@@ -288,13 +288,12 @@ int TPpContext::lFloatConst(int len, int ch, TPpToken* ppToken)
         }
     } else if (ch == 'f' || ch == 'F') {
         if (ifdepth == 0)
-	{
-		_parseContext.profileRequires(ppToken->loc,  EEsProfile, 300, nullptr, "floating-point suffix");
-		_parseContext.profileRequires(ppToken->loc, ~EEsProfile, 120, nullptr, "floating-point suffix");
-		if (!hasDecimalOrExponent)
-			_parseContext.ppError(ppToken->loc, "float literal needs a decimal point or exponent", "", "");
-		saveName(ch);
-	}
+            _parseContext.profileRequires(ppToken->loc,  EEsProfile, 300, nullptr, "floating-point suffix");
+        if (ifdepth == 0 && !_parseContext.relaxedErrors())
+            _parseContext.profileRequires(ppToken->loc, ~EEsProfile, 120, nullptr, "floating-point suffix");
+        if (ifdepth == 0 && !hasDecimalOrExponent)
+            _parseContext.ppError(ppToken->loc, "float literal needs a decimal point or exponent", "", "");
+        saveName(ch);
     } else
         ungetChar();
 

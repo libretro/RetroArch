@@ -5317,6 +5317,9 @@ TIntermTyped* HlslParseContext::handleFunctionCall(const TSourceLoc& loc, TFunct
             if (arguments && !builtIn)
                 expandArguments(loc, *fnCandidate, arguments);
 
+            // Expansion may have changed the form of arguments
+            aggregate = arguments ? arguments->getAsAggregate() : nullptr;
+
             op = fnCandidate->getBuiltInOp();
             if (builtIn && op != EOpNull) {
                 // A function call mapped to a built-in operation.
@@ -9979,6 +9982,11 @@ void HlslParseContext::finish()
     addPatchConstantInvocation();
     fixTextureShadowModes();
     finalizeAppendMethods();
+
+    // Communicate out (esp. for command line) that we formed AST that will make
+    // illegal AST SPIR-V and it needs transforms to legalize it.
+    if (intermediate.needsLegalization() && (messages & EShMsgHlslLegalization))
+        infoSink.info << "WARNING: AST will form illegal SPIR-V; need to transform to legalize";
 
     TParseContextBase::finish();
 }

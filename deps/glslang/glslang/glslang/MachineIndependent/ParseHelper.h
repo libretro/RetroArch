@@ -220,6 +220,9 @@ protected:
     virtual const char* getGlobalUniformBlockName() const { return ""; }
     virtual void setUniformBlockDefaults(TType&) const { }
     virtual void finalizeGlobalUniformBlockLayout(TVariable&) { }
+    virtual void outputMessage(const TSourceLoc&, const char* szReason, const char* szToken,
+                               const char* szExtraInfoFormat, TPrefixType prefix,
+                               va_list args);
     virtual void trackLinkage(TSymbol& symbol);
     virtual void makeEditable(TSymbol*&);
     virtual TVariable* getEditableVariable(const char* name);

@@ -41,6 +41,7 @@
 //
 
 #include "localintermediate.h"
+#include "RemoveTree.h"
 #include "SymbolTable.h"
 #include "propagateNoContraction.h"
 
@@ -49,34 +50,6 @@
 #include <tuple>
 
 namespace glslang {
-
-static __inline int getTypeRank(TBasicType type)
-{
-    int res = -1;
-    switch(type) {
-    case EbtInt8:
-    case EbtUint8:
-        res = 0;
-        break;
-    case EbtInt16:
-    case EbtUint16:
-        res = 1;
-        break;
-    case EbtInt:
-    case EbtUint:
-        res = 2;
-        break;
-    case EbtInt64:
-    case EbtUint64:
-        res = 3;
-        break;
-    default:
-        assert(false);
-        break;
-    }
-    return res;
-}
-
 
 ////////////////////////////////////////////////////////////////////////////
 //
@@ -1663,6 +1636,7 @@ static bool canSignedIntTypeRepresentAllUnsignedValues(TBasicType sintType, TBas
     }
 }
 
+
 static TBasicType getCorrespondingUnsignedType(TBasicType type) {
     switch(type) {
     case EbtInt8:
@@ -2626,6 +2600,15 @@ void TIntermediate::addToCallGraph(TInfoSink& /*infoSink*/, const TString& calle
     }
 
     callGraph.push_front(TCall(caller, callee));
+}
+
+//
+// This deletes the tree.
+//
+void TIntermediate::removeTree()
+{
+    if (treeRoot)
+        RemoveAllTreeNodes(treeRoot);
 }
 
 //
@@ -3828,5 +3811,21 @@ void TIntermediate::performTextureUpgradeAndSamplerRemovalTransformation(TInterm
     TextureUpgradeAndSamplerRemovalTransform transform;
     root->traverse(&transform);
 }
+
+const char* TIntermediate::getResourceName(TResourceType res)
+{
+    switch (res) {
+    case EResSampler: return "shift-sampler-binding";
+    case EResTexture: return "shift-texture-binding";
+    case EResImage:   return "shift-image-binding";
+    case EResUbo:     return "shift-UBO-binding";
+    case EResSsbo:    return "shift-ssbo-binding";
+    case EResUav:     return "shift-uav-binding";
+    default:
+        assert(0); // internal error: should only be called with valid resource types.
+        return nullptr;
+    }
+}
+
 
 } // end namespace glslang

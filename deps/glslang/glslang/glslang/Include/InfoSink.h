@@ -53,6 +53,12 @@ enum TPrefixType {
     EPrefixNote
 };
 
+enum TOutputStream {
+    ENull = 0,
+    EDebugger = 0x01,
+    EStdOut = 0x02,
+    EString = 0x04,
+};
 //
 // Encapsulate info logs for all objects that have them.
 //
@@ -61,7 +67,8 @@ enum TPrefixType {
 //
 class TInfoSinkBase {
 public:
-    TInfoSinkBase() {}
+    TInfoSinkBase() : outputStream(4) {}
+    void erase() { sink.erase(); }
     TInfoSinkBase& operator<<(const TPersistString& t) { append(t); return *this; }
     TInfoSinkBase& operator<<(char c)                  { append(1, c); return *this; }
     TInfoSinkBase& operator<<(const char* s)           { append(s); return *this; }
@@ -76,14 +83,43 @@ public:
     TInfoSinkBase& operator<<(const TString& t)        { append(t); return *this; }
     TInfoSinkBase& operator+(const char* s)            { append(s); return *this; }
     const char* c_str() const { return sink.c_str(); }
+    void prefix(TPrefixType message) {
+        switch(message) {
+        case EPrefixNone:                                      break;
+        case EPrefixWarning:       append("WARNING: ");        break;
+        case EPrefixError:         append("ERROR: ");          break;
+        case EPrefixInternalError: append("INTERNAL ERROR: "); break;
+        case EPrefixUnimplemented: append("UNIMPLEMENTED: ");  break;
+        case EPrefixNote:          append("NOTE: ");           break;
+        default:                   append("UNKNOWN ERROR: ");   break;
+        }
+    }
     void location(const TSourceLoc& loc) {
-        char locText[24];
-        snprintf(locText, 24, ":%d", loc.line);
+        const int maxSize = 24;
+        char locText[maxSize];
+        snprintf(locText, maxSize, ":%d", loc.line);
         append(loc.getStringNameOrNum(false).c_str());
         append(locText);
         append(": ");
     }
+    void message(TPrefixType message, const char* s) {
+        prefix(message);
+        append(s);
+        append("\n");
+    }
+    void message(TPrefixType message, const char* s, const TSourceLoc& loc) {
+        prefix(message);
+        location(loc);
+        append(s);
+        append("\n");
+    }
 
+    void setOutputStream(int output = 4)
+    {
+        outputStream = output;
+    }
+
+protected:
     void append(const char* s);
 
     void append(int count, char c);
@@ -92,8 +128,9 @@ public:
 
     void checkMem(size_t growth) { if (sink.capacity() < sink.size() + growth + 2)
                                        sink.reserve(sink.capacity() +  sink.capacity() / 2); }
-protected:
+    void appendToStream(const char* s);
     TPersistString sink;
+    int outputStream;
 };
 
 } // end namespace glslang

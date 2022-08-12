@@ -44,24 +44,37 @@ extern int yyparse(glslang::TParseContext*);
 
 namespace glslang {
 
+//
+// Used to output syntax, parsing, and semantic errors.
+//
+
+void TParseContextBase::outputMessage(const TSourceLoc& loc, const char* szReason,
+                                      const char* szToken,
+                                      const char* szExtraInfoFormat,
+                                      TPrefixType prefix, va_list args)
+{
+    const int maxSize = MaxTokenLength + 200;
+    char szExtraInfo[maxSize];
+
+    safe_vsprintf(szExtraInfo, maxSize, szExtraInfoFormat, args);
+
+    infoSink.info.prefix(prefix);
+    infoSink.info.location(loc);
+    infoSink.info << "'" << szToken <<  "' : " << szReason << " " << szExtraInfo << "\n";
+
+    if (prefix == EPrefixError) {
+        ++numErrors;
+    }
+}
+
 void C_DECL TParseContextBase::error(const TSourceLoc& loc, const char* szReason, const char* szToken,
                                      const char* szExtraInfoFormat, ...)
 {
+    if (messages & EShMsgOnlyPreprocessor)
+        return;
     va_list args;
     va_start(args, szExtraInfoFormat);
-    const int maxSize = MaxTokenLength + 200;
-    char szExtraInfo[maxSize];
-    safe_vsprintf(szExtraInfo, maxSize, szExtraInfoFormat, args);
-    infoSink.info.append("ERROR: ");
-    infoSink.info.location(loc);
-    infoSink.info.append("'");
-    infoSink.info << szToken;
-    infoSink.info.append("' : ");
-    infoSink.info << szReason;
-    infoSink.info.append(" ");
-    infoSink.info << szExtraInfo;
-    infoSink.info.append("\n");
-    ++numErrors;
+    outputMessage(loc, szReason, szToken, szExtraInfoFormat, EPrefixError, args);
     va_end(args);
 
     if ((messages & EShMsgCascadingErrors) == 0)
@@ -75,18 +88,7 @@ void C_DECL TParseContextBase::warn(const TSourceLoc& loc, const char* szReason,
         return;
     va_list args;
     va_start(args, szExtraInfoFormat);
-    const int maxSize = MaxTokenLength + 200;
-    char szExtraInfo[maxSize];
-    safe_vsprintf(szExtraInfo, maxSize, szExtraInfoFormat, args);
-    infoSink.info.append("WARNING: ");
-    infoSink.info.location(loc);
-    infoSink.info.append("'");
-    infoSink.info << szToken;
-    infoSink.info.append("' : ");
-    infoSink.info << szReason;
-    infoSink.info.append(" ");
-    infoSink.info << szExtraInfo;
-    infoSink.info.append("\n");
+    outputMessage(loc, szReason, szToken, szExtraInfoFormat, EPrefixWarning, args);
     va_end(args);
 }
 
@@ -95,19 +97,7 @@ void C_DECL TParseContextBase::ppError(const TSourceLoc& loc, const char* szReas
 {
     va_list args;
     va_start(args, szExtraInfoFormat);
-    const int maxSize = MaxTokenLength + 200;
-    char szExtraInfo[maxSize];
-    safe_vsprintf(szExtraInfo, maxSize, szExtraInfoFormat, args);
-    infoSink.info.append("ERROR: ");
-    infoSink.info.location(loc);
-    infoSink.info.append("'");
-    infoSink.info << szToken;
-    infoSink.info.append("' : ");
-    infoSink.info << szReason;
-    infoSink.info.append(" ");
-    infoSink.info << szExtraInfo;
-    infoSink.info.append("\n");
-    ++numErrors;
+    outputMessage(loc, szReason, szToken, szExtraInfoFormat, EPrefixError, args);
     va_end(args);
 
     if ((messages & EShMsgCascadingErrors) == 0)
@@ -119,18 +109,7 @@ void C_DECL TParseContextBase::ppWarn(const TSourceLoc& loc, const char* szReaso
 {
     va_list args;
     va_start(args, szExtraInfoFormat);
-    const int maxSize = MaxTokenLength + 200;
-    char szExtraInfo[maxSize];
-    safe_vsprintf(szExtraInfo, maxSize, szExtraInfoFormat, args);
-    infoSink.info.append("WARNING: ");
-    infoSink.info.location(loc);
-    infoSink.info.append("'");
-    infoSink.info << szToken;
-    infoSink.info.append("' : ");
-    infoSink.info << szReason;
-    infoSink.info.append(" ");
-    infoSink.info << szExtraInfo;
-    infoSink.info.append("\n");
+    outputMessage(loc, szReason, szToken, szExtraInfoFormat, EPrefixWarning, args);
     va_end(args);
 }
 

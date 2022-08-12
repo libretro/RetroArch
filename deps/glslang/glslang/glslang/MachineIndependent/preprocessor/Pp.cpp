@@ -315,7 +315,10 @@ int TPpContext::extraTokenCheck(int contextAtom, TPpToken* ppToken, int token)
         else
             label = "";
 
-        _parseContext.ppError(ppToken->loc, message, label, "");
+        if (_parseContext.relaxedErrors())
+            _parseContext.ppWarn(ppToken->loc, message, label, "");
+        else
+            _parseContext.ppError(ppToken->loc, message, label, "");
 
         while (token != '\n' && token != EndOfInput)
             token = scanToken(ppToken);
@@ -397,7 +400,11 @@ int TPpContext::eval(int token, int precedence, bool shortCircuit, int& res, boo
     if (token == PpAtomIdentifier) {
         if (strcmp("defined", ppToken->name) == 0) {
             if (! _parseContext.isReadingHLSL() && isMacroInput()) {
-                _parseContext.ppError(ppToken->loc, "cannot use in preprocessor expression when expanded from macros",
+                if (_parseContext.relaxedErrors())
+                    _parseContext.ppWarn(ppToken->loc, "nonportable when expanded from macros for preprocessor expression",
+                                                      "defined", "");
+                else
+                    _parseContext.ppError(ppToken->loc, "cannot use in preprocessor expression when expanded from macros",
                                                        "defined", "");
             }
             bool needclose = 0;
@@ -519,7 +526,10 @@ int TPpContext::evalToToken(int token, bool shortCircuit, int& res, bool& err, T
         if (macroReturn == -1) {
             if (! shortCircuit && _parseContext.profile == EEsProfile) {
                 const char* message = "undefined macro in expression not allowed in es profile";
-                _parseContext.ppError(ppToken->loc, message, "preprocessor evaluation", ppToken->name);
+                if (_parseContext.relaxedErrors())
+                    _parseContext.ppWarn(ppToken->loc, message, "preprocessor evaluation", ppToken->name);
+                else
+                    _parseContext.ppError(ppToken->loc, message, "preprocessor evaluation", ppToken->name);
             }
         }
         token = scanToken(ppToken);
@@ -633,14 +643,9 @@ int TPpContext::CPPinclude(TPpToken* ppToken)
             const bool forNextLine = _parseContext.lineDirectiveShouldSetNextLine();
             std::ostringstream prologue;
             std::ostringstream epilogue;
-            prologue << "#line ";
-	    prologue << forNextLine;
-	    prologue << " \"";
-	    prologue << res->headerName;
-	    prologue << "\"\n";
-            epilogue << (res->headerData[res->headerLength - 1] == '\n'? "" : "\n");
-	    epilogue << "#line ";
-            epilogue << directiveLoc.line + forNextLine << " " << directiveLoc.getStringNameOrNum() << "\n";
+            prologue << "#line " << forNextLine << " " << "\"" << res->headerName << "\"\n";
+            epilogue << (res->headerData[res->headerLength - 1] == '\n'? "" : "\n") <<
+                "#line " << directiveLoc.line + forNextLine << " " << directiveLoc.getStringNameOrNum() << "\n";
             pushInput(new TokenizableIncludeFile(directiveLoc, prologue.str(), res, epilogue.str(), this));
             // There's no "current" location anymore.
             _parseContext.setCurrentColumn(0);

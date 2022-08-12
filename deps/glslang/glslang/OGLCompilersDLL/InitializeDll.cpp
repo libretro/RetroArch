@@ -32,6 +32,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 
+#define SH_EXPORTING
+
 #include <cassert>
 
 #include "InitializeDll.h"
@@ -39,97 +41,113 @@
 #include "../glslang/Public/ShaderLang.h"
 #include "../glslang/Include/PoolAlloc.h"
 
-static OS_TLSIndex ThreadInitializeIndex = OS_INVALID_TLS_INDEX;
+namespace glslang {
 
-/*  Per-process initialization.
- *  Needs to be called at least once before parsing, etc. is done.
- *  Will also do thread initialization for the calling thread; other
- *  threads will need to do that explicitly.
- */
-extern "C" bool InitProcess(void)
+OS_TLSIndex ThreadInitializeIndex = OS_INVALID_TLS_INDEX;
+
+// Per-process initialization.
+// Needs to be called at least once before parsing, etc. is done.
+// Will also do thread initialization for the calling thread; other
+// threads will need to do that explicitly.
+bool InitProcess()
 {
-    GetGlobalLock();
+    glslang::GetGlobalLock();
 
-    if (ThreadInitializeIndex != OS_INVALID_TLS_INDEX)
-    {
-        /* Function is re-entrant. */
-        ReleaseGlobalLock();
+    if (ThreadInitializeIndex != OS_INVALID_TLS_INDEX) {
+        //
+        // Function is re-entrant.
+        //
+
+        glslang::ReleaseGlobalLock();
         return true;
     }
 
-    if ((ThreadInitializeIndex = OS_AllocTLSIndex()) == OS_INVALID_TLS_INDEX)
-    {
-        ReleaseGlobalLock();
+    ThreadInitializeIndex = OS_AllocTLSIndex();
+
+    if (ThreadInitializeIndex == OS_INVALID_TLS_INDEX) {
+        assert(0 && "InitProcess(): Failed to allocate TLS area for init flag");
+
+        glslang::ReleaseGlobalLock();
         return false;
     }
 
-    if (! InitializePoolIndex())
-    {
-        ReleaseGlobalLock();
+    if (! InitializePoolIndex()) {
+        assert(0 && "InitProcess(): Failed to initialize global pool");
+
+        glslang::ReleaseGlobalLock();
         return false;
     }
 
-    if (!InitThread())
-    {
-        ReleaseGlobalLock();
+    if (! InitThread()) {
+        assert(0 && "InitProcess(): Failed to initialize thread");
+
+        glslang::ReleaseGlobalLock();
         return false;
     }
 
-    ReleaseGlobalLock();
+    glslang::ReleaseGlobalLock();
     return true;
 }
 
-/* Per-thread scoped initialization.
- * Must be called at least once by each new thread sharing the
- * symbol tables, etc., needed to parse.
- */
-extern "C" bool InitThread(void)
+// Per-thread scoped initialization.
+// Must be called at least once by each new thread sharing the
+// symbol tables, etc., needed to parse.
+bool InitThread()
 {
-    /* This function is re-entrant */
-    if (ThreadInitializeIndex == OS_INVALID_TLS_INDEX)
+    //
+    // This function is re-entrant
+    //
+    if (ThreadInitializeIndex == OS_INVALID_TLS_INDEX) {
+        assert(0 && "InitThread(): Process hasn't been initalised.");
         return false;
+    }
 
     if (OS_GetTLSValue(ThreadInitializeIndex) != 0)
         return true;
 
-    if (! OS_SetTLSValue(ThreadInitializeIndex, (void *)1))
+    if (! OS_SetTLSValue(ThreadInitializeIndex, (void *)1)) {
+        assert(0 && "InitThread(): Unable to set init flag.");
         return false;
+    }
 
     glslang::SetThreadPoolAllocator(nullptr);
 
     return true;
 }
 
-/* Not necessary to call this: InitThread() is reentrant, and the need
- * to do per thread tear down has been removed.
- *
- * This is kept, with memory management removed, to satisfy any exiting
- * calls to it that rely on it.
- */
-extern "C" bool DetachThread(void)
+// Not necessary to call this: InitThread() is reentrant, and the need
+// to do per thread tear down has been removed.
+//
+// This is kept, with memory management removed, to satisfy any exiting
+// calls to it that rely on it.
+bool DetachThread()
 {
+    bool success = true;
+
     if (ThreadInitializeIndex == OS_INVALID_TLS_INDEX)
         return true;
 
-    /* Function is re-entrant and this thread may not have been initialized. */
-    if (OS_GetTLSValue(ThreadInitializeIndex) != 0)
-    {
-        if (!OS_SetTLSValue(ThreadInitializeIndex, (void *)0))
-            return false;
+    //
+    // Function is re-entrant and this thread may not have been initialized.
+    //
+    if (OS_GetTLSValue(ThreadInitializeIndex) != 0) {
+        if (!OS_SetTLSValue(ThreadInitializeIndex, (void *)0)) {
+            assert(0 && "DetachThread(): Unable to clear init flag.");
+            success = false;
+        }
     }
 
-    return true;
+    return success;
 }
 
-/* Not necessary to call this: InitProcess() is reentrant.
- *
- * This is kept, with memory management removed, to satisfy any exiting
- * calls to it that rely on it.
- *
- * Users of glslang should call shFinalize() or glslang::FinalizeProcess() for
- * process-scoped memory tear down.
- */
-extern "C" bool DetachProcess(void)
+// Not necessary to call this: InitProcess() is reentrant.
+//
+// This is kept, with memory management removed, to satisfy any exiting
+// calls to it that rely on it.
+//
+// Users of glslang should call shFinalize() or glslang::FinalizeProcess() for
+// process-scoped memory tear down.
+bool DetachProcess()
 {
     bool success = true;
 
@@ -144,3 +162,5 @@ extern "C" bool DetachProcess(void)
 
     return success;
 }
+
+} // end namespace glslang

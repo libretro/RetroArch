@@ -172,33 +172,21 @@ void TType::buildMangledName(TString& mangledName) const
 
 void TVariable::dump(TInfoSink& infoSink) const
 {
-    infoSink.debug << getName().c_str();
-    infoSink.debug.append(": ");
-    infoSink.debug << type.getStorageQualifierString();
-    infoSink.debug.append(" ");
-    infoSink.debug << type.getBasicTypeString();
-    if (type.isArray())
-        infoSink.debug.append("[0]");
-    infoSink.debug.append("\n");
+    infoSink.debug << getName().c_str() << ": " << type.getStorageQualifierString() << " " << type.getBasicTypeString();
+    if (type.isArray()) {
+        infoSink.debug << "[0]";
+    }
+    infoSink.debug << "\n";
 }
 
 void TFunction::dump(TInfoSink& infoSink) const
 {
-    infoSink.debug << getName().c_str();
-    infoSink.debug.append(": ");
-    infoSink.debug <<  returnType.getBasicTypeString();
-    infoSink.debug.append(" ");
-    infoSink.debug << getMangledName().c_str();
-    infoSink.debug.append("\n");
+    infoSink.debug << getName().c_str() << ": " <<  returnType.getBasicTypeString() << " " << getMangledName().c_str() << "\n";
 }
 
 void TAnonMember::dump(TInfoSink& TInfoSink) const
 {
-    TInfoSink.debug.append("anonymous member ");
-    TInfoSink.debug << getMemberNumber();
-    TInfoSink.debug.append(" of ");
-    TInfoSink.debug << getAnonContainer().getName().c_str();
-    TInfoSink.debug.append("\n");
+    TInfoSink.debug << "anonymous member " << getMemberNumber() << " of " << getAnonContainer().getName().c_str() << "\n";
 }
 
 void TSymbolTableLevel::dump(TInfoSink &infoSink) const
@@ -211,9 +199,7 @@ void TSymbolTableLevel::dump(TInfoSink &infoSink) const
 void TSymbolTable::dump(TInfoSink &infoSink) const
 {
     for (int level = currentLevel(); level >= 0; --level) {
-        infoSink.debug.append("LEVEL ");
-	infoSink.debug << level;
-	infoSink.debug.append("\n");
+        infoSink.debug << "LEVEL " << level << "\n";
         table[level]->dump(infoSink);
     }
 }
@@ -323,9 +309,6 @@ TFunction::TFunction(const TFunction& copyOf) : TSymbol(copyOf)
 {
     for (unsigned int i = 0; i < copyOf.parameters.size(); ++i) {
         TParameter param;
- 	param.name         = NULL;
- 	param.type         = NULL;
- 	param.defaultValue = NULL;
         parameters.push_back(param);
         parameters.back().copyParam(copyOf.parameters[i]);
     }

@@ -52,7 +52,7 @@ typedef union {
 
 // Some helper functions
 
-static bool isNan(double x)
+bool isNan(double x)
 {
     DoubleIntUnion u;
     // tough to find a platform independent library function, do it directly
@@ -63,7 +63,7 @@ static bool isNan(double x)
            ((bitPatternH & 0xFFFFF) != 0 || bitPatternL != 0);
 }
 
-static bool isInf(double x)
+bool isInf(double x)
 {
     DoubleIntUnion u;
     // tough to find a platform independent library function, do it directly
@@ -74,9 +74,7 @@ static bool isInf(double x)
            (bitPatternH & 0xFFFFF) == 0 && bitPatternL == 0;
 }
 
-#ifndef M_PI
-#define M_PI 3.1415926535897932384626433832795
-#endif
+const double pi = 3.1415926535897932384626433832795;
 
 } // end anonymous namespace
 
@@ -547,10 +545,10 @@ TIntermTyped* TIntermConstantUnion::fold(TOperator op, const TType& returnType) 
             newConstArray[i] = ~unionArray[i];
             break;
         case EOpRadians:
-            newConstArray[i].setDConst(unionArray[i].getDConst() * M_PI / 180.0);
+            newConstArray[i].setDConst(unionArray[i].getDConst() * pi / 180.0);
             break;
         case EOpDegrees:
-            newConstArray[i].setDConst(unionArray[i].getDConst() * 180.0 / M_PI);
+            newConstArray[i].setDConst(unionArray[i].getDConst() * 180.0 / pi);
             break;
         case EOpSin:
             newConstArray[i].setDConst(sin(unionArray[i].getDConst()));

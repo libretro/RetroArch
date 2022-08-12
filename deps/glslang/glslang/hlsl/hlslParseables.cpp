@@ -58,29 +58,28 @@ namespace {  // anonymous namespace functions
 
 const bool UseHlslTypes = true;
 
-static const char* BaseTypeName(const char argOrder, const char* scalarName, const char* vecName, const char* matName)
+const char* BaseTypeName(const char argOrder, const char* scalarName, const char* vecName, const char* matName)
 {
     switch (argOrder) {
     case 'S': return scalarName;
     case 'V': return vecName;
     case 'M': return matName;
-    default:  break;
+    default:  return "UNKNOWN_TYPE";
     }
-    return "UNKNOWN_TYPE";
 }
 
 // arg order queries
-static bool IsSamplerType(const char argType)     { return argType == 'S' || argType == 's'; }
-static bool IsArrayed(const char argOrder)        { return argOrder == '@' || argOrder == '&' || argOrder == '#'; }
-static bool IsTextureNonMS(const char argOrder)   { return argOrder == '%'; }
-static bool IsSubpassInput(const char argOrder)   { return argOrder == '[' || argOrder == ']'; }
-static bool IsArrayedTexture(const char argOrder) { return argOrder == '@'; }
-static bool IsTextureMS(const char argOrder)      { return argOrder == '$' || argOrder == '&'; }
-static bool IsMS(const char argOrder)             { return IsTextureMS(argOrder) || argOrder == ']'; }
-static bool IsBuffer(const char argOrder)         { return argOrder == '*' || argOrder == '~'; }
-static bool IsImage(const char argOrder)          { return argOrder == '!' || argOrder == '#' || argOrder == '~'; }
+bool IsSamplerType(const char argType)     { return argType == 'S' || argType == 's'; }
+bool IsArrayed(const char argOrder)        { return argOrder == '@' || argOrder == '&' || argOrder == '#'; }
+bool IsTextureNonMS(const char argOrder)   { return argOrder == '%'; }
+bool IsSubpassInput(const char argOrder)   { return argOrder == '[' || argOrder == ']'; }
+bool IsArrayedTexture(const char argOrder) { return argOrder == '@'; }
+bool IsTextureMS(const char argOrder)      { return argOrder == '$' || argOrder == '&'; }
+bool IsMS(const char argOrder)             { return IsTextureMS(argOrder) || argOrder == ']'; }
+bool IsBuffer(const char argOrder)         { return argOrder == '*' || argOrder == '~'; }
+bool IsImage(const char argOrder)          { return argOrder == '!' || argOrder == '#' || argOrder == '~'; }
 
-static bool IsTextureType(const char argOrder)
+bool IsTextureType(const char argOrder)
 {
     return IsTextureNonMS(argOrder) || IsArrayedTexture(argOrder) ||
            IsTextureMS(argOrder) || IsBuffer(argOrder) || IsImage(argOrder);
@@ -88,7 +87,7 @@ static bool IsTextureType(const char argOrder)
 
 // Reject certain combinations that are illegal sample methods.  For example,
 // 3D arrays.
-static bool IsIllegalSample(const glslang::TString& name, const char* argOrder, int dim0)
+bool IsIllegalSample(const glslang::TString& name, const char* argOrder, int dim0)
 {
     const bool isArrayed = IsArrayed(*argOrder);
     const bool isMS      = IsTextureMS(*argOrder);
@@ -153,29 +152,30 @@ static bool IsIllegalSample(const glslang::TString& name, const char* argOrder, 
 }
 
 // Return the number of the coordinate arg, if any
-static int CoordinateArgPos(const glslang::TString& name, bool isTexture)
+int CoordinateArgPos(const glslang::TString& name, bool isTexture)
 {
     if (!isTexture || (name == "GetDimensions"))
         return -1;  // has none
     else if (name == "Load")
         return 1;
-    return 2;  // other texture methods are 2
+    else
+        return 2;  // other texture methods are 2
 }
 
 // Some texture methods use an addition coordinate dimension for the mip
-static bool HasMipInCoord(const glslang::TString& name, bool isMS, bool isBuffer, bool isImage)
+bool HasMipInCoord(const glslang::TString& name, bool isMS, bool isBuffer, bool isImage)
 {
     return name == "Load" && !isMS && !isBuffer && !isImage;
 }
 
 // LOD calculations don't pass the array level in the coordinate.
-static bool NoArrayCoord(const glslang::TString& name)
+bool NoArrayCoord(const glslang::TString& name)
 {
     return name == "CalculateLevelOfDetail" || name == "CalculateLevelOfDetailUnclamped";
 }
 
 // Handle IO params marked with > or <
-static const char* IoParam(glslang::TString& s, const char* nthArgOrder)
+const char* IoParam(glslang::TString& s, const char* nthArgOrder)
 {
     if (*nthArgOrder == '>') {           // output params
         ++nthArgOrder;
@@ -189,7 +189,7 @@ static const char* IoParam(glslang::TString& s, const char* nthArgOrder)
 }
 
 // Handle repeated args
-static void HandleRepeatArg(const char*& arg, const char*& prev, const char* current)
+void HandleRepeatArg(const char*& arg, const char*& prev, const char* current)
 {
     if (*arg == ',' || *arg == '\0')
         arg = prev;
@@ -199,13 +199,13 @@ static void HandleRepeatArg(const char*& arg, const char*& prev, const char* cur
 
 // Return true for the end of a single argument key, which can be the end of the string, or
 // the comma separator.
-static inline bool IsEndOfArg(const char* arg)
+inline bool IsEndOfArg(const char* arg)
 {
     return arg == nullptr || *arg == '\0' || *arg == ',';
 }
 
 // If this is a fixed vector size, such as V3, return the size.  Else return 0.
-static int FixedVecSize(const char* arg)
+int FixedVecSize(const char* arg)
 {
     while (!IsEndOfArg(arg)) {
         if (isdigit(*arg))
@@ -223,7 +223,7 @@ static int FixedVecSize(const char* arg)
 //    argType: F = float, D = double, I = int, U = uint, B = bool, S = sampler
 //    dim0 = vector dimension, or matrix 1st dimension
 //    dim1 = matrix 2nd dimension
-static glslang::TString& AppendTypeName(glslang::TString& s, const char* argOrder, const char* argType, int dim0, int dim1)
+glslang::TString& AppendTypeName(glslang::TString& s, const char* argOrder, const char* argType, int dim0, int dim1)
 {
     const bool isTranspose = (argOrder[0] == '^');
     const bool isTexture   = IsTextureType(argOrder[0]);
@@ -373,9 +373,10 @@ static glslang::TString& AppendTypeName(glslang::TString& s, const char* argOrde
 // The GLSL parser can be used to parse a subset of HLSL prototypes.  However, many valid HLSL prototypes
 // are not valid GLSL prototypes.  This rejects the invalid ones.  Thus, there is a single switch below
 // to enable creation of the entire HLSL space.
-static inline bool IsValid(const char* cname, char retOrder, char retType, char argOrder, char argType, int dim0, int dim1)
+inline bool IsValid(const char* cname, char retOrder, char retType, char argOrder, char argType, int dim0, int dim1)
 {
     const bool isVec = (argOrder == 'V');
+    const bool isMat = (argOrder == 'M');
 
     const std::string name(cname);
 
@@ -386,10 +387,10 @@ static inline bool IsValid(const char* cname, char retOrder, char retType, char 
     if (!IsTextureType(argOrder) && (isVec && dim0 == 1)) // avoid vec1
         return false;
 
-    if (!UseHlslTypes)
-    {
+    if (UseHlslTypes) {
+        // NO further restrictions for HLSL
+    } else {
         // GLSL parser restrictions
-        const bool isMat = (argOrder == 'M');
         if ((isMat && (argType == 'I' || argType == 'U' || argType == 'B')) ||
             (retOrder == 'M' && (retType == 'I' || retType == 'U' || retType == 'B')))
             return false;
@@ -410,7 +411,7 @@ static inline bool IsValid(const char* cname, char retOrder, char retType, char 
 }
 
 // return position of end of argument specifier
-static inline const char* FindEndOfArg(const char* arg)
+inline const char* FindEndOfArg(const char* arg)
 {
     while (!IsEndOfArg(arg))
         ++arg;
@@ -419,7 +420,7 @@ static inline const char* FindEndOfArg(const char* arg)
 }
 
 // Return pointer to beginning of Nth argument specifier in the string.
-static inline const char* NthArg(const char* arg, int n)
+inline const char* NthArg(const char* arg, int n)
 {
     for (int x=0; x<n && arg; ++x)
         if ((arg = FindEndOfArg(arg)) != nullptr)
@@ -428,7 +429,7 @@ static inline const char* NthArg(const char* arg, int n)
     return arg;
 }
 
-static inline void FindVectorMatrixBounds(const char* argOrder, int fixedVecSize, int& dim0Min, int& dim0Max, int& /*dim1Min*/, int& dim1Max)
+inline void FindVectorMatrixBounds(const char* argOrder, int fixedVecSize, int& dim0Min, int& dim0Max, int& /*dim1Min*/, int& dim1Max)
 {
     for (int arg = 0; ; ++arg) {
         const char* nthArgOrder(NthArg(argOrder, arg));
@@ -471,7 +472,8 @@ void TBuiltInParseablesHlsl::createMatTimesMat()
 
                 // Create a mat * mat of the appropriate dimensions
                 AppendTypeName(s, "M", "F", retRows, retCols);  // add return type
-                s.append(" mul"); // space between type and name, intrinsic name
+                s.append(" ");                                  // space between type and name
+                s.append("mul");                                // intrinsic name
                 s.append("(");                                  // open paren
 
                 AppendTypeName(s, "M", "F", xRows, xCols);      // add X input
@@ -483,7 +485,8 @@ void TBuiltInParseablesHlsl::createMatTimesMat()
 
             // Create M*V
             AppendTypeName(s, "V", "F", xRows, 1);          // add return type
-            s.append(" mul"); // space between type and name, intrinsic name
+            s.append(" ");                                  // space between type and name
+            s.append("mul");                                // intrinsic name
             s.append("(");                                  // open paren
 
             AppendTypeName(s, "M", "F", xRows, xCols);      // add X input
@@ -494,7 +497,8 @@ void TBuiltInParseablesHlsl::createMatTimesMat()
 
             // Create V*M
             AppendTypeName(s, "V", "F", xCols, 1);          // add return type
-            s.append(" mul"); // space between type and name, intrinsic name
+            s.append(" ");                                  // space between type and name
+            s.append("mul");                                // intrinsic name
             s.append("(");                                  // open paren
 
             AppendTypeName(s, "V", "F", xRows, 1);          // add Y input
@@ -1050,6 +1054,14 @@ void TBuiltInParseablesHlsl::initialize(int /*version*/, EProfile /*profile*/, c
     }
 
     createMatTimesMat(); // handle this case separately, for convenience
+
+    // printf("Common:\n%s\n",   getCommonString().c_str());
+    // printf("Frag:\n%s\n",     getStageString(EShLangFragment).c_str());
+    // printf("Vertex:\n%s\n",   getStageString(EShLangVertex).c_str());
+    // printf("Geo:\n%s\n",      getStageString(EShLangGeometry).c_str());
+    // printf("TessCtrl:\n%s\n", getStageString(EShLangTessControl).c_str());
+    // printf("TessEval:\n%s\n", getStageString(EShLangTessEvaluation).c_str());
+    // printf("Compute:\n%s\n",  getStageString(EShLangCompute).c_str());
 }
 
 //
@@ -1155,9 +1167,22 @@ void TBuiltInParseablesHlsl::identifyBuiltIns(int /*version*/, EProfile /*profil
     symbolTable.relateToOperator("max",                         EOpMax);
     symbolTable.relateToOperator("min",                         EOpMin);
     symbolTable.relateToOperator("modf",                        EOpModf);
+    // symbolTable.relateToOperator("msad4",                       EOpMsad4);
     symbolTable.relateToOperator("mul",                         EOpGenMul);
+    // symbolTable.relateToOperator("noise",                    EOpNoise); // TODO: check return type
     symbolTable.relateToOperator("normalize",                   EOpNormalize);
     symbolTable.relateToOperator("pow",                         EOpPow);
+    // symbolTable.relateToOperator("printf",                     EOpPrintf);
+    // symbolTable.relateToOperator("Process2DQuadTessFactorsAvg");
+    // symbolTable.relateToOperator("Process2DQuadTessFactorsMax");
+    // symbolTable.relateToOperator("Process2DQuadTessFactorsMin");
+    // symbolTable.relateToOperator("ProcessIsolineTessFactors");
+    // symbolTable.relateToOperator("ProcessQuadTessFactorsAvg");
+    // symbolTable.relateToOperator("ProcessQuadTessFactorsMax");
+    // symbolTable.relateToOperator("ProcessQuadTessFactorsMin");
+    // symbolTable.relateToOperator("ProcessTriTessFactorsAvg");
+    // symbolTable.relateToOperator("ProcessTriTessFactorsMax");
+    // symbolTable.relateToOperator("ProcessTriTessFactorsMin");
     symbolTable.relateToOperator("radians",                     EOpRadians);
     symbolTable.relateToOperator("rcp",                         EOpRcp);
     symbolTable.relateToOperator("reflect",                     EOpReflect);

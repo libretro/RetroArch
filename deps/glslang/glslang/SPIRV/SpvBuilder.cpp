@@ -54,10 +54,11 @@
 
 namespace spv {
 
-Builder::Builder(unsigned int spvVersion, unsigned int magicNumber) :
+Builder::Builder(unsigned int spvVersion, unsigned int magicNumber, SpvBuildLogger* buildLogger) :
     spvVersion(spvVersion),
     source(SourceLanguageUnknown),
     sourceVersion(0),
+    sourceFileStringId(NoResult),
     currentLine(0),
     emitOpLines(false),
     addressModel(AddressingModelLogical),
@@ -66,7 +67,8 @@ Builder::Builder(unsigned int spvVersion, unsigned int magicNumber) :
     buildPoint(0),
     uniqueId(0),
     entryPointFunction(0),
-    generatingOpCodeForSpecConst(false)
+    generatingOpCodeForSpecConst(false),
+    logger(buildLogger)
 {
     clearAccessChain();
 }
@@ -91,7 +93,7 @@ void Builder::setLine(int lineNum)
     if (lineNum != 0 && lineNum != currentLine) {
         currentLine = lineNum;
         if (emitOpLines)
-            addLine(NoResult, currentLine, 0);
+            addLine(sourceFileStringId, currentLine, 0);
     }
 }
 
@@ -2719,13 +2721,40 @@ void Builder::createConditionalBranch(Id condition, Block* thenBlock, Block* els
 // ...
 void Builder::dumpSourceInstructions(std::vector<unsigned int>& out) const
 {
+    const int maxWordCount = 0xFFFF;
+    const int opSourceWordCount = 4;
+    const int nonNullBytesPerInstruction = 4 * (maxWordCount - opSourceWordCount) - 1;
+
     if (source != SourceLanguageUnknown) {
         // OpSource Language Version File Source
         Instruction sourceInst(NoResult, NoType, OpSource);
         sourceInst.addImmediateOperand(source);
         sourceInst.addImmediateOperand(sourceVersion);
         // File operand
-        sourceInst.dump(out);
+        if (sourceFileStringId != NoResult) {
+            sourceInst.addIdOperand(sourceFileStringId);
+            // Source operand
+            if (sourceText.size() > 0) {
+                int nextByte = 0;
+                std::string subString;
+                while ((int)sourceText.size() - nextByte > 0) {
+                    subString = sourceText.substr(nextByte, nonNullBytesPerInstruction);
+                    if (nextByte == 0) {
+                        // OpSource
+                        sourceInst.addStringOperand(subString.c_str());
+                        sourceInst.dump(out);
+                    } else {
+                        // OpSourcContinued
+                        Instruction sourceContinuedInst(OpSourceContinued);
+                        sourceContinuedInst.addStringOperand(subString.c_str());
+                        sourceContinuedInst.dump(out);
+                    }
+                    nextByte += nonNullBytesPerInstruction;
+                }
+            } else
+                sourceInst.dump(out);
+        } else
+            sourceInst.dump(out);
     }
 }
 

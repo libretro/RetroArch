@@ -46,6 +46,7 @@
 #ifndef SpvBuilder_H
 #define SpvBuilder_H
 
+#include "Logger.h"
 #include "spirv.hpp"
 #include "spvIR.h"
 
@@ -61,7 +62,7 @@ namespace spv {
 
 class Builder {
 public:
-    Builder(unsigned int spvVersion, unsigned int userNumber);
+    Builder(unsigned int spvVersion, unsigned int userNumber, SpvBuildLogger* logger);
     virtual ~Builder();
 
     static const int maxMatrixSize = 4;
@@ -73,6 +74,14 @@ public:
         source = lang;
         sourceVersion = version;
     }
+    void setSourceFile(const std::string& file)
+    {
+        Instruction* fileString = new Instruction(getUniqueId(), NoType, OpString);
+        fileString->addStringOperand(file.c_str());
+        sourceFileStringId = fileString->getResultId();
+        strings.push_back(std::unique_ptr<Instruction>(fileString));
+    }
+    void setSourceText(const std::string& text) { sourceText = text; }
     void addSourceExtension(const char* ext) { sourceExtensions.push_back(ext); }
     void addModuleProcessed(const std::string& p) { moduleProcesses.push_back(p.c_str()); }
     void setEmitOpLines() { emitOpLines = true; }
@@ -590,6 +599,8 @@ public:
     unsigned int spvVersion;     // the version of SPIR-V to emit in the header
     SourceLanguage source;
     int sourceVersion;
+    spv::Id sourceFileStringId;
+    std::string sourceText;
     int currentLine;
     bool emitOpLines;
     std::set<std::string> extensions;
@@ -627,6 +638,9 @@ public:
 
     // Our loop stack.
     std::stack<LoopBlocks> loops;
+
+    // The stream for outputting warnings and errors.
+    SpvBuildLogger* logger;
 };  // end Builder class
 
 };  // end spv namespace

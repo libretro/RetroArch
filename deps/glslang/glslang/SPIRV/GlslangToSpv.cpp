@@ -114,7 +114,8 @@ struct OpDecorations {
 //
 class TGlslangToSpvTraverser : public glslang::TIntermTraverser {
 public:
-    TGlslangToSpvTraverser(unsigned int spvVersion, const glslang::TIntermediate*, glslang::SpvOptions& options);
+    TGlslangToSpvTraverser(unsigned int spvVersion, const glslang::TIntermediate*, spv::SpvBuildLogger* logger,
+        glslang::SpvOptions& options);
     virtual ~TGlslangToSpvTraverser() { }
 
     bool visitAggregate(glslang::TVisit, glslang::TIntermAggregate*);
@@ -217,6 +218,8 @@ protected:
     spv::Function* currentFunction;
     spv::Instruction* entryPoint;
     int sequenceDepth;
+
+    spv::SpvBuildLogger* logger;
 
     // There is a 1:1 mapping between a spv builder and a module; this is thread safe
     spv::Builder builder;
@@ -1007,14 +1010,13 @@ bool HasNonLayoutQualifiers(const glslang::TType& type, const glslang::TQualifie
 // Implement the TGlslangToSpvTraverser class.
 //
 
-#define KHRONOS_TOOL_ID 8
-
-TGlslangToSpvTraverser::TGlslangToSpvTraverser(unsigned int spvVersion, const glslang::TIntermediate* glslangIntermediate, glslang::SpvOptions& options)
+TGlslangToSpvTraverser::TGlslangToSpvTraverser(unsigned int spvVersion, const glslang::TIntermediate* glslangIntermediate,
+                                               spv::SpvBuildLogger* buildLogger, glslang::SpvOptions& options)
     : TIntermTraverser(true, false, true),
       options(options),
       shaderEntry(nullptr), currentFunction(nullptr),
-      sequenceDepth(0),
-      builder(spvVersion, (KHRONOS_TOOL_ID << 16) | glslang::GetSpirvGeneratorVersion()),
+      sequenceDepth(0), logger(buildLogger),
+      builder(spvVersion, (glslang::GetKhronosToolId() << 16) | glslang::GetSpirvGeneratorVersion(), logger),
       inEntryPoint(false), entryPointTerminated(false), linkageOnly(false),
       glslangIntermediate(glslangIntermediate)
 {
@@ -1023,6 +1025,29 @@ TGlslangToSpvTraverser::TGlslangToSpvTraverser(unsigned int spvVersion, const gl
     builder.clearAccessChain();
     builder.setSource(TranslateSourceLanguage(glslangIntermediate->getSource(), glslangIntermediate->getProfile()),
                       glslangIntermediate->getVersion());
+
+    if (options.generateDebugInfo) {
+        builder.setEmitOpLines();
+        builder.setSourceFile(glslangIntermediate->getSourceFile());
+
+        // Set the source shader's text. If for SPV version 1.0, include
+        // a preamble in comments stating the OpModuleProcessed instructions.
+        // Otherwise, emit those as actual instructions.
+        std::string text;
+        const std::vector<std::string>& processes = glslangIntermediate->getProcesses();
+        for (int p = 0; p < (int)processes.size(); ++p) {
+            if (glslangIntermediate->getSpv().spv < 0x00010100) {
+                text.append("// OpModuleProcessed ");
+                text.append(processes[p]);
+                text.append("\n");
+            } else
+                builder.addModuleProcessed(processes[p]);
+        }
+        if (glslangIntermediate->getSpv().spv < 0x00010100 && (int)processes.size() > 0)
+            text.append("#line 1\n");
+        text.append(glslangIntermediate->getSourceText());
+        builder.setSourceText(text);
+    }
     stdBuiltins = builder.import("GLSL.std.450");
     builder.setMemoryModel(spv::AddressingModelLogical, spv::MemoryModelGLSL450);
     shaderEntry = builder.makeEntryPoint(glslangIntermediate->getEntryPointName().c_str());
@@ -1412,6 +1437,7 @@ bool TGlslangToSpvTraverser::visitBinary(glslang::TVisit /* visit */, glslang::T
         }
         return false;
     case glslang::EOpMatrixSwizzle:
+        logger->missingFunctionality("matrix swizzle");
         return true;
     case glslang::EOpLogicalOr:
     case glslang::EOpLogicalAnd:
@@ -1454,6 +1480,7 @@ bool TGlslangToSpvTraverser::visitBinary(glslang::TVisit /* visit */, glslang::T
 
     builder.clearAccessChain();
     if (! result) {
+        logger->missingFunctionality("unknown glslang binary operation");
         return true;  // pick up a child as the place-holder result
     } else {
         builder.setAccessChainRValue(result);
@@ -1610,6 +1637,7 @@ bool TGlslangToSpvTraverser::visitUnary(glslang::TVisit /* visit */, glslang::TI
         return false;
 
     default:
+        logger->missingFunctionality("unknown glslang unary");
         return true;  // pick up operand as placeholder result
     }
 }
@@ -1727,7 +1755,8 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
         if (result) {
             builder.clearAccessChain();
             builder.setAccessChainRValue(result);
-        }
+        } else
+            logger->missingFunctionality("missing user function; linker needs to catch that");
 
         return false;
     }
@@ -1872,7 +1901,7 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
         // Map the operation to a binary
         binOp = node->getOp();
         reduceComparison = false;
-        switch (binOp) {
+        switch (node->getOp()) {
         case glslang::EOpVectorEqual:     binOp = glslang::EOpVectorEqual;      break;
         case glslang::EOpVectorNotEqual:  binOp = glslang::EOpVectorNotEqual;   break;
         default:                          binOp = node->getOp();                break;
@@ -2093,6 +2122,7 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
         return false;
 
     if (! result) {
+        logger->missingFunctionality("unknown glslang aggregate");
         return true;  // pick up a child as a placeholder operand
     } else {
         builder.clearAccessChain();
@@ -5534,6 +5564,7 @@ spv::Id TGlslangToSpvTraverser::createInvocationsOperation(glslang::TOperator op
         break;
 #endif
     default:
+        logger->missingFunctionality("invocation operation");
         return spv::NoResult;
     }
 
@@ -6375,6 +6406,7 @@ spv::Id TGlslangToSpvTraverser::createNoArgOperation(glslang::TOperator op, spv:
     }
 #endif
     default:
+        logger->missingFunctionality("unknown operation with no arguments");
         return 0;
     }
 }
@@ -6556,6 +6588,7 @@ spv::Id TGlslangToSpvTraverser::createSpvConstant(const glslang::TIntermTyped& n
 
     // Neither a front-end constant node, nor a specialization constant node with constant union array or
     // constant sub tree as initializer.
+    logger->missingFunctionality("Neither a front-end constant nor a spec constant.");
     exit(1);
     return spv::NoResult;
 }
@@ -6836,6 +6869,14 @@ spv::Id TGlslangToSpvTraverser::getExtBuiltins(const char* name)
 
 namespace glslang {
 
+void GetSpirvVersion(std::string& version)
+{
+    const int bufSize = 100;
+    char buf[bufSize];
+    snprintf(buf, bufSize, "0x%08x, Revision %d", spv::Version, spv::Revision);
+    version = buf;
+}
+
 // For low-order part of the generator's magic number. Bump up
 // when there is a change in the style (e.g., if SSA form changes,
 // or a different instruction sequence to do something gets used).
@@ -6851,8 +6892,63 @@ int GetSpirvGeneratorVersion()
     return 7; // GLSL volatile keyword maps to both SPIR-V decorations Volatile and Coherent
 }
 
+// Write SPIR-V out to a binary file
+void OutputSpvBin(const std::vector<unsigned int>& spirv, const char* baseName)
+{
+    std::ofstream out;
+    out.open(baseName, std::ios::binary | std::ios::out);
+    if (out.fail())
+        printf("ERROR: Failed to open file: %s\n", baseName);
+    for (int i = 0; i < (int)spirv.size(); ++i) {
+        unsigned int word = spirv[i];
+        out.write((const char*)&word, 4);
+    }
+    out.close();
+}
+
+// Write SPIR-V out to a text file with 32-bit hexadecimal words
+void OutputSpvHex(const std::vector<unsigned int>& spirv, const char* baseName, const char* varName)
+{
+    std::ofstream out;
+    out.open(baseName, std::ios::binary | std::ios::out);
+    if (out.fail())
+        printf("ERROR: Failed to open file: %s\n", baseName);
+    out << "\t// " << 
+        glslang::GetSpirvGeneratorVersion() << "." << GLSLANG_MINOR_VERSION << "." << GLSLANG_PATCH_LEVEL <<
+        std::endl;
+    if (varName != nullptr) {
+        out << "\t #pragma once" << std::endl;
+        out << "const uint32_t " << varName << "[] = {" << std::endl;
+    }
+    const int WORDS_PER_LINE = 8;
+    for (int i = 0; i < (int)spirv.size(); i += WORDS_PER_LINE) {
+        out << "\t";
+        for (int j = 0; j < WORDS_PER_LINE && i + j < (int)spirv.size(); ++j) {
+            const unsigned int word = spirv[i + j];
+            out << "0x" << std::hex << std::setw(8) << std::setfill('0') << word;
+            if (i + j + 1 < (int)spirv.size()) {
+                out << ",";
+            }
+        }
+        out << std::endl;
+    }
+    if (varName != nullptr) {
+        out << "};";
+    }
+    out.close();
+}
+
+//
 // Set up the glslang traversal
+//
 void GlslangToSpv(const glslang::TIntermediate& intermediate, std::vector<unsigned int>& spirv, SpvOptions* options)
+{
+    spv::SpvBuildLogger logger;
+    GlslangToSpv(intermediate, spirv, &logger, options);
+}
+
+void GlslangToSpv(const glslang::TIntermediate& intermediate, std::vector<unsigned int>& spirv,
+                  spv::SpvBuildLogger* logger, SpvOptions* options)
 {
     TIntermNode* root = intermediate.getTreeRoot();
 
@@ -6865,7 +6961,7 @@ void GlslangToSpv(const glslang::TIntermediate& intermediate, std::vector<unsign
 
     glslang::GetThreadPoolAllocator().push();
 
-    TGlslangToSpvTraverser it(intermediate.getSpv().spv, &intermediate, *options);
+    TGlslangToSpvTraverser it(intermediate.getSpv().spv, &intermediate, logger, *options);
     root->traverse(&it);
     it.finishSpv();
     it.dumpSpv(spirv);
@@ -6922,6 +7018,5 @@ void GlslangToSpv(const glslang::TIntermediate& intermediate, std::vector<unsign
 
     glslang::GetThreadPoolAllocator().pop();
 }
-
 
 }; // end namespace glslang

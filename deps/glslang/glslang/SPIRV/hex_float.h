@@ -25,6 +25,10 @@
 
 #if defined(_MSC_VER) && _MSC_VER < 1800
 namespace std {
+bool isnan(double f)
+{
+  return ::_isnan(f) != 0;
+}
 bool isinf(double f)
 {
   return ::_finite(f) == 0;
@@ -71,6 +75,7 @@ struct FloatProxyTraits {
 template <>
 struct FloatProxyTraits<float> {
   typedef uint32_t uint_type;
+  static bool isNan(float f) { return std::isnan(f); }
   // Returns true if the given value is any kind of infinity.
   static bool isInfinity(float f) { return std::isinf(f); }
   // Returns the maximum normal value.
@@ -82,6 +87,7 @@ struct FloatProxyTraits<float> {
 template <>
 struct FloatProxyTraits<double> {
   typedef uint64_t uint_type;
+  static bool isNan(double f) { return std::isnan(f); }
   // Returns true if the given value is any kind of infinity.
   static bool isInfinity(double f) { return std::isinf(f); }
   // Returns the maximum normal value.

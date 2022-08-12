@@ -191,6 +191,8 @@ public:
     TPpContext(TParseContextBase&, const std::string& rootFileName, TShader::Includer&);
     virtual ~TPpContext();
 
+    void setPreamble(const char* preamble, size_t length);
+
     int tokenize(TPpToken& ppToken);
     int tokenPaste(int token, TPpToken&);
 

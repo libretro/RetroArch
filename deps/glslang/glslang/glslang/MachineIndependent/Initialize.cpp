@@ -5806,6 +5806,9 @@ void TBuiltIns::initialize(int version, EProfile profile, const SpvVersion& spvV
             "flat in highp uint gl_ViewID_OVR;"     // GL_OVR_multiview, GL_OVR_multiview2
             "\n");
     }
+
+    // printf("%s\n", commonBuiltins.c_str());
+    // printf("%s\n", stageBuiltins[EShLangFragment].c_str());
 }
 
 //
