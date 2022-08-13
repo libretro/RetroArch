@@ -3085,43 +3085,39 @@ static void netplay_handle_frame_hash(netplay_t *netplay,
 {
    if (netplay->is_server)
    {
-      if (netplay->check_frames &&
-          delta->frame % abs(netplay->check_frames) == 0)
+      if (netplay->check_frames && (delta->frame % netplay->check_frames) == 0)
       {
-         if (netplay->state_size)
-            delta->crc = netplay_delta_frame_crc(netplay, delta);
-         else
-            delta->crc = 0;
+         delta->crc = netplay->state_size ?
+            netplay_delta_frame_crc(netplay, delta) : 0;
          netplay_cmd_crc(netplay, delta);
       }
    }
-   else if (delta->crc && netplay->crcs_valid)
+   else
    {
-      /* We have a remote CRC, so check it */
-      uint32_t local_crc = 0;
-      if (netplay->state_size)
-         local_crc = netplay_delta_frame_crc(netplay, delta);
-
-      if (local_crc != delta->crc)
+      if (netplay->crcs_valid && delta->crc)
       {
-         /* If the very first check frame is wrong,
-          * they probably just don't work */
-         if (!netplay->crc_validity_checked)
-            netplay->crcs_valid = false;
-         else if (netplay->crcs_valid)
+         /* We have a remote CRC, so check it. */
+         uint32_t local_crc = netplay->state_size ?
+            netplay_delta_frame_crc(netplay, delta) : 0;
+
+         if (local_crc != delta->crc)
          {
-            /* Fix this! */
-            if (netplay->check_frames < 0)
+            /* If the very first check frame is wrong,
+               they probably just don't work. */
+            if (!netplay->crc_validity_checked)
             {
-               /* Just report */
-               RARCH_ERR("[Netplay] Netplay CRCs mismatch!\n");
+               netplay->crcs_valid = false;
+               return;
             }
-            else
+
+            if (netplay->check_frames)
                netplay_cmd_request_savestate(netplay);
+            else
+               RARCH_WARN("[Netplay] Netplay CRCs mismatch!\n");
          }
+         else
+            netplay->crc_validity_checked = true;
       }
-      else if (!netplay->crc_validity_checked)
-         netplay->crc_validity_checked = true;
    }
 }
 
@@ -6969,8 +6965,8 @@ static void netplay_free(netplay_t *netplay)
  */
 static netplay_t *netplay_new(const char *server, const char *mitm,
       uint16_t port, const char *mitm_session,
-      int check_frames, const struct retro_callbacks *cb, bool nat_traversal,
-      const char *nick, uint32_t quirks)
+      uint32_t check_frames, const struct retro_callbacks *cb,
+      bool nat_traversal, const char *nick, uint32_t quirks)
 {
    settings_t *settings          = config_get_ptr();
    netplay_t *netplay            = (netplay_t*)calloc(1, sizeof(*netplay));

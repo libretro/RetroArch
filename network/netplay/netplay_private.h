@@ -566,6 +566,9 @@ struct netplay
    uint32_t server_frame_count;
    uint32_t replay_frame_count;
 
+   /* Frequency with which to check CRCs */
+   uint32_t check_frames;
+
    /* How far behind did we fall? */
    uint32_t catch_up_behind;
 
@@ -581,9 +584,6 @@ struct netplay
    int listen_fd;
 
    int frame_run_time_ptr;
-
-   /* Frequency with which to check CRCs */
-   int check_frames;
 
    /* Latency frames; positive to hide network latency, 
     * negative to hide input latency */
