@@ -1348,7 +1348,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
    struct string_list *core_ext_list = NULL;
    bool dir_list_ok                  = false;
    char exts[32];
-   size_t i, len;
+   size_t i;
 
    if (string_is_empty(core_exts) ||
        !path_list)
@@ -1356,13 +1356,6 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
 
    if (!(core_ext_list = string_split(core_exts, "|")))
       goto error;
-   if (!string_list_append(core_ext_list, "lck", attr))
-      goto error;
-#if defined(HAVE_DYNAMIC)
-   /* > 'standalone exempt' */
-   if (!string_list_append(core_ext_list, "lsae", attr))
-      goto error;
-#endif
 
    /* Allocate list containers */
    path_list->dir_list               = string_list_new();
@@ -1382,6 +1375,12 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
    /* Get list of file extensions to include
     * > core + lock */
    strlcpy(exts, core_exts, sizeof(exts));
+#if defined(HAVE_DYNAMIC)
+   /* > 'standalone exempt' */
+   strlcat(exts, "|lck|lsae", sizeof(exts));
+#else
+   strlcat(exts, "|lck",      sizeof(exts));
+#endif
 
    /* Fetch core directory listing */
    dir_list_ok = dir_list_append(path_list->dir_list,
