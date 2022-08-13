@@ -3578,17 +3578,11 @@ static bool netplay_sync_pre_frame(netplay_t *netplay)
       if (!(netplay->quirks & NETPLAY_QUIRK_INITIALIZATION))
       {
          retro_ctx_serialize_info_t serial_info = {0};
-         bool okay                              = false;
-         runloop_state_t *runloop_st            = runloop_state_get_ptr();
 
          serial_info.data = netplay->buffer[netplay->run_ptr].state;
          serial_info.size = netplay->state_size;
          memset(serial_info.data, 0, serial_info.size);
-
-         runloop_st->request_fast_savestate = true;
-         okay                               = core_serialize(&serial_info);
-         runloop_st->request_fast_savestate = false;
-         if (okay)
+         if (core_serialize_special(&serial_info))
          {
             if (netplay->force_send_savestate && !netplay->stall &&
                   !netplay->remote_paused)
@@ -3604,7 +3598,7 @@ static bool netplay_sync_pre_frame(netplay_t *netplay)
                   netplay->run_frame_count = netplay->self_frame_count;
                }
 
-               /* Send this along to the other side */
+               /* Send this along to the other side. */
                serial_info.data_const =
                   netplay->buffer[netplay->run_ptr].state;
 
@@ -3789,8 +3783,6 @@ static void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
        netplay->replay_frame_count < netplay->run_frame_count)
    {
       retro_ctx_serialize_info_t serial_info;
-      bool okay                   = false;
-      runloop_state_t *runloop_st = runloop_state_get_ptr();
 
       /* Replay frames. */
       netplay->is_replay = true;
@@ -3820,31 +3812,24 @@ static void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       serial_info.data       = NULL;
       serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;
       serial_info.size       = netplay->state_size;
-
-      runloop_st->request_fast_savestate = true;
-      okay                               = core_unserialize(&serial_info);
-      runloop_st->request_fast_savestate = false;
-      if (!okay)
-      {
+      if (!core_unserialize_special(&serial_info))
          RARCH_ERR("[Netplay] Netplay savestate loading failed: Prepare for desync!\n");
-      }
 
       while (netplay->replay_frame_count < netplay->run_frame_count)
       {
          retro_time_t start, tm;
          struct delta_frame *ptr = &netplay->buffer[netplay->replay_ptr];
 
+         serial_info.data_const  = NULL;
          serial_info.data        = ptr->state;
          serial_info.size        = netplay->state_size;
-         serial_info.data_const  = NULL;
 
          start                   = cpu_features_get_time_usec();
 
          /* Remember the current state */
          memset(serial_info.data, 0, serial_info.size);
-         runloop_st->request_fast_savestate = true;
-         core_serialize(&serial_info);
-         runloop_st->request_fast_savestate = false;
+         core_serialize_special(&serial_info);
+
          if (netplay->replay_frame_count < netplay->unread_frame_count)
             netplay_handle_frame_hash(netplay, ptr);
 
@@ -3869,12 +3854,12 @@ static void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
                RARCH_LOG("INP  %X %X\n", ptr->real_input_state[0], ptr->self_state[0]);
             else
                RARCH_LOG("INP  %X %X\n", ptr->self_state[0], ptr->real_input_state[0]);
-            ptr = &netplay->buffer[netplay->replay_ptr];
+
+            ptr              = &netplay->buffer[netplay->replay_ptr];
             serial_info.data = ptr->state;
             memset(serial_info.data, 0, serial_info.size);
-            runloop_st->request_fast_savestate = true;
-            core_serialize(&serial_info);
-            runloop_st->request_fast_savestate = false;
+            core_serialize_special(&serial_info);
+
             RARCH_LOG("POST %u: %X\n", netplay->replay_frame_count-1, netplay->state_size ? netplay_delta_frame_crc(netplay, ptr) : 0);
          }
 #endif
@@ -6779,18 +6764,14 @@ static bool netplay_init_socket_buffers(netplay_t *netplay)
 static bool netplay_init_serialization(netplay_t *netplay)
 {
    size_t i;
-   retro_ctx_size_info_t info  = {0};
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   retro_ctx_size_info_t info = {0};
 
    if (netplay->state_size)
       return true;
 
-   runloop_st->request_fast_savestate = true;
-   core_serialize_size(&info);
-   runloop_st->request_fast_savestate = false;
+   core_serialize_size_special(&info);
    if (!info.size)
       return false;
-
    netplay->state_size = info.size;
 
    for (i = 0; i < netplay->buffer_size; i++)
@@ -6822,8 +6803,6 @@ static bool netplay_init_serialization(netplay_t *netplay)
 static bool netplay_try_init_serialization(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
-   bool okay                   = false;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    if (netplay->state_size)
       return true;
@@ -6831,19 +6810,15 @@ static bool netplay_try_init_serialization(netplay_t *netplay)
    if (!netplay_init_serialization(netplay))
       return false;
 
-   /* Check if we can actually save */
+   /* Check if we can actually save. */
    serial_info.data_const = NULL;
    serial_info.data       = netplay->buffer[netplay->run_ptr].state;
    serial_info.size       = netplay->state_size;
-
-   runloop_st->request_fast_savestate = true;
-   okay                               = core_serialize(&serial_info);
-   runloop_st->request_fast_savestate = false;
-   if (!okay)
+   if (!core_serialize_special(&serial_info))
       return false;
 
-   /* Once initialized, we no longer exhibit this quirk */
-   netplay->quirks &= ~((uint32_t)NETPLAY_QUIRK_INITIALIZATION);
+   /* Once initialized, we no longer exhibit this quirk. */
+   netplay->quirks &= ~NETPLAY_QUIRK_INITIALIZATION;
 
    return netplay_init_socket_buffers(netplay);
 }
@@ -7302,51 +7277,46 @@ static void netplay_core_reset(netplay_t *netplay)
 void netplay_load_savestate(netplay_t *netplay,
       retro_ctx_serialize_info_t *serial_info, bool save)
 {
-   retro_ctx_serialize_info_t tmp_serial_info;
-   bool okay                   = false;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   retro_ctx_serialize_info_t tmp_serial_info = {0};
+
+   if (!serial_info)
+      save = true;
 
    netplay_force_future(netplay);
 
-   /* Record it in our own buffer */
-   if (save || !serial_info)
+   /* Record it in our own buffer. */
+   if (save)
    {
       /* TODO/FIXME: This is a critical failure! */
       if (!netplay_delta_frame_ready(netplay,
-               &netplay->buffer[netplay->run_ptr], netplay->run_frame_count))
+            &netplay->buffer[netplay->run_ptr], netplay->run_frame_count))
          return;
 
       if (!serial_info)
       {
-         tmp_serial_info.size = netplay->state_size;
-         tmp_serial_info.data = netplay->buffer[netplay->run_ptr].state;
-
-         runloop_st->request_fast_savestate = true;
-         okay                               = core_serialize(&tmp_serial_info);
-         runloop_st->request_fast_savestate = false;
-         if (!okay)
+         tmp_serial_info.data       = netplay->buffer[netplay->run_ptr].state;
+         tmp_serial_info.size       = netplay->state_size;
+         if (!core_serialize_special(&tmp_serial_info))
             return;
          tmp_serial_info.data_const = tmp_serial_info.data;
-         serial_info = &tmp_serial_info;
+         serial_info                = &tmp_serial_info;
       }
-      else
-      {
-         if (serial_info->size <= netplay->state_size)
-            memcpy(netplay->buffer[netplay->run_ptr].state,
-                  serial_info->data_const, serial_info->size);
-      }
+      else if (serial_info->size <= netplay->state_size)
+         memcpy(netplay->buffer[netplay->run_ptr].state,
+            serial_info->data_const, serial_info->size);
    }
 
-   /* Don't send it if we're expected to be desynced */
-   if (netplay->desync)
-      return;
-
-   /* Send this to every peer */
-   if (netplay->compress_nil.compression_backend)
-      netplay_send_savestate(netplay, serial_info, 0, &netplay->compress_nil);
-   if (netplay->compress_zlib.compression_backend)
-      netplay_send_savestate(netplay, serial_info, NETPLAY_COMPRESSION_ZLIB,
-         &netplay->compress_zlib);
+   /* Don't send it if we're expected to be desynced. */
+   if (!netplay->desync)
+   {
+      /* Send this to every peer. */
+      if (netplay->compress_nil.compression_backend)
+         netplay_send_savestate(netplay, serial_info, 0,
+            &netplay->compress_nil);
+      if (netplay->compress_zlib.compression_backend)
+         netplay_send_savestate(netplay, serial_info, NETPLAY_COMPRESSION_ZLIB,
+            &netplay->compress_zlib);
+   }
 }
 
 /**
