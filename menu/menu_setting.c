@@ -20071,8 +20071,8 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
-            menu_settings_list_current_add_range(list, list_info, -600, 600, 1, false, false);
+            menu_settings_list_current_add_range(list, list_info, 0, 5184000, 1, true, false);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
             CONFIG_INT(
