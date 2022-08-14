@@ -5344,7 +5344,7 @@ static void setting_get_string_representation_uint_playlist_entry_remove_enable(
    }
 }
 
-#if defined(_3DS)
+#ifdef _3DS
 static void setting_get_string_representation_uint_video_3ds_display_mode(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -8756,8 +8756,6 @@ static void timezone_change_handler(rarch_setting_t *setting)
 #ifdef _3DS
 static void new3ds_speedup_change_handler(rarch_setting_t *setting)
 {
-   settings_t *settings             = config_get_ptr();
-
    if (!setting)
       return;
 
@@ -9864,7 +9862,15 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-
+#ifdef _3DS
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,
@@ -18141,7 +18147,7 @@ static bool setting_append_list(
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 #endif
 
-#if defined(_3DS)
+#ifdef _3DS
          {
             u8 device_model = 0xFF;
 
@@ -18162,8 +18168,8 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-               (*list)[list_info->index - 1].get_string_representation =
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_video_3ds_display_mode;
             menu_settings_list_current_add_range(list, list_info, 0,
                   CTR_VIDEO_MODE_LAST - (((device_model == 0) || (device_model == 1)) ? 1 : 3),
@@ -18200,9 +18206,112 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_CMD_APPLY_AUTO);
+         (*list)[list_info->index - 1].action_ok = &setting_bool_action_left_with_refresh;
 #ifdef CONSOLE_LOG
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT_FROM_TOGGLE);
 #endif
+
+         CONFIG_DIR(
+               list, list_info,
+               settings->paths.directory_bottom_assets,
+               sizeof(settings->paths.directory_bottom_assets),
+               MENU_ENUM_LABEL_BOTTOM_ASSETS_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
+               g_defaults.dirs[DEFAULT_DIR_BOTTOM_ASSETS],
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.bottom_font_enable,
+               MENU_ENUM_LABEL_BOTTOM_FONT_ENABLE,
+               MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
+               DEFAULT_BOTTOM_FONT_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_INT(
+               list, list_info,
+               &settings->ints.bottom_font_color_red,
+               MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_RED,
+               MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
+               DEFAULT_BOTTOM_FONT_COLOR,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
+
+         CONFIG_INT(
+               list, list_info,
+               &settings->ints.bottom_font_color_green,
+               MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_GREEN,
+               MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
+               DEFAULT_BOTTOM_FONT_COLOR,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
+
+         CONFIG_INT(
+               list, list_info,
+               &settings->ints.bottom_font_color_blue,
+               MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_BLUE,
+               MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+               DEFAULT_BOTTOM_FONT_COLOR,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
+
+         CONFIG_INT(
+               list, list_info,
+               &settings->ints.bottom_font_color_opacity,
+               MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_OPACITY,
+               MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+               DEFAULT_BOTTOM_FONT_COLOR,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.bottom_font_scale,
+               MENU_ENUM_LABEL_BOTTOM_FONT_SCALE,
+               MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
+               DEFAULT_BOTTOM_FONT_SCALE,
+               "%.2f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 1, 2, 0.01, true, true);
 #endif
 
 #ifdef HAVE_NETWORKING

@@ -1026,6 +1026,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST,
    "deferred_menu_settings_list"
    )
+#ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_MENU_BOTTOM_SETTINGS_LIST,
+   "deferred_menu_bottom_settings"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_MENU_VIEWS_SETTINGS_LIST,
    "deferred_menu_views_settings_list"
@@ -1978,6 +1984,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_MENU_SETTINGS,
    "menu_settings"
    )
+#ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS,
+   "menu_bottom_settings"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_WALLPAPER,
    "menu_wallpaper"
@@ -4960,7 +4972,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_NO_FAVORITES_AVAILABLE,
    "no_favorites"
    )
-#if defined(_3DS)
+#ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE,
    "new3ds_speedup_enable"
@@ -4972,6 +4984,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,
    "video_3ds_display_mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_ASSETS_DIRECTORY,
+   "bottom_assets_directory"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_FONT_ENABLE,
+   "bottom_font_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_RED,
+   "bottom_font_color_red"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_GREEN,
+   "bottom_font_color_green"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_BLUE,
+   "bottom_font_color_blue"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_OPACITY,
+   "bottom_font_color_opacity"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_FONT_SCALE,
+   "bottom_font_scale"
    )
 #endif
 MSG_HASH(

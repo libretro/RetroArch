@@ -1579,7 +1579,10 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("bundle_assets_src_path",   settings->paths.bundle_assets_src, false, NULL, true);
    SETTING_PATH("bundle_assets_dst_path",   settings->paths.bundle_assets_dst, false, NULL, true);
    SETTING_PATH("bundle_assets_dst_path_subdir", settings->paths.bundle_assets_dst_subdir, false, NULL, true);
-
+#ifdef _3DS
+   SETTING_PATH("bottom_assets_directory",
+         settings->paths.directory_bottom_assets, true, NULL, true);
+#endif
    SETTING_ARRAY("log_dir", settings->paths.log_dir, true, NULL, true);
 
    *size = count;
@@ -1996,7 +1999,8 @@ static struct config_bool_setting *populate_settings_bool(
 
 #ifdef _3DS
    SETTING_BOOL("new3ds_speedup_enable",         &settings->bools.new3ds_speedup_enable, true, new3ds_speedup_enable, false);
-   SETTING_BOOL("video_3ds_lcd_bottom",          &settings->bools.video_3ds_lcd_bottom, true, video_3ds_lcd_bottom, false);
+   SETTING_BOOL("video_3ds_lcd_bottom",          &settings->bools.video_3ds_lcd_bottom,  true, video_3ds_lcd_bottom,  false);
+   SETTING_BOOL("bottom_font_enable",            &settings->bools.bottom_font_enable,    true, bottom_font_enable,    false);
 #endif
 
 #ifdef WIIU
@@ -2106,7 +2110,9 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("video_hdr_max_nits",          &settings->floats.video_hdr_max_nits, true, DEFAULT_VIDEO_HDR_MAX_NITS, false);
    SETTING_FLOAT("video_hdr_paper_white_nits",  &settings->floats.video_hdr_paper_white_nits, true, DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS, false);
    SETTING_FLOAT("video_hdr_display_contrast",  &settings->floats.video_hdr_display_contrast, true, DEFAULT_VIDEO_HDR_CONTRAST, false);
-
+#ifdef _3DS
+   SETTING_FLOAT("bottom_font_scale",        &settings->floats.bottom_font_scale,       true, DEFAULT_BOTTOM_FONT_SCALE,       false);
+#endif
    *size = count;
 
    return tmp;
@@ -2318,11 +2324,9 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_LIBNX
    SETTING_UINT("libnx_overclock",  &settings->uints.libnx_overclock, true, SWITCH_DEFAULT_CPU_PROFILE, false);
 #endif
-
 #ifdef _3DS
-   SETTING_UINT("video_3ds_display_mode",  &settings->uints.video_3ds_display_mode, true, video_3ds_display_mode, false);
+   SETTING_UINT("video_3ds_display_mode",       &settings->uints.video_3ds_display_mode, true, video_3ds_display_mode, false);
 #endif
-
 #if defined(DINGUX)
    SETTING_UINT("video_dingux_ipu_filter_type", &settings->uints.video_dingux_ipu_filter_type, true, DEFAULT_DINGUX_IPU_FILTER_TYPE, false);
 #if defined(DINGUX_BETA)
@@ -2414,7 +2418,12 @@ static struct config_int_setting *populate_settings_int(
    SETTING_INT("video_window_offset_y",        &settings->ints.video_window_offset_y, true, DEFAULT_WINDOW_OFFSET_Y, false);
 #endif
    SETTING_INT("content_favorites_size",       &settings->ints.content_favorites_size, true, default_content_favorites_size, false);
-
+#ifdef _3DS
+   SETTING_INT("bottom_font_color_red",        &settings->ints.bottom_font_color_red,     true, bottom_font_color_red,     false);
+   SETTING_INT("bottom_font_color_green",      &settings->ints.bottom_font_color_green,   true, bottom_font_color_green,   false);
+   SETTING_INT("bottom_font_color_blue",       &settings->ints.bottom_font_color_blue,    true, bottom_font_color_blue,    false);
+   SETTING_INT("bottom_font_color_opacity",    &settings->ints.bottom_font_color_opacity, true, bottom_font_color_opacity, false);
+#endif
    *size = count;
 
    return tmp;

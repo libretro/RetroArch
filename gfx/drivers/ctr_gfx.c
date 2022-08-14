@@ -262,7 +262,7 @@ static const char *ctr_texture_path(unsigned id)
    switch (id)
    {
       case CTR_TEXTURE_BOTTOM_MENU:
-         return "ctr/bottom_menu.png";
+         return "bottom_menu.png";
       case CTR_TEXTURE_STATE_THUMBNAIL:
          {
             static char texture_path[PATH_MAX_LENGTH];
@@ -395,7 +395,7 @@ static bool ctr_load_bottom_texture(void *data)
       if (i == CTR_TEXTURE_STATE_THUMBNAIL)
          dir_assets = dir_get_ptr(RARCH_DIR_SAVESTATE);
       else
-         dir_assets = settings->paths.directory_assets;
+         dir_assets = settings->paths.directory_bottom_assets;
 
       if (gfx_display_reset_textures_list(
          ctr_texture_path(i), dir_assets,
@@ -669,18 +669,30 @@ static void font_driver_render_msg_bottom(ctr_video_t *ctr,
 
 static void ctr_render_bottom_screen(void *data)
 {
-   struct font_params params = { 0, };
-   ctr_video_t *ctr          = (ctr_video_t*)data;
+   struct font_params params  = { 0, };
+   ctr_video_t *ctr           = (ctr_video_t*)data;
+
+   settings_t *settings       = config_get_ptr();
+   bool font_enable           = settings->bools.bottom_font_enable;
+   int font_color_red         = settings->ints.bottom_font_color_red;
+   int font_color_green       = settings->ints.bottom_font_color_green;
+   int font_color_blue        = settings->ints.bottom_font_color_blue;
+   int font_color_opacity     = settings->ints.bottom_font_color_opacity;
+   float font_scale           = settings->floats.bottom_font_scale;
 
    if (!ctr || !ctr->refresh_bottom_menu)
       return;
 
    params.text_align = TEXT_ALIGN_CENTER;
-   params.color      = COLOR_ABGR(255, 255, 255, 255);
+   params.color      = COLOR_ABGR(font_color_opacity,
+                                  font_color_blue,
+                                  font_color_green,
+                                  font_color_red);
 
    switch (ctr->bottom_menu)
    {
       case CTR_BOTTOM_MENU_NOT_AVAILABLE:
+         params.color = COLOR_ABGR(255, 255, 255, 255);
          params.scale = 1.6f;
          params.x     = 0.0f;
          params.y     = 0.5f;
@@ -690,6 +702,7 @@ static void ctr_render_bottom_screen(void *data)
                &params);
          break;
       case CTR_BOTTOM_MENU_DEFAULT:
+         params.color = COLOR_ABGR(255, 255, 255, 255);
          params.scale = 1.6f;
          params.x     = 0.0f;
          params.y     = 0.5f;
@@ -703,9 +716,7 @@ static void ctr_render_bottom_screen(void *data)
             struct ctr_bottom_texture_data *o = NULL;
             ctr_texture_t *texture            = NULL;
 
-            params.scale                      = 1.48f;
-            params.color                      = COLOR_ABGR(
-                  255, 255, 255, 255);
+            params.scale = font_scale;
 
             /* draw state thumbnail */
             if (ctr->state_data_exist)
@@ -793,35 +804,44 @@ static void ctr_render_bottom_screen(void *data)
                   CTR_BOTTOM_FRAMEBUFFER_WIDTH);
             GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
 
-            /* draw resume game */
-            params.x = -0.178f;
-            params.y = 0.78f;
+            if (font_enable)
+            {
+               /* draw resume game */
+               params.x = -0.178f;
+               params.y = 0.78f;
 
-            font_driver_render_msg_bottom(ctr, 
-               msg_hash_to_str(MSG_3DS_BOTTOM_MENU_RESUME),
-               &params);
+               font_driver_render_msg_bottom(ctr,
+                  msg_hash_to_str(MSG_3DS_BOTTOM_MENU_RESUME),
+                  &params);
 
-            /* draw create restore point */
-            params.x = -0.178f;
-            params.y = 0.33f;
+               /* draw create restore point */
+               params.x = -0.178f;
+               params.y = 0.33f;
 
-            font_driver_render_msg_bottom(ctr, 
-               msg_hash_to_str(MSG_3DS_BOTTOM_MENU_SAVE_STATE),
-               &params);
+               font_driver_render_msg_bottom(ctr,
+                  msg_hash_to_str(MSG_3DS_BOTTOM_MENU_SAVE_STATE),
+                  &params);
 
-            /* draw load restore point */
-            params.x = 0.266f;
-            params.y = 0.24f;
+               if (ctr->state_data_exist)
+               {
+                  /* draw load restore point */
+                  params.x = 0.266f;
+                  params.y = 0.24f;
 
-            font_driver_render_msg_bottom(ctr, 
-               msg_hash_to_str(MSG_3DS_BOTTOM_MENU_LOAD_STATE),
-               &params);
-
-            /* draw date */
-            params.x = 0.266f;
-            params.y = 0.87f;
-            font_driver_render_msg_bottom(ctr, ctr->state_date,
-               &params);
+                  font_driver_render_msg_bottom(ctr,
+                     msg_hash_to_str(MSG_3DS_BOTTOM_MENU_LOAD_STATE),
+                     &params);
+               }
+            }
+            if (ctr->state_data_exist)
+            {
+               /* draw date */
+               params.x = 0.266f;
+               params.y = 0.87f;
+               font_driver_render_msg_bottom(ctr,
+                  ctr->state_date,
+                  &params);
+            }
          }
          break;
    }

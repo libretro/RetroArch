@@ -8359,8 +8359,10 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,                                   PARSE_ONLY_BOOL,   false},
                {MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,                                   PARSE_ONLY_BOOL,   true},
 #endif
+#ifdef _3DS
                {MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,                                PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,                                  PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS,                                  PARSE_ACTION,      true},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -10315,6 +10317,54 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+#ifdef _3DS
+      case DISPLAYLIST_MENU_BOTTOM_SETTINGS_LIST:
+         {
+            bool video_3ds_lcd_bottom = settings->bools.video_3ds_lcd_bottom;
+
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,      PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_BOTTOM_ASSETS_DIRECTORY,   PARSE_ONLY_DIR,   false},
+               {MENU_ENUM_LABEL_BOTTOM_FONT_ENABLE,        PARSE_ONLY_BOOL,  false},
+               {MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_RED,     PARSE_ONLY_INT,   false},
+               {MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_GREEN,   PARSE_ONLY_INT,   false},
+               {MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_BLUE,    PARSE_ONLY_INT,   false},
+               {MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_OPACITY, PARSE_ONLY_INT,   false},
+               {MENU_ENUM_LABEL_BOTTOM_FONT_SCALE,         PARSE_ONLY_FLOAT, false},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_BOTTOM_ASSETS_DIRECTORY:
+                  case MENU_ENUM_LABEL_BOTTOM_FONT_ENABLE:
+                  case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_RED:
+                  case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_GREEN:
+                  case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_BLUE:
+                  case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_OPACITY:
+                  case MENU_ENUM_LABEL_BOTTOM_FONT_SCALE:
+                     if (video_3ds_lcd_bottom)
+                        build_list[i].checked = true;
+                     break;
+                  default:
+                     break;
+               }
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
+#endif
       case DISPLAYLIST_BROWSE_URL_LIST:
          if (menu_entries_append_enum(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_URL),
@@ -12968,6 +13018,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
       case DISPLAYLIST_MENU_SETTINGS_LIST:
+#ifdef _3DS
+      case DISPLAYLIST_MENU_BOTTOM_SETTINGS_LIST:
+#endif
       case DISPLAYLIST_ADD_CONTENT_LIST:
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
       case DISPLAYLIST_INPUT_MENU_SETTINGS_LIST:
@@ -13028,6 +13081,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                case DISPLAYLIST_EJECT_DISC:
 #endif
                case DISPLAYLIST_MENU_SETTINGS_LIST:
+#ifdef _3DS
+               case DISPLAYLIST_MENU_BOTTOM_SETTINGS_LIST:
+#endif
                case DISPLAYLIST_ADD_CONTENT_LIST:
                case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE:

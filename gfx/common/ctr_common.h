@@ -40,6 +40,12 @@ extern PrintConsole* ctrConsole;
 extern const u8 ctr_sprite_shbin[];
 extern const u32 ctr_sprite_shbin_size;
 
+static const bool bottom_font_enable;
+static const int bottom_font_color_red;
+static const int bottom_font_color_green;
+static const int bottom_font_color_blue;
+static const int bottom_font_color_opacity;
+
 typedef struct
 {
    float v;
@@ -56,17 +62,17 @@ typedef struct
 
 typedef enum
 {
-	CTR_VIDEO_MODE_3D = 0,
-	CTR_VIDEO_MODE_2D,
-	CTR_VIDEO_MODE_2D_400X240,
-	CTR_VIDEO_MODE_2D_800X240,
-	CTR_VIDEO_MODE_LAST
+   CTR_VIDEO_MODE_3D = 0,
+   CTR_VIDEO_MODE_2D,
+   CTR_VIDEO_MODE_2D_400X240,
+   CTR_VIDEO_MODE_2D_800X240,
+   CTR_VIDEO_MODE_LAST
 } ctr_video_mode_enum;
 
 typedef enum
 {
    CTR_BOTTOM_MENU_NOT_AVAILABLE = 0,
-	CTR_BOTTOM_MENU_DEFAULT,
+   CTR_BOTTOM_MENU_DEFAULT,
    CTR_BOTTOM_MENU_SELECT,
 } ctr_bottom_menu;
 

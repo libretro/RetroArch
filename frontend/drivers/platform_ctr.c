@@ -137,6 +137,9 @@ static void frontend_ctr_get_env(int* argc, char* argv[],
    fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
                       FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_BOTTOM_ASSETS], g_defaults.dirs[DEFAULT_DIR_ASSETS],
+                      "ctr", sizeof(g_defaults.dirs[DEFAULT_DIR_BOTTOM_ASSETS]));
+
 #ifndef IS_SALAMANDER
    dir_check_defaults("custom.ini");
 #endif
