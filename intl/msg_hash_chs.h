@@ -10392,10 +10392,6 @@ MSG_HASH(
    "联机尝试失败，因为对方没有运行全能模拟器，或者运行的版本太旧。"
    )
 MSG_HASH(
-   MSG_NETPLAY_OUT_OF_DATE,
-   "联机玩家运行旧版本的全能模拟器。无法连接。"
-   )
-MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
    "警告：联机玩家运行不同版本的全能模拟器。如果遇到问题，请改用相同版本。"
    )
@@ -10406,14 +10402,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
    "警告：联机玩家运行不同版本的核心。如果遇到问题，请改用相同版本。"
-   )
-MSG_HASH(
-   MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "核心不支持这些系统架构之间的联机"
-   )
-MSG_HASH(
-   MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "核心不支持不同系统架构之间的联机"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,

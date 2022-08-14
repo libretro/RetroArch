@@ -10781,7 +10781,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_OUT_OF_DATE,
-   "Il peer di netplay sta eseguendo una vecchia versione di RetroArch. Impossibile connettersi."
+   "Un peer di rete sta eseguendo una vecchia versione di RetroArch. Impossibile connettersi."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
@@ -10797,11 +10797,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "Questo core non supporta la rete di inter-architettura tra questi sistemi"
+   "Questo core non supporta netplay tra queste piattaforme"
    )
 MSG_HASH(
    MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "Questo core non supporta la rete di inter-architettura"
+   "Questo core non supporta netplay tra diverse piattaforme"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,

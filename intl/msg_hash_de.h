@@ -10621,11 +10621,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "Dieser Core unterstützt kein Netzwerkspiel zwischen diesen Systemen"
+   "Dieser Core unterstützt kein Netzwerkspiel zwischen diesen Plattformen"
    )
 MSG_HASH(
    MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "Dieser Core unterstützt kein Netzwerkspiel zwischen verschiedenen Systemen"
+   "Dieser Core unterstützt kein Netzwerkspiel zwischen verschiedenen Plattformen"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,

@@ -5659,6 +5659,22 @@ MSG_HASH(
    "채팅 메시지를 서서히 사라지게 합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
+   "채팅 컬러 (닉네임)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_NAME,
+   "형식: #RRGGBB 또는 RRGGBB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
+   "채팅 컬러 (메세지)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_MSG,
+   "형식: #RRGGBB 또는 RRGGBB"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
    "일시정지 허용"
    )
@@ -10997,7 +11013,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_OUT_OF_DATE,
-   "넷플레이 사용자가 구 버전 RetroArch를 사용중입니다. 접속할 수 없습니다."
+   "넷플레이 사용자가 이전 버전의 RetroArch를 사용중입니다. 접속할 수 없습니다."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
@@ -11013,11 +11029,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "현재 코어는 해당 시스템 사이에서 구조 간 넷플레이를 지원하지 않습니다"
+   "현재 코어는 현재 기종의 넷플레이를 지원하지 않습니다"
    )
 MSG_HASH(
    MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "현재 코어는 구조 간 넷플레이를 지원하지 않습니다"
+   "현재 코어는 다른 기종간의 넷플레이를 지원하지 않습니다"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,

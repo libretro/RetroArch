@@ -7924,10 +7924,6 @@ MSG_HASH(
    "فشلت محاولة الاتصال بالشبكة لأن النظير لا يقوم بتشغيل RetroArch، أو يقوم بتشغيل نسخة قديمة من RetroArch."
    )
 MSG_HASH(
-   MSG_NETPLAY_OUT_OF_DATE,
-   "يقوم ند الشبكة بتشغيل إصدار قديم من RetroArch. لا يمكن الاتصال."
-   )
-MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
    "تحذير: يقوم النظير في الشبكة بتشغيل إصدار مختلف من RetroArch. إذا حدثت مشاكل، استخدم نفس الإصدار."
    )
@@ -7938,14 +7934,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
    "تحذير: يقوم النظير في الشبكة بتشغيل إصدار مختلف من النواة الأساسية. إذا حدثت مشاكل، استخدم نفس الإصدار."
-   )
-MSG_HASH(
-   MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "هذا الجوهر لا يدعم الشبكة المشتركة بين الهندسة المعمارية بين هذه النظم"
-   )
-MSG_HASH(
-   MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "هذا الجوهر لا يدعم الشبكة المشتركة بين المعماريات"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,

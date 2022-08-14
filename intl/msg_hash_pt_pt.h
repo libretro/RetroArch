@@ -4292,14 +4292,6 @@ MSG_HASH(
    "Você juntou-se como o(a) jogador(a) %u"
    )
 MSG_HASH(
-   MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "Este núcleo não suporta inter-arquitetura de Netplay entre estes sistemas"
-   )
-MSG_HASH(
-   MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "Este núcleo não suporta inter-arquitetura de Netplay"
-   )
-MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "Introduza a palavra-passe do servidor:"
    )

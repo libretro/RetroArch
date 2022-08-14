@@ -11009,7 +11009,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_OUT_OF_DATE,
-   "Netplay eşiniz RetroArch'ın eski bir sürümünü kullanıyor. Bağlantı gerçekleştiremez."
+   "Netplay eşi eski bir RetroArch sürümünü kullanıyor. Bağlantı gerçekleştiremez."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
@@ -11025,11 +11025,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "Bu çekirdek, sistemler arasında mimari farkı nedeniyle netplay desteklemiyor"
+   "Bu çekirdek, platformlar arası netplay desteklemiyor"
    )
 MSG_HASH(
    MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "Bu çekirdek, mimari farkı nedeniyle netplay desteklemiyor"
+   "Bu çekirdek, farklı platformlar arası netplay desteklemiyor"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,

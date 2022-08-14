@@ -10905,11 +10905,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
-   "Una conexión de juego en red ha fallado porque el usuario no utilizaba RetroArch o utilizaba una versión antigua de RetroArch."
+   "Una conexión de juego en red ha fallado porque el cliente no utilizaba RetroArch o utilizaba una versión antigua de RetroArch."
    )
 MSG_HASH(
    MSG_NETPLAY_OUT_OF_DATE,
-   "El cliente del juego en red utiliza una versión antigua de RetroArch. No se puede conectar con el cliente."
+   "Un cliente del juego en red utiliza una versión antigua de RetroArch. No se puede conectar con el cliente."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
@@ -10925,11 +10925,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "Este núcleo no permite el juego en red entre las arquitecturas de estos sistemas"
+   "Este núcleo no es compatible con el juego en red entre estas plataformas"
    )
 MSG_HASH(
    MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "Este núcleo no permite el juego en red entre diferentes sistemas"
+   "Este núcleo no es compatible con el juego en red entre plataformas diferentes"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,

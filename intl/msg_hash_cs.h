@@ -10724,10 +10724,6 @@ MSG_HASH(
    "Pokus o připojení k síti se nezdařil, protože klient nepoužívá RetroArch, nebo používá starou verzi RetroArch."
    )
 MSG_HASH(
-   MSG_NETPLAY_OUT_OF_DATE,
-   "Partner netplay používá starou verzi RetroArch. Nelze se připojit."
-   )
-MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
    "VAROVÁNÍ: Partner netplay používá jinou verzi RetroArch. Pokud se vyskytnou problémy, použijte stejnou verzi."
    )
@@ -10738,14 +10734,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
    "VAROVÁNÍ: Partner netplay používá jinou verzi jádra. Pokud se vyskytnou problémy, použijte stejnou verzi."
-   )
-MSG_HASH(
-   MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "Toto jádro nepodporuje meziarchitekturní netplay mezi těmito systémy"
-   )
-MSG_HASH(
-   MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "Toto jádro nepodporuje netplay mezi architekturou"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,

@@ -4840,14 +4840,6 @@ MSG_HASH(
    "你已做為玩家 %u 加入"
    )
 MSG_HASH(
-   MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "這個核心模擬器不支援不同系統的網路連線對戰"
-   )
-MSG_HASH(
-   MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "此模擬器且不支援此兩種架構下的連線遊戲模式"
-   )
-MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "輸入連線遊戲伺服器的密碼："
    )
