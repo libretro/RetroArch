@@ -1023,7 +1023,9 @@ int64_t rzipstream_tell(rzipstream_t *stream)
    if (!stream)
       return -1;
 
-   return (int64_t)stream->virtual_ptr;
+   if (stream->is_compressed)
+      return (int64_t)stream->virtual_ptr;
+   return filestream_tell(stream->file);
 }
 
 /* Returns true if specified RZIP file contains
