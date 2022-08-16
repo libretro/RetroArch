@@ -2152,7 +2152,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
-   "Gunakan input akselerometer, giroskop, dan sensor cahaya, jika ada. Fitur ini akan mempengaruhi kinerja perangkat dan akan menguras daya baterai pada platform tertentu."
+   "Mengaktifkan masukan akselerometer, giroskop, dan pengindra cahaya, jika ada. Fitur ini akan memengaruhi kinerja perangkat dan menguras daya baterai pada pelantar tertentu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
@@ -3238,6 +3238,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Mengatur cakram di baki"
+   )
+MSG_HASH(
+   MSG_NETPLAY_OUT_OF_DATE,
+   "Kawan (peer) Netplay bermain di versi lama RetroArch. Tak bisa bersambung."
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENDIAN_DEPENDENT,
+   "Inti ini tidak mendukung Netplay antara pelantar ini"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PLATFORM_DEPENDENT,
+   "Inti ini tidak mendukung Netplay antara pelantar yang berbeda"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,

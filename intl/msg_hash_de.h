@@ -10605,7 +10605,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_OUT_OF_DATE,
-   "Der Netzwerkspiel-Teilnehmer nutzt eine alte Version von RetroArch. Kann nicht verbinden."
+   "Ein Netplay-Teilnehmer nutzt eine alte RetroArch-Version. Verbindung nicht möglich."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,

@@ -10684,6 +10684,10 @@ MSG_HASH(
    "Verkkopelin yhteysyritys epäonnistui, koska toinen osapuoli ei käytä RetroArchia tai käyttää vanhaa versiota RetroArchista."
    )
 MSG_HASH(
+   MSG_NETPLAY_OUT_OF_DATE,
+   "Verkkopelin toinen osapuoli käyttää vanhaa versiota RetroArchista. Ei voida yhdistää."
+   )
+MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
    "VAROITUS: Verkkopelin toinen osapuoli käyttää eri RetroArch-versiota. Jos ongelmia ilmenee, käytä samaa versiota."
    )
@@ -10694,6 +10698,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
    "VAROITUS: Verkkopelin osapuoli käyttää eri versiota ytimestä. Jos ongelmia ilmenee, käytä samaa versiota."
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENDIAN_DEPENDENT,
+   "Tämä ydin ei tue näiden alustojen välistä verkkopeliä"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PLATFORM_DEPENDENT,
+   "Tämä ydin ei tue eri alustojen välistä verkkopeliä"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,

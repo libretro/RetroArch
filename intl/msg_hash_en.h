@@ -1768,6 +1768,10 @@ MSG_HASH(
    "A net-play connection attempt failed because the peer is not running RetroArch, or is running an old version of RetroArch."
    )
 MSG_HASH(
+   MSG_NETPLAY_OUT_OF_DATE,
+   "A net-play peer is running an old version of RetroArch. Cannot connect."
+   )
+MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
    "WARNING: A net-play peer is running a different version of RetroArch. If problems occur, use the same version."
    )
@@ -1778,6 +1782,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
    "WARNING: A net-play peer is running a different version of the core. If problems occur, use the same version."
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENDIAN_DEPENDENT,
+   "This core does not support net-play between these platforms"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PLATFORM_DEPENDENT,
+   "This core does not support net-play between different platforms"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
