@@ -973,7 +973,7 @@ int16_t input_joypad_analog_axis(
    return res;
 }
 
-bool input_keyboard_line_append(
+void input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
       const char *word)
 {
@@ -984,7 +984,7 @@ bool input_keyboard_line_append(
          keyboard_line->size + len * 2);
 
    if (!newbuf)
-      return false;
+      return;
 
    memmove(
          newbuf + keyboard_line->ptr + len,
@@ -1001,7 +1001,6 @@ bool input_keyboard_line_append(
    newbuf[keyboard_line->size]  = '\0';
 
    keyboard_line->buffer        = newbuf;
-   return true;
 }
 
 const char **input_keyboard_start_line(
@@ -1089,7 +1088,7 @@ static input_remote_t *input_remote_new(
    return handle;
 }
 
-void input_remote_parse_packet(
+static void input_remote_parse_packet(
       input_remote_state_t *input_state,
       struct remote_message *msg, unsigned user)
 {
@@ -1120,7 +1119,21 @@ input_remote_t *input_driver_init_remote(
 #endif
 
 #ifdef HAVE_OVERLAY
-bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
+/**
+ * input_overlay_add_inputs:
+ * @desc : pointer to overlay description
+ * @ol_state : pointer to overlay state. If valid, inputs
+ *             that are actually 'touched' on the overlay
+ *             itself will displayed. If NULL, inputs from
+ *             the device connected to 'port' will be displayed.
+ * @port : when ol_state is NULL, specifies the port of
+ *         the input device from which input will be
+ *         displayed.
+ *
+ * Adds inputs from current_input to the overlay, so it's displayed
+ * @return true if an input that is pressed will change the overlay
+ */
+static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
       input_overlay_state_t *ol_state, unsigned port)
 {
    switch(desc->type)
@@ -1223,7 +1236,7 @@ bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
    return false;
 }
 
-bool input_overlay_add_inputs(input_overlay_t *ol,
+static bool input_overlay_add_inputs(input_overlay_t *ol,
       bool show_touched, unsigned port)
 {
    size_t i;

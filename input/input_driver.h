@@ -907,7 +907,7 @@ int16_t input_joypad_analog_axis(
       unsigned ident,
       const struct retro_keybind *binds);
 
-bool input_keyboard_line_append(
+void input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
       const char *word);
 
@@ -930,10 +930,6 @@ const char **input_keyboard_start_line(
       input_keyboard_line_complete_t cb);
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-void input_remote_parse_packet(
-      input_remote_state_t *input_state,
-      struct remote_message *msg, unsigned user);
-
 input_remote_t *input_driver_init_remote(
       settings_t *settings,
       unsigned num_active_users);

@@ -296,26 +296,6 @@ void input_overlay_free_overlay(struct overlay *overlay);
 
 void input_overlay_set_visibility(int overlay_idx,enum overlay_visibility vis);
 
-/**
- * input_overlay_add_inputs:
- * @desc : pointer to overlay description
- * @ol_state : pointer to overlay state. If valid, inputs
- *             that are actually 'touched' on the overlay
- *             itself will displayed. If NULL, inputs from
- *             the device connected to 'port' will be displayed.
- * @port : when ol_state is NULL, specifies the port of
- *         the input device from which input will be
- *         displayed.
- *
- * Adds inputs from current_input to the overlay, so it's displayed
- * returns true if an input that is pressed will change the overlay
- */
-bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
-      input_overlay_state_t *ol_state, unsigned port);
-
-bool input_overlay_add_inputs(input_overlay_t *ol,
-      bool show_touched, unsigned port);
-
 /* Attempts to automatically rotate the specified overlay.
  * Depends upon proper naming conventions in overlay
  * config file. */
