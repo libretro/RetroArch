@@ -304,6 +304,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_views_settings_list,      MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_views_settings_list, MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings_views_settings_list, MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_settings_list,            MENU_ENUM_SUBLABEL_MENU_SETTINGS)
+#ifdef _3DS
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_bottom_settings_list,     MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_settings_list,           MENU_ENUM_SUBLABEL_VIDEO_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_synchronization_settings_list,           MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_fullscreen_mode_settings_list,           MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS)
@@ -1096,10 +1099,17 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_gamemode_enable,                MENU
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_brightness_control,             MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL)
 
-#if defined(_3DS)
+#ifdef _3DS
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_new3ds_speedup_enable,          MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_3ds_lcd_bottom,           MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_3ds_display_mode,         MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_3ds_lcd_bottom,           MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_assets_directory,        MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_font_enable,             MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_font_color_red,          MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_font_color_green,        MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_font_color_blue,         MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_font_color_opacity,      MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_font_scale,              MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE)
 #endif
 
 #if defined (WIIU)
@@ -4299,6 +4309,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_settings_list);
             break;
+#ifdef _3DS
+         case MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_bottom_settings_list);
+            break;
+#endif
          case MENU_ENUM_LABEL_VIDEO_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_settings_list);
             break;
@@ -4676,15 +4691,36 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_BRIGHTNESS_CONTROL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_brightness_control);
             break;
-#if defined(_3DS)
+#ifdef _3DS
          case MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_new3ds_speedup_enable);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_3ds_display_mode);
             break;
          case MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_3ds_lcd_bottom);
             break;
-         case MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_3ds_display_mode);
+         case MENU_ENUM_LABEL_BOTTOM_ASSETS_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_assets_directory);
+            break;
+         case MENU_ENUM_LABEL_BOTTOM_FONT_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_font_enable);
+            break;
+         case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_RED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_font_color_red);
+            break;
+         case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_GREEN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_font_color_green);
+            break;
+         case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_BLUE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_font_color_blue);
+            break;
+         case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_OPACITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_font_color_opacity);
+            break;
+         case MENU_ENUM_LABEL_BOTTOM_FONT_SCALE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_font_scale);
             break;
 #endif
 #if defined(WIIU)
