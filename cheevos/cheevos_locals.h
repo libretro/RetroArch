@@ -147,8 +147,6 @@ typedef struct rcheevos_menuitem_t
    enum msg_hash_enums state_label_idx;
 } rcheevos_menuitem_t;
 
-void rcheevos_menu_reset_badges(void);
-
 #endif
 
 typedef struct rcheevos_locals_t

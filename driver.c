@@ -49,6 +49,9 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#ifdef HAVE_CHEEVOS
+#include "cheevos/cheevos_menu.h"
+#endif
 #endif
 
 static void retro_frame_null(const void *data, unsigned width,
@@ -719,6 +722,10 @@ void driver_uninit(int flags)
       menu_explore_context_deinit();
 #endif
       menu_contentless_cores_context_deinit();
+
+#ifdef HAVE_CHEEVOS
+      rcheevos_menu_reset_badges();
+#endif
 
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
    }

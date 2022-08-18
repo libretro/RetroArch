@@ -53,6 +53,7 @@
 
 #include "cheevos.h"
 #include "cheevos_client.h"
+#include "cheevos_menu.h"
 #include "cheevos_locals.h"
 
 #include "../network/netplay/netplay.h"
