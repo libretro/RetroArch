@@ -114,8 +114,8 @@ int action_switch_thumbnail(const char *path,
    if (!settings)
       return -1;
 
-   /* RGUI is a special case where thumbnail 'switch' corresponds to
-    * toggling thumbnail view on/off.
+   /* RGUI has its own cycling for thumbnails in order to allow
+    * cycling all images in fullscreen mode.
     * GLUI is a special case where thumbnail 'switch' corresponds to
     * changing thumbnail view mode.
     * For other menu drivers, we cycle through available thumbnail
