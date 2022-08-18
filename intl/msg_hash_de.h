@@ -4301,6 +4301,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "Einstellungen für das Aussehen des Menüs ändern."
    )
+#ifdef _3DS
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    "Erweiterte Einstellungen zeigen"
@@ -12706,7 +12708,7 @@ MSG_HASH(
    "Hardware-Kontextskalierung (falls verfügbar)."
    )
 #endif
-#if defined(_3DS)
+#ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
    "New3DS-Taktfrequenz / -L2-Cache aktivieren"
