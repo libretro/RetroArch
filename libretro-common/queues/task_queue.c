@@ -392,17 +392,14 @@ static void retro_task_threaded_gather(void)
 {
    retro_task_t *task = NULL;
 
-   slock_lock(property_lock);
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
       task_queue_push_progress(task);
-
    slock_unlock(running_lock);
 
    slock_lock(finished_lock);
    retro_task_internal_gather();
    slock_unlock(finished_lock);
-   slock_unlock(property_lock);
 }
 
 static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
