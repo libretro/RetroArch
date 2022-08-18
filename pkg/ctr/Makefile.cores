@@ -21,6 +21,13 @@ else ifeq ($(LIBRETRO), a5200)
 	APP_ICON             = pkg/ctr/assets/a5200.png
 	APP_BANNER           = pkg/ctr/assets/a5200_banner.png
 
+else ifeq ($(LIBRETRO), arduous)
+	APP_TITLE            = Arduous
+	APP_PRODUCT_CODE     = RARCH-ARDUOUS
+	APP_UNIQUE_ID        = 0xBACD8
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), atari800)
 	APP_TITLE            = Atari800
 	APP_PRODUCT_CODE     = RARCH-ATARI800
@@ -240,6 +247,13 @@ else ifeq ($(LIBRETRO), gme)
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
+else ifeq ($(LIBRETRO), gong)
+	APP_TITLE            = Gong
+	APP_PRODUCT_CODE     = RARCH-GONG
+	APP_UNIQUE_ID        = 0xBACD9
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), gpsp)
 	APP_TITLE            = gpSP Libretro
 	APP_PRODUCT_CODE     = RARCH-GPSP
@@ -266,6 +280,13 @@ else ifeq ($(LIBRETRO), jaxe)
 	APP_TITLE            = jaxe
 	APP_PRODUCT_CODE     = RARCH-JAXE
 	APP_UNIQUE_ID        = 0xBACE2
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), jumpnbump)
+	APP_TITLE            = Jump'n Bump
+	APP_PRODUCT_CODE     = RARCH-JUMPNBUMP
+	APP_UNIQUE_ID        = 0xBACDA
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
@@ -350,6 +371,13 @@ else ifeq ($(LIBRETRO), mgba)
 	APP_UNIQUE_ID        = 0xBAC0E
 	APP_ICON             = pkg/ctr/assets/mgba.png
 	APP_BANNER           = pkg/ctr/assets/mgba_banner.png
+
+else ifeq ($(LIBRETRO), minivmac)
+	APP_TITLE            = Mini vMac
+	APP_PRODUCT_CODE     = RARCH-MINIVMAC
+	APP_UNIQUE_ID        = 0xBACDB
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
 else ifeq ($(LIBRETRO), mrboom)
 	APP_TITLE            = MrBoom
@@ -496,6 +524,13 @@ else ifeq ($(LIBRETRO), race)
 	APP_ICON             = pkg/ctr/assets/race.png
 	APP_BANNER           = pkg/ctr/assets/race_banner.png
 
+else ifeq ($(LIBRETRO), retro8)
+	APP_TITLE            = RETRO-8
+	APP_PRODUCT_CODE     = RARCH-RETRO8
+	APP_UNIQUE_ID        = 0xBACDC
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), scummvm)
 	APP_TITLE            = ScummVM Libretro
 	APP_AUTHOR           = SCUMMVMdev
@@ -569,6 +604,13 @@ else ifeq ($(LIBRETRO), stella)
 	APP_ICON             = pkg/ctr/assets/stella.png
 	APP_BANNER           = pkg/ctr/assets/stella_banner.png
 
+else ifeq ($(LIBRETRO), superbroswar)
+	APP_TITLE            = Super Mario War
+	APP_PRODUCT_CODE     = RARCH-SUPERBROSWAR
+	APP_UNIQUE_ID        = 0xBACDD
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), tgbdual)
 	APP_TITLE            = TGB-Dual
 	APP_PRODUCT_CODE     = RARCH-TGBDUAL
@@ -610,6 +652,13 @@ else ifeq ($(LIBRETRO), uzem)
 	APP_UNIQUE_ID        = 0xBACB7
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/uzem_banner.png
+
+else ifeq ($(LIBRETRO), vaporspec)
+	APP_TITLE            = Vapor Spec
+	APP_PRODUCT_CODE     = RARCH-VAPORSPEC
+	APP_UNIQUE_ID        = 0xBACDE
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
 else ifeq ($(LIBRETRO), vecx)
 	APP_TITLE            = VecX Libretro
@@ -688,6 +737,26 @@ else ifeq ($(LIBRETRO), vitaquake2)
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
+else ifeq ($(LIBRETRO), vitaquake2-rogue)
+	APP_TITLE            = vitaquake2-rogue
+	APP_PRODUCT_CODE     = RARCH-VITAQ2ROGUE
+	APP_UNIQUE_ID        = 0xBACDF
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), vitaquake2-xatrix)
+	APP_TITLE            = vitaquake2-xatrix
+	APP_PRODUCT_CODE     = RARCH-VITAQ2XATRIX
+	APP_UNIQUE_ID        = 0xBACE3
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), vitaquake2-zaero)
+	APP_TITLE            = vitaquake2-zaero
+	APP_PRODUCT_CODE     = RARCH-VITAQ2ZAERO
+	APP_UNIQUE_ID        = 0xBACE4
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
 else ifeq ($(LIBRETRO), wasm4)
 	APP_TITLE            = wasm4
