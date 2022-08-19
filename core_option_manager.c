@@ -27,9 +27,6 @@
 #include "core_option_manager.h"
 #include "msg_hash.h"
 
-#define CORE_OPTION_MANAGER_MAP_TAG "#"
-#define CORE_OPTION_MANAGER_MAP_DELIM ":"
-
 /*********************/
 /* Option Conversion */
 /*********************/
@@ -861,7 +858,8 @@ core_option_manager_t *core_option_manager_new_vars(
           * the map */
          char address[256];
 
-         address[0] = '\0';
+         address[0] = '#';
+         address[1] = '\0';
 
          /* Address string is normally:
           *    <category_key><delim><tag><option_key>
@@ -871,8 +869,7 @@ core_option_manager_t *core_option_manager_new_vars(
           * so we could just set the address to
           * <option_key> - but for consistency with
           * 'modern' options, we apply the tag regardless */
-         snprintf(address, sizeof(address),
-               CORE_OPTION_MANAGER_MAP_TAG "%s", var->key);
+         strlcat(address, var->key, sizeof(address));
 
          if (!nested_list_add_item(opt->option_map,
                address, NULL, (const void*)&opt->opts[size]))
@@ -933,7 +930,7 @@ static bool core_option_manager_parse_option(
     *   character */
    if (opt->cats &&
        !string_is_empty(category_key) &&
-       !strstr(category_key, CORE_OPTION_MANAGER_MAP_DELIM))
+       !strstr(category_key, ":"))
    {
       for (i = 0; i < opt->cats_size; i++)
       {
@@ -964,7 +961,7 @@ static bool core_option_manager_parse_option(
       /* If option has a category, option key
        * cannot contain a map delimiter character */
       if (!string_is_empty(option->category_key) &&
-          strstr(key, CORE_OPTION_MANAGER_MAP_DELIM))
+          strstr(key, ":"))
          return false;
 
       option->key      = strdup(key);
@@ -1193,7 +1190,6 @@ core_option_manager_t *core_option_manager_new(
          const char *category_key = opt->opts[size].category_key;
          char address[256];
 
-         address[0] = '\0';
 
          /* Address string is nominally:
           *    <category_key><delim><tag><option_key>
@@ -1201,15 +1197,21 @@ core_option_manager_t *core_option_manager_new(
           * key in order to avoid category/option key
           * collisions */
          if (string_is_empty(category_key))
-            snprintf(address, sizeof(address),
-                  CORE_OPTION_MANAGER_MAP_TAG "%s", option_def->key);
+         {
+            address[0] = '#';
+            address[1] = '\0';
+            strlcat(address, option_def->key, sizeof(address));
+         }
          else
+         {
+            address[0] = '\0';
             snprintf(address, sizeof(address),
-                  "%s" CORE_OPTION_MANAGER_MAP_DELIM CORE_OPTION_MANAGER_MAP_TAG "%s",
+                  "%s#%s",
                   category_key, option_def->key);
+         }
 
          if (!nested_list_add_item(opt->option_map,
-               address, CORE_OPTION_MANAGER_MAP_DELIM,
+               address, ":",
                (const void*)&opt->opts[size]))
             goto error;
       }
