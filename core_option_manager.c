@@ -1206,7 +1206,7 @@ core_option_manager_t *core_option_manager_new(
          {
             address[0] = '\0';
             snprintf(address, sizeof(address),
-                  "%s#%s",
+                  "%s:#%s",
                   category_key, option_def->key);
          }
 
