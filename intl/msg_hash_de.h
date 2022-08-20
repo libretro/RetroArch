@@ -12778,16 +12778,40 @@ MSG_HASH(
    "Schriftfarbe Rot"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
+   "Rote Schriftfarbe am unteren Bildschirmrand anpassen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
    "Schriftfarbe Grün"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
+   "Grüne Schriftfarbe am unteren Bildschirmrand anpassen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
    "Schriftfarbe Blau"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
+   "Blaue Schriftfarbe am unteren Bildschirmrand anpassen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   "Schriftfarbendeckkraft"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY,
+   "Schriftdeckkraft am unteren Bildschirmrand anpassen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
    "Schriftgröße"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
+   "Schriftgröße am unteren Bildschirmrand anpassen."
    )
 #endif
 #ifdef HAVE_QT
