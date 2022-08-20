@@ -216,6 +216,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    char scale_type[64];
    char scale_type_x[64];
    char scale_type_y[64];
+   char formatted_num[8];
    char tmp_path[PATH_MAX_LENGTH];
    struct gfx_fbo_scale *scale      = NULL;
    bool tmp_bool                    = false;
@@ -226,9 +227,13 @@ static bool video_shader_parse_pass(config_file_t *conf,
    scale_type_x[0]    = scale_type_y[0]        =
    shader_name[0]     = filter_name_buf[0]     = wrap_name_buf[0]   = 
                         frame_count_mod_buf[0] = srgb_output_buf[0] = '\0';
+   formatted_num[0]                                                 = '\0';
+
+   snprintf(formatted_num, sizeof(formatted_num), "%u", i);
 
    /* Source */
-   snprintf(shader_name, sizeof(shader_name), "shader%u", i);
+   strlcpy(shader_name, "shader",      sizeof(shader_name));
+   strlcat(shader_name, formatted_num, sizeof(shader_name));
    if (!config_get_path(conf, shader_name, tmp_path, sizeof(tmp_path)))
    {
       RARCH_ERR("[Shaders]: Couldn't parse shader source \"%s\".\n", shader_name);
@@ -240,7 +245,8 @@ static bool video_shader_parse_pass(config_file_t *conf,
          conf->path, tmp_path);
 
    /* Smooth */
-   snprintf(filter_name_buf, sizeof(filter_name_buf), "filter_linear%u", i);
+   strlcpy(filter_name_buf, "filter_linear", sizeof(filter_name_buf));
+   strlcat(filter_name_buf, formatted_num,   sizeof(filter_name_buf));
 
    if (config_get_bool(conf, filter_name_buf, &tmp_bool))
    {
@@ -251,48 +257,55 @@ static bool video_shader_parse_pass(config_file_t *conf,
       pass->filter = RARCH_FILTER_UNSPEC;
 
    /* Wrapping mode */
-   snprintf(wrap_name_buf, sizeof(wrap_name_buf), "wrap_mode%u", i);
+   strlcpy(wrap_name_buf,   "wrap_mode",   sizeof(wrap_name_buf));
+   strlcat(wrap_name_buf, formatted_num,   sizeof(wrap_name_buf));
    if ((entry = config_get_entry(conf, wrap_name_buf)) 
          && !string_is_empty(entry->value))
       pass->wrap = wrap_str_to_mode(entry->value);
    entry = NULL;
 
    /* Frame count mod */
-   snprintf(frame_count_mod_buf, sizeof(frame_count_mod_buf),
-         "frame_count_mod%u", i);
+   strlcpy(frame_count_mod_buf, "frame_count_mod",   sizeof(frame_count_mod_buf));
+   strlcat(frame_count_mod_buf, formatted_num,       sizeof(frame_count_mod_buf));
    if ((entry = config_get_entry(conf, frame_count_mod_buf)) 
          && !string_is_empty(entry->value))
       pass->frame_count_mod = (unsigned)strtoul(entry->value, NULL, 0);
    entry = NULL;
 
    /* FBO types and mipmapping */
-   snprintf(srgb_output_buf, sizeof(srgb_output_buf), "srgb_framebuffer%u", i);
+   strlcpy(srgb_output_buf, "srgb_framebuffer", sizeof(srgb_output_buf));
+   strlcat(srgb_output_buf, formatted_num,      sizeof(srgb_output_buf));
    if (config_get_bool(conf, srgb_output_buf, &tmp_bool))
       pass->fbo.srgb_fbo = tmp_bool;
 
-   snprintf(fp_fbo_buf, sizeof(fp_fbo_buf), "float_framebuffer%u", i);
+   strlcpy(fp_fbo_buf, "float_framebuffer", sizeof(fp_fbo_buf));
+   strlcat(fp_fbo_buf, formatted_num,       sizeof(fp_fbo_buf));
    if (config_get_bool(conf, fp_fbo_buf, &tmp_bool))
       pass->fbo.fp_fbo = tmp_bool;
 
-   snprintf(mipmap_buf, sizeof(mipmap_buf), "mipmap_input%u", i);
+   strlcpy(mipmap_buf, "mipmap_input",      sizeof(mipmap_buf));
+   strlcat(mipmap_buf, formatted_num,       sizeof(mipmap_buf));
    if (config_get_bool(conf, mipmap_buf, &tmp_bool))
       pass->mipmap = tmp_bool;
 
-   snprintf(alias_buf, sizeof(alias_buf), "alias%u", i);
+   strlcpy(alias_buf, "alias",        sizeof(alias_buf));
+   strlcat(alias_buf, formatted_num,  sizeof(alias_buf));
    if (!config_get_array(conf, alias_buf, pass->alias, sizeof(pass->alias)))
       *pass->alias = '\0';
 
    /* Scale */
    scale = &pass->fbo;
-   snprintf(scale_name_buf, sizeof(scale_name_buf), "scale_type%u", i);
+   strlcpy(scale_name_buf, "scale_type",   sizeof(scale_name_buf));
+   strlcat(scale_name_buf, formatted_num,  sizeof(scale_name_buf));
    config_get_array(conf, scale_name_buf, scale_type, sizeof(scale_type));
 
-   snprintf(scale_name_buf, sizeof(scale_name_buf), "scale_type_x%u", i);
+   strlcpy(scale_name_buf, "scale_type_x",   sizeof(scale_name_buf));
+   strlcat(scale_name_buf, formatted_num,    sizeof(scale_name_buf));
    config_get_array(conf, scale_name_buf, scale_type_x, sizeof(scale_type_x));
 
-   snprintf(scale_name_buf, sizeof(scale_name_buf), "scale_type_y%u", i);
+   strlcpy(scale_name_buf, "scale_type_y",   sizeof(scale_name_buf));
+   strlcat(scale_name_buf, formatted_num,    sizeof(scale_name_buf));
    config_get_array(conf, scale_name_buf, scale_type_y, sizeof(scale_type_y));
-
 
    if (*scale_type)
    {
@@ -338,7 +351,8 @@ static bool video_shader_parse_pass(config_file_t *conf,
       }
    }
 
-   snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
+   strlcpy(attr_name_buf, "scale",        sizeof(attr_name_buf));
+   strlcat(attr_name_buf, formatted_num,  sizeof(attr_name_buf));
 
    if (scale->type_x == RARCH_SCALE_ABSOLUTE)
    {
@@ -347,7 +361,8 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->abs_x    = iattr;
       else
       {
-         snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_x%u", i);
+	      strlcpy(attr_name_buf, "scale_x",      sizeof(attr_name_buf));
+	      strlcat(attr_name_buf, formatted_num,  sizeof(attr_name_buf));
          if (config_get_int(conf, attr_name_buf, &iattr))
             scale->abs_x = iattr;
       }
@@ -359,13 +374,15 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->scale_x    = fattr;
       else
       {
-         snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_x%u", i);
+	      strlcpy(attr_name_buf, "scale_x",      sizeof(attr_name_buf));
+	      strlcat(attr_name_buf, formatted_num,  sizeof(attr_name_buf));
          if (config_get_float(conf, attr_name_buf, &fattr))
             scale->scale_x = fattr;
       }
    }
 
-   snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
+   strlcpy(attr_name_buf, "scale",        sizeof(attr_name_buf));
+   strlcat(attr_name_buf, formatted_num,  sizeof(attr_name_buf));
 
    if (scale->type_y == RARCH_SCALE_ABSOLUTE)
    {
@@ -374,7 +391,8 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->abs_y    = iattr;
       else
       {
-         snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_y%u", i);
+         strlcpy(attr_name_buf, "scale_y",      sizeof(attr_name_buf));
+         strlcat(attr_name_buf, formatted_num,  sizeof(attr_name_buf));
          if (config_get_int(conf, attr_name_buf, &iattr))
             scale->abs_y = iattr;
       }
@@ -386,7 +404,8 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->scale_y    = fattr;
       else
       {
-         snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_y%u", i);
+         strlcpy(attr_name_buf, "scale_y",      sizeof(attr_name_buf));
+         strlcat(attr_name_buf, formatted_num,  sizeof(attr_name_buf));
          if (config_get_float(conf, attr_name_buf, &fattr))
             scale->scale_y = fattr;
       }
@@ -470,14 +489,14 @@ static bool video_shader_parse_textures(config_file_t *conf,
       else
          shader->lut[shader->luts].filter = RARCH_FILTER_UNSPEC;
 
-      strlcpy(id_wrap, id, sizeof(id_wrap));
+      strlcpy(id_wrap, id,           sizeof(id_wrap));
       strlcat(id_wrap, "_wrap_mode", sizeof(id_wrap));
       if ((entry = config_get_entry(conf, id_wrap)) 
             && !string_is_empty(entry->value))
          shader->lut[shader->luts].wrap = wrap_str_to_mode(entry->value);
       entry = NULL;
 
-      strlcpy(id_mipmap, id, sizeof(id_mipmap));
+      strlcpy(id_mipmap, id,        sizeof(id_mipmap));
       strlcat(id_mipmap, "_mipmap", sizeof(id_mipmap));
       if (config_get_bool(conf, id_mipmap, &mipmap))
          shader->lut[shader->luts].mipmap = mipmap;
@@ -704,13 +723,16 @@ static void shader_write_scale_dim(config_file_t *conf,
       unsigned i)
 {
    char key[64];
+   char dim_str[64];
+   dim_str[0] = '\0';
+   snprintf(dim_str, sizeof(dim_str), "%s%u", dim, i);
 
-   key[0] = '\0';
-
-   snprintf(key, sizeof(key), "scale_type_%s%u", dim, i);
+   strlcpy(key, "scale_type_", sizeof(key));
+   strlcat(key, dim_str,       sizeof(key));
    config_set_string(conf, key, scale_type_to_str(type));
 
-   snprintf(key, sizeof(key), "scale_%s%u", dim, i);
+   strlcpy(key, "scale_", sizeof(key));
+   strlcat(key, dim_str,  sizeof(key));
    if (type == RARCH_SCALE_ABSOLUTE)
       config_set_int(conf, key, absolute);
    else
@@ -721,12 +743,16 @@ static void shader_write_fbo(config_file_t *conf,
       const struct gfx_fbo_scale *fbo, unsigned i)
 {
    char key[64];
+   char formatted_num[8];
+   formatted_num[0] = '\0';
 
-   key[0] = '\0';
+   snprintf(formatted_num, sizeof(formatted_num), "%u", i);
 
-   snprintf(key, sizeof(key), "float_framebuffer%u", i);
+   strlcpy(key, "float_framebuffer", sizeof(key));
+   strlcat(key, formatted_num,       sizeof(key));
    config_set_string(conf, key, fbo->fp_fbo ? "true" : "false");
-   snprintf(key, sizeof(key), "srgb_framebuffer%u", i);
+   strlcpy(key, "srgb_framebuffer", sizeof(key));
+   strlcat(key, formatted_num,      sizeof(key));
    config_set_string(conf, key, fbo->srgb_fbo ? "true" : "false");
 
    if (!fbo->valid)
@@ -780,9 +806,15 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
 
    for (i = 0; i < shader->passes; i++)
    {
+      char formatted_num[8];
       const struct video_shader_pass *pass = &shader->pass[i];
 
-      snprintf(key, sizeof(key), "shader%u", i);
+      formatted_num[0]                     = '\0';
+
+      snprintf(formatted_num, sizeof(formatted_num), "%u", i);
+
+      strlcpy(key, "shader",      sizeof(key));
+      strlcat(key, formatted_num, sizeof(key));
 
       strlcpy(tmp, pass->source.path, PATH_MAX_LENGTH);
       path_relative_to(tmp_rel, tmp, tmp_base, PATH_MAX_LENGTH);
@@ -794,26 +826,31 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
 
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {
-         snprintf(key, sizeof(key), "filter_linear%u", i);
+         strlcpy(key, "filter_linear", sizeof(key));
+         strlcat(key, formatted_num,   sizeof(key));
          config_set_string(conf, key,
                (pass->filter == RARCH_FILTER_LINEAR)
                ? "true"
                : "false");
       }
 
-      snprintf(key, sizeof(key), "wrap_mode%u", i);
+      strlcpy(key, "wrap_mode",   sizeof(key));
+      strlcat(key, formatted_num, sizeof(key));
       config_set_string(conf, key, wrap_mode_to_str(pass->wrap));
 
       if (pass->frame_count_mod)
       {
-         snprintf(key, sizeof(key), "frame_count_mod%u", i);
+         strlcpy(key, "frame_count_mod", sizeof(key));
+         strlcat(key, formatted_num,     sizeof(key));
          config_set_int(conf, key, pass->frame_count_mod);
       }
 
-      snprintf(key, sizeof(key), "mipmap_input%u", i);
+      strlcpy(key, "mipmap_input", sizeof(key));
+      strlcat(key, formatted_num,  sizeof(key));
       config_set_string(conf, key, pass->mipmap ? "true" : "false");
 
-      snprintf(key, sizeof(key), "alias%u", i);
+      strlcpy(key, "alias",       sizeof(key));
+      strlcat(key, formatted_num, sizeof(key));
       config_set_string(conf, key, pass->alias);
 
       shader_write_fbo(conf, &pass->fbo, i);
@@ -857,7 +894,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
             char k[128];
             k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
-            strlcat(k, "_linear", sizeof(k));
+            strlcat(k, "_linear",         sizeof(k));
             config_set_string(conf, k, 
                   (shader->lut[i].filter == RARCH_FILTER_LINEAR)
                   ? "true"
@@ -869,7 +906,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
             char k[128];
             k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
-            strlcat(k, "_wrap_mode", sizeof(k));
+            strlcat(k, "_wrap_mode",      sizeof(k));
             config_set_string(conf, k,
                   wrap_mode_to_str(shader->lut[i].wrap));
          }
@@ -879,7 +916,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
             char k[128];
             k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
-            strlcat(k, "_mipmap", sizeof(k));
+            strlcat(k, "_mipmap",         sizeof(k));
             config_set_string(conf, k, shader->lut[i].mipmap
                   ? "true"
                   : "false");
