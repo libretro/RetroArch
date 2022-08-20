@@ -4664,18 +4664,27 @@ static bool runloop_check_movie_init(input_driver_state_t *input_st,
    char msg[16384], path[8192];
    bsv_movie_t *state          = NULL;
    int state_slot              = settings->ints.state_slot;
-
-   msg[0] = path[0]            = '\0';
+   msg[0]                      =  '\0';
 
    configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
 
    if (state_slot > 0)
+   {
+      path[0]      = '\0';
       snprintf(path, sizeof(path), "%s%d.bsv",
             input_st->bsv_movie_state.movie_path,
             state_slot);
+   }
    else
-      snprintf(path, sizeof(path), "%s.bsv",
-            input_st->bsv_movie_state.movie_path);
+   {
+      size_t _len  = strlcpy(path,
+            input_st->bsv_movie_state.movie_path, sizeof(path));
+      path[_len  ] = '.';
+      path[_len+1] = 'b';
+      path[_len+2] = 's';
+      path[_len+3] = 'v';
+      path[_len+4] = '\0';
+   }
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
          msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
