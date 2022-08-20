@@ -1204,10 +1204,11 @@ core_option_manager_t *core_option_manager_new(
          }
          else
          {
-            address[0] = '\0';
-            snprintf(address, sizeof(address),
-                  "%s:#%s",
-                  category_key, option_def->key);
+            size_t _len      = strlcpy(address, category_key, sizeof(address));
+            address[_len  ]  = ':';
+            address[_len+1]  = '#';
+            address[_len+2]  = '\0';
+            strlcat(address, option_def->key, sizeof(address));
          }
 
          if (!nested_list_add_item(opt->option_map,
