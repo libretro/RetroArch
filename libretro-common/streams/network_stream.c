@@ -178,6 +178,55 @@ NETSTREAM_READ_TYPE(double, double, uint64_t, retro_be_to_cpu64)
 #undef NETSTREAM_READ_TYPE
 #endif
 
+int netstream_read_string(netstream_t *stream, char *s, size_t len)
+{
+   char c;
+   int ret = 0;
+
+   if (!s || !len)
+      return -1;
+
+   for (; --len; ret++)
+   {
+      if (!netstream_read(stream, &c, sizeof(c)))
+         return -1;
+
+      *s++ = c;
+
+      if (!c)
+         break;
+   }
+
+   if (!len)
+   {
+      *s = '\0';
+
+      for (;; ret++)
+      {
+         if (!netstream_read(stream, &c, sizeof(c)))
+            return -1;
+         if (!c)
+            break;
+      }
+   }
+
+   return ret;
+}
+
+bool netstream_read_fixed_string(netstream_t *stream, char *s, size_t len)
+{
+   if (!len)
+      return false;
+
+   if (!netstream_read(stream, s, len))
+      return false;
+
+   /* Ensure the string is always null-terminated. */
+   s[len - 1] = '\0';
+
+   return true;
+}
+
 bool netstream_write(netstream_t *stream, const void *data, size_t len)
 {
    size_t remaining = stream->size - stream->pos;
@@ -250,3 +299,26 @@ NETSTREAM_WRITE_TYPE(double, double, uint64_t, retro_cpu_to_be64)
 
 #undef NETSTREAM_WRITE_TYPE
 #endif
+
+bool netstream_write_string(netstream_t *stream, const char *s)
+{
+   if (!s)
+      return false;
+
+   return netstream_write(stream, s, strlen(s) + 1);
+}
+
+bool netstream_write_fixed_string(netstream_t *stream, const char *s,
+      size_t len)
+{
+   char end = '\0';
+
+   if (!netstream_write(stream, s, len))
+      return false;
+
+   /* Ensure the string is always null-terminated. */
+   netstream_seek(stream, -1, NETSTREAM_SEEK_CUR);
+   netstream_write(stream, &end, sizeof(end));
+
+   return true;
+}
