@@ -89,6 +89,11 @@ void netstream_data(netstream_t *stream, void **data, size_t *len)
    *len  = stream->used;
 }
 
+bool netstream_eof(netstream_t *stream)
+{
+   return stream->pos >= stream->used;
+}
+
 size_t netstream_tell(netstream_t *stream)
 {
    return stream->pos;
