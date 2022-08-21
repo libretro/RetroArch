@@ -109,6 +109,17 @@ bool netstream_truncate(netstream_t *stream, size_t used);
 void netstream_data(netstream_t *stream, void **data, size_t *len);
 
 /**
+ * netstream_eof:
+ *
+ * @stream : Pointer to a network stream object.
+ *
+ * Checks whether the network stream is at EOF or not.
+ *
+ * Returns: true if the stream is at EOF, false otherwise.
+ */
+bool netstream_eof(netstream_t *stream);
+
+/**
  * netstream_tell:
  *
  * @stream : Pointer to a network stream object.
