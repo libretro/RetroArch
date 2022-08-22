@@ -892,7 +892,6 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
          {
             char k[128];
-            k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
             strlcat(k, "_linear",         sizeof(k));
             config_set_string(conf, k, 
@@ -904,7 +903,6 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          /* Wrap Mode */
          {
             char k[128];
-            k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
             strlcat(k, "_wrap_mode",      sizeof(k));
             config_set_string(conf, k,
@@ -914,7 +912,6 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          /* Mipmap On or Off */
          {
             char k[128];
-            k[0]  = '\0';
             strlcpy(k, shader->lut[i].id, sizeof(k));
             strlcat(k, "_mipmap",         sizeof(k));
             config_set_string(conf, k, shader->lut[i].mipmap
@@ -1725,10 +1722,8 @@ static bool override_shader_values(config_file_t *override_conf,
        * for each in the override config */
       for (i = 0; i < shader->luts; i++)
       {
-         entry = config_get_entry(override_conf, shader->lut[i].id);
-
          /* If the texture is defined in the reference config */
-         if (entry)
+         if ((entry = config_get_entry(override_conf, shader->lut[i].id)))
          {
             /* Texture path from shader the config */
             config_get_path(override_conf, shader->lut[i].id,
@@ -2325,8 +2320,6 @@ void dir_check_shader(
          if (shader && !string_is_empty(shader->loaded_preset_path))
          {
             char last_shader_path[PATH_MAX_LENGTH];
-            last_shader_path[0] = '\0';
-
             fill_pathname_join(last_shader_path,
                   last_shader_preset_dir, last_shader_preset_file_name,
                   sizeof(last_shader_path));
