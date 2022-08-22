@@ -1536,7 +1536,8 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
 
    if (string_is_empty(room->subsystem_name) ||
          string_is_equal_case_insensitive(room->subsystem_name, "N/A"))
-      snprintf(buf, sizeof(buf), "(%08lX)", (unsigned long)room->gamecrc);
+      snprintf(buf, sizeof(buf), "(%08lX)",
+         (unsigned long)(unsigned)room->gamecrc);
    else
       snprintf(buf, sizeof(buf), "(%s)", room->subsystem_name);
 
