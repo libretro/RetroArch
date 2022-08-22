@@ -234,7 +234,6 @@ void gfx_widgets_msg_queue_push(
          msg_widget->expiration_timer_started   = false;
 
          msg_widget->task_ptr                   = task;
-         msg_widget->task_title_ptr             = NULL;
          msg_widget->task_count                 = 0;
 
          msg_widget->task_progress              = 0;
@@ -268,7 +267,6 @@ void gfx_widgets_msg_queue_push(
             msg_widget->task_finished           = task->finished;
             msg_widget->task_progress           = task->progress;
             msg_widget->task_ident              = task->ident;
-            msg_widget->task_title_ptr          = title;
             msg_widget->task_count              = 1;
 
             msg_widget->unfolded                = true;
@@ -366,7 +364,6 @@ void gfx_widgets_msg_queue_push(
                   1);
 
             msg_widget->msg_len                    = len;
-            msg_widget->task_title_ptr             = title;
             msg_widget->msg_transition_animation   = 0;
 
             if (!task->alternative_look)
