@@ -290,7 +290,7 @@ void *task_push_decompress(
    if (!(s = (decompress_state_t*)calloc(1, sizeof(*s))))
       return NULL;
 
-   if (!(t = (retro_task_t*)calloc(1, sizeof(*t))))
+   if (!(t = task_init()))
    {
       free(s);
       return NULL;
