@@ -1342,7 +1342,6 @@ static void core_info_path_list_free(core_path_list_t *path_list)
 static core_path_list_t *core_info_path_list_new(const char *core_dir,
       const char *core_exts, bool show_hidden_files)
 {
-   union string_list_elem_attr attr;
    core_path_list_t *path_list       = (core_path_list_t*)
          calloc(1, sizeof(*path_list));
    struct string_list *core_ext_list = NULL;
