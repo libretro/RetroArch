@@ -115,8 +115,6 @@ typedef struct disp_widget_msg
    char *msg;
    char *msg_new;
    retro_task_t *task_ptr;
-   /* Used to detect title change */
-   char *task_title_ptr;
 
    uint32_t task_ident;
    unsigned msg_len;

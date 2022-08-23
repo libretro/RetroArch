@@ -576,14 +576,8 @@ void cb_http_task_core_updater_download(
    if (!(download_handle = (core_updater_download_handle_t*)transf->user_data))
       goto finish;
 
-   /* Update download_handle task status
-    * NOTE: We set decompress_task_complete = true
-    * here to prevent any lock-ups in the event
-    * of errors (or lack of decompression support).
-    * decompress_task_complete will be set false
-    * if/when we actually call task_push_decompress() */
+   /* Update download_handle task status */
    download_handle->http_task_complete       = true;
-   download_handle->decompress_task_complete = true;
 
    /* Create output directory, if required */
    strlcpy(output_dir, transf->path, sizeof(output_dir));
@@ -634,8 +628,6 @@ void cb_http_task_core_updater_download(
          err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
          goto finish;
       }
-
-      download_handle->decompress_task_complete = false;
    }
 #endif
 
@@ -647,6 +639,10 @@ finish:
 
    if (transf)
       free(transf);
+
+   /* if no decompress task was queued, mark it as completed */
+   if (!download_handle->decompress_task)
+      download_handle->decompress_task_complete = true;
 }
 
 static void free_core_updater_download_handle(core_updater_download_handle_t *download_handle)
@@ -893,13 +889,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
       case CORE_UPDATER_DOWNLOAD_WAIT_DECOMPRESS:
          {
             /* If decompression task is NULL, then it either
-             * finished or an error occurred - in either case,
-             * just move on to the next state */
-            if (!download_handle->decompress_task)
-               download_handle->decompress_task_complete = true;
-            /* Otherwise, check if decompression task is still
-             * running */
-            else if (!download_handle->decompress_task_finished)
+             * hasn't been queued by the download task yet,
+             * or an error occurred. The latter should set
+             * the decompress_task_complete flag and we'll
+             * continue to the next state */
+            if (download_handle->decompress_task &&
+               !download_handle->decompress_task_finished)
             {
                download_handle->decompress_task_finished =
                      task_get_finished(download_handle->decompress_task);

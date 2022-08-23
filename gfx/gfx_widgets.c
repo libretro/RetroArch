@@ -215,9 +215,6 @@ void gfx_widgets_msg_queue_push(
 
          msg_widget                             = (disp_widget_msg_t*)malloc(sizeof(*msg_widget));
 
-         if (task)
-            title                               = task->title;
-
          msg_widget->msg                        = NULL;
          msg_widget->msg_new                    = NULL;
          msg_widget->msg_transition_animation   = 0.0f;
@@ -237,7 +234,6 @@ void gfx_widgets_msg_queue_push(
          msg_widget->expiration_timer_started   = false;
 
          msg_widget->task_ptr                   = task;
-         msg_widget->task_title_ptr             = NULL;
          msg_widget->task_count                 = 0;
 
          msg_widget->task_progress              = 0;
@@ -262,7 +258,7 @@ void gfx_widgets_msg_queue_push(
 
          if (task)
          {
-            msg_widget->msg                     = strdup(title);
+            title = msg_widget->msg             = strdup(task->title);
             msg_widget->msg_new                 = strdup(title);
             msg_widget->msg_len                 = (unsigned)strlen(title);
 
@@ -271,7 +267,6 @@ void gfx_widgets_msg_queue_push(
             msg_widget->task_finished           = task->finished;
             msg_widget->task_progress           = task->progress;
             msg_widget->task_ident              = task->ident;
-            msg_widget->task_title_ptr          = task->title;
             msg_widget->task_count              = 1;
 
             msg_widget->unfolded                = true;
@@ -351,12 +346,7 @@ void gfx_widgets_msg_queue_push(
 
          if (!string_is_equal(task->title, msg_widget->msg_new))
          {
-            unsigned len         = (unsigned)strlen(task->title);
-            unsigned new_width   = font_driver_get_message_width(
-                  p_dispwidget->gfx_widget_fonts.msg_queue.font,
-                  task->title,
-                  len,
-                  1);
+            unsigned len, new_width;
 
             if (msg_widget->msg_new)
             {
@@ -364,9 +354,16 @@ void gfx_widgets_msg_queue_push(
                msg_widget->msg_new                 = NULL;
             }
 
-            msg_widget->msg_new                    = strdup(task->title);
+            title       = msg_widget->msg_new      = strdup(task->title);
+
+            len         = (unsigned)strlen(title);
+            new_width   = font_driver_get_message_width(
+                  p_dispwidget->gfx_widget_fonts.msg_queue.font,
+                  title,
+                  len,
+                  1);
+
             msg_widget->msg_len                    = len;
-            msg_widget->task_title_ptr             = task->title;
             msg_widget->msg_transition_animation   = 0;
 
             if (!task->alternative_look)

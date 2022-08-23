@@ -91,6 +91,13 @@ static void task_queue_msg_push(retro_task_t *task,
 
 static void task_queue_push_progress(retro_task_t *task)
 {
+#ifdef HAVE_THREADS
+   /* msg_push callback interacts directly with the task properties (particularly title).
+    * make sure another thread doesn't modify them while rendering
+    */
+   slock_lock(property_lock);
+#endif
+
    if (task->title && !task->mute)
    {
       if (task->finished)
@@ -113,6 +120,10 @@ static void task_queue_push_progress(retro_task_t *task)
       if (task->progress_cb)
          task->progress_cb(task);
    }
+
+#ifdef HAVE_THREADS
+   slock_unlock(property_lock);
+#endif
 }
 
 static void task_queue_put(task_queue_t *queue, retro_task_t *task)
@@ -392,7 +403,6 @@ static void retro_task_threaded_gather(void)
 {
    retro_task_t *task = NULL;
 
-   slock_lock(property_lock);
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
       task_queue_push_progress(task);
@@ -401,7 +411,6 @@ static void retro_task_threaded_gather(void)
    slock_lock(finished_lock);
    retro_task_internal_gather();
    slock_unlock(finished_lock);
-   slock_unlock(property_lock);
 }
 
 static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
