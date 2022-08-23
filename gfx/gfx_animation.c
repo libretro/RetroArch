@@ -1363,20 +1363,18 @@ static void build_ticker_loop_string(
       size_t char_offset3, size_t num_chars3,
       char *dest_str, size_t dest_str_len)
 {
-   char tmp[PATH_MAX_LENGTH];
-
-   tmp[0]      = '\0';
-   dest_str[0] = '\0';
-
    /* Copy 'trailing' chunk of source string, if required */
    if (num_chars1 > 0)
       utf8cpy(
             dest_str, dest_str_len,
             utf8skip(src_str, char_offset1), num_chars1);
+   else
+      dest_str[0] = '\0';
 
    /* Copy chunk of spacer string, if required */
    if (num_chars2 > 0)
    {
+      char tmp[PATH_MAX_LENGTH];
       utf8cpy(
             tmp, sizeof(tmp),
             utf8skip(spacer, char_offset2), num_chars2);
@@ -1387,6 +1385,7 @@ static void build_ticker_loop_string(
    /* Copy 'leading' chunk of source string, if required */
    if (num_chars3 > 0)
    {
+      char tmp[PATH_MAX_LENGTH];
       utf8cpy(
             tmp, sizeof(tmp),
             utf8skip(src_str, char_offset3), num_chars3);
@@ -1611,8 +1610,6 @@ static bool gfx_animation_ticker_smooth_fw(
          unsigned char_offset = 0;
          unsigned num_chars   = 0;
 
-         ticker->dst_str[0] = '\0';
-
          gfx_animation_ticker_smooth_generic_fw(
                ticker->idx,
                src_str_width, src_str_len, glyph_width, ticker->field_width,
@@ -1623,6 +1620,8 @@ static bool gfx_animation_ticker_smooth_fw(
             utf8cpy(
                   ticker->dst_str, ticker->dst_str_len,
                   utf8skip(ticker->src_str, char_offset), num_chars);
+         else
+            ticker->dst_str[0] = '\0';
 
          if (ticker->dst_str_width)
             *ticker->dst_str_width = num_chars * glyph_width;
@@ -1835,8 +1834,6 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
          unsigned char_offset = 0;
          unsigned num_chars   = 0;
 
-         ticker->dst_str[0] = '\0';
-
          gfx_animation_ticker_smooth_generic(
                ticker->idx,
                src_char_widths, src_str_len,
@@ -1849,6 +1846,8 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
             utf8cpy(
                   ticker->dst_str, ticker->dst_str_len,
                   utf8skip(ticker->src_str, char_offset), num_chars);
+         else
+            ticker->dst_str[0] = '\0';
 
          break;
       }
