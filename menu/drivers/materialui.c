@@ -568,8 +568,10 @@ typedef struct materialui_handle
       materialui_font_data_t hint;  /* ptr alignment */
    } font_data;
 
-   void (*word_wrap)(char *dst, size_t dst_size, const char *src,
-      int line_width, int wideglyph_width, unsigned max_lines);
+   void (*word_wrap)(
+         char *dst, size_t dst_size,
+         const char *src, size_t src_len,
+         int line_width, int wideglyph_width, unsigned max_lines);
 
    /* Thumbnail helpers */
    gfx_thumbnail_path_data_t *thumbnail_path_data;
@@ -2634,7 +2636,8 @@ static void materialui_render_messagebox(
 
    /* Split message into lines */
    (mui->word_wrap)(
-         wrapped_message, sizeof(wrapped_message), message,
+         wrapped_message, sizeof(wrapped_message),
+         message, strlen(message),
          usable_width / (int)mui->font_data.list.glyph_width,
          mui->font_data.list.wideglyph_width, 0);
 
@@ -2661,9 +2664,8 @@ static void materialui_render_messagebox(
 
       if (!string_is_empty(line))
       {
-         int width = font_driver_get_message_width(
+         int width     = font_driver_get_message_width(
                mui->font_data.list.font, line, (unsigned)strlen(line), 1);
-
          longest_width = (width > longest_width) ?
                width : longest_width;
       }
@@ -2797,7 +2799,8 @@ static unsigned materialui_count_sublabel_lines(
          (has_icon ? (int)mui->icon_size : 0);
 
    (mui->word_wrap)(
-         wrapped_sublabel_str, sizeof(wrapped_sublabel_str), entry.sublabel,
+         wrapped_sublabel_str, sizeof(wrapped_sublabel_str),
+         entry.sublabel, strlen(entry.sublabel),
          sublabel_width_max / (int)mui->font_data.hint.glyph_width,
          mui->font_data.hint.wideglyph_width, 0);
 
@@ -4113,8 +4116,10 @@ static void materialui_render_menu_entry_default(
       sublabel_y   = entry_y + vertical_margin + mui->font_data.list.line_height + (int)mui->sublabel_gap + mui->font_data.hint.line_ascender;
 
       /* Wrap sublabel string */
-      (mui->word_wrap)(wrapped_sublabel, sizeof(wrapped_sublabel), entry->sublabel,
-            (int)((usable_width - (int)mui->sublabel_padding) / mui->font_data.hint.glyph_width),
+      (mui->word_wrap)(wrapped_sublabel, sizeof(wrapped_sublabel),
+            entry->sublabel, strlen(entry->sublabel),
+            (int)((usable_width - (int)mui->sublabel_padding) 
+               / mui->font_data.hint.glyph_width),
             mui->font_data.hint.wideglyph_width, 0);
 
       /* Draw sublabel string
@@ -4457,8 +4462,10 @@ static void materialui_render_menu_entry_playlist_list(
       sublabel_y   = entry_y + vertical_margin + mui->font_data.list.line_height + (int)mui->sublabel_gap + mui->font_data.hint.line_ascender;
 
       /* Wrap sublabel string */
-      (mui->word_wrap)(wrapped_sublabel, sizeof(wrapped_sublabel), entry->sublabel,
-            (int)((usable_width - (int)mui->sublabel_padding) / mui->font_data.hint.glyph_width),
+      (mui->word_wrap)(wrapped_sublabel, sizeof(wrapped_sublabel),
+            entry->sublabel, strlen(entry->sublabel),
+            (int)((usable_width - (int)mui->sublabel_padding) 
+               / mui->font_data.hint.glyph_width),
             mui->font_data.hint.wideglyph_width, 0);
 
       /* Draw sublabel string

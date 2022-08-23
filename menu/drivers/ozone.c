@@ -427,8 +427,10 @@ struct ozone_handle
       ozone_font_data_t sidebar;
    } fonts;
 
-   void (*word_wrap)(char *dst, size_t dst_size, const char *src,
-      int line_width, int wideglyph_width, unsigned max_lines);
+   void (*word_wrap)(
+         char *dst, size_t dst_size,
+         const char *src, size_t src_len,
+         int line_width, int wideglyph_width, unsigned max_lines);
 
    struct
    {
@@ -3855,14 +3857,16 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       /* Word wrap core name string, if required */
       if (!scroll_content_metadata)
       {
-         char tmpstr[sizeof(ozone->selection_core_name)];
+         char tmpstr[256];
          unsigned metadata_len =
                (ozone->dimensions.thumbnail_bar_width - ((ozone->dimensions.sidebar_entry_icon_padding * 2) * 2)) /
                      ozone->fonts.footer.glyph_width;
 
          strlcpy(tmpstr, ozone->selection_core_name, sizeof(tmpstr));
-         (ozone->word_wrap)(ozone->selection_core_name, sizeof(ozone->selection_core_name),
-               tmpstr, metadata_len, ozone->fonts.footer.wideglyph_width, 0);
+         (ozone->word_wrap)(ozone->selection_core_name,
+               sizeof(ozone->selection_core_name),
+               tmpstr, strlen(tmpstr),
+               metadata_len, ozone->fonts.footer.wideglyph_width, 0);
          ozone->selection_core_name_lines = ozone_count_lines(ozone->selection_core_name);
       }
       else
@@ -3909,10 +3913,11 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
           * formats. Last played strings are well defined, however
           * (unlike core names), so this should never overflow the
           * side bar */
-         char tmpstr[sizeof(ozone->selection_lastplayed)];
+         char tmpstr[256];
 
          strlcpy(tmpstr, ozone->selection_lastplayed, sizeof(tmpstr));
-         (ozone->word_wrap)(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), tmpstr, 30, 100, 0);
+         (ozone->word_wrap)(ozone->selection_lastplayed,
+sizeof(ozone->selection_lastplayed), tmpstr, strlen(tmpstr), 30, 100, 0);
          ozone->selection_lastplayed_lines = ozone_count_lines(ozone->selection_lastplayed);
       }
       else
@@ -4971,7 +4976,10 @@ static void ozone_compute_entries_position(
             if (ozone->show_thumbnail_bar)
                sublabel_max_width -= ozone->dimensions.thumbnail_bar_width - entry_padding * 2;
 
-            (ozone->word_wrap)(wrapped_sublabel_str, sizeof(wrapped_sublabel_str), entry.sublabel,
+            (ozone->word_wrap)(wrapped_sublabel_str,
+                  sizeof(wrapped_sublabel_str),
+                  entry.sublabel,
+                  strlen(entry.sublabel),
                   sublabel_max_width / 
                   ozone->fonts.entries_sublabel.glyph_width,
                   ozone->fonts.entries_sublabel.wideglyph_width, 0);
@@ -5317,8 +5325,12 @@ border_iterate:
             }
 
             wrapped_sublabel_str[0] = '\0';
-            (ozone->word_wrap)(wrapped_sublabel_str, sizeof(wrapped_sublabel_str),
-                  sublabel_str, sublabel_max_width / ozone->fonts.entries_sublabel.glyph_width,
+            (ozone->word_wrap)(wrapped_sublabel_str,
+                  sizeof(wrapped_sublabel_str),
+                  sublabel_str,
+                  strlen(sublabel_str),
+                  sublabel_max_width 
+                  / ozone->fonts.entries_sublabel.glyph_width,
                   ozone->fonts.entries_sublabel.wideglyph_width, 0);
             sublabel_str = wrapped_sublabel_str;
          }
@@ -6241,8 +6253,9 @@ static void ozone_draw_osk(ozone_handle_t *ozone,
       text_color  = ozone_theme_light.text_sublabel_rgba;
    }
 
-   (ozone->word_wrap)(message, sizeof(message), text,
-         (video_width - margin*2 - padding*2) / ozone->fonts.entries_label.glyph_width,
+   (ozone->word_wrap)(message, sizeof(message), text, strlen(text),
+         (video_width - margin*2 - padding*2) / 
+         ozone->fonts.entries_label.glyph_width,
          ozone->fonts.entries_label.wideglyph_width, 0);
 
    string_list_initialize(&list);
@@ -6358,7 +6371,8 @@ static void ozone_draw_messagebox(
 
    /* Split message into lines */
    (ozone->word_wrap)(
-         wrapped_message, sizeof(wrapped_message), message,
+         wrapped_message, sizeof(wrapped_message),
+         message, strlen(message),
          usable_width / (int)ozone->fonts.footer.glyph_width,
          ozone->fonts.footer.wideglyph_width, 0);
 

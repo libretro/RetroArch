@@ -4266,7 +4266,8 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message,
 
    /* Split message into lines */
    word_wrap(
-         wrapped_message, sizeof(wrapped_message), message,
+         wrapped_message, sizeof(wrapped_message),
+         message, strlen(message),
          rgui->term_layout.width,
          100, 0);
 

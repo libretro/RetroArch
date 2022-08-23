@@ -298,10 +298,9 @@ void gfx_widgets_msg_queue_push(
                   title_length,
                   1);
             msg_widget->text_height             = p_dispwidget->gfx_widget_fonts.msg_queue.line_height;
-
-            msg_len = title_length + 1 + 1; /* 1 byte uses for inserting '\n' */
-            msg = (char *)malloc(msg_len);
-            if (!msg)
+            /* 1 byte uses for inserting '\n' */
+            msg_len                             = title_length + 1 + 1;
+            if (!(msg = (char *)malloc(msg_len)))
                return;
             msg[0] = '\0';
 
@@ -314,7 +313,8 @@ void gfx_widgets_msg_queue_push(
                if ((text_width - (text_width >> 2)) < width)
                   width = text_width - (text_width >> 2);
 
-               word_wrap(msg, msg_len, title, (title_length * width) / text_width,
+               word_wrap(msg, msg_len, title, title_length,
+                     (title_length * width) / text_width,
                      100, 2);
 
                msg_widget->text_height *= 2;

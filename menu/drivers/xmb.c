@@ -317,8 +317,10 @@ typedef struct xmb_handle
    video_font_raster_block_t raster_block;
    video_font_raster_block_t raster_block2;
 
-   void (*word_wrap)(char *dst, size_t dst_size, const char *src,
-      int line_width, int wideglyph_width, unsigned max_lines);
+   void (*word_wrap)(
+         char *dst, size_t dst_size,
+         const char *src, size_t src_len,
+         int line_width, int wideglyph_width, unsigned max_lines);
 
    menu_screensaver_t *screensaver;
 
@@ -1002,7 +1004,8 @@ static void xmb_render_messagebox_internal(
 
    /* Split message into lines */
    (xmb->word_wrap)(
-         wrapped_message, sizeof(wrapped_message), message,
+         wrapped_message, sizeof(wrapped_message),
+         message, strlen(message),
          usable_width / (xmb->font_size * 0.6f),
          xmb->wideglyph_width, 0);
 
@@ -1091,7 +1094,7 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
 {
    char path[PATH_MAX_LENGTH];
    size_t len                         = 0;
-   char       *tmp                    = string_replace_substring(xmb->title_name, "/", " ");
+   char       *tmp                    = string_replace_substring(xmb->title_name, "/", STRLEN_CONST("/"), " ", STRLEN_CONST(" "));
    settings_t *settings               = config_get_ptr();
    const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
    unsigned depth                     = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);

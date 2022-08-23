@@ -159,8 +159,9 @@ char *string_to_lower(char *s);
 
 char *string_ucwords(char *s);
 
-char *string_replace_substring(const char *in, const char *pattern,
-      const char *by);
+char *string_replace_substring(const char *in,
+      const char *pattern, size_t pattern_len,
+      const char *replacement, size_t replacement_len);
 
 /**
  * string_trim_whitespace_left:
@@ -188,6 +189,7 @@ char *string_trim_whitespace(char *const s);
  * @dst                : pointer to destination buffer.
  * @dst_size           : size of destination buffer.
  * @src                : pointer to input string.
+ * @src_len            : length of @src
  * @line_width         : max number of characters per line.
  * @wideglyph_width    : not used, but is necessary to keep
  *                       compatibility with word_wrap_wideglyph().
@@ -202,7 +204,7 @@ char *string_trim_whitespace(char *const s);
  * correctly any text containing so-called 'wide' Unicode
  * characters (e.g. CJK languages, emojis, etc.).
  **/
-void word_wrap(char *dst, size_t dst_size, const char *src,
+void word_wrap(char *dst, size_t dst_size, const char *src, size_t src_len,
       int line_width, int wideglyph_width, unsigned max_lines);
 
 /**
@@ -210,6 +212,7 @@ void word_wrap(char *dst, size_t dst_size, const char *src,
  * @dst                : pointer to destination buffer.
  * @dst_size           : size of destination buffer.
  * @src                : pointer to input string.
+ * @src_len            : length of @src
  * @line_width         : max number of characters per line.
  * @wideglyph_width    : effective width of 'wide' Unicode glyphs.
  *                       the value here is normalised relative to the
@@ -238,8 +241,11 @@ void word_wrap(char *dst, size_t dst_size, const char *src,
  * on-screen pixel width deviates greatly from the set
  * @wideglyph_width value.
  **/
-void word_wrap_wideglyph(char *dst, size_t dst_size, const char *src,
-      int line_width, int wideglyph_width, unsigned max_lines);
+void word_wrap_wideglyph(
+      char *dst, size_t dst_size,
+      const char *src, size_t src_len,
+      int line_width, int wideglyph_width,
+      unsigned max_lines);
 
 /**
  * string_tokenize:

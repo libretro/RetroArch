@@ -1886,6 +1886,7 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
 {
    char *wrapped_str            = NULL;
    size_t wrapped_str_len       = 0;
+   size_t line_ticker_str_len   = 0;
    struct string_list lines     = {0};
    size_t line_offset           = 0;
    bool success                 = false;
@@ -1902,7 +1903,8 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
       goto end;
 
    /* Line wrap input string */
-   wrapped_str_len = strlen(line_ticker->str) + 1 + 10; /* 10 bytes use for inserting '\n' */
+   line_ticker_str_len = strlen(line_ticker->str);
+   wrapped_str_len     = line_ticker_str_len + 1 + 10; /* 10 bytes use for inserting '\n' */
    if (!(wrapped_str = (char*)malloc(wrapped_str_len)))
       goto end;
    wrapped_str[0] = '\0';
@@ -1911,6 +1913,7 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
          wrapped_str,
          wrapped_str_len,
          line_ticker->str,
+         line_ticker_str_len,
          (int)line_ticker->line_len,
          100, 0);
 
@@ -1979,6 +1982,7 @@ end:
 bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *line_ticker)
 {
    char *wrapped_str              = NULL;
+   size_t line_ticker_src_len     = 0;
    size_t wrapped_str_len         = 0;
    struct string_list lines       = {0};
    int glyph_width                = 0;
@@ -1995,7 +1999,8 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
    gfx_animation_t *p_anim        = &anim_st;
    const char *wideglyph_str      = msg_hash_get_wideglyph_str();
    int wideglyph_width            = 100;
-   void (*word_wrap_func)(char *dst, size_t dst_size, const char *src,
+   void (*word_wrap_func)(char *dst, size_t dst_size,
+         const char *src, size_t src_len,
          int line_width, int wideglyph_width, unsigned max_lines)
       = wideglyph_str ? word_wrap_wideglyph : word_wrap;
 
@@ -2047,8 +2052,10 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
       goto end;
 
    /* Line wrap input string */
-   wrapped_str_len = strlen(line_ticker->src_str) + 1 + 10; /* 10 bytes use for inserting '\n' */
-   if (!(wrapped_str = (char*)malloc(wrapped_str_len)))
+   line_ticker_src_len = strlen(line_ticker->src_str);
+   /* 10 bytes use for inserting '\n' */
+   wrapped_str_len     = line_ticker_src_len + 1 + 10;
+   if (!(wrapped_str   = (char*)malloc(wrapped_str_len)))
       goto end;
    wrapped_str[0] = '\0';
 
@@ -2056,6 +2063,7 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
          wrapped_str,
          wrapped_str_len,
          line_ticker->src_str,
+         line_ticker_src_len,
          (int)line_len,
          wideglyph_width, 0);
 
