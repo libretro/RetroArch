@@ -18,7 +18,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include <file/nbio.h>
 #include <file/file_path.h>
@@ -570,8 +569,8 @@ error:
    if (t)
       free(t);
 
-   RARCH_ERR("[audio mixer load] Failed to open '%s': %s.\n",
-         fullpath, strerror(errno));
+   RARCH_ERR("[audio mixer load] Failed to open '%s'.\n",
+         fullpath);
 
    return false;
 }
@@ -697,8 +696,8 @@ error:
    if (t)
       free(t);
 
-   RARCH_ERR("[audio mixer load] Failed to open '%s': %s.\n",
-         fullpath, strerror(errno));
+   RARCH_ERR("[audio mixer load] Failed to open '%s'.\n",
+         fullpath);
 
    return false;
 }

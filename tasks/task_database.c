@@ -230,10 +230,9 @@ static bool intfstream_file_get_serial(const char *name,
 
       intfstream_close(fd);
       free(fd);
-      fd = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
+      if (!(fd = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
             RETRO_VFS_FILE_ACCESS_HINT_NONE,
-            size);
-      if (!fd)
+            size)))
       {
          free(data);
          return 0;
@@ -254,20 +253,18 @@ error:
 
 static int task_database_cue_get_serial(const char *name, char* serial)
 {
-   int rv;
    char track_path[PATH_MAX_LENGTH];
    uint64_t offset                  = 0;
    uint64_t size                    = 0;
 
    track_path[0]                    = '\0';
 
-   if ((rv = cue_find_track(name, true, &offset, &size, track_path,
-sizeof(track_path))) < 0)
+   if (cue_find_track(name, true, &offset, &size, track_path,
+sizeof(track_path)) < 0)
    {
 #ifdef DEBUG
-      RARCH_LOG("%s: %s\n",
-            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
-            strerror(-rv));
+      RARCH_LOG("%s\n",
+            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK));
 #endif
       return 0;
    }
@@ -282,17 +279,15 @@ sizeof(track_path))) < 0)
 static int task_database_gdi_get_serial(const char *name, char* serial)
 {
    char track_path[PATH_MAX_LENGTH];
-   int rv                           = 0;
 
    track_path[0]                    = '\0';
 
-   if ((rv = gdi_find_track(name, true,
-               track_path, sizeof(track_path))) < 0)
+   if (gdi_find_track(name, true,
+               track_path, sizeof(track_path)) < 0)
    {
 #ifdef DEBUG
-      RARCH_LOG("%s: %s\n",
-            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
-            strerror(-rv));
+      RARCH_LOG("%s\n",
+            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK));
 #endif
       return 0;
    }
@@ -393,9 +388,8 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
          track_path, sizeof(track_path))) < 0)
    {
 #ifdef DEBUG
-      RARCH_LOG("%s: %s\n",
-            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
-            strerror(-rv));
+      RARCH_LOG("%s\n",
+            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK));
 #endif
       return 0;
    }
@@ -424,8 +418,8 @@ static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
                track_path, sizeof(track_path))) < 0)
    {
 #ifdef DEBUG
-      RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
-                strerror(-rv));
+      RARCH_LOG("%s\n",
+            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK));
 #endif
       return 0;
    }

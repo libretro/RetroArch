@@ -158,7 +158,7 @@ void cue_append_multi_disc_suffix(char * str1, const char *filename)
    }
 }
 
-static int64_t get_token(intfstream_t *fd, char *token, uint64_t max_len)
+static int64_t task_database_cue_get_token(intfstream_t *fd, char *token, uint64_t max_len)
 {
    char *c       = token;
    int64_t len   = 0;
@@ -1041,9 +1041,8 @@ int cue_find_track(const char *cue_path, bool first,
    fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
 
    info.type                  = INTFSTREAM_FILE;
-   fd                         = (intfstream_t*)intfstream_init(&info);
 
-   if (!fd)
+   if (!(fd = (intfstream_t*)intfstream_init(&info)))
       goto error;
 
    if (!intfstream_open(fd, cue_path,
@@ -1063,7 +1062,7 @@ int cue_find_track(const char *cue_path, bool first,
 
    rv = -EINVAL;
 
-   while (get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
       if (string_is_equal_noncase(tmp_token, "FILE"))
       {
@@ -1081,27 +1080,27 @@ int cue_find_track(const char *cue_path, bool first,
                goto clean;
          }
 
-         get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
          fill_pathname_join_special(last_file, cue_dir,
                tmp_token, sizeof(last_file));
 
          file_size = intfstream_get_file_size(last_file);
 
-         get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
 
       }
       else if (string_is_equal_noncase(tmp_token, "TRACK"))
       {
-         get_token(fd, tmp_token, sizeof(tmp_token));
-         get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
          is_data = !string_is_equal_noncase(tmp_token, "AUDIO");
          ++track;
       }
       else if (string_is_equal_noncase(tmp_token, "INDEX"))
       {
          int m, s, f;
-         get_token(fd, tmp_token, sizeof(tmp_token));
-         get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
 
          if (sscanf(tmp_token, "%02d:%02d:%02d", &m, &s, &f) < 3)
          {
@@ -1169,11 +1168,11 @@ bool cue_next_file(intfstream_t *fd,
 
    tmp_token[0] = '\0';
 
-   while (get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
       if (string_is_equal_noncase(tmp_token, "FILE"))
       {
-         get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
          fill_pathname_join_special(path, cue_dir,
                tmp_token, (size_t)max_len);
          rv = true;
@@ -1198,9 +1197,7 @@ int gdi_find_track(const char *gdi_path, bool first,
 
    info.type         = INTFSTREAM_FILE;
 
-   fd                = (intfstream_t*)intfstream_init(&info);
-
-   if (!fd)
+   if (!(fd = (intfstream_t*)intfstream_init(&info)))
       goto error;
 
    if (!intfstream_open(fd, gdi_path,
@@ -1221,20 +1218,20 @@ int gdi_find_track(const char *gdi_path, bool first,
    rv = -EINVAL;
 
    /* Skip track count */
-   get_token(fd, tmp_token, sizeof(tmp_token));
+   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
 
    /* Track number */
-   while (get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
       /* Offset */
-      if (get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
       {
          errno = EINVAL;
          goto error;
       }
 
       /* Mode */
-      if (get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
       {
          errno = EINVAL;
          goto error;
@@ -1243,7 +1240,7 @@ int gdi_find_track(const char *gdi_path, bool first,
       mode = atoi(tmp_token);
 
       /* Sector size */
-      if (get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
       {
          errno = EINVAL;
          goto error;
@@ -1252,7 +1249,7 @@ int gdi_find_track(const char *gdi_path, bool first,
       size = atoi(tmp_token);
 
       /* File name */
-      if (get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
       {
          errno = EINVAL;
          goto error;
@@ -1284,7 +1281,7 @@ int gdi_find_track(const char *gdi_path, bool first,
       }
 
       /* Disc offset (not used?) */
-      if (get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
       {
          errno = EINVAL;
          goto error;
@@ -1309,32 +1306,30 @@ bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
       char *path, uint64_t max_len)
 {
    char tmp_token[MAX_TOKEN_LEN];
-   bool rv         = false;
 
    tmp_token[0]    = '\0';
 
    /* Skip initial track count */
    if (intfstream_tell(fd) == 0)
-      get_token(fd, tmp_token, sizeof(tmp_token));
+      task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
 
-   get_token(fd, tmp_token, sizeof(tmp_token)); /* Track number */
-   get_token(fd, tmp_token, sizeof(tmp_token)); /* Offset       */
-   get_token(fd, tmp_token, sizeof(tmp_token)); /* Mode         */
-   get_token(fd, tmp_token, sizeof(tmp_token)); /* Sector size  */
+   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Track number */
+   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Offset       */
+   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Mode         */
+   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Sector size  */
 
    /* File name */
-   if (get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
       char gdi_dir[PATH_MAX_LENGTH];
 
       fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
       fill_pathname_join_special(path, gdi_dir, tmp_token, (size_t)max_len);
 
-      rv              = true;
-
       /* Disc offset */
-      get_token(fd, tmp_token, sizeof(tmp_token));
+      task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+      return true;
    }
 
-   return rv;
+   return false;
 }
