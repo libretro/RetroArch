@@ -1041,7 +1041,7 @@ int cue_find_track(const char *cue_path, bool first,
 
    tmp_token[0] = '\0';
 
-   rv = -EINVAL;
+   rv = -1;
 
    while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
@@ -1134,15 +1134,14 @@ error:
       intfstream_close(fd);
       free(fd);
    }
-   return -errno;
+   return -1;
 }
 
 bool cue_next_file(intfstream_t *fd,
-      const char *cue_path, char *path, uint64_t max_len)
+      const char *cue_path, char *s, uint64_t len)
 {
    char tmp_token[MAX_TOKEN_LEN];
    char cue_dir[PATH_MAX_LENGTH];
-   bool rv                    = false;
    cue_dir[0]                 = '\0';
 
    fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
@@ -1154,24 +1153,22 @@ bool cue_next_file(intfstream_t *fd,
       if (string_is_equal_noncase(tmp_token, "FILE"))
       {
          task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
-         fill_pathname_join_special(path, cue_dir,
-               tmp_token, (size_t)max_len);
-         rv = true;
-         break;
+         fill_pathname_join_special(s, cue_dir, tmp_token, (size_t)len);
+         return true;
       }
    }
 
-   return rv;
+   return false;
 }
 
 int gdi_find_track(const char *gdi_path, bool first,
       char *track_path, uint64_t max_len)
 {
-   int rv;
    intfstream_info_t info;
    char tmp_token[MAX_TOKEN_LEN];
    intfstream_t *fd  = NULL;
    uint64_t largest  = 0;
+   int rv            = -1;
    int size          = -1;
    int mode          = -1;
    int64_t file_size = -1;
@@ -1196,8 +1193,6 @@ int gdi_find_track(const char *gdi_path, bool first,
 
    tmp_token[0] = '\0';
 
-   rv = -EINVAL;
-
    /* Skip track count */
    task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
 
@@ -1206,35 +1201,23 @@ int gdi_find_track(const char *gdi_path, bool first,
    {
       /* Offset */
       if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
          goto error;
-      }
 
       /* Mode */
       if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
          goto error;
-      }
 
       mode = atoi(tmp_token);
 
       /* Sector size */
       if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
          goto error;
-      }
 
       size = atoi(tmp_token);
 
       /* File name */
       if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
          goto error;
-      }
 
       /* Check for data track */
       if (!(mode == 0 && size == 2352))
@@ -1263,10 +1246,7 @@ int gdi_find_track(const char *gdi_path, bool first,
 
       /* Disc offset (not used?) */
       if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
          goto error;
-      }
    }
 
 clean:
@@ -1280,7 +1260,7 @@ error:
       intfstream_close(fd);
       free(fd);
    }
-   return -errno;
+   return -1;
 }
 
 bool gdi_next_file(intfstream_t *fd, const char *gdi_path,

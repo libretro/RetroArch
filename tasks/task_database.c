@@ -269,10 +269,6 @@ sizeof(track_path)) < 0)
       return 0;
    }
 
-#ifdef DEBUG
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
-#endif
-
    return intfstream_file_get_serial(track_path, offset, size, serial);
 }
 
@@ -291,10 +287,6 @@ static int task_database_gdi_get_serial(const char *name, char* serial)
 #endif
       return 0;
    }
-
-#ifdef DEBUG
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
-#endif
 
    return intfstream_file_get_serial(track_path, 0, SIZE_MAX, serial);
 }
@@ -380,12 +372,11 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
    char track_path[PATH_MAX_LENGTH];
    uint64_t offset  = 0;
    uint64_t size    = 0;
-   int rv           = 0;
 
    track_path[0]    = '\0';
 
-   if ((rv = cue_find_track(name, false, &offset, &size,
-         track_path, sizeof(track_path))) < 0)
+   if (cue_find_track(name, false, &offset, &size,
+         track_path, sizeof(track_path)) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("%s\n",
@@ -394,28 +385,17 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
       return 0;
    }
 
-#ifdef DEBUG
-   RARCH_LOG("CUE '%s' primary track: %s\n (%lu, %lu)\n",name, track_path, (unsigned long) offset, (unsigned long) size);
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
-
-   rv = intfstream_file_get_crc(track_path, offset, (size_t)size, crc);
-   if (rv == 1)
-      RARCH_LOG("CUE '%s' crc: %x\n", name, *crc);
-   return rv;
-#else
    return intfstream_file_get_crc(track_path, offset, (size_t)size, crc);
-#endif
 }
 
 static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
 {
    char track_path[PATH_MAX_LENGTH];
-   int rv        = 0;
 
    track_path[0] = '\0';
 
-   if ((rv = gdi_find_track(name, true,
-               track_path, sizeof(track_path))) < 0)
+   if (gdi_find_track(name, true,
+               track_path, sizeof(track_path)) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("%s\n",
@@ -424,22 +404,12 @@ static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
       return 0;
    }
 
-#ifdef DEBUG
-   RARCH_LOG("GDI '%s' primary track: %s\n", name, track_path);
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
-
-   rv = intfstream_file_get_crc(track_path, 0, SIZE_MAX, crc);
-   if (rv == 1)
-      RARCH_LOG("GDI '%s' crc: %x\n", name, *crc);
-   return rv;
-#else
    return intfstream_file_get_crc(track_path, 0, SIZE_MAX, crc);
-#endif
 }
 
 static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
 {
-   bool rv;
+   bool found_crc   = false;
    intfstream_t *fd = intfstream_open_chd_track(
          name,
          RETRO_VFS_FILE_ACCESS_READ,
@@ -448,17 +418,13 @@ static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
    if (!fd)
       return 0;
 
-   rv = intfstream_get_crc(fd, crc);
-#ifdef DEBUG
-   if (rv)
-      RARCH_LOG("CHD '%s' crc: %x\n", name, *crc);
-#endif
+   found_crc = intfstream_get_crc(fd, crc);
    if (fd)
    {
       intfstream_close(fd);
       free(fd);
    }
-   return rv;
+   return found_crc;
 }
 
 static void task_database_cue_prune(database_info_handle_t *db,
