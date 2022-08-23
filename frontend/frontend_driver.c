@@ -180,59 +180,98 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
 #ifdef HAVE_DYNAMIC
 
 #ifdef _WIN32
-   strcpy_literal(s, "dll");
+   s[0] = 'd';
+   s[1] = 'l';
+   s[2] = 'l';
+   s[3] = '\0';
    return true;
 #elif defined(__APPLE__) || defined(__MACH__)
-   strcpy_literal(s, "dylib");
+   s[0] = 'd';
+   s[1] = 'y';
+   s[2] = 'l';
+   s[3] = 'i';
+   s[4] = 'b';
+   s[5] = '\0';
    return true;
 #else
-   strcpy_literal(s, "so");
+   s[0] = 's';
+   s[1] = 'o';
+   s[2] = '\0';
    return true;
 #endif
 
 #else
 
 #if defined(PSP)
-   strcpy_literal(s, "pbp");
+   s[0] = 'p';
+   s[1] = 'b';
+   s[2] = 'p';
+   s[3] = '\0';
    return true;
-#elif defined(ORBIS)
+#elif defined(ORBIS) || defined(VITA) || defined(__PS3__)
    strlcpy(s, "self|bin", len);
    return true;
-#elif defined(VITA)
-   strcpy_literal(s, "self|bin");
-   return true;
 #elif defined(PS2)
-   strcpy_literal(s, "elf");
-   return true;
-#elif defined(__PS3__)
-   strcpy_literal(s, "self|bin");
+   s[0] = 'e';
+   s[1] = 'l';
+   s[2] = 'f';
+   s[3] = '\0';
    return true;
 #elif defined(_XBOX1)
-   strcpy_literal(s, "xbe");
+   s[0] = 'x';
+   s[1] = 'b';
+   s[2] = 'e';
+   s[3] = '\0';
    return true;
 #elif defined(_XBOX360)
-   strcpy_literal(s, "xex");
+   s[0] = 'x';
+   s[1] = 'e';
+   s[2] = 'x';
+   s[3] = '\0';
    return true;
 #elif defined(GEKKO)
-   strcpy_literal(s, "dol");
+   s[0] = 'd';
+   s[1] = 'o';
+   s[2] = 'l';
+   s[3] = '\0';
    return true;
 #elif defined(HW_WUP)
-   strcpy_literal(s, "rpx|elf");
+   strlcpy(s, "rpx|elf", len);
    return true;
 #elif defined(__linux__)
-   strcpy_literal(s, "elf");
+   s[0] = 'e';
+   s[1] = 'l';
+   s[2] = 'f';
+   s[3] = '\0';
    return true;
 #elif defined(HAVE_LIBNX)
-   strcpy_literal(s, "nro");
+   s[0] = 'n';
+   s[1] = 'r';
+   s[2] = 'o';
+   s[3] = '\0';
    return true;
 #elif defined(DJGPP)
-   strcpy_literal(s, "exe");
+   s[0] = 'e';
+   s[1] = 'x';
+   s[2] = 'e';
+   s[3] = '\0';
    return true;
 #elif defined(_3DS)
    if (envIsHomebrew())
-      strcpy_literal(s, "3dsx");
+   {
+      s[0] = '3';
+      s[1] = 'd';
+      s[2] = 's';
+      s[3] = 'x';
+      s[4] = '\0';
+   }
    else
-      strcpy_literal(s, "cia");
+   {
+      s[0] = 'c';
+      s[1] = 'i';
+      s[2] = 'a';
+      s[3] = '\0';
+   }
    return true;
 #else
    return false;
@@ -248,40 +287,40 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
 #else
 
 #if defined(PSP)
-   strcpy_literal(s, "EBOOT.PBP");
+   strlcpy(s, "EBOOT.PBP", len);
    return true;
 #elif defined(ORBIS)
    strlcpy(s, "eboot.bin", len);
    return true;
 #elif defined(VITA)
-   strcpy_literal(s, "eboot.bin");
+   strlcpy(s, "eboot.bin", len);
    return true;
 #elif defined(PS2)
-   strcpy_literal(s, "raboot.elf");
+   strlcpy(s, "raboot.elf", len);
    return true;
 #elif defined(__PSL1GHT__) || defined(__PS3__)
-   strcpy_literal(s, "EBOOT.BIN");
+   strlcpy(s, "EBOOT.BIN", len);
    return true;
 #elif defined(_XBOX1)
-   strcpy_literal(s, "default.xbe");
+   strlcpy(s, "default.xbe", len);
    return true;
 #elif defined(_XBOX360)
-   strcpy_literal(s, "default.xex");
+   strlcpy(s, "default.xex", len);
    return true;
 #elif defined(HW_RVL)
-   strcpy_literal(s, "boot.dol");
+   strlcpy(s, "boot.dol", len);
    return true;
 #elif defined(HW_WUP)
-   strcpy_literal(s, "retroarch.rpx");
+   strlcpy(s, "retroarch.rpx", len);
    return true;
 #elif defined(_3DS)
-   strcpy_literal(s, "retroarch.core");
+   strlcpy(s, "retroarch.core", len);
    return true;
 #elif defined(DJGPP)
-   strcpy_literal(s, "retrodos.exe");
+   strlcpy(s, "retrodos.exe", len);
    return true;
 #elif defined(SWITCH)
-   strcpy_literal(s, "retroarch_switch.nro");
+   strlcpy(s, "retroarch_switch.nro", len);
    return true;
 #else
    return false;
@@ -412,7 +451,7 @@ enum frontend_architecture frontend_driver_get_cpu_architecture(void)
 }
 
 const void *frontend_driver_get_cpu_architecture_str(
-      char *architecture, size_t size)
+      char *s, size_t len)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
@@ -421,32 +460,67 @@ const void *frontend_driver_get_cpu_architecture_str(
    switch (arch)
    {
       case FRONTEND_ARCH_X86:
-         strcpy_literal(architecture, "x86");
+         s[0] = 'x';
+         s[1] = '8';
+         s[2] = '6';
+         s[3] = '\0';
          break;
       case FRONTEND_ARCH_X86_64:
-         strcpy_literal(architecture, "x64");
+         s[0] = 'x';
+         s[1] = '6';
+         s[2] = '4';
+         s[3] = '\0';
          break;
       case FRONTEND_ARCH_PPC:
-         strcpy_literal(architecture, "PPC");
+         s[0] = 'P';
+         s[1] = 'P';
+         s[2] = 'C';
+         s[3] = '\0';
          break;
       case FRONTEND_ARCH_ARM:
-         strcpy_literal(architecture, "ARM");
+         s[0] = 'A';
+         s[1] = 'R';
+         s[2] = 'M';
+         s[3] = '\0';
          break;
       case FRONTEND_ARCH_ARMV7:
-         strcpy_literal(architecture, "ARMv7");
+         s[0] = 'A';
+         s[1] = 'R';
+         s[2] = 'M';
+         s[3] = 'v';
+         s[4] = '7';
+         s[5] = '\0';
          break;
       case FRONTEND_ARCH_ARMV8:
-         strcpy_literal(architecture, "ARMv8");
+         s[0] = 'A';
+         s[1] = 'R';
+         s[2] = 'M';
+         s[3] = 'v';
+         s[4] = '8';
+         s[5] = '\0';
          break;
       case FRONTEND_ARCH_MIPS:
-         strcpy_literal(architecture, "MIPS");
+         s[0] = 'M';
+         s[1] = 'I';
+         s[2] = 'P';
+         s[3] = 'S';
+         s[4] = '\0';
          break;
       case FRONTEND_ARCH_TILE:
-         strcpy_literal(architecture, "Tilera");
+         s[0] = 'T';
+         s[1] = 'i';
+         s[2] = 'l';
+         s[3] = 'e';
+         s[4] = 'r';
+         s[5] = 'a';
+         s[6] = '\0';
          break;
       case FRONTEND_ARCH_NONE:
       default:
-         strcpy_literal(architecture, "N/A");
+         s[0] = 'N';
+         s[1] = '/';
+         s[2] = 'A';
+         s[3] = '\0';
          break;
    }
 

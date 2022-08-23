@@ -105,78 +105,38 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
    {
       case 10:
          if (server)
-            strcpy_literal(s, "Windows Server 2016");
+            strlcpy(s, "Windows Server 2016", len);
          else
-            strcpy_literal(s, "Windows 10");
+            strlcpy(s, "Windows 10", len);
          break;
       case 6:
          switch (vi.dwMinorVersion)
          {
             case 3:
                if (server)
-                  strcpy_literal(s, "Windows Server 2012 R2");
+                  strlcpy(s, "Windows Server 2012 R2", len);
                else
-                  strcpy_literal(s, "Windows 8.1");
+                  strlcpy(s, "Windows 8.1", len);
                break;
             case 2:
                if (server)
-                  strcpy_literal(s, "Windows Server 2012");
+                  strlcpy(s, "Windows Server 2012", len);
                else
-                  strcpy_literal(s, "Windows 8");
+                  strlcpy(s, "Windows 8", len);
                break;
             case 1:
                if (server)
-                  strcpy_literal(s, "Windows Server 2008 R2");
+                  strlcpy(s, "Windows Server 2008 R2", len);
                else
-                  strcpy_literal(s, "Windows 7");
+                  strlcpy(s, "Windows 7", len);
                break;
             case 0:
                if (server)
-                  strcpy_literal(s, "Windows Server 2008");
+                  strlcpy(s, "Windows Server 2008", len);
                else
-                  strcpy_literal(s, "Windows Vista");
+                  strlcpy(s, "Windows Vista", len);
                break;
             default:
-               break;
-         }
-         break;
-      case 5:
-         switch (vi.dwMinorVersion)
-         {
-            case 2:
-               if (server)
-                  strcpy_literal(s, "Windows Server 2003");
-               else
-               {
-                  /* Yes, XP Pro x64 is a higher version number than XP x86 */
-                  if (string_is_equal(arch, "x64"))
-                     strcpy_literal(s, "Windows XP");
-               }
-               break;
-            case 1:
-               strcpy_literal(s, "Windows XP");
-               break;
-            case 0:
-               strcpy_literal(s, "Windows 2000");
-               break;
-         }
-         break;
-      case 4:
-         switch (vi.dwMinorVersion)
-         {
-            case 0:
-               if (vi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
-                  strcpy_literal(s, "Windows 95");
-               else if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-                  strcpy_literal(s, "Windows NT 4.0");
-               else
-                  strcpy_literal(s, "Unknown");
-               break;
-            case 90:
-               strcpy_literal(s, "Windows ME");
-               break;
-            case 10:
-               strcpy_literal(s, "Windows 98");
                break;
          }
          break;

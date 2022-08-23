@@ -5064,7 +5064,7 @@ static int action_ok_download_generic(const char *path,
          path = "shaders_cg.zip";
          break;
       case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         strcpy_literal(s, "http://thumbnailpacks.libretro.com");
+         strlcpy(s, "http://thumbnailpacks.libretro.com", sizeof(s));
          break;
       default:
          strlcpy(s, network_buildbot_url, sizeof(s));
@@ -5465,8 +5465,8 @@ static int action_ok_add_to_favorites(const char *path,
 
       if (string_is_empty(core_path) || string_is_empty(core_name))
       {
-         strcpy_literal(core_path, FILE_PATH_DETECT);
-         strcpy_literal(core_name, FILE_PATH_DETECT);
+         strlcpy(core_path, FILE_PATH_DETECT, sizeof(core_path));
+         strlcpy(core_name, FILE_PATH_DETECT, sizeof(core_name));
       }
 
       /* > crc32 + db_name */

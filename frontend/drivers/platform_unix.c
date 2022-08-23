@@ -1269,7 +1269,7 @@ static void frontend_unix_get_os(char *s,
    int rel;
    frontend_android_get_version(major, minor, &rel);
 
-   strcpy_literal(s, "Android");
+   strlcpy(s, "Android", len);
 #else
    char *ptr;
    struct utsname buffer;
@@ -1280,19 +1280,19 @@ static void frontend_unix_get_os(char *s,
    *major = (int)strtol(buffer.release, &ptr, 10);
    *minor = (int)strtol(++ptr, NULL, 10);
 #if defined(__FreeBSD__)
-   strcpy_literal(s, "FreeBSD");
+   strlcpy(s, "FreeBSD", len);
 #elif defined(__NetBSD__)
-   strcpy_literal(s, "NetBSD");
+   strlcpy(s, "NetBSD", len);
 #elif defined(__OpenBSD__)
-   strcpy_literal(s, "OpenBSD");
+   strlcpy(s, "OpenBSD", len);
 #elif defined(__DragonFly__)
-   strcpy_literal(s, "DragonFly BSD");
+   strlcpy(s, "DragonFly BSD", len);
 #elif defined(BSD)
-   strcpy_literal(s, "BSD");
+   strlcpy(s, "BSD", len);
 #elif defined(__HAIKU__)
-   strcpy_literal(s, "Haiku");
+   strlcpy(s, "Haiku", len);
 #else
-   strcpy_literal(s, "Linux");
+   strlcpy(s, "Linux", len);
 #endif
 #endif
 }

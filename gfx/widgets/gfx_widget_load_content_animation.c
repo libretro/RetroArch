@@ -434,7 +434,8 @@ bool gfx_widget_start_load_content_animation(void)
                sizeof(state->system_name));
       /* Otherwise, just use 'RetroArch' as a fallback */
       else
-         strcpy_literal(state->system_name, "RetroArch");
+         strlcpy(state->system_name, "RetroArch",
+               sizeof(state->system_name));
    }
 
    /* > Content name has been determined

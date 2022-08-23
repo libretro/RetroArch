@@ -164,8 +164,7 @@ static void get_first_valid_core(char *path_return, size_t len)
 
    path_return[0] = '\0';
 
-   dir = opendir(SD_PREFIX "/retroarch/cores");
-   if (dir)
+   if ((dir = opendir(SD_PREFIX "/retroarch/cores")))
    {
       while ((ent = readdir(dir)))
       {
@@ -173,7 +172,7 @@ static void get_first_valid_core(char *path_return, size_t len)
             break;
          if (strlen(ent->d_name) > strlen(extension) && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
          {
-            strcpy_literal(path_return, SD_PREFIX "/retroarch/cores");
+            strlcpy(path_return, SD_PREFIX "/retroarch/cores", len);
             strlcat(path_return, "/", len);
             strlcat(path_return, ent->d_name, len);
             break;
@@ -692,7 +691,7 @@ static void frontend_switch_get_os(
    ipc_request_t rq;
 #endif
 
-   strcpy_literal(s, "Horizon OS");
+   strlcpy(s, "Horizon OS", len);
 
 #ifdef HAVE_LIBNX
    *major     = 0;
@@ -730,8 +729,8 @@ fail:
 
 static void frontend_switch_get_name(char *s, size_t len)
 {
-   /* TODO: Add Mariko at some point */
-   strcpy_literal(s, "Nintendo Switch");
+   /* TODO/FIXME: Add Mariko at some point */
+   strlcpy(s, "Nintendo Switch", len);
 }
 
 void frontend_switch_process_args(int *argc, char *argv[])

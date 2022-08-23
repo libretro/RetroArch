@@ -3883,7 +3883,7 @@ bool menu_shader_manager_operate_auto_preset(
    switch (type)
    {
       case SHADER_PRESET_GLOBAL:
-         strcpy_literal(file, "global");
+         strlcpy(file, "global", sizeof(file));
          break;
       case SHADER_PRESET_CORE:
          fill_pathname_join_special(file, core_name, core_name, sizeof(file));
