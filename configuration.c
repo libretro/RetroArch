@@ -3423,16 +3423,23 @@ static bool config_load_file(global_t *global,
    for (i = 0; i < MAX_USERS; i++)
    {
       char buf[64];
+      char prefix[24];
 
-      buf[0] = '\0';
+      buf[0]    = '\0';
+      prefix[0] = '\0';
 
-      snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
+      snprintf(prefix, sizeof(prefix),"input_player%u", i + 1);
+
+      strlcpy(buf, prefix, sizeof(buf));
+      strlcat(buf, "_joypad_index", sizeof(buf));
       CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], buf);
 
-      snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
+      strlcpy(buf, prefix, sizeof(buf));
+      strlcat(buf, "_analog_dpad_mode", sizeof(buf));
       CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], buf);
 
-      snprintf(buf, sizeof(buf), "input_player%u_mouse_index", i + 1);
+      strlcpy(buf, prefix, sizeof(buf));
+      strlcat(buf, "_mouse_index", sizeof(buf));
       CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], buf);
    }
 
@@ -3915,12 +3922,13 @@ bool config_load_override(void *data)
 
          if (should_append)
          {
-            RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
-            snprintf(tmp_path, sizeof(tmp_path),
-                  "%s|%s",
+            size_t _len      = strlcpy(tmp_path,
                   path_get(RARCH_PATH_CONFIG_APPEND),
-                  content_path
-                  );
+                  sizeof(tmp_path));
+            tmp_path[_len  ] = '|';
+            tmp_path[_len+1] = '\0';
+            strlcat(tmp_path, content_path, sizeof(tmp_path));
+            RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
          }
          else
             strlcpy(tmp_path, content_path, sizeof(tmp_path));
@@ -3941,12 +3949,13 @@ bool config_load_override(void *data)
 
          if (should_append)
          {
+            size_t _len      = strlcpy(tmp_path,
+			    path_get(RARCH_PATH_CONFIG_APPEND),
+			    sizeof(tmp_path));
+            tmp_path[_len  ] = '|';
+            tmp_path[_len+1] = '\0';
+            strlcat(tmp_path, game_path, sizeof(tmp_path));
             RARCH_LOG("[Overrides]: Game-specific overrides stacking on top of previous overrides.\n");
-            snprintf(tmp_path, sizeof(tmp_path),
-                  "%s|%s",
-                  path_get(RARCH_PATH_CONFIG_APPEND),
-                  game_path
-                  );
          }
          else
             strlcpy(tmp_path, game_path, sizeof(tmp_path));
@@ -5105,15 +5114,34 @@ bool input_remapping_load_file(void *data, const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
+      size_t _len;
+      char prefix[16];
       char s1[32], s2[32], s3[32];
 
-      s1[0] = '\0';
-      s2[0] = '\0';
-      s3[0] = '\0';
+      prefix[0]  = '\0';
+      s1[0]      = '\0';
+      s2[0]      = '\0';
+      s3[0]      = '\0';
 
-      snprintf(s1, sizeof(s1), "input_player%u_btn", i + 1);
-      snprintf(s2, sizeof(s2), "input_player%u_key", i + 1);
-      snprintf(s3, sizeof(s3), "input_player%u_stk", i + 1);
+      snprintf(prefix, sizeof(prefix), "input_player%u", i + 1);
+      _len       = strlcpy(s1, prefix, sizeof(s1));
+      s1[_len  ] = '_';
+      s1[_len+1] = 'b';
+      s1[_len+2] = 't';
+      s1[_len+3] = 'n';
+      s1[_len+4] = '\0';
+      _len       = strlcpy(s2, prefix, sizeof(s2));
+      s2[_len  ] = '_';
+      s2[_len+1] = 'k';
+      s2[_len+2] = 'e';
+      s2[_len+3] = 'y';
+      s2[_len+4] = '\0';
+      _len       = strlcpy(s3, prefix, sizeof(s3));
+      s3[_len  ] = '_';
+      s3[_len+1] = 's';
+      s3[_len+2] = 't';
+      s3[_len+3] = 'k';
+      s3[_len+4] = '\0';
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
       {
@@ -5237,14 +5265,17 @@ bool input_remapping_save_file(const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
+      size_t _len;
       bool skip_port = true;
+      char prefix[16];
       char s1[32];
       char s2[32];
       char s3[32];
 
-      s1[0] = '\0';
-      s2[0] = '\0';
-      s3[0] = '\0';
+      prefix[0] = '\0';
+      s1[0]     = '\0';
+      s2[0]     = '\0';
+      s3[0]     = '\0';
 
       /* We must include all mapped ports + all those
        * with an index less than max_users */
@@ -5267,9 +5298,25 @@ bool input_remapping_save_file(const char *path)
       if (skip_port)
          continue;
 
-      snprintf(s1, sizeof(s1), "input_player%u_btn", i + 1);
-      snprintf(s2, sizeof(s2), "input_player%u_key", i + 1);
-      snprintf(s3, sizeof(s3), "input_player%u_stk", i + 1);
+      snprintf(prefix, sizeof(prefix), "input_player%u", i + 1);
+      _len       = strlcpy(s1, prefix, sizeof(s1));
+      s1[_len  ] = '_';
+      s1[_len+1] = 'b';
+      s1[_len+2] = 't';
+      s1[_len+3] = 'n';
+      s1[_len+4] = '\0';
+      _len       = strlcpy(s2, prefix, sizeof(s2));
+      s2[_len  ] = '_';
+      s2[_len+1] = 'k';
+      s2[_len+2] = 'e';
+      s2[_len+3] = 'y';
+      s2[_len+4] = '\0';
+      _len       = strlcpy(s3, prefix, sizeof(s3));
+      s3[_len  ] = '_';
+      s3[_len+1] = 's';
+      s3[_len+2] = 't';
+      s3[_len+3] = 'k';
+      s3[_len+4] = '\0';
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {
