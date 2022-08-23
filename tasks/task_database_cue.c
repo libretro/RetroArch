@@ -1050,8 +1050,7 @@ int cue_find_track(const char *cue_path, bool first,
             RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE))
    {
 #ifdef DEBUG
-      RARCH_LOG("Could not open CUE file '%s': %s\n", cue_path,
-            strerror(errno));
+      RARCH_LOG("Could not open CUE file '%s'\n", cue_path);
 #endif
       goto error;
    }
@@ -1208,8 +1207,7 @@ int gdi_find_track(const char *gdi_path, bool first,
             RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE))
    {
 #ifdef DEBUG
-      RARCH_LOG("Could not open GDI file '%s': %s\n", gdi_path,
-            strerror(errno));
+      RARCH_LOG("Could not open GDI file '%s'\n", gdi_path);
 #endif
       goto error;
    }
