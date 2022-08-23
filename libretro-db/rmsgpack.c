@@ -526,10 +526,9 @@ int rmsgpack_read(RFILE *fd,
    else if (type < MPF_NIL)
    {
       ssize_t read_len = 0;
-      tmp_len = type - MPF_FIXSTR;
-      buff = (char *)malloc((size_t)(tmp_len + 1) * sizeof(char));
-      if (!buff)
-         return -ENOMEM;
+      tmp_len          = type - MPF_FIXSTR;
+      if (!(buff = (char *)malloc((size_t)(tmp_len + 1) * sizeof(char))))
+         return -1;
       if ((read_len = filestream_read(fd, buff, (ssize_t)tmp_len)) == -1)
       {
          free(buff);
