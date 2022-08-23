@@ -104,7 +104,7 @@ static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
    int rv = 0;
 
    if (doc->type != RDT_MAP)
-      return -EINVAL;
+      return -1;
 
    for (i = 0; i < doc->val.map.len; i++)
    {
@@ -112,13 +112,13 @@ static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
       struct rmsgpack_dom_value value = doc->val.map.items[i].value;
 
       if (key.type != RDT_STRING)
-         return -EINVAL;
+         return -1;
 
       if (key.val.string.len <= 0)
-         return -EINVAL;
+         return -1;
 
       if (key.val.string.buff[0] == '$')
-         return -EINVAL;
+         return -1;
 
       if (value.type != RDT_MAP)
          continue;

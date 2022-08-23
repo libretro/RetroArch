@@ -81,7 +81,7 @@ static int bintree_insert_internal(bintree_t *t,
       return bintree_insert_internal(t, root->left, value);
    else if (cmp_res < 0)
       return bintree_insert_internal(t, root->right, value);
-   return -EINVAL;
+   return -1;
 }
 
 static int bintree_iterate_internal(struct bintree_node *n,
