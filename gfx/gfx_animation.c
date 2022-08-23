@@ -1401,17 +1401,21 @@ static void build_line_ticker_string(
 {
    size_t i;
 
-   for (i = 0; i < num_display_lines; i++)
+   for (i = 0; i < (num_display_lines-1); i++)
    {
       size_t offset     = i + line_offset;
       size_t line_index = offset % (lines->size + 1);
-
       /* Is line valid? */
       if (line_index < lines->size)
          strlcat(dest_str, lines->elems[line_index].data, dest_str_len);
-
-      if (i < num_display_lines - 1)
-         strlcat(dest_str, "\n", dest_str_len);
+      strlcat(dest_str, "\n", dest_str_len);
+   }
+   {
+      size_t offset     = (num_display_lines-1) + line_offset;
+      size_t line_index = offset % (lines->size + 1);
+      /* Is line valid? */
+      if (line_index < lines->size)
+         strlcat(dest_str, lines->elems[line_index].data, dest_str_len);
    }
 }
 
@@ -1997,12 +2001,11 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
    bool success                   = false;
    bool is_active                 = false;
    gfx_animation_t *p_anim        = &anim_st;
-   const char *wideglyph_str      = msg_hash_get_wideglyph_str();
+   const char *wideglyph_str      = NULL;
    int wideglyph_width            = 100;
    void (*word_wrap_func)(char *dst, size_t dst_size,
          const char *src, size_t src_len,
-         int line_width, int wideglyph_width, unsigned max_lines)
-      = wideglyph_str ? word_wrap_wideglyph : word_wrap;
+         int line_width, int wideglyph_width, unsigned max_lines);
 
    /* Sanity check */
    if (!line_ticker)
@@ -2027,17 +2030,18 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
          line_ticker->font, "a", 1, line_ticker->font_scale)) <= 0)
       goto end;
 
-   if (wideglyph_str)
+   if ((wideglyph_str = msg_hash_get_wideglyph_str()))
    {
-      wideglyph_width = font_driver_get_message_width(
+      word_wrap_func      = word_wrap_wideglyph;
+      int new_glyph_width = font_driver_get_message_width(
          line_ticker->font, wideglyph_str, strlen(wideglyph_str),
          line_ticker->font_scale);
       
-      if (wideglyph_width > 0)
-         wideglyph_width = wideglyph_width * 100 / glyph_width;
-      else
-         wideglyph_width = 100;
+      if (new_glyph_width > 0)
+         wideglyph_width = new_glyph_width * 100 / glyph_width;
    }
+   else
+      word_wrap_func  = word_wrap;
 
    /* > Height */
    if ((glyph_height = font_driver_get_line_height(
