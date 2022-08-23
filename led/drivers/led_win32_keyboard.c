@@ -7,23 +7,21 @@
 
 #include <windows.h>
 
-static void key_translate(int *key)
+static int key_translate(int key)
 {
-   switch (*key)
+   switch (key)
    {
       case 0:
-         *key = VK_NUMLOCK;
-         break;
+         return VK_NUMLOCK;
       case 1:
-         *key = VK_CAPITAL;
-         break;
+         return VK_CAPITAL;
       case 2:
-         *key = VK_SCROLL;
-         break;
+         return VK_SCROLL;
       default:
-         *key = 0;
          break;
    }
+
+   return 0;
 }
 
 typedef struct
@@ -38,17 +36,6 @@ typedef struct
 static keyboard_led_t win32kb_curins;
 static keyboard_led_t *win32kb_cur = &win32kb_curins;
 
-static int get_led(int key)
-{
-   return GetKeyState(key);
-}
-
-static void set_led(int key)
-{
-   keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-   keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-}
-
 static int keyboard_led(int led, int state)
 {
    int status;
@@ -57,19 +44,19 @@ static int keyboard_led(int led, int state)
    if ((led < 0) || (led >= MAX_LEDS))
       return -1;
 
-   key_translate(&key);
-   if (!key)
+   if (!(key = key_translate(key)))
       return -1;
 
-   status = get_led(key);
+   status = GetKeyState(key);
 
    if (state == -1)
       return status;
 
-   if ((state && !status) ||
-       (!state && status))
+   if (   ( state && !status)
+       || (!state &&  status))
    {
-      set_led(key);
+      keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+      keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
       win32kb_cur->state[led] = state;
    }
    return -1;
@@ -85,9 +72,9 @@ static void keyboard_init(void)
 
    for (i = 0; i < MAX_LEDS; i++)
    {
-      win32kb_cur->setup[i] = keyboard_led(i, -1);
-      win32kb_cur->state[i] = -1;
-      win32kb_cur->map[i]   = settings->uints.led_map[i];
+      win32kb_cur->setup[i]  = keyboard_led(i, -1);
+      win32kb_cur->state[i]  = -1;
+      win32kb_cur->map[i]    = settings->uints.led_map[i];
       if (win32kb_cur->map[i] < 0)
          win32kb_cur->map[i] = i;
    }

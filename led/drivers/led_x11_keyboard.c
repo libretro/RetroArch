@@ -18,23 +18,21 @@
 #define XM_CAPSLOCK   1
 #define XM_SCROLLLOCK 4
 
-static void key_translate(int *key)
+static int key_translate(int key)
 {
-   switch (*key)
+   switch (key)
    {
       case 0:
-         *key = XK_NUMLOCK;
-         break;
+         return XK_NUMLOCK;
       case 1:
-         *key = XK_CAPSLOCK;
-         break;
+         return XK_CAPSLOCK;
       case 2:
-         *key = XK_SCROLLLOCK;
-         break;
+         return XK_SCROLLLOCK;
       default:
-         *key = 0;
          break;
    }
+
+   return 0;
 }
 
 typedef struct
@@ -91,8 +89,7 @@ static int keyboard_led(int led, int state)
    if ((led < 0) || (led >= MAX_LEDS))
       return -1;
 
-   key_translate(&key);
-   if (!key)
+   if (!(key = key_translate(key)))
       return -1;
 
    status = get_led(key);
@@ -100,8 +97,8 @@ static int keyboard_led(int led, int state)
    if (state == -1)
       return status;
 
-   if ((state && !status) ||
-       (!state && status))
+   if (   ( state  && !status)
+       || (!state  &&  status))
    {
       set_led(key, state);
       x11kb_cur->state[led] = state;
