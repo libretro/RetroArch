@@ -27,7 +27,6 @@
 #include <unistd.h>
 #endif
 #include <string.h>
-#include <errno.h>
 #include <sys/stat.h>
 #include <stdlib.h>
 
@@ -105,7 +104,7 @@ static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
    int rv = 0;
 
    if (doc->type != RDT_MAP)
-      return -EINVAL;
+      return -1;
 
    for (i = 0; i < doc->val.map.len; i++)
    {
@@ -113,13 +112,13 @@ static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
       struct rmsgpack_dom_value value = doc->val.map.items[i].value;
 
       if (key.type != RDT_STRING)
-         return -EINVAL;
+         return -1;
 
       if (key.val.string.len <= 0)
-         return -EINVAL;
+         return -1;
 
       if (key.val.string.buff[0] == '$')
-         return -EINVAL;
+         return -1;
 
       if (value.type != RDT_MAP)
          continue;
@@ -214,13 +213,12 @@ int libretrodb_open(const char *path, libretrodb_t *db)
 {
    libretrodb_header_t header;
    libretrodb_metadata_t md;
-   int rv    = 0;
    RFILE *fd = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!fd)
-      return -errno;
+      return -1;
 
    if (!string_is_empty(db->path))
       free(db->path);
@@ -229,26 +227,17 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    db->root  = filestream_tell(fd);
 
    if ((int)filestream_read(fd, &header, sizeof(header)) == -1)
-   {
-      rv = -errno;
       goto error;
-   }
 
    if (strncmp(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)) != 0)
-   {
-      rv = -EINVAL;
       goto error;
-   }
 
    header.metadata_offset = swap_if_little64(header.metadata_offset);
    filestream_seek(fd, (ssize_t)header.metadata_offset,
          RETRO_VFS_SEEK_POSITION_START);
 
    if (libretrodb_read_metadata(fd, &md) < 0)
-   {
-      rv = -EINVAL;
       goto error;
-   }
 
    db->count              = md.count;
    db->first_index_offset = filestream_tell(fd);
@@ -258,7 +247,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
 error:
    if (fd)
       filestream_close(fd);
-   return rv;
+   return -1;
 }
 
 static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
@@ -322,10 +311,9 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
       return -1;
 
    bufflen = idx.next;
-   buff    = malloc(bufflen);
 
-   if (!buff)
-      return -ENOMEM;
+   if (!(buff = malloc(bufflen)))
+      return -1;
 
    while (nread < bufflen)
    {
@@ -335,7 +323,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
       if (rv <= 0)
       {
          free(buff);
-         return -errno;
+         return -1;
       }
       nread += rv;
    }
@@ -437,14 +425,12 @@ int libretrodb_cursor_open(libretrodb_t *db,
 {
    RFILE *fd = NULL;
    if (!db || string_is_empty(db->path))
-      return -errno;
+      return -1;
 
-   fd = filestream_open(db->path,
+   if (!(fd = filestream_open(db->path,
          RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!fd)
-      return -errno;
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      return -1;
 
    cursor->fd       = fd;
    cursor->db       = db;

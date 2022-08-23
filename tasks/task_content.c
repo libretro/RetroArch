@@ -23,7 +23,6 @@
 #include <sys/types.h>
 #include <string.h>
 #include <time.h>
-#include <errno.h>
 
 #ifdef _WIN32
 #ifdef _XBOX
