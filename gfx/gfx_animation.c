@@ -2032,16 +2032,16 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
 
    if ((wideglyph_str = msg_hash_get_wideglyph_str()))
    {
-      word_wrap_func      = word_wrap_wideglyph;
       int new_glyph_width = font_driver_get_message_width(
          line_ticker->font, wideglyph_str, strlen(wideglyph_str),
          line_ticker->font_scale);
       
       if (new_glyph_width > 0)
-         wideglyph_width = new_glyph_width * 100 / glyph_width;
+         wideglyph_width  = new_glyph_width * 100 / glyph_width;
+      word_wrap_func      = word_wrap_wideglyph;
    }
    else
-      word_wrap_func  = word_wrap;
+      word_wrap_func      = word_wrap;
 
    /* > Height */
    if ((glyph_height = font_driver_get_line_height(
