@@ -272,9 +272,6 @@ retro_time_t cpu_features_get_time_usec(void)
 
 #if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || (defined(_M_X64) && _MSC_VER > 1310) || (defined(_M_IX86) && _MSC_VER > 1310)
 #define CPU_X86
-#elif defined(__ARM_ARCH) || defined(__TARGET_ARCH_ARM) || defined(_M_ARM) || defined(__arm__) || \
-      defined(__arm64) || defined(_M_ARM64) || defined(__aarch64__) || defined(__AARCH64EL__)
-#define CPU_ARM
 #endif
 
 #if defined(_MSC_VER) && !defined(_XBOX)
@@ -359,7 +356,7 @@ static void arm_enable_runfast_mode(void)
 #endif
 #endif
 
-#if defined(__linux__) && defined(CPU_ARM)
+#if defined(__linux__) && !defined(CPU_X86)
 static unsigned char check_arm_cpu_feature(const char* feature)
 {
    char line[1024];
