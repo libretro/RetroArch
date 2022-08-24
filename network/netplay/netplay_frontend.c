@@ -2371,7 +2371,7 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd,
    bool error    = false;
 
    if (buf_used(sbuf) >= (sbuf->bufsz - 1))
-      return 0;
+      goto copy;
 
    /* Receive whatever we can into the buffer */
    if (sbuf->end >= sbuf->start)
@@ -2415,6 +2415,7 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd,
    }
 
    /* Now copy it into the reader */
+copy:
    if (sbuf->end >= sbuf->read || (sbuf->bufsz - sbuf->read) >= len)
    {
       size_t unread = buf_unread(sbuf);
@@ -2426,7 +2427,6 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd,
          if (sbuf->read >= sbuf->bufsz)
             sbuf->read = 0;
          recvd = len;
-
       }
       else if (unread > 0)
       {
@@ -2442,8 +2442,8 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd,
    else
    {
       /* Our read goes around the edge */
-      size_t chunka   = sbuf->bufsz - sbuf->read;
-      size_t chunkb   = ((len - chunka) > sbuf->end) ? sbuf->end :
+      size_t chunka = sbuf->bufsz - sbuf->read;
+      size_t chunkb = ((len - chunka) > sbuf->end) ? sbuf->end :
          (len - chunka);
 
       memcpy(buf, sbuf->data + sbuf->read, chunka);
