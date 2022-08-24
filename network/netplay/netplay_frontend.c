@@ -2370,7 +2370,7 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd,
    ssize_t recvd;
    bool error    = false;
 
-   if (buf_used(sbuf) >= (sbuf->bufsz - 1))
+   if (buf_unread(sbuf) >= len || !buf_remaining(sbuf))
       goto copy;
 
    /* Receive whatever we can into the buffer */
@@ -2389,7 +2389,7 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd,
       {
          sbuf->end = 0;
 
-         if (sbuf->start > 1)
+         if (sbuf->start > 1 && buf_unread(sbuf) < len)
          {
             error = false;
             recvd = socket_receive_all_nonblocking(sockfd, &error,
