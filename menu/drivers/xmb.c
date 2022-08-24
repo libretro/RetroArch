@@ -1147,20 +1147,6 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb)
    path = NULL;
 }
 
-static bool xmb_is_running_quick_menu(void)
-{
-   menu_entry_t entry;
-
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled     = false;
-   entry.value_enabled    = false;
-   entry.sublabel_enabled = false;
-   menu_entry_get(&entry, 0, 0, NULL, true);
-
-   return string_is_equal(entry.label, "resume_content") ||
-          string_is_equal(entry.label, "state_slot");
-}
-
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings = config_get_ptr();
@@ -1184,7 +1170,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
-   if (!((xmb->is_quick_menu && xmb_is_running_quick_menu()) || xmb->is_state_slot))
+   if (!((xmb->is_quick_menu && menu_is_running_quick_menu()) || xmb->is_state_slot))
       return;
 
    xmb->fullscreen_thumbnails_available = false;
@@ -1474,7 +1460,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
-   if (!((xmb->is_quick_menu && xmb_is_running_quick_menu()) || xmb->is_state_slot))
+   if (!((xmb->is_quick_menu && menu_is_running_quick_menu()) || xmb->is_state_slot))
       return;
 
    /* If path is empty, just reset thumbnail */
@@ -4150,7 +4136,7 @@ static enum menu_action xmb_parse_menu_entry_action(
    {
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
-         if (xmb->show_fullscreen_thumbnails && (xmb->is_quick_menu && !xmb_is_running_quick_menu()))
+         if (xmb->show_fullscreen_thumbnails && (xmb->is_quick_menu && !menu_is_running_quick_menu()))
             return MENU_ACTION_NOOP;
 
          /* Check whether left/right action will

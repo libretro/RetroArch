@@ -3359,27 +3359,13 @@ console_iterate:
             video_width, video_height);
 }
 
-static bool ozone_is_running_quick_menu(void)
-{
-   menu_entry_t entry;
-
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled     = false;
-   entry.value_enabled    = false;
-   entry.sublabel_enabled = false;
-   menu_entry_get(&entry, 0, 0, NULL, true);
-
-   return string_is_equal(entry.label, "resume_content") ||
-          string_is_equal(entry.label, "state_slot");
-}
-
 static void ozone_thumbnail_bar_hide_end(void *userdata)
 {
    ozone_handle_t *ozone             = (ozone_handle_t*) userdata;
    ozone->show_thumbnail_bar         = false;
    ozone->pending_hide_thumbnail_bar = false;
 
-   if (!(ozone->is_quick_menu && ozone_is_running_quick_menu()))
+   if (!(ozone->is_quick_menu && menu_is_running_quick_menu()))
       ozone->need_compute               = true;
 }
 
@@ -3425,7 +3411,7 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
-   if (!((ozone->is_quick_menu && ozone_is_running_quick_menu()) || ozone->is_state_slot))
+   if (!((ozone->is_quick_menu && menu_is_running_quick_menu()) || ozone->is_state_slot))
       return;
 
    if (savestate_thumbnail_enable)
@@ -3514,7 +3500,7 @@ static void ozone_update_savestate_thumbnail_image(void *data)
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
-   if (!((ozone->is_quick_menu && ozone_is_running_quick_menu()) || ozone->is_state_slot))
+   if (!((ozone->is_quick_menu && menu_is_running_quick_menu()) || ozone->is_state_slot))
       return;
 
    /* If path is empty, just reset thumbnail */
@@ -3812,7 +3798,7 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
 
    ozone->selection_core_is_viewer_real  = ozone->selection_core_is_viewer;
 
-   if ((playlist && (ozone->is_playlist || (ozone->is_quick_menu && !ozone_is_running_quick_menu()))) ||
+   if ((playlist && (ozone->is_playlist || (ozone->is_quick_menu && !menu_is_running_quick_menu()))) ||
          (ozone->is_db_manager_list && ozone->depth == 4))
    {
       const char *core_label             = NULL;
@@ -5356,7 +5342,7 @@ border_iterate:
                sublabel_max_width -= (unsigned) ozone->dimensions_sidebar_width;
             if (ozone->show_thumbnail_bar)
             {
-               if (ozone->is_quick_menu && ozone_is_running_quick_menu())
+               if (ozone->is_quick_menu && menu_is_running_quick_menu())
                   sublabel_max_width -= ozone->dimensions.thumbnail_bar_width - entry_padding * 2;
                else
                   sublabel_max_width -= ozone->dimensions.thumbnail_bar_width - entry_padding;
@@ -7478,7 +7464,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             if (!menu_navigation_wraparound_enable && selection == 0 && !is_current_entry_settings)
                ozone_start_cursor_wiggle(ozone, MENU_ACTION_DOWN);
 
-            if (ozone->show_fullscreen_thumbnails && (ozone->is_quick_menu && !ozone_is_running_quick_menu()))
+            if (ozone->show_fullscreen_thumbnails && (ozone->is_quick_menu && !menu_is_running_quick_menu()))
                return MENU_ACTION_NOOP;
 
             break;
@@ -7509,7 +7495,7 @@ static enum menu_action ozone_parse_menu_entry_action(
                ozone_start_cursor_wiggle(ozone, MENU_ACTION_DOWN);
 
             if (ozone->show_fullscreen_thumbnails &&
-                  (ozone->is_playlist || (ozone->is_quick_menu && !ozone_is_running_quick_menu())))
+                  (ozone->is_playlist || (ozone->is_quick_menu && !menu_is_running_quick_menu())))
                return MENU_ACTION_NOOP;
 
             break;
@@ -10764,7 +10750,7 @@ static void ozone_populate_entries(void *data,
    }
    else if (ozone->is_quick_menu)
    {
-      if (ozone_is_running_quick_menu())
+      if (menu_is_running_quick_menu())
       {
          ozone->want_thumbnail_bar   = false;
          ozone->skip_thumbnail_reset = false;

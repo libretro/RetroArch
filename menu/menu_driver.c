@@ -8273,3 +8273,17 @@ size_t menu_update_fullscreen_thumbnail_label(
       return strlcpy(s, thumbnail_label, len);
    return 0;
 }
+
+bool menu_is_running_quick_menu(void)
+{
+   menu_entry_t entry;
+
+   MENU_ENTRY_INIT(entry);
+   entry.path_enabled     = false;
+   entry.value_enabled    = false;
+   entry.sublabel_enabled = false;
+   menu_entry_get(&entry, 0, 0, NULL, true);
+
+   return string_is_equal(entry.label, "resume_content") ||
+          string_is_equal(entry.label, "state_slot");
+}

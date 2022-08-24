@@ -4753,20 +4753,6 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, gfx_display_t *p_disp,
       bool delay_update);
 #endif
 
-static bool rgui_is_running_quick_menu(void)
-{
-   menu_entry_t entry;
-
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled     = false;
-   entry.value_enabled    = false;
-   entry.sublabel_enabled = false;
-   menu_entry_get(&entry, 0, 0, NULL, true);
-
-   return string_is_equal(entry.label, "resume_content") ||
-          string_is_equal(entry.label, "state_slot");
-}
-
 static void rgui_render(void *data,
       unsigned width, unsigned height,
       bool is_idle)
@@ -5102,11 +5088,11 @@ static void rgui_render(void *data,
             ((timedate_x - rgui->term_layout.start_x) / rgui->font_width_stride) - 3 :
                   rgui->term_layout.width - 1;
       bool show_mini_thumbnails      = rgui_inline_thumbnails &&
-            (rgui->is_playlist || (rgui->is_quick_menu && !rgui_is_running_quick_menu()));
+            (rgui->is_playlist || (rgui->is_quick_menu && !menu_is_running_quick_menu()));
       bool show_thumbnail            = false;
       bool show_left_thumbnail       = false;
       bool show_savestate_thumbnail  = (!string_is_empty(rgui->savestate_thumbnail_file_path) &&
-            (rgui->is_state_slot || (rgui->is_quick_menu && rgui_is_running_quick_menu())));
+            (rgui->is_state_slot || (rgui->is_quick_menu && menu_is_running_quick_menu())));
       unsigned thumbnail_panel_width = 0;
       unsigned term_mid_point        = 0;
       size_t powerstate_len          = 0;
@@ -6559,7 +6545,7 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
-   if (!((rgui->is_quick_menu && rgui_is_running_quick_menu()) || rgui->is_state_slot))
+   if (!((rgui->is_quick_menu && menu_is_running_quick_menu()) || rgui->is_state_slot))
       return;
 
    if (savestate_thumbnail_enable)
@@ -6632,7 +6618,7 @@ static void rgui_update_savestate_thumbnail_image(void *data)
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
-   if (!((rgui->is_quick_menu && rgui_is_running_quick_menu()) || rgui->is_state_slot))
+   if (!((rgui->is_quick_menu && menu_is_running_quick_menu()) || rgui->is_state_slot))
       return;
 
    /* If path is empty, just reset thumbnail */
@@ -7546,7 +7532,7 @@ static enum menu_action rgui_parse_menu_entry_action(
          break;
       case MENU_ACTION_START:
          /* Playlist thumbnail fullscreen toggle */
-         if (rgui->is_playlist || (rgui->is_quick_menu && !rgui_is_running_quick_menu()))
+         if (rgui->is_playlist || (rgui->is_quick_menu && !menu_is_running_quick_menu()))
          {
             settings_t *settings = config_get_ptr();
 
@@ -7651,7 +7637,7 @@ static enum menu_action rgui_parse_menu_entry_action(
          break;
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
-         if (rgui->show_fs_thumbnail && (rgui->is_quick_menu && !rgui_is_running_quick_menu()))
+         if (rgui->show_fs_thumbnail && (rgui->is_quick_menu && !menu_is_running_quick_menu()))
             new_action = MENU_ACTION_NOOP;
          break;
       default:

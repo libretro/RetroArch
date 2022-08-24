@@ -1008,6 +1008,8 @@ size_t menu_update_fullscreen_thumbnail_label(
       char *s, size_t len,
       bool is_quick_menu, size_t playlist_index);
 
+bool menu_is_running_quick_menu(void);
+
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 
 RETRO_END_DECLS
