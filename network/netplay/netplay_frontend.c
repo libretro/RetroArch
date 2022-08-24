@@ -99,7 +99,7 @@
 #endif
 
 #define RECV(buf, sz) \
-   recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz), false); \
+   recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz)); \
    if (recvd >= 0) \
    { \
       if (recvd < (ssize_t) (sz)) \
@@ -1838,7 +1838,7 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
 
       /* We cannot use the RECV macro here as we need to ALWAYS free sram_buf. */
       recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd,
-         sram_buf, remote_sram_size, false);
+         sram_buf, remote_sram_size);
       if (recvd < 0)
       {
          free(sram_buf);
@@ -2362,13 +2362,16 @@ bool netplay_send_flush(struct socket_buffer *sbuf, int sockfd, bool block)
  *
  * Receive buffered or fresh data.
  *
- * Returns number of bytes returned, which may be short or 0, or -1 on error.
+ * Returns number of bytes returned, which may be short, 0, or -1 on error.
  */
-ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf,
-   size_t len, bool block)
+ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd,
+      void *buf, size_t len)
 {
    ssize_t recvd;
    bool error    = false;
+
+   if (buf_used(sbuf) >= (sbuf->bufsz - 1))
+      return 0;
 
    /* Receive whatever we can into the buffer */
    if (sbuf->end >= sbuf->start)
@@ -2385,14 +2388,18 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf,
       if (sbuf->end >= sbuf->bufsz)
       {
          sbuf->end = 0;
-         error     = false;
-         recvd     = socket_receive_all_nonblocking(
-               sockfd, &error, sbuf->data, sbuf->start - 1);
 
-         if (recvd < 0 || error)
-            return -1;
+         if (sbuf->start > 1)
+         {
+            error = false;
+            recvd = socket_receive_all_nonblocking(sockfd, &error,
+               sbuf->data, sbuf->start - 1);
 
-         sbuf->end += recvd;
+            if (recvd < 0 || error)
+               return -1;
+
+            sbuf->end += recvd;
+         }
       }
    }
    else
@@ -2411,6 +2418,7 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf,
    if (sbuf->end >= sbuf->read || (sbuf->bufsz - sbuf->read) >= len)
    {
       size_t unread = buf_unread(sbuf);
+
       if (len <= unread)
       {
          memcpy(buf, sbuf->data + sbuf->read, len);
@@ -2420,7 +2428,7 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf,
          recvd = len;
 
       }
-      else
+      else if (unread > 0)
       {
          memcpy(buf, sbuf->data + sbuf->read, unread);
          sbuf->read += unread;
@@ -2428,30 +2436,22 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf,
             sbuf->read = 0;
          recvd = unread;
       }
+      else
+         recvd = 0;
    }
    else
    {
       /* Our read goes around the edge */
-      size_t chunka = sbuf->bufsz - sbuf->read,
-             pchunklen = len - chunka,
-             chunkb = (pchunklen >= sbuf->end) ? sbuf->end : pchunklen;
+      size_t chunka   = sbuf->bufsz - sbuf->read;
+      size_t chunkb   = ((len - chunka) > sbuf->end) ? sbuf->end :
+         (len - chunka);
+
       memcpy(buf, sbuf->data + sbuf->read, chunka);
-      memcpy((unsigned char *) buf + chunka, sbuf->data, chunkb);
+      if (chunkb > 0)
+         memcpy((unsigned char*)buf + chunka, sbuf->data, chunkb);
+
       sbuf->read = chunkb;
       recvd      = chunka + chunkb;
-   }
-
-   /* Perhaps block for more data */
-   if (block)
-   {
-      sbuf->start = sbuf->read;
-      if (recvd < 0 || recvd < (ssize_t) len)
-      {
-         if (!socket_receive_all_blocking(
-                  sockfd, (unsigned char *)buf + recvd, len - recvd))
-            return -1;
-         recvd = len;
-      }
    }
 
    return recvd;
@@ -5157,7 +5157,7 @@ static void answer_ping(netplay_t *netplay,
 
 #undef RECV
 #define RECV(buf, sz) \
-   recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz), false); \
+   recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz)); \
    if (recvd >= 0) \
    { \
       if (recvd < (ssize_t) (sz)) \
