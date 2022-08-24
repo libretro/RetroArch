@@ -77,58 +77,44 @@ static struct magic_entry MAGIC_NUMBERS[] = {
 /**
  * Given a filename and position, find the associated disc number.
  */
-int cue_find_disc_number(const char* str1, int index)
+static int cue_find_disc_number(const char* str1, int index)
 {
-   char disc;
-   int disc_number = 0;
+   char disc       = str1[index + 6];
 
-   disc = str1[index + 6];
-
-   switch(disc)
+   switch (disc)
    {
       case 'a':
       case 'A':
-         disc_number = 1;
-         break;
+         return 1;
       case 'b':
       case 'B':
-         disc_number = 2;
-         break;
+         return 2;
       case 'c':
       case 'C':
-         disc_number = 3;
-         break;
+         return 3;
       case 'd':
       case 'D':
-         disc_number = 4;
-         break;
+         return 4;
       case 'e':
       case 'E':
-         disc_number = 5;
-         break;
+         return 5;
       case 'f':
       case 'F':
-         disc_number = 6;
-         break;
+         return 6;
       case 'g':
       case 'G':
-         disc_number = 7;
-         break;
+         return 7;
       case 'h':
       case 'H':
-         disc_number = 8;
-         break;
+         return 8;
       case 'i':
       case 'I':
-         disc_number = 9;
-         break;
+         return 9;
       default:
-         disc_number = disc - '0';
+         if ((disc - '0') >= 1)
+            return (disc - '0');
          break;
    }
-
-   if (disc_number >= 1)
-      return disc_number;
 
    return 0;
 }
@@ -136,14 +122,10 @@ int cue_find_disc_number(const char* str1, int index)
 /**
  * Given a title and filename, append the appropriate disc number to it.
  */
-void cue_append_multi_disc_suffix(char * str1, const char *filename)
+static void cue_append_multi_disc_suffix(char * str1, const char *filename)
 {
-   char *dest = str1;
-   int result = 0;
-   int disc_number = 0;
-
-   /** check multi-disc and insert suffix **/
-   result = string_find_index_substring_string(filename, "(Disc ");
+   /* Check multi-disc and insert suffix */
+   int result = string_find_index_substring_string(filename, "(Disc ");
    if (result < 0)
       result = string_find_index_substring_string(filename, "(disc ");
    if (result < 0)
@@ -152,9 +134,10 @@ void cue_append_multi_disc_suffix(char * str1, const char *filename)
       result = string_find_index_substring_string(filename, "(disk ");
    if (result >= 0)
    {
-      disc_number = cue_find_disc_number(filename, result);
+      char      *dest = str1;
+      int disc_number = cue_find_disc_number(filename, result);
       if (disc_number > 0)
-         sprintf(dest+strlen(dest), "-%i", disc_number - 1);
+         sprintf(dest + strlen(dest), "-%i", disc_number - 1);
    }
 }
 
@@ -727,10 +710,9 @@ int detect_dc_game(intfstream_t *fd, char *game_id, const char *filename)
          index = string_index_last_occurance(raw_game_id, hyphen);
          if (index < 0)
             return false;
-         else
-            size_t_var = (size_t)index;
+         size_t_var           = (size_t)index;
          strncpy(lgame_id, &raw_game_id[0], size_t_var);
-         lgame_id[index] = '\0';
+         lgame_id[index]      = '\0';
          strncpy(rgame_id, &raw_game_id[index + 1], length - 1);
          rgame_id[length - 1] = '\0';
          strcat(game_id, lgame_id);
@@ -751,7 +733,7 @@ int detect_dc_game(intfstream_t *fd, char *game_id, const char *filename)
          else
          {
             strncpy(lgame_id, raw_game_id, 7);
-            lgame_id[7] = '\0';
+            lgame_id[7]          = '\0';
             strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
             rgame_id[length - 1] = '\0';
             strcat(game_id, lgame_id);
@@ -765,7 +747,7 @@ int detect_dc_game(intfstream_t *fd, char *game_id, const char *filename)
    else if (!strcmp(check_prefix_t, "T"))
    {
       strncpy(lgame_id, raw_game_id, 1);
-      lgame_id[1] = '\0';
+      lgame_id[1]          = '\0';
       strncpy(rgame_id, &raw_game_id[1], length - 1);
       rgame_id[length - 1] = '\0';
       sprintf(pre_game_id, "%s%s%s", lgame_id, hyphen_str, rgame_id);
@@ -776,11 +758,10 @@ int detect_dc_game(intfstream_t *fd, char *game_id, const char *filename)
          index = string_index_last_occurance(pre_game_id, hyphen);
          if (index < 0)
             return false;
-         else
-            size_t_var = (size_t)index;
+         size_t_var                  = (size_t)index;
          strncpy(lgame_id, pre_game_id, size_t_var);
-         lgame_id[index] = '\0';
-         length_recalc   = strlen(pre_game_id);
+         lgame_id[index]             = '\0';
+         length_recalc               = strlen(pre_game_id);
          strncpy(rgame_id, &pre_game_id[length_recalc - 2], length_recalc - 1);
          rgame_id[length_recalc - 1] = '\0';
          strcat(game_id, lgame_id);
@@ -850,7 +831,7 @@ int detect_dc_game(intfstream_t *fd, char *game_id, const char *filename)
       else
       {
          strncpy(lgame_id, raw_game_id, 8);
-         lgame_id[8] = '\0';
+         lgame_id[8]          = '\0';
          strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
          rgame_id[length - 1] = '\0';
          strcat(game_id, lgame_id);
@@ -1060,7 +1041,7 @@ int cue_find_track(const char *cue_path, bool first,
 
    tmp_token[0] = '\0';
 
-   rv = -EINVAL;
+   rv = -1;
 
    while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
@@ -1153,15 +1134,14 @@ error:
       intfstream_close(fd);
       free(fd);
    }
-   return -errno;
+   return -1;
 }
 
 bool cue_next_file(intfstream_t *fd,
-      const char *cue_path, char *path, uint64_t max_len)
+      const char *cue_path, char *s, uint64_t len)
 {
    char tmp_token[MAX_TOKEN_LEN];
    char cue_dir[PATH_MAX_LENGTH];
-   bool rv                    = false;
    cue_dir[0]                 = '\0';
 
    fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
@@ -1173,24 +1153,22 @@ bool cue_next_file(intfstream_t *fd,
       if (string_is_equal_noncase(tmp_token, "FILE"))
       {
          task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
-         fill_pathname_join_special(path, cue_dir,
-               tmp_token, (size_t)max_len);
-         rv = true;
-         break;
+         fill_pathname_join_special(s, cue_dir, tmp_token, (size_t)len);
+         return true;
       }
    }
 
-   return rv;
+   return false;
 }
 
 int gdi_find_track(const char *gdi_path, bool first,
       char *track_path, uint64_t max_len)
 {
-   int rv;
    intfstream_info_t info;
    char tmp_token[MAX_TOKEN_LEN];
    intfstream_t *fd  = NULL;
    uint64_t largest  = 0;
+   int rv            = -1;
    int size          = -1;
    int mode          = -1;
    int64_t file_size = -1;
@@ -1215,8 +1193,6 @@ int gdi_find_track(const char *gdi_path, bool first,
 
    tmp_token[0] = '\0';
 
-   rv = -EINVAL;
-
    /* Skip track count */
    task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
 
@@ -1225,35 +1201,23 @@ int gdi_find_track(const char *gdi_path, bool first,
    {
       /* Offset */
       if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
          goto error;
-      }
 
       /* Mode */
       if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
          goto error;
-      }
 
       mode = atoi(tmp_token);
 
       /* Sector size */
       if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
          goto error;
-      }
 
       size = atoi(tmp_token);
 
       /* File name */
       if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
          goto error;
-      }
 
       /* Check for data track */
       if (!(mode == 0 && size == 2352))
@@ -1282,10 +1246,7 @@ int gdi_find_track(const char *gdi_path, bool first,
 
       /* Disc offset (not used?) */
       if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
          goto error;
-      }
    }
 
 clean:
@@ -1299,7 +1260,7 @@ error:
       intfstream_close(fd);
       free(fd);
    }
-   return -errno;
+   return -1;
 }
 
 bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
