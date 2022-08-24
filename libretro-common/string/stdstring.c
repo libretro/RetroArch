@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <compat/strl.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 
@@ -234,7 +235,7 @@ void word_wrap(
     * than line width */
    if (src_len < line_width)
    {
-      strcpy(dst, src);
+      strlcpy(dst, src, dst_size);
       return;
    }
 
@@ -256,7 +257,7 @@ void word_wrap(
           * length is less than line width */
          if (src_end - src <= line_width)
          {
-            strcpy(dst, src);
+            strlcpy(dst, src, dst_size);
             return;
          }
      }
@@ -283,7 +284,7 @@ void word_wrap(
              * length is less than line width */
             if (src_end - src < line_width)
             {
-               strcpy(dst, src);
+               strlcpy(dst, src, dst_size);
                return;
             }
          }
