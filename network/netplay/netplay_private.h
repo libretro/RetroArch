@@ -696,12 +696,10 @@ bool netplay_send_flush(struct socket_buffer *sbuf,
  *
  * Receive buffered or fresh data.
  *
- * Returns number of bytes returned, which may be 
- * short or 0, or -1 on error.
+ * Returns number of bytes returned, which may be short, 0, or -1 on error.
  */
-ssize_t netplay_recv(struct socket_buffer *sbuf,
-      int sockfd, void *buf,
-      size_t len, bool block);
+ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd,
+      void *buf, size_t len);
 
 /**
  * netplay_recv_reset
