@@ -412,6 +412,7 @@ typedef struct xmb_handle
 
    bool fullscreen_thumbnails_available;
    bool show_fullscreen_thumbnails;
+   bool want_fullscreen_thumbnails;
    bool skip_thumbnail_reset;
    bool show_mouse;
    bool show_screensaver;
@@ -1160,6 +1161,62 @@ static bool xmb_is_running_quick_menu(void)
           string_is_equal(entry.label, "state_slot");
 }
 
+static void xmb_update_fullscreen_thumbnail_label(xmb_handle_t *xmb)
+{
+   menu_entry_t selected_entry;
+   const char *thumbnail_label     = NULL;
+
+   char tmpstr[64];
+   tmpstr[0]                       = '\0';
+
+   /* > Get menu entry */
+   MENU_ENTRY_INIT(selected_entry);
+   selected_entry.path_enabled     = false;
+   selected_entry.value_enabled    = false;
+   selected_entry.sublabel_enabled = false;
+   menu_entry_get(&selected_entry, 0, menu_navigation_get_selection(), NULL, true);
+
+   /* > Get entry label */
+   if (!string_is_empty(selected_entry.rich_label))
+      thumbnail_label = selected_entry.rich_label;
+   /* > State slot label */
+   else if (xmb->is_quick_menu && (
+            string_is_equal(selected_entry.label, "state_slot") ||
+            string_is_equal(selected_entry.label, "loadstate") ||
+            string_is_equal(selected_entry.label, "savestate")
+         ))
+   {
+      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+            config_get_ptr()->ints.state_slot);
+      thumbnail_label = tmpstr;
+   }
+   else if (string_to_unsigned(selected_entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
+   {
+      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+            string_to_unsigned(selected_entry.path));
+      thumbnail_label = tmpstr;
+   }
+   /* > Quick Menu playlist label */
+   else if (xmb->is_quick_menu)
+   {
+      const struct playlist_entry *entry = NULL;
+      playlist_get_index(playlist_get_cached(), xmb->playlist_index, &entry);
+      if (entry)
+         thumbnail_label = entry->label;
+   }
+   else
+      thumbnail_label = selected_entry.path;
+
+   /* > Sanity check */
+   if (!string_is_empty(thumbnail_label))
+      strlcpy(
+            xmb->fullscreen_thumbnail_label,
+            thumbnail_label,
+            sizeof(xmb->fullscreen_thumbnail_label));
+}
+
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings = config_get_ptr();
@@ -1236,6 +1293,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
                      sizeof(xmb->savestate_thumbnail_file_path));
 
                xmb->fullscreen_thumbnails_available = true;
+               xmb_update_fullscreen_thumbnail_label(xmb);
             }
          }
       }
@@ -4053,9 +4111,6 @@ static void xmb_show_fullscreen_thumbnails(
    uintptr_t              alpha_tag   = (uintptr_t)
       &xmb->fullscreen_thumbnail_alpha;
 
-   char tmpstr[64];
-   tmpstr[0] = '\0';
-
    /* We can only enable fullscreen thumbnails if
     * current selection has at least one valid thumbnail
     * and all thumbnails for current selection are already
@@ -4114,53 +4169,7 @@ static void xmb_show_fullscreen_thumbnails(
     * (used as title when fullscreen thumbnails
     * are shown) */
    xmb->fullscreen_thumbnail_label[0] = '\0';
-
-   /* > Get menu entry */
-   MENU_ENTRY_INIT(selected_entry);
-   selected_entry.path_enabled     = false;
-   selected_entry.value_enabled    = false;
-   selected_entry.sublabel_enabled = false;
-   menu_entry_get(&selected_entry, 0, selection, NULL, true);
-
-   /* > Get entry label */
-   if (!string_is_empty(selected_entry.rich_label))
-      thumbnail_label = selected_entry.rich_label;
-   /* > State slot label */
-   else if (xmb->is_quick_menu && (
-            string_is_equal(selected_entry.label, "state_slot") ||
-            string_is_equal(selected_entry.label, "loadstate") ||
-            string_is_equal(selected_entry.label, "savestate")
-         ))
-   {
-      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
-            config_get_ptr()->ints.state_slot);
-      thumbnail_label = tmpstr;
-   }
-   else if (string_to_unsigned(selected_entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
-   {
-      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
-            string_to_unsigned(selected_entry.path));
-      thumbnail_label = tmpstr;
-   }
-   /* > Quick Menu playlist label */
-   else if (xmb->is_quick_menu)
-   {
-      const struct playlist_entry *entry = NULL;
-      playlist_get_index(playlist_get_cached(), xmb->playlist_index, &entry);
-      if (entry)
-         thumbnail_label = entry->label;
-   }
-   else
-      thumbnail_label = selected_entry.path;
-
-   /* > Sanity check */
-   if (!string_is_empty(thumbnail_label))
-      strlcpy(
-            xmb->fullscreen_thumbnail_label,
-            thumbnail_label,
-            sizeof(xmb->fullscreen_thumbnail_label));
+   xmb_update_fullscreen_thumbnail_label(xmb);
 
    /* Configure fade in animation */
    animation_entry.easing_enum  = EASING_OUT_QUAD;
@@ -4184,42 +4193,14 @@ static enum menu_action xmb_parse_menu_entry_action(
 {
    enum menu_action new_action = action;
 
-   /* If fullscreen thumbnail view is active, any
-    * valid menu action will disable it... */
-   if (xmb->show_fullscreen_thumbnails)
-   {
-      if (action != MENU_ACTION_NOOP && action != MENU_ACTION_TOGGLE)
-      {
-         xmb_hide_fullscreen_thumbnails(xmb, true);
-
-         /* ...and any action other than Select/OK
-          * is ignored
-          * > We allow pass-through of Select/OK since
-          *   users may want to run content directly
-          *   after viewing fullscreen thumbnails,
-          *   and having to press RetroPad A or the Return
-          *   key twice is navigationally confusing
-          * > Note that we can only do this for non-pointer
-          *   input
-          * > Note that we don't do this when viewing a
-          *   file list, since there is no quick menu
-          *   in this case - i.e. content loads directly,
-          *   and a sudden transition from fullscreen
-          *   thumbnail to content is jarring... */
-         if (xmb->is_file_list ||
-             xmb->is_quick_menu ||
-             xmb->is_state_slot ||
-               ((action != MENU_ACTION_SELECT) &&
-                (action != MENU_ACTION_OK)))
-            return MENU_ACTION_NOOP;
-      }
-   }
-
    /* Scan user inputs */
    switch (action)
    {
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
+         if (xmb->show_fullscreen_thumbnails && (xmb->is_quick_menu && !xmb_is_running_quick_menu()))
+            return MENU_ACTION_NOOP;
+
          /* Check whether left/right action will
           * trigger a tab switch event */
          if (xmb->depth == 1)
@@ -4256,26 +4237,35 @@ static enum menu_action xmb_parse_menu_entry_action(
 
          /* If this is a menu with thumbnails, attempt
           * to show fullscreen thumbnail view */
-         if (xmb->fullscreen_thumbnails_available)
+         if (xmb->fullscreen_thumbnails_available &&
+               !xmb->show_fullscreen_thumbnails)
          {
-            size_t selection = menu_navigation_get_selection();
-
-            /* Before showing fullscreen thumbnails, must
-             * ensure that any existing fullscreen thumbnail
-             * view is disabled... */
             xmb_hide_fullscreen_thumbnails(xmb, false);
-            if (xmb->fullscreen_thumbnails_available)
-               xmb_show_fullscreen_thumbnails(xmb, selection);
+            xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
+            xmb->want_fullscreen_thumbnails = true;
             new_action = MENU_ACTION_NOOP;
+         }
+         else if (xmb->show_fullscreen_thumbnails || xmb->want_fullscreen_thumbnails)
+         {
+            xmb_hide_fullscreen_thumbnails(xmb, true);
+            xmb->want_fullscreen_thumbnails = false;
          }
          break;
       case MENU_ACTION_SCAN:
          if (xmb->fullscreen_thumbnails_available &&
+               !xmb->show_fullscreen_thumbnails &&
                ((xmb->is_state_slot) ||
                 (xmb->is_quick_menu && !string_is_empty(xmb->savestate_thumbnail_file_path))))
          {
             xmb_hide_fullscreen_thumbnails(xmb, false);
             xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
+            xmb->want_fullscreen_thumbnails = true;
+            new_action = MENU_ACTION_NOOP;
+         }
+         else if (xmb->show_fullscreen_thumbnails && !xmb->is_playlist)
+         {
+            xmb_hide_fullscreen_thumbnails(xmb, true);
+            xmb->want_fullscreen_thumbnails = false;
             new_action = MENU_ACTION_NOOP;
          }
          break;
@@ -4292,10 +4282,32 @@ static enum menu_action xmb_parse_menu_entry_action(
             xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
             new_action = MENU_ACTION_NOOP;
          }
+
+         if (xmb->show_fullscreen_thumbnails || xmb->want_fullscreen_thumbnails)
+         {
+            xmb_hide_fullscreen_thumbnails(xmb, true);
+            xmb->want_fullscreen_thumbnails = false;
+            if (!xmb->is_state_slot && !xmb->is_playlist)
+               return MENU_ACTION_NOOP;
+         }
          break;
       case MENU_ACTION_CANCEL:
          if (xmb->is_state_slot)
             xmb->skip_thumbnail_reset = true;
+
+         if (xmb->show_fullscreen_thumbnails || xmb->want_fullscreen_thumbnails)
+         {
+            xmb_hide_fullscreen_thumbnails(xmb, true);
+            xmb->want_fullscreen_thumbnails = false;
+            return MENU_ACTION_NOOP;
+         }
+         break;
+      case MENU_ACTION_UP:
+      case MENU_ACTION_DOWN:
+      case MENU_ACTION_SCROLL_UP:
+      case MENU_ACTION_SCROLL_DOWN:
+         if (xmb->show_fullscreen_thumbnails && xmb->is_quick_menu)
+            return MENU_ACTION_NOOP;
          break;
       default:
          /* In all other cases, pass through input
@@ -4792,7 +4804,7 @@ static void xmb_draw_fullscreen_thumbnails(
       settings_t *settings, size_t selection)
 {
    /* Check whether fullscreen thumbnails are visible */
-   if (xmb->fullscreen_thumbnail_alpha > 0.0f)
+   if (xmb->fullscreen_thumbnail_alpha > 0.0f || xmb->want_fullscreen_thumbnails)
    {
       int header_margin;
       int thumbnail_box_width;
@@ -4902,7 +4914,9 @@ static void xmb_draw_fullscreen_thumbnails(
        *   can never happen...
        * > Return instead of error to keep fullscreen
        *   mode after menu/fullscreen toggle */
-      if (num_thumbnails < 1)
+      if (num_thumbnails < 1 &&
+            (right_thumbnail->status == GFX_THUMBNAIL_STATUS_MISSING &&
+             left_thumbnail->status  == GFX_THUMBNAIL_STATUS_MISSING))
          return;
 
       /* Get base thumbnail dimensions + draw positions */
@@ -5386,6 +5400,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       else if (xmb->is_quick_menu && !libretro_running)
          xmb->fullscreen_thumbnails_available = true;
    }
+
+   /* Allow browsing playlist in fullscreen thumbnail mode */
+   if ((xmb->is_playlist || xmb->is_state_slot) &&
+         xmb->show_fullscreen_thumbnails &&
+         xmb->fullscreen_thumbnails_available &&
+         menu_navigation_get_selection() != xmb->fullscreen_thumbnail_selection)
+      xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
+   else if (!xmb->show_fullscreen_thumbnails &&
+         xmb->fullscreen_thumbnails_available &&
+         xmb->want_fullscreen_thumbnails)
+      xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
 
    /* Note: This is incredibly ugly, but there are
     * so many combinations here that we would go insane

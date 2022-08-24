@@ -2571,6 +2571,7 @@ bool command_event(enum event_command cmd, void *data)
             const char *core_path          = "DETECT";
             size_t *playlist_index         = (size_t*)data;
             struct playlist_entry entry    = {0};
+            unsigned i                     = 0;
 
             /* the update function reads our entry as const,
              * so these casts are safe */
@@ -2580,9 +2581,11 @@ bool command_event(enum event_command cmd, void *data)
             command_playlist_update_write(
                   NULL, *playlist_index, &entry);
 
+            /* Update playlist metadata */
+            menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, &i);
+
             runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             break;
-
          }
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
