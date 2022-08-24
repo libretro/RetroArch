@@ -104,7 +104,7 @@
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <menu key="submenu" title="Audio Options" id="661">
                                     <items>
-                                        <menuItem title="Mute Toggle" tag="11" id="663">
+                                        <menuItem title="Mute Toggle" tag="22" id="663">
                                             <modifierMask key="keyEquivalentModifierMask"/>
                                             <connections>
                                                 <action selector="basicEvent:" target="494" id="664"/>
@@ -185,7 +185,7 @@
                                     <action selector="basicEvent:" target="494" id="627"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Take Screenshot" tag="10" id="658">
+                            <menuItem title="Take Screenshot" tag="21" id="658">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="basicEvent:" target="494" id="659"/>
