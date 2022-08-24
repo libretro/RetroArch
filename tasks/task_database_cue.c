@@ -536,9 +536,9 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    check_suffix_50[2] = '\0';
 
    /** redump serials are built differently for each prefix **/
-   if (!strcmp(check_prefix_t_hyp, "T-"))
+   if (check_prefix_t_hyp[0] == 'T' && check_prefix_t_hyp[1] == '-')
    {
-      if (!strcmp(region_id, "U") || !strcmp(region_id, "J"))
+      if (region_id[0] == 'U' || region_id[0] == 'J')
       {
          if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
             return false;
@@ -559,7 +559,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
-   else if (!strcmp(check_prefix_g_hyp, "G-"))
+   else if (check_prefix_g_hyp[0] == 'G' && check_prefix_g_hyp[1] == '-')
    {
       if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
          return false;
@@ -568,9 +568,12 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
-   else if (!strcmp(check_prefix_mk_hyp, "MK-"))
+   else if (check_prefix_mk_hyp[0] == 'M'
+         && check_prefix_mk_hyp[1] == 'K'
+         && check_prefix_mk_hyp[2] == '-')
    {
-      if (!strcmp(check_suffix_50, "50"))
+      if (     check_suffix_50[0] == '5' 
+            && check_suffix_50[1] == '0')
       {
          strncpy(lgame_id, &pre_game_id[3], 4);
          lgame_id[4]     = '\0';
@@ -656,7 +659,9 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    switch (region_id)
    {
       case 'U':
-         if (strcmp(check_prefix_mk_hyp, "MK-") == 0)
+         if (     check_prefix_mk_hyp[0] == 'M'
+               && check_prefix_mk_hyp[1] == 'K'
+               && check_prefix_mk_hyp[2] == '-')
          {
             strncpy(s, &raw_game_id[3], length - 3);
             s[length - 3] = '\0';
@@ -671,7 +676,8 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       case 'E':
          strncpy(lgame_id, &raw_game_id[0], 2);
          lgame_id[2] = '\0';
-         if (strcmp(check_suffix_5, "-5") == 0 || strcmp(check_suffix_50, "50") == 0)
+         if (     !strcmp(check_suffix_5, "-5") 
+               || !strcmp(check_suffix_50, "50"))
          {
             strncpy(rgame_id, &raw_game_id[2], length - 4);
             rgame_id[length - 4] = '\0';
@@ -753,7 +759,8 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    check_prefix_mk_hyp[3] = '\0';
 
    /** redump serials are built differently for each prefix **/
-   if (!strcmp(check_prefix_t_hyp, "T-"))
+   if (     check_prefix_t_hyp[0] == 'T'
+         && check_prefix_t_hyp[1] == '-')
    {
       if (total_hyphens >= 2)
       {
@@ -790,7 +797,7 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
-   else if (!strcmp(check_prefix_t, "T"))
+   else if (check_prefix_t[0] == 'T')
    {
       strncpy(lgame_id, raw_game_id, 1);
       lgame_id[1]          = '\0';
@@ -841,7 +848,10 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       }
       return true;
    }
-   else if (!strcmp(check_prefix_hdr_hyp, "HDR-"))
+   else if (check_prefix_hdr_hyp[0] == 'H'
+         && check_prefix_hdr_hyp[1] == 'D'
+         && check_prefix_hdr_hyp[2] == 'R'
+         && check_prefix_hdr_hyp[3] == '-')
    {
       if (total_hyphens >= 2)
       {
@@ -863,7 +873,9 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
-   else if (!strcmp(check_prefix_mk_hyp, "MK-"))
+   else if (check_prefix_mk_hyp[0] == 'M'
+         && check_prefix_mk_hyp[1] == 'K'
+         && check_prefix_mk_hyp[2] == '-')
    {
 
       if (length <= 8)
