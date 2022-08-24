@@ -333,21 +333,22 @@ static ui_application_t ui_application_cocoa = {
 };
 
 @interface CommandPerformer : NSObject
-@end // @interface CommandPerformer
-
-@implementation CommandPerformer {
+{
    void *data;
    enum event_command cmd;
 }
+@end // @interface CommandPerformer
 
-- (id)initWithData:(void *)data command:(enum event_command)cmd
+@implementation CommandPerformer
+
+- (id)initWithData:(void *)userdata command:(enum event_command)command
 {
    self = [super init];
    if (!self)
       return self;
 
-   self->data = data;
-   self->cmd = cmd;
+   self->data = userdata;
+   self->cmd  = command;
 
    return self;
 }
