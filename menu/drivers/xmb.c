@@ -1161,62 +1161,6 @@ static bool xmb_is_running_quick_menu(void)
           string_is_equal(entry.label, "state_slot");
 }
 
-static void xmb_update_fullscreen_thumbnail_label(xmb_handle_t *xmb)
-{
-   menu_entry_t selected_entry;
-   const char *thumbnail_label     = NULL;
-
-   char tmpstr[64];
-   tmpstr[0]                       = '\0';
-
-   /* > Get menu entry */
-   MENU_ENTRY_INIT(selected_entry);
-   selected_entry.path_enabled     = false;
-   selected_entry.value_enabled    = false;
-   selected_entry.sublabel_enabled = false;
-   menu_entry_get(&selected_entry, 0, menu_navigation_get_selection(), NULL, true);
-
-   /* > Get entry label */
-   if (!string_is_empty(selected_entry.rich_label))
-      thumbnail_label = selected_entry.rich_label;
-   /* > State slot label */
-   else if (xmb->is_quick_menu && (
-            string_is_equal(selected_entry.label, "state_slot") ||
-            string_is_equal(selected_entry.label, "loadstate") ||
-            string_is_equal(selected_entry.label, "savestate")
-         ))
-   {
-      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
-            config_get_ptr()->ints.state_slot);
-      thumbnail_label = tmpstr;
-   }
-   else if (string_to_unsigned(selected_entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
-   {
-      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
-            string_to_unsigned(selected_entry.path));
-      thumbnail_label = tmpstr;
-   }
-   /* > Quick Menu playlist label */
-   else if (xmb->is_quick_menu)
-   {
-      const struct playlist_entry *entry = NULL;
-      playlist_get_index(playlist_get_cached(), xmb->playlist_index, &entry);
-      if (entry)
-         thumbnail_label = entry->label;
-   }
-   else
-      thumbnail_label = selected_entry.path;
-
-   /* > Sanity check */
-   if (!string_is_empty(thumbnail_label))
-      strlcpy(
-            xmb->fullscreen_thumbnail_label,
-            thumbnail_label,
-            sizeof(xmb->fullscreen_thumbnail_label));
-}
-
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings = config_get_ptr();
@@ -1293,7 +1237,11 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
                      sizeof(xmb->savestate_thumbnail_file_path));
 
                xmb->fullscreen_thumbnails_available = true;
-               xmb_update_fullscreen_thumbnail_label(xmb);
+               menu_update_fullscreen_thumbnail_label(
+                     xmb->fullscreen_thumbnail_label,
+                     sizeof(xmb->fullscreen_thumbnail_label),
+                     xmb->is_quick_menu,
+                     xmb->playlist_index);
             }
          }
       }
@@ -4168,8 +4116,12 @@ static void xmb_show_fullscreen_thumbnails(
    /* Cache selected entry label
     * (used as title when fullscreen thumbnails
     * are shown) */
-   xmb->fullscreen_thumbnail_label[0] = '\0';
-   xmb_update_fullscreen_thumbnail_label(xmb);
+   if (menu_update_fullscreen_thumbnail_label(
+         xmb->fullscreen_thumbnail_label,
+         sizeof(xmb->fullscreen_thumbnail_label),
+         xmb->is_quick_menu,
+         xmb->playlist_index) == 0)
+      xmb->fullscreen_thumbnail_label[0] = '\0';
 
    /* Configure fade in animation */
    animation_entry.easing_enum  = EASING_OUT_QUAD;

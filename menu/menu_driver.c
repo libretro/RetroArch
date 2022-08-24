@@ -8217,3 +8217,59 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
    return true;
 }
+
+size_t menu_update_fullscreen_thumbnail_label(
+      char *s, size_t len,
+      bool is_quick_menu, size_t playlist_index)
+{
+   menu_entry_t selected_entry;
+   const char *thumbnail_label     = NULL;
+
+   char tmpstr[64];
+   tmpstr[0]                       = '\0';
+
+   /* > Get menu entry */
+   MENU_ENTRY_INIT(selected_entry);
+   selected_entry.path_enabled     = false;
+   selected_entry.value_enabled    = false;
+   selected_entry.sublabel_enabled = false;
+   menu_entry_get(&selected_entry, 0, menu_navigation_get_selection(), NULL, true);
+
+   /* > Get entry label */
+   if (!string_is_empty(selected_entry.rich_label))
+      thumbnail_label = selected_entry.rich_label;
+   /* > State slot label */
+   else if (is_quick_menu && (
+            string_is_equal(selected_entry.label, "state_slot") ||
+            string_is_equal(selected_entry.label, "loadstate") ||
+            string_is_equal(selected_entry.label, "savestate")
+         ))
+   {
+      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+            config_get_ptr()->ints.state_slot);
+      thumbnail_label = tmpstr;
+   }
+   else if (string_to_unsigned(selected_entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
+   {
+      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+            string_to_unsigned(selected_entry.path));
+      thumbnail_label = tmpstr;
+   }
+   /* > Quick Menu playlist label */
+   else if (is_quick_menu)
+   {
+      const struct playlist_entry *entry = NULL;
+      playlist_get_index(playlist_get_cached(), playlist_index, &entry);
+      if (entry)
+         thumbnail_label = entry->label;
+   }
+   else
+      thumbnail_label = selected_entry.path;
+
+   /* > Sanity check */
+   if (!string_is_empty(thumbnail_label))
+      return strlcpy(s, thumbnail_label, len);
+   return 0;
+}

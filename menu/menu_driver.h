@@ -1004,6 +1004,10 @@ bool menu_driver_iterate(
       enum menu_action action,
       retro_time_t current_time);
 
+size_t menu_update_fullscreen_thumbnail_label(
+      char *s, size_t len,
+      bool is_quick_menu, size_t playlist_index);
+
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 
 RETRO_END_DECLS
