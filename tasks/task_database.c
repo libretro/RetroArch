@@ -82,13 +82,13 @@ int gdi_find_track(const char *gdi_path, bool first,
 bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
       char *path, uint64_t max_len);
 int detect_system(intfstream_t *fd, const char** system_name, const char *filename);
-int detect_ps1_game(intfstream_t *fd, char *serial, const char *filename);
-int detect_psp_game(intfstream_t *fd, char *serial, const char *filename);
-int detect_gc_game(intfstream_t *fd, char *serial, const char *filename);
-int detect_scd_game(intfstream_t *fd, char *serial, const char *filename);
-int detect_sat_game(intfstream_t *fd, char *serial, const char *filename);
-int detect_dc_game(intfstream_t *fd, char *serial, const char *filename);
-int detect_wii_game(intfstream_t *fd, char *serial, const char *filename);
+int detect_ps1_game(intfstream_t *fd, char *serial, size_t serial_len, const char *filename);
+int detect_psp_game(intfstream_t *fd, char *serial, size_t serial_len, const char *filename);
+int detect_gc_game(intfstream_t *fd,  char *serial, size_t serial_len, const char *filename);
+int detect_scd_game(intfstream_t *fd, char *serial, size_t serial_len, const char *filename);
+int detect_sat_game(intfstream_t *fd, char *serial, size_t serial_len, const char *filename);
+int detect_dc_game(intfstream_t *fd,  char *serial, size_t serial_len, const char *filename);
+int detect_wii_game(intfstream_t *fd, char *serial, size_t serial_len, const char *filename);
 
 static const char *database_info_get_current_name(
       database_state_handle_t *handle)
@@ -148,44 +148,44 @@ static int task_database_iterate_start(retro_task_t *task,
    return 0;
 }
 
-static int intfstream_get_serial(intfstream_t *fd, char *serial, const char *filename)
+static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_len, const char *filename)
 {
    const char *system_name = NULL;
    if (detect_system(fd, &system_name, filename) >= 1)
    {
       if (string_is_equal(system_name, "Sony - PlayStation Portable"))
       {
-         if (detect_psp_game(fd, serial, filename) != 0)
+         if (detect_psp_game(fd, serial, serial_len, filename) != 0)
             return 1;
       }
       else if (string_is_equal(system_name, "Sony - PlayStation"))
       {
-         if (detect_ps1_game(fd, serial, filename) != 0)
+         if (detect_ps1_game(fd, serial, serial_len, filename) != 0)
             return 1;
       }
       else if (string_is_equal(system_name, "Nintendo - GameCube"))
       {
-         if (detect_gc_game(fd, serial, filename) != 0)
+         if (detect_gc_game(fd, serial, serial_len, filename) != 0)
             return 1;
       }
       else if (string_is_equal(system_name, "Sega - Mega-CD - Sega CD"))
       {
-         if (detect_scd_game(fd, serial, filename) != 0)
+         if (detect_scd_game(fd, serial, serial_len, filename) != 0)
             return 1;
       }
       else if (string_is_equal(system_name, "Sega - Saturn"))
       {
-         if (detect_sat_game(fd, serial, filename) != 0)
+         if (detect_sat_game(fd, serial, serial_len, filename) != 0)
             return 1;
       }
       else if (string_is_equal(system_name, "Sega - Dreamcast"))
       {
-         if (detect_dc_game(fd, serial, filename) != 0)
+         if (detect_dc_game(fd, serial, serial_len, filename) != 0)
             return 1;
       }
       else if (string_is_equal(system_name, "Nintendo - Wii"))
       {
-         if (detect_wii_game(fd, serial, filename) != 0)
+         if (detect_wii_game(fd, serial, serial_len, filename) != 0)
             return 1;
       }
    }
@@ -193,7 +193,7 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, const char *fil
 }
 
 static bool intfstream_file_get_serial(const char *name,
-      uint64_t offset, uint64_t size, char *serial)
+      uint64_t offset, uint64_t size, char *serial, size_t serial_len)
 {
    int rv;
    uint8_t *data     = NULL;
@@ -239,7 +239,7 @@ static bool intfstream_file_get_serial(const char *name,
       }
    }
 
-   rv = intfstream_get_serial(fd, serial, name);
+   rv = intfstream_get_serial(fd, serial, serial_len, name);
    intfstream_close(fd);
    free(fd);
    free(data);
@@ -251,7 +251,7 @@ error:
    return 0;
 }
 
-static int task_database_cue_get_serial(const char *name, char* serial)
+static int task_database_cue_get_serial(const char *name, char* serial, size_t serial_len)
 {
    char track_path[PATH_MAX_LENGTH];
    uint64_t offset                  = 0;
@@ -269,10 +269,10 @@ sizeof(track_path)) < 0)
       return 0;
    }
 
-   return intfstream_file_get_serial(track_path, offset, size, serial);
+   return intfstream_file_get_serial(track_path, offset, size, serial, serial_len);
 }
 
-static int task_database_gdi_get_serial(const char *name, char* serial)
+static int task_database_gdi_get_serial(const char *name, char* serial, size_t serial_len)
 {
    char track_path[PATH_MAX_LENGTH];
 
@@ -288,10 +288,10 @@ static int task_database_gdi_get_serial(const char *name, char* serial)
       return 0;
    }
 
-   return intfstream_file_get_serial(track_path, 0, SIZE_MAX, serial);
+   return intfstream_file_get_serial(track_path, 0, SIZE_MAX, serial, serial_len);
 }
 
-static int task_database_chd_get_serial(const char *name, char* serial)
+static int task_database_chd_get_serial(const char *name, char* serial, size_t serial_len)
 {
    int result;
    intfstream_t *fd = intfstream_open_chd_track(
@@ -302,7 +302,7 @@ static int task_database_chd_get_serial(const char *name, char* serial)
    if (!fd)
       return 0;
 
-   result = intfstream_get_serial(fd, serial, name);
+   result = intfstream_get_serial(fd, serial, serial_len, name);
    intfstream_close(fd);
    free(fd);
    return result;
@@ -547,7 +547,7 @@ static int task_database_iterate_playlist(
       case FILE_TYPE_CUE:
          task_database_cue_prune(db, name);
          db_state->serial[0] = '\0';
-         if (task_database_cue_get_serial(name, db_state->serial))
+         if (task_database_cue_get_serial(name, db_state->serial, sizeof(db_state->serial)))
             db->type = DATABASE_TYPE_SERIAL_LOOKUP;
          else
          {
@@ -560,7 +560,7 @@ static int task_database_iterate_playlist(
          db_state->serial[0] = '\0';
          /* There are no serial databases, so don't bother with
             serials at the moment */
-         if (0 && task_database_gdi_get_serial(name, db_state->serial))
+         if (0 && task_database_gdi_get_serial(name, db_state->serial, sizeof(db_state->serial)))
             db->type = DATABASE_TYPE_SERIAL_LOOKUP;
          else
          {
@@ -571,17 +571,17 @@ static int task_database_iterate_playlist(
       /* Consider Wii WBFS files similar to ISO files. */
       case FILE_TYPE_WBFS:
          db_state->serial[0] = '\0';
-         intfstream_file_get_serial(name, 0, SIZE_MAX, db_state->serial);
+         intfstream_file_get_serial(name, 0, SIZE_MAX, db_state->serial, sizeof(db_state->serial));
          db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
          break;
       case FILE_TYPE_ISO:
          db_state->serial[0] = '\0';
-         intfstream_file_get_serial(name, 0, SIZE_MAX, db_state->serial);
+         intfstream_file_get_serial(name, 0, SIZE_MAX, db_state->serial, sizeof(db_state->serial));
          db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
          break;
       case FILE_TYPE_CHD:
          db_state->serial[0] = '\0';
-         if (task_database_chd_get_serial(name, db_state->serial))
+         if (task_database_chd_get_serial(name, db_state->serial, sizeof(db_state->serial)))
             db->type         = DATABASE_TYPE_SERIAL_LOOKUP;
          else
          {
