@@ -2258,7 +2258,7 @@ void rcheevos_change_disc(const char* new_disc_path, bool initial_disc)
        * from other systems for games that leverage user-provided discs. */
       CHEEVOS_LOG(RCHEEVOS_TAG "No hash generated\n");
       hash_game_id = -1;
-      strcpy(hash, "[NO HASH]");
+      strlcpy(hash, "[NO HASH]", sizeof(hash));
    }
 
    if (hash_game_id)
