@@ -6530,9 +6530,7 @@ static void ozone_hide_fullscreen_thumbnails(ozone_handle_t *ozone, bool animate
 
 static void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
 {
-   menu_entry_t selected_entry;
    gfx_animation_ctx_entry_t animation_entry;
-   const char *thumbnail_label        = NULL;
    file_list_t *selection_buf         = menu_entries_get_selection_buf_ptr(0);
    uintptr_t alpha_tag                = (uintptr_t)&ozone->animations.fullscreen_thumbnail_alpha;
    uintptr_t scroll_tag               = (uintptr_t)selection_buf;
