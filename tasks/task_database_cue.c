@@ -547,20 +547,17 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          cue_append_multi_disc_suffix(s, filename);
          return true;
       }
-      else
-      {
-         if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
-            return false;
-         strncpy(lgame_id, pre_game_id, index);
-         lgame_id[index] = '\0';
-         _len            = strlcat(s, lgame_id, len);
-         s[_len  ]       = '-';
-         s[_len+1]       = '5';
-         s[_len+2]       = '0';
-         s[_len+3]       = '\0';
-         cue_append_multi_disc_suffix(s, filename);
-         return true;
-      }
+      if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
+         return false;
+      strncpy(lgame_id, pre_game_id, index);
+      lgame_id[index] = '\0';
+      _len            = strlcat(s, lgame_id, len);
+      s[_len  ]       = '-';
+      s[_len+1]       = '5';
+      s[_len+2]       = '0';
+      s[_len+3]       = '\0';
+      cue_append_multi_disc_suffix(s, filename);
+      return true;
    }
    else if (!strcmp(check_prefix_g_hyp, "G-"))
    {
@@ -585,13 +582,10 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          cue_append_multi_disc_suffix(s, filename);
          return true;
       }
-      else
-      {
-         strncpy(s, &pre_game_id[3], 4);
-         s[4] = '\0';
-         cue_append_multi_disc_suffix(s, filename);
-         return true;
-      }
+      strncpy(s, &pre_game_id[3], 4);
+      s[4] = '\0';
+      cue_append_multi_disc_suffix(s, filename);
+      return true;
    }
    else
    {
@@ -763,7 +757,7 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    {
       if (total_hyphens >= 2)
       {
-         index = string_index_last_occurance(raw_game_id, '-');
+         index                = string_index_last_occurance(raw_game_id, '-');
          if (index < 0)
             return false;
          size_t_var           = (size_t)index;
@@ -778,29 +772,23 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          cue_append_multi_disc_suffix(s, filename);
          return true;
       }
-      else
+      if (length <= 7)
       {
-         if (length <= 7)
-         {
-            strncpy(s, raw_game_id, 7);
-            s[7] = '\0';
-            cue_append_multi_disc_suffix(s, filename);
-            return true;
-         }
-         else
-         {
-            strncpy(lgame_id, raw_game_id, 7);
-            lgame_id[7]          = '\0';
-            strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
-            rgame_id[length - 1] = '\0';
-            _len                 = strlcat(s, lgame_id, len);
-	    s[_len  ]            = '-';
-	    s[_len+1]            = '\0';
-            strlcat(s, rgame_id, len);
-            cue_append_multi_disc_suffix(s, filename);
-            return true;
-         }
+         strncpy(s, raw_game_id, 7);
+         s[7] = '\0';
+         cue_append_multi_disc_suffix(s, filename);
+         return true;
       }
+      strncpy(lgame_id, raw_game_id, 7);
+      lgame_id[7]          = '\0';
+      strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
+      rgame_id[length - 1] = '\0';
+      _len                 = strlcat(s, lgame_id, len);
+      s[_len  ]            = '-';
+      s[_len+1]            = '\0';
+      strlcat(s, rgame_id, len);
+      cue_append_multi_disc_suffix(s, filename);
+      return true;
    }
    else if (!strcmp(check_prefix_t, "T"))
    {
@@ -816,7 +804,7 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
       if (total_hyphens_recalc >= 2)
       {
-         index = string_index_last_occurance(pre_game_id, '-');
+         index                       = string_index_last_occurance(pre_game_id, '-');
          if (index < 0)
             return false;
          size_t_var                  = (size_t)index;
@@ -826,11 +814,10 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          strncpy(rgame_id, &pre_game_id[length_recalc - 2], length_recalc - 1);
          rgame_id[length_recalc - 1] = '\0';
          _len                        = strlcat(s, lgame_id, len);
-	 s[_len  ]                   = '-';
-	 s[_len+1]                   = '\0';
+         s[_len  ]                   = '-';
+         s[_len+1]                   = '\0';
          strlcat(s, rgame_id, len);
          cue_append_multi_disc_suffix(s, filename);
-         return true;
       }
       else
       {
@@ -842,20 +829,17 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
             cue_append_multi_disc_suffix(s, filename);
             return true;
          }
-         else
-         {
-            strncpy(lgame_id, pre_game_id, 7);
-            lgame_id[7] = '\0';
-            strncpy(rgame_id, &pre_game_id[length_recalc - 2], length_recalc - 1);
-            rgame_id[length_recalc - 1] = '\0';
-            _len                        = strlcat(s, lgame_id, len);
-	    s[_len  ]                   = '-';
-	    s[_len+1]                   = '\0';
-            strlcat(s, rgame_id ,len);
-            cue_append_multi_disc_suffix(s, filename);
-            return true;
-         }
+         strncpy(lgame_id, pre_game_id, 7);
+         lgame_id[7] = '\0';
+         strncpy(rgame_id, &pre_game_id[length_recalc - 2], length_recalc - 1);
+         rgame_id[length_recalc - 1] = '\0';
+         _len                        = strlcat(s, lgame_id, len);
+         s[_len  ]                   = '-';
+         s[_len+1]                   = '\0';
+         strlcat(s, rgame_id ,len);
+         cue_append_multi_disc_suffix(s, filename);
       }
+      return true;
    }
    else if (!strcmp(check_prefix_hdr_hyp, "HDR-"))
    {
@@ -869,18 +853,15 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          strncpy(rgame_id, &raw_game_id[length - 4], length - 3);
          rgame_id[length - 3] = '\0';
          _len                 = strlcat(s, lgame_id, len);
-	 s[_len  ]            = '-';
-	 s[_len+1]            = '\0';
+         s[_len  ]            = '-';
+         s[_len+1]            = '\0';
          strlcat(s, rgame_id, len);
          cue_append_multi_disc_suffix(s, filename);
          return true;
       }
-      else
-      {
-         strlcpy(s, raw_game_id, len);
-         cue_append_multi_disc_suffix(s, filename);
-         return true;
-      }
+      strlcpy(s, raw_game_id, len);
+      cue_append_multi_disc_suffix(s, filename);
+      return true;
    }
    else if (!strcmp(check_prefix_mk_hyp, "MK-"))
    {
@@ -892,19 +873,16 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          cue_append_multi_disc_suffix(s, filename);
          return true;
       }
-      else
-      {
-         strncpy(lgame_id, raw_game_id, 8);
-         lgame_id[8]          = '\0';
-         strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
-         rgame_id[length - 1] = '\0';
-         _len                 = strlcat(s, lgame_id, len);
-	 s[_len  ]            = '-';
-	 s[_len+1]            = '\0';
-         strlcat(s, rgame_id, len);
-         cue_append_multi_disc_suffix(s, filename);
-         return true;
-      }
+      strncpy(lgame_id, raw_game_id, 8);
+      lgame_id[8]          = '\0';
+      strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
+      rgame_id[length - 1] = '\0';
+      _len                 = strlcat(s, lgame_id, len);
+      s[_len  ]            = '-';
+      s[_len+1]            = '\0';
+      strlcat(s, rgame_id, len);
+      cue_append_multi_disc_suffix(s, filename);
+      return true;
    }
    else
    {
