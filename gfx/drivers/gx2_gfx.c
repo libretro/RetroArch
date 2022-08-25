@@ -1490,14 +1490,13 @@ static bool wiiu_gfx_set_shader(void *data,
    for (i = 0; i < wiiu->shader_preset->passes; i++)
    {
       unsigned j;
+      char *ptr;
       char gfdpath[PATH_MAX_LENGTH];
       struct video_shader_pass *pass = &wiiu->shader_preset->pass[i];
 
-      strncpy(gfdpath, pass->source.path, PATH_MAX_LENGTH);
+      strlcpy(gfdpath, pass->source.path, sizeof(gfdpath));
 
-      char *ptr = strrchr(gfdpath, '.');
-
-      if (!ptr)
+      if (!(ptr = strrchr(gfdpath, '.')))
          ptr = gfdpath + strlen(gfdpath);
 
       *ptr++ = '.';

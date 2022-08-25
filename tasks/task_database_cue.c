@@ -494,7 +494,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    /** process raw serial to a pre serial without spaces **/
    string_remove_all_whitespace(pre_game_id, raw_game_id);  /** rule: remove all spaces from the raw serial globally **/
 
-   /** disect this pre serial into parts **/
+   /** Dissect this pre serial into parts **/
    length    = strlen(pre_game_id);
    lengthref = length - 2;
    strncpy(check_prefix_t_hyp, pre_game_id, 2);
@@ -613,7 +613,7 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
    string_trim_whitespace(raw_game_id);
 
-   /** disect this raw serial into parts **/
+   /** Dissect this raw serial into parts **/
    strncpy(check_prefix_t_hyp, raw_game_id, 2);
    check_prefix_t_hyp[2] = '\0';
    strncpy(check_prefix_mk_hyp, raw_game_id, 3);
@@ -717,7 +717,7 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    length        = strlen(raw_game_id);
    total_hyphens = string_count_occurrences_single_character(raw_game_id, '-');
 
-   /** disect this raw serial into parts **/
+   /** Dissect this raw serial into parts **/
    strncpy(check_prefix_t_hyp, raw_game_id, 2);
    check_prefix_t_hyp[2] = '\0';
    strncpy(check_prefix_t, raw_game_id, 1);

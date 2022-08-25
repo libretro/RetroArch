@@ -271,7 +271,7 @@ static int mount_hdd_partition(void)
    if (bootDeviceID == BOOT_DEVICE_HDD || bootDeviceID == BOOT_DEVICE_HDD0)
    {
       /* If we're booting from HDD, we must update the cwd variable and add : to the mount point */
-      strncpy(cwd, new_cwd, sizeof(cwd));
+      strlcpy(cwd, new_cwd, sizeof(cwd));
       strlcat(mountPoint, ":", sizeof(mountPoint));
    }
    else
