@@ -66,6 +66,7 @@ ifeq ($(SALAMANDER_BUILD),1)
    OBJ += libretro-common/lists/dir_list.o
    OBJ += libretro-common/file/retro_dirent.o
    OBJ += libretro-common/compat/compat_strl.o
+   OBJ += libretro-common/compat/compat_strldup.o
    OBJ += libretro-common/file/config_file.o
    OBJ += libretro-common/streams/file_stream.o
    OBJ += libretro-common/vfs/vfs_implementation.o
