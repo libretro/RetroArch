@@ -431,37 +431,35 @@ static int net_http_new_socket(struct http_connection_t *conn)
 #ifdef HAVE_SSL
    if (conn->sock_state.ssl)
    {
+      if (fd < 0)
+         goto done;
+
       if (!(conn->sock_state.ssl_ctx = ssl_socket_init(fd, conn->domain)))
-         return -1;
-   }
-#endif
-
-   next_addr = addr;
-
-   while (fd >= 0)
-   {
-#ifdef HAVE_SSL
-      if (conn->sock_state.ssl)
       {
-         if (ssl_socket_connect(conn->sock_state.ssl_ctx,
-               (void*)next_addr, true, true) >= 0)
-            break;
-
-         ssl_socket_close(conn->sock_state.ssl_ctx);
-      }
-      else
-#endif
-      {
-         if (     socket_connect(fd, (void*)next_addr, true) >= 0
-               && socket_nonblock(fd))
-            break;
-
          socket_close(fd);
+         fd = -1;
+         goto done;
       }
+      if (ssl_socket_connect(conn->sock_state.ssl_ctx, addr, true, true)
+            < 0)
+      {
+         fd = -1;
+         goto done;
+      }
+   }
+   else
+#endif
+   for (next_addr = addr; fd >= 0; fd = socket_next((void**)&next_addr))
+   {
+      if (socket_connect_with_timeout(fd, next_addr, 5000))
+         break;
 
-      fd = socket_next((void**)&next_addr);
+      socket_close(fd);
    }
 
+#ifdef HAVE_SSL
+done:
+#endif
    if (addr)
       freeaddrinfo_retro(addr);
 
@@ -864,7 +862,7 @@ error:
       conn->postdatacopy    = NULL;
    }
 #ifdef HAVE_SSL
-   if (conn && conn->sock_state.ssl && conn->sock_state.ssl_ctx && fd >= 0)
+   if (conn && conn->sock_state.ssl_ctx)
    {
       ssl_socket_close(conn->sock_state.ssl_ctx);
       ssl_socket_free(conn->sock_state.ssl_ctx);

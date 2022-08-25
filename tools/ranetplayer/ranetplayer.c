@@ -277,7 +277,7 @@ int main(int argc, char **argv)
       return 1;
    }
 
-   if (socket_connect(sock, addr, false) < 0)
+   if (socket_connect(sock, addr) < 0)
    {
       perror("connect");
       return 1;

@@ -660,20 +660,9 @@ bool socket_bind(int fd, void *data)
    return !bind(fd, addr->ai_addr, addr->ai_addrlen);
 }
 
-int socket_connect(int fd, void *data, bool timeout_enable)
+int socket_connect(int fd, void *data)
 {
    struct addrinfo *addr = (struct addrinfo*)data;
-
-#if !defined(_WIN32) && !defined(VITA) && !defined(WIIU) && !defined(_3DS)
-   if (timeout_enable)
-   {
-      struct timeval timeout;
-      timeout.tv_sec  = 4;
-      timeout.tv_usec = 0;
-
-      setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeout));
-   }
-#endif
 
 #ifdef WIIU
    {

@@ -115,8 +115,19 @@ int ssl_socket_connect(void *state_data,
    int ret, flags;
    struct ssl_state *state = (struct ssl_state*)state_data;
 
-   if (socket_connect(state->net_ctx.fd, data, timeout_enable))
-      return -1;
+   if (timeout_enable)
+   {
+      if (!socket_connect_with_timeout(state->net_ctx.fd, data, 5000))
+         return -1;
+      /* socket_connect_with_timeout makes the socket non-blocking. */
+      if (!socket_set_block(state->net_ctx.fd, true))
+         return -1;
+   }
+   else
+   {
+      if (socket_connect(state->net_ctx.fd, data))
+         return -1;
+   }
 
    if (mbedtls_ssl_config_defaults(&state->conf,
                MBEDTLS_SSL_IS_CLIENT,
