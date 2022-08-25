@@ -189,7 +189,8 @@ task_finished:
             free(tmp);
 
          if (task_get_cancelled(task))
-            task_set_error(task, strdup("Task cancelled."));
+            task_set_error(task,
+                  strldup("Task cancelled.", sizeof("Task cancelled.")));
          else
          {
             data         = (http_transfer_data_t*)malloc(sizeof(*data));
@@ -200,7 +201,8 @@ task_finished:
             task_set_data(task, data);
 
             if (!task->mute)
-               task_set_error(task, strdup("Download failed."));
+               task_set_error(task, strldup("Download failed.",
+                        sizeof("Download failed.")));
          }
       }
       else
@@ -215,7 +217,8 @@ task_finished:
 
       net_http_delete(http->handle);
    } else if (http->error)
-      task_set_error(task, strdup("Internal error."));
+      task_set_error(task, strldup("Internal error.",
+               sizeof("Internal error.")));
 
    free(http);
 }

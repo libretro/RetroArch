@@ -2210,7 +2210,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    info.path                        = strdup(dir_playlist);
    info.label                       = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
-   info.exts                        = strdup("lpl");
+   info.exts                        = strldup("lpl", sizeof("lpl"));
    info.type_default                = FILE_TYPE_PLAIN;
    info.enum_idx                    = MENU_ENUM_LABEL_PLAYLISTS_TAB;
 
@@ -7622,7 +7622,7 @@ static bool xmb_menu_init_list(void *data)
 
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
-   info.exts                    = strdup("lpl");
+   info.exts                    = strldup("lpl", sizeof("lpl"));
    info.type_default            = FILE_TYPE_PLAIN;
    info.enum_idx                = MENU_ENUM_LABEL_MAIN_MENU;
 

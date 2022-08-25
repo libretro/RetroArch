@@ -125,7 +125,7 @@ void task_file_load_handler(retro_task_t *task)
 
    if (task_get_cancelled(task))
    {
-      task_set_error(task, strdup("Task canceled."));
+      task_set_error(task, strldup("Task canceled.", sizeof("Task canceled.")));
       task_set_finished(task, true);
    }
 }

@@ -2253,7 +2253,7 @@ static bool menu_driver_displaylist_push_internal(
       if (!string_is_empty(info->label))
          free(info->label);
 
-      info->exts  = strdup("lpl");
+      info->exts  = strldup("lpl", sizeof("lpl"));
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
@@ -2271,7 +2271,7 @@ static bool menu_driver_displaylist_push_internal(
       if (!string_is_empty(info->label))
          free(info->label);
 
-      info->exts  = strdup("lpl");
+      info->exts  = strldup("lpl", sizeof("lpl"));
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
@@ -2289,7 +2289,7 @@ static bool menu_driver_displaylist_push_internal(
       if (!string_is_empty(info->label))
          free(info->label);
 
-      info->exts  = strdup("lpl");
+      info->exts  = strldup("lpl", sizeof("lpl"));
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
@@ -2322,7 +2322,7 @@ static bool menu_driver_displaylist_push_internal(
       if (!string_is_empty(info->label))
          free(info->label);
 
-      info->exts  = strdup("lpl");
+      info->exts  = strldup("lpl", sizeof("lpl"));
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 

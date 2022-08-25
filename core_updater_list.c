@@ -576,7 +576,7 @@ static bool core_updater_list_set_core_info(
       if (!string_is_empty(core_info->description))
          entry->description     = strdup(core_info->description);
       else
-         entry->description     = strdup("");
+         entry->description     = strldup("", sizeof(""));
 
       /* licenses_list */
       if (!string_is_empty(core_info->licenses))
@@ -592,7 +592,7 @@ static bool core_updater_list_set_core_info(
        * cores must have a valid/complete core info file) */
       entry->display_name       = strdup(filename_str);
       entry->is_experimental    = true;
-      entry->description        = strdup("");
+      entry->description        = strldup("", sizeof(""));
    }
 
    return true;

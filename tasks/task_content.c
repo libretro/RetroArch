@@ -1347,7 +1347,7 @@ static void content_load_init_wrap(
       int *argc, char **argv)
 {
    *argc = 0;
-   argv[(*argc)++] = strdup("retroarch");
+   argv[(*argc)++] = strldup("retroarch", sizeof("retroarch"));
 
    if (args->content_path)
    {
@@ -1359,38 +1359,38 @@ static void content_load_init_wrap(
    {
       RARCH_LOG("[Core]: %s\n",
             msg_hash_to_str(MSG_NO_CONTENT_STARTING_DUMMY_CORE));
-      argv[(*argc)++] = strdup("--menu");
+      argv[(*argc)++] = strldup("--menu", sizeof("--menu"));
    }
 #endif
 
    if (args->sram_path)
    {
-      argv[(*argc)++] = strdup("-s");
+      argv[(*argc)++] = strldup("-s", sizeof("-s"));
       argv[(*argc)++] = strdup(args->sram_path);
    }
 
    if (args->state_path)
    {
-      argv[(*argc)++] = strdup("-S");
+      argv[(*argc)++] = strldup("-S", sizeof("-S"));
       argv[(*argc)++] = strdup(args->state_path);
    }
 
    if (args->config_path)
    {
-      argv[(*argc)++] = strdup("-c");
+      argv[(*argc)++] = strldup("-c", sizeof("-c"));
       argv[(*argc)++] = strdup(args->config_path);
    }
 
 #ifdef HAVE_DYNAMIC
    if (args->libretro_path)
    {
-      argv[(*argc)++] = strdup("-L");
+      argv[(*argc)++] = strldup("-L", sizeof("-L"));
       argv[(*argc)++] = strdup(args->libretro_path);
    }
 #endif
 
    if (args->verbose)
-      argv[(*argc)++] = strdup("-v");
+      argv[(*argc)++] = strldup("-v", sizeof("-v"));
 }
 
 /**

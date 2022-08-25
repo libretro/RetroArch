@@ -13724,7 +13724,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (info->path)
                free(info->path);
             info->type_default = FILE_TYPE_RDB;
-            info->exts         = strdup(".rdb");
+            info->exts         = strldup(".rdb", sizeof(".rdb"));
             info->enum_idx     = MENU_ENUM_LABEL_PLAYLISTS_TAB;
             load_content       = false;
             use_filebrowser    = true;
@@ -13740,7 +13740,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (info->path)
                free(info->path);
             info->type_default = FILE_TYPE_CURSOR;
-            info->exts         = strdup("dbc");
+            info->exts         = strldup("dbc", sizeof("dbc"));
             load_content       = false;
             use_filebrowser    = true;
             info->path         = strdup(settings->paths.directory_cursor);
@@ -13923,51 +13923,51 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          {
             case DISPLAYLIST_VIDEO_FILTERS:
                info->type_default = FILE_TYPE_VIDEOFILTER;
-               info->exts         = strdup("filt");
+               info->exts         = strldup("filt", sizeof("filt"));
                break;
             case DISPLAYLIST_CONFIG_FILES:
                info->type_default = FILE_TYPE_CONFIG;
-               info->exts         = strdup("cfg");
+               info->exts         = strldup("cfg", sizeof("cfg"));
                break;
             case DISPLAYLIST_REMAP_FILES:
-               info->type_default    = FILE_TYPE_REMAP;
-               info->exts            = strdup("rmp");
+               info->type_default = FILE_TYPE_REMAP;
+               info->exts         = strldup("rmp", sizeof("rmp"));
                break;
             case DISPLAYLIST_RGUI_THEME_PRESETS:
                info->type_default = FILE_TYPE_RGUI_THEME_PRESET;
-               info->exts         = strdup("cfg");
+               info->exts         = strldup("cfg", sizeof("cfg"));
                break;
             case DISPLAYLIST_STREAM_CONFIG_FILES:
                info->type_default = FILE_TYPE_STREAM_CONFIG;
-               info->exts         = strdup("cfg");
+               info->exts         = strldup("cfg", sizeof("cfg"));
                break;
             case DISPLAYLIST_RECORD_CONFIG_FILES:
                info->type_default = FILE_TYPE_RECORD_CONFIG;
-               info->exts         = strdup("cfg");
+               info->exts         = strldup("cfg", sizeof("cfg"));
                break;
             case DISPLAYLIST_OVERLAYS:
                info->type_default = FILE_TYPE_OVERLAY;
-               info->exts         = strdup("cfg");
+               info->exts         = strldup("cfg", sizeof("cfg"));
                break;
             case DISPLAYLIST_FONTS:
                info->type_default = FILE_TYPE_FONT;
-               info->exts         = strdup("ttf");
+               info->exts         = strldup("ttf", sizeof("ttf"));
                break;
             case DISPLAYLIST_VIDEO_FONTS:
                info->type_default = FILE_TYPE_VIDEO_FONT;
-               info->exts         = strdup("ttf");
+               info->exts         = strldup("ttf", sizeof("ttf"));
                break;
             case DISPLAYLIST_AUDIO_FILTERS:
                info->type_default = FILE_TYPE_AUDIOFILTER;
-               info->exts         = strdup("dsp");
+               info->exts         = strldup("dsp", sizeof("dsp"));
                break;
             case DISPLAYLIST_CHEAT_FILES:
                info->type_default = FILE_TYPE_CHEAT;
-               info->exts         = strdup("cht");
+               info->exts         = strldup("cht", sizeof("cht"));
                break;
             case DISPLAYLIST_MANUAL_CONTENT_SCAN_DAT_FILES:
                info->type_default = FILE_TYPE_MANUAL_SCAN_DAT;
-               info->exts         = strdup("dat|xml");
+               info->exts         = strldup("dat|xml", sizeof("dat|xml"));
                break;
             case DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE:
                {
@@ -14002,7 +14002,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          use_filebrowser    = true;
          if (!string_is_empty(info->exts))
             free(info->exts);
-         info->exts         = strdup("lay|zip");
+         info->exts         = strldup("lay|zip", sizeof("lay|zip"));
          break;
 #endif
       case DISPLAYLIST_CONTENT_HISTORY:
@@ -14012,7 +14012,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          use_filebrowser    = true;
          if (!string_is_empty(info->exts))
             free(info->exts);
-         info->exts         = strdup("lpl");
+         info->exts         = strldup("lpl", sizeof("lpl"));
          break;
       case DISPLAYLIST_DATABASE_PLAYLISTS:
       case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:

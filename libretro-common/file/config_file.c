@@ -211,7 +211,7 @@ static char *config_file_extract_value(char *line)
       line++;
 
    /* Note: From this point on, an empty value
-    * string is valid - and in this case, strdup("")
+    * string is valid - and in this case, strldup("", sizeof(""))
     * will be returned
     * > If we instead return NULL, the the entry
     *   is ignored completely - which means we cannot
@@ -254,7 +254,7 @@ static char *config_file_extract_value(char *line)
          return strdup(value);
    }
 
-   return strdup("");
+   return strldup("", sizeof(""));
 }
 
 /* Move semantics? */
