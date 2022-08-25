@@ -273,6 +273,7 @@ endif
 
 OBJ += \
        $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.o \
+       $(LIBRETRO_COMM_DIR)/compat/compat_strldup.o \
        $(LIBRETRO_COMM_DIR)/lists/file_list.o \
        $(LIBRETRO_COMM_DIR)/lists/dir_list.o \
        $(LIBRETRO_COMM_DIR)/file/retro_dirent.o \

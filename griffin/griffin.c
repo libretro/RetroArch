@@ -91,6 +91,7 @@ COMPATIBILITY
 #endif
 
 #include "../libretro-common/compat/compat_fnmatch.c"
+#include "../libretro-common/compat/compat_strldup.c"
 #include "../libretro-common/compat/fopen_utf8.c"
 #include "../libretro-common/memmap/memalign.c"
 
