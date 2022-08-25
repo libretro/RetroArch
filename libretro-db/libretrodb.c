@@ -101,13 +101,13 @@ static int libretrodb_write_metadata(RFILE *fd, libretrodb_metadata_t *md)
 static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
 {
    unsigned i;
-   int rv = 0;
 
    if (doc->type != RDT_MAP)
       return -1;
 
    for (i = 0; i < doc->val.map.len; i++)
    {
+      int rv                          = 0;
       struct rmsgpack_dom_value key   = doc->val.map.items[i].key;
       struct rmsgpack_dom_value value = doc->val.map.items[i].value;
 
@@ -127,7 +127,7 @@ static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
          return rv;
    }
 
-   return rv;
+   return 0;
 }
 
 int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
@@ -170,7 +170,7 @@ int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
       goto clean;
 
    header.metadata_offset = swap_if_little64(filestream_tell(fd));
-   md.count = item_count;
+   md.count               = item_count;
    libretrodb_write_metadata(fd, &md);
    filestream_seek(fd, root, RETRO_VFS_SEEK_POSITION_START);
    filestream_write(fd, &header, sizeof(header));
@@ -495,17 +495,15 @@ int libretrodb_create_index(libretrodb_t *db,
       if (item.type != RDT_MAP)
          goto clean;
 
-      field = rmsgpack_dom_value_map_value(&item, &key);
-
-      /* Field not found in item */
-      if (!field)
+      /* Field not found in item? */
+      if (!(field = rmsgpack_dom_value_map_value(&item, &key)))
          goto clean;
 
-      /* Field is not binary */
+      /* Field is not binary? */
       if (field->type != RDT_BINARY)
          goto clean;
 
-      /* Field is empty */
+      /* Field is empty? */
       if (field->val.binary.len == 0)
          goto clean;
 
@@ -515,8 +513,7 @@ int libretrodb_create_index(libretrodb_t *db,
       else if (field->val.binary.len != field_size) 
          goto clean;
 
-      buff = malloc(field_size + sizeof(uint64_t));
-      if (!buff)
+      if (!(buff = malloc(field_size + sizeof(uint64_t))))
          goto clean;
 
       memcpy(buff, field->val.binary.buff, field_size);
@@ -538,9 +535,8 @@ int libretrodb_create_index(libretrodb_t *db,
 
    filestream_seek(db->fd, 0, RETRO_VFS_SEEK_POSITION_END);
 
-   strncpy(idx.name, name, 50);
+   strlcpy(idx.name, name, sizeof(idx.name));
 
-   idx.name[49] = '\0';
    idx.key_size = field_size;
    idx.next     = db->count * (field_size + sizeof(uint64_t));
    libretrodb_write_index_header(db->fd, &idx);
