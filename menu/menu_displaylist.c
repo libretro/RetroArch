@@ -1127,6 +1127,7 @@ error:
 static unsigned menu_displaylist_parse_core_option_dropdown_list(
       menu_displaylist_info_t *info)
 {
+   char val_d[8];
    unsigned count                  = 0;
    struct string_list tmp_str_list = {0};
    unsigned option_index           = 0;
@@ -1156,6 +1157,8 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
 
    option_index = string_to_unsigned(
          tmp_str_list.elems[tmp_str_list.size - 1].data);
+   val_d[0]     = '\0';
+   snprintf(val_d, sizeof(val_d), "%d", option_index);
 
    /* Get option itself + current value */
    option = (struct core_option*)&coreopts->opts[option_index];
@@ -1173,11 +1176,6 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
 
       if (!string_is_empty(val_label_str))
       {
-         char val_d[256]; /* TODO/FIXME - way too big for just storing an integer */
-
-         val_d[0] = '\0';
-         snprintf(val_d, sizeof(val_d), "%d", option_index);
-
          if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)))
             val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
          else if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
