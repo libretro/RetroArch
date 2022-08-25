@@ -672,9 +672,21 @@ static void menu_action_cpu_managed_freq_label(
    };
 
    if (freq == 1)
-      strlcpy(s, "Min.", len);
+   {
+      s[0] = 'M';
+      s[1] = 'i';
+      s[2] = 'n';
+      s[3] = '.';
+      s[4] = '\0';
+   }
    else if (freq == ~0U)
-      strlcpy(s, "Max.", len);
+   {
+      s[0] = 'M';
+      s[1] = 'a';
+      s[2] = 'x';
+      s[3] = '.';
+      s[4] = '\0';
+   }
    else
       snprintf(s, len, "%u MHz", freq / 1000);
 }
@@ -817,12 +829,20 @@ static void menu_action_setting_disp_set_label_input_desc(
       const char *descriptor = runloop_state_get_ptr()->system.input_desc_btn[mapped_port][remap_idx];
       if (!string_is_empty(descriptor))
       {
-         if (remap_idx < RARCH_FIRST_CUSTOM_BIND)
-            strlcpy(s, descriptor, len);
+         size_t _len = strlcpy(s, descriptor, len);
+         if (remap_idx < RARCH_FIRST_CUSTOM_BIND) { }
          else if (remap_idx % 2 == 0)
-            snprintf(s, len, "%s %c", descriptor, '+');
+         {
+            s[_len  ] = ' ';
+            s[_len+1] = '+';
+            s[_len+2] = '\0';
+         }
          else
-            snprintf(s, len, "%s %c", descriptor, '-');
+         {
+            s[_len  ] = ' ';
+            s[_len+1] = '-';
+            s[_len+2] = '\0';
+         }
          return;
       }
    }
@@ -842,11 +862,9 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    const char *path,
    char *s2, size_t len2)
 {
-   char desc[PATH_MAX_LENGTH];
    unsigned key_id, btn_idx;
    unsigned remap_id;
    unsigned user_idx;
-
    settings_t *settings = config_get_ptr();
 
    if (!settings)
@@ -864,8 +882,8 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
 
    if (key_descriptors[key_id].key != RETROK_FIRST)
    {
-      snprintf(desc, sizeof(desc), "Keyboard %s", key_descriptors[key_id].desc);
-      strlcpy(s, desc, len);
+      strlcpy(s, "Keyboard ", len);
+      strlcat(s, key_descriptors[key_id].desc, len);
    }
    else
    {

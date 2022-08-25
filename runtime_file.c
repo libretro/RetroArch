@@ -575,14 +575,32 @@ void runtime_log_get_runtime_usec(
 void runtime_log_get_runtime_str(runtime_log_t *runtime_log,
       char *s, size_t len)
 {
+   size_t _len = strlcpy(s,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
+         len);
+   s[_len  ]   = ' ';
+   s[_len+1]   = '\0';
    if (runtime_log)
-      snprintf(s, len, "%s %02u:%02u:%02u",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
+   {
+      char t[64];
+      t[0] = '\0';
+      snprintf(t, sizeof(t), "%02u:%02u:%02u",
             runtime_log->runtime.hours, runtime_log->runtime.minutes,
             runtime_log->runtime.seconds);
+      strlcat(s, t, len);
+   }
    else
-      snprintf(s, len, "%s 00:00:00",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME));
+   {
+      s[_len+1]   = '0';
+      s[_len+2]   = '0';
+      s[_len+3]   = ':';
+      s[_len+4]   = '0';
+      s[_len+5]   = '0';
+      s[_len+6]   = ':';
+      s[_len+7]   = '0';
+      s[_len+8]   = '0';
+      s[_len+9]   = '\0';
+   }
 }
 
 /* Gets last played entry values */
@@ -702,6 +720,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
       enum playlist_sublabel_last_played_style_type timedate_style,
       enum playlist_sublabel_last_played_date_separator_type date_separator)
 {
+   size_t _len;
    char tmp[64];
    bool has_am_pm         = false;
    const char *format_str = "";
@@ -852,10 +871,11 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
             runtime_log_get_last_played_time(runtime_log, &time_info);
             runtime_last_played_strftime(tmp, sizeof(tmp), format_str, &time_info);
          }
-         snprintf(str, len, "%s%s",
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-               tmp);
+         _len        = strlcpy(str, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
+         str[_len  ] = ' ';
+         str[_len+1] = '\0';
+         strlcat(str, tmp, len);
          return;
       }
 
@@ -1138,10 +1158,11 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER),
                      sizeof(tmp));
-            snprintf(str, len, "%s %s",
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-                  tmp);
+            _len        =  strlcpy(str, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
+            str[_len  ] = ' ';
+            str[_len+1] = '\0';
+            strlcat(str, tmp, len);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS:
          default:

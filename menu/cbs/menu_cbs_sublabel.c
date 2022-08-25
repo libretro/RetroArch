@@ -69,6 +69,7 @@
 
 static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len)
 {
+   size_t _len;
    core_info_t *core_info = NULL;
 
    /* Search for specified core */
@@ -80,17 +81,22 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
       /* Add license text */
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->licenses_list, ", ");
-      snprintf(s, len, "%s: %s", 
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
-            tmp);
+      _len      = strlcpy(s,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
+      s[_len  ] = ':';
+      s[_len+1] = ' ';
+      s[_len+2] = '\0';
+      strlcat(s, tmp, len);
       return 1;
    }
 
    /* No license found - set to N/A */
-   snprintf(s, len, "%s: %s", 
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
-         );
+   _len      = strlcpy(s,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
+   s[_len  ] = ':';
+   s[_len+1] = ' ';
+   s[_len+2] = '\0';
+   strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
    return 1;
 }
 
@@ -1539,7 +1545,14 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
       snprintf(buf, sizeof(buf), "(%08lX)",
          (unsigned long)(unsigned)room->gamecrc);
    else
-      snprintf(buf, sizeof(buf), "(%s)", room->subsystem_name);
+   {
+      size_t _len;
+      buf[0 ]     = '(';
+      buf[1 ]     = '\0';
+      _len        = strlcat(buf, room->subsystem_name, sizeof(buf));
+      buf[_len  ] = ')';
+      buf[_len+1] = '\0';
+   }
 
    strlcat(s, buf, len);
 
@@ -1579,8 +1592,14 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
 
    if (status)
    {
-      snprintf(buf, sizeof(buf), "%s: %s\n",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS), status);
+      size_t _len = strlcpy(buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS),
+            sizeof(buf));
+      buf[_len  ] = ':';
+      buf[_len+1] = ' ';
+      buf[_len+2] = '\0';
+      _len        = strlcat(buf, status, sizeof(buf));
+      buf[_len  ] = '\n';
+      buf[_len+1] = '\0';
       strlcat(s, buf, len);
    }
 
@@ -1659,6 +1678,7 @@ static int action_bind_sublabel_playlist_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
+   size_t _len;
    size_t list_size                          = menu_entries_get_size();
    playlist_t *playlist                      = NULL;
    const struct playlist_entry *entry        = NULL;
@@ -1717,10 +1737,11 @@ static int action_bind_sublabel_playlist_entry(
       return 0;
 
    /* Add core name */
-   snprintf(s, len, "%s %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
-         entry->core_name
-         );
+   _len      = strlcpy(s,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
+   s[_len  ] =  ' ';
+   s[_len+1] =  '\0';
+   strlcat(s, entry->core_name, len);
 
    /* Get runtime info *if* required runtime log is enabled
     * *and* this is a valid playlist type */
@@ -1842,6 +1863,7 @@ static int action_bind_sublabel_core_updater_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
+   size_t _len;
    core_updater_list_t *core_list         = core_updater_list_get_cached();
    const core_updater_list_entry_t *entry = NULL;
 
@@ -1855,20 +1877,22 @@ static int action_bind_sublabel_core_updater_entry(
       /* Add license text */
       string_list_join_concat(tmp, sizeof(tmp),
             entry->licenses_list, ", ");
-      snprintf(s, len,
-            "%s: %s",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
-            tmp
-            );
+      _len      = strlcpy(s,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
+      s[_len  ] = ':';
+      s[_len+1] = ' ';
+      s[_len+2] = '\0';
+      strlcat(s, tmp, len);
       return 1;
    }
 
    /* No license found - set to N/A */
-   snprintf(s, len,
-         "%s: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
-         );
+   _len      = strlcpy(s,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
+   s[_len  ] = ':';
+   s[_len+1] = ' ';
+   s[_len+2] = '\0';
+   strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
    return 1;
 }
 #endif
@@ -1884,7 +1908,7 @@ static int action_bind_sublabel_core_backup_entry(
       ? list->list[i].alt
       : list->list[i].path;
    /* Set sublabel prefix */
-   size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC), len);
+   size_t _len     = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC), len);
 
    /* Add crc string */
    if (string_is_empty(crc))
