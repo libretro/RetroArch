@@ -1094,7 +1094,7 @@ int menu_entries_get_title(char *s, size_t len)
 
    if (cbs && cbs->action_get_title)
    {
-      int ret;
+      int ret = 0;
       if (!string_is_empty(cbs->action_title_cache))
       {
          strlcpy(s, cbs->action_title_cache, len);
@@ -1102,7 +1102,26 @@ int menu_entries_get_title(char *s, size_t len)
       }
       file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
             &path, &label, &menu_type, NULL);
-      ret = cbs->action_get_title(path, label, menu_type, s, len);
+
+      /* Show playlist entry instead of "Quick Menu" */
+      if (string_is_equal(label, "deferred_rpl_entry_actions"))
+      {
+         const struct playlist_entry *entry = NULL;
+         playlist_t *playlist               = playlist_get_cached();
+         if (playlist)
+         {
+            menu_handle_t *menu = menu_state_get_ptr()->driver_data;
+            playlist_get_index(playlist, menu->rpl_entry_selection_ptr, &entry);
+
+            if (entry)
+               strlcpy(s,
+                     !string_is_empty(entry->label) ? entry->label : entry->path,
+                     len);
+         }
+      }
+      else
+         ret = cbs->action_get_title(path, label, menu_type, s, len);
+
       if (ret == 1)
          strlcpy(cbs->action_title_cache, s, sizeof(cbs->action_title_cache));
       return ret;

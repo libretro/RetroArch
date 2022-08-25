@@ -1101,7 +1101,8 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
    unsigned depth                     = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
    /* Do not update wallpaper in "Load Content" playlists */
-   if (xmb->categories_selection_ptr == 0 && depth > 4)
+   if ((xmb->categories_selection_ptr == 0 && depth > 4) ||
+         (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1))
       return strdup(xmb->bg_file_path);
 
    if (tmp)
@@ -1963,7 +1964,9 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
 static void xmb_set_title(xmb_handle_t *xmb)
 {
-   if (xmb->categories_selection_ptr <= xmb->system_tab_end)
+   if (xmb->categories_selection_ptr <= xmb->system_tab_end ||
+         (xmb->is_quick_menu && !menu_is_running_quick_menu()) ||
+         xmb->depth > 1)
       menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
    else
    {
@@ -2592,10 +2595,6 @@ static void xmb_populate_entries(void *data,
    if (settings->bools.menu_content_show_video)
       xmb->playlist_collection_offset++;
 
-   xmb_set_title(xmb);
-   if (menu_dynamic_wallpaper_enable)
-      xmb_update_dynamic_wallpaper(xmb);
-
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
    {
       xmb_selection_pointer_changed(xmb, false);
@@ -2607,6 +2606,10 @@ static void xmb_populate_entries(void *data,
       xmb_list_switch(xmb);
    else
       xmb_list_open(xmb);
+
+   xmb_set_title(xmb);
+   if (menu_dynamic_wallpaper_enable)
+      xmb_update_dynamic_wallpaper(xmb);
 
    /* Determine whether to show entry index */
    /* Update list size & entry index texts */
@@ -6808,7 +6811,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
    /* Do not reset wallpaper in "Load Content" playlists. */
-   if (!string_is_empty(bg_file_path) && xmb->depth < 4)
+   if (!string_is_empty(bg_file_path) && xmb->depth < 2)
    {
       if (!string_is_empty(xmb->bg_file_path))
          free(xmb->bg_file_path);
