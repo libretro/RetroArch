@@ -875,7 +875,7 @@ static void content_file_get_path(
                   content_path, sizeof(info_path));
             info_path[_len  ] = '#';
             info_path[_len+1] = '\0';
-            strlcpy(info_path, archive_file, sizeof(info_path));
+            strlcat(info_path, archive_file, sizeof(info_path));
 
             /* Update 'content' string_list */
             string_list_set(content, idx, info_path);
