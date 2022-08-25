@@ -3207,7 +3207,7 @@ static bool netplay_tunnel_connect(int fd, const struct addrinfo *addr)
    SET_TCP_NODELAY(fd)
    SET_FD_CLOEXEC(fd)
 
-   result = socket_connect(fd, (void*)addr, false);
+   result = socket_connect(fd, (void*)addr);
    if (result && !isinprogress(result) && !isagain(result))
       return false;
 

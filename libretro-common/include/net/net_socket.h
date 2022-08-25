@@ -101,7 +101,7 @@ ssize_t socket_receive_all_nonblocking(int fd, bool *error,
 
 bool socket_bind(int fd, void *data);
 
-int socket_connect(int fd, void *data, bool timeout_enable);
+int socket_connect(int fd, void *data);
 
 bool socket_connect_with_timeout(int fd, void *data, int timeout);
 

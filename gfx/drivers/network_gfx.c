@@ -119,20 +119,16 @@ static void *network_gfx_init(const video_info_t *video,
 try_connect:
    fd = socket_init((void**)&addr, network->port, network->address, SOCKET_TYPE_STREAM, 0);
 
-   next_addr = addr;
-
-   while (fd >= 0)
+   for (next_addr = addr; fd >= 0; fd = socket_next((void**)&next_addr))
    {
+      if (socket_connect_with_timeout(fd, next_addr, 5000))
       {
-         int ret = socket_connect(fd, (void*)next_addr, true);
-
-         if (ret >= 0) /* && socket_nonblock(fd)) */
+         /* socket_connect_with_timeout makes the socket non-blocking. */
+         if (socket_set_block(fd, true))
             break;
-
-         socket_close(fd);
       }
 
-      fd = socket_next((void**)&next_addr);
+      socket_close(fd);
    }
 
    if (addr)
@@ -140,11 +136,7 @@ try_connect:
 
    network->fd = fd;
 
-#if 0
-   socket_nonblock(network->fd);
-#endif
-
-   if (network->fd > 0)
+   if (network->fd >= 0)
       RARCH_LOG("[Network]: Connected to host.\n");
    else
    {
@@ -156,11 +148,6 @@ try_connect:
    RARCH_LOG("[Network]: Init complete.\n");
 
    return network;
-
-error:
-   if (network)
-      free(network);
-   return NULL;
 }
 
 static bool network_gfx_frame(void *data, const void *frame,
