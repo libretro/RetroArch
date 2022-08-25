@@ -10485,11 +10485,15 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
 static void ozone_set_header(ozone_handle_t *ozone)
 {
-   if (ozone->categories_selection_ptr <= ozone->system_tab_end)
+   if (ozone->categories_selection_ptr <= ozone->system_tab_end ||
+         (ozone->is_quick_menu && !menu_is_running_quick_menu()) ||
+         ozone->depth > 1)
       menu_entries_get_title(ozone->title, sizeof(ozone->title));
    else
    {
-      ozone_node_t *node = (ozone_node_t*)file_list_get_userdata_at_offset(&ozone->horizontal_list, ozone->categories_selection_ptr - ozone->system_tab_end-1);
+      ozone_node_t *node = (ozone_node_t*)file_list_get_userdata_at_offset(
+            &ozone->horizontal_list,
+            ozone->categories_selection_ptr - ozone->system_tab_end-1);
 
       if (node && node->console_name)
       {
@@ -10602,8 +10606,6 @@ static void ozone_populate_entries(void *data,
    settings                    = config_get_ptr();
    ozone_collapse_sidebar      = settings->bools.ozone_collapse_sidebar;
 
-   ozone_set_header(ozone);
-
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
    {
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
@@ -10680,6 +10682,8 @@ static void ozone_populate_entries(void *data,
                                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST));
    ozone->is_state_slot        = string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT;
    ozone->is_playlist          = ozone_is_playlist(ozone, true);
+
+   ozone_set_header(ozone);
 
    if (was_db_manager_list)
    {
