@@ -14,7 +14,6 @@
  */
 
 #include <string.h>
-#include <errno.h>
 #include <file/nbio.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>

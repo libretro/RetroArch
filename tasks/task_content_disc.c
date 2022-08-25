@@ -20,7 +20,6 @@
 #include <sys/types.h>
 #include <string.h>
 #include <time.h>
-#include <errno.h>
 
 #include <file/file_path.h>
 #include <queues/task_queue.h>

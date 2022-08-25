@@ -24,7 +24,6 @@
 #else
 #include <unistd.h>
 #endif
-#include <errno.h>
 
 #include <compat/strl.h>
 #include <retro_assert.h>

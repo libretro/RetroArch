@@ -45,7 +45,6 @@
 #include <boolean.h>
 #include <string.h>
 #include <time.h>
-#include <errno.h>
 
 #include <file/file_path.h>
 #include <string/stdstring.h>

@@ -25,7 +25,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include <errno.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

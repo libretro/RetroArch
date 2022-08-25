@@ -23,7 +23,6 @@
 #include <windows.h>
 #if defined(_WIN32) && !defined(_XBOX)
 #include <process.h>
-#include <errno.h>
 #endif
 
 #include <boolean.h>

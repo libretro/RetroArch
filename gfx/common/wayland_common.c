@@ -368,18 +368,17 @@ static shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
    if (size <= 0)
       return NULL;
 
-   fd = create_shm_file(size);
-   if (fd < 0)
+   if ((fd = create_shm_file(size)) < 0)
    {
-      RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed: %s\n",
-         size, strerror(errno));
+      RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed\n",
+         size);
       return NULL;
    }
 
    data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
    if (data == MAP_FAILED)
    {
-      RARCH_ERR("[Wayland] [SHM]: mmap failed: %s\n", strerror(errno));
+      RARCH_ERR("[Wayland] [SHM]: mmap failed\n");
       close(fd);
       return NULL;
    }

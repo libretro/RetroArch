@@ -22,7 +22,8 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <errno.h>
+
+#include <boolean.h>
 
 #ifdef HAVE_RPNG
 #include <formats/rpng.h>

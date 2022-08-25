@@ -16,7 +16,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include <file/nbio.h>
 #include <formats/image.h>

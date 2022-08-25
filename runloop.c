@@ -57,7 +57,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <ctype.h>
-#include <errno.h>
 #include <math.h>
 #include <locale.h>
 

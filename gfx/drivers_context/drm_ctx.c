@@ -19,7 +19,6 @@
  */
 
 #include <stdint.h>
-#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
@@ -198,7 +197,7 @@ static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
    return fb;
 
 error:
-   RARCH_ERR("[KMS]: Failed to create FB: %s\n", strerror(errno));
+   RARCH_ERR("[KMS]: Failed to create FB.\n");
    free(fb);
    return NULL;
 }
