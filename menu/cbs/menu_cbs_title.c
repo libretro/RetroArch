@@ -66,17 +66,16 @@
 #define DEFAULT_FILL_TITLE_MACRO(func_name, lbl) \
   static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
 { \
+   size_t _len = 0; \
    const char *title = msg_hash_to_str(lbl); \
-   if (!string_is_empty(path) && !string_is_empty(title)) \
+   if (!string_is_empty(title)) \
+      _len = strlcpy(s, title, len); \
+   if (!string_is_empty(path)) \
    { \
-      size_t _len = strlcpy(s, title, len); \
       s[_len  ]   = ':'; \
       s[_len+1]   = ' '; \
-      s[_len+2]   = '\0'; \
       strlcat(s, path, len); \
    } \
-   else if (!string_is_empty(title)) \
-      strlcpy(s, title, len); \
    return 1; \
 }
 
