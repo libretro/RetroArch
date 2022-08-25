@@ -141,6 +141,8 @@ static int64_t task_database_cue_get_token(intfstream_t *fd, char *token, uint64
       int64_t rv = (int64_t)intfstream_read(fd, c, 1);
       if (rv == 0)
          return 0;
+      else if (rv < 1)
+         return -1;
 
       switch (*c)
       {
