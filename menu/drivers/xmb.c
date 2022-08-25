@@ -3787,6 +3787,18 @@ static int xmb_draw_item(
       {
          switch (xmb_get_system_tab(xmb, xmb->categories_selection_ptr))
          {
+            case XMB_SYSTEM_TAB_MAIN:
+               {
+                  /* Special fall-through for "Load Content" > Playlists > Favorites */
+                  char title[255];
+                  menu_entries_get_title(title, sizeof(title));
+                  if (string_is_equal(title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES)))
+                     ; /* no-op */
+                  else if (xmb->depth == 5)
+                     show_history_icons = PLAYLIST_SHOW_HISTORY_ICONS_CONTENT;
+                  else
+                     break;
+               }
             case XMB_SYSTEM_TAB_HISTORY:
             case XMB_SYSTEM_TAB_FAVORITES:
                {
