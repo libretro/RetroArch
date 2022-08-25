@@ -29,6 +29,7 @@
 #include <streams/interface_stream.h>
 #include <string/stdstring.h>
 #include "../retroarch.h"
+#include "task_database_cue.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -42,7 +43,6 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 
-#define MAGIC_LEN       17
 #define MAX_TOKEN_LEN   255
 
 #ifdef MSB_FIRST
@@ -51,27 +51,17 @@
 #define MODETEST_VAL    0xffffff00
 #endif
 
-/* TODO/FIXME - reorder this according to CODING-GUIDELINES
- * and make sure LUT table below conforms */
-struct magic_entry
-{
-   int32_t offset;
-   const char *system_name;
-   const char *magic;
-   int length_magic;
-};
-
 static struct magic_entry MAGIC_NUMBERS[] = {
-   { 0x000010,   "Sega - Mega-CD - Sega CD",      "\x53\x45\x47\x41\x44\x49\x53\x43\x53\x59\x53\x54\x45\x4d",       14},
-   { 0x000010,   "Sega - Saturn",                 "\x53\x45\x47\x41\x20\x53\x45\x47\x41\x53\x41\x54\x55\x52\x4e",   15},
-   { 0x000010,   "Sega - Dreamcast",              "\x53\x45\x47\x41\x20\x53\x45\x47\x41\x4b\x41\x54\x41\x4e\x41",   15},
-   { 0x000018,   "Nintendo - Wii",                "\x5d\x1c\x9e\xa3",                                               4},
-   { 0x000218,   "Nintendo - Wii",                "\x5d\x1c\x9e\xa3",                                               4},
-   { 0x00001c,   "Nintendo - GameCube",           "\xc2\x33\x9f\x3d",                                               4},
-   { 0x008008,   "Sony - PlayStation Portable",   "\x50\x53\x50\x20\x47\x41\x4d\x45",                               8},
-   { 0x008008,   "Sony - PlayStation",            "\x50\x4c\x41\x59\x53\x54\x41\x54\x49\x4f\x4e",                   11},
-   { 0x009320,   "Sony - PlayStation",            "\x50\x4c\x41\x59\x53\x54\x41\x54\x49\x4f\x4e",                   11},
-   { 0,          NULL,                            NULL,                                                             0}
+   { "Nintendo - GameCube",         "\xc2\x33\x9f\x3d", 0x00001c},
+   { "Nintendo - Wii",              "\x5d\x1c\x9e\xa3", 0x000018},
+   { "Nintendo - Wii",              "\x5d\x1c\x9e\xa3", 0x000218},
+   { "Sega - Dreamcast",            "SEGA SEGAKATANA",  0x000010},
+   { "Sega - Mega-CD - Sega CD",    "SEGADISCSYSTEM",   0x000010},
+   { "Sega - Saturn",               "SEGA SEGASATURN",  0x000010},
+   { "Sony - PlayStation",          "PLAYSTATION",      0x008008},
+   { "Sony - PlayStation",          "PLAYSTATION",      0x009320},
+   { "Sony - PlayStation Portable", "PSP GAME",         0x008008},
+   { NULL,                          NULL,               0}
 };
 
 /**
@@ -473,45 +463,37 @@ int detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
 int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
+   #define SCD_SERIAL_OFFSET 0x0193
+   #define SCD_SERIAL_LEN    11
+   #define SCD_REGION_OFFSET 0x0200
    size_t _len;
-   char pre_game_id[15];
-   char raw_game_id[15];
+   char pre_game_id[SCD_SERIAL_LEN+1];
+   char raw_game_id[SCD_SERIAL_LEN+1];
    char check_prefix_t_hyp[10];
    char check_suffix_50[10];
    char check_prefix_g_hyp[10];
    char check_prefix_mk_hyp[10];
-   char region_id[10];
+   char region_id;
    size_t length;
    int lengthref;
    int index;
    char lgame_id[10];
 
    /* Load raw serial or quit */
-   if (intfstream_seek(fd, 0x0193, SEEK_SET) < 0)
+   if (intfstream_seek(fd, SCD_SERIAL_OFFSET, SEEK_SET) < 0)
       return false;
 
-   if (intfstream_read(fd, raw_game_id, 11) <= 0)
+   if (intfstream_read(fd, raw_game_id, SCD_SERIAL_LEN) <= 0)
       return false;
 
-   raw_game_id[11] = '\0';
-
-   if (raw_game_id[0] == ' ')
-   {
-      if (intfstream_seek(fd, 0x0194, SEEK_SET) < 0)
-         return false;
-      if (intfstream_read(fd, raw_game_id, 11) <= 0)
-         return false;
-      raw_game_id[11] = '\0';
-   }
+   raw_game_id[SCD_SERIAL_LEN] = '\0';
 
    /* Load raw region id or quit */
-   if (intfstream_seek(fd, 0x0200, SEEK_SET) < 0)
+   if (intfstream_seek(fd, SCD_REGION_OFFSET, SEEK_SET) < 0)
       return false;
 
-   if (intfstream_read(fd, region_id, 1) <= 0)
+   if (intfstream_read(fd, &region_id, 1) <= 0)
       return false;
-
-   region_id[1] = '\0';
 
 #ifdef DEBUG
    /** Scrub files with bad data and log **/
@@ -538,7 +520,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    /** redump serials are built differently for each prefix **/
    if (check_prefix_t_hyp[0] == 'T' && check_prefix_t_hyp[1] == '-')
    {
-      if (region_id[0] == 'U' || region_id[0] == 'J')
+      if (region_id == 'U' || region_id == 'J')
       {
          if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
             return false;
@@ -601,9 +583,11 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
 int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
+   #define SAT_SERIAL_OFFSET 0x0030
+   #define SAT_SERIAL_LEN    9
+   #define SAT_REGION_OFFSET 0x0050
    size_t _len;
-   char raw_game_id[15];
-   char raw_region_id[15];
+   char raw_game_id[SAT_SERIAL_LEN+1];
    char region_id;
    char check_prefix_t_hyp[10];
    char check_prefix_mk_hyp[10];
@@ -614,22 +598,20 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    char rgame_id[10];
 
    /* Load raw serial or quit */
-   if (intfstream_seek(fd, 0x0030, SEEK_SET) < 0)
+   if (intfstream_seek(fd, SAT_SERIAL_OFFSET, SEEK_SET) < 0)
       return false;
 
-   if (intfstream_read(fd, raw_game_id, 9) <= 0)
+   if (intfstream_read(fd, raw_game_id, SAT_SERIAL_LEN) <= 0)
       return false;
 
-   raw_game_id[9] = '\0';
+   raw_game_id[SAT_SERIAL_LEN] = '\0';
 
    /* Load raw region id or quit */
-   if (intfstream_seek(fd, 0x0050, SEEK_SET) < 0)
+   if (intfstream_seek(fd, SAT_REGION_OFFSET, SEEK_SET) < 0)
       return false;
 
-   if (intfstream_read(fd, raw_region_id, 1) <= 0)
+   if (intfstream_read(fd, &region_id, 1) <= 0)
       return false;
-
-   raw_region_id[1] = '\0';
 
    /** Scrub files with bad data and log **/
    if (raw_game_id[0] == '\0' || raw_game_id[0] == ' ')
@@ -639,8 +621,6 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 #endif
       return false;
    }
-
-   region_id = raw_region_id[0];
 
    string_trim_whitespace(raw_game_id);
 
@@ -995,6 +975,7 @@ int detect_system(intfstream_t *fd, const char **system_name, const char * filen
 {
    int i;
    char magic[50];
+   int magic_len;
 
 #ifdef DEBUG
    RARCH_LOG("[Scanner]: %s\n", msg_hash_to_str(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS));
@@ -1003,10 +984,11 @@ int detect_system(intfstream_t *fd, const char **system_name, const char * filen
    {
       if (intfstream_seek(fd, MAGIC_NUMBERS[i].offset, SEEK_SET) >= 0)
       {
-         if (intfstream_read(fd, magic, MAGIC_NUMBERS[i].length_magic) > 0)
+        magic_len = strlen(MAGIC_NUMBERS[i].magic);
+         if (intfstream_read(fd, magic, magic_len) > 0)
          {
-            magic[MAGIC_NUMBERS[i].length_magic] = '\0';
-            if (memcmp(MAGIC_NUMBERS[i].magic, magic, MAGIC_NUMBERS[i].length_magic) == 0)
+            magic[magic_len] = '\0';
+            if (memcmp(MAGIC_NUMBERS[i].magic, magic, magic_len) == 0)
             {
                *system_name = MAGIC_NUMBERS[i].system_name;
 #ifdef DEBUG

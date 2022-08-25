@@ -42,6 +42,7 @@
 #include "../gfx/video_display_server.h"
 #endif
 #include "../verbosity.h"
+#include "task_database_cue.h"
 
 typedef struct database_state_handle
 {
@@ -70,25 +71,6 @@ typedef struct db_handle
    bool scan_without_core_match;
    bool show_hidden_files;
 } db_handle_t;
-
-/* Forward declarations */
-int cue_find_track(const char *cue_path, bool first,
-      uint64_t *offset, uint64_t *size,
-      char *track_path, uint64_t max_len);
-bool cue_next_file(intfstream_t *fd, const char *cue_path,
-      char *path, uint64_t max_len);
-int gdi_find_track(const char *gdi_path, bool first,
-      char *track_path, uint64_t max_len);
-bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
-      char *path, uint64_t max_len);
-int detect_system(intfstream_t *fd, const char** system_name, const char *filename);
-int detect_ps1_game(intfstream_t *fd, char *serial, size_t serial_len, const char *filename);
-int detect_psp_game(intfstream_t *fd, char *serial, size_t serial_len, const char *filename);
-int detect_gc_game(intfstream_t *fd,  char *serial, size_t serial_len, const char *filename);
-int detect_scd_game(intfstream_t *fd, char *serial, size_t serial_len, const char *filename);
-int detect_sat_game(intfstream_t *fd, char *serial, size_t serial_len, const char *filename);
-int detect_dc_game(intfstream_t *fd,  char *serial, size_t serial_len, const char *filename);
-int detect_wii_game(intfstream_t *fd, char *serial, size_t serial_len, const char *filename);
 
 static const char *database_info_get_current_name(
       database_state_handle_t *handle)
