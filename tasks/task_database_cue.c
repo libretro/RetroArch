@@ -15,7 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
 #include <ctype.h>
 #include <string.h>
 
@@ -142,18 +141,6 @@ static int64_t task_database_cue_get_token(intfstream_t *fd, char *token, uint64
       int64_t rv = (int64_t)intfstream_read(fd, c, 1);
       if (rv == 0)
          return 0;
-
-      if (rv < 1)
-      {
-         switch (errno)
-         {
-            case EINTR:
-            case EAGAIN:
-               continue;
-            default:
-               return -errno;
-         }
-      }
 
       switch (*c)
       {
