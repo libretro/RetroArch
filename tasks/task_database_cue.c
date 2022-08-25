@@ -458,10 +458,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    size_t _len;
    char pre_game_id[SCD_SERIAL_LEN+1];
    char raw_game_id[SCD_SERIAL_LEN+1];
-   char check_prefix_t_hyp[10];
    char check_suffix_50[10];
-   char check_prefix_g_hyp[10];
-   char check_prefix_mk_hyp[10];
    char region_id;
    size_t length;
    int lengthref;
@@ -495,19 +492,13 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    string_remove_all_whitespace(pre_game_id, raw_game_id);  /** rule: remove all spaces from the raw serial globally **/
 
    /** Dissect this pre serial into parts **/
-   length    = strlen(pre_game_id);
-   lengthref = length - 2;
-   strncpy(check_prefix_t_hyp, pre_game_id, 2);
-   check_prefix_t_hyp[2] = '\0';
-   strncpy(check_prefix_g_hyp, pre_game_id, 2);
-   check_prefix_g_hyp[2] = '\0';
-   strncpy(check_prefix_mk_hyp, pre_game_id, 3);
-   check_prefix_mk_hyp[3] = '\0';
+   length             = strlen(pre_game_id);
+   lengthref          = length - 2;
    strncpy(check_suffix_50, &pre_game_id[lengthref], length - 2 + 1);
    check_suffix_50[2] = '\0';
 
    /** redump serials are built differently for each prefix **/
-   if (check_prefix_t_hyp[0] == 'T' && check_prefix_t_hyp[1] == '-')
+   if (pre_game_id[0] == 'T' && pre_game_id[1] == '-')
    {
       if (region_id == 'U' || region_id == 'J')
       {
@@ -530,7 +521,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
-   else if (check_prefix_g_hyp[0] == 'G' && check_prefix_g_hyp[1] == '-')
+   else if (pre_game_id[0] == 'G' && pre_game_id[1] == '-')
    {
       if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
          return false;
@@ -539,9 +530,9 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
-   else if (check_prefix_mk_hyp[0] == 'M'
-         && check_prefix_mk_hyp[1] == 'K'
-         && check_prefix_mk_hyp[2] == '-')
+   else if (pre_game_id[0] == 'M'
+         && pre_game_id[1] == 'K'
+         && pre_game_id[2] == '-')
    {
       if (     check_suffix_50[0] == '5' 
             && check_suffix_50[1] == '0')
@@ -578,8 +569,6 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    size_t _len;
    char raw_game_id[SAT_SERIAL_LEN+1];
    char region_id;
-   char check_prefix_t_hyp[10];
-   char check_prefix_mk_hyp[10];
    char check_suffix_5[10];
    char check_suffix_50[10];
    int length;
@@ -614,13 +603,9 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    string_trim_whitespace(raw_game_id);
 
    /** Dissect this raw serial into parts **/
-   strncpy(check_prefix_t_hyp, raw_game_id, 2);
-   check_prefix_t_hyp[2] = '\0';
-   strncpy(check_prefix_mk_hyp, raw_game_id, 3);
-   check_prefix_mk_hyp[3] = '\0';
-   length = strlen(raw_game_id);
-   strncpy(check_suffix_5, &raw_game_id[length - 2], 2);
-   check_suffix_5[2] = '\0';
+   length             = strlen(raw_game_id);
+   strncpy(check_suffix_5,  &raw_game_id[length - 2], 2);
+   check_suffix_5[2]  = '\0';
    strncpy(check_suffix_50, &raw_game_id[length - 2], 2);
    check_suffix_50[2] = '\0';
 
@@ -628,9 +613,9 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    switch (region_id)
    {
       case 'U':
-         if (     check_prefix_mk_hyp[0] == 'M'
-               && check_prefix_mk_hyp[1] == 'K'
-               && check_prefix_mk_hyp[2] == '-')
+         if (     raw_game_id[0] == 'M'
+               && raw_game_id[1] == 'K'
+               && raw_game_id[2] == '-')
          {
             strncpy(s, &raw_game_id[3], length - 3);
             s[length - 3] = '\0';
@@ -682,10 +667,6 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    int total_hyphens_recalc;
    char pre_game_id[50];
    char raw_game_id[50];
-   char check_prefix_t_hyp[10];
-   char check_prefix_t[10];
-   char check_prefix_hdr_hyp[10];
-   char check_prefix_mk_hyp[10];
    size_t length;
    size_t length_recalc;
    int index;
@@ -717,19 +698,9 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    length        = strlen(raw_game_id);
    total_hyphens = string_count_occurrences_single_character(raw_game_id, '-');
 
-   /** Dissect this raw serial into parts **/
-   strncpy(check_prefix_t_hyp, raw_game_id, 2);
-   check_prefix_t_hyp[2] = '\0';
-   strncpy(check_prefix_t, raw_game_id, 1);
-   check_prefix_t[1] = '\0';
-   strncpy(check_prefix_hdr_hyp, raw_game_id, 4);
-   check_prefix_hdr_hyp[4] = '\0';
-   strncpy(check_prefix_mk_hyp, raw_game_id, 3);
-   check_prefix_mk_hyp[3] = '\0';
-
    /** redump serials are built differently for each prefix **/
-   if (     check_prefix_t_hyp[0] == 'T'
-         && check_prefix_t_hyp[1] == '-')
+   if (     raw_game_id[0] == 'T'
+         && raw_game_id[1] == '-')
    {
       if (total_hyphens >= 2)
       {
@@ -766,7 +737,7 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
-   else if (check_prefix_t[0] == 'T')
+   else if (raw_game_id[0] == 'T')
    {
       strncpy(lgame_id, raw_game_id, 1);
       lgame_id[1]          = '\0';
@@ -817,10 +788,10 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       }
       return true;
    }
-   else if (check_prefix_hdr_hyp[0] == 'H'
-         && check_prefix_hdr_hyp[1] == 'D'
-         && check_prefix_hdr_hyp[2] == 'R'
-         && check_prefix_hdr_hyp[3] == '-')
+   else if (raw_game_id[0] == 'H'
+         && raw_game_id[1] == 'D'
+         && raw_game_id[2] == 'R'
+         && raw_game_id[3] == '-')
    {
       if (total_hyphens >= 2)
       {
@@ -842,9 +813,9 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
-   else if (check_prefix_mk_hyp[0] == 'M'
-         && check_prefix_mk_hyp[1] == 'K'
-         && check_prefix_mk_hyp[2] == '-')
+   else if (raw_game_id[0] == 'M'
+         && raw_game_id[1] == 'K'
+         && raw_game_id[2] == '-')
    {
 
       if (length <= 8)
