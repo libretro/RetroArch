@@ -870,11 +870,12 @@ static void content_file_get_path(
          if (!string_is_empty(archive_file))
          {
             char info_path[PATH_MAX_LENGTH];
-            info_path[0] = '\n';
-
             /* Build 'complete' archive file path */
-            snprintf(info_path, sizeof(info_path), "%s#%s",
-                  content_path, archive_file);
+            size_t _len       = strlcpy(info_path,
+                  content_path, sizeof(info_path));
+            info_path[_len  ] = '#';
+            info_path[_len+1] = '\0';
+            strlcpy(info_path, archive_file, sizeof(info_path));
 
             /* Update 'content' string_list */
             string_list_set(content, idx, info_path);

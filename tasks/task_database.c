@@ -989,6 +989,7 @@ static int task_database_iterate_serial_lookup(
 
    if (db_state->entry_index == 0)
    {
+      size_t _len;
       char query[50];
       char *serial_buf = bin_to_hex_alloc(
             (uint8_t*)db_state->serial,
@@ -997,9 +998,11 @@ static int task_database_iterate_serial_lookup(
       if (!serial_buf)
          return 1;
 
-      query[0] = '\0';
-
-      snprintf(query, sizeof(query), "{'serial': b'%s'}", serial_buf);
+      strlcpy(query, "{'serial': b'", sizeof(query));
+      _len          = strlcat(query, serial_buf, sizeof(query));
+      query[_len  ] = '\'';
+      query[_len+1] = '}';
+      query[_len+2] = '\0';
       database_info_list_iterate_new(db_state, query);
 
       free(serial_buf);
