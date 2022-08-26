@@ -148,9 +148,9 @@ core_info_t* steam_find_core_info_for_dlc(const char* name)
       char *start, *end;
       char core_info_name[256];
       core_info_t *core_info   = core_info_get(core_info_list, i);
-
       /* Find the opening parenthesis for the core name */
-      if (!(start = strchr(core_info->display_name, '('))))
+      char *start              = strchr(core_info->display_name, '(');
+      if (!start)
          continue;
 
       /* Skip the first parenthesis and copy it to the stack */
