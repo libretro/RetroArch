@@ -392,38 +392,29 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
    }
 
    /* Write output file */
-   rjsonwriter_raw(writer, "{", 1);
-   rjsonwriter_raw(writer, "\n", 1);
+   rjsonwriter_raw(writer, "{\n", 2);
 
    /* > Version entry */
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "version");
-   rjsonwriter_raw(writer, ":", 1);
-   rjsonwriter_raw(writer, " ", 1);
+   rjsonwriter_raw(writer, ": ", 2);
    rjsonwriter_add_string(writer, "1.0");
-   rjsonwriter_raw(writer, ",", 1);
-   rjsonwriter_raw(writer, "\n", 1);
+   rjsonwriter_raw(writer, ",\n", 2);
 
    /* > image index entry */
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "image_index");
-   rjsonwriter_raw(writer, ":", 1);
-   rjsonwriter_raw(writer, " ", 1);
+   rjsonwriter_raw(writer, ": ", 2);
    rjsonwriter_rawf(writer, "%u", disk_index_file->image_index);
-   rjsonwriter_raw(writer, ",", 1);
-   rjsonwriter_raw(writer, "\n", 1);
+   rjsonwriter_raw(writer, ",\n", 2);
 
    /* > image path entry */
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "image_path");
-   rjsonwriter_raw(writer, ":", 1);
-   rjsonwriter_raw(writer, " ", 1);
+   rjsonwriter_raw(writer, ": ", 2);
    rjsonwriter_add_string(writer, disk_index_file->image_path);
-   rjsonwriter_raw(writer, "\n", 1);
-
    /* > Finalise */
-   rjsonwriter_raw(writer, "}", 1);
-   rjsonwriter_raw(writer, "\n", 1);
+   rjsonwriter_raw(writer, "\n}\n", 3);
 
    /* Free JSON writer */
    if (!rjsonwriter_free(writer))

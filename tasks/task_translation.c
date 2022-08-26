@@ -968,45 +968,34 @@ bool run_translation_service(settings_t *settings, bool paused)
    if (!(jsonwriter = rjsonwriter_open_memory()))
       goto finish;
 
-   rjsonwriter_raw(jsonwriter, "{", 1);
-   rjsonwriter_raw(jsonwriter, " ", 1);
+   rjsonwriter_raw(jsonwriter, "{ ", 2);
    rjsonwriter_add_string(jsonwriter, "image");
-   rjsonwriter_raw(jsonwriter, ":", 1);
-   rjsonwriter_raw(jsonwriter, " ", 1);
+   rjsonwriter_raw(jsonwriter, ": ", 2);
    rjsonwriter_add_string_len(jsonwriter, bmp64_buffer, bmp64_length);
 
    /* Form request... */
    if (system_label)
    {
-      rjsonwriter_raw(jsonwriter, ",", 1);
-      rjsonwriter_raw(jsonwriter, " ", 1);
+      rjsonwriter_raw(jsonwriter, ", ", 2);
       rjsonwriter_add_string(jsonwriter, "label");
-      rjsonwriter_raw(jsonwriter, ":", 1);
-      rjsonwriter_raw(jsonwriter, " ", 1);
+      rjsonwriter_raw(jsonwriter, ": ", 2);
       rjsonwriter_add_string(jsonwriter, system_label);
    }
 
-   rjsonwriter_raw(jsonwriter, ",", 1);
-   rjsonwriter_raw(jsonwriter, " ", 1);
+   rjsonwriter_raw(jsonwriter, ", ", 2);
    rjsonwriter_add_string(jsonwriter, "state");
-   rjsonwriter_raw(jsonwriter, ":", 1);
-   rjsonwriter_raw(jsonwriter, " ", 1);
-   rjsonwriter_raw(jsonwriter, "{", 1);
-   rjsonwriter_raw(jsonwriter, " ", 1);
+   rjsonwriter_raw(jsonwriter, ": { ", 4);
    rjsonwriter_add_string(jsonwriter, "paused");
-   rjsonwriter_raw(jsonwriter, ":", 1);
-   rjsonwriter_raw(jsonwriter, " ", 1);
+   rjsonwriter_raw(jsonwriter, ": ", 2);
    rjsonwriter_rawf(jsonwriter, "%u", (paused ? 1 : 0));
    {
       static const char* state_labels[] = { "b", "y", "select", "start", "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3" };
       int i;
       for (i = 0; i < ARRAY_SIZE(state_labels); i++)
       {
-         rjsonwriter_raw(jsonwriter, ",", 1);
-         rjsonwriter_raw(jsonwriter, " ", 1);
+         rjsonwriter_raw(jsonwriter, ", ", 2);
          rjsonwriter_add_string(jsonwriter, state_labels[i]);
-         rjsonwriter_raw(jsonwriter, ":", 1);
-         rjsonwriter_raw(jsonwriter, " ", 1);
+         rjsonwriter_raw(jsonwriter, ": ", 2);
 #ifdef HAVE_ACCESSIBILITY
          rjsonwriter_rawf(jsonwriter, "%u",
                (input_st->ai_gamepad_state[i] ? 1 : 0));
@@ -1015,10 +1004,7 @@ bool run_translation_service(settings_t *settings, bool paused)
 #endif
       }
    }
-   rjsonwriter_raw(jsonwriter, " ", 1);
-   rjsonwriter_raw(jsonwriter, "}", 1);
-   rjsonwriter_raw(jsonwriter, " ", 1);
-   rjsonwriter_raw(jsonwriter, "}", 1);
+   rjsonwriter_raw(jsonwriter, " } }", 4);
 
    if (!(json_buffer = rjsonwriter_get_memory_buffer(jsonwriter, NULL)))
       goto finish; /* ran out of memory */
