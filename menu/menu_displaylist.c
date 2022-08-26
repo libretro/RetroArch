@@ -12213,8 +12213,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
           * a single instance where this case is met... */
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-         if (     string_starts_with(info->path, "content_")
-               && string_ends_with(info->path, ".lpl"))
+         if (     string_starts_with_size(info->path, "content_", STRLEN_CONST("content_"))
+               && string_ends_with_size(info->path, ".lpl", strlen(info->path), STRLEN_CONST(".lpl")))
          {
             if (string_is_equal(info->path,
                      FILE_PATH_CONTENT_HISTORY))

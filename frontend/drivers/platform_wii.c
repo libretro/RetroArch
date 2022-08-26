@@ -141,10 +141,10 @@ static void dol_copy_raw_argv(const char *dolpath,
       strlcpy(cmdline, __system_argv->argv[0],
          strchr(__system_argv->argv[0], ':') - __system_argv->argv[0] + 2);
    /* a relative path */
-   else if (!string_starts_with(dolpath, "sd:/") &&
-         !string_starts_with(dolpath, "usb:/") &&
-         !string_starts_with(dolpath, "carda:/") &&
-         !string_starts_with(dolpath, "cardb:/"))
+   else if (   !string_starts_with_size(dolpath, "sd:/",  STRLEN_CONST("sd:/"))
+            && !string_starts_with_size(dolpath, "usb:/", STRLEN_CONST("usb:/"))
+            && !string_starts_with_size(dolpath, "carda:/", STRLEN_CONST("carda:/"))
+            && !string_starts_with_size(dolpath, "cardb:/", STRLEN_CONST("cardb:/")))
       fill_pathname_parent_dir(cmdline, __system_argv->argv[0],
          PATH_MAX_LENGTH);
    /* fullpath */

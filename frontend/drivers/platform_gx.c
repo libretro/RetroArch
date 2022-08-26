@@ -215,8 +215,8 @@ static void frontend_gx_get_env(int *argc, char *argv[],
          /* When using external loaders (Wiiflow, etc),
             getcwd doesn't return the path correctly and as a result,
             the cfg file is not found. */
-         if (string_starts_with(argv[0], "usb1") ||
-               string_starts_with(argv[0], "usb2"))
+         if (  string_starts_with_size(argv[0], "usb1", STRLEN_CONST("usb1")) ||
+               string_starts_with_size(argv[0], "usb2", STRLEN_CONST("usb2")))
          {
             strcpy_literal(g_defaults.dirs[DEFAULT_DIR_CORE], "usb");
             strlcat(g_defaults.dirs[DEFAULT_DIR_CORE], argv[0] + 4,

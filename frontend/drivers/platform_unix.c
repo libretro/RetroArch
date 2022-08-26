@@ -1246,7 +1246,7 @@ static enum frontend_architecture frontend_unix_get_arch(void)
          string_is_equal(val, "armv7b")
       )
       return FRONTEND_ARCH_ARMV7;
-   else if (string_starts_with(val, "arm"))
+   else if (string_starts_with_size(val, "arm", STRLEN_CONST("arm")))
       return FRONTEND_ARCH_ARM;
    else if (string_is_equal(val, "x86_64"))
       return FRONTEND_ARCH_X86_64;
