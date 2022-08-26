@@ -1256,14 +1256,17 @@ void runtime_log_save(runtime_log_t *runtime_log)
    }
 
    /* Write output file */
-   rjsonwriter_raw(writer, "{\n", 2);
+   rjsonwriter_raw(writer, "{", 1);
+   rjsonwriter_raw(writer, "\n", 1);
 
    /* > Version entry */
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "version");
-   rjsonwriter_raw(writer, ": ", 2);
+   rjsonwriter_raw(writer, ":", 1);
+   rjsonwriter_raw(writer, " ", 1);
    rjsonwriter_add_string(writer, "1.0");
-   rjsonwriter_raw(writer, ",\n", 2);
+   rjsonwriter_raw(writer, ",", 1);
+   rjsonwriter_raw(writer, "\n", 1);
 
    /* > Runtime entry */
    snprintf(value_string,
@@ -1274,9 +1277,11 @@ void runtime_log_save(runtime_log_t *runtime_log)
     
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "runtime");
-   rjsonwriter_raw(writer, ": ", 2);
+   rjsonwriter_raw(writer, ":", 1);
+   rjsonwriter_raw(writer, " ", 1);
    rjsonwriter_add_string(writer, value_string);
-   rjsonwriter_raw(writer, ",\n", 2);
+   rjsonwriter_raw(writer, ",", 1);
+   rjsonwriter_raw(writer, "\n", 1);
 
    /* > Last played entry */
    value_string[0] = '\0';
@@ -1289,12 +1294,14 @@ void runtime_log_save(runtime_log_t *runtime_log)
 
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "last_played");
-   rjsonwriter_raw(writer, ": ", 2);
+   rjsonwriter_raw(writer, ":", 1);
+   rjsonwriter_raw(writer, " ", 1);
    rjsonwriter_add_string(writer, value_string);
    rjsonwriter_raw(writer, "\n", 1);
 
    /* > Finalise */
-   rjsonwriter_raw(writer, "}\n", 2);
+   rjsonwriter_raw(writer, "}", 1);
+   rjsonwriter_raw(writer, "\n", 1);
 
    /* Free JSON writer */
    if (!rjsonwriter_free(writer))

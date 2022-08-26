@@ -862,15 +862,21 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    rjsonwriter_set_options(writer, RJSONWRITER_OPTION_SKIP_WHITESPACE);
 #endif
 
-   rjsonwriter_raw(writer, "{\n", 2);
+   rjsonwriter_raw(writer, "{", 1);
+   rjsonwriter_raw(writer, "\n", 1);
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "version");
-   rjsonwriter_raw(writer, ": ", 2);
+   rjsonwriter_raw(writer, ":", 1);
+   rjsonwriter_raw(writer, " ", 1);
    rjsonwriter_add_string(writer, CORE_INFO_CACHE_VERSION);
-   rjsonwriter_raw(writer, ",\n", 2);
+   rjsonwriter_raw(writer, ",", 1);
+   rjsonwriter_raw(writer, "\n", 1);
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "items");
-   rjsonwriter_raw(writer, ": [\n", 4);
+   rjsonwriter_raw(writer, ":", 1);
+   rjsonwriter_raw(writer, " ", 1);
+   rjsonwriter_raw(writer, "[", 1);
+   rjsonwriter_raw(writer, "\n", 1);
 
    for (i = 0; i < list->length; i++)
    {
@@ -880,124 +886,167 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
          continue;
 
       if (i > 0)
-         rjsonwriter_raw(writer, ",\n", 2);
+      {
+         rjsonwriter_raw(writer, ",", 1);
+         rjsonwriter_raw(writer, "\n", 1);
+      }
 
       rjsonwriter_add_spaces(writer, 4);
-      rjsonwriter_raw(writer, "{\n", 2);
+      rjsonwriter_raw(writer, "{", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "display_name");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->display_name);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "display_version");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->display_version);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "core_name");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->core_name);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "system_manufacturer");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->system_manufacturer);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "systemname");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->systemname);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "system_id");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->system_id);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "supported_extensions");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->supported_extensions);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "authors");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->authors);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "permissions");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->permissions);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "licenses");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->licenses);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "categories");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->categories);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "databases");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->databases);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "notes");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->notes);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "required_hw_api");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->required_hw_api);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "description");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->description);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       if (info->firmware_count > 0)
       {
          rjsonwriter_add_spaces(writer, 6);
          rjsonwriter_add_string(writer, "firmware");
-         rjsonwriter_raw(writer, ": [\n", 4);
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
+         rjsonwriter_raw(writer, "[", 1);
+         rjsonwriter_raw(writer, "\n", 1);
 
          for (j = 0; j < info->firmware_count; j++)
          {
             rjsonwriter_add_spaces(writer, 8);
-            rjsonwriter_raw(writer, "{\n", 2);
+            rjsonwriter_raw(writer, "{", 1);
+            rjsonwriter_raw(writer, "\n", 1);
             rjsonwriter_add_spaces(writer, 10);
             rjsonwriter_add_string(writer, "path");
-            rjsonwriter_raw(writer, ": ", 2);
+            rjsonwriter_raw(writer, ":", 1);
+            rjsonwriter_raw(writer, " ", 1);
             rjsonwriter_add_string(writer, info->firmware[j].path);
-            rjsonwriter_raw(writer, ",\n", 2);
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
             rjsonwriter_add_spaces(writer, 10);
             rjsonwriter_add_string(writer, "desc");
-            rjsonwriter_raw(writer, ": ", 2);
+            rjsonwriter_raw(writer, ":", 1);
+            rjsonwriter_raw(writer, " ", 1);
             rjsonwriter_add_string(writer, info->firmware[j].desc);
-            rjsonwriter_raw(writer, ",\n", 2);
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
             rjsonwriter_add_spaces(writer, 10);
             rjsonwriter_add_string(writer, "optional");
-            rjsonwriter_raw(writer, ": ", 2);
+            rjsonwriter_raw(writer, ":", 1);
+            rjsonwriter_raw(writer, " ", 1);
             {
                bool value = info->firmware[j].optional;
                rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
@@ -1013,78 +1062,100 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
          }
 
          rjsonwriter_add_spaces(writer, 6);
-         rjsonwriter_raw(writer, "],\n", 3);
+         rjsonwriter_raw(writer, "]", 1);
+         rjsonwriter_raw(writer, ",", 1);
+         rjsonwriter_raw(writer, "\n", 1);
       }
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "core_file_id");
-      rjsonwriter_raw(writer, ":\n", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, "\n", 1);
       rjsonwriter_add_spaces(writer, 6);
-      rjsonwriter_raw(writer, "{\n", 2);
+      rjsonwriter_raw(writer, "{", 1);
+      rjsonwriter_raw(writer, "\n", 1);
       rjsonwriter_add_spaces(writer, 8);
       rjsonwriter_add_string(writer, "str");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_add_string(writer, info->core_file_id.str);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
       rjsonwriter_add_spaces(writer, 8);
       rjsonwriter_add_string(writer, "hash");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_rawf(writer, "%u", info->core_file_id.hash);
       rjsonwriter_raw(writer, "\n", 1);
       rjsonwriter_add_spaces(writer, 6);
-      rjsonwriter_raw(writer, "},\n", 3);
+      rjsonwriter_raw(writer, "}", 1);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "firmware_count");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_rawf(writer, "%u", info->firmware_count);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "savestate_support_level");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_rawf(writer, "%u", info->savestate_support_level);
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "has_info");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       {
          bool value = info->has_info;
          rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
       }
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "supports_no_game");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       {
          bool value = info->supports_no_game;
          rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
       }
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "single_purpose");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       {
          bool value = info->single_purpose;
          rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
       }
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "database_match_archive_member");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       {
          bool value = info->database_match_archive_member;
          rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
       }
-      rjsonwriter_raw(writer, ",\n", 2);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 6);
       rjsonwriter_add_string(writer, "is_experimental");
-      rjsonwriter_raw(writer, ": ", 2);
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
       {
          bool value = info->is_experimental;
          rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
@@ -1097,7 +1168,10 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
 
    rjsonwriter_raw(writer, "\n", 1);
    rjsonwriter_add_spaces(writer, 2);
-   rjsonwriter_raw(writer, "]\n}\n", 4);
+   rjsonwriter_raw(writer, "]", 1);
+   rjsonwriter_raw(writer, "\n", 1);
+   rjsonwriter_raw(writer, "}", 1);
+   rjsonwriter_raw(writer, "\n", 1);
    rjsonwriter_free(writer);
 
    RARCH_LOG("[Core Info] Wrote to cache file: %s\n", file_path);
