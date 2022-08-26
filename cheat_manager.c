@@ -196,16 +196,22 @@ bool cheat_manager_save(
       unsigned j;
       char endian_key[100];
       char key[256];
-      char desc_key[256];
-      char code_key[256];
-      char enable_key[256];
+      char desc_key[128];
+      char code_key[128];
+      char enable_key[128];
+      char formatted_number[8];
+ 
+      formatted_number[0] = '\0';
+      snprintf(formatted_number, sizeof(formatted_number), "cheat%u_", i);
 
-      key[0] = endian_key[0] = desc_key[0] = code_key[0] = enable_key[0] = '\0';
-
-      snprintf(endian_key, sizeof(endian_key), "cheat%u_big_endian", i);
-      snprintf(desc_key, sizeof(desc_key), "cheat%u_desc", i);
-      snprintf(code_key, sizeof(code_key), "cheat%u_code", i);
-      snprintf(enable_key, sizeof(enable_key), "cheat%u_enable", i);
+      strlcpy(endian_key, formatted_number, sizeof(endian_key));
+      strlcat(endian_key, "big_endian", sizeof(endian_key));
+      strlcpy(desc_key, formatted_number, sizeof(desc_key));
+      strlcat(desc_key, "desc", sizeof(desc_key));
+      strlcpy(code_key, formatted_number, sizeof(code_key));
+      strlcat(code_key, "code", sizeof(code_key));
+      strlcpy(enable_key, formatted_number, sizeof(enable_key));
+      strlcat(enable_key, "enable", sizeof(enable_key));
 
       if (!string_is_empty(cheat_st->cheats[i].desc))
          config_set_string(conf, desc_key, cheat_st->cheats[i].desc);
