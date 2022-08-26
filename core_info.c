@@ -1895,7 +1895,7 @@ static void core_info_list_resolve_all_extensions(
       if (!core_info_list->list[i].supported_extensions)
          continue;
 
-      _len = strlcat(core_info_list->all_ext,
+             strlcat(core_info_list->all_ext,
             core_info_list->list[i].supported_extensions, all_ext_len);
       _len = strlcat(core_info_list->all_ext, "|", all_ext_len);
    }

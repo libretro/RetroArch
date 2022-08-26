@@ -470,7 +470,7 @@ static void rcheevos_lboard_canceled(rcheevos_ralboard_t * lboard,
 
    if (rcheevos_locals.leaderboard_notifications)
    {
-      size_t _len    = strlcpy(buffer, "Leaderboard attempt failed: ",
+      strlcpy(buffer, "Leaderboard attempt failed: ",
             sizeof(buffer));
       strlcat(buffer, lboard->title, sizeof(buffer));
       runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
