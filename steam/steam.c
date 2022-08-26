@@ -157,7 +157,8 @@ core_info_t* steam_find_core_info_for_dlc(const char* name)
       strlcpy(core_info_name, start + 1, sizeof(core_info_name));
 
       /* Null terminate at the closing parenthesis. */
-      if (!(end = strchr((const char*)&core_info_name, ')'))
+      char *end = strchr((const char*)&core_info_name, ')');
+      if (!end)
             continue;
 
       *end = '\0';
