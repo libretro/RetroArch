@@ -339,7 +339,7 @@ static bool ctr_update_state_date_from_file(void *data)
 
 error:
   ctr->state_data_exist = false;
-  strlcpy(ctr->state_data, "00/00/0000", sizeof(ctr->state_date));
+  strlcpy(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
   return false;
 }
 
