@@ -2103,20 +2103,29 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_SETTING_ACTION_LOADSTATE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LOADSTATE];
       case MENU_SETTING_ACTION_CORE_OPTIONS:
-         if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS)))
+         if (string_starts_with(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS)))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_VIDEO];
-         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS)))
+         else if (string_starts_with(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS)) ||
+                  string_starts_with(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS)))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_AUDIO];
          else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
          else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS)))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_OSD];
-         else if (string_is_equal(enum_path, "Media"))
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS)) ||
+                  string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS)))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LATENCY];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS)))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FRAMESKIP];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS)) ||
+                  string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS)))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RDB];
-         else if (string_is_equal(enum_path, "System"))
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS)) ||
+                  string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS)))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DRIVERS];
-         else
-            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
+         else if (strstr(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS)))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_OVERRIDE];
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
       case MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST:
       case MENU_SETTING_ACTION_REMAP_FILE_MANAGER_LIST:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
