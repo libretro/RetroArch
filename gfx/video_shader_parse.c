@@ -717,15 +717,15 @@ static const char *scale_type_to_str(enum gfx_scale_type type)
 
 static void shader_write_scale_dim(config_file_t *conf,
       const char *dim,
+      const char *formatted_num,
       enum gfx_scale_type type, 
       float scale,
-      unsigned absolute, 
-      unsigned i)
+      unsigned absolute)
 {
    char key[64];
    char dim_str[64];
-   dim_str[0] = '\0';
-   snprintf(dim_str, sizeof(dim_str), "%s%u", dim, i);
+   strlcpy(dim_str, dim, sizeof(dim_str));
+   strlcat(dim_str, formatted_num, sizeof(dim_str));
 
    strlcpy(key, "scale_type_", sizeof(key));
    strlcat(key, dim_str,       sizeof(key));
@@ -740,14 +740,10 @@ static void shader_write_scale_dim(config_file_t *conf,
 }
 
 static void shader_write_fbo(config_file_t *conf,
-      const struct gfx_fbo_scale *fbo, unsigned i)
+      const char *formatted_num,
+      const struct gfx_fbo_scale *fbo)
 {
    char key[64];
-   char formatted_num[8];
-   formatted_num[0] = '\0';
-
-   snprintf(formatted_num, sizeof(formatted_num), "%u", i);
-
    strlcpy(key, "float_framebuffer", sizeof(key));
    strlcat(key, formatted_num,       sizeof(key));
    config_set_string(conf, key, fbo->fp_fbo ? "true" : "false");
@@ -758,8 +754,8 @@ static void shader_write_fbo(config_file_t *conf,
    if (!fbo->valid)
       return;
 
-   shader_write_scale_dim(conf, "x", fbo->type_x, fbo->scale_x, fbo->abs_x, i);
-   shader_write_scale_dim(conf, "y", fbo->type_y, fbo->scale_y, fbo->abs_y, i);
+   shader_write_scale_dim(conf, "x", formatted_num, fbo->type_x, fbo->scale_x, fbo->abs_x);
+   shader_write_scale_dim(conf, "y", formatted_num, fbo->type_y, fbo->scale_y, fbo->abs_y);
 }
 
 /**
@@ -823,7 +819,6 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
 
       config_set_path(conf, key, tmp_rel);
 
-
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {
          strlcpy(key, "filter_linear", sizeof(key));
@@ -853,7 +848,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       strlcat(key, formatted_num, sizeof(key));
       config_set_string(conf, key, pass->alias);
 
-      shader_write_fbo(conf, &pass->fbo, i);
+      shader_write_fbo(conf, formatted_num, &pass->fbo);
    }
 
    /* Write shader parameters which are different than the default shader values */
