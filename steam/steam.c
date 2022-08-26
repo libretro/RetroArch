@@ -447,7 +447,8 @@ void steam_update_presence(enum presence presence, bool force)
                   content[_len+2]    = '\0';
                   if (core_info)
                   {
-                     _len            = strlcat(content, core_info->systemname);
+                     _len            = strlcat(content, core_info->systemname,
+                           sizeof(content));
                      content[_len  ] = ')';
                      content[_len+1] = '\0';
                   }
@@ -467,7 +468,8 @@ void steam_update_presence(enum presence presence, bool force)
                   content[_len+2]    = '\0';
                   if (core_info)
                   {
-                     _len            = strlcat(content, core_info->core_name);
+                     _len            = strlcat(content, core_info->core_name,
+                           sizeof(content));
                      content[_len  ] = ')';
                      content[_len+1] = '\0';
                   }
@@ -487,11 +489,13 @@ void steam_update_presence(enum presence presence, bool force)
                   content[_len+2]    = '\0';
                   if (core_info)
                   {
-                     _len            = strlcat(content, core_info->systemname);
+                     _len            = strlcat(content, core_info->systemname,
+                           sizeof(content));
                      content[_len  ] = ' ';
                      content[_len+1] = '-';
                      content[_len+2] = ' ';
-                     _len            = strlcat(content, core_info->core_name);
+                     _len            = strlcat(content, core_info->core_name,
+                           sizeof(content));
                      content[_len  ] = ')';
                      content[_len+1] = '\0';
                   }
