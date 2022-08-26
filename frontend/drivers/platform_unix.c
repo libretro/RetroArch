@@ -689,7 +689,8 @@ static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
 static void check_proc_acpi_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
 {
-   char path[1024];
+   char basenode[512];
+   char path[PATH_MAX_LENGTH];
    const char *base  = proc_acpi_battery_path;
    int64_t length    = 0;
    char         *ptr = NULL;
@@ -704,9 +705,8 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
    int          secs = -1;
    int           pct = -1;
 
-   path[0]           = '\0';
-
-   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
+   fill_pathname_join_special(basenode, base, node, sizeof(basenode));
+   fill_pathname_join_special(path, basenode, "state", sizeof(path));
 
    if (!filestream_exists(path))
       goto end;
@@ -714,7 +714,7 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
    if (!filestream_read_file(path, (void**)&buf, &length))
       goto end;
 
-   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "info");
+   fill_pathname_join_special(path, basenode, "info", sizeof(path));
    if (!filestream_read_file(path, (void**)&buf_info, &length))
       goto end;
 
@@ -798,7 +798,8 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       bool *have_battery, bool *charging, int *seconds,
       int *percent, int *valid_pct_idx)
 {
-   char path[1024];
+   char basenode[512];
+   char path[PATH_MAX_LENGTH];
    const char *base  = proc_acpi_sysfs_battery_path;
    char        *buf  = NULL;
    char         *ptr = NULL;
@@ -813,10 +814,9 @@ static void check_proc_acpi_sysfs_battery(const char *node,
    int          secs = -1;
    int           pct = -1;
 
-   path[0]           = '\0';
-
    /* Stat type. Avoid unknown or device supplies. Missing is considered System. */
-   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "scope");
+   fill_pathname_join_special(basenode, base, node, sizeof(basenode));
+   fill_pathname_join_special(path, basenode, "scope", sizeof(path));
 
    if (filestream_exists(path) != 0)
    {
@@ -831,7 +831,7 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       }
    }
 
-   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "status");
+   fill_pathname_join_special(path, basenode, "status", sizeof(path));
 
    if (!filestream_exists(path))
       return;
@@ -854,7 +854,7 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       buf = NULL;
    }
 
-   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "capacity");
+   fill_pathname_join_special(path, basenode, "capacity", sizeof(path));
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       goto end;
 
@@ -874,7 +874,8 @@ end:
 
 static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 {
-   char path[1024];
+   char basenode[512];
+   char path[PATH_MAX_LENGTH];
    const char *base = proc_acpi_ac_adapter_path;
    char       *buf  = NULL;
    char        *ptr = NULL;
@@ -882,9 +883,8 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
    char        *val = NULL;
    int64_t length   = 0;
 
-   path[0]          = '\0';
-
-   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
+   fill_pathname_join_special(basenode, base, node, sizeof(basenode));
+   fill_pathname_join_special(path, basenode, "state", sizeof(path));
    if (!filestream_exists(path))
       return;
 

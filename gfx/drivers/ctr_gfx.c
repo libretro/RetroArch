@@ -21,6 +21,7 @@
 
 #include <retro_inline.h>
 #include <retro_math.h>
+#include <compat/strl.h>
 #include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H
@@ -64,8 +65,8 @@ extern uint64_t lifecycle_state;
  * Have to keep track of bottom screen enable state
  * externally, otherwise cannot detect current state
  * when reinitialising... */
-bool ctr_bottom_screen_enabled = true;
-int fadeCount = 256;
+bool ctr_bottom_screen_enabled  = true;
+static int fadeCount            = 256;
 
 static void ctr_set_bottom_screen_enable(bool enabled, bool idle);
 
@@ -265,6 +266,7 @@ static const char *ctr_texture_path(unsigned id)
          return "bottom_menu.png";
       case CTR_TEXTURE_STATE_THUMBNAIL:
          {
+            size_t _len;
             static char texture_path[PATH_MAX_LENGTH];
             char state_path[PATH_MAX_LENGTH];
 
@@ -272,8 +274,13 @@ static const char *ctr_texture_path(unsigned id)
                      sizeof(state_path)))
                return NULL;
 
-            snprintf(texture_path, sizeof(texture_path),
-                  "%s.png", state_path);
+            _len                 = strlcpy(texture_path,
+                  state_path, sizeof(texture_path));
+            texture_path[_len  ] = '.';
+            texture_path[_len+1] = 'p';
+            texture_path[_len+2] = 'n';
+            texture_path[_len+3] = 'g';
+            texture_path[_len+4] = '\0';
 
             return path_basename_nocompression(texture_path);
          }
@@ -289,7 +296,7 @@ static void ctr_update_state_date(void *data)
    ctr_video_t *ctr = (ctr_video_t*)data;
    time_t now       = time(NULL);
    struct tm *t     = localtime(&now);
-   sprintf(ctr->state_date, "%02d/%02d/%d",
+   snprintf(ctr->state_date, sizeof(ctr->state_date), "%02d/%02d/%d",
       t->tm_mon + 1, t->tm_mday, t->tm_year + 1900);
 }
 
@@ -325,14 +332,14 @@ static bool ctr_update_state_date_from_file(void *data)
    ft    = mtime;
    t     = localtime(&ft);
 #endif
-   sprintf(ctr->state_date, "%02d/%02d/%d",
+   snprintf(ctr->state_date, sizeof(ctr->state_date), "%02d/%02d/%d",
       t->tm_mon + 1, t->tm_mday, t->tm_year + 1900);
       
   return true;
 
 error:
   ctr->state_data_exist = false;
-  snprintf(ctr->state_date, sizeof(ctr->state_date), "00/00/0000");
+  strlcpy(ctr->state_data, "00/00/0000", sizeof(ctr->state_date));
   return false;
 }
 
@@ -535,7 +542,6 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
                   state_tmp_touch.py > 99 &&
                   state_tmp_touch.py < 230) 
             {
-               char screenshot_full_path[PATH_MAX_LENGTH];
 
                struct ctr_bottom_texture_data *o =
                   &ctr->bottom_textures[CTR_TEXTURE_STATE_THUMBNAIL];
@@ -576,9 +582,11 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
 
                if (settings->bools.savestate_thumbnail_enable)
                {
-                  sprintf(screenshot_full_path, "%s/%s",
+                  char screenshot_full_path[PATH_MAX_LENGTH];
+                  fill_pathname_join_special(screenshot_full_path,
                      dir_get_ptr(RARCH_DIR_SAVESTATE),
-                     ctr_texture_path(CTR_TEXTURE_STATE_THUMBNAIL));
+                     ctr_texture_path(CTR_TEXTURE_STATE_THUMBNAIL),
+                     sizeof(screenshot_full_path));
 
                   take_screenshot(NULL, screenshot_full_path, true,
                      video_driver_cached_frame_has_valid_framebuffer(),
@@ -1048,93 +1056,93 @@ static void* ctr_init(const video_info_t* video,
 {
    size_t i;
    float refresh_rate;
-   u8 device_model      = 0xFF;
-   void* ctrinput       = NULL;
-   settings_t *settings = config_get_ptr();
-   bool lcd_bottom      = settings->bools.video_3ds_lcd_bottom;
-   bool speedup_enable  = settings->bools.new3ds_speedup_enable;
-   ctr_video_t* ctr     = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
+   u8 device_model                 = 0xFF;
+   void* ctrinput                  = NULL;
+   settings_t *settings            = config_get_ptr();
+   bool lcd_bottom                 = settings->bools.video_3ds_lcd_bottom;
+   bool speedup_enable             = settings->bools.new3ds_speedup_enable;
+   ctr_video_t* ctr                = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
 
    if (!ctr)
       return NULL;
 
    memset(ctr, 0, sizeof(ctr_video_t));
 
-   ctr->vp.x                = 0;
-   ctr->vp.y                = 0;
-   ctr->vp.width            = CTR_TOP_FRAMEBUFFER_WIDTH;
-   ctr->vp.height           = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   ctr->vp.full_width       = CTR_TOP_FRAMEBUFFER_WIDTH;
-   ctr->vp.full_height      = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->vp.x                       = 0;
+   ctr->vp.y                       = 0;
+   ctr->vp.width                   = CTR_TOP_FRAMEBUFFER_WIDTH;
+   ctr->vp.height                  = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->vp.full_width              = CTR_TOP_FRAMEBUFFER_WIDTH;
+   ctr->vp.full_height             = CTR_TOP_FRAMEBUFFER_HEIGHT;
    video_driver_set_size(ctr->vp.width, ctr->vp.height);
 
-   ctr->drawbuffers.top.left = vramAlloc(CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
-   ctr->drawbuffers.top.right = (void*)((uint32_t*)ctr->drawbuffers.top.left + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT);
-   ctr->drawbuffers.bottom = vramAlloc(CTR_BOTTOM_FRAMEBUFFER_WIDTH * CTR_BOTTOM_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
+   ctr->drawbuffers.top.left       = vramAlloc(CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
+   ctr->drawbuffers.top.right      = (void*)((uint32_t*)ctr->drawbuffers.top.left + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT);
+   ctr->drawbuffers.bottom         = vramAlloc(CTR_BOTTOM_FRAMEBUFFER_WIDTH * CTR_BOTTOM_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
 
-   ctr->display_list_size = 0x4000;
-   ctr->display_list = linearAlloc(ctr->display_list_size * sizeof(uint32_t));
+   ctr->display_list_size          = 0x4000;
+   ctr->display_list               = linearAlloc(
+         ctr->display_list_size * sizeof(uint32_t));
    GPU_Reset(NULL, ctr->display_list, ctr->display_list_size);
 
-   ctr->vertex_cache.size = 0x1000;
-   ctr->vertex_cache.buffer = linearAlloc(ctr->vertex_cache.size * sizeof(ctr_vertex_t));
-   ctr->vertex_cache.current = ctr->vertex_cache.buffer;
+   ctr->vertex_cache.size          = 0x1000;
+   ctr->vertex_cache.buffer        = linearAlloc(ctr->vertex_cache.size * sizeof(ctr_vertex_t));
+   ctr->vertex_cache.current       = ctr->vertex_cache.buffer;
 
-   ctr->bottom_textures = (struct ctr_bottom_texture_data *)calloc(CTR_TEXTURE_LAST,
+   ctr->bottom_textures            = (struct ctr_bottom_texture_data *)calloc(CTR_TEXTURE_LAST,
       sizeof(*ctr->bottom_textures));
 
-   ctr->init_bottom_menu = false;
-   ctr->state_data_exist = false;
-   ctr->render_font_bottom = false;
-   ctr->refresh_bottom_menu = true;
+   ctr->init_bottom_menu           = false;
+   ctr->state_data_exist           = false;
+   ctr->render_font_bottom         = false;
+   ctr->refresh_bottom_menu        = true;
    ctr->render_state_from_png_file = false;
-   ctr->bottom_menu = CTR_BOTTOM_MENU_NOT_AVAILABLE;
-   ctr->prev_bottom_menu = CTR_BOTTOM_MENU_NOT_AVAILABLE;
-   ctr->bottom_check_idle = false;
-   ctr->bottom_is_idle = false;
-   ctr->bottom_is_fading = false;
-   ctr->idle_timestamp = 0;
-   ctr->state_slot = settings->ints.state_slot;
+   ctr->bottom_menu                = CTR_BOTTOM_MENU_NOT_AVAILABLE;
+   ctr->prev_bottom_menu           = CTR_BOTTOM_MENU_NOT_AVAILABLE;
+   ctr->bottom_check_idle          = false;
+   ctr->bottom_is_idle             = false;
+   ctr->bottom_is_fading           = false;
+   ctr->idle_timestamp             = 0;
+   ctr->state_slot                 = settings->ints.state_slot;
 
-   snprintf(ctr->state_date, sizeof(ctr->state_date), "%s", "00/00/0000");
-   ctr->state_date[CTR_STATE_DATE_SIZE - 1] = '\0';
+   strlcpy(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
 
-   ctr->rgb32 = video->rgb32;
-   ctr->texture_width = video->input_scale * RARCH_SCALE_BASE;
-   ctr->texture_height = video->input_scale * RARCH_SCALE_BASE;
-   ctr->texture_linear =
+   ctr->rgb32                      = video->rgb32;
+   ctr->texture_width              = video->input_scale * RARCH_SCALE_BASE;
+   ctr->texture_height             = video->input_scale * RARCH_SCALE_BASE;
+   ctr->texture_linear             =
          linearMemAlign(ctr->texture_width * ctr->texture_height * (ctr->rgb32? 4:2), 128);
-   ctr->texture_swizzled =
+   ctr->texture_swizzled           =
          linearMemAlign(ctr->texture_width * ctr->texture_height * (ctr->rgb32? 4:2), 128);
 
-   ctr->frame_coords = linearAlloc(3 * sizeof(ctr_vertex_t));
-   ctr->frame_coords->x0 = 0;
-   ctr->frame_coords->y0 = 0;
-   ctr->frame_coords->x1 = CTR_TOP_FRAMEBUFFER_WIDTH;
-   ctr->frame_coords->y1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   ctr->frame_coords->u0 = 0;
-   ctr->frame_coords->v0 = 0;
-   ctr->frame_coords->u1 = CTR_TOP_FRAMEBUFFER_WIDTH;
-   ctr->frame_coords->v1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->frame_coords               = linearAlloc(3 * sizeof(ctr_vertex_t));
+   ctr->frame_coords->x0           = 0;
+   ctr->frame_coords->y0           = 0;
+   ctr->frame_coords->x1           = CTR_TOP_FRAMEBUFFER_WIDTH;
+   ctr->frame_coords->y1           = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->frame_coords->u0           = 0;
+   ctr->frame_coords->v0           = 0;
+   ctr->frame_coords->u1           = CTR_TOP_FRAMEBUFFER_WIDTH;
+   ctr->frame_coords->v1           = CTR_TOP_FRAMEBUFFER_HEIGHT;
    GSPGPU_FlushDataCache(ctr->frame_coords, sizeof(ctr_vertex_t));
 
-   ctr->menu.texture_width = 512;
-   ctr->menu.texture_height = 512;
-   ctr->menu.texture_linear =
+   ctr->menu.texture_width         = 512;
+   ctr->menu.texture_height        = 512;
+   ctr->menu.texture_linear        =
          linearMemAlign(ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t), 128);
-   ctr->menu.texture_swizzled =
+   ctr->menu.texture_swizzled      =
          linearMemAlign(ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t), 128);
 
-   ctr->menu.frame_coords = linearAlloc(sizeof(ctr_vertex_t));
+   ctr->menu.frame_coords          = linearAlloc(sizeof(ctr_vertex_t));
 
-   ctr->menu.frame_coords->x0 = 40;
-   ctr->menu.frame_coords->y0 = 0;
-   ctr->menu.frame_coords->x1 = CTR_TOP_FRAMEBUFFER_WIDTH - 40;
-   ctr->menu.frame_coords->y1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   ctr->menu.frame_coords->u0 = 0;
-   ctr->menu.frame_coords->v0 = 0;
-   ctr->menu.frame_coords->u1 = CTR_TOP_FRAMEBUFFER_WIDTH - 80;
-   ctr->menu.frame_coords->v1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->menu.frame_coords->x0      = 40;
+   ctr->menu.frame_coords->y0      = 0;
+   ctr->menu.frame_coords->x1      = CTR_TOP_FRAMEBUFFER_WIDTH - 40;
+   ctr->menu.frame_coords->y1      = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->menu.frame_coords->u0      = 0;
+   ctr->menu.frame_coords->v0      = 0;
+   ctr->menu.frame_coords->u1      = CTR_TOP_FRAMEBUFFER_WIDTH - 80;
+   ctr->menu.frame_coords->v1      = CTR_TOP_FRAMEBUFFER_HEIGHT;
    GSPGPU_FlushDataCache(ctr->menu.frame_coords, sizeof(ctr_vertex_t));
 
    ctr_set_scale_vector(&ctr->scale_vector,
@@ -1205,11 +1213,11 @@ static void* ctr_init(const video_info_t* video,
       *input_data          = ctrinput;
    }
 
-   ctr->keep_aspect   = true;
-   ctr->should_resize = true;
-   ctr->smooth        = video->smooth;
-   ctr->vsync         = video->vsync;
-   ctr->current_buffer_top = 0;
+   ctr->keep_aspect           = true;
+   ctr->should_resize         = true;
+   ctr->smooth                = video->smooth;
+   ctr->vsync                 = video->vsync;
+   ctr->current_buffer_top    = 0;
    ctr->current_buffer_bottom = 0;
 
    /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
