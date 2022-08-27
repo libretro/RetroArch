@@ -40,6 +40,7 @@
 
 #include <encodings/utf.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_DBUS
 #include "dbus_common.h"
@@ -764,13 +765,17 @@ bool x11_connect(void)
 
 void x11_update_title(void *data)
 {
+   size_t len;
+   static char prev_title[128];
    char title[128];
    title[0] = '\0';
-   video_driver_get_window_title(title, sizeof(title));
-   if (title[0])
+   len      = video_driver_get_window_title(title, sizeof(title));
+   if (title[0] && !string_is_equal(title, prev_title))
+   {
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
-            8, PropModeReplace, (const unsigned char*)title,
-            strlen(title));
+            8, PropModeReplace, (const unsigned char*)title, len);
+      strlcpy(prev_title, title, sizeof(prev_title));
+   }
 }
 
 bool x11_input_ctx_new(bool true_full)
