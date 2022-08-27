@@ -4674,7 +4674,7 @@ static bool runloop_check_movie_init(input_driver_state_t *input_st,
          input_st->bsv_movie_state.movie_path, sizeof(path));
    if (state_slot > 0)
    {
-      char formatted_number[4];
+      char formatted_number[16];
       formatted_number[0] = '\0';
       snprintf(formatted_number, sizeof(formatted_number), "%d", state_slot);
       strlcat(path, formatted_number, sizeof(path));
