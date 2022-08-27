@@ -452,12 +452,12 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *setti
             }
 
             if (core_valid &&
-                menu_entries_append_enum(list,
+                menu_entries_append(list,
                      core_info->path,
                      core_info->core_file_id.str,
                      MENU_ENUM_LABEL_CONTENTLESS_CORE,
                      MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN,
-                     0, 0))
+                     0, 0, NULL))
             {
                file_list_set_alt_at_offset(
                      list, menu_index, core_info->display_name);
@@ -485,11 +485,11 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *setti
    }
 
    if ((count == 0) &&
-       menu_entries_append_enum(list,
+       menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
             MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
-            0, 0, 0))
+            0, 0, 0, NULL))
       count++;
 
    return count;

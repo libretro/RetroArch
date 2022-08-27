@@ -494,47 +494,47 @@ static int frontend_psp_parse_drive_list(void *data, bool load_content)
       MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 
 #ifdef VITA
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "app0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          "ur0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          "ux0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          "uma0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          "imc0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #else
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "ms0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          "ef0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          "host0:/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
 #endif
 

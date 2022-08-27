@@ -2298,11 +2298,11 @@ static bool menu_driver_displaylist_push_internal(
 #if 0
 #ifdef HAVE_SCREENSHOTS
       if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-         menu_entries_append_enum(info->list,
+         menu_entries_append(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
                msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
                MENU_ENUM_LABEL_TAKE_SCREENSHOT,
-               MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+               MENU_SETTING_ACTION_SCREENSHOT, 0, 0, NULL);
       else
          info->need_push_no_playlist_entries = true;
 #endif
@@ -3392,11 +3392,11 @@ bool generic_menu_init_list(struct menu_state *menu_st,
          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
    info.enum_idx                = MENU_ENUM_LABEL_MAIN_MENU;
 
-   menu_entries_append_enum(menu_stack,
+   menu_entries_append(menu_stack,
          info.path,
          info.label,
          MENU_ENUM_LABEL_MAIN_MENU,
-         info.type, info.flags, 0);
+         info.type, info.flags, 0, NULL);
 
    info.list                    = selection_buf;
 
@@ -4336,99 +4336,15 @@ int menu_entry_action(
    return -1;
 }
 
-void menu_entries_append(
-      file_list_t *list,
-      const char *path,
-      const char *label,
-      unsigned type,
-      size_t directory_ptr,
-      size_t entry_idx)
-{
-   menu_ctx_list_t list_info;
-   size_t i;
-   size_t idx;
-   const char *menu_path           = NULL;
-   menu_file_list_cbs_t *cbs       = NULL;
-   struct menu_state  *menu_st     = &menu_driver_state;
-   if (!list || !label)
-      return;
-
-   file_list_append(list, path, label, type, directory_ptr, entry_idx);
-   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-         &menu_path, NULL, NULL, NULL);
-
-   idx                = list->size - 1;
-
-   list_info.list     = list;
-   list_info.path     = path;
-   list_info.fullpath = NULL;
-
-   if (!string_is_empty(menu_path))
-      list_info.fullpath = strdup(menu_path);
-
-   list_info.label       = label;
-   list_info.idx         = idx;
-   list_info.entry_type  = type;
-
-   if (  menu_st->driver_ctx &&
-         menu_st->driver_ctx->list_insert)
-      menu_st->driver_ctx->list_insert(
-            menu_st->userdata,
-            list_info.list,
-            list_info.path,
-            list_info.fullpath,
-            list_info.label,
-            list_info.idx,
-            list_info.entry_type);
-
-   if (list_info.fullpath)
-      free(list_info.fullpath);
-
-   file_list_free_actiondata(list, idx);
-
-   if (!(cbs = (menu_file_list_cbs_t*)
-      malloc(sizeof(menu_file_list_cbs_t))))
-      return;
-
-   cbs->action_sublabel_cache[0]   = '\0';
-   cbs->action_title_cache[0]      = '\0';
-   cbs->enum_idx                   = MSG_UNKNOWN;
-   cbs->checked                    = false;
-   cbs->setting                    = menu_setting_find(label);
-   cbs->action_iterate             = NULL;
-   cbs->action_deferred_push       = NULL;
-   cbs->action_select              = NULL;
-   cbs->action_get_title           = NULL;
-   cbs->action_ok                  = NULL;
-   cbs->action_cancel              = NULL;
-   cbs->action_scan                = NULL;
-   cbs->action_start               = NULL;
-   cbs->action_info                = NULL;
-   cbs->action_left                = NULL;
-   cbs->action_right               = NULL;
-   cbs->action_label               = NULL;
-   cbs->action_sublabel            = NULL;
-   cbs->action_get_value           = NULL;
-
-   cbs->search.size                = 0;
-   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
-      cbs->search.terms[i][0]      = '\0';
-
-   list->list[idx].actiondata      = cbs;
-
-   menu_cbs_init(menu_st,
-         menu_st->driver_ctx,
-         list, cbs, path, label, type, idx);
-}
-
-bool menu_entries_append_enum(
+bool menu_entries_append(
       file_list_t *list,
       const char *path,
       const char *label,
       enum msg_hash_enums enum_idx,
       unsigned type,
       size_t directory_ptr,
-      size_t entry_idx)
+      size_t entry_idx,
+      rarch_setting_t *setting)
 {
    menu_ctx_list_t list_info;
    size_t i;
@@ -4471,17 +4387,16 @@ bool menu_entries_append_enum(
       free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
-   cbs                             = (menu_file_list_cbs_t*)
-      malloc(sizeof(menu_file_list_cbs_t));
 
-   if (!cbs)
+   if (!(cbs = (menu_file_list_cbs_t*)
+      malloc(sizeof(menu_file_list_cbs_t))))
       return false;
 
    cbs->action_sublabel_cache[0]   = '\0';
    cbs->action_title_cache[0]      = '\0';
    cbs->enum_idx                   = enum_idx;
    cbs->checked                    = false;
-   cbs->setting                    = NULL;
+   cbs->setting                    = setting;
    cbs->action_iterate             = NULL;
    cbs->action_deferred_push       = NULL;
    cbs->action_select              = NULL;
@@ -4503,12 +4418,15 @@ bool menu_entries_append_enum(
 
    list->list[idx].actiondata      = cbs;
 
-   if (   enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
-       && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY
-       && enum_idx != MENU_ENUM_LABEL_EXPLORE_ITEM
-       && enum_idx != MENU_ENUM_LABEL_CONTENTLESS_CORE
-       && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
-      cbs->setting                 = menu_setting_find_enum(enum_idx);
+   if (!cbs->setting && enum_idx != MSG_UNKNOWN)
+   {
+      if (     enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
+            && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY
+            && enum_idx != MENU_ENUM_LABEL_EXPLORE_ITEM
+            && enum_idx != MENU_ENUM_LABEL_CONTENTLESS_CORE
+            && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
+         cbs->setting                 = menu_setting_find_enum(enum_idx);
+   }
 
    menu_cbs_init(menu_st,
          menu_st->driver_ctx,

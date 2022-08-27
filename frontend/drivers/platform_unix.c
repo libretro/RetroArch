@@ -2154,43 +2154,43 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                internal_storage_path, "RetroArch",
                sizeof(user_data_path));
 
-         menu_entries_append_enum(list,
+         menu_entries_append(list,
                user_data_path,
                msg_hash_to_str(MSG_INTERNAL_STORAGE),
                enum_idx,
-               FILE_TYPE_DIRECTORY, 0, 0);
+               FILE_TYPE_DIRECTORY, 0, 0, NULL);
       }
 
-      menu_entries_append_enum(list,
+      menu_entries_append(list,
             internal_storage_path,
             msg_hash_to_str(MSG_INTERNAL_STORAGE),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    else
-      menu_entries_append_enum(list,
+      menu_entries_append(list,
             "/storage/emulated/0",
             msg_hash_to_str(MSG_REMOVABLE_STORAGE),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "/storage",
          msg_hash_to_str(MSG_REMOVABLE_STORAGE),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
    if (!string_is_empty(internal_storage_app_path))
-      menu_entries_append_enum(list,
+      menu_entries_append(list,
             internal_storage_app_path,
             msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    if (!string_is_empty(app_dir))
-      menu_entries_append_enum(list,
+      menu_entries_append(list,
             app_dir,
             msg_hash_to_str(MSG_APPLICATION_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    for (unsigned i=0; i < volume_count; i++)
    {
       static char aux_path[PATH_MAX_LENGTH];
@@ -2214,26 +2214,26 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
          (*env)->ReleaseStringUTFChars(env, jstr, str);
          if (!string_is_empty(aux_path))
-            menu_entries_append_enum(list,
+            menu_entries_append(list,
                   aux_path,
                   msg_hash_to_str(MSG_APPLICATION_DIR),
                   enum_idx,
-                  FILE_TYPE_DIRECTORY, 0, 0);
+                  FILE_TYPE_DIRECTORY, 0, 0, NULL);
       }
 
    }
 #elif defined(WEBOS)
    if (path_is_directory("/media/internal"))
-      menu_entries_append_enum(list, "/media/internal",
+      menu_entries_append(list, "/media/internal",
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
    if (path_is_directory("/tmp/usb"))
-      menu_entries_append_enum(list, "/tmp/usb",
+      menu_entries_append(list, "/tmp/usb",
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #else
    char base_path[PATH_MAX] = {0};
    char udisks_media_path[PATH_MAX] = {0};
@@ -2266,45 +2266,45 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
    if (!string_is_empty(base_path))
    {
-      menu_entries_append_enum(list, base_path,
+      menu_entries_append(list, base_path,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (!string_is_empty(home))
    {
-      menu_entries_append_enum(list, home,
+      menu_entries_append(list, home,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (path_is_directory(udisks_media_path))
    {
-      menu_entries_append_enum(list, udisks_media_path,
+      menu_entries_append(list, udisks_media_path,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (path_is_directory("/media"))
    {
-      menu_entries_append_enum(list, "/media",
+      menu_entries_append(list, "/media",
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (path_is_directory("/mnt"))
    {
-      menu_entries_append_enum(list, "/mnt",
+      menu_entries_append(list, "/mnt",
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
 #endif
 
-   menu_entries_append_enum(list, "/",
+   menu_entries_append(list, "/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
 
    return 0;

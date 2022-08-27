@@ -778,15 +778,15 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
    CFSearchPathForDirectoriesInDomains(
          home_dir_buf, sizeof(home_dir_buf));
 
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          home_dir_buf,
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list, "/",
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list, "/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-        FILE_TYPE_DIRECTORY, 0, 0);
+        FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
    ret = 0;
 

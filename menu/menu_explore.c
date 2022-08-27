@@ -843,9 +843,9 @@ static menu_file_list_cbs_t *explore_menu_entry(
    menu_file_list_cbs_t *cbs = NULL;
    if (!state)
       return NULL;
-   menu_entries_append_enum(list, path,
+   menu_entries_append(list, path,
          state->label_explore_item_str,
-         MENU_ENUM_LABEL_EXPLORE_ITEM, type, 0, 0);
+         MENU_ENUM_LABEL_EXPLORE_ITEM, type, 0, 0, NULL);
    cbs                       = ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata);
    if (!cbs)
       return NULL;
@@ -898,11 +898,11 @@ unsigned menu_displaylist_explore(file_list_t *list,
                settings->paths.directory_playlist,
                settings->paths.path_content_database);
 
-      menu_entries_append_enum(list,
+      menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST),
             msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST),
             MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST,
-            FILE_TYPE_NONE, 0, 0);
+            FILE_TYPE_NONE, 0, 0, NULL);
 
       if (menu_stack->size > 1)
       {

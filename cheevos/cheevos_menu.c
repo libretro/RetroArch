@@ -399,29 +399,29 @@ void rcheevos_menu_populate_hardcore_pause_submenu(void* data)
    {
       if (rcheevos_locals->hardcore_active)
       {
-         menu_entries_append_enum(info->list,
+         menu_entries_append(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL),
                msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_CANCEL),
                MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_CANCEL,
-               MENU_SETTING_ACTION_CLOSE, 0, 0);
-         menu_entries_append_enum(info->list,
+               MENU_SETTING_ACTION_CLOSE, 0, 0, NULL);
+         menu_entries_append(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE),
                msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE),
                MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,
-               MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS, 0, 0);
+               MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS, 0, 0, NULL);
       }
       else
       {
-         menu_entries_append_enum(info->list,
+         menu_entries_append(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL),
                msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL),
                MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL,
-               MENU_SETTING_ACTION_CLOSE, 0, 0);
-         menu_entries_append_enum(info->list,
+               MENU_SETTING_ACTION_CLOSE, 0, 0, NULL);
+         menu_entries_append(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME),
                msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_RESUME),
                MENU_ENUM_LABEL_ACHIEVEMENT_RESUME,
-               MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS, 0, 0);
+               MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS, 0, 0, NULL);
       }
    }
 }
@@ -449,17 +449,17 @@ void rcheevos_menu_populate(void* data)
       if (settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable)
       {
          if (rcheevos_locals->hardcore_active)
-            menu_entries_append_enum(info->list,
+            menu_entries_append(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE),
                   msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU),
                   MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,
-                  MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS, 0, 0);
+                  MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS, 0, 0, NULL);
          else
-            menu_entries_append_enum(info->list,
+            menu_entries_append(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME),
                   msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU),
                   MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,
-                  MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS, 0, 0);
+                  MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS, 0, 0, NULL);
       }
 
       /* update the bucket for each achievement */
@@ -596,18 +596,18 @@ void rcheevos_menu_populate(void* data)
       do
       {
          if (menuitem->cheevo)
-            menu_entries_append_enum(info->list, menuitem->cheevo->title,
+            menu_entries_append(info->list, menuitem->cheevo->title,
                   menuitem->cheevo->description,
                   MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + idx, 0, 0);
+                  MENU_SETTINGS_CHEEVOS_START + idx, 0, 0, NULL);
          else
          {
             snprintf(buffer, sizeof(buffer), "----- %s -----",
                   msg_hash_to_str(menuitem->state_label_idx));
 
-            menu_entries_append_enum(info->list, buffer, "",
+            menu_entries_append(info->list, buffer, "",
                   MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + idx, 0, 0);
+                  MENU_SETTINGS_CHEEVOS_START + idx, 0, 0, NULL);
          }
 
          ++idx;
@@ -618,35 +618,35 @@ void rcheevos_menu_populate(void* data)
    {
       /* no achievements found */
       if (!rcheevos_locals->core_supports)
-         menu_entries_append_enum(info->list,
+         menu_entries_append(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE),
             msg_hash_to_str(MENU_ENUM_LABEL_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE),
             MENU_ENUM_LABEL_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-            FILE_TYPE_NONE, 0, 0);
+            FILE_TYPE_NONE, 0, 0, NULL);
       else if (rcheevos_locals->load_info.state == RCHEEVOS_LOAD_STATE_NETWORK_ERROR)
-         menu_entries_append_enum(info->list,
+         menu_entries_append(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_ERROR),
             msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_ERROR),
             MENU_ENUM_LABEL_NETWORK_ERROR,
-            FILE_TYPE_NONE, 0, 0);
+            FILE_TYPE_NONE, 0, 0, NULL);
       else if (!rcheevos_locals->game.id)
-         menu_entries_append_enum(info->list,
+         menu_entries_append(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME),
             msg_hash_to_str(MENU_ENUM_LABEL_UNKNOWN_GAME),
             MENU_ENUM_LABEL_UNKNOWN_GAME,
-            FILE_TYPE_NONE, 0, 0);
+            FILE_TYPE_NONE, 0, 0, NULL);
       else if (!rcheevos_locals->token[0])
-         menu_entries_append_enum(info->list,
+         menu_entries_append(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN),
             msg_hash_to_str(MENU_ENUM_LABEL_NOT_LOGGED_IN),
             MENU_ENUM_LABEL_NOT_LOGGED_IN,
-            FILE_TYPE_NONE, 0, 0);
+            FILE_TYPE_NONE, 0, 0, NULL);
       else
-         menu_entries_append_enum(info->list,
+         menu_entries_append(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY),
             MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY,
-            FILE_TYPE_NONE, 0, 0);
+            FILE_TYPE_NONE, 0, 0, NULL);
    }
 }
 

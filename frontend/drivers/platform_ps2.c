@@ -483,48 +483,48 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
       MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
       MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          rootDevicePath(BOOT_DEVICE_MC0),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          rootDevicePath(BOOT_DEVICE_MC1),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          rootDevicePath(BOOT_DEVICE_CDFS),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          rootDevicePath(BOOT_DEVICE_MASS),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
    if (hdd_mounted)
    {
       size_t _len = strlcpy(hdd, mountString, sizeof(hdd));
       hdd[_len  ] = '/';
       hdd[_len+1] = '\0';
-      menu_entries_append_enum(list,
+      menu_entries_append(list,
             hdd,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          rootDevicePath(BOOT_DEVICE_HOST),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #if defined(DEBUG) && !defined(BUILD_FOR_PCSX2)
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "host:",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
 #endif
 

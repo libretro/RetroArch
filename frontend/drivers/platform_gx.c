@@ -521,27 +521,27 @@ static int frontend_gx_parse_drive_list(void *data, bool load_content)
       MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
       MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 #ifdef HW_RVL
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "sd:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          "usb:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "carda:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          "cardb:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
 
    return 0;
