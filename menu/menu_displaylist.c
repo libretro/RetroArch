@@ -7798,6 +7798,10 @@ unsigned menu_displaylist_build_list(
                            &sys_info->disk_control,
                            i, image_label, sizeof(image_label));
 
+                     snprintf(
+                           current_image_str, sizeof(current_image_str),
+                           "%0*u", num_digits, i + 1);
+
                      /* Get string representation of disk index
                       * > Note that displayed index starts at '1',
                       *   not '0' */
@@ -7805,19 +7809,11 @@ unsigned menu_displaylist_build_list(
                      {
                         /* Note: 2-space gap is intentional
                          * (for clarity) */
-                        int n = snprintf(
-                              current_image_str, sizeof(current_image_str),
-                              "%0*u:  %s", num_digits, i + 1, image_label);
-
-                        /* Suppress GCC warnings... */
-                        if ((n < 0) || (n >= PATH_MAX_LENGTH))
-                           n = 0;
-                        (void)n;
+                        strlcat(current_image_str,
+                              ":  ", sizeof(current_image_str));
+                        strlcat(current_image_str,
+                              image_label, sizeof(current_image_str));
                      }
-                     else
-                        snprintf(
-                              current_image_str, sizeof(current_image_str),
-                              "%0*u", num_digits, i + 1);
 
                      /* Add menu entry */
                      if (menu_entries_append_enum(list,
