@@ -4265,18 +4265,24 @@ static unsigned menu_displaylist_parse_cores(
    for (i = 0; i < list_size; i++)
    {
       char label[64];
+#ifndef HAVE_DYNAMIC
       bool is_dir                   = false;
+#endif
       const char *path              = NULL;
       enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
       enum msg_file_type file_type  = FILE_TYPE_NONE;
 
+      /* TODO/FIXME - empty label */
       label[0] = '\0';
 
       switch (str_list->elems[i].attr.i)
       {
          case RARCH_DIRECTORY:
             file_type = FILE_TYPE_DIRECTORY;
+            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
+#ifndef HAVE_DYNAMIC
             is_dir    = true;
+#endif
             break;
          case RARCH_COMPRESSED_ARCHIVE:
          case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
@@ -4285,6 +4291,7 @@ static unsigned menu_displaylist_parse_cores(
          case RARCH_PLAIN_FILE:
          default:
             file_type = FILE_TYPE_CORE;
+            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_CORE;
             break;
       }
 
@@ -4313,19 +4320,7 @@ static unsigned menu_displaylist_parse_cores(
       }
 #endif
 
-      if (is_dir)
-      {
-         file_type = FILE_TYPE_DIRECTORY;
-         enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
-      }
-      else
-      {
-         file_type = FILE_TYPE_CORE;
-         enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_CORE;
-      }
-
       items_found++;
-
       menu_entries_append(info->list, path, label,
             enum_idx,
             file_type, 0, 0, NULL);
