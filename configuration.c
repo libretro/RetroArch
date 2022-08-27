@@ -5297,7 +5297,7 @@ bool input_remapping_save_file(const char *path)
       char s2[32];
       char s3[32];
 
-      formatted_number[4] = '\0';
+      formatted_number[0] = '\0';
       prefix[0] = '\0';
       s1[0]     = '\0';
       s2[0]     = '\0';
