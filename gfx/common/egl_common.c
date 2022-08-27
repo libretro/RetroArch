@@ -20,6 +20,7 @@
 #include <stdlib.h>
 
 #include <retro_assert.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
