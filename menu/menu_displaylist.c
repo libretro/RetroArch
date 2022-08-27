@@ -11522,7 +11522,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                "Current profile: %s", current_profile);
 #else
          u32 currentClock = 0;
-         if (hosversionBefore(8, 0, 0, NULL))
+         if (hosversionBefore(8, 0, 0))
             pcvGetClockRate(PcvModule_CpuBus, &currentClock);
          else
          {
