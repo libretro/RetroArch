@@ -2665,7 +2665,7 @@ static void materialui_render_messagebox(
       if (!string_is_empty(line))
       {
          int width     = font_driver_get_message_width(
-               mui->font_data.list.font, line, (unsigned)strlen(line), 1);
+               mui->font_data.list.font, line, (unsigned)strlen(line), 1.0f);
          longest_width = (width > longest_width) ?
                width : longest_width;
       }
@@ -7789,7 +7789,7 @@ static void materialui_init_font(
    {
       /* Calculate a more realistic ticker_limit */
       int char_width =
-         font_driver_get_message_width(font_data->font, str_latin, 1, 1);
+         font_driver_get_message_width(font_data->font, str_latin, 1, 1.0f);
 
       if (char_width > 0)
          font_data->glyph_width = (unsigned)char_width;
@@ -7799,7 +7799,7 @@ static void materialui_init_font(
       if (wideglyph_str)
       {
          int wideglyph_width =
-            font_driver_get_message_width(font_data->font, wideglyph_str, (unsigned)strlen(wideglyph_str), 1);
+            font_driver_get_message_width(font_data->font, wideglyph_str, (unsigned)strlen(wideglyph_str), 1.0f);
 
          if (wideglyph_width > 0 && char_width > 0) 
             font_data->wideglyph_width = wideglyph_width * 100 / char_width;

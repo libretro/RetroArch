@@ -909,7 +909,7 @@ int16_t input_joypad_analog_axis(
 
 void input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
-      const char *word);
+      const char *word, size_t len);
 
 /**
  * input_keyboard_start_line:

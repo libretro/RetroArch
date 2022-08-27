@@ -385,15 +385,18 @@ static void gfx_widget_achievement_popup_start(
    gfx_animation_ctx_entry_t entry;
    const dispgfx_widget_t *p_dispwidget = (const dispgfx_widget_t*)
       state->dispwidget_ptr;
-
-   state->height = p_dispwidget->gfx_widget_fonts.regular.line_height * 4;
-   state->width  = MAX(
+   size_t title_len  = strlen(state->queue[state->queue_read_index].title);
+   size_t stitle_len = strlen(state->queue[state->queue_read_index].subtitle);
+   state->height     = p_dispwidget->gfx_widget_fonts.regular.line_height * 4;
+   state->width      = MAX(
          font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,
-            state->queue[state->queue_read_index].title, 0, 1),
+            state->queue[state->queue_read_index].title, title_len,
+            1.0f),
          font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,
-            state->queue[state->queue_read_index].subtitle, 0, 1)
+            state->queue[state->queue_read_index].subtitle, stitle_len,
+            1.0f)
    );
    state->width += p_dispwidget->simple_widget_padding * 2;
    state->y      = (float)(-(int)state->height);

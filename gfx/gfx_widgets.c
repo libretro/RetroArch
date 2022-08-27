@@ -274,7 +274,7 @@ void gfx_widgets_msg_queue_push(
             msg_widget->width                   = font_driver_get_message_width(
                   p_dispwidget->gfx_widget_fonts.msg_queue.font,
                   title,
-                  msg_widget->msg_len, 1) +
+                  msg_widget->msg_len, 1.0f) +
                   p_dispwidget->simple_widget_padding / 2;
 
             task->frontend_userdata             = msg_widget;
@@ -296,7 +296,7 @@ void gfx_widgets_msg_queue_push(
                   p_dispwidget->gfx_widget_fonts.msg_queue.font,
                   title,
                   title_length,
-                  1);
+                  1.0f);
             msg_widget->text_height             = p_dispwidget->gfx_widget_fonts.msg_queue.line_height;
             /* 1 byte uses for inserting '\n' */
             msg_len                             = title_length + 1 + 1;
@@ -361,7 +361,7 @@ void gfx_widgets_msg_queue_push(
                   p_dispwidget->gfx_widget_fonts.msg_queue.font,
                   title,
                   len,
-                  1);
+                  1.0f);
 
             msg_widget->msg_len                    = len;
             msg_widget->msg_transition_animation   = 0;
@@ -1107,9 +1107,11 @@ static int gfx_widgets_draw_indicator(
       unsigned height       = p_dispwidget->simple_widget_height;
       const char *txt       = msg_hash_to_str(msg);
 
-      width = font_driver_get_message_width(p_dispwidget->gfx_widget_fonts.regular.font,
+      width = font_driver_get_message_width(
+            p_dispwidget->gfx_widget_fonts.regular.font,
             txt,
-            (unsigned)strlen(txt), 1) + p_dispwidget->simple_widget_padding * 2;
+            (unsigned)strlen(txt), 1.0f) 
+         + p_dispwidget->simple_widget_padding * 2;
 
       gfx_display_draw_quad(
             p_disp,

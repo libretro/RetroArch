@@ -5640,7 +5640,7 @@ bool menu_input_dialog_get_display_kb(void)
             char oldchar     = buf[i+1];
             buf[i+1]         = '\0';
 
-            input_keyboard_line_append(&input_st->keyboard_line, word);
+            input_keyboard_line_append(&input_st->keyboard_line, word, strlen(word));
 
             osk_update_last_codepoint(
                   &input_st->osk_last_codepoint,
@@ -5978,7 +5978,8 @@ unsigned menu_event(
                   &input_st->osk_last_codepoint_len,
                   input_st->osk_ptr,
                   show_osk_symbols,
-                  input_st->osk_grid[input_st->osk_ptr]);
+                  input_st->osk_grid[input_st->osk_ptr],
+                  strlen(input_st->osk_grid[input_st->osk_ptr]));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
@@ -6400,8 +6401,7 @@ static int menu_input_pointer_post_iterate(
                if (point.retcode > -1)
                {
                   bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
-
-                  input_st->osk_ptr = point.retcode;
+                  input_st->osk_ptr     = point.retcode;
                   input_event_osk_append(
                         &input_st->keyboard_line,
                         &input_st->osk_idx,
@@ -6409,7 +6409,8 @@ static int menu_input_pointer_post_iterate(
                         &input_st->osk_last_codepoint_len,
                         point.retcode,
                         show_osk_symbols,
-                        input_st->osk_grid[input_st->osk_ptr]);
+                        input_st->osk_grid[input_st->osk_ptr],
+                        strlen(input_st->osk_grid[input_st->osk_ptr]));
                }
             }
 #ifdef HAVE_MIST

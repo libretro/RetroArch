@@ -5351,7 +5351,7 @@ border_iterate:
       {
          /* Note: This entry can never be selected, so ticker_x_offset
           * is irrelevant here (i.e. this text will never scroll) */
-         unsigned text_width = font_driver_get_message_width(ozone->fonts.entries_label.font, rich_label, (unsigned)strlen(rich_label), 1);
+         unsigned text_width = font_driver_get_message_width(ozone->fonts.entries_label.font, rich_label, (unsigned)strlen(rich_label), 1.0f);
          x_offset = (video_info_width - (unsigned)
                ozone->dimensions_sidebar_width - entry_padding * 2) 
             / 2 - text_width / 2 - 60 * scale_factor;
@@ -6342,7 +6342,7 @@ static void ozone_draw_osk(ozone_handle_t *ozone,
                ? 0 
                : font_driver_get_message_width(
                      ozone->fonts.entries_label.font, msg,
-                     (unsigned)strlen(msg), 1);
+                     (unsigned)strlen(msg), 1.0f);
             gfx_display_draw_quad(
                   p_disp,
                   userdata,
@@ -6454,7 +6454,7 @@ static void ozone_draw_messagebox(
       if (!string_is_empty(msg))
       {
          int width = font_driver_get_message_width(
-               ozone->fonts.footer.font, msg, (unsigned)strlen(msg), 1);
+               ozone->fonts.footer.font, msg, (unsigned)strlen(msg), 1.0f);
 
          if (width > longest_width)
             longest_width = width;

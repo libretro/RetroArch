@@ -975,10 +975,9 @@ int16_t input_joypad_analog_axis(
 
 void input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
-      const char *word)
+      const char *word, size_t len)
 {
    int i;
-   size_t len                  = strlen(word);
    char *newbuf                = (char*)realloc(
          keyboard_line->buffer,
          keyboard_line->size + len * 2);
@@ -2356,7 +2355,8 @@ void input_event_osk_append(
       unsigned *osk_last_codepoint_len,
       int ptr,
       bool show_symbol_pages,
-      const char *word)
+      const char *word,
+      size_t word_len)
 {
 #ifdef HAVE_LANGEXTRA
    if (string_is_equal(word, "\xe2\x87\xa6")) /* backspace character */
@@ -2387,7 +2387,7 @@ void input_event_osk_append(
          *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
    else
    {
-      input_keyboard_line_append(keyboard_line, word);
+      input_keyboard_line_append(keyboard_line, word, word_len);
       osk_update_last_codepoint(
             osk_last_codepoint,
             osk_last_codepoint_len,
