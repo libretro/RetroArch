@@ -111,8 +111,7 @@ static bool find_content_by_crc(playlist_config_t *playlist_config,
    {
       playlist_config_set_path(playlist_config, playlists->elems[i].data);
 
-      playlist = playlist_init(playlist_config);
-      if (!playlist)
+      if (!(playlist = playlist_init(playlist_config)))
          continue;
 
       for (j = 0; j < playlist_get_size(playlist); j++)
@@ -178,14 +177,12 @@ static bool find_content_by_name(playlist_config_t *playlist_config,
          /* We do it like this
             because we want names and paths to have the same order;
             we also want to read and parse a playlist only the first time. */
-         playlist = playlist_ptrs[j];
-         if (!playlist)
+         if (!(playlist = playlist_ptrs[j]))
          {
             playlist_config_set_path(playlist_config,
                playlists->elems[j].data);
 
-            playlist = playlist_init(playlist_config);
-            if (!playlist)
+            if (!(playlist = playlist_init(playlist_config)))
                continue;
             playlist_ptrs[j] = playlist;
          }

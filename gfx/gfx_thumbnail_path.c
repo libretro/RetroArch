@@ -133,9 +133,10 @@ static const char *gfx_thumbnail_get_type(
    unsigned        type          = 0;
    unsigned gfx_thumbnails       = settings->uints.gfx_thumbnails;
    unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
+   const char *val_off           = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
    
    if (!path_data)
-      return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
+      return val_off;
    
    switch (thumbnail_id)
    {
@@ -152,7 +153,7 @@ static const char *gfx_thumbnail_get_type(
             type = menu_left_thumbnails;
          break;
       default:
-         return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
+         return val_off;
    }
    
    switch (type)
@@ -168,7 +169,7 @@ static const char *gfx_thumbnail_get_type(
          break;
    }
    
-   return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
+   return val_off;
 }
 
 /* Returns true if specified thumbnail is enabled

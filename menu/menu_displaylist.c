@@ -4263,8 +4263,8 @@ static unsigned menu_displaylist_parse_cores(
 
    for (i = 0; i < list_size; i++)
    {
-      bool is_dir;
       char label[64];
+      bool is_dir                   = false;
       const char *path              = NULL;
       enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
       enum msg_file_type file_type  = FILE_TYPE_NONE;
@@ -4275,6 +4275,7 @@ static unsigned menu_displaylist_parse_cores(
       {
          case RARCH_DIRECTORY:
             file_type = FILE_TYPE_DIRECTORY;
+            is_dir    = true;
             break;
          case RARCH_COMPRESSED_ARCHIVE:
          case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
@@ -4286,7 +4287,6 @@ static unsigned menu_displaylist_parse_cores(
             break;
       }
 
-      is_dir  = (file_type == FILE_TYPE_DIRECTORY);
       /* Need to preserve slash first time. */
       path    = str_list->elems[i].data;
 
@@ -6063,7 +6063,11 @@ static unsigned menu_displaylist_populate_subsystem(
          }
          else
          {
-            snprintf(s, sizeof(s),"Load %s", subsystem->desc);
+            /* TODO/FIXME - localize */
+            size_t _len = strlcpy(s, "Load", sizeof(s));
+            s[_len  ]   = ' ';
+            s[_len+1]   = '\0';
+            strlcat(s, subsystem->desc, sizeof(s));
 
             /* If using RGUI with sublabels disabled, add the
              * appropriate text to the menu entry itself... */
@@ -14145,7 +14149,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               char* orig_val = setting->get_string_representation ?
                                  strdup(setting->value.target.string) : setting->value.target.string;
-                              char val_s[256], val_d[32];
+                              char val_s[256], val_d[16];
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
                               for (i = 0; i < size; i++)
@@ -14209,7 +14213,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            {
                               for (i = min; i <= max; i += step)
                               {
-                                 char val_s[256], val_d[256];
+                                 char val_s[256], val_d[16];
                                  int val = (int)i;
 
                                  *setting->value.target.integer = val;
@@ -14288,7 +14292,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            {
                               for (i = min; i <= max; i += step)
                               {
-                                 char val_s[256], val_d[256];
+                                 char val_s[256], val_d[16];
 
                                  *setting->value.target.fraction = i;
 
@@ -14315,12 +14319,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            }
                            else
                            {
+                              char val_d[16];
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
                               for (i = min; i <= max; i += step)
                               {
-                                 char val_s[16], val_d[16];
+                                 char val_s[16];
 
                                  snprintf(val_s, sizeof(val_s), "%.2f", i);
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
                                  if (menu_entries_append_enum(info->list,
                                        val_s,
@@ -14364,7 +14370,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            {
                               for (i = min; i <= max; i += step)
                               {
-                                 char val_s[256], val_d[256];
+                                 char val_s[256], val_d[16];
                                  int val = (int)i;
 
                                  *setting->value.target.unsigned_integer = val;
@@ -14392,13 +14398,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            }
                            else
                            {
+                              char val_d[16];
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                               for (i = min; i <= max; i += step)
                               {
-                                 char val_s[16], val_d[16];
+                                 char val_s[16];
                                  int val = (int)i;
 
                                  snprintf(val_s, sizeof(val_s), "%d", val);
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
                                  if (menu_entries_append_enum(info->list,
                                        val_s,
@@ -14448,7 +14455,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             for (i = 0; i < GFX_MAX_SHADERS+1; i++)
             {
-               char val_d[256];
+               char val_d[16];
                snprintf(val_d, sizeof(val_d), "%d", i);
                if (menu_entries_append_enum(info->list,
                         val_d,
@@ -14497,14 +14504,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         if (tmp_str_list.size > 0)
                         {
                            unsigned i;
+                           char val_d[16];
                            unsigned size        = (unsigned)tmp_str_list.size;
                            bool checked_found   = false;
                            unsigned checked     = 0;
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
                            for (i = 0; i < size; i++)
                            {
-                              char val_d[256];
-                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                               if (menu_entries_append_enum(info->list,
                                     tmp_str_list.elems[i].data,
                                     val_d,
@@ -14549,7 +14556,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         {
                            for (i = min; i <= max; i += step)
                            {
-                              char val_s[256], val_d[256];
+                              char val_s[256], val_d[16];
                               int val = (int)i;
 
                               *setting->value.target.integer = val;
@@ -14577,13 +14584,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         }
                         else
                         {
+                           char val_d[16];
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                            for (i = min; i <= max; i += step)
                            {
-                              char val_s[16], val_d[16];
+                              char val_s[16];
                               int val = (int)i;
-
                               snprintf(val_s, sizeof(val_s), "%d", val);
-                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
                               if (menu_entries_append_enum(info->list,
                                     val_s,
@@ -14628,7 +14635,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         {
                            for (i = min; i <= max; i += step)
                            {
-                              char val_s[256], val_d[256];
+                              char val_s[256], val_d[16];
 
                               *setting->value.target.fraction = i;
 
@@ -14655,12 +14662,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         }
                         else
                         {
+                           char val_d[16];
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                            for (i = min; i <= max; i += step)
                            {
-                              char val_s[16], val_d[16];
-
+                              char val_s[16];
                               snprintf(val_s, sizeof(val_s), "%.2f", i);
-                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
                               if (menu_entries_append_enum(info->list,
                                     val_s,
@@ -14704,7 +14711,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         {
                            for (i = min; i <= max; i += step)
                            {
-                              char val_s[256], val_d[256];
+                              char val_s[256], val_d[16];
                               int val = (int)i;
 
                               *setting->value.target.unsigned_integer = val;
@@ -14732,13 +14739,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         }
                         else
                         {
+                           char val_d[16];
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                            for (i = min; i <= max; i += step)
                            {
-                              char val_s[16], val_d[16];
+                              char val_s[16];
                               int val = (int)i;
-
                               snprintf(val_s, sizeof(val_s), "%d", val);
-                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
                               if (menu_entries_append_enum(info->list,
                                     val_s,
