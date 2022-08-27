@@ -1193,6 +1193,12 @@ MSG_HASH(
    "Wijzig de standaardmappen waar bestanden zich bevinden."
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "Systeem"
+   )
+
 #ifdef HAVE_MIST
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_SETTINGS,

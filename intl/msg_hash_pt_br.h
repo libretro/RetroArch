@@ -1261,6 +1261,32 @@ MSG_HASH(
    "Altera os diretórios padrões onde os arquivos estão localizados."
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   "Mapeamento"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "Mídia"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Desempenho"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "Áudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   "Armazenamento"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "Sistema"
+   )
+
 #ifdef HAVE_MIST
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
@@ -4366,6 +4392,14 @@ MSG_HASH(
    "Altera as configurações da aparência da tela do menu."
    )
 #ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+   "Aparência da tela inferior do 3DS"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+   "Altera as configurações da aparência da tela inferior."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
@@ -5597,8 +5631,16 @@ MSG_HASH(
    "Desaparece as mensagens de bate-papo com um efeito de desvanecimento depois de um tempo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
+   "Cor do bate-papo (apelido)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_NAME,
    "Formato: #RRGGBB ou RRGGBB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
+   "Cor do bate-papo (mensagem)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_MSG,
@@ -5864,7 +5906,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
-   "Última partida:"
+   "Último acesso:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
+   "segundo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
@@ -5936,11 +5982,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   "Estilo da data e hora da \"Última partida\""
+   "Estilo da data e hora do \"Último acesso\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   "Define o estilo da data e hora exibidas nas informações da \"Última partida\". As opções \"(AM/PM)\" terão um pequeno impacto de desempenho em algumas plataformas."
+   "Define o estilo da data e hora exibidas nas informações do \"Último acesso\". As opções \"(AM/PM)\" terão um pequeno impacto de desempenho em algumas plataformas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
@@ -6949,7 +6995,7 @@ MSG_HASH( /* FIXME Unused? */
    )
 MSG_HASH( /* FIXME Unused? */
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
-   "Última partida"
+   "Último acesso"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
@@ -12936,6 +12982,62 @@ MSG_HASH(
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
    "Carregar\num ponto de\nrestauração"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
+   "Diretório dos recursos da tela inferior"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
+   "Diretório dos recursos da tela inferior. O diretório precisa ter um \"bottom_menu.png\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
+   "Ativar fonte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
+   "Mostra a fonte do menu inferior. Ative para exibir as descrições dos botões na tela inferior. Não tem compatibilidade com a data do jogo salvo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
+   "Vermelho da fonte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
+   "Ajusta a cor vermelha da fonte da tela inferior."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
+   "Verde da fonte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
+   "Ajusta a cor verde da fonte da tela inferior."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   "Azul da fonte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
+   "Ajusta a cor azul da fonte da tela inferior."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   "Opacidade da fonte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY,
+   "Ajusta a opacidade da fonte da tela inferior."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
+   "Tamanho da fonte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
+   "Ajusta o tamanho da fonte da tela inferior."
    )
 #endif
 #ifdef HAVE_QT

@@ -865,6 +865,16 @@ MSG_HASH(
    "Direutoriu"
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Rindimientu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "Sistema"
+   )
+
 #ifdef HAVE_MIST
 #endif
 

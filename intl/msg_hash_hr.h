@@ -513,6 +513,8 @@ MSG_HASH(
    "Mape"
    )
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 #endif
 

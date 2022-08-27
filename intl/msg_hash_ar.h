@@ -1193,6 +1193,8 @@ MSG_HASH(
    "تغيير الدلائل الافتراضية حيث توجد الملفات."
    )
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS,

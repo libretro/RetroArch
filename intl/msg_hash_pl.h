@@ -1257,6 +1257,28 @@ MSG_HASH(
    "Zmień domyślne katalogi, w których znajdują się pliki."
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   "Mapowanie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Wydajność"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "Dźwięk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   "Dane techniczne"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   "Pamięć"
+   )
+
 #ifdef HAVE_MIST
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_SETTINGS,

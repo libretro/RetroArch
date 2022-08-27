@@ -1241,6 +1241,12 @@ MSG_HASH(
    "Canvia els directoris predeterminats per als arxius."
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "Mitjà"
+   )
+
 #ifdef HAVE_MIST
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
@@ -4955,17 +4961,93 @@ MSG_HASH(
    "Trucs"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
+   "Control de disc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_OPTIONS,
+   "Gestió de la imatge de disc."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
+   "Configura shaders per millorar visualment la imatge."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
+   "Excepcions"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
+   "Opcions per definir excepcions a la configuració global."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
    "Assoliments"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_LIST,
+   "Vegeu els assoliments i les opcions relacionades."
    )
 
 /* Quick Menu > Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST,
+   "Gestiona les opcions del nucli"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST,
+   "Desa o elimina excepcions a les opcions pel contingut actual."
+   )
 
 /* Quick Menu > Options > Manage Core Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Desa les opcions del joc"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Esborra les opcions del joc"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Desa les opcions del directori de contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Esborra les opcions del directori de contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
+   "Fitxer d’opcions actiu:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   "Reinicia les opcions"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
+   "Estableix totes les opcions del nucli als valors predeterminats."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
+   "Escriu les opcions al disc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   "Força que s’escriguin les opcions actuals al fitxer d’opcions actiu. S’assegura que les opcions es conservin en cas que un error del nucli provoqués una aturada incorrecta del front."
+   )
 
 /* - Legacy (unused) */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
+   "Crea el fitxer d’opcions del joc"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
+   "Desa el fitxer d’opcions del joc"
+   )
 
 /* Quick Menu > Controls */
 

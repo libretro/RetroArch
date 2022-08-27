@@ -1037,6 +1037,16 @@ MSG_HASH(
    "مسیرهای پیش‌فرضی که فایل‌ها آنجا هستند را تغییر دهید."
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "رسانه"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "سیستم"
+   )
+
 #ifdef HAVE_MIST
 #endif
 

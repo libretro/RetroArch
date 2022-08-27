@@ -1277,6 +1277,20 @@ MSG_HASH(
    "파일이 위치할 기본 디렉토리를 변경합니다."
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "미디어"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "성능"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "시스템"
+   )
+
 #ifdef HAVE_MIST
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_SETTINGS,

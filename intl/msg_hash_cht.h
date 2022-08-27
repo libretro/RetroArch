@@ -1157,6 +1157,12 @@ MSG_HASH(
    "變更預設目錄"
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "系統"
+   )
+
 #ifdef HAVE_MIST
 #endif
 

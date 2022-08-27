@@ -1157,6 +1157,12 @@ MSG_HASH(
    "システムの動作に関係するファイルが格納される初期ディレクトリを変更します."
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "システム"
+   )
+
 #ifdef HAVE_MIST
 #endif
 

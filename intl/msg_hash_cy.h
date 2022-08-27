@@ -989,6 +989,8 @@ MSG_HASH(
    "Newid cyfeirlyfrau diofyn lle mae ffeiliau wedi'u lleoli."
    )
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 #endif
 

@@ -1173,6 +1173,8 @@ MSG_HASH(
    "Ubah lokasi direktori berada."
    )
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_SETTINGS,

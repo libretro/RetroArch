@@ -1265,6 +1265,20 @@ MSG_HASH(
    "更改文件所在的默认文件夹。"
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "介质"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "性能"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "系统"
+   )
+
 #ifdef HAVE_MIST
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_SETTINGS,

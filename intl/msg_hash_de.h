@@ -1205,6 +1205,16 @@ MSG_HASH(
    "Die Standard-Verzeichnisse für diverse Daten ändern."
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "Medium"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Leistung"
+   )
+
 #ifdef HAVE_MIST
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
@@ -12791,7 +12801,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Text am unteren Rand anzeigen. Aktivieren, um Tastenbeschreibungen auf dem unteren Bildschirm anzuzeigen. Dies schließt das Speicherdatum aus."
+   "Text am unteren Bildschirm einblenden. Aktivieren, um Tastenbeschreibungen auf dem unteren Bildschirm anzuzeigen. Dies schließt das Speicherdatum aus."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
@@ -12799,7 +12809,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
-   "Rote Schriftfarbe am unteren Bildschirmrand anpassen."
+   "Rote Schriftfarbe auf unteren Bildschirm anpassen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
@@ -12807,7 +12817,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
-   "Grüne Schriftfarbe am unteren Bildschirmrand anpassen."
+   "Grüne Schriftfarbe auf unteren Bildschirm anpassen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
@@ -12815,7 +12825,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
-   "Blaue Schriftfarbe am unteren Bildschirmrand anpassen."
+   "Blaue Schriftfarbe auf unteren Bildschirm anpassen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
@@ -12823,7 +12833,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY,
-   "Schriftdeckkraft am unteren Bildschirmrand anpassen."
+   "Schriftdeckkraft auf unteren Bildschirm anpassen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
@@ -12831,7 +12841,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
-   "Schriftgröße am unteren Bildschirmrand anpassen."
+   "Schriftgröße auf unteren Bildschirm anpassen."
    )
 #endif
 #ifdef HAVE_QT

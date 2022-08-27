@@ -1265,6 +1265,40 @@ MSG_HASH(
    "Cambia los directorios predeterminados para los archivos."
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   "Mapeo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "Soporte"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Rendimiento"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "Sonido"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   "Características"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   "Almacenamiento"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "Sistema"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   "Ritmo"
+   )
+
 #ifdef HAVE_MIST
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_SETTINGS,

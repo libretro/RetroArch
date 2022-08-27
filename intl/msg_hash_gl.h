@@ -1137,6 +1137,8 @@ MSG_HASH(
    "Cambia os directorios predeterminados onde se atopan os ficheiros."
    )
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 #endif
 

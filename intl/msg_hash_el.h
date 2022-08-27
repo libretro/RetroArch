@@ -1145,6 +1145,16 @@ MSG_HASH(
    "Αλλαγή προκαθορισμένων ευρετηρίων όπου βρίσκονται τα αρχεία."
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Επίδοση"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "Σύστημα"
+   )
+
 #ifdef HAVE_MIST
 #endif
 

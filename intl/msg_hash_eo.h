@@ -225,6 +225,8 @@ MSG_HASH(
    "Change default directories for this system."
    )
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 #endif
 

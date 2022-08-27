@@ -1261,6 +1261,40 @@ MSG_HASH(
    "Dosyaların bulunduğu varsayılan dizinleri değiştir."
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   "Eşleme"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "Medya"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Performans"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "Ses"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   "Özellikler"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   "Depolama"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "Sistem"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   "Zamanlama"
+   )
+
 #ifdef HAVE_MIST
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_SETTINGS,

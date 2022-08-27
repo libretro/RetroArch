@@ -929,6 +929,12 @@ MSG_HASH(
    "Thay đổi thư mục mặc định đặt file."
    )
 
+/* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "Hệ thống"
+   )
+
 #ifdef HAVE_MIST
 #endif
 

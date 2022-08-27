@@ -1161,6 +1161,8 @@ MSG_HASH(
    "Zmeniť východzie zložky umiestnenia súborov."
    )
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 #endif
 

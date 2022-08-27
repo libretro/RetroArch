@@ -885,6 +885,8 @@ MSG_HASH(
    "Skift standardmapper hvor filer er placeret."
    )
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 #endif
 

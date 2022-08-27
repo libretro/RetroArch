@@ -1117,6 +1117,8 @@ MSG_HASH(
    "Módosítsa az alapértelmezett könyvtárakat, ahol a fájlok találhatók."
    )
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 #endif
 

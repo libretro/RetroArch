@@ -1129,6 +1129,8 @@ MSG_HASH(
    "Izmeni podrazumevane direktorijume i lokacije datoteka."
    )
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 #endif
 

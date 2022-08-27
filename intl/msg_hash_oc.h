@@ -213,6 +213,8 @@ MSG_HASH(
    "Utilizaire"
    )
 
+/* Core option category placeholders for icons */
+
 #ifdef HAVE_MIST
 #endif
 
