@@ -6029,7 +6029,6 @@ static unsigned menu_displaylist_populate_subsystem(
                {
                   unsigned j = 0;
                   char rom_buff[PATH_MAX_LENGTH];
-                  char tmp[PATH_MAX_LENGTH];
                   rom_buff[0] = '\0';
 
                   for (j = 0; j < content_get_subsystem_rom_id(); j++)
