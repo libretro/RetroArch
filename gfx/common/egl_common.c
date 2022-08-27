@@ -372,48 +372,44 @@ void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height)
    }
 }
 
-bool check_egl_version(int minMajorVersion, int minMinorVersion)
+static bool check_egl_version(int min_major_version, int min_minor_version)
 {
-   int count;
    int major, minor;
    const char *str = _egl_query_string(EGL_NO_DISPLAY, EGL_VERSION);
 
    if (!str)
       return false;
 
-   count = sscanf(str, "%d.%d", &major, &minor);
-   if (count != 2)
+   if (sscanf(str, "%d.%d", &major, &minor) != 2)
       return false;
 
-   if (major < minMajorVersion)
+   if (major < min_major_version)
       return false;
 
-   if (major > minMajorVersion)
+   if (major > min_major_version)
       return true;
 
-   if (minor >= minMinorVersion)
+   if (minor >= min_minor_version)
       return true;
 
    return false;
 }
 
-bool check_egl_client_extension(const char *name)
+static bool check_egl_client_extension(const char *name, size_t name_len)
 {
-   size_t nameLen;
    const char *str = _egl_query_string(EGL_NO_DISPLAY, EGL_EXTENSIONS);
 
    /* The EGL implementation doesn't support client extensions at all. */
    if (!str)
       return false;
 
-   nameLen = strlen(name);
    while (*str != '\0')
    {
       /* Use strspn and strcspn to find the start position and length of each
        * token in the extension string. Using strtok could also work, but
        * that would require allocating a copy of the string. */
       size_t len = strcspn(str, " ");
-      if (len == nameLen && strncmp(str, name, nameLen) == 0)
+      if (len == name_len && strncmp(str, name, name_len) == 0)
          return true;
       str += len;
       str += strspn(str, " ");
@@ -450,7 +446,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
 #endif /* defined(EGL_VERSION_1_5) */
 
 #if defined(EGL_EXT_platform_base)
-      if (check_egl_client_extension("EGL_EXT_platform_base"))
+      if (check_egl_client_extension("EGL_EXT_platform_base", STRLEN_CONST("EGL_EXT_platform_base")))
       {
          PFNEGLGETPLATFORMDISPLAYEXTPROC ptr_eglGetPlatformDisplayEXT;
 
