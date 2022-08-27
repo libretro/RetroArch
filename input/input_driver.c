@@ -2234,28 +2234,32 @@ void input_config_get_bind_string_joykey(
       }
       else
       {
-         const char *dir = "?";
+         const char *na_str =
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
          switch (GET_HAT_DIR(bind->joykey))
          {
             case HAT_UP_MASK:
-               dir = "up";
+               snprintf(buf, size, "%sHat #%u up (%s)", prefix,
+                     (unsigned)GET_HAT(bind->joykey), na_str);
                break;
             case HAT_DOWN_MASK:
-               dir = "down";
+               snprintf(buf, size, "%sHat #%u down (%s)", prefix,
+                     (unsigned)GET_HAT(bind->joykey), na_str);
                break;
             case HAT_LEFT_MASK:
-               dir = "left";
+               snprintf(buf, size, "%sHat #%u left (%s)", prefix,
+                     (unsigned)GET_HAT(bind->joykey), na_str);
                break;
             case HAT_RIGHT_MASK:
-               dir = "right";
+               snprintf(buf, size, "%sHat #%u right (%s)", prefix,
+                     (unsigned)GET_HAT(bind->joykey), na_str);
                break;
             default:
+               snprintf(buf, size, "%sHat #%u ? (%s)", prefix,
+                     (unsigned)GET_HAT(bind->joykey), na_str);
                break;
          }
-         snprintf(buf, size, "%sHat #%u %s (%s)", prefix,
-               (unsigned)GET_HAT(bind->joykey), dir,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
       }
    }
    else
@@ -2302,20 +2306,18 @@ void input_config_get_bind_string_joyaxis(
    }
    else
    {
-      unsigned axis        = 0;
-      char dir             = '\0';
+      const char *na_str   =
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
       if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
       {
-         dir = '-';
-         axis = AXIS_NEG_GET(bind->joyaxis);
+         unsigned axis = AXIS_NEG_GET(bind->joyaxis);
+         snprintf(buf, size, "%s-%u (%s)", prefix, axis, na_str);
       }
       else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
       {
-         dir = '+';
-         axis = AXIS_POS_GET(bind->joyaxis);
+         unsigned axis = AXIS_POS_GET(bind->joyaxis);
+         snprintf(buf, size, "%s+%u (%s)", prefix, axis, na_str);
       }
-      snprintf(buf, size, "%s%c%u (%s)", prefix, dir, axis,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 }
 
@@ -4668,23 +4670,16 @@ static bool runloop_check_movie_init(input_driver_state_t *input_st,
 
    configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
 
+   strlcpy(path,
+         input_st->bsv_movie_state.movie_path, sizeof(path));
    if (state_slot > 0)
    {
-      path[0]      = '\0';
-      snprintf(path, sizeof(path), "%s%d.bsv",
-            input_st->bsv_movie_state.movie_path,
-            state_slot);
+      char formatted_number[4];
+      formatted_number[0] = '\0';
+      snprintf(formatted_number, sizeof(formatted_number), "%d", state_slot);
+      strlcat(path, formatted_number, sizeof(path));
    }
-   else
-   {
-      size_t _len  = strlcpy(path,
-            input_st->bsv_movie_state.movie_path, sizeof(path));
-      path[_len  ] = '.';
-      path[_len+1] = 'b';
-      path[_len+2] = 's';
-      path[_len+3] = 'v';
-      path[_len+4] = '\0';
-   }
+   strlcat(path, ".bsv", sizeof(path));
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
          msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
@@ -4772,6 +4767,7 @@ bool bsv_movie_init(input_driver_state_t *input_st)
    bsv_movie_t *state = NULL;
    if (input_st->bsv_movie_state.movie_start_playback)
    {
+      const char *starting_movie_str = NULL;
       if (!(state = bsv_movie_init_internal(
                input_st->bsv_movie_state.movie_start_path,
                RARCH_MOVIE_PLAYBACK)))
@@ -4782,41 +4778,43 @@ bool bsv_movie_init(input_driver_state_t *input_st)
          return false;
       }
 
-      input_st->bsv_movie_state_handle        = state;
+      input_st->bsv_movie_state_handle         = state;
       input_st->bsv_movie_state.movie_playback = true;
-      runloop_msg_queue_push(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK),
+      starting_movie_str                       =
+         msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK);
+
+      runloop_msg_queue_push(starting_movie_str,
             2, 180, false,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
+      RARCH_LOG("%s.\n", starting_movie_str);
 
       return true;
    }
    else if (input_st->bsv_movie_state.movie_start_recording)
    {
       char msg[8192];
+      const char *movie_rec_str = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
 
       if (!(state = bsv_movie_init_internal(
                input_st->bsv_movie_state.movie_start_path,
                RARCH_MOVIE_RECORD)))
       {
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
+         const char *movie_rec_fail_str =
+            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
+         runloop_msg_queue_push(movie_rec_fail_str,
                1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("%s.\n",
-               msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
+         RARCH_ERR("%s.\n", movie_rec_fail_str);
          return false;
       }
 
       input_st->bsv_movie_state_handle         = state;
       snprintf(msg, sizeof(msg),
-            "%s \"%s\".",
-            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+            "%s \"%s\".", movie_rec_str,
             input_st->bsv_movie_state.movie_start_path);
 
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+      RARCH_LOG("%s \"%s\".\n", movie_rec_str,
             input_st->bsv_movie_state.movie_start_path);
 
       return true;
@@ -4835,18 +4833,21 @@ void bsv_movie_deinit(input_driver_state_t *input_st)
 bool bsv_movie_check(input_driver_state_t *input_st,
       settings_t *settings)
 {
+   const char *movie_rec_stopped_str = NULL;
    if (!input_st->bsv_movie_state_handle)
       return runloop_check_movie_init(input_st, settings);
 
    if (input_st->bsv_movie_state.movie_playback)
    {
+      const char *movie_playback_end_str = NULL;
       /* Checks if movie is being played back. */
       if (!input_st->bsv_movie_state.movie_end)
          return false;
+      movie_playback_end_str = msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED);
       runloop_msg_queue_push(
-            msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 2, 180, false,
+            movie_playback_end_str, 2, 180, false,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
+      RARCH_LOG("%s\n", movie_playback_end_str);
 
       bsv_movie_deinit(input_st);
 
@@ -4860,10 +4861,11 @@ bool bsv_movie_check(input_driver_state_t *input_st,
    if (!input_st->bsv_movie_state_handle)
       return false;
 
-   runloop_msg_queue_push(
-         msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true,
+   movie_rec_stopped_str = msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED);
+   runloop_msg_queue_push(movie_rec_stopped_str,
+         2, 180, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
+   RARCH_LOG("%s\n", movie_rec_stopped_str);
 
    bsv_movie_deinit(input_st);
 

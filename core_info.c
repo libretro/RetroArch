@@ -1612,19 +1612,22 @@ static void core_info_resolve_firmware(
 
    for (i = 0; i < firmware_count; i++)
    {
+      char prefix[12];
       char path_key[64];
       char desc_key[64];
       char opt_key[64];
       struct config_entry_list *entry = NULL;
       bool tmp_bool                   = false;
 
-      path_key[0] = '\0';
-      desc_key[0] = '\0';
-      opt_key[0]  = '\0';
+      prefix[0]   = '\0';
 
-      snprintf(path_key, sizeof(path_key), "firmware%u_path", i);
-      snprintf(desc_key, sizeof(desc_key), "firmware%u_desc", i);
-      snprintf(opt_key,  sizeof(opt_key),  "firmware%u_opt",  i);
+      snprintf(prefix,   sizeof(prefix),   "firmware%u_", i);
+      strlcpy(path_key,  prefix,           sizeof(path_key));
+      strlcat(path_key,  "path",           sizeof(path_key));
+      strlcpy(desc_key,  prefix,           sizeof(desc_key));
+      strlcat(desc_key,  "desc",           sizeof(desc_key));
+      strlcpy(opt_key,   prefix,           sizeof(opt_key));
+      strlcat(opt_key,   "opt",            sizeof(opt_key));
 
       entry = config_get_entry(conf, path_key);
 

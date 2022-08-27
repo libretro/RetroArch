@@ -687,6 +687,8 @@ static bool runtime_last_played_human(runtime_log_t *runtime_log,
 
    float periods[6] = {60.0f, 60.0f, 24.0f, 7.0f, 4.35f, 12.0f};
 
+   tmp[0]           = '\0';
+
    if (!runtime_log)
       return false;
 
@@ -703,10 +705,13 @@ static bool runtime_last_played_human(runtime_log_t *runtime_log,
       delta /= periods[i];
 
    /* Generate string */
-   snprintf(tmp, sizeof(tmp), "%u %s",
-         (int)delta, msg_hash_to_str((delta == 1) 
-            ? (enum msg_hash_enums)units[i][0] 
-            : (enum msg_hash_enums)units[i][1]));
+   snprintf(tmp, sizeof(tmp), "%u ", (int)delta);
+   if (delta == 1)
+      strlcat(tmp, msg_hash_to_str((enum msg_hash_enums)units[i][0]),
+            sizeof(tmp));
+   else
+      strlcat(tmp, msg_hash_to_str((enum msg_hash_enums)units[i][1]),
+            sizeof(tmp));
    strlcat(str, tmp, len);
    strlcat(str, " ", len);
    strlcat(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO), len);

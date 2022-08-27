@@ -1363,13 +1363,13 @@ static void load_timezone(char *setting)
 
       char *start = strstr(haystack, needle);
 
-      if (start != NULL)
+      if (start)
          snprintf(setting, TIMEZONE_LENGTH, "%s", start + needle_len);
       else
-         snprintf(setting, TIMEZONE_LENGTH, "%s", DEFAULT_TIMEZONE);
+         strlcpy(setting, DEFAULT_TIMEZONE, TIMEZONE_LENGTH);
    }
    else
-      snprintf(setting, TIMEZONE_LENGTH, "%s", DEFAULT_TIMEZONE);
+      strlcpy(setting, DEFAULT_TIMEZONE, TIMEZONE_LENGTH);
 
    config_set_timezone(setting);
 }
@@ -4697,16 +4697,26 @@ bool config_save_file(const char *path)
    for (i = 0; i < MAX_USERS; i++)
    {
       char cfg[64];
+      char formatted_number[4];
 
-      cfg[0] = '\0';
+      cfg[0] = formatted_number[0] = '\0';
 
-      snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
+      snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
+
+      strlcpy(cfg, "input_device_p",     sizeof(cfg));
+      strlcat(cfg, formatted_number,     sizeof(cfg));
       config_set_int(conf, cfg, settings->uints.input_device[i]);
-      snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
+      strlcpy(cfg, "input_player",       sizeof(cfg));
+      strlcat(cfg, formatted_number,     sizeof(cfg));
+      strlcat(cfg, "_joypad_index",      sizeof(cfg));
       config_set_int(conf, cfg, settings->uints.input_joypad_index[i]);
-      snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
+      strlcpy(cfg, "input_player",       sizeof(cfg));
+      strlcat(cfg, formatted_number,     sizeof(cfg));
+      strlcat(cfg, "_analog_dpad_mode",  sizeof(cfg));
       config_set_int(conf, cfg, settings->uints.input_analog_dpad_mode[i]);
-      snprintf(cfg, sizeof(cfg), "input_player%u_mouse_index", i + 1);
+      strlcpy(cfg, "input_player",       sizeof(cfg));
+      strlcat(cfg, formatted_number,     sizeof(cfg));
+      strlcat(cfg, "_mouse_index",       sizeof(cfg));
       config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
    }
 
@@ -4964,19 +4974,25 @@ bool config_save_overrides(enum override_type type, void *data)
       for (i = 0; i < MAX_USERS; i++)
       {
          char cfg[64];
+         char formatted_number[4];
+         cfg[0] = formatted_number[0] = '\0';
 
-         cfg[0] = '\0';
+         snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
+
          if (settings->uints.input_device[i]
                != overrides->uints.input_device[i])
          {
-            snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
+            strlcpy(cfg, "input_device_p", sizeof(cfg));
+            strlcat(cfg, formatted_number, sizeof(cfg));
             config_set_int(conf, cfg, overrides->uints.input_device[i]);
          }
 
          if (settings->uints.input_joypad_index[i]
                != overrides->uints.input_joypad_index[i])
          {
-            snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
+            strlcpy(cfg, "input_player",   sizeof(cfg));
+            strlcat(cfg, formatted_number, sizeof(cfg));
+            strlcpy(cfg, "_joypad_index",  sizeof(cfg));
             config_set_int(conf, cfg, overrides->uints.input_joypad_index[i]);
          }
       }
@@ -5117,13 +5133,17 @@ bool input_remapping_load_file(void *data, const char *path)
       size_t _len;
       char prefix[16];
       char s1[32], s2[32], s3[32];
+      char formatted_number[4];
 
       prefix[0]  = '\0';
       s1[0]      = '\0';
       s2[0]      = '\0';
       s3[0]      = '\0';
+      formatted_number[0] = '\0';
 
-      snprintf(prefix, sizeof(prefix), "input_player%u", i + 1);
+      snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
+      strlcpy(prefix, "input_player",   sizeof(prefix));
+      strlcat(prefix, formatted_number, sizeof(prefix));
       _len       = strlcpy(s1, prefix, sizeof(s1));
       s1[_len  ] = '_';
       s1[_len+1] = 'b';
@@ -5204,13 +5224,17 @@ bool input_remapping_load_file(void *data, const char *path)
          }
       }
 
-      snprintf(s1, sizeof(s1), "input_player%u_analog_dpad_mode", i + 1);
+      strlcpy(s1, "input_player",             sizeof(s1));
+      strlcat(s1, formatted_number,           sizeof(s1));
+      strlcat(s1, "_analog_dpad_mode",        sizeof(s1));
       CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], s1);
 
-      snprintf(s1, sizeof(s1), "input_libretro_device_p%u", i + 1);
+      strlcpy(s1, "input_libretro_device_p",  sizeof(s1));
+      strlcat(s1, formatted_number,           sizeof(s1));
       CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], s1);
 
-      snprintf(s1, sizeof(s1), "input_remap_port_p%u", i + 1);
+      strlcpy(s1, "input_remap_port_p",       sizeof(s1));
+      strlcat(s1, formatted_number,           sizeof(s1));
       CONFIG_GET_INT_BASE(conf, settings, uints.input_remap_ports[i], s1);
    }
 
@@ -5267,11 +5291,13 @@ bool input_remapping_save_file(const char *path)
    {
       size_t _len;
       bool skip_port = true;
+      char formatted_number[4];
       char prefix[16];
       char s1[32];
       char s2[32];
       char s3[32];
 
+      formatted_number[4] = '\0';
       prefix[0] = '\0';
       s1[0]     = '\0';
       s2[0]     = '\0';
@@ -5298,7 +5324,9 @@ bool input_remapping_save_file(const char *path)
       if (skip_port)
          continue;
 
-      snprintf(prefix, sizeof(prefix), "input_player%u", i + 1);
+      snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
+      strlcpy(prefix, "input_player",   sizeof(prefix));
+      strlcat(prefix, formatted_number, sizeof(prefix));
       _len       = strlcpy(s1, prefix, sizeof(s1));
       s1[_len  ] = '_';
       s1[_len+1] = 'b';
@@ -5384,13 +5412,17 @@ bool input_remapping_save_file(const char *path)
                   settings->uints.input_keymapper_ids[i][j]);
       }
 
-      snprintf(s1, sizeof(s1), "input_libretro_device_p%u", i + 1);
+      strlcpy(s1, "input_libretro_device_p", sizeof(s1));
+      strlcat(s1, formatted_number,          sizeof(s1));
       config_set_int(conf, s1, input_config_get_device(i));
 
-      snprintf(s1, sizeof(s1), "input_player%u_analog_dpad_mode", i + 1);
+      strlcpy(s1, "input_player",            sizeof(s1));
+      strlcat(s1, formatted_number,          sizeof(s1));
+      strlcat(s1, "_analog_dpad_mode",       sizeof(s1));
       config_set_int(conf, s1, settings->uints.input_analog_dpad_mode[i]);
 
-      snprintf(s1, sizeof(s1), "input_remap_port_p%u", i + 1);
+      strlcpy(s1, "input_remap_port_p",      sizeof(s1));
+      strlcat(s1, formatted_number,          sizeof(s1));
       config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
    }
 

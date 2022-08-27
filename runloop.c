@@ -3445,10 +3445,11 @@ static bool init_libretro_symbols_custom(
                            path_get_realsize(RARCH_PATH_CORE)
                            )))
                {
-                  RARCH_ERR("%s: \"%s\"\nError(s): %s\n",
-                        msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
+                  const char *failed_open_str =
+                     msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE);
+                  RARCH_ERR("%s: \"%s\"\nError(s): %s\n", failed_open_str,
                         path, dylib_error());
-                  runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
+                  runloop_msg_queue_push(failed_open_str,
                         1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return false;
                }
@@ -4771,9 +4772,11 @@ static void do_runahead(
 
       if (!runahead_create(runloop_st))
       {
+         const char *runahead_failed_str =
+            msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES);
          if (!runahead_hide_warnings)
-            runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES), 0, 2 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES));
+            runloop_msg_queue_push(runahead_failed_str, 0, 2 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
          goto force_input_dirty;
       }
    }
@@ -4817,8 +4820,10 @@ static void do_runahead(
          {
             if (!runahead_save_state(runloop_st))
             {
-               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE));
+               const char *runahead_failed_str =
+                  msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
+               runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
                return;
             }
          }
@@ -4827,8 +4832,10 @@ static void do_runahead(
          {
             if (!runahead_load_state(runloop_st))
             {
-               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE));
+               const char *runahead_failed_str =
+                  msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
+               runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
                return;
             }
          }
@@ -4839,10 +4846,12 @@ static void do_runahead(
 #if HAVE_DYNAMIC
       if (!secondary_core_ensure_exists(config_get_ptr()))
       {
+         const char *runahead_failed_str =
+            msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE);
          runloop_secondary_core_destroy();
          runloop_st->runahead_secondary_core_available = false;
-         runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE));
+         runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
          goto force_input_dirty;
       }
 
@@ -4858,15 +4867,19 @@ static void do_runahead(
 
          if (!runahead_save_state(runloop_st))
          {
-            runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE));
+            const char *runahead_failed_str =
+               msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
+            runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
             return;
          }
 
          if (!runahead_load_state_secondary())
          {
-            runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_WARN("[Run-Ahead]: %s\n", msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE));
+            const char *runahead_failed_str =
+               msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
+            runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
             return;
          }
 
@@ -8127,7 +8140,8 @@ bool retroarch_get_entry_state_path(char *path, size_t len, unsigned slot)
    if (string_is_empty(name_savestate))
       return false;
 
-   snprintf(path, len, "%s%d%s", name_savestate, slot, ".entry");
+   snprintf(path, len, "%s%d", name_savestate, slot);
+   strlcat(path, ".entry", len);
 
    return true;
 }

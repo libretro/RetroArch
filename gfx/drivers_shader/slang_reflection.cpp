@@ -682,9 +682,9 @@ bool slang_reflect(
 
    {
       char buf[64];
-      buf[0] = '\0';
-      snprintf(buf, sizeof(buf),
-            "[slang]:\n%s [slang]:   Parameters:\n", FILE_PATH_LOG_INFO);
+      strlcpy(buf, "[slang]:\n", sizeof(buf));
+      strlcat(buf, FILE_PATH_LOG_INFO, sizeof(buf));
+      strlcat(buf, " [slang]:   Parameters:\n", sizeof(buf));
       RARCH_LOG(buf);
    }
 

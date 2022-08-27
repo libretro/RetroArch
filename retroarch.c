@@ -2224,6 +2224,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_HISTORY_INIT:
          {
             playlist_config_t playlist_config;
+            const char *_msg                       = NULL;
             bool history_list_enable               = settings->bools.history_list_enable;
             const char *path_content_history       = settings->paths.path_content_history;
             const char *path_content_music_history = settings->paths.path_content_music_history;
@@ -2245,18 +2246,18 @@ bool command_event(enum event_command cmd, void *data)
             if (!history_list_enable)
                return false;
 
+            _msg = msg_hash_to_str(MSG_LOADING_HISTORY_FILE);
+
             /* Note: Sorting is disabled by default for
              * all content history playlists */
-            RARCH_LOG("[Playlist]: %s: \"%s\".\n",
-                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+            RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
                   path_content_history);
             playlist_config_set_path(&playlist_config, path_content_history);
             g_defaults.content_history = playlist_init(&playlist_config);
             playlist_set_sort_mode(
                   g_defaults.content_history, PLAYLIST_SORT_MODE_OFF);
 
-            RARCH_LOG("[Playlist]: %s: \"%s\".\n",
-                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+            RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
                   path_content_music_history);
             playlist_config_set_path(&playlist_config, path_content_music_history);
             g_defaults.music_history = playlist_init(&playlist_config);
@@ -2264,8 +2265,7 @@ bool command_event(enum event_command cmd, void *data)
                   g_defaults.music_history, PLAYLIST_SORT_MODE_OFF);
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-            RARCH_LOG("[Playlist]: %s: \"%s\".\n",
-                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+            RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
                   path_content_video_history);
             playlist_config_set_path(&playlist_config, path_content_video_history);
             g_defaults.video_history = playlist_init(&playlist_config);
@@ -2274,8 +2274,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
-            RARCH_LOG("[Playlist]: %s: \"%s\".\n",
-                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+            RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
                   path_content_image_history);
             playlist_config_set_path(&playlist_config, path_content_image_history);
             g_defaults.image_history = playlist_init(&playlist_config);

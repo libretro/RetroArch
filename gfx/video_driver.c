@@ -982,11 +982,11 @@ void recording_dump_frame(
       if (  vp.width  != record_st->gpu_width ||
             vp.height != record_st->gpu_height)
       {
-         RARCH_WARN("[Recording]: %s\n",
-               msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE));
+         const char *recording_failed_str =
+            msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE);
+         RARCH_WARN("[Recording]: %s\n", recording_failed_str);
 
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE),
+         runloop_msg_queue_push(recording_failed_str,
                1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          command_event(CMD_EVENT_RECORD_DEINIT, NULL);
