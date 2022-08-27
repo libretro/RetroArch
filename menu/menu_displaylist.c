@@ -547,9 +547,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
          tmp[len  ] = ':';
          tmp[len+1] = ' ';
          tmp[len+2] = '\0';
-         strlcat(tmp,
-               info_list[i].name,
-               sizeof(tmp));
+         strlcat(tmp, info_list[i].name, sizeof(tmp));
          if (menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_CORE_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
@@ -704,6 +702,12 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
 
       if (update_missing_firmware)
       {
+         const char *missing_optional = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL);
+         const char *missing_required = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED);
+         const char *present_optional = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL);
+         const char *present_required = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED);
+         const char *rdb_entry_name   =
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME);
          size_t len = strlcpy(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE),
                sizeof(tmp));
@@ -723,17 +727,19 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
                continue;
 
             snprintf(tmp, sizeof(tmp), "(!) %s %s",
-                  core_info->firmware[i].missing ?
-                  (core_info->firmware[i].optional ?
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL) :
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED))
+                  core_info->firmware[i].missing   ?
+                  (
+                    core_info->firmware[i].optional
+                  ? missing_optional
+                  : missing_required)
                   :
-                  (core_info->firmware[i].optional ?
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL) :
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED)),
+                  (
+                    core_info->firmware[i].optional
+                  ? present_optional
+                  : present_required),
                   core_info->firmware[i].desc ?
                   core_info->firmware[i].desc :
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME)
+                  rdb_entry_name
                   );
 
             if (menu_entries_append_enum(info->list, tmp, "",
@@ -1136,6 +1142,10 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    core_option_manager_t *coreopts = NULL;
    struct core_option *option      = NULL;
    const char *val                 = NULL;
+   const char *lbl_enabled         = NULL;
+   const char *lbl_disabled        = NULL;
+   const char *val_on_str          = NULL;
+   const char *val_off_str         = NULL;
    unsigned j;
 
    /* Fetch options */
@@ -1168,6 +1178,11 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
        string_is_empty(val))
       goto end;
 
+   lbl_enabled  = msg_hash_to_str(MENU_ENUM_LABEL_ENABLED);
+   lbl_disabled = msg_hash_to_str(MENU_ENUM_LABEL_DISABLED);
+   val_on_str   = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
+   val_off_str  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
+
    /* Loop over all option values */
    for (j = 0; j < option->vals->size; j++)
    {
@@ -1176,10 +1191,10 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
 
       if (!string_is_empty(val_label_str))
       {
-         if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)))
-            val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
-         else if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
-            val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
+         if (string_is_equal(val_label_str, lbl_enabled))
+            val_label_str = val_on_str;
+         else if (string_is_equal(val_label_str, lbl_disabled))
+            val_label_str = val_off_str;
 
          if (menu_entries_append_enum(info->list,
                val_label_str,
@@ -1450,6 +1465,7 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
    if (core_info_get_list(&core_info_list) &&
        core_info_list)
    {
+      const char *detect_core_str   = NULL;
       const core_info_t *core_infos = NULL;
       size_t core_infos_size        = 0;
       size_t core_idx               = 0;
@@ -1461,6 +1477,9 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
       /* Get list of supported cores */
       core_info_list_get_supported_cores(core_info_list,
             content_path, &core_infos, &core_infos_size);
+
+      detect_core_str = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE);
 
       for (core_idx = 0; core_idx < core_infos_size; core_idx++)
       {
@@ -1516,9 +1535,7 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
       {
          size_t _len;
          char entry_alt_text[256];
-         _len                   = strlcpy(entry_alt_text,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE),
+         _len                   = strlcpy(entry_alt_text, detect_core_str,
                sizeof(entry_alt_text));
          entry_alt_text[_len  ] = ' ';
          entry_alt_text[_len+1] = '(';
@@ -2118,6 +2135,8 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          {SUPPORTS_V4L2        ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT},
          {SUPPORTS_LIBUSB      ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT},
       };
+      const char *val_yes_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES);
+      const char *val_no_str  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO);
 
       for (i = 0; i < ARRAY_SIZE(info_list); i++)
       {
@@ -2129,9 +2148,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          feat_str[len+1] = ' ';
          feat_str[len+2] = '\0';
          strlcat(feat_str,
-               info_list[i].enabled ?
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO),
+               info_list[i].enabled ? val_yes_str : val_no_str,
                sizeof(feat_str));
          if (menu_entries_append_enum(list, feat_str, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
@@ -2745,14 +2762,17 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       if (db_info_entry->developer)
       {
+         const char *val_rdb_entry_dev =
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER);
+         const char *rdb_entry_dev     =
+            msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER);
          for (k = 0; k < db_info_entry->developer->size; k++)
          {
             if (db_info_entry->developer->elems[k].data)
             {
                if (create_string_list_rdb_entry_string(
                         MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER),
-                        msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER),
+                        val_rdb_entry_dev, rdb_entry_dev,
                         db_info_entry->developer->elems[k].data,
                         info->path, info->list) == -1)
                   goto error;
@@ -4901,15 +4921,14 @@ static unsigned menu_displaylist_parse_content_information(
    if (settings->bools.cheevos_enable && settings->arrays.cheevos_token[0] &&
       !string_is_empty(loaded_content_path))
    {
-      size_t _len = strlcpy(tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH),
-            sizeof(tmp));
-      tmp[_len  ] = ':';
-      tmp[_len+1] = ' ';
-      tmp[_len+2] = '\n';
+      const char *cheevos_hash_str =
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH);
+      size_t _len                  = strlcpy(tmp, cheevos_hash_str, sizeof(tmp));
+      tmp[_len  ]                  = ':';
+      tmp[_len+1]                  = ' ';
+      tmp[_len+2]                  = '\n';
       strlcat(tmp, rcheevos_get_hash(), sizeof(tmp));
-      if (menu_entries_append_enum(info->list, tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH),
+      if (menu_entries_append_enum(info->list, tmp, cheevos_hash_str,
             MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
             0, 0, 0))
          count++;
@@ -4993,6 +5012,10 @@ static int menu_displaylist_parse_input_device_type_list(
 {
    const struct retro_controller_description *desc = NULL;
    const char *name             = NULL;
+   const char *val_none         = NULL;
+   const char *val_retropad     = NULL;
+   const char *val_retropad_an  = NULL;
+   const char *val_unknown      = NULL;
 
    rarch_system_info_t *system  = &runloop_state_get_ptr()->system;
 
@@ -5020,6 +5043,11 @@ static int menu_displaylist_parse_input_device_type_list(
 
    types          = libretro_device_get_size(devices, ARRAY_SIZE(devices), port);
    current_device = input_config_get_device(port);
+   val_none       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+   val_retropad   = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD);
+   val_retropad_an= msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG);
+   val_unknown    = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
+
    for (i = 0; i < types; i++)
    {
       snprintf(device_id, sizeof(device_id), "%d", devices[i]);
@@ -5040,16 +5068,16 @@ static int menu_displaylist_parse_input_device_type_list(
          switch (devices[i])
          {
             case RETRO_DEVICE_NONE:
-               name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+               name = val_none;
                break;
             case RETRO_DEVICE_JOYPAD:
-               name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD);
+               name = val_retropad;
                break;
             case RETRO_DEVICE_ANALOG:
-               name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG);
+               name = val_retropad_an;
                break;
             default:
-               name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
+               name = val_unknown;
                break;
          }
       }
@@ -5093,6 +5121,12 @@ end:
 static int menu_displaylist_parse_input_device_index_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
+   char device_id[10];
+   char device_label[128];
+   const char *device_name      = NULL;
+   const char *val_port         = NULL;
+   const char *val_na           = NULL;
+   const char *val_disabled     = NULL;
    rarch_system_info_t *system  = &runloop_state_get_ptr()->system;
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
@@ -5105,21 +5139,21 @@ static int menu_displaylist_parse_input_device_index_list(
    int current_device           = -1;
    unsigned max_devices         = input_config_get_device_count();
 
-   char device_id[10];
-   char device_label[128];
-   const char *device_name      = NULL;
-
    device_id[0]                 = '\0';
    device_label[0]              = '\0';
 
    if (!system || !settings || !setting)
       goto end;
 
-   port = setting->index_offset;
-   map  = settings->uints.input_joypad_index[port];
+   port         = setting->index_offset;
+   map          = settings->uints.input_joypad_index[port];
 
    if (port >= MAX_USERS)
       goto end;
+
+   val_disabled = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED);
+   val_na       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+   val_port     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT);
 
    for (i = max_devices + 1; i--;)
    {
@@ -5147,13 +5181,11 @@ static int menu_displaylist_parse_input_device_index_list(
                strlcpy(device_label, device_name, sizeof(device_label));
          }
          else
-            snprintf(device_label, sizeof(device_label), "%s (%s %u)",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
-                  map);
+            snprintf(device_label, sizeof(device_label), "%s (%s %u)", val_na,
+                  val_port, map);
       }
       else
-         strlcpy(device_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), sizeof(device_label));
+         strlcpy(device_label, val_disabled, sizeof(device_label));
 
       /* Add menu entry */
       if (menu_entries_append_enum(info->list,
@@ -5521,12 +5553,13 @@ static void bluetooth_scan_callback(retro_task_t *task,
       void *user_data, const char *error)
 {
    unsigned i;
-   file_list_t *file_list        = NULL;
-   struct string_list *device_list = NULL;
-
-   const char *path              = NULL;
-   const char *label             = NULL;
-   unsigned menu_type            = 0;
+   file_list_t *file_list            = NULL;
+   struct string_list *device_list   = NULL;
+   const char *msg_connect_bluetooth =
+      msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_BLUETOOTH);
+   const char *path                  = NULL;
+   const char *label                 = NULL;
+   unsigned menu_type                = 0;
 
    menu_entries_get_last_stack(&path, &label, &menu_type, NULL, NULL);
 
@@ -5546,8 +5579,7 @@ static void bluetooth_scan_callback(retro_task_t *task,
    {
       const char *device = device_list->elems[i].data;
       menu_entries_append_enum(file_list,
-            device,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_BLUETOOTH),
+            device, msg_connect_bluetooth,
             MENU_ENUM_LABEL_CONNECT_BLUETOOTH,
             MENU_BLUETOOTH, 0, 0);
    }
@@ -5928,7 +5960,6 @@ static unsigned menu_displaylist_populate_subsystem(
    static const char utf8_star_char[] = "\xE2\x98\x85";
 #endif
    unsigned   i = 0;
-   int        n = 0;
    bool is_rgui = string_is_equal(menu_driver, "rgui");
 
    /* Select appropriate 'star' marker for subsystem menu entries
@@ -5953,42 +5984,29 @@ static unsigned menu_displaylist_populate_subsystem(
          {
             if (content_get_subsystem_rom_id() < subsystem->num_roms)
             {
-               snprintf(s, sizeof(s),
-                  "Load %s %s",
-                  subsystem->desc,
-                  star_char);
+               /* TODO/FIXME - localize string */
+               size_t _len = strlcpy(s, "Load", sizeof(s));
+               s[_len  ]   = ' ';
+               s[_len+1]   = '\0';
+               _len        = strlcat(s, subsystem->desc, sizeof(s));
+               s[_len  ]   = ' ';
+               s[_len+1]   = '\0';
+               strlcat(s, star_char, sizeof(s));
 
                /* If using RGUI with sublabels disabled, add the
                 * appropriate text to the menu entry itself... */
                if (is_rgui && !menu_show_sublabels)
                {
-                  char tmp[PATH_MAX_LENGTH];
-
-                  n = snprintf(tmp, sizeof(tmp),
-                     "%s [%s %s]", s, "Current Content:",
-                     subsystem->roms[content_get_subsystem_rom_id()].desc);
-
-                  /* Stupid GCC will warn about snprintf() truncation even though
-                   * we couldn't care less about it (if the menu entry label gets
-                   * truncated then the string will already be too long to view in
-                   * any usable manner on screen, so the fact that the end is
-                   * missing is irrelevant). There are two ways to silence this noise:
-                   * 1) Make the destination buffers large enough that text cannot be
-                   *    truncated. This is a waste of memory.
-                   * 2) Check the snprintf() return value (and take action). This is
-                   *    the most harmless option, so we just print a warning if anything
-                   *    is truncated.
-                   * To reiterate: The actual warning generated here is pointless, and
-                   * should be ignored. */
-                  if ((n < 0) || (n >= PATH_MAX_LENGTH))
-                  {
-                     if (verbosity_is_enabled())
-                     {
-                        RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
-                     }
-                  }
-
-                  strlcpy(s, tmp, sizeof(s));
+                  strlcat(s, " [", sizeof(s));
+                  /* TODO/FIXME - localize */
+                  _len        = strlcat(s, "Current Content:", sizeof(s));
+                  s[_len  ]   = ' ';
+                  s[_len+1]   = '\0';
+                  _len        = strlcat(s,
+                        subsystem->roms[content_get_subsystem_rom_id()].desc,
+                        sizeof(s));
+                  s[_len  ]   = ']';
+                  s[_len+1]   = '\0';
                }
 
                if (menu_entries_append_enum(list,
@@ -6000,10 +6018,14 @@ static unsigned menu_displaylist_populate_subsystem(
             }
             else
             {
-               snprintf(s, sizeof(s),
-                  "Start %s %s",
-                  subsystem->desc,
-                  star_char);
+               /* TODO/FIXME - localize string */
+               size_t _len = strlcpy(s, "Start", sizeof(s));
+               s[_len  ]   = ' ';
+               s[_len+1]   = '\0';
+               _len        = strlcat(s, subsystem->desc, sizeof(s));
+               s[_len  ]   = ' ';
+               s[_len+1]   = '\0';
+               strlcat(s, star_char, sizeof(s));
 
                /* If using RGUI with sublabels disabled, add the
                 * appropriate text to the menu entry itself... */
@@ -6025,18 +6047,9 @@ static unsigned menu_displaylist_populate_subsystem(
 
                   if (!string_is_empty(rom_buff))
                   {
-                     n = snprintf(tmp, sizeof(tmp), "%s [%s]", s, rom_buff);
-
-                     /* More snprintf() gcc warning suppression... */
-                     if ((n < 0) || (n >= PATH_MAX_LENGTH))
-                     {
-                        if (verbosity_is_enabled())
-                        {
-                           RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
-                        }
-                     }
-
-                     strlcpy(s, tmp, sizeof(s));
+                     strlcat(s, " [", sizeof(s));
+                     strlcat(s, rom_buff, sizeof(s));
+                     strlcat(s, "]", sizeof(s));
                   }
                }
 
@@ -6061,22 +6074,12 @@ static unsigned menu_displaylist_populate_subsystem(
                 * anyway), but no harm in being safe... */
                if (subsystem->num_roms > 0)
                {
-                  char tmp[PATH_MAX_LENGTH];
-
-                  n = snprintf(tmp, sizeof(tmp),
-                     "%s [%s %s]", s, "Current Content:",
-                     subsystem->roms[0].desc);
-
-                  /* More snprintf() gcc warning suppression... */
-                  if ((n < 0) || (n >= PATH_MAX_LENGTH))
-                  {
-                     if (verbosity_is_enabled())
-                     {
-                        RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
-                     }
-                  }
-
-                  strlcpy(s, tmp, sizeof(s));
+                  strlcat(s, " [", sizeof(s));
+                  /* TODO/FIXME - localize */
+                  strlcat(s, "Current Content:", sizeof(s));
+                  strlcat(s, " ",  sizeof(s));
+                  strlcat(s, subsystem->roms[0].desc, sizeof(s));
+                  strlcat(s, "]",  sizeof(s));
                }
             }
 
@@ -7231,13 +7234,14 @@ unsigned menu_displaylist_build_list(
             {
                size_t i;
                char buf[768];
+               const char *msg_intf = msg_hash_to_str(MSG_INTERFACE);
 
                for (i = 0; i < interfaces.size; i++)
                {
                   struct net_ifinfo_entry *entry = &interfaces.entries[i];
 
-                  snprintf(buf, sizeof(buf), "%s (%s) : %s\n",
-                     msg_hash_to_str(MSG_INTERFACE), entry->name, entry->host);
+                  snprintf(buf, sizeof(buf), "%s (%s) : %s\n", msg_intf,
+                     entry->name, entry->host);
                   if (menu_entries_append_enum(list, buf, entry->name,
                         MENU_ENUM_LABEL_NETWORK_INFO_ENTRY,
                         MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
@@ -10510,6 +10514,11 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
    char country[8];
    const char *room_type;
    struct netplay_room *room;
+   const char *msg_int_nc         = NULL;
+   const char *msg_int_relay      = NULL;
+   const char *msg_int            = NULL;
+   const char *msg_local          = NULL;
+   const char *msg_room_pwd       = NULL;
    unsigned count                 = 0;
    core_info_list_t *coreinfos    = NULL;
    settings_t *settings           = config_get_ptr();
@@ -10580,6 +10589,12 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 
    core_info_get_list(&coreinfos);
 
+   msg_int_nc    = msg_hash_to_str(MSG_INTERNET_NOT_CONNECTABLE);
+   msg_int_relay = msg_hash_to_str(MSG_INTERNET_RELAY);
+   msg_int       = msg_hash_to_str(MSG_INTERNET);
+   msg_local     = msg_hash_to_str(MSG_LOCAL);
+   msg_room_pwd  = msg_hash_to_str(MSG_ROOM_PASSWORDED);
+
    for (i = 0; i < net_st->room_count; i++)
    {
       room = &net_st->room_list[i];
@@ -10599,14 +10614,14 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          if (show_only_connectable)
             continue;
 
-         room_type = msg_hash_to_str(MSG_INTERNET_NOT_CONNECTABLE);
+         room_type = msg_int_nc;
       }
       else if (room->lan)
-         room_type = msg_hash_to_str(MSG_LOCAL);
+         room_type = msg_local;
       else if (room->host_method == NETPLAY_HOST_METHOD_MITM)
-         room_type = msg_hash_to_str(MSG_INTERNET_RELAY);
+         room_type = msg_int_relay;
       else
-         room_type = msg_hash_to_str(MSG_INTERNET);
+         room_type = msg_int;
 
       /* Get rid of any room running a core that we don't have installed,
          if the user opt-in. */
@@ -10628,8 +10643,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       {
          if (!show_passworded)
             continue;
-         snprintf(passworded, sizeof(passworded), "[%s] ",
-            msg_hash_to_str(MSG_ROOM_PASSWORDED));
+         snprintf(passworded, sizeof(passworded), "[%s] ", msg_room_pwd);
       }
       else
          *passworded = '\0';
@@ -11007,6 +11021,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
                {
+                  const char *msg_val_port =
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT);
                   for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
                   {
                      char desc_label[400];
@@ -11032,8 +11048,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         const struct retro_keybind *keyptr =
                            &input_config_binds[port][retro_id];
                         size_t _len        = strlcpy(desc_label,
-					msg_hash_to_str(keyptr->enum_idx),
-					sizeof(desc_label));
+                                             msg_hash_to_str(keyptr->enum_idx),
+                                             sizeof(desc_label));
                         desc_label[_len  ] = ' '; 
                         desc_label[_len+1] = '\0'; 
                         strlcat(desc_label, descriptor, sizeof(desc_label));
@@ -11047,8 +11063,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            && !settings->bools.menu_show_sublabels)
                      {
                         snprintf(desc_label, sizeof(desc_label),
-                               "%s [%s %u]", descriptor,
-                               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), port + 1);
+                               "%s [%s %u]", descriptor, msg_val_port, port+1);
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 
@@ -11062,6 +11077,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
                else if (device == RETRO_DEVICE_KEYBOARD)
                {
+                  const char *val_port = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT);
                   for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
                   {
                      char desc_label[400];
@@ -11087,8 +11103,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         const struct retro_keybind *keyptr =
                            &input_config_binds[port][retro_id];
                         size_t _len        = strlcpy(desc_label,
-					msg_hash_to_str(keyptr->enum_idx),
-					sizeof(desc_label));
+                                             msg_hash_to_str(keyptr->enum_idx),
+                                             sizeof(desc_label));
                         desc_label[_len  ] = ' '; 
                         desc_label[_len+1] = '\0'; 
                         strlcat(desc_label, descriptor, sizeof(desc_label));
@@ -11102,9 +11118,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            && !settings->bools.menu_show_sublabels)
                      {
                         snprintf(desc_label, sizeof(desc_label), "%s [%s %u]",
-                              descriptor,
-                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
-                              port + 1);
+                              descriptor, val_port, port + 1);
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 
@@ -11868,6 +11882,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             if (video_shader_enable)
             {
+               const char *val_shdr =
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER);
+               const char *shdr_pass =
+                  msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS);
+               const char *shdr_filter_pass =
+                  msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS);
+               const char *shdr_scale_pass =
+                  msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS);
+               const char *val_filter =
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILTER);
+               const char *val_scale = 
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCALE);
+
                if (frontend_driver_can_watch_for_changes())
                {
                   if (menu_entries_append_enum(info->list,
@@ -11929,30 +11956,33 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                for (i = 0; i < pass_count; i++)
                {
+                  size_t _len;
                   char buf_tmp[64];
                   char buf[128];
 
-                  buf[0] = buf_tmp[0] = '\0';
+                  buf_tmp[0] = '\0';
 
-                  snprintf(buf_tmp, sizeof(buf_tmp),
-                        "%s #%u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER), i);
+                  snprintf(buf_tmp, sizeof(buf_tmp),"%s #%u", val_shdr, i);
 
-                  if (menu_entries_append_enum(info->list, buf_tmp,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS),
+                  if (menu_entries_append_enum(info->list, buf_tmp, shdr_pass,
                            MENU_ENUM_LABEL_VIDEO_SHADER_PASS,
                            MENU_SETTINGS_SHADER_PASS_0 + i, 0, 0))
                      count++;
 
-                  snprintf(buf, sizeof(buf), "%s %s", buf_tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILTER));
-                  if (menu_entries_append_enum(info->list, buf,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS),
+                  _len        = strlcpy(buf, buf_tmp, sizeof(buf));
+                  buf[_len  ] = ' ';
+                  buf[_len+1] = '\0';
+                  strlcat(buf, val_filter, sizeof(buf));
+                  if (menu_entries_append_enum(info->list, buf, shdr_filter_pass,
                            MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS,
                            MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0, 0))
                      count++;
 
-                  snprintf(buf, sizeof(buf), "%s %s", buf_tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCALE));
-                  if (menu_entries_append_enum(info->list, buf,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS),
+                  _len        = strlcpy(buf, buf_tmp, sizeof(buf));
+                  buf[_len  ] = ' ';
+                  buf[_len+1] = '\0';
+                  strlcat(buf, val_scale, sizeof(buf));
+                  if (menu_entries_append_enum(info->list, buf, shdr_scale_pass,
                            MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS,
                            MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0, 0))
                      count++;
