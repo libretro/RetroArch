@@ -776,15 +776,18 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
       goto task_finished;
 
    /* Set task title */
+   snprintf(task_title, sizeof(task_title), "%s %u",
+         msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
+         autoconfig_handle->port + 1);
    if (!string_is_empty(autoconfig_handle->device_info.name))
-      snprintf(task_title, sizeof(task_title), "%s %u (%s)",
-            msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
-            autoconfig_handle->port + 1,
-            autoconfig_handle->device_info.name);
-   else
-      snprintf(task_title, sizeof(task_title), "%s %u",
-            msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
-            autoconfig_handle->port + 1);
+   {
+      size_t _len;
+      strlcat(task_title, " (", sizeof(task_title));
+      _len               = strlcat(task_title, autoconfig_handle->device_info.name,
+            sizeof(task_title));
+      task_title[_len  ] = ')';
+      task_title[_len+1] = '\0';
+   }
 
    task_free_title(task);
    if (!autoconfig_handle->suppress_notifcations)
