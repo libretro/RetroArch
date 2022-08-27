@@ -2351,6 +2351,7 @@ static int create_string_list_rdb_entry_string(
       const char *actual_string, const char *path,
       file_list_t *list)
 {
+   size_t _len;
    struct string_list str_list;
    union string_list_elem_attr attr;
    char tmp[PATH_MAX_LENGTH];
@@ -2380,10 +2381,10 @@ static int create_string_list_rdb_entry_string(
    string_list_join_concat(output_label, str_len, &str_list, "|");
    string_list_deinitialize(&str_list);
 
-   str_len        = strlcpy(tmp, desc, sizeof(tmp));
-   tmp[str_len  ] = ':';
-   tmp[str_len+1] = ' ';
-   tmp[str_len+2] = '\0';
+   _len           = strlcpy(tmp, desc, sizeof(tmp));
+   tmp[_len  ]    = ':';
+   tmp[_len+1]    = ' ';
+   tmp[_len+2]    = '\0';
    strlcat(tmp, actual_string, sizeof(tmp));
    menu_entries_append(list, tmp, output_label,
          enum_idx,
