@@ -11551,7 +11551,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (menu_entries_append(info->list,
                   title,
                   "",
-                  0, MENU_SET_SWITCH_CPU_PROFILE, 0, i))
+                  0, MENU_SET_SWITCH_CPU_PROFILE, 0, i, NULL))
                count++;
 
          }
@@ -11593,7 +11593,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             snprintf(title, sizeof(title), "%s (%s)", profile, speed);
 
-            if (menu_entries_append(info->list, title, "", 0, MENU_SET_SWITCH_GPU_PROFILE, 0, i))
+            if (menu_entries_append(info->list, title, "", 0, MENU_SET_SWITCH_GPU_PROFILE, 0, i, NULL))
                count++;
          }
 
