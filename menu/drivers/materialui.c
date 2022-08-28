@@ -4043,9 +4043,11 @@ static void materialui_render_menu_entry_default(
          if (!entry->checked)
             icon_texture = mui->textures.list[node->icon_texture_index];
          break;
+#if defined(HAVE_LIBRETRODB)
       case MUI_ICON_TYPE_MENU_EXPLORE:
          icon_texture = menu_explore_get_entry_icon(entry_type);
          break;
+#endif
       case MUI_ICON_TYPE_MENU_CONTENTLESS_CORE:
          icon_texture = menu_contentless_cores_get_entry_icon(entry->label);
          break;
