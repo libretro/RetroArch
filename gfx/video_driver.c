@@ -3614,7 +3614,7 @@ void video_driver_frame(const void *data, unsigned width,
    bool render_frame             = true;
    retro_time_t new_time;
    video_frame_info_t video_info;
-   size_t buf_pos                = 1;
+   size_t buf_pos                = 0;
    video_driver_state_t *video_st= &video_driver_st;
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    const enum retro_pixel_format
