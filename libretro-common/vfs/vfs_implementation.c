@@ -1015,7 +1015,6 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
       const char *name, bool include_hidden)
 {
 #if defined(_WIN32)
-   unsigned path_len;
    char path_buf[1024];
    size_t copied      = 0;
 #if defined(LEGACY_WIN32)
@@ -1038,16 +1037,13 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
    rdir->orig_path       = strdup(name);
 
 #if defined(_WIN32)
-   path_buf[0]           = '\0';
-   path_len              = strlen(name);
-
    copied                = strlcpy(path_buf, name, sizeof(path_buf));
 
    /* Non-NT platforms don't like extra slashes in the path */
-   if (name[path_len - 1] != '\\')
-      path_buf[copied++]   = '\\';
+   if (path_buf[copied - 1] != '\\')
+      path_buf [copied++]  = '\\';
 
-   path_buf[copied]        = '*';
+   path_buf[copied  ]      = '*';
    path_buf[copied+1]      = '\0';
 
 #if defined(LEGACY_WIN32)
