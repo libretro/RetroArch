@@ -43,6 +43,7 @@
 #include <defines/gx_defines.h>
 
 #include <boolean.h>
+#include <compat/strl.h>
 
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
@@ -130,6 +131,8 @@ static void gx_devthread(void *a)
 {
    unsigned i;
 
+   slock_lock(gx_device_cond_mutex);
+
    while (!gx_stop_dev_thread)
    {
       slock_lock(gx_device_mutex);
@@ -141,9 +144,9 @@ static void gx_devthread(void *a)
             if (!gx_devices[i].interface->isInserted())
             {
                char n[8] = {0};
-
                gx_devices[i].mounted = false;
-               snprintf(n, sizeof(n), "%s:", gx_devices[i].name);
+               strlcpy(n, gx_devices[i].name, sizeof(n));
+               strlcat(n, ":", sizeof(n));
                fatUnmount(n);
             }
          }
@@ -152,11 +155,10 @@ static void gx_devthread(void *a)
       }
 
       slock_unlock(gx_device_mutex);
-
-      slock_lock(gx_device_cond_mutex);
       scond_wait_timeout(gx_device_cond, gx_device_cond_mutex, 1000000);
-      slock_unlock(gx_device_cond_mutex);
    }
+
+   slock_unlock(gx_device_cond_mutex);
 }
 #endif
 
