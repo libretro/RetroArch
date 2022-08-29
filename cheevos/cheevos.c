@@ -257,6 +257,8 @@ static void rcheevos_activate_achievements(void)
          if (result != RC_OK)
          {
             char buffer[256];
+            buffer[0] = '\0';
+            /* TODO/FIXME - localize */
             snprintf(buffer, sizeof(buffer),
                "Could not activate achievement %u \"%s\": %s",
                achievement->id, achievement->title, rc_error_str(result));
@@ -570,11 +572,19 @@ int rcheevos_get_richpresence(char *s, size_t len)
             &rcheevos_peek, NULL, NULL);
 
       if (ret <= 0 && rcheevos_locals.game.title)
-         return snprintf(s, len, "Playing %s", rcheevos_locals.game.title);
+      {
+         /* TODO/FIXME - localize */
+         strlcpy(s, "Playing ", len);
+         strlcat(s, rcheevos_locals.game.title, len);
+      }
       return ret;
    }
    if (rcheevos_locals.game.title)
-      return snprintf(s, len, "Spectating %s", rcheevos_locals.game.title);
+   {
+      /* TODO/FIXME - localize */
+      strlcpy(s, "Spectating ", len);
+      return strlcat(s, rcheevos_locals.game.title, len);
+   }
    return 0;
 }
 
@@ -747,6 +757,8 @@ static void rcheevos_activate_leaderboards(void)
       if (result != RC_OK)
       {
          char buffer[256];
+         buffer[0] = '\0';
+         /* TODO/FIXME - localize */
          snprintf(buffer, sizeof(buffer),
             "Could not activate leaderboard %u \"%s\": %s",
             leaderboard->id, leaderboard->title, rc_error_str(result));
@@ -1033,6 +1045,8 @@ void rcheevos_validate_config_settings(void)
       !rc_libretro_is_system_allowed(system->library_name, rcheevos_locals.game.console_id))
    {
       char buffer[256];
+      buffer[0] = '\0';
+      /* TODO/FIXME - localize */
       snprintf(buffer, sizeof(buffer),
             "Hardcore paused. You cannot earn hardcore achievements for %s using %s",
             rc_console_name(rcheevos_locals.game.console_id), system->library_name);
@@ -1440,8 +1454,8 @@ static void rc_hash_reset_cdreader_hooks(void)
 
 void rcheevos_show_mastery_placard(void)
 {
-   const settings_t* settings = config_get_ptr();
    char title[256];
+   const settings_t* settings = config_get_ptr();
 
    if (rcheevos_locals.game.mastery_placard_shown)
       return;
@@ -1449,7 +1463,9 @@ void rcheevos_show_mastery_placard(void)
    rcheevos_locals.game.mastery_placard_shown = true;
 
    snprintf(title, sizeof(title),
-      msg_hash_to_str(rcheevos_locals.hardcore_active ? MSG_CHEEVOS_MASTERED_GAME : MSG_CHEEVOS_COMPLETED_GAME),
+      msg_hash_to_str(rcheevos_locals.hardcore_active 
+         ? MSG_CHEEVOS_MASTERED_GAME 
+         : MSG_CHEEVOS_COMPLETED_GAME),
       rcheevos_locals.game.title);
    title[sizeof(title) - 1] = '\0';
    CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", title);
@@ -1457,16 +1473,16 @@ void rcheevos_show_mastery_placard(void)
 #if defined (HAVE_GFX_WIDGETS)
    if (gfx_widgets_ready())
    {
-      const bool content_runtime_log = settings->bools.content_runtime_log;
+      const bool content_runtime_log      = settings->bools.content_runtime_log;
       const bool content_runtime_log_aggr = settings->bools.content_runtime_log_aggregate;
       char msg[128];
-      size_t len = snprintf(msg, sizeof(msg), "%s", rcheevos_locals.displayname);
+      size_t len = strlcpy(msg, rcheevos_locals.displayname, sizeof(msg));
 
       if (len < sizeof(msg) - 12 &&
          (content_runtime_log || content_runtime_log_aggr))
       {
-         const char* content_path = path_get(RARCH_PATH_CONTENT);
-         const char* core_path = path_get(RARCH_PATH_CORE);
+         const char* content_path   = path_get(RARCH_PATH_CONTENT);
+         const char* core_path      = path_get(RARCH_PATH_CORE);
          runtime_log_t* runtime_log = runtime_log_init(
                content_path, core_path,
                settings->paths.directory_runtime_log,
@@ -1521,6 +1537,7 @@ static void rcheevos_show_game_placard(void)
          number_of_active++;
    }
 
+   /* TODO/FIXME - localize strings */
    if (number_of_core == 0)
       strlcpy(msg, "This game has no achievements.", sizeof(msg));
    else if (!number_of_unsupported)
@@ -1918,6 +1935,8 @@ static void rcheevos_login_callback(void* userdata)
       if (settings->bools.cheevos_verbose_enable)
       {
          char msg[256];
+         msg[0] = '\0';
+         /* TODO/FIXME - localize */
          snprintf(msg, sizeof(msg),
             "RetroAchievements: Logged in as \"%s\".",
             rcheevos_locals.displayname);
