@@ -3744,13 +3744,20 @@ void video_driver_frame(const void *data, unsigned width,
       fps_time                                     = new_time;
 
       if (video_info.fps_show)
-         buf_pos = snprintf(
-               status_text, sizeof(status_text),
-               "FPS: %6.2f", last_fps);
+      {
+         status_text[0] = 'F';
+         status_text[1] = 'P';
+         status_text[2] = 'S';
+         status_text[3] = ':';
+         status_text[4] = ' ';
+         status_text[5] = '\0';
+         buf_pos        = snprintf(
+               status_text + 5, sizeof(status_text) - 5,
+               "%6.2f", last_fps) + 5;
+      }
 
       if (video_info.framecount_show)
       {
-         char frames_text[64];
          if (status_text[buf_pos-1] != '\0')
          {
             status_text[buf_pos  ] = ' ';
@@ -3759,36 +3766,45 @@ void video_driver_frame(const void *data, unsigned width,
             status_text[buf_pos+3] = ' ';
             status_text[buf_pos+4] = '\0';
          }
-         snprintf(frames_text,
-               sizeof(frames_text),
-               "%s: %" PRIu64, msg_hash_to_str(MSG_FRAMES),
-               (uint64_t)video_st->frame_count);
-         buf_pos = strlcat(status_text, frames_text, sizeof(status_text));
+         buf_pos                   = strlcat(status_text, msg_hash_to_str(MSG_FRAMES),
+			 sizeof(status_text));
+         status_text[buf_pos  ]    = ':';
+         status_text[++buf_pos]    = ' ';
+         status_text[++buf_pos]    = '\0';
+         buf_pos                  += snprintf(
+		status_text         + buf_pos,
+		sizeof(status_text) - buf_pos,
+		"%" PRIu64, (uint64_t)video_st->frame_count);
       }
 
       if (video_info.memory_show)
       {
-         char mem[128];
-
          if ((video_st->frame_count % memory_update_interval) == 0)
          {
             last_total_memory = frontend_driver_get_total_memory();
             last_used_memory  = last_total_memory - frontend_driver_get_free_memory();
          }
 
-         mem[0] = '\0';
-         snprintf(
-               mem, sizeof(mem), "MEM: %.2f/%.2fMB", last_used_memory / (1024.0f * 1024.0f),
-               last_total_memory / (1024.0f * 1024.0f));
          if (status_text[buf_pos-1] != '\0')
          {
-            status_text[buf_pos  ] = ' ';
-            status_text[buf_pos+1] = '|';
-            status_text[buf_pos+2] = '|';
-            status_text[buf_pos+3] = ' ';
-            status_text[buf_pos+4] = '\0';
+            status_text[buf_pos]   = ' ';
+            status_text[++buf_pos] = '|';
+            status_text[++buf_pos] = '|';
+            status_text[++buf_pos] = ' ';
+            status_text[++buf_pos] = '\0';
          }
-         buf_pos = strlcat(status_text, mem, sizeof(status_text));
+         status_text[buf_pos  ]    = 'M';
+         status_text[++buf_pos]    = 'E';
+         status_text[++buf_pos]    = 'M';
+         status_text[++buf_pos]    = ':';
+         status_text[++buf_pos]    = ' ';
+         status_text[++buf_pos]    = '\0';
+         buf_pos                  += snprintf(
+               status_text + buf_pos, sizeof(status_text) - buf_pos, "%.2f/%.2f", last_used_memory / (1024.0f * 1024.0f),
+               last_total_memory / (1024.0f * 1024.0f));
+         status_text[buf_pos  ]   = 'M';
+         status_text[++buf_pos]   = 'B';
+         status_text[++buf_pos]   = '\0';
       }
 
       if ((video_st->frame_count % fps_update_interval) == 0)
