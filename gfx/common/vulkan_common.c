@@ -1646,38 +1646,26 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    {
       char device_str[128];
-      char driver_version[64];
-      char api_version[64];
       char version_str[128];
-      size_t len        = 0;
-      int pos           = 0;
-      driver_version[0] = api_version[0] = '\0';
+      size_t len            = strlcpy(device_str, vk->context.gpu_properties.deviceName, sizeof(device_str));
+      device_str[len  ]     = ' ';
+      device_str[++len]     = '\0';
 
-      len               = strlcpy(device_str, vk->context.gpu_properties.deviceName, sizeof(device_str));
-      device_str[len  ] = ' ';
-      device_str[len+1] = '\0';
+      len                  += snprintf(device_str + len, sizeof(device_str) - len, "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.driverVersion));
+      device_str[len  ]     = '.';
+      device_str[++len]     = '\0';
+      len                  += snprintf(device_str + len, sizeof(device_str) - len, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.driverVersion));
+      device_str[len  ]     = '.';
+      device_str[++len]     = '\0';
+      snprintf(device_str + len, sizeof(device_str) - len, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.driverVersion));
 
-      pos += snprintf(driver_version + pos, sizeof(driver_version) - pos, "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.driverVersion));
-      strlcat(driver_version, ".", sizeof(driver_version));
-      pos++;
-      pos += snprintf(driver_version + pos, sizeof(driver_version) - pos, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.driverVersion));
-      pos++;
-      strlcat(driver_version, ".", sizeof(driver_version));
-      pos += snprintf(driver_version + pos, sizeof(driver_version) - pos, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.driverVersion));
-
-      strlcat(device_str, driver_version, sizeof(device_str));
-
-      pos = 0;
-
-      pos += snprintf(api_version + pos, sizeof(api_version) - pos, "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
-      strlcat(api_version, ".", sizeof(api_version));
-      pos++;
-      pos += snprintf(api_version + pos, sizeof(api_version) - pos, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.apiVersion));
-      pos++;
-      strlcat(api_version, ".", sizeof(api_version));
-      pos += snprintf(api_version + pos, sizeof(api_version) - pos, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.apiVersion));
-
-      strlcpy(version_str, api_version, sizeof(device_str));
+      len                   = snprintf(version_str      , sizeof(version_str)      , "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
+      version_str[len  ]    = '.';
+      version_str[++len]    = '\0';
+      len                  += snprintf(version_str + len, sizeof(version_str) - len, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.apiVersion));
+      version_str[len  ]    = '.';
+      version_str[++len]    = '\0';
+      snprintf(version_str + len, sizeof(version_str) - len, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.apiVersion));
 
       video_driver_set_gpu_device_string(device_str);
       video_driver_set_gpu_api_version_string(version_str);
