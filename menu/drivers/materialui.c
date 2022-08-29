@@ -3478,14 +3478,21 @@ static bool materialui_render_process_entry_playlist_desktop(
                last_played_str = mui->status_bar.last_played_fallback_str;
 
             /* Generate metadata string */
-            snprintf(mui->status_bar.str, sizeof(mui->status_bar.str),
-                  "%s %s%s%s%s%s",
+            strlcpy(mui->status_bar.str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
-                  core_name,
-                  MUI_TICKER_SPACER,
-                  runtime_str,
-                  MUI_TICKER_SPACER,
-                  last_played_str);
+                  sizeof(mui->status_bar.str));
+            strlcat(mui->status_bar.str, " ",
+                  sizeof(mui->status_bar.str));
+            strlcat(mui->status_bar.str, core_name,
+                  sizeof(mui->status_bar.str));
+            strlcat(mui->status_bar.str, MUI_TICKER_SPACER,
+                  sizeof(mui->status_bar.str));
+            strlcat(mui->status_bar.str, runtime_str,
+                  sizeof(mui->status_bar.str));
+            strlcat(mui->status_bar.str, MUI_TICKER_SPACER,
+                  sizeof(mui->status_bar.str));
+            strlcat(mui->status_bar.str, last_played_str,
+                  sizeof(mui->status_bar.str));
 
             /* All metadata is cached */
             mui->status_bar.cached = true;
@@ -7048,11 +7055,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    /* Handle onscreen keyboard */
    if (menu_input_dialog_get_display_kb())
    {
+      size_t _len;
       char msg[255];
       const char *str   = menu_input_dialog_get_buffer();
       const char *label = menu_input_dialog_get_label_buffer();
-
-      msg[0] = '\0';
 
       /* Darken screen */
       gfx_display_set_alpha(
@@ -7069,7 +7075,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             NULL);
 
       /* Draw message box */
-      snprintf(msg, sizeof(msg), "%s\n%s", label, str);
+      _len        = strlcpy(msg, label, sizeof(msg));
+      msg[_len  ] = '\n';
+      msg[_len+1] = '\0';
+      strlcat(msg, str, sizeof(msg));
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
@@ -7400,6 +7409,7 @@ static void materialui_status_bar_init(
 
    if (mui->status_bar.enabled)
    {
+      size_t _len;
       /* Determine status bar height */
       mui->status_bar.height = (unsigned)(((float)mui->font_data.hint.line_height * 1.6f) + 0.5f);
 
@@ -7408,15 +7418,25 @@ static void materialui_status_bar_init(
        *  materialui_init()? Because re-caching the
        *  values each time allows us to handle changes
        *  in user interface language settings) */
-      snprintf(mui->status_bar.runtime_fallback_str,
-            sizeof(mui->status_bar.runtime_fallback_str), "%s %s",
+      _len = strlcpy(mui->status_bar.runtime_fallback_str,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
+	    sizeof(mui->status_bar.runtime_fallback_str));
+      mui->status_bar.runtime_fallback_str[_len  ] = ' ';
+      mui->status_bar.runtime_fallback_str[_len+1] = '\0';
+      strlcat(mui->status_bar.runtime_fallback_str,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED),
+	    sizeof(mui->status_bar.runtime_fallback_str));
 
-      snprintf(mui->status_bar.last_played_fallback_str,
-            sizeof(mui->status_bar.last_played_fallback_str), "%s %s",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
+      _len = strlcpy(mui->status_bar.last_played_fallback_str,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
+            sizeof(mui->status_bar.last_played_fallback_str));
+      mui->status_bar.last_played_fallback_str[_len  ] = ' ';
+      mui->status_bar.last_played_fallback_str[_len+1] = '\0';
+      strlcat(mui->status_bar.last_played_fallback_str,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED),
+            sizeof(mui->status_bar.last_played_fallback_str)
+            );
    }
 }
 
@@ -10740,8 +10760,8 @@ static void materialui_list_insert(
                {
                   char val[255];
                   unsigned user_value = i + 1;
-
-                  snprintf(val, sizeof(val), "%d_input_binds_list", user_value);
+                  snprintf(val, sizeof(val), "%d", user_value);
+                  strlcat(val, "_input_binds_list", sizeof(val));
 
                   if (string_is_equal(label, val))
                   {

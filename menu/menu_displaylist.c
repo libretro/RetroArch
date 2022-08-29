@@ -2420,8 +2420,8 @@ static int create_string_list_rdb_entry_int(
    str_len                         += strlen(label) + 1;
    string_list_append(&str_list, label, attr);
 
-   snprintf(str, sizeof(str), "%d", actual_int);
-   str_len                         += strlen(str) + 1;
+   _len = snprintf(str, sizeof(str), "%d", actual_int);
+   str_len                         += _len + 1;
    string_list_append(&str_list, str, attr);
 
    str_len                         += strlen(path) + 1;

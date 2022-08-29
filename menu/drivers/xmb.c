@@ -1527,11 +1527,9 @@ static void xmb_selection_pointer_changed(
 
          /* Update entry index text */
          if (xmb->entry_idx_enabled)
-         {
             snprintf(xmb->entry_index_str, sizeof(xmb->entry_index_str),
                      "%lu/%lu", (unsigned long)selection + 1,
                                 (unsigned long)xmb->list_size);
-         }
 
          ia                      = xmb->items_active_alpha;
          iz                      = xmb->items_active_zoom;
@@ -5883,8 +5881,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       const char *str   = menu_input_dialog_get_buffer();
       const char *label = menu_input_dialog_get_label_buffer();
-
-      snprintf(msg, sizeof(msg), "%s\n%s", label, str);
+      size_t _len       = strlcpy(msg, label, sizeof(msg));
+      msg[_len  ]       = '\n';
+      msg[_len+1]       = '\0';
+      strlcat(msg, str, sizeof(msg));
       render_background = true;
    }
 
