@@ -3353,10 +3353,8 @@ static bool config_load_file(global_t *global,
    for (i = 0; i < MAX_USERS; i++)
    {
       char tmp[64];
-
-      tmp[0] = '\0';
-
-      snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
+      size_t _len = strlcpy(tmp, "network_remote_enable_user_p", sizeof(tmp));
+      snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
 
       if (config_get_bool(conf, tmp, &tmp_bool))
          configuration_set_bool(settings,
@@ -3424,11 +3422,10 @@ static bool config_load_file(global_t *global,
    {
       char buf[64];
       char prefix[24];
-
+      size_t _len;
       buf[0]    = '\0';
-      prefix[0] = '\0';
-
-      snprintf(prefix, sizeof(prefix),"input_player%u", i + 1);
+      _len      = strlcpy(prefix, "input_player", sizeof(prefix));
+      snprintf(prefix + _len, sizeof(prefix) - _len, "%u", i + 1);
 
       strlcpy(buf, prefix, sizeof(buf));
       strlcat(buf, "_joypad_index", sizeof(buf));
@@ -4209,31 +4206,33 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
    unsigned hat     = (unsigned)GET_HAT(bind->joykey);
    const char *dir  = NULL;
 
-   config[0]        = '\0';
+   config[0]        = 'h';
+   config[1]        = '\0';
+
+   snprintf(config + 1, sizeof(config) - 1, "%u", hat); 
 
    switch (GET_HAT_DIR(bind->joykey))
    {
       case HAT_UP_MASK:
-         dir = "up";
+         strlcat(config, "up", sizeof(config));
          break;
 
       case HAT_DOWN_MASK:
-         dir = "down";
+         strlcat(config, "down", sizeof(config));
          break;
 
       case HAT_LEFT_MASK:
-         dir = "left";
+         strlcat(config, "left", sizeof(config));
          break;
 
       case HAT_RIGHT_MASK:
-         dir = "right";
+         strlcat(config, "right", sizeof(config));
          break;
 
       default:
          break;
    }
 
-   snprintf(config, sizeof(config), "h%u%s", hat, dir);
    config_set_string(conf, key, config);
 }
 
@@ -4284,15 +4283,19 @@ static void save_keybind_axis(config_file_t *conf,
    else if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
       char config[16];
-      config[0] = '\0';
-      snprintf(config, sizeof(config), "-%u", AXIS_NEG_GET(bind->joyaxis));
+      config[0] = '-';
+      config[1] = '\0';
+      snprintf(config + 1, sizeof(config) - 1, "%u",
+            AXIS_NEG_GET(bind->joyaxis));
       config_set_string(conf, key, config);
    }
    else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
       char config[16];
-      config[0] = '\0';
-      snprintf(config, sizeof(config), "+%u", AXIS_POS_GET(bind->joyaxis));
+      config[0] = '+';
+      config[1] = '\0';
+      snprintf(config + 1, sizeof(config) - 1, "%u",
+            AXIS_POS_GET(bind->joyaxis));
       config_set_string(conf, key, config);
    }
 }
@@ -4737,10 +4740,8 @@ bool config_save_file(const char *path)
    for (i = 0; i < MAX_USERS; i++)
    {
       char tmp[64];
-
-      tmp[0] = '\0';
-
-      snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
+      size_t _len = strlcpy(tmp, "network_remote_enable_user_p", sizeof(tmp));
+      snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
       config_set_string(conf, tmp,
             settings->bools.network_remote_enable_user[i]
             ? "true" : "false");
