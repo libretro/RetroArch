@@ -7926,20 +7926,31 @@ int generic_menu_entry_action(
 
       if (!string_is_empty(title_name))
       {
+	      size_t _len             = strlcpy(speak_string,
+               title_name, sizeof(speak_string));
+         speak_string[_len  ]    = ' ';
+         speak_string[_len+1]    = '\0';
+         _len                    = strlcat(speak_string,
+               current_label, sizeof(speak_string));
          if (!string_is_equal(current_value, "..."))
-            snprintf(speak_string, sizeof(speak_string),
-                  "%s %s %s", title_name, current_label, current_value);
-         else
-            snprintf(speak_string, sizeof(speak_string),
-                  "%s %s", title_name, current_label);
+         {
+            speak_string[_len  ] = ' ';
+            speak_string[_len+1] = '\0';
+            strlcat(speak_string, current_value,
+                  sizeof(speak_string));
+         }
       }
       else
       {
+         size_t _len = strlcpy(speak_string,
+               current_label, sizeof(speak_string));
          if (!string_is_equal(current_value, "..."))
-            snprintf(speak_string, sizeof(speak_string),
-                  "%s %s", current_label, current_value);
-         else
-            strlcpy(speak_string, current_label, sizeof(speak_string));
+         {
+            speak_string[_len  ] = ' ';
+            speak_string[_len+1] = '\0';
+            strlcat(speak_string, current_value,
+                  sizeof(speak_string));
+         }
       }
 
       if (!string_is_empty(speak_string))

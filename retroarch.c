@@ -1693,14 +1693,15 @@ bool command_event(enum event_command cmd, void *data)
 
             if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
             {
-               char msg[128] = {0};
+               char msg[128];
 
                video_driver_set_video_mode(width, height, true);
 
                if (width == 0 || height == 0)
-                  snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_DEFAULT));
+                  strlcpy(msg, msg_hash_to_str(MSG_SCREEN_RESOLUTION_DEFAULT), sizeof(msg));
                else
                {
+                  msg[0] = '\0';
                   if (!string_is_empty(desc))
                      snprintf(msg, sizeof(msg),
                         msg_hash_to_str(MSG_SCREEN_RESOLUTION_DESC),

@@ -1370,8 +1370,9 @@ static void task_update_installed_cores_handler(retro_task_t *task)
             if (update_installed_handle->list_size > 0)
             {
                char task_title[PATH_MAX_LENGTH];
-
-               task_title[0] = '\0';
+               size_t _len = strlcpy(task_title,
+                     msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                     sizeof(task_title));
 
                /* > Generate final status message based on number
                 *   of cores that were updated/locked */
@@ -1379,28 +1380,28 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                {
                   if (update_installed_handle->num_locked > 0)
                      snprintf(
-                           task_title, sizeof(task_title), "%s [%s%u, %s%u]",
-                           msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                           task_title         + _len,
+                           sizeof(task_title) - _len,
+                           " [%s%u, %s%u]",
                            msg_hash_to_str(MSG_NUM_CORES_UPDATED),
                            update_installed_handle->num_updated,
                            msg_hash_to_str(MSG_NUM_CORES_LOCKED),
                            update_installed_handle->num_locked);
                   else
                      snprintf(
-                           task_title, sizeof(task_title), "%s [%s%u]",
-                           msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                           task_title         + _len,
+                           sizeof(task_title) - _len,
+                           " [%s%u]",
                            msg_hash_to_str(MSG_NUM_CORES_UPDATED),
                            update_installed_handle->num_updated);
                }
                else if (update_installed_handle->num_locked > 0)
                   snprintf(
-                        task_title, sizeof(task_title), "%s [%s%u]",
-                        msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                        task_title         + _len,
+                        sizeof(task_title) - _len,
+                        " [%s%u]",
                         msg_hash_to_str(MSG_NUM_CORES_LOCKED),
                         update_installed_handle->num_locked);
-               else
-                  strlcpy(task_title, msg_hash_to_str(MSG_ALL_CORES_UPDATED),
-                        sizeof(task_title));
 
                task_set_title(task, strdup(task_title));
             }

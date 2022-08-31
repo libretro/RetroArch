@@ -7336,15 +7336,17 @@ static enum runloop_state_enum runloop_check_state(
        * for this frame. */
       if (check2)
       {
+         size_t _len;
          char msg[128];
          int cur_state_slot                = state_slot;
          if (check1)
             configuration_set_int(settings, settings->ints.state_slot,
                   cur_state_slot + addition);
-         msg[0] = '\0';
-         snprintf(msg, sizeof(msg), "%s: %d",
-               msg_hash_to_str(MSG_STATE_SLOT),
-               settings->ints.state_slot);
+         _len = strlcpy(msg, msg_hash_to_str(MSG_STATE_SLOT), sizeof(msg));
+         snprintf(msg         + _len,
+                  sizeof(msg) - _len,
+                  ": %d",
+                  settings->ints.state_slot);
          runloop_msg_queue_push(msg, 2, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          RARCH_LOG("[State]: %s\n", msg);
@@ -8130,6 +8132,7 @@ bool retroarch_get_current_savestate_path(char *path, size_t len)
 
 bool retroarch_get_entry_state_path(char *path, size_t len, unsigned slot)
 {
+   size_t _len;
    runloop_state_t *runloop_st = &runloop_state;
    const char *name_savestate  = NULL;
 
@@ -8140,8 +8143,8 @@ bool retroarch_get_entry_state_path(char *path, size_t len, unsigned slot)
    if (string_is_empty(name_savestate))
       return false;
 
-   snprintf(path, len, "%s%d", name_savestate, slot);
-   strlcat(path, ".entry", len);
+   _len = strlcpy(path, name_savestate, len);
+   snprintf(path + _len, len - _len, "%d.entry", slot);
 
    return true;
 }

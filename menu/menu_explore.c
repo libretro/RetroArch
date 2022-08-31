@@ -1017,10 +1017,8 @@ unsigned menu_displaylist_explore(file_list_t *list,
          if (is_top && tmplen < sizeof(tmp) - 5)
          {
             if (explore_by_info[cat].is_numeric)
-            {
                snprintf(tmp + tmplen, sizeof(tmp) - tmplen, " (%s - %s)",
                      entries[0]->str, entries[RBUF_LEN(entries) - 1]->str);
-            }
             else
             {
                strlcat(tmp, " (", sizeof(tmp));

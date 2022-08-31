@@ -1028,13 +1028,15 @@ bool run_translation_service(settings_t *settings, bool paused)
       RARCH_LOG("Request size: %d\n", bmp64_length);
 #endif
    {
+      size_t _len;
       char new_ai_service_url[PATH_MAX_LENGTH];
       char separator                  = '?';
       unsigned ai_service_source_lang = settings->uints.ai_service_source_lang;
       unsigned ai_service_target_lang = settings->uints.ai_service_target_lang;
       const char *ai_service_url      = settings->arrays.ai_service_url;
 
-      strlcpy(new_ai_service_url, ai_service_url, sizeof(new_ai_service_url));
+      _len = strlcpy(new_ai_service_url,
+            ai_service_url, sizeof(new_ai_service_url));
 
       /* if query already exists in url, then use &'s instead */
       if (strrchr(new_ai_service_url, '?'))
@@ -1048,13 +1050,15 @@ bool run_translation_service(settings_t *settings, bool paused)
 
          if (!string_is_empty(lang_source))
          {
-            char temp_string[PATH_MAX_LENGTH];
-            snprintf(temp_string,
-                  sizeof(temp_string),
-                  "%csource_lang=%s", separator, lang_source);
-            separator = '&';
-            strlcat(new_ai_service_url,
-                  temp_string, sizeof(new_ai_service_url));
+            new_ai_service_url[_len  ] = separator;
+            new_ai_service_url[_len+1] = '\0';
+                                         strlcat(
+                  new_ai_service_url, "source_lang=",
+                  sizeof(new_ai_service_url));
+            _len                       = strlcat(
+                  new_ai_service_url, lang_source,
+                  sizeof(new_ai_service_url));
+            separator                  = '&';
          }
       }
 
@@ -1066,57 +1070,58 @@ bool run_translation_service(settings_t *settings, bool paused)
 
          if (!string_is_empty(lang_target))
          {
-            char temp_string[PATH_MAX_LENGTH];
-            snprintf(temp_string,
-                  sizeof(temp_string),
-                  "%ctarget_lang=%s", separator, lang_target);
-            separator = '&';
-
-            strlcat(new_ai_service_url, temp_string,
+            new_ai_service_url[_len  ] = separator;
+            new_ai_service_url[_len+1] = '\0';
+                                         strlcat(
+                  new_ai_service_url, "target_lang=",
                   sizeof(new_ai_service_url));
+            _len                       = strlcat(
+                  new_ai_service_url, lang_target,
+                  sizeof(new_ai_service_url));
+            separator                  = '&';
          }
       }
 
       /* mode */
       {
-         char temp_string[PATH_MAX_LENGTH];
-         const char *mode_chr                    = NULL;
-         unsigned ai_service_mode                = settings->uints.ai_service_mode;
+         unsigned ai_service_mode      = settings->uints.ai_service_mode;
          /*"image" is included for backwards compatability with
           * vgtranslate < 1.04 */
 
-         temp_string[0] = '\0';
+         new_ai_service_url[_len  ] = separator;
+         new_ai_service_url[_len+1] = '\0';
+         _len                       = strlcat(
+               new_ai_service_url, "output=",
+               sizeof(new_ai_service_url));
 
          switch (ai_service_mode)
          {
             case 0:
+               strlcat(new_ai_service_url, "image,png",
+                     sizeof(new_ai_service_url));
                if (use_overlay)
-                  mode_chr = "image,png,png-a";
-               else
-                  mode_chr = "image,png";
+                  strlcat(new_ai_service_url, ",png-a",
+                        sizeof(new_ai_service_url));
                break;
             case 1:
-               mode_chr    = "sound,wav";
+               strlcat(new_ai_service_url, "sound,wav",
+                     sizeof(new_ai_service_url));
                break;
             case 2:
-               mode_chr    = "text";
+               strlcat(new_ai_service_url, "text",
+                     sizeof(new_ai_service_url));
                break;
             case 3:
+               strlcat(new_ai_service_url, "image,png,sound,wav",
+                     sizeof(new_ai_service_url));
                if (use_overlay)
-                  mode_chr = "image,png,png-a,sound,wav";
-               else
-                  mode_chr = "image,png,sound,wav";
+                  strlcat(new_ai_service_url,
+                        ",png-a", sizeof(new_ai_service_url));
                break;
             default:
                break;
          }
 
-         snprintf(temp_string,
-               sizeof(temp_string),
-               "%coutput=%s", separator, mode_chr);
-
-         strlcat(new_ai_service_url, temp_string,
-                 sizeof(new_ai_service_url));
       }
 #ifdef DEBUG
       if (access_st->ai_service_auto != 2)

@@ -1760,10 +1760,12 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    {
       char cpu_str[64];
       unsigned amount_cores = cpu_features_get_core_amount();
-      cpu_str[0]            = '\0';
-      snprintf(cpu_str, sizeof(cpu_str),
-            "%s %d\n",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_CORES), amount_cores);
+      size_t _len           = strlcpy(cpu_str,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_CORES),
+            sizeof(cpu_str));
+      snprintf(cpu_str      + _len,
+            sizeof(cpu_str) - _len,
+            " %d\n", amount_cores);
       if (menu_entries_append(list, cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_CPU_CORES),
             MENU_ENUM_LABEL_CPU_CORES, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
@@ -2029,10 +2031,13 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       if (video_context_driver_get_metrics(&metrics))
       {
-         snprintf(tmp, sizeof(tmp), "%s: %.2f",
+         size_t _len = strlcpy(tmp,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH),
-               val);
+               sizeof(tmp));
+         snprintf(tmp      + _len,
+               sizeof(tmp) - _len,
+               ": %.2f", val);
          if (menu_entries_append(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
