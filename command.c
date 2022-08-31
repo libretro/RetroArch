@@ -375,7 +375,7 @@ bool command_get_config_param(command_t *cmd, const char* arg)
       value = path_username;
    /* TODO: query any string */
 
-   strlcpy(reply, "GET_CONFIG_PARAM ";
+   strlcpy(reply, "GET_CONFIG_PARAM ", sizeof(reply));
    _len          = strlcat(reply, arg, sizeof(reply));
    reply[_len  ] = ' ';
    reply[_len+1] = '\0';
