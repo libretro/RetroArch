@@ -246,8 +246,8 @@ static int action_right_scroll(unsigned type, const char *label,
    if (!menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
       return false;
 
-   scroll_speed      = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
-   fast_scroll_speed = 4 + 4 * scroll_speed;
+   scroll_speed          = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
+   fast_scroll_speed     = 10 * scroll_speed;
 
    if (selection  + fast_scroll_speed < (menu_entries_get_size()))
    {

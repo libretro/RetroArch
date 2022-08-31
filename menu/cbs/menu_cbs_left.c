@@ -235,7 +235,7 @@ static int action_left_scroll(unsigned type, const char *label,
       return false;
 
    scroll_speed          = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
-   fast_scroll_speed     = 4 + 4 * scroll_speed;
+   fast_scroll_speed     = 10 * scroll_speed;
 
    if (selection > fast_scroll_speed)
    {
