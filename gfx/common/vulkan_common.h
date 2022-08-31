@@ -783,6 +783,10 @@ void vulkan_set_uniform_buffer(
       VkDeviceSize offset,
       VkDeviceSize range);
 
+void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
+void vulkan_debug_mark_image(VkDevice device, VkImage image);
+void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
+
 RETRO_END_DECLS
 
 #endif

@@ -358,6 +358,40 @@ static unsigned vulkan_num_miplevels(unsigned width, unsigned height)
    return levels;
 }
 
+static void vulkan_debug_mark_object(VkDevice device,
+      VkObjectType object_type, uint64_t object_handle, const char *name, unsigned count)
+{
+   if (vkSetDebugUtilsObjectNameEXT)
+   {
+      char merged_name[1024];
+      snprintf(merged_name, sizeof(merged_name), "%s (%u)", name, count);
+
+      VkDebugUtilsObjectNameInfoEXT info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+      info.objectType = object_type;
+      info.objectHandle = object_handle;
+      info.pObjectName = merged_name;
+      vkSetDebugUtilsObjectNameEXT(device, &info);
+   }
+}
+
+void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer)
+{
+   static unsigned object_count;
+   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)buffer, "marked buffer", ++object_count);
+}
+
+void vulkan_debug_mark_image(VkDevice device, VkImage image)
+{
+   static unsigned object_count;
+   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)image, "marked image", ++object_count);
+}
+
+void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory)
+{
+   static unsigned object_count;
+   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)memory, "marked memory", ++object_count);
+}
+
 struct vk_texture vulkan_create_texture(vk_t *vk,
       struct vk_texture *old,
       unsigned width, unsigned height,
