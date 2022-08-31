@@ -1123,6 +1123,17 @@ static void vulkan_deinit_menu(vk_t *vk)
    }
 }
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+static void vulkan_destroy_hdr_buffer(VkDevice device, struct vk_image *img)
+{
+   vkDestroyImageView(device, img->view, NULL);
+   vkDestroyImage(device, img->image, NULL);
+   vkDestroyFramebuffer(device, img->framebuffer, NULL);
+   vkFreeMemory(device, img->memory, NULL);
+   memset(img, 0, sizeof(*img));
+}
+#endif
+
 static void vulkan_free(void *data)
 {
    vk_t *vk = (vk_t*)data;
@@ -1160,6 +1171,7 @@ static void vulkan_free(void *data)
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo);
+      vulkan_destroy_hdr_buffer(vk->context->device, &vk->main_buffer);
       video_driver_unset_hdr_support();
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -2078,9 +2090,8 @@ static bool vulkan_frame(void *data, const void *frame,
    bool overlay_behind_menu                      = video_info->overlay_behind_menu;
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   struct video_shader* shader_preset           = vulkan_filter_chain_get_preset(vk->filter_chain); 
-   VkFormat main_buffer_format                  = shader_preset && shader_preset->passes ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_R8G8B8A8_UNORM;
-   bool use_main_buffer                         = main_buffer_format != vk->context->swapchain_format; 
+   bool use_main_buffer                          = vk->context->hdr_enable &&
+      (!vk->filter_chain || !vulkan_filter_chain_emits_hdr10(vk->filter_chain));
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Bookkeeping on start of frame. */
@@ -2318,7 +2329,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   if(vk->context->hdr_enable && use_main_buffer)
+   if (use_main_buffer)
       backbuffer = &vk->main_buffer;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -2428,7 +2439,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       /* Copy over back buffer to swap chain render targets */
-      if (vk->context->hdr_enable && use_main_buffer)
+      if (use_main_buffer)
       {
          backbuffer = &vk->backbuffers[swapchain_index];
 
@@ -2526,6 +2537,8 @@ static bool vulkan_frame(void *data, const void *frame,
             viewport.y             = 0.0f;
             viewport.width         = vk->context->swapchain_width;
             viewport.height        = vk->context->swapchain_height;
+            viewport.minDepth      = 0.0f;
+            viewport.maxDepth      = 1.0f;
 
             sci.offset.x           = (int32_t)viewport.x;
             sci.offset.y           = (int32_t)viewport.y;
@@ -2752,8 +2765,6 @@ static bool vulkan_frame(void *data, const void *frame,
 
       if (vk->context->hdr_enable)
       {
-         struct vk_image* img;
-
 #ifdef HAVE_THREADS
          slock_lock(vk->context->queue_lock);
 #endif
@@ -2761,16 +2772,8 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_THREADS
          slock_unlock(vk->context->queue_lock);
 #endif
-         img = &vk->main_buffer;
 
-         if (img->framebuffer)
-            vkDestroyFramebuffer(vk->context->device, img->framebuffer, NULL);
-         if (img->view)
-            vkDestroyImageView(vk->context->device, img->view, NULL);
-         if (img->image)
-            vkDestroyImage(vk->context->device, img->image, NULL);
-         if (img->memory)
-            vkFreeMemory(vk->context->device, img->memory, NULL);
+         vulkan_destroy_hdr_buffer(vk->context->device, &vk->main_buffer);
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -2785,7 +2788,7 @@ static bool vulkan_frame(void *data, const void *frame,
       if (!(vk->hdr.support = vk->context->swapchain_colour_space == VK_COLOR_SPACE_HDR10_ST2084_EXT))
          vk->context->hdr_enable                = false;
 
-      if(vk->context->hdr_enable)
+      if (vk->context->hdr_enable)
       {
          VkMemoryRequirements mem_reqs;
          VkImageCreateInfo image_info;
@@ -2800,7 +2803,7 @@ static bool vulkan_frame(void *data, const void *frame,
          image_info.pNext                = NULL;
          image_info.flags                = 0;
          image_info.imageType            = VK_IMAGE_TYPE_2D;
-         image_info.format               = main_buffer_format;
+         image_info.format               = vk->context->swapchain_format;
          image_info.extent.width         = video_width;
          image_info.extent.height        = video_height;
          image_info.extent.depth         = 1;
@@ -2810,7 +2813,8 @@ static bool vulkan_frame(void *data, const void *frame,
          image_info.tiling               = VK_IMAGE_TILING_OPTIMAL;
          image_info.usage                = VK_IMAGE_USAGE_SAMPLED_BIT |
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-            VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
          image_info.sharingMode          = VK_SHARING_MODE_EXCLUSIVE;
          image_info.queueFamilyIndexCount= 0;
          image_info.pQueueFamilyIndices  = NULL;
@@ -2838,7 +2842,7 @@ static bool vulkan_frame(void *data, const void *frame,
          view.flags                           = 0;
          view.image                           = vk->main_buffer.image;
          view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-         view.format                          = main_buffer_format;
+         view.format                          = image_info.format;
          view.components.r                    = VK_COMPONENT_SWIZZLE_R;
          view.components.g                    = VK_COMPONENT_SWIZZLE_G;
          view.components.b                    = VK_COMPONENT_SWIZZLE_B;
