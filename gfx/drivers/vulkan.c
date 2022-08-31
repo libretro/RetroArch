@@ -1123,6 +1123,17 @@ static void vulkan_deinit_menu(vk_t *vk)
    }
 }
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+static void vulkan_destroy_hdr_buffer(VkDevice device, struct vk_image *img)
+{
+   vkDestroyImageView(device, img->view, NULL);
+   vkDestroyImage(device, img->image, NULL);
+   vkDestroyFramebuffer(device, img->framebuffer, NULL);
+   vkFreeMemory(device, img->memory, NULL);
+   memset(img, 0, sizeof(*img));
+}
+#endif
+
 static void vulkan_free(void *data)
 {
    vk_t *vk = (vk_t*)data;
@@ -1160,6 +1171,7 @@ static void vulkan_free(void *data)
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo);
+      vulkan_destroy_hdr_buffer(vk->context->device, &vk->main_buffer);
       video_driver_unset_hdr_support();
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -2526,6 +2538,8 @@ static bool vulkan_frame(void *data, const void *frame,
             viewport.y             = 0.0f;
             viewport.width         = vk->context->swapchain_width;
             viewport.height        = vk->context->swapchain_height;
+            viewport.minDepth      = 0.0f;
+            viewport.maxDepth      = 1.0f;
 
             sci.offset.x           = (int32_t)viewport.x;
             sci.offset.y           = (int32_t)viewport.y;
@@ -2752,8 +2766,6 @@ static bool vulkan_frame(void *data, const void *frame,
 
       if (vk->context->hdr_enable)
       {
-         struct vk_image* img;
-
 #ifdef HAVE_THREADS
          slock_lock(vk->context->queue_lock);
 #endif
@@ -2761,16 +2773,8 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_THREADS
          slock_unlock(vk->context->queue_lock);
 #endif
-         img = &vk->main_buffer;
 
-         if (img->framebuffer)
-            vkDestroyFramebuffer(vk->context->device, img->framebuffer, NULL);
-         if (img->view)
-            vkDestroyImageView(vk->context->device, img->view, NULL);
-         if (img->image)
-            vkDestroyImage(vk->context->device, img->image, NULL);
-         if (img->memory)
-            vkFreeMemory(vk->context->device, img->memory, NULL);
+         vulkan_destroy_hdr_buffer(vk->context->device, &vk->main_buffer);
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -2810,7 +2814,8 @@ static bool vulkan_frame(void *data, const void *frame,
          image_info.tiling               = VK_IMAGE_TILING_OPTIMAL;
          image_info.usage                = VK_IMAGE_USAGE_SAMPLED_BIT |
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-            VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
          image_info.sharingMode          = VK_SHARING_MODE_EXCLUSIVE;
          image_info.queueFamilyIndexCount= 0;
          image_info.pQueueFamilyIndices  = NULL;
