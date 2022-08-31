@@ -377,19 +377,19 @@ static void vulkan_debug_mark_object(VkDevice device,
 void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer)
 {
    static unsigned object_count;
-   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)buffer, "marked buffer", ++object_count);
+   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)buffer, "RetroArch buffer", ++object_count);
 }
 
 void vulkan_debug_mark_image(VkDevice device, VkImage image)
 {
    static unsigned object_count;
-   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)image, "marked image", ++object_count);
+   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)image, "RetroArch image", ++object_count);
 }
 
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory)
 {
    static unsigned object_count;
-   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)memory, "marked memory", ++object_count);
+   vulkan_debug_mark_object(device, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)memory, "RetroArch memory", ++object_count);
 }
 
 struct vk_texture vulkan_create_texture(vk_t *vk,
@@ -493,6 +493,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    if (type != VULKAN_TEXTURE_STAGING && type != VULKAN_TEXTURE_READBACK)
    {
       vkCreateImage(device, &info, NULL, &tex.image);
+      vulkan_debug_mark_image(device, tex.image);
 #if 0
       vulkan_track_alloc(tex.image);
 #endif
@@ -503,6 +504,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       /* Linear staging textures are not guaranteed to be supported,
        * use buffers instead. */
       vkCreateBuffer(device, &buffer_info, NULL, &tex.buffer);
+      vulkan_debug_mark_buffer(device, tex.buffer);
       vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
    }
    alloc.allocationSize = mem_reqs.size;
@@ -548,6 +550,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
             buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
             vkCreateBuffer(device, &buffer_info, NULL, &tex.buffer);
+            vulkan_debug_mark_buffer(device, tex.buffer);
             vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
 
             alloc.allocationSize  = mem_reqs.size;
@@ -596,6 +599,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    else
    {
       vkAllocateMemory(device, &alloc, NULL, &tex.memory);
+      vulkan_debug_mark_memory(device, tex.memory);
       tex.memory_size = alloc.allocationSize;
       tex.memory_type = alloc.memoryTypeIndex;
    }
@@ -1173,6 +1177,7 @@ struct vk_buffer vulkan_create_buffer(
    info.queueFamilyIndexCount = 0;
    info.pQueueFamilyIndices   = NULL;
    vkCreateBuffer(context->device, &info, NULL, &buffer.buffer);
+   vulkan_debug_mark_buffer(context->device, buffer.buffer);
 
    vkGetBufferMemoryRequirements(context->device, buffer.buffer, &mem_reqs);
 
@@ -1185,6 +1190,7 @@ struct vk_buffer vulkan_create_buffer(
            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
    vkAllocateMemory(context->device, &alloc, NULL, &buffer.memory);
+   vulkan_debug_mark_memory(context->device, buffer.memory);
    vkBindBufferMemory(context->device, buffer.buffer, buffer.memory, 0);
 
    buffer.size                = size;
