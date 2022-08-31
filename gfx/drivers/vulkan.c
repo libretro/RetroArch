@@ -2090,9 +2090,8 @@ static bool vulkan_frame(void *data, const void *frame,
    bool overlay_behind_menu                      = video_info->overlay_behind_menu;
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   struct video_shader* shader_preset           = vulkan_filter_chain_get_preset(vk->filter_chain); 
-   VkFormat main_buffer_format                  = shader_preset && shader_preset->passes ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_R8G8B8A8_UNORM;
-   bool use_main_buffer                         = main_buffer_format != vk->context->swapchain_format; 
+   bool use_main_buffer                          = vk->context->hdr_enable &&
+      (!vk->filter_chain || !vulkan_filter_chain_emits_hdr10(vk->filter_chain));
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Bookkeeping on start of frame. */
@@ -2330,7 +2329,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   if(vk->context->hdr_enable && use_main_buffer)
+   if (use_main_buffer)
       backbuffer = &vk->main_buffer;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -2440,7 +2439,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       /* Copy over back buffer to swap chain render targets */
-      if (vk->context->hdr_enable && use_main_buffer)
+      if (use_main_buffer)
       {
          backbuffer = &vk->backbuffers[swapchain_index];
 
@@ -2789,7 +2788,7 @@ static bool vulkan_frame(void *data, const void *frame,
       if (!(vk->hdr.support = vk->context->swapchain_colour_space == VK_COLOR_SPACE_HDR10_ST2084_EXT))
          vk->context->hdr_enable                = false;
 
-      if(vk->context->hdr_enable)
+      if (vk->context->hdr_enable)
       {
          VkMemoryRequirements mem_reqs;
          VkImageCreateInfo image_info;
@@ -2804,7 +2803,7 @@ static bool vulkan_frame(void *data, const void *frame,
          image_info.pNext                = NULL;
          image_info.flags                = 0;
          image_info.imageType            = VK_IMAGE_TYPE_2D;
-         image_info.format               = main_buffer_format;
+         image_info.format               = vk->context->swapchain_format;
          image_info.extent.width         = video_width;
          image_info.extent.height        = video_height;
          image_info.extent.depth         = 1;
@@ -2843,7 +2842,7 @@ static bool vulkan_frame(void *data, const void *frame,
          view.flags                           = 0;
          view.image                           = vk->main_buffer.image;
          view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-         view.format                          = main_buffer_format;
+         view.format                          = image_info.format;
          view.components.r                    = VK_COMPONENT_SWIZZLE_R;
          view.components.g                    = VK_COMPONENT_SWIZZLE_G;
          view.components.b                    = VK_COMPONENT_SWIZZLE_B;

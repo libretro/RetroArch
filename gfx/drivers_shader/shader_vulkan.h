@@ -141,6 +141,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 struct video_shader *vulkan_filter_chain_get_preset(
       vulkan_filter_chain_t *chain);
 
+bool vulkan_filter_chain_emits_hdr10(vulkan_filter_chain_t *chain);
+
 RETRO_END_DECLS
 
 #endif
