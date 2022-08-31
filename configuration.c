@@ -4702,7 +4702,7 @@ bool config_save_file(const char *path)
       char cfg[64];
       char formatted_number[4];
 
-      cfg[0] = formatted_number[0] = '\0';
+      formatted_number[0] = '\0';
 
       snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
 
@@ -5135,13 +5135,7 @@ bool input_remapping_load_file(void *data, const char *path)
       char prefix[16];
       char s1[32], s2[32], s3[32];
       char formatted_number[4];
-
-      prefix[0]  = '\0';
-      s1[0]      = '\0';
-      s2[0]      = '\0';
-      s3[0]      = '\0';
       formatted_number[0] = '\0';
-
       snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
       strlcpy(prefix, "input_player",   sizeof(prefix));
       strlcat(prefix, formatted_number, sizeof(prefix));
@@ -5225,8 +5219,7 @@ bool input_remapping_load_file(void *data, const char *path)
          }
       }
 
-      strlcpy(s1, "input_player",             sizeof(s1));
-      strlcat(s1, formatted_number,           sizeof(s1));
+      strlcpy(s1, prefix,                     sizeof(s1));
       strlcat(s1, "_analog_dpad_mode",        sizeof(s1));
       CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], s1);
 
@@ -5299,10 +5292,6 @@ bool input_remapping_save_file(const char *path)
       char s3[32];
 
       formatted_number[0] = '\0';
-      prefix[0] = '\0';
-      s1[0]     = '\0';
-      s2[0]     = '\0';
-      s3[0]     = '\0';
 
       /* We must include all mapped ports + all those
        * with an index less than max_users */
@@ -5417,8 +5406,7 @@ bool input_remapping_save_file(const char *path)
       strlcat(s1, formatted_number,          sizeof(s1));
       config_set_int(conf, s1, input_config_get_device(i));
 
-      strlcpy(s1, "input_player",            sizeof(s1));
-      strlcat(s1, formatted_number,          sizeof(s1));
+      strlcpy(s1, prefix,                    sizeof(s1));
       strlcat(s1, "_analog_dpad_mode",       sizeof(s1));
       config_set_int(conf, s1, settings->uints.input_analog_dpad_mode[i]);
 
