@@ -1159,7 +1159,8 @@ static void vulkan_free(void *data)
          vulkan_filter_chain_free((vulkan_filter_chain_t*)vk->filter_chain);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   video_driver_unset_hdr_support();
+      vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo);
+      video_driver_unset_hdr_support();
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
       if (vk->ctx_driver && vk->ctx_driver->destroy)
