@@ -790,7 +790,6 @@ bool run_translation_service(settings_t *settings, bool paused)
 
    int bmp64_length                      = 0;
    bool TRANSLATE_USE_BMP                = false;
-   bool use_overlay                      = false;
 
    const char *label                     = NULL;
    char* system_label                    = NULL;
@@ -814,12 +813,6 @@ bool run_translation_service(settings_t *settings, bool paused)
    }
 #endif
 
-#ifdef HAVE_GFX_WIDGETS
-   if (     video_st->poke
-         && video_st->poke->load_texture
-         && video_st->poke->unload_texture)
-      use_overlay = true;
-#endif
 
    /* get the core info here so we can pass long the game name */
    core_info_get_current_core(&core_info);
@@ -940,10 +933,8 @@ bool run_translation_service(settings_t *settings, bool paused)
         the BMP header as bytes, and then covert that to a
         b64 encoded array for transport in JSON.
       */
-
       form_bmp_header(header, width, height, false);
-      bmp_buffer  = (uint8_t*)malloc(width * height * 3 + 54);
-      if (!bmp_buffer)
+      if (!(bmp_buffer  = (uint8_t*)malloc(width * height * 3 + 54)))
          goto finish;
 
       memcpy(bmp_buffer, header, 54 * sizeof(uint8_t));
@@ -1096,27 +1087,27 @@ bool run_translation_service(settings_t *settings, bool paused)
 
          switch (ai_service_mode)
          {
-            case 0:
-               strlcat(new_ai_service_url, "image,png",
-                     sizeof(new_ai_service_url));
-               if (use_overlay)
-                  strlcat(new_ai_service_url, ",png-a",
-                        sizeof(new_ai_service_url));
-               break;
-            case 1:
-               strlcat(new_ai_service_url, "sound,wav",
-                     sizeof(new_ai_service_url));
-               break;
             case 2:
                strlcat(new_ai_service_url, "text",
                      sizeof(new_ai_service_url));
                break;
+            case 1:
             case 3:
-               strlcat(new_ai_service_url, "image,png,sound,wav",
+               strlcat(new_ai_service_url, "sound,wav",
                      sizeof(new_ai_service_url));
-               if (use_overlay)
-                  strlcat(new_ai_service_url,
-                        ",png-a", sizeof(new_ai_service_url));
+               if (ai_service_mode == 1)
+                  break;
+               /* fall-through intentional for ai_service_mode == 3 */
+            case 0:
+               strlcat(new_ai_service_url, "image,png",
+                     sizeof(new_ai_service_url));
+#ifdef HAVE_GFX_WIDGETS
+               if (     video_st->poke
+                     && video_st->poke->load_texture
+                     && video_st->poke->unload_texture)
+                  strlcat(new_ai_service_url, ",png-a",
+                        sizeof(new_ai_service_url));
+#endif
                break;
             default:
                break;
