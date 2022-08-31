@@ -4204,7 +4204,6 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
 {
    char config[16];
    unsigned hat     = (unsigned)GET_HAT(bind->joykey);
-   const char *dir  = NULL;
 
    config[0]        = 'h';
    config[1]        = '\0';
