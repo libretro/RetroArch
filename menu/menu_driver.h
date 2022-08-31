@@ -488,6 +488,7 @@ struct menu_state
       size_t   index_list[SCROLL_INDEX_SIZE];
       unsigned index_size;
       unsigned acceleration;
+      bool     mode;
    } scroll;
 
    /* unsigned alignment */

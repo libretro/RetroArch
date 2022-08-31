@@ -237,6 +237,12 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_OEM_102,       "OEM-102"}
 };
 
+enum menu_scroll_mode
+{
+   MENU_SCROLL_PAGE = 0,
+   MENU_SCROLL_START_LETTER
+};
+
 static void *null_menu_init(void **userdata, bool video_is_threaded)
 {
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
@@ -5938,9 +5944,25 @@ unsigned menu_event(
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+      {
+         menu_st->scroll.mode = MENU_SCROLL_PAGE;
          ret = MENU_ACTION_SCROLL_UP;
+      }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+      {
+         menu_st->scroll.mode = MENU_SCROLL_PAGE;
          ret = MENU_ACTION_SCROLL_DOWN;
+      }
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L2))
+      {
+         menu_st->scroll.mode = MENU_SCROLL_START_LETTER;
+         ret = MENU_ACTION_SCROLL_UP;
+      }
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R2))
+      {
+         menu_st->scroll.mode = MENU_SCROLL_START_LETTER;
+         ret = MENU_ACTION_SCROLL_DOWN;
+      }
       else if (ok_trigger)
          ret = MENU_ACTION_OK;
       else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
@@ -6361,7 +6383,7 @@ static int menu_input_pointer_post_iterate(
             {
                /* Pointer has moved - check if this is a swipe */
                float dpi = menu ? menu_input_get_dpi(menu, p_disp,
-video_st->width, video_st->height) : 0.0f;
+                     video_st->width, video_st->height) : 0.0f;
 
                if ((dpi > 0.0f)
                      &&
@@ -7705,6 +7727,7 @@ int generic_menu_entry_action(
    settings_t   *settings         = config_get_ptr();
    void *menu_userdata            = menu_st->userdata;
    bool wraparound_enable         = settings->bools.menu_navigation_wraparound_enable;
+   bool scroll_mode               = menu_st->scroll.mode;
    size_t scroll_accel            = menu_st->scroll.acceleration;
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *selection_buf     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
@@ -7775,46 +7798,96 @@ int generic_menu_entry_action(
          }
          break;
       case MENU_ACTION_SCROLL_UP:
-         if (
-                  menu_st->scroll.index_size
-               && menu_st->selection_ptr != 0
-            )
+         if (scroll_mode == MENU_SCROLL_PAGE)
          {
-            size_t l   = menu_st->scroll.index_size - 1;
+            if (selection_buf_size > 0)
+            {
+               unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 10);
+               if (!(menu_st->selection_ptr == 0 && !wraparound_enable))
+               {
+                  size_t idx             = 0;
+                  if (menu_st->selection_ptr >= scroll_speed)
+                     idx = menu_st->selection_ptr - scroll_speed;
+                  else
+                     idx = 0;
 
-            while (l
-                  && menu_st->scroll.index_list[l - 1]
-                  >= menu_st->selection_ptr)
-               l--;
+                  menu_st->selection_ptr = idx;
+                  menu_driver_navigation_set(true);
 
-            if (l > 0)
-               menu_st->selection_ptr = menu_st->scroll.index_list[l - 1];
+                  if (menu_driver_ctx->navigation_decrement)
+                     menu_driver_ctx->navigation_decrement(menu_userdata);
+               }
+            }
+         }
+         else /* MENU_SCROLL_START_LETTER */
+         {
+            if (
+                     menu_st->scroll.index_size
+                  && menu_st->selection_ptr != 0
+               )
+            {
+               size_t l   = menu_st->scroll.index_size - 1;
 
-            if (menu_driver_ctx->navigation_descend_alphabet)
-               menu_driver_ctx->navigation_descend_alphabet(
-                     menu_userdata, &menu_st->selection_ptr);
+               while (l
+                     && menu_st->scroll.index_list[l - 1]
+                     >= menu_st->selection_ptr)
+                  l--;
+
+               if (l > 0)
+                  menu_st->selection_ptr = menu_st->scroll.index_list[l - 1];
+
+               if (menu_driver_ctx->navigation_descend_alphabet)
+                  menu_driver_ctx->navigation_descend_alphabet(
+                        menu_userdata, &menu_st->selection_ptr);
+            }
          }
          break;
       case MENU_ACTION_SCROLL_DOWN:
-         if (menu_st->scroll.index_size)
+         if (scroll_mode == MENU_SCROLL_PAGE)
          {
-            if (menu_st->selection_ptr == menu_st->scroll.index_list[menu_st->scroll.index_size - 1])
-               menu_st->selection_ptr = selection_buf_size - 1;
-            else
+            if (selection_buf_size > 0)
             {
-               size_t l               = 0;
-               while (l < menu_st->scroll.index_size - 1
-                     && menu_st->scroll.index_list[l + 1] <= menu_st->selection_ptr)
-                  l++;
-               menu_st->selection_ptr = menu_st->scroll.index_list[l + 1];
+               unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 10);
+               if (!(menu_st->selection_ptr >= selection_buf_size - 1
+                     && !wraparound_enable))
+               {
+                  if ((menu_st->selection_ptr + scroll_speed) < selection_buf_size)
+                  {
+                     size_t idx  = menu_st->selection_ptr + scroll_speed;
 
-               if (menu_st->selection_ptr >= selection_buf_size)
-                  menu_st->selection_ptr = selection_buf_size - 1;
+                     menu_st->selection_ptr = idx;
+                     menu_driver_navigation_set(true);
+                  }
+                  else
+                     menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
+
+                  if (menu_driver_ctx->navigation_increment)
+                     menu_driver_ctx->navigation_increment(menu_userdata);
+               }
             }
+         }
+         else /* MENU_SCROLL_START_LETTER */
+         {
+            if (menu_st->scroll.index_size)
+            {
+               if (menu_st->selection_ptr == menu_st->scroll.index_list[menu_st->scroll.index_size - 1])
+                  menu_st->selection_ptr = selection_buf_size - 1;
+               else
+               {
+                  size_t l               = 0;
+                  while (l < menu_st->scroll.index_size - 1
+                        && menu_st->scroll.index_list[l + 1] <= menu_st->selection_ptr)
+                     l++;
+                  menu_st->selection_ptr = menu_st->scroll.index_list[l + 1];
 
-            if (menu_driver_ctx->navigation_ascend_alphabet)
-               menu_driver_ctx->navigation_ascend_alphabet(
-                     menu_userdata, &menu_st->selection_ptr);
+                  if (menu_st->selection_ptr >= selection_buf_size)
+                     menu_st->selection_ptr = selection_buf_size - 1;
+               }
+
+               if (menu_driver_ctx->navigation_ascend_alphabet)
+                  menu_driver_ctx->navigation_ascend_alphabet(
+                        menu_userdata, &menu_st->selection_ptr);
+            }
          }
          break;
       case MENU_ACTION_CANCEL:
