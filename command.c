@@ -341,7 +341,8 @@ command_t* command_stdin_new(void)
 
 bool command_get_config_param(command_t *cmd, const char* arg)
 {
-   char reply[8192]             = {0};
+   size_t _len;
+   char reply[8192];
    const char      *value       = "unsupported";
    settings_t       *settings   = config_get_ptr();
    bool       video_fullscreen  = settings->bools.video_fullscreen;
@@ -374,7 +375,11 @@ bool command_get_config_param(command_t *cmd, const char* arg)
       value = path_username;
    /* TODO: query any string */
 
-   snprintf(reply, sizeof(reply), "GET_CONFIG_PARAM %s %s\n", arg, value);
+   strlcpy(reply, "GET_CONFIG_PARAM ";
+   _len          = strlcat(reply, arg, sizeof(reply));
+   reply[_len  ] = ' ';
+   reply[_len+1] = '\0';
+   strlcat(reply, value, sizeof(reply));
    cmd->replier(cmd, reply, strlen(reply));
    return true;
 }
@@ -700,9 +705,10 @@ bool command_write_ram(command_t *cmd, const char *arg)
 
 bool command_version(command_t *cmd, const char* arg)
 {
-   char reply[256]             = {0};
-
-   snprintf(reply, sizeof(reply), "%s\n", PACKAGE_VERSION);
+   char reply[256];
+   size_t _len   = strlcpy(reply, PACKAGE_VERSION, sizeof(reply));
+   reply[_len  ] = '\n';
+   reply[_len+1] = '\0';
    cmd->replier(cmd, reply, strlen(reply));
 
    return true;
@@ -913,17 +919,23 @@ void command_event_set_volume(
       bool widgets_active,
       bool audio_driver_mute_enable)
 {
+   size_t _len;
    char msg[128];
-   float new_volume            = settings->floats.audio_volume + gain;
-
-   new_volume                  = MAX(new_volume, -80.0f);
-   new_volume                  = MIN(new_volume, 12.0f);
-
+   float new_volume = settings->floats.audio_volume + gain;
+   new_volume       = MAX(new_volume, -80.0f);
+   new_volume       = MIN(new_volume, 12.0f);
    configuration_set_float(settings, settings->floats.audio_volume, new_volume);
-
-   snprintf(msg, sizeof(msg), "%s: %.1f dB",
-         msg_hash_to_str(MSG_AUDIO_VOLUME),
+   _len             = strlcpy(msg, msg_hash_to_str(MSG_AUDIO_VOLUME),
+         sizeof(msg));
+   msg[_len  ]      = ':';
+   msg[++_len]      = ' ';
+   msg[++_len]      = '\0';
+   _len            += snprintf(msg + _len, sizeof(msg) - _len, "%.1f",
          new_volume);
+   msg[_len  ]      = ' ';
+   msg[++_len]      = 'd';
+   msg[++_len]      = 'B';
+   msg[++_len]      = '\0';
 
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
@@ -950,17 +962,23 @@ void command_event_set_mixer_volume(
       settings_t *settings,
       float gain)
 {
+   size_t _len;
    char msg[128];
-   float new_volume            = settings->floats.audio_mixer_volume + gain;
-
-   new_volume                  = MAX(new_volume, -80.0f);
-   new_volume                  = MIN(new_volume, 12.0f);
-
+   float new_volume = settings->floats.audio_mixer_volume + gain;
+   new_volume       = MAX(new_volume, -80.0f);
+   new_volume       = MIN(new_volume, 12.0f);
    configuration_set_float(settings, settings->floats.audio_mixer_volume, new_volume);
-
-   snprintf(msg, sizeof(msg), "%s: %.1f dB",
-         msg_hash_to_str(MSG_AUDIO_VOLUME),
+   _len             = strlcpy(msg, msg_hash_to_str(MSG_AUDIO_VOLUME),
+         sizeof(msg));
+   msg[_len  ]      = ':';
+   msg[++_len]      = ' ';
+   msg[++_len]      = '\0';
+   _len            += snprintf(msg + _len, sizeof(msg) - _len, "%.1f",
          new_volume);
+   msg[_len  ]      = ' ';
+   msg[++_len]      = 'd';
+   msg[++_len]      = 'B';
+   msg[++_len]      = '\0';
    runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    RARCH_LOG("[Audio]: %s\n", msg);
@@ -1492,10 +1510,9 @@ bool command_event_save_core_config(
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
+         size_t _len = strlcpy(tmp, config_path, sizeof(tmp));
          if (i)
-            snprintf(tmp, sizeof(tmp), "%s-%u", config_path, i);
-         else
-            strlcpy(tmp, config_path, sizeof(tmp));
+            snprintf(tmp + _len, sizeof(tmp) - _len, "-%u", i);
          strlcat(tmp, ".cfg", sizeof(tmp));
 
          if (!path_is_valid(tmp))
