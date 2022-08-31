@@ -140,7 +140,7 @@ typedef struct vulkan_context
    VkSemaphore swapchain_wait_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
 
 #ifdef VULKAN_DEBUG
-   VkDebugReportCallbackEXT debug_callback;
+   VkDebugUtilsMessengerEXT debug_callback;
 #endif
    uint32_t graphics_queue_index;
    uint32_t num_swapchain_images;

@@ -80,43 +80,19 @@ static bool trigger_spurious_error(void)
 
 #ifdef VULKAN_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
-      VkDebugReportFlagsEXT flags,
-      VkDebugReportObjectTypeEXT objectType,
-      uint64_t object,
-      size_t location,
-      int32_t messageCode,
-      const char *pLayerPrefix,
-      const char *pMessage,
+      VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+      VkDebugUtilsMessageTypeFlagsEXT messageType,
+      const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
       void *pUserData)
 {
-   (void)objectType;
-   (void)object;
-   (void)location;
-   (void)messageCode;
+   const char *name;
    (void)pUserData;
 
-   if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+   if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT &&
+         messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
    {
-      RARCH_ERR("[Vulkan]: Error: %s: %s\n",
-            pLayerPrefix, pMessage);
+      RARCH_ERR("[Vulkan]: Validation Error: %s\n", pCallbackData->pMessage);
    }
-#if 0
-   else if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
-   {
-      RARCH_WARN("[Vulkan]: Warning: %s: %s\n",
-            pLayerPrefix, pMessage);
-   }
-   else if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
-   {
-      RARCH_LOG("[Vulkan]: Performance warning: %s: %s\n",
-            pLayerPrefix, pMessage);
-   }
-   else
-   {
-      RARCH_LOG("[Vulkan]: Information: %s: %s\n",
-            pLayerPrefix, pMessage);
-   }
-#endif
 
    return VK_FALSE;
 }
@@ -1787,7 +1763,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       (struct retro_hw_render_context_negotiation_interface_vulkan*)video_driver_get_context_negotiation_interface();
 #ifdef VULKAN_DEBUG
    static const char *instance_layers[] = { "VK_LAYER_KHRONOS_validation" };
-   instance_extensions[ext_count++]     = "VK_EXT_debug_report";
+   instance_extensions[ext_count++]     = "VK_EXT_debug_utils";
 #endif
 
    if (iface && iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
@@ -1923,24 +1899,29 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
 #ifdef VULKAN_DEBUG
    VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
-         vkCreateDebugReportCallbackEXT);
+         vkCreateDebugUtilsMessengerEXT);
    VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
-         vkDebugReportMessageEXT);
+         vkDestroyDebugUtilsMessengerEXT);
    VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
-         vkDestroyDebugReportCallbackEXT);
+         vkSetDebugUtilsObjectNameEXT);
 
    {
-      VkDebugReportCallbackCreateInfoEXT info =
-      { VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT };
-      info.flags =
-         VK_DEBUG_REPORT_ERROR_BIT_EXT |
-         VK_DEBUG_REPORT_WARNING_BIT_EXT |
-         VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
-      info.pfnCallback = vulkan_debug_cb;
+      VkDebugUtilsMessengerCreateInfoEXT info =
+      { VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
+      info.messageSeverity =
+         VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
+         VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+         VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
+      info.messageType =
+         VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+         VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+      info.pfnUserCallback = vulkan_debug_cb;
 
       if (vk->context.instance)
-         vkCreateDebugReportCallbackEXT(vk->context.instance, &info, NULL,
+      {
+         vkCreateDebugUtilsMessengerEXT(vk->context.instance, &info, NULL,
                &vk->context.debug_callback);
+      }
    }
    RARCH_LOG("[Vulkan]: Enabling Vulkan debug layers.\n");
 #endif
@@ -1957,6 +1938,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    if (res != VK_SUCCESS)
    {
       RARCH_ERR("Failed to create Vulkan instance (%d).\n", res);
+      RARCH_ERR("If VULKAN_DEBUG=1 is enabled, make sure Vulkan validation layers are installed.\n");
       return false;
    }
 
@@ -2521,7 +2503,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
 #ifdef VULKAN_DEBUG
    if (vk->context.debug_callback)
-      vkDestroyDebugReportCallbackEXT(vk->context.instance, vk->context.debug_callback, NULL);
+      vkDestroyDebugUtilsMessengerEXT(vk->context.instance, vk->context.debug_callback, NULL);
 #endif
 
    if (video_driver_is_video_cache_context())
