@@ -8158,7 +8158,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
 size_t menu_update_fullscreen_thumbnail_label(
       char *s, size_t len,
-      bool is_quick_menu, size_t playlist_index)
+      bool is_quick_menu, const char *title)
 {
    menu_entry_t selected_entry;
    const char *thumbnail_label     = NULL;
@@ -8196,13 +8196,8 @@ size_t menu_update_fullscreen_thumbnail_label(
       thumbnail_label = tmpstr;
    }
    /* > Quick Menu playlist label */
-   else if (is_quick_menu)
-   {
-      const struct playlist_entry *entry = NULL;
-      playlist_get_index(playlist_get_cached(), playlist_index, &entry);
-      if (entry)
-         thumbnail_label = entry->label;
-   }
+   else if (is_quick_menu && title)
+      thumbnail_label = title;
    else
       thumbnail_label = selected_entry.path;
 
@@ -8224,4 +8219,17 @@ bool menu_is_running_quick_menu(void)
 
    return string_is_equal(entry.label, "resume_content") ||
           string_is_equal(entry.label, "state_slot");
+}
+
+bool menu_is_nonrunning_quick_menu(void)
+{
+   menu_entry_t entry;
+
+   MENU_ENTRY_INIT(entry);
+   entry.path_enabled     = false;
+   entry.value_enabled    = false;
+   entry.sublabel_enabled = false;
+   menu_entry_get(&entry, 0, 0, NULL, true);
+
+   return string_is_equal(entry.label, "collection");
 }

@@ -663,6 +663,10 @@ typedef struct explore_state explore_state_t;
 explore_state_t *menu_explore_build_list(const char *directory_playlist,
       const char *directory_database);
 uintptr_t menu_explore_get_entry_icon(unsigned type);
+const char *menu_explore_get_entry_database(unsigned type);
+ssize_t menu_explore_get_entry_playlist_index(unsigned type,
+      playlist_t **playlist,
+      const struct playlist_entry **entry);
 void menu_explore_context_init(void);
 void menu_explore_context_deinit(void);
 void menu_explore_free_state(explore_state_t *state);
@@ -1006,9 +1010,10 @@ bool menu_driver_iterate(
 
 size_t menu_update_fullscreen_thumbnail_label(
       char *s, size_t len,
-      bool is_quick_menu, size_t playlist_index);
+      bool is_quick_menu, const char *title);
 
 bool menu_is_running_quick_menu(void);
+bool menu_is_nonrunning_quick_menu(void);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

@@ -85,9 +85,9 @@ bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data, enum gfx_thu
  *   associated database name */
 bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data, const char *system, playlist_t *playlist);
 
-/* Sets current thumbnail content according to the specified label.
+/* Sets current thumbnail content according to the specified label and optional database name.
  * Returns true if content is valid */
-bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char *label);
+bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char *label, const char *db_name);
 
 /* Sets current thumbnail content to the specified image.
  * Returns true if content is valid */

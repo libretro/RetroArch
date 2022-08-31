@@ -339,6 +339,7 @@ typedef struct
    bool shadow_enable;
    bool extended_ascii_enable;
    bool is_playlist;
+   bool is_explore_list;
    bool is_quick_menu;
    bool is_state_slot;
    bool entry_has_thumbnail;
@@ -5090,7 +5091,7 @@ static void rgui_render(void *data,
             ((timedate_x - rgui->term_layout.start_x) / rgui->font_width_stride) - 3 :
                   rgui->term_layout.width - 1;
       bool show_mini_thumbnails      = rgui_inline_thumbnails &&
-            (rgui->is_playlist || (rgui->is_quick_menu && !menu_is_running_quick_menu()));
+            (rgui->is_playlist || rgui->is_explore_list || (rgui->is_quick_menu && !menu_is_running_quick_menu()));
       bool show_thumbnail            = false;
       bool show_left_thumbnail       = false;
       bool show_savestate_thumbnail  = (!string_is_empty(rgui->savestate_thumbnail_file_path) &&
@@ -6651,7 +6652,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
 
    /* Update thumbnail content/path */
    if ((rgui->show_fs_thumbnail || menu_rgui_inline_thumbnails) 
-         && (rgui->is_playlist || rgui->is_quick_menu))
+         && (rgui->is_playlist || rgui->is_explore_list || rgui->is_quick_menu))
    {
       size_t selection      = menu_navigation_get_selection();
       size_t list_size      = menu_entries_get_size();
@@ -6671,25 +6672,65 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
             playlist_index       = list->list[selection].entry_idx;
             rgui->playlist_index = playlist_index;
          }
-      }
-      else if (rgui->is_quick_menu &&
-            string_is_empty(rgui->savestate_thumbnail_file_path))
-      {
-         playlist_valid = true;
-         playlist_index = rgui->playlist_index;
-      }
 
-      if (gfx_thumbnail_set_content_playlist(rgui->thumbnail_path_data,
-            playlist_valid ? playlist_get_cached() : NULL, playlist_index))
-      {
-         if (gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
-            has_thumbnail = gfx_thumbnail_update_path(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT);
-         
-         if (menu_rgui_inline_thumbnails &&
-             gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
-            has_thumbnail = gfx_thumbnail_update_path(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT) ||
-                            has_thumbnail;
+         gfx_thumbnail_set_content_playlist(rgui->thumbnail_path_data,
+               playlist_valid ? playlist_get_cached() : NULL, playlist_index);
       }
+      else if (rgui->is_quick_menu)
+      {
+         if (string_is_empty(rgui->savestate_thumbnail_file_path))
+            playlist_valid = true;
+
+         playlist_index = rgui->playlist_index;
+
+         gfx_thumbnail_set_content_playlist(rgui->thumbnail_path_data,
+               playlist_valid ? playlist_get_cached() : NULL, playlist_index);
+      }
+#if defined(HAVE_LIBRETRODB)
+      else if (rgui->is_explore_list)
+      {
+         /* Get playlist index corresponding
+          * to the selected entry */
+         if (list &&
+             (selection < list_size))
+         {
+            menu_entry_t entry;
+            const char *db_name;
+
+            MENU_ENTRY_INIT(entry);
+            entry.label_enabled      = false;
+            entry.rich_label_enabled = false;
+            entry.value_enabled      = false;
+            entry.sublabel_enabled   = false;
+            menu_entry_get(&entry, 0, selection, NULL, true);
+
+            if (!entry.type)
+               return;
+
+            db_name = menu_explore_get_entry_database(entry.type);
+
+            if (!string_is_empty(entry.path) && !string_is_empty(db_name))
+            {
+               playlist_t *playlist                        = playlist_get_cached();
+               const struct playlist_entry *playlist_entry = NULL;
+               size_t playlist_index                       =
+                     menu_explore_get_entry_playlist_index(list->list[selection].type, &playlist, &playlist_entry);
+
+               rgui->playlist_index = playlist_index;
+
+               gfx_thumbnail_set_content(rgui->thumbnail_path_data, entry.path, db_name);
+            }
+            else
+               gfx_thumbnail_set_content(rgui->thumbnail_path_data, NULL, NULL);
+         }
+      }
+#endif
+
+      if (gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
+         has_thumbnail = gfx_thumbnail_update_path(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT);
+
+      if (menu_rgui_inline_thumbnails && gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+         has_thumbnail = gfx_thumbnail_update_path(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT) || has_thumbnail;
    }
 
    /* Save state thumbnails */
@@ -6724,7 +6765,7 @@ static void rgui_update_thumbnail_image(void *data)
 {
    rgui_t *rgui     = (rgui_t*)data;
 
-   if (rgui->is_playlist)
+   if (rgui->is_playlist || rgui->is_explore_list)
       rgui_scan_selected_entry_thumbnail(rgui, true);
 }
 
@@ -6798,7 +6839,7 @@ static void rgui_refresh_thumbnail_image(void *userdata, unsigned i)
       /* Only load thumbnails if currently viewing a
        * playlist (note that thumbnails are loaded
        * immediately, for an optimal user experience) */
-      if (rgui->is_playlist)
+      if (rgui->is_playlist || rgui->is_explore_list || rgui->is_quick_menu)
          rgui_scan_selected_entry_thumbnail(rgui, true);
    }
 }
@@ -6944,11 +6985,22 @@ static void rgui_populate_entries(void *data,
                        || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
                        || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST));
 
+   rgui->is_explore_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST)) ||
+                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB));
+
    /* Determine whether this is the quick menu */
    rgui->is_quick_menu = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) ||
                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS)) ||
                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST));
    rgui->is_state_slot = string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT;
+
+   /* Quick Menu under Explore list must also be Quick Menu */
+   if (rgui->is_explore_list)
+   {
+      rgui->is_quick_menu |= menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu();
+      if (rgui->is_quick_menu)
+         rgui->is_explore_list = false;
+   }
    
    /* Set menu title */
    menu_entries_get_title(rgui->menu_title, sizeof(rgui->menu_title));
@@ -7520,7 +7572,7 @@ static enum menu_action rgui_parse_menu_entry_action(
             rgui_thumbnail_cycle_dupe(rgui);
             rgui_toggle_fs_thumbnail(rgui, config_get_ptr()->bools.menu_rgui_inline_thumbnails);
 
-            if (!rgui->is_state_slot && !rgui->is_playlist)
+            if (!rgui->is_state_slot && !rgui->is_playlist && !rgui->is_explore_list)
                new_action = MENU_ACTION_NOOP;
          }
          break;
@@ -7534,7 +7586,7 @@ static enum menu_action rgui_parse_menu_entry_action(
          break;
       case MENU_ACTION_START:
          /* Playlist thumbnail fullscreen toggle */
-         if (rgui->is_playlist || (rgui->is_quick_menu && !menu_is_running_quick_menu()))
+         if (rgui->is_playlist || rgui->is_explore_list || (rgui->is_quick_menu && !menu_is_running_quick_menu()))
          {
             settings_t *settings = config_get_ptr();
 
@@ -7578,7 +7630,7 @@ static enum menu_action rgui_parse_menu_entry_action(
             new_action = MENU_ACTION_NOOP;
          }
          /* Playlist thumbnail cycle */
-         else if (rgui->is_playlist)
+         else if (rgui->is_playlist || rgui->is_explore_list || rgui->is_quick_menu)
          {
             settings_t *settings = config_get_ptr();
 
