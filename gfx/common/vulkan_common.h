@@ -140,7 +140,7 @@ typedef struct vulkan_context
    VkSemaphore swapchain_wait_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
 
 #ifdef VULKAN_DEBUG
-   VkDebugReportCallbackEXT debug_callback;
+   VkDebugUtilsMessengerEXT debug_callback;
 #endif
    uint32_t graphics_queue_index;
    uint32_t num_swapchain_images;
@@ -782,6 +782,10 @@ void vulkan_set_uniform_buffer(
       VkBuffer buffer,
       VkDeviceSize offset,
       VkDeviceSize range);
+
+void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
+void vulkan_debug_mark_image(VkDevice device, VkImage image);
+void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
 
 RETRO_END_DECLS
 
