@@ -2461,8 +2461,8 @@ static bool vulkan_frame(void *data, const void *frame,
 
          VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->main_buffer.image,
                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-               VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
-               VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+               VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);   
 
          /* Begin render pass and set up viewport */
@@ -2495,7 +2495,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
             image_info.sampler              = vk->samplers.nearest;
             image_info.imageView            = vk->main_buffer.view;
-            image_info.imageLayout          = VK_IMAGE_LAYOUT_GENERAL;
+            image_info.imageLayout          = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
             write.sType                     = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             write.pNext                     = NULL;
@@ -2814,7 +2814,7 @@ static bool vulkan_frame(void *data, const void *frame,
          image_info.sharingMode          = VK_SHARING_MODE_EXCLUSIVE;
          image_info.queueFamilyIndexCount= 0;
          image_info.pQueueFamilyIndices  = NULL;
-         image_info.initialLayout        = VK_IMAGE_LAYOUT_GENERAL; /* VK_IMAGE_LAYOUT_UNDEFINED; */
+         image_info.initialLayout        = VK_IMAGE_LAYOUT_UNDEFINED;
 
          vkCreateImage(vk->context->device, &image_info, NULL, &vk->main_buffer.image);
          vulkan_debug_mark_image(vk->context->device, vk->main_buffer.image);
