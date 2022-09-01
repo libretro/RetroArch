@@ -1810,6 +1810,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
                count++;
+            /* TODO/FIXME - Localize */
             snprintf(tmp, sizeof(tmp), " Device VID/PID: %d/%d",
                input_config_get_device_vid(controller),
                input_config_get_device_pid(controller));
@@ -2425,7 +2426,7 @@ static int create_string_list_rdb_entry_int(
    str_len                         += strlen(label) + 1;
    string_list_append(&str_list, label, attr);
 
-   _len = snprintf(str, sizeof(str), "%d", actual_int);
+   _len                             = snprintf(str, sizeof(str), "%d", actual_int);
    str_len                         += _len + 1;
    string_list_append(&str_list, str, attr);
 
@@ -5125,7 +5126,6 @@ static int menu_displaylist_parse_input_device_index_list(
 {
    char device_id[10];
    char device_label[128];
-   const char *device_name      = NULL;
    const char *val_port         = NULL;
    const char *val_na           = NULL;
    const char *val_disabled     = NULL;
@@ -5162,11 +5162,10 @@ static int menu_displaylist_parse_input_device_index_list(
       snprintf(device_id, sizeof(device_id), "%d", i);
 
       device_label[0] = '\0';
-      device_name     = NULL;
 
       if (i < max_devices)
       {
-         device_name = input_config_get_device_display_name(i) ?
+         const char *device_name = input_config_get_device_display_name(i) ?
                input_config_get_device_display_name(i) : input_config_get_device_name(i);
 
          if (!string_is_empty(device_name))
@@ -5486,7 +5485,7 @@ static int menu_displaylist_parse_input_description_kbd_list(
       }
       else
       {
-         /* TODO/FIXME: Localise 'Keyboard' */
+         /* TODO/FIXME: Localize 'Keyboard' */
          strlcpy(input_description, "Keyboard ", sizeof(input_description));
          strlcat(input_description, key_label, sizeof(input_description));
       }
@@ -5909,19 +5908,20 @@ static int menu_displaylist_parse_disc_info(file_list_t *info_list,
       unsigned type)
 {
    unsigned i;
-   unsigned           count = 0;
-   struct string_list *list = cdrom_get_available_drives();
+   unsigned           count     = 0;
+   struct string_list *list     = cdrom_get_available_drives();
+   const char *msg_drive_number = msg_hash_to_str(MSG_DRIVE_NUMBER);
 
    for (i = 0; list && i < list->size; i++)
    {
+      char drive[2];
       char drive_string[256] = {0};
-      char drive[2]          = {0};
-      size_t pos             = 0;
+      size_t pos             = snprintf(drive_string, sizeof(drive_string),
+            msg_drive_number, i + 1);
+      pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, ": %s", list->elems[i].data);
 
       drive[0]               = list->elems[i].attr.i;
-
-      pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, msg_hash_to_str(MSG_DRIVE_NUMBER), i + 1);
-      pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, ": %s", list->elems[i].data);
+      drive[1]               = '\0';
 
       if (menu_entries_append(info_list,
                drive_string,
@@ -5984,7 +5984,7 @@ static unsigned menu_displaylist_populate_subsystem(
          {
             if (content_get_subsystem_rom_id() < subsystem->num_roms)
             {
-               /* TODO/FIXME - localize string */
+               /* TODO/FIXME - Localize string */
                size_t _len = strlcpy(s, "Load", sizeof(s));
                s[_len  ]   = ' ';
                s[_len+1]   = '\0';
@@ -5998,7 +5998,7 @@ static unsigned menu_displaylist_populate_subsystem(
                if (is_rgui && !menu_show_sublabels)
                {
                   strlcat(s, " [", sizeof(s));
-                  /* TODO/FIXME - localize */
+                  /* TODO/FIXME - Localize */
                   _len        = strlcat(s, "Current Content:", sizeof(s));
                   s[_len  ]   = ' ';
                   s[_len+1]   = '\0';
@@ -6018,7 +6018,7 @@ static unsigned menu_displaylist_populate_subsystem(
             }
             else
             {
-               /* TODO/FIXME - localize string */
+               /* TODO/FIXME - Localize string */
                size_t _len = strlcpy(s, "Start", sizeof(s));
                s[_len  ]   = ' ';
                s[_len+1]   = '\0';
@@ -6062,7 +6062,7 @@ static unsigned menu_displaylist_populate_subsystem(
          }
          else
          {
-            /* TODO/FIXME - localize */
+            /* TODO/FIXME - Localize */
             size_t _len = strlcpy(s, "Load", sizeof(s));
             s[_len  ]   = ' ';
             s[_len+1]   = '\0';
@@ -6078,7 +6078,7 @@ static unsigned menu_displaylist_populate_subsystem(
                if (subsystem->num_roms > 0)
                {
                   strlcat(s, " [", sizeof(s));
-                  /* TODO/FIXME - localize */
+                  /* TODO/FIXME - Localize */
                   strlcat(s, "Current Content:", sizeof(s));
                   strlcat(s, " ",  sizeof(s));
                   strlcat(s, subsystem->roms[0].desc, sizeof(s));
@@ -10513,7 +10513,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
    char passworded[64];
    char country[8];
    const char *room_type;
-   struct netplay_room *room;
+   const char *cnc_netplay_room   = NULL;
    const char *msg_int_nc         = NULL;
    const char *msg_int_relay      = NULL;
    const char *msg_int            = NULL;
@@ -10589,15 +10589,16 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 
    core_info_get_list(&coreinfos);
 
-   msg_int_nc    = msg_hash_to_str(MSG_INTERNET_NOT_CONNECTABLE);
-   msg_int_relay = msg_hash_to_str(MSG_INTERNET_RELAY);
-   msg_int       = msg_hash_to_str(MSG_INTERNET);
-   msg_local     = msg_hash_to_str(MSG_LOCAL);
-   msg_room_pwd  = msg_hash_to_str(MSG_ROOM_PASSWORDED);
+   msg_int_nc       = msg_hash_to_str(MSG_INTERNET_NOT_CONNECTABLE);
+   msg_int_relay    = msg_hash_to_str(MSG_INTERNET_RELAY);
+   msg_int          = msg_hash_to_str(MSG_INTERNET);
+   msg_local        = msg_hash_to_str(MSG_LOCAL);
+   msg_room_pwd     = msg_hash_to_str(MSG_ROOM_PASSWORDED);
+   cnc_netplay_room = msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM);
 
    for (i = 0; i < net_st->room_count; i++)
    {
-      room = &net_st->room_list[i];
+      struct netplay_room *room = &net_st->room_list[i];
 
       /* Get rid of any room that is not running RetroArch. */
       if (!room->is_retroarch)
@@ -10657,7 +10658,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          passworded, room_type, room->nickname, country);
 
       if (menu_entries_append(list, buf,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
+            cnc_netplay_room,
             MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
             (unsigned)MENU_SETTINGS_NETPLAY_ROOMS_START + i, 0, 0, NULL))
          count++;
@@ -10892,30 +10893,30 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
 		    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
 
-            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-            {
-               if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
-               {
-                  menu_entries_append(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
-                     MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
-                     MENU_SETTING_ACTION, 0, 0, NULL);
-                  if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-                  {
-                     menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_KICK),
-                        msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_KICK),
-                        MENU_ENUM_LABEL_NETPLAY_KICK,
-                        MENU_SETTING_ACTION, 0, 0, NULL);
-                     menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_BAN),
-                        msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_BAN),
-                        MENU_ENUM_LABEL_NETPLAY_BAN,
-                        MENU_SETTING_ACTION, 0, 0, NULL);
-                  }
-               }
-            }
+          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+          {
+             if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+             {
+                menu_entries_append(list,
+                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST),
+                      msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
+                      MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
+                      MENU_SETTING_ACTION, 0, 0, NULL);
+                if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+                {
+                   menu_entries_append(list,
+                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_KICK),
+                         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_KICK),
+                         MENU_ENUM_LABEL_NETPLAY_KICK,
+                         MENU_SETTING_ACTION, 0, 0, NULL);
+                   menu_entries_append(list,
+                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_BAN),
+                         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_BAN),
+                         MENU_ENUM_LABEL_NETPLAY_BAN,
+                         MENU_SETTING_ACTION, 0, 0, NULL);
+                }
+             }
+          }
             else
             {
                menu_entries_append(list,
@@ -11153,9 +11154,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             cdrom_device_fillpath(file_path, sizeof(file_path), drive, 0, true);
 
             /* opening the cue triggers storing of TOC info internally */
-            file = filestream_open(file_path, RETRO_VFS_FILE_ACCESS_READ, 0);
-
-            if (file)
+            if ((file = filestream_open(file_path, RETRO_VFS_FILE_ACCESS_READ,
+                        0)))
             {
                const cdrom_toc_t *toc = retro_vfs_file_get_cdrom_toc();
                unsigned first_data_track = 1;
@@ -11199,6 +11199,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (!string_is_empty(cd_info.system))
                   {
                      char system[256];
+                     /* TODO/FIXME - Localize */
                      strlcpy(system, "System: ", sizeof(system));
                      strlcat(system, cd_info.system, sizeof(system));
 
@@ -11230,6 +11231,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (!string_is_empty(cd_info.version))
                   {
                      char version[256];
+                     /* TODO/FIXME - why are we using a Qt core version string
+                      * message here? */
                      snprintf(version, sizeof(version),
                            "%s: %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION), cd_info.version);
 
@@ -11244,6 +11247,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (!string_is_empty(cd_info.release_date))
                   {
                      char release_date[256];
+                     /* TODO/FIXME - Localize */
                      snprintf(release_date, sizeof(release_date),
                            "Release Date: %s", cd_info.release_date);
 
@@ -11257,6 +11261,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                   if (atip)
                   {
+                     /* TODO/FIXME - Localize */
                      const char *atip_string = "Genuine Disc: No";
                      if (menu_entries_append(info->list,
                               atip_string,
@@ -11267,6 +11272,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   }
                   else
                   {
+                     /* TODO/FIXME - Localize */
                      const char *atip_string = "Genuine Disc: Yes";
                      if (menu_entries_append(info->list,
                               atip_string,
@@ -11277,6 +11283,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   }
 
                   {
+                     /* TODO/FIXME - Localize */
                      char tracks_string[32] = {"Number of tracks: "};
 
                      snprintf(tracks_string + strlen(tracks_string), sizeof(tracks_string) - strlen(tracks_string), "%d", toc->num_tracks);
@@ -11549,6 +11556,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             char title[PATH_MAX_LENGTH];
             char* profile               = SWITCH_CPU_PROFILES[i];
             char* speed                 = SWITCH_CPU_SPEEDS[i];
+            title[0] = '\0';
 
             snprintf(title, sizeof(title), "%s (%s)", profile, speed);
 
@@ -11575,7 +11583,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          FILE               *profile = NULL;
          const size_t profiles_count = sizeof(SWITCH_GPU_PROFILES)/sizeof(SWITCH_GPU_PROFILES[1]);
 
-         runloop_msg_queue_push("Warning : extented overclocking can damage the Switch", 1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push("Warning : extended overclocking can damage the Switch", 1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          profile = popen("gpu-profile get", "r");
          fgets(current_profile, PATH_MAX_LENGTH, profile);
@@ -11583,6 +11591,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
+         /* TODO/FIXME - Localize */
          snprintf(text, sizeof(text),
                "Current profile : %s", current_profile);
 
@@ -11880,6 +11889,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             if (video_shader_enable)
             {
+               char buf_tmp[64];
+               size_t _len;
                const char *val_shdr =
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER);
                const char *shdr_pass =
@@ -11952,33 +11963,31 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         0, 0, 0, NULL))
                   count++;
 
+               _len = strlcpy(buf_tmp, val_shdr, sizeof(buf_tmp));
+
                for (i = 0; i < pass_count; i++)
                {
-                  size_t _len;
-                  char buf_tmp[64];
+                  size_t _len2;
                   char buf[128];
-
-                  buf_tmp[0] = '\0';
-
-                  snprintf(buf_tmp, sizeof(buf_tmp),"%s #%u", val_shdr, i);
+                  snprintf(buf_tmp + _len, sizeof(buf_tmp) - _len," #%u", i);
 
                   if (menu_entries_append(info->list, buf_tmp, shdr_pass,
                            MENU_ENUM_LABEL_VIDEO_SHADER_PASS,
                            MENU_SETTINGS_SHADER_PASS_0 + i, 0, 0, NULL))
                      count++;
 
-                  _len        = strlcpy(buf, buf_tmp, sizeof(buf));
-                  buf[_len  ] = ' ';
-                  buf[_len+1] = '\0';
+                  _len2        = strlcpy(buf, buf_tmp, sizeof(buf));
+                  buf[_len2  ] = ' ';
+                  buf[_len2+1] = '\0';
                   strlcat(buf, val_filter, sizeof(buf));
                   if (menu_entries_append(info->list, buf, shdr_filter_pass,
                            MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS,
                            MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0, 0, NULL))
                      count++;
 
-                  _len        = strlcpy(buf, buf_tmp, sizeof(buf));
-                  buf[_len  ] = ' ';
-                  buf[_len+1] = '\0';
+                  _len2        = strlcpy(buf, buf_tmp, sizeof(buf));
+                  buf[_len2  ] = ' ';
+                  buf[_len2+1] = '\0';
                   strlcat(buf, val_scale, sizeof(buf));
                   if (menu_entries_append(info->list, buf, shdr_scale_pass,
                            MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS,
@@ -12726,11 +12735,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
                {
-                  nested_list_item_t *category_item = NULL;
-                  nested_list_t *option_list        = NULL;
-                  nested_list_item_t *option_item   = NULL;
-                  const struct core_option *option  = NULL;
                   size_t i;
+                  nested_list_t *option_list        = NULL;
 
                   /* Empty 'category' string signifies top
                    * level core options menu */
@@ -12738,7 +12744,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      option_list = coreopts->option_map;
                   else
                   {
-                     category_item  = nested_list_get_item(coreopts->option_map,
+                     nested_list_item_t *category_item  = nested_list_get_item(coreopts->option_map,
                            category, NULL);
                      if (category_item)
                         option_list = nested_list_item_get_children(category_item);
@@ -12749,8 +12755,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      /* Loop over child options */
                      for (i = 0; i < nested_list_get_size(option_list); i++)
                      {
-                        option_item = nested_list_get_item_idx(option_list, i);
-                        option      = (const struct core_option *)
+                        nested_list_item_t *option_item  = nested_list_get_item_idx(option_list, i);
+                        const struct core_option *option = (const struct core_option *)
                               nested_list_item_get_value(option_item);
 
                         /* Check whether this is an option or a
@@ -12771,9 +12777,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         else if (option_item)
                         {
                            /* This is a subcategory */
-                           const char *catgory_id = nested_list_item_get_id(option_item);
-                           bool category_visible  = core_option_manager_get_category_visible(
-                                 coreopts, catgory_id);
+                           const char *category_id = nested_list_item_get_id(option_item);
+                           bool category_visible   = core_option_manager_get_category_visible(
+                                 coreopts, category_id);
 
                            /* Note: We use nested_list_item_get_id() because we
                             * guarantee that the list can only be two levels
@@ -12781,10 +12787,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                             * have to use nested_list_item_get_address() here */
 
                            if (category_visible &&
-                               !string_is_empty(catgory_id))
+                               !string_is_empty(category_id))
                            {
                               if (menu_entries_append(info->list,
-                                    catgory_id,
+                                    category_id,
                                     msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
                                     MENU_ENUM_LABEL_CORE_OPTIONS,
                                     MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0, NULL))
@@ -14243,13 +14249,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            }
                            else
                            {
+                              char val_d[16];
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
                               for (i = min; i <= max; i += step)
                               {
-                                 char val_s[16], val_d[16];
+                                 char val_s[16];
                                  int val = (int)i;
-
                                  snprintf(val_s, sizeof(val_s), "%d", val);
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
                                  if (menu_entries_append(info->list,
                                        val_s,
@@ -14292,15 +14299,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            if (setting->get_string_representation)
                            {
+                              char val_d[16];
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
                               for (i = min; i <= max; i += step)
                               {
-                                 char val_s[256], val_d[16];
-
+                                 char val_s[256];
                                  *setting->value.target.fraction = i;
-
                                  setting->get_string_representation(setting,
                                        val_s, sizeof(val_s));
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                                  if (menu_entries_append(info->list,
                                        val_s,
                                        val_d,
@@ -14327,7 +14334,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               for (i = min; i <= max; i += step)
                               {
                                  char val_s[16];
-
                                  snprintf(val_s, sizeof(val_s), "%.2f", i);
 
                                  if (menu_entries_append(info->list,
@@ -14370,16 +14376,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            if (setting->get_string_representation)
                            {
+                              char val_d[16];
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                               for (i = min; i <= max; i += step)
                               {
-                                 char val_s[256], val_d[16];
+                                 char val_s[256];
                                  int val = (int)i;
-
                                  *setting->value.target.unsigned_integer = val;
-
                                  setting->get_string_representation(setting,
                                        val_s, sizeof(val_s));
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                                  if (menu_entries_append(info->list,
                                           val_s,
                                           val_d,
@@ -14406,9 +14411,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               {
                                  char val_s[16];
                                  int val = (int)i;
-
                                  snprintf(val_s, sizeof(val_s), "%d", val);
-
                                  if (menu_entries_append(info->list,
                                        val_s,
                                        val_d,
@@ -14556,16 +14559,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         if (setting->get_string_representation)
                         {
+                           char val_d[16];
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
                            for (i = min; i <= max; i += step)
                            {
-                              char val_s[256], val_d[16];
+                              char val_s[256];
                               int val = (int)i;
-
                               *setting->value.target.integer = val;
-
                               setting->get_string_representation(setting,
                                     val_s, sizeof(val_s));
-                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                               if (menu_entries_append(info->list,
                                     val_s,
                                     val_d,
@@ -14593,7 +14596,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               char val_s[16];
                               int val = (int)i;
                               snprintf(val_s, sizeof(val_s), "%d", val);
-
                               if (menu_entries_append(info->list,
                                     val_s,
                                     val_d,
@@ -14635,15 +14637,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         if (setting->get_string_representation)
                         {
+                           char val_d[16];
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                            for (i = min; i <= max; i += step)
                            {
-                              char val_s[256], val_d[16];
-
+                              char val_s[256];
                               *setting->value.target.fraction = i;
-
                               setting->get_string_representation(setting,
                                     val_s, sizeof(val_s));
-                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                               if (menu_entries_append(info->list,
                                     val_s,
                                     val_d,
@@ -14670,7 +14671,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            {
                               char val_s[16];
                               snprintf(val_s, sizeof(val_s), "%.2f", i);
-
                               if (menu_entries_append(info->list,
                                     val_s,
                                     val_d,
@@ -14711,16 +14711,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         if (setting->get_string_representation)
                         {
+                           char val_d[16];
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                            for (i = min; i <= max; i += step)
                            {
-                              char val_s[256], val_d[16];
+                              char val_s[256];
                               int val = (int)i;
-
                               *setting->value.target.unsigned_integer = val;
-
                               setting->get_string_representation(setting,
                                     val_s, sizeof(val_s));
-                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                               if (menu_entries_append(info->list,
                                     val_s,
                                     val_d,
@@ -14748,7 +14747,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               char val_s[16];
                               int val = (int)i;
                               snprintf(val_s, sizeof(val_s), "%d", val);
-
                               if (menu_entries_append(info->list,
                                     val_s,
                                     val_d,
