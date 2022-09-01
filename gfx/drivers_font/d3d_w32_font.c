@@ -111,7 +111,7 @@ static void d3d_win32_font_free(void *data, bool is_threaded)
 }
 
 static int d3d_win32_font_get_message_width(void* data, const char* msg,
-      unsigned msg_len, float scale)
+      size_t msg_len, float scale)
 {
    RECT box             = {0,0,0,0};
    d3dfonts_t *d3dfonts = (d3dfonts_t*)data;
@@ -120,7 +120,7 @@ static int d3d_win32_font_get_message_width(void* data, const char* msg,
       return 0;
 
    d3d9x_font_draw_text(d3dfonts->font, NULL, (void*)msg,
-         msg_len? msg_len : -1, &box, DT_CALCRECT, 0);
+         msg_len ? msg_len : -1, &box, DT_CALCRECT, 0);
 
    return box.right - box.left;
 }

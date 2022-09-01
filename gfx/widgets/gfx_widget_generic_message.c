@@ -178,7 +178,7 @@ void gfx_widget_set_generic_message(
    /* Get background width */
    text_width         = font_driver_get_message_width(
          font_msg_queue->font, state->message,
-         (unsigned)strlen(state->message), 1.0f);
+         strlen(state->message), 1.0f);
    if (text_width < 0)
       text_width      = 0;
    state->bg_width    = (state->text_padding * 2) + (unsigned)text_width;
@@ -272,7 +272,7 @@ static void gfx_widget_generic_message_layout(
    {
       text_width       = font_driver_get_message_width(
             font_msg_queue->font, state->message,
-            (unsigned)strlen(state->message), 1.0f);
+            strlen(state->message), 1.0f);
       if (text_width < 0)
          text_width       = 0;
 

@@ -2665,7 +2665,7 @@ static void materialui_render_messagebox(
       if (!string_is_empty(line))
       {
          int width     = font_driver_get_message_width(
-               mui->font_data.list.font, line, (unsigned)strlen(line), 1.0f);
+               mui->font_data.list.font, line, strlen(line), 1.0f);
          longest_width = (width > longest_width) ?
                width : longest_width;
       }
@@ -5662,7 +5662,7 @@ static void materialui_render_header(
                font_driver_get_message_width(
                   mui->font_data.hint.font,
                   mui->sys_bar_cache.battery_percent_str,
-                  (unsigned)strlen(mui->sys_bar_cache.battery_percent_str),
+                  strlen(mui->sys_bar_cache.battery_percent_str),
                   1.0f);
          }
 
@@ -5755,7 +5755,7 @@ static void materialui_render_header(
             = font_driver_get_message_width(
                mui->font_data.hint.font,
                mui->sys_bar_cache.timedate_str,
-               (unsigned)strlen(mui->sys_bar_cache.timedate_str),
+               strlen(mui->sys_bar_cache.timedate_str),
                1.0f);
       }
 
@@ -7821,7 +7821,7 @@ static void materialui_init_font(
       if (wideglyph_str)
       {
          int wideglyph_width =
-            font_driver_get_message_width(font_data->font, wideglyph_str, (unsigned)strlen(wideglyph_str), 1.0f);
+            font_driver_get_message_width(font_data->font, wideglyph_str, strlen(wideglyph_str), 1.0f);
 
          if (wideglyph_width > 0 && char_width > 0) 
             font_data->wideglyph_width = wideglyph_width * 100 / char_width;

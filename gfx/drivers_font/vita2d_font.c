@@ -107,9 +107,9 @@ static void vita2d_font_free(void *data, bool is_threaded)
 }
 
 static int vita2d_font_get_message_width(void *data, const char *msg,
-      unsigned msg_len, float scale)
+      size_t msg_len, float scale)
 {
-   unsigned i;
+   int i;
    const struct font_glyph* glyph_q = NULL;
    int delta_x       = 0;
    vita_font_t *font = (vita_font_t*)data;
@@ -141,12 +141,12 @@ static int vita2d_font_get_message_width(void *data, const char *msg,
 }
 
 static void vita2d_font_render_line(
-      vita_font_t *font, const char *msg, unsigned msg_len,
+      vita_font_t *font, const char *msg, size_t msg_len,
       float scale, const unsigned int color, float pos_x,
       float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
-   unsigned i;
+   int i;
    const struct font_glyph* glyph_q = NULL;
    int x           = roundf(pos_x * width);
    int y           = roundf((1.0f - pos_y) * height);
@@ -244,8 +244,8 @@ static void vita2d_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      unsigned msg_len  = (delim) ? 
-         (unsigned)(delim - msg) : strlen(msg);
+      size_t msg_len    = (delim) ? 
+         (delim - msg) : strlen(msg);
 
       /* Draw the line */
       vita2d_font_render_line(font, msg, msg_len,

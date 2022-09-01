@@ -1036,7 +1036,7 @@ static void xmb_render_messagebox_internal(
       if (!string_is_empty(msg))
       {
          int width     = font_driver_get_message_width(
-               xmb->font, msg, (unsigned)strlen(msg), 1);
+               xmb->font, msg, strlen(msg), 1);
          if (width > longest_width)
             longest_width = width;
       }
@@ -5676,7 +5676,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          percent_width = (unsigned)
             font_driver_get_message_width(
-                  xmb->font, msg, (unsigned)strlen(msg), 1);
+                  xmb->font, msg, strlen(msg), 1);
 
          xmb_draw_text(xmb_shadows_enable, xmb, settings, msg,
                video_width - xmb->margins_title_left - x_pos,
@@ -6920,7 +6920,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       int char_width =
          font_driver_get_message_width(xmb->font, "a", 1, 1);
       int wideglyph_width =
-         font_driver_get_message_width(xmb->font, wideglyph_str, (unsigned)strlen(wideglyph_str), 1);
+         font_driver_get_message_width(xmb->font, wideglyph_str, strlen(wideglyph_str), 1);
 
       if (wideglyph_width > 0 && char_width > 0)
          xmb->wideglyph_width = wideglyph_width * 100 / char_width;

@@ -117,7 +117,7 @@ typedef struct disp_widget_msg
    retro_task_t *task_ptr;
 
    uint32_t task_ident;
-   unsigned msg_len;
+   size_t   msg_len;
    unsigned duration;
    unsigned text_height;
    unsigned width;

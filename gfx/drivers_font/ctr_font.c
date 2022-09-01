@@ -122,9 +122,9 @@ static void ctr_font_free(void* data, bool is_threaded)
 }
 
 static int ctr_font_get_message_width(void* data, const char* msg,
-                                      unsigned msg_len, float scale)
+                                      size_t msg_len, float scale)
 {
-   unsigned i;
+   int i;
    int delta_x = 0;
    const struct font_glyph* glyph_q = NULL;
    ctr_font_t* font                 = (ctr_font_t*)data;
@@ -159,7 +159,7 @@ static int ctr_font_get_message_width(void* data, const char* msg,
 
 static void ctr_font_render_line(
       ctr_video_t *ctr,
-      ctr_font_t* font, const char* msg, unsigned msg_len,
+      ctr_font_t* font, const char* msg, size_t msg_len,
       float scale, const unsigned int color, float pos_x,
       float pos_y,
       unsigned width, unsigned height, unsigned text_align)
@@ -309,7 +309,7 @@ static void ctr_font_render_message(
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      unsigned msg_len = strlen(msg);
+      size_t msg_len = strlen(msg);
       ctr_font_render_line(ctr, font, msg, msg_len,
                            scale, color, pos_x, pos_y,
                            width, height, text_align);
@@ -321,8 +321,8 @@ static void ctr_font_render_message(
    for (;;)
    {
       const char* delim = strchr(msg, '\n');
-      unsigned msg_len  = delim ?
-         (unsigned)(delim - msg) : strlen(msg);
+      size_t msg_len  = delim ?
+         (delim - msg) : strlen(msg);
 
       /* Draw the line */
       ctr_font_render_line(ctr, font, msg, msg_len,

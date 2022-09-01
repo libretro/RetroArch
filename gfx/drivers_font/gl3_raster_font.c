@@ -137,7 +137,7 @@ error:
 }
 
 static int gl3_raster_font_get_message_width(void *data, const char *msg,
-      unsigned msg_len, float scale)
+      size_t msg_len, float scale)
 {
    const struct font_glyph* glyph_q = NULL;
    gl3_raster_t *font   = (gl3_raster_t*)data;
@@ -208,11 +208,11 @@ static void gl3_raster_font_draw_vertices(gl3_raster_t *font,
 }
 
 static void gl3_raster_font_render_line(gl3_t *gl,
-      gl3_raster_t *font, const char *msg, unsigned msg_len,
+      gl3_raster_t *font, const char *msg, size_t msg_len,
       GLfloat scale, const GLfloat color[4], GLfloat pos_x,
       GLfloat pos_y, unsigned text_align)
 {
-   unsigned i;
+   int i;
    struct video_coords coords;
    const struct font_glyph* glyph_q = NULL;
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
@@ -303,7 +303,7 @@ static void gl3_raster_font_render_message(
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       gl3_raster_font_render_line(font->gl, font,
-            msg, (unsigned)strlen(msg), scale, color, pos_x,
+            msg, strlen(msg), scale, color, pos_x,
             pos_y, text_align);
       return;
    }
@@ -313,8 +313,8 @@ static void gl3_raster_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      unsigned msg_len  = delim
-         ? (unsigned)(delim - msg) : (unsigned)strlen(msg);
+      size_t msg_len    = delim
+         ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
       gl3_raster_font_render_line(font->gl, font,

@@ -367,7 +367,7 @@
    {
       float r, g, b, a;
       int msg_width         =
-         font_driver_get_message_width(NULL, msg, (unsigned)strlen(msg), 1.0f);
+         font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
       float font_size       = settings->floats.video_font_size;
       unsigned bgcolor_red 
                             = settings->uints.video_msg_bgcolor_red;

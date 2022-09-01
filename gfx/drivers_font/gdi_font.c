@@ -83,10 +83,11 @@ static void gdi_font_render_msg(
       const char *msg,
       const struct font_params *params)
 {
+   int i;
    char* msg_local;
+   size_t msg_len;
    float x, y, scale, drop_mod, drop_alpha;
-   int drop_x, drop_y, msg_strlen;
-   unsigned i;
+   int drop_x, drop_y;
    unsigned new_x, new_y, new_drop_x, new_drop_y;
    unsigned align;
    unsigned red, green, blue;
@@ -137,9 +138,9 @@ static void gdi_font_render_msg(
    }
 
    msg_local                  = utf8_to_local_string_alloc(msg);
-   msg_strlen                 = strlen(msg_local);
+   msg_len                    = strlen(msg_local);
 
-   GetTextExtentPoint32(font->gdi->memDC, msg_local, msg_strlen, &text_size);
+   GetTextExtentPoint32(font->gdi->memDC, msg_local, (int)msg_len, &text_size);
 
    switch (align)
    {

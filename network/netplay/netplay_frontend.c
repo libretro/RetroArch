@@ -9198,7 +9198,7 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
    size_t i;
    char formatted_nick[NETPLAY_CHAT_MAX_SIZE];
    char formatted_msg[NETPLAY_CHAT_MAX_SIZE];
-   int  formatted_nick_len;
+   size_t formatted_nick_len;
    int  formatted_nick_width;
    video_frame_info_t         *video_info   = (video_frame_info_t*)data;
    dispgfx_widget_t           *p_dispwidget = (dispgfx_widget_t*)userdata;
@@ -9222,7 +9222,7 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
          continue;
 
       /* Truncate the message, if necessary. */
-      formatted_nick_len = snprintf(formatted_nick, sizeof(formatted_nick),
+      formatted_nick_len = (size_t)snprintf(formatted_nick, sizeof(formatted_nick),
          "%s: ", nick);
       strlcpy(formatted_msg, msg, sizeof(formatted_msg) - formatted_nick_len);
 
@@ -9299,7 +9299,7 @@ static void gfx_widget_netplay_ping_frame(void *data, void *userdata)
    if (ping >= 0)
    {
       char ping_str[16];
-      int ping_len;
+      size_t ping_len;
       int ping_width, total_width;
       video_frame_info_t     *video_info   = (video_frame_info_t*)data;
       dispgfx_widget_t       *p_dispwidget = (dispgfx_widget_t*)userdata;
@@ -9312,7 +9312,8 @@ static void gfx_widget_netplay_ping_frame(void *data, void *userdata)
       if (ping > 999)
          ping = 999;
 
-      ping_len = snprintf(ping_str, sizeof(ping_str), "PING: %d", ping);
+      ping_len    = (size_t)snprintf(ping_str,
+            sizeof(ping_str), "PING: %d", ping);
 
       ping_width  = font_driver_get_message_width(
          font->font, ping_str, ping_len, 1.0f);

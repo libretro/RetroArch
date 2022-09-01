@@ -110,7 +110,7 @@ static void *vulkan_font_init(void *data,
 }
 
 static int vulkan_get_message_width(void *data, const char *msg,
-      unsigned msg_len, float scale)
+      size_t msg_len, float scale)
 {
    const struct font_glyph* glyph_q = NULL;
    vulkan_raster_t *font = (vulkan_raster_t*)data;
@@ -149,7 +149,7 @@ static int vulkan_get_message_width(void *data, const char *msg,
 }
 
 static void vulkan_font_render_line(vk_t *vk,
-      vulkan_raster_t *font, const char *msg, unsigned msg_len,
+      vulkan_raster_t *font, const char *msg, size_t msg_len,
       float scale, const float color[4], float pos_x,
       float pos_y, unsigned text_align)
 {
@@ -258,8 +258,8 @@ static void vulkan_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      unsigned msg_len  = delim
-         ? (unsigned)(delim - msg) : (unsigned)strlen(msg);
+      size_t msg_len    = delim
+         ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
       vulkan_font_render_line(font->vk, font, msg, msg_len,

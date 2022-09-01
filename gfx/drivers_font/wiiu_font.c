@@ -112,9 +112,9 @@ static void wiiu_font_free(void* data, bool is_threaded)
 }
 
 static int wiiu_font_get_message_width(void* data, const char* msg,
-      unsigned msg_len, float scale)
+      size_t msg_len, float scale)
 {
-   unsigned i;
+   int i;
    int delta_x = 0;
    const struct font_glyph* glyph_q = NULL;
    wiiu_font_t                *font = (wiiu_font_t*)data;
@@ -148,12 +148,12 @@ static int wiiu_font_get_message_width(void* data, const char* msg,
 
 static void wiiu_font_render_line(
       wiiu_video_t *wiiu,
-      wiiu_font_t* font, const char* msg, unsigned msg_len,
+      wiiu_font_t* font, const char* msg, size_t msg_len,
       float scale, const unsigned int color, float pos_x,
       float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
-   unsigned i;
+   int i;
    int count;
    sprite_vertex_t *v;
    const struct font_glyph* glyph_q = NULL;
@@ -259,7 +259,7 @@ static void wiiu_font_render_message(
    if (!font->font_driver->get_line_metrics ||
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
-      unsigned msg_len = strlen(msg);
+      size_t msg_len = strlen(msg);
       if (wiiu->vertex_cache.current + (msg_len * 4) <= wiiu->vertex_cache.size) 
          wiiu_font_render_line(wiiu, font, msg, msg_len,
                scale, color, pos_x, pos_y,
@@ -272,8 +272,8 @@ static void wiiu_font_render_message(
    for (;;)
    {
       const char* delim = strchr(msg, '\n');
-      unsigned msg_len  = delim ? 
-         (unsigned)(delim - msg) : strlen(msg);
+      size_t msg_len    = delim ? 
+         (delim - msg) : strlen(msg);
 
       /* Draw the line */
       if (wiiu->vertex_cache.current + (msg_len * 4) <= wiiu->vertex_cache.size) 

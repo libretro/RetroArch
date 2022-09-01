@@ -172,7 +172,7 @@ void gfx_widget_set_libretro_message(
    state->bg_width = (state->text_padding * 2) +
          font_driver_get_message_width(
                font_msg_queue->font, state->message,
-               (unsigned)strlen(state->message), 1.0f);
+               strlen(state->message), 1.0f);
 
    /* If a 'slide in' animation is already in
     * progress, no further action is required;
@@ -236,7 +236,7 @@ static void gfx_widget_libretro_message_layout(
    if (!string_is_empty(state->message))
       state->bg_width += font_driver_get_message_width(
             font_msg_queue->font, state->message,
-            (unsigned)strlen(state->message), 1.0f);
+            strlen(state->message), 1.0f);
 }
 
 /* Widget iterate() */

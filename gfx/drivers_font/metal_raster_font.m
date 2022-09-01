@@ -101,11 +101,12 @@
       }
       else
       {
+         int i;
          _buffer = [_context.device newBufferWithLength:(NSUInteger)(_stride * _atlas->height)
                                                 options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
          void *dst = _buffer.contents;
          void *src = _atlas->buffer;
-         for (unsigned i = 0; i < _atlas->height; i++)
+         for (i = 0; i < _atlas->height; i++)
          {
             memcpy(dst, src, _atlas->width);
             dst += _stride;
@@ -242,7 +243,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
       float tex_x, float tex_y, float tex_width, float tex_height,
       const vector_float4 *color)
 {
-   unsigned i;
+   int i;
    static const float strip[2 * 6] = {
       0.0f, 0.0f,
       0.0f, 1.0f,
@@ -526,10 +527,10 @@ static void metal_raster_font_free(void *data, bool is_threaded)
 }
 
 static int metal_raster_font_get_message_width(void *data, const char *msg,
-      unsigned msg_len, float scale)
+      size_t msg_len, float scale)
 {
    MetalRaster *r = (__bridge MetalRaster *)data;
-   return [r getWidthForMessage:msg length:msg_len scale:scale];
+   return [r getWidthForMessage:msg length:(unsigned)msg_len scale:scale];
 }
 
 static void metal_raster_font_render_msg(

@@ -598,10 +598,10 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
       /* Get overall text width */
       content_name_width = font_driver_get_message_width(
             font_bold->font, state->content_name,
-            (unsigned)strlen(state->content_name), 1.0f);
+            strlen(state->content_name), 1.0f);
       system_name_width = font_driver_get_message_width(
             font_regular->font, state->system_name,
-            (unsigned)strlen(state->system_name), 1.0f);
+            strlen(state->system_name), 1.0f);
 
       state->content_name_width = (content_name_width > 0) ?
             (unsigned)content_name_width : 0;

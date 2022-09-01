@@ -2318,7 +2318,7 @@ static void gl2_render_osd_background(gl2_t *gl, const char *msg)
    settings_t *settings    = config_get_ptr();
    float video_font_size   = settings->floats.video_font_size;
    int msg_width           =
-      font_driver_get_message_width(NULL, msg, (unsigned)strlen(msg), 1.0f);
+      font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
 
    /* shader driver expects vertex coords as 0..1 */
    float x                 = settings->floats.video_msg_pos_x;

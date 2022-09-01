@@ -104,10 +104,10 @@ static void ps2_font_free(void* data, bool is_threaded)
 }
 
 static int ps2_font_get_message_width(void* data, const char* msg,
-                                      unsigned msg_len, float scale)
+      size_t msg_len, float scale)
 {
+   int i;
    const struct font_glyph* glyph_q = NULL;
-   unsigned i;
    int delta_x      = 0;
    ps2_font_t* font = (ps2_font_t*)data;
 
@@ -140,12 +140,12 @@ static int ps2_font_get_message_width(void* data, const char* msg,
 
 static void ps2_font_render_line(
       ps2_video_t *ps2,
-      ps2_font_t* font, const char* msg, unsigned msg_len,
+      ps2_font_t* font, const char* msg, size_t msg_len,
       float scale, const unsigned int color, float pos_x,
       float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
-   unsigned i;
+   int i;
    const struct font_glyph* glyph_q = NULL;
    int x            = roundf(pos_x * width);
    int y            = roundf((1.0f - pos_y) * height);
@@ -258,8 +258,8 @@ static void ps2_font_render_message(
    for (;;)
    {
       const char* delim = strchr(msg, '\n');
-      unsigned msg_len  = delim ?
-         (unsigned)(delim - msg) : strlen(msg);
+      size_t msg_len    = delim ?
+         (delim - msg) : strlen(msg);
 
       /* Draw the line */
       ps2_font_render_line(ps2, font, msg, msg_len,

@@ -1014,7 +1014,7 @@ int font_driver_get_message_width(void *font_data,
    if (len == 0 && msg)
       len = strlen(msg);
    if (font && font->renderer && font->renderer->get_message_width)
-      return font->renderer->get_message_width(font->renderer_data, msg, (unsigned)len, scale);
+      return font->renderer->get_message_width(font->renderer_data, msg, len, scale);
    return -1;
 }
 

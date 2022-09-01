@@ -72,7 +72,7 @@ static void caca_font_free(void *data, bool is_threaded)
 }
 
 static int caca_font_get_message_width(void *data, const char *msg,
-      unsigned msg_len, float scale)
+      size_t msg_len, float scale)
 {
    return 0;
 }

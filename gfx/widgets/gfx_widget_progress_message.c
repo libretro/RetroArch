@@ -151,7 +151,7 @@ void gfx_widget_set_progress_message(
    state->text_width = font_driver_get_message_width(
          font_regular->font,
          state->message,
-         (unsigned)strlen(state->message),
+         strlen(state->message),
          1.0f);
 
    /* Kill any existing timer/animation */
