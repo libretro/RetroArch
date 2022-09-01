@@ -326,7 +326,7 @@ void gfx_widgets_msg_queue_push(
             }
 
             msg_widget->msg                     = msg;
-            msg_widget->msg_len                 = (unsigned)strlen(msg);
+            msg_widget->msg_len                 = strlen(msg);
             msg_widget->width                   = width + 
                p_dispwidget->simple_widget_padding / 2;
          }

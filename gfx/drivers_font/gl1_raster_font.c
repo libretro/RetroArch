@@ -360,7 +360,7 @@ static void gl1_raster_font_render_message(
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       gl1_raster_font_render_line(font->gl, font,
-            msg, (unsigned)strlen(msg), scale, color, pos_x,
+            msg, strlen(msg), scale, color, pos_x,
             pos_y, text_align);
       return;
    }

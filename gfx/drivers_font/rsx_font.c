@@ -366,7 +366,7 @@ static void rsx_font_render_message(
        !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       rsx_font_render_line(font,
-            msg, (unsigned)strlen(msg), scale, color, pos_x,
+            msg, strlen(msg), scale, color, pos_x,
             pos_y, text_align);
       return;
    }
