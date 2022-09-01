@@ -5025,7 +5025,7 @@ static void rgui_render(void *data,
             if (rgui->is_quick_menu)
             {
                snprintf(thumbnail_title_buf      + _len,
-                     sizeof(thumbnail_title_buf) + _len,
+                     sizeof(thumbnail_title_buf) - _len,
                      " %d",
                      config_get_ptr()->ints.state_slot);
                thumbnail_title = thumbnail_title_buf;
