@@ -4736,14 +4736,16 @@ bool config_save_file(const char *path)
    }
 
 #ifdef HAVE_NETWORKGAMEPAD
-   for (i = 0; i < MAX_USERS; i++)
    {
       char tmp[64];
       size_t _len = strlcpy(tmp, "network_remote_enable_user_p", sizeof(tmp));
-      snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
-      config_set_string(conf, tmp,
-            settings->bools.network_remote_enable_user[i]
-            ? "true" : "false");
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         config_set_string(conf, tmp,
+               settings->bools.network_remote_enable_user[i]
+               ? "true" : "false");
+      }
    }
 #endif
 
