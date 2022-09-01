@@ -1150,18 +1150,21 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
    if (!coreopts)
-      goto end;
+      return 0;
 
    /* Path string has the format core_option_<opt_idx>
     * > Extract option index */
    if (string_is_empty(info->path))
-      goto end;
+      return 0;
 
    string_list_initialize(&tmp_str_list);
    string_split_noalloc(&tmp_str_list, info->path, "_");
 
    if (tmp_str_list.size < 1)
-      goto end;
+   {
+      string_list_deinitialize(&tmp_str_list);
+      return 0;
+   }
 
    option_index = string_to_unsigned(
          tmp_str_list.elems[tmp_str_list.size - 1].data);
@@ -1174,7 +1177,10 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
 
    if (!option ||
        string_is_empty(val))
-      goto end;
+   {
+      string_list_deinitialize(&tmp_str_list);
+      return 0;
+   }
 
    lbl_enabled  = msg_hash_to_str(MENU_ENUM_LABEL_ENABLED);
    lbl_disabled = msg_hash_to_str(MENU_ENUM_LABEL_DISABLED);
@@ -1209,6 +1215,8 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
       }
    }
 
+   string_list_deinitialize(&tmp_str_list);
+
    if (checked_found)
    {
       menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
@@ -1220,8 +1228,6 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
       menu_navigation_set_selection(checked);
    }
 
-end:
-   string_list_deinitialize(&tmp_str_list);
    return count;
 }
 
@@ -14149,14 +14155,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            if (tmp_str_list.size > 0)
                            {
                               unsigned i;
+                              char val_s[256], val_d[16];
                               unsigned size        = (unsigned)
                                  tmp_str_list.size;
                               bool checked_found   = false;
                               unsigned checked     = 0;
-
-                              char* orig_val = setting->get_string_representation ?
+                              char* orig_val       = setting->get_string_representation ?
                                  strdup(setting->value.target.string) : setting->value.target.string;
-                              char val_s[256], val_d[16];
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
                               for (i = 0; i < size; i++)
@@ -14208,6 +14213,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      case ST_INT:
                         {
                            float i;
+                           char val_d[16];
                            int32_t orig_value     = *setting->value.target.integer;
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM;
                            float step             = setting->step;
@@ -14217,18 +14223,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            unsigned checked       = 0;
                            unsigned entry_index   = 0;
 
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
                            if (setting->get_string_representation)
                            {
                               for (i = min; i <= max; i += step)
                               {
-                                 char val_s[256], val_d[16];
+                                 char val_s[256];
                                  int val = (int)i;
-
                                  *setting->value.target.integer = val;
-
                                  setting->get_string_representation(setting,
                                        val_s, sizeof(val_s));
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                                  if (menu_entries_append(info->list,
                                        val_s,
                                        val_d,
@@ -14249,9 +14254,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            }
                            else
                            {
-                              char val_d[16];
-                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-
                               for (i = min; i <= max; i += step)
                               {
                                  char val_s[16];
@@ -14287,6 +14289,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      case ST_FLOAT:
                         {
                            float i;
+                           char val_d[16];
                            float orig_value       = *setting->value.target.fraction;
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM;
                            float step             = setting->step;
@@ -14297,11 +14300,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            unsigned checked       = 0;
                            unsigned entry_index   = 0;
 
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
                            if (setting->get_string_representation)
                            {
-                              char val_d[16];
-                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-
                               for (i = min; i <= max; i += step)
                               {
                                  char val_s[256];
@@ -14328,9 +14330,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            }
                            else
                            {
-                              char val_d[16];
-                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-
                               for (i = min; i <= max; i += step)
                               {
                                  char val_s[16];
@@ -14365,6 +14364,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      case ST_UINT:
                         {
                            float i;
+                           char val_d[16];
                            unsigned orig_value    = *setting->value.target.unsigned_integer;
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM;
                            float step             = setting->step;
@@ -14374,10 +14374,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            unsigned checked       = 0;
                            unsigned entry_index   = 0;
 
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
                            if (setting->get_string_representation)
                            {
-                              char val_d[16];
-                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                               for (i = min; i <= max; i += step)
                               {
                                  char val_s[256];
@@ -14405,8 +14405,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            }
                            else
                            {
-                              char val_d[16];
-                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                               for (i = min; i <= max; i += step)
                               {
                                  char val_s[16];
@@ -14548,6 +14546,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   case ST_INT:
                      {
                         float i;
+                        char val_d[16];
                         int32_t orig_value     = *setting->value.target.integer;
                         unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL;
                         float step             = setting->step;
@@ -14557,11 +14556,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         unsigned checked       = 0;
                         unsigned entry_index   = 0;
 
+                        snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
                         if (setting->get_string_representation)
                         {
-                           char val_d[16];
-                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-
                            for (i = min; i <= max; i += step)
                            {
                               char val_s[256];
@@ -14589,8 +14587,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         }
                         else
                         {
-                           char val_d[16];
-                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                            for (i = min; i <= max; i += step)
                            {
                               char val_s[16];
@@ -14625,6 +14621,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   case ST_FLOAT:
                      {
                         float i;
+                        char val_d[16];
                         float orig_value       = *setting->value.target.fraction;
                         unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL;
                         float step             = setting->step;
@@ -14635,10 +14632,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         unsigned checked       = 0;
                         unsigned entry_index   = 0;
 
+                        snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
                         if (setting->get_string_representation)
                         {
-                           char val_d[16];
-                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                            for (i = min; i <= max; i += step)
                            {
                               char val_s[256];
@@ -14665,8 +14662,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         }
                         else
                         {
-                           char val_d[16];
-                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                            for (i = min; i <= max; i += step)
                            {
                               char val_s[16];
@@ -14700,6 +14695,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   case ST_UINT:
                      {
                         float i;
+                        char val_d[16];
                         unsigned orig_value    = *setting->value.target.unsigned_integer;
                         unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL;
                         float step             = setting->step;
@@ -14709,10 +14705,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         unsigned checked       = 0;
                         unsigned entry_index   = 0;
 
+                        snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+
                         if (setting->get_string_representation)
                         {
-                           char val_d[16];
-                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                            for (i = min; i <= max; i += step)
                            {
                               char val_s[256];
@@ -14740,8 +14736,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         }
                         else
                         {
-                           char val_d[16];
-                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
                            for (i = min; i <= max; i += step)
                            {
                               char val_s[16];
