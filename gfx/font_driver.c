@@ -1008,13 +1008,13 @@ void font_driver_flush(unsigned width, unsigned height, void *font_data)
 }
 
 int font_driver_get_message_width(void *font_data,
-      const char *msg, unsigned len, float scale)
+      const char *msg, size_t len, float scale)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
    if (len == 0 && msg)
-      len = (unsigned)strlen(msg);
+      len = strlen(msg);
    if (font && font->renderer && font->renderer->get_message_width)
-      return font->renderer->get_message_width(font->renderer_data, msg, len, scale);
+      return font->renderer->get_message_width(font->renderer_data, msg, (unsigned)len, scale);
    return -1;
 }
 

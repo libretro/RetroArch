@@ -1050,7 +1050,7 @@ SKIP_EXPLORE_BY_CATEGORY:;
    {
       /* List all items in a selected explore by category */
       explore_string_t **entries = explore_state->by[current_cat];
-      unsigned i_last            = RBUF_LEN(entries) - 1;
+      size_t i_last              = RBUF_LEN(entries) - 1;
       for (i = 0; i <= i_last; i++)
          explore_menu_entry(list, explore_state,
                entries[i]->str, EXPLORE_TYPE_FIRSTITEM + i);

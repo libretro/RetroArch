@@ -146,7 +146,7 @@ void font_driver_render_msg(void *data,
 
 void font_driver_bind_block(void *font_data, void *block);
 
-int font_driver_get_message_width(void *font_data, const char *msg, unsigned len, float scale);
+int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
 void font_driver_flush(unsigned width, unsigned height, void *font_data);
 

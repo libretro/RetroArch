@@ -1081,7 +1081,7 @@ bool run_translation_service(settings_t *settings, bool paused)
 
          new_ai_service_url[_len  ] = separator;
          new_ai_service_url[_len+1] = '\0';
-         _len                       = strlcat(
+         strlcat(
                new_ai_service_url, "output=",
                sizeof(new_ai_service_url));
 

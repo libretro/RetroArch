@@ -7042,7 +7042,7 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
       {
          int           flen = 0;
          unsigned char *buf =
-            unbase64(mitm_session, strlen(mitm_session), &flen);
+            unbase64(mitm_session, (int)strlen(mitm_session), &flen);
 
          if (!buf)
             goto failure;

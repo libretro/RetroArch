@@ -878,7 +878,7 @@ static void content_file_get_path(
             strlcat(info_path, archive_file, sizeof(info_path));
 
             /* Update 'content' string_list */
-            string_list_set(content, idx, info_path);
+            string_list_set(content, (unsigned)idx, info_path);
             content_path = content->elems[idx].data;
 
             string_list_free(archive_list);

@@ -461,7 +461,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    char check_suffix_50[10];
    char region_id;
    size_t length;
-   int lengthref;
+   size_t lengthref;
    int index;
    char lgame_id[10];
 
@@ -566,12 +566,11 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    #define SAT_SERIAL_OFFSET 0x0030
    #define SAT_SERIAL_LEN    9
    #define SAT_REGION_OFFSET 0x0050
-   size_t _len;
+   size_t _len, length;
    char raw_game_id[SAT_SERIAL_LEN+1];
    char region_id;
    char check_suffix_5[10];
    char check_suffix_50[10];
-   int length;
    char lgame_id[10];
    char rgame_id[10];
 
@@ -935,8 +934,6 @@ int detect_system(intfstream_t *fd, const char **system_name, const char * filen
 {
    int i;
    char magic[50];
-   int magic_len;
-
 #ifdef DEBUG
    RARCH_LOG("[Scanner]: %s\n", msg_hash_to_str(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS));
 #endif
@@ -944,7 +941,7 @@ int detect_system(intfstream_t *fd, const char **system_name, const char * filen
    {
       if (intfstream_seek(fd, MAGIC_NUMBERS[i].offset, SEEK_SET) >= 0)
       {
-        magic_len = strlen(MAGIC_NUMBERS[i].magic);
+         size_t magic_len = strlen(MAGIC_NUMBERS[i].magic);
          if (intfstream_read(fd, magic, magic_len) > 0)
          {
             magic[magic_len] = '\0';

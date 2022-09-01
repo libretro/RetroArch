@@ -5959,7 +5959,7 @@ static int setting_string_action_left_netplay_mitm_server(
 {
    size_t i;
    char *netplay_mitm_server;
-   int offset = -1;
+   ssize_t offset = -1;
 
    if (!setting)
       return -1;
@@ -5997,7 +5997,7 @@ static int setting_string_action_right_netplay_mitm_server(
 {
    size_t i;
    char *netplay_mitm_server;
-   int offset = -1;
+   ssize_t offset = -1;
 
    if (!setting)
       return -1;

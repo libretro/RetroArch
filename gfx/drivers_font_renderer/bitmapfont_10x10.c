@@ -178,7 +178,7 @@ bitmapfont_lut_t *bitmapfont_10x10_load(unsigned language)
          for (i = 0; i < FONT_10X10_WIDTH; i++)
          {
             uint8_t rem     = 1 << ((i + j * FONT_10X10_WIDTH) & 7);
-            unsigned offset = (i + j * FONT_10X10_WIDTH) >> 3;
+            size_t offset   = (i + j * FONT_10X10_WIDTH) >> 3;
 
             /* LUT value is 'true' if specified glyph
              * position contains a pixel */
