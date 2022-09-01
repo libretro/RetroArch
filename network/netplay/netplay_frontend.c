@@ -1246,7 +1246,7 @@ static bool netplay_handshake_sync(netplay_t *netplay,
    uint32_t cmd[4];
    retro_ctx_memory_info_t mem_info;
    uint32_t client_num = 0;
-   uint32_t sram_size  = 0;
+   size_t sram_size    = 0;
 
    client_num = (uint32_t)(connection - netplay->connections + 1);
    if (netplay->local_paused || netplay->remote_paused)
