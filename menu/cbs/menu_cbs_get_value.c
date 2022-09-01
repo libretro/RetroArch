@@ -882,6 +882,7 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
 
    if (key_descriptors[key_id].key != RETROK_FIRST)
    {
+      /* TODO/FIXME - Localize */
       strlcpy(s, "Keyboard ", len);
       strlcat(s, key_descriptors[key_id].desc, len);
    }

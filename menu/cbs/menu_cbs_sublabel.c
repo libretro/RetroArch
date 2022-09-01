@@ -1200,13 +1200,15 @@ static int action_bind_sublabel_systeminfo_controller_entry(
 {
    char tmp[4096];
    unsigned controller;
+   const char *val_port_dev_name =
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME);
 
    for (controller = 0; controller < MAX_USERS; controller++)
    {
       if (input_config_get_device_autoconfigured(controller))
       {
             snprintf(tmp, sizeof(tmp),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
+               val_port_dev_name,
                controller,
                input_config_get_device_name(controller),
                input_config_get_device_name_index(controller));
@@ -1215,6 +1217,8 @@ static int action_bind_sublabel_systeminfo_controller_entry(
                break;
       }
    }
+
+   /* TODO/FIXME - Localize */
    snprintf(tmp, sizeof(tmp), "Device display name: %s\nDevice config name: %s\nDevice identifiers: %d/%d",
       input_config_get_device_display_name(controller) ? input_config_get_device_display_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
       input_config_get_device_display_name(controller) ? input_config_get_device_config_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -1302,6 +1306,7 @@ static int action_bind_sublabel_subsystem_add(
 
    if (subsystem && runloop_st->subsystem_current_count > 0)
    {
+      /* TODO/FIXME - Localize */
       if (content_get_subsystem_rom_id() < subsystem->num_roms)
          snprintf(s, len, " Current Content: %s",
             content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD
@@ -1361,9 +1366,9 @@ static int action_bind_sublabel_remap_kbd_sublabel(
       char *s, size_t len)
 {
    unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
-
-   snprintf(s, len, "%s %u: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
+   size_t _len       = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
+         len);
+   snprintf(s + _len, len - _len, " %u: %s",
          user_idx + 1,
          input_config_get_device_display_name(user_idx) ?
          input_config_get_device_display_name(user_idx) :
@@ -1395,19 +1400,24 @@ static int action_bind_sublabel_audio_mixer_stream(
                sizeof(msg));
          break;
       case AUDIO_STREAM_STATE_STOPPED:
+         /* TODO/FIXME - Localize */
          strlcpy(msg, "Stopped", sizeof(msg));
          break;
       case AUDIO_STREAM_STATE_PLAYING:
+         /* TODO/FIXME - Localize */
          strlcpy(msg, "Playing", sizeof(msg));
          break;
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
+         /* TODO/FIXME - Localize */
          strlcpy(msg, "Playing (Looped)", sizeof(msg));
          break;
       case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
+         /* TODO/FIXME - Localize */
          strlcpy(msg, "Playing (Sequential)", sizeof(msg));
          break;
    }
 
+   /* TODO/FIXME - Localize */
    snprintf(s, len, "State : %s | %s: %.2f dB", msg,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME),
          stream->volume);
@@ -1421,6 +1431,7 @@ static int action_bind_sublabel_remap_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
+   size_t _len;
    settings_t *settings = config_get_ptr();
    unsigned port        = (type - MENU_SETTINGS_INPUT_DESC_BEGIN)
          / (RARCH_FIRST_CUSTOM_BIND + 8);
@@ -1435,8 +1446,9 @@ static int action_bind_sublabel_remap_sublabel(
     * controller is connected... */
    port = settings->uints.input_joypad_index[port];
 
-   snprintf(s, len, "%s %u: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
+   _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), len);
+
+   snprintf(s + _len, len - _len, " %u: %s",
          port + 1,
          input_config_get_device_display_name(port) ?
          input_config_get_device_display_name(port) :

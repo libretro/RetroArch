@@ -366,9 +366,10 @@ static int action_get_title_dropdown_item(
 #ifdef HAVE_AUDIOMIXER
 static int action_get_title_mixer_stream_actions(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
-   unsigned         offset      = (menu_type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN);
-
-   snprintf(s, len, "Mixer Stream #%d: %s", offset + 1, audio_driver_mixer_get_stream_name(offset));
+   unsigned offset = (menu_type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN);
+   /* TODO/FIXME - Localize */
+   size_t _len     = strlcpy(s, "Mixer Stream", len);
+   snprintf(s + _len, len - _len, " #%d: %s", offset + 1, audio_driver_mixer_get_stream_name(offset));
    return 0;
 }
 #endif

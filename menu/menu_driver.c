@@ -5058,23 +5058,15 @@ int menu_entries_get_core_title(char *s, size_t len)
       (system && system->library_version) 
       ? system->library_version 
       : "";
+   size_t _len = strlcpy(s, PACKAGE_VERSION, len);
+#if defined(_MSC_VER)
+   _len        = strlcat(s, msvc_vercode_to_str(_MSC_VER), len);
+#endif
 
    if (!string_is_empty(core_version))
-   {
-#if defined(_MSC_VER)
-      snprintf(s, len, PACKAGE_VERSION "%s"        " - %s (%s)", msvc_vercode_to_str(_MSC_VER), core_name, core_version);
-#else
-      snprintf(s, len, PACKAGE_VERSION             " - %s (%s)",                                core_name, core_version);
-#endif
-   }
+      snprintf(s + _len, len - _len, " - %s (%s)", core_name, core_version);
    else
-   {
-#if defined(_MSC_VER)
-      snprintf(s, len, PACKAGE_VERSION "%s"        " - %s", msvc_vercode_to_str(_MSC_VER), core_name);
-#else
-      snprintf(s, len, PACKAGE_VERSION             " - %s",                                core_name);
-#endif
-   }
+      snprintf(s + _len, len - _len, " - %s", core_name);
 
    return 0;
 }

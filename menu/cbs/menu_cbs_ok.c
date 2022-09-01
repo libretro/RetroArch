@@ -8027,11 +8027,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
                   STRLEN_CONST("input_binds_list")))
          {
             unsigned i;
+            unsigned first_char = atoi(&str[0]);
 
             for (i = 0; i < MAX_USERS; i++)
             {
-               unsigned first_char = atoi(&str[0]);
-
                if (first_char != ((i+1)))
                   continue;
 

@@ -43,11 +43,9 @@ static int action_select_default(
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    if (selection_buf)
-      cbs                     = (menu_file_list_cbs_t*)
-         file_list_get_actiondata_at_offset(selection_buf, idx);
-
-   if (!cbs)
-      return -1;
+      if (!(cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(selection_buf, idx)))
+         return -1;
 
    if (cbs->setting)
    {
@@ -62,7 +60,7 @@ static int action_select_default(
             if (cbs->action_ok)
                action     = MENU_ACTION_OK;
             else
-               action = MENU_ACTION_RIGHT;
+               action     = MENU_ACTION_RIGHT;
             break;
          case ST_PATH:
          case ST_DIR:
@@ -70,7 +68,7 @@ static int action_select_default(
          case ST_STRING:
          case ST_HEX:
          case ST_BIND:
-            action = MENU_ACTION_OK;
+            action        = MENU_ACTION_OK;
             break;
          default:
             break;
@@ -138,12 +136,6 @@ static int menu_cbs_init_bind_select_compare_type(
    return 0;
 }
 
-static int menu_cbs_init_bind_select_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label)
-{
-   return -1;
-}
-
 int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -158,9 +150,6 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       BIND_ACTION_SELECT(cbs, action_select_core_setting);
       return 0;
    }
-
-   if (menu_cbs_init_bind_select_compare_label(cbs, label) == 0)
-      return 0;
 
    if (menu_cbs_init_bind_select_compare_type(cbs, type) == 0)
       return 0;
