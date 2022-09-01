@@ -669,9 +669,17 @@ void video_monitor_set_refresh_rate(float hz)
 {
    char msg[128];
    settings_t        *settings = config_get_ptr();
-
-   snprintf(msg, sizeof(msg),
-         "Setting refresh rate to: %.3f Hz.", hz);
+   /* TODO/FIXME - localize */
+   size_t _len = strlcpy(msg, "Setting refresh rate to", sizeof(msg));
+   msg[_len  ] = ':';
+   msg[++_len] = ' ';
+   msg[++_len] = '\0';
+   _len       += snprintf(msg + _len, sizeof(msg) - _len, "%.3f", hz);
+   msg[_len  ] = ' ';
+   msg[_len+1] = 'H';
+   msg[_len+2] = 'z';
+   msg[_len+3] = '.';
+   msg[_len+4] = '\0';
    if (settings->bools.notification_show_refresh_rate)
       runloop_msg_queue_push(msg, 1, 180, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

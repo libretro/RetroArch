@@ -1760,10 +1760,12 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    {
       char cpu_str[64];
       unsigned amount_cores = cpu_features_get_core_amount();
-      cpu_str[0]            = '\0';
-      snprintf(cpu_str, sizeof(cpu_str),
-            "%s %d\n",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_CORES), amount_cores);
+      size_t _len           = strlcpy(cpu_str,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_CORES),
+            sizeof(cpu_str));
+      snprintf(cpu_str      + _len,
+            sizeof(cpu_str) - _len,
+            " %d\n", amount_cores);
       if (menu_entries_append(list, cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_CPU_CORES),
             MENU_ENUM_LABEL_CPU_CORES, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
@@ -2029,10 +2031,13 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       if (video_context_driver_get_metrics(&metrics))
       {
-         snprintf(tmp, sizeof(tmp), "%s: %.2f",
+         size_t _len = strlcpy(tmp,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH),
-               val);
+               sizeof(tmp));
+         snprintf(tmp      + _len,
+               sizeof(tmp) - _len,
+               ": %.2f", val);
          if (menu_entries_append(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
@@ -5167,15 +5172,13 @@ static int menu_displaylist_parse_input_device_index_list(
          if (!string_is_empty(device_name))
          {
             unsigned idx = input_config_get_device_name_index(i);
+            size_t _len  = strlcpy(device_label, device_name,
+                  sizeof(device_label));
 
             /*if idx is non-zero, it's part of a set*/
             if (idx > 0)
-               snprintf(device_label, sizeof(device_label),
-                     "%s (#%u)",
-                     device_name,
-                     idx);
-            else
-               strlcpy(device_label, device_name, sizeof(device_label));
+               snprintf(device_label         + _len,
+                        sizeof(device_label) - _len, " (#%u)", idx);
          }
          else
             snprintf(device_label, sizeof(device_label), "%s (%s %u)", val_na,
@@ -5297,8 +5300,8 @@ static int menu_displaylist_parse_input_description_list(
           * > Above RARCH_FIRST_CUSTOM_BIND, inputs
           *   are analog axes - have to add +/-
           *   indicators */
-	 size_t _len = strlcpy(input_description, input_desc_btn,
-			 sizeof(input_description));
+         size_t _len = strlcpy(input_description, input_desc_btn,
+               sizeof(input_description));
          if (i >= RARCH_FIRST_CUSTOM_BIND)
          {
             input_description   [_len  ] = ' ';
@@ -5306,7 +5309,7 @@ static int menu_displaylist_parse_input_description_list(
                input_description[_len+1] = '+';
             else
                input_description[_len+1] = '-';
-	    input_description   [_len+2] = '\0';
+            input_description   [_len+2] = '\0';
          }
 
          if (string_is_empty(input_description))
@@ -7094,18 +7097,18 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_LIBNX
          {
             unsigned user;
+            char key_split_joycon[PATH_MAX_LENGTH];
+            const char *split_joycon_str =
+               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON);
+            size_t _len                  = strlcpy(key_split_joycon, split_joycon_str, 
+                  sizeof(key_split_joycon));
 
             for (user = 0; user < 8; user++)
             {
-               char key_split_joycon[PATH_MAX_LENGTH];
                unsigned val = user + 1;
-
-               key_split_joycon[0] = '\0';
-
-               snprintf(key_split_joycon, sizeof(key_split_joycon),
-                     "%s_%u",
-                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON), val);
-
+               snprintf(key_split_joycon         + _len,
+                        sizeof(key_split_joycon) - _len,
+                        "_%u", val);
                if (MENU_DISPLAYLIST_PARSE_SETTINGS(list,
                         key_split_joycon, PARSE_ONLY_UINT, true, 0) != -1)
                   count++;
@@ -7235,12 +7238,12 @@ unsigned menu_displaylist_build_list(
                size_t i;
                char buf[768];
                const char *msg_intf = msg_hash_to_str(MSG_INTERFACE);
+               size_t _len          = strlcpy(buf, msg_intf, sizeof(buf));
 
                for (i = 0; i < interfaces.size; i++)
                {
                   struct net_ifinfo_entry *entry = &interfaces.entries[i];
-
-                  snprintf(buf, sizeof(buf), "%s (%s) : %s\n", msg_intf,
+                  snprintf(buf + _len, sizeof(buf) - _len, " (%s) : %s\n",
                      entry->name, entry->host);
                   if (menu_entries_append(list, buf, entry->name,
                         MENU_ENUM_LABEL_NETWORK_INFO_ENTRY,

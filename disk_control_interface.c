@@ -308,24 +308,25 @@ static void disk_control_get_index_set_msg(
    /* Check whether image was inserted or removed */
    if (index < num_images)
    {
+      size_t _len = strlcpy(msg,
+            success 
+            ? msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY)
+            : msg_hash_to_str(MSG_FAILED_TO_SET_DISK), len);
       if (has_label)
          snprintf(
-               msg, len, "%s: %u/%u - %s",
-               success ? msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY) :
-                     msg_hash_to_str(MSG_FAILED_TO_SET_DISK),
+               msg + _len, len - _len, ": %u/%u - %s",
                index + 1, num_images, image_label);
       else
          snprintf(
-               msg, len, "%s: %u/%u",
-               success ? msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY) :
-                     msg_hash_to_str(MSG_FAILED_TO_SET_DISK),
+               msg + _len, len - _len, ": %u/%u",
                index + 1, num_images);
    }
    else
       strlcpy(
             msg,
-            success ? msg_hash_to_str(MSG_REMOVED_DISK_FROM_TRAY) :
-                  msg_hash_to_str(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY),
+            success 
+            ? msg_hash_to_str(MSG_REMOVED_DISK_FROM_TRAY)
+            : msg_hash_to_str(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY),
             len);
 }
 
@@ -348,17 +349,21 @@ bool disk_control_set_eject_state(
 
    /* Set eject state */
    if (disk_control->cb.set_eject_state(eject))
-      snprintf(
-            msg, sizeof(msg), "%s",
-            eject ? msg_hash_to_str(MSG_DISK_EJECTED) :
-                  msg_hash_to_str(MSG_DISK_CLOSED));
+      strlcpy(
+            msg,
+            eject 
+            ? msg_hash_to_str(MSG_DISK_EJECTED)
+            : msg_hash_to_str(MSG_DISK_CLOSED),
+              sizeof(msg));
    else
    {
       error = true;
-      snprintf(
-            msg, sizeof(msg), "%s",
-            eject ? msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_EJECT) :
-                  msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_CLOSE));
+      strlcpy(
+            msg,
+            eject 
+            ? msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_EJECT)
+            : msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_CLOSE),
+              sizeof(msg));
    }
 
    if (!string_is_empty(msg))
@@ -458,15 +463,10 @@ bool disk_control_set_index(
       if (disk_control->cb.get_image_index &&
           disk_control->cb.get_image_path)
       {
-         bool image_path_valid    = false;
-         unsigned new_image_index = 0;
-         char new_image_path[PATH_MAX_LENGTH];
-
-         new_image_path[0] = '\0';
-
+         char new_image_path[PATH_MAX_LENGTH] = {0};
          /* Get current image index + path */
-         new_image_index  = disk_control->cb.get_image_index();
-         image_path_valid = disk_control->cb.get_image_path(
+         unsigned new_image_index = disk_control->cb.get_image_index();
+         bool image_path_valid    = disk_control->cb.get_image_path(
                new_image_index, new_image_path, sizeof(new_image_path));
 
          if (image_path_valid)
@@ -570,14 +570,13 @@ bool disk_control_append_image(
       disk_control_interface_t *disk_control,
       const char *image_path)
 {
+   size_t _len;
    bool initial_disk_ejected   = false;
    unsigned initial_index      = 0;
    unsigned new_index          = 0;
    const char *image_filename  = NULL;
    struct retro_game_info info = {0};
    char msg[128];
-
-   msg[0] = '\0';
 
    /* Sanity check. If any of these fail then a
     * frontend error has occurred - we will not
@@ -634,17 +633,17 @@ bool disk_control_append_image(
       goto error;
 
    /* Display log */
-   snprintf(
-         msg, sizeof(msg), "%s: %s",
-         msg_hash_to_str(MSG_APPENDED_DISK), image_filename);
+   _len        = strlcpy(msg, msg_hash_to_str(MSG_APPENDED_DISK), sizeof(msg));
+   msg[_len  ] = ':';
+   msg[_len+1] = ' ';
+   msg[_len+2] = '\0';
+   strlcat(msg, image_filename, sizeof(msg));
 
    RARCH_LOG("[Disc]: %s\n", msg);
    /* This message should always be displayed, since
     * the menu itself does not provide sufficient
     * visual feedback */
-   runloop_msg_queue_push(
-         msg, 0, 120,
-         true, NULL,
+   runloop_msg_queue_push(msg, 0, 120, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return true;
@@ -663,9 +662,12 @@ error:
    if (!initial_disk_ejected)
       disk_control_set_eject_state(disk_control, false, false);
 
-   snprintf(
-         msg, sizeof(msg), "%s: %s",
-         msg_hash_to_str(MSG_FAILED_TO_APPEND_DISK), image_filename);
+   _len        = strlcpy(msg,
+         msg_hash_to_str(MSG_FAILED_TO_APPEND_DISK), sizeof(msg));
+   msg[_len  ] = ':';
+   msg[_len+1] = ' ';
+   msg[_len+2] = '\0';
+   strlcat(msg, image_filename, sizeof(msg));
 
    runloop_msg_queue_push(
          msg, 0, 180,

@@ -121,11 +121,15 @@ static void contentless_cores_init_info_entries(
       if (core_info &&
           core_info->supports_no_game)
       {
+         char licenses_str[MENU_SUBLABEL_MAX_LENGTH];
          contentless_core_info_entry_t *entry =
                (contentless_core_info_entry_t*)malloc(sizeof(*entry));
-         char licenses_str[MENU_SUBLABEL_MAX_LENGTH];
-
-         licenses_str[0] = '\0';
+         size_t _len          = strlcpy(licenses_str,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
+               sizeof(licenses_str));
+         licenses_str[_len  ] = ':';
+         licenses_str[_len+1] = ' ';
+         licenses_str[_len+2] = '\0';
 
          /* Populate licences string */
          if (core_info->licenses_list)
@@ -134,17 +138,15 @@ static void contentless_cores_init_info_entries(
             tmp_str[0] = '\0';
             string_list_join_concat(tmp_str, sizeof(tmp_str),
                   core_info->licenses_list, ", ");
-            snprintf(licenses_str, sizeof(licenses_str), "%s: %s",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
-                  tmp_str);
+            strlcat(licenses_str, tmp_str, sizeof(licenses_str));
          }
          /* No license found - set to N/A */
          else
-            snprintf(licenses_str, sizeof(licenses_str), "%s: %s",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+            strlcat(licenses_str,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+                  sizeof(licenses_str));
 
-         entry->licenses_str = strdup(licenses_str);
+         entry->licenses_str            = strdup(licenses_str);
 
          /* Initialise runtime info */
          entry->runtime.runtime_str     = NULL;

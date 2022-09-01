@@ -5019,17 +5019,22 @@ static void rgui_render(void *data,
          /* State slot title */
          if (is_state_slot)
          {
+            size_t _len = strlcpy(thumbnail_title_buf,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+                  sizeof(thumbnail_title_buf));
             if (rgui->is_quick_menu)
             {
-               snprintf(thumbnail_title_buf, sizeof(thumbnail_title_buf), "%s %d",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+               snprintf(thumbnail_title_buf      + _len,
+                     sizeof(thumbnail_title_buf) - _len,
+                     " %d",
                      config_get_ptr()->ints.state_slot);
                thumbnail_title = thumbnail_title_buf;
             }
             else if (rgui->is_state_slot)
             {
-               snprintf(thumbnail_title_buf, sizeof(thumbnail_title_buf), "%s %d",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+               snprintf(thumbnail_title_buf      + _len,
+                     sizeof(thumbnail_title_buf) - _len,
+                     " %d",
                      (int)menu_navigation_get_selection() - 1);
                thumbnail_title = thumbnail_title_buf;
             }
@@ -6572,8 +6577,6 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
             char path[8204];
             runloop_state_t *runloop_st = runloop_state_get_ptr();
 
-            path[0] = '\0';
-
             /* State slot dropdown */
             if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
             {
@@ -6581,14 +6584,20 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
                rgui->is_state_slot = true;
             }
 
-            if (state_slot > 0)
-               snprintf(path, sizeof(path), "%s%d",
-                     runloop_st->name.savestate, state_slot);
-            else if (state_slot < 0)
+            if (state_slot < 0)
+            {
+               path[0] = '\0';
                fill_pathname_join_delim(path,
                      runloop_st->name.savestate, "auto", '.', sizeof(path));
+            }
             else
-               strlcpy(path, runloop_st->name.savestate, sizeof(path));
+            {
+               size_t _len = strlcpy(path,
+                     runloop_st->name.savestate, sizeof(path));
+               if (state_slot > 0)
+                  snprintf(path + _len, sizeof(path) - _len, "%d",
+                        state_slot);
+            }
 
             strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
 

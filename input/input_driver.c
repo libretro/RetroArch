@@ -4663,6 +4663,7 @@ error:
 static bool runloop_check_movie_init(input_driver_state_t *input_st,
       settings_t *settings)
 {
+   size_t _len;
    char msg[16384], path[8192];
    bsv_movie_t *state          = NULL;
    int state_slot              = settings->ints.state_slot;
@@ -4670,15 +4671,10 @@ static bool runloop_check_movie_init(input_driver_state_t *input_st,
 
    configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
 
-   strlcpy(path,
+   _len = strlcpy(path,
          input_st->bsv_movie_state.movie_path, sizeof(path));
    if (state_slot > 0)
-   {
-      char formatted_number[16];
-      formatted_number[0] = '\0';
-      snprintf(formatted_number, sizeof(formatted_number), "%d", state_slot);
-      strlcat(path, formatted_number, sizeof(path));
-   }
+      snprintf(path + _len, sizeof(path) - _len, "%d", state_slot);
    strlcat(path, ".bsv", sizeof(path));
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
