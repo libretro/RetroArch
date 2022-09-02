@@ -871,28 +871,73 @@ extern "C" {
 
 	int uwp_get_height(void)
 	{
-		if (is_running_on_xbox())
+		//This function must be performed within UI thread otherwise it will cause crash in specific cases
+		//https://github.com/libretro/RetroArch/issues/13491
+		float surface_scale = 0;
+		int returnValue = -1;
+		volatile bool finished = false;
+		Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher->RunAsync(
+			CoreDispatcherPriority::Normal,
+			ref new Windows::UI::Core::DispatchedHandler([&surface_scale, &returnValue, &finished]()
+				{
+					if (is_running_on_xbox())
+					{
+						const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+						if (hdi)
+							returnValue = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionHeightInRawPixels;
+					}
+
+					if (returnValue == -1) {
+					const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
+					surface_scale = static_cast<float>(resolution_scale) / 100.0f;
+					returnValue = static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Height * surface_scale);
+					}
+					finished = true;
+				}));
+		Windows::UI::Core::CoreWindow^ corewindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
+		while (!finished)
 		{
-			const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
-			if (hdi)
-				return Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionHeightInRawPixels;
+			if (corewindow) {
+				corewindow->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
+			}
 		}
-		const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
-		auto surface_scale = static_cast<float>(resolution_scale) / 100.0f;
-		return static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Height * surface_scale);
+		return returnValue;
 	}
 
 	int uwp_get_width(void)
 	{
-		if (is_running_on_xbox())
+		//This function must be performed within UI thread otherwise it will cause crash in specific cases
+		//https://github.com/libretro/RetroArch/issues/13491
+		float surface_scale = 0;
+		int returnValue = -1;
+		volatile bool finished = false;
+		Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher->RunAsync(
+			CoreDispatcherPriority::Normal,
+			ref new Windows::UI::Core::DispatchedHandler([&surface_scale, &returnValue, &finished]()
+				{
+					if (is_running_on_xbox())
+					{
+						const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+						if (hdi)
+							returnValue = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionWidthInRawPixels;
+					}
+
+					if(returnValue == -1) {
+					const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
+					surface_scale = static_cast<float>(resolution_scale) / 100.0f;
+					returnValue = static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Width * surface_scale);
+					}
+					finished = true;
+				}));
+		Windows::UI::Core::CoreWindow^ corewindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
+		while (!finished)
 		{
-			const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
-			if (hdi)
-				return Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionWidthInRawPixels;
+			if (corewindow) {
+				corewindow->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
+			}
 		}
-		const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
-		auto surface_scale = static_cast<float>(resolution_scale) / 100.0f;
-		return static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Width * surface_scale);
+		
+		return returnValue;
 	}
 
 	void uwp_fill_installed_core_packages(struct string_list *list)
