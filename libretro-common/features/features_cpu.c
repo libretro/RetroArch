@@ -126,7 +126,7 @@
 static int ra_clock_gettime(int clk_ik, struct timespec *t)
 {
    struct timeval now;
-   int rv = gettimeofday(&now, NULL);
+   int rv     = gettimeofday(&now, NULL);
    if (rv)
       return rv;
    t->tv_sec  = now.tv_sec;
@@ -184,7 +184,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
 #elif !defined(__MACH__) && (defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__) || defined(__PSL1GHT__) || defined(__PPC64__) || defined(__powerpc64__))
    time_ticks = __mftb();
 #elif (defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK > 0) || defined(__QNX__) || defined(ANDROID)
-   struct timespec tv = {0};
+   struct timespec tv;
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
          (retro_perf_tick_t)tv.tv_nsec;
@@ -251,7 +251,7 @@ retro_time_t cpu_features_get_time_usec(void)
 #elif defined(_3DS)
    return osGetTime() * 1000;
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
-   struct timespec tv = {0};
+   struct timespec tv;
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;

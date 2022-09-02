@@ -826,8 +826,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 #else
    int ret;
    int64_t seconds, remainder;
-   struct timespec now = {0};
-
+   struct timespec now;
 #ifdef __MACH__
    /* OSX doesn't have clock_gettime. */
    clock_serv_t cclock;

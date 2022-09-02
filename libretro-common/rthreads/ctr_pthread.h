@@ -265,26 +265,27 @@ static INLINE int pthread_cond_wait(pthread_cond_t *cond,
 static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
       pthread_mutex_t *mutex, const struct timespec *abstime)
 {
-   struct timespec now = {0};
    /* Missing clock_gettime*/
+   struct timespec now;
    struct timeval tm;
    int retval = 0;
 
-   do {
+   do
+   {
+      s64 timeout;
       gettimeofday(&tm, NULL);
-      now.tv_sec = tm.tv_sec;
+      now.tv_sec  = tm.tv_sec;
       now.tv_nsec = tm.tv_usec * 1000;
-      s64 timeout = (abstime->tv_sec - now.tv_sec) * 1000000000 + (abstime->tv_nsec - now.tv_nsec);
 
-      if (timeout < 0)
+      if ((timeout = (abstime->tv_sec - now.tv_sec) * 1000000000 +
+(abstime->tv_nsec - now.tv_nsec)) < 0)
       {
          retval = ETIMEDOUT;
          break;
       }
 
-      if (!CondVar_WaitTimeout((CondVar *)cond, (LightLock *)mutex, timeout)) {
+      if (!CondVar_WaitTimeout((CondVar *)cond, (LightLock *)mutex, timeout))
          break;
-      }
    } while (1);
 
    return retval;

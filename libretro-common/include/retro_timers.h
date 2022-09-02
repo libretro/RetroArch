@@ -102,7 +102,7 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
 #else
 #define retro_sleep(msec) \
 { \
-   struct timespec tv = {0}; \
+   struct timespec tv; \
    tv.tv_sec          = msec / 1000; \
    tv.tv_nsec         = (msec % 1000) * 1000000; \
    nanosleep(&tv, NULL); \
