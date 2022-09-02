@@ -153,9 +153,10 @@ static bool record_driver_init_first(
 
    for (i = 0; record_drivers[i]; i++)
    {
-      void *handle = record_drivers[i]->init(params);
-
-      if (!handle)
+      void *handle = NULL;
+      if (!record_drivers[i]->init)
+         continue;
+      if (!(handle = record_drivers[i]->init(params)))
          continue;
 
       *backend = record_drivers[i];
