@@ -2103,6 +2103,38 @@ MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
    "Tap the Touch Screen to go\nto the RetroArch menu"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
+   "Display bottom menu font. Enable to display button descriptions on the bottom screen. This excludes the save-state date."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
+   "Font Colour Red"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
+   "Adjust bottom screen font red colour."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
+   "Font Colour Green"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
+   "Adjust bottom screen font green colour."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   "Font Colour Blue"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
+   "Adjust bottom screen font blue colour."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   "Font Colour Opacity"
+   )
 #endif
 #ifdef HAVE_QT
 MSG_HASH(
