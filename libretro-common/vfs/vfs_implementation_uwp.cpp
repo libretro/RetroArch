@@ -54,30 +54,25 @@
 #include <uwp/uwp_async.h>
 #include <uwp/std_filesystem_compat.h>
 
-// define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING to silence warnings
-// idk why this warning happens considering we can't use the non experimental version but whatever ig
-
 namespace
 {
-   void windowsize_path(wchar_t* path)
+   /* UWP deals with paths containing / instead of 
+    * \ way worse than normal Windows */
+   /* and RetroArch may sometimes mix them 
+    * (e.g. on archive extraction) */
+   static void windowsize_path(wchar_t* path)
    {
-      /* UWP deals with paths containing / instead of 
-       * \ way worse than normal Windows */
-      /* and RetroArch may sometimes mix them 
-       * (e.g. on archive extraction) */
-      if (!path)
-         return;
-
-      while (*path)
+      if (path)
       {
-         if (*path == '/')
-            *path = '\\';
-         ++path;
+         while (*path)
+         {
+            if (*path == '/')
+               *path = '\\';
+            ++path;
+         }
       }
    }
 }
-
-
 
 #ifdef VFS_FRONTEND
 struct retro_vfs_file_handle
@@ -171,21 +166,7 @@ int64_t retro_vfs_file_seek_internal(
 int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file* stream,
     int64_t offset, int seek_position)
 {
-    int whence = -1;
-    switch (seek_position)
-    {
-    case RETRO_VFS_SEEK_POSITION_START:
-        whence = SEEK_SET;
-        break;
-    case RETRO_VFS_SEEK_POSITION_CURRENT:
-        whence = SEEK_CUR;
-        break;
-    case RETRO_VFS_SEEK_POSITION_END:
-        whence = SEEK_END;
-        break;
-    }
-
-    return retro_vfs_file_seek_internal(stream, offset, whence);
+    return retro_vfs_file_seek_internal(stream, offset, seek_position);
 }
 
 int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file* stream,
@@ -259,14 +240,6 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
     std::wstring path_wstring;
     DWORD desireAccess;
     DWORD creationDisposition;
-#if defined(VFS_FRONTEND) || defined(HAVE_CDROM)
-    int                             path_len = (int)strlen(path);
-#endif
-#ifdef VFS_FRONTEND
-    const char* dumb_prefix = "vfsonly://";
-    size_t                   dumb_prefix_siz = STRLEN_CONST("vfsonly://");
-    int                      dumb_prefix_len = (int)dumb_prefix_siz;
-#endif
     wchar_t                       *path_wide = NULL;
     int                                flags = 0;
     const char                     *mode_str = NULL;
@@ -290,9 +263,18 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
     stream->scheme    = VFS_SCHEME_NONE;
 
 #ifdef VFS_FRONTEND
-    if (path_len >= dumb_prefix_len)
-        if (!memcmp(path, dumb_prefix, dumb_prefix_len))
-            path += dumb_prefix_siz;
+   if (     path
+         && path[0] == 'v'
+         && path[1] == 'f'
+         && path[2] == 's'
+         && path[3] == 'o'
+         && path[4] == 'n'
+         && path[5] == 'l'
+         && path[6] == 'y'
+         && path[7] == ':'
+         && path[8] == '/'
+         && path[9] == '/')
+         path             += sizeof("vfsonly://")-1;
 #endif
 
     path_wide    = utf8_to_utf16_string_alloc(path);
@@ -453,12 +435,17 @@ int retro_vfs_mkdir_impl(const char* dir)
     return uwp_mkdir_impl(std::filesystem::path(dir));
 }
 
-/* The first run paramater is used to avoid error checking when doing recursion.
- * Unlike the initial implementation this can move folders even empty ones when you want to move a directory structure.
+/* The first run paramater is used to avoid error checking 
+ * when doing recursion.
+ * Unlike the initial implementation, this can move folders 
+ * even empty ones when you want to move a directory structure.
  *
  * This will fail even if a single file cannot be moved.
  */
-int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path,  bool firstrun = true)
+static int uwp_move_path(
+      std::filesystem::path old_path,
+      std::filesystem::path new_path,
+      bool firstrun)
 {
     if (old_path.empty() || new_path.empty())
         return -1;
@@ -469,10 +456,14 @@ int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path
         bool parent_dir_exists = false;
 
         /* Make sure that parent path exists */
-        if (GetFileAttributesExFromAppW(new_path.parent_path().wstring().c_str(), GetFileExInfoStandard, &lpFileInfo))
+        if (GetFileAttributesExFromAppW(
+                 new_path.parent_path().wstring().c_str(),
+                 GetFileExInfoStandard, &lpFileInfo))
         {
             /* Check that the files attributes are not null or empty */
-            if (lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && lpFileInfo.dwFileAttributes != 0)
+            if (     lpFileInfo.dwFileAttributes 
+                  != INVALID_FILE_ATTRIBUTES 
+                  && lpFileInfo.dwFileAttributes != 0)
             {
                /* Parent path doesn't exist, so we gotta create it  */
                 if (!(lpFileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
@@ -484,7 +475,8 @@ int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path
         if (GetFileAttributesExFromAppW(old_path.wstring().c_str(), GetFileExInfoStandard, &lpFileInfo))
         {
             /* Check that the files attributes are not null or empty */
-            if (lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && lpFileInfo.dwFileAttributes != 0)
+            if (     lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES 
+                  && lpFileInfo.dwFileAttributes != 0)
             {
                 /* Check if source path is a dir */
                 if (lpFileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
@@ -501,16 +493,23 @@ int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path
                 {
                     /* The file that we want to move exists so we can copy it now
                      * check if target file already exists. */
-                    if (GetFileAttributesExFromAppW(new_path.wstring().c_str(), GetFileExInfoStandard, &targetfileinfo))
+                   if (GetFileAttributesExFromAppW(
+                            new_path.wstring().c_str(),
+                            GetFileExInfoStandard,
+                            &targetfileinfo))
                     {
-                        if (targetfileinfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && targetfileinfo.dwFileAttributes != 0 && (!(targetfileinfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)))
+                        if (
+                                 targetfileinfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES
+                              && targetfileinfo.dwFileAttributes != 0
+                              && (!(targetfileinfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)))
                         {
                             if (DeleteFileFromAppW(new_path.wstring().c_str()))
                                 return -1;
                         }
                     }
 
-                    if (!MoveFileFromAppW(old_path.wstring().c_str(), new_path.wstring().c_str()))
+                    if (!MoveFileFromAppW(old_path.wstring().c_str(),
+                             new_path.wstring().c_str()))
                         return -1;
                     /* Set ACL */
                     uwp_set_acl(new_path.wstring().c_str(), L"S-1-15-2-1");
@@ -521,58 +520,72 @@ int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path
     }
     else
     {
-        /* We are bypassing error checking and moving a dir.
-         * First we have to get a list of files in the dir. */
-        wchar_t* filteredPath = wcsdup(old_path.wstring().c_str());
-        wcscat_s(filteredPath, sizeof(L"\\*.*"), L"\\*.*");
-        WIN32_FIND_DATA findDataResult;
-        HANDLE searchResults = FindFirstFileExFromAppW(filteredPath, FindExInfoBasic, &findDataResult, FindExSearchNameMatch, nullptr, FIND_FIRST_EX_LARGE_FETCH);
-        if (searchResults != INVALID_HANDLE_VALUE)
-        {
-            bool fail = false;
-            do
-            {
-                if (wcscmp(findDataResult.cFileName, L".") != 0 && wcscmp(findDataResult.cFileName, L"..") != 0)
-                {
-                    std::filesystem::path temp_old = old_path;
-                    std::filesystem::path temp_new = new_path;
-                    temp_old /= findDataResult.cFileName;
-                    temp_new /= findDataResult.cFileName;
-                    if (findDataResult.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-                    {
-                        CreateDirectoryFromAppW(temp_new.wstring().c_str(), NULL);
-                        if (uwp_move_path(temp_old, temp_new, false) != 0)
-                            fail = true;
-                    }
-                    else
-                    {
-                        WIN32_FILE_ATTRIBUTE_DATA targetfileinfo;
-                        /* The file that we want to move exists so we can copy
-                         * it now.
-                         * Check if target file already exists. */
-                        if (GetFileAttributesExFromAppW(temp_new.wstring().c_str(), GetFileExInfoStandard, &targetfileinfo))
-                        {
-                            if (targetfileinfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && targetfileinfo.dwFileAttributes != 0 && (!(targetfileinfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)))
-                            {
-                                if (DeleteFileFromAppW(temp_new.wstring().c_str()))
-                                    fail = true;
-                            }
-                        }
+       HANDLE searchResults;
+       WIN32_FIND_DATA findDataResult;
+       /* We are bypassing error checking and moving a dir.
+        * First we have to get a list of files in the dir. */
+       wchar_t* filteredPath = wcsdup(old_path.wstring().c_str());
+       wcscat_s(filteredPath, sizeof(L"\\*.*"), L"\\*.*");
+       searchResults         = FindFirstFileExFromAppW(
+             filteredPath, FindExInfoBasic, &findDataResult,
+             FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
 
-                        if (!MoveFileFromAppW(temp_old.wstring().c_str(), temp_new.wstring().c_str()))
-                            fail = true;
-                        /* Set ACL - this step sucks or at least to before I made a whole function
-                         * Don't know if we actually "need" to set the ACL
-                         * though */
-                        uwp_set_acl(temp_new.wstring().c_str(), L"S-1-15-2-1");
-                    }
+       if (searchResults != INVALID_HANDLE_VALUE)
+       {
+          bool fail = false;
+          do
+          {
+             if (     wcscmp(findDataResult.cFileName, L".")  != 0 
+                   && wcscmp(findDataResult.cFileName, L"..") != 0)
+             {
+                std::filesystem::path temp_old = old_path;
+                std::filesystem::path temp_new = new_path;
+                temp_old /= findDataResult.cFileName;
+                temp_new /= findDataResult.cFileName;
+                if (    findDataResult.dwFileAttributes 
+                      & FILE_ATTRIBUTE_DIRECTORY)
+                {
+                   CreateDirectoryFromAppW(temp_new.wstring().c_str(), NULL);
+                   if (uwp_move_path(temp_old, temp_new, false) != 0)
+                      fail = true;
                 }
-            } while (FindNextFile(searchResults, &findDataResult));
-            FindClose(searchResults);
-            if (fail)
-                return -1;
-        }
-        free(filteredPath);
+                else
+                {
+                   WIN32_FILE_ATTRIBUTE_DATA targetfileinfo;
+                   /* The file that we want to move exists so we can copy
+                    * it now.
+                    * Check if target file already exists. */
+                   if (GetFileAttributesExFromAppW(temp_new.wstring().c_str(),
+                            GetFileExInfoStandard, &targetfileinfo))
+                   {
+                      if (
+                               (targetfileinfo.dwFileAttributes !=
+                                INVALID_FILE_ATTRIBUTES)
+                            && (targetfileinfo.dwFileAttributes != 0)
+                            && (!(targetfileinfo.dwFileAttributes 
+                                  & FILE_ATTRIBUTE_DIRECTORY)))
+                      {
+                         if (DeleteFileFromAppW(temp_new.wstring().c_str()))
+                            fail = true;
+                      }
+                   }
+
+                   if (!MoveFileFromAppW(temp_old.wstring().c_str(),
+                            temp_new.wstring().c_str()))
+                      fail = true;
+                   /* Set ACL - this step sucks or at least used to 
+                    * before I made a whole function
+                    * Don't know if we actually "need" to set the ACL
+                    * though */
+                   uwp_set_acl(temp_new.wstring().c_str(), L"S-1-15-2-1");
+                }
+             }
+          } while (FindNextFile(searchResults, &findDataResult));
+          FindClose(searchResults);
+          if (fail)
+             return -1;
+       }
+       free(filteredPath);
     }
     return 0;
 }
@@ -582,12 +595,13 @@ int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path
  * Default arguments mean that we can do better recursion */
 int retro_vfs_file_rename_impl(const char* old_path, const char* new_path)
 {
-    return uwp_move_path(std::filesystem::path(old_path), std::filesystem::path(old_path));
+    return uwp_move_path(std::filesystem::path(old_path),
+          std::filesystem::path(old_path), true);
 }
 
 const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *stream)
 {
-   /* should never happen, do something noisy so caller can be fixed */
+   /* Should never happen, do something noisy so caller can be fixed */
    if (!stream)
       abort();
    return stream->orig_path;
@@ -605,7 +619,8 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    windowsize_path(path_wide);
 
    /* Try Win32 first, this should work in AppData */
-   if (GetFileAttributesExFromAppW(path_wide, GetFileExInfoStandard, &attribdata))
+   if (GetFileAttributesExFromAppW(path_wide,
+            GetFileExInfoStandard, &attribdata))
    {
        if (attribdata.dwFileAttributes != INVALID_FILE_ATTRIBUTES)
        {
@@ -645,13 +660,12 @@ struct libretro_vfs_implementation_dir
 libretro_vfs_implementation_dir* retro_vfs_opendir_impl(
     const char* name, bool include_hidden)
 {
-    unsigned path_len;
     char path_buf[1024];
-    size_t copied = 0;
+    size_t copied      = 0;
     wchar_t* path_wide = NULL;
     libretro_vfs_implementation_dir* rdir;
 
-    /*Reject null or empty string paths*/
+    /* Reject NULL or empty string paths*/
     if (!name || (*name == 0))
         return NULL;
 
@@ -661,21 +675,19 @@ libretro_vfs_implementation_dir* retro_vfs_opendir_impl(
 
     rdir->orig_path = strdup(name);
 
-    path_buf[0]     = '\0';
-    path_len        = strlen(name);
-
     copied          = strlcpy(path_buf, name, sizeof(path_buf));
 
     /* Non-NT platforms don't like extra slashes in the path */
-    if (name[path_len - 1] != '\\')
+    if (path_buf[copied - 1] != '\\')
         path_buf[copied++] = '\\';
 
     path_buf[copied]       = '*';
     path_buf[copied + 1]   = '\0';
 
     path_wide              = utf8_to_utf16_string_alloc(path_buf);
-    rdir->directory        = FindFirstFileExFromAppW(path_wide, FindExInfoStandard, &rdir->entry,
-          FindExSearchNameMatch, nullptr, FIND_FIRST_EX_LARGE_FETCH);
+    rdir->directory        = FindFirstFileExFromAppW(
+          path_wide, FindExInfoStandard, &rdir->entry,
+          FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
 
     if (path_wide)
         free(path_wide);
@@ -733,15 +745,16 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir* rdir)
 
 void uwp_set_acl(const wchar_t* path, const wchar_t* AccessString)
 {
-    PSECURITY_DESCRIPTOR SecurityDescriptor = nullptr;
+    PSECURITY_DESCRIPTOR SecurityDescriptor = NULL;
     EXPLICIT_ACCESSW ExplicitAccess         = { 0 };
-    ACL* AccessControlCurrent               = nullptr;
-    ACL* AccessControlNew                   = nullptr;
+    ACL* AccessControlCurrent               = NULL;
+    ACL* AccessControlNew                   = NULL;
     SECURITY_INFORMATION SecurityInfo       = DACL_SECURITY_INFORMATION;
-    PSID SecurityIdentifier                 = nullptr;
+    PSID SecurityIdentifier                 = NULL;
     HANDLE original_file                    = CreateFileFromAppW(path,
-          GENERIC_READ | GENERIC_WRITE | WRITE_DAC, FILE_SHARE_READ | FILE_SHARE_WRITE,
-          nullptr, OPEN_EXISTING, 0, nullptr);
+          GENERIC_READ    | GENERIC_WRITE | WRITE_DAC,
+          FILE_SHARE_READ | FILE_SHARE_WRITE,
+          NULL, OPEN_EXISTING, 0, NULL);
 
     if (original_file != INVALID_HANDLE_VALUE)
     {
@@ -750,23 +763,23 @@ void uwp_set_acl(const wchar_t* path, const wchar_t* AccessString)
                 original_file,
                 SE_FILE_OBJECT,
                 DACL_SECURITY_INFORMATION,
-                nullptr,
-                nullptr,
+                NULL,
+                NULL,
                 &AccessControlCurrent,
-                nullptr,
+                NULL,
                 &SecurityDescriptor
                 ) == ERROR_SUCCESS
           )
        {
           ConvertStringSidToSidW(AccessString, &SecurityIdentifier);
-          if (SecurityIdentifier != nullptr)
+          if (SecurityIdentifier)
           {
-             ExplicitAccess.grfAccessPermissions = GENERIC_READ | GENERIC_EXECUTE | GENERIC_WRITE;
-             ExplicitAccess.grfAccessMode = SET_ACCESS;
-             ExplicitAccess.grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
+             ExplicitAccess.grfAccessPermissions= GENERIC_READ | GENERIC_EXECUTE | GENERIC_WRITE;
+             ExplicitAccess.grfAccessMode       = SET_ACCESS;
+             ExplicitAccess.grfInheritance      = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
              ExplicitAccess.Trustee.TrusteeForm = TRUSTEE_IS_SID;
              ExplicitAccess.Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-             ExplicitAccess.Trustee.ptstrName = reinterpret_cast<wchar_t*>(SecurityIdentifier);
+             ExplicitAccess.Trustee.ptstrName   = reinterpret_cast<wchar_t*>(SecurityIdentifier);
 
              if (
                    SetEntriesInAclW(
@@ -776,17 +789,15 @@ void uwp_set_acl(const wchar_t* path, const wchar_t* AccessString)
                       &AccessControlNew
                       ) == ERROR_SUCCESS
                 )
-             {
                 SetSecurityInfo(
                       original_file,
                       SE_FILE_OBJECT,
                       SecurityInfo,
-                      nullptr,
-                      nullptr,
+                      NULL,
+                      NULL,
                       AccessControlNew,
-                      nullptr
+                      NULL
                       );
-             }
           }
        }
        if (SecurityDescriptor)

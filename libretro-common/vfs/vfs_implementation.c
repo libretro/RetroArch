@@ -604,21 +604,7 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream,
       int64_t offset, int seek_position)
 {
-   int whence = -1;
-   switch (seek_position)
-   {
-      case RETRO_VFS_SEEK_POSITION_START:
-         whence = SEEK_SET;
-         break;
-      case RETRO_VFS_SEEK_POSITION_CURRENT:
-         whence = SEEK_CUR;
-         break;
-      case RETRO_VFS_SEEK_POSITION_END:
-         whence = SEEK_END;
-         break;
-   }
-
-   return retro_vfs_file_seek_internal(stream, offset, whence);
+   return retro_vfs_file_seek_internal(stream, offset, seek_position);
 }
 
 int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
@@ -1025,7 +1011,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
 #endif
    libretro_vfs_implementation_dir *rdir;
 
-   /*Reject null or empty string paths*/
+   /* Reject NULL or empty string paths*/
    if (!name || (*name == 0))
       return NULL;
 
