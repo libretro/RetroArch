@@ -141,7 +141,7 @@ struct autosave
    sthread_t *thread;
    size_t bufsize;
    unsigned interval;
-   volatile bool quit;
+   bool quit;
    bool compress_files;
 };
 #endif
@@ -187,13 +187,13 @@ static void autosave_thread(void *data)
 {
    autosave_t *save = (autosave_t*)data;
 
-   while (!save->quit)
+   for (;;)
    {
       bool differ;
 
       slock_lock(save->lock);
-      differ = string_is_not_equal_fast(save->buffer, save->retro_buffer,
-            save->bufsize);
+      differ = memcmp(save->buffer, save->retro_buffer,
+            save->bufsize) != 0;
       if (differ)
          memcpy(save->buffer, save->retro_buffer, save->bufsize);
       slock_unlock(save->lock);
@@ -221,16 +221,20 @@ static void autosave_thread(void *data)
 
       slock_lock(save->cond_lock);
 
-      if (!save->quit)
+      if (save->quit)
       {
-#if defined(_MSC_VER) && _MSC_VER <= 1200
-         int64_t timeout_us = 1000000;
-#else
-         int64_t timeout_us = 1000000LL;
-#endif
-         scond_wait_timeout(save->cond, save->cond_lock,
-               save->interval * timeout_us);
+         slock_unlock(save->cond_lock);
+         break;
       }
+
+      scond_wait_timeout(save->cond,
+            save->cond_lock,
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+            save->interval * 1000000
+#else
+            save->interval * 1000000LL
+#endif
+            );
 
       slock_unlock(save->cond_lock);
    }
