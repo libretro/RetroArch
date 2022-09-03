@@ -307,7 +307,7 @@ struct rarch_state
    char path_content[PATH_MAX_LENGTH];
    char path_libretro[PATH_MAX_LENGTH];
    char path_config_file[PATH_MAX_LENGTH];
-   char path_config_append_file[256];
+   char path_config_append_file[PATH_MAX_LENGTH];
    char path_core_options_file[PATH_MAX_LENGTH];
    char dir_system[PATH_MAX_LENGTH];
    char dir_savefile[PATH_MAX_LENGTH];
