@@ -3896,7 +3896,7 @@ bool config_load_override(void *data)
 
    /* per-core overrides */
    /* Create a new config file from core_path */
-   if (config_file_exists(core_path))
+   if (path_is_valid(core_path))
    {
       RARCH_LOG("[Overrides]: Core-specific overrides found at \"%s\".\n",
             core_path);
@@ -3910,7 +3910,7 @@ bool config_load_override(void *data)
    {
       /* per-content-dir overrides */
       /* Create a new config file from content_path */
-      if (config_file_exists(content_path))
+      if (path_is_valid(content_path))
       {
          char tmp_path[PATH_MAX_LENGTH + 1];
 
@@ -3937,7 +3937,7 @@ bool config_load_override(void *data)
 
       /* per-game overrides */
       /* Create a new config file from game_path */
-      if (config_file_exists(game_path))
+      if (path_is_valid(game_path))
       {
          char tmp_path[PATH_MAX_LENGTH + 1];
 

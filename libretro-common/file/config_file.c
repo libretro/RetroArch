@@ -1513,14 +1513,3 @@ bool config_get_entry_list_next(struct config_file_entry *entry)
    entry->next  = next->next;
    return true;
 }
-
-bool config_file_exists(const char *path)
-{
-   config_file_t conf;
-   config_file_initialize(&conf);
-   if (config_file_load_internal(&conf, path, 0, NULL) == 1)
-      return false;
-
-   config_file_deinitialize(&conf);
-   return true;
-}
