@@ -1883,6 +1883,8 @@ else ifeq ($(HAVE_GLSLANG),1)
 
    # The order of these libs are somewhat specific
    LIBS += $(GLSLANG_LIBS) \
+           $(GLSLANG_MACHINEINDEPENDENT_LIBS) \
+           $(GLSLANG_GENERICCODEGEN_LIBS) \
            $(GLSLANG_OSDEPENDENT_LIBS) \
            $(GLSLANG_OGLCOMPILER_LIBS) \
            $(GLSLANG_HLSL_LIBS) \

@@ -630,6 +630,8 @@ if [ "$HAVE_GLSLANG" != no ]; then
    check_lib cxx GLSLANG -lglslang '' '-lSPIRV'
    check_lib cxx GLSLANG_OSDEPENDENT -lOSDependent
    check_lib cxx GLSLANG_OGLCOMPILER -lOGLCompiler
+   check_lib cxx GLSLANG_MACHINEINDEPENDENT -lMachineIndependent
+   check_lib cxx GLSLANG_GENERICCODEGEN -lGenericCodeGen
    check_lib cxx GLSLANG_HLSL -lHLSL '' '-lglslang -lSPIRV'
    check_lib cxx GLSLANG_SPIRV -lSPIRV
    check_lib cxx GLSLANG_SPIRV_TOOLS_OPT -lSPIRV-Tools-opt
