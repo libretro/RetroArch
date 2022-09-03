@@ -3644,6 +3644,12 @@ static bool config_load_file(global_t *global,
       *settings->paths.directory_core_assets = '\0';
    if (string_is_equal(settings->paths.directory_assets, "default"))
       *settings->paths.directory_assets = '\0';
+#ifdef _3DS
+   if (string_is_equal(settings->paths.directory_bottom_assets, "default"))
+         configuration_set_string(settings,
+               settings->paths.directory_bottom_assets,
+               g_defaults.dirs[DEFAULT_DIR_BOTTOM_ASSETS]);
+#endif
    if (string_is_equal(settings->paths.directory_dynamic_wallpapers, "default"))
       *settings->paths.directory_dynamic_wallpapers = '\0';
    if (string_is_equal(settings->paths.directory_thumbnails, "default"))

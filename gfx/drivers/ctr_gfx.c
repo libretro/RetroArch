@@ -503,8 +503,7 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
       return;
 #endif
 
-      if (    !lcd_bottom
-            || ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE)
+      if (!lcd_bottom)
       {
          BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
          return;
@@ -522,6 +521,13 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
          ctr->bottom_check_idle = false;
          ctr->bottom_is_fading  = false;
          fadeCount              = 256;
+      }
+
+      if (ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE)
+      {
+         BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+         ctr->refresh_bottom_menu = true;
+         return;
       }
 
       switch (ctr->bottom_menu)
@@ -700,14 +706,26 @@ static void ctr_render_bottom_screen(void *data)
    switch (ctr->bottom_menu)
    {
       case CTR_BOTTOM_MENU_NOT_AVAILABLE:
-         params.color = COLOR_ABGR(255, 255, 255, 255);
-         params.scale = 1.6f;
-         params.x     = 0.0f;
-         params.y     = 0.5f;
+         {
+            char str_path[PATH_MAX_LENGTH];
+            const char *dir_assets = settings->paths.directory_bottom_assets;
 
-         font_driver_render_msg_bottom(ctr,
-               msg_hash_to_str(MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND),
+            params.color = COLOR_ABGR(255, 255, 255, 255);
+            params.scale = 1.6f;
+            params.x     = 0.0f;
+            params.y     = 0.5f;
+
+            font_driver_render_msg_bottom(ctr,
+                  msg_hash_to_str(MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND),
+                  &params);
+
+            sprintf(str_path, "%s\n/bottom_menu.png", dir_assets);
+
+            params.scale = 1.10f;
+            params.y    -= 0.10f;
+            font_driver_render_msg_bottom(ctr, str_path,
                &params);
+            }
          break;
       case CTR_BOTTOM_MENU_DEFAULT:
          params.color = COLOR_ABGR(255, 255, 255, 255);
