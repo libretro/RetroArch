@@ -3860,7 +3860,8 @@ static char *get_tmpdir_alloc(const char *override_dir)
 static bool write_file_with_random_name(char **temp_dll_path,
       const char *tmp_path, const void* data, ssize_t dataSize)
 {
-   int i, ext_len;
+   int i;
+   size_t ext_len;
    char number_buf[32];
    bool okay                = false;
    const char *prefix       = "tmp";
@@ -3882,7 +3883,7 @@ static bool write_file_with_random_name(char **temp_dll_path,
    else
       ext                   = (char*)calloc(1,1);
 
-   ext_len                  = (int)strlen(ext);
+   ext_len                  = strlen(ext);
 
    if (ext_len > 0)
    {
