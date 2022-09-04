@@ -25,22 +25,72 @@
 
 #include "joypad_connection.h"
 
-/* We init the HID/VID to 0 because we need to do 
-   endian magic that we can't do during the declaration */
-joypad_connection_entry_t pad_map[] = {
-   { "Nintendo RVL-CNT-01",           0,     0,  &pad_connection_wii },
-   { "Nintendo RVL-CNT-01-UC",        0,     0,  &pad_connection_wiiupro },
-   { "Wireless Controller",           0,     0,  &pad_connection_ps4 },
-   { "PLAYSTATION(R)3 Controller",    0,     0,  &pad_connection_ps3 },
-   { "PLAYSTATION(R)3 Controller",    0,     0,  &pad_connection_ps3 },
-   { "Generic SNES USB Controller",   0,     0,  &pad_connection_snesusb },
-   { "Generic NES USB Controller",    0,     0,  &pad_connection_nesusb },
-   { "Wii U GC Controller Adapter",   0,     0,  &pad_connection_wiiugca },
-   { "PS2/PSX Controller Adapter",    0,     0,  &pad_connection_ps2adapter },
-   { "PSX to PS3 Controller Adapter", 0,     0,  &pad_connection_psxadapter },
-   { "Mayflash DolphinBar",           0,     0,  &pad_connection_wii },
-   { "Retrode",                       0,     0,  &pad_connection_retrode },
-   { "HORI mini wired PS4",           0,     0,  &pad_connection_ps4_hori_mini },
+static joypad_connection_entry_t pad_map[] = {
+   { "Nintendo RVL-CNT-01",
+      VID_NINTENDO,
+      PID_NINTENDO_PRO,
+      &pad_connection_wii
+   },
+   { "Nintendo RVL-CNT-01-UC",
+      VID_NINTENDO,
+      PID_NINTENDO_PRO,
+      &pad_connection_wiiupro
+   },
+   { "Wireless Controller",
+      VID_SONY,
+      PID_SONY_DS4,
+      &pad_connection_ps4
+   },
+   { "PLAYSTATION(R)3 Controller",
+      VID_SONY,
+      PID_SONY_DS3,
+      &pad_connection_ps3
+   },
+   { "PLAYSTATION(R)3 Controller",
+      VID_PS3_CLONE,
+      PID_DS3_CLONE,
+      &pad_connection_ps3
+   },
+   { "Generic SNES USB Controller",
+      VID_SNES_CLONE,
+      PID_SNES_CLONE,
+      &pad_connection_snesusb
+   },
+   { "Generic NES USB Controller",
+      VID_MICRONTEK,
+      PID_MICRONTEK_NES,
+      &pad_connection_nesusb
+   },
+   { "Wii U GC Controller Adapter",
+      VID_NINTENDO,
+      PID_NINTENDO_GCA,
+      &pad_connection_wiiugca
+   },
+   { "PS2/PSX Controller Adapter",
+      VID_PCS,
+      PID_PCS_PS2PSX,
+      &pad_connection_ps2adapter
+   },
+   { "PSX to PS3 Controller Adapter",
+      VID_PCS,
+      PID_PCS_PSX2PS3,
+      &pad_connection_psxadapter
+   },
+   { "Mayflash DolphinBar",
+      1406,
+      774,
+      &pad_connection_wii
+   },
+   { "Retrode",
+      VID_RETRODE,
+      PID_RETRODE,
+      &pad_connection_retrode
+   },
+   { "HORI mini wired PS4",
+      VID_HORI_1,
+      PID_HORI_MINI_WIRED_PS4,
+      &pad_connection_ps4_hori_mini
+   },
    { 0, 0}
 };
 
@@ -54,9 +104,9 @@ static bool joypad_is_end_of_list(joypad_connection_t *pad)
 
 int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
 {
-   int i;
    if (joyconn)
    {
+      int i;
       for (i = 0; !joypad_is_end_of_list(&joyconn[i]); i++)
       {
          if (!joyconn[i].connected)
@@ -88,11 +138,11 @@ joypad_connection_t *pad_connection_init(unsigned pads)
 
    for (i = 0; i < pads; i++)
    {
-      joypad_connection_t *conn = (joypad_connection_t*)&joyconn[i];
+      joypad_connection_t *conn  = (joypad_connection_t*)&joyconn[i];
 
-      conn->connected           = false;
-      conn->iface               = NULL;
-      conn->data                = NULL;
+      conn->connected            = false;
+      conn->iface                = NULL;
+      conn->data                 = NULL;
    }
 
    /* Set end of list */
@@ -105,47 +155,13 @@ joypad_connection_t *pad_connection_init(unsigned pads)
 
    return joyconn;
 }
-
-static void init_pad_map(void)
-{
-   pad_map[0].vid         = VID_NINTENDO;
-   pad_map[0].pid         = PID_NINTENDO_PRO;
-   pad_map[1].vid         = VID_NINTENDO;
-   pad_map[1].pid         = PID_NINTENDO_PRO;
-   pad_map[2].vid         = VID_SONY;
-   pad_map[2].pid         = PID_SONY_DS4;
-   pad_map[3].vid         = VID_SONY;
-   pad_map[3].pid         = PID_SONY_DS3;
-   pad_map[4].vid         = VID_PS3_CLONE;
-   pad_map[4].pid         = PID_DS3_CLONE;
-   pad_map[5].vid         = VID_SNES_CLONE;
-   pad_map[5].pid         = PID_SNES_CLONE;
-   pad_map[6].vid         = VID_MICRONTEK;
-   pad_map[6].pid         = PID_MICRONTEK_NES;
-   pad_map[7].vid         = VID_NINTENDO;
-   pad_map[7].pid         = PID_NINTENDO_GCA;
-   pad_map[8].vid         = VID_PCS;
-   pad_map[8].pid         = PID_PCS_PS2PSX;
-   pad_map[9].vid         = VID_PCS;
-   pad_map[9].pid         = PID_PCS_PSX2PS3;
-   pad_map[10].vid        = 1406;
-   pad_map[10].pid        = 774;
-   pad_map[11].vid        = VID_RETRODE;
-   pad_map[11].pid        = PID_RETRODE;
-   pad_map[12].vid        = VID_HORI_1;
-   pad_map[12].pid        = PID_HORI_MINI_WIRED_PS4;
-}
-
 joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, const char *name)
 {
    unsigned i;
    const bool has_name = !string_is_empty(name);
    size_t name_len     = strlen(name);
 
-   if (pad_map[0].vid == 0)
-      init_pad_map();
-
-   for(i = 0; pad_map[i].name != NULL; i++)
+   for (i = 0; pad_map[i].name != NULL; i++)
    {
       char *name_match = NULL;
       /* The Wii Pro Controller and WiiU Pro controller have
@@ -184,7 +200,7 @@ static int joypad_to_slot(joypad_connection_t *haystack,
    if (!needle)
       return -1;
 
-   for(i = 0; !joypad_is_end_of_list(&haystack[i]); i++)
+   for (i = 0; !joypad_is_end_of_list(&haystack[i]); i++)
    {
       if (&haystack[i] == needle)
          return i;
@@ -192,14 +208,10 @@ static int joypad_to_slot(joypad_connection_t *haystack,
    return -1;
 }
 
-void release_joypad(joypad_connection_t *joypad) {
-
-}
-
 void legacy_pad_connection_pad_deregister(joypad_connection_t *pad_list, pad_connection_interface_t *iface, void *pad_data)
 {
    int i;
-   for(i = 0; !joypad_is_end_of_list(&pad_list[i]); i++)
+   for (i = 0; !joypad_is_end_of_list(&pad_list[i]); i++)
    {
       if (pad_list[i].connection == pad_data)
       {
@@ -221,7 +233,7 @@ void pad_connection_pad_deregister(joypad_connection_t *joyconn,
       return;
    }
 
-   for(i = 0; i < iface->max_pad; i++)
+   for (i = 0; i < iface->max_pad; i++)
    {
       int slot = joypad_to_slot(joyconn, iface->joypad(pad_data, i));
       if (slot >= 0)
@@ -265,10 +277,9 @@ void pad_connection_pad_refresh(joypad_connection_t *joyconn,
             break;
             /* The joypad is connected but has not been bound */
          case PAD_CONNECT_READY:
-            slot = pad_connection_find_vacant_pad(joyconn);
-            if (slot >= 0)
+            if ((slot = pad_connection_find_vacant_pad(joyconn)) >= 0)
             {
-               joypad = &joyconn[slot];
+               joypad               = &joyconn[slot];
                joypad->connection   = iface->pad_init(device_data,
                                       i, joypad);
                joypad->data         = handle;
@@ -294,18 +305,19 @@ void pad_connection_pad_register(joypad_connection_t *joyconn,
       input_device_driver_t *input_driver, int slot)
 {
    int i;
-   int max_pad;
+   int max_pad = 1;
 
-   if (     (iface->multi_pad)
-         && (iface->max_pad <= 1 || !iface->status || !iface->pad_init))
+   if (iface->multi_pad)
    {
-      RARCH_ERR("pad_connection_pad_register: multi-pad driver has incomplete implementation\n");
-      return;
+      if (iface->max_pad <= 1 || !iface->status || !iface->pad_init)
+      {
+         RARCH_ERR("pad_connection_pad_register: multi-pad driver has incomplete implementation\n");
+         return;
+      }
+      max_pad = iface->max_pad;
    }
 
-   max_pad = iface->multi_pad ? iface->max_pad : 1;
-
-   for(i = 0; i < max_pad; i++)
+   for (i = 0; i < max_pad; i++)
    {
       int status = iface->multi_pad 
          ? iface->status(device_data, i) 
@@ -352,9 +364,7 @@ int32_t pad_connection_pad_init_entry(joypad_connection_t *joyconn,
    if (entry)
    {
       conn->iface      = entry->iface;
-      conn->data       = data;
       conn->connection = conn->iface->init(data, pad, driver);
-      conn->connected  = true;
    }
    else
    {
@@ -362,9 +372,9 @@ int32_t pad_connection_pad_init_entry(joypad_connection_t *joyconn,
        * Set up one without an interface */
       RARCH_DBG("Pad was not matched. Setting up without an interface.\n");
       conn->iface      = NULL;
-      conn->data       = data;
-      conn->connected  = true;
    }
+   conn->data          = data;
+   conn->connected     = true;
 
    return pad;
 }
@@ -373,13 +383,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char *name, uint16_t vid, uint16_t pid,
    void *data, hid_driver_t *driver)
 {
-   joypad_connection_entry_t *entry = NULL;
-
-   if (pad_map[0].vid == 0)
-      init_pad_map();
-
-   entry = find_connection_entry(vid, pid, name);
-
+   joypad_connection_entry_t *entry = find_connection_entry(vid, pid, name);
    return pad_connection_pad_init_entry(joyconn, entry, data, driver);
 }
 
@@ -454,9 +458,7 @@ void pad_connection_destroy(joypad_connection_t *joyconn)
 bool pad_connection_rumble(joypad_connection_t *joyconn,
    unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
 {
-   if (!joyconn->connected)
-      return false;
-   if (!joyconn->iface || !joyconn->iface->set_rumble)
+   if (!joyconn->connected || !joyconn->iface || !joyconn->iface->set_rumble)
       return false;
 
    joyconn->iface->set_rumble(joyconn->connection, effect, strength);
