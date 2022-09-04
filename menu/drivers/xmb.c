@@ -6249,7 +6249,9 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    *userdata                          = xmb;
 
-   file_list_initialize(&xmb->selection_buf_old);
+   xmb->selection_buf_old.list        = NULL;
+   xmb->selection_buf_old.capacity    = 0;
+   xmb->selection_buf_old.size        = 0;
 
    xmb->categories_active_idx         = 0;
    xmb->categories_active_idx_old     = 0;
@@ -6311,7 +6313,9 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    gfx_display_init_white_texture();
 
-   file_list_initialize(&xmb->horizontal_list);
+   xmb->horizontal_list.list        = NULL;
+   xmb->horizontal_list.capacity    = 0;
+   xmb->horizontal_list.size        = 0;
 
    xmb_init_horizontal_list(xmb);
 

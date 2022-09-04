@@ -72,8 +72,6 @@ void file_list_free(file_list_t *list);
 
 bool file_list_deinitialize(file_list_t *list);
 
-bool file_list_initialize(file_list_t *list);
-
 /**
  * @brief makes the list big enough to contain at least nitems
  *
@@ -100,26 +98,12 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr);
 
 void file_list_clear(file_list_t *list);
 
-size_t file_list_get_size(const file_list_t *list);
-
-size_t file_list_get_directory_ptr(const file_list_t *list);
-
 void file_list_free_userdata(const file_list_t *list, size_t index);
 
 void file_list_free_actiondata(const file_list_t *list, size_t idx);
 
-void file_list_set_label_at_offset(file_list_t *list, size_t index,
-      const char *label);
-
-void file_list_get_label_at_offset(const file_list_t *list, size_t index,
-      const char **label);
-
 void file_list_set_alt_at_offset(file_list_t *list, size_t index,
       const char *alt);
-
-void file_list_set_userdata(const file_list_t *list, size_t idx, void *ptr);
-
-void file_list_set_actiondata(const file_list_t *list, size_t idx, void *ptr);
 
 void file_list_sort_on_alt(file_list_t *list);
 

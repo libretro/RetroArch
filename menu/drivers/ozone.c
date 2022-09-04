@@ -4661,7 +4661,9 @@ static void ozone_refresh_horizontal_list(ozone_handle_t *ozone,
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
-   file_list_initialize(&ozone->horizontal_list);
+   ozone->horizontal_list.list     = NULL;
+   ozone->horizontal_list.capacity = 0;
+   ozone->horizontal_list.size     = 0;
    ozone_init_horizontal_list(ozone, settings);
 
    ozone_context_reset_horizontal_list(ozone);
@@ -7842,7 +7844,9 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
          settings, width, height, false, false);
    ozone->last_thumbnail_scale_factor = settings->floats.ozone_thumbnail_scale_factor;
 
-   file_list_initialize(&ozone->selection_buf_old);
+   ozone->selection_buf_old.list                = NULL;
+   ozone->selection_buf_old.capacity            = 0;
+   ozone->selection_buf_old.size                = 0;
 
    ozone->draw_sidebar                          = true;
    ozone->sidebar_offset                        = 0;
@@ -7942,7 +7946,9 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    gfx_display_init_white_texture();
 
-   file_list_initialize(&ozone->horizontal_list);
+   ozone->horizontal_list.list     = NULL;
+   ozone->horizontal_list.capacity = 0;
+   ozone->horizontal_list.size     = 0;
 
    ozone_init_horizontal_list(ozone, settings);
 
