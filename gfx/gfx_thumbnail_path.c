@@ -42,6 +42,7 @@ struct gfx_thumbnail_path_data
 {
    enum playlist_thumbnail_mode playlist_right_mode;
    enum playlist_thumbnail_mode playlist_left_mode;
+   size_t playlist_index;
    char system[PATH_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
    char content_label[PATH_MAX_LENGTH];
@@ -319,9 +320,9 @@ bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
    return true;
 }
 
-/* Sets current thumbnail content according to the specified label and optional database name.
+/* Sets current thumbnail content according to the specified label.
  * Returns true if content is valid */
-bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char *label, const char *db_name)
+bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char *label)
 {
    if (!path_data)
       return false;
@@ -341,6 +342,7 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
    /* Must also reset playlist thumbnail display modes */
    path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_left_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_index       = 0;
    
    if (string_is_empty(label))
       return false;
@@ -355,10 +357,6 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
     * Just use label value (it doesn't matter) */
    strlcpy(path_data->content_path, label, sizeof(path_data->content_path));
 
-   /* Database name required for Explore thumbnails */
-   if (!string_is_empty(db_name))
-      strlcpy(path_data->content_db_name, db_name, sizeof(path_data->content_db_name));
-   
    /* Redundant error check... */
    return !string_is_empty(path_data->content_img);
 }
@@ -389,6 +387,7 @@ bool gfx_thumbnail_set_content_image(
    /* Must also reset playlist thumbnail display modes */
    path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_left_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_index       = 0;
    
    if (string_is_empty(img_dir) || string_is_empty(img_name))
       return false;
@@ -462,6 +461,7 @@ bool gfx_thumbnail_set_content_playlist(
    /* Must also reset playlist thumbnail display modes */
    path_data->playlist_right_mode     = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_left_mode      = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_index          = 0;
    
    if (!playlist)
       return false;
@@ -506,6 +506,9 @@ bool gfx_thumbnail_set_content_playlist(
    
    /* Determine content image name */
    fill_content_img(path_data);
+
+   /* Store playlist index */
+   path_data->playlist_index = idx;
    
    /* Redundant error check... */
    if (string_is_empty(path_data->content_img))
@@ -820,4 +823,11 @@ bool gfx_thumbnail_get_content_dir(
    strlcpy(content_dir, path_basename_nocompression(tmp_buf), len);
    
    return !string_is_empty(content_dir);
+}
+
+/* Fetches current playlist index. */
+size_t gfx_thumbnail_get_playlist_index(
+      gfx_thumbnail_path_data_t *path_data)
+{
+   return (path_data) ? path_data->playlist_index : 0;
 }

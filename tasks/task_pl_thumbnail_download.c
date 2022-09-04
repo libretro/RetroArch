@@ -578,6 +578,17 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    else
 #endif
    {
+      char str[255];
+      menu_entries_get_label(str, sizeof(str));
+
+      /* Explore menu selection index does not match playlist index even in System list. */
+      if (string_is_equal(str, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
+      {
+         if (!string_is_equal(pl_thumb->playlist_path,
+               playlist_get_conf_path(current_playlist)))
+         return;
+      }
+      else
       if (((pl_thumb->list_index != menu_navigation_get_selection()) &&
            (pl_thumb->list_index != menu->rpl_entry_selection_ptr)) ||
             !string_is_equal(pl_thumb->playlist_path,

@@ -7083,7 +7083,7 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
          menu_entry_get(&entry, 0, selection, NULL, true);
 
          if (!string_is_empty(entry.path))
-            gfx_thumbnail_set_content(ozone->thumbnail_path_data, entry.path, NULL);
+            gfx_thumbnail_set_content(ozone->thumbnail_path_data, entry.path);
       }
    }
 #if defined(HAVE_LIBRETRODB)
@@ -7093,7 +7093,6 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
       if (string_is_empty(s))
       {
          menu_entry_t entry;
-         const char *db_name;
          size_t selection         = menu_navigation_get_selection();
 
          MENU_ENTRY_INIT(entry);
@@ -7101,20 +7100,40 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
          entry.rich_label_enabled = false;
          entry.value_enabled      = false;
          entry.sublabel_enabled   = false;
-         menu_entry_get(&entry, 0, selection, NULL, true);
 
-         if (!entry.type)
+         /* First entry */
+         menu_entry_get(&entry, 0, 0, NULL, true);
+         if (string_is_empty(entry.path))
             return;
 
-         db_name = menu_explore_get_entry_database(entry.type);
+         /* No thumbnails for intermediate lists without playlist items */
+         if (!string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER)) &&
+             !string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME)))
+         {
+            gfx_thumbnail_set_content_playlist(ozone->thumbnail_path_data, NULL, 0);
+            ozone->want_thumbnail_bar = ozone->fullscreen_thumbnails_available = false;
+            return;
+         }
 
-         if (!string_is_empty(entry.path) && !string_is_empty(db_name))
-            gfx_thumbnail_set_content(ozone->thumbnail_path_data,
-                  entry.path,
-                  db_name);
+         /* Selected entry */
+         menu_entry_get(&entry, 0, selection, NULL, true);
+         if (string_is_empty(entry.path))
+            return;
 
-         ozone->want_thumbnail_bar = ozone->fullscreen_thumbnails_available =
-               (!string_is_empty(db_name) && menu_explore_get_entry_icon(entry.type));
+         /* No thumbnails for header non-items */
+         if (string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER)) ||
+             string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME)))
+         {
+            gfx_thumbnail_set_content_playlist(ozone->thumbnail_path_data, NULL, 0);
+            ozone->want_thumbnail_bar = ozone->fullscreen_thumbnails_available = false;
+            return;
+         }
+         else
+         {
+            ozone->want_thumbnail_bar = ozone->fullscreen_thumbnails_available =
+                  (menu_explore_set_entry_playlist_index(entry.type, ozone->thumbnail_path_data) >= 0 &&
+                  menu_explore_get_entry_icon(entry.type));
+         }
       }
    }
 #endif
@@ -7147,7 +7166,7 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
        * the sublevels of database manager lists.
        * Showing thumbnails on database entries is a
        * pointless nuisance and a waste of CPU cycles, IMHO... */
-      gfx_thumbnail_set_content(ozone->thumbnail_path_data, s, NULL);
+      gfx_thumbnail_set_content(ozone->thumbnail_path_data, s);
    }
 
    ozone_update_content_metadata(ozone);
@@ -8129,8 +8148,7 @@ static void ozone_refresh_thumbnail_image(void *data, unsigned i)
    if (!i)
       ozone_update_content_metadata(ozone);
 
-   /* Only refresh thumbnails if thumbnails are enabled
-    * and we are currently viewing a playlist */
+   /* Only refresh thumbnails if thumbnails are enabled */
    if ((gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
         gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_LEFT)) &&
         ozone->want_thumbnail_bar &&
@@ -9223,7 +9241,8 @@ static void ozone_render(void *data,
                      menu_navigation_set_selection(i);
 
                      /* If this is a playlist, must update thumbnails */
-                     if (ozone->is_playlist && (ozone->depth == 1 || ozone->depth == 4))
+                     if ((ozone->is_playlist && (ozone->depth == 1 || ozone->depth == 4)) ||
+                           ozone->is_explore_list)
                      {
                         ozone->skip_thumbnail_reset = false;
                         ozone_set_thumbnail_content(ozone, "");
@@ -9334,6 +9353,10 @@ static void ozone_render(void *data,
       playlist_t *playlist                     = playlist_get_cached();
       unsigned gfx_thumbnail_upscale_threshold = settings->uints.gfx_thumbnail_upscale_threshold;
       bool network_on_demand_thumbnails        = settings->bools.network_on_demand_thumbnails;
+
+      /* Explore list needs cached selection index */
+      if (ozone->is_explore_list)
+         selection = gfx_thumbnail_get_playlist_index(ozone->thumbnail_path_data);
 
       switch (ozone->thumbnails.pending)
       {
@@ -10133,7 +10156,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
                 * content + right/left thumbnails
                 * (otherwise last loaded thumbnail will
                 * persist, and be shown on the wrong entry) */
-               gfx_thumbnail_set_content(ozone->thumbnail_path_data, NULL, NULL);
+               gfx_thumbnail_set_content(ozone->thumbnail_path_data, NULL);
                ozone_unload_thumbnail_textures(ozone);
                update_thumbnails         = true;
                ozone->want_thumbnail_bar = false;

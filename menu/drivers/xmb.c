@@ -1300,20 +1300,10 @@ static void xmb_refresh_thumbnail_image(void *data, unsigned i)
       return;
 
    /* Only refresh thumbnails if thumbnails are enabled */
-   if (  gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
-         gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
-   {
-      unsigned depth          = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-      unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
-
-      /* Only refresh thumbnails if we are viewing a playlist or
-       * the quick menu... */
-      if (((((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && depth == 1) ||
-             (xmb_system_tab < XMB_SYSTEM_TAB_SETTINGS && depth == 4)) &&
-              xmb->is_playlist)) ||
-            xmb->is_quick_menu)
-         xmb_update_thumbnail_image(xmb);
-   }
+   if ((gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
+        gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT)) &&
+        (xmb->is_quick_menu || xmb->is_playlist || xmb->is_explore_list))
+      xmb_update_thumbnail_image(xmb);
 }
 
 static void xmb_set_thumbnail_system(void *data, char*s, size_t len)
@@ -1407,7 +1397,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
 
          if (!string_is_empty(entry.path))
          {
-            gfx_thumbnail_set_content(xmb->thumbnail_path_data, entry.path, NULL);
+            gfx_thumbnail_set_content(xmb->thumbnail_path_data, entry.path);
             xmb->fullscreen_thumbnails_available = true;
          }
       }
@@ -1419,7 +1409,6 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       if (string_is_empty(s))
       {
          menu_entry_t entry;
-         const char *db_name;
          size_t selection         = menu_navigation_get_selection();
 
          MENU_ENTRY_INIT(entry);
@@ -1427,20 +1416,40 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
          entry.rich_label_enabled = false;
          entry.value_enabled      = false;
          entry.sublabel_enabled   = false;
-         menu_entry_get(&entry, 0, selection, NULL, true);
 
-         if (!entry.type)
+         /* First entry */
+         menu_entry_get(&entry, 0, 0, NULL, true);
+         if (string_is_empty(entry.path))
             return;
 
-         db_name = menu_explore_get_entry_database(entry.type);
+         /* No thumbnails for intermediate lists without playlist items */
+         if (!string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER)) &&
+             !string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME)))
+         {
+            gfx_thumbnail_set_content_playlist(xmb->thumbnail_path_data, NULL, 0);
+            xmb->fullscreen_thumbnails_available = false;
+            return;
+         }
 
-         if (!string_is_empty(entry.path) && !string_is_empty(db_name))
-            gfx_thumbnail_set_content(xmb->thumbnail_path_data,
-                  entry.path,
-                  db_name);
+         /* Selected entry */
+         menu_entry_get(&entry, 0, selection, NULL, true);
+         if (string_is_empty(entry.path))
+            return;
 
-         xmb->fullscreen_thumbnails_available =
-               (!string_is_empty(db_name) && menu_explore_get_entry_icon(entry.type));
+         /* No thumbnails for header non-items */
+         if (string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER)) ||
+             string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME)))
+         {
+            gfx_thumbnail_set_content_playlist(xmb->thumbnail_path_data, NULL, 0);
+            xmb->fullscreen_thumbnails_available = false;
+            return;
+         }
+         else
+         {
+            xmb->fullscreen_thumbnails_available =
+                  (menu_explore_set_entry_playlist_index(entry.type, xmb->thumbnail_path_data) >= 0 &&
+                  menu_explore_get_entry_icon(entry.type));
+         }
       }
    }
 #endif
@@ -1477,7 +1486,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
        * the sublevels of database manager lists.
        * Showing thumbnails on database entries is a
        * pointless nuisance and a waste of CPU cycles, IMHO... */
-      gfx_thumbnail_set_content(xmb->thumbnail_path_data, s, NULL);
+      gfx_thumbnail_set_content(xmb->thumbnail_path_data, s);
       xmb->fullscreen_thumbnails_available = true;
    }
 }
@@ -1622,7 +1631,7 @@ static void xmb_selection_pointer_changed(
                    * persist, and be shown on the wrong entry) */
                   xmb->fullscreen_thumbnails_available = false;
                   xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
-                  gfx_thumbnail_set_content(xmb->thumbnail_path_data, NULL, NULL);
+                  gfx_thumbnail_set_content(xmb->thumbnail_path_data, NULL);
                   gfx_thumbnail_cancel_pending_requests();
                   gfx_thumbnail_reset(&xmb->thumbnails.right);
                   gfx_thumbnail_reset(&xmb->thumbnails.left);
@@ -2697,7 +2706,7 @@ static void xmb_populate_entries(void *data,
    {
       xmb->fullscreen_thumbnails_available = false;
       xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
-      gfx_thumbnail_set_content(xmb->thumbnail_path_data, NULL, NULL);
+      gfx_thumbnail_set_content(xmb->thumbnail_path_data, NULL);
       gfx_thumbnail_cancel_pending_requests();
       gfx_thumbnail_reset(&xmb->thumbnails.right);
       gfx_thumbnail_reset(&xmb->thumbnails.left);
@@ -4556,6 +4565,10 @@ static void xmb_render(void *data,
       playlist_t *playlist                     = playlist_get_cached();
       unsigned gfx_thumbnail_upscale_threshold = settings->uints.gfx_thumbnail_upscale_threshold;
       bool network_on_demand_thumbnails        = settings->bools.network_on_demand_thumbnails;
+
+      /* Explore list needs cached selection index */
+      if (xmb->is_explore_list)
+         selection = gfx_thumbnail_get_playlist_index(xmb->thumbnail_path_data);
 
       switch (xmb->thumbnails.pending)
       {
