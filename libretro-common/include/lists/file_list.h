@@ -104,10 +104,6 @@ size_t file_list_get_size(const file_list_t *list);
 
 size_t file_list_get_directory_ptr(const file_list_t *list);
 
-void file_list_get_at_offset(const file_list_t *list, size_t index,
-      const char **path, const char **label,
-      unsigned *type, size_t *entry_idx);
-
 void file_list_free_userdata(const file_list_t *list, size_t index);
 
 void file_list_free_actiondata(const file_list_t *list, size_t idx);

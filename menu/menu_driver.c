@@ -399,8 +399,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       entry->checked                = cbs->checked;
 
       if (menu_stack && menu_stack->size)
-         file_list_get_at_offset(menu_stack, menu_stack->size - 1,
-               NULL, &label, NULL, NULL);
+         label = menu_stack->list[menu_stack->size - 1].label;
 
       if (entry->rich_label_enabled && cbs->action_label)
       {
@@ -1110,8 +1109,11 @@ int menu_entries_get_title(char *s, size_t len)
       }
   
       if (list && list->size)
-         file_list_get_at_offset(list, list->size - 1,
-               &path, &label, &menu_type, NULL);
+      {
+         path      = list->list[list->size - 1].path;
+         label     = list->list[list->size - 1].label;
+         menu_type = list->list[list->size - 1].type;
+      }
 
       /* Show playlist entry instead of "Quick Menu" */
       if (string_is_equal(label, "deferred_rpl_entry_actions"))
@@ -1154,8 +1156,7 @@ void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
    /* Determine whether this is a help or info
     * message box */
    if (list && list->size)
-      file_list_get_at_offset(list, list->size - 1,
-            NULL, &label, NULL, NULL);
+      label = list->list[list->size - 1].label;
 
    /* Pop stack, if required */
    if (menu_should_pop_stack(label))
@@ -1336,17 +1337,18 @@ void menu_list_flush_stack(
       size_t idx, const char *needle, unsigned final_type)
 {
    bool refresh                = false;
-   const char *path            = NULL;
    const char *label           = NULL;
    unsigned type               = 0;
-   size_t entry_idx            = 0;
    file_list_t *menu_list      = MENU_LIST_GET(list, (unsigned)idx);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_contentless_cores_flush_runtime();
 
    if (menu_list && menu_list->size)
-      file_list_get_at_offset(menu_list, menu_list->size - 1, &path, &label, &type, &entry_idx);
+   {
+      label     = menu_list->list[menu_list->size - 1].label;
+      type      = menu_list->list[menu_list->size - 1].type;
+   }
 
    while (menu_list_flush_stack_type(
             needle, label, type, final_type) != 0)
@@ -1371,7 +1373,10 @@ void menu_list_flush_stack(
       menu_list                = MENU_LIST_GET(list, (unsigned)idx);
 
       if (menu_list && menu_list->size)
-         file_list_get_at_offset(menu_list, menu_list->size - 1, &path, &label, &type, &entry_idx);
+      {
+         label     = menu_list->list[menu_list->size - 1].label;
+         type      = menu_list->list[menu_list->size - 1].type;
+      }
    }
 }
 
@@ -2407,7 +2412,11 @@ bool menu_driver_displaylist_push(
    menu_displaylist_info_init(&info);
 
    if (list && list->size)
-      file_list_get_at_offset(list, list->size - 1, &path, &label, &type, NULL);
+   {
+      path      = list->list[list->size - 1].path;
+      label     = list->list[list->size - 1].label;
+      type      = list->list[list->size - 1].type;
+   }
 
    if (cbs)
       enum_idx    = cbs->enum_idx;
@@ -2520,7 +2529,7 @@ void menu_cbs_init(
 #endif
 
    if (menu_list && menu_list->size)
-      file_list_get_at_offset(menu_list, menu_list->size - 1, NULL, &menu_label, NULL, NULL);
+      menu_label = menu_list->list[menu_list->size - 1].label;
 
    if (!label || !menu_label)
       return;
@@ -4141,7 +4150,16 @@ void menu_entries_get_last_stack(const char **path, const char **label,
    list                           = MENU_LIST_GET(menu_st->entries.list, 0);
 
    if (list && list->size)
-      file_list_get_at_offset(list, list->size - 1, path, label, file_type, entry_idx);
+   {
+      if (path)
+         *path      = list->list[list->size - 1].path;
+      if (label)
+	      *label     = list->list[list->size - 1].label;
+      if (file_type)
+         *file_type = list->list[list->size - 1].type;
+      if (entry_idx)
+         *entry_idx = list->list[list->size - 1].entry_idx;
+   }
 
    if (enum_idx)
    {
@@ -4218,8 +4236,10 @@ void menu_input_search_cb(void *userdata, const char *str)
     * viewing a menu list with 'search
     * filter' support */
    if (list && list->size)
-      file_list_get_at_offset(list, list->size - 1,
-            NULL, &label, &type, NULL);
+   {
+      label     = list->list[list->size - 1].label;
+      type      = list->list[list->size - 1].type;
+   }
 
    /* Do not apply search filter if string
     * consists of a single Latin alphabet
@@ -4373,9 +4393,7 @@ bool menu_entries_append(
 
    file_list_append(list, path, label, type, directory_ptr, entry_idx);
    if (mlist && mlist->size)
-      file_list_get_at_offset(mlist, mlist->size - 1,
-            &menu_path, NULL, NULL, NULL);
-
+      menu_path          = mlist->list[mlist->size - 1].path;
    idx                   = list->size - 1;
 
    list_info.fullpath    = NULL;
@@ -4468,8 +4486,7 @@ void menu_entries_prepend(file_list_t *list,
 
    file_list_insert(list, path, label, type, directory_ptr, entry_idx, 0);
    if (mlist && mlist->size)
-      file_list_get_at_offset(mlist, mlist->size -1,
-            &menu_path, NULL, NULL, NULL);
+      menu_path          = mlist->list[mlist->size - 1].path;
 
    list_info.fullpath    = NULL;
 
@@ -7360,13 +7377,12 @@ static int generic_menu_iterate(
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
    enum action_iterate_type iterate_type;
-   unsigned file_type              = 0;
    int ret                         = 0;
    const char *label               = NULL;
    file_list_t *list               = MENU_LIST_GET(menu_st->entries.list, 0);
 
    if (list && list->size)
-      file_list_get_at_offset(list, list->size - 1, NULL, &label, &file_type, NULL);
+      label                        = list->list[list->size - 1].label;
 
    menu->menu_state_msg[0]         = '\0';
 
@@ -8053,11 +8069,8 @@ int generic_menu_entry_action(
        * find a known reference point */
       while (menu_stack && (menu_stack->size >= stack_offset))
       {
-         const char *parent_label = NULL;
-
-         file_list_get_at_offset(menu_stack,
-               menu_stack->size - stack_offset,
-               NULL, &parent_label, NULL, NULL);
+         const char *parent_label = menu_stack->list[
+            menu_stack->size - stack_offset].label;
 
          if (string_is_empty(parent_label))
             continue;

@@ -2326,7 +2326,10 @@ static int action_ok_file_load(const char *path,
    }
 
    if (menu_stack && menu_stack->size)
-      file_list_get_at_offset(menu_stack, menu_stack->size - 1, &menu_path, &menu_label, NULL, NULL);
+   {
+      menu_path  = menu_stack->list[menu_stack->size - 1].path;
+      menu_label = menu_stack->list[menu_stack->size - 1].label;
+   }
 
    if (!string_is_empty(menu_label))
       setting = menu_setting_find(menu_label);
@@ -3928,7 +3931,7 @@ static int action_ok_file_load_ffmpeg(const char *path,
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
 
    if (menu_stack && menu_stack->size)
-      file_list_get_at_offset(menu_stack, menu_stack->size - 1, &menu_path, NULL, NULL, NULL);
+      menu_path  = menu_stack->list[menu_stack->size - 1].path;
 
    if (string_is_empty(menu_path))
 	   return -1;
@@ -4370,7 +4373,7 @@ static int action_ok_file_load_imageviewer(const char *path,
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
 
    if (menu_stack && menu_stack->size)
-      file_list_get_at_offset(menu_stack, menu_stack->size - 1, &menu_path, NULL, NULL, NULL);
+      menu_path = menu_stack->list[menu_stack->size - 1].path;
 
    if (!string_is_empty(menu_path))
       fill_pathname_join_special(fullpath, menu_path, path,
@@ -5334,7 +5337,7 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
          list  = MENU_LIST_GET(menu_st->entries.list, 0);
       if (list && (list->size > 1))
       {
-         file_list_get_at_offset(list, list->size - 2, NULL, &parent_label, NULL, NULL);
+         parent_label = list->list[list->size - 2].label;
 
          if (string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
              string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))

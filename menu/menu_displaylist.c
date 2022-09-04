@@ -4699,8 +4699,7 @@ static unsigned menu_displaylist_parse_content_information(
       list  = MENU_LIST_GET(menu_st->entries.list, 0);
    if (list && (list->size > 2))
    {
-      file_list_get_at_offset(list, list->size - 3, NULL,
-            &origin_label, NULL, NULL);
+      origin_label = list->list[list->size - 3].label;
 
       if (string_is_equal(origin_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)) ||
           string_is_equal(origin_label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
