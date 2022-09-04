@@ -52,8 +52,10 @@
 
 static struct magic_entry MAGIC_NUMBERS[] = {
    { "Nintendo - GameCube",         "\xc2\x33\x9f\x3d", 0x00001c},
+   { "Nintendo - GameCube",         "\xc2\x33\x9f\x3d", 0x000074}, /* RVZ, WIA */
    { "Nintendo - Wii",              "\x5d\x1c\x9e\xa3", 0x000018},
-   { "Nintendo - Wii",              "\x5d\x1c\x9e\xa3", 0x000218},
+   { "Nintendo - Wii",              "\x5d\x1c\x9e\xa3", 0x000218}, /* WBFS */
+   { "Nintendo - Wii",              "\x5d\x1c\x9e\xa3", 0x000070}, /* RVZ, WIA */
    { "Sega - Dreamcast",            "SEGA SEGAKATANA",  0x000010},
    { "Sega - Mega-CD - Sega CD",    "SEGADISCSYSTEM",   0x000010},
    { "Sega - Saturn",               "SEGA SEGASATURN",  0x000010},
@@ -338,6 +340,15 @@ int detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
    if (intfstream_read(fd, raw_game_id, 4) <= 0)
       return false;
+
+   if (string_is_equal_fast(raw_game_id, "RVZ", STRLEN_CONST("RVZ"))
+         || string_is_equal_fast(raw_game_id, "WIA", STRLEN_CONST("WIA")))
+   {
+      if (intfstream_seek(fd, 0x0058, SEEK_SET) < 0)
+         return false;
+      if (intfstream_read(fd, raw_game_id, 4) <= 0)
+         return false;
+   }
 
    raw_game_id[4] = '\0';
 
@@ -816,9 +827,17 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          && raw_game_id[1] == 'K'
          && raw_game_id[2] == '-')
    {
-
       if (length <= 8)
       {
+         /* For 8 chars serials in 'MK-xxxxx' format, we need to remove 'MK-' to match Redump database
+          * Sega GT being the only exception (MK-51053), we have to check if it's not that game first */
+         if (string_is_not_equal_fast(raw_game_id, "MK-51053", STRLEN_CONST("MK-51053")))
+         {
+            strncpy(s, raw_game_id + 3, 5);
+            s[5] = '\0';
+            cue_append_multi_disc_suffix(s, filename);
+            return true;
+         }
          strncpy(s, raw_game_id, 8);
          s[8] = '\0';
          cue_append_multi_disc_suffix(s, filename);
@@ -858,6 +877,15 @@ int detect_wii_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    if (string_is_equal_fast(raw_game_id, "WBFS", STRLEN_CONST("WBFS")))
    {
       if (intfstream_seek(fd, 0x0200, SEEK_SET) < 0)
+         return false;
+      if (intfstream_read(fd, raw_game_id, 6) <= 0)
+         return false;
+   }
+
+   if (string_is_equal_fast(raw_game_id, "RVZ", STRLEN_CONST("RVZ"))
+         || string_is_equal_fast(raw_game_id, "WIA", STRLEN_CONST("WIA")))
+   {
+      if (intfstream_seek(fd, 0x0058, SEEK_SET) < 0)
          return false;
       if (intfstream_read(fd, raw_game_id, 6) <= 0)
          return false;

@@ -140,6 +140,8 @@ enum msg_file_type
    FILE_TYPE_LUTRO,
    FILE_TYPE_CHD,
    FILE_TYPE_WBFS,
+   FILE_TYPE_RVZ,
+   FILE_TYPE_WIA,
 
    FILE_TYPE_DIRECT_LOAD,
 
