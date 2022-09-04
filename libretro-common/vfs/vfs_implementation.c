@@ -560,10 +560,16 @@ int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, i
 {
 #ifdef _WIN32
    if (stream && _chsize(_fileno(stream->fp), length) == 0)
+   {
+	   stream->size = length;
 	   return 0;
+   }
 #elif !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS) && (!defined(SWITCH) || defined(HAVE_LIBNX))
    if (stream && ftruncate(fileno(stream->fp), (off_t)length) == 0)
+   {
+      stream->size = length;
       return 0;
+   }
 #endif
    return -1;
 }
@@ -642,16 +648,34 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
 
 int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, const void *s, uint64_t len)
 {
+   int64_t pos = 0;
+   size_t result = -1;
+
    if (!stream)
       return -1;
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-      return fwrite(s, 1, (size_t)len, stream->fp);
+   {
+      pos = retro_vfs_file_tell_impl(stream);
+      result = fwrite(s, 1, (size_t)len, stream->fp);
+
+      if (result != -1 && pos + result > stream->size)
+         stream->size = pos + result;
+
+      return result;
+   }
 #ifdef HAVE_MMAP
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
       return -1;
 #endif
-   return write(stream->fd, s, (size_t)len);
+
+   pos = retro_vfs_file_tell_impl(stream);
+   result = write(stream->fd, s, (size_t)len);
+
+   if (result != -1 && pos + result > stream->size)
+      stream->size = pos + result;
+
+   return result;
 }
 
 int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
