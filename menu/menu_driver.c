@@ -1141,6 +1141,20 @@ int menu_entries_get_title(char *s, size_t len)
    return 0;
 }
 
+/* Get current menu label */
+int menu_entries_get_label(char *s, size_t len)
+{
+   struct menu_state   *menu_st = &menu_driver_state;
+   const file_list_t *list      = MENU_LIST_GET(menu_st->entries.list, 0);
+
+   if (list && list->size)
+   {
+      strlcpy(s, list->list[list->size - 1].label, len);
+      return 1;
+   }
+   return 0;
+}
+
 /* Used to close an active message box (help or info)
  * TODO/FIXME: The way that message boxes are handled
  * is complete garbage. generic_menu_iterate() and

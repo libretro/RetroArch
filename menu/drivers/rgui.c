@@ -6523,11 +6523,17 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
    /* On demand thumbnail downloads */
    if (thumbnails_missing && download_missing)
    {
-      const char *system = NULL;
+      const char *system   = NULL;
+      playlist_t *playlist = playlist_get_cached();
+      size_t selection     = menu_navigation_get_selection();
+
+      /* Explore list needs cached selection index */
+      if (rgui->is_explore_list)
+         selection = gfx_thumbnail_get_playlist_index(rgui->thumbnail_path_data);
 
       if (gfx_thumbnail_get_system(rgui->thumbnail_path_data, &system))
          task_push_pl_entry_thumbnail_download(system,
-               playlist_get_cached(), (unsigned)menu_navigation_get_selection(),
+               playlist, (unsigned)selection,
                false, true);
    }
 #endif
@@ -6704,33 +6710,43 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
              (selection < list_size))
          {
             menu_entry_t entry;
-            const char *db_name;
 
             MENU_ENTRY_INIT(entry);
             entry.label_enabled      = false;
             entry.rich_label_enabled = false;
             entry.value_enabled      = false;
             entry.sublabel_enabled   = false;
-            menu_entry_get(&entry, 0, selection, NULL, true);
 
-            if (!entry.type)
+            /* First entry */
+            menu_entry_get(&entry, 0, 0, NULL, true);
+            if (string_is_empty(entry.path))
                return;
 
-            db_name = menu_explore_get_entry_database(entry.type);
-
-            if (!string_is_empty(entry.path) && !string_is_empty(db_name))
+            /* No thumbnails for intermediate lists without playlist items */
+            if (!string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER)) &&
+                !string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME)))
             {
-               playlist_t *playlist                        = playlist_get_cached();
-               const struct playlist_entry *playlist_entry = NULL;
-               size_t playlist_index                       =
-                     menu_explore_get_entry_playlist_index(list->list[selection].type, &playlist, &playlist_entry);
+               gfx_thumbnail_set_content_playlist(rgui->thumbnail_path_data, NULL, 0);
+               return;
+            }
 
-               rgui->playlist_index = playlist_index;
+            /* Selected entry */
+            menu_entry_get(&entry, 0, selection, NULL, true);
+            if (string_is_empty(entry.path))
+               return;
 
-               gfx_thumbnail_set_content(rgui->thumbnail_path_data, entry.path, db_name);
+            /* No thumbnails for header non-items */
+            if (string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER)) ||
+                string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME)))
+            {
+               gfx_thumbnail_set_content_playlist(rgui->thumbnail_path_data, NULL, 0);
+               return;
             }
             else
-               gfx_thumbnail_set_content(rgui->thumbnail_path_data, NULL, NULL);
+            {
+               rgui->playlist_index =
+                     menu_explore_set_entry_playlist_index(entry.type, rgui->thumbnail_path_data);
+            }
          }
       }
 #endif

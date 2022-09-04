@@ -42,7 +42,7 @@
 #include "menu_shader.h"
 #include "../gfx/gfx_animation.h"
 #include "../gfx/gfx_display.h"
-
+#include "../gfx/gfx_thumbnail_path.h"
 #include "../gfx/font_driver.h"
 #include "../performance_counters.h"
 
@@ -668,6 +668,8 @@ const char *menu_explore_get_entry_database(unsigned type);
 ssize_t menu_explore_get_entry_playlist_index(unsigned type,
       playlist_t **playlist,
       const struct playlist_entry **entry);
+ssize_t menu_explore_set_entry_playlist_index(unsigned type,
+      gfx_thumbnail_path_data_t *thumbnail_path_data);
 void menu_explore_context_init(void);
 void menu_explore_context_deinit(void);
 void menu_explore_free_state(explore_state_t *state);

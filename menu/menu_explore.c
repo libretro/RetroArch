@@ -1330,11 +1330,38 @@ ssize_t menu_explore_get_entry_playlist_index(unsigned type,
          {
             *playlist_entry = entry;
             *playlist       = p;
+
+            /* Playlist needs to get cached for on-demand thumbnails */
+            playlist_set_cached_external(p);
             return j;
          }
       }
    }
 
+   return -1;
+}
+
+ssize_t menu_explore_set_entry_playlist_index(unsigned type,
+      gfx_thumbnail_path_data_t *thumbnail_path_data)
+{
+   const char *db_name;
+   ssize_t playlist_index                      = -1;
+   playlist_t *playlist                        = NULL;
+   const struct playlist_entry *playlist_entry = NULL;
+
+   db_name = menu_explore_get_entry_database(type);
+   if (!string_is_empty(db_name))
+      playlist_index = menu_explore_get_entry_playlist_index(type, &playlist, &playlist_entry);
+
+   if (playlist_index >= 0 && playlist && playlist_entry)
+   {
+      gfx_thumbnail_set_system(thumbnail_path_data, db_name, playlist);
+      gfx_thumbnail_set_content_playlist(thumbnail_path_data,
+            playlist, playlist_index);
+      return playlist_index;
+   }
+
+   gfx_thumbnail_set_content_playlist(thumbnail_path_data, NULL, 0);
    return -1;
 }
 

@@ -160,6 +160,8 @@ typedef struct menu_entry
 
 int menu_entries_get_title(char *title, size_t title_len);
 
+int menu_entries_get_label(char *label, size_t label_len);
+
 int menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
 file_list_t *menu_entries_get_selection_buf_ptr(size_t idx);
