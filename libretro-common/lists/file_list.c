@@ -362,13 +362,6 @@ void file_list_free_userdata(const file_list_t *list, size_t idx)
    list->list[idx].userdata = NULL;
 }
 
-void *file_list_get_last_actiondata(const file_list_t *list)
-{
-   if (!list)
-      return NULL;
-   return list->list[list->size - 1].actiondata;
-}
-
 void file_list_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
       size_t *entry_idx)
@@ -384,14 +377,6 @@ void file_list_get_at_offset(const file_list_t *list, size_t idx,
       *file_type = list->list[idx].type;
    if (entry_idx)
       *entry_idx = list->list[idx].entry_idx;
-}
-
-void file_list_get_last(const file_list_t *list,
-      const char **path, const char **label,
-      unsigned *file_type, size_t *entry_idx)
-{
-   if (list && list->size)
-      file_list_get_at_offset(list, list->size - 1, path, label, file_type, entry_idx);
 }
 
 bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)

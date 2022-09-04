@@ -2325,7 +2325,8 @@ static int action_ok_file_load(const char *path,
       return 0;
    }
 
-   file_list_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
+   if (menu_stack && menu_stack->size)
+      file_list_get_at_offset(menu_stack, menu_stack->size - 1, &menu_path, &menu_label, NULL, NULL);
 
    if (!string_is_empty(menu_label))
       setting = menu_setting_find(menu_label);
@@ -3926,7 +3927,8 @@ static int action_ok_file_load_ffmpeg(const char *path,
    const char *menu_path           = NULL;
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
 
-   file_list_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
+   if (menu_stack && menu_stack->size)
+      file_list_get_at_offset(menu_stack, menu_stack->size - 1, &menu_path, NULL, NULL, NULL);
 
    if (string_is_empty(menu_path))
 	   return -1;
@@ -4367,13 +4369,14 @@ static int action_ok_file_load_imageviewer(const char *path,
    const char *menu_path           = NULL;
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
 
-   file_list_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
-
-   fullpath[0] = '\0';
+   if (menu_stack && menu_stack->size)
+      file_list_get_at_offset(menu_stack, menu_stack->size - 1, &menu_path, NULL, NULL, NULL);
 
    if (!string_is_empty(menu_path))
       fill_pathname_join_special(fullpath, menu_path, path,
             sizeof(fullpath));
+   else
+      fullpath[0] = '\0';
 
    return default_action_ok_load_content_with_core_from_menu(fullpath, CORE_TYPE_IMAGEVIEWER);
 }

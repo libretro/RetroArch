@@ -393,12 +393,14 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    if (cbs)
    {
       const char *label             = NULL;
+      file_list_t *menu_stack       = MENU_LIST_GET(menu_st->entries.list, 0);
 
       entry->enum_idx               = cbs->enum_idx;
       entry->checked                = cbs->checked;
 
-      file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-            NULL, &label, NULL, NULL);
+      if (menu_stack && menu_stack->size)
+         file_list_get_at_offset(menu_stack, menu_stack->size - 1,
+               NULL, &label, NULL, NULL);
 
       if (entry->rich_label_enabled && cbs->action_label)
       {
@@ -1106,8 +1108,10 @@ int menu_entries_get_title(char *s, size_t len)
          strlcpy(s, cbs->action_title_cache, len);
          return 0;
       }
-      file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-            &path, &label, &menu_type, NULL);
+  
+      if (list && list->size)
+         file_list_get_at_offset(list, list->size - 1,
+               &path, &label, &menu_type, NULL);
 
       /* Show playlist entry instead of "Quick Menu" */
       if (string_is_equal(label, "deferred_rpl_entry_actions"))
@@ -1145,11 +1149,13 @@ int menu_entries_get_title(char *s, size_t len)
 void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
 {
    const char *label            = NULL;
+   const file_list_t *list      = MENU_LIST_GET(menu_st->entries.list, 0);
 
    /* Determine whether this is a help or info
     * message box */
-   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-         NULL, &label, NULL, NULL);
+   if (list && list->size)
+      file_list_get_at_offset(list, list->size - 1,
+            NULL, &label, NULL, NULL);
 
    /* Pop stack, if required */
    if (menu_should_pop_stack(label))
@@ -4203,6 +4209,7 @@ void menu_input_search_cb(void *userdata, const char *str)
    const char *label           = NULL;
    unsigned type               = MENU_SETTINGS_NONE;
    struct menu_state *menu_st  = &menu_driver_state;
+   const file_list_t *list     = MENU_LIST_GET(menu_st->entries.list, 0);
 
    if (string_is_empty(str))
       goto end;
@@ -4210,8 +4217,9 @@ void menu_input_search_cb(void *userdata, const char *str)
    /* Determine whether we are currently
     * viewing a menu list with 'search
     * filter' support */
-   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-         NULL, &label, &type, NULL);
+   if (list && list->size)
+      file_list_get_at_offset(list, list->size - 1,
+            NULL, &label, &type, NULL);
 
    /* Do not apply search filter if string
     * consists of a single Latin alphabet
@@ -4355,16 +4363,18 @@ bool menu_entries_append(
    menu_ctx_list_t list_info;
    size_t i;
    size_t idx;
-   const char *menu_path           = NULL;
-   menu_file_list_cbs_t *cbs       = NULL;
-   struct menu_state  *menu_st     = &menu_driver_state;
+   const char *menu_path       = NULL;
+   menu_file_list_cbs_t *cbs   = NULL;
+   struct menu_state  *menu_st = &menu_driver_state;
+   const file_list_t *mlist    = MENU_LIST_GET(menu_st->entries.list, 0);
 
    if (!list || !label)
       return false;
 
    file_list_append(list, path, label, type, directory_ptr, entry_idx);
-   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-         &menu_path, NULL, NULL, NULL);
+   if (mlist && mlist->size)
+      file_list_get_at_offset(mlist, mlist->size - 1,
+            &menu_path, NULL, NULL, NULL);
 
    idx                   = list->size - 1;
 
@@ -4448,16 +4458,18 @@ void menu_entries_prepend(file_list_t *list,
 {
    menu_ctx_list_t list_info;
    size_t i;
-   size_t idx                      = 0;
-   const char *menu_path           = NULL;
-   menu_file_list_cbs_t *cbs       = NULL;
-   struct menu_state  *menu_st     = &menu_driver_state;
+   size_t idx                  = 0;
+   const char *menu_path       = NULL;
+   menu_file_list_cbs_t *cbs   = NULL;
+   struct menu_state  *menu_st = &menu_driver_state;
+   const file_list_t *mlist    = MENU_LIST_GET(menu_st->entries.list, 0);
    if (!list || !label)
       return;
 
    file_list_insert(list, path, label, type, directory_ptr, entry_idx, 0);
-   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-         &menu_path, NULL, NULL, NULL);
+   if (mlist && mlist->size)
+      file_list_get_at_offset(mlist, mlist->size -1,
+            &menu_path, NULL, NULL, NULL);
 
    list_info.fullpath    = NULL;
 
