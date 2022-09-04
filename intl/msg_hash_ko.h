@@ -13212,10 +13212,6 @@ MSG_HASH(
    "터치해서\nRetroArch 메뉴로"
    )
 MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
-   "assets/ctr 폴더에\nbottom_menu.png가 없습니다"
-   )
-MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
    "데이터\n없음"
    )

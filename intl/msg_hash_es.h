@@ -13081,7 +13081,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
-   "No se ha encontrado\nel archivo bottom_menu.png\nen la carpeta assets/ctr."
+   "Recurso(s) no encontrado(s)"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,

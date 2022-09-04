@@ -12804,10 +12804,6 @@ MSG_HASH(
    "Napauta kosketusnäyttöä\nsiirtyäksesi RetroArch-\nvalikkoon"
    )
 MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
-   "bottom_menu.png ei löydy\nassets/ctr kansiosta"
-   )
-MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
    "Ei\ndataa"
    )

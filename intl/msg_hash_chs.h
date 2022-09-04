@@ -12440,10 +12440,6 @@ MSG_HASH(
    "触摸屏幕前往全能模拟器菜单"
    )
 MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
-   "在 assets/ctr 文件夹中未找到\nbottom_menu.png"
-   )
-MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
    "没有数据"
    )

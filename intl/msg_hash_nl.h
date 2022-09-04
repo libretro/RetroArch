@@ -5752,10 +5752,6 @@ MSG_HASH(
    "Raak aan voor\nRetroArch-menu"
    )
 MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
-   "bottom_menu.png niet gevonden\nin de assets/ctr folder"
-   )
-MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
    "Spel\nhervatten"
    )

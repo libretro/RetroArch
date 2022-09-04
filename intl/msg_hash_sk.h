@@ -3180,10 +3180,6 @@ MSG_HASH(
    "Dotknite sa dotykovej obrazovky, \naby ste prešli do ponuky Retroarch"
    )
 MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
-   "bottom_menu.png nebol nájdený\nv priečinku assets/ctr"
-   )
-MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
    "Žiadne \núdaje"
    )

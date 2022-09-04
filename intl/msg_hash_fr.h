@@ -13044,10 +13044,6 @@ MSG_HASH(
    "Touchez l'écran tactile\npour ouvrir le menu de\nRetroarch."
    )
 MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
-   "bottom_menu.png introuvable\ndans le dossier assets/ctr"
-   )
-MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
    "Aucunes\ndonnées"
    )
