@@ -54,7 +54,6 @@
 #include "../../input/input_osk.h"
 
 #include "../../file_path_special.h"
-#include "../../verbosity.h"
 #include "../../configuration.h"
 
 #include "../../tasks/tasks_internal.h"

@@ -58,7 +58,6 @@
 #include "../../configuration.h"
 #include "../../content.h"
 #include "../../core_info.h"
-#include "../../verbosity.h"
 
 #define ANIMATION_PUSH_ENTRY_DURATION  166
 #define ANIMATION_CURSOR_DURATION      133
@@ -8428,9 +8427,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
             fill_pathname_application_special(buf,
                sizeof(buf),
                APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
-            if (!gfx_display_reset_textures_list(filename, buf, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-               RARCH_WARN("[OZONE]: Asset missing: \"%s%s%s\".\n", ozone->png_path,
-                     PATH_DEFAULT_SLASH(), filename);
+            gfx_display_reset_textures_list(filename, buf, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
          }
          else
          {
@@ -8446,11 +8443,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
       for (i = 0; i < OZONE_TAB_TEXTURE_LAST; i++)
       {
          if (!gfx_display_reset_textures_list(OZONE_TAB_TEXTURES_FILES[i], ozone->tab_path, &ozone->tab_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-         {
             ozone->has_all_assets = false;
-            RARCH_WARN("[OZONE]: Asset missing: \"%s%s%s\".\n", ozone->tab_path,
-                  PATH_DEFAULT_SLASH(), OZONE_TAB_TEXTURES_FILES[i]);
-         }
       }
 
       /* Theme textures */
@@ -8461,11 +8454,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
       for (i = 0; i < OZONE_ENTRIES_ICONS_TEXTURE_LAST; i++)
       {
          if (!gfx_display_reset_textures_list(ozone_entries_icon_texture_path(i), ozone->icons_path, &ozone->icons_textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-         {
             ozone->has_all_assets = false;
-            RARCH_WARN("[OZONE]: Asset missing: \"%s%s%s\".\n", ozone->icons_path,
-                  PATH_DEFAULT_SLASH(), ozone_entries_icon_texture_path(i));
-         }
       }
 
       gfx_display_deinit_white_texture();
@@ -11019,10 +11008,7 @@ static void ozone_list_insert(void *userdata,
    if (!(node = (ozone_node_t*)list->list[i].userdata))
    {
       if (!(node = ozone_alloc_node()))
-      {
-         RARCH_ERR("ozone node could not be allocated.\n");
          return;
-      }
    }
 
    if (!string_is_empty(fullpath))

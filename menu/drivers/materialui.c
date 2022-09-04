@@ -49,7 +49,6 @@
 
 #include "../../core_info.h"
 #include "../../configuration.h"
-#include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../runtime_file.h"
 #include "../../file_path_special.h"
@@ -2404,11 +2403,7 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
       if (!gfx_display_reset_textures_list(
             materialui_texture_path(i), mui->icons_path, &mui->textures.list[i],
             TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-      {
-         RARCH_WARN("[GLUI]: Asset missing: \"%s%s%s\".\n", mui->icons_path,
-               PATH_DEFAULT_SLASH(), materialui_texture_path(i));
          has_all_assets = false;
-      }
    }
 
    /* Warn user if assets are missing */
@@ -10156,10 +10151,7 @@ static void materialui_list_insert(
    }
 
    if (!node)
-   {
-      RARCH_ERR("GLUI node could not be allocated.\n");
       return;
-   }
 
    node->icon_type          = MUI_ICON_TYPE_NONE;
    node->icon_texture_index = 0;
