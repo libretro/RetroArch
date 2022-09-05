@@ -1174,6 +1174,34 @@ MSG_HASH(
    )
 
 /* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   "Pemetaan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Kinerja"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "Suara"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   "Spesifikasi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   "Penyimpanan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "Sistem"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   "Pewaktuan"
+   )
 
 #ifdef HAVE_MIST
 MSG_HASH(
@@ -3286,7 +3314,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FILE_NOT_FOUND,
-   "Berkas tidak Ditemukan"
+   "Berkas tidak ditemukan"
    )
 MSG_HASH(
    MSG_FOUND_AUTO_SAVESTATE_IN,
@@ -3351,6 +3379,10 @@ MSG_HASH(
 #else
 #endif
 #ifdef _3DS
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "Aset tidak ditemukan"
+   )
 #endif
 #ifdef HAVE_QT
 #endif

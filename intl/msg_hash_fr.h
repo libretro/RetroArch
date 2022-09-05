@@ -347,7 +347,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   "Mettre à jour les assets"
+   "Mettre à jour les ressources"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
@@ -5767,7 +5767,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-   "Adresse URL des cœurs sur le Buildbot "
+   "Adresse URL des cœurs sur le buildbot "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
@@ -5775,11 +5775,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-   "Adresse URL des assets sur le Buildbot "
+   "Adresse URL des ressources sur le buildbot "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
-   "URL du dossier de mise à jour des assets sur le buildbot de libretro."
+   "URL du dossier de mise à jour des ressources sur le buildbot de libretro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
@@ -6217,11 +6217,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   "Assets "
+   "Ressources "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
-   "Les assets de menu utilisés par RetroArch sont conservés dans ce dossier."
+   "Les ressources de menu utilisés par RetroArch sont conservés dans ce dossier."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
@@ -10723,7 +10723,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_DIR,
-   "Généralement défini par les développeurs qui compilent les applications libretro/RetroArch pour pointer vers des assets."
+   "Généralement défini par les développeurs qui compilent les applications libretro/RetroArch pour pointer vers des ressources."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
@@ -12330,7 +12330,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "AVERTISSEMENT : Assets manquants, utilisez la mise à jour en ligne si disponible"
+   "AVERTISSEMENT : Ressources manquantes, utilisez la mise à jour en ligne si disponible"
    )
 MSG_HASH(
    MSG_RGUI_MISSING_FONTS,
@@ -13042,6 +13042,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
    "Touchez l'écran tactile\npour ouvrir le menu de\nRetroarch."
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "Ressource(s) non trouvée(s)"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
