@@ -4061,7 +4061,7 @@ static void materialui_render_menu_entry_default(
          if (icon_texture)
          {
             /* draw the icon ourselves - the draw_icon below tints it to match the theme */
-            const float color_white[16] = {
+            static float color_white[16] = {
                1.0f, 1.0f, 1.0f, 1.0f,
                1.0f, 1.0f, 1.0f, 1.0f,
                1.0f, 1.0f, 1.0f, 1.0f,
