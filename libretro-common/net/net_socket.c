@@ -728,7 +728,10 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
          return false;
    }
 
-#if !defined(GEKKO) && defined(SO_ERROR)
+   /* Excluded platforms do not have getsockopt implemented [GEKKO],
+    * or it's returned values are unreliable [3DS].
+    */
+#if !defined(GEKKO) && !defined(_3DS) && defined(SO_ERROR)
    {
       int       error = -1;
       socklen_t errsz = sizeof(error);
