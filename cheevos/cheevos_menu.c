@@ -42,6 +42,11 @@ enum rcheevos_menuitem_bucket
    RCHEEVOS_MENUITEM_BUCKET_ALMOST_THERE
 };
 
+/* if menu_badge_grayscale is set to a value other than 1 or 0, it's a counter for the number of
+ * frames since the last time we checked for the file. When the counter reaches this value, we'll
+ * check for the file again. */
+#define MENU_BADGE_RETRY_RELOAD_FRAMES 64
+
 static void rcheevos_menu_update_bucket(rcheevos_racheevo_t* cheevo)
 {
    cheevo->menu_progress = 0;
@@ -163,7 +168,11 @@ void rcheevos_menu_reset_badges(void)
    while (cheevo < stop)
    {
       if (cheevo->menu_badge_texture)
+      {
          video_driver_texture_unload(&cheevo->menu_badge_texture);
+         cheevo->menu_badge_texture = 0;
+         cheevo->menu_badge_grayscale = MENU_BADGE_RETRY_RELOAD_FRAMES;
+      }
       ++cheevo;
    }
 }
@@ -374,7 +383,7 @@ uintptr_t rcheevos_menu_get_badge_texture(unsigned menu_offset)
           * has become available (do this roughly once a second) */
          if (cheevo->menu_badge_grayscale >= 2)
          {
-            if (++cheevo->menu_badge_grayscale == 64)
+            if (++cheevo->menu_badge_grayscale >= MENU_BADGE_RETRY_RELOAD_FRAMES)
             {
                cheevo->menu_badge_grayscale = 2;
                rcheevos_menu_update_badge(cheevo);

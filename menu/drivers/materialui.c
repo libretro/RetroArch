@@ -54,6 +54,10 @@
 #include "../../file_path_special.h"
 #include "../../list_special.h"
 
+#ifdef HAVE_CHEEVOS
+#include "../../cheevos/cheevos_menu.h"
+#endif
+
 /* Defines the 'device independent pixel' base
  * unit reference size for all UI elements.
  * 212 px corresponds to the the baseline standard
@@ -169,7 +173,8 @@ enum materialui_node_icon_type
    MUI_ICON_TYPE_INTERNAL,
    MUI_ICON_TYPE_MENU_EXPLORE,
    MUI_ICON_TYPE_PLAYLIST,
-   MUI_ICON_TYPE_MENU_CONTENTLESS_CORE
+   MUI_ICON_TYPE_MENU_CONTENTLESS_CORE,
+   MUI_ICON_TYPE_ACHIEVEMENT
 };
 
 /* Defines all standard menu textures */
@@ -4050,6 +4055,52 @@ static void materialui_render_menu_entry_default(
          icon_texture = materialui_get_playlist_icon(
                mui, node->icon_texture_index);
          break;
+#ifdef HAVE_CHEEVOS
+      case MUI_ICON_TYPE_ACHIEVEMENT:
+         icon_texture = rcheevos_menu_get_badge_texture(node->icon_texture_index);
+         if (icon_texture)
+         {
+            /* draw the icon ourselves - the draw_icon below tints it to match the theme */
+            const float color_white[16] = {
+               1.0f, 1.0f, 1.0f, 1.0f,
+               1.0f, 1.0f, 1.0f, 1.0f,
+               1.0f, 1.0f, 1.0f, 1.0f,
+               1.0f, 1.0f, 1.0f, 1.0f,
+            };
+            materialui_draw_icon(
+                  userdata, p_disp,
+                  video_width,
+                  video_height,
+                  mui->icon_size,
+                  (uintptr_t)icon_texture,
+                  entry_x + (int)mui->landscape_optimization.entry_margin,
+                  entry_y + (node->entry_height / 2.0f) - (mui->icon_size / 2.0f),
+                  0,
+                  1,
+                  color_white,
+                  &mymat);
+
+            entry_margin += mui->icon_size;
+            usable_width -= mui->icon_size;
+
+            icon_texture = 0; /* prevent drawing tinted icon */
+         }
+         else
+         {
+            char buffer[64];
+            if (!rcheevos_menu_get_state(node->icon_texture_index, buffer, sizeof(buffer)))
+            {
+               /* no state means its a header - show the info icon */
+               icon_texture = mui->textures.list[MUI_TEXTURE_INFO];
+            }
+            else
+            {
+               /* placeholder badge image was not found, show generic menu icon */
+               icon_texture = mui->textures.list[MUI_TEXTURE_IMAGE];
+            }
+         }
+         break;
+#endif
       default:
          switch (entry_file_type)
          {
@@ -10328,6 +10379,15 @@ static void materialui_list_insert(
              * switch */
             break;
          default:
+#ifdef HAVE_CHEEVOS
+            if (type >= MENU_SETTINGS_CHEEVOS_START &&
+               type < MENU_SETTINGS_NETPLAY_ROOMS_START)
+            {
+               node->icon_texture_index = type - MENU_SETTINGS_CHEEVOS_START;
+               node->icon_type          = MUI_ICON_TYPE_ACHIEVEMENT;
+            }
+            else
+#endif
             if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION_LIST))              ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION))            ||
