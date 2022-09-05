@@ -1129,7 +1129,7 @@ bool command_event_resize_windowed_scale(settings_t *settings,
    if (window_scale == 0)
       return false;
 
-   configuration_set_float(settings, settings->floats.video_scale, (float)window_scale);
+   configuration_set_uint(settings, settings->uints.video_scale, window_scale);
 
    if (!video_fullscreen)
       command_event(CMD_EVENT_REINIT, NULL);

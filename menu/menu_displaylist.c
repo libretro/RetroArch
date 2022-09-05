@@ -8451,7 +8451,7 @@ unsigned menu_displaylist_build_list(
 #else
                {MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE, PARSE_ONLY_BOOL,  true },
 #endif
-               {MENU_ENUM_LABEL_VIDEO_SCALE,                     PARSE_ONLY_FLOAT, false},
+               {MENU_ENUM_LABEL_VIDEO_SCALE,                     PARSE_ONLY_UINT,  false},
                {MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,              PARSE_ONLY_UINT,  false},
                {MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,             PARSE_ONLY_UINT,  false},
                {MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,     PARSE_ONLY_UINT,  false},

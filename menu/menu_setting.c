@@ -8019,7 +8019,7 @@ static void general_write_handler(rarch_setting_t *setting)
          {
             settings_t *settings         = config_get_ptr();
             settings->modified           = true;
-            settings->floats.video_scale = roundf(*setting->value.target.fraction);
+            settings->uints.video_scale  = *setting->value.target.unsigned_integer;
 
             if (!settings->bools.video_fullscreen)
                rarch_cmd = CMD_EVENT_REINIT;
@@ -8065,7 +8065,7 @@ static void general_write_handler(rarch_setting_t *setting)
          {
             settings_t *settings                   = config_get_ptr();
             settings->modified                     = true;
-            settings->bools.video_hdr_expand_gamut = *setting->value.target.boolean;;
+            settings->bools.video_hdr_expand_gamut = *setting->value.target.boolean;
 
             video_driver_set_hdr_expand_gamut(settings->bools.video_hdr_expand_gamut);
          }
@@ -12009,20 +12009,19 @@ static bool setting_append_list(
 
             if (video_driver_has_windowed())
             {
-               CONFIG_FLOAT(
+               CONFIG_UINT(
                      list, list_info,
-                     &settings->floats.video_scale,
+                     &settings->uints.video_scale,
                      MENU_ENUM_LABEL_VIDEO_SCALE,
                      MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
                      DEFAULT_SCALE,
-                     "%.1fx",
                      &group_info,
                      &subgroup_info,
                      parent_group,
                      general_write_handler,
                      general_read_handler);
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-               menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
+               menu_settings_list_current_add_range(list, list_info, 1, 10, 1, true, true);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
                CONFIG_UINT(

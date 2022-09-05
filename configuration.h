@@ -210,6 +210,7 @@ typedef struct settings
       unsigned video_monitor_index;
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;
+      unsigned video_scale;
       unsigned video_max_swapchain_images;
       unsigned video_max_frame_latency;
       unsigned video_swap_interval;
@@ -336,7 +337,6 @@ typedef struct settings
    struct
    {
       float placeholder;
-      float video_scale;
       float video_aspect_ratio;
       float video_refresh_rate;
       float crt_video_refresh_rate;

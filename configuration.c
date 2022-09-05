@@ -2054,7 +2054,6 @@ static struct config_float_setting *populate_settings_float(
       return NULL;
 
    SETTING_FLOAT("video_aspect_ratio",       &settings->floats.video_aspect_ratio, true, DEFAULT_ASPECT_RATIO, false);
-   SETTING_FLOAT("video_scale",              &settings->floats.video_scale, false, 0.0f, false);
    SETTING_FLOAT("crt_video_refresh_rate",   &settings->floats.crt_video_refresh_rate, true, DEFAULT_CRT_REFRESH_RATE, false);
    SETTING_FLOAT("video_refresh_rate",       &settings->floats.video_refresh_rate, true, DEFAULT_REFRESH_RATE, false);
    SETTING_FLOAT("audio_rate_control_delta", audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA), true, DEFAULT_RATE_CONTROL_DELTA, false);
@@ -2174,6 +2173,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_fullscreen_x", &settings->uints.video_fullscreen_x, true, DEFAULT_FULLSCREEN_X, false);
    SETTING_UINT("video_fullscreen_y", &settings->uints.video_fullscreen_y, true, DEFAULT_FULLSCREEN_Y, false);
 #endif
+   SETTING_UINT("video_scale",                  &settings->uints.video_scale, true, DEFAULT_SCALE, false);
    SETTING_UINT("video_window_opacity",         &settings->uints.video_window_opacity, true, DEFAULT_WINDOW_OPACITY, false);
 #ifdef HAVE_VIDEO_LAYOUT
    SETTING_UINT("video_layout_selected_view",   &settings->uints.video_layout_selected_view, true, 0, false);
@@ -2618,7 +2618,7 @@ void config_set_defaults(void *data)
 #endif
 #endif
 
-   settings->floats.video_scale                = DEFAULT_SCALE;
+   settings->uints.video_scale                 = DEFAULT_SCALE;
 
    video_driver_set_threaded(DEFAULT_VIDEO_THREADED);
 

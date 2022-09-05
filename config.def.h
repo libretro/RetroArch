@@ -202,7 +202,7 @@
  * Real x resolution = aspect * base_size * x scale
  * Real y resolution = base_size * y scale
  */
-#define DEFAULT_SCALE (3.0)
+#define DEFAULT_SCALE 3
 
 /* Fullscreen */
 

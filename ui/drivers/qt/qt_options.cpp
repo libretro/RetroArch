@@ -1299,7 +1299,7 @@ QWidget *VideoPage::widget()
    aspectGroup->add(MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER);
    aspectGroup->addRow(new AspectRatioGroup("Aspect Ratio"));
 
-   leftWindowedSizeForm->addRow("Scale:", new FloatSpinBox(MENU_ENUM_LABEL_VIDEO_SCALE));
+   leftWindowedSizeForm->addRow("Scale:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_SCALE));
    leftWindowedSizeForm->addRow("Max Width:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX));
 
    rightWindowedSizeForm->addRow("Opacity:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY));

@@ -3362,7 +3362,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          }
          else
          {
-            float video_scale = settings->floats.video_scale;
+            unsigned video_scale = settings->uints.video_scale;
             /* Determine maximum allowed window dimensions
              * NOTE: We cannot read the actual display
              * metrics here, because the context driver
@@ -3397,12 +3397,12 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
                 * scale correctness. */
                unsigned base_width = roundf(geom->base_height *
                   video_st->aspect_ratio);
-               width = roundf(base_width * video_scale);
+               width = base_width * video_scale;
             }
             else
-               width = roundf(geom->base_width * video_scale);
+               width = geom->base_width * video_scale;
 
-            height = roundf(geom->base_height * video_scale);
+            height = geom->base_height * video_scale;
 
             /* Cap window size to maximum allowed values */
             if ((width > max_win_width) || (height > max_win_height))
