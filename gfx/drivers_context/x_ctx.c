@@ -148,7 +148,6 @@ static int GLXExtensionSupported(Display *dpy, const char *extension)
 
    return 0;
 }
-#endif
 
 static int x_log_error_handler(Display *dpy, XErrorEvent *event)
 {
@@ -158,6 +157,7 @@ static int x_log_error_handler(Display *dpy, XErrorEvent *event)
          buf, event->request_code, event->minor_code);
    return 0;
 }
+#endif
 
 static int x_nul_handler(Display *dpy, XErrorEvent *event) { return 0; }
 
@@ -514,29 +514,26 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    {
       if (x11_enter_fullscreen(g_x11_dpy, width, height))
       {
+         char *wm_name        = x11_get_wm_name(g_x11_dpy);
          x->should_reset_mode = true;
-         true_full = true;
+         true_full            = true;
+
+         if (wm_name)
+         {
+            RARCH_LOG("[GLX]: Window manager is %s.\n", wm_name);
+            if (strcasestr(wm_name, "xfwm"))
+            {
+               RARCH_LOG("[GLX]: Using override-redirect workaround.\n");
+               swa.override_redirect = True;
+            }
+            free(wm_name);
+         }
+
+         if (!x11_has_net_wm_fullscreen(g_x11_dpy))
+            swa.override_redirect = True;
       }
       else
          RARCH_ERR("[GLX]: Entering true fullscreen failed. Will attempt windowed mode.\n");
-   }
-
-   if (true_full)
-   {
-	   char *wm_name = x11_get_wm_name(g_x11_dpy);
-	   if (wm_name)
-	   {
-		   RARCH_LOG("[GLX]: Window manager is %s.\n", wm_name);
-		   if (strcasestr(wm_name, "xfwm"))
-		   {
-			   RARCH_LOG("[GLX]: Using override-redirect workaround.\n");
-			   swa.override_redirect = True;
-		   }
-		   free(wm_name);
-	   }
-
-      if (!x11_has_net_wm_fullscreen(g_x11_dpy))
-         swa.override_redirect = True;
    }
 #endif
 
