@@ -1399,6 +1399,7 @@ static bool ctr_frame(void* data, const void* frame,
 
    ctr->vsync_event_pending = true;
 
+#ifdef CONSOLE_LOG
    /* Internal counters/statistics
     * > This is only required if the bottom screen is enabled */
    if (ctr_bottom_screen_enabled)
@@ -1464,6 +1465,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
       fflush(stdout);
    }
+#endif
 
    if (ctr->should_resize)
       ctr_update_viewport(ctr, settings,
