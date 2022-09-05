@@ -1099,7 +1099,11 @@ static video_poke_interface_t xv_video_poke_interface = {
    NULL,
    NULL,
    NULL,
+#ifdef HAVE_XF86VM
    x11_get_refresh_rate,
+#else
+   NULL,
+#endif
    NULL,
    NULL,
    NULL,

@@ -64,7 +64,9 @@ typedef struct gfx_ctx_x_data
    bool core_es;
    bool core_es_core;
    bool debug;
+#ifdef HAVE_XF86VM
    bool should_reset_mode;
+#endif
    bool is_fullscreen;
    bool is_double;
    bool core_hw_context_enable;
@@ -213,6 +215,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 
    x11_colormap_destroy();
 
+#ifdef HAVE_XF86VM
    if (g_x11_dpy)
    {
       if (x->should_reset_mode)
@@ -221,6 +224,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
          x->should_reset_mode = false;
       }
    }
+#endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
    g_pglSwapInterval    = NULL;
@@ -444,13 +448,14 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       bool fullscreen)
 {
    XEvent event;
+#ifdef HAVE_XF86VM
    bool true_full            = false;
+#endif
    int val                   = 0;
    int x_off                 = 0;
    int y_off                 = 0;
    XVisualInfo *vi           = NULL;
    XSetWindowAttributes swa  = {0};
-   char *wm_name             = NULL;
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
    gfx_ctx_x_data_t *x       = (gfx_ctx_x_data_t*)data;
    Atom net_wm_icon          = XInternAtom(g_x11_dpy, "_NET_WM_ICON", False);
@@ -504,6 +509,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    x->is_fullscreen = fullscreen;
 
+#ifdef HAVE_XF86VM
    if (fullscreen && !windowed_full)
    {
       if (x11_enter_fullscreen(g_x11_dpy, width, height))
@@ -515,20 +521,24 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          RARCH_ERR("[GLX]: Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 
-   wm_name = x11_get_wm_name(g_x11_dpy);
-   if (wm_name)
+   if (true_full)
    {
-      RARCH_LOG("[GLX]: Window manager is %s.\n", wm_name);
+	   char *wm_name = x11_get_wm_name(g_x11_dpy);
+	   if (wm_name)
+	   {
+		   RARCH_LOG("[GLX]: Window manager is %s.\n", wm_name);
+		   if (strcasestr(wm_name, "xfwm"))
+		   {
+			   RARCH_LOG("[GLX]: Using override-redirect workaround.\n");
+			   swa.override_redirect = True;
+		   }
+		   free(wm_name);
+	   }
 
-      if (true_full && strcasestr(wm_name, "xfwm"))
-      {
-         RARCH_LOG("[GLX]: Using override-redirect workaround.\n");
+      if (!x11_has_net_wm_fullscreen(g_x11_dpy))
          swa.override_redirect = True;
-      }
-      free(wm_name);
    }
-   if (!x11_has_net_wm_fullscreen(g_x11_dpy) && true_full)
-      swa.override_redirect = True;
+#endif
 
    if (video_monitor_index)
       g_x11_screen = video_monitor_index - 1;
@@ -614,13 +624,16 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    if (fullscreen)
       x11_show_mouse(g_x11_dpy, g_x11_win, false);
 
+#ifdef HAVE_XF86VM
    if (true_full)
    {
       RARCH_LOG("[GLX]: Using true fullscreen.\n");
       XMapRaised(g_x11_dpy, g_x11_win);
       x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
    }
-   else if (fullscreen)
+   else
+#endif
+   if (fullscreen)
    {
       /* We attempted true fullscreen, but failed.
        * Attempt using windowed fullscreen. */
@@ -904,8 +917,13 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    XFree(vi);
    vi = NULL;
 
+#ifdef HAVE_XF86VM
    if (!x11_input_ctx_new(true_full))
       goto error;
+#else
+   if (!x11_input_ctx_new(false))
+      goto error;
+#endif
 
    return true;
 
@@ -1153,7 +1171,11 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    gfx_ctx_x_swap_interval,
    gfx_ctx_x_set_video_mode,
    x11_get_video_size,
+#ifdef HAVE_XF86VM
    x11_get_refresh_rate,
+#else
+   NULL,
+#endif
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

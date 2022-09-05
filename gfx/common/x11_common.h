@@ -31,9 +31,7 @@ extern unsigned g_x11_screen;
 void x11_show_mouse(Display *dpy, Window win, bool state);
 void x11_set_net_wm_fullscreen(Display *dpy, Window win);
 void x11_suspend_screensaver(Window win, bool enable);
-bool x11_enter_fullscreen(Display *dpy, unsigned width, unsigned height);
 
-void x11_exit_fullscreen(Display *dpy);
 void x11_move_window(Display *dpy, Window win,
       int x, int y, unsigned width, unsigned height);
 
@@ -43,7 +41,13 @@ void x11_set_window_attr(Display *dpy, Window win);
 bool x11_get_metrics(void *data,
       enum display_metric_types type, float *value);
 
+#ifdef HAVE_XF86VM
 float x11_get_refresh_rate(void *data);
+
+bool x11_enter_fullscreen(Display *dpy, unsigned width, unsigned height);
+
+void x11_exit_fullscreen(Display *dpy);
+#endif
 
 void x11_check_window(void *data, bool *quit,
    bool *resize, unsigned *width, unsigned *height);

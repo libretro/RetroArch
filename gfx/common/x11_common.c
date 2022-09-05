@@ -36,7 +36,9 @@
 
 #include "x11_common.h"
 
+#ifdef HAVE_XF86VM
 #include <X11/extensions/xf86vmode.h>
+#endif
 
 #include <encodings/utf.h>
 #include <compat/strl.h>
@@ -68,7 +70,9 @@ Window   g_x11_win                          = None;
 Colormap g_x11_cmap;
 
 /* TODO/FIXME - static globals */
+#ifdef HAVE_XF86VM
 static XF86VidModeModeInfo desktop_mode;
+#endif
 static bool xdg_screensaver_available       = true;
 static bool g_x11_has_focus                 = false;
 static bool g_x11_true_full                 = false;
@@ -249,6 +253,7 @@ void x11_suspend_screensaver(Window wnd, bool enable)
           xdg_screensaver_inhibit(wnd);
 }
 
+#ifdef HAVE_XF86VM
 float x11_get_refresh_rate(void *data)
 {
    XWindowAttributes attr;
@@ -256,7 +261,6 @@ float x11_get_refresh_rate(void *data)
    Screen *screen;
    int screenid;
    int dotclock;
-   float refresh;
 
    if (!g_x11_dpy || g_x11_win == None)
       return 0.0f;
@@ -273,9 +277,7 @@ float x11_get_refresh_rate(void *data)
    if (modeline.flags & V_DBLSCAN)
       dotclock /= 2;
 
-   refresh = (float)dotclock * 1000.0f / modeline.htotal / modeline.vtotal;
-
-   return refresh;
+   return (float)dotclock * 1000.0f / modeline.htotal / modeline.vtotal;
 }
 
 static bool get_video_mode(
@@ -354,6 +356,7 @@ void x11_exit_fullscreen(Display *dpy)
    XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), &desktop_mode);
    XF86VidModeSetViewPort(dpy, DefaultScreen(dpy), 0, 0);
 }
+#endif
 
 static void x11_init_keyboard_lut(void)
 {
