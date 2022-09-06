@@ -4351,6 +4351,18 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "Assoliments"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Mode expert"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Es guanyaran el doble de punts.Desactiva els desats ràpids, els trucs, el rebobinat, la pausa i la càmera lenta per tots els jocs.Si es canvia aquest paràmetre durant l’execució es reiniciarà el joc."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
+   "Taules de classificació específiques del joc. No té efecte si el «mode expert» està desactivat."
+   )
 
 /* Settings > Network */
 
@@ -5124,9 +5136,53 @@ MSG_HASH(
 
 /* Quick Menu > Overrides */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "Desa les excepcions del joc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "Desa un fitxer de configuració d’excepcions que s’aplicarà només al contingut actual. Tindrà prioritat sobre la configuració principal."
+   )
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
+   "No hi ha assoliments per mostrar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
+   "Cancel·la la pausa del mode expert d’assoliments"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
+   "Deixa el mode expert d’assoliments activat per la sessió actual"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
+   "Cancel·la la represa del mode expert d’assoliments"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
+   "Deixa el mode expert d’assoliments desactivat per la sessió actual"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+   "Posa en pausa el mode expert d’assoliments"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+   "Posa en pausa el mode expert d’assoliments per la sessió actual. Aquesta acció habilitarà els desats ràpids, els trucs, el rebobinat, la pausa i la càmera lenta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
+   "Reprèn el mode expert d’assoliments"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+   "Reprèn el mode expert d’assoliments per la sessió actual. Aquesta acció inhabilitarà els desats ràpids, els trucs, el rebobinat, la pausa i la càmera lenta i reiniciarà el joc actual."
+   )
 
 /* Quick Menu > Information */
 
@@ -5267,6 +5323,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
    "N/D"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE,
+   "Expert"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT,
@@ -6192,7 +6252,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
-   "Assoliments (Hardcore)"
+   "Assoliments (expert)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
@@ -6530,7 +6590,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "S’ha activat el mode expert d’assoliments; s’han desactivat el desament d’estat i el rebobinat."
+   "S’ha activat el mode expert d’assoliments; s’han desactivat els desats ràpids i el rebobinat."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -6991,6 +7051,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT,
    "Configurat al port:"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
+   "Heu de posar en pausa o desactivar el mode expert d’assoliments per carregar desats ràpids."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
+   "S’ha carregat un desat ràpid. S’ha desactivat el mode expert d’assoliments per la sessió actual."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
+   "S’ha activat un truc. S’ha desactivat el mode expert d’assoliments per la sessió actual."
    )
 MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
