@@ -952,7 +952,7 @@ bool playlist_push_runtime(playlist_t *playlist,
 
    if (string_is_empty(entry->core_path))
    {
-      RARCH_ERR("cannot push NULL or empty core path into the playlist.\n");
+      RARCH_ERR("Cannot push NULL or empty core path into the playlist.\n");
       goto error;
    }
 
@@ -969,7 +969,7 @@ bool playlist_push_runtime(playlist_t *playlist,
 
    if (string_is_empty(real_core_path))
    {
-      RARCH_ERR("cannot push NULL or empty core path into the playlist.\n");
+      RARCH_ERR("Cannot push NULL or empty core path into the playlist.\n");
       goto error;
    }
 
@@ -1227,7 +1227,7 @@ bool playlist_push(playlist_t *playlist,
 
    if (string_is_empty(entry->core_path))
    {
-      RARCH_ERR("cannot push NULL or empty core path into the playlist.\n");
+      RARCH_ERR("Cannot push NULL or empty core path into the playlist.\n");
       goto error;
    }
 
@@ -1244,7 +1244,7 @@ bool playlist_push(playlist_t *playlist,
 
    if (string_is_empty(real_core_path))
    {
-      RARCH_ERR("cannot push NULL or empty core path into the playlist.\n");
+      RARCH_ERR("Cannot push NULL or empty core path into the playlist.\n");
       goto error;
    }
 
@@ -1258,7 +1258,7 @@ bool playlist_push(playlist_t *playlist,
 
       if (string_is_empty(core_name))
       {
-         RARCH_ERR("cannot push NULL or empty core name into the playlist.\n");
+         RARCH_ERR("Cannot push NULL or empty core name into the playlist.\n");
          goto error;
       }
    }
@@ -1487,7 +1487,7 @@ void playlist_write_runtime_file(playlist_t *playlist)
    if (!(file = intfstream_open_file(playlist->config.path,
          RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
    {
-      RARCH_ERR("Failed to write to playlist file: %s\n", playlist->config.path);
+      RARCH_ERR("Failed to write to playlist file: \"%s\".\n", playlist->config.path);
       return;
    }
 
@@ -1626,7 +1626,7 @@ void playlist_write_runtime_file(playlist_t *playlist)
    playlist->old_format      = false;
    playlist->compressed      = false;
 
-   RARCH_LOG("[Playlist]: Written to playlist file: %s\n", playlist->config.path);
+   RARCH_LOG("[Playlist]: Written to playlist file: \"%s\".\n", playlist->config.path);
 end:
    intfstream_close(file);
    free(file);
@@ -1665,7 +1665,7 @@ void playlist_write_file(playlist_t *playlist)
 
    if (!file)
    {
-      RARCH_ERR("Failed to write to playlist file: %s\n", playlist->config.path);
+      RARCH_ERR("Failed to write to playlist file: \"%s\".\n", playlist->config.path);
       return;
    }
 
@@ -1995,7 +1995,7 @@ void playlist_write_file(playlist_t *playlist)
 
       if (!rjsonwriter_free(writer))
       {
-         RARCH_ERR("Failed to write to playlist file: %s\n", playlist->config.path);
+         RARCH_ERR("Failed to write to playlist file: \"%s\".\n", playlist->config.path);
       }
 
       playlist->old_format = false;
@@ -2004,7 +2004,7 @@ void playlist_write_file(playlist_t *playlist)
    playlist->modified   = false;
    playlist->compressed = compressed;
 
-   RARCH_LOG("[Playlist]: Written to playlist file: %s\n", playlist->config.path);
+   RARCH_LOG("[Playlist]: Written to playlist file: \"%s\".\n", playlist->config.path);
 end:
    intfstream_close(file);
    free(file);

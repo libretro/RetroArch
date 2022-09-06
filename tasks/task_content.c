@@ -1875,7 +1875,7 @@ static bool firmware_update_status(
       firmware_info.directory.system = s;
    }
 
-   RARCH_LOG("[Content]: Updating firmware status for: %s on %s\n",
+   RARCH_LOG("[Content]: Updating firmware status for: \"%s\" on \"%s\".\n",
          core_info->path,
          firmware_info.directory.system);
 
@@ -2843,7 +2843,7 @@ void content_add_subsystem(const char* path)
          p_content->pending_subsystem_rom_id],
          path, pending_size);
    RARCH_LOG("[Subsystem]: Subsystem id: %d Subsystem ident:"
-         " %s Content ID: %d, Content Path: %s\n",
+         " %s Content ID: %d, Content Path: \"%s\".\n",
          p_content->pending_subsystem_id,
          p_content->pending_subsystem_ident,
          p_content->pending_subsystem_rom_id,
