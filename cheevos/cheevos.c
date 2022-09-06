@@ -1198,7 +1198,14 @@ void rcheevos_test(void)
 
    /* We were unable to initialize memory earlier, try now */
    if (rcheevos_locals.memory.count == 0)
+   {
       rcheevos_validate_memrefs(&rcheevos_locals);
+
+      /* rcheevos_validate_memrefs may decide the core doesn't support achievements and
+       * disable them. if so, bail. */
+      if (!rcheevos_locals.loaded)
+         return;
+   }
 
    rc_runtime_do_frame(&rcheevos_locals.runtime,
          &rcheevos_runtime_event_handler, rcheevos_peek, NULL, 0);
