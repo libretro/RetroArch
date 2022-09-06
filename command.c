@@ -1156,10 +1156,6 @@ bool command_event_save_auto_state(
       return false;
    if (string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))))
       return false;
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-      return false;
-#endif
 
    strlcpy(savestate_name_auto,
          runloop_st->name.savestate,
