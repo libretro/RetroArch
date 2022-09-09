@@ -144,10 +144,6 @@ static void* hidpad_ps4_init(void *data, uint32_t slot, hid_driver_t *driver)
    device->connection = connection;
    device->driver     = driver;
    device->slot       = slot;
-   driver->motors[0]  = 0;
-   driver->motors[1]  = 0;
-   driver->data       = 0;
-   driver->have_led   = false;
 
 #if 0
    /* TODO - unsure of this */
