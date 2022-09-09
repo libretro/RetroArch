@@ -30,7 +30,7 @@
 
 typedef struct ds3_instance
 {
-   hid_driver_t *hid_driver;
+   hid_driver_t *driver;
    void *handle;
    int slot;
    bool led_set;
@@ -40,7 +40,8 @@ typedef struct ds3_instance
    uint8_t data[64];
 } ds3_instance_t;
 
-struct __attribute__((__packed__)) sixaxis_led {
+struct __attribute__((__packed__)) sixaxis_led
+{
     uint8_t time_enabled; /* the total time the led is active (0xff means forever) */
     uint8_t duty_length;  /* how long a cycle is in deciseconds (0 means "really fast") */
     uint8_t enabled;
@@ -48,14 +49,16 @@ struct __attribute__((__packed__)) sixaxis_led {
     uint8_t duty_on;  /* % of duty_length the led is on (0xff mean 100%) */
 };
 
-struct __attribute__((__packed__)) sixaxis_rumble {
+struct __attribute__((__packed__)) sixaxis_rumble
+{
     uint8_t right_duration; /* Right motor duration (0xff means forever) */
     uint8_t right_motor_on; /* Right (small) motor on/off, only supports values of 0 or 1 (off/on) */
     uint8_t left_duration;    /* Left motor duration (0xff means forever) */
     uint8_t left_motor_force; /* left (large) motor, supports force values from 0 to 255 */
 };
 
-struct __attribute__((__packed__)) sixaxis_output_report {
+struct __attribute__((__packed__)) sixaxis_output_report
+{
     uint8_t report_id;
     uint8_t padding1;
     struct sixaxis_rumble rumble;
@@ -66,17 +69,20 @@ struct __attribute__((__packed__)) sixaxis_output_report {
     uint8_t unknown[13];
 };
 
-struct __attribute__((__packed__)) sixaxis_activation_report {
+struct __attribute__((__packed__)) sixaxis_activation_report
+{
    uint8_t report_id;
    uint8_t unknown[4];
 };
 
-union sixaxis_activation_report_f4 {
+union sixaxis_activation_report_f4
+{
    uint8_t buf[5];
    struct sixaxis_activation_report data;
 };
 
-union sixaxis_output_report_01 {
+union sixaxis_output_report_01
+{
     uint8_t buf[49];
     struct sixaxis_output_report data;
 };
@@ -112,16 +118,16 @@ static void ds3_update_analog_state(ds3_instance_t *instance);
 
 static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver)
 {
-   ds3_instance_t *instance = (ds3_instance_t *)malloc(sizeof(ds3_instance_t));
+   ds3_instance_t *instance = (ds3_instance_t *)calloc(1, sizeof(ds3_instance_t));
    if(!instance)
       return NULL;
 
    instance->handle     = handle;
-   instance->hid_driver = driver;
+   instance->driver     = driver;
    instance->slot       = slot;
 
-   if(instance->hid_driver->set_protocol)
-      instance->hid_driver->set_protocol(instance->handle, 1);
+   if(instance->driver->set_protocol)
+      instance->driver->set_protocol(instance->handle, 1);
 
    if (ds3_send_output_report(instance) < 0)
    {
@@ -135,21 +141,22 @@ static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver)
       goto error;
    }
 
-
    return instance;
 error:
    free(instance);
    return NULL;
 }
 
-static void ds3_deinit(void *device_data) {
-   if(device_data) {
+static void ds3_deinit(void *device_data)
+{
+   if(device_data)
       free(device_data);
-   }
 }
 
-static void ds3_packet_handler(void *device_data, uint8_t *packet, uint16_t size) {
-   ds3_instance_t *device = (ds3_instance_t *)device_data;
+static void ds3_packet_handler(void *device_data,
+      uint8_t *packet, uint16_t size)
+{
+   ds3_instance_t *device   = (ds3_instance_t *)device_data;
    static long packet_count = 0;
 
    if(!device)
@@ -164,7 +171,7 @@ static void ds3_packet_handler(void *device_data, uint8_t *packet, uint16_t size
    if (size > sizeof(device->data))
    {
       RARCH_ERR("[ds3]: Expecting packet to be %ld but was %d\n",
-         (long)sizeof(device->data), size);
+            (long)sizeof(device->data), size);
       return;
    }
    packet_count++;
@@ -179,11 +186,12 @@ static void ds3_packet_handler(void *device_data, uint8_t *packet, uint16_t size
    ds3_update_analog_state(device);
 }
 
-static void ds3_set_rumble(void *device_data, enum retro_rumble_effect effect, uint16_t strength) {
-
+static void ds3_set_rumble(void *device_data, enum retro_rumble_effect effect, uint16_t strength)
+{
 }
 
-static void ds3_get_buttons(void *device_data, input_bits_t *state) {
+static void ds3_get_buttons(void *device_data, input_bits_t *state)
+{
    ds3_instance_t *device = (ds3_instance_t *)device_data;
    if (device)
    {
@@ -194,32 +202,34 @@ static void ds3_get_buttons(void *device_data, input_bits_t *state) {
       BIT256_CLEAR_ALL_PTR(state);
 }
 
-static int16_t ds3_get_axis(void *device_data, unsigned axis) {
-   union joyaxis {
+static int16_t ds3_get_axis(void *device_data, unsigned axis)
+{
+   union joyaxis
+   {
       uint32_t encoded;
       int16_t axis[2];
    } joyaxis;
-   axis_data axis_data = {0};
+   axis_data axis_data    = {0};
    ds3_instance_t *device = (ds3_instance_t *)device_data;
 
-   joyaxis.encoded = axis;
+   joyaxis.encoded        = axis;
    gamepad_read_axis_data(axis, &axis_data);
 
    if (!device || axis_data.axis >= 4)
       return 0;
 
-   if(joyaxis.axis[0] < 0 || joyaxis.axis[1] < 0) {
+   if(joyaxis.axis[0] < 0 || joyaxis.axis[1] < 0)
       return gamepad_get_axis_value(device->analog_state, &axis_data);
-   } else {
-      return gamepad_get_axis_value_raw(device->analog_state, &axis_data, false);
-   }
+   return gamepad_get_axis_value_raw(device->analog_state, &axis_data, false);
 }
 
-static const char *ds3_get_name(void *device_data) {
+static const char *ds3_get_name(void *device_data)
+{
    return "PLAYSTATION(R)3 Controller";
 }
 
-static int32_t ds3_button(void *device_data, uint16_t joykey) {
+static int32_t ds3_button(void *device_data, uint16_t joykey)
+{
    ds3_instance_t *device = (ds3_instance_t *)device_data;
 
    if (!device || joykey > 31)
@@ -231,12 +241,12 @@ static int ds3_set_operational(ds3_instance_t *instance)
 {
    int ret;
    const int buf_size = SIXAXIS_REPORT_0xF2_SIZE;
-   uint8_t *buf = (uint8_t *)malloc(buf_size);
+   uint8_t *buf       = (uint8_t *)malloc(buf_size);
 
    if(!buf)
       return -1;
 
-   ret = instance->hid_driver->set_report(instance->handle, HID_REPORT_FEATURE, ds3_activation_packet.data.report_id, (uint8_t*)ds3_activation_packet.buf, sizeof(ds3_activation_packet));
+   ret = instance->driver->set_report(instance->handle, HID_REPORT_FEATURE, ds3_activation_packet.data.report_id, (uint8_t*)ds3_activation_packet.buf, sizeof(ds3_activation_packet));
    if(ret < 0)
       RARCH_LOG("Failed to send activation packet\n");
 
@@ -244,9 +254,11 @@ static int ds3_set_operational(ds3_instance_t *instance)
    return ret;
 }
 
-static uint8_t get_leds(unsigned slot) {
+static uint8_t get_leds(unsigned slot)
+{
    unsigned pad_number = slot+1;
-   switch(pad_number) {
+   switch(pad_number)
+   {
       case 1:
       case 2:
       case 3:
@@ -268,15 +280,16 @@ static uint8_t get_leds(unsigned slot) {
    }
 }
 
-static int ds3_send_output_report(ds3_instance_t *instance) {
+static int ds3_send_output_report(ds3_instance_t *instance)
+{
    struct sixaxis_output_report report = {0};
-   uint8_t *packet = (uint8_t *)&report;
+   uint8_t *packet                     = (uint8_t *)&report;
 
    /* Initialize the report with default values */
    memcpy(&report, &default_report, sizeof(struct sixaxis_output_report));
    report.leds_bitmap = get_leds(instance->slot);
 
-   return instance->hid_driver->set_report(instance->handle, HID_REPORT_OUTPUT, report.report_id, packet, sizeof(report));
+   return instance->driver->set_report(instance->handle, HID_REPORT_OUTPUT, report.report_id, packet, sizeof(report));
 }
 
 static void ds3_update_pad_state(ds3_instance_t *instance)
@@ -306,9 +319,10 @@ static void ds3_update_pad_state(ds3_instance_t *instance)
 
    instance->buttons = 0;
 
-   pressed_keys = instance->data[2]        |
-      (instance->data[3] << 8) |
-      ((instance->data[4] & 0x01) << 16);
+   pressed_keys      = 
+         instance->data[2]
+      | (instance->data[3] << 8)
+      | ((instance->data[4] & 0x01) << 16);
 
    for (i = 0; i < 17; i++)
       instance->buttons |= (pressed_keys & (1 << i)) ?
@@ -318,17 +332,15 @@ static void ds3_update_pad_state(ds3_instance_t *instance)
 static void ds3_update_analog_state(ds3_instance_t *instance)
 {
    int pad_axis;
-   int16_t interpolated;
-   unsigned stick, axis;
 
    for (pad_axis = 0; pad_axis < 4; pad_axis++)
    {
-      axis         = (pad_axis % 2) ? 0 : 1;
-      stick        = pad_axis / 2;
-      interpolated = instance->data[6 + pad_axis];
+      unsigned axis        = (pad_axis % 2) ? 0 : 1;
+      unsigned stick       = pad_axis / 2;
+      int16_t interpolated = instance->data[6 + pad_axis];
 
       /* libretro requires "up" to be negative, so we invert the y axis */
-      interpolated = (axis) ?
+      interpolated         = (axis) ?
          ((interpolated - 128) * 256) :
          ((interpolated - 128) * -256);
       instance->analog_state[stick][axis] = interpolated;

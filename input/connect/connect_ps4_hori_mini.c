@@ -30,7 +30,8 @@ struct hidpad_ps4_hori_mini_data
    uint8_t data[512];
 };
 
-static void* hidpad_ps4_hori_mini_init(void *data, uint32_t slot, hid_driver_t *driver)
+static void* hidpad_ps4_hori_mini_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
 {
    struct pad_connection *connection        = (struct pad_connection*)data;
    struct hidpad_ps4_hori_mini_data *device = 

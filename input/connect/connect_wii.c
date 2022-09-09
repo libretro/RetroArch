@@ -580,7 +580,7 @@ static void hidpad_wii_deinit(void *data)
 static void* hidpad_wii_init(void *data, uint32_t slot,
       hid_driver_t *driver)
 {
-   struct pad_connection *connection = (struct pad_connection*)data;
+   struct pad_connection *connection    = (struct pad_connection*)data;
    struct connect_wii_wiimote_t *device = (struct connect_wii_wiimote_t*)
       calloc(1, sizeof(struct connect_wii_wiimote_t));
 
