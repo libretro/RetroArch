@@ -128,6 +128,33 @@ static int ds3_set_operational(ds3_instance_t *instance)
    return ret;
 }
 
+static uint8_t ds3_get_leds(unsigned pad_number)
+{
+   switch(pad_number)
+   {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+         return 1 << pad_number; 
+      case 5:
+         return (1 << 1) | (1 << 4);
+      case 6:
+         return (1 << 2) | (1 << 4);
+      case 7:
+         return (1 << 3) | (1 << 4);
+      case 8:
+         return (1 << 3) | (1 << 1) | (1 << 4);
+      case 9:
+         return (1 << 2) | (1 << 3) | (1 << 4);
+      case 10:
+      default:
+         break;
+   }
+
+   return (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4);
+}
+
 static int ds3_send_output_report(ds3_instance_t *instance)
 {
    struct sixaxis_output_report report = {0};
@@ -135,7 +162,7 @@ static int ds3_send_output_report(ds3_instance_t *instance)
 
    /* Initialize the report with default values */
    memcpy(&report, &default_report, sizeof(struct sixaxis_output_report));
-   report.leds_bitmap = get_leds(instance->slot);
+   report.leds_bitmap = ds3_get_leds(instance->slot + 1);
 
    return instance->driver->set_report(instance->handle, HID_REPORT_OUTPUT, report.report_id, packet, sizeof(report));
 }
@@ -165,9 +192,9 @@ static void ds3_update_pad_state(ds3_instance_t *instance)
       16 /* PS button */
    };
 
-   instance->buttons = 0;
+   instance->buttons     = 0;
 
-   pressed_keys      = 
+   pressed_keys          = 
          instance->data[2]
       | (instance->data[3] << 8)
       | ((instance->data[4] & 0x01) << 16);
@@ -183,14 +210,14 @@ static void ds3_update_analog_state(ds3_instance_t *instance)
 
    for (pad_axis = 0; pad_axis < 4; pad_axis++)
    {
-      unsigned axis        = (pad_axis % 2) ? 0 : 1;
-      unsigned stick       = pad_axis / 2;
-      int16_t interpolated = instance->data[6 + pad_axis];
+      unsigned axis                       = (pad_axis % 2) ? 0 : 1;
+      unsigned stick                      = pad_axis / 2;
+      int16_t interpolated                = instance->data[6 + pad_axis];
 
       /* libretro requires "up" to be negative, so we invert the y axis */
-      interpolated         = (axis) ?
-         ((interpolated - 128) * 256) :
-         ((interpolated - 128) * -256);
+      interpolated                        = axis
+         ? ((interpolated - 128) *  256)
+         : ((interpolated - 128) * -256);
       instance->analog_state[stick][axis] = interpolated;
    }
 }
@@ -316,35 +343,6 @@ static int32_t ds3_button(void *device_data, uint16_t joykey)
    if (!device || joykey > 31)
       return 0;
    return device->buttons & (1 << joykey);
-}
-
-
-static uint8_t get_leds(unsigned slot)
-{
-   unsigned pad_number = slot+1;
-   switch(pad_number)
-   {
-      case 1:
-      case 2:
-      case 3:
-      case 4:
-         return 1 << pad_number; 
-      case 5:
-         return (1 << 1) | (1 << 4);
-      case 6:
-         return (1 << 2) | (1 << 4);
-      case 7:
-         return (1 << 3) | (1 << 4);
-      case 8:
-         return (1 << 3) | (1 << 1) | (1 << 4);
-      case 9:
-         return (1 << 2) | (1 << 3) | (1 << 4);
-      case 10:
-      default:
-         break;
-   }
-
-   return (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4);
 }
 
 pad_connection_interface_t pad_connection_ps3 = {
