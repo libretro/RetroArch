@@ -111,173 +111,21 @@ static const union sixaxis_activation_report_f4 ds3_activation_packet = {
 };
 
 /* forward declarations */
-static int ds3_set_operational(ds3_instance_t *instance);
-static int ds3_send_output_report(ds3_instance_t *instance);
-static void ds3_update_pad_state(ds3_instance_t *instance);
-static void ds3_update_analog_state(ds3_instance_t *instance);
-
-static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver)
-{
-   ds3_instance_t *instance = (ds3_instance_t *)calloc(1, sizeof(ds3_instance_t));
-   if(!instance)
-      return NULL;
-
-   instance->handle     = handle;
-   instance->driver     = driver;
-   instance->slot       = slot;
-
-   if(instance->driver->set_protocol)
-      instance->driver->set_protocol(instance->handle, 1);
-
-   if (ds3_send_output_report(instance) < 0)
-   {
-      RARCH_LOG("Failed to send output report\n");
-      goto error;
-   }
-    
-   if (ds3_set_operational(instance) < 0)
-   {
-      RARCH_LOG("Failed to set operational mode\n");
-      goto error;
-   }
-
-   return instance;
-error:
-   free(instance);
-   return NULL;
-}
-
-static void ds3_deinit(void *device_data)
-{
-   if(device_data)
-      free(device_data);
-}
-
-static void ds3_packet_handler(void *device_data,
-      uint8_t *packet, uint16_t size)
-{
-   ds3_instance_t *device   = (ds3_instance_t *)device_data;
-   static long packet_count = 0;
-
-   if(!device)
-      return;
-
-   if (!device->led_set)
-   {
-      ds3_send_output_report(device);
-      device->led_set = true;
-   }
-
-   if (size > sizeof(device->data))
-   {
-      RARCH_ERR("[ds3]: Expecting packet to be %ld but was %d\n",
-            (long)sizeof(device->data), size);
-      return;
-   }
-   packet_count++;
-
-#if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
-   packet++;
-   size -= 2;
-#endif
-
-   memcpy(device->data, packet, size);
-   ds3_update_pad_state(device);
-   ds3_update_analog_state(device);
-}
-
-static void ds3_set_rumble(void *device_data, enum retro_rumble_effect effect, uint16_t strength)
-{
-}
-
-static void ds3_get_buttons(void *device_data, input_bits_t *state)
-{
-   ds3_instance_t *device = (ds3_instance_t *)device_data;
-   if (device)
-   {
-      /* copy 32 bits : needed for PS button? */
-      BITS_COPY32_PTR(state, device->buttons);
-   }
-   else
-      BIT256_CLEAR_ALL_PTR(state);
-}
-
-static int16_t ds3_get_axis(void *device_data, unsigned axis)
-{
-   union joyaxis
-   {
-      uint32_t encoded;
-      int16_t axis[2];
-   } joyaxis;
-   axis_data axis_data    = {0};
-   ds3_instance_t *device = (ds3_instance_t *)device_data;
-
-   joyaxis.encoded        = axis;
-   gamepad_read_axis_data(axis, &axis_data);
-
-   if (!device || axis_data.axis >= 4)
-      return 0;
-
-   if(joyaxis.axis[0] < 0 || joyaxis.axis[1] < 0)
-      return gamepad_get_axis_value(device->analog_state, &axis_data);
-   return gamepad_get_axis_value_raw(device->analog_state, &axis_data, false);
-}
-
-static const char *ds3_get_name(void *device_data)
-{
-   return "PLAYSTATION(R)3 Controller";
-}
-
-static int32_t ds3_button(void *device_data, uint16_t joykey)
-{
-   ds3_instance_t *device = (ds3_instance_t *)device_data;
-
-   if (!device || joykey > 31)
-      return 0;
-   return device->buttons & (1 << joykey);
-}
-
 static int ds3_set_operational(ds3_instance_t *instance)
 {
    int ret;
    const int buf_size = SIXAXIS_REPORT_0xF2_SIZE;
    uint8_t *buf       = (uint8_t *)malloc(buf_size);
 
-   if(!buf)
+   if (!buf)
       return -1;
 
    ret = instance->driver->set_report(instance->handle, HID_REPORT_FEATURE, ds3_activation_packet.data.report_id, (uint8_t*)ds3_activation_packet.buf, sizeof(ds3_activation_packet));
-   if(ret < 0)
+   if (ret < 0)
       RARCH_LOG("Failed to send activation packet\n");
 
    free(buf);
    return ret;
-}
-
-static uint8_t get_leds(unsigned slot)
-{
-   unsigned pad_number = slot+1;
-   switch(pad_number)
-   {
-      case 1:
-      case 2:
-      case 3:
-      case 4:
-         return 1 << pad_number; 
-      case 5:
-         return (1 << 1) | (1 << 4);
-      case 6:
-         return (1 << 2) | (1 << 4);
-      case 7:
-         return (1 << 3) | (1 << 4);
-      case 8:
-         return (1 << 3) | (1 << 1) | (1 << 4);
-      case 9:
-         return (1 << 2) | (1 << 3) | (1 << 4);
-      case 10:
-      default:
-         return (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4);
-   }
 }
 
 static int ds3_send_output_report(ds3_instance_t *instance)
@@ -345,6 +193,158 @@ static void ds3_update_analog_state(ds3_instance_t *instance)
          ((interpolated - 128) * -256);
       instance->analog_state[stick][axis] = interpolated;
    }
+}
+
+
+static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver)
+{
+   ds3_instance_t *instance = (ds3_instance_t *)
+      calloc(1, sizeof(ds3_instance_t));
+   if (!instance)
+      return NULL;
+
+   instance->handle     = handle;
+   instance->driver     = driver;
+   instance->slot       = slot;
+
+   if (instance->driver->set_protocol)
+      instance->driver->set_protocol(instance->handle, 1);
+
+   if (ds3_send_output_report(instance) < 0)
+   {
+      RARCH_LOG("Failed to send output report\n");
+      goto error;
+   }
+    
+   if (ds3_set_operational(instance) < 0)
+   {
+      RARCH_LOG("Failed to set operational mode\n");
+      goto error;
+   }
+
+   return instance;
+error:
+   free(instance);
+   return NULL;
+}
+
+static void ds3_deinit(void *device_data)
+{
+   if (device_data)
+      free(device_data);
+}
+
+static void ds3_packet_handler(void *device_data,
+      uint8_t *packet, uint16_t size)
+{
+   ds3_instance_t *device   = (ds3_instance_t *)device_data;
+
+   if (!device)
+      return;
+
+   if (!device->led_set)
+   {
+      ds3_send_output_report(device);
+      device->led_set = true;
+   }
+
+   if (size > sizeof(device->data))
+   {
+      RARCH_ERR("[ds3]: Expecting packet to be %ld but was %d\n",
+            (long)sizeof(device->data), size);
+      return;
+   }
+
+#if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
+   packet++;
+   size -= 2;
+#endif
+
+   memcpy(device->data, packet, size);
+   ds3_update_pad_state(device);
+   ds3_update_analog_state(device);
+}
+
+static void ds3_set_rumble(void *device_data,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   /* TODO/FIXME - implement */
+}
+
+static void ds3_get_buttons(void *device_data, input_bits_t *state)
+{
+   ds3_instance_t *device = (ds3_instance_t *)device_data;
+   if (device)
+   {
+      /* copy 32 bits : needed for PS button? */
+      BITS_COPY32_PTR(state, device->buttons);
+   }
+   else
+      BIT256_CLEAR_ALL_PTR(state);
+}
+
+static int16_t ds3_get_axis(void *device_data, unsigned axis)
+{
+   union joyaxis
+   {
+      uint32_t encoded;
+      int16_t axis[2];
+   } joyaxis;
+   axis_data axis_data    = {0};
+   ds3_instance_t *device = (ds3_instance_t *)device_data;
+
+   joyaxis.encoded        = axis;
+   gamepad_read_axis_data(axis, &axis_data);
+
+   if (!device || axis_data.axis >= 4)
+      return 0;
+
+   if (joyaxis.axis[0] < 0 || joyaxis.axis[1] < 0)
+      return gamepad_get_axis_value(device->analog_state, &axis_data);
+   return gamepad_get_axis_value_raw(device->analog_state, &axis_data, false);
+}
+
+static const char *ds3_get_name(void *device_data)
+{
+   return "PLAYSTATION(R)3 Controller";
+}
+
+static int32_t ds3_button(void *device_data, uint16_t joykey)
+{
+   ds3_instance_t *device = (ds3_instance_t *)device_data;
+
+   if (!device || joykey > 31)
+      return 0;
+   return device->buttons & (1 << joykey);
+}
+
+
+static uint8_t get_leds(unsigned slot)
+{
+   unsigned pad_number = slot+1;
+   switch(pad_number)
+   {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+         return 1 << pad_number; 
+      case 5:
+         return (1 << 1) | (1 << 4);
+      case 6:
+         return (1 << 2) | (1 << 4);
+      case 7:
+         return (1 << 3) | (1 << 4);
+      case 8:
+         return (1 << 3) | (1 << 1) | (1 << 4);
+      case 9:
+         return (1 << 2) | (1 << 3) | (1 << 4);
+      case 10:
+      default:
+         break;
+   }
+
+   return (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4);
 }
 
 pad_connection_interface_t pad_connection_ps3 = {
