@@ -135,7 +135,6 @@ static void frontend_ctr_get_env(int* argc, char* argv[],
                       "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
                       FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
-
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_BOTTOM_ASSETS], g_defaults.dirs[DEFAULT_DIR_ASSETS],
                       "ctr", sizeof(g_defaults.dirs[DEFAULT_DIR_BOTTOM_ASSETS]));
 
@@ -154,24 +153,6 @@ static void frontend_ctr_deinit(void* data)
    (void)data;
 
 #ifndef IS_SALAMANDER
-   /* Note: frontend_ctr_deinit() is normally called when
-    * forking to load new content. When this happens, the
-    * log messages generated in frontend_ctr_exec() *must*
-    * be printed to screen (provided bottom screen is not
-    * turned off...), since the 'first core launch' warning
-    * can prevent sdcard corruption. We therefore close any
-    * existing log file, enable verbose logging and revert
-    * to console output. (Normal logging will be resumed
-    * once retroarch.cfg has been re-read) */
-   retro_main_log_file_deinit();
-   verbosity_enable();
-   retro_main_log_file_init(NULL, false);
-
-#ifdef CONSOLE_LOG
-   if (ctr_bottom_screen_enabled && (ctr_fork_mode == FRONTEND_FORK_NONE))
-      wait_for_input();
-#endif
-
    CFGU_GetModelNintendo2DS(&not_2DS);
 
    if (not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
@@ -259,23 +240,9 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
 #endif
 
       if (envIsHomebrew())
-      {
          exec_3dsx_no_path_in_args(path, (const char**)arg_data);
-      }
       else
-      {
-         RARCH_WARN("\n");
-         RARCH_WARN("\n");
-         RARCH_WARN("Warning:\n");
-         RARCH_WARN("First core launch may take 20\n");
-         RARCH_WARN("seconds! Do not force quit\n");
-         RARCH_WARN("before then or your memory\n");
-         RARCH_WARN("card may be corrupted!\n");
-         RARCH_WARN("\n");
-         RARCH_WARN("\n");
-
          exec_cia(path, (const char**)arg_data);
-      }
 
       /* couldnt launch new core, but context
          is corrupt so we have to quit */
