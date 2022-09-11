@@ -116,6 +116,15 @@ static int ds3_set_operational(ds3_instance_t *instance)
    int ret;
    uint8_t usb_packet[64] = { 0x00 };
 
+   if(instance->driver->set_report == NULL || instance->driver->get_report == NULL) {
+      RARCH_ERR("This HID implementation does not support the Sony Sixaxis controller:\n");
+      if(instance->driver->set_report == NULL)
+         RARCH_ERR("- set_report implementation is missing\n");
+      if(instance->driver->get_report == NULL)
+         RARCH_ERR("- get_report implementation is missing\n");
+      return -1;
+   }
+
    ret = instance->driver->set_report(instance->handle, HID_REPORT_FEATURE, ds3_activation_packet.data.report_id, ds3_activation_packet.buf, sizeof(ds3_activation_packet.buf));
    if (ret < 0) {
       RARCH_LOG("Failed to send activation packet\n");
@@ -124,13 +133,13 @@ static int ds3_set_operational(ds3_instance_t *instance)
 
    ret = instance->driver->get_report(instance->handle, HID_REPORT_FEATURE, 0xf2, &usb_packet, SIXAXIS_REPORT_0xF2_SIZE);
    if (ret < 0) {
-      RARCH_LOG("Failed to read feature report 0xf2");
+      RARCH_LOG("Failed to read feature report 0xf2\n");
       return ret;
    }
 
    ret = instance->driver->get_report(instance->handle, HID_REPORT_FEATURE, 0xf5, &usb_packet, SIXAXIS_REPORT_0xF5_SIZE);
    if (ret < 0) {
-      RARCH_LOG("Failed to read feature report 0xf5");
+      RARCH_LOG("Failed to read feature report 0xf5\n");
       return ret;
    }
 
