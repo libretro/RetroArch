@@ -1382,7 +1382,7 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
 #ifdef __WINRT__
    DXGICreateFactory2(&d3d12->factory);
 #else
-   DXGICreateFactory(&d3d12->factory);
+   DXGICreateFactory1(&d3d12->factory);
 #endif
    {
       settings_t *settings = config_get_ptr();
@@ -1406,7 +1406,7 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
          if (FAILED(DXGIEnumAdapters2(d3d12->factory, i, &adapter)))
             break;
 #else
-         if (FAILED(DXGIEnumAdapters(d3d12->factory, i, &adapter)))
+         if (FAILED(DXGIEnumAdapters1(d3d12->factory, i, &adapter)))
             break;
 #endif
          adapter->lpVtbl->GetDesc(adapter, &desc);

@@ -156,7 +156,7 @@ typedef struct
 #ifdef __WINRT__
    DXGIFactory2 factory;
 #else
-   DXGIFactory factory;
+   DXGIFactory1 factory;
 #endif
    DXGIAdapter adapter;
 

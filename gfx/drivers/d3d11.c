@@ -1193,7 +1193,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
 #ifdef __WINRT__
    DXGICreateFactory2(&d3d11->factory);
 #else
-   DXGICreateFactory(&d3d11->factory);
+   DXGICreateFactory1(&d3d11->factory);
 #endif
 #ifdef HAVE_DXGI_HDR
    d3d11->hdr.enable                      = settings->bools.video_hdr_enable;
@@ -1651,7 +1651,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
          if (FAILED(DXGIEnumAdapters2(d3d11->factory, i, &d3d11->adapter)))
             break;
 #else
-         if (FAILED(DXGIEnumAdapters(d3d11->factory, i, &d3d11->adapter)))
+         if (FAILED(DXGIEnumAdapters1(d3d11->factory, i, &d3d11->adapter)))
             break;
 #endif
 

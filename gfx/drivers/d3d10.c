@@ -1063,7 +1063,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
 #ifdef __WINRT__
    DXGICreateFactory2(&d3d10->factory);
 #else
-   DXGICreateFactory(&d3d10->factory);
+   DXGICreateFactory1(&d3d10->factory);
 #endif
    
    {
@@ -1087,7 +1087,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
          if (FAILED(DXGIEnumAdapters2(d3d10->factory, i, &d3d10->adapter)))
             break;
 #else
-         if (FAILED(DXGIEnumAdapters(d3d10->factory, i, &d3d10->adapter)))
+         if (FAILED(DXGIEnumAdapters1(d3d10->factory, i, &d3d10->adapter)))
             break;
 #endif
 

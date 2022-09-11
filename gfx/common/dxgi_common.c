@@ -429,7 +429,7 @@ inline static int dxgi_compute_intersection_area(
 #ifdef __WINRT__
 bool dxgi_check_display_hdr_support(DXGIFactory2 factory, HWND hwnd)
 #else
-bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd)
+bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
 #endif
 {
    DXGIOutput6 output6       = NULL;
@@ -470,7 +470,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd)
    if (!factory->lpVtbl->IsCurrent(factory))
 #endif
    {
-      if (FAILED(DXGICreateFactory(&factory)))
+      if (FAILED(DXGICreateFactory1(&factory)))
       {
          RARCH_ERR("[DXGI]: Failed to create DXGI factory\n");
          return false;
