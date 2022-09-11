@@ -72,7 +72,7 @@ struct __attribute__((__packed__)) sixaxis_output_report
 struct __attribute__((__packed__)) sixaxis_activation_report
 {
    uint8_t report_id;
-   uint8_t unknown[4];
+   uint8_t knock[4];
 };
 
 union sixaxis_activation_report_f4
@@ -93,7 +93,7 @@ static const union sixaxis_output_report_01 default_report = {
       0x00, /* padding */
       0xff, 0x00, /* right rumble */
       0xff, 0x00, /* left rumble */
-      0x00, 0x00, 0x00, 0x00, /* padding */
+      0x00, 0x00, 0x00, 0x00, /* gyro */
       0x00, /* LED bitmap */
       0xff, 0x27, 0x10, 0x00, 0x32, /* LED 1 config */
       0xff, 0x27, 0x10, 0x00, 0x32, /* LED 2 config */
@@ -107,25 +107,34 @@ static const union sixaxis_output_report_01 default_report = {
 };
 
 static const union sixaxis_activation_report_f4 ds3_activation_packet = {
-   { 0xF4, 0x42, 0x0c, 0x00, 0x00 }
+   { 0xf4, 0x42, 0x0c, 0x00, 0x00 }
 };
 
 /* forward declarations */
 static int ds3_set_operational(ds3_instance_t *instance)
 {
    int ret;
-   const int buf_size = SIXAXIS_REPORT_0xF2_SIZE;
-   uint8_t *buf       = (uint8_t *)malloc(buf_size);
+   uint8_t usb_packet[64] = { 0x00 };
 
-   if (!buf)
-      return -1;
-
-   ret = instance->driver->set_report(instance->handle, HID_REPORT_FEATURE, ds3_activation_packet.data.report_id, (uint8_t*)ds3_activation_packet.buf, sizeof(ds3_activation_packet));
-   if (ret < 0)
+   ret = instance->driver->set_report(instance->handle, HID_REPORT_FEATURE, ds3_activation_packet.data.report_id, ds3_activation_packet.buf, sizeof(ds3_activation_packet.buf));
+   if (ret < 0) {
       RARCH_LOG("Failed to send activation packet\n");
+      return ret;
+   }
 
-   free(buf);
-   return ret;
+   ret = instance->driver->get_report(instance->handle, HID_REPORT_FEATURE, 0xf2, &usb_packet, SIXAXIS_REPORT_0xF2_SIZE);
+   if (ret < 0) {
+      RARCH_LOG("Failed to read feature report 0xf2");
+      return ret;
+   }
+
+   ret = instance->driver->get_report(instance->handle, HID_REPORT_FEATURE, 0xf5, &usb_packet, SIXAXIS_REPORT_0xF5_SIZE);
+   if (ret < 0) {
+      RARCH_LOG("Failed to read feature report 0xf5");
+      return ret;
+   }
+
+   return 0;
 }
 
 static uint8_t ds3_get_leds(unsigned pad_number)
@@ -242,7 +251,7 @@ static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver)
       RARCH_LOG("Failed to send output report\n");
       goto error;
    }
-    
+
    if (ds3_set_operational(instance) < 0)
    {
       RARCH_LOG("Failed to set operational mode\n");
