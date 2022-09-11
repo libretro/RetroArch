@@ -96,10 +96,6 @@
  * a fixed colour: HTML WhiteSmoke */
 #define XMB_SCREENSAVER_TINT 0xF5F5F5
 
-#if 0
-#define XMB_DEBUG
-#endif
-
 enum
 {
    XMB_TEXTURE_MAIN_MENU = 0,
