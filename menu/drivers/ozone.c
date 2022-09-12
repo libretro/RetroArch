@@ -1633,16 +1633,17 @@ static void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
 static unsigned ozone_get_system_theme(void)
 {
 #ifdef HAVE_LIBNX
-   unsigned ret = 0;
    if (R_SUCCEEDED(setsysInitialize()))
    {
       ColorSetId theme;
+      unsigned ret = 0;
       setsysGetColorSetId(&theme);
-      ret = (theme == ColorSetId_Dark) ? 1 : 0;
+      if (theme == ColorSetId_Dark)
+         ret = 1;
       setsysExit();
+      return ret;
    }
-
-   return ret;
+   return 0;
 #else
    return DEFAULT_OZONE_COLOR_THEME;
 #endif
@@ -9169,8 +9170,10 @@ static void ozone_render(void *data,
        *   when mixing pointer + gamepad/keyboard input */
 
       /* >> Loop over all entries */
-      ozone->first_onscreen_entry = 0;
-      ozone->last_onscreen_entry  = (entries_end > 0) ? entries_end - 1 : 0;
+      ozone->first_onscreen_entry   = 0;
+      ozone->last_onscreen_entry    = 0;
+      if (entries_end > 0)
+         ozone->last_onscreen_entry = entries_end - 1;
 
       for (i = 0; i < entries_end; i++)
       {
@@ -10739,9 +10742,9 @@ static void ozone_populate_entries(void *data,
        * (Ozone is a fickle beast...) */
       if (ozone->is_playlist)
       {
-         menu_search_terms_t *menu_search_terms=
+         menu_search_terms_t *menu_search_terms =
                menu_entries_search_get_terms();
-         size_t num_search_terms               =
+         size_t num_search_terms                =
                menu_search_terms ? menu_search_terms->size : 0;
 
          if (ozone->num_search_terms_old != num_search_terms)

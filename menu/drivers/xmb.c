@@ -1698,7 +1698,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i, height = 0;
-   int        threshold = xmb->icon_size * 10;
+   int        threshold = xmb->icon_size    * 10;
    size_t           end = list ? list->size : 0;
 
    video_driver_get_size(NULL, &height);
@@ -1721,9 +1721,9 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
 
       if (real_y < -threshold || real_y > height+threshold)
       {
-         node->alpha = ia;
+         node->alpha       = ia;
          node->label_alpha = 0;
-         node->x = xmb->icon_size * dir * -2;
+         node->x           = xmb->icon_size * dir * -2;
       }
       else
       {
@@ -5322,10 +5322,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       /* Drop shadow for thumbnails needs to be larger
        * than for text/icons, and also needs to scale
        * with screen dimensions */
-      float shadow_offset = xmb->shadow_offset * 1.5f * xmb->last_scale_factor;
-      shadow_offset       = (shadow_offset > xmb->shadow_offset)
-         ? shadow_offset
-         : xmb->shadow_offset;
+      float shadow_offset            =   xmb->shadow_offset * 1.5f 
+                                       * xmb->last_scale_factor;
+      if (shadow_offset <= xmb->shadow_offset)
+         shadow_offset               = xmb->shadow_offset;
 
       thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_DROP;
       thumbnail_shadow.alpha         = GFX_SHADOW_ALPHA;
@@ -5820,8 +5820,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   float fade_alpha      = xmb_item_color[3];
                   float fade_offset     = (x - x_threshold) * 2.0f;
 
-                  fade_offset = (fade_offset > xmb->icon_size) ? xmb->icon_size : fade_offset;
-                  fade_alpha *= 1.0f - (fade_offset / xmb->icon_size);
+                  if (fade_offset > xmb->icon_size)
+                     fade_offset        = xmb->icon_size;
+                  fade_alpha           *= 1.0f - (fade_offset / xmb->icon_size);
 
                   if (fade_alpha <= 0.0f)
                      continue;

@@ -1266,9 +1266,12 @@ static uint16_t argb32_to_rgb5a3(uint32_t col)
       /* a_factor can actually be greater than 1. This will never happen
        * with the current preset theme colour values, but users can set
        * any custom values they like, so we have to play it safe... */
-      r = (r <= 0xFF) ? r : 0xFF;
-      g = (g <= 0xFF) ? g : 0xFF;
-      b = (b <= 0xFF) ? b : 0xFF;
+      if (r >= 0xFF)
+         r = 0xFF;
+      if (g >= 0xFF)
+         g = 0xFF;
+      if (b >= 0xFF)
+         b = 0xFF;
    }
    /* Convert RGB from 8 bit to 4 bit */
    r = r >> 4;
@@ -1628,16 +1631,16 @@ static void rgui_fill_rect(
    unsigned x_index, y_index;
    uint16_t scanline_even[RGUI_MAX_FB_WIDTH]; /* Initial values don't matter here */
    uint16_t scanline_odd[RGUI_MAX_FB_WIDTH];
-   unsigned x_start = x <= fb_width  ? x : fb_width;
-   unsigned y_start = y <= fb_height ? y : fb_height;
+   unsigned x_start = (x <= fb_width)  ? x : fb_width;
+   unsigned y_start = (y <= fb_height) ? y : fb_height;
    unsigned x_end_i = x + width;
    unsigned y_end_i = y + height;
    /* Note: unlike rgui_color_rect() and rgui_draw_particle(),
     * this function is frequently used to fill large areas.
     * We therefore gain significant performance benefits
     * from using memcpy() tricks... */
-   unsigned x_end  = x_end_i <= fb_width  ? x_end_i : fb_width;
-   unsigned y_end  = y_end_i <= fb_height ? y_end_i : fb_height;
+   unsigned x_end  = (x_end_i <= fb_width)  ? x_end_i : fb_width;
+   unsigned y_end  = (y_end_i <= fb_height) ? y_end_i : fb_height;
    size_t x_size   = (x_end - x_start) * sizeof(uint16_t);
 
    /* Sanity check */
@@ -1763,13 +1766,15 @@ static void rgui_color_rect(
       uint16_t color)
 {
    unsigned x_index, y_index;
-   unsigned x_start = x <= fb_width  ? x : fb_width;
-   unsigned y_start = y <= fb_height ? y : fb_height;
+   unsigned x_start = (x <= fb_width)  ? x : fb_width;
+   unsigned y_start = (y <= fb_height) ? y : fb_height;
    unsigned x_end   = x + width;
    unsigned y_end   = y + height;
 
-   x_end            = x_end <= fb_width  ? x_end : fb_width;
-   y_end            = y_end <= fb_height ? y_end : fb_height;
+   if (x_end > fb_width)
+      x_end         = fb_width;
+   if (y_end > fb_height)
+      y_end         = fb_height;
 
    for (y_index = y_start; y_index < y_end; y_index++)
    {
@@ -1836,13 +1841,17 @@ static bool INLINE rgui_draw_particle(
    int x_start   = (x_start_i <= (int)fb_width)  ? x_start_i : fb_width;
    int y_start   = (y_start_i <= (int)fb_height) ? y_start_i : fb_height;
    
-   x_end         = (x_end >  0)              ? x_end : 0;
-   x_end         = (x_end <= (int)fb_width)  ? x_end : fb_width;
+   if (x_end <= 0)
+      x_end      = 0;
+   else if (x_end > (int)fb_width)
+      x_end      = fb_width;
    
-   y_end         = (y_end >  0)              ? y_end : 0;
-   y_end         = (y_end <= (int)fb_height) ? y_end : fb_height;
+   if (y_end <= 0)
+      y_end      = 0;
+   else if (y_end > (int)fb_height)
+      y_end      = fb_height;
    
-   for (y_index = (unsigned)y_start; y_index < (unsigned)y_end; y_index++)
+   for (y_index  = (unsigned)y_start; y_index < (unsigned)y_end; y_index++)
    {
       uint16_t *data_ptr = data + (y_index * fb_width);
       for (x_index = (unsigned)x_start; x_index < (unsigned)x_end; x_index++)
@@ -1888,8 +1897,8 @@ static void rgui_init_particle_effect(rgui_t *rgui,
                9, 9,
                10};
             unsigned num_drops = (unsigned)(0.85f * ((float)fb_width / (float)RGUI_MAX_FB_WIDTH) * (float)RGUI_NUM_PARTICLES);
-            
-            num_drops = num_drops < RGUI_NUM_PARTICLES ? num_drops : RGUI_NUM_PARTICLES;
+            if (num_drops >= RGUI_NUM_PARTICLES)
+               num_drops       = RGUI_NUM_PARTICLES;
             
             for (i = 0; i < num_drops; i++)
             {
@@ -2018,14 +2027,18 @@ static void rgui_render_particle_effect(
                rgui_particle_t *particle = &rgui->particles[i];
                
                /* Update particle 'speed' */
-               particle->c = particle->c + (float)(rand() % 16 - 9) * 0.01f;
-               particle->d = particle->d + (float)(rand() % 16 - 7) * 0.01f;
+               particle->c    = particle->c + (float)(rand() % 16 - 9) * 0.01f;
+               particle->d    = particle->d + (float)(rand() % 16 - 7) * 0.01f;
                
-               particle->c = (particle->c < -0.4f) ? -0.4f : particle->c;
-               particle->c = (particle->c >  0.1f) ?  0.1f : particle->c;
+               if (particle->c < -0.4f)
+                  particle->c = -0.4f;
+               else if (particle->c > 0.1f)
+                  particle->c = 0.1f;
                
-               particle->d = (particle->d < -0.1f) ? -0.1f : particle->d;
-               particle->d = (particle->d >  0.4f) ?  0.4f : particle->d;
+               if (particle->d < -0.1f)
+                  particle->d = -0.1f;
+               else if (particle->d >  0.4f)
+                  particle->d = 0.4f;
                
                /* Update particle location */
                particle->a = fmod(particle->a + (global_speed_factor * particle->c), fb_width);
@@ -2053,8 +2066,10 @@ static void rgui_render_particle_effect(
                /* Reset particle if it has fallen off screen */
                if (!on_screen)
                {
-                  particle->a = (particle->a < 0.0f) ? (particle->a + (float)fb_width)  : particle->a;
-                  particle->b = (particle->b < 0.0f) ? (particle->b + (float)fb_height) : particle->b;
+                  if (particle->a < 0.0f)
+                     particle->a = (particle->a + (float)fb_width);
+                  if (particle->b < 0.0f)
+                     particle->b = (particle->b + (float)fb_height);
                }
             }
          }
@@ -2071,24 +2086,26 @@ static void rgui_render_particle_effect(
                8, 8, 8,
                9, 9,
                10};
+            bool on_screen     = false;
             unsigned num_drops = (unsigned)(0.85f * ((float)fb_width / (float)RGUI_MAX_FB_WIDTH) * (float)RGUI_NUM_PARTICLES);
-            bool on_screen;
-            
-            num_drops = num_drops < RGUI_NUM_PARTICLES ? num_drops : RGUI_NUM_PARTICLES;
+            if (num_drops >= RGUI_NUM_PARTICLES)
+               num_drops       = RGUI_NUM_PARTICLES;
             
             for (i = 0; i < num_drops; i++)
             {
                rgui_particle_t *particle = &rgui->particles[i];
                
                /* Draw particle */
-               on_screen = rgui_draw_particle(frame_buf_data, fb_width, fb_height,
-                                 (int)particle->a, (int)particle->b,
-                                 2, (unsigned)particle->c, particle_color);
+               on_screen = rgui_draw_particle(
+                     frame_buf_data, fb_width, fb_height,
+                     (int)particle->a, (int)particle->b,
+                     2, (unsigned)particle->c, particle_color);
                
                /* Update y pos */
                particle->b += particle->d * global_speed_factor;
                
-               /* Reset particle if it has fallen off the bottom of the screen */
+               /* Reset particle if it has fallen off 
+                  the bottom of the screen */
                if (!on_screen)
                {
                   /* x pos */
@@ -2349,8 +2366,10 @@ static bool rgui_downscale_thumbnail(
       }
 
       /* Account for any possible rounding errors... */
-      image_dst->height          = (image_dst->height < 1) ? 1 : image_dst->height;
-      image_dst->height          = (image_dst->height > max_height) ? max_height : image_dst->height;
+      if (image_dst->height < 1)
+         image_dst->height       = 1;
+      else if (image_dst->height > max_height)
+         image_dst->height       = max_height;
    }
    else
    {
@@ -2361,13 +2380,15 @@ static bool rgui_downscale_thumbnail(
          image_dst->width        = image_dst->width / (aspect_ratio / core_aspect);
 
       /* Account for any possible rounding errors... */
-      image_dst->width           = (image_dst->width < 1) ? 1 : image_dst->width;
-      image_dst->width           = (image_dst->width > max_width) ? max_width : image_dst->width;
+      if (image_dst->width < 1)
+         image_dst->width        = 1;
+      if (image_dst->width > max_width)
+         image_dst->width        = max_width;
    }
 
    /* Allocate pixel buffer */
-   image_dst->pixels             = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t));
-   if (!image_dst->pixels)
+   if (!(image_dst->pixels = (uint32_t*)calloc(image_dst->width *
+image_dst->height, sizeof(uint32_t))))
       return false;
 
    /* Determine scaling method */
@@ -2459,7 +2480,9 @@ static void rgui_process_thumbnail(
    /* Downscale thumbnail if it exceeds maximum size limits */
    if ((image_src->width > thumbnail->max_width) || (image_src->height > thumbnail->max_height))
    {
-      if (!rgui_downscale_thumbnail(rgui, thumbnail->max_width, thumbnail->max_height,
+      if (!rgui_downscale_thumbnail(rgui,
+               thumbnail->max_width,
+               thumbnail->max_height,
                menu_rgui_thumbnail_downscaler,
                image_src, &image_resampled))
       {
@@ -2690,9 +2713,12 @@ static void rgui_render_fs_thumbnail(rgui_t *rgui,
          /* Vertical component */
          if (fs_thumbnail_width < fb_width)
          {
-            shadow_width  = fb_width - fs_thumbnail_width;
-            shadow_width  = shadow_width > 2 ? 2 : shadow_width;
-            shadow_height = fs_thumbnail_height + 2 < fb_height ? fs_thumbnail_height : fb_height - 2;
+            shadow_width     = fb_width - fs_thumbnail_width;
+            if (shadow_width > 2)
+               shadow_width  = 2;
+            shadow_height    = (fs_thumbnail_height + 2 < fb_height) 
+               ? fs_thumbnail_height 
+               : fb_height - 2;
 
             shadow_x      = fb_x_offset + fs_thumbnail_width;
             shadow_y      = fb_y_offset + 2;
@@ -2704,12 +2730,15 @@ static void rgui_render_fs_thumbnail(rgui_t *rgui,
          /* Horizontal component */
          if (fs_thumbnail_height < fb_height)
          {
-            shadow_height = fb_height - fs_thumbnail_height;
-            shadow_height = shadow_height > 2 ? 2 : shadow_height;
-            shadow_width  = fs_thumbnail_width + 2 < fb_width ? fs_thumbnail_width : fb_width - 2;
+            shadow_height    = fb_height - fs_thumbnail_height;
+            if (shadow_height > 2)
+               shadow_height = 2;
+            shadow_width     = (fs_thumbnail_width + 2 < fb_width) 
+               ? fs_thumbnail_width 
+               : fb_width - 2;
 
-            shadow_x      = fb_x_offset + 2;
-            shadow_y      = fb_y_offset + fs_thumbnail_height;
+            shadow_x         = fb_x_offset + 2;
+            shadow_y         = fb_y_offset + fs_thumbnail_height;
 
             rgui_color_rect(frame_buf_data, fb_width, fb_height,
                   shadow_x, shadow_y, shadow_width, shadow_height, rgui->colors.shadow_color);
@@ -4295,8 +4324,10 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message,
 
    if (height > fb_height)
       height                = fb_height;
-   x                        = (x < 0) ? 0 : x;
-   y                        = (y < 0) ? 0 : y;
+   if (x < 0)
+      x                     = 0;
+   if (y < 0)
+      y                     = 0;
 
    if (frame_buf_data)
    {
@@ -4933,11 +4964,13 @@ static void rgui_render(void *data,
          size_t start;
          int16_t scroll_y_max = bottom * rgui->font_height_stride;
 
-         rgui->scroll_y += -1 * rgui->pointer.dy;
-         rgui->scroll_y = (rgui->scroll_y < 0)            ? 0            : rgui->scroll_y;
-         rgui->scroll_y = (rgui->scroll_y > scroll_y_max) ? scroll_y_max : rgui->scroll_y;
+         rgui->scroll_y      += -1 * rgui->pointer.dy;
+         if (rgui->scroll_y < 0)
+            rgui->scroll_y    = 0;
+         if (rgui->scroll_y > scroll_y_max)
+            rgui->scroll_y    = scroll_y_max;
 
-         start = rgui->scroll_y / rgui->font_height_stride;
+         start                = rgui->scroll_y / rgui->font_height_stride;
          menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
       }
    }
@@ -5780,14 +5813,10 @@ static void rgui_update_menu_viewport(rgui_t *rgui,
 #endif
       
       /* Sanity check */
-      rgui->menu_video_settings.viewport.width = 
-         (rgui->menu_video_settings.viewport.width < 1) 
-         ? 1 
-         : rgui->menu_video_settings.viewport.width;
-      rgui->menu_video_settings.viewport.height = 
-         (rgui->menu_video_settings.viewport.height < 1) 
-         ? 1 
-         : rgui->menu_video_settings.viewport.height;
+      if (rgui->menu_video_settings.viewport.width < 1)
+         rgui->menu_video_settings.viewport.width = 1;
+      if (rgui->menu_video_settings.viewport.height < 1)
+         rgui->menu_video_settings.viewport.height = 1;
    }
    else
    {
@@ -6097,7 +6126,8 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui,
    
    /* Allocate mini thumbnail buffers */
    mini_thumbnail_term_width       = (unsigned)((float)rgui->term_layout.width * (2.0f / 5.0f));
-   mini_thumbnail_term_width       = mini_thumbnail_term_width > 19 ? 19 : mini_thumbnail_term_width;
+   if (mini_thumbnail_term_width > 19)
+      mini_thumbnail_term_width    = 19;
    rgui->mini_thumbnail_max_width  = mini_thumbnail_term_width * rgui->font_width_stride;
    rgui->mini_thumbnail_max_height = (unsigned)((rgui->term_layout.height * rgui->font_height_stride) * 0.5f) - 2;
    
@@ -6836,9 +6866,10 @@ static void rgui_refresh_thumbnail_image(void *userdata, unsigned i)
 {
    rgui_t       *rgui          = (rgui_t*)userdata;
    settings_t       *settings  = config_get_ptr();
-   bool rgui_inline_thumbnails = settings ? settings->bools.menu_rgui_inline_thumbnails : false;
+   bool rgui_inline_thumbnails = false;
    if (!rgui || !settings)
       return;
+   rgui_inline_thumbnails      = settings->bools.menu_rgui_inline_thumbnails;
 
    /* Only refresh thumbnails if thumbnails are enabled */
    if ((rgui->show_fs_thumbnail || rgui_inline_thumbnails) &&

@@ -5541,18 +5541,21 @@ static void materialui_render_entry_touch_feedback(
       }
 
       /* Update highlight opacity */
-      mui->touch_feedback_alpha = (float)mui->pointer.press_duration / (float)MENU_INPUT_PRESS_TIME_SHORT;
-      mui->touch_feedback_alpha = (mui->touch_feedback_alpha > 1.0f) ? 1.0f : mui->touch_feedback_alpha;
+      mui->touch_feedback_alpha    = (float)mui->pointer.press_duration 
+         / (float)MENU_INPUT_PRESS_TIME_SHORT;
+      if (mui->touch_feedback_alpha > 1.0f)
+         mui->touch_feedback_alpha = 1.0f;
    }
    /* If pointer has moved, or has been released, any
     * unfinished feedback highlight animation must
     * fade out */
    else if (mui->touch_feedback_alpha > 0.0f)
    {
-      gfx_animation_t *p_anim    = anim_get_ptr();
-      mui->touch_feedback_alpha -= (p_anim->delta_time * 1000.0f) 
+      gfx_animation_t *p_anim      = anim_get_ptr();
+      mui->touch_feedback_alpha   -= (p_anim->delta_time * 1000.0f) 
          / (float)MENU_INPUT_PRESS_TIME_SHORT;
-      mui->touch_feedback_alpha = (mui->touch_feedback_alpha < 0.0f) ? 0.0f : mui->touch_feedback_alpha;
+      if (mui->touch_feedback_alpha < 0.0f)
+         mui->touch_feedback_alpha = 0.0f;
    }
 
    /* If alpha value is greater than zero, draw
@@ -5828,10 +5831,9 @@ static void materialui_render_header(
       }
    }
 
-   usable_sys_bar_width -= (2 * mui->sys_bar_margin);
-   usable_sys_bar_width  = (usable_sys_bar_width > 0) 
-      ? usable_sys_bar_width 
-      : 0;
+   usable_sys_bar_width    -= (2 * mui->sys_bar_margin);
+   if (usable_sys_bar_width <= 0)
+      usable_sys_bar_width  = 0;
 
    /* > Draw core name, if required */
    if (menu_core_enable)
@@ -5950,7 +5952,8 @@ static void materialui_render_header(
       if (show_back_icon && !show_search_icon)
          usable_title_bar_width -= (mui->icon_size - mui->margin);
 
-   usable_title_bar_width = (usable_title_bar_width > 0) ? usable_title_bar_width : 0;
+   if (usable_title_bar_width <= 0)
+      usable_title_bar_width     = 0;
 
    /* > Draw title string */
 
@@ -6932,7 +6935,8 @@ static void materialui_update_scrollbar(
    mui->scrollbar.y += (int)mui->scrollbar.width;
 
    /* > Ensure we don't fall off the bottom of the screen... */
-   mui->scrollbar.y = (mui->scrollbar.y > y_max) ? y_max : mui->scrollbar.y;
+   if (mui->scrollbar.y > y_max)
+      mui->scrollbar.y = y_max;
 }
 
 /* Main function of the menu driver
