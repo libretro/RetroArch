@@ -1978,13 +1978,17 @@ void menu_input_get_mouse_hw_state(
 
       /* Adjust X position */
       hw_state->x                  = (int16_t)(((float)(hw_state->x - vp.x) / (float)vp.width) * (float)fb_width);
-      hw_state->x                  = (hw_state->x <  0)         ? (0          ) : hw_state->x;
-      hw_state->x                  = (hw_state->x >= fb_width)  ? (fb_width -1) : hw_state->x;
+      if (hw_state->x < 0)
+         hw_state->x               = 0;
+      else if (hw_state->x >= fb_width)
+         hw_state->x               = (fb_width -1);
 
       /* Adjust Y position */
       hw_state->y                  = (int16_t)(((float)(hw_state->y - vp.y) / (float)vp.height) * (float)fb_height);
-      hw_state->y                  = (hw_state->y <  0)         ? (0          ) : hw_state->y;
-      hw_state->y                  = (hw_state->y >= fb_height) ? (fb_height-1) : hw_state->y;
+      if (hw_state->y <  0)
+         hw_state->y               = 0;
+      else if (hw_state->y >= fb_height)
+         hw_state->y               = (fb_height-1);
    }
 
    if (state_inited)
@@ -4359,7 +4363,8 @@ void menu_driver_set_last_start_content(const char *start_content_path)
        * before the archive delimiter (i.e. path of
        * 'parent' archive file) */
       size_t len      = (size_t)(1 + archive_delim - start_content_path);
-      len             = (len < PATH_MAX_LENGTH) ? len : PATH_MAX_LENGTH;
+      if (len >= PATH_MAX_LENGTH)
+         len          = PATH_MAX_LENGTH;
 
       strlcpy(archive_path, start_content_path, len * sizeof(char));
 
@@ -4661,13 +4666,14 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
           * Ensure it doesn't overflow.
           **/
          {
-            size_t list_size;
+            size_t list_size                = 0;
             file_list_t *list               = (file_list_t*)data;
             if (!list)
                return false;
             if (list->size)
                menu_entries_build_scroll_indices(menu_st, list);
-            list_size                       = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+            if (menu_st->entries.list)
+               list_size                    = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size;
 
             if (list_size)
             {

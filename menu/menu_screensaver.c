@@ -562,11 +562,15 @@ void menu_screensaver_iterate(
             particle->a = particle->a + (float)(rand() % 16 - 9) * 0.01f;
             particle->b = particle->b + (float)(rand() % 16 - 7) * 0.01f;
 
-            particle->a = (particle->a < -0.4f) ? -0.4f : particle->a;
-            particle->a = (particle->a >  0.1f) ?  0.1f : particle->a;
+            if (particle->a < -0.4f)
+               particle->a = -0.4f;
+            else if (particle->a >  0.1f)
+               particle->a = 0.1f;
 
-            particle->b = (particle->b < -0.1f) ? -0.1f : particle->b;
-            particle->b = (particle->b >  0.4f) ?  0.4f : particle->b;
+            if (particle->b < -0.1f)
+               particle->b = -0.1f;
+            else if (particle->b >  0.4f)
+               particle->b = 0.4f;
 
             /* Update particle location */
             particle->x = particle->x + (global_speed_factor * particle->size * particle->a);
