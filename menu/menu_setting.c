@@ -1895,20 +1895,6 @@ static int setting_bool_action_ok_default(
    return 0;
 }
 
-static int setting_bool_action_toggle_default(
-      rarch_setting_t *setting, size_t idx, bool wraparound)
-{
-   if (!setting)
-      return -1;
-
-   setting_set_with_string_representation(setting,
-          *setting->value.target.boolean 
-         ? "false" 
-         : "true");
-
-   return 0;
-}
-
 int setting_string_action_start_generic(rarch_setting_t *setting)
 {
    if (!setting)
@@ -2171,8 +2157,8 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.change_handler            = change_handler;
    result.read_handler              = read_handler;
    result.action_start              = setting_generic_action_start_default;
-   result.action_left               = setting_bool_action_toggle_default;
-   result.action_right              = setting_bool_action_toggle_default;
+   result.action_left               = setting_bool_action_ok_default;
+   result.action_right              = setting_bool_action_ok_default;
    result.action_up                 = NULL;
    result.action_down               = NULL;
    result.action_cancel             = NULL;
@@ -8749,16 +8735,15 @@ static void localap_enable_toggle_change_handler(rarch_setting_t *setting)
 
 static void timezone_change_handler(rarch_setting_t *setting)
 {
+   RFILE *tzfp;
    if (!setting)
       return;
 
    config_set_timezone(setting->value.target.string);
 
-   RFILE *tzfp = filestream_open(LAKKA_TIMEZONE_PATH,
-                       RETRO_VFS_FILE_ACCESS_WRITE,
-                       RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (tzfp != NULL)
+   if ((tzfp = filestream_open(LAKKA_TIMEZONE_PATH,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
    {
       filestream_printf(tzfp, "TIMEZONE=%s", setting->value.target.string);
       filestream_close(tzfp);
