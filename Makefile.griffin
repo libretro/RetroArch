@@ -415,7 +415,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
-   HAVE_IFINFO              := 1
+   HAVE_IFINFO              := 0
    HAVE_NETWORK_CMD         := 1
    HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
@@ -471,7 +471,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
-   HAVE_IFINFO              := 1
+   HAVE_IFINFO              := 0
    HAVE_NETWORK_CMD         := 1
    HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
