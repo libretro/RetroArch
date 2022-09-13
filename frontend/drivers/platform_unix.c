@@ -30,7 +30,7 @@
 
 #ifdef __linux__
 #include <linux/version.h>
-#if __STDC_VERSION__ >= 199901L
+#if __STDC_VERSION__ >= 199901L && !defined(ANDROID)
 #include "feralgamemode/gamemode_client.h"
 #define FERAL_GAMEMODE
 #endif
@@ -2004,7 +2004,6 @@ static bool frontend_unix_set_gamemode(bool on)
 
    return true;
 #else
-   (void)on;
    return false;
 #endif
 }
