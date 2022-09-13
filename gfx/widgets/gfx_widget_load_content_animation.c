@@ -93,6 +93,8 @@ struct gfx_widget_load_content_animation_state
    float margin_shadow_right_color[16];
    float icon_color[16];
 
+   size_t system_name_len;
+
    enum gfx_widget_load_content_animation_status status;
 
    char content_name[512];
@@ -148,6 +150,8 @@ static gfx_widget_load_content_animation_state_t p_w_load_content_animation_st =
    COLOR_HEX_TO_FLOAT(0x000000, 0.0f), /* margin_shadow_left_color */
    COLOR_HEX_TO_FLOAT(0x000000, 0.0f), /* margin_shadow_right_color */
    COLOR_HEX_TO_FLOAT(0xE0E0E0, 1.0f), /* icon_color */
+
+   0,                                  /* system_name_len */
 
    GFX_WIDGET_LOAD_CONTENT_IDLE,       /* status */
 
@@ -393,17 +397,16 @@ bool gfx_widget_start_load_content_animation(void)
 
          if (!string_is_empty(playlist_path))
          {
-            size_t system_name_len;
             fill_pathname_base(state->system_name, playlist_path,
                   sizeof(state->system_name));
             path_remove_extension(state->system_name);
 
-            system_name_len = strlen(state->system_name);
+            state->system_name_len = strlen(state->system_name);
             /* Exclude history and favourites playlists */
             if (string_ends_with_size(state->system_name, "_history",
-                     system_name_len, STRLEN_CONST("_history")) ||
+                     state->system_name_len, STRLEN_CONST("_history")) ||
                 string_ends_with_size(state->system_name, "_favorites",
-                     system_name_len, STRLEN_CONST("_favorites")))
+                     state->system_name_len, STRLEN_CONST("_favorites")))
                state->system_name[0] = '\0';
 
             /* Check whether a valid system name was found */
@@ -601,7 +604,7 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
             strlen(state->content_name), 1.0f);
       system_name_width = font_driver_get_message_width(
             font_regular->font, state->system_name,
-            strlen(state->system_name), 1.0f);
+            state->system_name_len, 1.0f);
 
       state->content_name_width = (content_name_width > 0) ?
             (unsigned)content_name_width : 0;
