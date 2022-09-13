@@ -397,11 +397,12 @@ bool gfx_widget_start_load_content_animation(void)
 
          if (!string_is_empty(playlist_path))
          {
-            fill_pathname_base(state->system_name, playlist_path,
+            char new_system_name[512];
+            strlcpy(new_system_name, playlist_path, sizeof(new_system_name));
+            path_remove_extension(new_system_name);
+            state->system_name_len = fill_pathname_base(
+                  state->system_name, new_system_name,
                   sizeof(state->system_name));
-            path_remove_extension(state->system_name);
-
-            state->system_name_len = strlen(state->system_name);
             /* Exclude history and favourites playlists */
             if (string_ends_with_size(state->system_name, "_history",
                      state->system_name_len, STRLEN_CONST("_history")) ||
