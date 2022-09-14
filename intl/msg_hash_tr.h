@@ -2588,7 +2588,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "Etkinleştirilmişse bilgi düğmesine tıklamalat dikkate alınmaz."
+   "Etkinleştirilirse, bilgi düğmesine tıklamak dikkate alınmaz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
@@ -2596,7 +2596,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "Etkinleştirilirse, arama düğmesine tıklama dikkate alınmaz."
+   "Etkinleştirilirse, arama düğmesine tıklamak dikkate alınmaz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
