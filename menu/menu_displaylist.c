@@ -13312,6 +13312,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                count++;
 #endif
 
+            if (menu_entries_append(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
+                     msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS),
+                     MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+
+#ifdef HAVE_NETWORKING
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                     MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+                     PARSE_ONLY_BOOL, false) != -1)
+               count++;
+#endif
+
             if (settings->bools.menu_show_legacy_thumbnail_updater)
             {
                if (menu_entries_append(info->list,
@@ -13326,13 +13340,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
                      msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST),
                      MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
-
-            if (menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
-                     msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS),
-                     MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
 
@@ -13421,13 +13428,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
 #endif
 #endif
-#endif
-
-#ifdef HAVE_NETWORKING
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
-                     MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-                     PARSE_ONLY_BOOL, false) != -1)
-               count++;
 #endif
          }
 
