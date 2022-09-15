@@ -5409,7 +5409,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Zdvojnásobte počet získaných bodů. Zakáže ukládání pozic, cheatu, přetáčení, pauzu a zpomalený pohyb pro všechny hry. Přepnutím tohoto nastavení za běhu se hra restartuje."
+   "Zakáže cheaty, přetáčení, pauzu, zpomalený pohyb a načítání uložených stavů. Úspěchy získané v hardcore režimu jsou jedinečně označeny, takže můžete ostatním ukázat, čeho jste dosáhli bez asistenčních funkcí emulátoru. Přepnutím tohoto nastavení za běhu se hra restartuje."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -5425,7 +5425,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
-   "Odešlete podrobný stav hry na webové stránky RetroAchievements."
+   "Pravidelně odesílá kontextové informace o hrách na webové stránky RetroÚspěchů. Nemá žádný účinek, pokud je povolen 'Hardcore Mode'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,

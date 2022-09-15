@@ -4356,10 +4356,6 @@ MSG_HASH(
    "Mode expert"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Es guanyaran el doble de punts.Desactiva els desats ràpids, els trucs, el rebobinat, la pausa i la càmera lenta per tots els jocs.Si es canvia aquest paràmetre durant l’execució es reiniciarà el joc."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
    "Taules de classificació específiques del joc. No té efecte si el «mode expert» està desactivat."
    )
