@@ -728,10 +728,16 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
          return false;
    }
 
-   /* Excluded platforms do not have getsockopt implemented [GEKKO],
-    * or it's returned values are unreliable [3DS].
-    */
-#if !defined(GEKKO) && !defined(_3DS) && defined(SO_ERROR)
+#if defined(GEKKO)
+   /* libogc does not have getsockopt implemented */
+   res = connect(fd, addr->ai_addr, addr->ai_addrlen);
+   if (res < 0 && -res != EISCONN)
+      return false;
+#elif defined(_3DS)
+   /* libctru getsockopt does not return expected value */
+   if (connect(fd, addr->ai_addr, addr->ai_addrlen) < 0 && errno != EISCONN)
+      return false;
+#else
    {
       int       error = -1;
       socklen_t errsz = sizeof(error);
