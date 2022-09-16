@@ -342,6 +342,10 @@ MSG_HASH(
    "Descargador de contenido"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Descarga contenidos gratuitos para el núcleo seleccionado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
    "Descargador de archivos del sistema de los núcleos"
    )

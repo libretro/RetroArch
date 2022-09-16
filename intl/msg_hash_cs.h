@@ -342,6 +342,10 @@ MSG_HASH(
    "Stahování Obsahu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Stáhněte si bezplatný obsah pro vybrané jádro."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
    "Stažení Jádra Systémových Dat"
    )

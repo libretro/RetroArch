@@ -334,6 +334,10 @@ MSG_HASH(
    "İçerik İndirici"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Seçili çekirdek için ücretsiz içerik indirin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
    "Çekirdek Sistem Dosyaları İndirici"
    )

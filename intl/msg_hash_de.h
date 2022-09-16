@@ -330,6 +330,10 @@ MSG_HASH(
    "Inhalts-Downloader"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Kostenlose Inhalte für den ausgewählten Core herunterladen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
    "Core-Systemdateien-Downloader"
    )

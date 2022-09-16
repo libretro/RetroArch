@@ -342,6 +342,10 @@ MSG_HASH(
    "Завантажити вміст"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Завантажте безкоштовний контент для вибраного ядра."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
    "Завантажувач базових системних файлів"
    )

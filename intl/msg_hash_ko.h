@@ -342,6 +342,10 @@ MSG_HASH(
    "컨텐츠 다운로더"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "지정된 코어에서 사용 가능한 무료 컨텐츠를 다운로드합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
    "코어 시스템 파일 다운로더"
    )
