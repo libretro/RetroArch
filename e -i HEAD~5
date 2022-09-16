@@ -1,0 +1,222 @@
+[33mcommit 72b26558c1667d5ec69cef601351bd8e200024d4[m[33m ([m[1;36mHEAD -> [m[1;32mpatch-1[m[33m, [m[1;31morigin/patch-1[m[33m)[m
+Author: CyberLabSystems <96454019+CyberLabSystems@users.noreply.github.com>
+Date:   Fri Sep 16 18:17:36 2022 -0400
+
+    Update Blargg_NTSC_SNES_Custom_pseudo_MD_Composite.filt
+    
+    Change "their" to "his" in the credits because it's the appropriate pronoun.
+
+[33mcommit 4f23b9141114292a64869cc9f2513e0dd3b4cbf5[m
+Author: CyberLabSystems <96454019+CyberLabSystems@users.noreply.github.com>
+Date:   Fri Sep 16 18:16:33 2022 -0400
+
+    Update Blargg_NTSC_SNES_Custom_pseudo_MD_S-Video.filt
+    
+    Change "their" to "his" in the credits because it's the appropriate pronoun.
+
+[33mcommit 58abb6f4892505054f8812905e87aaf16ae509ab[m
+Author: CyberLabSystems <96454019+CyberLabSystems@users.noreply.github.com>
+Date:   Fri Sep 16 18:13:52 2022 -0400
+
+    Update and rename Blargg_NTSC_SNES_Custom_pseudo_PCE_PSX_SNES_RGB.filt to Blargg_NTSC_SNES_Custom_pseudo_PCE_SNES_RGB.filt
+    
+    Change "their" to "his" in the credits because it's the appropriate pronoun.
+    Remove "PSX" from the filename because it doesn't seem to work with any currently available PSX core.
+
+[33mcommit 58e2e9177a682cad7ccb453300b393c6cfb7b207[m
+Author: CyberLabSystems <96454019+CyberLabSystems@users.noreply.github.com>
+Date:   Fri Sep 16 18:10:49 2022 -0400
+
+    Update and rename Blargg_NTSC_SNES_Custom_pseudo_PCE_PSX_SNES_S-Video.filt to Blargg_NTSC_SNES_Custom_pseudo_PCE_SNES_S-Video.filt
+    
+    Change "their" to "his" in the credit because it's the appropriate pronoun.
+    Remove "PSX" from the filename because it doesn't seem to work with any currently available PSX core.
+
+[33mcommit 6c9c4a705c2308ae209168de01bb1809e198d3ce[m
+Author: CyberLabSystems <96454019+CyberLabSystems@users.noreply.github.com>
+Date:   Fri Sep 16 17:55:58 2022 -0400
+
+    Update and rename Blargg_NTSC_SNES_Custom_pseudo_PCE_PSX_SNES_Composite.filt to Blargg_NTSC_SNES_Custom_pseudo_PCE_SNES_Composite.filt
+    
+    Change "their" to "his" in the credit because it's the appropriate pronoun.
+    Remove "PSX" from the filename because it doesn't seem to work with any currently available PSX core.
+
+[33mcommit 83ce6f42d9720f9ce3dbfeca21a73322f49a20c8[m[33m ([m[1;31mupstream/master[m[33m, [m[1;31mupstream/HEAD[m[33m)[m
+Author: github-actions <github-actions@github.com>
+Date:   Fri Sep 16 00:15:20 2022 +0000
+
+    Fetch translations from Crowdin
+
+[33mcommit 884260316569888f048de7635995a74853632e3d[m
+Author: sonninnos <45124675+sonninnos@users.noreply.github.com>
+Date:   Thu Sep 15 10:24:35 2022 +0300
+
+    Online Updater menu reorganizing (#14414)
+
+[33mcommit 262d9720fea61028cf0a7aed82cb95a3acb90437[m
+Author: github-actions <github-actions@github.com>
+Date:   Thu Sep 15 00:13:48 2022 +0000
+
+    Fetch translations from Crowdin
+
+[33mcommit ec333e261fe69fb37a4cfdf41dd38623d52c3688[m
+Author: Jamiras <32680403+Jamiras@users.noreply.github.com>
+Date:   Tue Sep 13 18:42:35 2022 -0600
+
+    Update wording for hardcore (#14413)
+
+[33mcommit c16a50f1dddc3162f31fcdefb8f03dc5bdab286e[m
+Author: github-actions <github-actions@github.com>
+Date:   Wed Sep 14 00:14:28 2022 +0000
+
+    Fetch translations from Crowdin
+
+[33mcommit be044c09dda27e88c5e1e93f8dbadafc898a311e[m
+Author: LibretroAdmin <reallibretroretroarch@gmail.com>
+Date:   Tue Sep 13 19:29:45 2022 +0200
+
+    Disable Feral GameMode for Android - only available on Linux
+
+[33mcommit ce8389d4a6825dd99545d47d252936771bde0f53[m
+Author: LibretroAdmin <reallibretroretroarch@gmail.com>
+Date:   Tue Sep 13 11:06:37 2022 +0200
+
+    (menu_setting.c) Remove code duplicated functions
+
+[33mcommit b32b1f277b82c6da05380a0ae18fea86b6e22ad5[m
+Author: LibretroAdmin <reallibretroretroarch@gmail.com>
+Date:   Tue Sep 13 10:53:15 2022 +0200
+
+    Disable HAVE_IFINFO for MSVC 2003/2005 builds
+
+[33mcommit 045fd38f19edd1c0e42c2aa9f08311baf737d3d2[m
+Author: LibretroAdmin <reallibretroretroarch@gmail.com>
+Date:   Tue Sep 13 10:28:03 2022 +0200
+
+    Reduce tertiary operators
+
+[33mcommit c1709f2218a0c2a27c40807aada4d72e76d8fdc7[m
+Author: LibretroAdmin <reallibretroretroarch@gmail.com>
+Date:   Tue Sep 13 09:14:43 2022 +0200
+
+    (gfx_widget_load_content_animation) Get rid of strlen
+
+[33mcommit c5d70d49e5b743f333f6e2fa8e1acb66cbf8be48[m
+Author: LibretroAdmin <reallibretroretroarch@gmail.com>
+Date:   Tue Sep 13 03:58:54 2022 +0200
+
+    (gfx_widgets_progress_message) Cut down on another strlen
+
+[33mcommit 5e8987839e56ffaeb75e9b43342c482097c23e4d[m
+Author: LibretroAdmin <reallibretroretroarch@gmail.com>
+Date:   Tue Sep 13 03:56:44 2022 +0200
+
+    (gfx_widgets) Cut down on strlens
+
+[33mcommit 663b5eed9df615d81be4ab599d6dd56d85168eef[m
+Author: github-actions <github-actions@github.com>
+Date:   Tue Sep 13 00:13:53 2022 +0000
+
+    Fetch translations from Crowdin
+
+[33mcommit 8cc866b051601cf0adb56797392d861eabdc0c0c[m
+Author: tr12345 <27497732+tr12345@users.noreply.github.com>
+Date:   Mon Sep 12 17:17:24 2022 -0400
+
+    New Menu Items for disabling Info & Search buttons in the menu (#14259)
+    
+    * New Menu Items Disable Info & Search
+    
+    Add menu options for disabling Info and   Search buttons
+    
+    * Update msg_hash_us.h
+    
+    Update Sublabels
+    
+    * Update menu_setting.c
+    
+    Set Advanced flag for new settings
+
+[33mcommit 36d60f6bf42b593ce1ff2fb628325100a1d1cfc6[m
+Author: LibretroAdmin <reallibretroretroarch@gmail.com>
+Date:   Mon Sep 12 22:20:03 2022 +0200
+
+    (Ozone/MaterialUI/RGUI/XMB) Get rid of some tertiary operators - was basically reassigning the same
+    value
+
+[33mcommit 911308327dc1f06531575f9f606b21a0a25ac38a[m
+Author: MrHuu <MrHuu@users.noreply.github.com>
+Date:   Mon Sep 12 01:44:02 2022 +0200
+
+    (3DS) Set default bottom font values (#14404)
+
+[33mcommit 75757d7d027dc4694a383239ce841af3c2f2bab7[m
+Author: LibretroAdmin <reallibretroretroarch@gmail.com>
+Date:   Sun Sep 11 23:14:54 2022 +0200
+
+    Remove unused DXGI inline functions
+
+[33mcommit da094eeb2f062fd2a20eb93ddcfcf2195d75edf5[m
+Author: LibretroAdmin <reallibretroretroarch@gmail.com>
+Date:   Sun Sep 11 19:53:44 2022 +0200
+
+    Remove unused XMB_DEBUG
+
+[33mcommit cdd39a63644e1a772c19c9aa6fdb0af21ddc00c5[m
+Author: gblues <gblues@gmail.com>
+Date:   Sun Sep 11 00:40:38 2022 -0700
+
+    MacOS: Fix Sixaxis (DS3) support (#14402)
+    
+    * MacOS: Fix sixaxis on MacOS 12.x
+    
+    == DETAILS
+    Mac OS 12.x "Monterey" dropped some built-in support for the
+    Sixaxis controller--exactly what changed is unclear, but other
+    projects reported similar issues with the OS.
+    
+    This commit ports the work done on SDL, which is basically to
+    read two feature reports after writing out the activation report.
+    I think we did this at one point in the past, but it got lost
+    among HID driver rewrites.
+    
+    I've tested this locally and it resolves the issue; after connecting
+    the sixaxis and pressing the Playstation button, the pad is registered
+    and works successfully.
+    
+    I have not tested this on other platforms.
+    
+    * Gracefully handle incomplete HID implementations
+    
+    == DETAILS
+    Not all HID drivers implement all HID methods; since this controller
+    has a magic sequence that requires the ability to set and get HID
+    reports, we need to make sure we don't crash if we're running on
+    an incomplete implementation.
+    
+    - Add a null check for the driver methods and log useful info if checks
+      fail
+    - Fix minor formatting
+
+[33mcommit 422d2fcf1295a7e5f124e2193ba0325661fe9606[m
+Author: MrHuu <MrHuu@users.noreply.github.com>
+Date:   Sun Sep 11 02:57:31 2022 +0200
+
+    (3DS) Fix CIA installation issues (#14399)
+    
+    - Fixes CIA installation failing
+    - Add CIA installation progress stats
+
+[33mcommit 14f4f35445d9f4f2568ae1e4ef94952d23db8805[m
+Author: LibretroAdmin <reallibretroretroarch@gmail.com>
+Date:   Sat Sep 10 00:01:20 2022 +0200
+
+    Exclude unused HAVE_HID for Miyoo and RetroFW
+
+[33mcommit 2dec44188b5e73c12d83ee36fbf1f163188dd4b8[m
+Author: LibretroAdmin <reallibretroretroarch@gmail.com>
+Date:   Fri Sep 9 23:58:00 2022 +0200
+
+    (connect_ps3.c) Buildfixg
+
+[33mcommit 
