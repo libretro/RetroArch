@@ -2528,8 +2528,12 @@ static void gl2_video_layout_fbo_init(gl2_t *gl, unsigned width, unsigned height
    glGenTextures(1, &gl->video_layout_fbo_texture);
    glBindTexture(GL_TEXTURE_2D, gl->video_layout_fbo_texture);
 
-   gl2_load_texture_image(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
-      width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+   gl2_load_texture_image(GL_TEXTURE_2D,
+      0, RARCH_GL_INTERNAL_FORMAT32,
+      width,
+      height,
+      0, RARCH_GL_TEXTURE_TYPE32,
+      RARCH_GL_FORMAT32, NULL);
 
    gl2_gen_fb(1, &gl->video_layout_fbo);
    gl2_bind_fb(gl->video_layout_fbo);
