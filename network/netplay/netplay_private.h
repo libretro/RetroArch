@@ -39,6 +39,11 @@
 #define NETPLAY_PASS_LEN      128
 #define NETPLAY_PASS_HASH_LEN 64 /* length of a SHA-256 hash */
 
+#define NETPLAY_ANNOUNCE_AFTER 5000000
+#define NETPLAY_PING_AFTER     3000000
+#define NETPLAY_ANNOUNCE_TIME  20000000
+#define NETPLAY_PING_TIME      3000000
+
 #define MAX_SERVER_STALL_TIME_USEC (5*1000*1000)
 #define MAX_CLIENT_STALL_TIME_USEC (10*1000*1000)
 #define CATCH_UP_CHECK_TIME_USEC   (500*1000)
@@ -471,6 +476,9 @@ struct netplay
    /* How long have we been stalled? */
    retro_time_t stall_time;
 
+   retro_time_t next_announce;
+   retro_time_t next_ping;
+
    struct retro_callbacks cbs;
 
    /* Compression transcoder */
@@ -588,10 +596,6 @@ struct netplay
    /* Latency frames; positive to hide network latency, 
     * negative to hide input latency */
    int input_latency_frames;
-
-   int reannounce;
-
-   int reping;
 
    /* Our mode and status */
    enum rarch_netplay_connection_mode self_mode;

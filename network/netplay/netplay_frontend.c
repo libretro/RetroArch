@@ -139,10 +139,6 @@
 #define MITM_ADDR_MAGIC    0x52415441 /* RATA */
 #define MITM_PING_MAGIC    0x52415450 /* RATP */
 
-#define ANNOUNCE_FRAMES      1200
-#define ANNOUNCE_FRAME_START 900
-#define PING_FRAMES          180
-
 struct nick_buf_s
 {
    uint32_t cmd[2];
@@ -1890,6 +1886,8 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
    connection->mode = NETPLAY_CONNECTION_PLAYING;
    netplay_handshake_ready(netplay, connection);
    netplay_recv_flush(&connection->recv_packet_buffer);
+
+   netplay->next_ping = cpu_features_get_time_usec() + NETPLAY_PING_AFTER;
 
    /* Ask to switch to playing mode if we should */
    if (!settings->bools.netplay_start_as_spectator)
@@ -6416,7 +6414,10 @@ static void netplay_announce_nat_traversal(netplay_t *netplay,
       uint16_t ext_port)
 {
    net_driver_state_t *net_st = &networking_driver_st;
-  
+
+   /* Start announcing immediately. */
+   netplay->next_announce = cpu_features_get_time_usec();
+
    if (net_st->nat_traversal_request.status == NAT_TRAVERSAL_STATUS_OPENED)
    {
       char msg[512];
@@ -6968,28 +6969,37 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
       uint32_t check_frames, const struct retro_callbacks *cb,
       bool nat_traversal, const char *nick, uint32_t quirks)
 {
-   settings_t *settings          = config_get_ptr();
-   netplay_t *netplay            = (netplay_t*)calloc(1, sizeof(*netplay));
+   netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
 
    if (!netplay)
       return NULL;
 
-   netplay->listen_fd        = -1;
-   netplay->tcp_port         = port;
-   netplay->ext_tcp_port     = port;
-   netplay->cbs              = *cb;
    netplay->is_server        = !server;
-   netplay->nat_traversal    = (!server && !mitm) ? nat_traversal : false;
    netplay->check_frames     = check_frames;
-   netplay->crcs_valid       = true;
+   netplay->cbs              = *cb;
    netplay->quirks           = quirks;
+   netplay->crcs_valid       = true;
+   netplay->listen_fd        = -1;
+   netplay->next_announce    = -1;
+   netplay->next_ping        = -1;
    netplay->simple_rand_next = 1;
+
+   strlcpy(netplay->nick,
+      !string_is_empty(nick) ? nick : RARCH_DEFAULT_NICK,
+      sizeof(netplay->nick));
 
    netplay_key_init(netplay);
 
    if (netplay->is_server)
    {
       unsigned i;
+      settings_t *settings = config_get_ptr();
+
+      netplay->tcp_port     = port;
+      netplay->ext_tcp_port = port;
+
+      if (!mitm)
+         netplay->nat_traversal = nat_traversal;
 
       for (i = 0; i < MAX_INPUT_DEVICES; i++)
       {
@@ -7024,17 +7034,14 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
       netplay->input_latency_frames_max =
          netplay->input_latency_frames_min +
          settings->uints.netplay_input_latency_frames_range;
-
-      netplay->self_mode  = NETPLAY_CONNECTION_SPECTATING;
-      netplay->reannounce = ANNOUNCE_FRAME_START;
    }
    else
    {
-      netplay->connections_size = 1;
       netplay->connections      =
          (struct netplay_connection*)calloc(1, sizeof(*netplay->connections));
       if (!netplay->connections)
          goto failure;
+      netplay->connections_size = 1;
 
       netplay->connections[0].fd = -1;
 
@@ -7062,25 +7069,9 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
       /* Clients get device info from the server. */
    }
 
-   strlcpy(netplay->nick,
-      !string_is_empty(nick) ? nick : RARCH_DEFAULT_NICK,
-      sizeof(netplay->nick));
-
    if (!init_tcp_socket(netplay, server, mitm, port) ||
          !netplay_init_buffers(netplay))
       goto failure;
-
-   if (!netplay->is_server)
-   {
-      /* Start our handshake */
-      netplay_handshake_init_send(netplay, &netplay->connections[0],
-         LOW_NETPLAY_PROTOCOL_VERSION);
-
-      netplay->connections[0].mode = NETPLAY_CONNECTION_INIT;
-      netplay->self_mode           = NETPLAY_CONNECTION_INIT;
-
-      netplay->reping = -1;
-   }
 
    return netplay;
 
@@ -7931,6 +7922,9 @@ static void netplay_announce_cb(retro_task_t *task, void *task_data,
    if (!net_st->data)
       return;
 
+   net_st->data->next_announce =
+      cpu_features_get_time_usec() + NETPLAY_ANNOUNCE_TIME;
+
    if (error || !data || !data->data || !data->len || data->status != 200)
    {
       RARCH_ERR("[Netplay] Failed to announce session to the lobby server.");
@@ -8163,8 +8157,13 @@ static void netplay_announce(netplay_t *netplay)
       mitm_custom_addr,
       mitm_custom_port);
 
-   task_push_http_post_transfer(FILE_PATH_LOBBY_LIBRETRO_URL "add", buf,
-      true, NULL, netplay_announce_cb, NULL);
+   if (task_push_http_post_transfer(FILE_PATH_LOBBY_LIBRETRO_URL "add", buf,
+         true, NULL, netplay_announce_cb, NULL))
+      /* Let the callback set the time for the next announce. */
+      netplay->next_announce = -1;
+   else
+      netplay->next_announce =
+         cpu_features_get_time_usec() + NETPLAY_ANNOUNCE_TIME;
 
    free(username);
    free(corename);
@@ -8362,15 +8361,12 @@ static bool netplay_pre_frame(netplay_t *netplay)
       }
 #endif
 
-      if (settings->bools.netplay_public_announce)
+      if (settings->bools.netplay_public_announce &&
+            netplay->next_announce != -1)
       {
-         if (++netplay->reannounce % ANNOUNCE_FRAMES == 0)
+         if (cpu_features_get_time_usec() >= netplay->next_announce)
             netplay_announce(netplay);
       }
-      else
-         /* Make sure that if announcement is turned on mid-game,
-            it gets announced. */
-         netplay->reannounce = -1;
    }
    else
    {
@@ -8381,8 +8377,17 @@ static bool netplay_pre_frame(netplay_t *netplay)
          return true;
       }
 
-      if (++netplay->reping % PING_FRAMES == 0)
-         request_ping(netplay, &netplay->connections[0]);
+      if (netplay->next_ping != -1)
+      {
+         retro_time_t ctime = cpu_features_get_time_usec();
+
+         if (ctime >= netplay->next_ping)
+         {
+            request_ping(netplay, &netplay->connections[0]);
+
+            netplay->next_ping = ctime + NETPLAY_PING_TIME;
+         }
+      }
    }
 
    if ((netplay->stall || netplay->remote_paused) &&
@@ -8568,15 +8573,33 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
             sizeof(host_room->mitm_session));
          free(buf);
       }
-      else if (netplay->nat_traversal)
+
+      if (netplay->nat_traversal)
+         /* If performing NAT traversal,
+            start announcing after it's done. */
          netplay_init_nat_traversal(netplay);
+      else
+         /* Start announcing after NETPLAY_ANNOUNCE_AFTER. */
+         netplay->next_announce =
+            cpu_features_get_time_usec() + NETPLAY_ANNOUNCE_AFTER;
 
       runloop_msg_queue_push(
          msg_hash_to_str(MSG_WAITING_FOR_CLIENT), 0, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
+      netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
       if (!settings->bools.netplay_start_as_spectator)
          netplay_toggle_play_spectate(netplay);
+   }
+   else
+   {
+      /* Start our handshake */
+      if (!netplay_handshake_init_send(netplay, &netplay->connections[0],
+            LOW_NETPLAY_PROTOCOL_VERSION))
+         goto failure;
+
+      netplay->connections[0].mode = NETPLAY_CONNECTION_INIT;
+      netplay->self_mode           = NETPLAY_CONNECTION_INIT;
    }
 
    return true;
