@@ -1105,7 +1105,7 @@ static int32_t iohidmanager_set_report(void *handle, uint8_t report_type, uint8_
       (struct iohidmanager_hid_adapter*)handle;
 
    if (adapter)
-      return IOHIDDeviceSetReport(adapter->handle, translate_hid_report_type(report_type), report_type, data_buf, size);
+      return IOHIDDeviceSetReport(adapter->handle, translate_hid_report_type(report_type), report_id, data_buf, size);
 
    return -1;
 }
