@@ -342,6 +342,10 @@ MSG_HASH(
    "Sisällön lataaja"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Lataa ilmaista sisältöä valitulle ytimelle."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
    "Ytimen järjestelmä tiedostojen lataaja"
    )
@@ -6263,6 +6267,10 @@ MSG_HASH(
 #ifdef HAVE_MIST
 /* Settings > Steam */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_ENABLE,
+   "Jaa nykyinen RetroArchin tilatietosi Steamissa."
+   )
 
 
 MSG_HASH(
