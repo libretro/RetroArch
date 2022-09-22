@@ -266,7 +266,7 @@ static void hidpad_ps4_packet_handler(void *data,
    }
 #endif
 
-   memcpy(&device->data, packet, sizeof(struct ps4));
+   memcpy(&device->data, packet+1, sizeof(struct ps4));
 }
 
 static void hidpad_ps4_set_rumble(void *data,
