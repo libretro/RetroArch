@@ -12006,6 +12006,7 @@ static bool setting_append_list(
                      general_write_handler,
                      general_read_handler);
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].offset_by = 1;
                menu_settings_list_current_add_range(list, list_info, 1, 10, 1, true, true);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
