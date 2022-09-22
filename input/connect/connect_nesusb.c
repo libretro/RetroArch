@@ -118,7 +118,7 @@ static void hidpad_nesusb_packet_handler(void *data,
    memcpy(device->data, packet, size);
 
    device->buttons = 0;
-   pressed_keys    = device->data[7] | (device->data[6] << 8);
+   pressed_keys    = device->data[6] | (device->data[5] << 8);
 
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)

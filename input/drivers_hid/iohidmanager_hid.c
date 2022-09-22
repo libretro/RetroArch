@@ -701,7 +701,7 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
    
    if (pad_connection_has_interface(hid->slots, adapter->slot)) {
       IOHIDDeviceRegisterInputReportCallback(device,
-            adapter->data + 1, sizeof(adapter->data) - 1,
+            adapter->data, sizeof(adapter->data),
             iohidmanager_hid_device_report, adapter);
    }
    else {

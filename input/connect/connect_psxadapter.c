@@ -148,7 +148,7 @@ static void hidpad_psxadapter_packet_handler(void *data,
 
    device->buttons = 0;
 
-   pressed_keys    = device->data[7] | (device->data[6] << 8);
+   pressed_keys    = device->data[6] | (device->data[5] << 8);
 
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)
@@ -157,15 +157,15 @@ static void hidpad_psxadapter_packet_handler(void *data,
    if (device->data[2]==0x7F) /* digital mode detection */
    {
       /* We're in digital mode, process the dpad values */
-      device->buttons |= (device->data[4]==0x00) ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-      device->buttons |= (device->data[4]==0xFF) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-      device->buttons |= (device->data[5]==0x00) ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-      device->buttons |= (device->data[5]==0xFF) ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+      device->buttons |= (device->data[3]==0x00) ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+      device->buttons |= (device->data[3]==0xFF) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+      device->buttons |= (device->data[4]==0x00) ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+      device->buttons |= (device->data[4]==0xFF) ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
    }
    else
    {
       /* We're in analog mode, process the hat values as if they were pad buttons */
-      hat_value = PSX_H_GET(device->data[6]);
+      hat_value = PSX_H_GET(device->data[5]);
       device->buttons |= PSX_H_LEFT(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
       device->buttons |= PSX_H_RIGHT(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
       device->buttons |= PSX_H_UP(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
