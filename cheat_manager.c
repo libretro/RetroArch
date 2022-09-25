@@ -199,7 +199,7 @@ bool cheat_manager_save(
       char desc_key[128];
       char code_key[128];
       char enable_key[128];
-      char formatted_number[8];
+      char formatted_number[12];
  
       formatted_number[0] = '\0';
       snprintf(formatted_number, sizeof(formatted_number), "cheat%u_", i);
