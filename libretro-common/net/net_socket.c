@@ -469,6 +469,33 @@ done:
    sceNetEpollDestroy(epoll_fd);
 
    return ret;
+#elif defined(_3DS)
+   int i;
+   int timeout_quotient;
+   int timeout_remainder;
+   int ret = -1;
+
+#define TIMEOUT_DIVISOR 100
+   if (timeout <= TIMEOUT_DIVISOR)
+      return poll(fds, nfds, timeout);
+
+   timeout_quotient = timeout / TIMEOUT_DIVISOR;
+   for (i = 0; i < timeout_quotient; i++)
+   {
+      ret = poll(fds, nfds, TIMEOUT_DIVISOR);
+
+      /* Success or error. */
+      if (ret)
+         return ret;
+   }
+
+   timeout_remainder = timeout % TIMEOUT_DIVISOR;
+   if (timeout_remainder)
+      ret = poll(fds, nfds, timeout_remainder);
+
+   return ret;
+#undef TIMEOUT_DIVISOR
+
 #elif defined(GEKKO)
    return net_poll(fds, nfds, timeout);
 #else
