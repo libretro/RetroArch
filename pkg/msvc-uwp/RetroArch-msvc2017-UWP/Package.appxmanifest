@@ -34,6 +34,5 @@
     <Capability Name="internetClientServer" />
     <rescap:Capability Name="runFullTrust"/>
     <rescap:Capability Name="broadFileSystemAccess" />
-    <rescap:Capability Name="expandedResources" />
   </Capabilities>
 </Package>
