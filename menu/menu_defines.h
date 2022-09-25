@@ -311,7 +311,7 @@ enum xmb_shader_pipeline
    XMB_SHADER_PIPELINE_SNOW,
    XMB_SHADER_PIPELINE_BOKEH,
    XMB_SHADER_PIPELINE_SNOWFLAKE
-#endif   
+#endif
 };
 
 enum rgui_thumbnail_scaler
@@ -400,6 +400,7 @@ enum menu_action
    MENU_ACTION_OK,
    MENU_ACTION_SEARCH,
    MENU_ACTION_SCAN,
+   MENU_ACTION_CONTEXT,
    MENU_ACTION_CANCEL,
    MENU_ACTION_INFO,
    MENU_ACTION_SELECT,
