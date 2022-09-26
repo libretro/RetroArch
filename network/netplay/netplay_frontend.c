@@ -7751,7 +7751,7 @@ static bool netplay_poll(netplay_t *netplay, bool block_libretro_input)
                   if (!connection->active ||
                         connection->mode != NETPLAY_CONNECTION_PLAYING)
                      continue;
-                  if (netplay->read_frame_count[i + 1] < min_frame_count)
+                  if (netplay->read_frame_count[i + 1] <= min_frame_count)
                   {
                      connection->stall = NETPLAY_STALL_RUNNING_FAST;
                      connection->stall_slow++;
