@@ -130,6 +130,10 @@ typedef struct settings
       int bottom_font_color_blue;
       int bottom_font_color_opacity;
 #endif
+#ifdef HAVE_XMB
+      int menu_xmb_title_margin;
+      int menu_xmb_title_margin_horizontal_offset;
+#endif
    } ints;
 
    struct
@@ -266,7 +270,6 @@ typedef struct settings
       unsigned menu_xmb_color_theme;
       unsigned menu_xmb_thumbnail_scale_factor;
       unsigned menu_xmb_vertical_fade_factor;
-      unsigned menu_xmb_title_margin;
       unsigned menu_materialui_color_theme;
       unsigned menu_materialui_transition_animation;
       unsigned menu_materialui_thumbnail_view_portrait;
@@ -704,6 +707,7 @@ typedef struct settings
       bool menu_rgui_particle_effect_screensaver;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_vertical_thumbnails;
+      bool menu_xmb_show_title_header;
       bool menu_content_show_settings;
       bool menu_content_show_favorites;
       bool menu_content_show_images;
