@@ -7730,7 +7730,7 @@ static bool netplay_poll(netplay_t *netplay, bool block_libretro_input)
 
       /* Are we too far ahead? */
       if (netplay->stall == NETPLAY_STALL_NONE &&
-            netplay->self_frame_count > NETPLAY_MAX_STALL_FRAMES)
+            netplay->self_frame_count >= NETPLAY_MAX_STALL_FRAMES)
       {
          uint32_t min_frame_count = netplay->self_frame_count -
             NETPLAY_MAX_STALL_FRAMES;
