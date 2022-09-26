@@ -300,11 +300,6 @@ static void ds3_packet_handler(void *device_data,
       return;
    }
 
-#if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
-   packet++;
-   size -= 2;
-#endif
-
    memcpy(device->data, packet, size);
    ds3_update_pad_state(device);
    ds3_update_analog_state(device);

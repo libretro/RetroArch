@@ -649,12 +649,12 @@ static void hidpad_wii_packet_handler(void *data,
       uint8_t *packet, uint16_t size)
 {
    struct connect_wii_wiimote_t* device = (struct connect_wii_wiimote_t*)data;
-   uint8_t             *msg = packet + 2;
+   uint8_t             *msg = packet + 1;
 
    if (!device)
       return;
 
-   switch (packet[1])
+   switch (packet[0])
    {
       case WM_RPT_BTN:
          wiimote_pressed_buttons(device, msg);

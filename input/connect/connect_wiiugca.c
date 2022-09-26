@@ -216,14 +216,6 @@ static void hidpad_wiiugca_packet_handler(void *device_data, uint8_t *packet, ui
    if (!device)
       return;
 
-/* Mac OSX reads a 39-byte packet which has both a leading and trailing byte from
- * the actual packet data.
- */
-#if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
-   packet++;
-   size = 37;
-#endif
-
    memcpy(device->data, packet, size);
 
    for (i = 1; i < 37; i += 9)

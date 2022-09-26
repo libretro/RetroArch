@@ -41,6 +41,11 @@ static joypad_connection_entry_t pad_map[] = {
       PID_SONY_DS4,
       &pad_connection_ps4
    },
+   { "Wireless Controller",
+      VID_SONY,
+      PID_SONY_DS4_R2,
+      &pad_connection_ps4
+   },
    { "PLAYSTATION(R)3 Controller",
       VID_SONY,
       PID_SONY_DS3,
@@ -182,7 +187,7 @@ joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, con
                   SWAP_IF_BIG(vid), SWAP_IF_BIG(pid), name, pad_map[i].name);
          }
          else if (!string_is_equal(pad_map[i].name, name))
-               continue;
+            continue;
       }
 
       if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
