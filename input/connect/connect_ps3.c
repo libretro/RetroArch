@@ -87,58 +87,56 @@ union sixaxis_output_report_01
     struct sixaxis_output_report data;
 };
 
-static const union sixaxis_output_report_01 default_report = {
-    {
-      0x01, /* report ID */
-      0x00, /* padding */
-      0xff, 0x00, /* right rumble */
-      0xff, 0x00, /* left rumble */
-      0x00, 0x00, 0x00, 0x00, /* gyro */
-      0x00, /* LED bitmap */
-      0xff, 0x27, 0x10, 0x00, 0x32, /* LED 1 config */
-      0xff, 0x27, 0x10, 0x00, 0x32, /* LED 2 config */
-      0xff, 0x27, 0x10, 0x00, 0x32, /* LED 3 config */
-      0xff, 0x27, 0x10, 0x00, 0x32, /* LED 4 config */
-      0x00, 0x00, 0x00, 0x00, 0x00, /* LED 5 config (unusable/unsoldered) */
-      0x00, 0x00, 0x00, 0x00, 0x00, /* unknown */
-      0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00
-    }
-};
-
-static const union sixaxis_activation_report_f4 ds3_activation_packet = {
-   { 0xf4, 0x42, 0x0c, 0x00, 0x00 }
-};
-
-/* forward declarations */
 static int ds3_set_operational(ds3_instance_t *instance)
 {
+   static const union sixaxis_activation_report_f4 ds3_activation_packet = {
+      { 0xf4, 0x42, 0x0c, 0x00, 0x00 }
+   };
    int ret;
    uint8_t usb_packet[64] = { 0x00 };
 
-   if(instance->driver->set_report == NULL || instance->driver->get_report == NULL) {
+   if (     !instance->driver->set_report
+         || !instance->driver->get_report)
+   {
       RARCH_ERR("This HID implementation does not support the Sony Sixaxis controller:\n");
-      if(instance->driver->set_report == NULL)
+      if (!instance->driver->set_report)
          RARCH_ERR("- set_report implementation is missing\n");
-      if(instance->driver->get_report == NULL)
+      if (!instance->driver->get_report)
          RARCH_ERR("- get_report implementation is missing\n");
       return -1;
    }
 
-   ret = instance->driver->set_report(instance->handle, HID_REPORT_FEATURE, ds3_activation_packet.data.report_id, ds3_activation_packet.buf, sizeof(ds3_activation_packet.buf));
-   if (ret < 0) {
+   ret = instance->driver->set_report(instance->handle,
+         HID_REPORT_FEATURE,
+         ds3_activation_packet.data.report_id,
+         (uint8_t*)ds3_activation_packet.buf,
+         sizeof(ds3_activation_packet.buf));
+   if (ret < 0)
+   {
       RARCH_LOG("Failed to send activation packet\n");
       return ret;
    }
 
-   ret = instance->driver->get_report(instance->handle, HID_REPORT_FEATURE, 0xf2, &usb_packet, SIXAXIS_REPORT_0xF2_SIZE);
-   if (ret < 0) {
+   ret = instance->driver->get_report(
+         instance->handle,
+         HID_REPORT_FEATURE,
+         0xf2,
+         (uint8_t*)&usb_packet,
+         SIXAXIS_REPORT_0xF2_SIZE);
+   if (ret < 0)
+   {
       RARCH_LOG("Failed to read feature report 0xf2\n");
       return ret;
    }
 
-   ret = instance->driver->get_report(instance->handle, HID_REPORT_FEATURE, 0xf5, &usb_packet, SIXAXIS_REPORT_0xF5_SIZE);
-   if (ret < 0) {
+   ret = instance->driver->get_report(
+         instance->handle,
+         HID_REPORT_FEATURE,
+         0xf5,
+         (uint8_t*)&usb_packet,
+         SIXAXIS_REPORT_0xF5_SIZE);
+   if (ret < 0)
+   {
       RARCH_LOG("Failed to read feature report 0xf5\n");
       return ret;
    }
@@ -175,6 +173,25 @@ static uint8_t ds3_get_leds(unsigned pad_number)
 
 static int ds3_send_output_report(ds3_instance_t *instance)
 {
+   static const union sixaxis_output_report_01 default_report = 
+   {
+      {
+         0x01, /* report ID */
+         0x00, /* padding */
+         0xff, 0x00, /* right rumble */
+         0xff, 0x00, /* left rumble */
+         0x00, 0x00, 0x00, 0x00, /* gyro */
+         0x00, /* LED bitmap */
+         0xff, 0x27, 0x10, 0x00, 0x32, /* LED 1 config */
+         0xff, 0x27, 0x10, 0x00, 0x32, /* LED 2 config */
+         0xff, 0x27, 0x10, 0x00, 0x32, /* LED 3 config */
+         0xff, 0x27, 0x10, 0x00, 0x32, /* LED 4 config */
+         0x00, 0x00, 0x00, 0x00, 0x00, /* LED 5 config (unusable/unsoldered) */
+         0x00, 0x00, 0x00, 0x00, 0x00, /* unknown */
+         0x00, 0x00, 0x00, 0x00, 0x00,
+         0x00, 0x00, 0x00
+      }
+   };
    struct sixaxis_output_report report = {0};
    uint8_t *packet                     = (uint8_t *)&report;
 
@@ -213,8 +230,8 @@ static void ds3_update_pad_state(ds3_instance_t *instance)
    instance->buttons     = 0;
 
    pressed_keys          = 
-         instance->data[2]
-      | (instance->data[3] << 8)
+          instance->data[2]
+      |  (instance->data[3]         << 8)
       | ((instance->data[4] & 0x01) << 16);
 
    for (i = 0; i < 17; i++)
