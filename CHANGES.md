@@ -1,5 +1,225 @@
 # Future
 
+# 1.11.0
+- 3DS: Add unique ID's
+- 3DS: Add bottom menu options
+- 3DS: Set bottom_asset directory default
+- 3DS: Only enable internal counter with CONSOLE_LOG defined
+- 3DS: Set default bottom font values
+- 3DS: Fix CIA installation issues
+- 3DS: Support latest libctru 
+- ANDROID: Add HAVE_ACCESSIBILITY
+- ANDROID: Gingerbread support
+- ANDROID: Touchpads support
+- ANDROID: Builtin Xperia Play autoconfig profile
+- ANDROID: Disable Feral GameMode for Android - only available on Linux
+- ANDROID: Add a configurable workaround for Android reconnecting devices
+- ANDROID/FDROID: Add F-Droid metadata to repo in Fastlane format
+- AUDIO/AUDIO MIXER: Add missing locks for thread safety
+- AUDIO/AUDIO MIXER: Fix audio mixer memory leak + remove redundant 'single threaded' rthreads implementation
+- AUTOSAVE: Change/improve exit behavior of autosave thread - if condition variable is signaled, the loop is ran another last time so we can do a final check/save before stopping the thread.
+- CDROM: Fix memory leak caught with asan - buf passed to filestream_read_file
+- CORE INFO/NETPLAY: Ensure current core info is initialized at runloop_event_init_core when netplay is enabled
+- CHEEVOS: Upgrade to rcheevos 10.4
+- CHEEVOS: Allow creating auto savestate in hardcore
+- CHEEVOS: prevent invalid memory reference if game has achievements but core doesn't expose memory
+- CHEEVOS: Release achievement badge textures when video driver is deinitialized
+- CHEEVOS: Re-enforce hardcore limitations once achievements are loade
+- CHEEVOS/MENU/MATERIALUI: Show achievement badge icons in MaterialUI driver
+- D3D9: D3D9 has been split up into two drivers - D3D9 HLSL (max compatibility, no shader support yet) and D3D9 Cg (dependent on deprecated Nvidia Cg runtime library)
+- D3D9/HLSL/XMB: XMB fix
+- D3D9/CG: D3D9 Cg driver fixed
+- D3D11: Fix overlay not showing up
+- D3D11/12: Reduce lag with WaitForVBlank - this rather simple addition seems to make D3D11/12 very very close to Vulkan/GLCore regarding input lag.
+- D3D11/12: Add waitable swapchains and max frame latency option
+- D3D11/12: Make waitable swapchains optional
+- DATABASE: Reformat 'rdb_entry_int' - Nitpick adjustments for database entries: Capitalize "Release Date", and remove space before : from Release Date rows which use integer
+- DATABASE/EXPLORE: Allow On-Demand Thumbnails in Explore menu
+- DATABASE/EXPLORE/MENU/OZONE/XMB/RGUI: Explore menu thumbnails
+- DISC CONTROL: Better Disc Control append focus
+- DOS/DJGPP: Add a workaround for libc bug
+- AUTOMATIC FRAME DELAY: Added slowmotion resiliency
+- AUTOMATIC FRAME DELAY: Added string representation for seeing the current effective delay without opening statistics
+- AUTOMATIC FRAME DELAY: Added "ms" to logging and "(ms)" to label just like in Audio Latency
+- GENERAL: Don't bake in OpenAL and libcaca by default unless explicitly enabled with configure switch.
+- GENERAL: Reduce amount of strlen calls
+- GENERAL: Reduce or simply sin/cosf calls
+- GFX: Fix readability and precision issues in aspectratio_lut
+- GFX: Add option to manually enable/disable automatic refresh rate switching
+- GFX: Enable automatic configuration of 'VSync Swap Interval'
+- GFX/FONT/FREETYPE: Use FT_New_Memory_Face - first read it from file to memory beforehand -
+this solves an asset extraction issue when selecting 'Update Assets' - apparently FT_New_Face keeps an open file handle to the font file which
+prevents it from being overwritten/deleted while the program is still running.
+- GFX/THUMBNAILS: Thumbnail aspect ratio fix
+- GFX/THREADED VIDEO: Optimizations, fixes and cleanups
+- GFX/VIDEO FILTERS: Add Upscale_240x160-320x240 video filter with 'mixed' method
+- GLSLANG: Fix compilation with ./configure --disable-builtinglslang - was missing linking against -lMachineIndependent and -lGenericCodeGen static libs
+- INPUT: Fix off by one error for input_block_timeout setting. Also default to 0 for this setting (pretty massive performance gain)
+- INPUT: Analog button mapping fixes
+- INPUT/HID/LINUX: (qb) Disable HAVE_HID by default for now for Linux as long as there are no working backends for both
+- INPUT/HID/WINDOWS: (qb) Disable HAVE_HID by default for now for Windows as long as there are no working backends for both
+- INPUT/OVERLAY: Block pointer input when overlay is pressed
+- INPUT/REMAPPING: input_remapping_save_file - existing remapping file was needlessly reloaded
+- INPUT/REMAPPING: Add option to disable automatic saving of input remap files
+- INPUT/LINUX/UDEV: Fix lightgun scaling on Y axis
+- INPUT/LINUX/X11/LED: Add LED keyboard driver
+- INPUT/WINDOWS/LED: LED keyboard driver cleanup
+- INPUT/WINDOWS/WINRAW: Clear key states when unfocused
+- INPUT/WINDOWS/WINRAW: Fix pointer device position
+- IOS: iOS app icon fixes & revisions
+- LIBRETRO/SAVESTATES: Implement an api call for context awareness
+- LOCALIZATION: Updates
+- LOCALIZATION: Add Catalan language option
+- LOCALIZATION: Fix some bad localization
+- LINUX: Make memfd_create call more backwards compatible by calling it through syscall - on older systems, you'll have to include linux/memfd.h for the MFD_ defines, and call memfd_create() via the the syscall(2) wrapper (and include unistd.h and sys/syscall.h for it work). We exclude linux/memfd.h header include because we already provide the MFD_ defines in case they are missing
+- LINUX/MALI FBDEV: Fix assertion failed on video threaded switch
+- MENU: Menu paging navigation adjustments
+- MENU: New Menu Items for disabling Info & Search buttons in the menu
+- MENU: Allow the user to use volume up/down/mute hotkeys from within the menu
+- MENU: Add missing sublabels for non-running Quick Menu
+- MENU: Reorganize Quick Menu Information
+- MENU: Savestate thumbnails - Savestate slot reset action
+- MENU: Allow changing savestate slots with left/right on save/load
+- MENU: Add 'Ago' to playlist last played styles
+- MENU: Add proper icons for shader items
+- MENU/MATERIALUI: Add icon for 'Download Thumbnails' 
+- MENU/XMB: Add options for hiding header and horizontal title margin
+- MENU/XMB: Dynamic wallpaper fixes
+- MENU/XMB: Add Daite XMB Icon Theme
+- MENU/XMB/OZONE: Savestate thumbnail aspect ratio
+- MENU/XMB/OZONE: Core option category icon refinements
+- MENU/XMB/OZONE: Fullscreen thumbnail browsing
+- MENU/XMB/OZONE: Add playlist icons under 'Load Content'
+- MENU/XMB/OZONE: Thumbnail improvements
+- MENU/XMB/OZONE: Savestate thumbnail fullscreen + dropdown
+- MENU/XMB/OZONE: Prevent unnecessary thumbnail requests when scrolling through playlists
+- MENU/OZONE: Fix playlist thumbnail mouse hover after returning from Quick Menu
+- MENU/OZONE: Thumbnail visibility corrections
+- MENU/OZONE: Playlist metadata reformat
+- MENU/OZONE: Savestate thumbnail fixes
+- MENU/OZONE: Add savestate thumbnails
+- MENU/OZONE: Header icon spacing adjustment
+- MENU/RGUI: Savestate thumbnails
+- MENU/SETTINGS: Turn Advanced Settings on by default, this entire filtering of settings will need a complete rethink anyways
+- MENU/WIDGETS: Widget color + position adjustments
+- MIYOO: Exclude unused HAVE_HID for Miyoo
+- MIYOO: Enable screenshots
+- MIYOO: Enable rewind
+- NETWORK: Allow MITM server selection on OK callback
+- NETWORK: Replace socket_select calls
+- NETWORK: Implement binary network streams
+- NETWORK: Poll support
+- NETWORK: Check connect errno for successful connection
+- NETWORK: Get rid of the timeout_enable parameter for socket_connect
+- NETWORK: Fix getnameinfo_retro's port value for HAVE_SOCKET_LEGACY platforms
+- NETWORK: Define inet_ntop and inet_pton for older Windows versions
+- NETWORK: Define isinprogress function
+- NETWORK/NATT: Move natt files to "network"
+- NETWORK/NETWORK STREAMS: Add function netstream_eof
+- NETWORK/NETPLAY: Fix game CRC parsing
+- NETWORK/NETPLAY: Disable and hide stateless mode
+- NETWORK/NETPLAY: Change default for input sharing to "no sharing"
+- NETWORK/NETPLAY: Enforce a timeout during connection
+- NETWORK/NETPLAY: Disallow clients from loading states and resetting
+- NETWORK/NETPLAY: Special saves directory for client
+- NETWORK/NETPLAY: Ensure current content is reloaded before joining a host
+- NETWORK/NETPLAY: Fix client info devices index
+- NETWORK/NETPLAY: Fix input for some cores when hosting 
+- NETWORK/NETPLAY: Memory leak fixes
+- NETWORK/NETPLAY: Force a core update when starting netplay
+- NETWORK/NETPLAY: Fix NAT traversal announce for HAVE_SOCKET_LEGACY platforms
+- NETWORK/NETPLAY: Refactor fork arguments
+- NETWORK/NETPLAY: Fix content reload deadlocks on static core platforms
+- NETWORK/NETPLAY: Disallow netplay start when content is not loaded for static core platforms
+- NETWORK/NETPLAY: Show client slowdown information
+- NETWORK/NETPLAY: Improve check frames menu entry
+- NETWORK/NETPLAY: Do not try to receive new data if the data is in the buffer
+- NETWORK/NETPLAY: Copy data on receive, even if the buffer is full
+- NETWORK/NETPLAY: Fix lobby sublabel CRC display on some platforms
+- NETWORK/NETPLAY: Support for customizing chat colors
+- NETWORK/NETPLAY: Small launch compatibility patch adjustments
+- NETWORK/NETPLAY: Support for banning clients
+- NETWORK/NETPLAY: Minor tweaks to the find content task
+- NETWORK/NETPLAY: Support for gathering client info and kicking
+- NETWORK/NETPLAY: Fix possible deadlock
+- NETWORK/NETPLAY: Initialize client's allow_pausing to true
+- NETWORK/NETPLAY: Disable netplay for unsupported cores - with stateless mode being disabled for now, there is no reason not to include this. Refuse to initialize netplay when the current core is not supported (no proper savestates support)
+- NETWORK/NETPLAY/DISCOVERY: Ensure fixed width ints on packet struct
+- NETWORK/NETPLAY/DISCOVERY: Support for IPv4 tunneling (6to4)
+- NETWORK/NETPLAY/DISCOVERY/TASKS: Netplay/LAN Discovery Task refactor -  aims to prevent blocking the main thread while awaiting for the LAN discovery timeout; This is accomplished by moving the whole discovery functionality into its task and using a non-blocking timer to finish the task. Also fixes discovery sockets not being made non-blocking, which could cause the main thread to hang for very long periods of time every pre-frame.
+- NETWORK/NETPLAY/TASKS: Find content task refactor - fixes many issues along the way, including a couple of nasty memory leaks that would leak thousands of bytes each time the task ran. It also expands the original concept by matching currently run content by filename (CRC matching is always performed first though).
+- NETWORK/NETPLAY/TASKS: Find content task refactor - Ensure CRC32 is 8 characters long
+- NETWORK/NETPLAY/LOBBY: Add setting for filtering out rooms with non-installed cores
+- NETWORK/NETPLAY/LOBBY: Hide older (incompatible) rooms
+- NETWORK/NETPLAY/LOBBY: Add a toggleable filter for passworded rooms. In addition, move lobby filters into its own submenu for better organization.
+- NETWORK/NETPLAY/MENU: Chat supported info for the host kick submenu
+- NETWORK/NETPLAY/MENU: Localize relay servers
+- NETWORK/NETPLAY/MENU: Host Ban Submenu
+- NETWORK/NETPLAY/MENU: Add client devices info to the kick sub-menu
+- NETWORK/NETPLAY/MENU: Path: Netplay -> Host -> Kick Client - Allows the host to kick clients. Allows the host to view client information: connected clients (names), status (playing/spectating) and ping.
+- NETWORK/NETPLAY/VITA: Add net_ifinfo support
+- NETWORK/NETPLAY/VITA: Enable partial LAN discovery
+- NETWORK/NETPLAY/VITA: Change default UDP port to 19492
+- NETWORK/NETPLAY/VITA: Do not multiply negative timeout values
+- NETWORK/NETPLAY/VITA: Fix epoll's timeout parameter
+- NETWORK/NETPLAY/VITA: Launch compatibility patch
+- NETWORK/NETPLAY/3DS: Launch compatibility patch
+- NETWORK/NETPLAY/3DS: Adapt POLL for 3DS platform
+- NETWORK/NETPLAY/PS3: Launch compatibility patch
+- NETWORK/NETPLAY/WII: Enable net_ifinfo for some features. In practice, this only allows the netplay's UPnP task to succeed on the Wii.
+- NETWORK/NETPLAY/WIIU: Launch compatibility patch
+- NETWORK/NETPLAY/SWITCH: Launch compatibility patch
+- NETWORK/UPNP: Attempt support for remaining platforms
+- NETWORK/UPNP: Support for IPv4 tunneling
+- ODROID GO2: Increase DEFAULT_MAX_PADS to 8 for ODROIDGO2, since that impacts the RG351[X] consoles. The RG351[X] have a USB host controller and can have an arbitrary number of USB gamepads.
+- ONLINE UPDATER: Online Updater menu reorganizing
+- OSX: Fixed items of system top menu bar on macOS
+- OSX: Revision to macOS app icon set
+- PLAYLISTS: Ensure history list will contain CRC32
+- PLAYLISTS: Fix CRC32 comparison - as state->content_crc has "|crc" suffix.
+- PS4/ORBIS: Orbis/PS4 Support using OrbisDev toolchain
+- PS4/ORBIS: Update xxHash dependecy
+- PS4/ORBIS: Shader cache
+- RETROFW: Exclude unused HAVE_HID for RetroFW
+- RETROFW: Support battery indicator on RetroFW
+- RETROFW: Enable menu toggle button on retrofw devices
+- SHADERS: Shader Preset Loading of Multiple additional #references lines for settings
+- SHADERS: Shader Load Extra Parameter Reference Files - this adds the ability to put additional #reference lines inside shader presets which will load additional settings. The first reference in the preset still needs to point at a chain of presets which ends with a shader chain, and subsequent #reference lines will load presets which only have parameter values adjustment. This allows presets to be made with a modular selection of settings. For example with the Mega Bezel one additional reference could point at a preset which contained settings for Night mode vs Day mode, and another reference could point to a preset which contained settings for how much the screen should be zoomed in.
+- SHADERS/MENU: Increase shader scale max value
+- SCANNER/DC: Fix Redump bin/cue scan for some DC games
+- SCANNER/GC/WII: Add RVZ/WIA scan support for GC/Wii
+- SCANNER/PS1: Improved success rate of Serial scanning on PS1 by adding support for the xx.xxx format
+- SCANNER/PS1: Changed return value of detect_ps1_game function to actuially return a failure when the Serial couldn't be extracted. Scanner will then fallback on   crc check, and usually ends up finding the games in the database.
+- SWITCH: Enable RWAV (WAV audio file) support
+- STRING: Do not assume char is unsigned
+- TASKS: More thread-awareness in task callbacks
+- TASKS: Fix race condition at task_queue_wait
+- TVOS: Revised tvOS icons w/ updated alien.
+- VFS: Fix various VFS / file stream issues
+- VULKAN: Fix more validation errors
+- VULKAN: Attempt to fix validation errors with HDR swapchain. Always use final render pass type equal to swapchain format. Use more direct logic to expose if filter chain emits HDR10 color space or not
+- VULKAN/ANDROID: Honor SUBOPTIMAL on non-Android since you'd want to recreate swapchains then. On Android it can be promoted to SUCCESS.
+SUBOPTIMAL_KHR can happen there when rotation (pre-rotate) is wrong.
+- VULKAN/DEBUG: Automatically mark buffer/images/memory with names
+- VULKAN/DEBUG: Move over to VK_EXT_debug_utils. Debug marker is deprecated years ago.
+- VULKAN/HDR: Fix leak of HDR UBO buffer
+- VULKAN/BFI: Fix BFI (Black Frame Insertion) regression
+- WINDOWS: Fix exclusive fullscreen video refresh rate when vsync swap interval is not equal to one - refresh rate in exclusive fullscreen mode was being incorrectly multiplied by vsync swap interval, breaking swap interval functionality at the gfx driver level
+- WIN32: Do optimization for Windows where we only update the title with SetWindowText when the previous title differs from the current title
+- WIN32: Skip console attach when logging to file
+- WIN32: Remove black margins with borderless non-fullscreen window
+- WIN32/TASKBAR: Release ITaskbarList3 on failed HrInit - pointer wasn't NULL'd, thus set_window_progress would cause weird behavior
+- WII/GX: Fix potential datarace
+- WIIU: Implement sysconf and __clear_cache
+- WIIU: Add OS memory mapping imports
+- UWP: Added launch protocol arg 'forceExit' so a frontend can tell an already-running RetroArch UWP instance to quit.
+- UWP: Enable core downloader/updater
+- UWP: Remove copy permissions as its inefficient as we can just directly assign the new ACL and that works
+- Xbox/UWP: Remove expandedResources
+- Xbox/UWP: UWP OnSuspending crash fix
+- Xbox/UWP: Enable savestate file compression by default for UWP/Xbox - got told there are no more issues with it
+- Xbox/UWP: Add support for 4k to angle on xbox for MSVC2017 build
+
 # 1.10.3
 - ANDROID: Decouple Play Core dependency to bring app into compliance for F-Droid
 - ANDROID: Allow audio playback capture on android
