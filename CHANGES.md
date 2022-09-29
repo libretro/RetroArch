@@ -56,8 +56,10 @@ prevents it from being overwritten/deleted while the program is still running.
 - GLSLANG: Fix compilation with ./configure --disable-builtinglslang - was missing linking against -lMachineIndependent and -lGenericCodeGen static libs
 - INPUT: Fix off by one error for input_block_timeout setting. Also default to 0 for this setting (pretty massive performance gain)
 - INPUT: Analog button mapping fixes
+- INPUT/HID/OSX: Fix DualShock3 support
 - INPUT/HID/LINUX: (qb) Disable HAVE_HID by default for now for Linux as long as there are no working backends for both
 - INPUT/HID/WINDOWS: (qb) Disable HAVE_HID by default for now for Windows as long as there are no working backends for both
+- INPUT/HID/WIIU: Fix DualShock3 support
 - INPUT/OVERLAY: Block pointer input when overlay is pressed
 - INPUT/REMAPPING: input_remapping_save_file - existing remapping file was needlessly reloaded
 - INPUT/REMAPPING: Add option to disable automatic saving of input remap files
