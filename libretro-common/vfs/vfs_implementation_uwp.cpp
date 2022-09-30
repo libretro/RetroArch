@@ -391,7 +391,7 @@ error:
     return NULL;
 }
 
-int uwp_mkdir_impl(std::experimental::filesystem::path dir)
+static int uwp_mkdir_impl(std::experimental::filesystem::path dir)
 {
     /*I feel like this should create the directory recursively but the existing implementation does not so this update won't
      *I put in the work but I just commented out the stuff you would need */
