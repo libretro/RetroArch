@@ -6162,6 +6162,13 @@ bool retroarch_main_quit(void)
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
+   
+   //Save configs before quitting
+   //as for UWP depending on `OnSuspending` is not important as we can call it directly here
+   //specifically we need to get width,height which requires UI thread and it will not be available on exit
+   bool config_save_on_exit = settings->bools.config_save_on_exit;
+   if (config_save_on_exit)
+      command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
 #ifdef HAVE_PRESENCE
    {
