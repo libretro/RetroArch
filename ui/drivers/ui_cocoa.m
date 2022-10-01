@@ -337,7 +337,7 @@ static ui_application_t ui_application_cocoa = {
    void *data;
    enum event_command cmd;
 }
-@end // @interface CommandPerformer
+@end /* @interface CommandPerformer */
 
 @implementation CommandPerformer
 
@@ -358,7 +358,7 @@ static ui_application_t ui_application_cocoa = {
    command_event(self->cmd, self->data);
 }
 
-@end // @implementation CommandPerformer
+@end /* @implementation CommandPerformer */
 
 #if defined(HAVE_COCOA_METAL)
 @interface RAWindow : NSWindow

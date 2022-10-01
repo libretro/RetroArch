@@ -358,64 +358,58 @@ static inline void initAttributeGem(gemAttribute * attribute,
 
 int initGemVideoConvert(ps3_input_t *ps3)
 {
-   int ret;
-
-   ps3->gem_video_convert.version = 2;
-   ps3->gem_video_convert.format = 2; //GEM_RGBA_640x480;
-   ps3->gem_video_convert.conversion= GEM_AUTO_WHITE_BALANCE | GEM_COMBINE_PREVIOUS_INPUT_FRAME |
-                                      GEM_FILTER_OUTLIER_PIXELS | GEM_GAMMA_BOOST;
-   ps3->gem_video_convert.gain = 1.0f;
-   ps3->gem_video_convert.red_gain = 1.0f;
-   ps3->gem_video_convert.green_gain = 1.0f;
-   ps3->gem_video_convert.blue_gain = 1.0f;
-   ps3->buffer_mem = (void *)memalign(128, 640*480);
-   ps3->video_out = (void *)ps3->video_frame;
-   ps3->gem_video_convert.buffer_memory = ps3->buffer_mem;
+   ps3->gem_video_convert.version        = 2;
+   ps3->gem_video_convert.format         = 2; /* GEM_RGBA_640x480; */
+   ps3->gem_video_convert.conversion     = GEM_AUTO_WHITE_BALANCE 
+	                                 | GEM_COMBINE_PREVIOUS_INPUT_FRAME
+                                         | GEM_FILTER_OUTLIER_PIXELS 
+				         | GEM_GAMMA_BOOST;
+   ps3->gem_video_convert.gain           = 1.0f;
+   ps3->gem_video_convert.red_gain       = 1.0f;
+   ps3->gem_video_convert.green_gain     = 1.0f;
+   ps3->gem_video_convert.blue_gain      = 1.0f;
+   ps3->buffer_mem                       = (void *)memalign(128, 640*480);
+   ps3->video_out                        = (void *)ps3->video_frame;
+   ps3->gem_video_convert.buffer_memory  = ps3->buffer_mem;
    ps3->gem_video_convert.video_data_out = ps3->video_out;
-   ps3->gem_video_convert.alpha = 255;
-   ret = gemPrepareVideoConvert(&ps3->gem_video_convert);
-   return ret;
+   ps3->gem_video_convert.alpha          = 255;
+
+   return gemPrepareVideoConvert(&ps3->gem_video_convert);
 }
 
 int initGem(ps3_input_t *ps3)
 {
-   int ret;
    int i;
-
-   ret = initSpurs(ps3);
-   if (ret)
-   {
+   gemAttribute gem_attr;
+   u8 gem_spu_priorities[8] = { 1, 1, 1, 1, 1, 0, 0, 0 };	/* execute */
+                /* libgem jobs */
+                /* on 5 SPUs */
+   if (initSpurs(ps3))
       return -1;
-   }
 
-   ret = gemGetMemorySize(1);
-   ps3->gem_memory = (void *)malloc(ret);
+   ps3->gem_memory = (void *)malloc(gemGetMemorySize(1));
    if (!ps3->gem_memory)
       return -1;
 
-   u8 gem_spu_priorities[8] = { 1, 1, 1, 1, 1, 0, 0, 0 };	// execute
-                // libgem jobs
-                // on 5 spu
-   gemAttribute gem_attr;
+   initAttributeGem(&gem_attr, 1, ps3->gem_memory,
+		   ps3->spurs, gem_spu_priorities);
 
-   initAttributeGem(&gem_attr, 1, ps3->gem_memory, ps3->spurs, gem_spu_priorities);
+   gemInit (&gem_attr);
+   initGemVideoConvert(ps3);
+   gemPrepareCamera (128, 0.5);
+   gemReset(0);
 
-   ret = gemInit (&gem_attr);
-   ret= initGemVideoConvert(ps3);
-   ret = gemPrepareCamera (128, 0.5);
-   ret = gemReset(0);
    return 0;
 }
 
 void readGemPad(ps3_input_t *ps3, int num_gem)
 {
-   int ret;
    unsigned int hues[] = { 4 << 24, 4 << 24, 4 << 24, 4 << 24 };
-   ret = gemGetState (0, 0, -22000, &ps3->gem_state);
+   int ret             = gemGetState(0, 0, -22000, &ps3->gem_state);
 
-   ps3->newGemPad = ps3->gem_state.paddata.buttons & (~ps3->oldGemPad);
-   ps3->newGemAnalogT = ps3->gem_state.paddata.ANA_T;
-   ps3->oldGemPad = ps3->gem_state.paddata.buttons;
+   ps3->newGemPad      = ps3->gem_state.paddata.buttons & (~ps3->oldGemPad);
+   ps3->newGemAnalogT  = ps3->gem_state.paddata.ANA_T;
+   ps3->oldGemPad      = ps3->gem_state.paddata.buttons;
 
    switch (ret)
    {
@@ -441,10 +435,8 @@ void readGemAccPosition(int num_gem)
 
 void readGemInertial(ps3_input_t *ps3, int num_gem)
 {
-   int ret;
    VmathVector4 v;
-
-   ret = gemGetInertialState(num_gem, 0, -22000, &ps3->gem_inertial_state);
+   int ret  = gemGetInertialState(num_gem, 0, -22000, &ps3->gem_inertial_state);
    v.vec128 = ps3->gem_inertial_state.accelerometer;
    v.vec128 = ps3->gem_inertial_state.accelerometer_bias;
    v.vec128 = ps3->gem_inertial_state.gyro;
@@ -453,14 +445,16 @@ void readGemInertial(ps3_input_t *ps3, int num_gem)
 
 void readGem(ps3_input_t *ps3)
 {
+   VmathVector4 v;
+
    proccessGem(ps3, 0);
    proccessGem(ps3, 1);
    proccessGem(ps3, 2);
    proccessGem(ps3, 3);
-   readGemPad(ps3, 0);		// This will read buttons from Move
-   VmathVector4 v;
+   readGemPad(ps3, 0);		/* This will read buttons from Move */
    v.vec128 = ps3->gem_state.pos;
-   switch (ps3->newGemPad) {
+   switch (ps3->newGemPad)
+   {
       case 1:
          ps3->select_pressed++;
          break;
@@ -478,23 +472,27 @@ void readGem(ps3_input_t *ps3)
          break;
       case 16:
          ps3->triangle_pressed++;
-      break;
-         case 32:
+         break;
+      case 32:
          ps3->circle_pressed++;
          break;
       case 64:
          ps3->cross_pressed++;
-         //readGemAccPosition(0);
+#if 0
+         readGemAccPosition(0);
+#endif
          break;
       case 128:
          ps3->square_pressed++;
-         //readGemInertial(ps3, 0);
+#if 0
+         readGemInertial(ps3, 0);
+#endif
          break;
       default:
          break;
    }
 }
-#endif // HAVE_LIGHTGUN
+#endif /* HAVE_LIGHTGUN */
 
 static void ps3_input_poll(void *data)
 {
@@ -665,11 +663,14 @@ static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
 static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
       unsigned user, unsigned id)
 {
-   if (!ps3->gem_connected || !ps3->gem_init)
-      return 0;
-
-   readCamera(ps3);
-   readGem(ps3);
+   float center_x;
+   float center_y;
+   float pointer_x;
+   float pointer_y;
+   videoState state;
+   videoConfiguration vconfig;
+   videoResolution res;
+   VmathVector4 ray_start, ray_dir;
    struct video_viewport vp;
    const int edge_detect       = 32700;
    bool inside                 = false;
@@ -677,29 +678,27 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
    int16_t res_y               = 0;
    int16_t res_screen_x        = 0;
    int16_t res_screen_y        = 0;
-   float center_x;
-   float center_y;
-   float pointer_x;
-   float pointer_y;
-   float sensitivity = 1.0f;
+   float sensitivity           = 1.0f;
+   if (!ps3->gem_connected || !ps3->gem_init)
+      return 0;
 
-   videoState state;
-   videoConfiguration vconfig;
-   videoResolution res;
+   readCamera(ps3);
+   readGem(ps3);
+
    videoGetState(0, 0, &state);
    videoGetResolution(state.displayMode.resolution, &res);
 
    if (res.height == 720)
    {
-      // 720p offset adjustments
-      center_x = 645.0f;
-      center_y = 375.0f;
+      /* 720p offset adjustments */
+      center_x                 = 645.0f;
+      center_y                 = 375.0f;
    }
    else if (res.height == 1080)
    {
-      // 1080p offset adjustments
-      center_x = 960.0f;
-      center_y = 565.0f;
+      /* 1080p offset adjustments */
+      center_x                 = 960.0f;
+      center_y                 = 565.0f;
    }
 
    vp.x                        = 0;
@@ -709,25 +708,23 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
    vp.full_width               = 0;
    vp.full_height              = 0;
 
-#if 1
-   // tracking mode 1: laser pointer mode (this is closest to actual lightgun behavior)
-   VmathVector4 ray_start;
-   ray_start.vec128 = ps3->gem_state.pos;
-   VmathVector4 ray_tmp = {.vec128 = {0.0f,0.0f,-1.0f,0.0f}};
-   const VmathQuat *quat = &ps3->gem_state.quat;
-   VmathVector4 ray_dir;
+   /* tracking mode 1: laser pointer mode (this is closest 
+      to actual lightgun behavior) */
+   ray_start.vec128            = ps3->gem_state.pos;
+   VmathVector4 ray_tmp        = {.vec128 = {0.0f,0.0f,-1.0f,0.0f}};
+   const VmathQuat *quat       = &ps3->gem_state.quat;
    vmathQRotate(&ray_dir, quat, &ray_tmp);
-   float t = -ray_start.vec128[2] / ray_dir.vec128[2];
-   pointer_x = ray_start.vec128[0] + ray_dir.vec128[0]*t;
-   pointer_y = ray_start.vec128[1] + ray_dir.vec128[1]*t;
-#endif
+   float t                     = -ray_start.vec128[2] / ray_dir.vec128[2];
+   pointer_x                   = ray_start.vec128[0] + ray_dir.vec128[0]*t;
+   pointer_y                   = ray_start.vec128[1] + ray_dir.vec128[1]*t;
 
 #if 0
-   // tracking mode 2: 3D coordinate system (move pointer position by moving the whole controller)
+   /* tracking mode 2: 3D coordinate system (move pointer position by moving the
+ * whole controller) */
    VmathVector4 v;
-   v.vec128 = ps3->gem_state.pos;
-   pointer_x = v.vec128[0];
-   pointer_y = v.vec128[1];
+   v.vec128              = ps3->gem_state.pos;
+   pointer_x             = v.vec128[0];
+   pointer_y             = v.vec128[1];
 #endif
 
    if (video_driver_translate_coord_viewport_wrap(&vp,
@@ -782,15 +779,11 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
             break;
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
             if (inside)
-            {
                return (res_x);
-            }
             break;
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
             if (inside)
-            {
                return (~res_y);
-            }
             break;
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
             return !inside;
@@ -825,7 +818,7 @@ static int16_t ps3_input_state(
       case RETRO_DEVICE_JOYPAD:
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
-            unsigned i;
+            int i;
             int16_t ret = 0;
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -880,7 +873,10 @@ static void ps3_input_free_input(void *data)
 
 static void* ps3_input_init(const char *joypad_driver)
 {
-   unsigned i;
+   int i;
+#ifdef HAVE_LIGHTGUN
+   gemInfo gem_info;
+#endif
    ps3_input_t *ps3 = (ps3_input_t*)calloc(1, sizeof(*ps3));
    if (!ps3)
       return NULL;
@@ -902,8 +898,7 @@ static void* ps3_input_init(const char *joypad_driver)
    ioMouseInit(MAX_MICE);
 #endif
 #ifdef HAVE_LIGHTGUN
-   ps3->gem_init = 0;
-   gemInfo gem_info;
+   ps3->gem_init      = 0;
    gemGetInfo(&gem_info);
    ps3->gem_connected = gem_info.connected;
    if (ps3->gem_connected)
@@ -918,9 +913,7 @@ static void* ps3_input_init(const char *joypad_driver)
                if (!setupCamera(ps3));
                {
                   if (!initGem(ps3))
-                  {
                      ps3->gem_init = 1;
-                  }
                }
             }
          }

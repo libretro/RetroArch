@@ -1459,7 +1459,7 @@ const struct rarch_key_map rarch_key_map_qnx[] = {
    { KEYCODE_RIGHT_CTRL, RETROK_RCTRL },
    { KEYCODE_LEFT_ALT, RETROK_LALT },
    { KEYCODE_RIGHT_ALT, RETROK_RALT },
-   // TODO/FIXME: Code for 'sym' key on BB keyboards. Figure out which sys/keycodes.h define this maps to.
+   /* TODO/FIXME: Code for 'sym' key on BB keyboards. Figure out which sys/keycodes.h define this maps to. */
    { 61651, RETROK_RSUPER },
    { KEYCODE_DOLLAR, RETROK_DOLLAR },
    { KEYCODE_MENU, RETROK_MENU },

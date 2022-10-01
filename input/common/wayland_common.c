@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Needed for memfd_create
+/* Needed for memfd_create */
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE /* See feature_test_macros(7) */
 #endif
@@ -85,7 +85,7 @@ static void keyboard_handle_leave(void *data,
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    wl->input.keyboard_focus   = false;
 
-   // Release all keys
+   /* Release all keys */
    memset(wl->input.key_state, 0, sizeof(wl->input.key_state));
 }
 
@@ -727,7 +727,7 @@ void* wayland_data_offer_receive(struct wl_display *display, struct wl_data_offe
    {
       wl_data_offer_receive(offer, mime_type, pipefd[1]);
 
-      // Wait for sending client to transfer
+      /* Wait for sending client to transfer */
       wl_display_roundtrip(display);
 
       close(pipefd[1]);
@@ -849,9 +849,12 @@ static void data_device_handle_drop(void *data,
       line[strcspn(line, "\r\n")] = 0;
       RARCH_LOG("[Wayland]: > \"%s\"\n", line);
 
-      // TODO: Convert from file:// URI, Implement file loading
-      //if (wayland_load_content_from_drop(g_filename_from_uri(line, NULL, NULL)))
-      //   RARCH_WARN("----- wayland_load_content_from_drop success\n");
+      /* TODO/FIXME: Convert from file:// URI, Implement file loading
+       * Drag and Drop */
+#if 0
+      if (wayland_load_content_from_drop(g_filename_from_uri(line, NULL, NULL)))
+         RARCH_WARN("----- wayland_load_content_from_drop success\n");
+#endif
    }
 
    fclose(stream);
@@ -867,7 +870,7 @@ static void data_offer_handle_offer(void *data, struct wl_data_offer *offer,
 {
    data_offer_ctx *offer_data = data;
 
-   // TODO: Keep list of mime types for offer if beneficial
+   /* TODO: Keep list of mime types for offer if beneficial */
    if (string_is_equal(mime_type, FILE_MIME))
       offer_data->is_file_mime_type = true;
 }
@@ -875,8 +878,8 @@ static void data_offer_handle_offer(void *data, struct wl_data_offer *offer,
 static void data_offer_handle_source_actions(void *data,
       struct wl_data_offer *offer, enum wl_data_device_manager_dnd_action actions)
 {
-   // Report of actions for this offer supported by compositor
-   data_offer_ctx *offer_data = data;
+   /* Report of actions for this offer supported by compositor */
+   data_offer_ctx *offer_data    = data;
    offer_data->supported_actions = actions;
 }
 

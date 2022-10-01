@@ -279,16 +279,16 @@ BTDIMPORT const hci_cmd_t* l2cap_decline_connection_ptr;
 
 /* RFCOMM EVENTS */
 
-// data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
+/* data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16) */
 #define RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE                  0x80
 
-// data: event(8), len(8), rfcomm_cid(16)
+/* data: event(8), len(8), rfcomm_cid(16) */
 #define RFCOMM_EVENT_CHANNEL_CLOSED                         0x81
 
-// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
+/* data: event (8), len(8), address(48), channel (8), rfcomm_cid (16) */
 #define RFCOMM_EVENT_INCOMING_CONNECTION                    0x82
 
-// data: event (8), len(8), rfcommid (16), ...
+/* data: event (8), len(8), rfcommid (16), ... */
 #define RFCOMM_EVENT_REMOTE_LINE_STATUS                     0x83
 
 /* data: event(8), len(8), rfcomm_cid(16), credits(8) */

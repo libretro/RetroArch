@@ -205,4 +205,4 @@ static INLINE void ctr_set_scale_vector(ctr_scale_vector_t* vec,
    vec->v = -1.0 / texture_height;
 }
 
-#endif // CTR_COMMON_H__
+#endif /* CTR_COMMON_H__ */
