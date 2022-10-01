@@ -45,24 +45,33 @@
 #define STRUCT_ASSIGN(x, y) \
 { \
    NSObject * __y = y; \
-   if (x != nil) \
-   { \
+   if (x != nil) { \
       NSObject * __foo = (__bridge_transfer NSObject *)(__bridge void *)(x); \
       __foo = nil; \
       x = (__bridge __typeof__(x))nil; \
    } \
    if (__y != nil) \
-      x = (__bridge __typeof__(x))(__bridge_retained void *)((NSObject *)__y)
+      x = (__bridge __typeof__(x))(__bridge_retained void *)((NSObject *)__y); \
+   }
 
 @implementation MetalView
 
 #if !defined(HAVE_COCOATOUCH)
-- (void)keyDown:(NSEvent*)theEvent { }
+- (void)keyDown:(NSEvent*)theEvent
+{
+}
 #endif
 
 /* Stop the annoying sound when pressing a key. */
-- (BOOL)acceptsFirstResponder { return YES; }
-- (BOOL)isFlipped { return YES; }
+- (BOOL)acceptsFirstResponder
+{
+   return YES;
+}
+
+- (BOOL)isFlipped
+{
+   return YES;
+}
 @end
 
 #pragma mark - private categories
@@ -101,14 +110,15 @@
 
    CAMetalLayer *_layer;
 
-   /* Render target layer state */
+   // render target layer state
    id<MTLRenderPipelineState> _t_pipelineState;
    id<MTLRenderPipelineState> _t_pipelineStateNoAlpha;
 
    id<MTLSamplerState> _samplerStateLinear;
    id<MTLSamplerState> _samplerStateNearest;
 
-   Uniforms _viewportMVP; /* Other state */
+   // other state
+   Uniforms _viewportMVP;
 }
 
 - (instancetype)initWithVideo:(const video_info_t *)video
@@ -117,61 +127,61 @@
 {
    if (self = [super init])
    {
-      gfx_ctx_mode_t mode;
-      _device                       = MTLCreateSystemDefaultDevice();
-      MetalView *view               = (MetalView *)apple_platform.renderView;
-      view.device                   = _device;
-      view.delegate                 = self;
-      _layer                        = (CAMetalLayer *)view.layer;
+      _device = MTLCreateSystemDefaultDevice();
+      MetalView *view = (MetalView *)apple_platform.renderView;
+      view.device = _device;
+      view.delegate = self;
+      _layer = (CAMetalLayer *)view.layer;
 
       if (![self _initMetal])
+      {
          return nil;
+      }
 
-      _video                        = *video;
-      _viewport                     = (video_viewport_t *)calloc(1, sizeof(video_viewport_t));
+      _video = *video;
+      _viewport = (video_viewport_t *)calloc(1, sizeof(video_viewport_t));
       _viewportMVP.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
 
-      _keepAspect                   = _video.force_aspect;
+      _keepAspect = _video.force_aspect;
 
-      mode.width                    = _video.width;
-      mode.height                   = _video.height;
-      mode.fullscreen               = _video.fullscreen;
+      gfx_ctx_mode_t mode = {
+         .width = _video.width,
+         .height = _video.height,
+         .fullscreen = _video.fullscreen,
+      };
 
       if (mode.width == 0 || mode.height == 0)
       {
-         /* 0 indicates full screen, so we'll use the view's dimensions, 
-          * which should already be full screen.
-          * If this turns out to be the wrong assumption, 
-          * we can use NSScreen to query the dimensions */
+         // 0 indicates full screen, so we'll use the view's dimensions, which should already be full screen
+         // If this turns out to be the wrong assumption, we can use NSScreen to query the dimensions
          CGSize size = view.frame.size;
-         mode.width  = (unsigned int)size.width;
+         mode.width = (unsigned int)size.width;
          mode.height = (unsigned int)size.height;
       }
 
       [apple_platform setVideoMode:mode];
 
-      *input     = NULL;
+      *input = NULL;
       *inputData = NULL;
 
-      /* Graphics display driver */
-      _display   = [[MenuDisplay alloc] initWithContext:_context];
-      /* Menu view */
-      _menu      = [[MetalMenu alloc] initWithContext:_context];
+      // graphics display driver
+      _display = [[MenuDisplay alloc] initWithContext:_context];
 
-      /* Framebuffer view */
+      // menu view
+      _menu = [[MetalMenu alloc] initWithContext:_context];
+
+      // frame buffer view
       {
-         ViewDescriptor *vd  = [ViewDescriptor new];
-         vd.format           = _video.rgb32 
-            ? RPixelFormatBGRX8Unorm 
-            : RPixelFormatB5G6R5Unorm;
-         vd.size             = CGSizeMake(video->width, video->height);
-         vd.filter           = _video.smooth ? RTextureFilterLinear : RTextureFilterNearest;
-         _frameView          = [[FrameView alloc] initWithDescriptor:vd context:_context];
+         ViewDescriptor *vd = [ViewDescriptor new];
+         vd.format = _video.rgb32 ? RPixelFormatBGRX8Unorm : RPixelFormatB5G6R5Unorm;
+         vd.size = CGSizeMake(video->width, video->height);
+         vd.filter = _video.smooth ? RTextureFilterLinear : RTextureFilterNearest;
+         _frameView = [[FrameView alloc] initWithDescriptor:vd context:_context];
          _frameView.viewport = _viewport;
          [_frameView setFilteringIndex:0 smooth:video->smooth];
       }
 
-      /* Overlay view */
+      // overlay view
       _overlay = [[Overlay alloc] initWithContext:_context];
 
       font_driver_init_osd((__bridge void *)self,
@@ -197,35 +207,34 @@
 {
    _library = [_device newDefaultLibrary];
    _context = [[Context alloc] initWithDevice:_device
-      layer:_layer library:_library];
+                                        layer:_layer
+                                      library:_library];
 
    {
-      NSError *err;
-      MTLRenderPipelineDescriptor *psd;
-      MTLRenderPipelineColorAttachmentDescriptor *ca;
-      MTLVertexDescriptor *vd        = [MTLVertexDescriptor new];
-      vd.attributes[0].offset        = 0;
-      vd.attributes[0].format        = MTLVertexFormatFloat3;
-      vd.attributes[1].offset        = offsetof(Vertex, texCoord);
-      vd.attributes[1].format        = MTLVertexFormatFloat2;
-      vd.layouts[0].stride           = sizeof(Vertex);
+      MTLVertexDescriptor *vd = [MTLVertexDescriptor new];
+      vd.attributes[0].offset = 0;
+      vd.attributes[0].format = MTLVertexFormatFloat3;
+      vd.attributes[1].offset = offsetof(Vertex, texCoord);
+      vd.attributes[1].format = MTLVertexFormatFloat2;
+      vd.layouts[0].stride = sizeof(Vertex);
 
-      psd                            = [MTLRenderPipelineDescriptor new];
-      psd.label                      = @"Pipeline+Alpha";
+      MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
+      psd.label = @"Pipeline+Alpha";
 
-      ca                             = psd.colorAttachments[0];
-      ca.pixelFormat                 = _layer.pixelFormat;
-      ca.blendingEnabled             = YES;
-      ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
-      ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
+      MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
+      ca.pixelFormat = _layer.pixelFormat;
+      ca.blendingEnabled = YES;
+      ca.sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
+      ca.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
       ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-      ca.destinationRGBBlendFactor   = MTLBlendFactorOneMinusSourceAlpha;
+      ca.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
 
-      psd.sampleCount                = 1;
-      psd.vertexDescriptor           = vd;
-      psd.vertexFunction             = [_library newFunctionWithName:@"basic_vertex_proj_tex"];
-      psd.fragmentFunction           = [_library newFunctionWithName:@"basic_fragment_proj_tex"];
+      psd.sampleCount = 1;
+      psd.vertexDescriptor = vd;
+      psd.vertexFunction = [_library newFunctionWithName:@"basic_vertex_proj_tex"];
+      psd.fragmentFunction = [_library newFunctionWithName:@"basic_fragment_proj_tex"];
 
+      NSError *err;
       _t_pipelineState = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
       if (err != nil)
       {
@@ -233,9 +242,9 @@
          return NO;
       }
 
-      psd.label                      = @"Pipeline+No Alpha";
-      ca.blendingEnabled             = NO;
-      _t_pipelineStateNoAlpha        = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      psd.label = @"Pipeline+No Alpha";
+      ca.blendingEnabled = NO;
+      _t_pipelineStateNoAlpha = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
       if (err != nil)
       {
          RARCH_ERR("[Metal]: error creating pipeline state (no alpha) %s\n", err.localizedDescription.UTF8String);
@@ -245,11 +254,11 @@
 
    {
       MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];
-      _samplerStateNearest     = [_device newSamplerStateWithDescriptor:sd];
+      _samplerStateNearest = [_device newSamplerStateWithDescriptor:sd];
 
-      sd.minFilter             = MTLSamplerMinMagFilterLinear;
-      sd.magFilter             = MTLSamplerMinMagFilterLinear;
-      _samplerStateLinear      = [_device newSamplerStateWithDescriptor:sd];
+      sd.minFilter = MTLSamplerMinMagFilterLinear;
+      sd.magFilter = MTLSamplerMinMagFilterLinear;
+      _samplerStateLinear = [_device newSamplerStateWithDescriptor:sd];
    }
 
    return YES;
@@ -257,32 +266,37 @@
 
 - (void)setViewportWidth:(unsigned)width height:(unsigned)height forceFull:(BOOL)forceFull allowRotate:(BOOL)allowRotate
 {
-   _viewport->full_width   = width;
-   _viewport->full_height  = height;
+   _viewport->full_width = width;
+   _viewport->full_height = height;
    video_driver_set_size(_viewport->full_width, _viewport->full_height);
-   _layer.drawableSize     = CGSizeMake(width, height);
+   _layer.drawableSize = CGSizeMake(width, height);
    video_driver_update_viewport(_viewport, forceFull, _keepAspect);
-   _context.viewport       = _viewport; /* Update matrix */
+
+   // update matrix
+   _context.viewport = _viewport;
 
    _viewportMVP.outputSize = simd_make_float2(_viewport->full_width, _viewport->full_height);
 }
 
 #pragma mark - video
 
-- (void)setVideo:(const video_info_t *)video { }
+- (void)setVideo:(const video_info_t *)video
+{
+
+}
 
 - (bool)renderFrame:(const void *)frame
-             data:(void*)data
-             width:(unsigned)width
+               data:(void*)data
+              width:(unsigned)width
              height:(unsigned)height
-             frameCount:(uint64_t)frameCount
-             pitch:(unsigned)pitch
-             msg:(const char *)msg
-             info:(video_frame_info_t *)video_info
+         frameCount:(uint64_t)frameCount
+              pitch:(unsigned)pitch
+                msg:(const char *)msg
+               info:(video_frame_info_t *)video_info
 {
    @autoreleasepool
    {
-      bool statistics_show  = video_info->statistics_show;
+      bool statistics_show = video_info->statistics_show;
 
       [self _beginFrame];
 
@@ -377,9 +391,9 @@
       width                += x2;
       height               += y2;
 
-      r                     = bgcolor_red   / 255.0f;
+      r                     = bgcolor_red / 255.0f;
       g                     = bgcolor_green / 255.0f;
-      b                     = bgcolor_blue  / 255.0f;
+      b                     = bgcolor_blue / 255.0f;
       a                     = bgcolor_opacity;
 
       [_context resetRenderViewport:kFullscreenViewport];
@@ -404,7 +418,7 @@
 {
    id<MTLRenderCommandEncoder> rce = _context.rce;
 
-   /* Draw back buffer */
+   /* draw back buffer */
    [rce pushDebugGroup:@"core frame"];
    [_frameView drawWithContext:_context];
 
@@ -413,9 +427,13 @@
       [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
       [rce setRenderPipelineState:_t_pipelineStateNoAlpha];
       if (_frameView.filter == RTextureFilterNearest)
+      {
          [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
+      }
       else
+      {
          [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
+      }
       [_frameView drawWithEncoder:rce];
    }
    [rce popDebugGroup];
@@ -437,9 +455,13 @@
       [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
       [rce setRenderPipelineState:_t_pipelineState];
       if (_menu.view.filter == RTextureFilterNearest)
+      {
          [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
+      }
       else
+      {
          [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
+      }
       [_menu.view drawWithEncoder:rce];
       [rce popDebugGroup];
    }
@@ -454,23 +476,31 @@
 #endif
 }
 
-/* TODO/FIXME (sgc): resize all drawables */
-- (void)setNeedsResize { }
+- (void)_endFrame
+{
+   [_context end];
+}
 
-- (void)_endFrame { [_context end]; }
+- (void)setNeedsResize
+{
+   // TODO(sgc): resize all drawables
+}
+
 - (void)setRotation:(unsigned)rotation
 {
    [_context setRotation:rotation];
 }
-- (Uniforms *)viewportMVP { return &_viewportMVP; }
+
+- (Uniforms *)viewportMVP
+{
+   return &_viewportMVP;
+}
 
 #pragma mark - MTKViewDelegate
 
 - (void)mtkView:(MTKView *)view drawableSizeWillChange:(CGSize)size
 {
-#ifndef NDEBUG
     NSLog(@"mtkView drawableSizeWillChange to: %f x %f",size.width,size.height);
-#endif
 #ifdef HAVE_COCOATOUCH
     CGFloat scale = [[UIScreen mainScreen] scale];
     [self setViewportWidth:(unsigned int)view.bounds.size.width*scale height:(unsigned int)view.bounds.size.height*scale forceFull:NO allowRotate:YES];
@@ -479,7 +509,11 @@
 #endif
 }
 
-- (void)drawInMTKView:(MTKView *)view { }
+- (void)drawInMTKView:(MTKView *)view
+{
+
+}
+
 @end
 
 @implementation MetalMenu
@@ -492,7 +526,9 @@
 - (instancetype)initWithContext:(Context *)context
 {
    if (self = [super init])
+   {
       _context = context;
+   }
    return self;
 }
 
@@ -525,17 +561,19 @@
       if (!(CGSizeEqualToSize(_view.size, size) &&
             _view.format == format &&
             _view.filter == filter))
+      {
          _view = nil;
+      }
    }
 
    if (!_view)
    {
       ViewDescriptor *vd = [ViewDescriptor new];
-      vd.format          = format;
-      vd.filter          = filter;
-      vd.size            = size;
-      _view              = [[TexturedView alloc] initWithDescriptor:vd context:_context];
-      _view.visible      = _enabled;
+      vd.format = format;
+      vd.filter = filter;
+      vd.size = size;
+      _view = [[TexturedView alloc] initWithDescriptor:vd context:_context];
+      _view.visible = _enabled;
    }
 }
 
@@ -594,14 +632,14 @@ typedef struct MTLALIGN(16)
 @implementation FrameView
 {
    Context *_context;
-   id<MTLTexture> _texture; /* Final render texture */
+   id<MTLTexture> _texture; // final render texture
    Vertex _v[4];
    VertexSlang _vertex[4];
-   CGSize _size;            /* Size of view in pixels */
+   CGSize _size; // size of view in pixels
    CGRect _frame;
    NSUInteger _bpp;
 
-   id<MTLTexture> _src;     /* Source texture */
+   id<MTLTexture> _src;    // src texture
    bool _srcDirty;
 
    id<MTLSamplerState> _samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
@@ -619,25 +657,28 @@ typedef struct MTLALIGN(16)
    self = [super init];
    if (self)
    {
-      _context              = c;
-      _format               = d.format;
-      _bpp                  = RPixelFormatToBPP(_format);
-      _filter               = d.filter;
-      if (     _format == RPixelFormatBGRA8Unorm 
-		      || _format == RPixelFormatBGRX8Unorm)
-         _drawState         = ViewDrawStateEncoder;
+      _context = c;
+      _format = d.format;
+      _bpp = RPixelFormatToBPP(_format);
+      _filter = d.filter;
+      if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
+      {
+         _drawState = ViewDrawStateEncoder;
+      }
       else
-         _drawState         = ViewDrawStateAll;
-      _visible              = YES;
-      _engine.mvp           = matrix_proj_ortho(0, 1, 0, 1);
+      {
+         _drawState = ViewDrawStateAll;
+      }
+      _visible = YES;
+      _engine.mvp = matrix_proj_ortho(0, 1, 0, 1);
       [self _initSamplers];
 
-      self.size             = d.size;
-      self.frame            = CGRectMake(0, 0, 1, 1);
+      self.size = d.size;
+      self.frame = CGRectMake(0, 0, 1, 1);
       resize_render_targets = YES;
 
-      /* Initialize slang vertex buffer */
-      VertexSlang v[4]      = {
+      // init slang vertex buffer
+      VertexSlang v[4] = {
          {simd_make_float4(0, 1, 0, 1), simd_make_float2(0, 1)},
          {simd_make_float4(1, 1, 0, 1), simd_make_float2(1, 1)},
          {simd_make_float4(0, 0, 0, 1), simd_make_float2(0, 0)},
@@ -650,14 +691,11 @@ typedef struct MTLALIGN(16)
 
 - (void)_initSamplers
 {
-   int i;
    MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];
 
    /* Initialize samplers */
-   for (i = 0; i < RARCH_WRAP_MAX; i++)
+   for (unsigned i = 0; i < RARCH_WRAP_MAX; i++)
    {
-      id<MTLSamplerState> ss;
-
       switch (i)
       {
          case RARCH_WRAP_BORDER:
@@ -683,18 +721,18 @@ typedef struct MTLALIGN(16)
          default:
             continue;
       }
-      sd.tAddressMode                    = sd.sAddressMode;
-      sd.rAddressMode                    = sd.sAddressMode;
-      sd.minFilter                       = MTLSamplerMinMagFilterLinear;
-      sd.magFilter                       = MTLSamplerMinMagFilterLinear;
+      sd.tAddressMode = sd.sAddressMode;
+      sd.rAddressMode = sd.sAddressMode;
+      sd.minFilter = MTLSamplerMinMagFilterLinear;
+      sd.magFilter = MTLSamplerMinMagFilterLinear;
 
-      ss                                 = [_context.device newSamplerStateWithDescriptor:sd];
-      _samplers[RARCH_FILTER_LINEAR][i]  = ss;
+      id<MTLSamplerState> ss = [_context.device newSamplerStateWithDescriptor:sd];
+      _samplers[RARCH_FILTER_LINEAR][i] = ss;
 
-      sd.minFilter                       = MTLSamplerMinMagFilterNearest;
-      sd.magFilter                       = MTLSamplerMinMagFilterNearest;
+      sd.minFilter = MTLSamplerMinMagFilterNearest;
+      sd.magFilter = MTLSamplerMinMagFilterNearest;
 
-      ss                                 = [_context.device newSamplerStateWithDescriptor:sd];
+      ss = [_context.device newSamplerStateWithDescriptor:sd];
       _samplers[RARCH_FILTER_NEAREST][i] = ss;
    }
 }
@@ -719,14 +757,12 @@ typedef struct MTLALIGN(16)
 
    resize_render_targets = YES;
 
-   if (     _format != RPixelFormatBGRA8Unorm 
-         && _format != RPixelFormatBGRX8Unorm)
+   if (_format != RPixelFormatBGRA8Unorm && _format != RPixelFormatBGRX8Unorm)
    {
-      MTLTextureDescriptor *td = [MTLTextureDescriptor 
-         texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
-         width:(NSUInteger)size.width
-         height:(NSUInteger)size.height
-         mipmapped:NO];
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
+                                 width:(NSUInteger)size.width
+                                 height:(NSUInteger)size.height
+                                 mipmapped:NO];
       _src = [_context.device newTextureWithDescriptor:td];
    }
 }
@@ -741,14 +777,17 @@ typedef struct MTLALIGN(16)
    if (CGRectEqualToRect(_frame, frame))
       return;
 
-   _frame      = frame;
-   /* Update vertices */
-   CGPoint o   = frame.origin;
-   CGSize  s   = frame.size;
-   CGFloat l   = o.x;
-   CGFloat t   = o.y;
-   CGFloat r   = o.x + s.width;
-   CGFloat b   = o.y + s.height;
+   _frame = frame;
+
+   // update vertices
+   CGPoint o = frame.origin;
+   CGSize  s = frame.size;
+
+   CGFloat l = o.x;
+   CGFloat t = o.y;
+   CGFloat r = o.x + s.width;
+   CGFloat b = o.y + s.height;
+
    Vertex v[4] = {
       {simd_make_float3(l, b, 0), simd_make_float2(0, 1)},
       {simd_make_float3(r, b, 0), simd_make_float2(1, 1)},
@@ -758,7 +797,10 @@ typedef struct MTLALIGN(16)
    memcpy(_v, v, sizeof(_v));
 }
 
-- (CGRect)frame { return _frame; }
+- (CGRect)frame
+{
+   return _frame;
+}
 
 - (void)_convertFormat
 {
@@ -798,23 +840,24 @@ typedef struct MTLALIGN(16)
    if (_engine.frame.texture[0].size_data.x != _size.width ||
        _engine.frame.texture[0].size_data.y != _size.height)
    {
-      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm width:(NSUInteger)_size.width height:(NSUInteger)_size.height mipmapped:false];
-      td.usage                 = MTLTextureUsageShaderRead 
-                               | MTLTextureUsageShaderWrite;
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+                                                                                    width:(NSUInteger)_size.width
+                                                                                   height:(NSUInteger)_size.height
+                                                                                mipmapped:false];
+      td.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
       [self _initTexture:&_engine.frame.texture[0] withDescriptor:td];
    }
 }
 
 - (bool)readViewport:(uint8_t *)buffer isIdle:(bool)isIdle
 {
-   bool res;
    bool enabled = _context.captureEnabled;
    if (!enabled)
       _context.captureEnabled = YES;
 
    video_driver_cached_frame();
 
-   res = [_context readBackBuffer:buffer];
+   bool res = [_context readBackBuffer:buffer];
 
    if (!enabled)
       _context.captureEnabled = NO;
@@ -872,10 +915,11 @@ typedef struct MTLALIGN(16)
 - (void)_initHistory
 {
    int i;
-   MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm width:(NSUInteger)_size.width height:(NSUInteger)_size.height mipmapped:false];
-   td.usage                 = MTLTextureUsageShaderRead 
-                            | MTLTextureUsageShaderWrite 
-                            | MTLTextureUsageRenderTarget;
+   MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+                                                   width:(NSUInteger)_size.width
+                                                   height:(NSUInteger)_size.height
+                                                   mipmapped:false];
+   td.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite | MTLTextureUsageRenderTarget;
 
    for (i = 0; i < _shader->history_size + 1; i++)
       [self _initTexture:&_engine.frame.texture[i] withDescriptor:td];
@@ -895,10 +939,7 @@ typedef struct MTLALIGN(16)
 
 - (void)drawWithContext:(Context *)ctx
 {
-   int i;
-   id<MTLCommandBuffer> cb;
-   MTLRenderPassDescriptor *rpd;
-
+   unsigned i;
    _texture = _engine.frame.texture[0].view;
    [self _convertFormat];
 
@@ -915,25 +956,23 @@ typedef struct MTLALIGN(16)
       }
    }
 
-   cb = ctx.blitCommandBuffer;
+   id<MTLCommandBuffer> cb = ctx.blitCommandBuffer;
    [cb pushDebugGroup:@"shaders"];
 
-   rpd                                 = [MTLRenderPassDescriptor new];
-   rpd.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
+   MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor new];
+   rpd.colorAttachments[0].loadAction = MTLLoadActionDontCare;
    rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
 
-   for (i = 0; i < _shader->passes; i++)
+   for (unsigned i = 0; i < _shader->passes; i++)
    {
-      int j;
-      NSURL *shader_path;
-      __unsafe_unretained id<MTLTexture> textures[SLANG_NUM_BINDINGS] = {NULL};
-      id<MTLSamplerState> samplers[SLANG_NUM_BINDINGS]                = {NULL};
-      texture_sem_t *texture_sem      = NULL;
       id<MTLRenderCommandEncoder> rce = nil;
-      BOOL backBuffer                 = (_engine.pass[i].rt.view == nil);
+
+      BOOL backBuffer = (_engine.pass[i].rt.view == nil);
 
       if (backBuffer)
+      {
          rce = _context.rce;
+      }
       else
       {
          rpd.colorAttachments[0].texture = _engine.pass[i].rt.view;
@@ -942,8 +981,8 @@ typedef struct MTLALIGN(16)
 
       [rce setRenderPipelineState:_engine.pass[i]._state];
 
-      shader_path = [NSURL fileURLWithPath:_engine.pass[i]._state.label];
-      rce.label   = shader_path.lastPathComponent.stringByDeletingPathExtension;
+      NSURL *shaderPath = [NSURL fileURLWithPath:_engine.pass[i]._state.label];
+      rce.label = shaderPath.lastPathComponent.stringByDeletingPathExtension;
 
       _engine.pass[i].frame_count = (uint32_t)_frameCount;
       if (_shader->pass[i].frame_count_mod)
@@ -957,14 +996,14 @@ typedef struct MTLALIGN(16)
          _engine.pass[i].frame_direction = 1;
 #endif
 
-      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+      for (unsigned j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
-         id<MTLBuffer> buffer      = _engine.pass[i].buffers[j];
+         id<MTLBuffer> buffer = _engine.pass[i].buffers[j];
          cbuffer_sem_t *buffer_sem = &_engine.pass[i].semantics.cbuffers[j];
 
          if (buffer_sem->stage_mask && buffer_sem->uniforms)
          {
-            void             *data = buffer.contents;
+            void *data = buffer.contents;
             uniform_sem_t *uniform = buffer_sem->uniforms;
 
             while (uniform->size)
@@ -985,21 +1024,27 @@ typedef struct MTLALIGN(16)
          }
       }
 
-      texture_sem = _engine.pass[i].semantics.textures;
+      __unsafe_unretained id<MTLTexture> textures[SLANG_NUM_BINDINGS] = {NULL};
+      id<MTLSamplerState> samplers[SLANG_NUM_BINDINGS] = {NULL};
 
+      texture_sem_t *texture_sem = _engine.pass[i].semantics.textures;
       while (texture_sem->stage_mask)
       {
-         int binding        = texture_sem->binding;
+         int binding = texture_sem->binding;
          id<MTLTexture> tex = (__bridge id<MTLTexture>)*(void **)texture_sem->texture_data;
-         textures[binding]  = tex;
-         samplers[binding]  = _samplers[texture_sem->filter][texture_sem->wrap];
+         textures[binding] = tex;
+         samplers[binding] = _samplers[texture_sem->filter][texture_sem->wrap];
          texture_sem++;
       }
 
       if (backBuffer)
+      {
          [rce setViewport:_engine.frame.viewport];
+      }
       else
+      {
          [rce setViewport:_engine.pass[i].viewport];
+      }
 
       [rce setFragmentTextures:textures withRange:NSMakeRange(0, SLANG_NUM_BINDINGS)];
       [rce setFragmentSamplerStates:samplers withRange:NSMakeRange(0, SLANG_NUM_BINDINGS)];
@@ -1007,7 +1052,9 @@ typedef struct MTLALIGN(16)
       [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
 
       if (!backBuffer)
+      {
          [rce endEncoding];
+      }
 
       _texture = _engine.pass[i].rt.view;
    }
@@ -1022,13 +1069,10 @@ typedef struct MTLALIGN(16)
 
 - (void)_updateRenderTargets
 {
-   int i;
-   NSUInteger width, height;
-   if (!_shader || !resize_render_targets)
-      return;
+   if (!_shader || !resize_render_targets) return;
 
-   /* release existing targets */
-   for (i = 0; i < _shader->passes; i++)
+   // release existing targets
+   for (int i = 0; i < _shader->passes; i++)
    {
       STRUCT_ASSIGN(_engine.pass[i].rt.view, nil);
       STRUCT_ASSIGN(_engine.pass[i].feedback.view, nil);
@@ -1036,12 +1080,10 @@ typedef struct MTLALIGN(16)
       memset(&_engine.pass[i].feedback, 0, sizeof(_engine.pass[i].feedback));
    }
 
-   width  = (NSUInteger)_size.width;
-   height = (NSUInteger)_size.height;
+   NSUInteger width = (NSUInteger)_size.width, height = (NSUInteger)_size.height;
 
-   for (i = 0; i < _shader->passes; i++)
+   for (unsigned i = 0; i < _shader->passes; i++)
    {
-      MTLPixelFormat fmt;
       struct video_shader_pass *shader_pass = &_shader->pass[i];
 
       if (shader_pass->fbo.valid)
@@ -1095,30 +1137,29 @@ typedef struct MTLALIGN(16)
       }
 
       /* Updating framebuffer size */
-      fmt = SelectOptimalPixelFormat(glslang_format_to_metal(
-               _engine.pass[i].semantics.format));
 
+      MTLPixelFormat fmt = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
       if ((i != (_shader->passes - 1)) ||
           (width != _viewport->width) || (height != _viewport->height) ||
           fmt != MTLPixelFormatBGRA8Unorm)
       {
-         MTLTextureDescriptor *td;
-
-         _engine.pass[i].viewport.width  = width;
+         _engine.pass[i].viewport.width = width;
          _engine.pass[i].viewport.height = height;
-         _engine.pass[i].viewport.znear  = 0.0f;
-         _engine.pass[i].viewport.zfar   = 1.0f;
+         _engine.pass[i].viewport.znear = 0.0;
+         _engine.pass[i].viewport.zfar = 1.0;
 
-         td                              = [MTLTextureDescriptor
-            texture2DDescriptorWithPixelFormat:fmt width:width height:height
-            mipmapped:false];
-         td.storageMode                  = MTLStorageModePrivate;
-         td.usage                        = MTLTextureUsageShaderRead 
-                                         | MTLTextureUsageRenderTarget;
+         MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:fmt
+                                                                                       width:width
+                                                                                      height:height
+                                                                                   mipmapped:false];
+         td.storageMode = MTLStorageModePrivate;
+         td.usage = MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
          [self _initTexture:&_engine.pass[i].rt withDescriptor:td];
 
          if (shader_pass->feedback)
+         {
             [self _initTexture:&_engine.pass[i].feedback withDescriptor:td];
+         }
       }
       else
       {
@@ -1134,13 +1175,11 @@ typedef struct MTLALIGN(16)
 
 - (void)_freeVideoShader:(struct video_shader *)shader
 {
-   int i;
    if (!shader)
       return;
 
-   for (i = 0; i < GFX_MAX_SHADERS; i++)
+   for (int i = 0; i < GFX_MAX_SHADERS; i++)
    {
-      int j;
       STRUCT_ASSIGN(_engine.pass[i].rt.view, nil);
       STRUCT_ASSIGN(_engine.pass[i].feedback.view, nil);
       memset(&_engine.pass[i].rt, 0, sizeof(_engine.pass[i].rt));
@@ -1148,13 +1187,13 @@ typedef struct MTLALIGN(16)
 
       STRUCT_ASSIGN(_engine.pass[i]._state, nil);
 
-      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+      for (unsigned j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          STRUCT_ASSIGN(_engine.pass[i].buffers[j], nil);
       }
    }
 
-   for (i = 0; i < GFX_MAX_TEXTURES; i++)
+   for (int i = 0; i < GFX_MAX_TEXTURES; i++)
    {
       STRUCT_ASSIGN(_engine.luts[i].view, nil);
    }
@@ -1174,7 +1213,7 @@ typedef struct MTLALIGN(16)
 
    @try
    {
-      int i;
+      unsigned i;
       texture_t *source = NULL;
       if (!video_shader_load_preset_into_shader(path.UTF8String, shader))
          return NO;
@@ -1237,26 +1276,26 @@ typedef struct MTLALIGN(16)
          @try
          {
             NSError *err;
-            MTLRenderPipelineColorAttachmentDescriptor *ca;
-            MTLRenderPipelineDescriptor *psd;
-            MTLVertexDescriptor *vd        = [MTLVertexDescriptor new];
-            vd.attributes[0].offset        = offsetof(VertexSlang, position);
-            vd.attributes[0].format        = MTLVertexFormatFloat4;
-            vd.attributes[0].bufferIndex   = 4;
-            vd.attributes[1].offset        = offsetof(VertexSlang, texCoord);
-            vd.attributes[1].format        = MTLVertexFormatFloat2;
-            vd.attributes[1].bufferIndex   = 4;
-            vd.layouts[4].stride           = sizeof(VertexSlang);
-            vd.layouts[4].stepFunction     = MTLVertexStepFunctionPerVertex;
+            MTLVertexDescriptor *vd      = [MTLVertexDescriptor new];
+            vd.attributes[0].offset      = offsetof(VertexSlang, position);
+            vd.attributes[0].format      = MTLVertexFormatFloat4;
+            vd.attributes[0].bufferIndex = 4;
+            vd.attributes[1].offset      = offsetof(VertexSlang, texCoord);
+            vd.attributes[1].format      = MTLVertexFormatFloat2;
+            vd.attributes[1].bufferIndex = 4;
+            vd.layouts[4].stride         = sizeof(VertexSlang);
+            vd.layouts[4].stepFunction   = MTLVertexStepFunctionPerVertex;
 
-            psd                            = [MTLRenderPipelineDescriptor new];
-            psd.label                      = [[NSString stringWithUTF8String:shader->pass[i].source.path] stringByReplacingOccurrencesOfString:shadersPath withString:@""];
-            ca                             = psd.colorAttachments[0];
-            ca.pixelFormat                 = SelectOptimalPixelFormat(
-                  glslang_format_to_metal(_engine.pass[i].semantics.format));
+            MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
 
-            /* TODO/FIXME (sgc): confirm we never 
-             * need blending for render passes */
+            psd.label = [[NSString stringWithUTF8String:shader->pass[i].source.path]
+                          stringByReplacingOccurrencesOfString:shadersPath withString:@""];
+
+            MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
+
+            ca.pixelFormat = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
+
+            /* TODO(sgc): confirm we never need blending for render passes */
             ca.blendingEnabled             = NO;
             ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
             ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
@@ -1299,7 +1338,6 @@ typedef struct MTLALIGN(16)
 
             STRUCT_ASSIGN(_engine.pass[i]._state,
                           [_context.device newRenderPipelineStateWithDescriptor:psd error:&err]);
-
             if (err != nil)
             {
                save_msl = true;
@@ -1357,34 +1395,39 @@ typedef struct MTLALIGN(16)
 
       for (i = 0; i < shader->luts; i++)
       {
-         MTLTextureDescriptor *td;
          struct texture_image image = {0};
          image.supports_rgba        = true;
 
          if (!image_texture_load(&image, shader->lut[i].path))
             return NO;
 
-         td       = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm width:image.width height:image.height mipmapped:shader->lut[i].mipmap];
+         MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
+                                                                                       width:image.width
+                                                                                      height:image.height
+                                                                                   mipmapped:shader->lut[i].mipmap];
          td.usage = MTLTextureUsageShaderRead;
          [self _initTexture:&_engine.luts[i] withDescriptor:td];
+
          [_engine.luts[i].view replaceRegion:MTLRegionMake2D(0, 0, image.width, image.height)
                                  mipmapLevel:0 withBytes:image.pixels
                                  bytesPerRow:4 * image.width];
 
-         /* TODO/FIXME (sgc): generate mip maps */
+         /* TODO(sgc): generate mip maps */
          image_texture_free(&image);
       }
       _shader = shader;
-      shader  = nil;
+      shader = nil;
    }
    @finally
    {
       if (shader)
+      {
          [self _freeVideoShader:shader];
+      }
    }
 
    resize_render_targets = YES;
-   init_history          = YES;
+   init_history = YES;
 
    return YES;
 }
@@ -1402,23 +1445,25 @@ typedef struct MTLALIGN(16)
 - (instancetype)initWithContext:(Context *)context
 {
    if (self = [super init])
+   {
       _context = context;
+   }
    return self;
 }
 
 - (bool)loadImages:(const struct texture_image *)images count:(NSUInteger)count
 {
-   NSUInteger needed, i;
-
    [self _freeImages];
 
    _images = [NSMutableArray arrayWithCapacity:count];
-   needed  = sizeof(SpriteVertex) * count * 4;
 
+   NSUInteger needed = sizeof(SpriteVertex) * count * 4;
    if (!_vert || _vert.length < needed)
+   {
       _vert = [_context.device newBufferWithLength:needed options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
+   }
 
-   for (i = 0; i < count; i++)
+   for (NSUInteger i = 0; i < count; i++)
    {
       _images[i] = [_context newTexture:images[i] mipmapped:NO];
       [self updateVertexX:0 y:0 w:1 h:1 index:i];
@@ -1433,7 +1478,6 @@ typedef struct MTLALIGN(16)
 
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce
 {
-   NSUInteger count, i;
 #if !defined(HAVE_COCOATOUCH)
    if (_vertDirty)
    {
@@ -1442,8 +1486,8 @@ typedef struct MTLALIGN(16)
    }
 #endif
 
-   count = _images.count;
-   for (i = 0; i < count; ++i)
+   NSUInteger count = _images.count;
+   for (NSUInteger i = 0; i < count; ++i)
    {
       NSUInteger offset = sizeof(SpriteVertex) * 4 * i;
       [rce setVertexBuffer:_vert offset:offset atIndex:BufferIndexPositions];
@@ -1461,12 +1505,12 @@ typedef struct MTLALIGN(16)
 - (void)_updateColorRed:(float)r green:(float)g blue:(float)b alpha:(float)a index:(NSUInteger)index
 {
    simd_float4 color = simd_make_float4(r, g, b, a);
-   SpriteVertex *pv  = [self _getForIndex:index];
-   pv[0].color       = color;
-   pv[1].color       = color;
-   pv[2].color       = color;
-   pv[3].color       = color;
-   _vertDirty        = YES;
+   SpriteVertex *pv = [self _getForIndex:index];
+   pv[0].color = color;
+   pv[1].color = color;
+   pv[2].color = color;
+   pv[3].color = color;
+   _vertDirty = YES;
 }
 
 - (void)updateAlpha:(float)alpha index:(NSUInteger)index
@@ -1477,21 +1521,21 @@ typedef struct MTLALIGN(16)
 - (void)updateVertexX:(float)x y:(float)y w:(float)w h:(float)h index:(NSUInteger)index
 {
    SpriteVertex *pv = [self _getForIndex:index];
-   pv[0].position   = simd_make_float2(x, y);
-   pv[1].position   = simd_make_float2(x + w, y);
-   pv[2].position   = simd_make_float2(x, y + h);
-   pv[3].position   = simd_make_float2(x + w, y + h);
-   _vertDirty       = YES;
+   pv[0].position = simd_make_float2(x, y);
+   pv[1].position = simd_make_float2(x + w, y);
+   pv[2].position = simd_make_float2(x, y + h);
+   pv[3].position = simd_make_float2(x + w, y + h);
+   _vertDirty = YES;
 }
 
 - (void)updateTextureCoordsX:(float)x y:(float)y w:(float)w h:(float)h index:(NSUInteger)index
 {
    SpriteVertex *pv = [self _getForIndex:index];
-   pv[0].texCoord   = simd_make_float2(x, y);
-   pv[1].texCoord   = simd_make_float2(x + w, y);
-   pv[2].texCoord   = simd_make_float2(x, y + h);
-   pv[3].texCoord   = simd_make_float2(x + w, y + h);
-   _vertDirty       = YES;
+   pv[0].texCoord = simd_make_float2(x, y);
+   pv[1].texCoord = simd_make_float2(x + w, y);
+   pv[2].texCoord = simd_make_float2(x, y + h);
+   pv[3].texCoord = simd_make_float2(x + w, y + h);
+   _vertDirty = YES;
 }
 
 - (void)_freeImages
