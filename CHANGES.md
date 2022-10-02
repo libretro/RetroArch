@@ -1,5 +1,9 @@
 # Future
 
+# 1.11.1
+- GENERAL: Fix DEFAULT_FILL_TITLE_MACRO
+- UWP: Better 'Save on quit' fix
+
 # 1.11.0
 - 3DS: Add unique ID's
 - 3DS: Add bottom menu options
