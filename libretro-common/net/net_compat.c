@@ -24,6 +24,7 @@
 #include <stdio.h>
 
 #include <compat/strl.h>
+#include <retro_miscellaneous.h>
 #include <retro_timers.h>
 
 #include <net/net_compat.h>
@@ -420,6 +421,35 @@ bool addr_6to4(struct sockaddr_storage *addr)
 #endif
 
    return true;
+}
+
+bool ipv4_is_lan_address(struct sockaddr_in *addr)
+{
+   static const uint32_t subnets[] = {0x0A000000, 0xAC100000, 0xC0A80000};
+   static const uint32_t masks[]   = {0xFF000000, 0xFFF00000, 0xFFFF0000};
+   size_t i;
+   uint32_t uaddr;
+
+   memcpy(&uaddr, &addr->sin_addr, sizeof(uaddr));
+   uaddr = ntohl(uaddr);
+
+   for (i = 0; i < ARRAY_SIZE(subnets); i++)
+      if ((uaddr & masks[i]) == subnets[i])
+         return true;
+
+   return false;
+}
+
+bool ipv4_is_cgnat_address(struct sockaddr_in *addr)
+{
+   static const uint32_t subnet = 0x64400000;
+   static const uint32_t mask   = 0xFFC00000;
+   uint32_t uaddr;
+
+   memcpy(&uaddr, &addr->sin_addr, sizeof(uaddr));
+   uaddr = ntohl(uaddr);
+
+   return (uaddr & mask) == subnet;
 }
 
 /**

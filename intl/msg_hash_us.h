@@ -11660,6 +11660,10 @@ MSG_HASH(
    "Netplay Port Mapping Successful"
    )
 MSG_HASH(
+   MSG_PRIVATE_OR_SHARED_ADDRESS,
+   "External network has a private or shared address. Consider using a relay server."
+   )
+MSG_HASH(
    MSG_UPNP_FAILED,
    "Netplay UPnP Port Mapping Failed"
    )

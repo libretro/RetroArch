@@ -331,7 +331,7 @@ static bool netplay_lan_ad_client_response(void)
       if (!addr_6to4(&their_addr))
          continue;
 
-      if (!netplay_is_lan_address((struct sockaddr_in*)&their_addr))
+      if (!ipv4_is_lan_address((struct sockaddr_in*)&their_addr))
          continue;
 
       if (getnameinfo_retro((struct sockaddr*)&their_addr, sizeof(their_addr),
@@ -530,7 +530,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
       if (!addr_6to4(&their_addr))
          return true;
 
-      if (!netplay_is_lan_address((struct sockaddr_in*)&their_addr))
+      if (!ipv4_is_lan_address((struct sockaddr_in*)&their_addr))
          return true;
 
       RARCH_LOG("[Discovery] Query received on LAN interface.\n");
@@ -6420,24 +6420,35 @@ static void netplay_announce_nat_traversal(netplay_t *netplay,
 
    if (net_st->nat_traversal_request.status == NAT_TRAVERSAL_STATUS_OPENED)
    {
-      char msg[512];
-      char host[256], port[6];
+      struct sockaddr_in *addr = &net_st->nat_traversal_request.request.addr;
 
       netplay->ext_tcp_port = ext_port;
 
-      if (!getnameinfo_retro(
-            (struct sockaddr*)&net_st->nat_traversal_request.request.addr,
-            sizeof(net_st->nat_traversal_request.request.addr),
-            host, sizeof(host), port, sizeof(port),
-            NI_NUMERICHOST | NI_NUMERICSERV))
-         snprintf(msg, sizeof(msg), "%s: %s:%s",
-            msg_hash_to_str(MSG_PUBLIC_ADDRESS), host, port);
-      else
-         strlcpy(msg, msg_hash_to_str(MSG_PUBLIC_ADDRESS), sizeof(msg));
+      if (!ipv4_is_cgnat_address(addr) && !ipv4_is_lan_address(addr))
+      {
+         char msg[512];
+         char host[256], port[6];
 
-      RARCH_LOG("[Netplay] %s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         if (!getnameinfo_retro((struct sockaddr*)addr, sizeof(*addr),
+               host, sizeof(host), port, sizeof(port),
+               NI_NUMERICHOST | NI_NUMERICSERV))
+            snprintf(msg, sizeof(msg), "%s: %s:%s",
+               msg_hash_to_str(MSG_PUBLIC_ADDRESS), host, port);
+         else
+            strlcpy(msg, msg_hash_to_str(MSG_PUBLIC_ADDRESS), sizeof(msg));
+
+         RARCH_LOG("[Netplay] %s\n", msg);
+         runloop_msg_queue_push(msg, 1, 180, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
+      else
+      {
+         const char *msg = msg_hash_to_str(MSG_PRIVATE_OR_SHARED_ADDRESS);
+
+         RARCH_WARN("[Netplay] %s\n", msg);
+         runloop_msg_queue_push(msg, 1, 600, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
    else
    {
@@ -9122,23 +9133,6 @@ bool netplay_decode_hostname(const char *hostname,
    string_list_deinitialize(&hostname_data);
 
    return true;
-}
-
-bool netplay_is_lan_address(struct sockaddr_in *addr)
-{
-   static const uint32_t subnets[] = {0x0A000000, 0xAC100000, 0xC0A80000};
-   static const uint32_t masks[]   = {0xFF000000, 0xFFF00000, 0xFFFF0000};
-   size_t i;
-   uint32_t uaddr;
-
-   memcpy(&uaddr, &addr->sin_addr, sizeof(uaddr));
-   uaddr = ntohl(uaddr);
-
-   for (i = 0; i < ARRAY_SIZE(subnets); i++)
-      if ((uaddr & masks[i]) == subnets[i])
-         return true;
-
-   return false;
 }
 
 /* Netplay Widgets */

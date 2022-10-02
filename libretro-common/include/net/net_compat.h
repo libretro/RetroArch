@@ -395,6 +395,9 @@ int getnameinfo_retro(const struct sockaddr *addr, socklen_t addrlen,
 
 bool addr_6to4(struct sockaddr_storage *addr);
 
+bool ipv4_is_lan_address(struct sockaddr_in *addr);
+bool ipv4_is_cgnat_address(struct sockaddr_in *addr);
+
 /**
  * network_init:
  *

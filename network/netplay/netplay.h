@@ -285,7 +285,6 @@ net_driver_state_t *networking_state_get_ptr(void);
 bool netplay_compatible_version(const char *version);
 bool netplay_decode_hostname(const char *hostname,
    char *address, unsigned *port, char *session, size_t len);
-bool netplay_is_lan_address(struct sockaddr_in *addr);
 
 int netplay_rooms_parse(const char *buf, size_t len);
 int netplay_rooms_get_count(void);
