@@ -112,12 +112,12 @@ struct rarch_setting_group_info
 
 struct rarch_setting
 {
-   double               min;
-   double               max;
 
-   uint64_t             flags;
-   uint64_t             free_flags;
+   uint64_t            flags;
+   uint64_t            free_flags;
 
+   float               min;
+   float               max;
    struct
    {
       const char     *off_label;
