@@ -2,6 +2,7 @@
 
 # 1.11.1
 - GENERAL: Fix DEFAULT_FILL_TITLE_MACRO
+- NETWORKING/NETPLAY/UPNP: Add a private or CGNAT address warning to UPnP
 - UWP: Better 'Save on quit' fix
 
 # 1.11.0
