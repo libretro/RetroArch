@@ -89,7 +89,7 @@ static void *network_gfx_init(const video_info_t *video,
    settings_t *settings                 = config_get_ptr();
    network_video_t *network             = (network_video_t*)calloc(1, sizeof(*network));
    bool video_font_enable               = settings->bools.video_font_enable;
-   const char *joypad_driver            = settings->arrays.joypad_driver;
+   const char *joypad_driver            = settings->arrays.input_joypad_driver;
 
    *input                               = NULL;
    *input_data                          = NULL;
@@ -105,7 +105,7 @@ static void *network_gfx_init(const video_info_t *video,
    gfx_ctx_network_input_driver(joypad_driver,
          input, input_data);
 
-   if (font_enable)
+   if (video_font_enable)
       font_driver_init_osd(network,
             video,
             false,
@@ -286,7 +286,7 @@ static bool network_gfx_frame(void *data, const void *frame,
                }
             }
 
-            pixfmt = NETWORK_VIDEO_PIXELFORMAT_BGRA8888;
+            pixfmt        = NETWORK_VIDEO_PIXELFORMAT_BGRA8888;
             frame_to_copy = network_video_temp_buf;
          }
       }
@@ -313,7 +313,7 @@ static bool network_gfx_frame(void *data, const void *frame,
          }
       }
 
-      pixfmt = NETWORK_VIDEO_PIXELFORMAT_BGRA8888;
+      pixfmt        = NETWORK_VIDEO_PIXELFORMAT_BGRA8888;
       frame_to_copy = network_video_temp_buf;
    }
 
