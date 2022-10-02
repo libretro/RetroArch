@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="msimg32.lib winmm.lib Dinput8.lib dxguid.lib Iphlpapi.lib"
+				AdditionalDependencies="msimg32.lib winmm.lib Dinput8.lib Iphlpapi.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -136,7 +136,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="msimg32.lib winmm.lib Dinput8.lib dxguid.lib Iphlpapi.lib"
+				AdditionalDependencies="msimg32.lib winmm.lib Dinput8.lib Iphlpapi.lib"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -212,7 +212,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="msimg32.lib winmm.lib dxguid.lib Iphlpapi.lib"
+				AdditionalDependencies="msimg32.lib winmm.lib Iphlpapi.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -287,7 +287,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="msimg32.lib winmm.lib dxguid.lib Iphlpapi.lib"
+				AdditionalDependencies="msimg32.lib winmm.lib Iphlpapi.lib"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="2"

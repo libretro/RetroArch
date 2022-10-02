@@ -1794,7 +1794,9 @@ ifeq ($(HAVE_D3DX_COMMON), 1)
 endif
 
 ifeq ($(HAVE_DX_COMMON), 1)
+ifeq ($(HAVE_DXGUID), 1)
    LIBS += -ldxguid
+endif
 endif
 
 ifeq ($(HAVE_D3D8), 1)
