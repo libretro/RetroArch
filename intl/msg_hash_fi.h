@@ -5392,7 +5392,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
-   "Suurin aktiivisten yhteyksin määrä, jotka isäntä hyväksyy, ennen uusien yhteyksien hylkäämistä."
+   "Suurin aktiivisten yhteyksien määrä, jotka isäntä hyväksyy, ennen uusien yhteyksien hylkäämistä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
@@ -5400,7 +5400,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
-   "Palvelimen hyväksymä maksimi yhteysviive (ping). Aseta 0, mikäli ei rajoitettu."
+   "Palvelimen hyväksymä suurin yhteysviive (ping). Aseta 0, mikäli ei rajoitettu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
