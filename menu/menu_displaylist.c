@@ -14227,8 +14227,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            int32_t orig_value     = *setting->value.target.integer;
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM;
                            float step             = setting->step;
-                           double min             = setting->enforce_minrange ? setting->min : 0.00;
-                           double max             = setting->enforce_maxrange ? setting->max : 99999.00;
+                           float  min             = setting->enforce_minrange ? setting->min : 0.00f;
+                           float  max             = setting->enforce_maxrange ? setting->max : 99999.00f;
                            bool checked_found     = false;
                            unsigned checked       = 0;
                            unsigned entry_index   = 0;
@@ -14304,8 +14304,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM;
                            float step             = setting->step;
                            float half_step        = step * 0.5f;
-                           double min             = setting->enforce_minrange ? setting->min : 0.00;
-                           double max             = setting->enforce_maxrange ? setting->max : 9999.00;
+                           float min              = setting->enforce_minrange ?
+setting->min : 0.00f;
+                           float max              = setting->enforce_maxrange ?
+setting->max : 9999.00f;
                            bool checked_found     = false;
                            unsigned checked       = 0;
                            unsigned entry_index   = 0;
@@ -14378,8 +14380,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            unsigned orig_value    = *setting->value.target.unsigned_integer;
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM;
                            float step             = setting->step;
-                           double min             = setting->enforce_minrange ? setting->min : 0.00;
-                           double max             = setting->enforce_maxrange ? setting->max : 9999.00;
+                           float min             = setting->enforce_minrange ?
+setting->min : 0.00f;
+                           float max             = setting->enforce_maxrange ?
+setting->max : 9999.00f;
                            bool checked_found     = false;
                            unsigned checked       = 0;
                            unsigned entry_index   = 0;
@@ -14560,8 +14564,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         int32_t orig_value     = *setting->value.target.integer;
                         unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL;
                         float step             = setting->step;
-                        double min             = setting->enforce_minrange ? setting->min : 0.00;
-                        double max             = setting->enforce_maxrange ? setting->max : 9999.00;
+                        float min             = setting->enforce_minrange ?
+setting->min : 0.00f;
+                        float max             = setting->enforce_maxrange ?
+setting->max : 9999.00f;
                         bool checked_found     = false;
                         unsigned checked       = 0;
                         unsigned entry_index   = 0;
@@ -14636,8 +14642,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL;
                         float step             = setting->step;
                         float half_step        = step * 0.5f;
-                        double min             = setting->enforce_minrange ? setting->min : 0.00;
-                        double max             = setting->enforce_maxrange ? setting->max : 9999.00;
+                        float min             = setting->enforce_minrange ?
+setting->min : 0.00f;
+                        float max             = setting->enforce_maxrange ?
+setting->max : 9999.00f;
                         bool checked_found     = false;
                         unsigned checked       = 0;
                         unsigned entry_index   = 0;
@@ -14709,8 +14717,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         unsigned orig_value    = *setting->value.target.unsigned_integer;
                         unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL;
                         float step             = setting->step;
-                        double min             = setting->enforce_minrange ? setting->min : 0.00;
-                        double max             = setting->enforce_maxrange ? setting->max : 9999.00;
+                        float min             = setting->enforce_minrange ?
+setting->min : 0.00f;
+                        float max             = setting->enforce_maxrange ?
+setting->max : 9999.00f;
                         bool checked_found     = false;
                         unsigned checked       = 0;
                         unsigned entry_index   = 0;

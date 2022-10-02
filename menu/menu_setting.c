@@ -619,7 +619,7 @@ static int setting_bind_action_ok(
 static int setting_int_action_right_default(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   double               max = 0.0f;
+   float max = 0.0f;
 
    if (!setting)
       return -1;
@@ -636,7 +636,7 @@ static int setting_int_action_right_default(
       if (*setting->value.target.integer > max)
       {
          settings_t *settings = config_get_ptr();
-         double          min  = setting->min;
+         float          min   = setting->min;
 
          if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.integer = min;
@@ -784,7 +784,7 @@ int setting_uint_action_left_default(
 
    if (setting->enforce_minrange)
    {
-      double min = setting->min;
+      float min = setting->min;
       if (overflowed || *setting->value.target.unsigned_integer < min)
       {
          settings_t *settings = config_get_ptr();
@@ -792,7 +792,7 @@ int setting_uint_action_left_default(
          if (settings && 
              settings->bools.menu_navigation_wraparound_enable)
          {
-            double max = setting->max;
+            float max = setting->max;
             *setting->value.target.unsigned_integer = max;
          }
          else
@@ -819,11 +819,11 @@ int setting_uint_action_right_default(
 
    if (setting->enforce_maxrange)
    {
-      double max = setting->max;
+      float max = setting->max;
       if (*setting->value.target.unsigned_integer > max)
       {
          settings_t *settings = config_get_ptr();
-         double           min = setting->min;
+         float           min  = setting->min;
 
          if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.unsigned_integer = min;
@@ -905,11 +905,11 @@ static int setting_size_action_left_default(
 
    if (setting->enforce_minrange)
    {
-      double min = setting->min;
+      float min = setting->min;
       if (overflowed || *setting->value.target.sizet < min)
       {
          settings_t *settings = config_get_ptr();
-         double           max = setting->max;
+         float           max  = setting->max;
 
          if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.sizet = max;
@@ -936,11 +936,11 @@ static int setting_size_action_right_default(
 
    if (setting->enforce_maxrange)
    {
-      double max = setting->max;
+      float max = setting->max;
       if (*setting->value.target.sizet > max)
       {
          settings_t *settings = config_get_ptr();
-         double           min = setting->min;
+         float           min  = setting->min;
 
          if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.sizet = min;
@@ -1013,7 +1013,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
    char *ptr;
-   double min, max;
+   float min, max;
    uint64_t flags;
    if (!setting || !value)
       return -1;
@@ -1124,11 +1124,11 @@ static int setting_fraction_action_left_default(
 
    if (setting->enforce_minrange)
    {
-      double min = setting->min;
+      float min = setting->min;
       if (*setting->value.target.fraction < min)
       {
          settings_t *settings = config_get_ptr();
-         double           max = setting->max;
+         float           max  = setting->max;
 
          if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.fraction = max;
@@ -1151,11 +1151,11 @@ static int setting_fraction_action_right_default(
 
    if (setting->enforce_maxrange)
    {
-      double max = setting->max;
+      float max = setting->max;
       if (*setting->value.target.fraction > max)
       {
          settings_t *settings = config_get_ptr();
-         double          min  = setting->min;
+         float          min   = setting->min;
 
          if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.fraction = min;
@@ -1864,11 +1864,11 @@ static int setting_int_action_left_default(
 
    if (setting->enforce_minrange)
    {
-      double min = setting->min;
+      float min = setting->min;
       if (*setting->value.target.integer < min)
       {
          settings_t *settings = config_get_ptr();
-         double           max = setting->max;
+         float           max  = setting->max;
 
          if (   settings
              && settings->bools.menu_navigation_wraparound_enable)
