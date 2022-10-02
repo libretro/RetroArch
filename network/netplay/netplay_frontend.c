@@ -9106,10 +9106,10 @@ bool netplay_decode_hostname(const char *hostname,
    {
       if (port)
       {
-         unsigned tmp_port = strtoul(hostname_data.elems[1].data, NULL, 10);
+         unsigned long int tmp_port = (unsigned long int)strtoul(hostname_data.elems[1].data, NULL, 10);
 
          if (tmp_port && tmp_port <= 65535)
-            *port = tmp_port;
+            *port = (unsigned)tmp_port;
       }
    }
    if (hostname_data.size >= 3 &&

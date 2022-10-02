@@ -491,7 +491,7 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
 
             runloop_st->subsystem_current_count =
                size <= SUBSYSTEM_MAX_SUBSYSTEMS
-               ? size
+               ? (unsigned)size
                : SUBSYSTEM_MAX_SUBSYSTEMS;
          }
          break;

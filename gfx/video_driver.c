@@ -4189,8 +4189,8 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
    unsigned frame_time_limit_max = frame_time_target * 1.90f;
    unsigned frame_time_limit_cap = frame_time_target * 3.00f;
    unsigned frame_time_limit_ign = frame_time_target * 3.50f;
-   unsigned frame_time_min       = frame_time_target;
-   unsigned frame_time_max       = frame_time_target;
+   retro_time_t frame_time_min   = frame_time_target;
+   retro_time_t frame_time_max   = frame_time_target;
    unsigned frame_time_count_pos = 0;
    unsigned frame_time_count_min = 0;
    unsigned frame_time_count_med = 0;
@@ -4203,7 +4203,7 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
    /* Calculate average frame time */
    for (i = 1; i < frame_time_frames + 1; i++)
    {
-      unsigned frame_time_i = 0;
+      retro_time_t frame_time_i = 0;
 
       if (i > frame_time_index)
          continue;
@@ -4245,8 +4245,8 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
    /* Special handlings for different video driver frame timings */
    if (frame_time < frame_time_limit_med && frame_time > frame_time_target)
    {
-      unsigned frame_time_frames_half = frame_time_frames / 2;
-      unsigned frame_time_delta       = frame_time_max - frame_time_min;
+      retro_time_t frame_time_frames_half = frame_time_frames / 2;
+      retro_time_t frame_time_delta       = frame_time_max - frame_time_min;
 
       /* Ensure outcome on certain conditions */
       int mode = 0;

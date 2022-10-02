@@ -652,7 +652,7 @@ bool command_read_ram(command_t *cmd, const char *arg)
    unsigned int nbytes          = 0;
    unsigned int alloc_size      = 0;
    unsigned int addr            = -1;
-   unsigned int len             = 0;
+   size_t len                   = 0;
 
    if (sscanf(arg, "%x %u", &addr, &nbytes) != 2)
       return true;
@@ -786,7 +786,7 @@ uint8_t *command_memory_get_pointer(
          strlcpy(reply_at, " -1 descriptor data is readonly\n", len);
       else
       {
-         *max_bytes = (desc->core.len - offset);
+         *max_bytes = (unsigned int)(desc->core.len - offset);
          return (uint8_t*)desc->core.ptr + desc->core.offset + offset;
       }
    }

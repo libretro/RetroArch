@@ -6117,7 +6117,7 @@ static void netplay_refresh_lan_cb(const void *data)
       (struct netplay_room*)calloc(hosts->size, sizeof(*net_st->room_list));
    if (!net_st->room_list)
       goto done;
-   net_st->room_count = hosts->size;
+   net_st->room_count = (int)hosts->size;
 
    for (i = 0; i < net_st->room_count; i++)
    {
@@ -6458,7 +6458,7 @@ int action_cb_push_dropdown_item_resolution(const char *path,
       float num            = refreshrate / 60.0f;
       unsigned refresh_mod = num > 0 ? (unsigned)(floorf(num + 0.5f)) : (unsigned)(ceilf(num - 0.5f));
 #else
-      unsigned refresh_mod = lroundf((float)(refreshrate / 60.0f));
+      unsigned refresh_mod = (unsigned)lroundf((float)(refreshrate / 60.0f));
 #endif
       float refresh_exact  = refreshrate;
 

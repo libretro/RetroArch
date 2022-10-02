@@ -6796,7 +6796,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
 
       if (selection < list_size)
       {
-         rgui_update_savestate_thumbnail_path(rgui, selection);
+         rgui_update_savestate_thumbnail_path(rgui, (unsigned)selection);
          rgui_update_savestate_thumbnail_image(rgui);
       }
    }

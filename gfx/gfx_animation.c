@@ -443,13 +443,13 @@ static void ticker_smooth_scan_string_fw(
     * string once offset has been subtracted */
    if (*char_offset < num_chars)
    {
-      unsigned chars_remaining = num_chars - *char_offset;
+      size_t chars_remaining = num_chars - *char_offset;
       /* Determine number of characters to copy */
       if ((chars_remaining > 0) && (field_width > *x_offset))
       {
          *num_chars_to_copy = (field_width - *x_offset) / glyph_width;
          if (*num_chars_to_copy > chars_remaining)
-            *num_chars_to_copy = chars_remaining;
+            *num_chars_to_copy = (unsigned)chars_remaining;
       }
    }
 }
@@ -566,7 +566,7 @@ static void gfx_animation_ticker_smooth_loop_fw(uint64_t idx,
       /* Determine number of characters to copy */
       *num_chars_to_copy3 = remaining_width / glyph_width;
       if (*num_chars_to_copy3 > num_chars)
-         *num_chars_to_copy3 = num_chars;
+         *num_chars_to_copy3 = (unsigned)num_chars;
    }
 }
 
@@ -1517,7 +1517,7 @@ static bool gfx_animation_ticker_smooth_fw(
    if (src_str_len < 1)
       goto end;
 
-   src_str_width = src_str_len * glyph_width;
+   src_str_width = (unsigned)(src_str_len * glyph_width);
 
    /* If src string width is <= text field width, we
     * can just copy the entire string */
@@ -1573,7 +1573,7 @@ static bool gfx_animation_ticker_smooth_fw(
    if ((spacer_len = utf8len(ticker->spacer)) < 1)
       goto end;
 
-   spacer_width          = spacer_len * glyph_width;
+   spacer_width          = (unsigned)(spacer_len * glyph_width);
 
    /* Determine animation type */
    switch (ticker->type_enum)

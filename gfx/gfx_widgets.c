@@ -314,7 +314,7 @@ void gfx_widgets_msg_queue_push(
                   width = text_width - (text_width >> 2);
 
                word_wrap(msg, msg_len, title, title_length,
-                     (title_length * width) / text_width,
+                     (int)((title_length * width) / text_width),
                      100, 2);
 
                msg_widget->text_height *= 2;

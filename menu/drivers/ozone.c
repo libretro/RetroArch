@@ -344,7 +344,7 @@ typedef struct
 typedef struct
 {
    const char *str;
-   int width;
+   size_t width;
 } ozone_footer_label_t;
 
 typedef struct ozone_theme
@@ -2733,8 +2733,7 @@ static int ozone_wiggle(ozone_handle_t* ozone, float t)
  */
 static void ozone_apply_cursor_wiggle_offset(ozone_handle_t* ozone, int* x, size_t* y)
 {
-   retro_time_t cur_time;
-   retro_time_t t;
+   retro_time_t cur_time, t;
 
    /* Don't do anything if we are not wiggling */
    if (!ozone || !ozone->cursor_wiggle_state.wiggling)
@@ -2867,7 +2866,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_3px,
-         y,
+         (int)y,
          width + ozone->dimensions.spacer_3px * 2,
          height,
          video_width,
@@ -2884,7 +2883,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_5px,
-         y - ozone->dimensions.spacer_3px,
+         (int)(y - ozone->dimensions.spacer_3px),
          width + 1 + ozone->dimensions.spacer_5px * 2,
          ozone->dimensions.spacer_3px,
          video_width,
@@ -2899,7 +2898,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_5px,
-         y + height,
+         (int)(y + height),
          width + 1 + ozone->dimensions.spacer_5px * 2,
          ozone->dimensions.spacer_3px,
          video_width,
@@ -2914,7 +2913,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_5px,
-         y,
+         (int)y,
          ozone->dimensions.spacer_3px,
          height,
          video_width,
@@ -2929,7 +2928,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset + width + ozone->dimensions.spacer_3px,
-         y,
+         (int)y,
          ozone->dimensions.spacer_3px,
          height,
          video_width,
@@ -6440,9 +6439,10 @@ static void ozone_draw_messagebox(
       const char *message,
       math_matrix_4x4 *mymat)
 {
+   size_t x, y;
    unsigned i, y_position;
    char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
-   int x, y, longest_width  = 0;
+   int longest_width        = 0;
    int usable_width         = 0;
    struct string_list list  = {0};
    float scale_factor       = 0.0f;
@@ -6516,9 +6516,9 @@ static void ozone_draw_messagebox(
        * > The actual size and offset of a texture slice
        *   is quite 'loose', and depends upon source image
        *   size, draw size and scale factor... */
-      unsigned slice_new_w = longest_width + 48 * 2 * scale_factor;
-      unsigned slice_new_h = ozone->fonts.footer.line_height * (list.size + 2);
-      int slice_x          = x - longest_width/2 - 48 * scale_factor;
+      size_t slice_new_w   = longest_width + 48 * 2 * scale_factor;
+      size_t slice_new_h   = ozone->fonts.footer.line_height * (list.size + 2);
+      int slice_x          = x - longest_width / 2 - 48 * scale_factor;
       int slice_y          = y - ozone->fonts.footer.line_height +
             ((slice_new_h >= 256) 
              ? (16.0f * scale_factor) 
@@ -6532,8 +6532,8 @@ static void ozone_draw_messagebox(
             slice_x,
             slice_y,
             256, 256,
-            slice_new_w,
-            slice_new_h,
+            (unsigned)slice_new_w,
+            (unsigned)slice_new_h,
             width, height,
             ozone->theme_dynamic.message_background,
             16, scale_factor,
@@ -9258,7 +9258,7 @@ static void ozone_render(void *data,
                      else if ((ozone->is_quick_menu && ozone->depth >= 2) ||
                            ozone->is_state_slot)
                      {
-                        ozone_update_savestate_thumbnail_path(ozone, i);
+                        ozone_update_savestate_thumbnail_path(ozone, (unsigned)i);
                         ozone_update_savestate_thumbnail_image(ozone);
                      }
                   }
@@ -10173,7 +10173,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
             ozone_update_thumbnail_image(ozone);
       }
 
-      ozone_update_savestate_thumbnail_path(ozone, ozone->selection);
+      ozone_update_savestate_thumbnail_path(ozone, (unsigned)ozone->selection);
       ozone_update_savestate_thumbnail_image(ozone);
    }
 }
@@ -10872,7 +10872,7 @@ static void ozone_populate_entries(void *data,
       {
          ozone->want_thumbnail_bar   = false;
          ozone->skip_thumbnail_reset = false;
-         ozone_update_savestate_thumbnail_path(ozone, menu_navigation_get_selection());
+         ozone_update_savestate_thumbnail_path(ozone, (unsigned)menu_navigation_get_selection());
          ozone_update_savestate_thumbnail_image(ozone);
       }
       else if (gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
@@ -10965,7 +10965,7 @@ static void ozone_toggle(void *userdata, bool menu_on)
       ozone->want_thumbnail_bar   = false;
       ozone->skip_thumbnail_reset = false;
       gfx_thumbnail_reset(&ozone->thumbnails.savestate);
-      ozone_update_savestate_thumbnail_path(ozone, menu_navigation_get_selection());
+      ozone_update_savestate_thumbnail_path(ozone, (unsigned)menu_navigation_get_selection());
       ozone_update_savestate_thumbnail_image(ozone);
    }
 

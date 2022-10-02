@@ -568,7 +568,7 @@ int rcheevos_get_richpresence(char *s, size_t len)
    if (rcheevos_is_player_active())
    {
       int ret = rc_runtime_get_richpresence(
-            &rcheevos_locals.runtime, s, len,
+            &rcheevos_locals.runtime, s, (unsigned)len,
             &rcheevos_peek, NULL, NULL);
 
       if (ret <= 0 && rcheevos_locals.game.title)
@@ -583,7 +583,7 @@ int rcheevos_get_richpresence(char *s, size_t len)
    {
       /* TODO/FIXME - localize */
       strlcpy(s, "Spectating ", len);
-      return strlcat(s, rcheevos_locals.game.title, len);
+      return (int)strlcat(s, rcheevos_locals.game.title, len);
    }
    return 0;
 }
