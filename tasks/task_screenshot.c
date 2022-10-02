@@ -534,13 +534,22 @@ static bool take_screenshot_choice(
 bool take_screenshot(
       const char *screenshot_dir,
       const char *name_base,
-      bool silence, bool has_valid_framebuffer,
+      bool savestate, bool has_valid_framebuffer,
       bool fullpath, bool use_thread)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   bool video_gpu_screenshot   = settings->bools.video_gpu_screenshot;
    bool is_paused              = false;
    bool is_idle                = false;
    bool ret                    = false;
+   bool supports_viewport_read = video_driver_supports_viewport_read();
+   bool prefer_viewport_read   = supports_viewport_read &&
+         video_driver_prefer_viewport_read();
+
+   /* Avoid GPU screenshots with savestates */
+   if (supports_viewport_read && video_gpu_screenshot && !savestate)
+      prefer_viewport_read = true;
 
    if (runloop_st)
    {
@@ -555,10 +564,9 @@ bool take_screenshot(
 
    ret       = take_screenshot_choice(
          screenshot_dir,
-         name_base, silence, is_paused, is_idle,
+         name_base, savestate, is_paused, is_idle,
          has_valid_framebuffer, fullpath, use_thread,
-         video_driver_supports_viewport_read() &&
-         video_driver_prefer_viewport_read(),
+         prefer_viewport_read,
          video_driver_supports_read_frame_raw(),
          video_driver_get_pixel_format()
          );

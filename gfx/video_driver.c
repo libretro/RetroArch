@@ -2030,12 +2030,6 @@ bool video_driver_supports_viewport_read(void)
 bool video_driver_prefer_viewport_read(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   settings_t *settings           = config_get_ptr();
-#ifdef HAVE_SCREENSHOTS
-   bool video_gpu_screenshot      = settings->bools.video_gpu_screenshot;
-   if (video_gpu_screenshot)
-      return true;
-#endif
    return (video_driver_is_hw_context() &&
        !video_st->current_video->read_frame_raw);
 }
