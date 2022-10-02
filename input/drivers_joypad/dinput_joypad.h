@@ -21,7 +21,15 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_DXGUID
 #include <dinput.h>
+#else
+#include "../include/dinput8.h"
+#endif
 
 /* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
 #define ARRAY_SIZE_RGB_BUTTONS 128

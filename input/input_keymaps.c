@@ -64,10 +64,13 @@
 #endif
 
 #ifdef HAVE_DINPUT
+#ifdef HAVE_DXGUID
 #undef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800
-
 #include <dinput.h>
+#else
+#include "include/dinput8.h"
+#endif
 #endif
 
 #include "input_keymaps.h"

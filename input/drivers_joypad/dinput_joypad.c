@@ -19,16 +19,21 @@
 #include <string.h>
 #include <windowsx.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_DXGUID
 #include <dinput.h>
+#else
+#include "../include/dinput8.h"
+#endif
 #include <mmsystem.h>
 
 #include <boolean.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
 
 #include "../../tasks/tasks_internal.h"
 #include "../input_keymaps.h"

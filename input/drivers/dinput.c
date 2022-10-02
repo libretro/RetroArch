@@ -18,18 +18,27 @@
 #pragma comment(lib, "dinput8")
 #endif
 
-#undef DIRECTINPUT_VERSION
-#define DIRECTINPUT_VERSION 0x0800
-
-#include <dinput.h>
-#include <dbt.h>
-
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 #include <boolean.h>
+#include <retro_common_api.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_DXGUID
+#undef DIRECTINPUT_VERSION
+#define DIRECTINPUT_VERSION 0x0800
+#include <dinput.h>
+#else
+#include "../include/dinput8.h"
+#endif
+#include <dbt.h>
 
 #include <windowsx.h>
+#include <string/stdstring.h>
 
 #ifndef WM_MOUSEHWHEEL
 #define WM_MOUSEHWHEEL                  0x20e
@@ -38,12 +47,6 @@
 #ifndef WM_MOUSEWHEEL
 #define WM_MOUSEWHEEL                   0x020A
 #endif
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
-
-#include <string/stdstring.h>
 
 #ifndef _XBOX
 #include "../../gfx/common/win32_common.h"
@@ -135,12 +138,12 @@ bool dinput_init_context(void)
    /* Who said we shouldn't have same call signature in a COM API? <_< */
 #ifdef __cplusplus
    if (!(SUCCEEDED(DirectInput8Create(
-                  GetModuleHandle(NULL), DIRECTINPUT_VERSION,
+                  GetModuleHandle(NULL), 0x0800,
                   IID_IDirectInput8,
                   (void**)&g_dinput_ctx, NULL))))
 #else
       if (!(SUCCEEDED(DirectInput8Create(
-                     GetModuleHandle(NULL), DIRECTINPUT_VERSION,
+                     GetModuleHandle(NULL), 0x0800,
                      &IID_IDirectInput8,
                      (void**)&g_dinput_ctx, NULL))))
 #endif

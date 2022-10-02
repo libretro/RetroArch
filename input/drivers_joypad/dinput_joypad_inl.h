@@ -22,7 +22,17 @@
 #include <retro_common_api.h>
 
 #include <windowsx.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_DXGUID
 #include <dinput.h>
+#else
+#include "../include/dinput8.h"
+#endif
+
 #include <mmsystem.h>
 
 /* Forward declaration */
