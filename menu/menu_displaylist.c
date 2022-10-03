@@ -14227,8 +14227,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            int32_t orig_value     = *setting->value.target.integer;
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM;
                            float step             = setting->step;
-                           float  min             = setting->enforce_minrange ? setting->min : 0.00f;
-                           float  max             = setting->enforce_maxrange ? setting->max : 99999.00f;
+                           float  min             = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
+                           float  max             = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : 99999.00f;
                            bool checked_found     = false;
                            unsigned checked       = 0;
                            unsigned entry_index   = 0;
@@ -14304,9 +14304,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM;
                            float step             = setting->step;
                            float half_step        = step * 0.5f;
-                           float min              = setting->enforce_minrange ?
+                           float min              = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ?
 setting->min : 0.00f;
-                           float max              = setting->enforce_maxrange ?
+                           float max              = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ?
 setting->max : 9999.00f;
                            bool checked_found     = false;
                            unsigned checked       = 0;
@@ -14380,10 +14380,10 @@ setting->max : 9999.00f;
                            unsigned orig_value    = *setting->value.target.unsigned_integer;
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM;
                            float step             = setting->step;
-                           float min             = setting->enforce_minrange ?
-setting->min : 0.00f;
-                           float max             = setting->enforce_maxrange ?
-setting->max : 9999.00f;
+                           float min              = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ?
+                              setting->min : 0.00f;
+                           float max              = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ?
+                              setting->max : 9999.00f;
                            bool checked_found     = false;
                            unsigned checked       = 0;
                            unsigned entry_index   = 0;
@@ -14564,10 +14564,8 @@ setting->max : 9999.00f;
                         int32_t orig_value     = *setting->value.target.integer;
                         unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL;
                         float step             = setting->step;
-                        float min             = setting->enforce_minrange ?
-setting->min : 0.00f;
-                        float max             = setting->enforce_maxrange ?
-setting->max : 9999.00f;
+                        float min              = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
+                        float max              = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : 9999.00f;
                         bool checked_found     = false;
                         unsigned checked       = 0;
                         unsigned entry_index   = 0;
@@ -14642,10 +14640,8 @@ setting->max : 9999.00f;
                         unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL;
                         float step             = setting->step;
                         float half_step        = step * 0.5f;
-                        float min             = setting->enforce_minrange ?
-setting->min : 0.00f;
-                        float max             = setting->enforce_maxrange ?
-setting->max : 9999.00f;
+                        float min              = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
+                        float max              = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : 9999.00f;
                         bool checked_found     = false;
                         unsigned checked       = 0;
                         unsigned entry_index   = 0;
@@ -14717,10 +14713,8 @@ setting->max : 9999.00f;
                         unsigned orig_value    = *setting->value.target.unsigned_integer;
                         unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL;
                         float step             = setting->step;
-                        float min             = setting->enforce_minrange ?
-setting->min : 0.00f;
-                        float max             = setting->enforce_maxrange ?
-setting->max : 9999.00f;
+                        float min              = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
+                        float max              = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : 9999.00f;
                         bool checked_found     = false;
                         unsigned checked       = 0;
                         unsigned entry_index   = 0;

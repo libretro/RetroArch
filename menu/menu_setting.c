@@ -631,7 +631,7 @@ static int setting_int_action_right_default(
    *setting->value.target.integer =
       *setting->value.target.integer + setting->step;
 
-   if (setting->enforce_maxrange)
+   if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
    {
       if (*setting->value.target.integer > max)
       {
@@ -782,7 +782,7 @@ int setting_uint_action_left_default(
       *setting->value.target.unsigned_integer =
          *setting->value.target.unsigned_integer - step;
 
-   if (setting->enforce_minrange)
+   if (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
    {
       float min = setting->min;
       if (overflowed || *setting->value.target.unsigned_integer < min)
@@ -817,7 +817,7 @@ int setting_uint_action_right_default(
    *setting->value.target.unsigned_integer =
       *setting->value.target.unsigned_integer + step;
 
-   if (setting->enforce_maxrange)
+   if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
    {
       float max = setting->max;
       if (*setting->value.target.unsigned_integer > max)
@@ -903,7 +903,7 @@ static int setting_size_action_left_default(
    if (!(overflowed = step > *setting->value.target.sizet))
       *setting->value.target.sizet = *setting->value.target.sizet - step;
 
-   if (setting->enforce_minrange)
+   if (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
    {
       float min = setting->min;
       if (overflowed || *setting->value.target.sizet < min)
@@ -934,7 +934,7 @@ static int setting_size_action_right_default(
    *setting->value.target.sizet =
       *setting->value.target.sizet + step;
 
-   if (setting->enforce_maxrange)
+   if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
    {
       float max = setting->max;
       if (*setting->value.target.sizet > max)
@@ -1028,9 +1028,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          *setting->value.target.integer = (int)strtol(value, &ptr, 10);
          if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->enforce_minrange && *setting->value.target.integer < min)
+            if (setting->flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.integer < min)
                *setting->value.target.integer = min;
-            if (setting->enforce_maxrange && *setting->value.target.integer > max)
+            if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.integer > max)
             {
                settings_t *settings = config_get_ptr();
                if (settings && settings->bools.menu_navigation_wraparound_enable)
@@ -1044,9 +1044,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 10);
          if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->enforce_minrange && *setting->value.target.unsigned_integer < min)
+            if (setting->flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.unsigned_integer < min)
                *setting->value.target.unsigned_integer = min;
-            if (setting->enforce_maxrange && *setting->value.target.unsigned_integer > max)
+            if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.unsigned_integer > max)
             {
                settings_t *settings = config_get_ptr();
                if (settings && settings->bools.menu_navigation_wraparound_enable)
@@ -1060,9 +1060,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          sscanf(value, "%" PRI_SIZET, setting->value.target.sizet);
          if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->enforce_minrange && *setting->value.target.sizet < min)
+            if (setting->flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.sizet < min)
                *setting->value.target.sizet = min;
-            if (setting->enforce_maxrange && *setting->value.target.sizet > max)
+            if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.sizet > max)
             {
                settings_t *settings = config_get_ptr();
                if (settings && settings->bools.menu_navigation_wraparound_enable)
@@ -1077,9 +1077,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          *setting->value.target.fraction = (float)strtod(value, &ptr);
          if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->enforce_minrange && *setting->value.target.fraction < min)
+            if (setting->flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.fraction < min)
                *setting->value.target.fraction = min;
-            if (setting->enforce_maxrange && *setting->value.target.fraction > max)
+            if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.fraction > max)
             {
                settings_t *settings = config_get_ptr();
                if (settings && settings->bools.menu_navigation_wraparound_enable)
@@ -1122,7 +1122,7 @@ static int setting_fraction_action_left_default(
    *setting->value.target.fraction = 
       *setting->value.target.fraction - setting->step;
 
-   if (setting->enforce_minrange)
+   if (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
    {
       float min = setting->min;
       if (*setting->value.target.fraction < min)
@@ -1149,7 +1149,7 @@ static int setting_fraction_action_right_default(
    *setting->value.target.fraction =
       *setting->value.target.fraction + setting->step;
 
-   if (setting->enforce_maxrange)
+   if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
    {
       float max = setting->max;
       if (*setting->value.target.fraction > max)
@@ -1389,8 +1389,6 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
 
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
    result.cmd_trigger_event_triggered      = false;
@@ -1453,8 +1451,6 @@ static rarch_setting_t setting_group_setting(
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
 
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
    result.cmd_trigger_event_triggered      = false;
@@ -1527,8 +1523,6 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
    result.rounding_fraction         = rounding;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
 
    result.value.target.fraction     = target;
    result.original_value.fraction   = *target;
@@ -1604,8 +1598,6 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
 
    result.value.target.unsigned_integer   = target;
    result.original_value.unsigned_integer = *target;
@@ -1683,8 +1675,6 @@ static rarch_setting_t setting_size_setting(const char* name,
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
 
    result.value.target.sizet   = target;
    result.original_value.sizet = *target;
@@ -1761,8 +1751,6 @@ static rarch_setting_t setting_hex_setting(const char* name,
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
 
    result.value.target.unsigned_integer   = target;
    result.original_value.unsigned_integer = *target;
@@ -1840,8 +1828,6 @@ static rarch_setting_t setting_bind_setting(const char* name,
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
 
    result.value.target.keybind      = target;
    result.default_value.keybind     = default_value;
@@ -1862,7 +1848,7 @@ static int setting_int_action_left_default(
 
    *setting->value.target.integer = *setting->value.target.integer - setting->step;
 
-   if (setting->enforce_minrange)
+   if (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
    {
       float min = setting->min;
       if (*setting->value.target.integer < min)
@@ -1971,8 +1957,6 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
 
    result.dir.empty_path            = empty;
    result.value.target.string       = target;
@@ -2095,8 +2079,6 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
 
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
    result.cmd_trigger_event_triggered      = false;
@@ -2170,8 +2152,6 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
 
    result.value.target.boolean      = target;
    result.original_value.boolean    = *target;
@@ -2249,8 +2229,6 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
 
    result.value.target.integer      = target;
    result.original_value.integer    = *target;
@@ -7033,16 +7011,16 @@ static void menu_settings_list_current_add_range(
    unsigned idx                   = list_info->index - 1;
 
    if ((*list)[idx].type == ST_FLOAT)
-      (*list)[list_info->index - 1].ui_type
-                                  = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
-
+      (*list)[idx].ui_type        = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
+                                  
    (*list)[idx].min               = min;
    (*list)[idx].step              = step;
    (*list)[idx].max               = max;
-   (*list)[idx].enforce_minrange  = enforce_minrange_enable;
-   (*list)[idx].enforce_maxrange  = enforce_maxrange_enable;
-
-   (*list)[list_info->index - 1].flags |= SD_FLAG_HAS_RANGE;
+   if (enforce_minrange_enable)
+      (*list)[idx].flags         |= SD_FLAG_ENFORCE_MINRANGE;
+   if (enforce_maxrange_enable)
+      (*list)[idx].flags         |= SD_FLAG_ENFORCE_MAXRANGE;
+   (*list)[idx].flags            |= SD_FLAG_HAS_RANGE;
 }
 
 int menu_setting_generic(rarch_setting_t *setting, size_t idx, bool wraparound)
@@ -21748,8 +21726,6 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].enum_value_idx                   = MSG_UNKNOWN; \
    (*&list)[pos].type                             = ST_NONE; \
    (*&list)[pos].dont_use_enum_idx_representation = false; \
-   (*&list)[pos].enforce_minrange                 = false; \
-   (*&list)[pos].enforce_maxrange                 = false; \
    (*&list)[pos].index                            = 0; \
    (*&list)[pos].index_offset                     = 0; \
    (*&list)[pos].offset_by                        = 0; \
