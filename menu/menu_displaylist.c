@@ -3352,6 +3352,13 @@ static int menu_displaylist_parse_horizontal_list(
    if (!item)
       return -1;
 
+   if (item->type == MENU_EXPLORE_TAB)
+   {
+      /* when opening a saved view the explore menu will handle the list */
+      menu_displaylist_ctl(DISPLAYLIST_EXPLORE, info, settings);
+      return 0;
+   }
+
    if (!string_is_empty(item->path))
    {
       char lpl_basename[256];
@@ -4039,6 +4046,7 @@ static unsigned menu_displaylist_parse_playlists(
    size_t i, list_size;
    struct string_list str_list  = {0};
    unsigned count               = 0;
+   unsigned content_count       = 0;
    const char *path             = info->path;
    bool show_hidden_files       = settings->bools.show_hidden_files;
 
@@ -4136,9 +4144,39 @@ static unsigned menu_displaylist_parse_playlists(
          show_hidden_files, true, false))
       return count;
 
+   content_count = count;
+
    dir_list_sort(&str_list, true);
 
    list_size = str_list.size;
+
+#if defined(HAVE_LIBRETRODB)
+   if (settings->bools.menu_content_show_explore)
+   {
+      /* list any custom explore views above playlists */
+      for (i = 0; i < list_size; i++)
+      {
+         char label[512];
+         const char *path = str_list.elems[i].data;
+         const char *fname = path_basename(path);
+         const char *fext = path_get_extension(fname);
+         if (!string_is_equal_noncase(fext, "lvw"))
+            continue;
+
+         snprintf(label, sizeof(label), "%s: %.*s",
+               msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW),
+               (int)(fext - 1 - fname), fname);
+         if (menu_entries_append(info->list, label, path,
+               MENU_ENUM_LABEL_GOTO_EXPLORE,
+               MENU_EXPLORE_TAB, 0, (count - content_count), NULL))
+         {
+            menu_file_list_cbs_t *cbs = ((menu_file_list_cbs_t*)info->list->list[info->list->size-1].actiondata);
+            cbs->action_sublabel = NULL;
+            count++;
+         }
+      }
+   }
+#endif
 
    for (i = 0; i < list_size; i++)
    {
@@ -4188,7 +4226,7 @@ static unsigned menu_displaylist_parse_playlists(
 
       if (menu_entries_append(info->list, path, "",
             MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY,
-            file_type, 0, 0, NULL))
+            file_type, 0, (count - content_count), NULL))
          count++;
    }
 

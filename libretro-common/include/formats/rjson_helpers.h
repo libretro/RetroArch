@@ -70,6 +70,8 @@ static INLINE void rjsonwriter_add_int(rjsonwriter_t *writer, int value)
 static INLINE void rjsonwriter_add_bool(rjsonwriter_t *writer, bool value)
       { rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5)); }
 
+static INLINE void rjsonwriter_add_null(rjsonwriter_t *writer)
+      { rjsonwriter_raw(writer, "null", 4); }
 
 RETRO_END_DECLS
 

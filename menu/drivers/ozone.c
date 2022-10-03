@@ -455,7 +455,6 @@ struct ozone_handle
    size_t categories_selection_ptr; /* active tab id  */
    size_t categories_active_idx_old;
    size_t playlist_index;
-   size_t playlist_collection_offset;
 
    size_t selection; /* currently selected entry */
    size_t selection_old; /* previously selected entry (for fancy animation) */
@@ -3619,12 +3618,25 @@ static void ozone_entries_update_thumbnail_bar(
    }
 }
 
+static unsigned ozone_get_horizontal_selection_type(ozone_handle_t *ozone)
+{
+   if (ozone->categories_selection_ptr > ozone->system_tab_end)
+   {
+      size_t i = ozone->categories_selection_ptr - ozone->system_tab_end-1;
+      return ozone->horizontal_list.list[i].type;
+   }
+   return 0;
+}
+
 static bool ozone_is_playlist(ozone_handle_t *ozone, bool depth)
 {
    bool is_playlist;
 
    if (ozone->categories_selection_ptr > ozone->system_tab_end)
-      is_playlist = true;
+   {
+      unsigned type = ozone_get_horizontal_selection_type(ozone);
+      is_playlist = type == FILE_TYPE_PLAYLIST_COLLECTION;
+   }
    else
    {
       switch (ozone->tabs[ozone->categories_selection_ptr])
@@ -3838,14 +3850,11 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
             (selection < list_size) &&
             ozone->is_explore_list)
       {
-         playlist_index = menu_explore_get_entry_playlist_index(list->list[selection].type, &playlist, &entry);
+         playlist_index = menu_explore_get_entry_playlist_index(list->list[selection].type, &playlist, &entry, list, &selection, &list_size);
 
          /* Fill play time if applicable */
          if (content_runtime_log || content_runtime_log_aggr)
             playlist_get_index(playlist, playlist_index, &entry);
-
-         /* Corrections */
-         list_size--;
 
          /* Remember playlist index for metadata */
          ozone->playlist_index = playlist_index;
@@ -3872,7 +3881,7 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       {
          unsigned long _entry = (unsigned long)(playlist_index + 1);
          if (ozone->is_explore_list)
-            _entry            = (unsigned long)(selection);
+            _entry            = (unsigned long)(selection + 1);
 
          snprintf(ozone->selection_entry_enumeration,
                sizeof(ozone->selection_entry_enumeration),
@@ -4650,6 +4659,13 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             node->console_name = strdup(console_name);
          else
             node->console_name = strdup(path);
+      }
+      else if (string_ends_with_size(ozone->horizontal_list.list[i].label, ".lvw",
+              strlen(ozone->horizontal_list.list[i].label), STRLEN_CONST(".lvw")))
+      {
+         /* For now use a default icon for views */
+         node->console_name = strdup(path + strlen(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW)) + 2);
+         node->icon = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FILE];
       }
    }
 }
@@ -5449,14 +5465,7 @@ border_iterate:
             }
             else if (ozone->depth == 3 && entry.type == FILE_TYPE_PLAYLIST_COLLECTION)
             {
-               size_t i_playlist = 0;
-               ozone_node_t *sidebar_node;
-
-               if (i >= ozone->playlist_collection_offset)
-                  i_playlist = i - ozone->playlist_collection_offset;
-
-               sidebar_node = (ozone_node_t*) file_list_get_userdata_at_offset(&ozone->horizontal_list, i_playlist);
-
+               ozone_node_t *sidebar_node = (ozone_node_t*) file_list_get_userdata_at_offset(&ozone->horizontal_list, selection_buf->list[i].entry_idx);
                if (sidebar_node && sidebar_node->icon)
                   texture = sidebar_node->icon;
             }
@@ -7096,48 +7105,18 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
       /* Explore list */
       if (string_is_empty(s))
       {
+         /* Selected entry */
          menu_entry_t entry;
-         size_t selection         = menu_navigation_get_selection();
-
          MENU_ENTRY_INIT(entry);
          entry.label_enabled      = false;
          entry.rich_label_enabled = false;
          entry.value_enabled      = false;
          entry.sublabel_enabled   = false;
+         menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
 
-         /* First entry */
-         menu_entry_get(&entry, 0, 0, NULL, true);
-         if (string_is_empty(entry.path))
-            return;
-
-         /* No thumbnails for intermediate lists without playlist items */
-         if (!string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER)) &&
-             !string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME)))
-         {
-            gfx_thumbnail_set_content_playlist(ozone->thumbnail_path_data, NULL, 0);
-            ozone->want_thumbnail_bar = ozone->fullscreen_thumbnails_available = false;
-            return;
-         }
-
-         /* Selected entry */
-         menu_entry_get(&entry, 0, selection, NULL, true);
-         if (string_is_empty(entry.path))
-            return;
-
-         /* No thumbnails for header non-items */
-         if (string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER)) ||
-             string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME)))
-         {
-            gfx_thumbnail_set_content_playlist(ozone->thumbnail_path_data, NULL, 0);
-            ozone->want_thumbnail_bar = ozone->fullscreen_thumbnails_available = false;
-            return;
-         }
-         else
-         {
-            ozone->want_thumbnail_bar = ozone->fullscreen_thumbnails_available =
-                  (menu_explore_set_entry_playlist_index(entry.type, ozone->thumbnail_path_data) >= 0 &&
-                  menu_explore_get_entry_icon(entry.type));
-         }
+         ozone->want_thumbnail_bar = ozone->fullscreen_thumbnails_available =
+               (menu_explore_set_playlist_thumbnail(entry.type, ozone->thumbnail_path_data) >= 0 &&
+               menu_explore_get_entry_icon(entry.type));
       }
    }
 #endif
@@ -10786,6 +10765,11 @@ static void ozone_populate_entries(void *data,
             ozone->num_search_terms_old = num_search_terms;
          }
       }
+      else if (ozone->is_explore_list)
+      {
+         /* when refreshing the explore view, also refresh the title */
+         ozone_set_header(ozone);
+      }
 
       return;
    }
@@ -10805,7 +10789,8 @@ static void ozone_populate_entries(void *data,
    ozone->depth                = new_depth;
    ozone->is_db_manager_list   = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST));
    ozone->is_explore_list      = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST)) ||
-                                 string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB));
+                                 string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)) ||
+                                 ozone_get_horizontal_selection_type(ozone) == MENU_EXPLORE_TAB;
    ozone->is_file_list         = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES));
    ozone->is_quick_menu        = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) ||
                                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS)) ||
@@ -10830,23 +10815,6 @@ static void ozone_populate_entries(void *data,
       if (ozone->is_quick_menu)
          ozone->is_explore_list = false;
    }
-
-   /* Determine the first playlist item under "Load Content > Playlists" */
-   ozone->playlist_collection_offset = 0;
-   if (settings->uints.menu_content_show_add_entry)
-      ozone->playlist_collection_offset++;
-   if (settings->uints.menu_content_show_contentless_cores)
-      ozone->playlist_collection_offset++;
-   if (settings->bools.menu_content_show_explore)
-      ozone->playlist_collection_offset++;
-   if (settings->bools.menu_content_show_favorites)
-      ozone->playlist_collection_offset++;
-   if (settings->bools.menu_content_show_images)
-      ozone->playlist_collection_offset++;
-   if (settings->bools.menu_content_show_music)
-      ozone->playlist_collection_offset++;
-   if (settings->bools.menu_content_show_video)
-      ozone->playlist_collection_offset++;
 
    if (animate)
       if (ozone->categories_selection_ptr == ozone->categories_active_idx_old)

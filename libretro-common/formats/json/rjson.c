@@ -1251,6 +1251,17 @@ char* rjsonwriter_get_memory_buffer(rjsonwriter_t *writer, int* len)
    return writer->buf;
 }
 
+int rjsonwriter_count_memory_buffer(rjsonwriter_t *writer)
+{
+   return writer->buf_num;
+}
+
+void rjsonwriter_erase_memory_buffer(rjsonwriter_t *writer, int keep_len)
+{
+   if (keep_len <= writer->buf_num)
+      writer->buf_num = (keep_len < 0 ? 0 : keep_len);
+}
+
 bool rjsonwriter_free(rjsonwriter_t *writer)
 {
    bool res;

@@ -6736,47 +6736,19 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
       {
          /* Get playlist index corresponding
           * to the selected entry */
-         if (list &&
-             (selection < list_size))
+         if (list && selection < list_size)
          {
+            /* Selected entry */
             menu_entry_t entry;
-
             MENU_ENTRY_INIT(entry);
             entry.label_enabled      = false;
             entry.rich_label_enabled = false;
             entry.value_enabled      = false;
             entry.sublabel_enabled   = false;
-
-            /* First entry */
-            menu_entry_get(&entry, 0, 0, NULL, true);
-            if (string_is_empty(entry.path))
-               return;
-
-            /* No thumbnails for intermediate lists without playlist items */
-            if (!string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER)) &&
-                !string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME)))
-            {
-               gfx_thumbnail_set_content_playlist(rgui->thumbnail_path_data, NULL, 0);
-               return;
-            }
-
-            /* Selected entry */
             menu_entry_get(&entry, 0, selection, NULL, true);
-            if (string_is_empty(entry.path))
-               return;
 
-            /* No thumbnails for header non-items */
-            if (string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER)) ||
-                string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME)))
-            {
-               gfx_thumbnail_set_content_playlist(rgui->thumbnail_path_data, NULL, 0);
-               return;
-            }
-            else
-            {
-               rgui->playlist_index =
-                     menu_explore_set_entry_playlist_index(entry.type, rgui->thumbnail_path_data);
-            }
+            rgui->playlist_index =
+                  menu_explore_set_playlist_thumbnail(entry.type, rgui->thumbnail_path_data);
          }
       }
 #endif
