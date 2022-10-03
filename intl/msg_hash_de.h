@@ -10616,6 +10616,10 @@ MSG_HASH(
    "Netzwerkspiel-Port-Zuordnung erfolgreich"
    )
 MSG_HASH(
+   MSG_PRIVATE_OR_SHARED_ADDRESS,
+   "Externes Netzwerk hat eine private oder gemeinsame Adresse. Erwäge die Verwendung eines Relay-Servers."
+   )
+MSG_HASH(
    MSG_UPNP_FAILED,
    "Netplay UPnP-Port-Zuordnung fehlgeschlagen"
    )

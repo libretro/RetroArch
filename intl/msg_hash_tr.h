@@ -11032,6 +11032,10 @@ MSG_HASH(
    "Netplay Port Eşlemesi Başarılı"
    )
 MSG_HASH(
+   MSG_PRIVATE_OR_SHARED_ADDRESS,
+   "Harici ağın özel veya paylaşılan bir adresi var. Bir geçiş sunucusu kullanmayı düşünün."
+   )
+MSG_HASH(
    MSG_UPNP_FAILED,
    "Netplay UPnP Port Eşlemesi Başarısız"
    )
