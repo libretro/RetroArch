@@ -7048,6 +7048,38 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
    "By System Name"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER,
+   "Set Range Filter"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW,
+   "View"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW,
+   "Save as View"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
+   "Delete this View"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
+   "Enter name of new view"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW_EXISTS,
+   "View already exists with the same name"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW_SAVED,
+   "View was saved"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW_DELETED,
+   "View was deleted"
+   )
 
 /* Playlist > Playlist Item */
 
