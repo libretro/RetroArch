@@ -4244,14 +4244,14 @@ static void materialui_render_menu_entry_default(
                      (size_t)(entry_value_width_max / mui->font_data.list.glyph_width);
 
                /* Limit length of value string */
-               entry_value_len_max = (entry_value_len_max > 0) ?
-                     entry_value_len_max - 1 : entry_value_len_max;
-               entry_value_len = (entry_value_len > entry_value_len_max) ?
-                     entry_value_len_max : entry_value_len;
+               if (entry_value_len_max > 0)
+                  entry_value_len_max  = entry_value_len_max - 1;
+               if (entry_value_len > entry_value_len_max)
+                  entry_value_len      = entry_value_len_max;
 
-               mui->ticker.s        = value_buf;
-               mui->ticker.len      = entry_value_len;
-               mui->ticker.str      = entry_value;
+               mui->ticker.s           = value_buf;
+               mui->ticker.len         = entry_value_len;
+               mui->ticker.str         = entry_value;
 
                gfx_animation_ticker(&mui->ticker);
 
