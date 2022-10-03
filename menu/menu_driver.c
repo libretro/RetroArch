@@ -2340,7 +2340,7 @@ static bool menu_driver_displaylist_push_internal(
                MENU_ENUM_LABEL_TAKE_SCREENSHOT,
                MENU_SETTING_ACTION_SCREENSHOT, 0, 0, NULL);
       else
-         info->need_push_no_playlist_entries = true;
+         info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
 #endif
 #endif
       menu_displaylist_ctl(DISPLAYLIST_IMAGES_HISTORY, info, settings);
@@ -2365,9 +2365,9 @@ static bool menu_driver_displaylist_push_internal(
       if (string_is_empty(dir_playlist))
       {
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         info->need_refresh                  = true;
-         info->need_push_no_playlist_entries = true;
-         info->need_push                     = true;
+         info->flags |= MD_FLAG_NEED_REFRESH;
+         info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
+         info->flags |= MD_FLAG_NEED_PUSH;
 
          return true;
       }

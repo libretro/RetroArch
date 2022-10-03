@@ -8680,9 +8680,9 @@ static int ozone_list_push(void *data, void *userdata,
                      MENU_SETTING_ACTION, 0, 0, NULL);
             }
 
-            info->need_push    = true;
-            info->need_refresh = true;
-            ret = 0;
+            info->flags |= MD_FLAG_NEED_PUSH;
+            info->flags |= MD_FLAG_NEED_REFRESH;
+            ret          = 0;
          }
          break;
       case DISPLAYLIST_MAIN_MENU:
@@ -8902,8 +8902,8 @@ static int ozone_list_push(void *data, void *userdata,
                      false);
             }
 
-            info->need_push    = true;
-            ret = 0;
+            info->flags |= MD_FLAG_NEED_PUSH;
+            ret          = 0;
          }
          break;
    }
@@ -11010,7 +11010,7 @@ static bool ozone_menu_init_list(void *data)
    if (!menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info, settings))
       goto error;
 
-   info.need_push = true;
+   info.flags |= MD_FLAG_NEED_PUSH;
 
    if (!menu_displaylist_process(&info))
       goto error;
