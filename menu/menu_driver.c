@@ -469,7 +469,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
                 cbs
             &&  cbs->setting
             &&  cbs->setting->enum_value_idx != MSG_UNKNOWN
-            && !cbs->setting->dont_use_enum_idx_representation)
+            && !(cbs->setting->flags 
+               & SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION))
          strlcpy(entry->path,
                msg_hash_to_str(cbs->setting->enum_value_idx),
                sizeof(entry->path));

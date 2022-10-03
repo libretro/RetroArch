@@ -83,7 +83,8 @@ enum setting_flags
    SD_FLAG_ADVANCED         = (1 << 9),
    SD_FLAG_LAKKA_ADVANCED   = (1 << 10),
    SD_FLAG_ENFORCE_MINRANGE = (1 << 11),
-   SD_FLAG_ENFORCE_MAXRANGE = (1 << 12)
+   SD_FLAG_ENFORCE_MAXRANGE = (1 << 12),
+   SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION = (1 << 13)
 };
 
 enum settings_free_flags
@@ -200,7 +201,6 @@ struct rarch_setting
    uint8_t              index;
 
    bool                 cmd_trigger_event_triggered;
-   bool                 dont_use_enum_idx_representation;
 };
 
 /**

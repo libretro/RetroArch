@@ -1393,7 +1393,8 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
    result.cmd_trigger_event_triggered      = false;
 
-   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+   if (dont_use_enum_idx)
+      result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
 
    return result;
 }
@@ -1454,8 +1455,6 @@ static rarch_setting_t setting_group_setting(
 
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
    result.cmd_trigger_event_triggered      = false;
-
-   result.dont_use_enum_idx_representation = false;
 
    return result;
 }
@@ -1531,7 +1530,8 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
    result.cmd_trigger_event_triggered      = false;
 
-   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+   if (dont_use_enum_idx)
+      result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
 
    return result;
 }
@@ -1606,7 +1606,8 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
    result.cmd_trigger_event_triggered      = false;
 
-   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+   if (dont_use_enum_idx)
+      result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
 
    return result;
 }
@@ -1683,7 +1684,8 @@ static rarch_setting_t setting_size_setting(const char* name,
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
    result.cmd_trigger_event_triggered      = false;
 
-   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+   if (dont_use_enum_idx)
+      result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
 
    return result;
 }
@@ -1759,7 +1761,8 @@ static rarch_setting_t setting_hex_setting(const char* name,
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
    result.cmd_trigger_event_triggered      = false;
 
-   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+   if (dont_use_enum_idx)
+      result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
 
    return result;
 }
@@ -1835,7 +1838,8 @@ static rarch_setting_t setting_bind_setting(const char* name,
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
    result.cmd_trigger_event_triggered      = false;
 
-   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+   if (dont_use_enum_idx)
+      result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
 
    return result;
 }
@@ -1981,7 +1985,8 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
          break;
    }
 
-   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+   if (dont_use_enum_idx)
+      result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
 
    return result;
 }
@@ -2083,7 +2088,8 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
    result.cmd_trigger_event_triggered      = false;
 
-   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+   if (dont_use_enum_idx)
+      result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
 
    return result;
 }
@@ -2162,7 +2168,8 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
    result.cmd_trigger_event_triggered      = false;
 
-   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+   if (dont_use_enum_idx)
+      result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
 
    return result;
 }
@@ -2237,7 +2244,8 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
    result.cmd_trigger_event_triggered      = false;
 
-   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+   if (dont_use_enum_idx)
+      result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
 
    return result;
 }
@@ -21725,7 +21733,6 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].enum_idx                         = MSG_UNKNOWN; \
    (*&list)[pos].enum_value_idx                   = MSG_UNKNOWN; \
    (*&list)[pos].type                             = ST_NONE; \
-   (*&list)[pos].dont_use_enum_idx_representation = false; \
    (*&list)[pos].index                            = 0; \
    (*&list)[pos].index_offset                     = 0; \
    (*&list)[pos].offset_by                        = 0; \
