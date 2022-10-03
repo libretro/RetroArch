@@ -11434,10 +11434,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             MENU_ENUM_LABEL_CPU_POLICY_GOVERNOR,
             MENU_SETTINGS_CPU_POLICY_SET_GOVERNOR, 0, 0, NULL);
 
-         info->need_push    = true;
-         info->need_refresh = true;
-         info->need_clear   = true;
-
+         info->flags       |= MD_FLAG_NEED_REFRESH;
+         info->flags       |= MD_FLAG_NEED_PUSH;
+         info->flags       |= MD_FLAG_NEED_CLEAR;
          break;
       case DISPLAYLIST_CPU_PERFPOWER_LIST:
       {
@@ -11508,9 +11507,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             };
          }
 
-         info->need_push    = true;
-         info->need_refresh = true;
-         info->need_clear   = true;
+         info->flags       |= MD_FLAG_NEED_REFRESH;
+         info->flags       |= MD_FLAG_NEED_PUSH;
+         info->flags       |= MD_FLAG_NEED_CLEAR;
          break;
       }
 #endif
@@ -11574,10 +11573,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          }
 
-         info->need_push    = true;
-         info->need_refresh = true;
-         info->need_clear   = true;
-
+         info->flags       |= MD_FLAG_NEED_REFRESH;
+         info->flags       |= MD_FLAG_NEED_PUSH;
+         info->flags       |= MD_FLAG_NEED_CLEAR;
          break;
       }
 #if defined(HAVE_LAKKA_SWITCH)
@@ -11616,10 +11614,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                count++;
          }
 
-         info->need_push    = true;
-         info->need_refresh = true;
-         info->need_clear   = true;
-
+         info->flags       |= MD_FLAG_NEED_REFRESH;
+         info->flags       |= MD_FLAG_NEED_PUSH;
+         info->flags       |= MD_FLAG_NEED_CLEAR;
          break;
       }
 #endif /* HAVE_LAKKA_SWITCH */
@@ -11835,8 +11832,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             else
                info->flags       |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
 #else
-            ret = 0;
-            info->need_push_no_playlist_entries = true;
+            ret                   = 0;
+            info->flags          |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
 #endif
          }
 
@@ -12590,9 +12587,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_CORE_MANAGER_STEAM_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_parse_core_manager_steam_list(info, settings);
-         info->need_navigation_clear = true;
-         info->need_refresh          = false;
-         info->need_push             = true;
+         info->flags       &= ~MD_FLAG_NEED_REFRESH;
+         info->flags       |=  MD_FLAG_NEED_PUSH;
+         info->flags       |=  MD_FLAG_NEED_NAVIGATION_CLEAR;
          
          /* No core dlcs were found */
          if (count == 0)
@@ -12607,10 +12604,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_CORE_INFORMATION_STEAM_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
       
-         info->need_navigation_clear = true;
-         info->need_refresh          = false;
-         info->need_push             = true;
-               count = menu_displaylist_parse_core_information_steam(info, settings);
+         info->flags                &= ~MD_FLAG_NEED_REFRESH;
+         info->flags                |=  MD_FLAG_NEED_PUSH;
+         info->flags                |=  MD_FLAG_NEED_NAVIGATION_CLEAR;
+         count                       = 
+            menu_displaylist_parse_core_information_steam(info, settings);
       
          if (count == 0)
             if (menu_entries_append(info->list,
