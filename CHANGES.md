@@ -2,7 +2,9 @@
 
 # 1.11.1
 - GENERAL: Fix DEFAULT_FILL_TITLE_MACRO
+- NETWORKING: Add the const qualifier to some function parameters
 - NETWORKING/NETPLAY/UPNP: Add a private or CGNAT address warning to UPnP
+- SAVESTATES/SCREENSHOTS: Avoid 'video_gpu_screenshot' with savestates
 - UWP: Better 'Save on quit' fix
 
 # 1.11.0
