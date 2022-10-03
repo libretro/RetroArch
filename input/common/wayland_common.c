@@ -43,13 +43,13 @@
 #define TEXT_MIME "text/plain;charset=utf-8"
 #define PIPE_MS_TIMEOUT 10
 
-#define IOR_READ 0x1
-#define IOR_WRITE 0x2
+#define IOR_READ     0x1
+#define IOR_WRITE    0x2
 #define IOR_NO_RETRY 0x4
 
 #define SPLASH_SHM_NAME "retroarch-wayland-splash"
 
-static void keyboard_handle_keymap(void* data,
+static void wl_keyboard_handle_keymap(void* data,
       struct wl_keyboard* keyboard,
       uint32_t format,
       int fd,
@@ -67,7 +67,7 @@ static void keyboard_handle_keymap(void* data,
    close(fd);
 }
 
-static void keyboard_handle_enter(void* data,
+static void wl_keyboard_handle_enter(void* data,
       struct wl_keyboard* keyboard,
       uint32_t serial,
       struct wl_surface* surface,
@@ -77,7 +77,7 @@ static void keyboard_handle_enter(void* data,
    wl->input.keyboard_focus   = true;
 }
 
-static void keyboard_handle_leave(void *data,
+static void wl_keyboard_handle_leave(void *data,
       struct wl_keyboard *keyboard,
       uint32_t serial,
       struct wl_surface *surface)
@@ -89,7 +89,7 @@ static void keyboard_handle_leave(void *data,
    memset(wl->input.key_state, 0, sizeof(wl->input.key_state));
 }
 
-static void keyboard_handle_key(void *data,
+static void wl_keyboard_handle_key(void *data,
       struct wl_keyboard *keyboard,
       uint32_t serial,
       uint32_t time,
@@ -133,7 +133,7 @@ static void keyboard_handle_key(void *data,
          0, 0, RETRO_DEVICE_KEYBOARD);
 }
 
-static void keyboard_handle_modifiers(void *data,
+static void wl_keyboard_handle_modifiers(void *data,
       struct wl_keyboard *keyboard,
       uint32_t serial,
       uint32_t modsDepressed,
@@ -146,7 +146,7 @@ static void keyboard_handle_modifiers(void *data,
 #endif
 }
 
-void keyboard_handle_repeat_info(void *data,
+static void wl_keyboard_handle_repeat_info(void *data,
       struct wl_keyboard *wl_keyboard,
       int32_t rate,
       int32_t delay)
@@ -164,8 +164,11 @@ void gfx_ctx_wl_show_mouse(void *data, bool state)
    if (state)
    {
       struct wl_cursor_image *image = wl->cursor.default_cursor->images[0];
-      wl_pointer_set_cursor(wl->wl_pointer, wl->cursor.serial, wl->cursor.surface, image->hotspot_x, image->hotspot_y);
-      wl_surface_attach(wl->cursor.surface, wl_cursor_image_get_buffer(image), 0, 0);
+      wl_pointer_set_cursor(wl->wl_pointer,
+            wl->cursor.serial, wl->cursor.surface,
+            image->hotspot_x, image->hotspot_y);
+      wl_surface_attach(wl->cursor.surface,
+            wl_cursor_image_get_buffer(image), 0, 0);
       wl_surface_damage(wl->cursor.surface, 0, 0, image->width, image->height);
       wl_surface_commit(wl->cursor.surface);
    }
@@ -175,7 +178,7 @@ void gfx_ctx_wl_show_mouse(void *data, bool state)
    wl->cursor.visible = state;
 }
 
-static void pointer_handle_enter(void *data,
+static void wl_pointer_handle_enter(void *data,
       struct wl_pointer *pointer,
       uint32_t serial,
       struct wl_surface *surface,
@@ -184,18 +187,20 @@ static void pointer_handle_enter(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   wl->input.mouse.surface = surface;
-   wl->input.mouse.last_x  = wl_fixed_to_int(sx * (wl_fixed_t)wl->buffer_scale);
-   wl->input.mouse.last_y  = wl_fixed_to_int(sy * (wl_fixed_t)wl->buffer_scale);
-   wl->input.mouse.x       = wl->input.mouse.last_x;
-   wl->input.mouse.y       = wl->input.mouse.last_y;
-   wl->input.mouse.focus   = true;
-   wl->cursor.serial       = serial;
+   wl->input.mouse.surface    = surface;
+   wl->input.mouse.last_x     = wl_fixed_to_int(
+         sx * (wl_fixed_t)wl->buffer_scale);
+   wl->input.mouse.last_y     = wl_fixed_to_int(
+         sy * (wl_fixed_t)wl->buffer_scale);
+   wl->input.mouse.x          = wl->input.mouse.last_x;
+   wl->input.mouse.y          = wl->input.mouse.last_y;
+   wl->input.mouse.focus      = true;
+   wl->cursor.serial          = serial;
 
    gfx_ctx_wl_show_mouse(data, wl->cursor.visible);
 }
 
-static void pointer_handle_leave(void *data,
+static void wl_pointer_handle_leave(void *data,
       struct wl_pointer *pointer,
       uint32_t serial,
       struct wl_surface *surface)
@@ -210,7 +215,7 @@ static void pointer_handle_leave(void *data,
       wl->input.mouse.surface = NULL;
 }
 
-static void pointer_handle_motion(void *data,
+static void wl_pointer_handle_motion(void *data,
       struct wl_pointer *pointer,
       uint32_t time,
       wl_fixed_t sx,
@@ -223,7 +228,7 @@ static void pointer_handle_motion(void *data,
          (wl_fixed_t)wl->buffer_scale * sy);
 }
 
-static void pointer_handle_button(void *data,
+static void wl_pointer_handle_button(void *data,
       struct wl_pointer *wl_pointer,
       uint32_t serial,
       uint32_t time,
@@ -279,32 +284,32 @@ static void pointer_handle_button(void *data,
    }
 }
 
-static void pointer_handle_axis(void *data,
+static void wl_pointer_handle_axis(void *data,
       struct wl_pointer *wl_pointer,
       uint32_t time,
       uint32_t axis,
-      wl_fixed_t value) {
+      wl_fixed_t value)
+{
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   double dvalue = wl_fixed_to_double(value);
-   switch (axis) {
+   double d_value             = wl_fixed_to_double(value);
+   switch (axis)
+   {
       case WL_POINTER_AXIS_VERTICAL_SCROLL:
-         if (dvalue < 0) {
+         if (d_value < 0)
             wl->input.mouse.wu = true;
-         } else if (dvalue > 0) {
+         else if (d_value > 0)
             wl->input.mouse.wd = true;
-         }
          break;
       case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
-         if (dvalue < 0) {
+         if (d_value < 0)
             wl->input.mouse.wl = true;
-         } else if (dvalue > 0) {
+         else if (d_value > 0)
             wl->input.mouse.wr = true;
-         }
          break;
    }
 }
 
-static void touch_handle_down(void *data,
+static void wl_touch_handle_down(void *data,
       struct wl_touch *wl_touch,
       uint32_t serial,
       uint32_t time,
@@ -336,7 +341,7 @@ static void touch_handle_down(void *data,
    }
 }
 
-static void reorder_touches(gfx_ctx_wayland_data_t *wl)
+static void wl_reorder_touches(gfx_ctx_wayland_data_t *wl)
 {
    int i, j;
    if (wl->num_active_touches == 0)
@@ -370,7 +375,7 @@ static void reorder_touches(gfx_ctx_wayland_data_t *wl)
    }
 }
 
-static void touch_handle_up(void *data,
+static void wl_touch_handle_up(void *data,
       struct wl_touch *wl_touch,
       uint32_t serial,
       uint32_t time,
@@ -391,10 +396,10 @@ static void touch_handle_up(void *data,
          wl->num_active_touches--;
       }
    }
-   reorder_touches(wl);
+   wl_reorder_touches(wl);
 }
 
-static void touch_handle_motion(void *data,
+static void wl_touch_handle_motion(void *data,
       struct wl_touch *wl_touch,
       uint32_t time,
       int32_t id,
@@ -415,11 +420,9 @@ static void touch_handle_motion(void *data,
    }
 }
 
-static void touch_handle_frame(void *data,
-      struct wl_touch *wl_touch) { }
+static void wl_touch_handle_frame(void *data, struct wl_touch *wl_touch) { }
 
-static void touch_handle_cancel(void *data,
-      struct wl_touch *wl_touch)
+static void wl_touch_handle_cancel(void *data, struct wl_touch *wl_touch)
 {
    /* If i understand the spec correctly we have to reset all touches here
     * since they were not ment for us anyway */
@@ -437,7 +440,7 @@ static void touch_handle_cancel(void *data,
    wl->num_active_touches = 0;
 }
 
-static void seat_handle_capabilities(void *data,
+static void wl_seat_handle_capabilities(void *data,
       struct wl_seat *seat, unsigned caps)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
@@ -472,10 +475,9 @@ static void seat_handle_capabilities(void *data,
       wl_touch_destroy(wl->wl_touch);
       wl->wl_touch = NULL;
    }
-
 }
 
-static void seat_handle_name(void *data,
+static void wl_seat_handle_name(void *data,
       struct wl_seat *seat, const char *name) { }
 
 /* Surface callbacks. */
@@ -486,7 +488,7 @@ static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
     output_info_t *oi;
     gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-    wl->input.mouse.surface = wl_surface;
+    wl->input.mouse.surface    = wl_surface;
 
     /* TODO: track all outputs the surface is on, pick highest scale */
 
@@ -505,18 +507,20 @@ static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
 static void wl_nop(void *a, struct wl_surface *b, struct wl_output *c) { }
 
 /* Shell surface callbacks. */
-static void xdg_shell_ping(void *data, struct xdg_wm_base *shell, uint32_t serial)
+static void xdg_shell_ping(
+      void *data, struct xdg_wm_base *shell, uint32_t serial)
 {
     xdg_wm_base_pong(shell, serial);
 }
 
-static void xdg_surface_handle_configure(void *data, struct xdg_surface *surface,
-                                  uint32_t serial)
+static void xdg_surface_handle_configure(
+      void *data, struct xdg_surface *surface,
+      uint32_t serial)
 {
     xdg_surface_ack_configure(surface, serial);
 }
 
-static void display_handle_geometry(void *data,
+static void wl_display_handle_geometry(void *data,
       struct wl_output *output,
       int x, int y,
       int physical_width, int physical_height,
@@ -532,39 +536,35 @@ static void display_handle_geometry(void *data,
    oi->model                  = strdup(model);
 }
 
-static void display_handle_mode(void *data,
+static void wl_display_handle_mode(void *data,
       struct wl_output *output,
       uint32_t flags,
       int width,
       int height,
       int refresh)
 {
-   (void)output;
-   (void)flags;
-
    output_info_t *oi          = (output_info_t*)data;
    oi->width                  = width;
    oi->height                 = height;
    oi->refresh_rate           = refresh;
 }
 
-static void display_handle_done(void *data,
-      struct wl_output *output) { }
+static void wl_display_handle_done(void *data, struct wl_output *output) { }
 
-static void display_handle_scale(void *data,
+static void wl_display_handle_scale(void *data,
       struct wl_output *output,
       int32_t factor)
 {
    output_info_t *oi = (output_info_t*)data;
-   oi->scale = factor;
+   oi->scale         = factor;
 }
 
-bool setup_data_device(gfx_ctx_wayland_data_t *wl)
+static bool wl_setup_data_device(gfx_ctx_wayland_data_t *wl)
 {
-   if (wl->data_device == NULL && wl->data_device_manager != NULL && wl->seat != NULL)
+   if (!wl->data_device && wl->data_device_manager && wl->seat)
    {
       wl->data_device = wl_data_device_manager_get_data_device(wl->data_device_manager, wl->seat);
-      if (wl->data_device != NULL)
+      if (wl->data_device)
       {
          wl_data_device_add_listener(wl->data_device, &data_device_listener, wl);
          return true;
@@ -574,7 +574,7 @@ bool setup_data_device(gfx_ctx_wayland_data_t *wl)
 }
 
 /* Registry callbacks. */
-static void registry_handle_global(void *data, struct wl_registry *reg,
+static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       uint32_t id, const char *interface, uint32_t version)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
@@ -605,13 +605,14 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
    {
       wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, MIN(version, 2));
       wl_seat_add_listener(wl->seat, &seat_listener, wl);
-      setup_data_device(wl);
+      wl_setup_data_device(wl);
    }
    else if (string_is_equal(interface, wl_data_device_manager_interface.name))
    {
-      wl->data_device_manager = (struct wl_data_device_manager*)wl_registry_bind(
-                                 reg, id, &wl_data_device_manager_interface, MIN(version, 3));
-      setup_data_device(wl);
+      wl->data_device_manager = (struct wl_data_device_manager*)
+         wl_registry_bind(
+               reg, id, &wl_data_device_manager_interface, MIN(version, 3));
+      wl_setup_data_device(wl);
    }
    else if (string_is_equal(interface, zwp_idle_inhibit_manager_v1_interface.name))
       wl->idle_inhibit_manager = (struct zwp_idle_inhibit_manager_v1*)wl_registry_bind(
@@ -621,7 +622,7 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
                                   reg, id, &zxdg_decoration_manager_v1_interface, MIN(version, 1));
 }
 
-static void registry_handle_global_remove(void *data,
+static void wl_registry_handle_global_remove(void *data,
       struct wl_registry *registry, uint32_t id)
 {
    output_info_t *oi, *tmp;
@@ -638,15 +639,14 @@ static void registry_handle_global_remove(void *data,
    }
 }
 
-
-int ioready(int fd, int flags, int timeoutMS)
+static int wl_ioready(int fd, int flags, int timeoutMS)
 {
    int result;
 
    do
    {
       struct pollfd info;
-      info.fd = fd;
+      info.fd     = fd;
       info.events = 0;
       if (flags & IOR_READ)
          info.events |= POLLIN | POLLPRI;
@@ -658,16 +658,15 @@ int ioready(int fd, int flags, int timeoutMS)
    return result;
 }
 
-static ssize_t read_pipe(int fd, void** buffer, size_t* total_length, bool null_terminate)
+static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
+      bool null_terminate)
 {
-   int ready = 0;
-   void* output_buffer = NULL;
    char temp[PIPE_BUF];
+   void* output_buffer      = NULL;
    size_t new_buffer_length = 0;
-   ssize_t bytes_read = 0;
-   size_t pos = 0;
-
-   ready = ioready(fd, IOR_READ, PIPE_MS_TIMEOUT);
+   ssize_t bytes_read       = 0;
+   size_t pos               = 0;
+   int ready                = wl_ioready(fd, IOR_READ, PIPE_MS_TIMEOUT);
 
    if (ready == 0)
    {
@@ -684,10 +683,10 @@ static ssize_t read_pipe(int fd, void** buffer, size_t* total_length, bool null_
 
    if (bytes_read > 0)
    {
-      pos = *total_length;
+      pos            = *total_length;
       *total_length += bytes_read;
 
-      if (null_terminate == true)
+      if (null_terminate)
          new_buffer_length = *total_length + 1;
       else
           new_buffer_length = *total_length;
@@ -696,13 +695,12 @@ static ssize_t read_pipe(int fd, void** buffer, size_t* total_length, bool null_
          output_buffer = malloc(new_buffer_length);
       else
          output_buffer = realloc(*buffer, new_buffer_length);
-      if (output_buffer == NULL)
-         RARCH_WARN("[Wayland]: Out of memory for pipe read\n");
-      else
+
+      if (output_buffer)
       {
          memcpy((uint8_t*)output_buffer + pos, temp, bytes_read);
 
-         if (null_terminate == true)
+         if (null_terminate)
             memset((uint8_t*)output_buffer + (new_buffer_length - 1), 0, 1);
 
          *buffer = output_buffer;
@@ -712,14 +710,16 @@ static ssize_t read_pipe(int fd, void** buffer, size_t* total_length, bool null_
    return bytes_read;
 }
 
-void* wayland_data_offer_receive(struct wl_display *display, struct wl_data_offer *offer, size_t *length,
-   const char* mime_type, bool null_terminate)
+void* wayland_data_offer_receive(
+      struct wl_display *display, struct wl_data_offer *offer,
+      size_t *length,
+      const char* mime_type, bool null_terminate)
 {
    int pipefd[2];
    void *buffer = NULL;
-   *length = 0;
+   *length      = 0;
 
-   if (offer == NULL)
+   if (!offer)
       RARCH_WARN("[Wayland]: Invalid data offer\n");
    else if (pipe2(pipefd, O_CLOEXEC|O_NONBLOCK) == -1)
       RARCH_WARN("[Wayland]: Could not read pipe");
@@ -732,61 +732,62 @@ void* wayland_data_offer_receive(struct wl_display *display, struct wl_data_offe
 
       close(pipefd[1]);
 
-      while (read_pipe(pipefd[0], &buffer, length, null_terminate) > 0);
+      while (wl_read_pipe(pipefd[0], &buffer, length, null_terminate) > 0);
       close(pipefd[0]);
    }
    return buffer;
 }
 
 
-static void data_device_handle_data_offer(void *data,
+static void wl_data_device_handle_data_offer(void *data,
       struct wl_data_device *data_device, struct wl_data_offer *offer)
 {
-   data_offer_ctx *offer_data;
+   data_offer_ctx *offer_data = (data_offer_ctx*)calloc(1, sizeof *offer_data);
 
-   offer_data = calloc(1, sizeof *offer_data);
-   offer_data->offer = offer;
-   offer_data->data_device = data_device;
-   offer_data->dropped = false;
+   offer_data->offer          = offer;
+   offer_data->data_device    = data_device;
+   offer_data->dropped        = false;
 
    wl_data_offer_set_user_data(offer, offer_data);
    wl_data_offer_add_listener(offer, &data_offer_listener, offer_data);
 }
 
-static void data_device_handle_enter(void *data,
+static void wl_data_device_handle_enter(void *data,
       struct wl_data_device *data_device, uint32_t serial,
       struct wl_surface *surface, wl_fixed_t x, wl_fixed_t y,
       struct wl_data_offer *offer)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
    data_offer_ctx *offer_data;
-   enum wl_data_device_manager_dnd_action dnd_action = WL_DATA_DEVICE_MANAGER_DND_ACTION_NONE;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   enum wl_data_device_manager_dnd_action dnd_action = 
+      WL_DATA_DEVICE_MANAGER_DND_ACTION_NONE;
 
-   if (offer == NULL)
+   if (!offer)
       return;
 
-   offer_data = wl_data_offer_get_user_data(offer);
+   offer_data             = wl_data_offer_get_user_data(offer);
    wl->current_drag_offer = offer_data;
 
    wl_data_offer_accept(offer, serial,
       offer_data->is_file_mime_type ? FILE_MIME : NULL);
 
-   if (offer_data->is_file_mime_type && offer_data->supported_actions & DND_ACTION)
+   if (     offer_data->is_file_mime_type 
+         && offer_data->supported_actions & DND_ACTION)
       dnd_action = DND_ACTION;
 
-   if (wl_data_offer_get_version(offer) >= WL_DATA_OFFER_SET_ACTIONS_SINCE_VERSION)
+   if (     wl_data_offer_get_version(offer) 
+         >= WL_DATA_OFFER_SET_ACTIONS_SINCE_VERSION)
      wl_data_offer_set_actions(offer, dnd_action, dnd_action);
 }
 
-static void data_device_handle_leave(void *data,
+static void wl_data_device_handle_leave(void *data,
       struct wl_data_device *data_device)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    data_offer_ctx *offer_data = wl->current_drag_offer;
 
-   if (offer_data != NULL && !offer_data->dropped)
+   if (offer_data && !offer_data->dropped)
    {
       wl->current_drag_offer = NULL;
       wl_data_offer_destroy(offer_data->offer);
@@ -794,39 +795,35 @@ static void data_device_handle_leave(void *data,
    }
 }
 
-static void data_device_handle_motion(void *data,
+static void wl_data_device_handle_motion(void *data,
       struct wl_data_device *data_device, uint32_t time,
       wl_fixed_t x, wl_fixed_t y) { }
 
-static void data_device_handle_drop(void *data,
+static void wl_data_device_handle_drop(void *data,
       struct wl_data_device *data_device)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   data_offer_ctx *offer_data = wl->current_drag_offer;
-
-   offer_data->dropped = true;
-
-   if (offer_data == NULL)
-      return;
-
+   FILE *stream;
    int pipefd[2];
-   pipe(pipefd);
    void *buffer;
    size_t length;
+   size_t len                 = 0;
+   ssize_t read               = 0;
+   char *line                 = NULL;
+   char file_list[512][512]   = { 0 };
+   char file_list_i           = 0;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   data_offer_ctx *offer_data = wl->current_drag_offer;
+
+   offer_data->dropped        = true;
+
+   if (!offer_data)
+      return;
+
+   pipe(pipefd);
 
    buffer = wayland_data_offer_receive(wl->input.dpy, offer_data->offer, &length, FILE_MIME, false);
 
    close(pipefd[1]);
-
-   size_t len = 0;
-   ssize_t read = 0;
-
-   char *line = NULL;
-
-   char file_list[512][512] = { 0 };
-   char file_list_i = 0;
-
    close(pipefd[0]);
 
    wl->current_drag_offer = NULL;
@@ -835,9 +832,7 @@ static void data_device_handle_drop(void *data,
    wl_data_offer_destroy(offer_data->offer);
    free(offer_data);
 
-   FILE *stream = fmemopen(buffer, length, "r");
-
-   if (stream == NULL)
+   if (!(stream = fmemopen(buffer, length, "r")))
    {
       RARCH_WARN("[Wayland]: Failed to open DnD buffer\n");
       return;
@@ -861,11 +856,10 @@ static void data_device_handle_drop(void *data,
    free(buffer);
 }
 
-static void data_device_handle_selection(void *data,
+static void wl_data_device_handle_selection(void *data,
       struct wl_data_device *data_device, struct wl_data_offer *offer) { }
 
-
-static void data_offer_handle_offer(void *data, struct wl_data_offer *offer,
+static void wl_data_offer_handle_offer(void *data, struct wl_data_offer *offer,
       const char *mime_type)
 {
    data_offer_ctx *offer_data = data;
@@ -875,7 +869,7 @@ static void data_offer_handle_offer(void *data, struct wl_data_offer *offer,
       offer_data->is_file_mime_type = true;
 }
 
-static void data_offer_handle_source_actions(void *data,
+static void wl_data_offer_handle_source_actions(void *data,
       struct wl_data_offer *offer, enum wl_data_device_manager_dnd_action actions)
 {
    /* Report of actions for this offer supported by compositor */
@@ -883,21 +877,20 @@ static void data_offer_handle_source_actions(void *data,
    offer_data->supported_actions = actions;
 }
 
-static void data_offer_handle_action(void *data,
+static void wl_data_offer_handle_action(void *data,
       struct wl_data_offer *offer,
       enum wl_data_device_manager_dnd_action dnd_action) { }
 
 const struct wl_registry_listener registry_listener = {
-   registry_handle_global,
-   registry_handle_global_remove,
+   wl_registry_handle_global,
+   wl_registry_handle_global_remove,
 };
 
-
 const struct wl_output_listener output_listener = {
-   display_handle_geometry,
-   display_handle_mode,
-   display_handle_done,
-   display_handle_scale,
+   wl_display_handle_geometry,
+   wl_display_handle_mode,
+   wl_display_handle_done,
+   wl_display_handle_scale,
 };
 
 const struct xdg_wm_base_listener xdg_shell_listener = {
@@ -914,60 +907,60 @@ const struct wl_surface_listener wl_surface_listener = {
 };
 
 const struct wl_seat_listener seat_listener = {
-   seat_handle_capabilities,
-   seat_handle_name,
+   wl_seat_handle_capabilities,
+   wl_seat_handle_name,
 };
 
 const struct wl_touch_listener touch_listener = {
-   touch_handle_down,
-   touch_handle_up,
-   touch_handle_motion,
-   touch_handle_frame,
-   touch_handle_cancel,
+   wl_touch_handle_down,
+   wl_touch_handle_up,
+   wl_touch_handle_motion,
+   wl_touch_handle_frame,
+   wl_touch_handle_cancel,
 };
 
 const struct wl_keyboard_listener keyboard_listener = {
-   keyboard_handle_keymap,
-   keyboard_handle_enter,
-   keyboard_handle_leave,
-   keyboard_handle_key,
-   keyboard_handle_modifiers,
-   keyboard_handle_repeat_info
+   wl_keyboard_handle_keymap,
+   wl_keyboard_handle_enter,
+   wl_keyboard_handle_leave,
+   wl_keyboard_handle_key,
+   wl_keyboard_handle_modifiers,
+   wl_keyboard_handle_repeat_info
 };
 
 const struct wl_pointer_listener pointer_listener = {
-   pointer_handle_enter,
-   pointer_handle_leave,
-   pointer_handle_motion,
-   pointer_handle_button,
-   pointer_handle_axis,
+   wl_pointer_handle_enter,
+   wl_pointer_handle_leave,
+   wl_pointer_handle_motion,
+   wl_pointer_handle_button,
+   wl_pointer_handle_axis,
 };
 
 const struct wl_data_device_listener data_device_listener = {
-   .data_offer = data_device_handle_data_offer,
-   .enter = data_device_handle_enter,
-   .leave = data_device_handle_leave,
-   .motion = data_device_handle_motion,
-   .drop = data_device_handle_drop,
-   .selection = data_device_handle_selection,
+   wl_data_device_handle_data_offer,
+   wl_data_device_handle_enter,
+   wl_data_device_handle_leave,
+   wl_data_device_handle_motion,
+   wl_data_device_handle_drop,
+   wl_data_device_handle_selection
 };
 
 const struct wl_data_offer_listener data_offer_listener = {
-   .offer = data_offer_handle_offer,
-   .source_actions = data_offer_handle_source_actions,
-   .action = data_offer_handle_action,
+   wl_data_offer_handle_offer,
+   wl_data_offer_handle_source_actions,
+   wl_data_offer_handle_action
 };
 
 void flush_wayland_fd(void *data)
 {
-   struct pollfd fd = {0};
+   struct pollfd fd             = {0};
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
 
    wl_display_dispatch_pending(wl->dpy);
    wl_display_flush(wl->dpy);
 
-   fd.fd     = wl->fd;
-   fd.events = POLLIN | POLLOUT | POLLERR | POLLHUP;
+   fd.fd                        = wl->fd;
+   fd.events                    = POLLIN | POLLOUT | POLLERR | POLLHUP;
 
    if (poll(&fd, 1, 0) > 0)
    {
@@ -983,5 +976,3 @@ void flush_wayland_fd(void *data)
          wl_display_flush(wl->dpy);
    }
 }
-
-
