@@ -386,8 +386,8 @@ static void wl_touch_handle_up(void *data,
 
    for (i = 0; i < MAX_TOUCHES; i++)
    {
-      if (  wl->active_touch_positions[i].active &&
-            wl->active_touch_positions[i].id == id)
+      if (     wl->active_touch_positions[i].active
+            && wl->active_touch_positions[i].id == id)
       {
          wl->active_touch_positions[i].active = false;
          wl->active_touch_positions[i].id     = -1;
@@ -563,10 +563,12 @@ static bool wl_setup_data_device(gfx_ctx_wayland_data_t *wl)
 {
    if (!wl->data_device && wl->data_device_manager && wl->seat)
    {
-      wl->data_device = wl_data_device_manager_get_data_device(wl->data_device_manager, wl->seat);
+      wl->data_device = wl_data_device_manager_get_data_device(
+            wl->data_device_manager, wl->seat);
       if (wl->data_device)
       {
-         wl_data_device_add_listener(wl->data_device, &data_device_listener, wl);
+         wl_data_device_add_listener(wl->data_device,
+               &data_device_listener, wl);
          return true;
       }
    }
@@ -579,7 +581,8 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   RARCH_DBG("[Wayland]: Add global %u, interface %s, version %u\n", id, interface, version);
+   RARCH_DBG("[Wayland]: Add global %u, interface %s, version %u\n",
+         id, interface, version);
 
    if (string_is_equal(interface, wl_compositor_interface.name))
       wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
@@ -615,11 +618,13 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl_setup_data_device(wl);
    }
    else if (string_is_equal(interface, zwp_idle_inhibit_manager_v1_interface.name))
-      wl->idle_inhibit_manager = (struct zwp_idle_inhibit_manager_v1*)wl_registry_bind(
-                                  reg, id, &zwp_idle_inhibit_manager_v1_interface, MIN(version, 1));
-   else if (string_is_equal(interface, zxdg_decoration_manager_v1_interface.name))
+      wl->idle_inhibit_manager = (struct zwp_idle_inhibit_manager_v1*)
+         wl_registry_bind(
+            reg, id, &zwp_idle_inhibit_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(
+            interface, zxdg_decoration_manager_v1_interface.name))
       wl->deco_manager = (struct zxdg_decoration_manager_v1*)wl_registry_bind(
-                                  reg, id, &zxdg_decoration_manager_v1_interface, MIN(version, 1));
+            reg, id, &zxdg_decoration_manager_v1_interface, MIN(version, 1));
 }
 
 static void wl_registry_handle_global_remove(void *data,
@@ -710,7 +715,7 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
    return bytes_read;
 }
 
-void* wayland_data_offer_receive(
+static void *wayland_data_offer_receive(
       struct wl_display *display, struct wl_data_offer *offer,
       size_t *length,
       const char* mime_type, bool null_terminate)
