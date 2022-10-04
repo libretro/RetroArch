@@ -36,6 +36,10 @@
 #include "../config.h"
 #endif
 
+#if defined(HAVE_STEAM) && defined(HAVE_MIST)
+#include <mist.h>
+#endif
+
 #ifdef HAVE_CDROM
 #include <vfs/vfs_implementation_cdrom.h>
 #endif
@@ -12753,23 +12757,33 @@ static bool setting_append_list(
                   );
 
 #if !defined(RARCH_MOBILE)
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_BLACK_FRAME_INSERTION))
             {
+#if defined(HAVE_STEAM) && defined(HAVE_MIST)
+               bool on_deck = false;
+               mist_steam_utils_is_steam_running_on_steam_deck(&on_deck);
+               /* We want to not expose Black Frame Insertion on Steam Deck
+                * for safety reasons */
+               if (!on_deck && video_driver_test_all_flags(GFX_CTX_FLAGS_BLACK_FRAME_INSERTION))
+#else
+               if (video_driver_test_all_flags(GFX_CTX_FLAGS_BLACK_FRAME_INSERTION))
+#endif
+               {
 
-               CONFIG_UINT(
-                     list, list_info,
-                     &settings->uints.video_black_frame_insertion,
-                     MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-                     DEFAULT_BLACK_FRAME_INSERTION,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-               menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
-            }  
+                  CONFIG_UINT(
+                        list, list_info,
+                        &settings->uints.video_black_frame_insertion,
+                        MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
+                        MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+                        DEFAULT_BLACK_FRAME_INSERTION,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group,
+                        general_write_handler,
+                        general_read_handler);
+                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+                  menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
+               }  
+            }
 #endif
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(
