@@ -116,5 +116,5 @@ Miscellaneous
 - Brace usage follows "Allman style". The brace associated with a control statement is placed on the following line, 
   indented to the same level as the control statement. 
   Statements within the braces are indented to the next level.
-- A single statement block must not include brackets (unless the block uses a macro that expends into multiple lines)
+- A single statement block must not include brackets (unless the block uses a macro that expands into multiple lines)
 - If possible, avoid 'while (true)' and use 'for (;;)' instead
