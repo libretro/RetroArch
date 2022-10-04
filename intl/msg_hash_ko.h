@@ -11036,6 +11036,10 @@ MSG_HASH(
    "넷플레이 포트 매핑 성공"
    )
 MSG_HASH(
+   MSG_PRIVATE_OR_SHARED_ADDRESS,
+   "외부 네트워크가 개인 또는 공유 주소를 사용하고 있습니다. 중계 서버를 사용하십시오."
+   )
+MSG_HASH(
    MSG_UPNP_FAILED,
    "넷플레이 UPnP 포트 매핑 실패"
    )

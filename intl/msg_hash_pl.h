@@ -10556,6 +10556,10 @@ MSG_HASH(
    "Mapowanie portów Netplay zakończone sukcesem"
    )
 MSG_HASH(
+   MSG_PRIVATE_OR_SHARED_ADDRESS,
+   "Sieć zewnętrzna ma prywatny lub współdzielony adres. Rozważ użycie serwera przekaźnika."
+   )
+MSG_HASH(
    MSG_UPNP_FAILED,
    "Mapowanie portu UPnP Netplay nie powiodło się"
    )

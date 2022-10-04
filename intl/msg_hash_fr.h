@@ -10904,6 +10904,10 @@ MSG_HASH(
    "Mappage du port Netplay réussi"
    )
 MSG_HASH(
+   MSG_PRIVATE_OR_SHARED_ADDRESS,
+   "Le réseau externe possède une adresse privée ou partagée. Envisagez d'utiliser un serveur de relais."
+   )
+MSG_HASH(
    MSG_UPNP_FAILED,
    "Mappage du port de jeu en réseau UPnP échoué"
    )

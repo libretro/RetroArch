@@ -10932,6 +10932,10 @@ MSG_HASH(
    "Asignación de puertos para juego en red completada"
    )
 MSG_HASH(
+   MSG_PRIVATE_OR_SHARED_ADDRESS,
+   "La red externa tiene una dirección privada o compartida. Tal vez deberías utilizar un servidor intermediario."
+   )
+MSG_HASH(
    MSG_UPNP_FAILED,
    "Error al asignar puertos UPnP para juego en red"
    )

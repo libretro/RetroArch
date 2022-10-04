@@ -10800,6 +10800,10 @@ MSG_HASH(
    "Mappatura Porta Netplay Riuscita"
    )
 MSG_HASH(
+   MSG_PRIVATE_OR_SHARED_ADDRESS,
+   "La rete esterna ha un indirizzo privato o condiviso. Considera di usare un server relè."
+   )
+MSG_HASH(
    MSG_UPNP_FAILED,
    "Mappatura Porta UPnP Netplay Non Riuscita"
    )
