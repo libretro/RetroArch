@@ -399,7 +399,7 @@ typedef struct ozone_node
    uintptr_t content_icon;    /* console content icon */
    unsigned height;           /* Entry height */
    unsigned position_y;       /* Entry position Y */
-   unsigned sublabel_lines;   /* Entry sublabel lines */
+   uint8_t sublabel_lines;    /* Entry sublabel lines */
    bool wrap;                 /* Wrap entry? */
 } ozone_node_t;
 
@@ -511,7 +511,6 @@ struct ozone_handle
    unsigned entries_height;
    unsigned theme_dynamic_cursor_state; /* 0 -> 1 -> 0 -> 1 [...] */
    unsigned selection_core_name_lines;
-   unsigned selection_lastplayed_lines;
    unsigned old_list_offset_y;
 
    float dimensions_sidebar_width; /* animated field */
@@ -556,6 +555,7 @@ struct ozone_handle
    int16_t cursor_x_old;
    int16_t cursor_y_old;
 
+   uint8_t selection_lastplayed_lines;
    uint8_t system_tab_end;
    uint8_t tabs[OZONE_SYSTEM_TAB_LAST];
 
@@ -1491,10 +1491,10 @@ static float ozone_last_framebuffer_opacity = -1.0f;
 /* Forward declarations */
 static void ozone_cursor_animation_cb(void *userdata);
 
-static INLINE unsigned ozone_count_lines(const char *str)
+static INLINE uint8_t ozone_count_lines(const char *str)
 {
    unsigned c     = 0;
-   unsigned lines = 1;
+   uint8_t lines  = 1;
 
    for (c = 0; str[c]; c++)
       lines += (str[c] == '\n');
@@ -4873,7 +4873,7 @@ static void ozone_content_metadata_line(
       unsigned column_x,
       const char *text,
       uint32_t color,
-      unsigned lines_count)
+      uint8_t lines_count)
 {
    gfx_display_draw_text(
          ozone->fonts.footer.font,
@@ -5069,7 +5069,7 @@ static void ozone_compute_entries_position(
             if (node->sublabel_lines > 1)
             {
                node->height += (node->sublabel_lines - 1) * ozone->fonts.entries_sublabel.line_height;
-               node->wrap = true;
+               node->wrap    = true;
             }
          }
       }

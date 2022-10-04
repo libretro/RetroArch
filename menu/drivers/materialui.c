@@ -2760,10 +2760,10 @@ static void materialui_scrollbar_init(
 /* Utility functions */
 
 /* > Returns number of lines in a string */
-static unsigned materialui_count_lines(const char *str)
+static uint8_t materialui_count_lines(const char *str)
 {
    unsigned c     = 0;
-   unsigned lines = 1;
+   uint8_t lines  = 1;
 
    for (c = 0; str[c]; c++)
       lines += (str[c] == '\n');
@@ -2772,7 +2772,7 @@ static unsigned materialui_count_lines(const char *str)
 
 /* > Returns number of lines required to display
  *   the sublabel of entry 'entry_idx' */
-static unsigned materialui_count_sublabel_lines(
+static uint8_t materialui_count_sublabel_lines(
       materialui_handle_t* mui, int usable_width,
       size_t entry_idx, bool has_icon)
 {
@@ -2831,7 +2831,7 @@ static void materialui_compute_entries_box_default(
 
    for (i = 0; i < entries_end; i++)
    {
-      unsigned num_sublabel_lines = 0;
+      uint8_t num_sublabel_lines  = 0;
       materialui_node_t *node     = (materialui_node_t*)list->list[i].userdata;
       bool has_icon               = false;
 
@@ -2931,7 +2931,7 @@ static void materialui_compute_entries_box_playlist_list(
 
    for (i = 0; i < entries_end; i++)
    {
-      unsigned num_sublabel_lines = 0;
+      uint8_t num_sublabel_lines  = 0;
       materialui_node_t *node     = (materialui_node_t*)list->list[i].userdata;
 
       if (!node)
