@@ -262,6 +262,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
       ticker.s          = shotname;
       ticker.selected   = true;
       ticker.str        = state->shotname;
+      ticker.spacer     = NULL;
 
       gfx_animation_ticker(&ticker);
 
