@@ -1,4 +1,7 @@
 # Future
+- FILEBROWSER: Fix regression - certain extensions keep disappearing
+- VULKAN/SCREENSHOTS: Fix screenshot widget crash when ticker animating
+- MIST/STEAM/STEAMDECK: Don't expose Black Frame Insertion (BFI) if we are running on a Steam Deck
 
 # 1.11.1
 - GENERAL: Fix DEFAULT_FILL_TITLE_MACRO
