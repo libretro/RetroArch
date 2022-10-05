@@ -544,11 +544,11 @@ static void cocoa_input_free(void *data)
 static uint64_t cocoa_input_get_capabilities(void *data)
 {
    return
-      (1 << RETRO_DEVICE_JOYPAD)   |
-      (1 << RETRO_DEVICE_MOUSE)    |
-      (1 << RETRO_DEVICE_KEYBOARD) |
-      (1 << RETRO_DEVICE_POINTER)  |
-      (1 << RETRO_DEVICE_ANALOG);
+        (1 << RETRO_DEVICE_JOYPAD)
+      | (1 << RETRO_DEVICE_MOUSE)
+      | (1 << RETRO_DEVICE_KEYBOARD)
+      | (1 << RETRO_DEVICE_POINTER)
+      | (1 << RETRO_DEVICE_ANALOG);
 }
 
 input_driver_t input_cocoa = {

@@ -54,8 +54,7 @@ static void *linuxraw_input_init(const char *joypad_driver)
       return NULL;
    }
 
-   linuxraw = (linuxraw_input_t*)calloc(1, sizeof(*linuxraw));
-   if (!linuxraw)
+   if (!(linuxraw = (linuxraw_input_t*)calloc(1, sizeof(*linuxraw))))
       return NULL;
 
    if (!linux_terminal_disable_input())
@@ -196,7 +195,8 @@ static void linuxraw_input_poll(void *data)
 
 static uint64_t linuxraw_get_capabilities(void *data)
 {
-   return (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
+   return (1 << RETRO_DEVICE_JOYPAD) 
+        | (1 << RETRO_DEVICE_ANALOG);
 }
 
 input_driver_t input_linuxraw = {

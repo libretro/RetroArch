@@ -596,16 +596,13 @@ static void x_grab_mouse(void *data, bool state)
 
 static uint64_t x_input_get_capabilities(void *data)
 {
-   uint64_t caps = 0;
-
-   caps |= (1 << RETRO_DEVICE_JOYPAD);
-   caps |= (1 << RETRO_DEVICE_MOUSE);
-   caps |= (1 << RETRO_DEVICE_KEYBOARD);
-   caps |= (1 << RETRO_DEVICE_LIGHTGUN);
-   caps |= (1 << RETRO_DEVICE_POINTER);
-   caps |= (1 << RETRO_DEVICE_ANALOG);
-
-   return caps;
+   return
+           (1 << RETRO_DEVICE_JOYPAD)
+         | (1 << RETRO_DEVICE_MOUSE)
+         | (1 << RETRO_DEVICE_KEYBOARD)
+         | (1 << RETRO_DEVICE_LIGHTGUN)
+         | (1 << RETRO_DEVICE_POINTER)
+         | (1 << RETRO_DEVICE_ANALOG);
 }
 
 input_driver_t input_x = {

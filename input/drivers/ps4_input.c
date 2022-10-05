@@ -126,12 +126,12 @@ static void ps4_input_poll(void *data)
    if (ps4 && ps4->joypad)
       ps4->joypad->poll();
 }
+
 static uint64_t ps4_input_get_capabilities(void *data)
 {
-   return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
+   return   (1 << RETRO_DEVICE_JOYPAD) 
+          | (1 << RETRO_DEVICE_ANALOG);
 }
-
-
 
 input_driver_t input_ps4 = {
    ps4_input_initialize,

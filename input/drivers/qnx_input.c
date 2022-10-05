@@ -833,15 +833,13 @@ static void qnx_input_free_input(void *data)
 
 static uint64_t qnx_input_get_capabilities(void *data)
 {
-    (void)data;
-
     return
-        (1 << RETRO_DEVICE_JOYPAD)   |
-        (1 << RETRO_DEVICE_POINTER)  |
+          (1 << RETRO_DEVICE_JOYPAD)
+        | (1 << RETRO_DEVICE_POINTER)
 #ifdef HAVE_BB10
-        (1 << RETRO_DEVICE_ANALOG)   |
+        | (1 << RETRO_DEVICE_ANALOG)
 #endif
-        (1 << RETRO_DEVICE_KEYBOARD);
+        | (1 << RETRO_DEVICE_KEYBOARD);
 }
 
 input_driver_t input_qnx = {

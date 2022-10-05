@@ -627,17 +627,12 @@ uint64_t cpu_features_get(void)
    size_t len          = sizeof(size_t);
 
    if (sysctlbyname("hw.optional.floatingpoint", NULL, &len, NULL, 0) == 0)
-   {
       cpu |= RETRO_SIMD_CMOV;
-   }
 
 #if defined(CPU_X86)
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.mmx", NULL, &len, NULL, 0) == 0)
-   {
-      cpu |= RETRO_SIMD_MMX;
-      cpu |= RETRO_SIMD_MMXEXT;
-   }
+      cpu |= RETRO_SIMD_MMX | RETRO_SIMD_MMXEXT;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.sse", NULL, &len, NULL, 0) == 0)
@@ -693,9 +688,7 @@ uint64_t cpu_features_get(void)
       cpu |= RETRO_SIMD_VFPV4;
 #endif
 #elif defined(_XBOX1)
-   cpu |= RETRO_SIMD_MMX;
-   cpu |= RETRO_SIMD_SSE;
-   cpu |= RETRO_SIMD_MMXEXT;
+   cpu |= RETRO_SIMD_MMX | RETRO_SIMD_SSE | RETRO_SIMD_MMXEXT;
 #elif defined(CPU_X86)
    unsigned max_flag   = 0;
    int flags[4];
@@ -729,12 +722,9 @@ uint64_t cpu_features_get(void)
    if (flags[3] & (1 << 23))
       cpu |= RETRO_SIMD_MMX;
 
+   /* SSE also implies MMXEXT (according to FFmpeg source). */
    if (flags[3] & (1 << 25))
-   {
-      /* SSE also implies MMXEXT (according to FFmpeg source). */
-      cpu |= RETRO_SIMD_SSE;
-      cpu |= RETRO_SIMD_MMXEXT;
-   }
+      cpu |= RETRO_SIMD_SSE | RETRO_SIMD_MMXEXT;
 
    if (flags[3] & (1 << 26))
       cpu |= RETRO_SIMD_SSE2;

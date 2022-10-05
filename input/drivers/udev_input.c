@@ -1496,11 +1496,11 @@ error:
 static uint64_t udev_input_get_capabilities(void *data)
 {
    return
-      (1 << RETRO_DEVICE_JOYPAD)   |
-      (1 << RETRO_DEVICE_ANALOG)   |
-      (1 << RETRO_DEVICE_KEYBOARD) |
-      (1 << RETRO_DEVICE_MOUSE)    |
-      (1 << RETRO_DEVICE_LIGHTGUN);
+        (1 << RETRO_DEVICE_JOYPAD)
+      | (1 << RETRO_DEVICE_ANALOG)
+      | (1 << RETRO_DEVICE_KEYBOARD)
+      | (1 << RETRO_DEVICE_MOUSE)
+      | (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
 static void udev_input_grab_mouse(void *data, bool state)

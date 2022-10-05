@@ -1694,11 +1694,11 @@ static void android_input_free_input(void *data)
 static uint64_t android_input_get_capabilities(void *data)
 {
    return
-      (1 << RETRO_DEVICE_JOYPAD)  |
-      (1 << RETRO_DEVICE_POINTER) |
-      (1 << RETRO_DEVICE_KEYBOARD)  |
-      (1 << RETRO_DEVICE_LIGHTGUN)  |
-      (1 << RETRO_DEVICE_ANALOG);
+        (1 << RETRO_DEVICE_JOYPAD)
+      | (1 << RETRO_DEVICE_POINTER)
+      | (1 << RETRO_DEVICE_KEYBOARD)
+      | (1 << RETRO_DEVICE_LIGHTGUN)
+      | (1 << RETRO_DEVICE_ANALOG);
 }
 
 static void android_input_enable_sensor_manager(struct android_app *android_app)
