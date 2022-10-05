@@ -1,7 +1,9 @@
 # Future
 - FILEBROWSER: Fix regression - certain extensions keep disappearing
-- VULKAN/SCREENSHOTS: Fix screenshot widget crash when ticker animating
 - MIST/STEAM/STEAMDECK: Don't expose Black Frame Insertion (BFI) if we are running on a Steam Deck
+- NETWORKING/WINDOWS: Disable poll support for MSVC 2010 and earlier. WSAPoll is not supported on Windows XP and earlier.
+- SCREENSHOTS/VULKAN: Unload screenshot widget texture early. Fixes Vulkan crash when closing content while a screenshot widget is still on-screen
+- SCREENSHOTS/VULKAN: Fix screenshot widget crash when ticker animating
 
 # 1.11.1
 - GENERAL: Fix DEFAULT_FILL_TITLE_MACRO
