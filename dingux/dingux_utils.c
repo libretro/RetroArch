@@ -60,20 +60,18 @@
  * the IPU hardware scaler */
 bool dingux_ipu_set_downscaling_enable(bool enable)
 {
-#if defined(DINGUX_BETA)
-   return true;
-#else
+#if !defined(DINGUX_BETA)
    const char *path       = DINGUX_ALLOW_DOWNSCALING_FILE;
    const char *enable_str = enable ? "1" : "0";
-
    /* Check whether file exists */
    if (!path_is_valid(path))
       return false;
-
    /* Write enable state to file */
-   return filestream_write_file(
-         path, enable_str, 1);
+   if (!filestream_write_file(
+            path, enable_str, 1))
+      return false;
 #endif
+   return true;
 }
 
 /* Sets the video scaling mode when using the
@@ -197,8 +195,8 @@ float dingux_set_video_refresh_rate(enum dingux_refresh_rate refresh_rate)
    switch (refresh_rate)
    {
       case DINGUX_REFRESH_RATE_50HZ:
-         refresh_rate_float = 50.0f;
-         refresh_rate_str   = "50";
+         refresh_rate_float     = 50.0f;
+         refresh_rate_str       = "50";
          break;
       default:
          /* Refresh rate is already set to 60 Hz
@@ -207,7 +205,7 @@ float dingux_set_video_refresh_rate(enum dingux_refresh_rate refresh_rate)
    }
 
    if (setenv(DINGUX_VIDEO_REFRESHRATE_ENVAR, refresh_rate_str, 1) != 0)
-      refresh_rate_float = 0.0f;
+      return 0.0f;
 
    return refresh_rate_float;
 }
@@ -266,14 +264,10 @@ static uint64_t read_battery_ignore_size(const char *path)
 
    memset(file_buf, 0, sizeof(file_buf));
 
-   file              = filestream_open(path,
+   if (!(file = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
-   {
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return -1;
-   }
 
    file_len = filestream_read(file, file_buf, sizeof(file_buf) - 1);
    if (filestream_close(file) != 0)
@@ -291,25 +285,32 @@ int retrofw_get_battery_level(enum frontend_powerstate *state)
    /* retrofw battery only provides "voltage_now". Values are based on gmenu2x with some interpolation */
    uint32_t rawval = read_battery_ignore_size(RETROFW_BATTERY_VOLTAGE_NOW_FILE);
    int voltage_now = rawval & 0x7fffffff;
-   if (voltage_now > 10000) {
+   if (voltage_now > 10000)
+   {
       *state = FRONTEND_POWERSTATE_NONE;
       return -1;
    }
-   if (rawval & 0x80000000) {
+   if (rawval & 0x80000000)
+   {
       *state = FRONTEND_POWERSTATE_CHARGING;
       if (voltage_now > 4000)
-	 *state = FRONTEND_POWERSTATE_CHARGED;
-   } else
+         *state = FRONTEND_POWERSTATE_CHARGED;
+   }
+   else
       *state = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
-   if (voltage_now < 0) return -1;     // voltage_now not available
-   if (voltage_now > 4000) return 100;
-   if (voltage_now > 3700) return 40 + (voltage_now - 3700) / 5;
-   if (voltage_now > 3520) return 20 + (voltage_now - 3520) / 9;
-   if (voltage_now > 3330) return 1 + (voltage_now - 3330) * 10;
+   if (voltage_now < 0)
+      return -1; /* voltage_now not available */
+   if (voltage_now > 4000)
+      return 100;
+   if (voltage_now > 3700)
+      return 40 + (voltage_now - 3700) / 5;
+   if (voltage_now > 3520)
+      return 20 + (voltage_now - 3520) / 9;
+   if (voltage_now > 3330)
+      return 1 + (voltage_now - 3330) * 10;
    return 0;
 }
 #else
-
 static int dingux_read_battery_sys_file(const char *path)
 {
    int64_t file_len   = 0;
@@ -376,20 +377,33 @@ int dingux_get_battery_level(void)
    /* miyoo-battery only provides "voltage_now". Results are based on
     * value distribution while running a game at max load. */
    int voltage_now = dingux_read_battery_sys_file(MIYOO_BATTERY_VOLTAGE_NOW_FILE);
-   if (voltage_now < 0) return -1;     // voltage_now not available
-   if (voltage_now > 4300) return 100; // 4320
-   if (voltage_now > 4200) return 90;  // 4230
-   if (voltage_now > 4100) return 80;  // 4140
-   if (voltage_now > 4000) return 70;  // 4050
-   if (voltage_now > 3900) return 60;  // 3960
-   if (voltage_now > 3800) return 50;  // 3870
-   if (voltage_now > 3700) return 40;  // 3780
-   if (voltage_now > 3600) return 30;  // 3690
-   if (voltage_now > 3550) return 20;  // 3600
-   if (voltage_now > 3500) return 10;  // 3510
-   if (voltage_now > 3400) return 5;   // 3420
-   if (voltage_now > 3300) return 1;   // 3330
-   return 0;                           // 3240
+   if (voltage_now < 0)
+      return -1;     /* voltage_now not available */
+   if (voltage_now > 4300)
+      return 100;    /* 4320 */
+   if (voltage_now > 4200)
+      return 90;     /* 4230 */
+   if (voltage_now > 4100)
+      return 80;     /* 4140 */
+   if (voltage_now > 4000)
+      return 70;     /* 4050 */
+   if (voltage_now > 3900)
+      return 60;     /* 3960 */
+   if (voltage_now > 3800)
+      return 50;     /* 3870 */
+   if (voltage_now > 3700)
+      return 40;     /* 3780 */
+   if (voltage_now > 3600)
+      return 30;     /* 3690 */
+   if (voltage_now > 3550)
+      return 20;     /* 3600 */
+   if (voltage_now > 3500)
+      return 10;     /* 3510 */
+   if (voltage_now > 3400)
+      return 5;      /* 3420 */
+   if (voltage_now > 3300)
+      return 1;      /* 3330 */
+   return 0;         /* 3240 */
 #else
    return dingux_read_battery_sys_file(DINGUX_BATTERY_CAPACITY_FILE);
 #endif
@@ -417,10 +431,8 @@ void dingux_get_base_path(char *path, size_t len)
     * path on the external microsd card */
 
    /* Get list of directories in /media */
-   dir_list = dir_list_new(DINGUX_RS90_MEDIA_PATH,
-         NULL, true, true, false, false);
-
-   if (dir_list)
+   if ((dir_list = dir_list_new(DINGUX_RS90_MEDIA_PATH,
+         NULL, true, true, false, false)))
    {
       size_t i;
       bool path_found = false;
@@ -458,15 +470,14 @@ void dingux_get_base_path(char *path, size_t len)
          return;
    }
 #endif
-   /* Get home directory */
-   home = getenv(DINGUX_HOME_ENVAR);
-
-   /* If a home directory is found (which should
+   /* Get home directory
+    *
+    * If a home directory is found (which should
     * always be the case), base path is "$HOME/.retroarch"
     * > If home path is unset, use existing UNIX frontend
     *   driver default of "retroarch" (this will ultimately
     *   fail, but there is nothing else we can do...) */
-   if (home)
+   if ((home = getenv(DINGUX_HOME_ENVAR)))
       snprintf(path, len, "%s%c%s", home,
             PATH_DEFAULT_SLASH_C(), DINGUX_BASE_DIR_HIDDEN);
    else
