@@ -963,7 +963,7 @@ int setting_generic_action_ok_default(
       return -1;
 
    if (setting->cmd_trigger_idx != CMD_EVENT_NONE)
-      setting->cmd_trigger_event_triggered = true;
+      setting->flags |= SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED;
 
    return 0;
 }
@@ -976,7 +976,8 @@ void setting_generic_handle_change(rarch_setting_t *setting)
    if (setting->change_handler)
       setting->change_handler(setting);
 
-   if (setting->cmd_trigger_idx && !setting->cmd_trigger_event_triggered)
+   if (       setting->cmd_trigger_idx 
+         && !(setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED))
       command_event(setting->cmd_trigger_idx, NULL);
 }
 
@@ -1394,8 +1395,7 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
 
-   result.cmd_trigger_idx                  = CMD_EVENT_NONE;
-   result.cmd_trigger_event_triggered      = false;
+   result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
    if (dont_use_enum_idx)
       result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
@@ -1457,8 +1457,7 @@ static rarch_setting_t setting_group_setting(
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
 
-   result.cmd_trigger_idx                  = CMD_EVENT_NONE;
-   result.cmd_trigger_event_triggered      = false;
+   result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
    return result;
 }
@@ -1531,8 +1530,7 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.original_value.fraction   = *target;
    result.default_value.fraction    = default_value;
 
-   result.cmd_trigger_idx                  = CMD_EVENT_NONE;
-   result.cmd_trigger_event_triggered      = false;
+   result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
    if (dont_use_enum_idx)
       result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
@@ -1608,7 +1606,6 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.default_value.unsigned_integer  = default_value;
 
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
-   result.cmd_trigger_event_triggered      = false;
 
    if (dont_use_enum_idx)
       result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
@@ -1681,12 +1678,11 @@ static rarch_setting_t setting_size_setting(const char* name,
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
 
-   result.value.target.sizet   = target;
-   result.original_value.sizet = *target;
-   result.default_value.sizet  = default_value;
+   result.value.target.sizet        = target;
+   result.original_value.sizet      = *target;
+   result.default_value.sizet       = default_value;
 
-   result.cmd_trigger_idx                  = CMD_EVENT_NONE;
-   result.cmd_trigger_event_triggered      = false;
+   result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
    if (dont_use_enum_idx)
       result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
@@ -1763,7 +1759,6 @@ static rarch_setting_t setting_hex_setting(const char* name,
    result.default_value.unsigned_integer  = default_value;
 
    result.cmd_trigger_idx                  = CMD_EVENT_NONE;
-   result.cmd_trigger_event_triggered      = false;
 
    if (dont_use_enum_idx)
       result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
@@ -1839,8 +1834,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
    result.value.target.keybind      = target;
    result.default_value.keybind     = default_value;
 
-   result.cmd_trigger_idx                  = CMD_EVENT_NONE;
-   result.cmd_trigger_event_triggered      = false;
+   result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
    if (dont_use_enum_idx)
       result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
@@ -1970,8 +1964,7 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
    result.value.target.string       = target;
    result.default_value.string      = default_value;
 
-   result.cmd_trigger_idx                  = CMD_EVENT_NONE;
-   result.cmd_trigger_event_triggered      = false;
+   result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
    switch (type)
    {
@@ -2089,8 +2082,7 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
    result.step                      = 0.0f;
    result.rounding_fraction         = NULL;
 
-   result.cmd_trigger_idx                  = CMD_EVENT_NONE;
-   result.cmd_trigger_event_triggered      = false;
+   result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
    if (dont_use_enum_idx)
       result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
@@ -2169,8 +2161,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.boolean.off_label         = off;
    result.boolean.on_label          = on;
 
-   result.cmd_trigger_idx                  = CMD_EVENT_NONE;
-   result.cmd_trigger_event_triggered      = false;
+   result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
    if (dont_use_enum_idx)
       result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
@@ -2245,8 +2236,7 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.original_value.integer    = *target;
    result.default_value.integer     = default_value;
 
-   result.cmd_trigger_idx                  = CMD_EVENT_NONE;
-   result.cmd_trigger_event_triggered      = false;
+   result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
    if (dont_use_enum_idx)
       result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
@@ -7044,9 +7034,9 @@ int menu_setting_generic(rarch_setting_t *setting, size_t idx, bool wraparound)
    if (setting->change_handler)
       setting->change_handler(setting);
 
-   if ((flags & SD_FLAG_EXIT) && setting->cmd_trigger_event_triggered)
+   if ((flags & SD_FLAG_EXIT) && (flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED))
    {
-      setting->cmd_trigger_event_triggered = false;
+      setting->flags &= ~SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED;
       return -1;
    }
 
@@ -7736,7 +7726,7 @@ static enum event_command write_handler_get_cmd(rarch_setting_t *setting)
          if (*setting->value.target.boolean)
             *setting->value.target.boolean = false;
 
-      if (setting->cmd_trigger_event_triggered ||
+      if (  (setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED) ||
             (setting->flags & SD_FLAG_CMD_APPLY_AUTO))
          return setting->cmd_trigger_idx;
    }
@@ -7765,7 +7755,7 @@ static void write_handler_audio_rate_control_delta(rarch_setting_t *setting)
       audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
    }
 
-   if (rarch_cmd || setting->cmd_trigger_event_triggered)
+   if (rarch_cmd || (setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED))
       command_event(rarch_cmd, NULL);
 }
 
@@ -7794,7 +7784,7 @@ static void write_handler_logging_verbosity(rarch_setting_t *setting)
    }
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
 
-   if (rarch_cmd || setting->cmd_trigger_event_triggered)
+   if (rarch_cmd || (setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED))
       command_event(rarch_cmd, NULL);
 }
 
@@ -8538,7 +8528,7 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
    }
 
-   if (rarch_cmd || setting->cmd_trigger_event_triggered)
+   if (rarch_cmd || (setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED))
       command_event(rarch_cmd, NULL);
 }
 
@@ -21780,7 +21770,6 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].original_value.fraction          = 0.0f; \
    (*&list)[pos].dir.empty_path                   = NULL; \
    (*&list)[pos].cmd_trigger_idx                  = CMD_EVENT_NONE; \
-   (*&list)[pos].cmd_trigger_event_triggered      = false; \
    (*&list)[pos].boolean.off_label                = NULL; \
    (*&list)[pos].boolean.on_label                 = NULL; \
 }
