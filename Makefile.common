@@ -2138,7 +2138,8 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    ifneq ($(findstring Win32,$(OS)),)
-      LIBS += -lws2_32 -liphlpapi
+      DEFINES += -DNETWORK_HAVE_POLL
+      LIBS    += -lws2_32 -liphlpapi
    endif
 
    # Netplay
