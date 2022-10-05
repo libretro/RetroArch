@@ -2365,10 +2365,9 @@ static bool menu_driver_displaylist_push_internal(
       if (string_is_empty(dir_playlist))
       {
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         info->flags |= MD_FLAG_NEED_REFRESH;
-         info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
-         info->flags |= MD_FLAG_NEED_PUSH;
-
+         info->flags |= MD_FLAG_NEED_REFRESH
+                      | MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES
+                      | MD_FLAG_NEED_PUSH;
          return true;
       }
 

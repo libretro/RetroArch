@@ -8680,8 +8680,7 @@ static int ozone_list_push(void *data, void *userdata,
                      MENU_SETTING_ACTION, 0, 0, NULL);
             }
 
-            info->flags |= MD_FLAG_NEED_PUSH;
-            info->flags |= MD_FLAG_NEED_REFRESH;
+            info->flags |= MD_FLAG_NEED_PUSH | MD_FLAG_NEED_REFRESH;
             ret          = 0;
          }
          break;
