@@ -1019,7 +1019,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
 {
    char *ptr;
    float min, max;
-   uint64_t flags;
+   uint32_t flags;
    if (!setting || !value)
       return -1;
 
@@ -1033,9 +1033,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          *setting->value.target.integer = (int)strtol(value, &ptr, 10);
          if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.integer < min)
+            if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.integer < min)
                *setting->value.target.integer = min;
-            if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.integer > max)
+            if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.integer > max)
             {
                settings_t *settings = config_get_ptr();
                if (settings && settings->bools.menu_navigation_wraparound_enable)
@@ -1049,9 +1049,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 10);
          if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.unsigned_integer < min)
+            if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.unsigned_integer < min)
                *setting->value.target.unsigned_integer = min;
-            if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.unsigned_integer > max)
+            if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.unsigned_integer > max)
             {
                settings_t *settings = config_get_ptr();
                if (settings && settings->bools.menu_navigation_wraparound_enable)
@@ -1065,9 +1065,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          sscanf(value, "%" PRI_SIZET, setting->value.target.sizet);
          if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.sizet < min)
+            if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.sizet < min)
                *setting->value.target.sizet = min;
-            if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.sizet > max)
+            if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.sizet > max)
             {
                settings_t *settings = config_get_ptr();
                if (settings && settings->bools.menu_navigation_wraparound_enable)
@@ -1082,9 +1082,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          *setting->value.target.fraction = (float)strtod(value, &ptr);
          if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.fraction < min)
+            if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.fraction < min)
                *setting->value.target.fraction = min;
-            if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.fraction > max)
+            if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.fraction > max)
             {
                settings_t *settings = config_get_ptr();
                if (settings && settings->bools.menu_navigation_wraparound_enable)
@@ -7027,7 +7027,7 @@ static void menu_settings_list_current_add_range(
 
 int menu_setting_generic(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   uint64_t flags = setting->flags;
+   uint32_t flags = setting->flags;
    if (setting_generic_action_ok_default(setting, idx, wraparound) != 0)
       return -1;
 
@@ -7722,12 +7722,13 @@ static enum event_command write_handler_get_cmd(rarch_setting_t *setting)
 {
    if (setting && setting->cmd_trigger_idx != CMD_EVENT_NONE)
    {
-      if (setting->flags & SD_FLAG_EXIT)
+      uint32_t flags = setting->flags;
+      if (flags & SD_FLAG_EXIT)
          if (*setting->value.target.boolean)
             *setting->value.target.boolean = false;
 
-      if (  (setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED) ||
-            (setting->flags & SD_FLAG_CMD_APPLY_AUTO))
+      if (  (flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED) ||
+            (flags & SD_FLAG_CMD_APPLY_AUTO))
          return setting->cmd_trigger_idx;
    }
    return CMD_EVENT_NONE;
@@ -21705,7 +21706,7 @@ void menu_setting_free(rarch_setting_t *setting)
 
    /* Free data which was previously tagged */
    for (; setting->type != ST_NONE; (*list = *list + 1))
-      for (values = (unsigned)setting->free_flags, n = 0; values != 0; values >>= 1, n++)
+      for (values = setting->free_flags, n = 0; values != 0; values >>= 1, n++)
          if (values & 1)
             switch (1 << n)
             {

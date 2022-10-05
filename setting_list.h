@@ -117,9 +117,6 @@ struct rarch_setting_group_info
 struct rarch_setting
 {
 
-   uint64_t            flags;
-   uint64_t            free_flags;
-
    float               min;
    float               max;
    struct
@@ -186,6 +183,8 @@ struct rarch_setting
       bool           boolean;
    } original_value;
 
+   uint32_t             flags;
+   uint32_t             free_flags;
    uint32_t             index_offset;
    uint32_t             size;
    unsigned             bind_type;

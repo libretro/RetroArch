@@ -3119,7 +3119,7 @@ int menu_displaylist_parse_settings_enum(
       ST_NONE,                   /* PARSE_SUB_GROUP           */
       ST_SIZE,                   /* PARSE_ONLY_SIZE           */
    };
-   uint64_t flags;
+   uint32_t flags;
    enum setting_type precond   = precond_lut[parse_type];
    size_t             count    = 0;
 
