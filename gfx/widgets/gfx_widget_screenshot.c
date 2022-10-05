@@ -193,6 +193,11 @@ static void gfx_widget_screenshot_free(void)
    gfx_widget_screenshot_dispose(NULL);
 }
 
+static void gfx_widget_screenshot_context_destroy(void)
+{
+   gfx_widget_screenshot_dispose(NULL);
+}
+
 static void gfx_widget_screenshot_frame(void* data, void *user_data)
 {
    static float pure_white[16]          = {
@@ -379,7 +384,7 @@ const gfx_widget_t gfx_widget_screenshot = {
    gfx_widget_screenshot_init,
    gfx_widget_screenshot_free,
    NULL, /* context_reset*/
-   NULL, /* context_destroy */
+   gfx_widget_screenshot_context_destroy,
    NULL, /* layout */
    gfx_widget_screenshot_iterate,
    gfx_widget_screenshot_frame
