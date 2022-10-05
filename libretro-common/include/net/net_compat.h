@@ -43,7 +43,16 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
+#if _MSC_VER && _MSC_VER <= 1600
+/* If we are using MSVC2010 or lower, disable WSAPoll support 
+ * to ensure Windows XP and earlier backwards compatibility */
+#else
+#ifndef WIN32_SUPPORTS_POLL
+#define WIN32_SUPPORTS_POLL 1
+#endif
+#endif
+
+#if defined(WIN32_SUPPORTS_POLL) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
 #define NETWORK_HAVE_POLL 1
 #endif
 
