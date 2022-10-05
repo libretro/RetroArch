@@ -10748,6 +10748,10 @@ MSG_HASH(
    "Mapování Portů Netplay bylo Úspěšné"
    )
 MSG_HASH(
+   MSG_PRIVATE_OR_SHARED_ADDRESS,
+   "Externí síť má soukromou nebo sdílenou adresu. Zvažte použití přenosového serveru."
+   )
+MSG_HASH(
    MSG_UPNP_FAILED,
    "Mapování Portů Netplay UPnP Selhalo"
    )
