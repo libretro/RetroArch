@@ -1265,7 +1265,7 @@ static void gfx_widgets_draw_task_msg(
       float radians = 0.0f; /* rad                        */
       float cosine  = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
       float sine    = 0.0f; /* sine(rad) = sine(0) = 0.0f */
-      if (!msg->flags & DISPWIDG_FLAG_TASK_FINISHED)
+      if (!(msg->flags & DISPWIDG_FLAG_TASK_FINISHED))
       {
          radians    = msg->hourglass_rotation;
          cosine     = cosf(radians);
