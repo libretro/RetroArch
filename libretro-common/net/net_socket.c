@@ -769,8 +769,8 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
       int       error = -1;
       socklen_t errsz = sizeof(error);
 
-      getsockopt(fd, SOL_SOCKET, SO_ERROR, (char*)&error, &errsz);
-      if (error)
+      /* Only error out here if the getsockopt() call succeeds and error is still set. */
+      if(!getsockopt(fd, SOL_SOCKET, SO_ERROR, (char*)&error, &errsz) && error)
          return false;
    }
 #endif
