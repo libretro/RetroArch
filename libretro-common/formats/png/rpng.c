@@ -82,6 +82,13 @@ struct idat_buffer
    size_t size;
 };
 
+enum rpng_process_flags
+{
+   RPNG_PROCESS_FLAG_INFLATE_INITIALIZED    = (1 << 0),
+   RPNG_PROCESS_FLAG_ADAM7_PASS_INITIALIZED = (1 << 1),
+   RPNG_PROCESS_FLAG_PASS_INITIALIZED       = (1 << 2)
+};
+
 struct rpng_process
 {
    uint32_t *data;
@@ -106,9 +113,16 @@ struct rpng_process
    unsigned pass_width;
    unsigned pass_height;
    unsigned pass_pos;
-   bool inflate_initialized;
-   bool adam7_pass_initialized;
-   bool pass_initialized;
+   uint8_t flags;
+};
+
+enum rpng_flags
+{
+   RPNG_FLAG_HAS_IHDR = (1 << 0),
+   RPNG_FLAG_HAS_IDAT = (1 << 1),
+   RPNG_FLAG_HAS_IEND = (1 << 2),
+   RPNG_FLAG_HAS_PLTE = (1 << 3),
+   RPNG_FLAG_HAS_TRNS = (1 << 4)
 };
 
 struct rpng
@@ -119,11 +133,7 @@ struct rpng
    struct idat_buffer idat_buf; /* ptr alignment */
    struct png_ihdr ihdr; /* uint32 alignment */
    uint32_t palette[256];
-   bool has_ihdr;
-   bool has_idat;
-   bool has_iend;
-   bool has_plte;
-   bool has_trns;
+   uint8_t flags;
 };
 
 static const struct adam7_pass rpng_passes[] = {
@@ -485,7 +495,7 @@ static void rpng_reverse_filter_deinit(struct rpng_process *pngp)
       free(pngp->prev_scanline);
    pngp->prev_scanline    = NULL;
 
-   pngp->pass_initialized = false;
+   pngp->flags           &= ~RPNG_PROCESS_FLAG_PASS_INITIALIZED;
    pngp->h                = 0;
 }
 
@@ -494,7 +504,8 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
 {
    size_t pass_size;
 
-   if (!pngp->adam7_pass_initialized && ihdr->interlace)
+   if (   !(pngp->flags & RPNG_PROCESS_FLAG_ADAM7_PASS_INITIALIZED) 
+         && ihdr->interlace)
    {
       if (     ihdr->width  <= rpng_passes[pngp->pass_pos].x
             || ihdr->height <= rpng_passes[pngp->pass_pos].y) /* Empty pass */
@@ -524,12 +535,12 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
          return -1;
       }
 
-      pngp->adam7_pass_initialized = true;
+      pngp->flags |= RPNG_PROCESS_FLAG_ADAM7_PASS_INITIALIZED;
 
       return 0;
    }
 
-   if (pngp->pass_initialized)
+   if (pngp->flags & RPNG_PROCESS_FLAG_PASS_INITIALIZED)
       return 0;
 
    rpng_pass_geom(ihdr, ihdr->width, ihdr->height, &pngp->bpp, &pngp->pitch, &pass_size);
@@ -545,8 +556,8 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
    if (!pngp->prev_scanline || !pngp->decoded_scanline)
       goto error;
 
-   pngp->h = 0;
-   pngp->pass_initialized = true;
+   pngp->h                    = 0;
+   pngp->flags               |= RPNG_PROCESS_FLAG_PASS_INITIALIZED;
 
    return 0;
 
@@ -702,11 +713,11 @@ static int rpng_reverse_filter_adam7_iterate(uint32_t **data_,
 
    free(pngp->data);
 
-   pngp->data = NULL;
-   pngp->pass_width  = 0;
-   pngp->pass_height = 0;
-   pngp->pass_size   = 0;
-   pngp->adam7_pass_initialized = false;
+   pngp->data                   = NULL;
+   pngp->pass_width             = 0;
+   pngp->pass_height            = 0;
+   pngp->pass_size              = 0;
+   pngp->flags                 &= ~RPNG_PROCESS_FLAG_ADAM7_PASS_INITIALIZED;
 
    return IMAGE_PROCESS_NEXT;
 }
@@ -790,12 +801,12 @@ end:
       if (rpng_reverse_filter_init(&rpng->ihdr, process) == -1)
          goto false_end;
 
-   process->inflate_initialized = true;
+   process->flags              |=  RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
    return 1;
 
 error:
 false_end:
-   process->inflate_initialized = false;
+   process->flags              &= ~RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
    return -1;
 }
 
@@ -818,9 +829,7 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng)
    if (!process)
       return NULL;
 
-   process->inflate_initialized    = false;
-   process->adam7_pass_initialized = false;
-   process->pass_initialized       = false;
+   process->flags                  = 0;
    process->prev_scanline          = NULL;
    process->decoded_scanline       = NULL;
    process->inflate_buf            = NULL;
@@ -993,7 +1002,9 @@ bool rpng_iterate_image(rpng_t *rpng)
          return false;
 
       case PNG_CHUNK_IHDR:
-         if (rpng->has_ihdr || rpng->has_idat || rpng->has_iend)
+         if (     (rpng->flags & RPNG_FLAG_HAS_IHDR) 
+               || (rpng->flags & RPNG_FLAG_HAS_IDAT)
+               || (rpng->flags & RPNG_FLAG_HAS_IEND))
             return false;
 
          if (chunk_size != 13)
@@ -1026,7 +1037,7 @@ bool rpng_iterate_image(rpng_t *rpng)
             return false;
          }
 
-         rpng->has_ihdr = true;
+         rpng->flags   |= RPNG_FLAG_HAS_IHDR;
          break;
 
       case PNG_CHUNK_PLTE:
@@ -1039,11 +1050,11 @@ bool rpng_iterate_image(rpng_t *rpng)
             if (chunk_size % 3)
                return false;
 
-            if (     !rpng->has_ihdr 
-                  ||  rpng->has_plte 
-                  ||  rpng->has_iend 
-                  ||  rpng->has_idat
-                  ||  rpng->has_trns)
+            if (     !(rpng->flags & RPNG_FLAG_HAS_IHDR)
+                  ||  (rpng->flags & RPNG_FLAG_HAS_PLTE)
+                  ||  (rpng->flags & RPNG_FLAG_HAS_IEND)
+                  ||  (rpng->flags & RPNG_FLAG_HAS_IDAT)
+                  ||  (rpng->flags & RPNG_FLAG_HAS_TRNS))
                return false;
 
             buf += 8;
@@ -1056,12 +1067,12 @@ bool rpng_iterate_image(rpng_t *rpng)
                rpng->palette[i] = (r << 16) | (g << 8) | (b << 0) | (0xffu << 24);
             }
 
-            rpng->has_plte = true;
+            rpng->flags        |= RPNG_FLAG_HAS_PLTE;
          }
          break;
 
       case PNG_CHUNK_tRNS:
-         if (rpng->has_idat)
+         if (rpng->flags & RPNG_FLAG_HAS_IDAT)
             return false;
 
          if (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT)
@@ -1080,11 +1091,15 @@ bool rpng_iterate_image(rpng_t *rpng)
          }
          /* TODO: support colorkey in grayscale and truecolor images */
 
-         rpng->has_trns = true;
+         rpng->flags         |= RPNG_FLAG_HAS_TRNS;
          break;
 
       case PNG_CHUNK_IDAT:
-         if (!(rpng->has_ihdr) || rpng->has_iend || (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT && !(rpng->has_plte)))
+         if (     !(rpng->flags & RPNG_FLAG_HAS_IHDR) 
+               ||  (rpng->flags & RPNG_FLAG_HAS_IEND)
+               ||  (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT 
+                  && 
+                  !(rpng->flags & RPNG_FLAG_HAS_PLTE)))
             return false;
 
          if (!rpng_realloc_idat(&rpng->idat_buf, chunk_size))
@@ -1097,14 +1112,15 @@ bool rpng_iterate_image(rpng_t *rpng)
 
          rpng->idat_buf.size += chunk_size;
 
-         rpng->has_idat = true;
+         rpng->flags         |= RPNG_FLAG_HAS_IDAT;
          break;
 
       case PNG_CHUNK_IEND:
-         if (!(rpng->has_ihdr) || !(rpng->has_idat))
+         if (     !(rpng->flags & RPNG_FLAG_HAS_IHDR) 
+               || !(rpng->flags & RPNG_FLAG_HAS_IDAT))
             return false;
 
-         rpng->has_iend = true;
+         rpng->flags         |= RPNG_FLAG_HAS_IEND;
          return false;
    }
 
@@ -1132,7 +1148,7 @@ int rpng_process_image(rpng_t *rpng,
       return IMAGE_PROCESS_NEXT;
    }
 
-   if (!rpng->process->inflate_initialized)
+   if (!(rpng->process->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED))
    {
       if (rpng_load_image_argb_process_inflate_init(rpng, data) == -1)
          goto error;
@@ -1215,7 +1231,10 @@ bool rpng_start(rpng_t *rpng)
  **/
 bool rpng_is_valid(rpng_t *rpng)
 {
-   return (rpng && rpng->has_ihdr && rpng->has_idat && rpng->has_iend);
+   return (  rpng 
+         && (rpng->flags & RPNG_FLAG_HAS_IHDR)
+         && (rpng->flags & RPNG_FLAG_HAS_IDAT)
+         && (rpng->flags & RPNG_FLAG_HAS_IEND));
 }
 
 bool rpng_set_buf_ptr(rpng_t *rpng, void *data, size_t len)
