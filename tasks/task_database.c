@@ -57,6 +57,14 @@ typedef struct database_state_handle
    char serial[4096];
 } database_state_handle_t;
 
+enum db_flags_enum
+{
+   DB_HANDLE_FLAG_IS_DIRECTORY            = (1 << 0),
+   DB_HANDLE_FLAG_SCAN_STARTED            = (1 << 1),
+   DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH = (1 << 2),
+   DB_HANDLE_FLAG_SHOW_HIDDEN_FILES       = (1 << 3)
+};
+
 typedef struct db_handle
 {
    char *playlist_directory;
@@ -66,10 +74,7 @@ typedef struct db_handle
    database_state_handle_t state;
    playlist_config_t playlist_config; /* size_t alignment */
    unsigned status;
-   bool is_directory;
-   bool scan_started;
-   bool scan_without_core_match;
-   bool show_hidden_files;
+   uint8_t flags;
 } db_handle_t;
 
 static const char *database_info_get_current_name(
@@ -853,7 +858,7 @@ static int task_database_iterate_crc_lookup(
 
       query[0] = '\0';
 
-      if (!_db->scan_without_core_match)
+      if (!(_db->flags & DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH))
       {
          /* don't scan files that can't be in this database.
           *
@@ -1111,16 +1116,16 @@ static void task_database_handler(retro_task_t *task)
    if (!db)
       goto task_finished;
 
-   if (!db->scan_started)
+   if (!(db->flags & DB_HANDLE_FLAG_SCAN_STARTED))
    {
-      db->scan_started = true;
+      db->flags       |= DB_HANDLE_FLAG_SCAN_STARTED;
 
       if (!string_is_empty(db->fullpath))
       {
-         if (db->is_directory)
+         if (db->flags & DB_HANDLE_FLAG_IS_DIRECTORY)
             db->handle = database_info_dir_init(
                   db->fullpath, DATABASE_TYPE_ITERATE,
-                  task, db->show_hidden_files);
+                  task, db->flags & DB_HANDLE_FLAG_SHOW_HIDDEN_FILES);
          else
             db->handle = database_info_file_init(
                   db->fullpath, DATABASE_TYPE_ITERATE,
@@ -1146,12 +1151,12 @@ static void task_database_handler(retro_task_t *task)
                dbstate->list        = dir_list_new(
                      db->content_database_path,
                      "rdb", false,
-                     db->show_hidden_files,
+                     db->flags & DB_HANDLE_FLAG_SHOW_HIDDEN_FILES,
                      false, false);
 
             /* If the scan path matches a database path exactly then
              * save time by only processing that database. */
-            if (dbstate->list && db->is_directory)
+            if (dbstate->list && (db->flags & DB_HANDLE_FLAG_IS_DIRECTORY))
             {
                size_t i;
                char *dirname = NULL;
@@ -1230,7 +1235,7 @@ static void task_database_handler(retro_task_t *task)
          else
          {
             const char *msg = NULL;
-            if (db->is_directory)
+            if (db->flags & DB_HANDLE_FLAG_IS_DIRECTORY)
                msg = msg_hash_to_str(MSG_SCANNING_OF_DIRECTORY_FINISHED);
             else
                msg = msg_hash_to_str(MSG_SCANNING_OF_FILE_FINISHED);
@@ -1317,7 +1322,8 @@ bool task_push_dbscan(
 
 #ifdef RARCH_INTERNAL
    t->progress_cb                          = task_database_progress_cb;
-   db->scan_without_core_match             = settings->bools.scan_without_core_match;
+   if (settings->bools.scan_without_core_match)
+      db->flags |= DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH;
    db->playlist_config.capacity            = COLLECTION_SIZE;
    db->playlist_config.old_format          = settings->bools.playlist_use_old_format;
    db->playlist_config.compress            = settings->bools.playlist_compression;
@@ -1330,8 +1336,10 @@ bool task_push_dbscan(
    db->playlist_config.fuzzy_archive_match = false;
    playlist_config_set_base_content_directory(&db->playlist_config, NULL);
 #endif
-   db->show_hidden_files                   = db_dir_show_hidden_files;
-   db->is_directory                        = directory;
+   if (db_dir_show_hidden_files)
+      db->flags |= DB_HANDLE_FLAG_SHOW_HIDDEN_FILES;
+   if (directory)
+      db->flags |= DB_HANDLE_FLAG_IS_DIRECTORY;
    db->fullpath                            = strdup(fullpath);
    db->playlist_directory                  = strdup(playlist_directory);
    db->content_database_path               = strdup(content_database);

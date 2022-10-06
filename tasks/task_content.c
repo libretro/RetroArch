@@ -119,6 +119,19 @@ struct content_stream
    uint32_t crc;
 };
 
+enum content_information_flags
+{
+   CONTENT_INFO_FLAG_BLOCK_EXTRACT               = (1 << 0),
+   CONTENT_INFO_FLAG_NEED_FULLPATH               = (1 << 1),
+   CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE = (1 << 2),
+   CONTENT_INFO_FLAG_IS_IPS_PREF                 = (1 << 3),
+   CONTENT_INFO_FLAG_IS_BPS_PREF                 = (1 << 4),
+   CONTENT_INFO_FLAG_IS_UPS_PREF                 = (1 << 5),
+   CONTENT_INFO_FLAG_PATCH_IS_BLOCKED            = (1 << 6),
+   CONTENT_INFO_FLAG_BIOS_IS_MISSING             = (1 << 7),
+   CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING     = (1 << 8)
+};
+
 struct content_information_ctx
 {
    char *name_ips;
@@ -135,17 +148,7 @@ struct content_information_ctx
       unsigned size;
    } subsystem;
 
-   bool block_extract;
-   bool need_fullpath;
-   bool set_supports_no_game_enable;
-#ifdef HAVE_PATCH
-   bool is_ips_pref;
-   bool is_bps_pref;
-   bool is_ups_pref;
-   bool patch_is_blocked;
-#endif
-   bool bios_is_missing;
-   bool check_firmware_before_loading;
+   uint16_t flags;
 };
 
 /*************************************/
@@ -724,11 +727,11 @@ static bool content_file_load_into_memory(
 
 #ifdef HAVE_PATCH
          /* Attempt to apply a patch. */
-         if (!content_ctx->patch_is_blocked)
+         if (!(content_ctx->flags & CONTENT_INFO_FLAG_PATCH_IS_BLOCKED))
             has_patch = patch_content(
-                  content_ctx->is_ips_pref,
-                  content_ctx->is_bps_pref,
-                  content_ctx->is_ups_pref,
+                  content_ctx->flags & CONTENT_INFO_FLAG_IS_IPS_PREF,
+                  content_ctx->flags & CONTENT_INFO_FLAG_IS_BPS_PREF,
+                  content_ctx->flags & CONTENT_INFO_FLAG_IS_UPS_PREF,
                   content_ctx->name_ips,
                   content_ctx->name_bps,
                   content_ctx->name_ups,
@@ -1257,8 +1260,10 @@ static void content_file_set_attributes(
       content_get_status(&contentless, &is_inited);
 
       CONTENT_FILE_ATTR_RESET(attr);
-      CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(attr, content_ctx->block_extract);
-      CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, content_ctx->need_fullpath);
+      CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(attr, content_ctx->flags &
+CONTENT_INFO_FLAG_BLOCK_EXTRACT);
+      CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, content_ctx->flags &
+CONTENT_INFO_FLAG_NEED_FULLPATH);
       CONTENT_FILE_ATTR_SET_REQUIRED(attr, !contentless);
 
 #if defined(HAVE_RUNAHEAD)
@@ -1273,7 +1278,7 @@ static void content_file_set_attributes(
       if (string_is_empty(content_path))
       {
          if (contentless &&
-             content_ctx->set_supports_no_game_enable)
+             content_ctx->flags & CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE)
             string_list_append(content, "", attr);
       }
       else
@@ -1888,8 +1893,8 @@ static bool firmware_update_status(
       retroarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
 
    if (
-         content_ctx->bios_is_missing &&
-         content_ctx->check_firmware_before_loading)
+            (content_ctx->flags & CONTENT_INFO_FLAG_BIOS_IS_MISSING)
+         && (content_ctx->flags & CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING))
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_FIRMWARE),
@@ -1918,23 +1923,28 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    if (!content_info)
       return false;
 
-   content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
+   content_ctx.flags     = 0;
+
+   if (check_firmware_before_loading)
+      content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = runloop_st->patch_blocked;
+   if (retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
+   if (retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
+   if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+   if (runloop_st->patch_blocked)
+      content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
-   content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
+   if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
    content_ctx.name_bps                       = NULL;
    content_ctx.name_ups                       = NULL;
    content_ctx.valid_extensions               = NULL;
-   content_ctx.block_extract                  = false;
-   content_ctx.need_fullpath                  = false;
-   content_ctx.set_supports_no_game_enable    = false;
 
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
@@ -1998,24 +2008,30 @@ bool task_push_load_content_from_playlist_from_menu(
 #ifndef HAVE_DYNAMIC
    bool force_core_reload                     = settings->bools.always_reload_core_on_run_content;
 #endif
+   bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
 
-   content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
+   content_ctx.flags     = 0;
+
+   if (check_firmware_before_loading)
+      content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = runloop_st->patch_blocked;
+   if (retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
+   if (retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
+   if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+   if (runloop_st->patch_blocked)
+      content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
-   content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
+   if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
    content_ctx.name_bps                       = NULL;
    content_ctx.name_ups                       = NULL;
    content_ctx.valid_extensions               = NULL;
-   content_ctx.block_extract                  = false;
-   content_ctx.need_fullpath                  = false;
-   content_ctx.set_supports_no_game_enable    = false;
 
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
@@ -2122,34 +2138,38 @@ end:
 bool task_push_start_current_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
-
-   content_state_t                 *p_content = content_state_get_ptr();
-   bool ret                                   = true;
-   settings_t *settings                       = config_get_ptr();
-   runloop_state_t *runloop_st                = runloop_state_get_ptr();
-   const char *path_dir_system                = settings->paths.directory_system;
-   bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
+   bool ret                           = true;
+   content_state_t *p_content         = content_state_get_ptr();
+   settings_t *settings               = config_get_ptr();
+   runloop_state_t *runloop_st        = runloop_state_get_ptr();
+   const char *path_dir_system        = settings->paths.directory_system;
+   bool check_firmware_before_loading = settings->bools.check_firmware_before_loading;
 
    if (!content_info)
       return false;
 
-   content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
+   content_ctx.flags     = 0;
+
+   if (check_firmware_before_loading)
+      content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = runloop_st->patch_blocked;
+   if (retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
+   if (retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
+   if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+   if (runloop_st->patch_blocked)
+      content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
-   content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
+   if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
    content_ctx.name_bps                       = NULL;
    content_ctx.name_ups                       = NULL;
    content_ctx.valid_extensions               = NULL;
-   content_ctx.block_extract                  = false;
-   content_ctx.need_fullpath                  = false;
-   content_ctx.set_supports_no_game_enable    = false;
 
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
@@ -2261,8 +2281,12 @@ bool task_push_load_contentless_core_from_menu(
    if (string_is_empty(core_path))
       return false;
 
-   content_ctx.check_firmware_before_loading = check_firmware_before_loading;
-   content_ctx.bios_is_missing               = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.flags     = 0;
+
+   if (check_firmware_before_loading)
+      content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
+   if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    if (!string_is_empty(path_dir_system))
       content_ctx.directory_system           = strdup(path_dir_system);
 
@@ -2358,23 +2382,28 @@ bool task_push_load_content_with_new_core_from_menu(
             type, cb, user_data);
 #endif
 
-   content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
+   content_ctx.flags     = 0;
+
+   if (check_firmware_before_loading)
+      content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = runloop_st->patch_blocked;
+   if (retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
+   if (retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
+   if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+   if (runloop_st->patch_blocked)
+      content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
-   content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
+   if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
    content_ctx.name_bps                       = NULL;
    content_ctx.name_ups                       = NULL;
    content_ctx.valid_extensions               = NULL;
-   content_ctx.block_extract                  = false;
-   content_ctx.need_fullpath                  = false;
-   content_ctx.set_supports_no_game_enable    = false;
 
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
@@ -2458,23 +2487,28 @@ static bool task_load_content_internal(
    const char *path_dir_system                = settings->paths.directory_system;
    const char *path_dir_cache                 = settings->paths.directory_cache;
 
-   content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
+   content_ctx.flags     = 0;
+
+   if (check_firmware_before_loading)
+      content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = runloop_st->patch_blocked;
+   if (retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
+   if (retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
+   if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+   if (runloop_st->patch_blocked)
+      content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
-   content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
+   if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
    content_ctx.name_bps                       = NULL;
    content_ctx.name_ups                       = NULL;
    content_ctx.valid_extensions               = NULL;
-   content_ctx.block_extract                  = false;
-   content_ctx.need_fullpath                  = false;
-   content_ctx.set_supports_no_game_enable    = false;
 
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
@@ -2483,15 +2517,18 @@ static bool task_load_content_internal(
    {
       struct retro_system_info *system        = &runloop_state_get_ptr()->system.info;
 
-      content_ctx.set_supports_no_game_enable = set_supports_no_game_enable;
+      if (set_supports_no_game_enable)
+         content_ctx.flags |= CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE;
 
       if (!string_is_empty(path_dir_cache))
          content_ctx.directory_cache          = strdup(path_dir_cache);
       if (!string_is_empty(system->valid_extensions))
          content_ctx.valid_extensions         = strdup(system->valid_extensions);
 
-      content_ctx.block_extract               = system->block_extract;
-      content_ctx.need_fullpath               = system->need_fullpath;
+      if (system->block_extract)
+         content_ctx.flags |= CONTENT_INFO_FLAG_BLOCK_EXTRACT;
+      if (system->need_fullpath)
+         content_ctx.flags |= CONTENT_INFO_FLAG_NEED_FULLPATH;
 
       content_ctx.subsystem.data              = sys_info->subsystem.data;
       content_ctx.subsystem.size              = sys_info->subsystem.size;
@@ -2976,28 +3013,35 @@ bool content_init(void)
 {
    struct string_list content;
    content_information_ctx_t content_ctx;
-   enum msg_hash_enums error_enum             = MSG_UNKNOWN;
-   content_state_t *p_content                 = content_state_get_ptr();
+   enum msg_hash_enums error_enum     = MSG_UNKNOWN;
+   content_state_t *p_content         = content_state_get_ptr();
 
-   bool ret                                   = true;
-   char *error_string                         = NULL;
-   runloop_state_t *runloop_st                = runloop_state_get_ptr();
-   rarch_system_info_t *sys_info              = &runloop_st->system;
-   settings_t *settings                       = config_get_ptr();
-   bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
-   bool set_supports_no_game_enable           = settings->bools.set_supports_no_game_enable;
-   const char *path_dir_system                = settings->paths.directory_system;
-   const char *path_dir_cache                 = settings->paths.directory_cache;
+   bool ret                           = true;
+   char *error_string                 = NULL;
+   runloop_state_t *runloop_st        = runloop_state_get_ptr();
+   rarch_system_info_t *sys_info      = &runloop_st->system;
+   settings_t *settings               = config_get_ptr();
+   bool check_firmware_before_loading = settings->bools.check_firmware_before_loading;
+   bool set_supports_no_game_enable   = settings->bools.set_supports_no_game_enable;
+   const char *path_dir_system        = settings->paths.directory_system;
+   const char *path_dir_cache         = settings->paths.directory_cache;
 
    content_file_list_free(p_content->content_list);
-   p_content->content_list                    = NULL;
+   p_content->content_list            = NULL;
 
-   content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
+   content_ctx.flags                  = 0;
+
+   if (check_firmware_before_loading)
+      content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = runloop_st->patch_blocked;
+   if (retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
+   if (retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
+   if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
+      content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+   if (runloop_st->patch_blocked)
+      content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -3005,9 +3049,6 @@ bool content_init(void)
    content_ctx.name_bps                       = NULL;
    content_ctx.name_ups                       = NULL;
    content_ctx.valid_extensions               = NULL;
-   content_ctx.block_extract                  = false;
-   content_ctx.need_fullpath                  = false;
-   content_ctx.set_supports_no_game_enable    = false;
 
    content_ctx.subsystem.data                 = NULL;
    content_ctx.subsystem.size                 = 0;
@@ -3023,7 +3064,8 @@ bool content_init(void)
    {
       struct retro_system_info *system        = &runloop_state_get_ptr()->system.info;
 
-      content_ctx.set_supports_no_game_enable = set_supports_no_game_enable;
+      if (set_supports_no_game_enable)
+         content_ctx.flags |= CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE;
 
       if (!string_is_empty(path_dir_system))
          content_ctx.directory_system         = strdup(path_dir_system);
@@ -3032,8 +3074,10 @@ bool content_init(void)
       if (!string_is_empty(system->valid_extensions))
          content_ctx.valid_extensions         = strdup(system->valid_extensions);
 
-      content_ctx.block_extract               = system->block_extract;
-      content_ctx.need_fullpath               = system->need_fullpath;
+      if (system->block_extract)
+         content_ctx.flags |= CONTENT_INFO_FLAG_BLOCK_EXTRACT;
+      if (system->need_fullpath)
+         content_ctx.flags |= CONTENT_INFO_FLAG_NEED_FULLPATH;
 
       content_ctx.subsystem.data              = sys_info->subsystem.data;
       content_ctx.subsystem.size              = sys_info->subsystem.size;

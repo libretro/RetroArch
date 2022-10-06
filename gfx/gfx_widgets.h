@@ -110,6 +110,21 @@ typedef struct
    gfx_widget_font_data_t msg_queue;
 } gfx_widget_fonts_t;
 
+enum disp_widget_flags_enum
+{
+   DISPWIDG_FLAG_TASK_FINISHED             = (1 << 0),
+   DISPWIDG_FLAG_TASK_ERROR                = (1 << 1),
+   DISPWIDG_FLAG_TASK_CANCELLED            = (1 << 2),
+   DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED  = (1 << 3),
+   /* Is it currently doing the fade out animation ? */
+   DISPWIDG_FLAG_DYING                     = (1 << 4),
+   /* Has the timer expired ? if so, should be set to dying */
+   DISPWIDG_FLAG_EXPIRED                   = (1 << 5),
+   /* Unfold animation */
+   DISPWIDG_FLAG_UNFOLDED                  = (1 << 6),
+   DISPWIDG_FLAG_UNFOLDING                 = (1 << 7)
+};
+
 typedef struct disp_widget_msg
 {
    char *msg;
@@ -130,21 +145,10 @@ typedef struct disp_widget_msg
    float hourglass_timer; /* float alignment */
    float expiration_timer; /* float alignment */
 
+   uint16_t flags;
    int8_t task_progress;
    /* How many tasks have used this notification? */
    uint8_t task_count;
-
-   bool task_finished;
-   bool task_error;
-   bool task_cancelled;
-   bool expiration_timer_started;
-   /* Is it currently doing the fade out animation ? */
-   bool dying;
-   /* Has the timer expired ? if so, should be set to dying */
-   bool expired;
-   /* Unfold animation */
-   bool unfolded;
-   bool unfolding;
 } disp_widget_msg_t;
 
 typedef struct dispgfx_widget

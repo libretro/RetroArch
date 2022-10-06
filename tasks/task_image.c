@@ -38,6 +38,13 @@ enum image_status_enum
    IMAGE_STATUS_PROCESS_TRANSFER_PARSE
 };
 
+enum image_flags_enum
+{
+   IMAGE_FLAG_IS_BLOCKING                = (1 << 0),
+   IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING  = (1 << 1),
+   IMAGE_FLAG_IS_FINISHED                = (1 << 2)
+};
+
 struct nbio_image_handle
 {
    void *handle;
@@ -49,9 +56,7 @@ struct nbio_image_handle
    unsigned upscale_threshold;
    enum image_type_enum type;
    enum image_status_enum status;
-   bool is_blocking;
-   bool is_blocking_on_processing;
-   bool is_finished;
+   uint8_t flags;
 };
 
 static int cb_image_upload_generic(void *data, size_t len)
@@ -78,9 +83,9 @@ static int cb_image_upload_generic(void *data, size_t len)
    image_texture_color_convert(r_shift, g_shift, b_shift,
          a_shift, &image->ti);
 
-   image->is_blocking_on_processing         = false;
-   image->is_blocking                       = true;
-   image->is_finished                       = true;
+   image->flags                   &= ~IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING;
+   image->flags                   |=  IMAGE_FLAG_IS_BLOCKING;
+   image->flags                   |=  IMAGE_FLAG_IS_FINISHED;
    nbio->is_finished                        = true;
 
    return 0;
@@ -121,8 +126,14 @@ static int cb_image_thumbnail(void *data, size_t len)
       )
       return -1;
 
-   image->is_blocking_on_processing = (retval != IMAGE_PROCESS_END);
-   image->is_finished               = (retval == IMAGE_PROCESS_END);
+   if (retval != IMAGE_PROCESS_END)
+      image->flags                 |=  IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING;
+   else
+      image->flags                 &= ~IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING;
+   if (retval == IMAGE_PROCESS_END)
+      image->flags                 |=  IMAGE_FLAG_IS_FINISHED;
+   else
+      image->flags                 &= ~IMAGE_FLAG_IS_FINISHED;
    image->cb                        = &cb_image_upload_generic;
 
    return 0;
@@ -218,8 +229,8 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
       return -1;
    }
 
-   image->is_blocking              = false;
-   image->is_finished              = false;
+   image->flags                   &= ~IMAGE_FLAG_IS_BLOCKING;
+   image->flags                   &= ~IMAGE_FLAG_IS_FINISHED;
    nbio->is_finished               = true;
 
    return 0;
@@ -288,11 +299,12 @@ bool task_image_load_handler(retro_task_t *task)
                if (image->cb(nbio, len) == -1)
                   return false;
             }
-            if (image->is_blocking_on_processing)
+            if (image->flags & IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING)
                image->status = IMAGE_STATUS_PROCESS_TRANSFER;
             break;
          case IMAGE_STATUS_TRANSFER:
-            if (!image->is_blocking && !image->is_finished)
+            if (     !(image->flags & IMAGE_FLAG_IS_BLOCKING) 
+                  && !(image->flags & IMAGE_FLAG_IS_FINISHED))
             {
                retro_time_t start_time = cpu_features_get_time_usec();
                do
@@ -313,13 +325,13 @@ bool task_image_load_handler(retro_task_t *task)
                if (image->cb(nbio, len) == -1)
                   return false;
             }
-            if (!image->is_finished)
+            if (!(image->flags & IMAGE_FLAG_IS_FINISHED))
                break;
       }
    }
 
    if (     nbio->is_finished
-         && (image && image->is_finished)
+         && (image && (image->flags & IMAGE_FLAG_IS_FINISHED))
          && (!task_get_cancelled(task)))
    {
       struct texture_image *img = (struct texture_image*)malloc(sizeof(struct texture_image));
@@ -414,9 +426,6 @@ bool task_push_image_load(const char *fullpath,
 
    image->type                       = image_texture_get_type(fullpath);
    image->status                     = IMAGE_STATUS_WAIT;
-   image->is_blocking                = false;
-   image->is_blocking_on_processing  = false;
-   image->is_finished                = false;
    image->processing_final_state     = 0;
    image->frame_duration             = 0;
    image->size                       = 0;
