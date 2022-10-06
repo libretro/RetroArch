@@ -602,7 +602,23 @@ bool gfx_ctx_wl_init_common(
    if (!wl_draw_splash_screen(wl))
       RARCH_ERR("[Wayland`]: Failed to draw splash screen\n");
 
-   wl_display_roundtrip(wl->input.dpy);
+   // Make sure splash screen is on screen and sized
+#ifdef HAVE_LIBDECOR_H
+   if (wl->libdecor)
+   {
+      wl->configured = true;
+      while (wl->configured)
+         if (wl->libdecor_dispatch(wl->libdecor_context, 0) < 0)
+            RARCH_ERR("[Wayland]: libdecor failed to dispatch\n");
+   }
+   else
+#endif
+   {
+      wl->configured = true;
+
+      while (wl->configured)
+         wl_display_dispatch(wl->input.dpy);
+   }
 
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
 
