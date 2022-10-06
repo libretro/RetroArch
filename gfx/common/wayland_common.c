@@ -542,19 +542,17 @@ bool gfx_ctx_wl_init_common(
    if (wl->libdecor)
    {
       wl->libdecor_context = wl->libdecor_new(wl->input.dpy, &libdecor_interface);
-      if (wl->libdecor_context)
-      {
-         wl->libdecor_frame = wl->libdecor_decorate(wl->libdecor_context, wl->surface, &toplevel_listener->libdecor_frame_interface, wl);
-         if (!wl->libdecor_frame)
-         {
-            RARCH_ERR("[Wayland]: Failed to crate libdecor frame\n");
-            goto error;
-         }
 
-         wl->libdecor_frame_set_app_id(wl->libdecor_frame, APP_ID);
-         wl->libdecor_frame_set_title(wl->libdecor_frame, WINDOW_TITLE);
-         wl->libdecor_frame_map(wl->libdecor_frame);
+      wl->libdecor_frame = wl->libdecor_decorate(wl->libdecor_context, wl->surface, &toplevel_listener->libdecor_frame_interface, wl);
+      if (!wl->libdecor_frame)
+      {
+         RARCH_ERR("[Wayland]: Failed to create libdecor frame\n");
+         goto error;
       }
+
+      wl->libdecor_frame_set_app_id(wl->libdecor_frame, APP_ID);
+      wl->libdecor_frame_set_title(wl->libdecor_frame, WINDOW_TITLE);
+      wl->libdecor_frame_map(wl->libdecor_frame);
 
       /* Waiting for libdecor to be configured before starting to draw */
       wl_surface_commit(wl->surface);
@@ -600,7 +598,7 @@ bool gfx_ctx_wl_init_common(
     * This shows the window which assigns us a display (wl_output)
     *  which is usefull for HiDPI and auto selecting a display for fullscreen. */
    if (!wl_draw_splash_screen(wl))
-      RARCH_ERR("[Wayland`]: Failed to draw splash screen\n");
+      RARCH_ERR("[Wayland]: Failed to draw splash screen\n");
 
    // Make sure splash screen is on screen and sized
 #ifdef HAVE_LIBDECOR_H
