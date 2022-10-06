@@ -1425,8 +1425,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
          menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
 
          xmb->fullscreen_thumbnails_available =
-               (menu_explore_set_playlist_thumbnail(entry.type, xmb->thumbnail_path_data) >= 0 &&
-               menu_explore_get_entry_icon(entry.type));
+               (menu_explore_set_playlist_thumbnail(entry.type, xmb->thumbnail_path_data) >= 0);
       }
    }
 #endif

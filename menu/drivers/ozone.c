@@ -3699,7 +3699,8 @@ static void ozone_sidebar_update_collapse(
       goto end;
 
    /* Collapse it */
-   if (ozone_collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar))
+   if (ozone_collapse_sidebar || (!ozone->cursor_in_sidebar &&
+         (is_playlist || ozone->is_explore_list)))
    {
       if (allow_animation)
       {
@@ -7115,8 +7116,7 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
          menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
 
          ozone->want_thumbnail_bar = ozone->fullscreen_thumbnails_available =
-               (menu_explore_set_playlist_thumbnail(entry.type, ozone->thumbnail_path_data) >= 0 &&
-               menu_explore_get_entry_icon(entry.type));
+               (menu_explore_set_playlist_thumbnail(entry.type, ozone->thumbnail_path_data) >= 0);
       }
    }
 #endif
