@@ -267,7 +267,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #else
    FILE *fp = (FILE*)g_verbosity->fp;
 #if defined(HAVE_QT) || defined(__WINRT__)
-   char buffer[1024];
+   char buffer[2048];
    buffer[0] = '\0';
 
    /* Ensure null termination and line break in error case */
