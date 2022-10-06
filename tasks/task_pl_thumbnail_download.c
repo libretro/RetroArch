@@ -706,13 +706,12 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
              *   current task is 'complete' */
             if (!pl_thumb->http_task)
                pl_thumb->flags |= PL_THUMB_FLAG_HTTP_TASK_COMPLETE;
-
             /* > Wait for task_push_http_transfer_file()
              *   callback to trigger */
-            if (pl_thumb->flags & PL_THUMB_FLAG_HTTP_TASK_COMPLETE)
-               pl_thumb->http_task = NULL;
-            else
+            else if (!(pl_thumb->flags & PL_THUMB_FLAG_HTTP_TASK_COMPLETE))
                break;
+
+            pl_thumb->http_task = NULL;
             
             /* Check whether all thumbnail types have been processed */
             if (pl_thumb->type_idx > 3)
