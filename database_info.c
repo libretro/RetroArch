@@ -742,14 +742,6 @@ error:
    return -1;
 }
 
-static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
-{
-   libretrodb_cursor_close(cur);
-   libretrodb_close(db);
-
-   return 0;
-}
-
 static bool type_is_prioritized(const char *path)
 {
    const char *ext = path_get_extension(path);
@@ -789,11 +781,9 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
    core_info_get_list(&core_info_list);
 
-   list = dir_list_new(dir, core_info_list ? core_info_list->all_ext : NULL,
+   if (!(list = dir_list_new(dir, core_info_list ? core_info_list->all_ext : NULL,
          false, show_hidden_files,
-         false, true);
-
-   if (!list)
+         false, true)))
    {
       free(db);
       return NULL;
@@ -820,16 +810,13 @@ database_info_handle_t *database_info_file_init(const char *path,
    if (!db)
       return NULL;
 
-   attr.i             = 0;
-
-   list               = string_list_new();
-
-   if (!list)
+   if (!(list = string_list_new()))
    {
       free(db);
       return NULL;
    }
 
+   attr.i                 = 0;
    string_list_append(list, path, attr);
 
    db->status             = DATABASE_STATUS_ITERATE;
@@ -842,10 +829,8 @@ database_info_handle_t *database_info_file_init(const char *path,
 
 void database_info_free(database_info_handle_t *db)
 {
-   if (!db)
-      return;
-
-   string_list_free(db->list);
+   if (db)
+      string_list_free(db->list);
 }
 
 database_info_list_t *database_info_list_new(
@@ -990,7 +975,8 @@ database_info_list_t *database_info_list_new(
 end:
    if (db)
    {
-      database_cursor_close(db, cur);
+      libretrodb_cursor_close(cur);
+      libretrodb_close(db);
       libretrodb_free(db);
    }
    if (cur)
