@@ -1,7 +1,12 @@
 # Future
 - FILEBROWSER: Fix regression - certain extensions keep disappearing
+- LOGGING/QT: Increase log buffer to 2048 characters - Vulkan validation layer
+  messages output correctly now.
 - MIST/STEAM/STEAMDECK: Don't expose Black Frame Insertion (BFI) if we are running on a Steam Deck
 - NETWORKING/WINDOWS: Disable poll support for MSVC 2010 and earlier. WSAPoll is not supported on Windows XP and earlier.
+- NETWORKING/WIIU: Fix socket_connect_with_timeout for WIIU
+- NETWORKING/WIIU: Fixes RetroAchievements login 
+- NETWORKING/WIIU: Fixes other online updater functionality
 - SCREENSHOTS/VULKAN: Unload screenshot widget texture early. Fixes Vulkan crash when closing content while a screenshot widget is still on-screen
 - SCREENSHOTS/VULKAN: Fix screenshot widget crash when ticker animating
 
