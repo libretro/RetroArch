@@ -1231,8 +1231,8 @@ bool rpng_start(rpng_t *rpng)
  **/
 bool rpng_is_valid(rpng_t *rpng)
 {
-   return ((rpng->flags & (RPNG_FLAG_HAS_IHDR | RPNG_FLAG_HAS_IDAT |
-RPNG_FLAG_HAS_IEND)) > 0);
+   return (rpng && ((rpng->flags & (RPNG_FLAG_HAS_IHDR | RPNG_FLAG_HAS_IDAT |
+RPNG_FLAG_HAS_IEND)) > 0));
 }
 
 bool rpng_set_buf_ptr(rpng_t *rpng, void *data, size_t len)

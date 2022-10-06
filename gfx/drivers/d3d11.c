@@ -739,8 +739,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       image_texture_free(&image);
    }
 
-   d3d11->flags                |= D3D11_ST_FLAG_RESIZE_RTS
-                                | D3D11_ST_FLAG_INIT_HISTORY;
+   d3d11->flags|= D3D11_ST_FLAG_RESIZE_RTS | D3D11_ST_FLAG_INIT_HISTORY;
 
    return true;
 
@@ -882,11 +881,11 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    hwnd = (HWND)corewindow;
 
 #ifdef HAVE_DXGI_HDR
-   if (!(d3d11->hdr.support                              = 
+   if (!(d3d11->hdr.support                = 
             dxgi_check_display_hdr_support(d3d11->factory, hwnd)))
-      d3d11->hdr.enable                            = false;
+      d3d11->hdr.enable                    = false;
 
-   d3d11->chain_bit_depth                          = d3d11->hdr.enable 
+   d3d11->chain_bit_depth                  = d3d11->hdr.enable 
       ? DXGI_SWAPCHAIN_BIT_DEPTH_10 
       : DXGI_SWAPCHAIN_BIT_DEPTH_8;
 #endif
@@ -1052,7 +1051,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
       RARCH_WARN("[D3D11]: Failed to create swapchain with flip model, try non-flip model.\n");
 
       /* Failed to create swapchain, try non-flip model */
-      desc.SwapEffect          = DXGI_SWAP_EFFECT_DISCARD;
+      desc.SwapEffect           =  DXGI_SWAP_EFFECT_DISCARD;
       desc.Flags               &= ~DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
       d3d11->flags             &= ~(  D3D11_ST_FLAG_HAS_FLIP_MODEL
                                     | D3D11_ST_FLAG_HAS_ALLOW_TEARING);
@@ -2521,19 +2520,15 @@ static void d3d11_gfx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
-   if (!d3d11)
-      return;
-
-   d3d11->flags          |= D3D11_ST_FLAG_KEEP_ASPECT
-                          | D3D11_ST_FLAG_RESIZE_VIEWPORT;
+   if (d3d11)
+      d3d11->flags |= D3D11_ST_FLAG_KEEP_ASPECT | D3D11_ST_FLAG_RESIZE_VIEWPORT;
 }
 
 static void d3d11_gfx_apply_state_changes(void* data)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
-
    if (d3d11)
-      d3d11->flags |= D3D11_ST_FLAG_RESIZE_VIEWPORT;
+      d3d11->flags     |= D3D11_ST_FLAG_RESIZE_VIEWPORT;
 }
 
 static void d3d11_gfx_set_osd_msg(
