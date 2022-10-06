@@ -1776,7 +1776,7 @@ void command_event_reinit(const int flags)
    command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
 
 #ifdef HAVE_MENU
-   p_disp->framebuf_dirty = true;
+   p_disp->flags |= GFX_DISP_FLAG_FB_DIRTY;
    if (video_fullscreen)
       video_driver_hide_mouse();
    if (     menu_st->alive 

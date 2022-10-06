@@ -1258,12 +1258,13 @@ void gfx_display_free(void)
    gfx_display_t *p_disp       = &dispgfx_st;
    video_coord_array_free(&p_disp->dispca);
 
-   p_disp->msg_force           = false;
+   p_disp->flags              &= ~(GFX_DISP_FLAG_MSG_FORCE
+                                 | GFX_DISP_FLAG_HAS_WINDOWED
+                                  );
    p_disp->header_height       = 0;
    p_disp->framebuf_width      = 0;
    p_disp->framebuf_height     = 0;
    p_disp->framebuf_pitch      = 0;
-   p_disp->has_windowed        = false;
    p_disp->dispctx             = NULL;
 }
 
@@ -1272,7 +1273,10 @@ void gfx_display_init(void)
    gfx_display_t *p_disp         = &dispgfx_st;
    video_coord_array_t *p_dispca = &p_disp->dispca;
 
-   p_disp->has_windowed          = video_driver_has_windowed();
+   if (video_driver_has_windowed())
+      p_disp->flags             |=  GFX_DISP_FLAG_HAS_WINDOWED;
+   else
+      p_disp->flags             &= ~GFX_DISP_FLAG_HAS_WINDOWED;
    p_dispca->allocated           =  0;
 }
 

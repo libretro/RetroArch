@@ -2024,7 +2024,7 @@ static int generic_action_ok(const char *path,
             bool config_save_on_exit        = settings->bools.config_save_on_exit;
             flush_type                      = MENU_SETTINGS;
 
-            disp_get_ptr()->msg_force       = true;
+            disp_get_ptr()->flags          |= GFX_DISP_FLAG_MSG_FORCE;
 
             if (config_replace(config_save_on_exit, action_path))
             {

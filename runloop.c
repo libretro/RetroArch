@@ -6875,7 +6875,7 @@ static enum runloop_state_enum runloop_check_state(
          list_info.action = 0;
          menu_driver_list_cache(&list_info);
 
-         p_disp->msg_force = true;
+         p_disp->flags   |= GFX_DISP_FLAG_MSG_FORCE;
 
          generic_action_ok_displaylist_push("", NULL,
                "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
@@ -6919,7 +6919,7 @@ static enum runloop_state_enum runloop_check_state(
                BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
 
             if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER))
-               p_disp->framebuf_dirty = true;
+               p_disp->flags |= GFX_DISP_FLAG_FB_DIRTY;
 
             if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX)
                   && !string_is_empty(menu->menu_state_msg))

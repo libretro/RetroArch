@@ -66,10 +66,7 @@ static gfx_animation_t anim_st = {
    NULL,   /* list                  */
    NULL,   /* pending               */
    0.0f,   /* delta_time            */
-   false,  /* pending_deletes       */
-   false,  /* in_update             */
-   false,  /* animation_is_active   */
-   false   /* ticker_is_active      */
+   0       /* flags                 */
 };
 
 gfx_animation_t *anim_get_ptr(void)
@@ -1175,7 +1172,7 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
 
-   if (p_anim->in_update)
+   if (p_anim->flags & GFX_ANIM_FLAG_IN_UPDATE)
       RBUF_PUSH(p_anim->pending, t);
    else
       RBUF_PUSH(p_anim->list, t);
@@ -1192,7 +1189,7 @@ bool gfx_animation_update(
 {
    unsigned i;
    gfx_animation_t *p_anim                     = &anim_st;
-   const bool ticker_is_active                 = p_anim->ticker_is_active;
+   const bool ticker_is_active                 = p_anim->flags & GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
    static retro_time_t last_clock_update       = 0;
    static retro_time_t last_ticker_update      = 0;
@@ -1227,7 +1224,7 @@ bool gfx_animation_update(
    if (((p_anim->cur_time - last_clock_update) > 1000000) /* 1000000 us == 1 second */
          && timedate_enable)
    {
-      p_anim->animation_is_active   = true;
+      p_anim->flags                |= GFX_ANIM_FLAG_IS_ACTIVE;
       last_clock_update             = p_anim->cur_time;
    }
 
@@ -1296,8 +1293,8 @@ bool gfx_animation_update(
       }
    }
 
-   p_anim->in_update       = true;
-   p_anim->pending_deletes = false;
+   p_anim->flags          |=  GFX_ANIM_FLAG_IN_UPDATE;
+   p_anim->flags          &= ~GFX_ANIM_FLAG_PENDING_DELETES;
 
    for (i = 0; i < RBUF_LEN(p_anim->list); i++)
    {
@@ -1326,7 +1323,7 @@ bool gfx_animation_update(
       }
    }
 
-   if (p_anim->pending_deletes)
+   if (p_anim->flags & GFX_ANIM_FLAG_PENDING_DELETES)
    {
       for (i = 0; i < RBUF_LEN(p_anim->list); i++)
       {
@@ -1337,7 +1334,7 @@ bool gfx_animation_update(
             i--;
          }
       }
-      p_anim->pending_deletes = false;
+      p_anim->flags &= ~GFX_ANIM_FLAG_PENDING_DELETES;
    }
 
    if (RBUF_LEN(p_anim->pending) > 0)
@@ -1350,10 +1347,13 @@ bool gfx_animation_update(
       RBUF_CLEAR(p_anim->pending);
    }
 
-   p_anim->in_update           = false;
-   p_anim->animation_is_active = RBUF_LEN(p_anim->list) > 0;
+   p_anim->flags              &= ~GFX_ANIM_FLAG_IN_UPDATE;
+   if (RBUF_LEN(p_anim->list) > 0)
+	   p_anim->flags      |=  GFX_ANIM_FLAG_IS_ACTIVE;
+   else
+	   p_anim->flags      &= ~GFX_ANIM_FLAG_IS_ACTIVE;
 
-   return p_anim->animation_is_active;
+   return ((p_anim->flags & GFX_ANIM_FLAG_IS_ACTIVE) > 0);
 }
 
 static void build_ticker_loop_string(
@@ -1491,7 +1491,7 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
          break;
    }
 
-   p_anim->ticker_is_active = true;
+   p_anim->flags |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
    return true;
 }
@@ -1636,7 +1636,7 @@ static bool gfx_animation_ticker_smooth_fw(
 
    success                  = true;
    is_active                = true;
-   p_anim->ticker_is_active = true;
+   p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
 end:
    if (!success)
@@ -1859,7 +1859,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
 
    success                  = true;
    is_active                = true;
-   p_anim->ticker_is_active = true;
+   p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
 end:
 
@@ -1965,7 +1965,7 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
 
    success                  = true;
    is_active                = true;
-   p_anim->ticker_is_active = true;
+   p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
 end:
 
@@ -2159,7 +2159,7 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
 
    success                  = true;
    is_active                = true;
-   p_anim->ticker_is_active = true;
+   p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
 end:
 
@@ -2213,10 +2213,10 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
        * > Cannot modify p_anim->list now, so schedule a
        *   delete for when the gfx_animation_update() loop
        *   is complete */
-      if (p_anim->in_update)
+      if (p_anim->flags & GFX_ANIM_FLAG_IN_UPDATE)
       {
          t->deleted              = true;
-         p_anim->pending_deletes = true;
+	 p_anim->flags          |= GFX_ANIM_FLAG_PENDING_DELETES;
       }
       else
       {
@@ -2230,7 +2230,7 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
     * (otherwise any entries that are simultaneously added
     * and deleted inside gfx_animation_update() won't get
     * deleted at all, producing utter chaos) */
-   if (p_anim->in_update)
+   if (p_anim->flags & GFX_ANIM_FLAG_IN_UPDATE)
    {
       for (i = 0; i < RBUF_LEN(p_anim->pending); ++i)
       {
