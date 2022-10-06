@@ -34,6 +34,13 @@
 
 RETRO_BEGIN_DECLS
 
+enum gfx_display_flags
+{
+   GFX_DISP_FLAG_HAS_WINDOWED     = (1 << 0),
+   GFX_DISP_FLAG_MSG_FORCE        = (1 << 1),
+   GFX_DISP_FLAG_FB_DIRTY         = (1 << 2)
+};
+
 #define GFX_SHADOW_ALPHA 0.50f
 
 /* Number of pixels corner-to-corner on a 1080p
@@ -65,7 +72,7 @@ RETRO_BEGIN_DECLS
  * so that we don't have to render the display graphics per-frame
  * unless a change has happened.
  * */
-#define GFX_DISPLAY_GET_UPDATE_PENDING(p_anim, p_disp) (ANIM_IS_ACTIVE(p_anim) || p_disp->framebuf_dirty)
+#define GFX_DISPLAY_GET_UPDATE_PENDING(p_anim, p_disp) (ANIM_IS_ACTIVE(p_anim) || (p_disp->flags & GFX_DISP_FLAG_FB_DIRTY))
 
 enum menu_driver_id_type
 {
@@ -207,9 +214,7 @@ struct gfx_display
 
    enum menu_driver_id_type menu_driver_id;
 
-   bool has_windowed;
-   bool msg_force;
-   bool framebuf_dirty;
+   uint8_t flags;
 };
 
 void gfx_display_free(void);

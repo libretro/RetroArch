@@ -4870,7 +4870,7 @@ static void rgui_render(void *data,
 
    if (!rgui->force_redraw)
    {
-      msg_force = p_disp->msg_force;
+      msg_force = p_disp->flags & GFX_DISP_FLAG_MSG_FORCE;
 
       if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
             && !msg_force)
@@ -4920,7 +4920,7 @@ static void rgui_render(void *data,
    if (rgui->bg_modified)
       rgui->bg_modified      = false;
 
-   p_disp->framebuf_dirty    = true;
+   p_disp->flags            |= GFX_DISP_FLAG_FB_DIRTY;
    GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 
    rgui->force_redraw        = false;
@@ -6373,13 +6373,13 @@ static void rgui_set_texture(void *data)
    rgui_t *rgui                    = (rgui_t*)data;
 
    /* Framebuffer is dirty and needs to be updated? */
-   if (!rgui || !p_disp->framebuf_dirty)
+   if (!rgui || !(p_disp->flags & GFX_DISP_FLAG_FB_DIRTY))
       return;
 
    fb_width               = p_disp->framebuf_width;
    fb_height              = p_disp->framebuf_height;
 
-   p_disp->framebuf_dirty = false;
+   p_disp->flags         &= ~GFX_DISP_FLAG_FB_DIRTY;
 
    if (internal_upscale_level == RGUI_UPSCALE_NONE)
       video_driver_set_texture_frame(rgui->frame_buf.data,
@@ -7123,11 +7123,11 @@ static int rgui_environ(enum menu_environ_cb type,
    {
       case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
          rgui->show_mouse          = true;
-         p_disp->framebuf_dirty    = true;
+         p_disp->flags            |= GFX_DISP_FLAG_FB_DIRTY;
          break;
       case MENU_ENVIRON_DISABLE_MOUSE_CURSOR:
          rgui->show_mouse          = false;
-         p_disp->framebuf_dirty    = false;
+         p_disp->flags            &= ~GFX_DISP_FLAG_FB_DIRTY;
          break;
       case MENU_ENVIRON_ENABLE_SCREENSAVER:
          rgui->show_screensaver    = true;
