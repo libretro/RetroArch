@@ -55,10 +55,15 @@ typedef struct
    float refresh_rate;
 } mali_ctx_data_t;
 
+#ifndef EGL_OPENGL_ES3_BIT
+#define EGL_OPENGL_ES3_BIT                  0x0040
+#endif
+
 mali_ctx_data_t *gfx_ctx_mali_fbdev_global=NULL;
-bool gfx_ctx_mali_fbdev_was_threaded=false;
-bool gfx_ctx_mali_fbdev_hw_ctx_trigger=false;
-bool gfx_ctx_mali_fbdev_restart_pending=false;
+static bool gfx_ctx_mali_fbdev_was_threaded=false;
+static bool gfx_ctx_mali_fbdev_hw_ctx_trigger=false;
+static bool gfx_ctx_mali_fbdev_restart_pending=false;
+static bool g_es3=false;
 
 static int gfx_ctx_mali_fbdev_get_vinfo(void *data)
 {
@@ -218,7 +223,7 @@ static void *gfx_ctx_mali_fbdev_init(void *video_driver)
    EGLint n;
    EGLint major, minor;
    EGLint format;
-   static const EGLint attribs_init[] = {
+   EGLint attribs_init[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
       EGL_BLUE_SIZE, 8,
@@ -228,8 +233,13 @@ static void *gfx_ctx_mali_fbdev_init(void *video_driver)
       EGL_NONE
    };
 
-   static const EGLint attribs_create[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2,
+   if (g_es3){
+      attribs_init[1] = EGL_OPENGL_ES3_BIT;
+   }
+   RARCH_LOG("GLES version = %d.\n", g_es3 ? 3 : 2);
+
+   EGLint attribs_create[] = {
+      EGL_CONTEXT_CLIENT_VERSION, g_es3 ? 3 : 2,
       EGL_NONE
    };
 
@@ -320,6 +330,12 @@ static enum gfx_ctx_api gfx_ctx_mali_fbdev_get_api(void *data)
 static bool gfx_ctx_mali_fbdev_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   unsigned version;
+   version = major * 100 + minor;
+
+   if (version >= 300)
+      g_es3 = true;
+
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
    return false;
