@@ -169,6 +169,21 @@ typedef struct d3d11_shader_t
    D3D11InputLayout    layout;
 } d3d11_shader_t;
 
+enum d3d11_state_flags
+{
+   D3D11_ST_FLAG_VSYNC               = (1 << 0),
+   D3D11_ST_FLAG_WAITABLE_SWAPCHAINS = (1 << 1),
+   D3D11_ST_FLAG_WAIT_FOR_VBLANK     = (1 << 2),
+   D3D11_ST_FLAG_RESIZE_CHAIN        = (1 << 3),
+   D3D11_ST_FLAG_KEEP_ASPECT         = (1 << 4),
+   D3D11_ST_FLAG_RESIZE_VIEWPORT     = (1 << 5),
+   D3D11_ST_FLAG_RESIZE_RTS          = (1 << 6), /* RT = Render Target */
+   D3D11_ST_FLAG_INIT_HISTORY        = (1 << 7),
+   D3D11_ST_FLAG_HAS_FLIP_MODEL      = (1 << 8),
+   D3D11_ST_FLAG_HAS_ALLOW_TEARING   = (1 << 9),
+   D3D11_ST_FLAG_HW_IFACE_ENABLE     = (1 << 10)
+};
+
 typedef struct
 {
    unsigned              cur_mon_id;
@@ -196,16 +211,7 @@ typedef struct
    DXGI_FORMAT           format;
    float                 clearcolor[4];
    unsigned              swap_interval;
-   bool                  vsync;
-   bool                  waitable_swapchains;
-   bool                  wait_for_vblank;
-   bool                  resize_chain;
-   bool                  keep_aspect;
-   bool                  resize_viewport;
-   bool                  resize_render_targets;
-   bool                  init_history;
-   bool                  has_flip_model;
-   bool                  has_allow_tearing;
+   uint16_t              flags;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
 #ifdef HAVE_DXGI_HDR
    enum dxgi_swapchain_bit_depth 
@@ -220,11 +226,7 @@ typedef struct
 #endif
    DXGIAdapter adapter;
 
-	struct
-   {
-      bool enable;
-      struct retro_hw_render_interface_d3d11 iface;
-   } hw;
+   struct retro_hw_render_interface_d3d11 hw_iface;
 
 #ifdef HAVE_DXGI_HDR
    struct
