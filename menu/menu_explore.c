@@ -1693,21 +1693,6 @@ uintptr_t menu_explore_get_entry_icon(unsigned type)
    return 0;
 }
 
-const char *menu_explore_get_entry_database(unsigned type)
-{
-   explore_entry_t* e;
-
-   if (!explore_state || type < EXPLORE_TYPE_FIRSTITEM)
-      return NULL;
-
-   e = &explore_state->entries[type - EXPLORE_TYPE_FIRSTITEM];
-
-   if (e < RBUF_END(explore_state->entries))
-      return e->by[EXPLORE_BY_SYSTEM]->str;
-
-   return NULL;
-}
-
 ssize_t menu_explore_get_entry_playlist_index(unsigned type,
       playlist_t **playlist, const struct playlist_entry **playlist_entry,
       file_list_t *list, size_t *list_pos, size_t *list_size)
@@ -1715,11 +1700,11 @@ ssize_t menu_explore_get_entry_playlist_index(unsigned type,
    int              pl_idx;
    explore_entry_t* entry;
 
-   if (!explore_state || type < EXPLORE_TYPE_FIRSTITEM)
+   if (!explore_state || type < EXPLORE_TYPE_FIRSTITEM
+         || explore_state->show_icons != EXPLORE_ICONS_CONTENT)
       return -1;
 
    entry = &explore_state->entries[type - EXPLORE_TYPE_FIRSTITEM];
-
    if (entry >= RBUF_END(explore_state->entries)
          || !entry->playlist_entry)
       return -1;
@@ -1755,9 +1740,18 @@ ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
 {
    const char *db_name;
    ssize_t playlist_index = -1;
-   playlist_t *playlist   = NULL;
+   playlist_t *playlist = NULL;
+   explore_entry_t* entry;
 
-   db_name = menu_explore_get_entry_database(type);
+   if (!explore_state || type < EXPLORE_TYPE_FIRSTITEM
+         || explore_state->show_icons != EXPLORE_ICONS_CONTENT)
+      return -1;
+
+   entry = &explore_state->entries[type - EXPLORE_TYPE_FIRSTITEM];
+   if (entry >= RBUF_END(explore_state->entries))
+      return -1;
+
+   db_name = entry->by[EXPLORE_BY_SYSTEM]->str;
    if (!string_is_empty(db_name))
       playlist_index = menu_explore_get_entry_playlist_index(type, &playlist, NULL, NULL, NULL, NULL);
 
@@ -1771,6 +1765,13 @@ ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
 
    gfx_thumbnail_set_content_playlist(thumbnail_path_data, NULL, 0);
    return -1;
+}
+
+bool menu_explore_is_content_list()
+{
+   if (explore_state)
+      return (explore_state->show_icons == EXPLORE_ICONS_CONTENT);
+   return explore_get_view_path() != NULL;
 }
 
 void menu_explore_context_init(void)

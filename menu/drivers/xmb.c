@@ -2602,19 +2602,17 @@ static void xmb_populate_entries(void *data,
                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)) ||
                           xmb_horizontal_type == MENU_EXPLORE_TAB;
 
+#if defined(HAVE_LIBRETRODB)
    if (xmb->is_explore_list)
    {
       /* Quick Menu under Explore list must also be Quick Menu */
       xmb->is_quick_menu |= menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu();
-      if (xmb->is_quick_menu)
-         xmb->is_explore_list = false;
-      else
+      if (!menu_explore_is_content_list())
+         xmb->is_explore_list = show_entry_idx = false;
+      else if (!xmb->is_quick_menu)
          xmb->skip_thumbnail_reset = true;
-      /* don't show entry index on the explore top menu */
-      if (k == MENU_EXPLORE_TAB && (!path ||
-            string_is_equal(path, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE))))
-         show_entry_idx = false;
    }
+#endif
 
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
    {

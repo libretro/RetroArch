@@ -10808,13 +10808,15 @@ static void ozone_populate_entries(void *data,
       ozone->skip_thumbnail_reset = true;
    }
 
-   /* Quick Menu under Explore list must also be Quick Menu */
+#if defined(HAVE_LIBRETRODB)
    if (ozone->is_explore_list)
    {
+      /* Quick Menu under Explore list must also be Quick Menu */
       ozone->is_quick_menu |= menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu();
-      if (ozone->is_quick_menu)
+      if (!menu_explore_is_content_list())
          ozone->is_explore_list = false;
    }
+#endif
 
    if (animate)
       if (ozone->categories_selection_ptr == ozone->categories_active_idx_old)
