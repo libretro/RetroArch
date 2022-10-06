@@ -220,6 +220,16 @@ void task_file_load_handler(retro_task_t *task);
 
 typedef struct screenshot_task_state screenshot_task_state_t;
 
+enum screenshot_task_flags
+{
+   SS_TASK_FLAG_BGR24               = (1 << 0),
+   SS_TASK_FLAG_SILENCE             = (1 << 1),
+   SS_TASK_FLAG_IS_IDLE             = (1 << 2),
+   SS_TASK_FLAG_IS_PAUSED           = (1 << 3),
+   SS_TASK_FLAG_HISTORY_LIST_ENABLE = (1 << 4),
+   SS_TASK_FLAG_WIDGETS_READY       = (1 << 5)
+};
+
 struct screenshot_task_state
 {
    struct scaler_ctx scaler;
@@ -232,15 +242,10 @@ struct screenshot_task_state
    unsigned height;
    unsigned pixel_format_type;
 
+   uint8_t flags;
+
    char filename[PATH_MAX_LENGTH];
    char shotname[NAME_MAX_LENGTH];
-
-   bool bgr24;
-   bool silence;
-   bool is_idle;
-   bool is_paused;
-   bool history_list_enable;
-   bool widgets_ready;
 };
 
 bool take_screenshot(

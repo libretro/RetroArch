@@ -62,7 +62,7 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
    bool ret                      = false;
 
 #if defined(HAVE_RPNG)
-   if (state->bgr24)
+   if (state->flags & SS_TASK_FLAG_BGR24)
       scaler->in_fmt             = SCALER_FMT_BGR24;
    else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
       scaler->in_fmt             = SCALER_FMT_ARGB8888;
@@ -134,9 +134,9 @@ static void task_screenshot_handler(retro_task_t *task)
 
    /* Push screenshot to image history playlist */
 #ifdef HAVE_IMAGEVIEWER
-   if (  ret                        &&
-         !state->silence            &&
-         state->history_list_enable
+   if (       ret
+         && !(state->flags & SS_TASK_FLAG_SILENCE)
+         &&  (state->flags & SS_TASK_FLAG_HISTORY_LIST_ENABLE)
          )
    {
       struct playlist_entry entry = {0};
@@ -156,7 +156,7 @@ static void task_screenshot_handler(retro_task_t *task)
    if (!ret)
    {
       char *msg = strdup(msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
-      runloop_msg_queue_push(msg, 1, state->is_paused ? 1 : 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, (state->flags & SS_TASK_FLAG_IS_PAUSED) ? 1 : 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       free(msg);
    }
 
@@ -179,7 +179,7 @@ task_finished:
    /* If display widgets are enabled, state is freed
       in the callback after the notification
       is displayed */
-   if (state && !state->widgets_ready)
+   if (state && !(state->flags & SS_TASK_FLAG_WIDGETS_READY))
 #endif
    {
       free(state);
@@ -203,7 +203,8 @@ static void task_screenshot_callback(retro_task_t *task,
    if (!(state = (screenshot_task_state_t*)task->state))
       return;
 
-   if (!state->silence && state->widgets_ready)
+   if (    !(state->flags & SS_TASK_FLAG_SILENCE)
+         && (state->flags & SS_TASK_FLAG_WIDGETS_READY))
       gfx_widget_screenshot_taken(dispwidget_get_ptr(),
             state->shotname, state->filename);
 
@@ -235,6 +236,7 @@ static bool screenshot_dump(
    struct retro_system_info system_info;
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
+   bool history_list_enable       = settings->bools.history_list_enable;
    screenshot_task_state_t *state = (screenshot_task_state_t*)
          calloc(1, sizeof(*state));
 
@@ -243,21 +245,26 @@ static bool screenshot_dump(
    if (fullpath)
       strlcpy(state->filename, name_base, sizeof(state->filename));
 
-   state->is_idle                = is_idle;
-   state->is_paused              = is_paused;
-   state->bgr24                  = bgr24;
+   if (is_idle)
+      state->flags              |= SS_TASK_FLAG_IS_IDLE;
+   if (is_paused)
+      state->flags              |= SS_TASK_FLAG_IS_PAUSED;
+   if (bgr24)
+      state->flags              |= SS_TASK_FLAG_BGR24;
    state->height                 = height;
    state->width                  = width;
    state->pitch                  = pitch;
    state->frame                  = frame;
    state->userbuf                = userbuf;
 #if defined(HAVE_GFX_WIDGETS)
-   state->widgets_ready          = gfx_widgets_ready();
-#else
-   state->widgets_ready          = false;
+   if (gfx_widgets_ready())
+      state->flags              |= SS_TASK_FLAG_WIDGETS_READY;
 #endif
-   state->silence                = savestate;
-   state->history_list_enable    = settings->bools.history_list_enable;
+   if (savestate)
+      state->flags              |= SS_TASK_FLAG_SILENCE;
+   
+   if (history_list_enable)
+      state->flags              |= SS_TASK_FLAG_HISTORY_LIST_ENABLE;
    state->pixel_format_type      = pixel_format_type;
 
    if (!fullpath)
@@ -355,23 +362,24 @@ static bool screenshot_dump(
       free(state);
       return false;
    }
-   state->out_buffer = buf;
+   state->out_buffer     = buf;
 #endif
 
    if (use_thread)
    {
       retro_task_t *task = task_init();
 
-      task->type        = TASK_TYPE_BLOCKING;
-      task->state       = state;
-      task->handler     = task_screenshot_handler;
-      task->mute        = savestate;
+      task->type         = TASK_TYPE_BLOCKING;
+      task->state        = state;
+      task->handler      = task_screenshot_handler;
+      task->mute         = savestate;
 #if defined(HAVE_GFX_WIDGETS)
       /* This callback is only required when
        * widgets are enabled */
-      task->callback    = state->widgets_ready ?
-            task_screenshot_callback : NULL;
-      if (state->widgets_ready && !savestate)
+      if (state->flags & SS_TASK_FLAG_WIDGETS_READY)
+         task->callback    = task_screenshot_callback;
+
+      if ((state->flags & SS_TASK_FLAG_WIDGETS_READY) && !savestate)
          task_free_title(task);
       else
 #endif
