@@ -30,10 +30,16 @@
 #include <gfx/math/matrix_4x4.h>
 
 #include "../retroarch.h"
-#include "../file_path_special.h"
 #include "../gfx/font_driver.h"
 
 RETRO_BEGIN_DECLS
+
+enum gfx_display_flags
+{
+   GFX_DISP_FLAG_HAS_WINDOWED     = (1 << 0),
+   GFX_DISP_FLAG_MSG_FORCE        = (1 << 1),
+   GFX_DISP_FLAG_FB_DIRTY         = (1 << 2)
+};
 
 #define GFX_SHADOW_ALPHA 0.50f
 
@@ -66,7 +72,7 @@ RETRO_BEGIN_DECLS
  * so that we don't have to render the display graphics per-frame
  * unless a change has happened.
  * */
-#define GFX_DISPLAY_GET_UPDATE_PENDING(p_anim, p_disp) (ANIM_IS_ACTIVE(p_anim) || p_disp->framebuf_dirty)
+#define GFX_DISPLAY_GET_UPDATE_PENDING(p_anim, p_disp) (ANIM_IS_ACTIVE(p_anim) || (p_disp->flags & GFX_DISP_FLAG_FB_DIRTY))
 
 enum menu_driver_id_type
 {
@@ -137,11 +143,7 @@ typedef struct gfx_display_ctx_driver
    const float *(*get_default_vertices)(void);
    /* Get the default texture coordinates matrix */
    const float *(*get_default_tex_coords)(void);
-   /* Initialize the first compatible font driver for this menu driver. */
-   bool (*font_init_first)(
-         void **font_handle, void *video_data,
-         const char *font_path, float font_size,
-         bool is_threaded);
+   enum font_driver_render_api  font_type;
    enum gfx_display_driver_type type;
    const char *ident;
    bool handles_transform;
@@ -174,16 +176,6 @@ struct gfx_display_ctx_draw
    enum gfx_display_prim_type prim_type;
    bool pipeline_active;
 };
-
-typedef struct gfx_display_ctx_rotate_draw
-{
-   math_matrix_4x4 *matrix;
-   float rotation;
-   float scale_x;
-   float scale_y;
-   float scale_z;
-   bool scale_enable;
-} gfx_display_ctx_rotate_draw_t;
 
 typedef struct gfx_display_ctx_coord_draw
 {
@@ -222,9 +214,7 @@ struct gfx_display
 
    enum menu_driver_id_type menu_driver_id;
 
-   bool has_windowed;
-   bool msg_force;
-   bool framebuf_dirty;
+   uint8_t flags;
 };
 
 void gfx_display_free(void);
@@ -246,12 +236,6 @@ void gfx_display_draw_text(
       uint32_t color, enum text_alignment text_align,
       float scale_factor, bool shadows_enable, float shadow_offset,
       bool draw_outside);
-
-font_data_t *gfx_display_font(
-      gfx_display_t *p_disp,
-      enum application_special_type type,
-      float font_size,
-      bool video_is_threaded);
 
 void gfx_display_scissor_begin(
       gfx_display_t *p_disp,
@@ -311,15 +295,27 @@ void gfx_display_draw_texture_slice(
       math_matrix_4x4 *mymat);
 
 void gfx_display_rotate_z(gfx_display_t *p_disp,
-      gfx_display_ctx_rotate_draw_t *draw, void *data);
+      math_matrix_4x4 *matrix, float cosine, float sine, void *data);
 
 font_data_t *gfx_display_font_file(gfx_display_t *p_disp,
       char* fontpath, float font_size, bool is_threaded);
 
 bool gfx_display_reset_textures_list(
-      const char *texture_path, const char *iconpath,
-      uintptr_t *item, enum texture_filter_type filter_type,
-      unsigned *width, unsigned *height);
+      const char *texture_path,
+      const char *iconpath,
+      uintptr_t *item,
+      enum texture_filter_type filter_type,
+      unsigned *width,
+      unsigned *height);
+
+bool gfx_display_reset_textures_list_buffer(
+        uintptr_t *item,
+        enum texture_filter_type filter_type,
+        void* buffer,
+        unsigned buffer_len,
+        enum image_type_enum image_type,
+        unsigned *width,
+        unsigned *height);
 
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
@@ -341,8 +337,6 @@ float gfx_display_get_dpi_scale(
 void gfx_display_deinit_white_texture(void);
 
 void gfx_display_init_white_texture(void);
-
-bool gfx_display_driver_exists(const char *s);
 
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);

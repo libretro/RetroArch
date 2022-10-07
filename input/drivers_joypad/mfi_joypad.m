@@ -17,7 +17,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <limits.h>
-#include <errno.h>
 
 #include <boolean.h>
 
@@ -61,7 +60,7 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
         return;
 
     slot               = (uint32_t)controller.playerIndex;
-    // if we have not assigned a slot to this controller yet, ignore it.
+    /* If we have not assigned a slot to this controller yet, ignore it. */
     if (slot >= MAX_USERS)
         return;
     buttons            = &mfi_buttons[slot];
@@ -69,13 +68,14 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
     /* retain the values from the paused controller handler and pass them through */
     if (@available(iOS 13, *))
     {
-        // The menu button can be pressed/unpressed like any other button in iOS 13
-        // so no need to passthrough anything
+        /* The menu button can be pressed/unpressed 
+         * like any other button in iOS 13,
+         * so no need to passthrough anything */
         *buttons = 0;
     }
     else
     {
-        // Use the paused controller handler for iOS versions below 13
+        /* Use the paused controller handler for iOS versions below 13 */
         pause              = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_START);
         select             = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
         l3                 = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_L3);
@@ -111,14 +111,15 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 || __TV_OS_VERSION_MAX_ALLOWED >= 130000
         if (@available(iOS 13, *))
         {
-            // Support "Options" button present in PS4 / XBox One controllers
+            /* Support "Options" button present in PS4 / XBox One controllers */
             *buttons         |= gp.buttonOptions.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
             
-            // Support buttons that aren't supported by older mFi controller via "hotkey" combinations:
-            //
-            // LS + Menu => Select
-            // LT + Menu => L3
-            // RT + Menu => R3
+            /* Support buttons that aren't supported by older mFi controller via "hotkey" combinations:
+             *
+             * LS + Menu => Select
+             * LT + Menu => L3
+             * RT + Menu => R3
+	     */
             if (gp.buttonMenu.pressed )
             {
                 if (gp.leftShoulder.pressed)
@@ -139,7 +140,8 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
         mfi_axes[slot][3]     = gp.rightThumbstick.yAxis.value * 32767.0f;
 
     }
-// GCGamepad is deprecated
+
+    /* GCGamepad is deprecated */
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
     else if (controller.gamepad)
@@ -169,19 +171,21 @@ static void apple_gamecontroller_joypad_poll(void)
         apple_gamecontroller_joypad_poll_internal(controller);
 }
 
-// GCGamepad is deprecated
+/* GCGamepad is deprecated */
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
 static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
 {
 #ifdef __IPHONE_14_0
-    // dont let tvOS or iOS do anything with **our** buttons!!
-    // iOS will start a screen recording if you hold or dbl click the OPTIONS button, we dont want that.
-    if (@available(iOS 14.0, tvOS 14.0, *)) {
+    /* Don't let tvOS or iOS do anything with **our** buttons!!
+     * iOS will start a screen recording if you hold or doubleclick  
+     * the OPTIONS button, we don't want that. */
+    if (@available(iOS 14.0, tvOS 14.0, *))
+    {
         GCExtendedGamepad *gp = (GCExtendedGamepad *)gamepad.controller.extendedGamepad;
         gp.buttonOptions.preferredSystemGestureState = GCSystemGestureStateDisabled;
-        gp.buttonMenu.preferredSystemGestureState = GCSystemGestureStateDisabled;
-        gp.buttonHome.preferredSystemGestureState = GCSystemGestureStateDisabled;
+        gp.buttonMenu.preferredSystemGestureState    = GCSystemGestureStateDisabled;
+        gp.buttonHome.preferredSystemGestureState    = GCSystemGestureStateDisabled;
     }
 #endif
     
@@ -190,13 +194,12 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
         apple_gamecontroller_joypad_poll_internal(updateGamepad.controller);
     };
 
+    /* controllerPausedHandler is deprecated in favor 
+     * of being able to deal with the menu
+     * button as any other button */
     if (@available(iOS 13, *))
-    {
-       // controllerPausedHandler is deprecated in favor of being able to deal with the menu
-       // button as any other button
        return;
-    }
-    else
+
     {
         gamepad.controller.controllerPausedHandler = ^(GCController *controller)
 
@@ -295,11 +298,11 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
             }
         }
 
-// GCGamepad is deprecated
+/* GCGamepad is deprecated */
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
         [mfiControllers addObject:controller];
-        // move any non-game controllers (like the siri remote) to the end
+        /* Move any non-game controllers (like the siri remote) to the end */
         if (mfiControllers.count > 1)
         {
            int newPlayerIndex = 0;

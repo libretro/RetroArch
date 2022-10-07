@@ -30,7 +30,7 @@
 
 #ifdef __linux__
 #include <linux/version.h>
-#if __STDC_VERSION__ >= 199901L
+#if __STDC_VERSION__ >= 199901L && !defined(ANDROID)
 #include "feralgamemode/gamemode_client.h"
 #define FERAL_GAMEMODE
 #endif
@@ -161,9 +161,9 @@ int system_property_get(const char *command,
       const char *args, char *value)
 {
    FILE *pipe;
+   char buffer[BUFSIZ];
+   char cmd[NAME_MAX_LENGTH];
    int length                   = 0;
-   char buffer[PATH_MAX_LENGTH] = {0};
-   char cmd[NAME_MAX_LENGTH]    = {0};
    char *curpos                 = NULL;
    size_t buf_pos               = strlcpy(cmd, command, sizeof(cmd));
 
@@ -172,16 +172,17 @@ int system_property_get(const char *command,
 
    buf_pos                      = strlcat(cmd, args, sizeof(cmd));
 
-   pipe                         = popen(cmd, "r");
-
-   if (!pipe)
-      goto error;
+   if (!(pipe = popen(cmd, "r")))
+   {
+      RARCH_ERR("Could not create pipe.\n");
+      return 0;
+   }
 
    curpos = value;
 
    while (!feof(pipe))
    {
-      if (fgets(buffer, 128, pipe))
+      if (fgets(buffer, sizeof(buffer), pipe))
       {
          int curlen = strlen(buffer);
 
@@ -197,10 +198,6 @@ int system_property_get(const char *command,
    pclose(pipe);
 
    return length;
-
-error:
-   RARCH_ERR("Could not create pipe.\n");
-   return 0;
 }
 
 #ifdef ANDROID
@@ -298,7 +295,6 @@ static void android_app_free(struct android_app* android_app)
    slock_lock(android_app->mutex);
 
    sthread_join(android_app->thread);
-   RARCH_LOG("Joined with RetroArch native thread.\n");
 
    slock_unlock(android_app->mutex);
 
@@ -312,23 +308,18 @@ static void android_app_free(struct android_app* android_app)
 
 static void onDestroy(ANativeActivity* activity)
 {
-   RARCH_LOG("onDestroy: %p\n", activity);
    android_app_free((struct android_app*)activity->instance);
 }
 
 static void onStart(ANativeActivity* activity)
 {
-   RARCH_LOG("Start: %p\n", activity);
-   int result;
-   result = system("sh -c \"sh /sdcard/switch\"");
-   RARCH_LOG("Result: %d\n", result);
+   int result = system("sh -c \"sh /sdcard/switch\"");
    android_app_set_activity_state((struct android_app*)
          activity->instance, APP_CMD_START);
 }
 
 static void onResume(ANativeActivity* activity)
 {
-   RARCH_LOG("Resume: %p\n", activity);
    android_app_set_activity_state((struct android_app*)
          activity->instance, APP_CMD_RESUME);
 }
@@ -339,8 +330,6 @@ static void* onSaveInstanceState(
    void* savedState = NULL;
    struct android_app* android_app = (struct android_app*)
       activity->instance;
-
-   RARCH_LOG("SaveInstanceState: %p\n", activity);
 
    slock_lock(android_app->mutex);
 
@@ -365,35 +354,30 @@ static void* onSaveInstanceState(
 
 static void onPause(ANativeActivity* activity)
 {
-   RARCH_LOG("Pause: %p\n", activity);
    android_app_set_activity_state((struct android_app*)
          activity->instance, APP_CMD_PAUSE);
 }
 
 static void onStop(ANativeActivity* activity)
 {
-   RARCH_LOG("Stop: %p\n", activity);
    android_app_set_activity_state((struct android_app*)
          activity->instance, APP_CMD_STOP);
 }
 
 static void onConfigurationChanged(ANativeActivity *activity)
 {
-   RARCH_LOG("ConfigurationChanged: %p\n", activity);
    android_app_write_cmd((struct android_app*)
          activity->instance, APP_CMD_CONFIG_CHANGED);
 }
 
 static void onLowMemory(ANativeActivity* activity)
 {
-   RARCH_LOG("LowMemory: %p\n", activity);
    android_app_write_cmd((struct android_app*)
          activity->instance, APP_CMD_LOW_MEMORY);
 }
 
 static void onWindowFocusChanged(ANativeActivity* activity, int focused)
 {
-   RARCH_LOG("WindowFocusChanged: %p -- %d\n", activity, focused);
    android_app_write_cmd((struct android_app*)activity->instance,
          focused ? APP_CMD_GAINED_FOCUS : APP_CMD_LOST_FOCUS);
 }
@@ -401,27 +385,23 @@ static void onWindowFocusChanged(ANativeActivity* activity, int focused)
 static void onNativeWindowCreated(ANativeActivity* activity,
       ANativeWindow* window)
 {
-   RARCH_LOG("NativeWindowCreated: %p -- %p\n", activity, window);
    android_app_set_window((struct android_app*)activity->instance, window);
 }
 
 static void onNativeWindowDestroyed(ANativeActivity* activity,
       ANativeWindow* window)
 {
-   RARCH_LOG("NativeWindowDestroyed: %p -- %p\n", activity, window);
    android_app_set_window((struct android_app*)activity->instance, NULL);
 }
 
 static void onInputQueueCreated(ANativeActivity* activity, AInputQueue* queue)
 {
-   RARCH_LOG("InputQueueCreated: %p -- %p\n", activity, queue);
    android_app_set_input((struct android_app*)activity->instance, queue);
 }
 
 static void onInputQueueDestroyed(ANativeActivity* activity,
       AInputQueue* queue)
 {
-   RARCH_LOG("InputQueueDestroyed: %p -- %p\n", activity, queue);
    android_app_set_input((struct android_app*)activity->instance, NULL);
 }
 
@@ -431,7 +411,6 @@ static void onContentRectChanged(ANativeActivity *activity,
    struct android_app *instance = (struct android_app*)activity->instance;
    unsigned width = rect->right - rect->left;
    unsigned height = rect->bottom - rect->top;
-   RARCH_LOG("Content rect changed: %u x %u\n", width, height);
    instance->content_rect.changed = true;
    instance->content_rect.width   = width;
    instance->content_rect.height  = height;
@@ -458,7 +437,6 @@ static void jni_thread_destruct(void *value)
 {
    JNIEnv *env = (JNIEnv*)value;
    struct android_app *android_app = (struct android_app*)g_android;
-   RARCH_LOG("jni_thread_destruct()\n");
 
    if (!env)
       return;
@@ -532,7 +510,6 @@ static struct android_app* android_app_create(ANativeActivity* activity,
 void ANativeActivity_onCreate(ANativeActivity* activity,
       void* savedState, size_t savedStateSize)
 {
-   RARCH_LOG("Creating Native Activity: %p\n", activity);
    activity->callbacks->onDestroy               = onDestroy;
    activity->callbacks->onStart                 = onStart;
    activity->callbacks->onResume                = onResume;
@@ -597,13 +574,9 @@ static void frontend_android_get_version_sdk(int32_t *sdk)
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
    system_property_get("getprop", "ro.build.version.sdk", os_version_str);
-
    *sdk = 0;
    if (os_version_str[0])
-   {
-      int num_read = sscanf(os_version_str, "%d", sdk);
-      (void) num_read;
-   }
+      *sdk = (int32_t)strtol(os_version_str, NULL, 10);
 }
 
 static bool device_is_xperia_play(const char *name)
@@ -646,13 +619,13 @@ static bool device_is_android_tv()
 
 bool test_permissions(const char *path)
 {
+   char buf[PATH_MAX_LENGTH];
    bool ret                  = false;
-   char buf[PATH_MAX_LENGTH] = {0};
 
    __android_log_print(ANDROID_LOG_INFO,
       "RetroArch", "Testing permissions for %s\n",path);
 
-   fill_pathname_join(buf, path, ".retroarch", sizeof(buf));
+   fill_pathname_join_special(buf, path, ".retroarch", sizeof(buf));
    ret = path_mkdir(buf);
 
    __android_log_print(ANDROID_LOG_INFO,
@@ -716,7 +689,8 @@ static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
 static void check_proc_acpi_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
 {
-   char path[1024];
+   char basenode[512];
+   char path[PATH_MAX_LENGTH];
    const char *base  = proc_acpi_battery_path;
    int64_t length    = 0;
    char         *ptr = NULL;
@@ -731,9 +705,8 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
    int          secs = -1;
    int           pct = -1;
 
-   path[0]           = '\0';
-
-   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
+   fill_pathname_join_special(basenode, base, node, sizeof(basenode));
+   fill_pathname_join_special(path, basenode, "state", sizeof(path));
 
    if (!filestream_exists(path))
       goto end;
@@ -741,7 +714,7 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
    if (!filestream_read_file(path, (void**)&buf, &length))
       goto end;
 
-   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "info");
+   fill_pathname_join_special(path, basenode, "info", sizeof(path));
    if (!filestream_read_file(path, (void**)&buf_info, &length))
       goto end;
 
@@ -825,7 +798,8 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       bool *have_battery, bool *charging, int *seconds,
       int *percent, int *valid_pct_idx)
 {
-   char path[1024];
+   char basenode[512];
+   char path[PATH_MAX_LENGTH];
    const char *base  = proc_acpi_sysfs_battery_path;
    char        *buf  = NULL;
    char         *ptr = NULL;
@@ -840,10 +814,9 @@ static void check_proc_acpi_sysfs_battery(const char *node,
    int          secs = -1;
    int           pct = -1;
 
-   path[0]           = '\0';
-
    /* Stat type. Avoid unknown or device supplies. Missing is considered System. */
-   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "scope");
+   fill_pathname_join_special(basenode, base, node, sizeof(basenode));
+   fill_pathname_join_special(path, basenode, "scope", sizeof(path));
 
    if (filestream_exists(path) != 0)
    {
@@ -858,7 +831,7 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       }
    }
 
-   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "status");
+   fill_pathname_join_special(path, basenode, "status", sizeof(path));
 
    if (!filestream_exists(path))
       return;
@@ -881,7 +854,7 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       buf = NULL;
    }
 
-   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "capacity");
+   fill_pathname_join_special(path, basenode, "capacity", sizeof(path));
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       goto end;
 
@@ -901,7 +874,8 @@ end:
 
 static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 {
-   char path[1024];
+   char basenode[512];
+   char path[PATH_MAX_LENGTH];
    const char *base = proc_acpi_ac_adapter_path;
    char       *buf  = NULL;
    char        *ptr = NULL;
@@ -909,9 +883,8 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
    char        *val = NULL;
    int64_t length   = 0;
 
-   path[0]          = '\0';
-
-   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
+   fill_pathname_join_special(basenode, base, node, sizeof(basenode));
+   fill_pathname_join_special(path, basenode, "state", sizeof(path));
    if (!filestream_exists(path))
       return;
 
@@ -937,10 +910,7 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    int64_t length   = 0;
    char     *buf    = NULL;
    const char *base = proc_acpi_sysfs_ac_adapter_path;
-
-   path[0]          = '\0';
-
-   snprintf(path, sizeof(path), "%s/%s", base, "online");
+   fill_pathname_join_special(path, base, "online", sizeof(path));
    if (!filestream_exists(path))
       return;
 
@@ -1186,9 +1156,6 @@ static int frontend_unix_get_rating(void)
 #ifdef ANDROID
    char device_model[PROP_VALUE_MAX] = {0};
    frontend_android_get_name(device_model, sizeof(device_model));
-
-   RARCH_LOG("ro.product.model: (%s).\n", device_model);
-
    if (device_is_xperia_play(device_model))
       return 6;
    else if (strstr(device_model, "GT-I9505"))
@@ -1222,6 +1189,11 @@ static enum frontend_powerstate frontend_unix_get_powerstate(
    *percent = battery_level;
 
    ret = (enum frontend_powerstate)powerstate;
+#elif defined(RETROFW)
+   *percent = retrofw_get_battery_level(&ret);
+
+   /* 'Time left' reporting is unsupported */
+   *seconds = -1;
 #elif defined(DINGUX)
    /* Dingux seems to have limited battery
     * reporting capability - if we get a valid
@@ -1274,7 +1246,7 @@ static enum frontend_architecture frontend_unix_get_arch(void)
          string_is_equal(val, "armv7b")
       )
       return FRONTEND_ARCH_ARMV7;
-   else if (string_starts_with(val, "arm"))
+   else if (string_starts_with_size(val, "arm", STRLEN_CONST("arm")))
       return FRONTEND_ARCH_ARM;
    else if (string_is_equal(val, "x86_64"))
       return FRONTEND_ARCH_X86_64;
@@ -1297,29 +1269,30 @@ static void frontend_unix_get_os(char *s,
    int rel;
    frontend_android_get_version(major, minor, &rel);
 
-   strcpy_literal(s, "Android");
+   strlcpy(s, "Android", len);
 #else
-   unsigned krel;
+   char *ptr;
    struct utsname buffer;
 
    if (uname(&buffer) != 0)
       return;
 
-   sscanf(buffer.release, "%d.%d.%u", major, minor, &krel);
+   *major = (int)strtol(buffer.release, &ptr, 10);
+   *minor = (int)strtol(++ptr, NULL, 10);
 #if defined(__FreeBSD__)
-   strcpy_literal(s, "FreeBSD");
+   strlcpy(s, "FreeBSD", len);
 #elif defined(__NetBSD__)
-   strcpy_literal(s, "NetBSD");
+   strlcpy(s, "NetBSD", len);
 #elif defined(__OpenBSD__)
-   strcpy_literal(s, "OpenBSD");
+   strlcpy(s, "OpenBSD", len);
 #elif defined(__DragonFly__)
-   strcpy_literal(s, "DragonFly BSD");
+   strlcpy(s, "DragonFly BSD", len);
 #elif defined(BSD)
-   strcpy_literal(s, "BSD");
+   strlcpy(s, "BSD", len);
 #elif defined(__HAIKU__)
-   strcpy_literal(s, "Haiku");
+   strlcpy(s, "Haiku", len);
 #else
-   strcpy_literal(s, "Linux");
+   strlcpy(s, "Linux", len);
 #endif
 #endif
 }
@@ -1812,7 +1785,7 @@ static void frontend_unix_get_env(int *argc,
       strlcat(base_path, "/.config/retroarch", sizeof(base_path));
    }
    else
-      strcpy_literal(base_path, "retroarch");
+      strlcpy(base_path, "retroarch", sizeof(base_path));
 #endif
 
    if (!string_is_empty(libretro_directory))
@@ -2031,7 +2004,6 @@ static bool frontend_unix_set_gamemode(bool on)
 
    return true;
 #else
-   (void)on;
    return false;
 #endif
 }
@@ -2086,8 +2058,6 @@ static void frontend_unix_init(void *data)
    memset(&g_android, 0, sizeof(g_android));
    g_android = (struct android_app*)android_app;
 
-   RARCH_LOG("Waiting for Android Native Window to be initialized ...\n");
-
    while (!android_app->window)
    {
       if (!android_run_events(android_app))
@@ -2098,10 +2068,7 @@ static void frontend_unix_init(void *data)
       }
    }
 
-   RARCH_LOG("Android Native Window initialized.\n");
-
-   env = jni_thread_getenv();
-   if (!env)
+   if (!(env = jni_thread_getenv()))
       return;
 
    GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
@@ -2177,54 +2144,52 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       volume_count = output;
    }
 
-   RARCH_LOG("external volumes: %d\n", volume_count);
-
    if (!string_is_empty(internal_storage_path))
    {
       if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
       {
          char user_data_path[PATH_MAX_LENGTH];
-         fill_pathname_join(user_data_path,
+         fill_pathname_join_special(user_data_path,
                internal_storage_path, "RetroArch",
                sizeof(user_data_path));
 
-         menu_entries_append_enum(list,
+         menu_entries_append(list,
                user_data_path,
                msg_hash_to_str(MSG_INTERNAL_STORAGE),
                enum_idx,
-               FILE_TYPE_DIRECTORY, 0, 0);
+               FILE_TYPE_DIRECTORY, 0, 0, NULL);
       }
 
-      menu_entries_append_enum(list,
+      menu_entries_append(list,
             internal_storage_path,
             msg_hash_to_str(MSG_INTERNAL_STORAGE),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    else
-      menu_entries_append_enum(list,
+      menu_entries_append(list,
             "/storage/emulated/0",
             msg_hash_to_str(MSG_REMOVABLE_STORAGE),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "/storage",
          msg_hash_to_str(MSG_REMOVABLE_STORAGE),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
    if (!string_is_empty(internal_storage_app_path))
-      menu_entries_append_enum(list,
+      menu_entries_append(list,
             internal_storage_app_path,
             msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    if (!string_is_empty(app_dir))
-      menu_entries_append_enum(list,
+      menu_entries_append(list,
             app_dir,
             msg_hash_to_str(MSG_APPLICATION_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    for (unsigned i=0; i < volume_count; i++)
    {
       static char aux_path[PATH_MAX_LENGTH];
@@ -2248,26 +2213,26 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
          (*env)->ReleaseStringUTFChars(env, jstr, str);
          if (!string_is_empty(aux_path))
-            menu_entries_append_enum(list,
+            menu_entries_append(list,
                   aux_path,
                   msg_hash_to_str(MSG_APPLICATION_DIR),
                   enum_idx,
-                  FILE_TYPE_DIRECTORY, 0, 0);
+                  FILE_TYPE_DIRECTORY, 0, 0, NULL);
       }
 
    }
 #elif defined(WEBOS)
    if (path_is_directory("/media/internal"))
-      menu_entries_append_enum(list, "/media/internal",
+      menu_entries_append(list, "/media/internal",
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
    if (path_is_directory("/tmp/usb"))
-      menu_entries_append_enum(list, "/tmp/usb",
+      menu_entries_append(list, "/tmp/usb",
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #else
    char base_path[PATH_MAX] = {0};
    char udisks_media_path[PATH_MAX] = {0};
@@ -2300,45 +2265,45 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
    if (!string_is_empty(base_path))
    {
-      menu_entries_append_enum(list, base_path,
+      menu_entries_append(list, base_path,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (!string_is_empty(home))
    {
-      menu_entries_append_enum(list, home,
+      menu_entries_append(list, home,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (path_is_directory(udisks_media_path))
    {
-      menu_entries_append_enum(list, udisks_media_path,
+      menu_entries_append(list, udisks_media_path,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (path_is_directory("/media"))
    {
-      menu_entries_append_enum(list, "/media",
+      menu_entries_append(list, "/media",
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
    if (path_is_directory("/mnt"))
    {
-      menu_entries_append_enum(list, "/mnt",
+      menu_entries_append(list, "/mnt",
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
 #endif
 
-   menu_entries_append_enum(list, "/",
+   menu_entries_append(list, "/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
 
    return 0;
@@ -2351,15 +2316,12 @@ static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         RARCH_LOG("FRONTEND_FORK_CORE\n");
          unix_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
          unix_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_RESTART:
-         RARCH_LOG("FRONTEND_FORK_RESTART\n");
          unix_fork_mode  = FRONTEND_FORK_CORE;
 
          {
@@ -2421,9 +2383,7 @@ static uint64_t frontend_unix_get_total_mem(void)
    line[0] = '\0';
 
    /* Open /proc/meminfo */
-   meminfo_file = fopen(PROC_MEMINFO_PATH, "r");
-
-   if (!meminfo_file)
+   if (!(meminfo_file = fopen(PROC_MEMINFO_PATH, "r")))
       return 0;
 
    /* Parse lines
@@ -2469,9 +2429,7 @@ static uint64_t frontend_unix_get_free_mem(void)
    line[0] = '\0';
 
    /* Open /proc/meminfo */
-   meminfo_file = fopen(PROC_MEMINFO_PATH, "r");
-
-   if (!meminfo_file)
+   if (!(meminfo_file = fopen(PROC_MEMINFO_PATH, "r")))
       return 0;
 
    /* Parse lines
@@ -2698,8 +2656,6 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
       int wd = inotify_add_watch(fd, list->elems[i].data, inotify_mask);
       union string_list_elem_attr attr = {0};
 
-      RARCH_LOG("Watching file for changes: %s\n", list->elems[i].data);
-
       int_vector_list_append(inotify_data->wd_list, wd);
       string_list_append(inotify_data->path_list, list->elems[i].data, attr);
    }
@@ -2745,8 +2701,6 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
                   /* found the right file, now sync it */
                   const char *path = inotify_data->path_list->elems[j].data;
                   FILE         *fp = (FILE*)fopen_utf8(path, "rb");
-
-                  RARCH_LOG("file change detected: %s\n", path);
 
                   if (fp)
                   {
@@ -2846,10 +2800,14 @@ static bool accessibility_speak_unix(int speed,
    else if (speed > 10)
       speed = 10;
 
-   strcpy_literal(voice_out, "-v");
+   voice_out[0] = '-';
+   voice_out[1] = 'v';
+   voice_out[2] = '\0';
    strlcat(voice_out, language, 5);
 
-   strcpy_literal(speed_out, "-s");
+   speed_out[0] = '-';
+   speed_out[1] = 's';
+   speed_out[2] = '\0';
    strlcat(speed_out, speeds[speed-1], 6);
 
    if (priority < 10 && speak_pid > 0)

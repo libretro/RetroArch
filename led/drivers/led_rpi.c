@@ -13,6 +13,7 @@
  */
 
 #include <stdio.h>
+#include <compat/strl.h>
 
 #include "../led_driver.h"
 #include "../led_defines.h"
@@ -46,6 +47,13 @@ static void rpi_init(void)
 
 static void rpi_free(void)
 {
+   int i;
+
+   for (i = 0; i < MAX_LEDS; i++)
+   {
+      rpi_cur->setup[i] = 0;
+      rpi_cur->map[i]   = 0;
+   }
 }
 
 static int set_gpio(int gpio, int value)
@@ -53,10 +61,9 @@ static int set_gpio(int gpio, int value)
    FILE *fp;
    char buf[256];
    snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", gpio);
-   fp = fopen(buf, "w");
 
    /* Failed to set GPIO? */
-   if (!fp)
+   if (!(fp = fopen(buf, "w")))
       return -1;
 
    fprintf(fp, "%d\n", value ? 1 : 0);
@@ -69,15 +76,13 @@ static int setup_gpio(int gpio)
    FILE *fp;
    char buf[256];
    snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/direction", gpio);
-   fp = fopen(buf, "w");
-
-   if(!fp)
+   
+   if (!(fp = fopen(buf, "w")))
    {
-      snprintf(buf, sizeof(buf), "/sys/class/gpio/export");
-      fp = fopen(buf, "w");
+      strlcpy(buf, "/sys/class/gpio/export", sizeof(buf));
 
       /* Failed to export GPIO? */
-      if (!fp)
+      if (!(fp = fopen(buf, "w")))
          return -1;
 
       fprintf(fp,"%d\n", gpio);

@@ -5,6 +5,7 @@ BUILD_RPX                  = 1
 DEBUG                      = 0
 GRIFFIN_BUILD              = 0
 SALAMANDER_BUILD           = 0
+HAVE_STATIC_DUMMY ?= 0
 WHOLE_ARCHIVE_LINK         = 0
 WIIU_HID                   = 1
 HAVE_HID                   = 1
@@ -65,6 +66,7 @@ ifeq ($(SALAMANDER_BUILD),1)
    OBJ += libretro-common/lists/dir_list.o
    OBJ += libretro-common/file/retro_dirent.o
    OBJ += libretro-common/compat/compat_strl.o
+   OBJ += libretro-common/compat/compat_strldup.o
    OBJ += libretro-common/file/config_file.o
    OBJ += libretro-common/streams/file_stream.o
    OBJ += libretro-common/vfs/vfs_implementation.o
@@ -118,7 +120,7 @@ endif
 		DEFINES += -DHAVE_REWIND
       DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DHAVE_CC_RESAMPLER
       DEFINES += -DHAVE_SPIRV_CROSS -DHAVE_SLANG
-      DEFINES += -DHAVE_STB_FONT -DHAVE_STB_VORBIS -DHAVE_LANGEXTRA -DHAVE_LIBRETRODB -DHAVE_NETWORKING -DHAVE_NETPLAYDISCOVERY
+      DEFINES += -DHAVE_STB_FONT -DHAVE_STB_VORBIS -DHAVE_LANGEXTRA -DHAVE_LIBRETRODB -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_NETPLAYDISCOVERY
       #DEFINES += -DWANT_IFADDRS
       #DEFINES += -DHAVE_FREETYPE
       DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
@@ -155,6 +157,7 @@ endif
       HAVE_LANGEXTRA = 1
       HAVE_LIBRETRODB = 1
       HAVE_NETWORKING = 1
+      HAVE_IFINFO = 1
       HAVE_NETPLAYDISCOVERY = 1
       HAVE_CHEEVOS = 1
       #WANT_IFADDRS = 1
@@ -223,7 +226,16 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END := -Wl,--no-whole-archive
 endif
 
-LIBS := $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm
+LIB_CORE :=
+
+ifeq ($(HAVE_STATIC_DUMMY),1)
+  DEFINES += -DHAVE_STATIC_DUMMY
+else
+  LIB_CORE += -lretro_wiiu
+endif
+
+
+LIBS := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END) -lm
 
 # Use portlibs zlib if deps/ isn't being used
 ifeq ($(HAVE_ZLIB),1)

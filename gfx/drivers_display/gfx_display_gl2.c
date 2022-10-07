@@ -20,7 +20,6 @@
 #endif
 
 #include "../../retroarch.h"
-#include "../font_driver.h"
 #include "../common/gl2_common.h"
 
 #include "../gfx_display.h"
@@ -331,20 +330,6 @@ static void gfx_display_gl2_draw_pipeline(
 #endif
 }
 
-static bool gfx_display_gl2_font_init_first(
-      void **font_handle, void *video_data,
-      const char *font_path, float menu_font_size,
-      bool is_threaded)
-{
-   font_data_t **handle = (font_data_t**)font_handle;
-   if (!(*handle = font_driver_init_first(video_data,
-         font_path, menu_font_size, true,
-         is_threaded,
-         FONT_DRIVER_RENDER_OPENGL_API)))
-		 return false;
-   return true;
-}
-
 static void gfx_display_gl2_scissor_begin(
       void *data,
       unsigned video_width,
@@ -387,7 +372,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    gfx_display_gl2_get_default_mvp,
    gfx_display_gl2_get_default_vertices,
    gfx_display_gl2_get_default_tex_coords,
-   gfx_display_gl2_font_init_first,
+   FONT_DRIVER_RENDER_OPENGL_API,
    GFX_VIDEO_DRIVER_OPENGL,
    "gl",
    false,

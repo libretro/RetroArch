@@ -1,0 +1,37 @@
+name: CI Windows i686 (MXE)
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: 
+      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-mxe-win32-cross:gcc10
+      options: --user root
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Compile RA
+      run: |
+        export MOC=/usr/lib/mxe/usr/i686-w64-mingw32.shared/qt5/bin/moc
+        ./configure --host=i686-w64-mingw32.shared
+        make clean
+        make -j$(getconf _NPROCESSORS_ONLN)
+
+    - name: Get short SHA
+      id: slug
+      run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
+    
+    - uses: actions/upload-artifact@v3
+      with:
+        name: retroarch${{ steps.slug.outputs.sha8 }}
+        path: |
+          retroarch.exe

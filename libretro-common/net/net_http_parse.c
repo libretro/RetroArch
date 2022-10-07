@@ -35,7 +35,7 @@
  * The buffer pointed to by @link is filled with the URL path the link points to,
  * and @name is filled with the title portion of the link.
  *
- * Returns: 0 if URL was parsed completely, otherwise 1.
+ * @return 0 if URL was parsed completely, otherwise 1.
  **/
 int string_parse_html_anchor(const char *line, char *link, char *name,
       size_t link_size, size_t name_size)

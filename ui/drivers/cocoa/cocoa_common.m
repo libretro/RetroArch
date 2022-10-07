@@ -38,6 +38,11 @@
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 
+#if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
+id<ApplePlatform> apple_platform;
+#else
+id apple_platform;
+#endif
 
 static CocoaView* g_instance;
 

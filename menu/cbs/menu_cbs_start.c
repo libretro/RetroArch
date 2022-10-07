@@ -31,6 +31,7 @@
 #endif
 
 #include "../../configuration.h"
+#include "../../file_path_special.h"
 #include "../../core.h"
 #include "../../core_info.h"
 #include "../../core_option_manager.h"
@@ -454,6 +455,20 @@ static int action_start_playlist_left_thumbnail_mode(
    return 0;
 }
 
+static int action_start_state_slot(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings      = config_get_ptr();
+
+   settings->ints.state_slot = 0;
+
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+
+   return 0;
+}
+
 static int action_start_playlist_sort_mode(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -610,8 +625,6 @@ static int action_start_core_lock(
       core_info_t *core_info = NULL;
       char msg[PATH_MAX_LENGTH];
 
-      msg[0] = '\0';
-
       /* Need to fetch core name for error message */
 
       /* If core is found, use display name */
@@ -620,7 +633,7 @@ static int action_start_core_lock(
          core_name = core_info->display_name;
       /* If not, use core file name */
       else
-         core_name = path_basename(core_path);
+         core_name = path_basename_nocompression(core_path);
 
       /* Build error message */
       strlcpy(msg, msg_hash_to_str(MSG_CORE_UNLOCK_FAILED), sizeof(msg));
@@ -671,8 +684,6 @@ static int action_start_core_set_standalone_exempt(
       core_info_t *core_info = NULL;
       char msg[PATH_MAX_LENGTH];
 
-      msg[0] = '\0';
-
       /* Need to fetch core name for error message */
 
       /* If core is found, use display name */
@@ -681,7 +692,7 @@ static int action_start_core_set_standalone_exempt(
          core_name = core_info->display_name;
       /* If not, use core file name */
       else
-         core_name = path_basename(core_path);
+         core_name = path_basename_nocompression(core_path);
 
       /* Build error message */
       strlcpy(msg,
@@ -798,6 +809,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             BIND_ACTION_START(cbs, action_start_bluetooth);
             break;
 #endif
+         case MENU_ENUM_LABEL_STATE_SLOT:
+            BIND_ACTION_START(cbs, action_start_state_slot);
+            break;
          default:
             return -1;
       }
@@ -866,6 +880,10 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
             BIND_ACTION_START(cbs, action_start_core_set_standalone_exempt);
+            break;
+         case MENU_SETTING_ACTION_SAVESTATE:
+         case MENU_SETTING_ACTION_LOADSTATE:
+            BIND_ACTION_START(cbs, action_start_state_slot);
             break;
          default:
             return -1;

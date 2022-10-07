@@ -149,8 +149,8 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
 
          if (!string_is_empty(track))
          {
-            unsigned track_number = 0;
-            sscanf(track, "%d", (int*)&track_number);
+            char *ptr             = NULL;
+            unsigned track_number = (unsigned)strtol(track, &ptr, 10);
 #ifdef MEDIA_CUE_PARSE_DEBUG
             printf("Found track: %d\n", track_number);
             fflush(stdout);
@@ -185,8 +185,8 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
 
          if (!string_is_empty(index))
          {
-            unsigned index_number = 0;
-            sscanf(index, "%d", (int*)&index_number);
+            char *ptr             = NULL;
+            unsigned index_number = (unsigned)strtol(index, &ptr, 10);
 
             if (index_number == 1)
             {
@@ -344,9 +344,6 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
       {
          const char *title_pos  = NULL;
          const char *serial_pos = NULL;
-#if 0
-         bool title_found       = false;
-#endif
 
          /* All discs currently in Redump for MCD start with SEGADISCSYSTEM. There are other strings mentioned elsewhere online,
           * but I have not seen any real examples of them. */
@@ -362,7 +359,12 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->title, sizeof(info->title));
          }
          else
-            strcpy_literal(info->title, "N/A");
+         {
+            info->title[0] = 'N';
+            info->title[1] = '/';
+            info->title[2] = 'A';
+            info->title[3] = '\0';
+         }
 
          serial_pos = buf + offset + 0x183;
 
@@ -372,7 +374,12 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->serial, sizeof(info->serial));
          }
          else
-            strcpy_literal(info->serial, "N/A");
+         {
+            info->serial[0] = 'N';
+            info->serial[1] = '/';
+            info->serial[2] = 'A';
+            info->serial[3] = '\0';
+         }
       }
       else if (!memcmp(buf + offset, "SEGA SEGASATURN",
                STRLEN_CONST("SEGA SEGASATURN")))
@@ -381,9 +388,6 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
          const char *serial_pos       = NULL;
          const char *version_pos      = NULL;
          const char *release_date_pos = NULL;
-#if 0
-         bool title_found             = false;
-#endif
 
          info->system_id = MEDIA_CD_SYSTEM_SATURN;
 
@@ -397,7 +401,12 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->title, sizeof(info->title));
          }
          else
-            strcpy_literal(info->title, "N/A");
+         {
+            info->title [0] = 'N';
+            info->title [1] = '/';
+            info->title [2] = 'A';
+            info->title [3] = '\0';
+         }
 
          serial_pos = buf + offset + 0x20;
 
@@ -407,7 +416,12 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->serial, sizeof(info->serial));
          }
          else
-            strcpy_literal(info->serial, "N/A");
+         {
+            info->serial[0] = 'N';
+            info->serial[1] = '/';
+            info->serial[2] = 'A';
+            info->serial[3] = '\0';
+         }
 
          version_pos = buf + offset + 0x2a;
 
@@ -417,7 +431,12 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->version, sizeof(info->version));
          }
          else
-            strcpy_literal(info->version, "N/A");
+         {
+            info->version[0] = 'N';
+            info->version[1] = '/';
+            info->version[2] = 'A';
+            info->version[3] = '\0';
+         }
 
          release_date_pos = buf + offset + 0x30;
 
@@ -427,7 +446,12 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->release_date, sizeof(info->release_date));
          }
          else
-            strcpy_literal(info->release_date, "N/A");
+         {
+            info->release_date[0] = 'N';
+            info->release_date[1] = '/';
+            info->release_date[2] = 'A';
+            info->release_date[3] = '\0';
+         }
       }
       else if (!memcmp(buf + offset, "SEGA SEGAKATANA", STRLEN_CONST("SEGA SEGAKATANA")))
       {
@@ -435,9 +459,6 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
          const char *serial_pos       = NULL;
          const char *version_pos      = NULL;
          const char *release_date_pos = NULL;
-#if 0
-         bool title_found             = false;
-#endif
 
          info->system_id = MEDIA_CD_SYSTEM_DREAMCAST;
 
@@ -451,7 +472,12 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->title, sizeof(info->title));
          }
          else
-            strcpy_literal(info->title, "N/A");
+         {
+            info->title       [0] = 'N';
+            info->title       [1] = '/';
+            info->title       [2] = 'A';
+            info->title       [3] = '\0';
+         }
 
          serial_pos = buf + offset + 0x40;
 
@@ -461,7 +487,12 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->serial, sizeof(info->serial));
          }
          else
-            strcpy_literal(info->serial, "N/A");
+         {
+            info->serial      [0] = 'N';
+            info->serial      [1] = '/';
+            info->serial      [2] = 'A';
+            info->serial      [3] = '\0';
+         }
 
          version_pos = buf + offset + 0x4a;
 
@@ -471,7 +502,12 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->version, sizeof(info->version));
          }
          else
-            strcpy_literal(info->version, "N/A");
+         {
+            info->version     [0] = 'N';
+            info->version     [1] = '/';
+            info->version     [2] = 'A';
+            info->version     [3] = '\0';
+         }
 
          release_date_pos = buf + offset + 0x50;
 
@@ -481,15 +517,17 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->release_date, sizeof(info->release_date));
          }
          else
-            strcpy_literal(info->release_date, "N/A");
+         {
+            info->release_date[0] = 'N';
+            info->release_date[1] = '/';
+            info->release_date[2] = 'A';
+            info->release_date[3] = '\0';
+         }
       }
       /* Primary Volume Descriptor fields of ISO9660 */
       else if (!memcmp(buf + offset + (16 * sector_size), "\1CD001\1\0PLAYSTATION", 19))
       {
          const char *title_pos = NULL;
-#if 0
-         bool title_found      = false;
-#endif
 
          info->system_id = MEDIA_CD_SYSTEM_PSX;
 
@@ -503,7 +541,12 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->title, sizeof(info->title));
          }
          else
-            strcpy_literal(info->title, "N/A");
+         {
+            info->title       [0] = 'N';
+            info->title       [1] = '/';
+            info->title       [2] = 'A';
+            info->title       [3] = '\0';
+         }
       }
       else if (!memcmp(buf + offset, "\x01\x5a\x5a\x5a\x5a\x5a\x01\x00\x00\x00\x00\x00", 12))
       {

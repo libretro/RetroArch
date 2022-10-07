@@ -55,9 +55,6 @@ static bool core_backup_get_backup_dir(
    char core_file_id[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
 
-   core_file_id[0] = '\0';
-   tmp[0]          = '\0';
-
    /* Extract core file 'ID' (name without extension + suffix)
     * from core path */
    if (string_is_empty(dir_libretro) ||
@@ -87,11 +84,13 @@ static bool core_backup_get_backup_dir(
    /* Get core backup directory
     * > If no assets directory is defined, use
     *   core directory as a base */
-   fill_pathname_join(tmp, string_is_empty(dir_core_assets) ?
-         dir_libretro : dir_core_assets,
+   fill_pathname_join_special(tmp,
+         string_is_empty(dir_core_assets)
+         ? dir_libretro 
+         : dir_core_assets,
                "core_backups", sizeof(tmp));
 
-   fill_pathname_join(backup_dir, tmp,
+   fill_pathname_join_special(backup_dir, tmp,
          core_file_id, len);
 
    if (string_is_empty(backup_dir))
@@ -113,8 +112,10 @@ static bool core_backup_get_backup_dir(
 /* Generates a timestamped core backup file path from
  * the specified core path. Returns true if successful */
 bool core_backup_get_backup_path(
-      const char *core_path, uint32_t crc, enum core_backup_mode backup_mode,
-      const char *dir_core_assets, char *backup_path, size_t len)
+      const char *core_path, uint32_t crc,
+      enum core_backup_mode backup_mode,
+      const char *dir_core_assets,
+      char *backup_path, size_t len)
 {
    time_t current_time;
    struct tm time_info;
@@ -123,7 +124,6 @@ bool core_backup_get_backup_path(
    char backup_dir[PATH_MAX_LENGTH];
    char backup_filename[PATH_MAX_LENGTH];
 
-   core_dir[0]        = '\0'; 
    backup_dir[0]      = '\0';
    backup_filename[0] = '\0';
 
@@ -165,7 +165,7 @@ bool core_backup_get_backup_path(
          FILE_PATH_CORE_BACKUP_EXTENSION);
 
    /* Build final path */
-   fill_pathname_join(backup_path, backup_dir,
+   fill_pathname_join_special(backup_path, backup_dir,
          backup_filename, len);
 
    return true;
@@ -281,9 +281,7 @@ bool core_backup_get_backup_crc(char *backup_path, uint32_t *crc)
                goto error;
 
             /* Convert to an integer */
-            *crc = (uint32_t)string_hex_to_unsigned(crc_str);
-
-            if (*crc == 0)
+            if ((*crc = (uint32_t)string_hex_to_unsigned(crc_str)) == 0)
                goto error;
 
             string_list_free(metadata_list);
@@ -383,7 +381,7 @@ enum core_backup_type core_backup_get_core_path(
                break;
 
             /* All good - build core path */
-            fill_pathname_join(core_path, dir_libretro,
+            fill_pathname_join_special(core_path, dir_libretro,
                   core_filename, len);
 
             backup_type = CORE_BACKUP_TYPE_ARCHIVE;
@@ -391,7 +389,7 @@ enum core_backup_type core_backup_get_core_path(
          break;
       case CORE_BACKUP_TYPE_LIB:
          /* This is a plain dynamic library file */
-         fill_pathname_join(core_path, dir_libretro,
+         fill_pathname_join_special(core_path, dir_libretro,
                backup_filename, len);
          backup_type = CORE_BACKUP_TYPE_LIB;
          break;

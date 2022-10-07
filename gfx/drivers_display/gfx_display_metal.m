@@ -21,7 +21,6 @@
 
 #include "../gfx_display.h"
 
-#include "../font_driver.h"
 #include "../../retroarch.h"
 #import "../common/metal_common.h"
 
@@ -113,23 +112,6 @@ static void gfx_display_metal_scissor_end(void *data,
    [md.display clearScissorRect];
 }
 
-static bool gfx_display_metal_font_init_first(
-   void **font_handle, void *video_data,
-   const char *font_path, float font_size,
-   bool is_threaded)
-{
-   font_data_t **handle = (font_data_t **)font_handle;
-   *handle = font_driver_init_first(video_data,
-         font_path, font_size, true,
-         is_threaded,
-         FONT_DRIVER_RENDER_METAL_API);
-
-   if (*handle)
-      return true;
-
-   return false;
-}
-
 gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    .draw                   = gfx_display_metal_draw,
    .draw_pipeline          = gfx_display_metal_draw_pipeline,
@@ -138,9 +120,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    .get_default_mvp        = gfx_display_metal_get_default_mvp,
    .get_default_vertices   = gfx_display_metal_get_default_vertices,
    .get_default_tex_coords = gfx_display_metal_get_default_tex_coords,
-   .font_init_first        = gfx_display_metal_font_init_first,
+   .font_type              = FONT_DRIVER_RENDER_METAL_API,
    .type                   = GFX_VIDEO_DRIVER_METAL,
-   .ident                  = "gfx_display_metal",
+   .ident                  = "metal",
    .handles_transform      = NO,
    .scissor_begin          = gfx_display_metal_scissor_begin,
    .scissor_end            = gfx_display_metal_scissor_end

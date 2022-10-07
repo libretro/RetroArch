@@ -73,12 +73,14 @@ void cmd_take_screenshot(void)
 static void frontend_emscripten_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   char base_path[PATH_MAX] = {0};
-   char user_path[PATH_MAX] = {0};
+   char base_path[PATH_MAX];
+   char user_path[PATH_MAX];
    const char *home         = getenv("HOME");
 
    if (home)
    {
+      base_path[0]          = '\0';
+      user_path[0]          = '\0';
       snprintf(base_path, sizeof(base_path),
             "%s/retroarch", home);
       snprintf(user_path, sizeof(user_path),
@@ -86,8 +88,8 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    }
    else
    {
-      snprintf(base_path, sizeof(base_path), "retroarch");
-      snprintf(user_path, sizeof(user_path), "retroarch/userdata");
+      strlcpy(base_path, "retroarch", sizeof(base_path));
+      strlcpy(user_path, "retroarch/userdata", sizeof(user_path));
    }
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,

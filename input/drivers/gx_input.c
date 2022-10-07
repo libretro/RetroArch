@@ -265,16 +265,16 @@ static void rvl_input_poll(void *data)
 
 static uint64_t rvl_input_get_capabilities(void *data)
 {
-   return (1 << RETRO_DEVICE_JOYPAD) |
-          (1 << RETRO_DEVICE_ANALOG) |
-          (1 << RETRO_DEVICE_MOUSE) |
-          (1 << RETRO_DEVICE_LIGHTGUN);
+   return   (1 << RETRO_DEVICE_JOYPAD)
+          | (1 << RETRO_DEVICE_ANALOG)
+          | (1 << RETRO_DEVICE_MOUSE)
+          | (1 << RETRO_DEVICE_LIGHTGUN);
 }
 #else
 static uint64_t gx_input_get_capabilities(void *data)
 {
-   return (1 << RETRO_DEVICE_JOYPAD) |
-          (1 << RETRO_DEVICE_ANALOG);
+   return   (1 << RETRO_DEVICE_JOYPAD)
+          | (1 << RETRO_DEVICE_ANALOG);
 }
 #endif
 

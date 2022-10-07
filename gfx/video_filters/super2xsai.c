@@ -216,11 +216,12 @@ static void supertwoxsai_generic_xrgb8888(unsigned width, unsigned height,
       {
          supertwoxsai_declare_variables(uint32_t, in, nextline);
 
-         //---------------------------    B1 B2
-         //                             4  5  6 S2
-         //                             1  2  3 S1
-         //                               A1 A2
-         //--------------------------------------
+         /*---------------------------    B1 B2
+          *                             4  5  6 S2
+          *                             1  2  3 S1
+          *                               A1 A2
+          *--------------------------------------
+          */
 
          supertwoxsai_function(supertwoxsai_result, supertwoxsai_interpolate_xrgb8888, supertwoxsai_interpolate2_xrgb8888);
       }
@@ -246,11 +247,12 @@ static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
       {
          supertwoxsai_declare_variables(uint16_t, in, nextline);
 
-         //---------------------------    B1 B2
-         //                             4  5  6 S2
-         //                             1  2  3 S1
-         //                               A1 A2
-         //--------------------------------------
+         /*---------------------------    B1 B2
+          *                             4  5  6 S2
+          *                             1  2  3 S1
+          *                               A1 A2
+          *--------------------------------------
+          */
 
          supertwoxsai_function(supertwoxsai_result, supertwoxsai_interpolate_rgb565, supertwoxsai_interpolate2_rgb565);
       }
@@ -311,7 +313,8 @@ static void supertwoxsai_generic_packets(void *data,
       thr->width = width;
       thr->height = y_end - y_start;
 
-      // Workers need to know if they can access pixels outside their given buffer.
+      /* Workers need to know if they can access pixels 
+       * outside their given buffer. */
       thr->first = y_start;
       thr->last = y_end == height;
 

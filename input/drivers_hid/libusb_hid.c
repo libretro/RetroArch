@@ -113,12 +113,12 @@ static void adapter_thread(void *data)
       slock_unlock(adapter->send_control_lock);
 
       libusb_interrupt_transfer(adapter->handle,
-            adapter->endpoint_in, &adapter->data[1],
+            adapter->endpoint_in, &adapter->data[0],
             adapter->endpoint_in_max_size, &size, 1000);
 
       if (adapter && hid && hid->slots && size)
          pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
-               adapter->data, size+1);
+               adapter->data, size);
    }
 }
 

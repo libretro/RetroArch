@@ -445,7 +445,8 @@ static void* rsx_init(const video_info_t* video,
 
    rsx_context_bind_hw_render(rsx, true);
 
-   if (video->font_enable) {
+   if (video->font_enable)
+   {
       font_driver_init_osd(rsx,
             video,
             false,
@@ -460,7 +461,13 @@ static void* rsx_init(const video_info_t* video,
 static void rsx_set_projection(rsx_t *rsx,
       struct video_ortho *ortho, bool allow_rotate)
 {
-   math_matrix_4x4 rot;
+   static math_matrix_4x4 rot     = {
+      { 0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    1.0f }
+   };
+   float radians, cosine, sine;
 
    /* Calculate projection. */
    matrix_4x4_ortho(rsx->mvp_no_rot, ortho->left, ortho->right,
@@ -472,7 +479,13 @@ static void rsx_set_projection(rsx_t *rsx,
       return;
    }
 
-   matrix_4x4_rotate_z(rot, M_PI * rsx->rotation / 180.0f);
+   radians                 = M_PI * rsx->rotation / 180.0f;
+   cosine                  = cosf(radians);
+   sine                    = sinf(radians);
+   MAT_ELEM_4X4(rot, 0, 0) = cosine;
+   MAT_ELEM_4X4(rot, 0, 1) = -sine;
+   MAT_ELEM_4X4(rot, 1, 0) = sine;
+   MAT_ELEM_4X4(rot, 1, 1) = cosine;
    matrix_4x4_multiply(rsx->mvp, rot, rsx->mvp_no_rot);
 }
 
@@ -624,7 +637,6 @@ static uintptr_t rsx_load_texture(void *video_data, void *data,
 static void rsx_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
-   rsx_t *rsx = (rsx_t *)data;
    rsx_texture_t *texture = (rsx_texture_t *)handle;
    if (texture) {
       if(texture->data)
@@ -1118,7 +1130,7 @@ static void rsx_set_rotation(void* data, unsigned rotation)
    rsx_set_projection(gcm, &ortho, true);
 }
 
-static void rsx_set_filtering(void* data, unsigned index, bool smooth)
+static void rsx_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
 {
    rsx_t* gcm = (rsx_t*)data;
 

@@ -34,93 +34,417 @@ int database_info_build_query_enum(char *s, size_t len,
       enum database_query_type type,
       const char *path)
 {
-   bool add_quotes = true;
-   bool add_glob   = false;
-
-   s[0]            = '{';
-   s[1]            = '\'';
-   s[2]            = '\0';
+   size_t pos = 0;
 
    switch (type)
    {
       case DATABASE_QUERY_ENTRY:
-         strlcat(s, "name", len);
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'n';
+         s[3]       = 'a';
+         s[4]       = 'm';
+         s[5]       = 'e';
+         s[6]       = '\'';
+         s[7]       = ':';
+         s[8]       = '"';
+         s[9]       = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '"';
+         s[pos+1]   = '}';
+         s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_PUBLISHER:
-         strlcat(s, "publisher", len);
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'p';
+         s[3]       = 'u';
+         s[4]       = 'b';
+         s[5]       = 'l';
+         s[6]       = 'i';
+         s[7]       = 's';
+         s[8]       = 'h';
+         s[9]       = 'e';
+         s[10]      = 'r';
+         s[11]      = '\'';
+         s[12]      = ':';
+         s[13]      = '"';
+         s[14]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '"';
+         s[pos+1]   = '}';
+         s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_DEVELOPER:
-         strlcat(s, "developer", len);
-         add_glob   = true;
-         add_quotes = false;
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'd';
+         s[3]       = 'e';
+         s[4]       = 'v';
+         s[5]       = 'e';
+         s[6]       = 'l';
+         s[7]       = 'o';
+         s[8]       = 'p';
+         s[9]       = 'e';
+         s[10]      = 'r';
+         s[11]      = '\'';
+         s[12]      = ':';
+         s[13]      = 'g';
+         s[14]      = 'l';
+         s[15]      = 'o';
+         s[16]      = 'b';
+         s[17]      = '(';
+         s[18]      = '\'';
+         s[19]      = '*';
+         s[20]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '*';
+         s[pos+1]   = '\'';
+         s[pos+2]   = ')';
+         s[pos+3]   = '}';
+         s[pos+4]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_ORIGIN:
-         strlcat(s, "origin", len);
+         s[0]       = '{';
+	      s[1]       = '\'';
+         s[2]       = 'o';
+         s[3]       = 'r';
+         s[4]       = 'i';
+         s[5]       = 'g';
+         s[6]       = 'i';
+         s[7]       = 'n';
+         s[8]       = '\'';
+         s[9]       = ':';
+         s[10]      = '"';
+         s[11]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '"';
+         s[pos+1]   = '}';
+         s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_FRANCHISE:
-         strlcat(s, "franchise", len);
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'f';
+         s[3]       = 'r';
+         s[4]       = 'a';
+         s[5]       = 'n';
+         s[6]       = 'c';
+         s[7]       = 'h';
+         s[8]       = 'i';
+         s[9]       = 's';
+         s[10]      = 'e';
+         s[11]      = '\'';
+         s[12]      = ':';
+         s[13]      = '"';
+         s[14]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '"';
+         s[pos+1]   = '}';
+         s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_RATING:
-         strlcat(s, "esrb_rating", len);
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'e';
+         s[3]       = 's';
+         s[4]       = 'r';
+         s[5]       = 'b';
+         s[6]       = '_';
+         s[7]       = 'r';
+         s[8]       = 'a';
+         s[9]       = 't';
+         s[10]      = 'i';
+         s[11]      = 'n';
+         s[12]      = 'g';
+         s[13]      = '\'';
+         s[14]      = ':';
+         s[15]      = '"';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '"';
+         s[pos+1]   = '}';
+         s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_BBFC_RATING:
-         strlcat(s, "bbfc_rating", len);
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'b';
+         s[3]       = 'b';
+         s[4]       = 'f';
+         s[5]       = 'c';
+         s[6]       = '_';
+         s[7]       = 'r';
+         s[8]       = 'a';
+         s[9]       = 't';
+         s[10]      = 'i';
+         s[11]      = 'n';
+         s[12]      = 'g';
+         s[13]      = '\'';
+         s[14]      = ':';
+         s[15]      = '"';
+         s[16]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '"';
+         s[pos+1]   = '}';
+         s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_ELSPA_RATING:
-         strlcat(s, "elspa_rating", len);
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'e';
+         s[3]       = 'l';
+         s[4]       = 's';
+         s[5]       = 'p';
+         s[6]       = 'a';
+         s[7]       = '_';
+         s[8]       = 'r';
+         s[9]       = 'a';
+         s[10]      = 't';
+         s[11]      = 'i';
+         s[12]      = 'n';
+         s[13]      = 'g';
+         s[14]      = '\'';
+         s[15]      = ':';
+         s[16]      = '"';
+         s[17]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '"';
+         s[pos+1]   = '}';
+         s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_ESRB_RATING:
-         strlcat(s, "esrb_rating", len);
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'e';
+         s[3]       = 's';
+         s[4]       = 'r';
+         s[5]       = 'b';
+         s[6]       = '_';
+         s[7]       = 'r';
+         s[8]       = 'a';
+         s[9 ]      = 't';
+         s[10]      = 'i';
+         s[11]      = 'n';
+         s[12]      = 'g';
+         s[13]      = '\'';
+         s[14]      = ':';
+         s[15]      = '"';
+         s[16]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '"';
+         s[pos+1]   = '}';
+         s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_PEGI_RATING:
-         strlcat(s, "pegi_rating", len);
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'p';
+         s[3]       = 'e';
+         s[4]       = 'g';
+         s[5]       = 'i';
+         s[6]       = '_';
+         s[7]       = 'r';
+         s[8]       = 'a';
+         s[9]       = 't';
+         s[10]      = 'i';
+         s[11]      = 'n';
+         s[12]      = 'g';
+         s[13]      = '\'';
+         s[14]      = ':';
+         s[15]      = '"';
+         s[16]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '"';
+         s[pos+1]   = '}';
+         s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_CERO_RATING:
-         strlcat(s, "cero_rating", len);
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'c';
+         s[3]       = 'e';
+         s[4]       = 'r';
+         s[5]       = 'o';
+         s[6]       = '_';
+         s[7]       = 'r';
+         s[8]       = 'a';
+         s[9]       = 't';
+         s[10]      = 'i';
+         s[11]      = 'n';
+         s[12]      = 'g';
+         s[13]      = '\'';
+         s[14]      = ':';
+         s[15]      = '"';
+         s[16]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '"';
+         s[pos+1]   = '}';
+         s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_ENHANCEMENT_HW:
-         strlcat(s, "enhancement_hw", len);
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'e';
+         s[3]       = 'n';
+         s[4]       = 'h';
+         s[5]       = 'a';
+         s[6]       = 'n';
+         s[7]       = 'c';
+         s[8]       = 'e';
+         s[9]       = 'm';
+         s[10]      = 'e';
+         s[11]      = 'n';
+         s[12]      = 't';
+         s[13]      = '_';
+         s[14]      = 'h';
+         s[15]      = 'w';
+         s[16]      = '\'';
+         s[17]      = ':';
+         s[18]      = '"';
+         s[19]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '"';
+         s[pos+1]   = '}';
+         s[pos+2]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_RATING:
-         strlcat(s, "edge_rating", len);
-         add_quotes = false;
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'e';
+         s[3]       = 'd';
+         s[4]       = 'g';
+         s[5]       = 'e';
+         s[6]       = '_';
+         s[7]       = 'r';
+         s[8]       = 'a';
+         s[9]       = 't';
+         s[10]      = 'i';
+         s[11]      = 'n';
+         s[12]      = 'g';
+         s[13]      = '\'';
+         s[14]      = ':';
+         s[15]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '}';
+         s[pos+1]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE:
-         strlcat(s, "edge_issue", len);
-         add_quotes = false;
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'e';
+         s[3]       = 'd';
+         s[4]       = 'g';
+         s[5]       = 'e';
+         s[6]       = '_';
+         s[7]       = 'i';
+         s[8]       = 's';
+         s[9]       = 's';
+         s[10]      = 'u';
+         s[11]      = 'e';
+         s[12]      = '\'';
+         s[13]      = ':';
+         s[14]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '}';
+         s[pos+1]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING:
-         strlcat(s, "famitsu_rating", len);
-         add_quotes = false;
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'f';
+         s[3]       = 'a';
+         s[4]       = 'm';
+         s[5]       = 'i';
+         s[6]       = 't';
+         s[7]       = 's';
+         s[8]       = 'u';
+         s[9]       = '_';
+         s[10]      = 'r';
+         s[11]      = 'a';
+         s[12]      = 't';
+         s[13]      = 'i';
+         s[14]      = 'n';
+         s[15]      = 'g';
+         s[16]      = '\'';
+         s[17]      = ':';
+         s[18]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '}';
+         s[pos+1]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_RELEASEDATE_MONTH:
-         strlcat(s, "releasemonth", len);
-         add_quotes = false;
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'r';
+         s[3]       = 'e';
+         s[4]       = 'l';
+         s[5]       = 'e';
+         s[6]       = 'a';
+         s[7]       = 's';
+         s[8]       = 'e';
+         s[9]       = 'm';
+         s[10]      = 'o';
+         s[11]      = 'n';
+         s[12]      = 't';
+         s[13]      = 'h';
+         s[14]      = '\'';
+         s[15]      = ':';
+         s[16]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '}';
+         s[pos+1]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR:
-         strlcat(s, "releaseyear", len);
-         add_quotes = false;
+	      s[0]       = '{';
+	      s[1]       = '\'';
+         s[2]       = 'r';
+         s[3]       = 'e';
+         s[4]       = 'l';
+         s[5]       = 'e';
+         s[6]       = 'a';
+         s[7]       = 's';
+         s[8]       = 'e';
+         s[9]       = 'y';
+         s[10]      = 'e';
+         s[11]      = 'a';
+         s[12]      = 'r';
+         s[13]      = '\'';
+         s[14]      = ':';
+         s[15]      = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '}';
+         s[pos+1]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_MAX_USERS:
-         strlcat(s, "users", len);
-         add_quotes = false;
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = 'u';
+         s[3]       = 's';
+         s[4]       = 'e';
+         s[5]       = 'r';
+         s[6]       = 's';
+         s[7]       = '\'';
+         s[8]       = ':';
+         s[9]       = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '}';
+         s[pos+1]   = '\0';
          break;
       case DATABASE_QUERY_NONE:
+         s[0]       = '{';
+         s[1]       = '\'';
+         s[2]       = '\'';
+         s[3]       = ':';
+         s[4]       = '\'';
+         s[5]       = ':';
+         s[6]       = '"';
+         s[7]       = '\0';
+         pos        = strlcat(s, path, len);
+         s[pos  ]   = '"';
+         s[pos+1]   = '}';
+         s[pos+2]   = '\0';
          break;
    }
-
-   strlcat(s, "':", len);
-   if (add_glob)
-      strlcat(s, "glob('*", len);
-   if (add_quotes)
-      strlcat(s, "\"", len);
-   strlcat(s, path, len);
-   if (add_glob)
-      strlcat(s, "*')", len);
-   if (add_quotes)
-      strlcat(s, "\"", len);
-
-   strlcat(s, "}", len);
 
    return 0;
 }
@@ -418,14 +742,6 @@ error:
    return -1;
 }
 
-static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
-{
-   libretrodb_cursor_close(cur);
-   libretrodb_close(db);
-
-   return 0;
-}
-
 static bool type_is_prioritized(const char *path)
 {
    const char *ext = path_get_extension(path);
@@ -465,11 +781,9 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
    core_info_get_list(&core_info_list);
 
-   list = dir_list_new(dir, core_info_list ? core_info_list->all_ext : NULL,
+   if (!(list = dir_list_new(dir, core_info_list ? core_info_list->all_ext : NULL,
          false, show_hidden_files,
-         false, true);
-
-   if (!list)
+         false, true)))
    {
       free(db);
       return NULL;
@@ -496,16 +810,13 @@ database_info_handle_t *database_info_file_init(const char *path,
    if (!db)
       return NULL;
 
-   attr.i             = 0;
-
-   list               = string_list_new();
-
-   if (!list)
+   if (!(list = string_list_new()))
    {
       free(db);
       return NULL;
    }
 
+   attr.i                 = 0;
    string_list_append(list, path, attr);
 
    db->status             = DATABASE_STATUS_ITERATE;
@@ -518,10 +829,8 @@ database_info_handle_t *database_info_file_init(const char *path,
 
 void database_info_free(database_info_handle_t *db)
 {
-   if (!db)
-      return;
-
-   string_list_free(db->list);
+   if (db)
+      string_list_free(db->list);
 }
 
 database_info_list_t *database_info_list_new(
@@ -666,7 +975,8 @@ database_info_list_t *database_info_list_new(
 end:
    if (db)
    {
-      database_cursor_close(db, cur);
+      libretrodb_cursor_close(cur);
+      libretrodb_close(db);
       libretrodb_free(db);
    }
    if (cur)

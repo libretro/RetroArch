@@ -202,7 +202,7 @@
  * Real x resolution = aspect * base_size * x scale
  * Real y resolution = base_size * y scale
  */
-#define DEFAULT_SCALE (3.0)
+#define DEFAULT_SCALE 3
 
 /* Fullscreen */
 
@@ -223,6 +223,10 @@
 #else
 #define DEFAULT_WINDOWED_FULLSCREEN true 
 #endif 
+
+/* Enable automatic switching of the screen refresh rate when using the specified screen mode(s),
+ * based on running core/content */
+#define DEFAULT_AUTOSWITCH_REFRESH_RATE AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN
 
 /* Which monitor to prefer. 0 is any monitor, 1 and up selects
  * specific monitors, 1 being the first monitor. */
@@ -331,8 +335,19 @@
 /* Video VSYNC (recommended) */
 #define DEFAULT_VSYNC true
 
+/* Vulkan specific */
 #define DEFAULT_MAX_SWAPCHAIN_IMAGES 3
 
+/* D3D1x specific */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define DEFAULT_WAITABLE_SWAPCHAINS false
+#else
+#define DEFAULT_WAITABLE_SWAPCHAINS true
+#endif
+#define DEFAULT_MAX_FRAME_LATENCY 1
+#define MAXIMUM_MAX_FRAME_LATENCY 4
+
+/* GL specific */
 #define DEFAULT_ADAPTIVE_VSYNC false
 
 /* Attempts to hard-synchronize CPU and GPU.
@@ -497,6 +512,9 @@
 /* Save configuration file on exit. */
 #define DEFAULT_CONFIG_SAVE_ON_EXIT true
 
+/* Save active input remap file on exit/close content */
+#define DEFAULT_REMAP_SAVE_ON_EXIT true
+
 #define DEFAULT_SHOW_HIDDEN_FILES false
 
 /* Initialise file browser with the last used start directory */
@@ -619,6 +637,8 @@
 #define DEFAULT_QUICK_MENU_SHOW_CLOSE_CONTENT true
 
 #define DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT true
+
+#define DEFAULT_QUICK_MENU_SHOW_SAVESTATE_SUBMENU false
 
 #define DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE true
 
@@ -744,9 +764,12 @@ static const bool content_show_playlists    = true;
 #define DEFAULT_MENU_CONTENT_SHOW_CONTENTLESS_CORES MENU_CONTENTLESS_CORES_DISPLAY_SINGLE_PURPOSE
 
 #ifdef HAVE_XMB
-#define DEFAULT_XMB_ANIMATION 0
-#define DEFAULT_XMB_VERTICAL_FADE_FACTOR 100
-#define DEFAULT_XMB_TITLE_MARGIN 5
+#define DEFAULT_XMB_ANIMATION                      0
+#define DEFAULT_XMB_VERTICAL_FADE_FACTOR           100
+#define DEFAULT_XMB_SHOW_TITLE_HEADER              true
+#define DEFAULT_XMB_TITLE_MARGIN                   5
+#define DEFAULT_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET 0
+#define MAXIMUM_XMB_TITLE_MARGIN                   12
 
 static const unsigned xmb_alpha_factor      = 75;
 static const unsigned menu_font_color_red   = 255;
@@ -781,7 +804,7 @@ static const float menu_header_opacity = 1.000;
 #define DEFAULT_MENU_SHADER_PIPELINE 2
 #endif
 
-#define DEFAULT_SHOW_ADVANCED_SETTINGS false
+#define DEFAULT_SHOW_ADVANCED_SETTINGS true
 
 #define DEFAULT_RGUI_COLOR_THEME RGUI_THEME_CLASSIC_GREEN
 #define DEFAULT_RGUI_TRANSPARENCY true
@@ -956,13 +979,17 @@ static const float message_bgcolor_opacity = 1.0f;
  * Used for setups where one manually rotates the monitor. */
 #define DEFAULT_ALLOW_ROTATE true
 
-#if defined(_3DS)
+#ifdef _3DS
 /* Enable New3DS clock and L2 cache */
 static const bool new3ds_speedup_enable      = true;
 /* Enable bottom LCD screen */
 static const bool video_3ds_lcd_bottom       = true;
 /* Sets video display mode (3D, 2D, etc.) */
 static const unsigned video_3ds_display_mode = CTR_VIDEO_MODE_3D;
+
+#define DEFAULT_BOTTOM_FONT_ENABLE true
+#define DEFAULT_BOTTOM_FONT_COLOR 255
+#define DEFAULT_BOTTOM_FONT_SCALE 1.48
 #endif
 
 #ifdef WIIU
@@ -1181,8 +1208,10 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_AUTOSAVE_INTERVAL 0
 #endif
 
-/* Show only connectable rooms */
-#define DEFAULT_NETPLAY_SHOW_ONLY_CONNECTABLE true
+/* Netplay lobby filters */
+#define DEFAULT_NETPLAY_SHOW_ONLY_CONNECTABLE     true
+#define DEFAULT_NETPLAY_SHOW_ONLY_INSTALLED_CORES false
+#define DEFAULT_NETPLAY_SHOW_PASSWORDED           true
 
 /* Publicly announce netplay */
 #define DEFAULT_NETPLAY_PUBLIC_ANNOUNCE true
@@ -1193,6 +1222,10 @@ static const bool netplay_start_as_spectator = false;
 /* Netplay chat fading toggle */
 static const bool netplay_fade_chat = true;
 
+/* Netplay chat colors */
+static const unsigned netplay_chat_color_name = 0x008000;
+static const unsigned netplay_chat_color_msg  = 0xFFFFFF;
+
 /* Allow players to pause */
 static const bool netplay_allow_pausing = false;
 
@@ -1201,9 +1234,6 @@ static const bool netplay_allow_slaves = true;
 
 /* Require connections only in slave mode */
 static const bool netplay_require_slaves = false;
-
-/* Netplay without savestates/rewind */
-static const bool netplay_stateless_mode = false;
 
 /* When being client over netplay, use keybinds for
  * user 1 rather than user 2. */
@@ -1223,8 +1253,8 @@ static const bool netplay_use_mitm_server = false;
 static const unsigned netplay_max_connections = 3;
 static const unsigned netplay_max_ping        = 0;
 
-static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
-static const unsigned netplay_share_analog  = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
+static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING;
+static const unsigned netplay_share_analog  = RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING;
 #endif
 
 /* On save state load, block SRAM from being overwritten.
@@ -1261,8 +1291,7 @@ static const bool savestate_thumbnail_enable = false;
 
 /* When creating save state files, compress
  * written data */
-#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
-/* TODO/FIXME Apparently this is an issue on UWP for now, so disable it for now */
+#if defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #define DEFAULT_SAVESTATE_FILE_COMPRESSION false
 #else
 #define DEFAULT_SAVESTATE_FILE_COMPRESSION true
@@ -1396,7 +1425,11 @@ static const int default_content_favorites_size = 200;
 #define DEFAULT_LIBRETRO_LOG_LEVEL 1
 
 #ifndef RARCH_DEFAULT_PORT
+#ifndef VITA
 #define RARCH_DEFAULT_PORT 55435
+#else
+#define RARCH_DEFAULT_PORT 19492
+#endif
 #endif
 
 #ifndef RARCH_STREAM_DEFAULT_PORT
@@ -1604,9 +1637,9 @@ static const bool enable_device_vibration    = false;
 #endif
 #else
 #if defined(__x86_64__) || defined(_M_X64)
-#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x64/latest/"
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows/x86_64/latest/"
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
-#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x86/latest/"
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows/x86/latest/"
 #elif defined(__arm__) || defined(_M_ARM)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm/latest/"
 #elif defined(__aarch64__) || defined(_M_ARM64)

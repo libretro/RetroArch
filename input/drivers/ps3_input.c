@@ -170,10 +170,10 @@ static uint64_t ps3_input_get_capabilities(void *data)
 {
    return
 #ifdef HAVE_MOUSE
-      (1 << RETRO_DEVICE_MOUSE)  |
+        (1 << RETRO_DEVICE_MOUSE)  |
 #endif
-      (1 << RETRO_DEVICE_JOYPAD) |
-      (1 << RETRO_DEVICE_ANALOG);
+        (1 << RETRO_DEVICE_JOYPAD)
+      | (1 << RETRO_DEVICE_ANALOG);
 }
 
 static bool ps3_input_set_sensor_state(void *data, unsigned port,

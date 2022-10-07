@@ -114,6 +114,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
                                };
    unsigned i;
    math_matrix_4x4 mop, m1, m2;
+   LPDIRECT3DVERTEXBUFFER8 vbo;
    LPDIRECT3DDEVICE8 dev;
    D3DPRIMITIVETYPE type;
    unsigned start                = 0;
@@ -129,9 +130,9 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
    if ((d3d->menu_display.offset + draw->coords->vertices )
          > (unsigned)d3d->menu_display.size)
       return;
+   vbo                           = (LPDIRECT3DVERTEXBUFFER8)d3d->menu_display.buffer;
    dev                           = d3d->dev;
-   pv                            = (Vertex*)
-      d3d8_vertex_buffer_lock(d3d->menu_display.buffer);
+   pv                            = (Vertex*)d3d8_vertex_buffer_lock(vbo);
 
    if (!pv)
       return;
@@ -161,17 +162,17 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
       pv[i].u     = *tex_coord++;
       pv[i].v     = *tex_coord++;
 
-#if 1
-	  if ((void*)draw->texture)
+      if ((void*)draw->texture)
       {
          D3DSURFACE_DESC desc;
-         if (d3d8_texture_get_level_desc((void*)draw->texture, 0, &desc))
+         LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)draw->texture;
+         if (SUCCEEDED(IDirect3DTexture8_GetLevelDesc(tex,
+                     0, (D3DSURFACE_DESC*)&desc)))
          {
             pv[i].u *= desc.Width;
             pv[i].v *= desc.Height;
          }
       }
-#endif
 
       pv[i].color =
          D3DCOLOR_ARGB(
@@ -181,7 +182,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
                colors[2]  /* B */
                );
    }
-   d3d8_vertex_buffer_unlock(d3d->menu_display.buffer);
+   IDirect3DVertexBuffer8_Unlock(vbo);
 
    if (!draw->matrix_data)
       draw->matrix_data = &default_mvp;
@@ -233,20 +234,6 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
    d3d->menu_display.offset += draw->coords->vertices;
 }
 
-static bool gfx_display_d3d8_font_init_first(
-      void **font_handle, void *video_data,
-      const char *font_path, float font_size,
-      bool is_threaded)
-{
-   font_data_t **handle = (font_data_t**)font_handle;
-   if (!(*handle = font_driver_init_first(video_data,
-         font_path, font_size, true,
-         is_threaded,
-         FONT_DRIVER_RENDER_D3D8_API)))
-		 return false;
-   return true;
-}
-
 gfx_display_ctx_driver_t gfx_display_ctx_d3d8 = {
    gfx_display_d3d8_draw,
    NULL,                                        /* draw_pipeline */
@@ -255,7 +242,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d8 = {
    gfx_display_d3d8_get_default_mvp,
    gfx_display_d3d8_get_default_vertices,
    gfx_display_d3d8_get_default_tex_coords,
-   gfx_display_d3d8_font_init_first,
+   FONT_DRIVER_RENDER_D3D8_API,
    GFX_VIDEO_DRIVER_DIRECT3D8,
    "d3d8",
    false,

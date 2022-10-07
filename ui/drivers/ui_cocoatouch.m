@@ -310,9 +310,9 @@ enum
          /* Keyboard event hack for iOS versions prior to iOS 7.
           *
           * Derived from:
-                  * http://nacho4d-nacho4d.blogspot.com/2012/01/
-                  * catching-keyboard-events-in-ios.html
-                  */
+	  * http://nacho4d-nacho4d.blogspot.com/2012/01/
+	  * catching-keyboard-events-in-ios.html
+	  */
          const uint8_t *eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
          int           eventType = eventMem ? *(int*)&eventMem[8] : 0;
 
@@ -471,8 +471,8 @@ enum
    NSString     *filename = (NSString*)url.path.lastPathComponent;
    NSError         *error = nil;
    NSString  *destination = [self.documentsDirectory stringByAppendingPathComponent:filename];
-   
-   // copy file to documents directory if its not already inside of documents directory
+   /* Copy file to documents directory if it's not already 
+    * inside Documents directory */
    if ([url startAccessingSecurityScopedResource]) {
       if (![[url path] containsString: self.documentsDirectory])
          if (![manager fileExistsAtPath:destination])

@@ -22,7 +22,6 @@
 #include <libdrm/drm_fourcc.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <errno.h>
 
 #include <compat/strl.h>
 #include <rthreads/rthreads.h>
@@ -277,7 +276,6 @@ static void drm_page_flip(struct drm_surface *surface)
    /* We alredy have the id of the FB_ID property of
     * the plane on which we are going to do a pageflip:
     * we got it back in drm_plane_setup()  */
-   int ret;
    static drmModeAtomicReqPtr req = NULL;
 
    req = drmModeAtomicAlloc();
@@ -285,12 +283,10 @@ static void drm_page_flip(struct drm_surface *surface)
    /* We add the buffer to the plane properties we want to
     * set on an atomically, in a single step.
     * We pass the plane id, the property id and the new fb id. */
-   ret = drmModeAtomicAddProperty(req,
+   if (drmModeAtomicAddProperty(req,
          drm.plane_id,
          drm.plane_fb_prop_id,
-         surface->pages[surface->flip_page].buf.fb_id);
-
-   if (ret < 0)
+         surface->pages[surface->flip_page].buf.fb_id) < 0)
    {
       RARCH_ERR ("DRM: failed to add atomic property for pageflip\n");
    }
@@ -301,11 +297,9 @@ static void drm_page_flip(struct drm_surface *surface)
     * pageflip is complete. If you don't want -12 errors
     * (ENOMEM), namely "Cannot allocate memory", then
     * you must drain the event queue of that fd. */
-   ret = drmModeAtomicCommit(drm.fd, req, 0, NULL);
-
-   if (ret < 0)
+   if (drmModeAtomicCommit(drm.fd, req, 0, NULL) < 0)
    {
-      RARCH_ERR ("DRM: failed to commit for pageflip: %s\n", strerror(errno));
+      RARCH_ERR ("DRM: failed to commit for pageflip\n");
    }
 
    surface->flip_page = !(surface->flip_page);
@@ -543,7 +537,7 @@ static void drm_plane_setup(struct drm_surface *surface)
             plane_flags, plane_x, plane_y, plane_w, plane_h,
             src_x<<16, src_y<<16, src_w<<16, src_h<<16))
    {
-      RARCH_ERR("[DRM]: failed to enable plane: %s\n", strerror(errno));
+      RARCH_ERR("[DRM]: failed to enable plane\n");
    }
 
    RARCH_LOG("[DRM]: src_w %d, src_h %d, plane_w %d, plane_h %d\n",
@@ -604,9 +598,8 @@ static int modeset_create_dumbfb(int fd, struct modeset_buf *buf,
 
 static bool init_drm(void)
 {
-   int ret;
-   drmModeConnector *connector;
    uint i;
+   drmModeConnector *connector;
 
    drm.fd = open("/dev/dri/card0", O_RDWR);
 
@@ -619,18 +612,16 @@ static bool init_drm(void)
    /* Programmer!! Save your sanity!!
     * VERY important or we won't get all the available planes on drmGetPlaneResources()!
     * We also need to enable the ATOMIC cap to see the atomic properties in objects!! */
-   ret = drmSetClientCap(drm.fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1);
-   if (ret)
+   if (drmSetClientCap(drm.fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1))
       RARCH_ERR ("DRM: can't set UNIVERSAL PLANES cap.\n");
    else
       RARCH_LOG ("DRM: UNIVERSAL PLANES cap set\n");
 
-   ret = drmSetClientCap(drm.fd, DRM_CLIENT_CAP_ATOMIC, 1);
-   if (ret)
+   if (drmSetClientCap(drm.fd, DRM_CLIENT_CAP_ATOMIC, 1))
    {
       /*If this happens, check kernel support and kernel parameters
        * (add i915.nuclear_pageflip=y to the kernel boot line for example) */
-      RARCH_ERR ("DRM: can't set ATOMIC caps: %s\n", strerror(errno));
+      RARCH_ERR ("DRM: can't set ATOMIC caps\n");
    }
    else
       RARCH_LOG ("DRM: ATOMIC caps set\n");
@@ -688,8 +679,7 @@ static bool init_drm(void)
    struct modeset_buf buf;
    buf.width = drm.current_mode->hdisplay;
    buf.height = drm.current_mode->vdisplay;
-   ret = modeset_create_dumbfb(drm.fd, &buf, 4, DRM_FORMAT_XRGB8888);
-   if (ret)
+   if (modeset_create_dumbfb(drm.fd, &buf, 4, DRM_FORMAT_XRGB8888))
    {
       RARCH_ERR ("DRM: can't create dumb fb\n");
    }
@@ -742,10 +732,8 @@ static void *drm_gfx_init(const video_info_t *video,
       free(_drmvars);
       return NULL;
    }
-   else
-   {
-      RARCH_LOG ("DRM: Init successful.\n");
-   }
+
+   RARCH_LOG ("DRM: Init successful.\n");
 
    _drmvars->kms_width  = drm.current_mode->hdisplay;
    _drmvars->kms_height = drm.current_mode->vdisplay;

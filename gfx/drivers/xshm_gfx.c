@@ -185,7 +185,11 @@ static video_poke_interface_t xshm_video_poke_interface = {
    NULL,
    NULL,
    NULL,
+#ifdef HAVE_XF86VM
    x11_get_refresh_rate,
+#else
+   NULL,
+#endif
    xshm_poke_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */

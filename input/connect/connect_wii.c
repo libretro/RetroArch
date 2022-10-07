@@ -580,7 +580,7 @@ static void hidpad_wii_deinit(void *data)
 static void* hidpad_wii_init(void *data, uint32_t slot,
       hid_driver_t *driver)
 {
-   struct pad_connection *connection = (struct pad_connection*)data;
+   struct pad_connection *connection    = (struct pad_connection*)data;
    struct connect_wii_wiimote_t *device = (struct connect_wii_wiimote_t*)
       calloc(1, sizeof(struct connect_wii_wiimote_t));
 
@@ -649,12 +649,12 @@ static void hidpad_wii_packet_handler(void *data,
       uint8_t *packet, uint16_t size)
 {
    struct connect_wii_wiimote_t* device = (struct connect_wii_wiimote_t*)data;
-   uint8_t             *msg = packet + 2;
+   uint8_t             *msg = packet + 1;
 
    if (!device)
       return;
 
-   switch (packet[1])
+   switch (packet[0])
    {
       case WM_RPT_BTN:
          wiimote_pressed_buttons(device, msg);

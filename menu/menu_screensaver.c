@@ -457,20 +457,16 @@ static bool menu_screensaver_update_state(
        !screensaver->font_data.font &&
        screensaver->font_enabled)
    {
-#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || defined(HAVE_STB_FONT)
       char font_file[PATH_MAX_LENGTH];
+#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || defined(HAVE_STB_FONT)
       char pkg_path[PATH_MAX_LENGTH];
-
-      font_file[0] = '\0';
-      pkg_path[0]  = '\0';
-
       /* Get font file path */
       if (!string_is_empty(dir_assets))
-         fill_pathname_join(pkg_path, dir_assets, MENU_SS_PKG_DIR, sizeof(pkg_path));
+         fill_pathname_join_special(pkg_path, dir_assets, MENU_SS_PKG_DIR, sizeof(pkg_path));
       else
          strlcpy(pkg_path, MENU_SS_PKG_DIR, sizeof(pkg_path));
 
-      fill_pathname_join(font_file, pkg_path, MENU_SS_FONT_FILE,
+      fill_pathname_join_special(font_file, pkg_path, MENU_SS_FONT_FILE,
             sizeof(font_file));
 
       /* Warn if font file is missing */
@@ -483,7 +479,6 @@ static bool menu_screensaver_update_state(
       /* On platforms without TTF support, there is
        * no need to generate a font path (a bitmap
        * font will be created automatically) */
-      char font_file[PATH_MAX_LENGTH];
       font_file[0] = '\0';
 #endif
 
@@ -567,11 +562,15 @@ void menu_screensaver_iterate(
             particle->a = particle->a + (float)(rand() % 16 - 9) * 0.01f;
             particle->b = particle->b + (float)(rand() % 16 - 7) * 0.01f;
 
-            particle->a = (particle->a < -0.4f) ? -0.4f : particle->a;
-            particle->a = (particle->a >  0.1f) ?  0.1f : particle->a;
+            if (particle->a < -0.4f)
+               particle->a = -0.4f;
+            else if (particle->a >  0.1f)
+               particle->a = 0.1f;
 
-            particle->b = (particle->b < -0.1f) ? -0.1f : particle->b;
-            particle->b = (particle->b >  0.4f) ?  0.4f : particle->b;
+            if (particle->b < -0.1f)
+               particle->b = -0.1f;
+            else if (particle->b >  0.4f)
+               particle->b = 0.4f;
 
             /* Update particle location */
             particle->x = particle->x + (global_speed_factor * particle->size * particle->a);

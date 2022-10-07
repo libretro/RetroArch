@@ -159,9 +159,9 @@ matrix_float4x4 matrix_rotate_z(float rot)
    id<CAMetalDrawable> _drawable;
    video_viewport_t _viewport;
    id<MTLSamplerState> _samplers[TEXTURE_FILTER_MIPMAP_NEAREST + 1];
-   Filter *_filters[RPixelFormatCount]; // convert to bgra8888
+   Filter *_filters[RPixelFormatCount]; /* convert to BGRA8888 */
 
-   // main render pass state
+   /* Main render pass state */
    id<MTLRenderCommandEncoder> _rce;
 
    id<MTLCommandBuffer> _blitCommandBuffer;
@@ -402,9 +402,9 @@ matrix_float4x4 matrix_rotate_z(float rot)
    {
       vals = [MTLFunctionConstantValues new];
       float values[3] = {
-         1.25f,   // baseScale
-         0.50f,   // density
-         0.15f,   // speed
+         1.25f,   /* baseScale */
+         0.50f,   /* density   */
+         0.15f,   /* speed     */
       };
       [vals setConstantValue:&values[0] type:MTLDataTypeFloat withName:@"snowBaseScale"];
       [vals setConstantValue:&values[1] type:MTLDataTypeFloat withName:@"snowDensity"];
@@ -423,9 +423,9 @@ matrix_float4x4 matrix_rotate_z(float rot)
    {
       vals = [MTLFunctionConstantValues new];
       float values[3] = {
-         3.50f,   // baseScale
-         0.70f,   // density
-         0.25f,   // speed
+         3.50f,   /* baseScale */
+         0.70f,   /* density   */
+         0.25f,   /* speed     */
       };
       [vals setConstantValue:&values[0] type:MTLDataTypeFloat withName:@"snowBaseScale"];
       [vals setConstantValue:&values[1] type:MTLDataTypeFloat withName:@"snowDensity"];
@@ -633,8 +633,10 @@ matrix_float4x4 matrix_rotate_z(float rot)
    if (_captureEnabled == captureEnabled)
       return;
 
-   _captureEnabled = captureEnabled;
-   //_layer.framebufferOnly = !captureEnabled;
+   _captureEnabled        = captureEnabled;
+#if 0
+   _layer.framebufferOnly = !captureEnabled;
+#endif
 }
 
 - (bool)captureEnabled
@@ -772,7 +774,7 @@ matrix_float4x4 matrix_rotate_z(float rot)
          [bce endEncoding];
       }
 #endif
-      // pending blits for mipmaps or render passes for slang shaders
+      /* Pending blits for mipmaps or render passes for slang shaders */
       [_blitCommandBuffer commit];
       [_blitCommandBuffer waitUntilCompleted];
       _blitCommandBuffer = nil;
@@ -829,7 +831,7 @@ matrix_float4x4 matrix_rotate_z(float rot)
    id<MTLDevice> _device;
    NSUInteger _blockLen;
    BufferNode *_head;
-   NSUInteger _offset; // offset into _current
+   NSUInteger _offset; /* offset into _current */
    BufferNode *_current;
    NSUInteger _length;
    NSUInteger _allocated;
@@ -1285,13 +1287,13 @@ static const NSUInteger kConstantAlignment = 4;
 @implementation TexturedView
 {
    Context *_context;
-   id<MTLTexture> _texture; // optimal render texture
+   id<MTLTexture> _texture; /* Optimal render texture */
    Vertex _v[4];
-   CGSize _size; // size of view in pixels
+   CGSize _size;            /* Size of view in pixels */
    CGRect _frame;
    NSUInteger _bpp;
 
-   id<MTLTexture> _src;    // source texture
+   id<MTLTexture> _src;     /* Source texture */
    bool _srcDirty;
 }
 

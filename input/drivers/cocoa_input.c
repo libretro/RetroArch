@@ -42,8 +42,8 @@ float cocoa_screen_get_backing_scale_factor(void);
 
 static bool apple_key_state[MAX_KEYS];
 
-// Send keyboard inputs directly using RETROK_* codes
-// Used by the iOS custom keyboard implementation
+/* Send keyboard inputs directly using RETROK_* codes
+ * Used by the iOS custom keyboard implementation */
 void apple_direct_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
@@ -544,11 +544,11 @@ static void cocoa_input_free(void *data)
 static uint64_t cocoa_input_get_capabilities(void *data)
 {
    return
-      (1 << RETRO_DEVICE_JOYPAD)   |
-      (1 << RETRO_DEVICE_MOUSE)    |
-      (1 << RETRO_DEVICE_KEYBOARD) |
-      (1 << RETRO_DEVICE_POINTER)  |
-      (1 << RETRO_DEVICE_ANALOG);
+        (1 << RETRO_DEVICE_JOYPAD)
+      | (1 << RETRO_DEVICE_MOUSE)
+      | (1 << RETRO_DEVICE_KEYBOARD)
+      | (1 << RETRO_DEVICE_POINTER)
+      | (1 << RETRO_DEVICE_ANALOG);
 }
 
 input_driver_t input_cocoa = {

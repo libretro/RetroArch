@@ -142,7 +142,6 @@
 		92B9EB7A24E0518700E6CFB2 /* net_ifinfo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_ifinfo.h; sourceTree = "<group>"; };
 		92B9EB7B24E0518700E6CFB2 /* net_compat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_compat.h; sourceTree = "<group>"; };
 		92B9EB7C24E0518700E6CFB2 /* net_socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_socket.h; sourceTree = "<group>"; };
-		92B9EB7D24E0518700E6CFB2 /* net_natt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_natt.h; sourceTree = "<group>"; };
 		92B9EB7E24E0518700E6CFB2 /* net_socket_ssl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_socket_ssl.h; sourceTree = "<group>"; };
 		92B9EB7F24E0518700E6CFB2 /* net_http.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_http.h; sourceTree = "<group>"; };
 		92B9EB8024E0518700E6CFB2 /* net_http_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_http_parse.h; sourceTree = "<group>"; };
@@ -571,7 +570,6 @@
 				92B9EB7A24E0518700E6CFB2 /* net_ifinfo.h */,
 				92B9EB7B24E0518700E6CFB2 /* net_compat.h */,
 				92B9EB7C24E0518700E6CFB2 /* net_socket.h */,
-				92B9EB7D24E0518700E6CFB2 /* net_natt.h */,
 				92B9EB7E24E0518700E6CFB2 /* net_socket_ssl.h */,
 				92B9EB7F24E0518700E6CFB2 /* net_http.h */,
 				92B9EB8024E0518700E6CFB2 /* net_http_parse.h */,
@@ -1280,7 +1278,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CURRENT_PROJECT_VERSION = 1.10.3;
+				CURRENT_PROJECT_VERSION = 1.11.1;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
@@ -1304,7 +1302,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
-				MARKETING_VERSION = 1.10.3;
+				MARKETING_VERSION = 1.11.1;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
@@ -1312,6 +1310,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
@@ -1396,7 +1395,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CURRENT_PROJECT_VERSION = 1.10.3;
+				CURRENT_PROJECT_VERSION = 1.11.1;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
@@ -1420,7 +1419,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
-				MARKETING_VERSION = 1.10.3;
+				MARKETING_VERSION = 1.11.1;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -1429,6 +1428,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
@@ -1483,6 +1483,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
@@ -1590,7 +1591,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.10.3;
+				CURRENT_PROJECT_VERSION = 1.11.1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -1619,7 +1620,7 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 1.10.3;
+				MARKETING_VERSION = 1.11.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1628,6 +1629,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
@@ -1724,7 +1726,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.10.3;
+				CURRENT_PROJECT_VERSION = 1.11.1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -1753,7 +1755,7 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 1.10.3;
+				MARKETING_VERSION = 1.11.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (
@@ -1763,6 +1765,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
@@ -1869,6 +1872,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
@@ -1943,6 +1947,7 @@
 					"-DHAVE_STB_FONT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",

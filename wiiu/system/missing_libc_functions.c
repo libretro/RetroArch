@@ -127,6 +127,30 @@ int clock_gettime(clockid_t clk_id, struct timespec* tp)
    return 0;
 }
 
+/* Fake sysconf for page size and processor count */
+long sysconf(int name) {
+   switch (name) {
+      case _SC_PAGESIZE:
+      //case _SC_PAGE_SIZE:
+         return 128 * 1024;
+      case _SC_NPROCESSORS_CONF:
+      case _SC_NPROCESSORS_ONLN:
+         return 3;
+      default:
+         errno = EINVAL;
+         return -1;
+   }
+}
+
+/**
+ * Intended to replace libgcc's __clear_cache builtin.
+ * For cores that need it, add -D__clear_cache=wiiu_clear_cache to CFLAGS.
+ */
+void wiiu_clear_cache (char *beg, char *end) {
+   DCFlushRange(beg, (uint32_t)(end - beg));
+   ICInvalidateRange(beg, (uint32_t)(end - beg));
+}
+
 /**
  * Implementation of getifaddrs() and freeifaddrs() for WiiU.
  */

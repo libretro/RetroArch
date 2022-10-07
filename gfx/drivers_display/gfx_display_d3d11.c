@@ -24,7 +24,6 @@
 #include "../gfx_display.h"
 
 #include "../../retroarch.h"
-#include "../font_driver.h"
 #include "../common/d3d11_common.h"
 
 static void gfx_display_d3d11_blend_begin(void *data)
@@ -63,9 +62,10 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
             d3d11->context->lpVtbl->PSSetShader(d3d11->context, shader->ps, NULL, 0);
             d3d11->context->lpVtbl->GSSetShader(d3d11->context, shader->gs, NULL, 0);
          }
-         D3D11Draw(d3d11->context, draw->coords->vertices, 0);
 
-	 d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+         d3d11->context->lpVtbl->Draw(d3d11->context, draw->coords->vertices, 0);
+         d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+
          {
             d3d11_shader_t *shader = &d3d11->sprites.shader;
             d3d11->context->lpVtbl->IASetInputLayout(d3d11->context, shader->layout);
@@ -172,12 +172,14 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
 
    {
       d3d11_texture_t *texture = (d3d11_texture_t*)draw->texture;
-      D3D11SetPShaderResources(d3d11->context, 0, 1, &texture->view);
+      d3d11->context->lpVtbl->PSSetShaderResources(
+            d3d11->context, 0, 1, &texture->view);
       d3d11->context->lpVtbl->PSSetSamplers(
             d3d11->context, 0, 1, (D3D11SamplerState*)&texture->sampler);
    }
 
-   D3D11Draw(d3d11->context, vertex_count, d3d11->sprites.offset);
+   d3d11->context->lpVtbl->Draw(d3d11->context, vertex_count,
+         d3d11->sprites.offset);
    d3d11->sprites.offset += vertex_count;
 
    if (vertex_count > 1)
@@ -209,14 +211,21 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
 
          if (!d3d11->menu_pipeline_vbo)
          {
-            D3D11_BUFFER_DESC desc = { 0 };
-            desc.Usage             = D3D11_USAGE_IMMUTABLE;
-            desc.ByteWidth         = ca->coords.vertices * 2 * sizeof(float);
-            desc.BindFlags         = D3D11_BIND_VERTEX_BUFFER;
+            D3D11_BUFFER_DESC desc;
+            desc.Usage               = D3D11_USAGE_IMMUTABLE;
+            desc.ByteWidth           = ca->coords.vertices * 2 * sizeof(float);
+            desc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
+            desc.CPUAccessFlags      = 0;
+            desc.MiscFlags           = 0;
+            desc.StructureByteStride = 0;
 
             {
-               D3D11_SUBRESOURCE_DATA vertexData = { ca->coords.vertex };
-               D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu_pipeline_vbo);
+               D3D11_SUBRESOURCE_DATA vertex_data;
+               vertex_data.pSysMem          = ca->coords.vertex;
+               vertex_data.SysMemPitch      = 0;
+               vertex_data.SysMemSlicePitch = 0;
+               d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, &vertex_data,
+                     &d3d11->menu_pipeline_vbo);
             }
          }
          {
@@ -259,23 +268,6 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
       *(d3d11_uniform_t*)mapped_ubo.pData = d3d11->ubo_values;
       d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->ubo, 0);
    }
-}
-
-static bool gfx_display_d3d11_font_init_first(
-      void**      font_handle,
-      void*       video_data,
-      const char* font_path,
-      float       menu_font_size,
-      bool        is_threaded)
-{
-   font_data_t** handle     = (font_data_t**)font_handle;
-   font_data_t*  new_handle = font_driver_init_first(
-         video_data, font_path, menu_font_size, true,
-         is_threaded, FONT_DRIVER_RENDER_D3D11_API);
-   if (!new_handle)
-      return false;
-   *handle = new_handle;
-   return true;
 }
 
 void gfx_display_d3d11_scissor_begin(void *data,
@@ -323,7 +315,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d11 = {
    NULL,                                     /* get_default_mvp */
    NULL,                                     /* get_default_vertices */
    NULL,                                     /* get_default_tex_coords */
-   gfx_display_d3d11_font_init_first,
+   FONT_DRIVER_RENDER_D3D11_API,
    GFX_VIDEO_DRIVER_DIRECT3D11,
    "d3d11",
    true,

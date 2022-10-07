@@ -152,10 +152,10 @@ static void* wiiu_input_init(const char *joypad_driver)
 
 static uint64_t wiiu_input_get_capabilities(void *data)
 {
-   return (1 << RETRO_DEVICE_JOYPAD) |
-          (1 << RETRO_DEVICE_ANALOG) |
-          (1 << RETRO_DEVICE_KEYBOARD) |
-          (1 << RETRO_DEVICE_POINTER);
+   return   (1 << RETRO_DEVICE_JOYPAD)
+          | (1 << RETRO_DEVICE_ANALOG)
+          | (1 << RETRO_DEVICE_KEYBOARD)
+          | (1 << RETRO_DEVICE_POINTER);
 }
 
 input_driver_t input_wiiu = {

@@ -25,11 +25,11 @@
 #include <retro_endianness.h>
 #include "../input_driver.h"
 
-/* Wii have PID/VID already swapped by USB_GetDescriptors from libogc */
-#ifdef GEKKO
-#define SWAP_IF_BIG(val) (val)
+/* Gekko (NGC/Wii) has PID/VID already swapped by USB_GetDescriptors from libogc, so skip bigendian byteswap */
+#if defined(MSB_FIRST) && !defined(GEKKO)
+#define SWAP_IF_BIG(val) ((((val) & 0x00ff) << 8) | (((val) & 0xff00) >> 8))
 #else
-#define SWAP_IF_BIG(val) swap_if_big16(val)
+#define SWAP_IF_BIG(val) (val)
 #endif
 
 #define VID_NONE          0x0000
@@ -46,6 +46,7 @@
 #define PID_NINTENDO_PRO  SWAP_IF_BIG(0x0330)
 #define PID_SONY_DS3      SWAP_IF_BIG(0x0268)
 #define PID_SONY_DS4      SWAP_IF_BIG(0x05c4)
+#define PID_SONY_DS4_R2   SWAP_IF_BIG(0x09cc)
 #define PID_DS3_CLONE     SWAP_IF_BIG(0x20d6)
 #define PID_SNES_CLONE    SWAP_IF_BIG(0xe401)
 #define PID_MICRONTEK_NES SWAP_IF_BIG(0x0011)

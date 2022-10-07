@@ -91,6 +91,7 @@ COMPATIBILITY
 #endif
 
 #include "../libretro-common/compat/compat_fnmatch.c"
+#include "../libretro-common/compat/compat_strldup.c"
 #include "../libretro-common/compat/fopen_utf8.c"
 #include "../libretro-common/memmap/memalign.c"
 
@@ -1057,6 +1058,7 @@ FILTERS
 #include "../gfx/video_filters/upscale_256x_320x240.c"
 #include "../gfx/video_filters/picoscale_256x_320x240.c"
 #include "../gfx/video_filters/upscale_240x160_320x240.c"
+#include "../gfx/video_filters/upscale_mix_240x160_320x240.c"
 #endif
 
 #ifdef HAVE_DSP_FILTER
@@ -1112,6 +1114,7 @@ FILE
 #include "../libretro-common/streams/file_stream_transforms.c"
 #include "../libretro-common/streams/interface_stream.c"
 #include "../libretro-common/streams/memory_stream.c"
+#include "../libretro-common/streams/network_stream.c"
 #ifndef __WINRT__
 #include "../libretro-common/vfs/vfs_implementation.c"
 #endif
@@ -1132,9 +1135,6 @@ FILE
 #endif
 #if defined(HAVE_MMAP_WIN32)
 #include "../libretro-common/file/nbio/nbio_windowsmmap.c"
-#endif
-#if defined(ORBIS)
-#include "../libretro-common/file/nbio/nbio_orbis.c"
 #endif
 #include "../libretro-common/file/nbio/nbio_intf.c"
 
@@ -1330,13 +1330,13 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
+#include "../network/natt.c"
 #include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_room_parse.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
-#include "../libretro-common/net/net_natt.c"
-#if !defined(HAVE_SOCKET_LEGACY)
+#ifdef HAVE_IFINFO
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
 #include "../tasks/task_http.c"

@@ -20,10 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _LIBRETRO_NET_IFINFO_H
-#define _LIBRETRO_NET_IFINFO_H
+#ifndef _LIBRETRO_SDK_NET_IFINFO_H
+#define _LIBRETRO_SDK_NET_IFINFO_H
 
-#include <stdint.h>
 #include <stddef.h>
 
 #include <boolean.h>
@@ -34,21 +33,19 @@ RETRO_BEGIN_DECLS
 
 struct net_ifinfo_entry
 {
-   char *name;
-   char *host;
+   char name[256];
+   char host[256];
 };
 
-struct net_ifinfo
+typedef struct net_ifinfo
 {
    struct net_ifinfo_entry *entries;
    size_t size;
-};
-
-typedef struct net_ifinfo net_ifinfo_t;
-
-void net_ifinfo_free(net_ifinfo_t *list);
+} net_ifinfo_t;
 
 bool net_ifinfo_new(net_ifinfo_t *list);
+
+void net_ifinfo_free(net_ifinfo_t *list);
 
 bool net_ifinfo_best(const char *dst, void *src, bool ipv6);
 

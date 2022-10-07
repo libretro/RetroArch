@@ -61,7 +61,7 @@ void gfx_ctx_wl_update_title_common(gfx_ctx_wayland_data_t *wl);
 bool gfx_ctx_wl_get_metrics_common(gfx_ctx_wayland_data_t *wl,
       enum display_metric_types type, float *value);
 
-bool gfx_ctx_wl_init_common(void *video_driver,
+bool gfx_ctx_wl_init_common(
       const toplevel_listener_t *toplevel_listener,
       gfx_ctx_wayland_data_t **wl);
 
@@ -84,17 +84,6 @@ bool gfx_ctx_wl_has_focus(void *data);
 void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
       void (*get_video_size)(void*, unsigned*, unsigned*), bool *quit,
       bool *resize, unsigned *width, unsigned *height);
-
-int create_shm_file(off_t size);
-
-shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl,
-   int width, int height, uint32_t format);
-
-void shm_buffer_paint_checkerboard(shm_buffer_t *buffer,
-      int width, int height, int scale,
-      size_t chk, uint32_t bg, uint32_t fg);
-
-bool draw_splash_screen(gfx_ctx_wayland_data_t *wl);
 
 #ifdef HAVE_LIBDECOR_H
 extern const struct libdecor_interface libdecor_interface;

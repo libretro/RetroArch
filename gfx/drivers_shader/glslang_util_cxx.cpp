@@ -65,12 +65,8 @@ static std::string build_stage_source(
             if (!string_is_empty(stage))
             {
                char expected[128];
-
-               expected[0] = '\0';
-
-               strcpy_literal(expected, "#pragma stage ");
+               strlcpy(expected, "#pragma stage ", sizeof(expected));
                strlcat(expected, stage,            sizeof(expected));
-
                active = string_is_equal(expected, line);
             }
          }

@@ -494,8 +494,8 @@ UIntComboBox::UIntComboBox(rarch_setting_t *setting, QWidget *parent) :
    ,m_setting(setting)
    ,m_value(setting->value.target.unsigned_integer)
 {
-   double min = setting->enforce_minrange ? setting->min : 0.00;
-   double max = setting->enforce_maxrange ? setting->max : 999.00;
+   float min = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
+   float max = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : 999.00f;
 
    populate(min, max);
 
@@ -586,8 +586,8 @@ UIntSpinBox::UIntSpinBox(rarch_setting_t *setting, QWidget *parent) :
    ,m_setting(setting)
    ,m_value(setting->value.target.unsigned_integer)
 {
-   setMinimum(setting->enforce_minrange ? setting->min : 0.00);
-   setMaximum(setting->enforce_maxrange ? setting->max : INT_MAX);
+   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f);
+   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : INT_MAX);
 
    setSingleStep(setting->step);
 
@@ -627,8 +627,8 @@ SizeSpinBox::SizeSpinBox(rarch_setting_t *setting, unsigned scale, QWidget *pare
    ,m_value(setting->value.target.sizet)
    ,m_scale(scale)
 {
-   setMinimum(setting->enforce_minrange ? setting->min / m_scale : 0.00);
-   setMaximum(setting->enforce_maxrange ? setting->max / m_scale : INT_MAX);
+   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min / m_scale : 0.00f);
+   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max / m_scale : INT_MAX);
 
    setSingleStep(setting->step / m_scale);
 
@@ -723,9 +723,8 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
    float i;
    unsigned orig_value = *setting->value.target.unsigned_integer;
    float          step = setting->step;
-   double          min = setting->enforce_minrange ? setting->min : 0.00;
-   double          max = setting->enforce_maxrange ? setting->max : UINT_MAX;
-
+   float           min = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
+   float           max = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : UINT_MAX;
    bool  checked_found = false;
 
    if (setting->get_string_representation)
@@ -779,8 +778,8 @@ IntSpinBox::IntSpinBox(rarch_setting_t *setting, QWidget *parent) :
    ,m_setting(setting)
    ,m_value(setting->value.target.integer)
 {
-   setMinimum(setting->enforce_minrange ? setting->min : INT_MIN);
-   setMaximum(setting->enforce_maxrange ? setting->max : INT_MAX);
+   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : INT_MIN);
+   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : INT_MAX);
 
    setSingleStep(setting->step);
 
@@ -829,8 +828,9 @@ FloatSpinBox::FloatSpinBox(rarch_setting_t *setting, QWidget *parent) :
    if (match.hasMatch())
       setDecimals(match.captured(1).toInt());
 
-   setMinimum(setting->enforce_minrange ? setting->min : 0.00);
-   setMaximum(setting->enforce_maxrange ? setting->max : 999.00);
+   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f);
+   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max :
+         999.00f);
 
    setValue(*m_value);
    setSingleStep(setting->step);
@@ -966,10 +966,12 @@ FloatSlider::FloatSlider(rarch_setting_t *setting, QWidget *parent) :
    if (match.hasMatch())
       m_precision = pow(10, match.captured(1).toInt());
    else
-      m_precision = pow(10, 3);
+      m_precision = 10 * 10 * 10;
 
-   setMinimum(setting->enforce_minrange ? setting->min * m_precision : 0.00 * m_precision);
-   setMaximum(setting->enforce_maxrange ? setting->max * m_precision : 999.00 * m_precision);
+   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min *
+         m_precision : 0.00f * m_precision);
+   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max *
+         m_precision : 999.00f * m_precision);
 
    setSingleStep(setting->step * m_precision);
 

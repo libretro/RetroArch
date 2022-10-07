@@ -55,18 +55,6 @@ static bool file_list_deinitialize_internal(file_list_t *list)
    return true;
 }
 
-bool file_list_initialize(file_list_t *list)
-{
-   if (!list)
-      return false;
-
-   list->list     = NULL;
-   list->capacity = 0;
-   list->size     = 0;
-
-   return true;
-}
-
 bool file_list_reserve(file_list_t *list, size_t nitems)
 {
    const size_t item_size = sizeof(struct item_file);
@@ -75,9 +63,7 @@ bool file_list_reserve(file_list_t *list, size_t nitems)
    if (nitems < list->capacity || nitems > (size_t)-1/item_size)
       return false;
 
-   new_data = (struct item_file*)realloc(list->list, nitems * item_size);
-
-   if (!new_data)
+   if (!(new_data = (struct item_file*)realloc(list->list, nitems * item_size)))
       return false;
 
    memset(&new_data[list->capacity], 0, item_size * (nitems - list->capacity));
@@ -86,18 +72,6 @@ bool file_list_reserve(file_list_t *list, size_t nitems)
    list->capacity = nitems;
 
    return true;
-}
-
-bool file_list_prepend(file_list_t *list,
-      const char *path, const char *label,
-      unsigned type, size_t directory_ptr,
-      size_t entry_idx)
-{
-   return file_list_insert(list, path,
-      label, type,
-      directory_ptr, entry_idx,
-      0
-   );
 }
 
 bool file_list_insert(file_list_t *list,
@@ -184,19 +158,6 @@ bool file_list_append(file_list_t *list,
    return true;
 }
 
-size_t file_list_get_size(const file_list_t *list)
-{
-   if (!list)
-      return 0;
-   return list->size;
-}
-
-size_t file_list_get_directory_ptr(const file_list_t *list)
-{
-   size_t size = list ? list->size : 0;
-   return list->list[size].directory_ptr;
-}
-
 void file_list_pop(file_list_t *list, size_t *directory_ptr)
 {
    if (!list)
@@ -262,21 +223,7 @@ void file_list_clear(file_list_t *list)
    list->size = 0;
 }
 
-void file_list_set_label_at_offset(file_list_t *list, size_t idx,
-      const char *label)
-{
-   if (!list)
-      return;
-
-   if (list->list[idx].label)
-      free(list->list[idx].label);
-   list->list[idx].alt      = NULL;
-
-   if (label)
-      list->list[idx].label = strdup(label);
-}
-
-void file_list_get_label_at_offset(const file_list_t *list, size_t idx,
+static void file_list_get_label_at_offset(const file_list_t *list, size_t idx,
       const char **label)
 {
    if (!label || !list)
@@ -339,18 +286,6 @@ void *file_list_get_userdata_at_offset(const file_list_t *list, size_t idx)
    return list->list[idx].userdata;
 }
 
-void file_list_set_userdata(const file_list_t *list, size_t idx, void *ptr)
-{
-   if (list && ptr)
-      list->list[idx].userdata = ptr;
-}
-
-void file_list_set_actiondata(const file_list_t *list, size_t idx, void *ptr)
-{
-   if (list && ptr)
-      list->list[idx].actiondata = ptr;
-}
-
 void *file_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
 {
    if (!list)
@@ -376,38 +311,6 @@ void file_list_free_userdata(const file_list_t *list, size_t idx)
    list->list[idx].userdata = NULL;
 }
 
-void *file_list_get_last_actiondata(const file_list_t *list)
-{
-   if (!list)
-      return NULL;
-   return list->list[list->size - 1].actiondata;
-}
-
-void file_list_get_at_offset(const file_list_t *list, size_t idx,
-      const char **path, const char **label, unsigned *file_type,
-      size_t *entry_idx)
-{
-   if (!list)
-      return;
-
-   if (path)
-      *path      = list->list[idx].path;
-   if (label)
-      *label     = list->list[idx].label;
-   if (file_type)
-      *file_type = list->list[idx].type;
-   if (entry_idx)
-      *entry_idx = list->list[idx].entry_idx;
-}
-
-void file_list_get_last(const file_list_t *list,
-      const char **path, const char **label,
-      unsigned *file_type, size_t *entry_idx)
-{
-   if (list && list->size)
-      file_list_get_at_offset(list, list->size - 1, path, label, file_type, entry_idx);
-}
-
 bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)
 {
    size_t i;
@@ -430,8 +333,7 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)
             continue;
       }
 
-      str = (const char *)strcasestr(alt, needle);
-      if (str == alt)
+      if ((str = (const char *)strcasestr(alt, needle)) == alt)
       {
          /* Found match with first chars, best possible match. */
          *idx = i;

@@ -273,6 +273,7 @@ endif
 
 OBJ += \
        $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.o \
+       $(LIBRETRO_COMM_DIR)/compat/compat_strldup.o \
        $(LIBRETRO_COMM_DIR)/lists/file_list.o \
        $(LIBRETRO_COMM_DIR)/lists/dir_list.o \
        $(LIBRETRO_COMM_DIR)/file/retro_dirent.o \
@@ -281,6 +282,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.o \
        $(LIBRETRO_COMM_DIR)/streams/interface_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/memory_stream.o \
+       $(LIBRETRO_COMM_DIR)/streams/network_stream.o \
        $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o
 
 OBJ += \
@@ -304,10 +306,6 @@ ifneq ($(findstring BSD,$(OS)),)
 	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o
 else ifneq ($(findstring Darwin,$(OS)),)
 	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o
-endif
-
-ifeq ($(TARGET), retroarch_orbis)
-	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_orbis.o
 endif
 
 OBJ += \
@@ -1875,7 +1873,6 @@ ifeq ($(HAVE_BUILTINGLSLANG), 1)
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
       $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/ossource.cpp
-
    ifneq ($(findstring Win32,$(OS)),)
       DEFINES += -DENABLE_HLSL
       GLSLANG_SOURCES += $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp)
@@ -1886,6 +1883,8 @@ else ifeq ($(HAVE_GLSLANG),1)
 
    # The order of these libs are somewhat specific
    LIBS += $(GLSLANG_LIBS) \
+           $(GLSLANG_MACHINEINDEPENDENT_LIBS) \
+           $(GLSLANG_GENERICCODEGEN_LIBS) \
            $(GLSLANG_OSDEPENDENT_LIBS) \
            $(GLSLANG_OGLCOMPILER_LIBS) \
            $(GLSLANG_HLSL_LIBS) \
@@ -1896,6 +1895,7 @@ endif
 
 ifeq ($(HAVE_GLSLANG_COMMON), 1)
    DEFINES += -DHAVE_GLSLANG
+   OBJ += $(GLSLANG_SOURCES_C:.c=.o)
    OBJ += $(GLSLANG_SOURCES:.cpp=.o)
 endif
 
@@ -2108,8 +2108,8 @@ ifeq ($(HAVE_NETWORKING), 1)
           $(LIBRETRO_COMM_DIR)/net/net_http.o \
           $(LIBRETRO_COMM_DIR)/net/net_http_parse.o \
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
-          $(LIBRETRO_COMM_DIR)/net/net_natt.o \
           core_updater_list.o \
+          network/natt.o \
           network/net_http_special.o \
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
@@ -2127,7 +2127,8 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl_mbed.o
    endif
 
-   ifneq ($(HAVE_SOCKET_LEGACY),1)
+   ifeq ($(HAVE_IFINFO), 1)
+      DEFINES += -DHAVE_IFINFO
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
    endif
 
@@ -2392,7 +2393,8 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/upscale_1_5x.o \
           gfx/video_filters/upscale_256x_320x240.o \
           gfx/video_filters/picoscale_256x_320x240.o \
-          gfx/video_filters/upscale_240x160_320x240.o
+          gfx/video_filters/upscale_240x160_320x240.o \
+          gfx/video_filters/upscale_mix_240x160_320x240.o
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)
@@ -2435,6 +2437,10 @@ endif
 
 ifneq ($(findstring Win32,$(OS)),)
    OBJ += led/drivers/led_win32_keyboard.o
+endif
+
+ifeq ($(HAVE_X11), 1)
+   OBJ += led/drivers/led_x11_keyboard.o
 endif
 
 ifeq ($(HAVE_VITAGLES), 1)

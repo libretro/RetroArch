@@ -97,9 +97,8 @@ static void menu_action_setting_audio_mixer_stream_volume(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned         offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
-
-   *w = 19;
+   unsigned offset = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
+   *w              = 19;
    strlcpy(s2, path, len2);
 
    if (offset >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
@@ -152,7 +151,6 @@ static void menu_action_setting_disp_set_label_remap_file_info(
    const char *remap_path      = runloop_st->name.remapfile;
    const char *remap_file      = NULL;
 
-   *s = '\0';
    *w = 19;
 
    if (!string_is_empty(remap_path))
@@ -200,24 +198,24 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
    *w = 19;
    strlcpy(s2, path, len2);
 
-   if (!shader_pass)
-      return;
-
-  switch (shader_pass->filter)
-  {
-     case 0:
-        strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE),
-              len);
-        break;
-     case 1:
-        strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LINEAR),
-              len);
-        break;
-     case 2:
-        strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NEAREST),
-              len);
-        break;
-  }
+   if (shader_pass)
+   {
+      switch (shader_pass->filter)
+      {
+         case 0:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE),
+                  len);
+            break;
+         case 1:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LINEAR),
+                  len);
+            break;
+         case 2:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NEAREST),
+                  len);
+            break;
+      }
+   }
 }
 
 static void menu_action_setting_disp_set_label_shader_watch_for_changes(
@@ -232,7 +230,6 @@ static void menu_action_setting_disp_set_label_shader_watch_for_changes(
       list->list[i].actiondata;
    bool val                  = *cbs->setting->value.target.boolean;
 
-   *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 
@@ -252,8 +249,6 @@ static void menu_action_setting_disp_set_label_shader_num_passes(
 {
    struct video_shader *shader = menu_shader_get();
    unsigned pass_count         = shader ? shader->passes : 0;
-
-   *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
    snprintf(s, len, "%u", pass_count);
@@ -269,17 +264,12 @@ static void menu_action_setting_disp_set_label_shader_pass(
 {
    struct video_shader *shader           = menu_shader_get();
    struct video_shader_pass *shader_pass = shader ? &shader->pass[type - MENU_SETTINGS_SHADER_PASS_0] : NULL;
-
-   *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
-
-   if (!shader_pass)
-      return;
-
-   if (!string_is_empty(shader_pass->source.path))
+   if (shader_pass && !string_is_empty(shader_pass->source.path))
       fill_pathname_base(s, shader_pass->source.path, len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
 
 static void menu_action_setting_disp_set_label_shader_default_filter(
@@ -293,10 +283,7 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       list->list[i].actiondata;
    bool val                  = *cbs->setting->value.target.boolean;
-
-   *s = '\0';
    *w = 19;
-
    if (val)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LINEAR), len);
    else
@@ -314,23 +301,14 @@ static void menu_action_setting_disp_set_label_shader_parameter_internal(
 {
    video_shader_ctx_t shader_info;
    const struct video_shader_parameter *param = NULL;
-
-   *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
-
    video_shader_driver_get_current_shader(&shader_info);
-
-   if (!shader_info.data)
-      return;
-
-   param = &shader_info.data->parameters[type - offset];
-
-   if (!param)
-      return;
-
-   snprintf(s, len, "%.2f [%.2f %.2f]",
-         param->current, param->minimum, param->maximum);
+   if (shader_info.data && (param = &shader_info.data->parameters[type - offset]))
+      snprintf(s, len, "%.2f [%.2f %.2f]",
+            param->current, param->minimum, param->maximum);
+   else
+      *s = '\0';
 }
 
 static void menu_action_setting_disp_set_label_shader_parameter(
@@ -376,13 +354,9 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
-
    if (!shader_pass)
       return;
-
-   scale_value = shader_pass->fbo.scale_x;
-
-   if (!scale_value)
+   if (!(scale_value = shader_pass->fbo.scale_x))
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    else
       snprintf(s, len, "%ux", scale_value);
@@ -392,30 +366,34 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
 
 #ifdef HAVE_NETWORKING
 static void menu_action_setting_disp_set_label_netplay_mitm_server(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *path,
-      char *s2, size_t len2)
+      file_list_t *list, unsigned *w, unsigned type, unsigned i,
+      const char *label, char *s, size_t len,
+      const char *path, char *path_buf, size_t path_buf_size)
 {
-   unsigned j;
-   menu_file_list_cbs_t       *cbs = (menu_file_list_cbs_t*)
-      list->list[i].actiondata;
-   const char *netplay_mitm_server = cbs->setting->value.target.string;
+   size_t j;
+   const char *netplay_mitm_server;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
 
-   *s = '\0';
    *w = 19;
-   strlcpy(s2, path, len2);
+   *s = '\0';
+   strlcpy(path_buf, path, path_buf_size);
 
+   if (!cbs || !cbs->setting)
+      return;
+
+   netplay_mitm_server = cbs->setting->value.target.string;
    if (string_is_empty(netplay_mitm_server))
       return;
 
    for (j = 0; j < ARRAY_SIZE(netplay_mitm_server_list); j++)
    {
-      if (string_is_equal(netplay_mitm_server,
-               netplay_mitm_server_list[j].name))
-         strlcpy(s, netplay_mitm_server_list[j].description, len);
+      const mitm_server_t *server = &netplay_mitm_server_list[j];
+
+      if (string_is_equal(server->name, netplay_mitm_server))
+      {
+         strlcpy(s, msg_hash_to_str(server->description), len);
+         break;
+      }
    }
 }
 #endif
@@ -511,8 +489,6 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
    const char *alt        = list->list[i].alt
          ? list->list[i].alt
          : list->list[i].path;
-   *s                     = '\0';
-   *w                     = 0;
 
    if (alt)
       strlcpy(s2, alt, len2);
@@ -530,6 +506,11 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
       s[3] = '\0';
       *w   = (unsigned)STRLEN_CONST("[!]");
    }
+   else
+   {
+      *s   = '\0';
+      *w   = 0;
+   }
 }
 
 #ifdef HAVE_MIST
@@ -541,9 +522,10 @@ static void menu_action_setting_disp_set_label_core_manager_steam_entry(
       const char *path,
       char *s2, size_t len2)
 {
+   MistResult result;
    steam_core_dlc_list_t *core_dlc_list = NULL;
-   steam_core_dlc_t *core_dlc = NULL;
-   bool dlc_installed = false;
+   steam_core_dlc_t *core_dlc           = NULL;
+   bool dlc_installed                   = false;
 
    *s = '\0';
    *w = 0;
@@ -552,10 +534,10 @@ static void menu_action_setting_disp_set_label_core_manager_steam_entry(
 
    strlcpy(s2, path, len2);
 
-   core_dlc = steam_get_core_dlc_by_name(core_dlc_list, path);
-   if (core_dlc == NULL) return;
+   if (!(core_dlc = steam_get_core_dlc_by_name(core_dlc_list, path)))
+      return;
 
-   MistResult result = mist_steam_apps_is_dlc_installed(core_dlc->app_id, &dlc_installed);
+   result = mist_steam_apps_is_dlc_installed(core_dlc->app_id, &dlc_installed);
 
    if (MIST_IS_ERROR(result))
    {
@@ -623,11 +605,11 @@ static void menu_action_setting_disp_cpu_gov_choose(
       const char *path,
       char *s2, size_t len2)
 {
-   const char *alt        = list->list[i].alt
+   cpu_scaling_opts_t opts;
+   const char *alt            = list->list[i].alt
          ? list->list[i].alt
          : list->list[i].path;
-   int fnum = atoi(list->list[i].label);
-   cpu_scaling_opts_t opts;
+   int fnum                   = atoi(list->list[i].label);
    enum cpu_scaling_mode mode = get_cpu_scaling_mode(&opts);
 
    if (alt)
@@ -671,27 +653,40 @@ static void menu_action_cpu_managed_freq_label(
       const char *path,
       char *s2, size_t len2)
 {
-   uint32_t freq = 0;
    cpu_scaling_opts_t opts;
+   uint32_t freq              = 0;
    enum cpu_scaling_mode mode = get_cpu_scaling_mode(&opts);
 
-   switch (type) {
-   case MENU_SETTINGS_CPU_MANAGED_SET_MINFREQ:
-      strlcpy(s2, msg_hash_to_str(
-         MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ), len2);
-      freq = opts.min_freq;
-      break;
-   case MENU_SETTINGS_CPU_MANAGED_SET_MAXFREQ:
-      strlcpy(s2, msg_hash_to_str(
-         MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ), len2);
-      freq = opts.max_freq;
-      break;
+   switch (type)
+   {
+      case MENU_SETTINGS_CPU_MANAGED_SET_MINFREQ:
+         strlcpy(s2, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ), len2);
+         freq = opts.min_freq;
+         break;
+      case MENU_SETTINGS_CPU_MANAGED_SET_MAXFREQ:
+         strlcpy(s2, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ), len2);
+         freq = opts.max_freq;
+         break;
    };
 
    if (freq == 1)
-      strlcpy(s, "Min.", len);
+   {
+      s[0] = 'M';
+      s[1] = 'i';
+      s[2] = 'n';
+      s[3] = '.';
+      s[4] = '\0';
+   }
    else if (freq == ~0U)
-      strlcpy(s, "Max.", len);
+   {
+      s[0] = 'M';
+      s[1] = 'a';
+      s[2] = 'x';
+      s[3] = '.';
+      s[4] = '\0';
+   }
    else
       snprintf(s, len, "%u MHz", freq / 1000);
 }
@@ -704,26 +699,27 @@ static void menu_action_cpu_freq_label(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned policyid = atoi(path);
+   unsigned              policyid = atoi(path);
    cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
-   cpu_scaling_driver_t *d = drivers[policyid];
+   cpu_scaling_driver_t        *d = drivers[policyid];
 
-   switch (type) {
-   case MENU_SETTINGS_CPU_POLICY_SET_MINFREQ:
-      strlcpy(s2, msg_hash_to_str(
-         MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ), len2);
-      snprintf(s, len, "%u MHz", d->min_policy_freq / 1000);
-      break;
-   case MENU_SETTINGS_CPU_POLICY_SET_MAXFREQ:
-      strlcpy(s2, msg_hash_to_str(
-         MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ), len2);
-      snprintf(s, len, "%u MHz", d->max_policy_freq / 1000);
-      break;
-   case MENU_SETTINGS_CPU_POLICY_SET_GOVERNOR:
-      strlcpy(s2, msg_hash_to_str(
-         MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR), len2);
-      strlcpy(s, d->scaling_governor, len);
-      break;
+   switch (type)
+   {
+      case MENU_SETTINGS_CPU_POLICY_SET_MINFREQ:
+         strlcpy(s2, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ), len2);
+         snprintf(s, len, "%u MHz", d->min_policy_freq / 1000);
+         break;
+      case MENU_SETTINGS_CPU_POLICY_SET_MAXFREQ:
+         strlcpy(s2, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ), len2);
+         snprintf(s, len, "%u MHz", d->max_policy_freq / 1000);
+         break;
+      case MENU_SETTINGS_CPU_POLICY_SET_GOVERNOR:
+         strlcpy(s2, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR), len2);
+         strlcpy(s, d->scaling_governor, len);
+         break;
    };
 }
 
@@ -758,8 +754,6 @@ static void menu_action_setting_disp_set_label_core_lock(
    const char *alt        = list->list[i].alt
          ? list->list[i].alt
          : list->list[i].path;
-   *s                     = '\0';
-   *w                     = 0;
 
    if (alt)
       strlcpy(s2, alt, len2);
@@ -789,8 +783,6 @@ static void menu_action_setting_disp_set_label_core_set_standalone_exempt(
    const char *alt        = list->list[i].alt
          ? list->list[i].alt
          : list->list[i].path;
-   *s                     = '\0';
-   *w                     = 0;
 
    if (alt)
       strlcpy(s2, alt, len2);
@@ -820,38 +812,46 @@ static void menu_action_setting_disp_set_label_input_desc(
       char *s2, size_t len2)
 {
    unsigned remap_idx;
-   unsigned mapped_port;
    settings_t *settings   = config_get_ptr();
-   const char* descriptor = NULL;
    unsigned user_idx      = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
    unsigned btn_idx       = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
    if (!settings)
       return;
 
-   mapped_port = settings->uints.input_remap_ports[user_idx];
-   remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
+   *w = 19;
+   strlcpy(s2, path, len2);
 
-   if (remap_idx != RARCH_UNMAPPED)
-      descriptor = runloop_state_get_ptr()->system.input_desc_btn[mapped_port][remap_idx];
+   if ((remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx]) !=
+         RARCH_UNMAPPED)
+   {
+      unsigned mapped_port   = settings->uints.input_remap_ports[user_idx];
+      const char *descriptor = runloop_state_get_ptr()->system.input_desc_btn[mapped_port][remap_idx];
+      if (!string_is_empty(descriptor))
+      {
+         size_t _len = strlcpy(s, descriptor, len);
+         if (remap_idx < RARCH_FIRST_CUSTOM_BIND) { }
+         else if (remap_idx % 2 == 0)
+         {
+            s[_len  ] = ' ';
+            s[_len+1] = '+';
+            s[_len+2] = '\0';
+         }
+         else
+         {
+            s[_len  ] = ' ';
+            s[_len+1] = '-';
+            s[_len+2] = '\0';
+         }
+         return;
+      }
+   }
 
+   /* If descriptor was not found, set this instead */
    s[0] = '-';
    s[1] = '-';
    s[2] = '-';
    s[3] = '\0';
-
-   if (!string_is_empty(descriptor))
-   {
-      if (remap_idx < RARCH_FIRST_CUSTOM_BIND)
-         strlcpy(s, descriptor, len);
-      else if (!string_is_empty(descriptor) && remap_idx % 2 == 0)
-         snprintf(s, len, "%s %c", descriptor, '+');
-      else if (remap_idx % 2 != 0)
-         snprintf(s, len, "%s %c", descriptor, '-');
-   }
-
-   *w = 19;
-   strlcpy(s2, path, len2);
 }
 
 static void menu_action_setting_disp_set_label_input_desc_kbd(
@@ -862,11 +862,9 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    const char *path,
    char *s2, size_t len2)
 {
-   char desc[PATH_MAX_LENGTH];
    unsigned key_id, btn_idx;
    unsigned remap_id;
    unsigned user_idx;
-
    settings_t *settings = config_get_ptr();
 
    if (!settings)
@@ -884,8 +882,9 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
 
    if (key_descriptors[key_id].key != RETROK_FIRST)
    {
-      snprintf(desc, sizeof(desc), "Keyboard %s", key_descriptors[key_id].desc);
-      strlcpy(s, desc, len);
+      /* TODO/FIXME - Localize */
+      strlcpy(s, "Keyboard ", len);
+      strlcat(s, key_descriptors[key_id].desc, len);
    }
    else
    {
@@ -1539,18 +1538,17 @@ static void menu_action_setting_disp_set_label_playlist_right_thumbnail_mode(
 {
    playlist_t *playlist  = playlist_get_cached();
 
-   *s = '\0';
    *w = 19;
 
    strlcpy(s2, path, len2);
 
-   if (!playlist)
-      return;
-
-   strlcpy(
-         s,
-         get_playlist_thumbnail_mode_value(playlist, PLAYLIST_THUMBNAIL_RIGHT),
-         len);
+   if (playlist)
+      strlcpy(
+            s,
+            get_playlist_thumbnail_mode_value(playlist, PLAYLIST_THUMBNAIL_RIGHT),
+            len);
+   else
+      *s = '\0';
 }
 
 static void menu_action_setting_disp_set_label_playlist_left_thumbnail_mode(
@@ -1563,18 +1561,17 @@ static void menu_action_setting_disp_set_label_playlist_left_thumbnail_mode(
 {
    playlist_t *playlist  = playlist_get_cached();
 
-   *s = '\0';
    *w = 19;
 
    strlcpy(s2, path, len2);
 
-   if (!playlist)
-      return;
-
-   strlcpy(
-         s,
-         get_playlist_thumbnail_mode_value(playlist, PLAYLIST_THUMBNAIL_LEFT),
-         len);
+   if (playlist)
+      strlcpy(
+            s,
+            get_playlist_thumbnail_mode_value(playlist, PLAYLIST_THUMBNAIL_LEFT),
+            len);
+   else
+      *s = '\0';
 }
 
 static void menu_action_setting_disp_set_label_playlist_sort_mode(
@@ -1592,8 +1589,7 @@ static void menu_action_setting_disp_set_label_playlist_sort_mode(
       return;
 
    sort_mode = playlist_get_sort_mode(playlist);
-
-   *w = 19;
+   *w        = 19;
 
    strlcpy(s2, path, len2);
 
@@ -1656,16 +1652,14 @@ static void menu_action_setting_disp_set_label_core_option(
       char *s2, size_t len2)
 {
    core_option_manager_t *coreopts = NULL;
-   const char *coreopt_label       = NULL;
 
    *s = '\0';
    *w = 19;
 
    if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
-      coreopt_label = core_option_manager_get_val_label(coreopts,
+      const char *coreopt_label    = core_option_manager_get_val_label(coreopts,
             type - MENU_SETTINGS_CORE_OPTION_START);
-
       if (!string_is_empty(coreopt_label))
          strlcpy(s, coreopt_label, len);
    }
@@ -1684,12 +1678,12 @@ static void menu_action_setting_disp_set_label_achievement_information(
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       list->list[i].actiondata;
    rarch_setting_t *setting  = cbs->setting;
-
-   *s                        = '\0';
    *w                        = 2;
 
    if (setting && setting->get_string_representation)
       setting->get_string_representation(setting, s, len);
+   else
+      *s                     = '\0';
 
    strlcpy(s2, path, len2);
 }
@@ -1703,16 +1697,14 @@ static void menu_action_setting_disp_set_label_manual_content_scan_dir(
       char *s2, size_t len2)
 {
    const char *content_dir = NULL;
-
-   *s = '\0';
    *w = 19;
 
    strlcpy(s2, path, len2);
 
-   if (!manual_content_scan_get_menu_content_dir(&content_dir))
-      return;
-
-   strlcpy(s, content_dir, len);
+   if (manual_content_scan_get_menu_content_dir(&content_dir))
+      strlcpy(s, content_dir, len);
+   else
+      *s = '\0';
 }
 
 static void menu_action_setting_disp_set_label_manual_content_scan_system_name(
@@ -1725,15 +1717,14 @@ static void menu_action_setting_disp_set_label_manual_content_scan_system_name(
 {
    const char *system_name = NULL;
 
-   *s = '\0';
    *w = 19;
 
    strlcpy(s2, path, len2);
 
-   if (!manual_content_scan_get_menu_system_name(&system_name))
-      return;
-
-   strlcpy(s, system_name, len);
+   if (manual_content_scan_get_menu_system_name(&system_name))
+      strlcpy(s, system_name, len);
+   else
+      *s = '\0';
 }
 
 static void menu_action_setting_disp_set_label_manual_content_scan_core_name(file_list_t* list,
@@ -1745,15 +1736,14 @@ static void menu_action_setting_disp_set_label_manual_content_scan_core_name(fil
 {
    const char *core_name = NULL;
 
-   *s = '\0';
    *w = 19;
 
    strlcpy(s2, path, len2);
 
-   if (!manual_content_scan_get_menu_core_name(&core_name))
-      return;
-
-   strlcpy(s, core_name, len);
+   if (manual_content_scan_get_menu_core_name(&core_name))
+      strlcpy(s, core_name, len);
+   else
+      *s = '\0';
 }
 
 static void menu_action_setting_disp_set_label_no_items(
@@ -1781,11 +1771,12 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       list->list[i].actiondata;
    rarch_setting_t *setting  = cbs->setting;
 
-   *s                        = '\0';
    *w                        = 19;
 
    if (setting && setting->get_string_representation)
       setting->get_string_representation(setting, s, len);
+   else
+      *s                     = '\0';
 
    strlcpy(s2, path, len2);
 }
@@ -1801,7 +1792,6 @@ static void menu_action_setting_disp_set_label_setting_bool(file_list_t* list,
       list->list[i].actiondata;
    rarch_setting_t *setting  = cbs->setting;
 
-   *s = '\0';
    *w = 19;
 
    if (setting)
@@ -1811,6 +1801,8 @@ static void menu_action_setting_disp_set_label_setting_bool(file_list_t* list,
       else
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
    }
+   else
+      *s = '\0';
 
    strlcpy(s2, path, len2);
 }
@@ -1825,8 +1817,7 @@ static void menu_action_setting_disp_set_label_setting_string(file_list_t* list,
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       list->list[i].actiondata;
    rarch_setting_t *setting  = cbs->setting;
-
-   *w = 19;
+   *w                        = 19;
 
    if (setting->value.target.string)
       strlcpy(s, setting->value.target.string, len);
@@ -1844,9 +1835,8 @@ static void menu_action_setting_disp_set_label_setting_path(file_list_t* list,
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       list->list[i].actiondata;
    rarch_setting_t *setting  = cbs->setting;
-   const char *basename     = setting ? path_basename(setting->value.target.string) : NULL;
-
-   *w = 19;
+   const char *basename      = setting ? path_basename(setting->value.target.string) : NULL;
+   *w                        = 19;
 
    if (!string_is_empty(basename))
       strlcpy(s, basename, len);

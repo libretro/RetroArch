@@ -973,8 +973,8 @@ static void rcheevos_client_fetch_game_badge(const char* badge_name, rcheevos_as
 {
 #if defined(HAVE_GFX_WIDGETS) /* don't need game badge unless widgets are enabled */
    char badge_fullpath[PATH_MAX_LENGTH] = "";
-   char* badge_fullname = NULL;
-   size_t badge_fullname_size = 0;
+   char *badge_fullname                 = NULL;
+   size_t badge_fullname_size           = 0;
 
    /* make sure the directory exists */
    fill_pathname_application_special(badge_fullpath,
@@ -988,7 +988,7 @@ static void rcheevos_client_fetch_game_badge(const char* badge_name, rcheevos_as
    }
 
    fill_pathname_slash(badge_fullpath, sizeof(badge_fullpath));
-   badge_fullname = badge_fullpath + strlen(badge_fullpath);
+   badge_fullname      = badge_fullpath + strlen(badge_fullpath);
    badge_fullname_size = sizeof(badge_fullpath) -
       (badge_fullname - badge_fullpath);
 
@@ -1248,7 +1248,8 @@ static retro_time_t rcheevos_client_prepare_ping(
    rc_api_ping_request_t api_params;
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
    const settings_t *settings               = config_get_ptr();
-   const bool cheevos_richpresence_enable   = 
+   const bool cheevos_richpresence_enable   =
+         rcheevos_hardcore_active() ||
          settings->bools.cheevos_richpresence_enable;
    char buffer[256]                         = "";
 
@@ -1425,11 +1426,15 @@ static void rcheevos_async_download_next_badge(void* userdata)
 
 static void rcheevos_async_fetch_badge_complete(rcheevos_fetch_badge_data* badge_data)
 {
+#ifdef HAVE_THREADS
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
 
-   CHEEVOS_LOCK(rcheevos_locals->load_info.request_lock);
+   slock_lock(rcheevos_locals->load_info.request_lock);
+#endif
    badge_data->state->requested_badges[badge_data->request_index][0] = '\0';
-   CHEEVOS_UNLOCK(rcheevos_locals->load_info.request_lock);
+#ifdef HAVE_THREADS
+   slock_unlock(rcheevos_locals->load_info.request_lock);
+#endif
 
    if (badge_data->callback)
       badge_data->callback(badge_data);
@@ -1441,9 +1446,10 @@ static void rcheevos_async_write_badge(retro_task_t* task)
    rcheevos_fetch_badge_data* badge_data =
       (rcheevos_fetch_badge_data*)task->user_data;
 
-   fill_pathname_join(badge_fullpath, badge_data->state->badge_directory,
-      badge_data->state->requested_badges[badge_data->request_index],
-      sizeof(badge_fullpath));
+   fill_pathname_join_special(badge_fullpath,
+         badge_data->state->badge_directory,
+         badge_data->state->requested_badges[badge_data->request_index],
+         sizeof(badge_fullpath));
 
    if (!filestream_write_file(badge_fullpath, badge_data->data, badge_data->data_len))
    {
@@ -1517,11 +1523,12 @@ static bool rcheevos_client_fetch_badge(
 
    /* check if it's already requested */
    {
-      const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-      int found_index = -1;
       int i;
-
-      CHEEVOS_LOCK(rcheevos_locals->load_info.request_lock);
+      int found_index = -1;
+#ifdef HAVE_THREADS
+      const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+      slock_lock(rcheevos_locals->load_info.request_lock);
+#endif
       for (i = RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS - 1; i >= 0; --i)
       {
          if (!state->requested_badges[i][0])
@@ -1546,8 +1553,9 @@ static bool rcheevos_client_fetch_badge(
                   badge_fullname,
                   sizeof(state->requested_badges[request_index]));
       }
-      CHEEVOS_UNLOCK(rcheevos_locals->load_info.request_lock);
-
+#ifdef HAVE_THREADS
+      slock_unlock(rcheevos_locals->load_info.request_lock);
+#endif
       if (found_index != -1)
          return false;
    }
@@ -1606,20 +1614,24 @@ static bool rcheevos_fetch_next_badge(rcheevos_fetch_badge_state* state)
    }
    else
    {
+      int active                               = 0;
+      const rcheevos_racheevo_t *cheevo        = NULL;
       const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-      const rcheevos_racheevo_t* cheevo = NULL;
-      int active = 0;
 
       /* fetch badges for current state of achievements first */
       do
       {
-         CHEEVOS_LOCK(rcheevos_locals->load_info.request_lock);
+#ifdef HAVE_THREADS
+         slock_lock(rcheevos_locals->load_info.request_lock);
+#endif
          if (    state->locked_badge_fetch_index 
                < rcheevos_locals->game.achievement_count)
             cheevo = &rcheevos_locals->game.achievements[state->locked_badge_fetch_index++];
          else
             cheevo = NULL;
-         CHEEVOS_UNLOCK(rcheevos_locals->load_info.request_lock);
+#ifdef HAVE_THREADS
+         slock_unlock(rcheevos_locals->load_info.request_lock);
+#endif
 
          if (!cheevo)
             break;
@@ -1634,13 +1646,17 @@ static bool rcheevos_fetch_next_badge(rcheevos_fetch_badge_state* state)
       /* then fetch badges for unlocked state so they're ready when the user unlocks something */
       do
       {
-         CHEEVOS_LOCK(rcheevos_locals->load_info.request_lock);
+#ifdef HAVE_THREADS
+         slock_lock(rcheevos_locals->load_info.request_lock);
+#endif
          if (state->badge_fetch_index < rcheevos_locals->game.achievement_count)
             cheevo = &rcheevos_locals->game.achievements[state->badge_fetch_index++];
          else
             cheevo = NULL;
 
-         CHEEVOS_UNLOCK(rcheevos_locals->load_info.request_lock);
+#ifdef HAVE_THREADS
+         slock_unlock(rcheevos_locals->load_info.request_lock);
+#endif
 
          if (!cheevo)
             break;

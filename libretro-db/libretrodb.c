@@ -27,7 +27,6 @@
 #include <unistd.h>
 #endif
 #include <string.h>
-#include <errno.h>
 #include <sys/stat.h>
 #include <stdlib.h>
 
@@ -102,24 +101,24 @@ static int libretrodb_write_metadata(RFILE *fd, libretrodb_metadata_t *md)
 static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
 {
    unsigned i;
-   int rv = 0;
 
    if (doc->type != RDT_MAP)
-      return -EINVAL;
+      return -1;
 
    for (i = 0; i < doc->val.map.len; i++)
    {
+      int rv                          = 0;
       struct rmsgpack_dom_value key   = doc->val.map.items[i].key;
       struct rmsgpack_dom_value value = doc->val.map.items[i].value;
 
       if (key.type != RDT_STRING)
-         return -EINVAL;
+         return -1;
 
       if (key.val.string.len <= 0)
-         return -EINVAL;
+         return -1;
 
       if (key.val.string.buff[0] == '$')
-         return -EINVAL;
+         return -1;
 
       if (value.type != RDT_MAP)
          continue;
@@ -128,7 +127,7 @@ static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
          return rv;
    }
 
-   return rv;
+   return 0;
 }
 
 int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
@@ -171,7 +170,7 @@ int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
       goto clean;
 
    header.metadata_offset = swap_if_little64(filestream_tell(fd));
-   md.count = item_count;
+   md.count               = item_count;
    libretrodb_write_metadata(fd, &md);
    filestream_seek(fd, root, RETRO_VFS_SEEK_POSITION_START);
    filestream_write(fd, &header, sizeof(header));
@@ -214,13 +213,12 @@ int libretrodb_open(const char *path, libretrodb_t *db)
 {
    libretrodb_header_t header;
    libretrodb_metadata_t md;
-   int rv    = 0;
    RFILE *fd = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!fd)
-      return -errno;
+      return -1;
 
    if (!string_is_empty(db->path))
       free(db->path);
@@ -229,26 +227,17 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    db->root  = filestream_tell(fd);
 
    if ((int)filestream_read(fd, &header, sizeof(header)) == -1)
-   {
-      rv = -errno;
       goto error;
-   }
 
    if (strncmp(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)) != 0)
-   {
-      rv = -EINVAL;
       goto error;
-   }
 
    header.metadata_offset = swap_if_little64(header.metadata_offset);
    filestream_seek(fd, (ssize_t)header.metadata_offset,
          RETRO_VFS_SEEK_POSITION_START);
 
    if (libretrodb_read_metadata(fd, &md) < 0)
-   {
-      rv = -EINVAL;
       goto error;
-   }
 
    db->count              = md.count;
    db->first_index_offset = filestream_tell(fd);
@@ -258,7 +247,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
 error:
    if (fd)
       filestream_close(fd);
-   return rv;
+   return -1;
 }
 
 static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
@@ -322,10 +311,9 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
       return -1;
 
    bufflen = idx.next;
-   buff    = malloc(bufflen);
 
-   if (!buff)
-      return -ENOMEM;
+   if (!(buff = malloc(bufflen)))
+      return -1;
 
    while (nread < bufflen)
    {
@@ -335,7 +323,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
       if (rv <= 0)
       {
          free(buff);
-         return -errno;
+         return -1;
       }
       nread += rv;
    }
@@ -437,14 +425,12 @@ int libretrodb_cursor_open(libretrodb_t *db,
 {
    RFILE *fd = NULL;
    if (!db || string_is_empty(db->path))
-      return -errno;
+      return -1;
 
-   fd = filestream_open(db->path,
+   if (!(fd = filestream_open(db->path,
          RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!fd)
-      return -errno;
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      return -1;
 
    cursor->fd       = fd;
    cursor->db       = db;
@@ -509,17 +495,15 @@ int libretrodb_create_index(libretrodb_t *db,
       if (item.type != RDT_MAP)
          goto clean;
 
-      field = rmsgpack_dom_value_map_value(&item, &key);
-
-      /* Field not found in item */
-      if (!field)
+      /* Field not found in item? */
+      if (!(field = rmsgpack_dom_value_map_value(&item, &key)))
          goto clean;
 
-      /* Field is not binary */
+      /* Field is not binary? */
       if (field->type != RDT_BINARY)
          goto clean;
 
-      /* Field is empty */
+      /* Field is empty? */
       if (field->val.binary.len == 0)
          goto clean;
 
@@ -529,8 +513,7 @@ int libretrodb_create_index(libretrodb_t *db,
       else if (field->val.binary.len != field_size) 
          goto clean;
 
-      buff = malloc(field_size + sizeof(uint64_t));
-      if (!buff)
+      if (!(buff = malloc(field_size + sizeof(uint64_t))))
          goto clean;
 
       memcpy(buff, field->val.binary.buff, field_size);
@@ -552,9 +535,8 @@ int libretrodb_create_index(libretrodb_t *db,
 
    filestream_seek(db->fd, 0, RETRO_VFS_SEEK_POSITION_END);
 
-   strncpy(idx.name, name, 50);
+   strlcpy(idx.name, name, sizeof(idx.name));
 
-   idx.name[49] = '\0';
    idx.key_size = field_size;
    idx.next     = db->count * (field_size + sizeof(uint64_t));
    libretrodb_write_index_header(db->fd, &idx);

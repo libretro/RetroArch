@@ -376,18 +376,16 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    {
       if (wr->rect_delay < 10)
       {
-          RARCH_DBG("[CRT][WinRaw]: Resize RECT delay for absolute co-ords - %d \n", wr->rect_delay);
           winraw_init_mouse_xy_mapping(wr); /* Triggering fewer times seems to fix the issue. Forcing resize while resolution is changing */
           wr->rect_delay ++;
       }
       else
       {
-	      int bottom = wr->prev_rect.bottom;
-	      int right = wr->prev_rect.right;
-	      RARCH_DBG("[CRT][WinRaw]: Resizing RECT for absolute coordinates to match new resolution - %dx%d\n", right ,bottom);
+	      int bottom      = wr->prev_rect.bottom;
+	      int right       = wr->prev_rect.right;
 	      wr->active_rect = wr->prev_rect;
 	      winraw_init_mouse_xy_mapping(wr);
-	      wr->rect_delay = 0;
+	      wr->rect_delay  = 0;
       }
    }
 
@@ -407,11 +405,16 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    }
    else if (state->lLastX || state->lLastY)
    {
-      /* Menu requires GetCursorPos() for accurate
+      /* Menu and pointer require GetCursorPos() for
        * positioning, but using that always will
        * break multiple mice positions */
+      bool getcursorpos = (mouse->device == RETRO_DEVICE_POINTER) ? true : false;
 #ifdef HAVE_MENU
       if (menu_state_get_ptr()->alive)
+         getcursorpos = true;
+#endif
+
+      if (getcursorpos)
       {
          if (!GetCursorPos(&crs_pos))
             RARCH_DBG("[WinRaw]: GetCursorPos failed with error %lu.\n", GetLastError());
@@ -419,7 +422,6 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
             RARCH_DBG("[WinRaw]: ScreenToClient failed with error %lu.\n", GetLastError());
       }
       else
-#endif
       {
          /* Handle different sensitivity for lightguns */
          if (mouse->device == RETRO_DEVICE_LIGHTGUN)
@@ -639,7 +641,7 @@ static void winraw_poll(void *data)
    }
 
    /* Prevent LAlt sticky after unfocusing with Alt-Tab */
-   if (    !winraw_focus
+   if (     !winraw_focus
          && wr->keyboard.keys[SC_LALT] 
          && !(GetKeyState(VK_MENU) & 0x8000))
    {
@@ -648,6 +650,9 @@ static void winraw_poll(void *data)
             input_keymaps_translate_keysym_to_rk(SC_LALT),
             0, 0, RETRO_DEVICE_KEYBOARD);
    }
+   /* Clear all keyboard key states when unfocused */
+   else if (!winraw_focus && !(GetKeyState(VK_MENU) & 0x8000))
+      memset(wr->keyboard.keys, 0, SC_LAST);
 }
 
 static unsigned winraw_retro_id_to_rarch(unsigned id)
@@ -697,6 +702,7 @@ static int16_t winraw_input_state(
       unsigned idx,
       unsigned id)
 {
+   int16_t ret           = 0;
    settings_t *settings  = NULL;
    winraw_mouse_t *mouse = NULL;
    winraw_input_t *wr    = (winraw_input_t*)data;
@@ -733,7 +739,6 @@ static int16_t winraw_input_state(
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
 
             if (mouse)
             {
@@ -782,13 +787,11 @@ static int16_t winraw_input_state(
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
          {
             int id_minus_key      = 0;
             int id_plus_key       = 0;
             unsigned id_minus     = 0;
             unsigned id_plus      = 0;
-            int16_t ret           = 0;
             bool id_plus_valid    = false;
             bool id_minus_valid   = false;
 
@@ -809,9 +812,8 @@ static int16_t winraw_input_state(
                if (WINRAW_KEYBOARD_PRESSED(wr, id_minus_key))
                   ret += -0x7fff;
             }
-            return ret;
          }
-         break;
+         return ret;
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && WINRAW_KEYBOARD_PRESSED(wr, id);
       case RETRO_DEVICE_MOUSE:
@@ -1050,12 +1052,12 @@ static void winraw_free(void *data)
 
 static uint64_t winraw_get_capabilities(void *u)
 {
-   return (1 << RETRO_DEVICE_KEYBOARD) |
-          (1 << RETRO_DEVICE_MOUSE)    |
-          (1 << RETRO_DEVICE_JOYPAD)   |
-          (1 << RETRO_DEVICE_ANALOG)   |
-          (1 << RETRO_DEVICE_POINTER)  |
-          (1 << RETRO_DEVICE_LIGHTGUN);
+   return   (1 << RETRO_DEVICE_KEYBOARD)
+          | (1 << RETRO_DEVICE_MOUSE)
+          | (1 << RETRO_DEVICE_JOYPAD)
+          | (1 << RETRO_DEVICE_ANALOG)
+          | (1 << RETRO_DEVICE_POINTER)
+          | (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
 static void winraw_grab_mouse(void *d, bool state)

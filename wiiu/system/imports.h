@@ -56,6 +56,12 @@ IMPORT(OSSignalSemaphore);
 IMPORT(OSWaitSemaphore);
 IMPORT(OSTryWaitSemaphore);
 
+IMPORT(OSAllocVirtAddr);
+IMPORT(OSFreeVirtAddr);
+IMPORT(OSGetMapVirtAddrRange);
+IMPORT(OSMapMemory);
+IMPORT(OSUnmapMemory);
+
 IMPORT(exit);
 IMPORT(_Exit);
 IMPORT(__os_snprintf);

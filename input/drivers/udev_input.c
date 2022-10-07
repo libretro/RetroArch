@@ -450,9 +450,9 @@ static int16_t udev_mouse_get_pointer_y(const udev_input_mouse_t *mouse, bool sc
          src_min = vp.y;
          src_height = vp.height;
       }
+      y = -32767.0 + 65535.0 / src_height * (mouse->y_abs - src_min);
    }
 
-   y = -32767.0 + 65535.0 / src_height * (mouse->y_abs - src_min);
    y += (y < 0 ? -0.5 : 0.5);
 
    if (y < -0x7fff)
@@ -1496,11 +1496,11 @@ error:
 static uint64_t udev_input_get_capabilities(void *data)
 {
    return
-      (1 << RETRO_DEVICE_JOYPAD)   |
-      (1 << RETRO_DEVICE_ANALOG)   |
-      (1 << RETRO_DEVICE_KEYBOARD) |
-      (1 << RETRO_DEVICE_MOUSE)    |
-      (1 << RETRO_DEVICE_LIGHTGUN);
+        (1 << RETRO_DEVICE_JOYPAD)
+      | (1 << RETRO_DEVICE_ANALOG)
+      | (1 << RETRO_DEVICE_KEYBOARD)
+      | (1 << RETRO_DEVICE_MOUSE)
+      | (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
 static void udev_input_grab_mouse(void *data, bool state)

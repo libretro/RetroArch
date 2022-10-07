@@ -62,14 +62,14 @@ int main(int argc, char ** argv)
 
    if ((rv = libretrodb_open(path, db)) != 0)
    {
-      printf("Could not open db file '%s': %s\n", path, strerror(-rv));
+      printf("Could not open db file '%s'\n", path);
       goto error;
    }
    else if (memcmp(command, "list", 4) == 0)
    {
       if ((rv = libretrodb_cursor_open(db, cur, NULL)) != 0)
       {
-         printf("Could not open cursor: %s\n", strerror(-rv));
+         printf("Could not open cursor\n");
          goto error;
       }
 
@@ -106,7 +106,7 @@ int main(int argc, char ** argv)
 
       if ((rv = libretrodb_cursor_open(db, cur, q)) != 0)
       {
-         printf("Could not open cursor: %s\n", strerror(-rv));
+         printf("Could not open cursor\n");
          goto error;
       }
 
@@ -137,7 +137,7 @@ int main(int argc, char ** argv)
 
       if ((rv = libretrodb_cursor_open(db, cur, q)) != 0)
       {
-         printf("Could not open cursor: %s\n", strerror(-rv));
+         printf("Could not open cursor\n");
          goto error;
       }
 

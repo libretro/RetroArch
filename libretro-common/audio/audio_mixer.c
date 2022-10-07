@@ -61,6 +61,15 @@
 #include <ibxm/ibxm.h>
 #endif
 
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#define AUDIO_MIXER_LOCK(voice)   slock_lock(voice->lock)
+#define AUDIO_MIXER_UNLOCK(voice) slock_unlock(voice->lock)
+#else
+#define AUDIO_MIXER_LOCK(voice)   do {} while(0)
+#define AUDIO_MIXER_UNLOCK(voice) do {} while(0)
+#endif
+
 #define AUDIO_MIXER_MAX_VOICES      8
 #define AUDIO_MIXER_TEMP_BUFFER 8192
 
@@ -183,6 +192,9 @@ struct audio_mixer_voice
    unsigned type;
    float    volume;
    bool     repeat;
+#ifdef HAVE_THREADS
+   slock_t *lock;
+#endif
 };
 
 /* TODO/FIXME - static globals */
@@ -312,7 +324,15 @@ void audio_mixer_init(unsigned rate)
    s_rate = rate;
 
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++)
-      s_voices[i].type = AUDIO_MIXER_TYPE_NONE;
+   {
+      audio_mixer_voice_t *voice = &s_voices[i];
+
+      voice->type = AUDIO_MIXER_TYPE_NONE;
+#ifdef HAVE_THREADS
+      if (!voice->lock)
+         voice->lock = slock_new();
+#endif
+   }
 }
 
 void audio_mixer_done(void)
@@ -320,7 +340,17 @@ void audio_mixer_done(void)
    unsigned i;
 
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++)
-      audio_mixer_release(&s_voices[i]);
+   {
+      audio_mixer_voice_t *voice = &s_voices[i];
+
+      AUDIO_MIXER_LOCK(voice);
+      audio_mixer_release(voice);
+      AUDIO_MIXER_UNLOCK(voice);
+#ifdef HAVE_THREADS
+      slock_free(voice->lock);
+      voice->lock = NULL;
+#endif
+   }
 }
 
 audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
@@ -837,6 +867,14 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
       if (voice->type != AUDIO_MIXER_TYPE_NONE)
          continue;
 
+      AUDIO_MIXER_LOCK(voice);
+
+      if (voice->type != AUDIO_MIXER_TYPE_NONE)
+      {
+         AUDIO_MIXER_UNLOCK(voice);
+         continue;
+      }
+
       /* claim the voice, also helps with cleanup on error */
       voice->type = sound->type;
 
@@ -881,16 +919,22 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
       voice->volume   = volume;
       voice->sound    = sound;
       voice->stop_cb  = stop_cb;
+      AUDIO_MIXER_UNLOCK(voice);
    }
    else
    {
-      audio_mixer_release(voice);
+      if(i < AUDIO_MIXER_MAX_VOICES)
+      {
+         audio_mixer_release(voice);
+         AUDIO_MIXER_UNLOCK(voice);
+      }
       voice = NULL;
    }
 
    return voice;
 }
 
+/* Need to hold lock for voice.  */
 static void audio_mixer_release(audio_mixer_voice_t* voice)
 {
    if (!voice)
@@ -933,10 +977,13 @@ void audio_mixer_stop(audio_mixer_voice_t* voice)
 
    if (voice)
    {
+      AUDIO_MIXER_LOCK(voice);
       stop_cb     = voice->stop_cb;
       sound       = voice->sound;
 
       audio_mixer_release(voice);
+
+      AUDIO_MIXER_UNLOCK(voice);
 
       if (stop_cb)
          stop_cb(sound, AUDIO_MIXER_SOUND_STOPPED);
@@ -997,6 +1044,9 @@ static void audio_mixer_mix_ogg(float* buffer, size_t num_frames,
    unsigned buf_free                = (unsigned)(num_frames * 2);
    unsigned temp_samples            = 0;
    float* pcm                       = NULL;
+
+   if (!voice->types.ogg.stream)
+      return;
 
    if (voice->types.ogg.position == voice->types.ogg.samples)
    {
@@ -1284,7 +1334,11 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
 
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
    {
-      float volume = (override) ? volume_override : voice->volume;
+      float volume;
+
+      AUDIO_MIXER_LOCK(voice);
+
+      volume = (override) ? volume_override : voice->volume;
 
       switch (voice->type)
       {
@@ -1314,6 +1368,8 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
          case AUDIO_MIXER_TYPE_NONE:
             break;
       }
+
+      AUDIO_MIXER_UNLOCK(voice);
    }
 
    for (j = 0, sample = buffer; j < num_frames * 2; j++, sample++)
@@ -1338,5 +1394,7 @@ void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val)
    if (!voice)
       return;
 
+   AUDIO_MIXER_LOCK(voice);
    voice->volume = val;
+   AUDIO_MIXER_UNLOCK(voice);
 }

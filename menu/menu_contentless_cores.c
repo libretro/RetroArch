@@ -23,6 +23,7 @@
 
 #include "menu_driver.h"
 #include "menu_displaylist.h"
+#include "../file_path_special.h"
 #include "../retroarch.h"
 #include "../core_info.h"
 #include "../configuration.h"
@@ -120,32 +121,32 @@ static void contentless_cores_init_info_entries(
       if (core_info &&
           core_info->supports_no_game)
       {
+         char licenses_str[MENU_SUBLABEL_MAX_LENGTH];
          contentless_core_info_entry_t *entry =
                (contentless_core_info_entry_t*)malloc(sizeof(*entry));
-         char licenses_str[MENU_SUBLABEL_MAX_LENGTH];
-
-         licenses_str[0] = '\0';
+         size_t _len          = strlcpy(licenses_str,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
+               sizeof(licenses_str));
+         licenses_str[_len  ] = ':';
+         licenses_str[_len+1] = ' ';
+         licenses_str[_len+2] = '\0';
 
          /* Populate licences string */
          if (core_info->licenses_list)
          {
-            char tmp_str[MENU_SUBLABEL_MAX_LENGTH];
-
+            char tmp_str[MENU_SUBLABEL_MAX_LENGTH - 2];
             tmp_str[0] = '\0';
-
             string_list_join_concat(tmp_str, sizeof(tmp_str),
                   core_info->licenses_list, ", ");
-            snprintf(licenses_str, sizeof(licenses_str), "%s: %s",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
-                  tmp_str);
+            strlcat(licenses_str, tmp_str, sizeof(licenses_str));
          }
          /* No license found - set to N/A */
          else
-            snprintf(licenses_str, sizeof(licenses_str), "%s: %s",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+            strlcat(licenses_str,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+                  sizeof(licenses_str));
 
-         entry->licenses_str = strdup(licenses_str);
+         entry->licenses_str            = strdup(licenses_str);
 
          /* Initialise runtime info */
          entry->runtime.runtime_str     = NULL;
@@ -266,9 +267,6 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
    char icon_path[PATH_MAX_LENGTH];
    size_t i;
 
-   icon_directory[0] = '\0';
-   icon_path[0]      = '\0';
-
    if (!state)
       return;
 
@@ -291,7 +289,7 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
       return;
 
    /* Load fallback icon */
-   fill_pathname_join(icon_path, icon_directory,
+   fill_pathname_join_special(icon_path, icon_directory,
          CONTENTLESS_CORE_ICON_DEFAULT, sizeof(icon_path));
 
    if (path_is_valid(icon_path))
@@ -327,14 +325,20 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
           core_info->databases_list &&
           (core_info->databases_list->size > 0))
       {
+         size_t len;
          const char *icon_name   =
                core_info->databases_list->elems[0].data;
          struct texture_image ti = {0};
          ti.supports_rgba        = rgba_supported;
 
-         fill_pathname_join(icon_path, icon_directory,
+         len                     = fill_pathname_join_special(
+               icon_path, icon_directory,
                icon_name, sizeof(icon_path));
-         strlcat(icon_path, ".png", sizeof(icon_path));
+         icon_path[len  ] = '.';
+         icon_path[len+1] = 'p';
+         icon_path[len+2] = 'n';
+         icon_path[len+3] = 'g';
+         icon_path[len+4] = '\0';
 
          if (!path_is_valid(icon_path))
             continue;
@@ -450,12 +454,12 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *setti
             }
 
             if (core_valid &&
-                menu_entries_append_enum(list,
+                menu_entries_append(list,
                      core_info->path,
                      core_info->core_file_id.str,
                      MENU_ENUM_LABEL_CONTENTLESS_CORE,
                      MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN,
-                     0, 0))
+                     0, 0, NULL))
             {
                file_list_set_alt_at_offset(
                      list, menu_index, core_info->display_name);
@@ -483,11 +487,11 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *setti
    }
 
    if ((count == 0) &&
-       menu_entries_append_enum(list,
+       menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
             MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
-            0, 0, 0))
+            0, 0, 0, NULL))
       count++;
 
    return count;

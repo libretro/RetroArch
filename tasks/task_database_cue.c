@@ -15,7 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
 #include <ctype.h>
 #include <string.h>
 
@@ -29,6 +28,7 @@
 #include <streams/interface_stream.h>
 #include <string/stdstring.h>
 #include "../retroarch.h"
+#include "task_database_cue.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -42,7 +42,6 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 
-#define MAGIC_LEN       17
 #define MAX_TOKEN_LEN   255
 
 #ifdef MSB_FIRST
@@ -51,84 +50,60 @@
 #define MODETEST_VAL    0xffffff00
 #endif
 
-/* TODO/FIXME - reorder this according to CODING-GUIDELINES
- * and make sure LUT table below conforms */
-struct magic_entry
-{
-   int32_t offset;
-   const char *system_name;
-   const char *magic;
-   int length_magic;
-};
-
 static struct magic_entry MAGIC_NUMBERS[] = {
-   { 0x000010,   "Sega - Mega-CD - Sega CD",      "\x53\x45\x47\x41\x44\x49\x53\x43\x53\x59\x53\x54\x45\x4d",       14},
-   { 0x000010,   "Sega - Saturn",                 "\x53\x45\x47\x41\x20\x53\x45\x47\x41\x53\x41\x54\x55\x52\x4e",   15},
-   { 0x000010,   "Sega - Dreamcast",              "\x53\x45\x47\x41\x20\x53\x45\x47\x41\x4b\x41\x54\x41\x4e\x41",   15},
-   { 0x000018,   "Nintendo - Wii",                "\x5d\x1c\x9e\xa3",                                               4},
-   { 0x000218,   "Nintendo - Wii",                "\x5d\x1c\x9e\xa3",                                               4},
-   { 0x00001c,   "Nintendo - GameCube",           "\xc2\x33\x9f\x3d",                                               4},
-   { 0x008008,   "Sony - PlayStation Portable",   "\x50\x53\x50\x20\x47\x41\x4d\x45",                               8},
-   { 0x008008,   "Sony - PlayStation",            "\x50\x4c\x41\x59\x53\x54\x41\x54\x49\x4f\x4e",                   11},
-   { 0x009320,   "Sony - PlayStation",            "\x50\x4c\x41\x59\x53\x54\x41\x54\x49\x4f\x4e",                   11},
-   { 0,          NULL,                            NULL,                                                             0}
+   { "Nintendo - GameCube",         "\xc2\x33\x9f\x3d", 0x00001c},
+   { "Nintendo - GameCube",         "\xc2\x33\x9f\x3d", 0x000074}, /* RVZ, WIA */
+   { "Nintendo - Wii",              "\x5d\x1c\x9e\xa3", 0x000018},
+   { "Nintendo - Wii",              "\x5d\x1c\x9e\xa3", 0x000218}, /* WBFS */
+   { "Nintendo - Wii",              "\x5d\x1c\x9e\xa3", 0x000070}, /* RVZ, WIA */
+   { "Sega - Dreamcast",            "SEGA SEGAKATANA",  0x000010},
+   { "Sega - Mega-CD - Sega CD",    "SEGADISCSYSTEM",   0x000010},
+   { "Sega - Saturn",               "SEGA SEGASATURN",  0x000010},
+   { "Sony - PlayStation",          "PLAYSTATION",      0x008008},
+   { "Sony - PlayStation",          "PLAYSTATION",      0x009320},
+   { "Sony - PlayStation Portable", "PSP GAME",         0x008008},
+   { NULL,                          NULL,               0}
 };
 
 /**
  * Given a filename and position, find the associated disc number.
  */
-int cue_find_disc_number(const char* str1, int index)
+static int cue_find_disc_number(const char* str1, char disc)
 {
-   char disc;
-   int disc_number = 0;
-
-   disc = str1[index + 6];
-
-   switch(disc)
+   switch (disc)
    {
       case 'a':
       case 'A':
-         disc_number = 1;
-         break;
+         return 1;
       case 'b':
       case 'B':
-         disc_number = 2;
-         break;
+         return 2;
       case 'c':
       case 'C':
-         disc_number = 3;
-         break;
+         return 3;
       case 'd':
       case 'D':
-         disc_number = 4;
-         break;
+         return 4;
       case 'e':
       case 'E':
-         disc_number = 5;
-         break;
+         return 5;
       case 'f':
       case 'F':
-         disc_number = 6;
-         break;
+         return 6;
       case 'g':
       case 'G':
-         disc_number = 7;
-         break;
+         return 7;
       case 'h':
       case 'H':
-         disc_number = 8;
-         break;
+         return 8;
       case 'i':
       case 'I':
-         disc_number = 9;
-         break;
+         return 9;
       default:
-         disc_number = disc - '0';
+         if ((disc - '0') >= 1)
+            return (disc - '0');
          break;
    }
-
-   if (disc_number >= 1)
-      return disc_number;
 
    return 0;
 }
@@ -136,14 +111,10 @@ int cue_find_disc_number(const char* str1, int index)
 /**
  * Given a title and filename, append the appropriate disc number to it.
  */
-void cue_append_multi_disc_suffix(char * str1, const char *filename)
+static void cue_append_multi_disc_suffix(char * str1, const char *filename)
 {
-   char *dest = str1;
-   int result = 0;
-   int disc_number = 0;
-
-   /** check multi-disc and insert suffix **/
-   result = string_find_index_substring_string(filename, "(Disc ");
+   /* Check multi-disc and insert suffix */
+   int result = string_find_index_substring_string(filename, "(Disc ");
    if (result < 0)
       result = string_find_index_substring_string(filename, "(disc ");
    if (result < 0)
@@ -152,13 +123,16 @@ void cue_append_multi_disc_suffix(char * str1, const char *filename)
       result = string_find_index_substring_string(filename, "(disk ");
    if (result >= 0)
    {
-      disc_number = cue_find_disc_number(filename, result);
+      int disc_number = cue_find_disc_number(filename, filename[result + 6]);
       if (disc_number > 0)
-         sprintf(dest+strlen(dest), "-%i", disc_number - 1);
+      {
+         char *dest = str1;
+         sprintf(dest + strlen(dest), "-%i", disc_number - 1);
+      }
    }
 }
 
-static int64_t get_token(intfstream_t *fd, char *token, uint64_t max_len)
+static int64_t task_database_cue_get_token(intfstream_t *fd, char *token, uint64_t max_len)
 {
    char *c       = token;
    int64_t len   = 0;
@@ -169,18 +143,8 @@ static int64_t get_token(intfstream_t *fd, char *token, uint64_t max_len)
       int64_t rv = (int64_t)intfstream_read(fd, c, 1);
       if (rv == 0)
          return 0;
-
-      if (rv < 1)
-      {
-         switch (errno)
-         {
-            case EINTR:
-            case EAGAIN:
-               continue;
-            default:
-               return -errno;
-         }
-      }
+      else if (rv < 0)
+         return -1;
 
       switch (*c)
       {
@@ -218,13 +182,12 @@ static int64_t get_token(intfstream_t *fd, char *token, uint64_t max_len)
    }
 }
 
-int detect_ps1_game(intfstream_t *fd, char *game_id, const char *filename)
+int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
    #define DISC_DATA_SIZE_PS1 60000
    int pos;
    char raw_game_id[50];
    char disc_data[DISC_DATA_SIZE_PS1];
-   char hyphen = '-';
 
    /* Load data into buffer and use pointers */
    if (intfstream_seek(fd, 0, SEEK_SET) < 0)
@@ -238,52 +201,70 @@ int detect_ps1_game(intfstream_t *fd, char *game_id, const char *filename)
    for (pos = 0; pos < DISC_DATA_SIZE_PS1; pos++)
    {
       strncpy(raw_game_id, &disc_data[pos], 12);
-	  raw_game_id[12] = '\0';
-      if (string_is_equal_fast(raw_game_id, "S", 1) || string_is_equal_fast(raw_game_id, "E", 1))
+      raw_game_id[12] = '\0';
+      if (     string_is_equal_fast(raw_game_id, "S", STRLEN_CONST("S")) 
+            || string_is_equal_fast(raw_game_id, "E", STRLEN_CONST("E")))
       {
          if (
-            (string_is_equal_fast(raw_game_id, "SCUS_", 5))
-            || (string_is_equal_fast(raw_game_id, "SLUS_", 5))
-            || (string_is_equal_fast(raw_game_id, "SLES_", 5))
-            || (string_is_equal_fast(raw_game_id, "SCED_", 5))
-            || (string_is_equal_fast(raw_game_id, "SLPS_", 5))
-            || (string_is_equal_fast(raw_game_id, "SLPM_", 5))
-            || (string_is_equal_fast(raw_game_id, "SCPS_", 5))
-            || (string_is_equal_fast(raw_game_id, "SLED_", 5))
-            || (string_is_equal_fast(raw_game_id, "SIPS_", 5))
-            || (string_is_equal_fast(raw_game_id, "ESPM_", 5))
-            || (string_is_equal_fast(raw_game_id, "SCES_", 5))
+            (   string_is_equal_fast(raw_game_id, "SCUS_", STRLEN_CONST("SCUS_")))
+            || (string_is_equal_fast(raw_game_id, "SLUS_", STRLEN_CONST("SLUS_")))
+            || (string_is_equal_fast(raw_game_id, "SLES_", STRLEN_CONST("SLES_")))
+            || (string_is_equal_fast(raw_game_id, "SCED_", STRLEN_CONST("SCED_")))
+            || (string_is_equal_fast(raw_game_id, "SLPS_", STRLEN_CONST("SLPS_")))
+            || (string_is_equal_fast(raw_game_id, "SLPM_", STRLEN_CONST("SLPM_")))
+            || (string_is_equal_fast(raw_game_id, "SCPS_", STRLEN_CONST("SCPS_")))
+            || (string_is_equal_fast(raw_game_id, "SLED_", STRLEN_CONST("SLED_")))
+            || (string_is_equal_fast(raw_game_id, "SIPS_", STRLEN_CONST("SIPS_")))
+            || (string_is_equal_fast(raw_game_id, "ESPM_", STRLEN_CONST("ESPM_")))
+            || (string_is_equal_fast(raw_game_id, "SCES_", STRLEN_CONST("SCES_")))
             )
          {
-            raw_game_id[4] = hyphen;
-            if (string_is_equal_fast(&raw_game_id[8], ".", 1))
+            raw_game_id[4] = '-';
+            if (string_is_equal_fast(&raw_game_id[8], ".", STRLEN_CONST(".")))
             {
+               raw_game_id[8] = raw_game_id[9];
+               raw_game_id[9] = raw_game_id[10];
+            }
+            /* A few games have their serial in the form of xx.xxx */
+            /* Tanaka Torahiko no Ultra-ryuu Shougi - Ibisha Anaguma-hen (Japan) -> SLPS_02.261 */
+            else if (string_is_equal_fast(&raw_game_id[7], ".", STRLEN_CONST(".")))
+            {
+               raw_game_id[7] = raw_game_id[8];
                raw_game_id[8] = raw_game_id[9];
                raw_game_id[9] = raw_game_id[10];
             }
             raw_game_id[10] = '\0';
 
-            string_remove_all_whitespace(game_id, raw_game_id);
-            cue_append_multi_disc_suffix(game_id, filename);
+            string_remove_all_whitespace(s, raw_game_id);
+            cue_append_multi_disc_suffix(s, filename);
             return true;
          }
-         else if (string_is_equal_fast(&disc_data[pos], "LSP-", 4))
+         else if (string_is_equal_fast(&disc_data[pos], "LSP-", STRLEN_CONST("LSP-")))
          {
-            string_remove_all_whitespace(game_id, raw_game_id);
-            game_id[10] = '\0';
-            cue_append_multi_disc_suffix(game_id, filename);
+            string_remove_all_whitespace(s, raw_game_id);
+            s[10] = '\0';
+            cue_append_multi_disc_suffix(s, filename);
             return true;
          }
       }
    }
 
-   strcpy(game_id, "XXXXXXXXXX");
-   game_id[10] = '\0';
-   cue_append_multi_disc_suffix(game_id, filename);
-   return true;
+   s[0 ] = 'X';
+   s[1 ] = 'X';
+   s[2 ] = 'X';
+   s[3 ] = 'X';
+   s[4 ] = 'X';
+   s[5 ] = 'X';
+   s[6 ] = 'X';
+   s[7 ] = 'X';
+   s[8 ] = 'X';
+   s[9 ] = 'X';
+   s[10] = '\0';
+   cue_append_multi_disc_suffix(s, filename);
+   return false;
 }
 
-int detect_psp_game(intfstream_t *fd, char *game_id, const char *filename)
+int detect_psp_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
    #define DISC_DATA_SIZE_PSP 40000
    int pos;
@@ -300,43 +281,44 @@ int detect_psp_game(intfstream_t *fd, char *game_id, const char *filename)
 
    for (pos = 0; pos < DISC_DATA_SIZE_PSP; pos++)
    {
-      strncpy(game_id, &disc_data[pos], 10);
-      game_id[10] = '\0';
-      if (string_is_equal_fast(game_id, "U", 1) || string_is_equal_fast(game_id, "N", 1))
+      strncpy(s, &disc_data[pos], 10);
+      s[10] = '\0';
+      if (     string_is_equal_fast(s, "U", STRLEN_CONST("U")) 
+            || string_is_equal_fast(s, "N", STRLEN_CONST("N")))
       {
          if (
-            (string_is_equal_fast(game_id, "ULES-", 5))
-            || (string_is_equal_fast(game_id, "ULUS-", 5))
-            || (string_is_equal_fast(game_id, "ULJS-", 5))
+            (   string_is_equal_fast(s, "ULES-", STRLEN_CONST("ULES-")))
+            || (string_is_equal_fast(s, "ULUS-", STRLEN_CONST("ULUS-")))
+            || (string_is_equal_fast(s, "ULJS-", STRLEN_CONST("ULJS-")))
 
-            || (string_is_equal_fast(game_id, "ULEM-", 5))
-            || (string_is_equal_fast(game_id, "ULUM-", 5))
-            || (string_is_equal_fast(game_id, "ULJM-", 5))
+            || (string_is_equal_fast(s, "ULEM-", STRLEN_CONST("ULEM-")))
+            || (string_is_equal_fast(s, "ULUM-", STRLEN_CONST("ULUM-")))
+            || (string_is_equal_fast(s, "ULJM-", STRLEN_CONST("ULJM-")))
 
-            || (string_is_equal_fast(game_id, "UCES-", 5))
-            || (string_is_equal_fast(game_id, "UCUS-", 5))
-            || (string_is_equal_fast(game_id, "UCJS-", 5))
-            || (string_is_equal_fast(game_id, "UCAS-", 5))
-            || (string_is_equal_fast(game_id, "UCKS-", 5))
+            || (string_is_equal_fast(s, "UCES-", STRLEN_CONST("UCES-")))
+            || (string_is_equal_fast(s, "UCUS-", STRLEN_CONST("UCUS-")))
+            || (string_is_equal_fast(s, "UCJS-", STRLEN_CONST("UCJS-")))
+            || (string_is_equal_fast(s, "UCAS-", STRLEN_CONST("UCAS-")))
+            || (string_is_equal_fast(s, "UCKS-", STRLEN_CONST("UCKS-")))
 
-            || (string_is_equal_fast(game_id, "ULKS-", 5))
-            || (string_is_equal_fast(game_id, "ULAS-", 5))
-            || (string_is_equal_fast(game_id, "NPEH-", 5))
-            || (string_is_equal_fast(game_id, "NPUH-", 5))
-            || (string_is_equal_fast(game_id, "NPJH-", 5))
-            || (string_is_equal_fast(game_id, "NPHH-", 5))
+            || (string_is_equal_fast(s, "ULKS-", STRLEN_CONST("ULKS-")))
+            || (string_is_equal_fast(s, "ULAS-", STRLEN_CONST("ULAS-")))
+            || (string_is_equal_fast(s, "NPEH-", STRLEN_CONST("NPEH-")))
+            || (string_is_equal_fast(s, "NPUH-", STRLEN_CONST("NPUH-")))
+            || (string_is_equal_fast(s, "NPJH-", STRLEN_CONST("NPJH-")))
+            || (string_is_equal_fast(s, "NPHH-", STRLEN_CONST("NPHH-")))
 
-            || (string_is_equal_fast(game_id, "NPEG-", 5))
-            || (string_is_equal_fast(game_id, "NPUG-", 5))
-            || (string_is_equal_fast(game_id, "NPJG-", 5))
-            || (string_is_equal_fast(game_id, "NPHG-", 5))
+            || (string_is_equal_fast(s, "NPEG-", STRLEN_CONST("NPEG-")))
+            || (string_is_equal_fast(s, "NPUG-", STRLEN_CONST("NPUG-")))
+            || (string_is_equal_fast(s, "NPJG-", STRLEN_CONST("NPJG-")))
+            || (string_is_equal_fast(s, "NPHG-", STRLEN_CONST("NPHG-")))
 
-            || (string_is_equal_fast(game_id, "NPEZ-", 5))
-            || (string_is_equal_fast(game_id, "NPUZ-", 5))
-            || (string_is_equal_fast(game_id, "NPJZ-", 5))
+            || (string_is_equal_fast(s, "NPEZ-", STRLEN_CONST("NPEZ-")))
+            || (string_is_equal_fast(s, "NPUZ-", STRLEN_CONST("NPUZ-")))
+            || (string_is_equal_fast(s, "NPJZ-", STRLEN_CONST("NPJZ-")))
             )
          {
-            cue_append_multi_disc_suffix(game_id, filename);
+            cue_append_multi_disc_suffix(s, filename);
             return true;
          }
       }
@@ -345,10 +327,10 @@ int detect_psp_game(intfstream_t *fd, char *game_id, const char *filename)
    return false;
 }
 
-int detect_gc_game(intfstream_t *fd, char *game_id, const char *filename)
+int detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
+   size_t _len;
    char region_id;
-   char prefix[] = "DL-DOL-";
    char pre_game_id[20];
    char raw_game_id[20];
 
@@ -359,12 +341,23 @@ int detect_gc_game(intfstream_t *fd, char *game_id, const char *filename)
    if (intfstream_read(fd, raw_game_id, 4) <= 0)
       return false;
 
+   if (string_is_equal_fast(raw_game_id, "RVZ", STRLEN_CONST("RVZ"))
+         || string_is_equal_fast(raw_game_id, "WIA", STRLEN_CONST("WIA")))
+   {
+      if (intfstream_seek(fd, 0x0058, SEEK_SET) < 0)
+         return false;
+      if (intfstream_read(fd, raw_game_id, 4) <= 0)
+         return false;
+   }
+
    raw_game_id[4] = '\0';
 
    /** Scrub files with bad data and log **/
    if (raw_game_id[0] == '\0' || raw_game_id[0] == ' ')
    {
+#ifdef DEBUG
       RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
+#endif
       return false;
    }
 
@@ -376,237 +369,253 @@ int detect_gc_game(intfstream_t *fd, char *game_id, const char *filename)
    will not match redump.**/
 
    /** insert prefix **/
-   strcpy(pre_game_id, prefix);
+   pre_game_id[0  ] = 'D';
+   pre_game_id[1  ] = 'L';
+   pre_game_id[2  ] = '-';
+   pre_game_id[3  ] = 'D';
+   pre_game_id[4  ] = 'O';
+   pre_game_id[5  ] = 'L';
+   pre_game_id[6  ] = '-';
+   pre_game_id[7  ] = '\0';
 
    /** add raw serial **/
-   strcat(pre_game_id, raw_game_id);
+   strlcat(pre_game_id, raw_game_id, sizeof(pre_game_id));
 
    /** check region **/
    region_id = pre_game_id[10];
 
    /** check multi-disc and insert suffix **/
    cue_append_multi_disc_suffix(pre_game_id, filename);
-   strcpy(game_id, pre_game_id);
+   _len = strlcpy(s, pre_game_id, len);
 
    switch (region_id)
    {
       case 'E':
-         strcat(game_id, "-USA");
+         s[_len  ] = '-';
+         s[_len+1] = 'U';
+         s[_len+2] = 'S';
+         s[_len+3] = 'A';
+         s[_len+4] = '\0';
          return true;
       case 'J':
-         strcat(game_id, "-JPN");
+         s[_len  ] = '-';
+         s[_len+1] = 'J';
+         s[_len+2] = 'P';
+         s[_len+3] = 'N';
+         s[_len+4] = '\0';
          return true;
       case 'P': /** NYI: P can also be P-UKV, P-AUS **/
-         strcat(game_id, "-EUR");
-         return true;
       case 'X': /** NYI: X can also be X-UKV, X-EUU **/
-         strcat(game_id, "-EUR");
+         s[_len  ] = '-';
+         s[_len+1] = 'E';
+         s[_len+2] = 'U';
+         s[_len+3] = 'R';
+         s[_len+4] = '\0';
          return true;
       case 'Y':
-         strcat(game_id, "-FAH");
+         s[_len  ] = '-';
+         s[_len+1] = 'F';
+         s[_len+2] = 'A';
+         s[_len+3] = 'H';
+         s[_len+4] = '\0';
          return true;
       case 'D':
-         strcat(game_id, "-NOE");
+         s[_len  ] = '-';
+         s[_len+1] = 'N';
+         s[_len+2] = 'O';
+         s[_len+3] = 'E';
+         s[_len+4] = '\0';
          return true;
       case 'S':
-         strcat(game_id, "-ESP");
+         s[_len  ] = '-';
+         s[_len+1] = 'E';
+         s[_len+2] = 'S';
+         s[_len+3] = 'P';
+         s[_len+4] = '\0';
          return true;
       case 'F':
-         strcat(game_id, "-FRA");
+         s[_len  ] = '-';
+         s[_len+1] = 'F';
+         s[_len+2] = 'R';
+         s[_len+3] = 'A';
+         s[_len+4] = '\0';
          return true;
       case 'I':
-         strcat(game_id, "-ITA");
+         s[_len  ] = '-';
+         s[_len+1] = 'I';
+         s[_len+2] = 'T';
+         s[_len+3] = 'A';
+         s[_len+4] = '\0';
          return true;
       case 'H':
-         strcat(game_id, "-HOL");
+         s[_len  ] = '-';
+         s[_len+1] = 'H';
+         s[_len+2] = 'O';
+         s[_len+3] = 'L';
+         s[_len+4] = '\0';
          return true;
       default:
-         return false;
+	 break;
    }
 
    return false;
 }
 
-int detect_scd_game(intfstream_t *fd, char *game_id, const char *filename)
+int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
-   char hyphen = '-';
-   char pre_game_id[15];
-   char raw_game_id[15];
-   char check_prefix_t_hyp[10];
+   #define SCD_SERIAL_OFFSET 0x0193
+   #define SCD_SERIAL_LEN    11
+   #define SCD_REGION_OFFSET 0x0200
+   size_t _len;
+   char pre_game_id[SCD_SERIAL_LEN+1];
+   char raw_game_id[SCD_SERIAL_LEN+1];
    char check_suffix_50[10];
-   char check_prefix_g_hyp[10];
-   char check_prefix_mk_hyp[10];
-   char region_id[10];
-   int length;
-   int lengthref;
+   char region_id;
+   size_t length;
+   size_t lengthref;
    int index;
    char lgame_id[10];
-   char rgame_id[] = "-50";
 
    /* Load raw serial or quit */
-   if (intfstream_seek(fd, 0x0193, SEEK_SET) < 0)
+   if (intfstream_seek(fd, SCD_SERIAL_OFFSET, SEEK_SET) < 0)
       return false;
 
-   if (intfstream_read(fd, raw_game_id, 11) <= 0)
+   if (intfstream_read(fd, raw_game_id, SCD_SERIAL_LEN) <= 0)
       return false;
 
-   raw_game_id[11] = '\0';
-
-   if (raw_game_id[0] == ' ')
-   {
-      if (intfstream_seek(fd, 0x0194, SEEK_SET) < 0)
-         return false;
-      if (intfstream_read(fd, raw_game_id, 11) <= 0)
-         return false;
-      raw_game_id[11] = '\0';
-   }
+   raw_game_id[SCD_SERIAL_LEN] = '\0';
 
    /* Load raw region id or quit */
-   if (intfstream_seek(fd, 0x0200, SEEK_SET) < 0)
+   if (intfstream_seek(fd, SCD_REGION_OFFSET, SEEK_SET) < 0)
       return false;
 
-   if (intfstream_read(fd, region_id, 1) <= 0)
+   if (intfstream_read(fd, &region_id, 1) <= 0)
       return false;
 
-   region_id[1] = '\0';
-
+#ifdef DEBUG
    /** Scrub files with bad data and log **/
    if (raw_game_id[0] == '\0' || raw_game_id[0] == ' ' || raw_game_id[0] == '0')
-   {
       RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
-   }
+#endif
 
    /** convert raw Sega - Mega-CD - Sega CD serial to redump serial. **/
    /** process raw serial to a pre serial without spaces **/
    string_remove_all_whitespace(pre_game_id, raw_game_id);  /** rule: remove all spaces from the raw serial globally **/
 
-   /** disect this pre serial into parts **/
-   length = strlen(pre_game_id);
-   lengthref = length - 2;
-   strncpy(check_prefix_t_hyp, pre_game_id, 2);
-   check_prefix_t_hyp[2] = '\0';
-   strncpy(check_prefix_g_hyp, pre_game_id, 2);
-   check_prefix_g_hyp[2] = '\0';
-   strncpy(check_prefix_mk_hyp, pre_game_id, 3);
-   check_prefix_mk_hyp[3] = '\0';
+   /** Dissect this pre serial into parts **/
+   length             = strlen(pre_game_id);
+   lengthref          = length - 2;
    strncpy(check_suffix_50, &pre_game_id[lengthref], length - 2 + 1);
    check_suffix_50[2] = '\0';
 
    /** redump serials are built differently for each prefix **/
-   if (!strcmp(check_prefix_t_hyp, "T-"))
+   if (pre_game_id[0] == 'T' && pre_game_id[1] == '-')
    {
-      if (!strcmp(region_id, "U") || !strcmp(region_id, "J"))
+      if (region_id == 'U' || region_id == 'J')
       {
-         index = string_index_last_occurance(pre_game_id, hyphen);
-         if (index == -1)
+         if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
             return false;
-         strncpy(game_id, pre_game_id, index);
-         game_id[index] = '\0';
-         cue_append_multi_disc_suffix(game_id, filename);
+         strncpy(s, pre_game_id, index);
+         s[index] = '\0';
+         cue_append_multi_disc_suffix(s, filename);
          return true;
       }
-      else
-      {
-         index = string_index_last_occurance(pre_game_id, hyphen);
-         if (index == -1)
-            return false;
-         strncpy(lgame_id, pre_game_id, index);
-         lgame_id[index] = '\0';
-         strcat(game_id, lgame_id);
-         strcat(game_id, rgame_id);
-         cue_append_multi_disc_suffix(game_id, filename);
-         return true;
-      }
-   }
-   else if (!strcmp(check_prefix_g_hyp, "G-"))
-   {
-      index = string_index_last_occurance(pre_game_id, hyphen);
-      if (index == -1)
+      if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
          return false;
-      strncpy(game_id, pre_game_id, index);
-      game_id[index] = '\0';
-      cue_append_multi_disc_suffix(game_id, filename);
+      strncpy(lgame_id, pre_game_id, index);
+      lgame_id[index] = '\0';
+      _len            = strlcat(s, lgame_id, len);
+      s[_len  ]       = '-';
+      s[_len+1]       = '5';
+      s[_len+2]       = '0';
+      s[_len+3]       = '\0';
+      cue_append_multi_disc_suffix(s, filename);
       return true;
    }
-   else if (!strcmp(check_prefix_mk_hyp, "MK-"))
+   else if (pre_game_id[0] == 'G' && pre_game_id[1] == '-')
    {
-      if (!strcmp(check_suffix_50, "50"))
+      if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
+         return false;
+      strncpy(s, pre_game_id, index);
+      s[index] = '\0';
+      cue_append_multi_disc_suffix(s, filename);
+      return true;
+   }
+   else if (pre_game_id[0] == 'M'
+         && pre_game_id[1] == 'K'
+         && pre_game_id[2] == '-')
+   {
+      if (     check_suffix_50[0] == '5' 
+            && check_suffix_50[1] == '0')
       {
          strncpy(lgame_id, &pre_game_id[3], 4);
-         lgame_id[4] = '\0';
-         strcat(game_id, lgame_id);
-         strcat(game_id, rgame_id);
-         cue_append_multi_disc_suffix(game_id, filename);
+         lgame_id[4]     = '\0';
+         _len            = strlcat(s, lgame_id, len);
+         s[_len  ]       = '-';
+         s[_len+1]       = '5';
+         s[_len+2]       = '0';
+         s[_len+3]       = '\0';
+         cue_append_multi_disc_suffix(s, filename);
          return true;
       }
-      else
-      {
-         strncpy(game_id, &pre_game_id[3], 4);
-         game_id[4] = '\0';
-         cue_append_multi_disc_suffix(game_id, filename);
-         return true;
-      }
+      strncpy(s, &pre_game_id[3], 4);
+      s[4] = '\0';
+      cue_append_multi_disc_suffix(s, filename);
+      return true;
    }
    else
    {
       string_trim_whitespace(raw_game_id);
-      strcpy(game_id, raw_game_id);
+      strlcpy(s, raw_game_id, len);
       return true;
    }
    return false;
 }
 
-int detect_sat_game(intfstream_t *fd, char *game_id, const char *filename)
+int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
-   char raw_game_id[15];
-   char raw_region_id[15];
+   #define SAT_SERIAL_OFFSET 0x0030
+   #define SAT_SERIAL_LEN    9
+   #define SAT_REGION_OFFSET 0x0050
+   size_t _len, length;
+   char raw_game_id[SAT_SERIAL_LEN+1];
    char region_id;
-   char check_prefix_t_hyp[10];
-   char check_prefix_mk_hyp[10];
    char check_suffix_5[10];
    char check_suffix_50[10];
-   int length;
    char lgame_id[10];
    char rgame_id[10];
-   char game_id50[] = "-50";
 
    /* Load raw serial or quit */
-   if (intfstream_seek(fd, 0x0030, SEEK_SET) < 0)
+   if (intfstream_seek(fd, SAT_SERIAL_OFFSET, SEEK_SET) < 0)
       return false;
 
-   if (intfstream_read(fd, raw_game_id, 9) <= 0)
+   if (intfstream_read(fd, raw_game_id, SAT_SERIAL_LEN) <= 0)
       return false;
 
-   raw_game_id[9] = '\0';
+   raw_game_id[SAT_SERIAL_LEN] = '\0';
 
    /* Load raw region id or quit */
-   if (intfstream_seek(fd, 0x0050, SEEK_SET) < 0)
+   if (intfstream_seek(fd, SAT_REGION_OFFSET, SEEK_SET) < 0)
       return false;
 
-   if (intfstream_read(fd, raw_region_id, 1) <= 0)
+   if (intfstream_read(fd, &region_id, 1) <= 0)
       return false;
-
-   raw_region_id[1] = '\0';
 
    /** Scrub files with bad data and log **/
    if (raw_game_id[0] == '\0' || raw_game_id[0] == ' ')
    {
+#ifdef DEBUG
       RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
+#endif
       return false;
    }
 
-   region_id = raw_region_id[0];
-
    string_trim_whitespace(raw_game_id);
 
-   /** disect this raw serial into parts **/
-   strncpy(check_prefix_t_hyp, raw_game_id, 2);
-   check_prefix_t_hyp[2] = '\0';
-   strncpy(check_prefix_mk_hyp, raw_game_id, 3);
-   check_prefix_mk_hyp[3] = '\0';
-   length = strlen(raw_game_id);
-   strncpy(check_suffix_5, &raw_game_id[length - 2], 2);
-   check_suffix_5[2] = '\0';
+   /** Dissect this raw serial into parts **/
+   length             = strlen(raw_game_id);
+   strncpy(check_suffix_5,  &raw_game_id[length - 2], 2);
+   check_suffix_5[2]  = '\0';
    strncpy(check_suffix_50, &raw_game_id[length - 2], 2);
    check_suffix_50[2] = '\0';
 
@@ -614,22 +623,25 @@ int detect_sat_game(intfstream_t *fd, char *game_id, const char *filename)
    switch (region_id)
    {
       case 'U':
-         if (strcmp(check_prefix_mk_hyp, "MK-") == 0)
+         if (     raw_game_id[0] == 'M'
+               && raw_game_id[1] == 'K'
+               && raw_game_id[2] == '-')
          {
-            strncpy(game_id, &raw_game_id[3], length - 3);
-            game_id[length - 3] = '\0';
-            cue_append_multi_disc_suffix(game_id, filename);
+            strncpy(s, &raw_game_id[3], length - 3);
+            s[length - 3] = '\0';
+            cue_append_multi_disc_suffix(s, filename);
          }
          else
          {
-            strcpy(game_id, raw_game_id);
-            cue_append_multi_disc_suffix(game_id, filename);
+            strlcpy(s, raw_game_id, len);
+            cue_append_multi_disc_suffix(s, filename);
          }
          return true;
       case 'E':
          strncpy(lgame_id, &raw_game_id[0], 2);
          lgame_id[2] = '\0';
-         if (strcmp(check_suffix_5, "-5") == 0 || strcmp(check_suffix_50, "50") == 0)
+         if (     !strcmp(check_suffix_5, "-5") 
+               || !strcmp(check_suffix_50, "50"))
          {
             strncpy(rgame_id, &raw_game_id[2], length - 4);
             rgame_id[length - 4] = '\0';
@@ -639,36 +651,34 @@ int detect_sat_game(intfstream_t *fd, char *game_id, const char *filename)
             strncpy(rgame_id, &raw_game_id[2], length - 1);
             rgame_id[length - 1] = '\0';
          }
-         strcat(game_id, lgame_id);
-         strcat(game_id, rgame_id);
-         strcat(game_id, game_id50);
-         cue_append_multi_disc_suffix(game_id, filename);
+         strlcat(s, lgame_id, len);
+         _len      = strlcat(s, rgame_id, len);
+         s[_len  ] = '-';
+         s[_len+1] = '5';
+         s[_len+2] = '0';
+         s[_len+3] = '\0';
+         cue_append_multi_disc_suffix(s, filename);
          return true;
       case 'J':
-         strcpy(game_id, raw_game_id);
-         cue_append_multi_disc_suffix(game_id, filename);
+         strlcpy(s, raw_game_id, len);
+         cue_append_multi_disc_suffix(s, filename);
          return true;
       default:
-         strcpy(game_id, raw_game_id);
+         strlcpy(s, raw_game_id, len);
          return true;
    }
    return false;
 }
 
-int detect_dc_game(intfstream_t *fd, char *game_id, const char *filename)
+int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
-   char hyphen = '-';
-   char hyphen_str[] = "-";
+   size_t _len;
    int total_hyphens;
    int total_hyphens_recalc;
    char pre_game_id[50];
    char raw_game_id[50];
-   char check_prefix_t_hyp[10];
-   char check_prefix_t[10];
-   char check_prefix_hdr_hyp[10];
-   char check_prefix_mk_hyp[10];
-   int length;
-   int length_recalc;
+   size_t length;
+   size_t length_recalc;
    int index;
    size_t size_t_var;
    char lgame_id[20];
@@ -686,177 +696,174 @@ int detect_dc_game(intfstream_t *fd, char *game_id, const char *filename)
    /** Scrub files with bad data and log **/
    if (raw_game_id[0] == '\0' || raw_game_id[0] == ' ')
    {
+#ifdef DEBUG
       RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
+#endif
       return false;
    }
 
    string_trim_whitespace(raw_game_id);
    string_replace_multi_space_with_single_space(raw_game_id);
-   string_replace_whitespace_with_single_character(raw_game_id, hyphen);
-   length = strlen(raw_game_id);
-   total_hyphens = string_count_occurrences_single_character(raw_game_id, hyphen);
-
-   /** disect this raw serial into parts **/
-   strncpy(check_prefix_t_hyp, raw_game_id, 2);
-   check_prefix_t_hyp[2] = '\0';
-   strncpy(check_prefix_t, raw_game_id, 1);
-   check_prefix_t[1] = '\0';
-   strncpy(check_prefix_hdr_hyp, raw_game_id, 4);
-   check_prefix_hdr_hyp[4] = '\0';
-   strncpy(check_prefix_mk_hyp, raw_game_id, 3);
-   check_prefix_mk_hyp[3] = '\0';
+   string_replace_whitespace_with_single_character(raw_game_id, '-');
+   length        = strlen(raw_game_id);
+   total_hyphens = string_count_occurrences_single_character(raw_game_id, '-');
 
    /** redump serials are built differently for each prefix **/
-   if (!strcmp(check_prefix_t_hyp, "T-"))
+   if (     raw_game_id[0] == 'T'
+         && raw_game_id[1] == '-')
    {
       if (total_hyphens >= 2)
       {
-         index = string_index_last_occurance(raw_game_id, hyphen);
+         index                = string_index_last_occurance(raw_game_id, '-');
          if (index < 0)
             return false;
-         else
-            size_t_var = (size_t)index;
+         size_t_var           = (size_t)index;
          strncpy(lgame_id, &raw_game_id[0], size_t_var);
-         lgame_id[index] = '\0';
+         lgame_id[index]      = '\0';
          strncpy(rgame_id, &raw_game_id[index + 1], length - 1);
          rgame_id[length - 1] = '\0';
-         strcat(game_id, lgame_id);
-         strcat(game_id, hyphen_str);
-         strcat(game_id, rgame_id);
-         cue_append_multi_disc_suffix(game_id, filename);
+         _len                 = strlcat(s, lgame_id, len);
+         s[_len  ]            = '-';
+         s[_len+1]            = '\0';
+         strlcat(s, rgame_id, len);
+         cue_append_multi_disc_suffix(s, filename);
          return true;
       }
-      else
+      if (length <= 7)
       {
-         if (length <= 7)
-         {
-            strncpy(game_id, raw_game_id, 7);
-            game_id[7] = '\0';
-            cue_append_multi_disc_suffix(game_id, filename);
-            return true;
-         }
-         else
-         {
-            strncpy(lgame_id, raw_game_id, 7);
-            lgame_id[7] = '\0';
-            strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
-            rgame_id[length - 1] = '\0';
-            strcat(game_id, lgame_id);
-            strcat(game_id, hyphen_str);
-            strcat(game_id, rgame_id);
-            cue_append_multi_disc_suffix(game_id, filename);
-            return true;
-         }
+         strncpy(s, raw_game_id, 7);
+         s[7] = '\0';
+         cue_append_multi_disc_suffix(s, filename);
+         return true;
       }
+      strncpy(lgame_id, raw_game_id, 7);
+      lgame_id[7]          = '\0';
+      strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
+      rgame_id[length - 1] = '\0';
+      _len                 = strlcat(s, lgame_id, len);
+      s[_len  ]            = '-';
+      s[_len+1]            = '\0';
+      strlcat(s, rgame_id, len);
+      cue_append_multi_disc_suffix(s, filename);
+      return true;
    }
-   else if (!strcmp(check_prefix_t, "T"))
+   else if (raw_game_id[0] == 'T')
    {
       strncpy(lgame_id, raw_game_id, 1);
-      lgame_id[1] = '\0';
+      lgame_id[1]          = '\0';
       strncpy(rgame_id, &raw_game_id[1], length - 1);
       rgame_id[length - 1] = '\0';
-      sprintf(pre_game_id, "%s%s%s", lgame_id, hyphen_str, rgame_id);
-      total_hyphens_recalc = string_count_occurrences_single_character(pre_game_id, hyphen);
+      _len                 = strlcpy(pre_game_id, lgame_id, sizeof(pre_game_id));
+      pre_game_id[_len  ]  = '-';
+      pre_game_id[_len+1]  = '\0';
+      strlcat(pre_game_id, rgame_id, sizeof(pre_game_id));
+      total_hyphens_recalc = string_count_occurrences_single_character(pre_game_id, '-');
 
       if (total_hyphens_recalc >= 2)
       {
-         index = string_index_last_occurance(pre_game_id, hyphen);
+         index                       = string_index_last_occurance(pre_game_id, '-');
          if (index < 0)
             return false;
-         else
-            size_t_var = (size_t)index;
+         size_t_var                  = (size_t)index;
          strncpy(lgame_id, pre_game_id, size_t_var);
-         lgame_id[index] = '\0';
-         length_recalc = strlen(pre_game_id);
+         lgame_id[index]             = '\0';
+         length_recalc               = strlen(pre_game_id);
          strncpy(rgame_id, &pre_game_id[length_recalc - 2], length_recalc - 1);
          rgame_id[length_recalc - 1] = '\0';
-         strcat(game_id, lgame_id);
-         strcat(game_id, hyphen_str);
-         strcat(game_id, rgame_id);
-         cue_append_multi_disc_suffix(game_id, filename);
-         return true;
+         _len                        = strlcat(s, lgame_id, len);
+         s[_len  ]                   = '-';
+         s[_len+1]                   = '\0';
+         strlcat(s, rgame_id, len);
+         cue_append_multi_disc_suffix(s, filename);
       }
       else
       {
          length_recalc = strlen(pre_game_id) - 1;
          if (length_recalc <= 8)
          {
-            strncpy(game_id, pre_game_id, 8);
-            game_id[8] = '\0';
-            cue_append_multi_disc_suffix(game_id, filename);
+            strncpy(s, pre_game_id, 8);
+            s[8] = '\0';
+            cue_append_multi_disc_suffix(s, filename);
             return true;
          }
-         else
-         {
-            strncpy(lgame_id, pre_game_id, 7);
-            lgame_id[7] = '\0';
-            strncpy(rgame_id, &pre_game_id[length_recalc - 2], length_recalc - 1);
-            rgame_id[length_recalc - 1] = '\0';
-            strcat(game_id, lgame_id);
-            strcat(game_id, hyphen_str);
-            strcat(game_id, rgame_id);
-            cue_append_multi_disc_suffix(game_id, filename);
-            return true;
-         }
+         strncpy(lgame_id, pre_game_id, 7);
+         lgame_id[7] = '\0';
+         strncpy(rgame_id, &pre_game_id[length_recalc - 2], length_recalc - 1);
+         rgame_id[length_recalc - 1] = '\0';
+         _len                        = strlcat(s, lgame_id, len);
+         s[_len  ]                   = '-';
+         s[_len+1]                   = '\0';
+         strlcat(s, rgame_id ,len);
+         cue_append_multi_disc_suffix(s, filename);
       }
+      return true;
    }
-   else if (!strcmp(check_prefix_hdr_hyp, "HDR-"))
+   else if (raw_game_id[0] == 'H'
+         && raw_game_id[1] == 'D'
+         && raw_game_id[2] == 'R'
+         && raw_game_id[3] == '-')
    {
       if (total_hyphens >= 2)
       {
-         index = string_index_last_occurance(raw_game_id, hyphen);
+         index = string_index_last_occurance(raw_game_id, '-');
          if (index < 0)
             return false;
          strncpy(lgame_id, raw_game_id, index - 1);
-         lgame_id[index - 1] = '\0';
+         lgame_id[index - 1]  = '\0';
          strncpy(rgame_id, &raw_game_id[length - 4], length - 3);
          rgame_id[length - 3] = '\0';
-         strcat(game_id, lgame_id);
-         strcat(game_id, hyphen_str);
-         strcat(game_id, rgame_id);
-         cue_append_multi_disc_suffix(game_id, filename);
+         _len                 = strlcat(s, lgame_id, len);
+         s[_len  ]            = '-';
+         s[_len+1]            = '\0';
+         strlcat(s, rgame_id, len);
+         cue_append_multi_disc_suffix(s, filename);
          return true;
       }
-      else
-      {
-         strcpy(game_id, raw_game_id);
-         cue_append_multi_disc_suffix(game_id, filename);
-         return true;
-      }
+      strlcpy(s, raw_game_id, len);
+      cue_append_multi_disc_suffix(s, filename);
+      return true;
    }
-   else if (!strcmp(check_prefix_mk_hyp, "MK-"))
+   else if (raw_game_id[0] == 'M'
+         && raw_game_id[1] == 'K'
+         && raw_game_id[2] == '-')
    {
-
       if (length <= 8)
       {
-         strncpy(game_id, raw_game_id, 8);
-         game_id[8] = '\0';
-         cue_append_multi_disc_suffix(game_id, filename);
+         /* For 8 chars serials in 'MK-xxxxx' format, we need to remove 'MK-' to match Redump database
+          * Sega GT being the only exception (MK-51053), we have to check if it's not that game first */
+         if (string_is_not_equal_fast(raw_game_id, "MK-51053", STRLEN_CONST("MK-51053")))
+         {
+            strncpy(s, raw_game_id + 3, 5);
+            s[5] = '\0';
+            cue_append_multi_disc_suffix(s, filename);
+            return true;
+         }
+         strncpy(s, raw_game_id, 8);
+         s[8] = '\0';
+         cue_append_multi_disc_suffix(s, filename);
          return true;
       }
-      else
-      {
-         strncpy(lgame_id, raw_game_id, 8);
-         lgame_id[8] = '\0';
-         strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
-         rgame_id[length - 1] = '\0';
-         strcat(game_id, lgame_id);
-         strcat(game_id, hyphen_str);
-         strcat(game_id, rgame_id);
-         cue_append_multi_disc_suffix(game_id, filename);
-         return true;
-      }
+      strncpy(lgame_id, raw_game_id, 8);
+      lgame_id[8]          = '\0';
+      strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
+      rgame_id[length - 1] = '\0';
+      _len                 = strlcat(s, lgame_id, len);
+      s[_len  ]            = '-';
+      s[_len+1]            = '\0';
+      strlcat(s, rgame_id, len);
+      cue_append_multi_disc_suffix(s, filename);
+      return true;
    }
    else
    {
-      strcpy(game_id, raw_game_id);
+      strlcpy(s, raw_game_id, len);
       return true;
    }
 
    return false;
 }
 
-int detect_wii_game(intfstream_t *fd, char *game_id, const char *filename)
+int detect_wii_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
    char raw_game_id[15];
 
@@ -867,9 +874,18 @@ int detect_wii_game(intfstream_t *fd, char *game_id, const char *filename)
    if (intfstream_read(fd, raw_game_id, 6) <= 0)
       return false;
    
-   if (string_is_equal_fast(raw_game_id, "WBFS", 4))
+   if (string_is_equal_fast(raw_game_id, "WBFS", STRLEN_CONST("WBFS")))
    {
       if (intfstream_seek(fd, 0x0200, SEEK_SET) < 0)
+         return false;
+      if (intfstream_read(fd, raw_game_id, 6) <= 0)
+         return false;
+   }
+
+   if (string_is_equal_fast(raw_game_id, "RVZ", STRLEN_CONST("RVZ"))
+         || string_is_equal_fast(raw_game_id, "WIA", STRLEN_CONST("WIA")))
+   {
+      if (intfstream_seek(fd, 0x0058, SEEK_SET) < 0)
          return false;
       if (intfstream_read(fd, raw_game_id, 6) <= 0)
          return false;
@@ -879,19 +895,23 @@ int detect_wii_game(intfstream_t *fd, char *game_id, const char *filename)
    /** Scrub files with bad data and log **/
    if (raw_game_id[0] == '\0' || raw_game_id[0] == ' ')
    {
+#ifdef DEBUG
       RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
+#endif
       return false;
    }
 
-   cue_append_multi_disc_suffix(game_id, filename);
-   strcpy(game_id, raw_game_id);
+   cue_append_multi_disc_suffix(s, filename);
+   strlcpy(s, raw_game_id, len);
    return true;
 }
 
+#if 0
 /**
  * Check for an ASCII serial in the first few bits of the ISO (Wii).
+ * TODO/FIXME - unused for now
  */
-int detect_serial_ascii_game(intfstream_t *fd, char *game_id)
+static int detect_serial_ascii_game(intfstream_t *fd, char *s, size_t len)
 {
    unsigned pos;
    int number_of_ascii = 0;
@@ -900,23 +920,23 @@ int detect_serial_ascii_game(intfstream_t *fd, char *game_id)
    for (pos = 0; pos < 10000; pos++)
    {
       intfstream_seek(fd, pos, SEEK_SET);
-      if (intfstream_read(fd, game_id, 15) > 0)
+      if (intfstream_read(fd, s, 15) > 0)
       {
          unsigned i;
-         game_id[15]     = '\0';
+         s[15]           = '\0';
          number_of_ascii = 0;
 
          /* When scanning WBFS files, "WBFS" is discovered as the first serial. Ignore it. */
-         if (string_is_equal(game_id, "WBFS"))
+         if (string_is_equal(s, "WBFS"))
             continue;
 
          /* Loop through until we run out of ASCII characters. */
          for (i = 0; i < 15; i++)
          {
             /* Is the given character ASCII? A-Z, 0-9, - */
-            if (  (game_id[i] == 45) || 
-                  (game_id[i] >= 48 && game_id[i] <= 57) || 
-                  (game_id[i] >= 65 && game_id[i] <= 90))
+            if (  (s[i] == 45) || 
+                  (s[i] >= 48 && s[i] <= 57) || 
+                  (s[i] >= 65 && s[i] <= 90))
                number_of_ascii++;
             else
                break;
@@ -927,7 +947,7 @@ int detect_serial_ascii_game(intfstream_t *fd, char *game_id)
          if (number_of_ascii > 3 && number_of_ascii < 9)
          {
             /* Cut the string off, and return it as a valid serial. */
-            game_id[number_of_ascii] = '\0';
+            s[number_of_ascii]       = '\0';
             rv                       = true;
             break;
          }
@@ -936,33 +956,40 @@ int detect_serial_ascii_game(intfstream_t *fd, char *game_id)
 
    return rv;
 }
+#endif
 
 int detect_system(intfstream_t *fd, const char **system_name, const char * filename)
 {
    int i;
    char magic[50];
-
+#ifdef DEBUG
    RARCH_LOG("[Scanner]: %s\n", msg_hash_to_str(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS));
+#endif
    for (i = 0; MAGIC_NUMBERS[i].system_name != NULL; i++)
    {
       if (intfstream_seek(fd, MAGIC_NUMBERS[i].offset, SEEK_SET) >= 0)
       {
-         if (intfstream_read(fd, magic, MAGIC_NUMBERS[i].length_magic) > 0)
+         size_t magic_len = strlen(MAGIC_NUMBERS[i].magic);
+         if (intfstream_read(fd, magic, magic_len) > 0)
          {
-            magic[MAGIC_NUMBERS[i].length_magic] = '\0';
-            if (memcmp(MAGIC_NUMBERS[i].magic, magic, MAGIC_NUMBERS[i].length_magic) == 0)
+            magic[magic_len] = '\0';
+            if (memcmp(MAGIC_NUMBERS[i].magic, magic, magic_len) == 0)
             {
                *system_name = MAGIC_NUMBERS[i].system_name;
+#ifdef DEBUG
                RARCH_LOG("[Scanner]: Name: %s\n", filename);
                RARCH_LOG("[Scanner]: System: %s\n", MAGIC_NUMBERS[i].system_name);
+#endif
                return true;
             }
          }
       }
    }
 
+#ifdef DEBUG
    RARCH_LOG("[Scanner]: Name: %s\n", filename);
    RARCH_LOG("[Scanner]: System: Unknown\n");
+#endif
    return false;
 }
 
@@ -1020,26 +1047,28 @@ int cue_find_track(const char *cue_path, bool first,
    fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
 
    info.type                  = INTFSTREAM_FILE;
-   fd                         = (intfstream_t*)intfstream_init(&info);
 
-   if (!fd)
+   if (!(fd = (intfstream_t*)intfstream_init(&info)))
       goto error;
 
    if (!intfstream_open(fd, cue_path,
             RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE))
    {
-      RARCH_LOG("Could not open CUE file '%s': %s\n", cue_path,
-            strerror(errno));
+#ifdef DEBUG
+      RARCH_LOG("Could not open CUE file '%s'\n", cue_path);
+#endif
       goto error;
    }
 
+#ifdef DEBUG
    RARCH_LOG("Parsing CUE file '%s'...\n", cue_path);
+#endif
 
    tmp_token[0] = '\0';
 
-   rv = -EINVAL;
+   rv = -1;
 
-   while (get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
       if (string_is_equal_noncase(tmp_token, "FILE"))
       {
@@ -1057,31 +1086,33 @@ int cue_find_track(const char *cue_path, bool first,
                goto clean;
          }
 
-         get_token(fd, tmp_token, sizeof(tmp_token));
-         fill_pathname_join(last_file, cue_dir,
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         fill_pathname_join_special(last_file, cue_dir,
                tmp_token, sizeof(last_file));
 
          file_size = intfstream_get_file_size(last_file);
 
-         get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
 
       }
       else if (string_is_equal_noncase(tmp_token, "TRACK"))
       {
-         get_token(fd, tmp_token, sizeof(tmp_token));
-         get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
          is_data = !string_is_equal_noncase(tmp_token, "AUDIO");
          ++track;
       }
       else if (string_is_equal_noncase(tmp_token, "INDEX"))
       {
          int m, s, f;
-         get_token(fd, tmp_token, sizeof(tmp_token));
-         get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
 
          if (sscanf(tmp_token, "%02d:%02d:%02d", &m, &s, &f) < 3)
          {
+#ifdef DEBUG
             RARCH_LOG("Error parsing time stamp '%s'\n", tmp_token);
+#endif
             goto error;
          }
 
@@ -1128,105 +1159,90 @@ error:
       intfstream_close(fd);
       free(fd);
    }
-   return -errno;
+   return -1;
 }
 
 bool cue_next_file(intfstream_t *fd,
-      const char *cue_path, char *path, uint64_t max_len)
+      const char *cue_path, char *s, uint64_t len)
 {
    char tmp_token[MAX_TOKEN_LEN];
    char cue_dir[PATH_MAX_LENGTH];
-   bool rv                    = false;
    cue_dir[0]                 = '\0';
 
    fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
 
    tmp_token[0] = '\0';
 
-   while (get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
       if (string_is_equal_noncase(tmp_token, "FILE"))
       {
-         get_token(fd, tmp_token, sizeof(tmp_token));
-         fill_pathname_join(path, cue_dir, tmp_token, (size_t)max_len);
-         rv = true;
-         break;
+         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         fill_pathname_join_special(s, cue_dir, tmp_token, (size_t)len);
+         return true;
       }
    }
 
-   return rv;
+   return false;
 }
 
 int gdi_find_track(const char *gdi_path, bool first,
       char *track_path, uint64_t max_len)
 {
-   int rv;
    intfstream_info_t info;
    char tmp_token[MAX_TOKEN_LEN];
    intfstream_t *fd  = NULL;
    uint64_t largest  = 0;
+   int rv            = -1;
    int size          = -1;
    int mode          = -1;
    int64_t file_size = -1;
 
    info.type         = INTFSTREAM_FILE;
 
-   fd                = (intfstream_t*)intfstream_init(&info);
-
-   if (!fd)
+   if (!(fd = (intfstream_t*)intfstream_init(&info)))
       goto error;
 
    if (!intfstream_open(fd, gdi_path,
             RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE))
    {
-      RARCH_LOG("Could not open GDI file '%s': %s\n", gdi_path,
-            strerror(errno));
+#ifdef DEBUG
+      RARCH_LOG("Could not open GDI file '%s'\n", gdi_path);
+#endif
       goto error;
    }
 
+#ifdef DEBUG
    RARCH_LOG("Parsing GDI file '%s'...\n", gdi_path);
+#endif
 
    tmp_token[0] = '\0';
 
-   rv = -EINVAL;
-
    /* Skip track count */
-   get_token(fd, tmp_token, sizeof(tmp_token));
+   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
 
    /* Track number */
-   while (get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
       /* Offset */
-      if (get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
+      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
-      }
 
       /* Mode */
-      if (get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
+      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
-      }
 
       mode = atoi(tmp_token);
 
       /* Sector size */
-      if (get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
+      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
-      }
 
       size = atoi(tmp_token);
 
       /* File name */
-      if (get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
+      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
-      }
 
       /* Check for data track */
       if (!(mode == 0 && size == 2352))
@@ -1234,15 +1250,11 @@ int gdi_find_track(const char *gdi_path, bool first,
          char last_file[PATH_MAX_LENGTH];
          char gdi_dir[PATH_MAX_LENGTH];
 
-         gdi_dir[0]        = last_file[0] = '\0';
-
          fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
-
-         fill_pathname_join(last_file,
+         fill_pathname_join_special(last_file,
                gdi_dir, tmp_token, sizeof(last_file));
-         file_size = intfstream_get_file_size(last_file);
 
-         if (file_size < 0)
+         if ((file_size = intfstream_get_file_size(last_file)) < 0)
             goto error;
 
          if ((uint64_t)file_size > largest)
@@ -1258,11 +1270,8 @@ int gdi_find_track(const char *gdi_path, bool first,
       }
 
       /* Disc offset (not used?) */
-      if (get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
-      {
-         errno = EINVAL;
+      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
-      }
    }
 
 clean:
@@ -1276,42 +1285,37 @@ error:
       intfstream_close(fd);
       free(fd);
    }
-   return -errno;
+   return -1;
 }
 
 bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
       char *path, uint64_t max_len)
 {
    char tmp_token[MAX_TOKEN_LEN];
-   bool rv         = false;
 
    tmp_token[0]    = '\0';
 
    /* Skip initial track count */
    if (intfstream_tell(fd) == 0)
-      get_token(fd, tmp_token, sizeof(tmp_token));
+      task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
 
-   get_token(fd, tmp_token, sizeof(tmp_token)); /* Track number */
-   get_token(fd, tmp_token, sizeof(tmp_token)); /* Offset       */
-   get_token(fd, tmp_token, sizeof(tmp_token)); /* Mode         */
-   get_token(fd, tmp_token, sizeof(tmp_token)); /* Sector size  */
+   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Track number */
+   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Offset       */
+   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Mode         */
+   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Sector size  */
 
    /* File name */
-   if (get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
       char gdi_dir[PATH_MAX_LENGTH];
 
-      gdi_dir[0]      = '\0';
-
       fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
-
-      fill_pathname_join(path, gdi_dir, tmp_token, (size_t)max_len);
-
-      rv              = true;
+      fill_pathname_join_special(path, gdi_dir, tmp_token, (size_t)max_len);
 
       /* Disc offset */
-      get_token(fd, tmp_token, sizeof(tmp_token));
+      task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+      return true;
    }
 
-   return rv;
+   return false;
 }

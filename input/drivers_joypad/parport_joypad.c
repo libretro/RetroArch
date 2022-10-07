@@ -18,7 +18,6 @@
 #include <unistd.h>
 #include <limits.h>
 #include <stdio.h>
-#include <errno.h>
 
 #include <linux/parport.h>
 #include <linux/ppdev.h>

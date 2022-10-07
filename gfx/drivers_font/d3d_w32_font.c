@@ -52,7 +52,7 @@ typedef struct
    uint32_t ascent;
 } d3dfonts_t;
 
-static void *d3dfonts_w32_init_font(void *video_data,
+static void *d3d_win32_font_init(void *video_data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
@@ -97,7 +97,7 @@ error:
    return NULL;
 }
 
-static void d3dfonts_w32_free_font(void *data, bool is_threaded)
+static void d3d_win32_font_free(void *data, bool is_threaded)
 {
    d3dfonts_t *d3dfonts = (d3dfonts_t*)data;
 
@@ -110,8 +110,8 @@ static void d3dfonts_w32_free_font(void *data, bool is_threaded)
    free(d3dfonts);
 }
 
-static int d3dfonts_w32_get_message_width(void* data, const char* msg,
-      unsigned msg_len, float scale)
+static int d3d_win32_font_get_message_width(void* data, const char* msg,
+      size_t msg_len, float scale)
 {
    RECT box             = {0,0,0,0};
    d3dfonts_t *d3dfonts = (d3dfonts_t*)data;
@@ -120,12 +120,12 @@ static int d3dfonts_w32_get_message_width(void* data, const char* msg,
       return 0;
 
    d3d9x_font_draw_text(d3dfonts->font, NULL, (void*)msg,
-         msg_len? msg_len : -1, &box, DT_CALCRECT, 0);
+         msg_len ? msg_len : -1, &box, DT_CALCRECT, 0);
 
    return box.right - box.left;
 }
 
-static void d3dfonts_w32_render_msg(
+static void d3d_win32_font_render_msg(
       void *userdata,
       void *data, const char *msg,
       const struct font_params *params)
@@ -141,12 +141,6 @@ static void d3dfonts_w32_render_msg(
    float drop_alpha                 = 1.0f;
    int drop_x                       = -2;
    int drop_y                       = -2;
-   settings_t *settings             = config_get_ptr();
-   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
-   float video_msg_color_r          = settings->floats.video_msg_color_r;
-   float video_msg_color_g          = settings->floats.video_msg_color_g;
-   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!d3dfonts || !msg)
       return;
@@ -158,7 +152,7 @@ static void d3dfonts_w32_render_msg(
    p_rect_shifted                   = &d3dfonts->d3d->font_rect_shifted;
    format                           = DT_LEFT;
 
-   if(params)
+   if (params)
    {
       a = FONT_COLOR_GET_ALPHA(params->color);
       r = FONT_COLOR_GET_RED(params->color);
@@ -192,7 +186,7 @@ static void d3dfonts_w32_render_msg(
       drop_x      = params->drop_x;
       drop_y      = params->drop_y;
 
-      if(drop_x || drop_y)
+      if (drop_x || drop_y)
       {
          drop_mod             = params->drop_mod;
          drop_alpha           = params->drop_alpha;
@@ -206,13 +200,19 @@ static void d3dfonts_w32_render_msg(
    }
    else
    {
-      a = 255;
-      r = video_msg_color_r * 255;
-      g = video_msg_color_g * 255;
-      b = video_msg_color_b * 255;
+      settings_t *settings     = config_get_ptr();
+      float video_msg_pos_x    = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y    = settings->floats.video_msg_pos_y;
+      float video_msg_color_r  = settings->floats.video_msg_color_r;
+      float video_msg_color_g  = settings->floats.video_msg_color_g;
+      float video_msg_color_b  = settings->floats.video_msg_color_b;
+      a                        = 255;
+      r                        = video_msg_color_r * 255;
+      g                        = video_msg_color_g * 255;
+      b                        = video_msg_color_b * 255;
    }
 
-   if(drop_x || drop_y)
+   if (drop_x || drop_y)
    {
       unsigned drop_a = a * drop_alpha;
       unsigned drop_r = r * drop_mod;
@@ -229,13 +229,13 @@ static void d3dfonts_w32_render_msg(
 }
 
 font_renderer_t d3d_win32_font = {
-   d3dfonts_w32_init_font,
-   d3dfonts_w32_free_font,
-   d3dfonts_w32_render_msg,
-   "d3dxfont",
+   d3d_win32_font_init,
+   d3d_win32_font_free,
+   d3d_win32_font_render_msg,
+   "d3d_win32_font",
    NULL,                      /* get_glyph */
    NULL,                      /* bind_block */
    NULL,                      /* flush */
-   d3dfonts_w32_get_message_width,
+   d3d_win32_font_get_message_width,
    NULL                       /* get_line_metrics */
 };

@@ -247,18 +247,14 @@ void gfx_thumbnail_request(
       gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id,
       playlist_t *playlist, size_t idx, gfx_thumbnail_t *thumbnail,
       unsigned gfx_thumbnail_upscale_threshold,
-      bool network_on_demand_thumbnails
-      )
+      bool network_on_demand_thumbnails)
 {
    const char *thumbnail_path         = NULL;
    bool has_thumbnail                 = false;
-   gfx_thumbnail_state_t *p_gfx_thumb = NULL;
-   p_gfx_thumb                        = NULL;
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
    
    if (!path_data || !thumbnail)
       return;
-
-   p_gfx_thumb                        = &gfx_thumb_st;
 
    /* Reset thumbnail, then set 'missing' status by default
     * (saves a number of checks later) */
@@ -354,8 +350,7 @@ end:
  * once the image load is complete */
 void gfx_thumbnail_request_file(
       const char *file_path, gfx_thumbnail_t *thumbnail,
-      unsigned gfx_thumbnail_upscale_threshold
-      )
+      unsigned gfx_thumbnail_upscale_threshold)
 {
    gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
    gfx_thumbnail_tag_t *thumbnail_tag = NULL;
@@ -369,16 +364,12 @@ void gfx_thumbnail_request_file(
    thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
 
    /* Check if file path is valid */
-   if (string_is_empty(file_path))
-      return;
-
-   if (!path_is_valid(file_path))
+   if (   string_is_empty(file_path)
+       || !path_is_valid(file_path))
       return;
 
    /* Load thumbnail */
-   thumbnail_tag = (gfx_thumbnail_tag_t*)malloc(sizeof(gfx_thumbnail_tag_t));
-
-   if (!thumbnail_tag)
+   if (!(thumbnail_tag = (gfx_thumbnail_tag_t*)malloc(sizeof(gfx_thumbnail_tag_t))))
       return;
 
    /* Configure user data */
@@ -420,9 +411,178 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
    thumbnail->alpha       = 0.0f;
    thumbnail->delay_timer = 0.0f;
    thumbnail->fade_active = false;
+   thumbnail->core_aspect = false;
 }
 
 /* Stream processing */
+
+/* Requests loading of the specified thumbnail via
+ * the stream interface
+ * - Must be called on each frame for the duration
+ *   that specified thumbnail is on-screen
+ * - Actual load request is deferred by currently
+ *   set stream delay
+ * - Function becomes a no-op once load request is
+ *   made
+ * - Thumbnails loaded via this function must be
+ *   deleted manually via gfx_thumbnail_reset()
+ *   when they move off-screen
+ * NOTE 1: Must be called *after* gfx_thumbnail_set_system()
+ *         and gfx_thumbnail_set_content*()
+ * NOTE 2: 'playlist' and 'idx' are only required here for
+ *         on-demand thumbnail download support
+ *         (an annoyance...)
+ * NOTE 3: This function is intended for use in situations
+ *         where each menu entry has a *single* thumbnail.
+ *         If each entry has two thumbnails, use
+ *         gfx_thumbnail_request_streams() for improved
+ *         performance */
+void gfx_thumbnail_request_stream(
+      gfx_thumbnail_path_data_t *path_data,
+      gfx_animation_t *p_anim,
+      enum gfx_thumbnail_id thumbnail_id,
+      playlist_t *playlist, size_t idx,
+      gfx_thumbnail_t *thumbnail,
+      unsigned gfx_thumbnail_upscale_threshold,
+      bool network_on_demand_thumbnails)
+{
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
+
+   /* Only process request if current status
+    * is GFX_THUMBNAIL_STATUS_UNKNOWN */
+   if (!thumbnail ||
+       (thumbnail->status != GFX_THUMBNAIL_STATUS_UNKNOWN))
+      return;
+
+   /* Check if stream delay timer has elapsed */
+   thumbnail->delay_timer += p_anim->delta_time;
+
+   if (thumbnail->delay_timer > p_gfx_thumb->stream_delay)
+   {
+      /* Sanity check */
+      if (!path_data)
+      {
+         /* No path information
+          * > Reset thumbnail and set missing status
+          *   to prevent repeated load attempts */
+         gfx_thumbnail_reset(thumbnail);
+         thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+         thumbnail->alpha  = 1.0f;
+         return;
+      }
+
+      /* Request image load */
+      gfx_thumbnail_request(
+            path_data, thumbnail_id, playlist, idx, thumbnail,
+            gfx_thumbnail_upscale_threshold,
+            network_on_demand_thumbnails);
+   }
+}
+
+/* Requests loading of the specified thumbnails via
+ * the stream interface
+ * - Must be called on each frame for the duration
+ *   that specified thumbnails are on-screen
+ * - Actual load request is deferred by currently
+ *   set stream delay
+ * - Function becomes a no-op once load request is
+ *   made
+ * - Thumbnails loaded via this function must be
+ *   deleted manually via gfx_thumbnail_reset()
+ *   when they move off-screen
+ * NOTE 1: Must be called *after* gfx_thumbnail_set_system()
+ *         and gfx_thumbnail_set_content*()
+ * NOTE 2: 'playlist' and 'idx' are only required here for
+ *         on-demand thumbnail download support
+ *         (an annoyance...)
+ * NOTE 3: This function is intended for use in situations
+ *         where each menu entry has *two* thumbnails.
+ *         If each entry only has a single thumbnail, use
+ *         gfx_thumbnail_request_stream() for improved
+ *         performance */
+void gfx_thumbnail_request_streams(
+      gfx_thumbnail_path_data_t *path_data,
+      gfx_animation_t *p_anim,
+      playlist_t *playlist, size_t idx,
+      gfx_thumbnail_t *right_thumbnail,
+      gfx_thumbnail_t *left_thumbnail,
+      unsigned gfx_thumbnail_upscale_threshold,
+      bool network_on_demand_thumbnails)
+{
+   bool process_right = false;
+   bool process_left  = false;
+
+   if (!right_thumbnail || !left_thumbnail)
+      return;
+
+   /* Only process request if current status
+    * is GFX_THUMBNAIL_STATUS_UNKNOWN */
+   process_right = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN);
+   process_left  = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_UNKNOWN);
+
+   if (process_right || process_left)
+   {
+      /* Check if stream delay timer has elapsed */
+      gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
+      float delta_time                   = p_anim->delta_time;
+      bool request_right                 = false;
+      bool request_left                  = false;
+
+      if (process_right)
+      {
+         right_thumbnail->delay_timer += delta_time;
+         request_right                 =
+               (right_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
+      }
+
+      if (process_left)
+      {
+         left_thumbnail->delay_timer  += delta_time;
+         request_left                  =
+               (left_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
+      }
+
+      /* Check if one or more thumbnails should be requested */
+      if (request_right || request_left)
+      {
+         /* Sanity check */
+         if (!path_data)
+         {
+            /* No path information
+             * > Reset thumbnail and set missing status
+             *   to prevent repeated load attempts */
+            if (request_right)
+            {
+               gfx_thumbnail_reset(right_thumbnail);
+               right_thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
+               right_thumbnail->alpha  = 1.0f;
+            }
+
+            if (request_left)
+            {
+               gfx_thumbnail_reset(left_thumbnail);
+               left_thumbnail->status  = GFX_THUMBNAIL_STATUS_MISSING;
+               left_thumbnail->alpha   = 1.0f;
+            }
+
+            return;
+         }
+
+         /* Request image load */
+         if (request_right)
+            gfx_thumbnail_request(
+                  path_data, GFX_THUMBNAIL_RIGHT, playlist, idx, right_thumbnail,
+                  gfx_thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails);
+
+         if (request_left)
+            gfx_thumbnail_request(
+                  path_data, GFX_THUMBNAIL_LEFT, playlist, idx, left_thumbnail,
+                  gfx_thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails);
+      }
+   }
+}
 
 /* Handles streaming of the specified thumbnail as it moves
  * on/off screen
@@ -440,13 +600,11 @@ void gfx_thumbnail_process_stream(
       gfx_thumbnail_path_data_t *path_data,
       gfx_animation_t *p_anim,
       enum gfx_thumbnail_id thumbnail_id,
-      playlist_t *playlist,
-      size_t idx,
+      playlist_t *playlist, size_t idx,
       gfx_thumbnail_t *thumbnail,
       bool on_screen,
       unsigned gfx_thumbnail_upscale_threshold,
-      bool network_on_demand_thumbnails
-      )
+      bool network_on_demand_thumbnails)
 {
    if (!thumbnail)
       return;
@@ -458,10 +616,10 @@ void gfx_thumbnail_process_stream(
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
       if (thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
       {
-	 gfx_thumbnail_state_t *p_gfx_thumb  = &gfx_thumb_st;
+         gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
 
          /* Check if stream delay timer has elapsed */
-         thumbnail->delay_timer             += p_anim->delta_time;
+         thumbnail->delay_timer += p_anim->delta_time;
 
          if (thumbnail->delay_timer > p_gfx_thumb->stream_delay)
          {
@@ -482,8 +640,7 @@ void gfx_thumbnail_process_stream(
             gfx_thumbnail_request(
                   path_data, thumbnail_id, playlist, idx, thumbnail,
                   gfx_thumbnail_upscale_threshold,
-                  network_on_demand_thumbnails
-                  );
+                  network_on_demand_thumbnails);
          }
       }
    }
@@ -521,8 +678,7 @@ void gfx_thumbnail_process_streams(
       gfx_thumbnail_t *left_thumbnail,
       bool on_screen,
       unsigned gfx_thumbnail_upscale_threshold,
-      bool network_on_demand_thumbnails
-      )
+      bool network_on_demand_thumbnails)
 {
    if (!right_thumbnail || !left_thumbnail)
       return;
@@ -538,7 +694,7 @@ void gfx_thumbnail_process_streams(
       if (process_right || process_left)
       {
          /* Check if stream delay timer has elapsed */
-	 gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
+         gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
          float delta_time                   = p_anim->delta_time;
          bool request_right                 = false;
          bool request_left                  = false;
@@ -628,30 +784,54 @@ void gfx_thumbnail_get_draw_dimensions(
       unsigned width, unsigned height, float scale_factor,
       float *draw_width, float *draw_height)
 {
+   float core_aspect;
    float display_aspect;
    float thumbnail_aspect;
+   video_driver_state_t *video_st = video_state_get_ptr();
 
    /* Sanity check */
-   if (!thumbnail || (width < 1) || (height < 1))
-      goto error;
+   if (   !thumbnail 
+       || (width             < 1) 
+       || (height            < 1)
+       || (thumbnail->width  < 1) 
+       || (thumbnail->height < 1))
+   {
+      *draw_width  = 0.0f;
+      *draw_height = 0.0f;
+      return;
+   }
 
-   if ((thumbnail->width < 1) || (thumbnail->height < 1))
-      goto error;
-
-   /* Account for display/thumbnail aspect ratio
+   /* Account for display/thumbnail/core aspect ratio
     * differences */
    display_aspect   = (float)width            / (float)height;
    thumbnail_aspect = (float)thumbnail->width / (float)thumbnail->height;
+   core_aspect      = (thumbnail->core_aspect && video_st)
+         ? video_st->av_info.geometry.aspect_ratio : thumbnail_aspect;
 
    if (thumbnail_aspect > display_aspect)
    {
       *draw_width  = (float)width;
       *draw_height = (float)thumbnail->height * (*draw_width / (float)thumbnail->width);
+
+      if (thumbnail->core_aspect)
+      {
+         *draw_height = *draw_height * (thumbnail_aspect / core_aspect);
+
+         if (*draw_height > height)
+         {
+            *draw_height = (float)height;
+            *draw_width  = (float)thumbnail->width * (*draw_height / (float)thumbnail->height);
+            *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
+         }
+      }
    }
    else
    {
       *draw_height = (float)height;
       *draw_width  = (float)thumbnail->width * (*draw_height / (float)thumbnail->height);
+
+      if (thumbnail->core_aspect)
+         *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
    }
 
    /* Account for scale factor
@@ -663,11 +843,6 @@ void gfx_thumbnail_get_draw_dimensions(
     *   without scaling manually... */
    *draw_width  *= scale_factor;
    *draw_height *= scale_factor;
-   return;
-
-error:
-   *draw_width  = 0.0f;
-   *draw_height = 0.0f;
 }
 
 /* Draws specified thumbnail with specified alignment
@@ -693,16 +868,19 @@ void gfx_thumbnail_draw(
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    /* Sanity check */
-   if (!thumbnail ||
-       (width < 1) || (height < 1) || (alpha <= 0.0f) || (scale_factor <= 0.0f))
-      return;
-   if (!dispctx)
+   if (
+            !thumbnail
+         || !dispctx
+         || (width         < 1)
+         || (height        < 1)
+         || (alpha        <= 0.0f)
+         || (scale_factor <= 0.0f)
+      )
       return;
 
    /* Only draw thumbnail if it is available... */
    if (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
    {
-      gfx_display_ctx_rotate_draw_t rotate_draw;
       gfx_display_ctx_draw_t draw;
       struct video_coords coords;
       math_matrix_4x4 mymat;
@@ -732,25 +910,22 @@ void gfx_thumbnail_draw(
       if (dispctx->blend_begin)
          dispctx->blend_begin(userdata);
 
-      /* Perform 'rotation' step
-       * > Note that rotation does not actually work...
-       * > It rotates the image all right, but distorts it
-       *   to fit the aspect of the bounding box while clipping
-       *   off any 'corners' that extend beyond the bounding box
-       * > Since the result is visual garbage, we disable
-       *   rotation entirely
-       * > But we still have to call gfx_display_rotate_z(),
-       *   or nothing will be drawn...
-       * Note that we also disable scaling here (scale_enable),
-       * since we handle scaling internally... */
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1.0f;
-      rotate_draw.scale_enable = false;
-
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      if (!p_disp->dispctx->handles_transform)
+      {
+         /* Perform 'rotation' step
+          * > Note that rotation does not actually work...
+          * > It rotates the image all right, but distorts it
+          *   to fit the aspect of the bounding box while clipping
+          *   off any 'corners' that extend beyond the bounding box
+          * > Since the result is visual garbage, we disable
+          *   rotation entirely
+          * > But we still have to call gfx_display_rotate_z(),
+          *   or nothing will be drawn...
+          */
+         float cosine             = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+         float sine               = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+         gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
+      }
 
       /* Configure draw object
        * > Note: Colour, width/height and position must

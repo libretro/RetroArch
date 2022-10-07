@@ -111,7 +111,7 @@ static int32_t wiiusb_hid_read_cb(int32_t size, void *data)
 
    if (hid && hid->connections && size > 0)
       pad_connection_packet(&hid->connections[adapter->slot],
-            adapter->slot, adapter->data-1, size+1);
+            adapter->slot, adapter->data, size);
 
   if (adapter)
       adapter->busy = false;
