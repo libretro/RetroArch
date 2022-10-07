@@ -104,7 +104,7 @@ static void vulkan_emulated_mailbox_deinit(
    if (mailbox->thread)
    {
       slock_lock(mailbox->lock);
-      mailbox->dead = true;
+      mailbox->flags |= VK_MAILBOX_FLAG_DEAD;
       scond_signal(mailbox->cond);
       slock_unlock(mailbox->lock);
       sthread_join(mailbox->thread);
@@ -126,20 +126,20 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image(
 
    slock_lock(mailbox->lock);
 
-   if (!mailbox->has_pending_request)
+   if (!(mailbox->flags & VK_MAILBOX_FLAG_HAS_PENDING_REQUEST))
    {
-      mailbox->request_acquire     = true;
+      mailbox->flags |= VK_MAILBOX_FLAG_REQUEST_ACQUIRE;
       scond_signal(mailbox->cond);
    }
 
-   mailbox->has_pending_request    = true;
+   mailbox->flags |= VK_MAILBOX_FLAG_HAS_PENDING_REQUEST;
 
-   if (mailbox->acquired)
+   if (mailbox->flags & VK_MAILBOX_FLAG_ACQUIRED)
    {
       res                          = mailbox->result;
       *index                       = mailbox->index;
-      mailbox->has_pending_request = false;
-      mailbox->acquired            = false;
+      mailbox->flags              &= ~(VK_MAILBOX_FLAG_HAS_PENDING_REQUEST
+                                     | VK_MAILBOX_FLAG_ACQUIRED);
    }
 
    slock_unlock(mailbox->lock);
@@ -154,21 +154,21 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
 
    slock_lock(mailbox->lock);
 
-   if (!mailbox->has_pending_request)
+   if (!(mailbox->flags & VK_MAILBOX_FLAG_HAS_PENDING_REQUEST))
    {
-      mailbox->request_acquire  = true;
+      mailbox->flags |= VK_MAILBOX_FLAG_REQUEST_ACQUIRE;
       scond_signal(mailbox->cond);
    }
 
-   mailbox->has_pending_request = true;
+   mailbox->flags |= VK_MAILBOX_FLAG_HAS_PENDING_REQUEST;
 
-   while (!mailbox->acquired)
+   while (!(mailbox->flags & VK_MAILBOX_FLAG_ACQUIRED))
       scond_wait(mailbox->cond, mailbox->lock);
 
    if ((res = mailbox->result) == VK_SUCCESS)
       *index                    = mailbox->index;
-   mailbox->has_pending_request = false;
-   mailbox->acquired            = false;
+   mailbox->flags              &= ~(VK_MAILBOX_FLAG_HAS_PENDING_REQUEST
+                                  | VK_MAILBOX_FLAG_ACQUIRED);
 
    slock_unlock(mailbox->lock);
    return res;
@@ -193,16 +193,17 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
    for (;;)
    {
       slock_lock(mailbox->lock);
-      while (!mailbox->dead && !mailbox->request_acquire)
+      while (  !(mailbox->flags & VK_MAILBOX_FLAG_DEAD) 
+		      && !(mailbox->flags & VK_MAILBOX_FLAG_REQUEST_ACQUIRE))
          scond_wait(mailbox->cond, mailbox->lock);
 
-      if (mailbox->dead)
+      if (mailbox->flags & VK_MAILBOX_FLAG_DEAD)
       {
          slock_unlock(mailbox->lock);
          break;
       }
 
-      mailbox->request_acquire = false;
+      mailbox->flags &= ~VK_MAILBOX_FLAG_REQUEST_ACQUIRE;
       slock_unlock(mailbox->lock);
 
 
@@ -228,7 +229,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
          vkResetFences(mailbox->device, 1, &fence);
 
          slock_lock(mailbox->lock);
-         mailbox->acquired = true;
+         mailbox->flags |= VK_MAILBOX_FLAG_ACQUIRED;
          scond_signal(mailbox->cond);
          slock_unlock(mailbox->lock);
       }
@@ -251,10 +252,7 @@ static bool vulkan_emulated_mailbox_init(
    mailbox->swapchain           = swapchain;
    mailbox->index               = 0;
    mailbox->result              = VK_SUCCESS;
-   mailbox->acquired            = false;
-   mailbox->request_acquire     = false;
-   mailbox->dead                = false;
-   mailbox->has_pending_request = false;
+   mailbox->flags               = 0;
 
    if (!(mailbox->cond      = scond_new()))
       return false;
@@ -452,7 +450,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
           * static textures, samplers can be used to enable it dynamically.
           */
          info.mipLevels     = vulkan_num_miplevels(width, height);
-         tex.mipmap         = true;
+         tex.flags         |= VK_TEX_FLAG_MIPMAP;
          retro_assert(initial && "Static textures must have initial data.\n");
          info.tiling        = VK_IMAGE_TILING_OPTIMAL;
          info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -529,9 +527,10 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-         tex.need_manual_cache_management =
-            (vk->context->memory_properties.memoryTypes[alloc.memoryTypeIndex].propertyFlags &
-             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0;
+         if ((vk->context->memory_properties.memoryTypes
+                  [alloc.memoryTypeIndex].propertyFlags &
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
+            tex.flags |= VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT;
 
          /* If the texture is STREAMED and it's not DEVICE_LOCAL, we expect to hit a slower path,
           * so fallback to copy path. */
@@ -681,8 +680,8 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                for (y = 0; y < tex.height; y++, dst += tex.stride, src += stride)
                   memcpy(dst, src, width * bpp);
 
-               if (  tex.need_manual_cache_management && 
-                     tex.memory != VK_NULL_HANDLE)
+               if (     (tex.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+                     && (tex.memory != VK_NULL_HANDLE))
                   VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, tex.memory);
                vkUnmapMemory(device, tex.memory);
             }
@@ -692,7 +691,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                VkBufferImageCopy region;
                VkCommandBuffer staging;
                enum VkImageLayout layout_fmt = 
-                  tex.mipmap
+                  (tex.flags & VK_TEX_FLAG_MIPMAP)
                   ? VK_IMAGE_LAYOUT_GENERAL
                   : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
                struct vk_texture tmp         = vulkan_create_texture(vk, NULL,
@@ -734,7 +733,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                vkCmdCopyBufferToImage(staging, tmp.buffer,
                      tex.image, layout_fmt, 1, &region);
 
-               if (tex.mipmap)
+               if (tex.flags & VK_TEX_FLAG_MIPMAP)
                {
                   for (i = 1; i < info.mipLevels; i++)
                   {
@@ -848,9 +847,7 @@ void vulkan_destroy_texture(
       vulkan_track_dealloc(tex->image);
 #endif
    tex->type                          = VULKAN_TEXTURE_STREAMED;
-   tex->default_smooth                = false;
-   tex->need_manual_cache_management  = false;
-   tex->mipmap                        = false;
+   tex->flags                         = 0;
    tex->memory_type                   = 0;
    tex->width                         = 0;
    tex->height                        = 0;

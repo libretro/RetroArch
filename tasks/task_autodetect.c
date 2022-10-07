@@ -37,6 +37,12 @@
 #include "../input/include/blissbox.h"
 #endif
 
+enum autoconfig_handle_flags
+{
+   AUTOCONF_FLAG_AUTOCONFIG_ENABLED     = (1 << 0),
+   AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS = (1 << 1)
+};
+
 typedef struct
 {
    char *dir_autoconfig;
@@ -44,8 +50,7 @@ typedef struct
    config_file_t *autoconfig_file;
    unsigned port;
    input_device_info_t device_info; /* unsigned alignment */
-   bool autoconfig_enabled;
-   bool suppress_notifcations;
+   uint8_t flags;
 } autoconfig_handle_t;
 
 /*********************/
@@ -442,9 +447,9 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 
    autoconfig_handle = (autoconfig_handle_t*)task->state;
 
-   if (!autoconfig_handle ||
-       string_is_empty(autoconfig_handle->device_info.name) ||
-       !autoconfig_handle->autoconfig_enabled)
+   if (   !autoconfig_handle
+       || string_is_empty(autoconfig_handle->device_info.name)
+       || !(autoconfig_handle->flags & AUTOCONF_FLAG_AUTOCONFIG_ENABLED))
       goto task_finished;
 
    /* Annoyingly, we have to scan all the autoconfig
@@ -522,7 +527,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       if (match_found)
       {
          /* A valid autoconfig was applied */
-         if (!autoconfig_handle->suppress_notifcations)
+         if (!(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS))
          {
             size_t _len        = strlcpy(task_title,
                   device_display_name, sizeof(task_title));
@@ -632,7 +637,8 @@ bool input_autoconfigure_connect(
       goto error;
 
    /* Configure handle */
-   if (!(autoconfig_handle = (autoconfig_handle_t*)malloc(sizeof(autoconfig_handle_t))))
+   if (!(autoconfig_handle = (autoconfig_handle_t*)
+            malloc(sizeof(autoconfig_handle_t))))
       goto error;
 
    autoconfig_handle->port                         = port;
@@ -645,8 +651,10 @@ bool input_autoconfigure_connect(
    autoconfig_handle->device_info.joypad_driver[0] = '\0';
    autoconfig_handle->device_info.autoconfigured   = false;
    autoconfig_handle->device_info.name_index       = 0;
-   autoconfig_handle->autoconfig_enabled           = autoconfig_enabled;
-   autoconfig_handle->suppress_notifcations        = !notification_show_autoconfig;
+   if (autoconfig_enabled)
+      autoconfig_handle->flags |= AUTOCONF_FLAG_AUTOCONFIG_ENABLED;
+   if (!notification_show_autoconfig)
+      autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS;
    autoconfig_handle->dir_autoconfig               = NULL;
    autoconfig_handle->dir_driver_autoconfig        = NULL;
    autoconfig_handle->autoconfig_file              = NULL;
@@ -659,8 +667,7 @@ bool input_autoconfigure_connect(
       strlcpy(autoconfig_handle->device_info.display_name, display_name,
             sizeof(autoconfig_handle->device_info.display_name));
 
-   driver_valid = !string_is_empty(driver);
-   if (driver_valid)
+   if ((driver_valid = !string_is_empty(driver)))
       strlcpy(autoconfig_handle->device_info.joypad_driver,
             driver, sizeof(autoconfig_handle->device_info.joypad_driver));
 
@@ -706,8 +713,8 @@ bool input_autoconfigure_connect(
     * task status messages
     * > Can skip this check if autoconfig notifications
     *   have been disabled by the user */
-   if (!autoconfig_handle->suppress_notifcations &&
-       !string_is_empty(autoconfig_handle->device_info.name))
+   if (   !(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS)
+       && !string_is_empty(autoconfig_handle->device_info.name))
    {
       const char *last_device_name = input_config_get_device_name(port);
       uint16_t last_vid            = input_config_get_device_vid(port);
@@ -720,7 +727,7 @@ bool input_autoconfigure_connect(
           (autoconfig_handle->device_info.vid == last_vid) &&
           (autoconfig_handle->device_info.pid == last_pid) &&
           last_autoconfigured)
-         autoconfig_handle->suppress_notifcations = true;
+         autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS;
    }
 
    /* Configure task */
@@ -823,7 +830,7 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
    }
 
    task_free_title(task);
-   if (!autoconfig_handle->suppress_notifcations)
+   if (!(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS))
       task_set_title(task, strdup(task_title));
 
 task_finished:
@@ -885,17 +892,16 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    if (!autoconfig_handle)
       goto error;
 
-   autoconfig_handle->port                  = port;
-   autoconfig_handle->suppress_notifcations = !notification_show_autoconfig;
+   autoconfig_handle->port      = port;
+   if (!notification_show_autoconfig)
+      autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS;
 
    if (!string_is_empty(name))
       strlcpy(autoconfig_handle->device_info.name,
             name, sizeof(autoconfig_handle->device_info.name));
 
    /* Configure task */
-   task = task_init();
-
-   if (!task)
+   if (!(task = task_init()))
       goto error;
 
    task->handler  = input_autoconfigure_disconnect_handler;
