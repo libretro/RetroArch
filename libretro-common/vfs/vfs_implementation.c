@@ -948,7 +948,7 @@ int retro_vfs_mkdir_impl(const char *dir)
    int ret = sceIoMkdir(dir, 0777);
 #elif defined(__QNX__)
    int ret = mkdir(dir, 0777);
-#elif defined(GEKKO)
+#elif defined(GEKKO) || defined(WIIU)
    /* On GEKKO platforms, mkdir() fails if
     * the path has a trailing slash. We must
     * therefore remove it. */
