@@ -994,10 +994,10 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
     * flip model cannot be used here */
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
 #else
-   d3d11->has_flip_model                   = true;
-   d3d11->has_allow_tearing                = true;
+   d3d11->flags |= D3D11_ST_FLAG_HAS_FLIP_MODEL
+      | D3D11_ST_FLAG_HAS_ALLOW_TEARING;
    desc.Flags                              = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-   if (d3d11->waitable_swapchains)
+   if (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
       desc.Flags                          |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
