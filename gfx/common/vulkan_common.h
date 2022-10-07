@@ -237,6 +237,13 @@ struct vk_image
    VkDeviceMemory memory;        /* ptr alignment */
 };
 
+enum vk_texture_flags
+{
+   VK_TEX_FLAG_DEFAULT_SMOOTH               = (1 << 0),
+   VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT = (1 << 1),
+   VK_TEX_FLAG_MIPMAP                       = (1 << 2)
+};
+
 struct vk_texture
 {
    VkDeviceSize memory_size;     /* uint64_t alignment */
@@ -256,9 +263,7 @@ struct vk_texture
    VkImageLayout layout;         /* enum alignment */
    VkFormat format;              /* enum alignment */
    enum vk_texture_type type;
-   bool default_smooth;
-   bool need_manual_cache_management;
-   bool mipmap;
+   uint8_t flags;
 };
 
 struct vk_buffer
@@ -712,11 +717,11 @@ void vulkan_destroy_texture(
  * changes in resolution, so this seems like the sanest and
  * simplest solution. */
 #define VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, tex) \
-   if ((tex)->need_manual_cache_management && (tex)->memory != VK_NULL_HANDLE) \
+   if (((tex)->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && (tex)->memory != VK_NULL_HANDLE) \
       VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex)->memory) \
 
 #define VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(vk, tex) \
-   if ((tex).need_manual_cache_management && (tex).memory != VK_NULL_HANDLE) \
+   if (((tex).flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && (tex).memory != VK_NULL_HANDLE) \
       VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex).memory) \
 
 /* VBO will be written to here. */

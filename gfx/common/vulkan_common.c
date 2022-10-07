@@ -450,7 +450,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
           * static textures, samplers can be used to enable it dynamically.
           */
          info.mipLevels     = vulkan_num_miplevels(width, height);
-         tex.mipmap         = true;
+         tex.flags         |= VK_TEX_FLAG_MIPMAP;
          retro_assert(initial && "Static textures must have initial data.\n");
          info.tiling        = VK_IMAGE_TILING_OPTIMAL;
          info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -527,9 +527,10 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-         tex.need_manual_cache_management =
-            (vk->context->memory_properties.memoryTypes[alloc.memoryTypeIndex].propertyFlags &
-             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0;
+         if ((vk->context->memory_properties.memoryTypes
+                  [alloc.memoryTypeIndex].propertyFlags &
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
+            tex.flags |= VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT;
 
          /* If the texture is STREAMED and it's not DEVICE_LOCAL, we expect to hit a slower path,
           * so fallback to copy path. */
@@ -679,8 +680,8 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                for (y = 0; y < tex.height; y++, dst += tex.stride, src += stride)
                   memcpy(dst, src, width * bpp);
 
-               if (  tex.need_manual_cache_management && 
-                     tex.memory != VK_NULL_HANDLE)
+               if (     (tex.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+                     && (tex.memory != VK_NULL_HANDLE))
                   VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, tex.memory);
                vkUnmapMemory(device, tex.memory);
             }
@@ -690,7 +691,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                VkBufferImageCopy region;
                VkCommandBuffer staging;
                enum VkImageLayout layout_fmt = 
-                  tex.mipmap
+                  (tex.flags & VK_TEX_FLAG_MIPMAP)
                   ? VK_IMAGE_LAYOUT_GENERAL
                   : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
                struct vk_texture tmp         = vulkan_create_texture(vk, NULL,
@@ -732,7 +733,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
                vkCmdCopyBufferToImage(staging, tmp.buffer,
                      tex.image, layout_fmt, 1, &region);
 
-               if (tex.mipmap)
+               if (tex.flags & VK_TEX_FLAG_MIPMAP)
                {
                   for (i = 1; i < info.mipLevels; i++)
                   {
@@ -846,9 +847,7 @@ void vulkan_destroy_texture(
       vulkan_track_dealloc(tex->image);
 #endif
    tex->type                          = VULKAN_TEXTURE_STREAMED;
-   tex->default_smooth                = false;
-   tex->need_manual_cache_management  = false;
-   tex->mipmap                        = false;
+   tex->flags                         = 0;
    tex->memory_type                   = 0;
    tex->width                         = 0;
    tex->height                        = 0;

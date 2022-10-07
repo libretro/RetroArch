@@ -254,9 +254,9 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
                (vk->display.blend << 0);
             call.pipeline     = vk->display.pipelines[disp_pipeline];
             call.texture      = texture;
-            call.sampler      = texture->mipmap ?
+            call.sampler      = (texture->flags & VK_TEX_FLAG_MIPMAP) ?
                vk->samplers.mipmap_linear :
-               (texture->default_smooth ? vk->samplers.linear
+               ((texture->flags & VK_TEX_FLAG_DEFAULT_SMOOTH) ? vk->samplers.linear
                 : vk->samplers.nearest);
             call.uniform      = draw->matrix_data
                ? draw->matrix_data : &vk->mvp_no_rot;

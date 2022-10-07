@@ -2394,21 +2394,17 @@ static bool vulkan_frame(void *data, const void *frame,
                quad.texture = optimal;
 
             if (menu_linear_filter)
-            {
-               quad.sampler = optimal->mipmap ?
+               quad.sampler = (optimal->flags & VK_TEX_FLAG_MIPMAP) ?
                   vk->samplers.mipmap_linear : vk->samplers.linear;
-            }
             else
-            {
-               quad.sampler = optimal->mipmap ?
+               quad.sampler = (optimal->flags & VK_TEX_FLAG_MIPMAP) ?
                   vk->samplers.mipmap_nearest : vk->samplers.nearest;
-            }
 
-            quad.mvp     = &vk->mvp_no_rot;
-            quad.color.r = 1.0f;
-            quad.color.g = 1.0f;
-            quad.color.b = 1.0f;
-            quad.color.a = vk->menu.alpha;
+            quad.mvp        = &vk->mvp_no_rot;
+            quad.color.r    = 1.0f;
+            quad.color.g    = 1.0f;
+            quad.color.b    = 1.0f;
+            quad.color.a    = vk->menu.alpha;
             vulkan_draw_quad(vk, &quad);
          }
       }
@@ -3128,21 +3124,22 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
       };
 #undef T0
 #undef T1
-      *texture = vulkan_create_texture(vk, NULL,
+      *texture                = vulkan_create_texture(vk, NULL,
             8, 8, VK_FORMAT_B8G8R8A8_UNORM,
             checkerboard, NULL, VULKAN_TEXTURE_STATIC);
-      texture->default_smooth = false;
-      texture->mipmap = false;
+      texture->flags         &= ~(VK_TEX_FLAG_DEFAULT_SMOOTH
+                                | VK_TEX_FLAG_MIPMAP);
    }
    else
    {
       *texture = vulkan_create_texture(vk, NULL,
             image->width, image->height, VK_FORMAT_B8G8R8A8_UNORM,
             image->pixels, NULL, VULKAN_TEXTURE_STATIC);
-
-      texture->default_smooth =
-         filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type == TEXTURE_FILTER_LINEAR;
-      texture->mipmap = filter_type == TEXTURE_FILTER_MIPMAP_LINEAR;
+      if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type ==
+            TEXTURE_FILTER_LINEAR)
+         texture->flags |= VK_TEX_FLAG_DEFAULT_SMOOTH;
+      if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
+         texture->flags |= VK_TEX_FLAG_MIPMAP;
    }
 
    return (uintptr_t)texture;
@@ -3320,8 +3317,8 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          vkMapMemory(vk->context->device, staging->memory,
                staging->offset, staging->size, 0, (void**)&src);
 
-         if (staging->need_manual_cache_management
-               && staging->memory != VK_NULL_HANDLE)
+         if (     (staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+               && (staging->memory != VK_NULL_HANDLE))
             VULKAN_SYNC_TEXTURE_TO_CPU(vk->context->device, staging->memory);
 
          ctx->in_stride  = staging->stride;
@@ -3362,8 +3359,8 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          VK_MAP_PERSISTENT_TEXTURE(vk->context->device, staging);
       }
 
-      if (staging->need_manual_cache_management
-            && staging->memory != VK_NULL_HANDLE)
+      if (     (staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+            && (staging->memory != VK_NULL_HANDLE))
          VULKAN_SYNC_TEXTURE_TO_CPU(vk->context->device, staging->memory);
 
       {
@@ -3501,8 +3498,8 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
       call.vbo          = &range;
       call.texture      = &vk->overlay.images[i];
       call.pipeline     = vk->display.pipelines[3]; /* Strip with blend */
-      call.sampler      = call.texture->mipmap ?
-         vk->samplers.mipmap_linear : vk->samplers.linear;
+      call.sampler      = (call.texture->flags & VK_TEX_FLAG_MIPMAP)
+         ? vk->samplers.mipmap_linear : vk->samplers.linear;
       vulkan_draw_triangles(vk, &call);
    }
 
