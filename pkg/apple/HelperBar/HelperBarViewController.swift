@@ -15,6 +15,7 @@ class HelperBarViewController: UIViewController {
       imageView.tintColor = .white
       imageView.translatesAutoresizingMaskIntoConstraints = false
       imageView.alpha = 0
+      imageView.isUserInteractionEnabled = true
       return imageView
    }()
    
@@ -63,6 +64,8 @@ class HelperBarViewController: UIViewController {
       tap.delegate = self
       view.addGestureRecognizer(tap)
       view.isUserInteractionEnabled = true
+      let indicatorTap = UITapGestureRecognizer(target: self, action: #selector(didTapIndicator(_:)))
+      indicatorImageView.addGestureRecognizer(indicatorTap)
       navigationBar.delegate = self
    }
    
@@ -103,16 +106,28 @@ class HelperBarViewController: UIViewController {
       }
    }
 
+   var tappedIndicator = false
+   
    @objc func didTap(_ sender: UITapGestureRecognizer) {
       let point = sender.location(in: view)
       guard point.y <= 60 else { return }   // detect top portion of view only
-      if point.x <= 100 {
-         viewModel.didInteractWithBar = true
+      if point.x <= 60 {
          indicatorImageView.layer.removeAllAnimations()
-         indicatorImageView.alpha = 0
-      } else {
-         showIndicatorAndFadeAway()
+         indicatorImageView.alpha = 1.0
+         tappedIndicator = false
+         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            if !(self?.tappedIndicator ?? false) {
+               self?.showIndicatorAndFadeAway()
+            }
+         }
       }
+   }
+   
+   @objc func didTapIndicator(_ sender: UITapGestureRecognizer) {
+      viewModel.didInteractWithBar = true
+      indicatorImageView.layer.removeAllAnimations()
+      indicatorImageView.alpha = 0
+      tappedIndicator = true
    }
 }
 
