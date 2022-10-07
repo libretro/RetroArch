@@ -3699,8 +3699,8 @@ static void ozone_sidebar_update_collapse(
       goto end;
 
    /* Collapse it */
-   if (ozone_collapse_sidebar || (!ozone->cursor_in_sidebar &&
-         (is_playlist || ozone->is_explore_list)))
+   if (ozone_collapse_sidebar || (!ozone->cursor_in_sidebar && (is_playlist ||
+         ozone_get_horizontal_selection_type(ozone) == MENU_EXPLORE_TAB)))
    {
       if (allow_animation)
       {
