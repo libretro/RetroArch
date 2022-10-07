@@ -462,7 +462,7 @@ void drivers_init(
    bool menu_enable_widgets    = settings->bools.menu_enable_widgets;
 
    /* By default, we want display widgets to persist through driver reinits. */
-   dispwidget_get_ptr()->persisting = true;
+   dispwidget_get_ptr()->flags |= DISPGFX_WIDGET_FLAG_PERSISTING;
 #endif
 
 #ifdef HAVE_MENU
@@ -708,9 +708,9 @@ void driver_uninit(int flags)
    /* This absolutely has to be done before video_driver_free_internal()
     * is called/completes, otherwise certain menu drivers
     * (e.g. Vulkan) will segfault */
-   if (dispwidget_get_ptr()->inited)
+   if (dispwidget_get_ptr()->flags & DISPGFX_WIDGET_FLAG_INITED)
    {
-      gfx_widgets_deinit(dispwidget_get_ptr()->persisting);
+      gfx_widgets_deinit(dispwidget_get_ptr()->flags & DISPGFX_WIDGET_FLAG_PERSISTING);
       dispwidget_get_ptr()->active = false;
    }
 #endif
@@ -804,10 +804,10 @@ void retroarch_deinit_drivers(struct retro_callbacks *cbs)
     * in case the handle is lost in the threaded
     * video driver in the meantime
     * (breaking video_driver_has_widgets) */
-   if (dispwidget_get_ptr()->inited)
+   if (dispwidget_get_ptr()->flags & DISPGFX_WIDGET_FLAG_INITED)
    {
       gfx_widgets_deinit(
-            dispwidget_get_ptr()->persisting);
+            dispwidget_get_ptr()->flags & DISPGFX_WIDGET_FLAG_PERSISTING);
       dispwidget_get_ptr()->active = false;
    }
 #endif

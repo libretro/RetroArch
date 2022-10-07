@@ -3686,7 +3686,7 @@ void main_exit(void *args)
 
 #if defined(HAVE_GFX_WIDGETS)
    /* Do not want display widgets to live any more. */
-   dispwidget_get_ptr()->persisting = false;
+   dispwidget_get_ptr()->flags &= ~DISPGFX_WIDGET_FLAG_PERSISTING;
 #endif
 #ifdef HAVE_MENU
    /* Do not want menu context to live any more. */

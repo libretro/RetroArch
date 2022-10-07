@@ -151,6 +151,16 @@ typedef struct disp_widget_msg
    uint8_t task_count;
 } disp_widget_msg_t;
 
+/* There can only be one message animation at a time to 
+ * avoid confusing users */
+enum dispgfx_widget_flags
+{
+   DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS = (1 << 0),
+   DISPGFX_WIDGET_FLAG_PERSISTING          = (1 << 1),
+   DISPGFX_WIDGET_FLAG_MOVING              = (1 << 2),
+   DISPGFX_WIDGET_FLAG_INITED              = (1 << 3)
+};
+
 typedef struct dispgfx_widget
 {
    uint64_t gfx_widgets_frame_count;
@@ -217,6 +227,8 @@ typedef struct dispgfx_widget
    unsigned ai_service_overlay_height;
 #endif
 
+   uint8_t flags;
+
    char assets_pkg_dir[PATH_MAX_LENGTH];
    char xmb_path[PATH_MAX_LENGTH];                /* TODO/FIXME - decouple from XMB */
    char ozone_path[PATH_MAX_LENGTH];              /* TODO/FIXME - decouple from Ozone */
@@ -227,18 +239,12 @@ typedef struct dispgfx_widget
    char gfx_widgets_path[PATH_MAX_LENGTH];
    char gfx_widgets_status_text[255];
 
-   /* There can only be one message animation at a time to 
-    * avoid confusing users */
-   bool moving;
-   bool inited;
    bool active;
-   bool persisting;
-   bool msg_queue_has_icons;
 } dispgfx_widget_t;
 
 
 /* A widget */
-/* TODO: cleanup all unused parameters */
+/* TODO/FIXME: cleanup all unused parameters */
 struct gfx_widget
 {
    /* called when the widgets system is initialized
