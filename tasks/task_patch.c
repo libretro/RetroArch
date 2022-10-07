@@ -637,7 +637,7 @@ static bool apply_patch_content(uint8_t **buf,
       /* Show an OSD message */
       if (show_notification)
       {
-         const char *patch_filename = path_basename(patch_path);
+         const char *patch_filename = path_basename_nocompression(patch_path);
          char msg[256];
 
          msg[0] = '\0';
@@ -760,7 +760,6 @@ bool patch_content(
    bool allow_ups   = !is_bps_pref && !is_ips_pref;
    bool allow_ips   = !is_ups_pref && !is_bps_pref;
    bool allow_bps   = !is_ups_pref && !is_ips_pref;
-   bool patch_found = false;
 
    if (    (unsigned)is_ips_pref
          + (unsigned)is_bps_pref
@@ -787,10 +786,6 @@ bool patch_content(
       /* First patch already applied -> index
        * for subsequent patches starts at 1 */
       size_t patch_index     = 1;
-
-      name_ips_indexed[0] = '\0';
-      name_bps_indexed[0] = '\0';
-      name_ups_indexed[0] = '\0';
 
       strlcpy(name_ips_indexed, name_ips, (name_ips_len + 1) * sizeof(char));
       strlcpy(name_bps_indexed, name_bps, (name_bps_len + 1) * sizeof(char));
@@ -833,12 +828,8 @@ bool patch_content(
       free(name_bps_indexed);
       free(name_ups_indexed);
 
-      patch_found = true;
+      return true;
    }
 
-   if(!patch_found)
-      RARCH_LOG("[Content]: %s\n",
-            msg_hash_to_str(MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH));
-
-   return patch_found;
+   return false;
 }

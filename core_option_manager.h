@@ -51,7 +51,7 @@ struct core_option
    bool visible;
 };
 
-struct core_catagory
+struct core_category
 {
    char *key;
    char *desc;
@@ -68,7 +68,7 @@ struct core_option_manager
    config_file_t *conf;
    char conf_path[PATH_MAX_LENGTH];
 
-   struct core_catagory *cats;
+   struct core_category *cats;
    struct core_option *opts;
    nested_list_t *option_map;
 
@@ -252,7 +252,7 @@ const char *core_option_manager_get_category_info(core_option_manager_t *opt,
  * be visible if at least one of the options
  * in the category is visible)
  *
- * Returns: true if option category should be
+ * @return true if option category should be
  * displayed by the frontend, otherwise false.
  **/
 bool core_option_manager_get_category_visible(core_option_manager_t *opt,
@@ -274,7 +274,7 @@ bool core_option_manager_get_category_visible(core_option_manager_t *opt,
  * Fetches the index of the core option identified
  * by the specified @key.
  *
- * Returns: true if option matching the specified
+ * @return true if option matching the specified
  * key was found, otherwise false.
  **/
 bool core_option_manager_get_idx(core_option_manager_t *opt,

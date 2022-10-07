@@ -4,6 +4,7 @@ LIBRETRO =
 DEBUG                   = 0
 CONSOLE_LOG             = 0
 GRIFFIN_BUILD           = 1
+HAVE_STATIC_DUMMY ?= 0
 WHOLE_ARCHIVE_LINK      = 0
 BUILD_3DSX              = 1
 BUILD_3DS               = 0
@@ -54,7 +55,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
 	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_RGUI -DHAVE_XMB -DHAVE_MATERIALUI -DHAVE_LIBRETRODB -DHAVE_CC_RESAMPLER
 	DEFINES += -DHAVE_ZLIB -DHAVE_7ZIP -D_7ZIP_ST -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA
-	DEFINES += -DHAVE_NETWORKING -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_CORES
+	DEFINES += -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_CORES
 	#DEFINES += -DHAVE_UPDATE_ASSETS
 	DEFINES += -DHAVE_PATCH -DHAVE_RWAV
 	DEFINES += -DHAVE_SCREENSHOTS
@@ -89,6 +90,7 @@ else
 	HAVE_AUDIOMIXER = 1
 	HAVE_RWAV = 1
 	#HAVE_NETWORKING = 1
+	#HAVE_IFINFO = 1
 	#HAVE_CHEEVOS = 1
 	#HAVE_SOCKET_LEGACY = 1
 	HAVE_THREADS = 1
@@ -151,13 +153,17 @@ LIBDIRS := -L. -L$(CTRULIB)/lib
 
 ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=soft
 
-CFLAGS	+=	-mword-relocations \
-			-fomit-frame-pointer -ffast-math \
-         -Werror=implicit-function-declaration \
-			$(ARCH)
+CFLAGS	+= -mword-relocations \
+	   -fomit-frame-pointer -ffast-math \
+	   -Werror=implicit-function-declaration \
+	   $(ARCH)
 
 #CFLAGS	+= -Wall
-CFLAGS	+=	-DARM11 -D_3DS
+CFLAGS	+= -DARM11 -D_3DS
+
+ifeq ($(strip $(USE_CTRULIB_2)),1)
+   CFLAGS	+= -D__3DS__
+endif
 
 ifeq ($(DEBUG), 1)
    CFLAGS	+= -O0 -g
@@ -179,12 +185,12 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
 endif
 
 CFLAGS += -I. \
-			 -Ideps \
-			 -Ideps/7zip \
-			 -Ideps/stb \
-			 -Ideps/rcheevos/include \
-			 -Ilibretro-common/include \
-			 -Ilibretro-common/include/compat/zlib
+	  -Ideps \
+	  -Ideps/7zip \
+	  -Ideps/stb \
+	  -Ideps/rcheevos/include \
+	  -Ilibretro-common/include \
+	  -Ilibretro-common/include/compat/zlib
 
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
 CFLAGS += -DHAVE_DSP_FILTER
@@ -192,14 +198,23 @@ CFLAGS += -DHAVE_VIDEO_FILTER
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
 CFLAGS += -DHAVE_CHEATS
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
-ASFLAGS	:=	-g $(ARCH) -O3
-LDFLAGS  +=	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
-
+ASFLAGS	 := -g $(ARCH) -O3
+LDFLAGS  += -specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 CFLAGS   += -std=gnu99 -ffast-math
 
-LIBS	:= $(WHOLE_START) -lretro_ctr $(WHOLE_END) -lm
+LIB_CORE      :=
+LIB_CORE_FULL :=
+
+ifeq ($(HAVE_STATIC_DUMMY),1)
+  DEFINES += -DHAVE_STATIC_DUMMY
+else
+  LIB_CORE      += -lretro_ctr
+  LIB_CORE_FULL += libretro_ctr.a
+endif
+
+LIBS	:= $(WHOLE_START) $(LIB_CORE) $(WHOLE_END) -lm
 
 ifeq ($(DEBUG), 1)
 	LIBS	+= -lctrud
@@ -225,7 +240,7 @@ all: $(TARGET)
 
 $(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
 $(TARGET).3dsx: $(TARGET).elf
-$(TARGET).elf: $(OBJ) libretro_ctr.a
+$(TARGET).elf: $(OBJ) $(LIB_CORE_FULL)
 
 PREFIX		:=	$(DEVKITARM)/bin/arm-none-eabi-
 

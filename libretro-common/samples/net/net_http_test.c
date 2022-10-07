@@ -52,7 +52,5 @@ int main(void)
    net_http_delete(http1);
    net_http_delete(http3);
 
-   network_deinit();
-
    return 0;
 }

@@ -446,7 +446,10 @@ static struct buffer query_parse_string(
 
       if (!value->val.string.buff)
       {
-         strcpy_literal(s, "Out of memory");
+         s[0]   = 'O';
+         s[1]   = 'O';
+         s[2]   = 'M';
+         s[3]   = '\0';
          *error = s;
       }
       else if (is_binstr)
@@ -717,7 +720,10 @@ static struct buffer query_parse_method_call(
 
    if (!invocation->argv)
    {
-      strcpy_literal(s, "Out of memory");
+      s[0]   = 'O';
+      s[1]   = 'O';
+      s[2]   = 'M';
+      s[3]   = '\0';
       *error = s;
       goto clean;
    }
@@ -891,7 +897,10 @@ static struct buffer query_parse_table(
 
    if (!invocation->argv)
    {
-      strcpy_literal(s, "Out of memory");
+      s[0]   = 'O';
+      s[1]   = 'O';
+      s[2]   = 'M';
+      s[3]   = '\0';
       *error = s;
       goto clean;
    }

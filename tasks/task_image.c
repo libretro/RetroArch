@@ -16,7 +16,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include <file/nbio.h>
 #include <formats/image.h>
@@ -39,6 +38,13 @@ enum image_status_enum
    IMAGE_STATUS_PROCESS_TRANSFER_PARSE
 };
 
+enum image_flags_enum
+{
+   IMAGE_FLAG_IS_BLOCKING                = (1 << 0),
+   IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING  = (1 << 1),
+   IMAGE_FLAG_IS_FINISHED                = (1 << 2)
+};
+
 struct nbio_image_handle
 {
    void *handle;
@@ -50,9 +56,7 @@ struct nbio_image_handle
    unsigned upscale_threshold;
    enum image_type_enum type;
    enum image_status_enum status;
-   bool is_blocking;
-   bool is_blocking_on_processing;
-   bool is_finished;
+   uint8_t flags;
 };
 
 static int cb_image_upload_generic(void *data, size_t len)
@@ -79,9 +83,9 @@ static int cb_image_upload_generic(void *data, size_t len)
    image_texture_color_convert(r_shift, g_shift, b_shift,
          a_shift, &image->ti);
 
-   image->is_blocking_on_processing         = false;
-   image->is_blocking                       = true;
-   image->is_finished                       = true;
+   image->flags                   &= ~IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING;
+   image->flags                   |=  IMAGE_FLAG_IS_BLOCKING;
+   image->flags                   |=  IMAGE_FLAG_IS_FINISHED;
    nbio->is_finished                        = true;
 
    return 0;
@@ -97,12 +101,10 @@ static int task_image_process(
    if (!image_transfer_is_valid(image->handle, image->type))
       return IMAGE_PROCESS_ERROR;
 
-   retval = image_transfer_process(
+   if ((retval = image_transfer_process(
          image->handle,
          image->type,
-         &image->ti.pixels, image->size, width, height);
-
-   if (retval == IMAGE_PROCESS_ERROR)
+         &image->ti.pixels, image->size, width, height)) == IMAGE_PROCESS_ERROR)
       return IMAGE_PROCESS_ERROR;
 
    image->ti.width  = *width;
@@ -124,8 +126,14 @@ static int cb_image_thumbnail(void *data, size_t len)
       )
       return -1;
 
-   image->is_blocking_on_processing = (retval != IMAGE_PROCESS_END);
-   image->is_finished               = (retval == IMAGE_PROCESS_END);
+   if (retval != IMAGE_PROCESS_END)
+      image->flags                 |=  IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING;
+   else
+      image->flags                 &= ~IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING;
+   if (retval == IMAGE_PROCESS_END)
+      image->flags                 |=  IMAGE_FLAG_IS_FINISHED;
+   else
+      image->flags                 &= ~IMAGE_FLAG_IS_FINISHED;
    image->cb                        = &cb_image_upload_generic;
 
    return 0;
@@ -140,9 +148,7 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
 
    do
    {
-      retval = task_image_process(image, &width, &height);
-
-      if (retval != IMAGE_PROCESS_NEXT)
+      if ((retval = task_image_process(image, &width, &height)) != IMAGE_PROCESS_NEXT)
          break;
    }while (cpu_features_get_time_usec() - start_time 
          < image->frame_duration);
@@ -162,8 +168,8 @@ static void task_image_cleanup(nbio_handle_t *nbio)
    {
       image_transfer_free(image->handle, image->type);
 
-      image->handle                 = NULL;
-      image->cb                     = NULL;
+      image->handle  = NULL;
+      image->cb      = NULL;
    }
    if (!string_is_empty(nbio->path))
       free(nbio->path);
@@ -177,7 +183,7 @@ static void task_image_cleanup(nbio_handle_t *nbio)
 
 static void task_image_load_free(retro_task_t *task)
 {
-   nbio_handle_t       *nbio  = task ? (nbio_handle_t*)task->state : NULL;
+   nbio_handle_t *nbio  = task ? (nbio_handle_t*)task->state : NULL;
 
    if (nbio)
    {
@@ -223,8 +229,8 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
       return -1;
    }
 
-   image->is_blocking              = false;
-   image->is_finished              = false;
+   image->flags                   &= ~IMAGE_FLAG_IS_BLOCKING;
+   image->flags                   &= ~IMAGE_FLAG_IS_FINISHED;
    nbio->is_finished               = true;
 
    return 0;
@@ -236,8 +242,7 @@ static bool upscale_image(
       struct texture_image *image_dst)
 {
    uint32_t x_ratio, y_ratio;
-   unsigned x_src, y_src;
-   unsigned x_dst, y_dst;
+   unsigned y_dst;
 
    /* Sanity check */
    if ((scale_factor < 1) || !image_src || !image_dst)
@@ -247,12 +252,11 @@ static bool upscale_image(
       return false;
 
    /* Get output dimensions */
-   image_dst->width = image_src->width * scale_factor;
+   image_dst->width  = image_src->width * scale_factor;
    image_dst->height = image_src->height * scale_factor;
 
    /* Allocate pixel buffer */
-   image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t));
-   if (!image_dst->pixels)
+   if (!(image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t))))
       return false;
 
    /* Perform nearest neighbour resampling */
@@ -261,10 +265,11 @@ static bool upscale_image(
 
    for (y_dst = 0; y_dst < image_dst->height; y_dst++)
    {
-      y_src = (y_dst * y_ratio) >> 16;
+      unsigned x_dst;
+      unsigned y_src = (y_dst * y_ratio) >> 16;
       for (x_dst = 0; x_dst < image_dst->width; x_dst++)
       {
-         x_src = (x_dst * x_ratio) >> 16;
+         unsigned x_src = (x_dst * x_ratio) >> 16;
          image_dst->pixels[(y_dst * image_dst->width) + x_dst] = image_src->pixels[(y_src * image_src->width) + x_src];
       }
    }
@@ -294,11 +299,12 @@ bool task_image_load_handler(retro_task_t *task)
                if (image->cb(nbio, len) == -1)
                   return false;
             }
-            if (image->is_blocking_on_processing)
+            if (image->flags & IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING)
                image->status = IMAGE_STATUS_PROCESS_TRANSFER;
             break;
          case IMAGE_STATUS_TRANSFER:
-            if (!image->is_blocking && !image->is_finished)
+            if (     !(image->flags & IMAGE_FLAG_IS_BLOCKING) 
+                  && !(image->flags & IMAGE_FLAG_IS_FINISHED))
             {
                retro_time_t start_time = cpu_features_get_time_usec();
                do
@@ -319,13 +325,13 @@ bool task_image_load_handler(retro_task_t *task)
                if (image->cb(nbio, len) == -1)
                   return false;
             }
-            if (!image->is_finished)
+            if (!(image->flags & IMAGE_FLAG_IS_FINISHED))
                break;
       }
    }
 
    if (     nbio->is_finished
-         && (image && image->is_finished)
+         && (image && (image->flags & IMAGE_FLAG_IS_FINISHED))
          && (!task_get_cancelled(task)))
    {
       struct texture_image *img = (struct texture_image*)malloc(sizeof(struct texture_image));
@@ -391,9 +397,7 @@ bool task_push_image_load(const char *fullpath,
    if (!t)
       return false;
 
-   nbio                = (nbio_handle_t*)malloc(sizeof(*nbio));
-
-   if (!nbio)
+   if (!(nbio = (nbio_handle_t*)malloc(sizeof(*nbio))))
    {
       free(t);
       return false;
@@ -411,8 +415,7 @@ bool task_push_image_load(const char *fullpath,
    if (supports_rgba)
       BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_SUPPORTS_RGBA);
 
-   image              = (struct nbio_image_handle*)malloc(sizeof(*image));
-   if (!image)
+   if (!(image = (struct nbio_image_handle*)malloc(sizeof(*image))))
    {
       free(nbio);
       free(t);
@@ -423,9 +426,6 @@ bool task_push_image_load(const char *fullpath,
 
    image->type                       = image_texture_get_type(fullpath);
    image->status                     = IMAGE_STATUS_WAIT;
-   image->is_blocking                = false;
-   image->is_blocking_on_processing  = false;
-   image->is_finished                = false;
    image->processing_final_state     = 0;
    image->frame_duration             = 0;
    image->size                       = 0;

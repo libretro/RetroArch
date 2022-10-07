@@ -72,6 +72,9 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_INDEX,
    DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION,
    DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD,
+#ifdef HAVE_NETWORKING
+   DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER,
+#endif
    DISPLAYLIST_CDROM_DETAIL_INFO,
    DISPLAYLIST_INFO,
    DISPLAYLIST_HELP,
@@ -112,6 +115,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_PL_THUMBNAILS_UPDATER,
    DISPLAYLIST_LAKKA,
    DISPLAYLIST_CORES_DETECTED,
+   DISPLAYLIST_SAVESTATE_LIST,
    DISPLAYLIST_CORE_OPTIONS,
    DISPLAYLIST_CORE_OPTION_OVERRIDE_LIST,
    DISPLAYLIST_CORE_INFO,
@@ -205,6 +209,9 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST,
    DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST,
    DISPLAYLIST_MENU_SETTINGS_LIST,
+#ifdef _3DS
+   DISPLAYLIST_MENU_BOTTOM_SETTINGS_LIST,
+#endif
    DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST,
    DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST,
    DISPLAYLIST_MENU_SOUNDS_LIST,
@@ -214,6 +221,9 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_WIFI_SETTINGS_LIST,
    DISPLAYLIST_NETWORK_SETTINGS_LIST,
    DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST,
+   DISPLAYLIST_NETPLAY_KICK_LIST,
+   DISPLAYLIST_NETPLAY_BAN_LIST,
+   DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST,
    DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST,
    DISPLAYLIST_LAKKA_SERVICES_LIST,
    DISPLAYLIST_USER_SETTINGS_LIST,
@@ -286,6 +296,24 @@ enum filebrowser_enums
    FILEBROWSER_SELECT_COLLECTION
 };
 
+enum menu_dl_flags
+{
+   MD_FLAG_NONE                          = 0,
+   MD_FLAG_NEED_SORT                     = (1 << 0), /* Should the displaylist be sorted by alphabet? */
+   MD_FLAG_NEED_REFRESH                  = (1 << 1),
+   MD_FLAG_NEED_ENTRIES_REFRESH          = (1 << 2),
+   MD_FLAG_NEED_PUSH                     = (1 << 3),
+   MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES = (1 << 4),
+   MD_FLAG_NEED_CLEAR                    = (1 << 5), /* Should we clear the displaylist before we push
+						      * entries onto it? */
+   MD_FLAG_PUSH_BUILTIN_CORES            = (1 << 6),
+   MD_FLAG_DOWNLOAD_CORE                 = (1 << 7), /* Should a 'download core' entry be pushed onto the list?
+						      * This will be set to true in case there are no currently
+						      * installed cores. */
+   MD_FLAG_NEED_NAVIGATION_CLEAR         = (1 << 8)  /* Does the navigation index need to be cleared 
+                                                      * to 0 (first entry) ? */
+};
+
 typedef struct menu_displaylist_info
 {
    char *path;
@@ -299,29 +327,12 @@ typedef struct menu_displaylist_info
 
    size_t directory_ptr;
 
+   uint32_t flags;
    unsigned count;
 
    unsigned type;
    unsigned type_default;
-   unsigned flags;
-
    enum msg_hash_enums enum_idx;
-   /* should the displaylist be sorted by alphabet? */
-   bool need_sort;
-   bool need_refresh;
-   bool need_entries_refresh;
-   bool need_push;
-   bool need_push_no_playlist_entries;
-   /* should we clear the displaylist before we push
-    * entries onto it? */
-   bool need_clear;
-   bool push_builtin_cores;
-   /* Should a 'download core' entry be pushed onto the list?
-    * This will be set to true in case there are no currently
-    * installed cores. */
-   bool download_core;
-   /* does the navigation index need to be cleared to 0 (first entry) ? */
-   bool need_navigation_clear;
 } menu_displaylist_info_t;
 
 #define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)

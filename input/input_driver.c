@@ -393,8 +393,7 @@ const char* config_get_joypad_driver_options(void)
  **/
 static const input_device_driver_t *input_joypad_init_first(void *data)
 {
-   unsigned i;
-
+   int i;
    for (i = 0; joypad_drivers[i]; i++)
    {
       if (     joypad_drivers[i]
@@ -429,7 +428,6 @@ bool input_driver_set_rumble(
 
    if (primary_joypad && primary_joypad->set_rumble)
       rumble_state = primary_joypad->set_rumble(joy_idx, effect, strength);
-   
    /* if sec_joypad exists, this set_rumble() return value will replace primary_joypad's return */
    if (sec_joypad     && sec_joypad->set_rumble)
       rumble_state = sec_joypad->set_rumble(joy_idx, effect, strength);
@@ -441,12 +439,12 @@ bool input_driver_set_rumble_gain(
          unsigned gain,
          unsigned input_max_users)
 {
-   unsigned i;
+   int i;
 
    if (  input_driver_st.primary_joypad
       && input_driver_st.primary_joypad->set_rumble_gain)
    {
-      for (i = 0; i < input_max_users; i++)
+      for (i = 0; i < (int)input_max_users; i++)
          input_driver_st.primary_joypad->set_rumble_gain(i, gain);
       return true;
    }
@@ -458,14 +456,9 @@ bool input_driver_set_sensor(
          enum retro_sensor_action action, unsigned rate)
 {
    const input_driver_t *current_driver;
-   void *current_data;
 
    if (!input_driver_st.current_data)
       return false;
-
-   current_driver = input_driver_st.current_driver;
-   current_data   = input_driver_st.current_data;
-
    /* If sensors are disabled, inhibit any enable
     * actions (but always allow disable actions) */
    if (!sensors_enable &&
@@ -473,10 +466,13 @@ bool input_driver_set_sensor(
         (action == RETRO_SENSOR_GYROSCOPE_ENABLE) ||
         (action == RETRO_SENSOR_ILLUMINANCE_ENABLE)))
       return false;
-
-   if (current_driver && current_driver->set_sensor_state)
+   if (   (current_driver = input_driver_st.current_driver)
+       &&  current_driver->set_sensor_state)
+   {
+      void *current_data = input_driver_st.current_data;
       return current_driver->set_sensor_state(current_data,
             port, action, rate);
+   }
 
    return false;
 }
@@ -486,17 +482,15 @@ bool input_driver_set_sensor(
 float input_driver_get_sensor(
          unsigned port, bool sensors_enable, unsigned id)
 {
-   const input_driver_t *current_driver;
-   void *current_data;
-
-   if (!input_driver_st.current_data)
-      return 0.0f;
-
-   current_driver = input_driver_st.current_driver;
-   current_data   = input_driver_st.current_data;
-
-   if (sensors_enable && current_driver->get_sensor_input)
-      return current_driver->get_sensor_input(current_data, port, id);
+   if (input_driver_st.current_data)
+   {
+      const input_driver_t *current_driver = input_driver_st.current_driver;
+      if (sensors_enable && current_driver->get_sensor_input)
+      {
+         void *current_data = input_driver_st.current_data;
+         return current_driver->get_sensor_input(current_data, port, id);
+      }
+   }
 
    return 0.0f;
 }
@@ -504,10 +498,9 @@ float input_driver_get_sensor(
 const input_device_driver_t *input_joypad_init_driver(
       const char *ident, void *data)
 {
-   unsigned i;
-
    if (ident && *ident)
    {
+      int i;
       for (i = 0; joypad_drivers[i]; i++)
       {
          if (string_is_equal(ident, joypad_drivers[i]->ident)
@@ -681,9 +674,8 @@ int16_t input_state_wrap(
 {
    int16_t ret                   = 0;
 
-   if(!binds || !binds[_port]) {
+   if (!binds)
       return 0;
-   }
 
    /* Do a bitwise OR to combine input states together */
 
@@ -981,18 +973,17 @@ int16_t input_joypad_analog_axis(
    return res;
 }
 
-bool input_keyboard_line_append(
+void input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
-      const char *word)
+      const char *word, size_t len)
 {
-   unsigned i                  = 0;
-   unsigned len                = (unsigned)strlen(word);
+   int i;
    char *newbuf                = (char*)realloc(
          keyboard_line->buffer,
          keyboard_line->size + len * 2);
 
    if (!newbuf)
-      return false;
+      return;
 
    memmove(
          newbuf + keyboard_line->ptr + len,
@@ -1009,7 +1000,6 @@ bool input_keyboard_line_append(
    newbuf[keyboard_line->size]  = '\0';
 
    keyboard_line->buffer        = newbuf;
-   return true;
 }
 
 const char **input_keyboard_start_line(
@@ -1033,8 +1023,7 @@ static bool input_remote_init_network(input_remote_t *handle,
 {
    int fd;
    struct addrinfo *res  = NULL;
-
-   port = port + user;
+   port                  = port + user;
 
    if (!network_init())
       return false;
@@ -1042,9 +1031,7 @@ static bool input_remote_init_network(input_remote_t *handle,
    RARCH_LOG("Bringing up remote interface on port %hu.\n",
          (unsigned short)port);
 
-   fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
-
-   if (fd < 0)
+   if ((fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM, AF_INET)) < 0)
       goto error;
 
    handle->net_fd[user] = fd;
@@ -1069,10 +1056,9 @@ error:
 
 void input_remote_free(input_remote_t *handle, unsigned max_users)
 {
-   unsigned user;
-   for (user = 0; user < max_users; user ++)
+   int user;
+   for (user = 0; user < (int)max_users; user ++)
       socket_close(handle->net_fd[user]);
-
    free(handle);
 }
 
@@ -1080,14 +1066,14 @@ static input_remote_t *input_remote_new(
       settings_t *settings,
       uint16_t port, unsigned max_users)
 {
-   unsigned user;
+   int user;
    input_remote_t      *handle = (input_remote_t*)
       calloc(1, sizeof(*handle));
 
    if (!handle)
       return NULL;
 
-   for (user = 0; user < max_users; user ++)
+   for (user = 0; user < (int)max_users; user++)
    {
       handle->net_fd[user] = -1;
       if (settings->bools.network_remote_enable_user[user])
@@ -1101,7 +1087,7 @@ static input_remote_t *input_remote_new(
    return handle;
 }
 
-void input_remote_parse_packet(
+static void input_remote_parse_packet(
       input_remote_state_t *input_state,
       struct remote_message *msg, unsigned user)
 {
@@ -1132,14 +1118,28 @@ input_remote_t *input_driver_init_remote(
 #endif
 
 #ifdef HAVE_OVERLAY
-bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
+/**
+ * input_overlay_add_inputs:
+ * @desc : pointer to overlay description
+ * @ol_state : pointer to overlay state. If valid, inputs
+ *             that are actually 'touched' on the overlay
+ *             itself will displayed. If NULL, inputs from
+ *             the device connected to 'port' will be displayed.
+ * @port : when ol_state is NULL, specifies the port of
+ *         the input device from which input will be
+ *         displayed.
+ *
+ * Adds inputs from current_input to the overlay, so it's displayed
+ * @return true if an input that is pressed will change the overlay
+ */
+static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
       input_overlay_state_t *ol_state, unsigned port)
 {
    switch(desc->type)
    {
       case OVERLAY_TYPE_BUTTONS:
          {
-            unsigned i;
+            int i;
             bool all_buttons_pressed        = false;
 
             /* Check each bank of the mask */
@@ -1182,36 +1182,31 @@ bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
       case OVERLAY_TYPE_ANALOG_LEFT:
       case OVERLAY_TYPE_ANALOG_RIGHT:
          {
-            float analog_x;
-            float analog_y;
-            float dx;
-            float dy;
-
+            float dx, dy;
             if (ol_state)
             {
                unsigned index_offset = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
-               analog_x              = (float)ol_state->analog[index_offset];
-               analog_y              = (float)ol_state->analog[index_offset + 1];
+               float analog_x        = (float)ol_state->analog[index_offset];
+               float analog_y        = (float)ol_state->analog[index_offset + 1];
+
+               dx                    = (analog_x / (float)0x8000) * (desc->range_x / 2.0f);
+               dy                    = (analog_y / (float)0x8000) * (desc->range_y / 2.0f);
             }
             else
             {
                unsigned index        = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ?
                   RETRO_DEVICE_INDEX_ANALOG_RIGHT : RETRO_DEVICE_INDEX_ANALOG_LEFT;
-
-               analog_x              = input_state_internal(port, RETRO_DEVICE_ANALOG,
+               float analog_x        = input_state_internal(port, RETRO_DEVICE_ANALOG,
                      index, RETRO_DEVICE_ID_ANALOG_X);
-               analog_y              = input_state_internal(port, RETRO_DEVICE_ANALOG,
+               float analog_y        = input_state_internal(port, RETRO_DEVICE_ANALOG,
                      index, RETRO_DEVICE_ID_ANALOG_Y);
-            }
 
-            dx = (analog_x / (float)0x8000) * (desc->range_x / 2.0f);
-            dy = (analog_y / (float)0x8000) * (desc->range_y / 2.0f);
+               dx                    = (analog_x / (float)0x8000) * (desc->range_x / 2.0f);
+               dy                    = (analog_y / (float)0x8000) * (desc->range_y / 2.0f);
 
-            /* Only modify overlay delta_x/delta_y values
-             * if we are monitoring input from a physical
-             * controller */
-            if (!ol_state)
-            {
+               /* Only modify overlay delta_x/delta_y values
+                * if we are monitoring input from a physical
+                * controller */
                desc->delta_x = dx;
                desc->delta_y = dy;
             }
@@ -1240,10 +1235,10 @@ bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
    return false;
 }
 
-bool input_overlay_add_inputs(input_overlay_t *ol,
+static bool input_overlay_add_inputs(input_overlay_t *ol,
       bool show_touched, unsigned port)
 {
-   unsigned i;
+   size_t i;
    bool button_pressed             = false;
    input_overlay_state_t *ol_state = &ol->overlay_state;
 
@@ -1274,9 +1269,6 @@ bool input_overlay_add_inputs(input_overlay_t *ol,
  **/
 static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
 {
-   if (!desc)
-      return false;
-
    switch (desc->hitbox)
    {
       case OVERLAY_HITBOX_RADIAL:
@@ -1287,13 +1279,11 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
          float sq_dist = x_dist * x_dist + y_dist * y_dist;
          return (sq_dist <= 1.0f);
       }
-
       case OVERLAY_HITBOX_RECT:
          return
             (fabs(x - desc->x_shift) <= desc->range_x_mod) &&
             (fabs(y - desc->y_shift) <= desc->range_y_mod);
    }
-
    return false;
 }
 
@@ -1334,7 +1324,7 @@ void input_overlay_poll(
       unsigned int base         = 0;
       struct overlay_desc *desc = &ol->active->descs[i];
 
-      if (!inside_hitbox(desc, x, y))
+      if (!desc || !inside_hitbox(desc, x, y))
          continue;
 
       desc->updated = true;
@@ -1509,7 +1499,7 @@ void input_overlay_scale(struct overlay *ol,
       else if (desc->x > (0.5f + 0.0001f))
          x_shift_offset = layout->x_separation;
 
-      desc->x_shift = desc->x + x_shift_offset;
+      desc->x_shift     = desc->x + x_shift_offset;
 
       /* Apply 'y separation' factor */
       if (desc->y < (0.5f - 0.0001f))
@@ -1517,17 +1507,17 @@ void input_overlay_scale(struct overlay *ol,
       else if (desc->y > (0.5f + 0.0001f))
          y_shift_offset = layout->y_separation;
 
-      desc->y_shift = desc->y + y_shift_offset;
+      desc->y_shift     = desc->y + y_shift_offset;
 
-      scale_w       = ol->mod_w * desc->range_x;
-      scale_h       = ol->mod_h * desc->range_y;
-      adj_center_x  = ol->mod_x + desc->x_shift * ol->mod_w;
-      adj_center_y  = ol->mod_y + desc->y_shift * ol->mod_h;
+      scale_w           = ol->mod_w * desc->range_x;
+      scale_h           = ol->mod_h * desc->range_y;
+      adj_center_x      = ol->mod_x + desc->x_shift * ol->mod_w;
+      adj_center_y      = ol->mod_y + desc->y_shift * ol->mod_h;
 
-      desc->mod_w   = 2.0f * scale_w;
-      desc->mod_h   = 2.0f * scale_h;
-      desc->mod_x   = adj_center_x - scale_w;
-      desc->mod_y   = adj_center_y - scale_h;
+      desc->mod_w       = 2.0f * scale_w;
+      desc->mod_h       = 2.0f * scale_h;
+      desc->mod_x       = adj_center_x - scale_w;
+      desc->mod_y       = adj_center_y - scale_h;
    }
 }
 
@@ -1660,22 +1650,21 @@ void input_overlay_set_vertex_geom(input_overlay_t *ol)
 {
    size_t i;
 
+   if (!ol->iface->vertex_geom)
+      return;
+
    if (ol->active->image.pixels)
       ol->iface->vertex_geom(ol->iface_data, 0,
             ol->active->mod_x, ol->active->mod_y,
             ol->active->mod_w, ol->active->mod_h);
 
-   if (ol->iface->vertex_geom)
-      for (i = 0; i < ol->active->size; i++)
-      {
-         struct overlay_desc *desc = &ol->active->descs[i];
-
-         if (!desc->image.pixels)
-            continue;
-
+   for (i = 0; i < ol->active->size; i++)
+   {
+      struct overlay_desc *desc = &ol->active->descs[i];
+      if (desc->image.pixels)
          ol->iface->vertex_geom(ol->iface_data, desc->image_index,
                desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
-      }
+   }
 }
 
 
@@ -1820,10 +1809,10 @@ void input_overlay_auto_rotate_(
          active_overlay_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
       else if (strstr(ol->active->name, "portrait"))
          active_overlay_orientation = OVERLAY_ORIENTATION_PORTRAIT;
+      else /* Sanity check */
+         return;
    }
-
-   /* Sanity check */
-   if (active_overlay_orientation == OVERLAY_ORIENTATION_NONE)
+   else /* Sanity check */
       return;
 
    /* If screen and overlay have the same orientation,
@@ -1872,7 +1861,7 @@ void input_poll_overlay(
       float axis_threshold)
 {
    input_overlay_state_t old_key_state;
-   unsigned i, j;
+   int i, j;
    input_overlay_t *ol                     = (input_overlay_t*)ol_data;
    uint16_t key_mod                        = 0;
    bool polled                             = false;
@@ -2053,10 +2042,14 @@ void input_poll_overlay(
          break;
    }
 
-   if (input_overlay_show_inputs != OVERLAY_SHOW_INPUT_NONE)
-      button_pressed = input_overlay_add_inputs(ol,
-            (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_TOUCHED),
-            input_overlay_show_inputs_port);
+   button_pressed = input_overlay_add_inputs(ol,
+         (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_TOUCHED),
+         input_overlay_show_inputs_port);
+
+   input_st->block_pointer_input = button_pressed;
+
+   if (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_NONE)
+      button_pressed = false;
 
    if (button_pressed || polled)
       input_overlay_post_poll(overlay_visibility, ol,
@@ -2154,7 +2147,7 @@ void input_config_get_bind_string(
          )
          *key = '\0';
       /*empty?*/
-      if (*key != '\0')
+      else if (*key != '\0')
       {
          char keybuf[64];
 
@@ -2227,32 +2220,45 @@ void input_config_get_bind_string_joykey(
       if (bind->joykey_label &&
             !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
-         fill_pathname_join_delim_concat(buf, prefix,
-               bind->joykey_label, ' ', " (hat)", size);
+      {
+         size_t len = fill_pathname_join_delim(buf, prefix,
+               bind->joykey_label, ' ', size);
+         buf[len  ] = ' ';
+         buf[len+1] = '(';
+         buf[len+2] = 'h';
+         buf[len+3] = 'a';
+         buf[len+4] = 't';
+         buf[len+5] = ')';
+         buf[len+6] = '\0';
+      }
       else
       {
-         const char *dir = "?";
+         const char *na_str =
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
          switch (GET_HAT_DIR(bind->joykey))
          {
             case HAT_UP_MASK:
-               dir = "up";
+               snprintf(buf, size, "%sHat #%u up (%s)", prefix,
+                     (unsigned)GET_HAT(bind->joykey), na_str);
                break;
             case HAT_DOWN_MASK:
-               dir = "down";
+               snprintf(buf, size, "%sHat #%u down (%s)", prefix,
+                     (unsigned)GET_HAT(bind->joykey), na_str);
                break;
             case HAT_LEFT_MASK:
-               dir = "left";
+               snprintf(buf, size, "%sHat #%u left (%s)", prefix,
+                     (unsigned)GET_HAT(bind->joykey), na_str);
                break;
             case HAT_RIGHT_MASK:
-               dir = "right";
+               snprintf(buf, size, "%sHat #%u right (%s)", prefix,
+                     (unsigned)GET_HAT(bind->joykey), na_str);
                break;
             default:
+               snprintf(buf, size, "%sHat #%u ? (%s)", prefix,
+                     (unsigned)GET_HAT(bind->joykey), na_str);
                break;
          }
-         snprintf(buf, size, "%sHat #%u %s (%s)", prefix,
-               (unsigned)GET_HAT(bind->joykey), dir,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
       }
    }
    else
@@ -2260,8 +2266,17 @@ void input_config_get_bind_string_joykey(
       if (bind->joykey_label &&
             !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
-         fill_pathname_join_delim_concat(buf, prefix,
-               bind->joykey_label, ' ', " (btn)", size);
+      {
+         size_t len = fill_pathname_join_delim(buf, prefix,
+               bind->joykey_label, ' ', size);
+         buf[len  ] = ' ';
+         buf[len+1] = '(';
+         buf[len+2] = 'b';
+         buf[len+3] = 't';
+         buf[len+4] = 'n';
+         buf[len+5] = ')';
+         buf[len+6] = '\0';
+      }
       else
          snprintf(buf, size, "%s%u (%s)", prefix, (unsigned)bind->joykey,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
@@ -2276,24 +2291,32 @@ void input_config_get_bind_string_joyaxis(
    if (bind->joyaxis_label &&
          !string_is_empty(bind->joyaxis_label)
          && input_descriptor_label_show)
-      fill_pathname_join_delim_concat(buf, prefix,
-            bind->joyaxis_label, ' ', " (axis)", size);
+   {
+      size_t len = fill_pathname_join_delim(buf, prefix,
+            bind->joyaxis_label, ' ', size);
+      buf[len  ] = ' ';
+      buf[len+1] = '(';
+      buf[len+2] = 'a';
+      buf[len+3] = 'x';
+      buf[len+4] = 'i';
+      buf[len+5] = 's';
+      buf[len+6] = ')';
+      buf[len+7] = '\0';
+   }
    else
    {
-      unsigned axis        = 0;
-      char dir             = '\0';
+      const char *na_str   =
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
       if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
       {
-         dir = '-';
-         axis = AXIS_NEG_GET(bind->joyaxis);
+         unsigned axis = AXIS_NEG_GET(bind->joyaxis);
+         snprintf(buf, size, "%s-%u (%s)", prefix, axis, na_str);
       }
       else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
       {
-         dir = '+';
-         axis = AXIS_POS_GET(bind->joyaxis);
+         unsigned axis = AXIS_POS_GET(bind->joyaxis);
+         snprintf(buf, size, "%s+%u (%s)", prefix, axis, na_str);
       }
-      snprintf(buf, size, "%s%c%u (%s)", prefix, dir, axis,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 }
 
@@ -2332,7 +2355,8 @@ void input_event_osk_append(
       unsigned *osk_last_codepoint_len,
       int ptr,
       bool show_symbol_pages,
-      const char *word)
+      const char *word,
+      size_t word_len)
 {
 #ifdef HAVE_LANGEXTRA
    if (string_is_equal(word, "\xe2\x87\xa6")) /* backspace character */
@@ -2363,7 +2387,7 @@ void input_event_osk_append(
          *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
    else
    {
-      input_keyboard_line_append(keyboard_line, word);
+      input_keyboard_line_append(keyboard_line, word, word_len);
       osk_update_last_codepoint(
             osk_last_codepoint,
             osk_last_codepoint_len,
@@ -2932,13 +2956,11 @@ void input_config_set_device_config_path(unsigned port, const char *path)
    {
       char parent_dir_name[128];
       input_driver_state_t *input_st = &input_driver_st;
-
-      parent_dir_name[0] = '\0';
-
       if (fill_pathname_parent_dir_name(parent_dir_name,
                path, sizeof(parent_dir_name)))
-         fill_pathname_join(input_st->input_device_info[port].config_path,
-               parent_dir_name, path_basename(path),
+         fill_pathname_join_special(
+               input_st->input_device_info[port].config_path,
+               parent_dir_name, path_basename_nocompression(path),
                sizeof(input_st->input_device_info[port].config_path));
    }
 }
@@ -3024,8 +3046,8 @@ const char *input_config_get_mouse_display_name(unsigned port)
 
 void input_config_set_mouse_display_name(unsigned port, const char *name)
 {
+   char name_ascii[NAME_MAX_LENGTH];
    input_driver_state_t *input_st = &input_driver_st;
-   char name_ascii[256];
 
    name_ascii[0] = '\0';
 
@@ -3069,7 +3091,7 @@ void config_read_keybinds_conf(void *data)
 
       for (j = 0; input_config_bind_map_get_valid(j); j++)
       {
-         char str[256];
+         char str[NAME_MAX_LENGTH];
          const struct input_bind_map *keybind =
             (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(j);
          struct retro_keybind *bind = &input_config_binds[i][j];
@@ -3089,8 +3111,6 @@ void config_read_keybinds_conf(void *data)
          prefix                     = input_config_get_prefix(i, meta);
          if (!btn || !prefix)
             continue;
-
-         str[0]                     = '\0';
 
          fill_pathname_join_delim(str, prefix, btn,  '_', sizeof(str));
 
@@ -3536,7 +3556,7 @@ void input_keys_pressed(
    unsigned i;
    input_driver_state_t *input_st = &input_driver_st;
 
-   if(!binds || !binds[port])
+   if (!binds)
       return;
 
    if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
@@ -3919,6 +3939,7 @@ int16_t input_state_device(
                         if (input_st->overlay_ptr &&
                             input_st->overlay_ptr->alive &&
                             (port == 0) &&
+                            (idx != RETRO_DEVICE_INDEX_ANALOG_BUTTON) &&
                             !(((input_analog_dpad_mode == ANALOG_DPAD_LSTICK) &&
                                  (idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)) ||
                              ((input_analog_dpad_mode == ANALOG_DPAD_RSTICK) &&
@@ -3976,6 +3997,9 @@ int16_t input_state_device(
       case RETRO_DEVICE_MOUSE:
       case RETRO_DEVICE_LIGHTGUN:
       case RETRO_DEVICE_POINTER:
+
+         if (input_st->block_pointer_input)
+            break;
 
          if (id < RARCH_FIRST_META_KEY)
          {
@@ -4463,7 +4487,6 @@ static bool bsv_movie_init_playback(
       bsv_movie_t *handle, const char *path)
 {
    uint32_t state_size       = 0;
-   uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
    intfstream_t *file        = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ,
@@ -4487,12 +4510,6 @@ static bool bsv_movie_init_playback(
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE));
       return false;
    }
-
-   content_crc               = content_get_crc();
-
-   if (content_crc != 0)
-      if (swap_if_big32(header[CRC_INDEX]) != content_crc)
-         RARCH_WARN("%s.\n", msg_hash_to_str(MSG_CRC32_CHECKSUM_MISMATCH));
 
    state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
 
@@ -4646,29 +4663,25 @@ error:
 static bool runloop_check_movie_init(input_driver_state_t *input_st,
       settings_t *settings)
 {
+   size_t _len;
    char msg[16384], path[8192];
    bsv_movie_t *state          = NULL;
    int state_slot              = settings->ints.state_slot;
-
-   msg[0] = path[0]            = '\0';
+   msg[0]                      =  '\0';
 
    configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
 
+   _len = strlcpy(path,
+         input_st->bsv_movie_state.movie_path, sizeof(path));
    if (state_slot > 0)
-      snprintf(path, sizeof(path), "%s%d.bsv",
-            input_st->bsv_movie_state.movie_path,
-            state_slot);
-   else
-      snprintf(path, sizeof(path), "%s.bsv",
-            input_st->bsv_movie_state.movie_path);
+      snprintf(path + _len, sizeof(path) - _len, "%d", state_slot);
+   strlcat(path, ".bsv", sizeof(path));
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
          msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
          path);
 
-   state = bsv_movie_init_internal(path, RARCH_MOVIE_RECORD);
-
-   if (!state)
+   if (!(state = bsv_movie_init_internal(path, RARCH_MOVIE_RECORD)))
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
@@ -4750,6 +4763,7 @@ bool bsv_movie_init(input_driver_state_t *input_st)
    bsv_movie_t *state = NULL;
    if (input_st->bsv_movie_state.movie_start_playback)
    {
+      const char *starting_movie_str = NULL;
       if (!(state = bsv_movie_init_internal(
                input_st->bsv_movie_state.movie_start_path,
                RARCH_MOVIE_PLAYBACK)))
@@ -4760,41 +4774,43 @@ bool bsv_movie_init(input_driver_state_t *input_st)
          return false;
       }
 
-      input_st->bsv_movie_state_handle        = state;
+      input_st->bsv_movie_state_handle         = state;
       input_st->bsv_movie_state.movie_playback = true;
-      runloop_msg_queue_push(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK),
+      starting_movie_str                       =
+         msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK);
+
+      runloop_msg_queue_push(starting_movie_str,
             2, 180, false,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
+      RARCH_LOG("%s.\n", starting_movie_str);
 
       return true;
    }
    else if (input_st->bsv_movie_state.movie_start_recording)
    {
       char msg[8192];
+      const char *movie_rec_str = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
 
       if (!(state = bsv_movie_init_internal(
                input_st->bsv_movie_state.movie_start_path,
                RARCH_MOVIE_RECORD)))
       {
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
+         const char *movie_rec_fail_str =
+            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
+         runloop_msg_queue_push(movie_rec_fail_str,
                1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_ERR("%s.\n",
-               msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
+         RARCH_ERR("%s.\n", movie_rec_fail_str);
          return false;
       }
 
       input_st->bsv_movie_state_handle         = state;
       snprintf(msg, sizeof(msg),
-            "%s \"%s\".",
-            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+            "%s \"%s\".", movie_rec_str,
             input_st->bsv_movie_state.movie_start_path);
 
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+      RARCH_LOG("%s \"%s\".\n", movie_rec_str,
             input_st->bsv_movie_state.movie_start_path);
 
       return true;
@@ -4813,18 +4829,21 @@ void bsv_movie_deinit(input_driver_state_t *input_st)
 bool bsv_movie_check(input_driver_state_t *input_st,
       settings_t *settings)
 {
+   const char *movie_rec_stopped_str = NULL;
    if (!input_st->bsv_movie_state_handle)
       return runloop_check_movie_init(input_st, settings);
 
    if (input_st->bsv_movie_state.movie_playback)
    {
+      const char *movie_playback_end_str = NULL;
       /* Checks if movie is being played back. */
       if (!input_st->bsv_movie_state.movie_end)
          return false;
+      movie_playback_end_str = msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED);
       runloop_msg_queue_push(
-            msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 2, 180, false,
+            movie_playback_end_str, 2, 180, false,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
+      RARCH_LOG("%s\n", movie_playback_end_str);
 
       bsv_movie_deinit(input_st);
 
@@ -4838,10 +4857,11 @@ bool bsv_movie_check(input_driver_state_t *input_st,
    if (!input_st->bsv_movie_state_handle)
       return false;
 
-   runloop_msg_queue_push(
-         msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true,
+   movie_rec_stopped_str = msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED);
+   runloop_msg_queue_push(movie_rec_stopped_str,
+         2, 180, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
+   RARCH_LOG("%s\n", movie_rec_stopped_str);
 
    bsv_movie_deinit(input_st);
 
@@ -4939,7 +4959,14 @@ int16_t input_state_internal(unsigned port, unsigned device,
             {
                if (id < RARCH_FIRST_CUSTOM_BIND)
                {
-                  bool valid_bind = (*input_st->libretro_input_binds[mapped_port])[id].valid;
+                  /* TODO/FIXME: Analog buttons can only be read as analog
+                   * when the default mapping is applied. If the user
+                   * remaps any analog buttons, they will become 'digital'
+                   * due to the way that mapping is handled elsewhere. We
+                   * cannot fix this without rewriting the entire mess that
+                   * is the input remapping system... */
+                  bool valid_bind = (*input_st->libretro_input_binds[mapped_port])[id].valid &&
+                        (id == settings->uints.input_remap_ids[mapped_port][id]);
 
                   if (valid_bind)
                   {
@@ -5323,7 +5350,7 @@ void input_remapping_set_defaults(bool clear_cache)
 void input_driver_collect_system_input(input_driver_state_t *input_st,
       settings_t *settings, input_bits_t *current_bits)
 {
-   unsigned port;
+   int port;
    rarch_joypad_info_t joypad_info;
    int block_delay                     = settings->uints.input_hotkey_block_delay;
    const input_device_driver_t *joypad = input_st->primary_joypad;
@@ -5346,9 +5373,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    joypad_info.axis_threshold          = settings->floats.input_axis_threshold;
 
    /* Gather input from each (enabled) joypad */
-   for(port = 0; port < max_users; port++)
+   for (port = 0; port < (int)max_users; port++)
    {
-      unsigned i;
       input_bits_t tmp_bits;
       input_bits_t *loop_bits                = NULL;
       const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
@@ -5369,7 +5395,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #ifdef HAVE_MENU
       if (menu_is_alive)
       {
-         unsigned k;
+         int k;
          unsigned x_plus  = RARCH_ANALOG_LEFT_X_PLUS;
          unsigned y_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
          unsigned x_minus = RARCH_ANALOG_LEFT_X_MINUS;
@@ -5418,8 +5444,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #ifdef HAVE_MENU
       if (menu_is_alive)
       {
-         unsigned j;
-
+         int j;
          /* Restores analog D-pad binds temporarily overridden. */
          for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++)
          {
@@ -5432,6 +5457,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       /* we write port 0 directly to input_bits to save one iteration of this loop */
       if (port != 0)
       {
+         int i;
          /* Update compound 'current_bits' record
           * Note: Only digital inputs are considered */
          for(i = 0; i < sizeof(current_bits->data) / sizeof(current_bits->data[0]); i++)
@@ -5439,7 +5465,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       }
       else if (!all_users_control_menu)
          break;
-
    }
 
 #ifdef HAVE_MENU
@@ -5509,10 +5534,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #if defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE)
       if (settings->bools.ai_service_enable)
       {
-         unsigned i;
-
+         int i;
          input_st->gamepad_input_override = 0;
-
          for (i = 0; i < MAX_USERS; i++)
          {
             /* Set gamepad input override */
@@ -5685,8 +5708,8 @@ void input_keyboard_event(bool down, unsigned code,
 
          if (say_char)
          {
-            char c    = (char) character;
-            *say_char = c;
+            char c      = (char) character;
+            *say_char   = c;
             say_char[1] = '\0';
 
             if (character == 127 || character == 8)

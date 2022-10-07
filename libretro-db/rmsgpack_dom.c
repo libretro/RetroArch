@@ -24,7 +24,6 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -51,7 +50,7 @@ static int dom_reader_state_push(
       struct dom_reader_state *s, struct rmsgpack_dom_value *v)
 {
 	if ((s->i + 1) == MAX_DEPTH)
-		return -ENOMEM;
+		return -1;
 	s->i++;
 	s->stack[s->i] = v;
 	return 0;
@@ -134,20 +133,18 @@ static int dom_read_map_start(uint32_t len, void *data)
    v->val.map.len                     = len;
    v->val.map.items                   = NULL;
 
-   items                              = (struct rmsgpack_dom_pair *)
-      calloc(len, sizeof(struct rmsgpack_dom_pair));
-
-   if (!items)
-      return -ENOMEM;
+   if (!(items = (struct rmsgpack_dom_pair *)
+      calloc(len, sizeof(struct rmsgpack_dom_pair))))
+      return -1;
 
    v->val.map.items                   = items;
 
    for (i = 0; i < len; i++)
    {
       if (dom_reader_state_push(dom_state, &items[i].value) < 0)
-         return -ENOMEM;
+         return -1;
       if (dom_reader_state_push(dom_state, &items[i].key) < 0)
-         return -ENOMEM;
+         return -1;
    }
 
    return 0;
@@ -164,18 +161,16 @@ static int dom_read_array_start(uint32_t len, void *data)
 	v->val.array.len                   = len;
 	v->val.array.items                 = NULL;
 
-	items                              = (struct rmsgpack_dom_value *)
-      calloc(len, sizeof(*items));
-
-	if (!items)
-		return -ENOMEM;
+	if (!(items = (struct rmsgpack_dom_value *)
+      calloc(len, sizeof(*items))))
+		return -1;
 
 	v->val.array.items = items;
 
 	for (i = 0; i < len; i++)
    {
       if (dom_reader_state_push(dom_state, &items[i]) < 0)
-         return -ENOMEM;
+         return -1;
    }
 
 	return 0;

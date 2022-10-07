@@ -461,6 +461,10 @@ MSG_HASH(
    "config_save_on_exit"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT,
+   "remap_save_on_exit"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CONNECT_WIFI,
    "connect_wifi"
    )
@@ -575,6 +579,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,
    "sideload_core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SAVESTATE_LIST,
+   "savestate_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_OPTIONS,
@@ -769,6 +777,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD,
    "deferred_dropdown_box_list_input_description_kbd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER,
+   "deferred_dropdown_box_list_netplay_mitm_server"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
@@ -1014,6 +1026,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST,
    "deferred_menu_settings_list"
    )
+#ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_MENU_BOTTOM_SETTINGS_LIST,
+   "deferred_menu_bottom_settings"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_MENU_VIEWS_SETTINGS_LIST,
    "deferred_menu_views_settings_list"
@@ -1037,6 +1055,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST,
    "deferred_network_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_NETPLAY_KICK_LIST,
+   "deferred_netplay_kick_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_NETPLAY_BAN_LIST,
+   "deferred_netplay_ban_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_NETPLAY_LOBBY_FILTERS_LIST,
+   "deferred_netplay_lobby_filters_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST,
@@ -1954,6 +1984,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_MENU_SETTINGS,
    "menu_settings"
    )
+#ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS,
+   "menu_bottom_settings"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_WALLPAPER,
    "menu_wallpaper"
@@ -2023,6 +2059,14 @@ MSG_HASH(
    "menu_netplay_enable_host"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_KICK,
+   "menu_netplay_kick"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_BAN,
+   "menu_netplay_ban"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES,
    "netplay_allow_slaves"
    )
@@ -2075,12 +2119,16 @@ MSG_HASH(
    "netplay_fade_chat"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,
-   "netplay_allow_pausing"
+   MENU_ENUM_LABEL_NETPLAY_CHAT_COLOR_NAME,
+   "netplay_chat_color_name"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE,
-   "netplay_stateless_mode"
+   MENU_ENUM_LABEL_NETPLAY_CHAT_COLOR_MSG,
+   "netplay_chat_color_msg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,
+   "netplay_allow_pausing"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,
@@ -2147,6 +2195,10 @@ MSG_HASH(
    "network_settings"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS,
+   "netplay_lobby_filters"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY,
    "no_achievements_to_display"
    )
@@ -2181,6 +2233,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND,
    "no_netplay_hosts_found"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NO_NETPLAY_CLIENTS_FOUND,
+   "no_netplay_clients_found"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND,
@@ -2845,6 +2901,10 @@ MSG_HASH(
    "remap_file_reset"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REMAP_FILE_FLUSH,
+   "remap_file_flush"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RESTART_CONTENT,
    "restart_content"
    )
@@ -3029,6 +3089,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE,
    "netplay_show_only_connectable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   "netplay_show_only_installed_cores"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NETPLAY_SHOW_PASSWORDED,
+   "netplay_show_passworded"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
@@ -3233,8 +3301,16 @@ MSG_HASH(
    "menu_xmb_vertical_fade_factor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_XMB_SHOW_TITLE_HEADER,
+   "menu_xmb_show_title_header"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MENU_XMB_TITLE_MARGIN,
    "menu_xmb_title_margin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   "menu_xmb_title_margin_horizontal_offset"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
@@ -3547,6 +3623,10 @@ MSG_HASH(
    "video_max_swapchain_images"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
+   "video_max_frame_latency"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X,
    "video_message_pos_x"
    )
@@ -3587,6 +3667,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED,
    "video_refresh_rate_polled"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "video_autoswitch_refresh_rate"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ROTATION,
@@ -4103,6 +4187,14 @@ MSG_HASH(
    "unified_menu_controls"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DISABLE_INFO_BUTTON,
+   "disable_info_button"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   "disable_search_button"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
    "quit_press_twice"
    )
@@ -4363,6 +4455,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
    "quick_menu_show_reset_core_association"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "quick_menu_show_savestate_submenu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,
@@ -4892,7 +4988,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_NO_FAVORITES_AVAILABLE,
    "no_favorites"
    )
-#if defined(_3DS)
+#ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE,
    "new3ds_speedup_enable"
@@ -4904,6 +5000,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,
    "video_3ds_display_mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_ASSETS_DIRECTORY,
+   "bottom_assets_directory"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_FONT_ENABLE,
+   "bottom_font_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_RED,
+   "bottom_font_color_red"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_GREEN,
+   "bottom_font_color_green"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_BLUE,
+   "bottom_font_color_blue"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_OPACITY,
+   "bottom_font_color_opacity"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BOTTOM_FONT_SCALE,
+   "bottom_font_scale"
    )
 #endif
 MSG_HASH(

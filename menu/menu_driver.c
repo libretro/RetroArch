@@ -237,6 +237,12 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_OEM_102,       "OEM-102"}
 };
 
+enum menu_scroll_mode
+{
+   MENU_SCROLL_PAGE = 0,
+   MENU_SCROLL_START_LETTER
+};
+
 static void *null_menu_init(void **userdata, bool video_is_threaded)
 {
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
@@ -387,12 +393,13 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    if (cbs)
    {
       const char *label             = NULL;
+      file_list_t *menu_stack       = MENU_LIST_GET(menu_st->entries.list, 0);
 
       entry->enum_idx               = cbs->enum_idx;
       entry->checked                = cbs->checked;
 
-      file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-            NULL, &label, NULL, NULL);
+      if (menu_stack && menu_stack->size)
+         label = menu_stack->list[menu_stack->size - 1].label;
 
       if (entry->rich_label_enabled && cbs->action_label)
       {
@@ -462,7 +469,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
                 cbs
             &&  cbs->setting
             &&  cbs->setting->enum_value_idx != MSG_UNKNOWN
-            && !cbs->setting->dont_use_enum_idx_representation)
+            && !(cbs->setting->flags 
+               & SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION))
          strlcpy(entry->path,
                msg_hash_to_str(cbs->setting->enum_value_idx),
                sizeof(entry->path));
@@ -638,7 +646,7 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
 
 /* Time format strings with AM-PM designation require special
  * handling due to platform dependence */
-static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
+static void strftime_am_pm(char *s, size_t len, const char* format,
       const struct tm* timeptr)
 {
    char *local = NULL;
@@ -647,15 +655,14 @@ static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
     * > Required for localised AM/PM strings */
    setlocale(LC_TIME, "");
 
-   strftime(ptr, maxsize, format, timeptr);
+   strftime(s, len, format, timeptr);
 #if !(defined(__linux__) && !defined(ANDROID))
-   local = local_to_utf8_string_alloc(ptr);
-
-   if (!string_is_empty(local))
-      strlcpy(ptr, local, maxsize);
-
+   local = local_to_utf8_string_alloc(s);
    if (local)
    {
+	   if (!string_is_empty(local))
+		   strlcpy(s, local, len);
+
       free(local);
       local = NULL;
    }
@@ -1095,18 +1102,56 @@ int menu_entries_get_title(char *s, size_t len)
 
    if (cbs && cbs->action_get_title)
    {
-      int ret;
+      int ret = 0;
       if (!string_is_empty(cbs->action_title_cache))
       {
          strlcpy(s, cbs->action_title_cache, len);
          return 0;
       }
-      file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-            &path, &label, &menu_type, NULL);
-      ret = cbs->action_get_title(path, label, menu_type, s, len);
+  
+      if (list && list->size)
+      {
+         path      = list->list[list->size - 1].path;
+         label     = list->list[list->size - 1].label;
+         menu_type = list->list[list->size - 1].type;
+      }
+
+      /* Show playlist entry instead of "Quick Menu" */
+      if (string_is_equal(label, "deferred_rpl_entry_actions"))
+      {
+         const struct playlist_entry *entry = NULL;
+         playlist_t *playlist               = playlist_get_cached();
+         if (playlist)
+         {
+            menu_handle_t *menu = menu_state_get_ptr()->driver_data;
+            playlist_get_index(playlist, menu->rpl_entry_selection_ptr, &entry);
+
+            if (entry)
+               strlcpy(s,
+                     !string_is_empty(entry->label) ? entry->label : entry->path,
+                     len);
+         }
+      }
+      else
+         ret = cbs->action_get_title(path, label, menu_type, s, len);
+
       if (ret == 1)
          strlcpy(cbs->action_title_cache, s, sizeof(cbs->action_title_cache));
       return ret;
+   }
+   return 0;
+}
+
+/* Get current menu label */
+int menu_entries_get_label(char *s, size_t len)
+{
+   struct menu_state   *menu_st = &menu_driver_state;
+   const file_list_t *list      = MENU_LIST_GET(menu_st->entries.list, 0);
+
+   if (list && list->size)
+   {
+      strlcpy(s, list->list[list->size - 1].label, len);
+      return 1;
    }
    return 0;
 }
@@ -1121,11 +1166,12 @@ int menu_entries_get_title(char *s, size_t len)
 void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
 {
    const char *label            = NULL;
+   const file_list_t *list      = MENU_LIST_GET(menu_st->entries.list, 0);
 
    /* Determine whether this is a help or info
     * message box */
-   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-         NULL, &label, NULL, NULL);
+   if (list && list->size)
+      label = list->list[list->size - 1].label;
 
    /* Pop stack, if required */
    if (menu_should_pop_stack(label))
@@ -1306,17 +1352,18 @@ void menu_list_flush_stack(
       size_t idx, const char *needle, unsigned final_type)
 {
    bool refresh                = false;
-   const char *path            = NULL;
    const char *label           = NULL;
    unsigned type               = 0;
-   size_t entry_idx            = 0;
    file_list_t *menu_list      = MENU_LIST_GET(list, (unsigned)idx);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_contentless_cores_flush_runtime();
 
    if (menu_list && menu_list->size)
-      file_list_get_at_offset(menu_list, menu_list->size - 1, &path, &label, &type, &entry_idx);
+   {
+      label     = menu_list->list[menu_list->size - 1].label;
+      type      = menu_list->list[menu_list->size - 1].type;
+   }
 
    while (menu_list_flush_stack_type(
             needle, label, type, final_type) != 0)
@@ -1341,7 +1388,10 @@ void menu_list_flush_stack(
       menu_list                = MENU_LIST_GET(list, (unsigned)idx);
 
       if (menu_list && menu_list->size)
-         file_list_get_at_offset(menu_list, menu_list->size - 1, &path, &label, &type, &entry_idx);
+      {
+         label     = menu_list->list[menu_list->size - 1].label;
+         type      = menu_list->list[menu_list->size - 1].type;
+      }
    }
 }
 
@@ -1929,13 +1979,17 @@ void menu_input_get_mouse_hw_state(
 
       /* Adjust X position */
       hw_state->x                  = (int16_t)(((float)(hw_state->x - vp.x) / (float)vp.width) * (float)fb_width);
-      hw_state->x                  = (hw_state->x <  0)         ? (0          ) : hw_state->x;
-      hw_state->x                  = (hw_state->x >= fb_width)  ? (fb_width -1) : hw_state->x;
+      if (hw_state->x < 0)
+         hw_state->x               = 0;
+      else if (hw_state->x >= fb_width)
+         hw_state->x               = (fb_width -1);
 
       /* Adjust Y position */
       hw_state->y                  = (int16_t)(((float)(hw_state->y - vp.y) / (float)vp.height) * (float)fb_height);
-      hw_state->y                  = (hw_state->y <  0)         ? (0          ) : hw_state->y;
-      hw_state->y                  = (hw_state->y >= fb_height) ? (fb_height-1) : hw_state->y;
+      if (hw_state->y <  0)
+         hw_state->y               = 0;
+      else if (hw_state->y >= fb_height)
+         hw_state->y               = (fb_height-1);
    }
 
    if (state_inited)
@@ -2235,7 +2289,7 @@ static bool menu_driver_displaylist_push_internal(
       if (!string_is_empty(info->label))
          free(info->label);
 
-      info->exts  = strdup("lpl");
+      info->exts  = strldup("lpl", sizeof("lpl"));
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
@@ -2253,7 +2307,7 @@ static bool menu_driver_displaylist_push_internal(
       if (!string_is_empty(info->label))
          free(info->label);
 
-      info->exts  = strdup("lpl");
+      info->exts  = strldup("lpl", sizeof("lpl"));
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
@@ -2271,7 +2325,7 @@ static bool menu_driver_displaylist_push_internal(
       if (!string_is_empty(info->label))
          free(info->label);
 
-      info->exts  = strdup("lpl");
+      info->exts  = strldup("lpl", sizeof("lpl"));
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
@@ -2280,13 +2334,13 @@ static bool menu_driver_displaylist_push_internal(
 #if 0
 #ifdef HAVE_SCREENSHOTS
       if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-         menu_entries_append_enum(info->list,
+         menu_entries_append(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
                msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
                MENU_ENUM_LABEL_TAKE_SCREENSHOT,
-               MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+               MENU_SETTING_ACTION_SCREENSHOT, 0, 0, NULL);
       else
-         info->need_push_no_playlist_entries = true;
+         info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
 #endif
 #endif
       menu_displaylist_ctl(DISPLAYLIST_IMAGES_HISTORY, info, settings);
@@ -2304,17 +2358,16 @@ static bool menu_driver_displaylist_push_internal(
       if (!string_is_empty(info->label))
          free(info->label);
 
-      info->exts  = strdup("lpl");
+      info->exts  = strldup("lpl", sizeof("lpl"));
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
       if (string_is_empty(dir_playlist))
       {
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         info->need_refresh                  = true;
-         info->need_push_no_playlist_entries = true;
-         info->need_push                     = true;
-
+         info->flags |= MD_FLAG_NEED_REFRESH
+                      | MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES
+                      | MD_FLAG_NEED_PUSH;
          return true;
       }
 
@@ -2377,7 +2430,11 @@ bool menu_driver_displaylist_push(
    menu_displaylist_info_init(&info);
 
    if (list && list->size)
-      file_list_get_at_offset(list, list->size - 1, &path, &label, &type, NULL);
+   {
+      path      = list->list[list->size - 1].path;
+      label     = list->list[list->size - 1].label;
+      type      = list->list[list->size - 1].type;
+   }
 
    if (cbs)
       enum_idx    = cbs->enum_idx;
@@ -2490,7 +2547,7 @@ void menu_cbs_init(
 #endif
 
    if (menu_list && menu_list->size)
-      file_list_get_at_offset(menu_list, menu_list->size - 1, NULL, &menu_label, NULL, NULL);
+      menu_label = menu_list->list[menu_list->size - 1].label;
 
    if (!label || !menu_label)
       return;
@@ -2875,10 +2932,12 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
    config_directory[0]         = '\0';
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
-      fill_pathname_basedir(
-            config_directory,
+   {
+      strlcpy(config_directory,
             path_get(RARCH_PATH_CONFIG),
             sizeof(config_directory));
+      path_basedir(config_directory);
+   }
 
    preset_dirs[0] = dir_video_shader;
    preset_dirs[1] = dir_menu_config;
@@ -3372,11 +3431,11 @@ bool generic_menu_init_list(struct menu_state *menu_st,
          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
    info.enum_idx                = MENU_ENUM_LABEL_MAIN_MENU;
 
-   menu_entries_append_enum(menu_stack,
+   menu_entries_append(menu_stack,
          info.path,
          info.label,
          MENU_ENUM_LABEL_MAIN_MENU,
-         info.type, info.flags, 0);
+         info.type, info.flags, 0, NULL);
 
    info.list                    = selection_buf;
 
@@ -3464,18 +3523,18 @@ bool rarch_menu_init(
 
 #ifdef HAVE_COMPRESSION
    if (      settings->bools.bundle_assets_extract_enable
-         && !string_is_empty(settings->arrays.bundle_assets_src)
-         && !string_is_empty(settings->arrays.bundle_assets_dst)
+         && !string_is_empty(settings->paths.bundle_assets_src)
+         && !string_is_empty(settings->paths.bundle_assets_dst)
          && (settings->uints.bundle_assets_extract_version_current
             != settings->uints.bundle_assets_extract_last_version)
       )
    {
       p_dialog->current_type         = MENU_DIALOG_HELP_EXTRACT;
       task_push_decompress(
-            settings->arrays.bundle_assets_src,
-            settings->arrays.bundle_assets_dst,
+            settings->paths.bundle_assets_src,
+            settings->paths.bundle_assets_dst,
             NULL,
-            settings->arrays.bundle_assets_dst_subdir,
+            settings->paths.bundle_assets_dst_subdir,
             NULL,
             bundle_decompressed,
             NULL,
@@ -3655,8 +3714,6 @@ bool menu_entries_search_push(const char *search_term)
    menu_search_terms_t *search = menu_entries_search_get_terms_internal();
    char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
 
-   search_term_clipped[0] = '\0';
-
    /* Sanity check + verify whether we have reached
     * the maximum number of allowed search terms */
    if (!search ||
@@ -3752,66 +3809,30 @@ bool menu_shader_manager_save_preset_internal(
 {
    char fullname[PATH_MAX_LENGTH];
    char buffer[PATH_MAX_LENGTH];
+   const char *preset_ext         = NULL;
    bool ret                       = false;
    enum rarch_shader_type type    = RARCH_SHADER_NONE;
    char *preset_path              = NULL;
    size_t i                       = 0;
-
-   fullname[0] = buffer[0]        = '\0';
-
    if (!shader || !shader->passes)
       return false;
-
-   type = menu_shader_manager_get_type(shader);
-
-   if (type == RARCH_SHADER_NONE)
+   if ((type = menu_shader_manager_get_type(shader)) == RARCH_SHADER_NONE)
       return false;
 
+   preset_ext = video_shader_get_preset_extension(type);
+
    if (!string_is_empty(basename))
-   {
-      /* We are comparing against a fixed list of file
-       * extensions, the longest (slangp) being 6 characters
-       * in length. We therefore only need to extract the first
-       * 7 characters from the extension of the input path
-       * to correctly validate a match */
-      char ext_lower[8];
-      const char *ext = NULL;
-
-      ext_lower[0]    = '\0';
-
       strlcpy(fullname, basename, sizeof(fullname));
-
-      /* Get file extension */
-      ext = strrchr(basename, '.');
-
-      /* Copy and convert to lower case */
-      if (ext && (*(++ext) != '\0'))
-      {
-         strlcpy(ext_lower, ext, sizeof(ext_lower));
-         string_to_lower(ext_lower);
-      }
-
-      /* Append extension automatically as appropriate. */
-      if (     !string_is_equal(ext_lower, "cgp")
-            && !string_is_equal(ext_lower, "glslp")
-            && !string_is_equal(ext_lower, "slangp"))
-      {
-         const char *preset_ext = video_shader_get_preset_extension(type);
-         strlcat(fullname, preset_ext, sizeof(fullname));
-      }
-   }
    else
-      snprintf(fullname, sizeof(fullname), "retroarch%s",
-            video_shader_get_preset_extension(type));
+      strlcpy(fullname, "retroarch", sizeof(fullname));
+   strlcat(fullname, preset_ext, sizeof(fullname));
 
    if (path_is_absolute(fullname))
    {
       preset_path = fullname;
-      ret         = video_shader_write_preset(preset_path,
+      if ((ret    = video_shader_write_preset(preset_path,
             dir_video_shader,
-            shader, save_reference);
-
-      if (ret)
+            shader, save_reference)))
          RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
       else
          RARCH_ERR("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
@@ -3833,9 +3854,7 @@ bool menu_shader_manager_save_preset_internal(
 
          if (!path_is_directory(basedir))
          {
-            ret = path_mkdir(basedir);
-
-            if (!ret)
+            if (!(ret = path_mkdir(basedir)))
             {
                RARCH_WARN("[Shaders]: Failed to create preset directory \"%s\".\n", basedir);
                continue;
@@ -3844,11 +3863,9 @@ bool menu_shader_manager_save_preset_internal(
 
          preset_path = buffer;
 
-         ret = video_shader_write_preset(preset_path,
+         if ((ret = video_shader_write_preset(preset_path,
                dir_video_shader,
-               shader, save_reference);
-
-         if (ret)
+               shader, save_reference)))
          {
             RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
             break;
@@ -3901,15 +3918,17 @@ bool menu_shader_manager_operate_auto_preset(
       return false;
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
-      fill_pathname_basedir(
-            config_directory,
+   {
+      strlcpy(config_directory,
             path_get(RARCH_PATH_CONFIG),
             sizeof(config_directory));
+      path_basedir(config_directory);
+   }
 
    /* We are only including this directory for compatibility purposes with
     * versions 1.8.7 and older. */
    if (op != AUTO_SHADER_OP_SAVE && !string_is_empty(dir_video_shader))
-      fill_pathname_join(
+      fill_pathname_join_special(
             old_presets_directory,
             dir_video_shader,
             "presets",
@@ -3922,22 +3941,22 @@ bool menu_shader_manager_operate_auto_preset(
    switch (type)
    {
       case SHADER_PRESET_GLOBAL:
-         strcpy_literal(file, "global");
+         strlcpy(file, "global", sizeof(file));
          break;
       case SHADER_PRESET_CORE:
-         fill_pathname_join(file, core_name, core_name, sizeof(file));
+         fill_pathname_join_special(file, core_name, core_name, sizeof(file));
          break;
       case SHADER_PRESET_PARENT:
          fill_pathname_parent_dir_name(tmp,
                rarch_path_basename, sizeof(tmp));
-         fill_pathname_join(file, core_name, tmp, sizeof(file));
+         fill_pathname_join_special(file, core_name, tmp, sizeof(file));
          break;
       case SHADER_PRESET_GAME:
          {
             const char *game_name = path_basename(rarch_path_basename);
             if (string_is_empty(game_name))
                return false;
-            fill_pathname_join(file, core_name, game_name, sizeof(file));
+            fill_pathname_join_special(file, core_name, game_name, sizeof(file));
             break;
          }
       default:
@@ -4065,10 +4084,8 @@ void menu_driver_set_last_shader_path_int(
       return;
 
    /* Get shader type */
-   *type = video_shader_parse_type(shader_path);
-
    /* If type is invalid, do nothing */
-   if (*type == RARCH_SHADER_NONE)
+   if ((*type = video_shader_parse_type(shader_path)) == RARCH_SHADER_NONE)
       return;
 
    /* Cache parent directory */
@@ -4151,7 +4168,16 @@ void menu_entries_get_last_stack(const char **path, const char **label,
    list                           = MENU_LIST_GET(menu_st->entries.list, 0);
 
    if (list && list->size)
-      file_list_get_at_offset(list, list->size - 1, path, label, file_type, entry_idx);
+   {
+      if (path)
+         *path      = list->list[list->size - 1].path;
+      if (label)
+	      *label     = list->list[list->size - 1].label;
+      if (file_type)
+         *file_type = list->list[list->size - 1].type;
+      if (entry_idx)
+         *entry_idx = list->list[list->size - 1].entry_idx;
+   }
 
    if (enum_idx)
    {
@@ -4209,13 +4235,9 @@ void menu_driver_set_pending_selection(const char *pending_selection)
 
    /* Reset existing cache */
    selection[0] = '\0';
-
-   /* If path is empty, do nothing */
-   if (string_is_empty(pending_selection))
-      return;
-
-   strlcpy(selection, pending_selection,
-         sizeof(menu_st->pending_selection));
+   if (!string_is_empty(pending_selection))
+      strlcpy(selection, pending_selection,
+            sizeof(menu_st->pending_selection));
 }
 
 void menu_input_search_cb(void *userdata, const char *str)
@@ -4223,6 +4245,7 @@ void menu_input_search_cb(void *userdata, const char *str)
    const char *label           = NULL;
    unsigned type               = MENU_SETTINGS_NONE;
    struct menu_state *menu_st  = &menu_driver_state;
+   const file_list_t *list     = MENU_LIST_GET(menu_st->entries.list, 0);
 
    if (string_is_empty(str))
       goto end;
@@ -4230,8 +4253,11 @@ void menu_input_search_cb(void *userdata, const char *str)
    /* Determine whether we are currently
     * viewing a menu list with 'search
     * filter' support */
-   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-         NULL, &label, &type, NULL);
+   if (list && list->size)
+   {
+      label     = list->list[list->size - 1].label;
+      type      = list->list[list->size - 1].type;
+   }
 
    /* Do not apply search filter if string
     * consists of a single Latin alphabet
@@ -4330,18 +4356,15 @@ void menu_driver_set_last_start_content(const char *start_content_path)
          start_content_path, sizeof(menu->last_start_content.directory));
 
    /* Cache file name */
-   archive_delim      = path_get_archive_delim(start_content_path);
-   if (archive_delim)
+   if ((archive_delim = path_get_archive_delim(start_content_path)))
    {
       /* If path references a file inside an
        * archive, must extract the string segment
        * before the archive delimiter (i.e. path of
        * 'parent' archive file) */
-      size_t len;
-
-      archive_path[0] = '\0';
-      len             = (size_t)(1 + archive_delim - start_content_path);
-      len             = (len < PATH_MAX_LENGTH) ? len : PATH_MAX_LENGTH;
+      size_t len      = (size_t)(1 + archive_delim - start_content_path);
+      if (len >= PATH_MAX_LENGTH)
+         len          = PATH_MAX_LENGTH;
 
       strlcpy(archive_path, start_content_path, len * sizeof(char));
 
@@ -4366,115 +4389,30 @@ int menu_entry_action(
    return -1;
 }
 
-void menu_entries_append(
-      file_list_t *list,
-      const char *path,
-      const char *label,
-      unsigned type,
-      size_t directory_ptr,
-      size_t entry_idx)
-{
-   menu_ctx_list_t list_info;
-   size_t i;
-   size_t idx;
-   const char *menu_path           = NULL;
-   menu_file_list_cbs_t *cbs       = NULL;
-   struct menu_state  *menu_st     = &menu_driver_state;
-   if (!list || !label)
-      return;
-
-   file_list_append(list, path, label, type, directory_ptr, entry_idx);
-   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-         &menu_path, NULL, NULL, NULL);
-
-   idx                = list->size - 1;
-
-   list_info.list     = list;
-   list_info.path     = path;
-   list_info.fullpath = NULL;
-
-   if (!string_is_empty(menu_path))
-      list_info.fullpath = strdup(menu_path);
-
-   list_info.label       = label;
-   list_info.idx         = idx;
-   list_info.entry_type  = type;
-
-   if (  menu_st->driver_ctx &&
-         menu_st->driver_ctx->list_insert)
-      menu_st->driver_ctx->list_insert(
-            menu_st->userdata,
-            list_info.list,
-            list_info.path,
-            list_info.fullpath,
-            list_info.label,
-            list_info.idx,
-            list_info.entry_type);
-
-   if (list_info.fullpath)
-      free(list_info.fullpath);
-
-   file_list_free_actiondata(list, idx);
-   cbs                             = (menu_file_list_cbs_t*)
-      malloc(sizeof(menu_file_list_cbs_t));
-
-   if (!cbs)
-      return;
-
-   cbs->action_sublabel_cache[0]   = '\0';
-   cbs->action_title_cache[0]      = '\0';
-   cbs->enum_idx                   = MSG_UNKNOWN;
-   cbs->checked                    = false;
-   cbs->setting                    = menu_setting_find(label);
-   cbs->action_iterate             = NULL;
-   cbs->action_deferred_push       = NULL;
-   cbs->action_select              = NULL;
-   cbs->action_get_title           = NULL;
-   cbs->action_ok                  = NULL;
-   cbs->action_cancel              = NULL;
-   cbs->action_scan                = NULL;
-   cbs->action_start               = NULL;
-   cbs->action_info                = NULL;
-   cbs->action_left                = NULL;
-   cbs->action_right               = NULL;
-   cbs->action_label               = NULL;
-   cbs->action_sublabel            = NULL;
-   cbs->action_get_value           = NULL;
-
-   cbs->search.size                = 0;
-   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
-      cbs->search.terms[i][0]      = '\0';
-
-   list->list[idx].actiondata      = cbs;
-
-   menu_cbs_init(menu_st,
-         menu_st->driver_ctx,
-         list, cbs, path, label, type, idx);
-}
-
-bool menu_entries_append_enum(
+bool menu_entries_append(
       file_list_t *list,
       const char *path,
       const char *label,
       enum msg_hash_enums enum_idx,
       unsigned type,
       size_t directory_ptr,
-      size_t entry_idx)
+      size_t entry_idx,
+      rarch_setting_t *setting)
 {
    menu_ctx_list_t list_info;
    size_t i;
    size_t idx;
-   const char *menu_path           = NULL;
-   menu_file_list_cbs_t *cbs       = NULL;
-   struct menu_state  *menu_st     = &menu_driver_state;
+   const char *menu_path       = NULL;
+   menu_file_list_cbs_t *cbs   = NULL;
+   struct menu_state  *menu_st = &menu_driver_state;
+   const file_list_t *mlist    = MENU_LIST_GET(menu_st->entries.list, 0);
 
    if (!list || !label)
       return false;
 
    file_list_append(list, path, label, type, directory_ptr, entry_idx);
-   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-         &menu_path, NULL, NULL, NULL);
-
+   if (mlist && mlist->size)
+      menu_path          = mlist->list[mlist->size - 1].path;
    idx                   = list->size - 1;
 
    list_info.fullpath    = NULL;
@@ -4502,17 +4440,16 @@ bool menu_entries_append_enum(
       free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
-   cbs                             = (menu_file_list_cbs_t*)
-      malloc(sizeof(menu_file_list_cbs_t));
 
-   if (!cbs)
+   if (!(cbs = (menu_file_list_cbs_t*)
+      malloc(sizeof(menu_file_list_cbs_t))))
       return false;
 
    cbs->action_sublabel_cache[0]   = '\0';
    cbs->action_title_cache[0]      = '\0';
    cbs->enum_idx                   = enum_idx;
    cbs->checked                    = false;
-   cbs->setting                    = NULL;
+   cbs->setting                    = setting;
    cbs->action_iterate             = NULL;
    cbs->action_deferred_push       = NULL;
    cbs->action_select              = NULL;
@@ -4534,12 +4471,15 @@ bool menu_entries_append_enum(
 
    list->list[idx].actiondata      = cbs;
 
-   if (   enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
-       && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY
-       && enum_idx != MENU_ENUM_LABEL_EXPLORE_ITEM
-       && enum_idx != MENU_ENUM_LABEL_CONTENTLESS_CORE
-       && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
-      cbs->setting                 = menu_setting_find_enum(enum_idx);
+   if (!cbs->setting && enum_idx != MSG_UNKNOWN)
+   {
+      if (     enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
+            && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY
+            && enum_idx != MENU_ENUM_LABEL_EXPLORE_ITEM
+            && enum_idx != MENU_ENUM_LABEL_CONTENTLESS_CORE
+            && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
+         cbs->setting                 = menu_setting_find_enum(enum_idx);
+   }
 
    menu_cbs_init(menu_st,
          menu_st->driver_ctx,
@@ -4555,16 +4495,17 @@ void menu_entries_prepend(file_list_t *list,
 {
    menu_ctx_list_t list_info;
    size_t i;
-   size_t idx                      = 0;
-   const char *menu_path           = NULL;
-   menu_file_list_cbs_t *cbs       = NULL;
-   struct menu_state  *menu_st     = &menu_driver_state;
+   size_t idx                  = 0;
+   const char *menu_path       = NULL;
+   menu_file_list_cbs_t *cbs   = NULL;
+   struct menu_state  *menu_st = &menu_driver_state;
+   const file_list_t *mlist    = MENU_LIST_GET(menu_st->entries.list, 0);
    if (!list || !label)
       return;
 
-   file_list_prepend(list, path, label, type, directory_ptr, entry_idx);
-   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
-         &menu_path, NULL, NULL, NULL);
+   file_list_insert(list, path, label, type, directory_ptr, entry_idx, 0);
+   if (mlist && mlist->size)
+      menu_path          = mlist->list[mlist->size - 1].path;
 
    list_info.fullpath    = NULL;
 
@@ -4725,13 +4666,14 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
           * Ensure it doesn't overflow.
           **/
          {
-            size_t list_size;
+            size_t list_size                = 0;
             file_list_t *list               = (file_list_t*)data;
             if (!list)
                return false;
             if (list->size)
                menu_entries_build_scroll_indices(menu_st, list);
-            list_size                       = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+            if (menu_st->entries.list)
+               list_size                    = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size;
 
             if (list_size)
             {
@@ -5165,23 +5107,15 @@ int menu_entries_get_core_title(char *s, size_t len)
       (system && system->library_version) 
       ? system->library_version 
       : "";
+   size_t _len = strlcpy(s, PACKAGE_VERSION, len);
+#if defined(_MSC_VER)
+   _len        = strlcat(s, msvc_vercode_to_str(_MSC_VER), len);
+#endif
 
    if (!string_is_empty(core_version))
-   {
-#if defined(_MSC_VER)
-      snprintf(s, len, PACKAGE_VERSION "%s"        " - %s (%s)", msvc_vercode_to_str(_MSC_VER), core_name, core_version);
-#else
-      snprintf(s, len, PACKAGE_VERSION             " - %s (%s)",                                core_name, core_version);
-#endif
-   }
+      snprintf(s + _len, len - _len, " - %s (%s)", core_name, core_version);
    else
-   {
-#if defined(_MSC_VER)
-      snprintf(s, len, PACKAGE_VERSION "%s"        " - %s", msvc_vercode_to_str(_MSC_VER), core_name);
-#else
-      snprintf(s, len, PACKAGE_VERSION             " - %s",                                core_name);
-#endif
-   }
+      snprintf(s + _len, len - _len, " - %s", core_name);
 
    return 0;
 }
@@ -5671,7 +5605,7 @@ bool menu_input_dialog_get_display_kb(void)
             char oldchar     = buf[i+1];
             buf[i+1]         = '\0';
 
-            input_keyboard_line_append(&input_st->keyboard_line, word);
+            input_keyboard_line_append(&input_st->keyboard_line, word, strlen(word));
 
             osk_update_last_codepoint(
                   &input_st->osk_last_codepoint,
@@ -6009,7 +5943,8 @@ unsigned menu_event(
                   &input_st->osk_last_codepoint_len,
                   input_st->osk_ptr,
                   show_osk_symbols,
-                  input_st->osk_grid[input_st->osk_ptr]);
+                  input_st->osk_grid[input_st->osk_ptr],
+                  strlen(input_st->osk_grid[input_st->osk_ptr]));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
@@ -6050,21 +5985,43 @@ unsigned menu_event(
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+      {
+         menu_st->scroll.mode = MENU_SCROLL_PAGE;
          ret = MENU_ACTION_SCROLL_UP;
+      }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+      {
+         menu_st->scroll.mode = MENU_SCROLL_PAGE;
          ret = MENU_ACTION_SCROLL_DOWN;
+      }
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L2))
+      {
+         menu_st->scroll.mode = MENU_SCROLL_START_LETTER;
+         ret = MENU_ACTION_SCROLL_UP;
+      }
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R2))
+      {
+         menu_st->scroll.mode = MENU_SCROLL_START_LETTER;
+         ret = MENU_ACTION_SCROLL_DOWN;
+      }
       else if (ok_trigger)
          ret = MENU_ACTION_OK;
       else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
          ret = MENU_ACTION_CANCEL;
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
-         ret = MENU_ACTION_SEARCH;
+      {
+         if (!settings->bools.menu_disable_search_button)
+            ret = MENU_ACTION_SEARCH;
+      }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
          ret = MENU_ACTION_SCAN;
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
          ret = MENU_ACTION_START;
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-         ret = MENU_ACTION_INFO;
+      {
+         if (!settings->bools.menu_disable_info_button)
+            ret = MENU_ACTION_INFO;
+      }
       else if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
          ret = MENU_ACTION_TOGGLE;
 
@@ -6431,8 +6388,7 @@ static int menu_input_pointer_post_iterate(
                if (point.retcode > -1)
                {
                   bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
-
-                  input_st->osk_ptr = point.retcode;
+                  input_st->osk_ptr     = point.retcode;
                   input_event_osk_append(
                         &input_st->keyboard_line,
                         &input_st->osk_idx,
@@ -6440,7 +6396,8 @@ static int menu_input_pointer_post_iterate(
                         &input_st->osk_last_codepoint_len,
                         point.retcode,
                         show_osk_symbols,
-                        input_st->osk_grid[input_st->osk_ptr]);
+                        input_st->osk_grid[input_st->osk_ptr],
+                        strlen(input_st->osk_grid[input_st->osk_ptr]));
                }
             }
 #ifdef HAVE_MIST
@@ -6473,7 +6430,7 @@ static int menu_input_pointer_post_iterate(
             {
                /* Pointer has moved - check if this is a swipe */
                float dpi = menu ? menu_input_get_dpi(menu, p_disp,
-video_st->width, video_st->height) : 0.0f;
+                     video_st->width, video_st->height) : 0.0f;
 
                if ((dpi > 0.0f)
                      &&
@@ -6726,7 +6683,6 @@ void menu_driver_toggle(
    bool input_overlay_enable          = false;
 #endif
    bool video_adaptive_vsync          = false;
-   bool video_swap_interval           = false;
 
    if (settings)
    {
@@ -6744,7 +6700,6 @@ void menu_driver_toggle(
       input_overlay_enable            = settings->bools.input_overlay_enable;
 #endif
       video_adaptive_vsync            = settings->bools.video_adaptive_vsync;
-      video_swap_interval             = settings->uints.video_swap_interval;
    }
 
    if (on) 
@@ -6796,15 +6751,18 @@ void menu_driver_toggle(
 
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
-      /* Menu should always run with vsync on. */
+      /* Menu should always run with vsync on and
+       * a video swap interval of 1 */
       if (current_video->set_nonblock_state)
+      {
          current_video->set_nonblock_state(
                video_driver_data,
                false,
                video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
                video_adaptive_vsync,
-               video_swap_interval
+               1
                );
+      }
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
@@ -7445,13 +7403,12 @@ static int generic_menu_iterate(
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
    enum action_iterate_type iterate_type;
-   unsigned file_type              = 0;
    int ret                         = 0;
    const char *label               = NULL;
    file_list_t *list               = MENU_LIST_GET(menu_st->entries.list, 0);
 
    if (list && list->size)
-      file_list_get_at_offset(list, list->size - 1, NULL, &label, &file_type, NULL);
+      label                        = list->list[list->size - 1].label;
 
    menu->menu_state_msg[0]         = '\0';
 
@@ -7816,6 +7773,7 @@ int generic_menu_entry_action(
    settings_t   *settings         = config_get_ptr();
    void *menu_userdata            = menu_st->userdata;
    bool wraparound_enable         = settings->bools.menu_navigation_wraparound_enable;
+   bool scroll_mode               = menu_st->scroll.mode;
    size_t scroll_accel            = menu_st->scroll.acceleration;
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *selection_buf     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
@@ -7886,46 +7844,96 @@ int generic_menu_entry_action(
          }
          break;
       case MENU_ACTION_SCROLL_UP:
-         if (
-                  menu_st->scroll.index_size
-               && menu_st->selection_ptr != 0
-            )
+         if (scroll_mode == MENU_SCROLL_PAGE)
          {
-            size_t l   = menu_st->scroll.index_size - 1;
+            if (selection_buf_size > 0)
+            {
+               unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 10);
+               if (!(menu_st->selection_ptr == 0 && !wraparound_enable))
+               {
+                  size_t idx             = 0;
+                  if (menu_st->selection_ptr >= scroll_speed)
+                     idx = menu_st->selection_ptr - scroll_speed;
+                  else
+                     idx = 0;
 
-            while (l
-                  && menu_st->scroll.index_list[l - 1]
-                  >= menu_st->selection_ptr)
-               l--;
+                  menu_st->selection_ptr = idx;
+                  menu_driver_navigation_set(true);
 
-            if (l > 0)
-               menu_st->selection_ptr = menu_st->scroll.index_list[l - 1];
+                  if (menu_driver_ctx->navigation_decrement)
+                     menu_driver_ctx->navigation_decrement(menu_userdata);
+               }
+            }
+         }
+         else /* MENU_SCROLL_START_LETTER */
+         {
+            if (
+                     menu_st->scroll.index_size
+                  && menu_st->selection_ptr != 0
+               )
+            {
+               size_t l   = menu_st->scroll.index_size - 1;
 
-            if (menu_driver_ctx->navigation_descend_alphabet)
-               menu_driver_ctx->navigation_descend_alphabet(
-                     menu_userdata, &menu_st->selection_ptr);
+               while (l
+                     && menu_st->scroll.index_list[l - 1]
+                     >= menu_st->selection_ptr)
+                  l--;
+
+               if (l > 0)
+                  menu_st->selection_ptr = menu_st->scroll.index_list[l - 1];
+
+               if (menu_driver_ctx->navigation_descend_alphabet)
+                  menu_driver_ctx->navigation_descend_alphabet(
+                        menu_userdata, &menu_st->selection_ptr);
+            }
          }
          break;
       case MENU_ACTION_SCROLL_DOWN:
-         if (menu_st->scroll.index_size)
+         if (scroll_mode == MENU_SCROLL_PAGE)
          {
-            if (menu_st->selection_ptr == menu_st->scroll.index_list[menu_st->scroll.index_size - 1])
-               menu_st->selection_ptr = selection_buf_size - 1;
-            else
+            if (selection_buf_size > 0)
             {
-               size_t l               = 0;
-               while (l < menu_st->scroll.index_size - 1
-                     && menu_st->scroll.index_list[l + 1] <= menu_st->selection_ptr)
-                  l++;
-               menu_st->selection_ptr = menu_st->scroll.index_list[l + 1];
+               unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 10);
+               if (!(menu_st->selection_ptr >= selection_buf_size - 1
+                     && !wraparound_enable))
+               {
+                  if ((menu_st->selection_ptr + scroll_speed) < selection_buf_size)
+                  {
+                     size_t idx  = menu_st->selection_ptr + scroll_speed;
 
-               if (menu_st->selection_ptr >= selection_buf_size)
-                  menu_st->selection_ptr = selection_buf_size - 1;
+                     menu_st->selection_ptr = idx;
+                     menu_driver_navigation_set(true);
+                  }
+                  else
+                     menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
+
+                  if (menu_driver_ctx->navigation_increment)
+                     menu_driver_ctx->navigation_increment(menu_userdata);
+               }
             }
+         }
+         else /* MENU_SCROLL_START_LETTER */
+         {
+            if (menu_st->scroll.index_size)
+            {
+               if (menu_st->selection_ptr == menu_st->scroll.index_list[menu_st->scroll.index_size - 1])
+                  menu_st->selection_ptr = selection_buf_size - 1;
+               else
+               {
+                  size_t l               = 0;
+                  while (l < menu_st->scroll.index_size - 1
+                        && menu_st->scroll.index_list[l + 1] <= menu_st->selection_ptr)
+                     l++;
+                  menu_st->selection_ptr = menu_st->scroll.index_list[l + 1];
 
-            if (menu_driver_ctx->navigation_ascend_alphabet)
-               menu_driver_ctx->navigation_ascend_alphabet(
-                     menu_userdata, &menu_st->selection_ptr);
+                  if (menu_st->selection_ptr >= selection_buf_size)
+                     menu_st->selection_ptr = selection_buf_size - 1;
+               }
+
+               if (menu_driver_ctx->navigation_ascend_alphabet)
+                  menu_driver_ctx->navigation_ascend_alphabet(
+                        menu_userdata, &menu_st->selection_ptr);
+            }
          }
          break;
       case MENU_ACTION_CANCEL:
@@ -8037,20 +8045,31 @@ int generic_menu_entry_action(
 
       if (!string_is_empty(title_name))
       {
+	      size_t _len             = strlcpy(speak_string,
+               title_name, sizeof(speak_string));
+         speak_string[_len  ]    = ' ';
+         speak_string[_len+1]    = '\0';
+         _len                    = strlcat(speak_string,
+               current_label, sizeof(speak_string));
          if (!string_is_equal(current_value, "..."))
-            snprintf(speak_string, sizeof(speak_string),
-                  "%s %s %s", title_name, current_label, current_value);
-         else
-            snprintf(speak_string, sizeof(speak_string),
-                  "%s %s", title_name, current_label);
+         {
+            speak_string[_len  ] = ' ';
+            speak_string[_len+1] = '\0';
+            strlcat(speak_string, current_value,
+                  sizeof(speak_string));
+         }
       }
       else
       {
+         size_t _len = strlcpy(speak_string,
+               current_label, sizeof(speak_string));
          if (!string_is_equal(current_value, "..."))
-            snprintf(speak_string, sizeof(speak_string),
-                  "%s %s", current_label, current_value);
-         else
-            strlcpy(speak_string, current_label, sizeof(speak_string));
+         {
+            speak_string[_len  ] = ' ';
+            speak_string[_len+1] = '\0';
+            strlcat(speak_string, current_value,
+                  sizeof(speak_string));
+         }
       }
 
       if (!string_is_empty(speak_string))
@@ -8076,11 +8095,8 @@ int generic_menu_entry_action(
        * find a known reference point */
       while (menu_stack && (menu_stack->size >= stack_offset))
       {
-         const char *parent_label = NULL;
-
-         file_list_get_at_offset(menu_stack,
-               menu_stack->size - stack_offset,
-               NULL, &parent_label, NULL, NULL);
+         const char *parent_label = menu_stack->list[
+            menu_stack->size - stack_offset].label;
 
          if (string_is_empty(parent_label))
             continue;
@@ -8265,4 +8281,82 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    input_st->keyboard_mapping_blocked = true;
 
    return true;
+}
+
+size_t menu_update_fullscreen_thumbnail_label(
+      char *s, size_t len,
+      bool is_quick_menu, const char *title)
+{
+   menu_entry_t selected_entry;
+   const char *thumbnail_label     = NULL;
+
+   char tmpstr[64];
+   tmpstr[0]                       = '\0';
+
+   /* > Get menu entry */
+   MENU_ENTRY_INIT(selected_entry);
+   selected_entry.path_enabled     = false;
+   selected_entry.value_enabled    = false;
+   selected_entry.sublabel_enabled = false;
+   menu_entry_get(&selected_entry, 0, menu_navigation_get_selection(), NULL, true);
+
+   /* > Get entry label */
+   if (!string_is_empty(selected_entry.rich_label))
+      thumbnail_label = selected_entry.rich_label;
+   /* > State slot label */
+   else if (is_quick_menu && (
+            string_is_equal(selected_entry.label, "state_slot") ||
+            string_is_equal(selected_entry.label, "loadstate") ||
+            string_is_equal(selected_entry.label, "savestate")
+         ))
+   {
+      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+            config_get_ptr()->ints.state_slot);
+      thumbnail_label = tmpstr;
+   }
+   else if (string_to_unsigned(selected_entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
+   {
+      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+            string_to_unsigned(selected_entry.path));
+      thumbnail_label = tmpstr;
+   }
+   /* > Quick Menu playlist label */
+   else if (is_quick_menu && title)
+      thumbnail_label = title;
+   else
+      thumbnail_label = selected_entry.path;
+
+   /* > Sanity check */
+   if (!string_is_empty(thumbnail_label))
+      return strlcpy(s, thumbnail_label, len);
+   return 0;
+}
+
+bool menu_is_running_quick_menu(void)
+{
+   menu_entry_t entry;
+
+   MENU_ENTRY_INIT(entry);
+   entry.path_enabled     = false;
+   entry.value_enabled    = false;
+   entry.sublabel_enabled = false;
+   menu_entry_get(&entry, 0, 0, NULL, true);
+
+   return string_is_equal(entry.label, "resume_content") ||
+          string_is_equal(entry.label, "state_slot");
+}
+
+bool menu_is_nonrunning_quick_menu(void)
+{
+   menu_entry_t entry;
+
+   MENU_ENTRY_INIT(entry);
+   entry.path_enabled     = false;
+   entry.value_enabled    = false;
+   entry.sublabel_enabled = false;
+   menu_entry_get(&entry, 0, 0, NULL, true);
+
+   return string_is_equal(entry.label, "collection");
 }

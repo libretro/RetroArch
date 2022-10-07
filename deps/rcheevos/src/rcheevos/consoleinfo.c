@@ -201,6 +201,9 @@ const char* rc_console_name(int console_id)
     case RC_CONSOLE_VIRTUAL_BOY:
       return "Virtual Boy";
 
+    case RC_CONSOLE_WASM4:
+      return "WASM-4";
+
     case RC_CONSOLE_WII:
       return "Wii";
 
@@ -241,6 +244,14 @@ static const rc_memory_region_t _rc_memory_regions_3do[] = {
     { 0x000000U, 0x1FFFFFU, 0x000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Main RAM" },
 };
 static const rc_memory_regions_t rc_memory_regions_3do = { _rc_memory_regions_3do, 1 };
+
+/* ===== Amiga ===== */
+/* http://amigadev.elowar.com/read/ADCD_2.1/Hardware_Manual_guide/node00D3.html */
+static const rc_memory_region_t _rc_memory_regions_amiga[] = {
+    { 0x000000U, 0x07FFFFU, 0x000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Main RAM" }, /* 512KB main RAM */
+    { 0x080000U, 0x0FFFFFU, 0x080000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Extended RAM" }, /* 512KB extended RAM */
+};
+static const rc_memory_regions_t rc_memory_regions_amiga = { _rc_memory_regions_amiga, 2 };
 
 /* ===== Amstrad CPC ===== */
 /* http://www.cpcalive.com/docs/amstrad_cpc_6128_memory_map.html */
@@ -324,12 +335,41 @@ static const rc_memory_region_t _rc_memory_regions_colecovision[] = {
 };
 static const rc_memory_regions_t rc_memory_regions_colecovision = { _rc_memory_regions_colecovision, 1 };
 
+/* ===== Commodore 64 ===== */
+/* https://www.c64-wiki.com/wiki/Memory_Map */
+/* https://sta.c64.org/cbm64mem.html */
+static const rc_memory_region_t _rc_memory_regions_c64[] = {
+    { 0x000000U, 0x0003FFU, 0x000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Kernel RAM" },
+    { 0x000400U, 0x0007FFU, 0x000400U, RC_MEMORY_TYPE_VIDEO_RAM, "Screen RAM" },
+    { 0x000800U, 0x009FFFU, 0x000800U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }, /* BASIC Program Storage Area */
+    { 0x00A000U, 0x00BFFFU, 0x00A000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }, /* Machine Language Storage Area / BASIC ROM Area */
+    { 0x00C000U, 0x00CFFFU, 0x00C000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }, /* Machine Language Storage Area */
+    { 0x00D000U, 0x00DFFFU, 0x00D000U, RC_MEMORY_TYPE_SYSTEM_RAM, "I/O Area" },   /* also Character ROM */
+    { 0x00E000U, 0x00FFFFU, 0x00E000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }, /* Machine Language Storage Area / Kernal ROM */
+};
+static const rc_memory_regions_t rc_memory_regions_c64 = { _rc_memory_regions_c64, 7 };
+
 /* ===== Dreamcast ===== */
 /* http://archiv.sega-dc.de/munkeechuff/hardware/Memory.html */
 static const rc_memory_region_t _rc_memory_regions_dreamcast[] = {
     { 0x00000000U, 0x00FFFFFFU, 0x0C000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
 };
 static const rc_memory_regions_t rc_memory_regions_dreamcast = { _rc_memory_regions_dreamcast, 1 };
+
+/* ===== Fairchild Channel F ===== */
+static const rc_memory_region_t _rc_memory_regions_fairchild_channel_f[] = {
+    /* "System RAM" is actually just a bunch of registers internal to CPU so all carts have it.
+     * "Video RAM" is part of the console so it's always available but it is write-only by the ROMs.
+     * "Cartridge RAM" is the cart BUS. Most carts only have ROMs on this bus. Exception are
+     *     German Schach and homebrew carts that have 2K of RAM there in addition to ROM.
+     * "F2102 RAM" is used by Maze for 1K of RAM.
+     * https://discord.com/channels/310192285306454017/645777658319208448/967001438087708714 */
+    { 0x00000000U, 0x0000003FU, 0x00100000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    { 0x00000040U, 0x0000083FU, 0x00300000U, RC_MEMORY_TYPE_VIDEO_RAM, "Video RAM" },
+    { 0x00000840U, 0x0001083FU, 0x00000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Cartridge RAM" },
+    { 0x00010840U, 0x00010C3FU, 0x00200000U, RC_MEMORY_TYPE_SYSTEM_RAM, "F2102 RAM" }
+};
+static const rc_memory_regions_t rc_memory_regions_fairchild_channel_f = { _rc_memory_regions_fairchild_channel_f, 4 };
 
 /* ===== GameBoy / GameBoy Color ===== */
 static const rc_memory_region_t _rc_memory_regions_gameboy[] = {
@@ -553,9 +593,10 @@ static const rc_memory_regions_t rc_memory_regions_playstation = { _rc_memory_re
 /* https://psi-rockin.github.io/ps2tek/ */
 static const rc_memory_region_t _rc_memory_regions_playstation2[] = {
     { 0x00000000U, 0x000FFFFFU, 0x00000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Kernel RAM" },
-    { 0x00100000U, 0x01FFFFFFU, 0x00100000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+    { 0x00100000U, 0x01FFFFFFU, 0x00100000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    { 0x02000000U, 0x02003FFFU, 0x70000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Scratchpad RAM" },
 };
-static const rc_memory_regions_t rc_memory_regions_playstation2 = { _rc_memory_regions_playstation2, 2 };
+static const rc_memory_regions_t rc_memory_regions_playstation2 = { _rc_memory_regions_playstation2, 3 };
 
 /* ===== PlayStation Portable ===== */
 /* https://github.com/uofw/upspd/wiki/Memory-map */
@@ -670,6 +711,17 @@ static const rc_memory_region_t _rc_memory_regions_watara_supervision[] = {
 };
 static const rc_memory_regions_t rc_memory_regions_watara_supervision = { _rc_memory_regions_watara_supervision, 3 };
 
+/* ===== WASM-4 ===== */
+/* fantasy console that runs specifically designed WebAssembly games */
+/* https://github.com/aduros/wasm4/blob/main/site/docs/intro.md#hardware-specs */
+static const rc_memory_region_t _rc_memory_regions_wasm4[] = {
+    { 0x000000U, 0x00FFFFU, 0x00000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    /* Persistent storage is not directly accessible from the game. It has to be loaded into System RAM first
+    { 0x010000U, 0x0103FFU, 0x80000000U, RC_MEMORY_TYPE_SAVE_RAM, "Disk Storage"}
+    */
+};
+static const rc_memory_regions_t rc_memory_regions_wasm4 = { _rc_memory_regions_wasm4, 1 };
+
 /* ===== WonderSwan ===== */
 /* http://daifukkat.su/docs/wsman/#ovr_memmap */
 static const rc_memory_region_t _rc_memory_regions_wonderswan[] = {
@@ -697,6 +749,9 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
     case RC_CONSOLE_3DO:
       return &rc_memory_regions_3do;
 
+    case RC_CONSOLE_AMIGA:
+      return &rc_memory_regions_amiga;
+
     case RC_CONSOLE_AMSTRAD_PC:
       return &rc_memory_regions_amstrad_pc;
 
@@ -721,8 +776,14 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
     case RC_CONSOLE_COLECOVISION:
       return &rc_memory_regions_colecovision;
 
+    case RC_CONSOLE_COMMODORE_64:
+      return &rc_memory_regions_c64;
+
     case RC_CONSOLE_DREAMCAST:
       return &rc_memory_regions_dreamcast;
+
+    case RC_CONSOLE_FAIRCHILD_CHANNEL_F:
+      return &rc_memory_regions_fairchild_channel_f;
 
     case RC_CONSOLE_MEGADUCK:
     case RC_CONSOLE_GAMEBOY:
@@ -820,6 +881,9 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
 
     case RC_CONSOLE_VIRTUAL_BOY:
       return &rc_memory_regions_virtualboy;
+
+    case RC_CONSOLE_WASM4:
+      return &rc_memory_regions_wasm4;
 
     case RC_CONSOLE_WONDERSWAN:
       return &rc_memory_regions_wonderswan;

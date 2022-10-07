@@ -319,6 +319,9 @@
 						RelativePath="..\..\..\libretro-common\compat\compat_strl.c">
 					</File>
 					<File
+						RelativePath="..\..\..\libretro-common\compat\compat_strldup.c">
+					</File>
+					<File
 						RelativePath="..\..\..\libretro-common\compat\fopen_utf8.c">
 					</File>
 				</Filter>

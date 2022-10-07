@@ -35,6 +35,22 @@ enum input_game_focus_cmd_type
    GAME_FOCUS_CMD_REAPPLY
 };
 
+/* Input config. */
+struct input_bind_map
+{
+   const char *base;
+   enum msg_hash_enums desc;
+   /* Meta binds get input as prefix, not input_playerN".
+    * 0 = libretro related.
+    * 1 = Common hotkey.
+    * 2 = Uncommon/obscure hotkey.
+    */
+   uint8_t meta;
+   uint8_t retro_key;
+   bool valid;
+};
+
+
 /* Turbo support. */
 struct turbo_buttons
 {
@@ -102,6 +118,10 @@ typedef struct input_game_focus_state
    bool enabled;
    bool core_requested;
 } input_game_focus_state_t;
+
+#define INPUT_CONFIG_BIND_MAP_GET(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
+
+extern const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL];
 
 typedef struct rarch_joypad_driver input_device_driver_t;
 typedef struct input_keyboard_line input_keyboard_line_t;

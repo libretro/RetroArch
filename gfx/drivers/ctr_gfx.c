@@ -21,6 +21,7 @@
 
 #include <retro_inline.h>
 #include <retro_math.h>
+#include <compat/strl.h>
 #include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H
@@ -64,8 +65,8 @@ extern uint64_t lifecycle_state;
  * Have to keep track of bottom screen enable state
  * externally, otherwise cannot detect current state
  * when reinitialising... */
-bool ctr_bottom_screen_enabled = true;
-int fadeCount = 256;
+bool ctr_bottom_screen_enabled  = true;
+static int fadeCount            = 256;
 
 static void ctr_set_bottom_screen_enable(bool enabled, bool idle);
 
@@ -262,9 +263,10 @@ static const char *ctr_texture_path(unsigned id)
    switch (id)
    {
       case CTR_TEXTURE_BOTTOM_MENU:
-         return "ctr/bottom_menu.png";
+         return "bottom_menu.png";
       case CTR_TEXTURE_STATE_THUMBNAIL:
          {
+            size_t _len;
             static char texture_path[PATH_MAX_LENGTH];
             char state_path[PATH_MAX_LENGTH];
 
@@ -272,10 +274,15 @@ static const char *ctr_texture_path(unsigned id)
                      sizeof(state_path)))
                return NULL;
 
-            snprintf(texture_path, sizeof(texture_path),
-                  "%s.png", state_path);
+            _len                 = strlcpy(texture_path,
+                  state_path, sizeof(texture_path));
+            texture_path[_len  ] = '.';
+            texture_path[_len+1] = 'p';
+            texture_path[_len+2] = 'n';
+            texture_path[_len+3] = 'g';
+            texture_path[_len+4] = '\0';
 
-            return path_basename(texture_path);
+            return path_basename_nocompression(texture_path);
          }
       default:
          break;
@@ -289,7 +296,7 @@ static void ctr_update_state_date(void *data)
    ctr_video_t *ctr = (ctr_video_t*)data;
    time_t now       = time(NULL);
    struct tm *t     = localtime(&now);
-   sprintf(ctr->state_date, "%02d/%02d/%d",
+   snprintf(ctr->state_date, sizeof(ctr->state_date), "%02d/%02d/%d",
       t->tm_mon + 1, t->tm_mday, t->tm_year + 1900);
 }
 
@@ -325,14 +332,14 @@ static bool ctr_update_state_date_from_file(void *data)
    ft    = mtime;
    t     = localtime(&ft);
 #endif
-   sprintf(ctr->state_date, "%02d/%02d/%d",
+   snprintf(ctr->state_date, sizeof(ctr->state_date), "%02d/%02d/%d",
       t->tm_mon + 1, t->tm_mday, t->tm_year + 1900);
       
   return true;
 
 error:
   ctr->state_data_exist = false;
-  snprintf(ctr->state_date, sizeof(ctr->state_date), "00/00/0000");
+  strlcpy(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
   return false;
 }
 
@@ -395,7 +402,7 @@ static bool ctr_load_bottom_texture(void *data)
       if (i == CTR_TEXTURE_STATE_THUMBNAIL)
          dir_assets = dir_get_ptr(RARCH_DIR_SAVESTATE);
       else
-         dir_assets = settings->paths.directory_assets;
+         dir_assets = settings->paths.directory_bottom_assets;
 
       if (gfx_display_reset_textures_list(
          ctr_texture_path(i), dir_assets,
@@ -496,8 +503,7 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
       return;
 #endif
 
-      if (    !lcd_bottom
-            || ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE)
+      if (!lcd_bottom)
       {
          BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
          return;
@@ -515,6 +521,13 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
          ctr->bottom_check_idle = false;
          ctr->bottom_is_fading  = false;
          fadeCount              = 256;
+      }
+
+      if (ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE)
+      {
+         BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+         ctr->refresh_bottom_menu = true;
+         return;
       }
 
       switch (ctr->bottom_menu)
@@ -535,7 +548,6 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
                   state_tmp_touch.py > 99 &&
                   state_tmp_touch.py < 230) 
             {
-               char screenshot_full_path[PATH_MAX_LENGTH];
 
                struct ctr_bottom_texture_data *o =
                   &ctr->bottom_textures[CTR_TEXTURE_STATE_THUMBNAIL];
@@ -576,9 +588,11 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
 
                if (settings->bools.savestate_thumbnail_enable)
                {
-                  sprintf(screenshot_full_path, "%s/%s",
+                  char screenshot_full_path[PATH_MAX_LENGTH];
+                  fill_pathname_join_special(screenshot_full_path,
                      dir_get_ptr(RARCH_DIR_SAVESTATE),
-                     ctr_texture_path(CTR_TEXTURE_STATE_THUMBNAIL));
+                     ctr_texture_path(CTR_TEXTURE_STATE_THUMBNAIL),
+                     sizeof(screenshot_full_path));
 
                   take_screenshot(NULL, screenshot_full_path, true,
                      video_driver_cached_frame_has_valid_framebuffer(),
@@ -659,57 +673,76 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
    }
 }
 
-static void font_driver_render_msg_bottom(
-      void *data,         
-      const char *msg,    
-      const void *_params,
-      void *font_data)    
+static void font_driver_render_msg_bottom(ctr_video_t *ctr,
+      const char *msg, const void *_params)
 {
-   ctr_video_t *ctr        = (ctr_video_t*)data;
    ctr->render_font_bottom = true;
-   font_driver_render_msg(ctr, msg, _params, font_data);
+   font_driver_render_msg(ctr, msg, _params, NULL);
    ctr->render_font_bottom = false;
 }
 
 static void ctr_render_bottom_screen(void *data)
 {
-   struct font_params params = { 0, };
-   ctr_video_t *ctr          = (ctr_video_t*)data;
+   struct font_params params  = { 0, };
+   ctr_video_t *ctr           = (ctr_video_t*)data;
+
+   settings_t *settings       = config_get_ptr();
+   bool font_enable           = settings->bools.bottom_font_enable;
+   int font_color_red         = settings->ints.bottom_font_color_red;
+   int font_color_green       = settings->ints.bottom_font_color_green;
+   int font_color_blue        = settings->ints.bottom_font_color_blue;
+   int font_color_opacity     = settings->ints.bottom_font_color_opacity;
+   float font_scale           = settings->floats.bottom_font_scale;
 
    if (!ctr || !ctr->refresh_bottom_menu)
       return;
 
    params.text_align = TEXT_ALIGN_CENTER;
-   params.color      = COLOR_ABGR(255, 255, 255, 255);
+   params.color      = COLOR_ABGR(font_color_opacity,
+                                  font_color_blue,
+                                  font_color_green,
+                                  font_color_red);
 
    switch (ctr->bottom_menu)
    {
       case CTR_BOTTOM_MENU_NOT_AVAILABLE:
-         params.scale = 1.6f;
-         params.x     = 0.0f;
-         params.y     = 0.5f;
+         {
+            char str_path[PATH_MAX_LENGTH];
+            const char *dir_assets = settings->paths.directory_bottom_assets;
 
-         font_driver_render_msg_bottom(ctr,
-               msg_hash_to_str(MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND),
-               &params, NULL);
+            params.color = COLOR_ABGR(255, 255, 255, 255);
+            params.scale = 1.6f;
+            params.x     = 0.0f;
+            params.y     = 0.5f;
+
+            font_driver_render_msg_bottom(ctr,
+                  msg_hash_to_str(MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND),
+                  &params);
+
+            sprintf(str_path, "%s\n/bottom_menu.png", dir_assets);
+
+            params.scale = 1.10f;
+            params.y    -= 0.10f;
+            font_driver_render_msg_bottom(ctr, str_path,
+               &params);
+            }
          break;
       case CTR_BOTTOM_MENU_DEFAULT:
+         params.color = COLOR_ABGR(255, 255, 255, 255);
          params.scale = 1.6f;
          params.x     = 0.0f;
          params.y     = 0.5f;
 
          font_driver_render_msg_bottom(ctr,
                msg_hash_to_str(MSG_3DS_BOTTOM_MENU_DEFAULT),
-               &params, NULL);
+               &params);
          break;
       case CTR_BOTTOM_MENU_SELECT:
          {
             struct ctr_bottom_texture_data *o = NULL;
             ctr_texture_t *texture            = NULL;
 
-            params.scale                      = 1.48f;
-            params.color                      = COLOR_ABGR(
-                  255, 255, 255, 255);
+            params.scale = font_scale;
 
             /* draw state thumbnail */
             if (ctr->state_data_exist)
@@ -755,7 +788,7 @@ static void ctr_render_bottom_screen(void *data)
                   font_driver_render_msg_bottom(ctr, 
                      msg_hash_to_str(
                         MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL),
-                     &params, NULL);
+                     &params);
                }
             }
             else
@@ -765,7 +798,7 @@ static void ctr_render_bottom_screen(void *data)
                font_driver_render_msg_bottom(ctr, 
                   msg_hash_to_str(
                      MSG_3DS_BOTTOM_MENU_NO_STATE_DATA),
-                  &params, NULL);
+                  &params);
             }
 
             /* draw bottom menu */
@@ -797,35 +830,44 @@ static void ctr_render_bottom_screen(void *data)
                   CTR_BOTTOM_FRAMEBUFFER_WIDTH);
             GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
 
-            /* draw resume game */
-            params.x = -0.178f;
-            params.y = 0.78f;
+            if (font_enable)
+            {
+               /* draw resume game */
+               params.x = -0.178f;
+               params.y = 0.78f;
 
-            font_driver_render_msg_bottom(ctr, 
-               msg_hash_to_str(MSG_3DS_BOTTOM_MENU_RESUME),
-               &params, NULL);
+               font_driver_render_msg_bottom(ctr,
+                  msg_hash_to_str(MSG_3DS_BOTTOM_MENU_RESUME),
+                  &params);
 
-            /* draw create restore point */
-            params.x = -0.178f;
-            params.y = 0.33f;
+               /* draw create restore point */
+               params.x = -0.178f;
+               params.y = 0.33f;
 
-            font_driver_render_msg_bottom(ctr, 
-               msg_hash_to_str(MSG_3DS_BOTTOM_MENU_SAVE_STATE),
-               &params, NULL);
+               font_driver_render_msg_bottom(ctr,
+                  msg_hash_to_str(MSG_3DS_BOTTOM_MENU_SAVE_STATE),
+                  &params);
 
-            /* draw load restore point */
-            params.x = 0.266f;
-            params.y = 0.24f;
+               if (ctr->state_data_exist)
+               {
+                  /* draw load restore point */
+                  params.x = 0.266f;
+                  params.y = 0.24f;
 
-            font_driver_render_msg_bottom(ctr, 
-               msg_hash_to_str(MSG_3DS_BOTTOM_MENU_LOAD_STATE),
-               &params, NULL);
-
-            /* draw date */
-            params.x = 0.266f;
-            params.y = 0.87f;
-            font_driver_render_msg_bottom(ctr, ctr->state_date,
-               &params, NULL);
+                  font_driver_render_msg_bottom(ctr,
+                     msg_hash_to_str(MSG_3DS_BOTTOM_MENU_LOAD_STATE),
+                     &params);
+               }
+            }
+            if (ctr->state_data_exist)
+            {
+               /* draw date */
+               params.x = 0.266f;
+               params.y = 0.87f;
+               font_driver_render_msg_bottom(ctr,
+                  ctr->state_date,
+                  &params);
+            }
          }
          break;
    }
@@ -835,6 +877,7 @@ static void ctr_render_bottom_screen(void *data)
 // https://github.com/smealum/3ds_hb_menu/blob/master/source/gfx.c
 void ctr_fade_bottom_screen(gfxScreen_t screen, gfx3dSide_t side, u32 f)
 {
+#ifndef CONSOLE_LOG
    int i;
    u16 fbWidth, fbHeight;
    u8* fbAdr = gfxGetFramebuffer(screen, side, &fbWidth, &fbHeight);
@@ -854,6 +897,7 @@ void ctr_fade_bottom_screen(gfxScreen_t screen, gfx3dSide_t side, u32 f)
       *fbAdr = (*fbAdr * f) >> 8;
       fbAdr++;
    }
+#endif
 }
 
 static void ctr_set_bottom_screen_idle(ctr_video_t * ctr)
@@ -893,6 +937,7 @@ static void ctr_set_bottom_screen_idle(ctr_video_t * ctr)
 
 static void ctr_set_bottom_screen_enable(bool enabled, bool idle)
 {
+#ifndef CONSOLE_LOG
    Handle lcd_handle;
    u8 not_2DS;
 
@@ -905,7 +950,7 @@ static void ctr_set_bottom_screen_enable(bool enabled, bool idle)
       svcSendSyncRequest(lcd_handle);
       svcCloseHandle(lcd_handle);
    }
-
+#endif
    if (!idle)
       ctr_bottom_screen_enabled = enabled;
 }
@@ -1029,93 +1074,93 @@ static void* ctr_init(const video_info_t* video,
 {
    size_t i;
    float refresh_rate;
-   u8 device_model      = 0xFF;
-   void* ctrinput       = NULL;
-   settings_t *settings = config_get_ptr();
-   bool lcd_bottom      = settings->bools.video_3ds_lcd_bottom;
-   bool speedup_enable  = settings->bools.new3ds_speedup_enable;
-   ctr_video_t* ctr     = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
+   u8 device_model                 = 0xFF;
+   void* ctrinput                  = NULL;
+   settings_t *settings            = config_get_ptr();
+   bool lcd_bottom                 = settings->bools.video_3ds_lcd_bottom;
+   bool speedup_enable             = settings->bools.new3ds_speedup_enable;
+   ctr_video_t* ctr                = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
 
    if (!ctr)
       return NULL;
 
    memset(ctr, 0, sizeof(ctr_video_t));
 
-   ctr->vp.x                = 0;
-   ctr->vp.y                = 0;
-   ctr->vp.width            = CTR_TOP_FRAMEBUFFER_WIDTH;
-   ctr->vp.height           = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   ctr->vp.full_width       = CTR_TOP_FRAMEBUFFER_WIDTH;
-   ctr->vp.full_height      = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->vp.x                       = 0;
+   ctr->vp.y                       = 0;
+   ctr->vp.width                   = CTR_TOP_FRAMEBUFFER_WIDTH;
+   ctr->vp.height                  = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->vp.full_width              = CTR_TOP_FRAMEBUFFER_WIDTH;
+   ctr->vp.full_height             = CTR_TOP_FRAMEBUFFER_HEIGHT;
    video_driver_set_size(ctr->vp.width, ctr->vp.height);
 
-   ctr->drawbuffers.top.left = vramAlloc(CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
-   ctr->drawbuffers.top.right = (void*)((uint32_t*)ctr->drawbuffers.top.left + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT);
-   ctr->drawbuffers.bottom = vramAlloc(CTR_BOTTOM_FRAMEBUFFER_WIDTH * CTR_BOTTOM_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
+   ctr->drawbuffers.top.left       = vramAlloc(CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
+   ctr->drawbuffers.top.right      = (void*)((uint32_t*)ctr->drawbuffers.top.left + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT);
+   ctr->drawbuffers.bottom         = vramAlloc(CTR_BOTTOM_FRAMEBUFFER_WIDTH * CTR_BOTTOM_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
 
-   ctr->display_list_size = 0x4000;
-   ctr->display_list = linearAlloc(ctr->display_list_size * sizeof(uint32_t));
+   ctr->display_list_size          = 0x4000;
+   ctr->display_list               = linearAlloc(
+         ctr->display_list_size * sizeof(uint32_t));
    GPU_Reset(NULL, ctr->display_list, ctr->display_list_size);
 
-   ctr->vertex_cache.size = 0x1000;
-   ctr->vertex_cache.buffer = linearAlloc(ctr->vertex_cache.size * sizeof(ctr_vertex_t));
-   ctr->vertex_cache.current = ctr->vertex_cache.buffer;
+   ctr->vertex_cache.size          = 0x1000;
+   ctr->vertex_cache.buffer        = linearAlloc(ctr->vertex_cache.size * sizeof(ctr_vertex_t));
+   ctr->vertex_cache.current       = ctr->vertex_cache.buffer;
 
-   ctr->bottom_textures = (struct ctr_bottom_texture_data *)calloc(CTR_TEXTURE_LAST,
+   ctr->bottom_textures            = (struct ctr_bottom_texture_data *)calloc(CTR_TEXTURE_LAST,
       sizeof(*ctr->bottom_textures));
 
-   ctr->init_bottom_menu = false;
-   ctr->state_data_exist = false;
-   ctr->render_font_bottom = false;
-   ctr->refresh_bottom_menu = true;
+   ctr->init_bottom_menu           = false;
+   ctr->state_data_exist           = false;
+   ctr->render_font_bottom         = false;
+   ctr->refresh_bottom_menu        = true;
    ctr->render_state_from_png_file = false;
-   ctr->bottom_menu = CTR_BOTTOM_MENU_NOT_AVAILABLE;
-   ctr->prev_bottom_menu = CTR_BOTTOM_MENU_NOT_AVAILABLE;
-   ctr->bottom_check_idle = false;
-   ctr->bottom_is_idle = false;
-   ctr->bottom_is_fading = false;
-   ctr->idle_timestamp = 0;
-   ctr->state_slot = settings->ints.state_slot;
+   ctr->bottom_menu                = CTR_BOTTOM_MENU_NOT_AVAILABLE;
+   ctr->prev_bottom_menu           = CTR_BOTTOM_MENU_NOT_AVAILABLE;
+   ctr->bottom_check_idle          = false;
+   ctr->bottom_is_idle             = false;
+   ctr->bottom_is_fading           = false;
+   ctr->idle_timestamp             = 0;
+   ctr->state_slot                 = settings->ints.state_slot;
 
-   snprintf(ctr->state_date, sizeof(ctr->state_date), "%s", "00/00/0000");
-   ctr->state_date[CTR_STATE_DATE_SIZE - 1] = '\0';
+   strlcpy(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
 
-   ctr->rgb32 = video->rgb32;
-   ctr->texture_width = video->input_scale * RARCH_SCALE_BASE;
-   ctr->texture_height = video->input_scale * RARCH_SCALE_BASE;
-   ctr->texture_linear =
+   ctr->rgb32                      = video->rgb32;
+   ctr->texture_width              = video->input_scale * RARCH_SCALE_BASE;
+   ctr->texture_height             = video->input_scale * RARCH_SCALE_BASE;
+   ctr->texture_linear             =
          linearMemAlign(ctr->texture_width * ctr->texture_height * (ctr->rgb32? 4:2), 128);
-   ctr->texture_swizzled =
+   ctr->texture_swizzled           =
          linearMemAlign(ctr->texture_width * ctr->texture_height * (ctr->rgb32? 4:2), 128);
 
-   ctr->frame_coords = linearAlloc(3 * sizeof(ctr_vertex_t));
-   ctr->frame_coords->x0 = 0;
-   ctr->frame_coords->y0 = 0;
-   ctr->frame_coords->x1 = CTR_TOP_FRAMEBUFFER_WIDTH;
-   ctr->frame_coords->y1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   ctr->frame_coords->u0 = 0;
-   ctr->frame_coords->v0 = 0;
-   ctr->frame_coords->u1 = CTR_TOP_FRAMEBUFFER_WIDTH;
-   ctr->frame_coords->v1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->frame_coords               = linearAlloc(3 * sizeof(ctr_vertex_t));
+   ctr->frame_coords->x0           = 0;
+   ctr->frame_coords->y0           = 0;
+   ctr->frame_coords->x1           = CTR_TOP_FRAMEBUFFER_WIDTH;
+   ctr->frame_coords->y1           = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->frame_coords->u0           = 0;
+   ctr->frame_coords->v0           = 0;
+   ctr->frame_coords->u1           = CTR_TOP_FRAMEBUFFER_WIDTH;
+   ctr->frame_coords->v1           = CTR_TOP_FRAMEBUFFER_HEIGHT;
    GSPGPU_FlushDataCache(ctr->frame_coords, sizeof(ctr_vertex_t));
 
-   ctr->menu.texture_width = 512;
-   ctr->menu.texture_height = 512;
-   ctr->menu.texture_linear =
+   ctr->menu.texture_width         = 512;
+   ctr->menu.texture_height        = 512;
+   ctr->menu.texture_linear        =
          linearMemAlign(ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t), 128);
-   ctr->menu.texture_swizzled =
+   ctr->menu.texture_swizzled      =
          linearMemAlign(ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t), 128);
 
-   ctr->menu.frame_coords = linearAlloc(sizeof(ctr_vertex_t));
+   ctr->menu.frame_coords          = linearAlloc(sizeof(ctr_vertex_t));
 
-   ctr->menu.frame_coords->x0 = 40;
-   ctr->menu.frame_coords->y0 = 0;
-   ctr->menu.frame_coords->x1 = CTR_TOP_FRAMEBUFFER_WIDTH - 40;
-   ctr->menu.frame_coords->y1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   ctr->menu.frame_coords->u0 = 0;
-   ctr->menu.frame_coords->v0 = 0;
-   ctr->menu.frame_coords->u1 = CTR_TOP_FRAMEBUFFER_WIDTH - 80;
-   ctr->menu.frame_coords->v1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->menu.frame_coords->x0      = 40;
+   ctr->menu.frame_coords->y0      = 0;
+   ctr->menu.frame_coords->x1      = CTR_TOP_FRAMEBUFFER_WIDTH - 40;
+   ctr->menu.frame_coords->y1      = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->menu.frame_coords->u0      = 0;
+   ctr->menu.frame_coords->v0      = 0;
+   ctr->menu.frame_coords->u1      = CTR_TOP_FRAMEBUFFER_WIDTH - 80;
+   ctr->menu.frame_coords->v1      = CTR_TOP_FRAMEBUFFER_HEIGHT;
    GSPGPU_FlushDataCache(ctr->menu.frame_coords, sizeof(ctr_vertex_t));
 
    ctr_set_scale_vector(&ctr->scale_vector,
@@ -1186,11 +1231,11 @@ static void* ctr_init(const video_info_t* video,
       *input_data          = ctrinput;
    }
 
-   ctr->keep_aspect   = true;
-   ctr->should_resize = true;
-   ctr->smooth        = video->smooth;
-   ctr->vsync         = video->vsync;
-   ctr->current_buffer_top = 0;
+   ctr->keep_aspect           = true;
+   ctr->should_resize         = true;
+   ctr->smooth                = video->smooth;
+   ctr->vsync                 = video->vsync;
+   ctr->current_buffer_top    = 0;
    ctr->current_buffer_bottom = 0;
 
    /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
@@ -1354,6 +1399,7 @@ static bool ctr_frame(void* data, const void* frame,
 
    ctr->vsync_event_pending = true;
 
+#ifdef CONSOLE_LOG
    /* Internal counters/statistics
     * > This is only required if the bottom screen is enabled */
    if (ctr_bottom_screen_enabled)
@@ -1419,6 +1465,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
       fflush(stdout);
    }
+#endif
 
    if (ctr->should_resize)
       ctr_update_viewport(ctr, settings,

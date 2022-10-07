@@ -80,9 +80,6 @@ bitmapfont_lut_t *bitmapfont_10x10_load(unsigned language)
    size_t symbol_index;
    size_t i, j;
 
-   font_dir[0]  = '\0';
-   font_path[0] = '\0';
-
    /* Get font file associated with
     * specified language */
    switch (language)
@@ -131,7 +128,7 @@ bitmapfont_lut_t *bitmapfont_10x10_load(unsigned language)
    /* Get font path */
    fill_pathname_application_special(font_dir, sizeof(font_dir),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_RGUI_FONT);
-   fill_pathname_join(font_path, font_dir, font_file,
+   fill_pathname_join_special(font_path, font_dir, font_file,
          sizeof(font_path));
 
    /* Attempt to read bitmap file */
@@ -181,7 +178,7 @@ bitmapfont_lut_t *bitmapfont_10x10_load(unsigned language)
          for (i = 0; i < FONT_10X10_WIDTH; i++)
          {
             uint8_t rem     = 1 << ((i + j * FONT_10X10_WIDTH) & 7);
-            unsigned offset = (i + j * FONT_10X10_WIDTH) >> 3;
+            size_t offset   = (i + j * FONT_10X10_WIDTH) >> 3;
 
             /* LUT value is 'true' if specified glyph
              * position contains a pixel */

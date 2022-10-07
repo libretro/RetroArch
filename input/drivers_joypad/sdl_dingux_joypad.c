@@ -32,9 +32,12 @@
 #include "../../config.def.h"
 #endif
 
-/* RS-90 and RetroFW devices:
+/* RS-90 devices:
  * - Analog input: No
  * - Menu button:  No
+* RetroFW devices:
+ * - Analog input: No
+ * - Menu button:  Yes
  * Miyoo devices:
  * - Analog input: No
  * - Menu button:  Yes
@@ -42,8 +45,8 @@
  * - Analog input: Yes
  * - Menu button:  Yes
  */
-#if !(defined(RS90) || defined(RETROFW))
-#if !defined(MIYOO)
+#if !defined(RS90)
+#if !(defined(MIYOO) || defined(RETROFW))
 #define SDL_DINGUX_HAS_ANALOG      1
 #endif
 #define SDL_DINGUX_HAS_MENU_TOGGLE 1
@@ -105,7 +108,9 @@
 #define SDL_DINGUX_SDLK_RIGHT  SDLK_RIGHT
 #define SDL_DINGUX_SDLK_DOWN   SDLK_DOWN
 #define SDL_DINGUX_SDLK_LEFT   SDLK_LEFT
-#if defined(MIYOO)
+#if defined(RETROFW)
+#define SDL_DINGUX_SDLK_MENU   SDLK_END
+#elif defined(MIYOO)
 #define SDL_DINGUX_SDLK_MENU   SDLK_RCTRL
 #else
 #define SDL_DINGUX_SDLK_MENU   SDLK_HOME

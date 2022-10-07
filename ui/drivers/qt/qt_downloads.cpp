@@ -34,11 +34,8 @@ extern "C" {
 #define TEMP_EXTENSION ".tmp"
 #define THUMBNAILPACK_URL_HEADER "http://thumbnailpacks.libretro.com/"
 #define THUMBNAILPACK_EXTENSION ".zip"
-#define THUMBNAIL_URL_HEADER "https://github.com/libretro-thumbnails/"
-#define THUMBNAIL_URL_BRANCH "/blob/master/"
+#define THUMBNAIL_URL_HEADER "https://thumbnails.libretro.com/"
 #define THUMBNAIL_IMAGE_EXTENSION ".png"
-#define THUMBNAIL_URL_FOOTER THUMBNAIL_IMAGE_EXTENSION "?raw=true"
-
 
 static void extractThumbnailPackCB(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
@@ -567,7 +564,6 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
    QNetworkRequest request;
    QByteArray urlArray;
    QString downloadType;
-   QString systemUnderscore = system;
    QNetworkReply *reply     = NULL;
    const char *urlData      = NULL;
    settings_t *settings     = config_get_ptr();
@@ -577,13 +573,11 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
 
    title                    = getScrubbedString(title);
    downloadType             = m_pendingThumbnailDownloadTypes.takeFirst();
-   systemUnderscore         = systemUnderscore.replace(" ", "_");
    urlString                = QString(THUMBNAIL_URL_HEADER) 
-      + systemUnderscore 
-      + THUMBNAIL_URL_BRANCH 
+      + system + "/"
       + downloadType + "/" 
       + title 
-      + THUMBNAIL_URL_FOOTER;
+      + THUMBNAIL_IMAGE_EXTENSION;
 
    if (url.isEmpty())
       url = urlString;
@@ -855,7 +849,6 @@ void MainWindow::onPlaylistThumbnailDownloadReadyRead()
 void MainWindow::downloadNextPlaylistThumbnail(
       QString system, QString title, QString type, QUrl url)
 {
-   QString systemUnderscore = system;
    QString urlString;
    QNetworkRequest request;
    QNetworkReply *reply = NULL;
@@ -865,16 +858,14 @@ void MainWindow::downloadNextPlaylistThumbnail(
       return;
 
    title                = getScrubbedString(title);
-   systemUnderscore     = systemUnderscore.replace(" ", "_");
 
    urlString            = 
         QString(THUMBNAIL_URL_HEADER) 
-      + systemUnderscore 
-      + THUMBNAIL_URL_BRANCH 
+      + system  + "/"
       + type 
       + "/" 
       + title 
-      + THUMBNAIL_URL_FOOTER;
+      + THUMBNAIL_IMAGE_EXTENSION;
 
    if (url.isEmpty())
       url               = urlString;

@@ -106,7 +106,7 @@ typedef struct font_renderer
    void (*bind_block)(void *data, void *block);
    void (*flush)(unsigned width, unsigned height, void *data);
 
-   int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
+   int (*get_message_width)(void *data, const char *msg, size_t msg_len, float scale);
    bool (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
 } font_renderer_t;
 
@@ -146,7 +146,7 @@ void font_driver_render_msg(void *data,
 
 void font_driver_bind_block(void *font_data, void *block);
 
-int font_driver_get_message_width(void *font_data, const char *msg, unsigned len, float scale);
+int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
 void font_driver_flush(unsigned width, unsigned height, void *font_data);
 
@@ -174,7 +174,7 @@ int font_driver_get_line_ascender(void *font_data, float scale);
 int font_driver_get_line_descender(void *font_data, float scale);
 int font_driver_get_line_centre_offset(void *font_data, float scale);
 
-extern font_renderer_t gl_raster_font;
+extern font_renderer_t gl2_raster_font;
 extern font_renderer_t gl3_raster_font;
 extern font_renderer_t gl1_raster_font;
 extern font_renderer_t d3d_xdk1_font;

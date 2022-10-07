@@ -40,6 +40,13 @@
 #include "../../retroarch.h"
 #include "../video_crt_switch.h" /* needed to set aspect for low res in linux */
 
+enum dispserv_x11_flags
+{
+   DISPSERV_X11_FLAG_USING_GLOBAL_DPY  = (1 << 0),
+   DISPSERV_X11_FLAG_CRT_EN            = (1 << 1),
+   DISPSERV_X11_FLAG_DECORATIONS       = (1 << 2)
+};
+
 typedef struct
 {
 #ifdef HAVE_XRANDR
@@ -48,34 +55,35 @@ typedef struct
    int crt_name_id;
    int monitor_index;
    unsigned opacity;
+   uint8_t flags;
    char crt_name[16];
    char new_mode[256];
    char old_mode[256];
    char orig_output[256];
-   bool using_global_dpy;
-   bool crt_en;
-   bool decorations;
 } dispserv_x11_t;
 
 #ifdef HAVE_XRANDR
 static Display* x11_display_server_open_display(dispserv_x11_t *dispserv)
 {
-   Display *dpy                           = g_x11_dpy;
+   Display *dpy        = g_x11_dpy;
    if (!dispserv)
       return NULL;
-   dispserv->using_global_dpy             = (dpy != NULL);
-
+   if (dpy)
+   {
+      dispserv->flags |= DISPSERV_X11_FLAG_USING_GLOBAL_DPY;
+      return dpy;
+   }
    /* SDL might use X11 but doesn't use g_x11_dpy, so open it manually */
-   if (!dpy)
-      dpy                                 = XOpenDisplay(0);
-
-   return dpy;
+   return XOpenDisplay(0);
 }
 
 static void x11_display_server_close_display(dispserv_x11_t *dispserv,
       Display *dpy)
 {
-   if (!dpy || !dispserv || dispserv->using_global_dpy || dpy == g_x11_dpy)
+   if (     !dpy 
+         || !dispserv 
+         || (dispserv->flags & DISPSERV_X11_FLAG_USING_GLOBAL_DPY)
+         || dpy == g_x11_dpy)
       return;
 
    XCloseDisplay(dpy);
@@ -111,7 +119,7 @@ static bool x11_display_server_set_resolution(void *data,
    dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
 
    dispserv->monitor_index  = monitor_index;
-   dispserv->crt_en         = true;
+   dispserv->flags         |= DISPSERV_X11_FLAG_CRT_EN;
    dispserv->crt_name_id   += 1;
    snprintf(dispserv->crt_name, sizeof(dispserv->crt_name),
          "CRT%d", dispserv->crt_name_id);
@@ -488,7 +496,7 @@ static void x11_display_server_destroy(void *data)
       return;
 
 #ifdef HAVE_XRANDR
-   if (dispserv->crt_en)
+   if (dispserv->flags & DISPSERV_X11_FLAG_CRT_EN)
    {
       XRRModeInfo *swoldmode   = NULL;
       XRRModeInfo *swdeskmode  = NULL;
@@ -696,13 +704,10 @@ static bool x11_display_server_set_window_opacity(void *data, unsigned opacity)
 static bool x11_display_server_set_window_decorations(void *data, bool on)
 {
    dispserv_x11_t *serv = (dispserv_x11_t*)data;
-
    if (serv)
-      serv->decorations = on;
-
+      serv->flags |= DISPSERV_X11_FLAG_DECORATIONS;
    /* menu_setting performs a reinit instead to properly apply
     * decoration changes */
-
    return true;
 }
 
@@ -710,11 +715,11 @@ static bool x11_display_server_set_window_decorations(void *data, bool on)
 const char *x11_display_server_get_output_options(void *data)
 {
 #ifdef HAVE_XRANDR
+   int i;
    Display *dpy;
    XRRScreenResources *res;
    XRROutputInfo *info;
    Window root;
-   int i;
    static char s[PATH_MAX_LENGTH];
 
    if (!(dpy = XOpenDisplay(0)))
@@ -727,12 +732,16 @@ const char *x11_display_server_get_output_options(void *data)
 
    for (i = 0; i < res->noutput; i++)
    {
+      size_t _len;
       if (!(info = XRRGetOutputInfo(dpy, res, res->outputs[i])))
          return NULL;
 
-      strlcat(s, info->name, sizeof(s));
+      _len = strlcat(s, info->name, sizeof(s));
       if ((i+1) < res->noutput)
-         strlcat(s, "|", sizeof(s));
+      {
+         s[_len  ] = '|';
+         s[_len+1] = '\0';
+      }
    }
 
    return s;

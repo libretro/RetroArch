@@ -46,7 +46,9 @@ const struct retro_subsystem_info *libretro_find_subsystem_info(
  *
  * Search for a controller of type @id in @info.
  *
- * Returns: controller description of found controller on success,
+ * Leaf function.
+ *
+ * @return controller description of found controller on success,
  * otherwise NULL.
  **/
 const struct retro_controller_description *

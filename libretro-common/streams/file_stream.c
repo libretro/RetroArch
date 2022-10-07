@@ -25,7 +25,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include <errno.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -46,7 +45,6 @@ struct RFILE
 {
    struct retro_vfs_file_handle *hfile;
 	bool error_flag;
-	bool eof_flag;
 };
 
 static retro_vfs_get_path_t filestream_get_path_cb = NULL;
@@ -109,18 +107,14 @@ bool filestream_exists(const char *path)
 
    if (!path || !*path)
       return false;
-
-   dummy                  = filestream_open(
+   if (!(dummy = filestream_open(
          path,
          RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!dummy)
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return false;
 
    if (filestream_close(dummy) != 0)
-      if (dummy)
-         free(dummy);
+      free(dummy);
 
    dummy = NULL;
    return true;
@@ -165,7 +159,7 @@ int64_t filestream_truncate(RFILE *stream, int64_t length)
  * @hints              :
  *
  * Opens a file for reading or writing, depending on the requested mode.
- * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
+ * @return A pointer to an RFILE if opened successfully, otherwise NULL.
  **/
 RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
 {
@@ -184,7 +178,6 @@ RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
 
    output             = (RFILE*)malloc(sizeof(RFILE));
    output->error_flag = false;
-   output->eof_flag   = false;
    output->hfile      = fp;
    return output;
 }
@@ -226,9 +219,9 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
    char buf[4096];
    char subfmt[64];
    va_list args_copy;
-   const char * bufiter = buf;
+   const char *bufiter  = buf;
    int        ret       = 0;
-   int64_t startpos     = filestream_tell(stream);
+   int64_t startpos     = 0;
    int64_t maxlen       = filestream_read(stream, buf, sizeof(buf)-1);
 
    if (maxlen <= 0)
@@ -337,7 +330,8 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
    }
 
    va_end(args_copy);
-   filestream_seek(stream, startpos+(bufiter-buf),
+   startpos             = filestream_tell(stream);
+   filestream_seek(stream, startpos + (bufiter - buf),
          RETRO_VFS_SEEK_POSITION_START);
 
    return ret;
@@ -367,14 +361,12 @@ int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
    if (output == VFS_ERROR_RETURN_VALUE)
       stream->error_flag = true;
 
-   stream->eof_flag      = false;
-
    return output;
 }
 
 int filestream_eof(RFILE *stream)
 {
-   return stream->eof_flag;
+   return filestream_tell(stream) == filestream_get_size(stream) ? EOF : 0;
 }
 
 int64_t filestream_tell(RFILE *stream)
@@ -399,7 +391,6 @@ void filestream_rewind(RFILE *stream)
       return;
    filestream_seek(stream, 0L, RETRO_VFS_SEEK_POSITION_START);
    stream->error_flag = false;
-   stream->eof_flag   = false;
 }
 
 int64_t filestream_read(RFILE *stream, void *s, int64_t len)
@@ -414,8 +405,6 @@ int64_t filestream_read(RFILE *stream, void *s, int64_t len)
 
    if (output == VFS_ERROR_RETURN_VALUE)
       stream->error_flag = true;
-   if (output < len)
-      stream->eof_flag   = true;
 
    return output;
 }
@@ -513,9 +502,7 @@ int filestream_printf(RFILE *stream, const char* format, ...)
 
 int filestream_error(RFILE *stream)
 {
-   if (stream && stream->error_flag)
-      return 1;
-   return 0;
+   return (stream && stream->error_flag);
 }
 
 int filestream_close(RFILE *stream)
@@ -544,7 +531,7 @@ int filestream_close(RFILE *stream)
  *
  * Read the contents of a file into @buf.
  *
- * Returns: non zero on success.
+ * @return Non-zero on success.
  */
 int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 {
@@ -561,25 +548,20 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
       return 0;
    }
 
-   content_buf_size = filestream_get_size(file);
-
-   if (content_buf_size < 0)
+   if ((content_buf_size = filestream_get_size(file)) < 0)
       goto error;
 
-   content_buf      = malloc((size_t)(content_buf_size + 1));
-
-   if (!content_buf)
+   if (!(content_buf = malloc((size_t)(content_buf_size + 1))))
       goto error;
    if ((int64_t)(uint64_t)(content_buf_size + 1) != (content_buf_size + 1))
       goto error;
 
-   ret = filestream_read(file, content_buf, (int64_t)content_buf_size);
-   if (ret < 0)
+   if ((ret = filestream_read(file, content_buf, (int64_t)content_buf_size)) <
+         0)
       goto error;
 
    if (filestream_close(file) != 0)
-      if (file)
-         free(file);
+      free(file);
 
    *buf    = content_buf;
 
@@ -593,9 +575,8 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
    return 1;
 
 error:
-   if (file)
-      if (filestream_close(file) != 0)
-         free(file);
+   if (filestream_close(file) != 0)
+      free(file);
    if (content_buf)
       free(content_buf);
    if (len)
@@ -612,8 +593,8 @@ error:
  *
  * Writes data to a file.
  *
- * Returns: true (1) on success, false (0) otherwise.
- */
+ * @return true on success, otherwise false.
+ **/
 bool filestream_write_file(const char *path, const void *data, int64_t size)
 {
    int64_t ret   = 0;
@@ -622,20 +603,18 @@ bool filestream_write_file(const char *path, const void *data, int64_t size)
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!file)
       return false;
-
    ret = filestream_write(file, data, size);
    if (filestream_close(file) != 0)
-      if (file)
-         free(file);
-
-   if (ret != size)
-      return false;
-
-   return true;
+      free(file);
+   return (ret == size);
 }
 
-/* Returned pointer must be freed by the caller. */
-char* filestream_getline(RFILE *stream)
+/**
+ * filestream_getline:
+ *
+ * Returned pointer must be freed by the caller.
+ **/
+char *filestream_getline(RFILE *stream)
 {
    char *newline_tmp  = NULL;
    size_t cur_size    = 8;
@@ -650,16 +629,15 @@ char* filestream_getline(RFILE *stream)
       return NULL;
    }
 
-   in                 = filestream_getc(stream);
+   in = filestream_getc(stream);
 
    while (in != EOF && in != '\n')
    {
       if (idx == cur_size)
       {
          cur_size    *= 2;
-         newline_tmp  = (char*)realloc(newline, cur_size + 1);
 
-         if (!newline_tmp)
+         if (!(newline_tmp = (char*)realloc(newline, cur_size + 1)))
          {
             free(newline);
             return NULL;

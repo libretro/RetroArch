@@ -145,10 +145,8 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
          > (unsigned)d3d->menu_display.size)
       return;
 
-   pv           = (Vertex*)
-      d3d9_vertex_buffer_lock((LPDIRECT3DVERTEXBUFFER9)
-            d3d->menu_display.buffer);
-
+   IDirect3DVertexBuffer9_Lock((LPDIRECT3DVERTEXBUFFER9)
+            d3d->menu_display.buffer, 0, 0, (void**)&pv, 0);
    if (!pv)
       return;
 
@@ -185,7 +183,7 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
                colors[2]  /* B */
                );
    }
-   d3d9_vertex_buffer_unlock((LPDIRECT3DVERTEXBUFFER9)
+   IDirect3DVertexBuffer9_Unlock((LPDIRECT3DVERTEXBUFFER9)
          d3d->menu_display.buffer);
 
    if (!draw->matrix_data)
@@ -273,20 +271,6 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
    }
 }
 
-static bool gfx_display_d3d9_hlsl_font_init_first(
-      void **font_handle, void *video_data,
-      const char *font_path, float menu_font_size,
-      bool is_threaded)
-{
-   font_data_t **handle = (font_data_t**)font_handle;
-   if (!(*handle = font_driver_init_first(video_data,
-         font_path, menu_font_size, true,
-         is_threaded,
-         FONT_DRIVER_RENDER_D3D9_API)))
-		 return false;
-   return true;
-}
-
 void gfx_display_d3d9_hlsl_scissor_begin(
       void *data,
       unsigned video_width, unsigned video_height,
@@ -331,7 +315,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
    gfx_display_d3d9_hlsl_get_default_mvp,
    gfx_display_d3d9_hlsl_get_default_vertices,
    gfx_display_d3d9_hlsl_get_default_tex_coords,
-   gfx_display_d3d9_hlsl_font_init_first,
+   FONT_DRIVER_RENDER_D3D9_API,
    GFX_VIDEO_DRIVER_DIRECT3D9_HLSL,
    "d3d9_hlsl",
    false,

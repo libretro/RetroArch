@@ -164,18 +164,21 @@ bool cheat_manager_save(
       (char*)"cheat%u_repeat_add_to_address"
    };
 
-   cheats_file[0] = '\0';
-
    if (!cheat_st->cheats || cheat_st->size == 0)
       return false;
 
    if (!cheat_database)
       strlcpy(cheats_file, path, sizeof(cheats_file));
    else
-      fill_pathname_join_concat(cheats_file,
-            cheat_database, path,
-            ".cht",
-            sizeof(cheats_file));
+   {
+      size_t len         = fill_pathname_join_special(cheats_file,
+            cheat_database, path, sizeof(cheats_file));
+      cheats_file[len  ] = '.';
+      cheats_file[len+1] = 'c';
+      cheats_file[len+2] = 'h';
+      cheats_file[len+3] = 't';
+      cheats_file[len+4] = '\0';
+   }
 
    if (!overwrite)
       conf = config_file_new_from_path_to_string(cheats_file);
@@ -193,16 +196,22 @@ bool cheat_manager_save(
       unsigned j;
       char endian_key[100];
       char key[256];
-      char desc_key[256];
-      char code_key[256];
-      char enable_key[256];
+      char desc_key[128];
+      char code_key[128];
+      char enable_key[128];
+      char formatted_number[12];
+ 
+      formatted_number[0] = '\0';
+      snprintf(formatted_number, sizeof(formatted_number), "cheat%u_", i);
 
-      key[0] = endian_key[0] = desc_key[0] = code_key[0] = enable_key[0] = '\0';
-
-      snprintf(endian_key, sizeof(endian_key), "cheat%u_big_endian", i);
-      snprintf(desc_key, sizeof(desc_key), "cheat%u_desc", i);
-      snprintf(code_key, sizeof(code_key), "cheat%u_code", i);
-      snprintf(enable_key, sizeof(enable_key), "cheat%u_enable", i);
+      strlcpy(endian_key, formatted_number, sizeof(endian_key));
+      strlcat(endian_key, "big_endian", sizeof(endian_key));
+      strlcpy(desc_key, formatted_number, sizeof(desc_key));
+      strlcat(desc_key, "desc", sizeof(desc_key));
+      strlcpy(code_key, formatted_number, sizeof(code_key));
+      strlcat(code_key, "code", sizeof(code_key));
+      strlcpy(enable_key, formatted_number, sizeof(enable_key));
+      strlcat(enable_key, "enable", sizeof(enable_key));
 
       if (!string_is_empty(cheat_st->cheats[i].desc))
          config_set_string(conf, desc_key, cheat_st->cheats[i].desc);
@@ -210,8 +219,15 @@ bool cheat_manager_save(
          config_set_string(conf, desc_key, cheat_st->cheats[i].code);
 
       config_set_string(conf, code_key, cheat_st->cheats[i].code);
-      config_set_bool(conf, enable_key, cheat_st->cheats[i].state);
-      config_set_bool(conf, endian_key, cheat_st->cheats[i].big_endian);
+      config_set_string(conf, enable_key,
+               cheat_st->cheats[i].state 
+            ? "true" 
+            : "false");
+      config_set_string(conf, endian_key,
+               cheat_st->cheats[i].big_endian
+            ? "true"
+            : "false"
+            );
 
       data_ptrs[0]  = &cheat_st->cheats[i].handler;
       data_ptrs[1]  = &cheat_st->cheats[i].memory_search_size;
@@ -702,8 +718,6 @@ static bool cheat_manager_get_game_specific_filename(
    const char *core_name       = NULL;
    const char *game_name       = NULL;
 
-   s1[0]                       = '\0';
-
    if (!core_get_system_info(&system_info))
       return false;
 
@@ -715,9 +729,7 @@ static bool cheat_manager_get_game_specific_filename(
          string_is_empty(game_name))
       return false;
 
-   s[0] = '\0';
-
-   fill_pathname_join(s1,
+   fill_pathname_join_special(s1,
          path_cheat_database, core_name,
          sizeof(s1));
 
@@ -728,7 +740,7 @@ static bool cheat_manager_get_game_specific_filename(
          path_mkdir(s1);
    }
 
-   fill_pathname_join(s, s1, game_name, len);
+   fill_pathname_join_special(s, s1, game_name, len);
 
    return true;
 }

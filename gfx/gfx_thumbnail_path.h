@@ -149,6 +149,9 @@ bool gfx_thumbnail_get_img_name(gfx_thumbnail_path_data_t *path_data, const char
  * Returns true if content directory is valid. */
 bool gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data, char *content_dir, size_t len);
 
+/* Fetches current playlist index. */
+size_t gfx_thumbnail_get_playlist_index(gfx_thumbnail_path_data_t *path_data);
+
 RETRO_END_DECLS
 
 #endif

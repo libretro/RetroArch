@@ -34,10 +34,8 @@
 
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 extern id<ApplePlatform> apple_platform;
-
-id<ApplePlatform> apple_platform;
 #else
-id apple_platform;
+extern id apple_platform;
 #endif
 
 #if defined(HAVE_COCOATOUCH)

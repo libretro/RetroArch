@@ -246,8 +246,8 @@ static int action_right_scroll(unsigned type, const char *label,
    if (!menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
       return false;
 
-   scroll_speed      = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
-   fast_scroll_speed = 4 + 4 * scroll_speed;
+   scroll_speed          = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
+   fast_scroll_speed     = 10 * scroll_speed;
 
    if (selection  + fast_scroll_speed < (menu_entries_get_size()))
    {
@@ -348,9 +348,10 @@ static int action_right_shader_scale_pass(unsigned type, const char *label,
    if (!shader_pass)
       return menu_cbs_exit();
 
+   /* A 20x scale is used to support scaling handheld border shaders up to 8K resolutions */
    current_scale            = shader_pass->fbo.scale_x;
    delta                    = 1;
-   current_scale            = (current_scale + delta) % 6;
+   current_scale            = (current_scale + delta) % 21;
 
    shader_pass->fbo.valid   = current_scale;
    shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
@@ -947,6 +948,21 @@ static int disk_options_disk_idx_right(unsigned type, const char *label,
    return 0;
 }
 
+static int action_right_state_slot(unsigned type, const char *label,
+      bool wraparound)
+{
+   settings_t           *settings = config_get_ptr();
+
+   settings->ints.state_slot++;
+   if (settings->ints.state_slot > 999)
+      settings->ints.state_slot = -1;
+
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+
+   return 0;
+}
+
 int bind_right_generic(unsigned type, const char *label,
        bool wraparound)
 {
@@ -1066,6 +1082,10 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
             BIND_ACTION_RIGHT(cbs, action_right_core_set_standalone_exempt);
+            break;
+         case MENU_SETTING_ACTION_SAVESTATE:
+         case MENU_SETTING_ACTION_LOADSTATE:
+            BIND_ACTION_RIGHT(cbs, action_right_state_slot);
             break;
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION:
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD:

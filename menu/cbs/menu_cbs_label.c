@@ -79,9 +79,6 @@ static int action_bind_label_playlist_collection_entry(
       else
       {
          char playlist_name[PATH_MAX_LENGTH];
-
-         playlist_name[0] = '\0';
-
          strlcpy(playlist_name, playlist_file, sizeof(playlist_name));
          path_remove_extension(playlist_name);
 

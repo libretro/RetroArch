@@ -15,8 +15,6 @@
 
 #define CINTERFACE
 
-#include <gfx/scaler/pixconv.h>
-
 #include "d3d10_common.h"
 #include "d3dcompiler_common.h"
 
@@ -48,18 +46,12 @@ HRESULT WINAPI D3D10CreateDeviceAndSwapChain(
    static PFN_D3D10_CREATE_DEVICE_AND_SWAP_CHAIN fp;
 
    if (!d3d10_dll)
-      d3d10_dll = dylib_load("d3d10.dll");
-
-   if (!d3d10_dll)
-      return TYPE_E_CANTLOADLIBRARY;
-
+      if (!(d3d10_dll = dylib_load("d3d10.dll")))
+         return TYPE_E_CANTLOADLIBRARY;
    if (!fp)
-      fp = (PFN_D3D10_CREATE_DEVICE_AND_SWAP_CHAIN)dylib_proc(
-            d3d10_dll, "D3D10CreateDeviceAndSwapChain");
-
-   if (!fp)
-      return TYPE_E_DLLFUNCTIONNOTFOUND;
-
+      if (!(fp = (PFN_D3D10_CREATE_DEVICE_AND_SWAP_CHAIN)dylib_proc(
+            d3d10_dll, "D3D10CreateDeviceAndSwapChain")))
+         return TYPE_E_DLLFUNCTIONNOTFOUND;
    return fp(
          pAdapter, DriverType, Software, Flags, SDKVersion,
          pSwapChainDesc, ppSwapChain, ppDevice);
@@ -68,10 +60,8 @@ HRESULT WINAPI D3D10CreateDeviceAndSwapChain(
 
 void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
 {
-   bool is_render_target = texture->desc.BindFlags & D3D10_BIND_RENDER_TARGET;
-   UINT format_support   = D3D10_FORMAT_SUPPORT_TEXTURE2D | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE;
-
-   d3d10_release_texture(texture);
+   bool is_render_target            = texture->desc.BindFlags & D3D10_BIND_RENDER_TARGET;
+   UINT format_support              = D3D10_FORMAT_SUPPORT_TEXTURE2D | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE;
 
    texture->desc.MipLevels          = 1;
    texture->desc.ArraySize          = 1;
@@ -86,35 +76,38 @@ void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
       unsigned width, height;
 
       texture->desc.BindFlags |= D3D10_BIND_RENDER_TARGET;
-      width                    = texture->desc.Width >> 5;
+      width                    = texture->desc.Width  >> 5;
       height                   = texture->desc.Height >> 5;
 
       while (width && height)
       {
-         width >>= 1;
+         width  >>= 1;
          height >>= 1;
          texture->desc.MipLevels++;
       }
    }
 
    if (texture->desc.BindFlags & D3D10_BIND_RENDER_TARGET)
-      format_support |= D3D10_FORMAT_SUPPORT_RENDER_TARGET;
+      format_support   |= D3D10_FORMAT_SUPPORT_RENDER_TARGET;
 
    texture->desc.Format = d3d10_get_closest_match(device, texture->desc.Format, format_support);
 
-   D3D10CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
+   device->lpVtbl->CreateTexture2D(device, &texture->desc, NULL,
+         &texture->handle);
 
    {
-      D3D10_SHADER_RESOURCE_VIEW_DESC view_desc = { DXGI_FORMAT_UNKNOWN };
+      D3D10_SHADER_RESOURCE_VIEW_DESC view_desc;
       view_desc.Format                          = texture->desc.Format;
       view_desc.ViewDimension                   = D3D_SRV_DIMENSION_TEXTURE2D;
       view_desc.Texture2D.MostDetailedMip       = 0;
       view_desc.Texture2D.MipLevels             = -1;
-      D3D10CreateTexture2DShaderResourceView(device, texture->handle, &view_desc, &texture->view);
+      device->lpVtbl->CreateShaderResourceView(device,
+            (D3D10Resource)texture->handle, &view_desc, &texture->view);
    }
 
    if (is_render_target)
-      D3D10CreateTexture2DRenderTargetView(device, texture->handle, NULL, &texture->rt_view);
+      device->lpVtbl->CreateRenderTargetView(device,
+            (D3D10Resource)texture->handle, NULL, &texture->rt_view);
    else
    {
       D3D10_TEXTURE2D_DESC desc = texture->desc;
@@ -123,7 +116,7 @@ void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
       desc.MiscFlags            = 0;
       desc.Usage                = D3D10_USAGE_STAGING;
       desc.CPUAccessFlags       = D3D10_CPU_ACCESS_WRITE;
-      D3D10CreateTexture2D(device, &desc, NULL, &texture->staging);
+      device->lpVtbl->CreateTexture2D(device, &desc, NULL, &texture->staging);
    }
 
    texture->size_data.x = texture->desc.Width;
@@ -142,33 +135,29 @@ void d3d10_update_texture(
       d3d10_texture_t* texture)
 {
    D3D10_MAPPED_TEXTURE2D mapped_texture;
-   D3D10_BOX                frame_box = { 0, 0, 0, (UINT)width,
-      (UINT)height, 1 };
+   D3D10_BOX                frame_box;
 
-   if (!texture || !texture->staging)
-      return;
-
-   D3D10MapTexture2D(texture->staging,
-         0, D3D10_MAP_WRITE, 0,
+   texture->staging->lpVtbl->Map(texture->staging, 0, D3D10_MAP_WRITE, 0,
          &mapped_texture);
 
-#if 0
-   conv_rgb565_argb8888(mapped_texture.pData, data, width, height,
-         mapped_texture.RowPitch, pitch);
-#else
    dxgi_copy(
          width, height, format, pitch, data, texture->desc.Format,
          mapped_texture.RowPitch,
          mapped_texture.pData);
-#endif
 
-   D3D10UnmapTexture2D(texture->staging, 0);
-
-   D3D10CopyTexture2DSubresourceRegion(
-         ctx, texture->handle, 0, 0, 0, 0, texture->staging, 0, &frame_box);
+   texture->staging->lpVtbl->Unmap(texture->staging, 0);
+   frame_box.left   = 0;
+   frame_box.top    = 0;
+   frame_box.front  = 0;
+   frame_box.right  = (UINT)width;
+   frame_box.bottom = (UINT)height;
+   frame_box.back   = 1;
+   ctx->lpVtbl->CopySubresourceRegion(
+         ctx, (D3D10Resource)texture->handle, 0, 0, 0, 0,
+         (D3D10Resource)texture->staging, 0, &frame_box);
 
    if (texture->desc.MiscFlags & D3D10_RESOURCE_MISC_GENERATE_MIPS)
-      D3D10GenerateMips(ctx, texture->view);
+      ctx->lpVtbl->GenerateMips(ctx, texture->view);
 }
 
    DXGI_FORMAT
@@ -184,7 +173,8 @@ d3d10_get_closest_match(D3D10Device device,
    while (*format != DXGI_FORMAT_UNKNOWN)
    {
       UINT format_support;
-      if (SUCCEEDED(D3D10CheckFormatSupport(device, *format, &format_support)) &&
+      if (SUCCEEDED(device->lpVtbl->CheckFormatSupport(device, *format,
+                  &format_support)) &&
             ((format_support & desired_format_support) == desired_format_support))
          break;
       format++;
@@ -230,23 +220,30 @@ bool d3d10_init_shader(
          success = false;
    }
 
-   if (vs_code)
-      D3D10CreateVertexShader(
-            device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code), &out->vs);
 
    if (ps_code)
-      D3D10CreatePixelShader(
-            device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code), &out->ps);
+      device->lpVtbl->CreatePixelShader(device,
+            ps_code->lpVtbl->GetBufferPointer(ps_code),
+            ps_code->lpVtbl->GetBufferSize(ps_code),
+            &out->ps);
 
    if (gs_code)
-      D3D10CreateGeometryShader(
-            device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code), &out->gs);
-
-   if (vs_code && input_element_descs)
-      D3D10CreateInputLayout(
+      device->lpVtbl->CreateGeometryShader(
             device,
-            (D3D10_INPUT_ELEMENT_DESC*)input_element_descs, num_elements, D3DGetBufferPointer(vs_code),
-            D3DGetBufferSize(vs_code), &out->layout);
+            gs_code->lpVtbl->GetBufferPointer(gs_code),
+            gs_code->lpVtbl->GetBufferSize(gs_code),
+            &out->gs);
+
+   if (vs_code)
+   {
+      LPVOID buf_ptr  = vs_code->lpVtbl->GetBufferPointer(vs_code);
+      SIZE_T buf_size = vs_code->lpVtbl->GetBufferSize(vs_code);
+      device->lpVtbl->CreateVertexShader(device, buf_ptr, buf_size, &out->vs);
+      if (input_element_descs)
+         device->lpVtbl->CreateInputLayout(
+               device, (D3D10_INPUT_ELEMENT_DESC*)input_element_descs,
+               num_elements, buf_ptr, buf_size, &out->layout);
+   }
 
    Release(vs_code);
    Release(ps_code);

@@ -30,7 +30,6 @@
 #endif
 
 #include "gfx/video_defines.h"
-#include "input/input_defines.h"
 #include "led/led_defines.h"
 
 #ifdef HAVE_LAKKA
@@ -69,8 +68,6 @@
    strlcpy(var, newvar, sizeof(var)); \
 }
 
-#define INPUT_CONFIG_BIND_MAP_GET(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
-
 enum crt_switch_type
 {
    CRT_SWITCH_NONE = 0,
@@ -89,25 +86,6 @@ enum override_type
 };
 
 RETRO_BEGIN_DECLS
-
-/* Input config. */
-struct input_bind_map
-{
-   const char *base;
-
-   enum msg_hash_enums desc;
-
-   /* Meta binds get input as prefix, not input_playerN".
-    * 0 = libretro related.
-    * 1 = Common hotkey.
-    * 2 = Uncommon/obscure hotkey.
-    */
-   uint8_t meta;
-
-   uint8_t retro_key;
-
-   bool valid;
-};
 
 typedef struct settings
 {
@@ -146,6 +124,16 @@ typedef struct settings
       int video_window_offset_y;
 #endif
       int content_favorites_size;
+#ifdef _3DS
+      int bottom_font_color_red;
+      int bottom_font_color_green;
+      int bottom_font_color_blue;
+      int bottom_font_color_opacity;
+#endif
+#ifdef HAVE_XMB
+      int menu_xmb_title_margin;
+      int menu_xmb_title_margin_horizontal_offset;
+#endif
    } ints;
 
    struct
@@ -201,6 +189,8 @@ typedef struct settings
       unsigned netplay_port;
       unsigned netplay_max_connections;
       unsigned netplay_max_ping;
+      unsigned netplay_chat_color_name;
+      unsigned netplay_chat_color_msg;
       unsigned netplay_input_latency_frames_min;
       unsigned netplay_input_latency_frames_range;
       unsigned netplay_share_digital;
@@ -224,7 +214,9 @@ typedef struct settings
       unsigned video_monitor_index;
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;
+      unsigned video_scale;
       unsigned video_max_swapchain_images;
+      unsigned video_max_frame_latency;
       unsigned video_swap_interval;
       unsigned video_hard_sync_frames;
       unsigned video_frame_delay;
@@ -278,7 +270,6 @@ typedef struct settings
       unsigned menu_xmb_color_theme;
       unsigned menu_xmb_thumbnail_scale_factor;
       unsigned menu_xmb_vertical_fade_factor;
-      unsigned menu_xmb_title_margin;
       unsigned menu_materialui_color_theme;
       unsigned menu_materialui_transition_animation;
       unsigned menu_materialui_thumbnail_view_portrait;
@@ -332,6 +323,7 @@ typedef struct settings
 
       unsigned core_updater_auto_backup_history_size;
       unsigned video_black_frame_insertion;
+      unsigned video_autoswitch_refresh_rate;
       unsigned quit_on_close_content;
 
 #ifdef HAVE_LAKKA
@@ -348,7 +340,6 @@ typedef struct settings
    struct
    {
       float placeholder;
-      float video_scale;
       float video_aspect_ratio;
       float video_refresh_rate;
       float crt_video_refresh_rate;
@@ -400,6 +391,9 @@ typedef struct settings
       float input_analog_deadzone;
       float input_axis_threshold;
       float input_analog_sensitivity;
+#ifdef _3DS
+      float bottom_font_scale;
+#endif
    } floats;
 
    struct
@@ -436,9 +430,6 @@ typedef struct settings
 
       char translation_service_url[2048];
 
-      char bundle_assets_src[PATH_MAX_LENGTH];
-      char bundle_assets_dst[PATH_MAX_LENGTH];
-      char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];
       char facebook_stream_key[PATH_MAX_LENGTH];
@@ -471,6 +462,9 @@ typedef struct settings
 
       char path_stream_url[8192];
 
+      char bundle_assets_src[PATH_MAX_LENGTH];
+      char bundle_assets_dst[PATH_MAX_LENGTH];
+      char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
       char path_menu_xmb_font[PATH_MAX_LENGTH];
       char menu_content_show_settings_password[PATH_MAX_LENGTH];
       char kiosk_mode_password[PATH_MAX_LENGTH];
@@ -525,7 +519,9 @@ typedef struct settings
       char directory_menu_config[PATH_MAX_LENGTH];
       char directory_menu_content[PATH_MAX_LENGTH];
       char streaming_title[PATH_MAX_LENGTH];
-
+#ifdef _3DS
+      char directory_bottom_assets[PATH_MAX_LENGTH];
+#endif
       char log_dir[PATH_MAX_LENGTH];
    } paths;
 
@@ -541,6 +537,7 @@ typedef struct settings
       bool video_vsync;
       bool video_adaptive_vsync;
       bool video_hard_sync;
+      bool video_waitable_swapchains;
       bool video_vfilter;
       bool video_smooth;
       bool video_ctx_scaling;
@@ -569,7 +566,9 @@ typedef struct settings
       bool video_framecount_show;
       bool video_memory_show;
       bool video_msg_bgcolor_enable;
+#ifdef _3DS
       bool video_3ds_lcd_bottom;
+#endif
       bool video_wiiu_prefer_drc;
       bool video_notch_write_over_enable;
 #ifdef HAVE_VIDEO_LAYOUT
@@ -708,6 +707,7 @@ typedef struct settings
       bool menu_rgui_particle_effect_screensaver;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_vertical_thumbnails;
+      bool menu_xmb_show_title_header;
       bool menu_content_show_settings;
       bool menu_content_show_favorites;
       bool menu_content_show_images;
@@ -721,6 +721,8 @@ typedef struct settings
       bool menu_use_preferred_system_color_theme;
       bool menu_preferred_system_color_theme_set;
       bool menu_unified_controls;
+      bool menu_disable_info_button;
+      bool menu_disable_search_button;
       bool menu_ticker_smooth;
       bool settings_show_drivers;
       bool settings_show_video;
@@ -751,6 +753,7 @@ typedef struct settings
       bool quick_menu_show_restart_content;
       bool quick_menu_show_close_content;
       bool quick_menu_show_take_screenshot;
+      bool quick_menu_show_savestate_submenu;
       bool quick_menu_show_save_load_state;
       bool quick_menu_show_undo_save_load_state;
       bool quick_menu_show_add_to_favorites;
@@ -777,13 +780,14 @@ typedef struct settings
 
       /* Netplay */
       bool netplay_show_only_connectable;
+      bool netplay_show_only_installed_cores;
+      bool netplay_show_passworded;
       bool netplay_public_announce;
       bool netplay_start_as_spectator;
       bool netplay_fade_chat;
       bool netplay_allow_pausing;
       bool netplay_allow_slaves;
       bool netplay_require_slaves;
-      bool netplay_stateless_mode;
       bool netplay_nat_traversal;
       bool netplay_use_mitm_server;
       bool netplay_request_devices[MAX_USERS];
@@ -892,6 +896,7 @@ typedef struct settings
       bool sort_savestates_by_content_enable;
       bool sort_screenshots_by_content_enable;
       bool config_save_on_exit;
+      bool remap_save_on_exit;
       bool show_hidden_files;
       bool use_last_start_directory;
 
@@ -939,6 +944,11 @@ typedef struct settings
       bool gamemode_enable;
 #ifdef _3DS
       bool new3ds_speedup_enable;
+      bool bottom_font_enable;
+#endif
+
+#ifdef ANDROID
+      bool android_input_disconnect_workaround;
 #endif
    } bools;
 
@@ -1152,8 +1162,6 @@ void input_config_parse_mouse_button(
       const char *btn, void *bind_data);
 
 const char *input_config_get_prefix(unsigned user, bool meta);
-
-extern const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL];
 
 RETRO_END_DECLS
 

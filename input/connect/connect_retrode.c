@@ -156,7 +156,7 @@ static void retrode_update_button_state(retrode_pad_data_t *pad)
    if (!pad)
       return;
 
-   pressed_keys = pad->data[4];
+   pressed_keys = pad->data[3];
    pad->buttons = 0;
 
    for (i = 0; i < 8; i ++)
@@ -180,14 +180,14 @@ static void hidpad_retrode_packet_handler(void *device_data, uint8_t *packet, ui
    memcpy(device->data, packet, size);
 
    /*
-    * packet[1] contains Retrode port number
+    * packet[0] contains Retrode port number
     * 1 = left SNES
     * 2 = right SNES
     * 3 = left Genesis/MD
     * 4 = right Genesis/MD
     */
 
-   hidpad_retrode_pad_packet_handler(&device->pad_data[packet[1] - 1], &device->data[0], size);
+   hidpad_retrode_pad_packet_handler(&device->pad_data[packet[0] - 1], &device->data[0], size);
 }
 
 static void hidpad_retrode_set_rumble(void *data,

@@ -49,6 +49,9 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#ifdef HAVE_CHEEVOS
+#include "cheevos/cheevos_menu.h"
+#endif
 #endif
 
 static void retro_frame_null(const void *data, unsigned width,
@@ -308,6 +311,18 @@ static void driver_adjust_system_rates(
    double input_sample_rate               = info->sample_rate;
    double input_fps                       = info->fps;
 
+   /* Update video swap interval if automatic
+    * switching is enabled */
+   runloop_set_video_swap_interval(
+         vrr_runloop_enable,
+         video_st->crt_switching_active,
+         video_swap_interval,
+         audio_max_timing_skew,
+         video_refresh_rate,
+         input_fps);
+   video_swap_interval = runloop_get_video_swap_interval(
+         video_swap_interval);
+
    if (input_sample_rate > 0.0)
    {
       audio_driver_state_t *audio_st      = audio_state_get_ptr();
@@ -341,6 +356,7 @@ static void driver_adjust_system_rates(
          video_refresh_rate,
          vrr_runloop_enable,
          audio_max_timing_skew,
+         video_swap_interval,
          input_fps))
       {
          /* We won't be able to do VSync reliably 
@@ -389,7 +405,8 @@ void driver_set_nonblock_state(void)
    bool audio_sync             = settings->bools.audio_sync;
    bool video_vsync            = settings->bools.video_vsync;
    bool adaptive_vsync         = settings->bools.video_adaptive_vsync;
-   unsigned swap_interval      = settings->uints.video_swap_interval;
+   unsigned swap_interval      = runloop_get_video_swap_interval(
+         settings->uints.video_swap_interval);
    bool video_driver_active    = video_st->active;
    bool audio_driver_active    = audio_st->active;
    bool runloop_force_nonblock = runloop_st->force_nonblock;
@@ -445,7 +462,7 @@ void drivers_init(
    bool menu_enable_widgets    = settings->bools.menu_enable_widgets;
 
    /* By default, we want display widgets to persist through driver reinits. */
-   dispwidget_get_ptr()->persisting = true;
+   dispwidget_get_ptr()->flags |= DISPGFX_WIDGET_FLAG_PERSISTING;
 #endif
 
 #ifdef HAVE_MENU
@@ -506,24 +523,33 @@ void drivers_init(
    {
       struct retro_system_av_info *av_info = &video_st->av_info;
       float refresh_rate                   = av_info->timing.fps;
-
+      unsigned autoswitch_refresh_rate     = settings->uints.video_autoswitch_refresh_rate;
+      bool exclusive_fullscreen            = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
+      bool windowed_fullscreen             = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
+      bool all_fullscreen                  = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
+   
       if (  refresh_rate > 0.0 &&
             !settings->uints.crt_switch_resolution &&
             !settings->bools.vrr_runloop_enable &&
-            !settings->bools.video_windowed_fullscreen &&
-            settings->bools.video_fullscreen &&
+            video_display_server_has_resolution_list() &&
+            (autoswitch_refresh_rate != AUTOSWITCH_REFRESH_RATE_OFF) &&
             fabs(settings->floats.video_refresh_rate - refresh_rate) > 1)
       {
-         bool video_switch_refresh_rate = false;
-
-         video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
-
-         if (video_switch_refresh_rate && video_display_server_set_refresh_rate(refresh_rate))
+         if (((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN) && exclusive_fullscreen) ||
+             ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN) && windowed_fullscreen)   ||
+             ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN) && all_fullscreen))
          {
-            int reinit_flags = DRIVER_AUDIO_MASK;
-            video_monitor_set_refresh_rate(refresh_rate);
-            /* Audio must reinit after successful rate switch */
-            command_event(CMD_EVENT_REINIT, &reinit_flags);
+            bool video_switch_refresh_rate = false;
+   
+            video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
+   
+            if (video_switch_refresh_rate && video_display_server_set_refresh_rate(refresh_rate))
+            {
+               int reinit_flags = DRIVER_AUDIO_MASK;
+               video_monitor_set_refresh_rate(refresh_rate);
+               /* Audio must reinit after successful rate switch */
+               command_event(CMD_EVENT_REINIT, &reinit_flags);
+            }
          }
       }
    }
@@ -682,9 +708,9 @@ void driver_uninit(int flags)
    /* This absolutely has to be done before video_driver_free_internal()
     * is called/completes, otherwise certain menu drivers
     * (e.g. Vulkan) will segfault */
-   if (dispwidget_get_ptr()->inited)
+   if (dispwidget_get_ptr()->flags & DISPGFX_WIDGET_FLAG_INITED)
    {
-      gfx_widgets_deinit(dispwidget_get_ptr()->persisting);
+      gfx_widgets_deinit(dispwidget_get_ptr()->flags & DISPGFX_WIDGET_FLAG_PERSISTING);
       dispwidget_get_ptr()->active = false;
    }
 #endif
@@ -696,6 +722,10 @@ void driver_uninit(int flags)
       menu_explore_context_deinit();
 #endif
       menu_contentless_cores_context_deinit();
+
+#ifdef HAVE_CHEEVOS
+      rcheevos_menu_reset_badges();
+#endif
 
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
    }
@@ -774,10 +804,10 @@ void retroarch_deinit_drivers(struct retro_callbacks *cbs)
     * in case the handle is lost in the threaded
     * video driver in the meantime
     * (breaking video_driver_has_widgets) */
-   if (dispwidget_get_ptr()->inited)
+   if (dispwidget_get_ptr()->flags & DISPGFX_WIDGET_FLAG_INITED)
    {
       gfx_widgets_deinit(
-            dispwidget_get_ptr()->persisting);
+            dispwidget_get_ptr()->flags & DISPGFX_WIDGET_FLAG_PERSISTING);
       dispwidget_get_ptr()->active = false;
    }
 #endif

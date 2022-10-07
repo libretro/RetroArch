@@ -54,12 +54,12 @@ RETRO_BEGIN_DECLS
 struct config_file
 {
    char *path;
-   char *reference;
    struct config_entry_list **entries_map;
    struct config_entry_list *entries;
    struct config_entry_list *tail;
    struct config_entry_list *last;
    struct config_include_list *includes;
+   struct path_linked_list *references;
    unsigned include_depth;
    bool guaranteed_no_duplicates;
    bool modified;
@@ -84,43 +84,72 @@ typedef struct config_file_cb config_file_cb_t ;
  * Key/value pairs from an #include are read-only, and cannot be modified.
  */
 
-/* Loads a config file. Returns NULL if file doesn't exist.
- * NULL path will create an empty config file. */
+/**
+ * config_file_new:
+ *
+ * Loads a config file.
+ * If @path is NULL, will create an empty config file.
+ *
+ * @return Returns NULL if file doesn't exist.
+ **/
 config_file_t *config_file_new(const char *path);
 
 config_file_t *config_file_new_alloc(void);
 
+/**
+ * config_file_initialize:
+ *
+ * Leaf function.
+ **/
 void config_file_initialize(struct config_file *conf);
 
-/* Loads a config file. Returns NULL if file doesn't exist.
- * NULL path will create an empty config file.
- * Includes cb callbacks to run custom code during config file processing.*/
-config_file_t *config_file_new_with_callback(const char *path, config_file_cb_t *cb);
+/**
+ * config_file_new_with_callback:
+ *
+ * Loads a config file.
+ * If @path is NULL, will create an empty config file.
+ * Includes cb callbacks  to run custom code during config file processing.
+ *
+ * @return Returns NULL if file doesn't exist.
+ **/
+config_file_t *config_file_new_with_callback(
+      const char *path, config_file_cb_t *cb);
 
-/* Load a config file from a string.
- * > WARNING: This will modify 'from_string'.
- *   Pass a copy of source string if original
- *   contents must be preserved */
+/**
+ * config_file_new_from_string:
+ *
+ * Load a config file from a string.
+ *
+ * NOTE: This will modify @from_string.
+ * Pass a copy of source string if original
+ * contents must be preserved
+ **/
 config_file_t *config_file_new_from_string(char *from_string,
       const char *path);
 
 config_file_t *config_file_new_from_path_to_string(const char *path);
 
-/* Frees config file. */
+/**
+ * config_file_free:
+ *
+ * Frees config file.
+ **/
 void config_file_free(config_file_t *conf);
 
-void config_file_set_reference_path(config_file_t *conf, char *path);
+void config_file_add_reference(config_file_t *conf, char *path);
 
 bool config_file_deinitialize(config_file_t *conf);
 
-/* Loads a new config, and appends its data to conf.
- * The key-value pairs of the new config file takes priority over the old. */
+/**
+ * config_append_file:
+ *
+ * Loads a new config, and appends its data to @conf.
+ * The key-value pairs of the new config file takes priority over the old.
+ **/
 bool config_append_file(config_file_t *conf, const char *path);
 
 /* All extract functions return true when value is valid and exists.
  * Returns false otherwise. */
-
-bool config_entry_exists(config_file_t *conf, const char *entry);
 
 struct config_entry_list
 {
@@ -131,7 +160,6 @@ struct config_entry_list
     * do not allow overwrite. */
    bool readonly;
 };
-
 
 struct config_file_entry
 {
@@ -144,13 +172,45 @@ struct config_file_entry
 struct config_entry_list *config_get_entry(
       const config_file_t *conf, const char *key);
 
-bool config_get_entry_list_head(config_file_t *conf, struct config_file_entry *entry);
+/**
+ * config_get_entry_list_head:
+ *
+ * Leaf function.
+ **/
+bool config_get_entry_list_head(config_file_t *conf,
+      struct config_file_entry *entry);
+
+/**
+ * config_get_entry_list_next:
+ *
+ * Leaf function.
+ **/
 bool config_get_entry_list_next(struct config_file_entry *entry);
 
-/* Extracts a double from config file. */
+/**
+ * config_get_double:
+ *
+ * Extracts a double from config file.
+ *
+ * Hidden non-leaf function cost:
+ * - Calls config_get_entry()
+ * - Calls strtod
+ *
+ * @return True if double found, otherwise false.
+ **/
 bool config_get_double(config_file_t *conf, const char *entry, double *in);
 
-/* Extracts a float from config file. */
+/**
+ * config_get_float:
+ *
+ * Extracts a float from config file.
+ *
+ * Hidden non-leaf function cost:
+ * - Calls config_get_entry()
+ * - Calls strtod
+ *
+ * @return true if found, otherwise false.
+ **/
 bool config_get_float(config_file_t *conf, const char *entry, float *in);
 
 /* Extracts an int from config file. */
@@ -170,27 +230,63 @@ bool config_get_uint64(config_file_t *conf, const char *entry, uint64_t *in);
 /* Extracts an unsigned int from config file treating input as hex. */
 bool config_get_hex(config_file_t *conf, const char *entry, unsigned *in);
 
-/* Extracts a single char. If value consists of several chars,
- * this is an error. */
+/**
+ * config_get_char:
+ *
+ * Extracts a single char from config file.
+ * If value consists of several chars, this is an error.
+ *
+ * Hidden non-leaf function cost:
+ * - Calls config_get_entry()
+ *
+ * @return true if found, otherwise false.
+ **/
 bool config_get_char(config_file_t *conf, const char *entry, char *in);
 
-/* Extracts an allocated string in *in. This must be free()-d if
- * this function succeeds. */
+/**
+ * config_get_string:
+ *
+ * Extracts an allocated string in *in. This must be free()-d if
+ * this function succeeds.
+ *
+ * Hidden non-leaf function cost:
+ * - Calls config_get_entry()
+ * - Calls strdup
+ *
+ * @return true if found, otherwise false.
+ **/
 bool config_get_string(config_file_t *conf, const char *entry, char **in);
 
 /* Extracts a string to a preallocated buffer. Avoid memory allocation. */
 bool config_get_array(config_file_t *conf, const char *entry, char *s, size_t len);
 
+/**
+  * config_get_config_path:
+  *
+  * Extracts a string to a preallocated buffer.
+  * Avoid memory allocation.
+  *
+  * Hidden non-leaf function cost:
+  * - Calls strlcpy
+  **/
+bool config_get_config_path(config_file_t *conf, char *s, size_t len);
+
 /* Extracts a string to a preallocated buffer. Avoid memory allocation.
  * Recognized magic like ~/. Similar to config_get_array() otherwise. */
 bool config_get_path(config_file_t *conf, const char *entry, char *s, size_t len);
 
-/* Extracts a string to a preallocated buffer. Avoid memory allocation. */
-bool config_get_config_path(config_file_t *conf, char *s, size_t len);
-
-/* Extracts a boolean from config.
+/**
+ * config_get_bool:
+ * 
+ * Extracts a boolean from config.
  * Valid boolean true are "true" and "1". Valid false are "false" and "0".
- * Other values will be treated as an error. */
+ * Other values will be treated as an error.
+ *
+ * Hidden non-leaf function cost:
+ * - Calls string_is_equal() x times
+ *
+ * @return true if preconditions are true, otherwise false.
+ **/
 bool config_get_bool(config_file_t *conf, const char *entry, bool *in);
 
 /* Setters. Similar to the getters.
@@ -204,21 +300,30 @@ void config_set_char(config_file_t *conf, const char *entry, char val);
 void config_set_string(config_file_t *conf, const char *entry, const char *val);
 void config_unset(config_file_t *conf, const char *key);
 void config_set_path(config_file_t *conf, const char *entry, const char *val);
+
+/**
+ * config_set_bool:
+
+ * TODO/FIXME - could be turned into a trivial macro or removed
+ **/
 void config_set_bool(config_file_t *conf, const char *entry, bool val);
+
 void config_set_uint(config_file_t *conf, const char *key, unsigned int val);
 
-/* Write the current config to a file. */
+/**
+ * config_file_write:
+ *
+ * Write the current config to a file.
+ **/
 bool config_file_write(config_file_t *conf, const char *path, bool val);
 
-/* Dump the current config to an already opened file.
- * Does not close the file. */
+/**
+ * config_file_dump:
+ *
+ * Dump the current config to an already opened file.
+ * Does not close the file.
+ **/
 void config_file_dump(config_file_t *conf, FILE *file, bool val);
-
-#ifdef ORBIS
-void config_file_dump_orbis(config_file_t *conf, int fd);
-#endif
-
-bool config_file_exists(const char *path);
 
 RETRO_END_DECLS
 

@@ -624,10 +624,7 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
 
       if (error == 0)
       {
-         /* NOTE: packet_handler() expects that packet[1] is the first byte, so added -1.
-          * The Wii version puts the slot number in packet[0], which is not possible here:
-          * packet[0] is undefined! */
-         adapter->pad_driver->packet_handler(adapter->pad_driver_data, buffer-1, buffer_size+1);
+         adapter->pad_driver->packet_handler(adapter->pad_driver_data, buffer, buffer_size);
       }
    }
 }

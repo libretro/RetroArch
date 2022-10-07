@@ -46,6 +46,7 @@
 #endif
 #endif
 
+#include <compat/strl.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
@@ -63,14 +64,15 @@ static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
 static char cwd[FILENAME_MAX];
 static char mountString[10];
 static char mountPoint[50];
-static int hddMounted = 0;
+static int hdd_mounted     = 0;
 static int pfsModuleLoaded = 0;
 
 static void create_path_names(void)
 {
    char user_path[FILENAME_MAX];
 
-   snprintf(user_path, sizeof(user_path), "%sretroarch", cwd);
+   strlcpy(user_path, cwd, sizeof(user_path));
+   strlcat(user_path, "retroarch", sizeof(user_path));
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], cwd, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 
    /* Content in the same folder */
@@ -143,14 +145,10 @@ static void reset_IOP()
 
 static int hddCheck(void)
 {
-    int ret;
-
-    ret = fileXioDevctl("hdd0:", HDIOC_STATUS, NULL, 0, NULL, 0);
-
-    // 0 = HDD connected and formatted, 1 = not formatted, 2 = HDD not usable, 3 = HDD not connected.
+    int ret = fileXioDevctl("hdd0:", HDIOC_STATUS, NULL, 0, NULL, 0);
+    /* 0 = HDD connected and formatted, 1 = not formatted, 2 = HDD not usable, 3 = HDD not connected. */
     if ((ret >= 3) || (ret < 0))
         return -1;
-
     return ret;
 }
 
@@ -176,14 +174,16 @@ static void load_hdd_modules()
       return;
    }
 
-   // Check if a HDD unit is connected
-   if (hddCheck() < 0) {
+   /* Check if a HDD unit is connected */
+   if (hddCheck() < 0)
+   {
       RARCH_WARN("HDD: No HardDisk Drive detected.\n");
       return;
    }
 
    ret = SifExecModuleBuffer(&ps2fs_irx, size_ps2fs_irx, 0, NULL, NULL);
-   if (ret < 0) {
+   if (ret < 0)
+   {
       RARCH_WARN("HDD: HardDisk Drive not formatted (PFS).\n");
       return;
    }
@@ -231,31 +231,32 @@ static void load_modules()
 #endif
 }
 
-static int mount_hdd_partition() {
-   char mountPath[FILENAME_MAX];
-   char newCWD[FILENAME_MAX];
-   int shouldMount = 0;
+static int mount_hdd_partition(void)
+{
+   char mount_path[FILENAME_MAX];
+   char new_cwd[FILENAME_MAX];
+   int should_mount  = 0;
+   int bootDeviceID  = getBootDeviceID(cwd);
 
-   int bootDeviceID = getBootDeviceID(cwd);
    /* Try to mount HDD partition, either from cwd or default one */
    if (bootDeviceID == BOOT_DEVICE_HDD || bootDeviceID == BOOT_DEVICE_HDD0)
    {
-      shouldMount = 1;
-      strlcpy(mountPath, cwd, sizeof(mountPath));
+      should_mount = 1;
+      strlcpy(mount_path, cwd, sizeof(mount_path));
    }
 #if !defined(IS_SALAMANDER) && defined(DEBUG)
    else
    {
-      // Even if we're booting from USB, try to mount default partition
-      strcpy(mountPath, DEFAULT_PARTITION);
-      shouldMount = 1;
+      /* Even if we're booting from USB, try to mount default partition */
+      strlcpy(mount_path, DEFAULT_PARTITION, sizeof(mount_path));
+      should_mount = 1;
    }
 #endif
 
-   if (!shouldMount)
+   if (!should_mount)
       return 0;
 
-   if (getMountInfo(mountPath, mountString, mountPoint, newCWD) != 1)
+   if (getMountInfo(mount_path, mountString, mountPoint, new_cwd) != 1)
    {
       RARCH_WARN("Partition info not readed\n");
       return 0;
@@ -269,12 +270,15 @@ static int mount_hdd_partition() {
 
    if (bootDeviceID == BOOT_DEVICE_HDD || bootDeviceID == BOOT_DEVICE_HDD0)
    {
-      // If we're booting from HDD, we must update the cwd variable and add : to the mount point
-      strncpy(cwd, newCWD, sizeof(cwd));
-      strcat(mountPoint, ":");
-   } else {
-      // we MUST put mountPoint as empty to avoid wrong results with LoadELFFromFileWithPartition
-      strcpy(mountPoint, "");
+      /* If we're booting from HDD, we must update the cwd variable and add : to the mount point */
+      strlcpy(cwd, new_cwd, sizeof(cwd));
+      strlcat(mountPoint, ":", sizeof(mountPoint));
+   }
+   else
+   {
+      /* We MUST put mountPoint as empty to avoid wrong results 
+	 with LoadELFFromFileWithPartition */
+      strlcpy(mountPoint, "", sizeof(mountPoint));
    }
 
    return 1;
@@ -282,7 +286,7 @@ static int mount_hdd_partition() {
 
 static void prepare_for_exit(void)
 {
-   if (hddMounted)
+   if (hdd_mounted)
    {
       fileXioUmount(mountString);
       fileXioDevctl(mountString, PDIOC_CLOSEALL, NULL, 0, NULL, 0);
@@ -370,11 +374,12 @@ static void frontend_ps2_init(void *data)
 
    getcwd(cwd, sizeof(cwd));
 #if !defined(IS_SALAMANDER) && !defined(DEBUG)
-   // If it is not salamander we need to go one level up for set the CWD.
-   path_parent_dir(cwd);
+   /* If it is not Salamander, we need to go one level 
+    * up for setting the CWD. */
+   path_parent_dir(cwd, strlen(cwd));
 #endif
    if (pfsModuleLoaded)
-      hddMounted = mount_hdd_partition();
+      hdd_mounted = mount_hdd_partition();
 
 #if !defined(DEBUG)
    waitUntilDeviceIsReady(cwd);
@@ -478,46 +483,48 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
       MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
       MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          rootDevicePath(BOOT_DEVICE_MC0),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          rootDevicePath(BOOT_DEVICE_MC1),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          rootDevicePath(BOOT_DEVICE_CDFS),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          rootDevicePath(BOOT_DEVICE_MASS),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   if (hddMounted)
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   if (hdd_mounted)
    {
-      sprintf(hdd, "%s/", mountString);
-      menu_entries_append_enum(list,
+      size_t _len = strlcpy(hdd, mountString, sizeof(hdd));
+      hdd[_len  ] = '/';
+      hdd[_len+1] = '\0';
+      menu_entries_append(list,
             hdd,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          rootDevicePath(BOOT_DEVICE_HOST),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #if defined(DEBUG) && !defined(BUILD_FOR_PCSX2)
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "host:",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
 #endif
 

@@ -701,7 +701,7 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
    
    if (pad_connection_has_interface(hid->slots, adapter->slot)) {
       IOHIDDeviceRegisterInputReportCallback(device,
-            adapter->data + 1, sizeof(adapter->data) - 1,
+            adapter->data, sizeof(adapter->data),
             iohidmanager_hid_device_report, adapter);
    }
    else {
@@ -1105,7 +1105,7 @@ static int32_t iohidmanager_set_report(void *handle, uint8_t report_type, uint8_
       (struct iohidmanager_hid_adapter*)handle;
 
    if (adapter)
-      return IOHIDDeviceSetReport(adapter->handle, translate_hid_report_type(report_type), report_type, data_buf, size);
+      return IOHIDDeviceSetReport(adapter->handle, translate_hid_report_type(report_type), report_id, data_buf + 1, size - 1);
 
    return -1;
 }

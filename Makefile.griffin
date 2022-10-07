@@ -345,6 +345,8 @@ else ifeq ($(platform), vita)
    HAVE_7ZIP                := 1
    HAVE_VITA2D              := 1
    HAVE_NETWORKING          := 1
+   HAVE_IFINFO              := 1
+   HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
    HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
@@ -365,8 +367,9 @@ else ifeq ($(platform), windows_msvc6_x86)
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 0
-   HAVE_NETWORK_CMD         := 1
-   HAVE_NETPLAYDISCOVERY    := 1
+   HAVE_IFINFO              := 0
+   HAVE_NETWORK_CMD         := 0
+   HAVE_NETPLAYDISCOVERY    := 0
    HAVE_OVERLAY             := 1
    HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
@@ -412,6 +415,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
+   HAVE_IFINFO              := 0
    HAVE_NETWORK_CMD         := 1
    HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
@@ -467,6 +471,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
+   HAVE_IFINFO              := 0
    HAVE_NETWORK_CMD         := 1
    HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
@@ -549,6 +554,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
+   HAVE_IFINFO              := 1
    HAVE_NETWORK_CMD         := 1
    HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
@@ -643,6 +649,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
+   HAVE_IFINFO              := 1
    HAVE_NETWORK_CMD         := 1
    HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
@@ -728,6 +735,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
+   HAVE_IFINFO              := 1
    HAVE_NETWORK_CMD         := 1
    HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
@@ -813,6 +821,7 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
+   HAVE_IFINFO              := 1
    HAVE_NETWORK_CMD         := 1
    HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
@@ -913,6 +922,7 @@ else ifeq (qnx,$(platform))
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
+   HAVE_IFINFO              := 1
    HAVE_NETWORK_CMD         := 1
    HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
@@ -958,6 +968,7 @@ else ifneq (,$(findstring unix,$(platform)))
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
+   HAVE_IFINFO              := 1
    HAVE_NETWORK_CMD         := 1
    HAVE_NETPLAYDISCOVERY    := 1
    HAVE_OVERLAY             := 1
@@ -1109,6 +1120,10 @@ endif
 
 ifeq ($(HAVE_NETWORKING), 1)
    CFLAGS      += -DHAVE_NETWORKING
+endif
+
+ifeq ($(HAVE_IFINFO), 1)
+   CFLAGS      += -DHAVE_IFINFO
 endif
 
 ifeq ($(HAVE_NETPLAYDISCOVERY), 1)

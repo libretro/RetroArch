@@ -59,7 +59,7 @@ int64_t filestream_truncate(RFILE *stream, int64_t length);
  * @bufsize            : optional buffer size (-1 or 0 to use default)
  *
  * Opens a file for reading or writing, depending on the requested mode.
- * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
+ * @return A pointer to an RFILE if opened successfully, otherwise NULL.
  **/
 RFILE* filestream_open(const char *path, unsigned mode, unsigned hints);
 
@@ -75,6 +75,17 @@ void filestream_rewind(RFILE *stream);
 
 int filestream_close(RFILE *stream);
 
+/**
+ * filestream_read_file:
+ * @path             : path to file.
+ * @buf              : buffer to allocate and read the contents of the
+ *                     file into. Needs to be freed manually.
+ * @len              : optional output integer containing bytes read.
+ *
+ * Read the contents of a file into @buf.
+ *
+ * @return Non-zero on success.
+ */
 int64_t filestream_read_file(const char *path, void **buf, int64_t *len);
 
 char* filestream_gets(RFILE *stream, char *s, size_t len);
@@ -87,6 +98,16 @@ int filestream_scanf(RFILE *stream, const char* format, ...);
 
 int filestream_eof(RFILE *stream);
 
+/**
+ * filestream_write_file:
+ * @path             : path to file.
+ * @data             : contents to write to the file.
+ * @size             : size of the contents.
+ *
+ * Writes data to a file.
+ *
+ * @return true on success, otherwise false.
+ **/
 bool filestream_write_file(const char *path, const void *data, int64_t size);
 
 int filestream_putc(RFILE *stream, int c);
@@ -107,7 +128,11 @@ const char* filestream_get_path(RFILE *stream);
 
 bool filestream_exists(const char *path);
 
-/* Returned pointer must be freed by the caller. */
+/**
+ * filestream_getline:
+ *
+ * Returned pointer must be freed by the caller.
+ **/
 char* filestream_getline(RFILE *stream);
 
 libretro_vfs_implementation_file* filestream_get_vfs_handle(RFILE *stream);

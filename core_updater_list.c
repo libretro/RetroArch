@@ -278,14 +278,9 @@ bool core_updater_list_get_core(
    size_t i;
    char real_core_path[PATH_MAX_LENGTH];
 
-   real_core_path[0] = '\0';
-
    if (!core_list || !entry || string_is_empty(local_core_path))
       return false;
-
-   num_entries = RBUF_LEN(core_list->entries);
-
-   if (num_entries < 1)
+   if ((num_entries = RBUF_LEN(core_list->entries)) < 1)
       return false;
 
    /* Resolve absolute pathname of local_core_path */
@@ -376,9 +371,7 @@ static bool core_updater_list_set_crc(
    if (!entry || string_is_empty(crc_str))
       return false;
 
-   crc = (uint32_t)string_hex_to_unsigned(crc_str);
-
-   if (crc == 0)
+   if ((crc = (uint32_t)string_hex_to_unsigned(crc_str)) == 0)
       return false;
 
    entry->crc = crc;
@@ -405,19 +398,15 @@ static bool core_updater_list_set_paths(
     * source files have non-standard file names (which
     * will not be recognised by regular core handling
     * routines) */
-   bool resolve_symlinks                  = (list_type != CORE_UPDATER_LIST_TYPE_PFD);
    char remote_core_path[PATH_MAX_LENGTH];
    char local_core_path[PATH_MAX_LENGTH];
    char local_info_path[PATH_MAX_LENGTH];
+   bool resolve_symlinks = (list_type != CORE_UPDATER_LIST_TYPE_PFD);
 
-   remote_core_path[0] = '\0';
-   local_core_path[0]  = '\0';
-   local_info_path[0]  = '\0';
-
-   if (!entry ||
-       string_is_empty(filename_str) ||
-       string_is_empty(path_dir_libretro) ||
-       string_is_empty(path_libretro_info))
+   if (  !entry
+       || string_is_empty(filename_str)
+       || string_is_empty(path_dir_libretro)
+       || string_is_empty(path_libretro_info))
       return false;
 
    /* Only buildbot cores require the buildbot URL */
@@ -441,14 +430,14 @@ static bool core_updater_list_set_paths(
     * > Leave blank if this is not a buildbot core */
    if (list_type == CORE_UPDATER_LIST_TYPE_BUILDBOT)
    {
-      fill_pathname_join(
+      fill_pathname_join_special(
             remote_core_path,
             network_buildbot_url,
             filename_str,
             sizeof(remote_core_path));
 
       /* > Apply proper URL encoding (messy...) */
-      tmp_url = strdup(remote_core_path);
+      tmp_url             = strdup(remote_core_path);
       remote_core_path[0] = '\0';
       net_http_urlencode_full(
             remote_core_path, tmp_url, sizeof(remote_core_path));
@@ -464,8 +453,7 @@ static bool core_updater_list_set_paths(
 
    entry->remote_core_path = strdup(remote_core_path);
 
-   /* local_core_path */
-   fill_pathname_join(
+   fill_pathname_join_special(
          local_core_path,
          path_dir_libretro,
          filename_str,
@@ -485,12 +473,12 @@ static bool core_updater_list_set_paths(
 
    entry->local_core_path = strdup(local_core_path);
 
-   /* local_info_path */
-   fill_pathname_join_noext(
+   fill_pathname_join_special(
          local_info_path,
          path_libretro_info,
          filename_str,
          sizeof(local_info_path));
+   path_remove_extension(local_info_path);
 
    if (is_archive)
       path_remove_extension(local_info_path);
@@ -533,9 +521,9 @@ static bool core_updater_list_set_core_info(
 {
    core_updater_info_t *core_info = NULL;
 
-   if (!entry ||
-       string_is_empty(local_info_path) ||
-       string_is_empty(filename_str))
+   if (  !entry
+       || string_is_empty(local_info_path)
+       || string_is_empty(filename_str))
       return false;
 
    /* Clear any existing core info */
@@ -567,9 +555,7 @@ static bool core_updater_list_set_core_info(
     *   Would be better to cache this globally
     *   (at present, we only cache info for
     *    *installed* cores...) */
-   core_info = core_info_get_core_updater_info(local_info_path);
-
-   if (core_info)
+   if ((core_info = core_info_get_core_updater_info(local_info_path)))
    {
       /* display_name + is_experimental */
       if (!string_is_empty(core_info->display_name))
@@ -590,7 +576,7 @@ static bool core_updater_list_set_core_info(
       if (!string_is_empty(core_info->description))
          entry->description     = strdup(core_info->description);
       else
-         entry->description     = strdup("");
+         entry->description     = strldup("", sizeof(""));
 
       /* licenses_list */
       if (!string_is_empty(core_info->licenses))
@@ -606,7 +592,7 @@ static bool core_updater_list_set_core_info(
        * cores must have a valid/complete core info file) */
       entry->display_name       = strdup(filename_str);
       entry->is_experimental    = true;
-      entry->description        = strdup("");
+      entry->description        = strldup("", sizeof(""));
    }
 
    return true;
@@ -691,9 +677,9 @@ static void core_updater_list_add_entry(
    crc_str      = network_core_entry_list->elems[1].data;
    filename_str = network_core_entry_list->elems[2].data;
 
-   if (string_is_empty(date_str) ||
-       string_is_empty(crc_str) ||
-       string_is_empty(filename_str))
+   if (   string_is_empty(date_str)
+       || string_is_empty(crc_str)
+       || string_is_empty(filename_str))
       goto error;
 
    /* Check whether core file is already included
@@ -770,13 +756,10 @@ static void core_updater_list_qsort(core_updater_list_t *core_list)
 
    if (!core_list)
       return;
-
-   num_entries = RBUF_LEN(core_list->entries);
-
-   if (num_entries < 2)
+   if ((num_entries = RBUF_LEN(core_list->entries)) < 2)
       return;
-
-   qsort(
+   if (core_list->entries)
+      qsort(
          core_list->entries, num_entries,
          sizeof(core_updater_list_entry_t),
          (int (*)(const void *, const void *))
@@ -808,9 +791,7 @@ bool core_updater_list_parse_network_data(
 
    /* Input data string is not terminated - have
     * to copy it to a temporary buffer... */
-   data_buf = (char*)malloc((len + 1) * sizeof(char));
-
-   if (!data_buf)
+   if (!(data_buf = (char*)malloc((len + 1) * sizeof(char))))
       goto error;
 
    memcpy(data_buf, data, len * sizeof(char));

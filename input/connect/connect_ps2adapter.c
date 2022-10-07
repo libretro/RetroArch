@@ -30,7 +30,8 @@ struct hidpad_ps2adapter_data
    uint32_t buttons;
 };
 
-static void* hidpad_ps2adapter_init(void *data, uint32_t slot, hid_driver_t *driver)
+static void* hidpad_ps2adapter_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
 {
    struct pad_connection* connection     = (struct pad_connection*)data;
    struct hidpad_ps2adapter_data* device = (struct hidpad_ps2adapter_data*)
@@ -45,8 +46,8 @@ static void* hidpad_ps2adapter_init(void *data, uint32_t slot, hid_driver_t *dri
       return NULL;
    }
 
-   device->connection   = connection;
    device->slot         = slot;
+   device->connection   = connection;
 
    return device;
 }

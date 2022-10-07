@@ -274,14 +274,10 @@ static bool android_gfx_ctx_get_metrics(void *data,
          if (dpi == -1)
          {
             char density[PROP_VALUE_MAX];
-            density[0] = '\0';
-
             android_dpi_get_density(density, sizeof(density));
             if (string_is_empty(density))
                goto dpi_fallback;
-            dpi    = atoi(density);
-
-            if (dpi <= 0)
+            if ((dpi = atoi(density)) <= 0)
                goto dpi_fallback;
          }
          *value = (float)dpi;

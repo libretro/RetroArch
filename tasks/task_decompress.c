@@ -43,23 +43,20 @@ static int file_decompressed_subdir(const char *name,
       unsigned cmode, uint32_t csize,uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
+   size_t _len;
    char path_dir[PATH_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
    size_t name_len            = strlen(name);
    char last_char             = name[name_len - 1];
-
-   path_dir[0] = path[0] = '\0';
-
    /* Ignore directories, go to next file. */
    if (last_char == '/' || last_char == '\\')
       return 1;
-
    if (strstr(name, userdata->dec->subdir) != name)
       return 1;
 
    name += strlen(userdata->dec->subdir) + 1;
 
-   fill_pathname_join(path,
+   fill_pathname_join_special(path,
          userdata->dec->target_dir, name, sizeof(path));
    fill_pathname_basedir(path_dir, path, sizeof(path_dir));
 
@@ -75,8 +72,14 @@ static int file_decompressed_subdir(const char *name,
 
 error:
    userdata->dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
-   snprintf(userdata->dec->callback_error,
-         CALLBACK_ERROR_SIZE, "Failed to deflate %s.\n", path);
+   strlcpy(userdata->dec->callback_error, "Failed to deflate ",
+		   CALLBACK_ERROR_SIZE);
+   _len                                  = strlcat(
+		   userdata->dec->callback_error,
+		   path, CALLBACK_ERROR_SIZE);
+   userdata->dec->callback_error[_len  ] = '.';
+   userdata->dec->callback_error[_len+1] = '\n';
+   userdata->dec->callback_error[_len+2] = '\0';
 
    return 0;
 }
@@ -85,25 +88,22 @@ static int file_decompressed(const char *name, const char *valid_exts,
    const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
    uint32_t crc32, struct archive_extract_userdata *userdata)
 {
+   size_t _len;
    char path[PATH_MAX_LENGTH];
    decompress_state_t    *dec = userdata->dec;
    size_t name_len            = strlen(name);
    char last_char             = name[name_len - 1];
-
-   path[0] = '\0';
-
    /* Ignore directories, go to next file. */
    if (last_char == '/' || last_char == '\\')
       return 1;
-
    /* Make directory */
-   fill_pathname_join(path, dec->target_dir, name, sizeof(path));
+   fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
    path_basedir_wrapper(path);
 
    if (!path_mkdir(path))
       goto error;
 
-   fill_pathname_join(path, dec->target_dir, name, sizeof(path));
+   fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
 
    if (!file_archive_perform_mode(path, valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
@@ -113,8 +113,13 @@ static int file_decompressed(const char *name, const char *valid_exts,
 
 error:
    dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
-   snprintf(dec->callback_error, CALLBACK_ERROR_SIZE,
-         "Failed to deflate %s.\n", path);
+   strlcpy(dec->callback_error, "Failed to deflate ",
+		   CALLBACK_ERROR_SIZE);
+   _len                        = strlcat(dec->callback_error,
+		   path, CALLBACK_ERROR_SIZE);
+   dec->callback_error[_len  ] = '.';
+   dec->callback_error[_len+1] = '\n';
+   dec->callback_error[_len+2] = '\0';
 
    return 0;
 }
@@ -264,6 +269,7 @@ void *task_push_decompress(
       void *frontend_userdata,
       bool mute)
 {
+   size_t _len;
    char tmp[PATH_MAX_LENGTH];
    const char *ext            = NULL;
    decompress_state_t *s      = NULL;
@@ -295,14 +301,10 @@ void *task_push_decompress(
    if (task_check_decompress(source_file))
       return NULL;
 
-   s              = (decompress_state_t*)calloc(1, sizeof(*s));
-
-   if (!s)
+   if (!(s = (decompress_state_t*)calloc(1, sizeof(*s))))
       return NULL;
 
-   t                   = (retro_task_t*)calloc(1, sizeof(*t));
-
-   if (!t)
+   if (!(t = task_init()))
    {
       free(s);
       return NULL;
@@ -335,9 +337,14 @@ void *task_push_decompress(
    t->callback         = cb;
    t->user_data        = user_data;
 
-   snprintf(tmp, sizeof(tmp), "%s '%s'",
-         msg_hash_to_str(MSG_EXTRACTING),
-         path_basename(source_file));
+   _len                = strlcpy(tmp,
+		   msg_hash_to_str(MSG_EXTRACTING), sizeof(tmp));
+   tmp[_len  ]         = ' ';
+   tmp[_len+1]         = '\'';
+   tmp[_len+2]         = '\0';
+   _len                = strlcat(tmp, path_basename(source_file), sizeof(tmp));
+   tmp[_len  ]         = '\'';
+   tmp[_len+1]         = '\0';
 
    t->title            = strdup(tmp);
    t->mute             = mute;

@@ -100,7 +100,7 @@ void content_deinit(void);
 bool content_init(void);
 
 /* Resets the state and savefile backup buffers */
-bool content_reset_savestate_backups(void);
+void content_reset_savestate_backups(void);
 
 /* Checks if the buffers are empty */
 bool content_undo_load_buf_is_empty(void);

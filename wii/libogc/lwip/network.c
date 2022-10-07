@@ -2096,6 +2096,14 @@ s32 net_select(s32 maxfdp1,fd_set *readset,fd_set *writeset,fd_set *exceptset,st
 	return nready;
 }
 
+s32 net_getsockopt(s32 s, u32 level, u32 optname, void *optval, socklen_t *optlen)
+{
+   /* TODO/FIXME: Implement getsockopt */
+   memset(optval, 0, *optlen);
+
+   return 0;
+}
+
 s32 net_setsockopt(s32 s,u32 level,u32 optname,const void *optval,socklen_t optlen)
 {
 	s32 err = 0;

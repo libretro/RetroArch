@@ -43,7 +43,7 @@ struct gfx_widget_libretro_message_state
 
    unsigned message_duration;
 
-   gfx_timer_t timer;   /* float alignment */
+   float timer;   /* float alignment */
 
    float bg_x;
    float bg_y_start;
@@ -54,6 +54,8 @@ struct gfx_widget_libretro_message_state
    float alpha;
 
    float frame_color[16];
+ 
+   size_t message_len;
 
    enum gfx_widget_libretro_message_status status;
 
@@ -84,6 +86,8 @@ static gfx_widget_libretro_message_state_t p_w_libretro_message_st = {
    0.0f,                               /* alpha */
 
    COLOR_HEX_TO_FLOAT(0x909090, 1.0f), /* frame_color */
+
+   0,                                  /* message_len */
 
    GFX_WIDGET_LIBRETRO_MESSAGE_IDLE,   /* status */
 
@@ -165,14 +169,14 @@ void gfx_widget_set_libretro_message(
       return;
 
    /* Cache message parameters */
-   strlcpy(state->message, msg, sizeof(state->message));
+   state->message_len      = strlcpy(state->message, msg, sizeof(state->message));
    state->message_duration = duration;
 
    /* Get background width */
    state->bg_width = (state->text_padding * 2) +
          font_driver_get_message_width(
                font_msg_queue->font, state->message,
-               (unsigned)strlen(state->message), 1.0f);
+               state->message_len, 1.0f);
 
    /* If a 'slide in' animation is already in
     * progress, no further action is required;
@@ -236,7 +240,7 @@ static void gfx_widget_libretro_message_layout(
    if (!string_is_empty(state->message))
       state->bg_width += font_driver_get_message_width(
             font_msg_queue->font, state->message,
-            (unsigned)strlen(state->message), 1.0f);
+            state->message_len, 1.0f);
 }
 
 /* Widget iterate() */

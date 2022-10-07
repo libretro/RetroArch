@@ -142,8 +142,8 @@ static void* hidpad_ps4_init(void *data, uint32_t slot, hid_driver_t *driver)
       goto error;
 
    device->connection = connection;
-   device->slot       = slot;
    device->driver     = driver;
+   device->slot       = slot;
 
 #if 0
    /* TODO - unsure of this */
@@ -266,7 +266,7 @@ static void hidpad_ps4_packet_handler(void *data,
    }
 #endif
 
-   memcpy(&device->data, &packet[2], sizeof(struct ps4));
+   memcpy(&device->data, packet+1, sizeof(struct ps4));
 }
 
 static void hidpad_ps4_set_rumble(void *data,

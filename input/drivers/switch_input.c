@@ -825,15 +825,14 @@ static void* switch_input_init(const char *joypad_driver)
 
 static uint64_t switch_input_get_capabilities(void *data)
 {
-   (void) data;
-
-   uint64_t caps =  (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
-
+   return
 #ifdef HAVE_LIBNX
-   caps |= (1 << RETRO_DEVICE_POINTER) | (1 << RETRO_DEVICE_KEYBOARD) | (1 << RETRO_DEVICE_MOUSE);
+           (1 << RETRO_DEVICE_POINTER) 
+         | (1 << RETRO_DEVICE_KEYBOARD) 
+         | (1 << RETRO_DEVICE_MOUSE) |
 #endif
-
-   return caps;
+           (1 << RETRO_DEVICE_JOYPAD) 
+         | (1 << RETRO_DEVICE_ANALOG);
 }
 
 static bool switch_input_set_sensor_state(void *data, unsigned port,

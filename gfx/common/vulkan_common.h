@@ -140,7 +140,7 @@ typedef struct vulkan_context
    VkSemaphore swapchain_wait_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
 
 #ifdef VULKAN_DEBUG
-   VkDebugReportCallbackEXT debug_callback;
+   VkDebugUtilsMessengerEXT debug_callback;
 #endif
    uint32_t graphics_queue_index;
    uint32_t num_swapchain_images;
@@ -165,6 +165,14 @@ typedef struct vulkan_context
 
 } vulkan_context_t;
 
+enum vulkan_emulated_mailbox_flags
+{
+   VK_MAILBOX_FLAG_ACQUIRED            = (1 << 0),
+   VK_MAILBOX_FLAG_REQUEST_ACQUIRE     = (1 << 1),
+   VK_MAILBOX_FLAG_DEAD                = (1 << 2),
+   VK_MAILBOX_FLAG_HAS_PENDING_REQUEST = (1 << 3)
+};
+
 struct vulkan_emulated_mailbox
 {
    sthread_t *thread;
@@ -175,10 +183,7 @@ struct vulkan_emulated_mailbox
 
    unsigned index;
    VkResult result;              /* enum alignment */
-   bool acquired;
-   bool request_acquire;
-   bool dead;
-   bool has_pending_request;
+   uint8_t flags;
 };
 
 typedef struct gfx_ctx_vulkan_data
@@ -232,6 +237,13 @@ struct vk_image
    VkDeviceMemory memory;        /* ptr alignment */
 };
 
+enum vk_texture_flags
+{
+   VK_TEX_FLAG_DEFAULT_SMOOTH               = (1 << 0),
+   VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT = (1 << 1),
+   VK_TEX_FLAG_MIPMAP                       = (1 << 2)
+};
+
 struct vk_texture
 {
    VkDeviceSize memory_size;     /* uint64_t alignment */
@@ -251,9 +263,7 @@ struct vk_texture
    VkImageLayout layout;         /* enum alignment */
    VkFormat format;              /* enum alignment */
    enum vk_texture_type type;
-   bool default_smooth;
-   bool need_manual_cache_management;
-   bool mipmap;
+   uint8_t flags;
 };
 
 struct vk_buffer
@@ -620,19 +630,13 @@ typedef struct vk
    pv[5].color.a  = a; \
 }
 
-
-struct vk_buffer_chain vulkan_buffer_chain_init(
-      VkDeviceSize block_size,
-      VkDeviceSize alignment,
-      VkBufferUsageFlags usage);
-
 bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
       struct vk_buffer_chain *chain, size_t size,
       struct vk_buffer_range *range);
 
-void vulkan_buffer_chain_free(
+struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
       VkDevice device,
-      struct vk_buffer_chain *chain);
+      const struct vk_descriptor_manager *manager);
 
 uint32_t vulkan_find_memory_type(
       const VkPhysicalDeviceMemoryProperties *mem_props,
@@ -713,11 +717,11 @@ void vulkan_destroy_texture(
  * changes in resolution, so this seems like the sanest and
  * simplest solution. */
 #define VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, tex) \
-   if ((tex)->need_manual_cache_management && (tex)->memory != VK_NULL_HANDLE) \
+   if (((tex)->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && (tex)->memory != VK_NULL_HANDLE) \
       VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex)->memory) \
 
 #define VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(vk, tex) \
-   if ((tex).need_manual_cache_management && (tex).memory != VK_NULL_HANDLE) \
+   if (((tex).flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && (tex).memory != VK_NULL_HANDLE) \
       VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex).memory) \
 
 /* VBO will be written to here. */
@@ -761,15 +765,6 @@ VkDescriptorSet vulkan_descriptor_manager_alloc(
       VkDevice device,
       struct vk_descriptor_manager *manager);
 
-struct vk_descriptor_manager vulkan_create_descriptor_manager(
-      VkDevice device,
-      const VkDescriptorPoolSize *sizes, unsigned num_sizes,
-      VkDescriptorSetLayout set_layout);
-
-void vulkan_destroy_descriptor_manager(
-      VkDevice device,
-      struct vk_descriptor_manager *manager);
-
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type);
 
@@ -798,23 +793,9 @@ void vulkan_set_uniform_buffer(
       VkDeviceSize offset,
       VkDeviceSize range);
 
-void vulkan_framebuffer_generate_mips(
-      VkFramebuffer framebuffer,
-      VkImage image,
-      struct Size2D size,
-      VkCommandBuffer cmd,
-      unsigned levels
-      );
-
-void vulkan_framebuffer_copy(VkImage image, 
-      struct Size2D size,
-      VkCommandBuffer cmd,
-      VkImage src_image, VkImageLayout src_layout);
-
-void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd);
-
-void vulkan_initialize_render_pass(VkDevice device,
-      VkFormat format, VkRenderPass *render_pass);
+void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
+void vulkan_debug_mark_image(VkDevice device, VkImage image);
+void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
 
 RETRO_END_DECLS
 

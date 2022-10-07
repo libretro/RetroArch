@@ -43,9 +43,7 @@ static void overlay_set(int led, int state)
    if ((led < 0) || (led >= MAX_LEDS))
       return;
 
-   gpio = ledoverlay_cur->map[led];
-
-   if (gpio < 0)
+   if ((gpio = ledoverlay_cur->map[led]) < 0)
       return;
 
    input_overlay_set_visibility(gpio,

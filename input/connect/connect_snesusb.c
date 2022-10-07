@@ -33,8 +33,8 @@ struct hidpad_snesusb_data
 
 static void* hidpad_snesusb_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
-   struct pad_connection* connection = (struct pad_connection*)data;
-   struct hidpad_snesusb_data* device    = (struct hidpad_snesusb_data*)
+   struct pad_connection* connection  = (struct pad_connection*)data;
+   struct hidpad_snesusb_data* device = (struct hidpad_snesusb_data*)
       calloc(1, sizeof(struct hidpad_snesusb_data));
 
    if (!device)
@@ -118,7 +118,7 @@ static void hidpad_snesusb_packet_handler(void *data, uint8_t *packet, uint16_t 
 
    device->buttons = 0;
 
-   pressed_keys  = device->data[7] | (device->data[6] << 8);
+   pressed_keys  = device->data[6] | (device->data[5] << 8);
 
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)

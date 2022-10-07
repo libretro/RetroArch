@@ -184,9 +184,9 @@ START_TEST (test_word_wrap)
       "adipiscing elit. Nam nec enim quis orci\n"
       "euismod efficitur at nec arcu. Vivamus\n"
       "imperdiet est feugiat massa rhoncus\n"
-      "porttitor at vitae ante. Nunc a orci vel\n"
-      "ipsum tempor posuere sed a lacus. Ut\n"
-      "erat odio, ultrices vitae iaculis\n"
+      "porttitor at vitae ante. Nunc a orci\n"
+      "vel ipsum tempor posuere sed a lacus.\n"
+      "Ut erat odio, ultrices vitae iaculis\n"
       "fringilla, iaculis ut eros.\n"
       "Sed facilisis viverra lectus et\n"
       "ullamcorper. "
@@ -196,7 +196,7 @@ START_TEST (test_word_wrap)
 
    char output[1024];
 
-   word_wrap(output, sizeof(output), testtxt, 40, 100, 10);
+   word_wrap(output, sizeof(output), testtxt, strlen(testtxt), 40, 100, 10);
    ck_assert(!strcmp(output, expected));
 }
 END_TEST

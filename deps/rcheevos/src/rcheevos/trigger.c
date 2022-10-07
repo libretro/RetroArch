@@ -96,16 +96,29 @@ int rc_trigger_state_active(int state)
   }
 }
 
+static int rc_condset_is_measured_from_hitcount(const rc_condset_t* condset, unsigned measured_value)
+{
+  const rc_condition_t* condition;
+  for (condition = condset->conditions; condition; condition = condition->next) {
+    if (condition->type == RC_CONDITION_MEASURED && condition->required_hits &&
+        condition->current_hits == measured_value) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 static void rc_reset_trigger_hitcounts(rc_trigger_t* self) {
   rc_condset_t* condset;
 
-  if (self->requirement != 0) {
+  if (self->requirement) {
     rc_reset_condset(self->requirement);
   }
 
   condset = self->alternative;
 
-  while (condset != 0) {
+  while (condset) {
     rc_reset_condset(condset);
     condset = condset->next;
   }
@@ -168,7 +181,7 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
       sub_primed |= eval_state.primed;
 
       condset = condset->next;
-    } while (condset != 0);
+    } while (condset);
 
     /* to trigger, the core must be true and at least one alt must be true */
     ret &= sub;
@@ -192,13 +205,31 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
     return RC_TRIGGER_STATE_WAITING;
   }
 
+  /* if any ResetIf condition was true, reset the hit counts */
   if (eval_state.was_reset) {
-    /* if any ResetIf condition was true, reset the hit counts */
-    rc_reset_trigger_hitcounts(self);
-
-    /* if the measured value came from a hit count, reset it too */
-    if (eval_state.measured_from_hits)
+    /* if the measured value came from a hit count, reset it. do this before calling
+     * rc_reset_trigger_hitcounts in case we need to call rc_condset_is_measured_from_hitcount */
+    if (eval_state.measured_from_hits) {
       self->measured_value = 0;
+    }
+    else if (is_paused && self->measured_value) {
+      /* if the measured value is in a paused group, measured_from_hits won't have been set.
+       * attempt to determine if it should have been */
+      if (self->requirement && self->requirement->is_paused &&
+          rc_condset_is_measured_from_hitcount(self->requirement, self->measured_value)) {
+        self->measured_value = 0;
+      }
+      else {
+        for (condset = self->alternative; condset; condset = condset->next) {
+          if (condset->is_paused && rc_condset_is_measured_from_hitcount(condset, self->measured_value)) {
+            self->measured_value = 0;
+            break;
+          }
+        }
+      }
+    }
+
+    rc_reset_trigger_hitcounts(self);
 
     /* if there were hit counts to clear, return RESET, but don't change the state */
     if (self->has_hits) {
@@ -206,7 +237,7 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
 
       /* cannot be PRIMED while ResetIf is true */
       if (self->state == RC_TRIGGER_STATE_PRIMED)
-          self->state = RC_TRIGGER_STATE_ACTIVE;
+        self->state = RC_TRIGGER_STATE_ACTIVE;
 
       return RC_TRIGGER_STATE_RESET;
     }

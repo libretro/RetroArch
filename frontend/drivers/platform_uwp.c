@@ -105,78 +105,38 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
    {
       case 10:
          if (server)
-            strcpy_literal(s, "Windows Server 2016");
+            strlcpy(s, "Windows Server 2016", len);
          else
-            strcpy_literal(s, "Windows 10");
+            strlcpy(s, "Windows 10", len);
          break;
       case 6:
          switch (vi.dwMinorVersion)
          {
             case 3:
                if (server)
-                  strcpy_literal(s, "Windows Server 2012 R2");
+                  strlcpy(s, "Windows Server 2012 R2", len);
                else
-                  strcpy_literal(s, "Windows 8.1");
+                  strlcpy(s, "Windows 8.1", len);
                break;
             case 2:
                if (server)
-                  strcpy_literal(s, "Windows Server 2012");
+                  strlcpy(s, "Windows Server 2012", len);
                else
-                  strcpy_literal(s, "Windows 8");
+                  strlcpy(s, "Windows 8", len);
                break;
             case 1:
                if (server)
-                  strcpy_literal(s, "Windows Server 2008 R2");
+                  strlcpy(s, "Windows Server 2008 R2", len);
                else
-                  strcpy_literal(s, "Windows 7");
+                  strlcpy(s, "Windows 7", len);
                break;
             case 0:
                if (server)
-                  strcpy_literal(s, "Windows Server 2008");
+                  strlcpy(s, "Windows Server 2008", len);
                else
-                  strcpy_literal(s, "Windows Vista");
+                  strlcpy(s, "Windows Vista", len);
                break;
             default:
-               break;
-         }
-         break;
-      case 5:
-         switch (vi.dwMinorVersion)
-         {
-            case 2:
-               if (server)
-                  strcpy_literal(s, "Windows Server 2003");
-               else
-               {
-                  /* Yes, XP Pro x64 is a higher version number than XP x86 */
-                  if (string_is_equal(arch, "x64"))
-                     strcpy_literal(s, "Windows XP");
-               }
-               break;
-            case 1:
-               strcpy_literal(s, "Windows XP");
-               break;
-            case 0:
-               strcpy_literal(s, "Windows 2000");
-               break;
-         }
-         break;
-      case 4:
-         switch (vi.dwMinorVersion)
-         {
-            case 0:
-               if (vi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
-                  strcpy_literal(s, "Windows 95");
-               else if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-                  strcpy_literal(s, "Windows NT 4.0");
-               else
-                  strcpy_literal(s, "Unknown");
-               break;
-            case 90:
-               strcpy_literal(s, "Windows ME");
-               break;
-            case 10:
-               strcpy_literal(s, "Windows 98");
                break;
          }
          break;
@@ -287,36 +247,36 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
       if (drives & (1 << i))
       {
          TCHAR driveName[] = { TEXT('A') + i, TEXT(':'), TEXT('\\'), TEXT('\0') };
-         menu_entries_append_enum(list,
+         menu_entries_append(list,
             driveName,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
          have_any_drives = true;
       }
    }
 
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
       home_dir,
       msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
       enum_idx,
-      FILE_TYPE_DIRECTORY, 0, 0);
+      FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
    if (!have_any_drives)
    {
-      menu_entries_append_enum(list,
+      menu_entries_append(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),
          MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,
-         MENU_SETTING_ACTION, 0, 0);
+         MENU_SETTING_ACTION, 0, 0, NULL);
 
       if (string_is_equal(uwp_device_family, "Windows.Desktop"))
       {
-         menu_entries_append_enum(list,
+         menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS),
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS),
             MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0, NULL);
       }
    }
 #endif

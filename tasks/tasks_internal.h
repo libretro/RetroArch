@@ -87,10 +87,11 @@ bool task_push_wifi_disable(retro_task_callback_t cb);
 bool task_push_wifi_disconnect(retro_task_callback_t cb);
 bool task_push_wifi_connect(retro_task_callback_t cb, void*);
 
-bool task_push_netplay_lan_scan(retro_task_callback_t cb);
+bool task_push_netplay_lan_scan(void (*cb)(const void*), unsigned timeout);
 
-bool task_push_netplay_crc_scan(uint32_t crc, char* name,
-      const char *hostname, const char *corename, const char* subsystem);
+bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
+      const char *subsystem, const char *core, const char *hostname);
+bool task_push_netplay_content_reload(const char *hostname);
 
 bool task_push_netplay_nat_traversal(void *data, uint16_t port);
 bool task_push_netplay_nat_close(void *data);
@@ -111,6 +112,9 @@ void task_push_update_installed_cores(
       bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro,
       const char *path_dir_core_assets);
+bool task_push_update_single_core(
+      const char *path_core, bool auto_backup, size_t auto_backup_history_size,
+      const char *path_dir_libretro, const char *path_dir_core_assets);
 #if defined(ANDROID)
 void *task_push_play_feature_delivery_core_install(
       core_updater_list_t* core_list,
@@ -216,6 +220,16 @@ void task_file_load_handler(retro_task_t *task);
 
 typedef struct screenshot_task_state screenshot_task_state_t;
 
+enum screenshot_task_flags
+{
+   SS_TASK_FLAG_BGR24               = (1 << 0),
+   SS_TASK_FLAG_SILENCE             = (1 << 1),
+   SS_TASK_FLAG_IS_IDLE             = (1 << 2),
+   SS_TASK_FLAG_IS_PAUSED           = (1 << 3),
+   SS_TASK_FLAG_HISTORY_LIST_ENABLE = (1 << 4),
+   SS_TASK_FLAG_WIDGETS_READY       = (1 << 5)
+};
+
 struct screenshot_task_state
 {
    struct scaler_ctx scaler;
@@ -228,15 +242,10 @@ struct screenshot_task_state
    unsigned height;
    unsigned pixel_format_type;
 
-   char filename[PATH_MAX_LENGTH];
-   char shotname[256];
+   uint8_t flags;
 
-   bool bgr24;
-   bool silence;
-   bool is_idle;
-   bool is_paused;
-   bool history_list_enable;
-   bool widgets_ready;
+   char filename[PATH_MAX_LENGTH];
+   char shotname[NAME_MAX_LENGTH];
 };
 
 bool take_screenshot(
@@ -258,7 +267,7 @@ void path_init_savefile_new(void);
 extern const char* const input_builtin_autoconfs[];
 void input_autoconfigure_blissbox_override_handler(
       int vid, int pid, char *device_name, size_t len);
-void input_autoconfigure_connect(
+bool input_autoconfigure_connect(
       const char *name,
       const char *display_name,
       const char *driver,

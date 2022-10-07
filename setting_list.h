@@ -70,18 +70,22 @@ enum ui_setting_type
 
 enum setting_flags
 {
-   SD_FLAG_NONE           = 0,
-   SD_FLAG_PATH_DIR       = (1 << 0),
-   SD_FLAG_PATH_FILE      = (1 << 1),
-   SD_FLAG_ALLOW_EMPTY    = (1 << 2),
-   SD_FLAG_HAS_RANGE      = (1 << 3),
-   SD_FLAG_ALLOW_INPUT    = (1 << 4),
-   SD_FLAG_IS_DRIVER      = (1 << 5),
-   SD_FLAG_EXIT           = (1 << 6),
-   SD_FLAG_CMD_APPLY_AUTO = (1 << 7),
-   SD_FLAG_BROWSER_ACTION = (1 << 8),
-   SD_FLAG_ADVANCED       = (1 << 9),
-   SD_FLAG_LAKKA_ADVANCED = (1 << 10)
+   SD_FLAG_NONE             = 0,
+   SD_FLAG_PATH_DIR         = (1 << 0),
+   SD_FLAG_PATH_FILE        = (1 << 1),
+   SD_FLAG_ALLOW_EMPTY      = (1 << 2),
+   SD_FLAG_HAS_RANGE        = (1 << 3),
+   SD_FLAG_ALLOW_INPUT      = (1 << 4),
+   SD_FLAG_IS_DRIVER        = (1 << 5),
+   SD_FLAG_EXIT             = (1 << 6),
+   SD_FLAG_CMD_APPLY_AUTO   = (1 << 7),
+   SD_FLAG_BROWSER_ACTION   = (1 << 8),
+   SD_FLAG_ADVANCED         = (1 << 9),
+   SD_FLAG_LAKKA_ADVANCED   = (1 << 10),
+   SD_FLAG_ENFORCE_MINRANGE = (1 << 11),
+   SD_FLAG_ENFORCE_MAXRANGE = (1 << 12),
+   SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION = (1 << 13),
+   SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED      = (1 << 14)
 };
 
 enum settings_free_flags
@@ -112,12 +116,9 @@ struct rarch_setting_group_info
 
 struct rarch_setting
 {
-   double               min;
-   double               max;
 
-   uint64_t             flags;
-   uint64_t             free_flags;
-
+   float               min;
+   float               max;
    struct
    {
       const char     *off_label;
@@ -182,6 +183,8 @@ struct rarch_setting
       bool           boolean;
    } original_value;
 
+   uint32_t             flags;
+   uint32_t             free_flags;
    uint32_t             index_offset;
    uint32_t             size;
    unsigned             bind_type;
@@ -196,11 +199,6 @@ struct rarch_setting
 
    int16_t              offset_by;
    uint8_t              index;
-
-   bool                 cmd_trigger_event_triggered;
-   bool                 dont_use_enum_idx_representation;
-   bool                 enforce_minrange;
-   bool                 enforce_maxrange;
 };
 
 /**

@@ -51,7 +51,7 @@ void rcheevos_set_support_cheevos(bool state);
 bool rcheevos_get_support_cheevos(void);
 
 const char* rcheevos_get_hash(void);
-int rcheevos_get_richpresence(char buffer[], int buffer_size);
+int rcheevos_get_richpresence(char *s, size_t len);
 uintptr_t rcheevos_get_badge_texture(const char *badge, bool locked);
 
 uint8_t* rcheevos_patch_address(unsigned address);

@@ -39,13 +39,6 @@ int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
     settings_t *settings = config_get_ptr();
 
-    if (msg == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
-    {
-       snprintf(s, len,
-             "TODO/FIXME - Fill in message here."
-             );
-       return 0;
-    }
     if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
     {
@@ -1772,16 +1765,6 @@ int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " \n"
                              "Não recomendado, exceto para redes muito \n"
                              "rápidas com máquinas muito lentas. \n");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
-            snprintf(s, len,
-                     "Define se o jogo em rede deve executar em um modo \n"
-                             "que não utilize jogos salvos. \n"
-                             " \n"
-                             "Se definido como verdadeiro, uma rede muito \n"
-                             "rápida é necessária, mas Voltar Atrás não é \n"
-                             "permitido, então não haverá oscilação \n"
-                             "no jogo em rede.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
             snprintf(s, len,

@@ -50,7 +50,9 @@ typedef struct
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
+#ifdef HAVE_XF86VM
    bool should_reset_mode;
+#endif
 } xegl_ctx_data_t;
 
 /* TODO/FIXME - static globals */
@@ -79,11 +81,13 @@ static void gfx_ctx_xegl_destroy(void *data)
 
    x11_colormap_destroy();
 
+#ifdef HAVE_XF86VM
    if (xegl->should_reset_mode)
    {
       x11_exit_fullscreen(g_x11_dpy);
       xegl->should_reset_mode = false;
    }
+#endif
 
    free(data);
 
@@ -264,13 +268,14 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    EGLint egl_attribs[16];
    EGLint vid, num_visuals;
    EGLint *attr                   = NULL;
+#ifdef HAVE_XF86VM
    bool true_full                 = false;
+#endif
    int x_off                      = 0;
    int y_off                      = 0;
    XVisualInfo temp               = {0};
    XSetWindowAttributes swa       = {0};
    XVisualInfo *vi                = NULL;
-   char *wm_name                  = NULL;
    xegl_ctx_data_t *xegl          = (xegl_ctx_data_t*)data;
    settings_t *settings           = config_get_ptr();
    bool video_disable_composition = settings->bools.video_disable_composition;
@@ -303,31 +308,34 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       EnterWindowMask | LeaveWindowMask;
    swa.override_redirect = False;
 
+#ifdef HAVE_XF86VM
    if (fullscreen && !windowed_fullscreen)
    {
       if (x11_enter_fullscreen(g_x11_dpy, width, height))
       {
+         char *wm_name           = x11_get_wm_name(g_x11_dpy);
          xegl->should_reset_mode = true;
-         true_full = true;
+         true_full               = true;
+
+         if (wm_name)
+         {
+            RARCH_LOG("[X/EGL]: Window manager is %s.\n", wm_name);
+
+            if (strcasestr(wm_name, "xfwm"))
+            {
+               RARCH_LOG("[X/EGL]: Using override-redirect workaround.\n");
+               swa.override_redirect = True;
+            }
+            free(wm_name);
+         }
+         if (!x11_has_net_wm_fullscreen(g_x11_dpy))
+            swa.override_redirect = True;
       }
       else
          RARCH_ERR("[X/EGL]: Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
+#endif
 
-   wm_name = x11_get_wm_name(g_x11_dpy);
-   if (wm_name)
-   {
-      RARCH_LOG("[X/EGL]: Window manager is %s.\n", wm_name);
-
-      if (true_full && strcasestr(wm_name, "xfwm"))
-      {
-         RARCH_LOG("[X/EGL]: Using override-redirect workaround.\n");
-         swa.override_redirect = True;
-      }
-      free(wm_name);
-   }
-   if (!x11_has_net_wm_fullscreen(g_x11_dpy) && true_full)
-      swa.override_redirect = True;
 
    if (video_monitor_index)
       g_x11_screen = video_monitor_index - 1;
@@ -387,13 +395,16 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    if (fullscreen)
       x11_show_mouse(g_x11_dpy, g_x11_win, false);
 
+#ifdef HAVE_XF86VM
    if (true_full)
    {
       RARCH_LOG("[X/EGL]: Using true fullscreen.\n");
       XMapRaised(g_x11_dpy, g_x11_win);
       x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
    }
-   else if (fullscreen)
+   else
+#endif
+   if (fullscreen)
    {
       /* We attempted true fullscreen, but failed.
        * Attempt using windowed fullscreen. */
@@ -439,8 +450,13 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    XFree(vi);
    g_egl_inited = true;
 
+#ifdef HAVE_XF86VM
    if (!x11_input_ctx_new(true_full))
       goto error;
+#else
+   if (!x11_input_ctx_new(false))
+      goto error;
+#endif
 
    return true;
 
@@ -588,7 +604,11 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    gfx_ctx_xegl_set_swap_interval,
    gfx_ctx_xegl_set_video_mode,
    x11_get_video_size,
+#ifdef HAVE_XF86VM
    x11_get_refresh_rate,
+#else
+   NULL,
+#endif
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

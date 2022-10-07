@@ -24,7 +24,7 @@
 
 #include <stdio.h>  /* snprintf, vsnprintf */
 #include <stdarg.h> /* va_list */
-#include <string.h> /* memcpy, strlen */
+#include <string.h> /* memcpy */
 #include <stdint.h> /* int64_t */
 #include <stdlib.h> /* malloc, realloc, atof, atoi */
 
@@ -871,9 +871,9 @@ rjson_t *rjson_open_buffer(const void *buffer, size_t size)
    return json;
 }
 
-rjson_t *rjson_open_string(const char *string)
+rjson_t *rjson_open_string(const char *string, size_t len)
 {
-   return rjson_open_buffer(string, strlen(string));
+   return rjson_open_buffer(string, len);
 }
 
 static int _rjson_stream_io(void* buf, int len, void *user)
@@ -982,7 +982,7 @@ size_t rjson_get_source_column(rjson_t *json)
 int rjson_get_source_context_len(rjson_t *json)
 {
    const unsigned char *from = json->input_buf, *to = json->input_end, *p = json->input_p;
-   return ((p + 256 < to ? p + 256 : to) - (p > from + 256 ? p - 256 : from));
+   return (int)(((p + 256 < to ? p + 256 : to) - (p > from + 256 ? p - 256 : from)));
 }
 
 const char* rjson_get_source_context_buf(rjson_t *json)
@@ -1013,7 +1013,7 @@ bool rjson_check_context(rjson_t *json, unsigned int depth, ...)
 
 unsigned int rjson_get_context_depth(rjson_t *json)
 {
-   return json->stack_top - json->stack;
+   return (unsigned int)(json->stack_top - json->stack);
 }
 
 size_t rjson_get_context_count(rjson_t *json)
@@ -1123,7 +1123,7 @@ enum rjson_type rjson_parse(rjson_t *json, void* context,
    }
 }
 
-bool rjson_parse_quick(const char *string, void* context, char option_flags,
+bool rjson_parse_quick(const char *string, size_t len, void* context, char option_flags,
       bool (*object_member_handler)(void *context, const char *str, size_t len),
       bool (*string_handler       )(void *context, const char *str, size_t len),
       bool (*number_handler       )(void *context, const char *str, size_t len),
@@ -1138,7 +1138,7 @@ bool rjson_parse_quick(const char *string, void* context, char option_flags,
    const char *user_data[2];
    rjson_t json;
    user_data[0] = string;
-   user_data[1] = string + strlen(string);
+   user_data[1] = string + len;
    _rjson_setup(&json, _rjson_buffer_io, (void*)user_data, sizeof(json.input_buf));
    rjson_set_options(&json, option_flags);
    if (rjson_parse(&json, context,
