@@ -65,9 +65,13 @@
  */
 #endif
 
+enum dispserv_win32_flags
+{
+   DISPSERV_WIN32_FLAG_DECORATIONS = (1 << 0)
+};
+
 typedef struct
 {
-   bool decorations;
    int crt_center;
    unsigned orig_width;
    unsigned orig_height;
@@ -75,6 +79,7 @@ typedef struct
 #ifdef HAS_TASKBAR_EXT
    ITaskbarList3 *taskbar_list;
 #endif
+   uint8_t flags;
 } dispserv_win32_t;
 
 
@@ -210,7 +215,7 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
    if (!serv)
       return false;
 
-   serv->decorations = on;
+   serv->flags      |= DISPSERV_WIN32_FLAG_DECORATIONS;
 
    /* menu_setting performs a reinit instead to properly
     * apply decoration changes */
