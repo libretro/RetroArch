@@ -165,6 +165,14 @@ typedef struct vulkan_context
 
 } vulkan_context_t;
 
+enum vulkan_emulated_mailbox_flags
+{
+   VK_MAILBOX_FLAG_ACQUIRED            = (1 << 0),
+   VK_MAILBOX_FLAG_REQUEST_ACQUIRE     = (1 << 1),
+   VK_MAILBOX_FLAG_DEAD                = (1 << 2),
+   VK_MAILBOX_FLAG_HAS_PENDING_REQUEST = (1 << 3)
+};
+
 struct vulkan_emulated_mailbox
 {
    sthread_t *thread;
@@ -175,10 +183,7 @@ struct vulkan_emulated_mailbox
 
    unsigned index;
    VkResult result;              /* enum alignment */
-   bool acquired;
-   bool request_acquire;
-   bool dead;
-   bool has_pending_request;
+   uint8_t flags;
 };
 
 typedef struct gfx_ctx_vulkan_data

@@ -104,7 +104,7 @@ static void vulkan_emulated_mailbox_deinit(
    if (mailbox->thread)
    {
       slock_lock(mailbox->lock);
-      mailbox->dead = true;
+      mailbox->flags |= VK_MAILBOX_FLAG_DEAD;
       scond_signal(mailbox->cond);
       slock_unlock(mailbox->lock);
       sthread_join(mailbox->thread);
@@ -126,20 +126,20 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image(
 
    slock_lock(mailbox->lock);
 
-   if (!mailbox->has_pending_request)
+   if (!(mailbox->flags & VK_MAILBOX_FLAG_HAS_PENDING_REQUEST))
    {
-      mailbox->request_acquire     = true;
+      mailbox->flags |= VK_MAILBOX_FLAG_REQUEST_ACQUIRE;
       scond_signal(mailbox->cond);
    }
 
-   mailbox->has_pending_request    = true;
+   mailbox->flags |= VK_MAILBOX_FLAG_HAS_PENDING_REQUEST;
 
-   if (mailbox->acquired)
+   if (mailbox->flags & VK_MAILBOX_FLAG_ACQUIRED)
    {
       res                          = mailbox->result;
       *index                       = mailbox->index;
-      mailbox->has_pending_request = false;
-      mailbox->acquired            = false;
+      mailbox->flags              &= ~(VK_MAILBOX_FLAG_HAS_PENDING_REQUEST
+                                     | VK_MAILBOX_FLAG_ACQUIRED);
    }
 
    slock_unlock(mailbox->lock);
@@ -154,21 +154,21 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
 
    slock_lock(mailbox->lock);
 
-   if (!mailbox->has_pending_request)
+   if (!(mailbox->flags & VK_MAILBOX_FLAG_HAS_PENDING_REQUEST))
    {
-      mailbox->request_acquire  = true;
+      mailbox->flags |= VK_MAILBOX_FLAG_REQUEST_ACQUIRE;
       scond_signal(mailbox->cond);
    }
 
-   mailbox->has_pending_request = true;
+   mailbox->flags |= VK_MAILBOX_FLAG_HAS_PENDING_REQUEST;
 
-   while (!mailbox->acquired)
+   while (!(mailbox->flags & VK_MAILBOX_FLAG_ACQUIRED))
       scond_wait(mailbox->cond, mailbox->lock);
 
    if ((res = mailbox->result) == VK_SUCCESS)
       *index                    = mailbox->index;
-   mailbox->has_pending_request = false;
-   mailbox->acquired            = false;
+   mailbox->flags              &= ~(VK_MAILBOX_FLAG_HAS_PENDING_REQUEST
+                                  | VK_MAILBOX_FLAG_ACQUIRED);
 
    slock_unlock(mailbox->lock);
    return res;
@@ -193,16 +193,17 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
    for (;;)
    {
       slock_lock(mailbox->lock);
-      while (!mailbox->dead && !mailbox->request_acquire)
+      while (  !(mailbox->flags & VK_MAILBOX_FLAG_DEAD) 
+		      && !(mailbox->flags & VK_MAILBOX_FLAG_REQUEST_ACQUIRE))
          scond_wait(mailbox->cond, mailbox->lock);
 
-      if (mailbox->dead)
+      if (mailbox->flags & VK_MAILBOX_FLAG_DEAD)
       {
          slock_unlock(mailbox->lock);
          break;
       }
 
-      mailbox->request_acquire = false;
+      mailbox->flags &= ~VK_MAILBOX_FLAG_REQUEST_ACQUIRE;
       slock_unlock(mailbox->lock);
 
 
@@ -228,7 +229,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
          vkResetFences(mailbox->device, 1, &fence);
 
          slock_lock(mailbox->lock);
-         mailbox->acquired = true;
+         mailbox->flags |= VK_MAILBOX_FLAG_ACQUIRED;
          scond_signal(mailbox->cond);
          slock_unlock(mailbox->lock);
       }
@@ -251,10 +252,7 @@ static bool vulkan_emulated_mailbox_init(
    mailbox->swapchain           = swapchain;
    mailbox->index               = 0;
    mailbox->result              = VK_SUCCESS;
-   mailbox->acquired            = false;
-   mailbox->request_acquire     = false;
-   mailbox->dead                = false;
-   mailbox->has_pending_request = false;
+   mailbox->flags               = 0;
 
    if (!(mailbox->cond      = scond_new()))
       return false;
