@@ -2913,10 +2913,6 @@ MSG_HASH(
    "Alvertencia"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_ERROR,
-   "Fallu"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
    "Reanicia'l programa pa que los cambeos faigan efeutu, por favor."
    )
@@ -3305,11 +3301,11 @@ MSG_HASH( /* FIXME Should be MSG_ */
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_DEBUG_INFO,
-   "Hebo un fallu al guardar la información de depuración."
+   "Hebo un error al guardar la información de depuración."
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_DEBUG_INFO,
-   "Hebo un fallu al unviar la información de depuración al sirvidor."
+   "Hebo un error al unviar la información de depuración al sirvidor."
    )
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
@@ -3366,7 +3362,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_LIST_FAILED,
-   "¡Hebo un fallu al recuperar la llista de nucleos!"
+   "¡Hebo un error al recuperar la llista de nucleos!"
    )
 MSG_HASH(
    MSG_EXTRACTING_CORE,
@@ -3374,7 +3370,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_INSTALL_FAILED,
-   "Hebo un fallu al instalar el nucleu: "
+   "Hebo un error al instalar el nucleu: "
    )
 MSG_HASH(
    MSG_ALL_CORES_SWITCHED_PFD,
@@ -3390,7 +3386,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FLUSH_FAILED,
-   "Hebo un fallu al guardar les opciones del nucleu en:"
+   "Hebo un error al guardar les opciones del nucleu en:"
    )
 MSG_HASH(
    MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
@@ -3421,10 +3417,6 @@ MSG_HASH(
    "Índiz"
    )
 MSG_HASH(
-   MSG_ERROR,
-   "Fallu"
-   )
-MSG_HASH(
    MSG_EXTRACTING,
    "Estrayendo"
    )
@@ -3434,23 +3426,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
-   "Hebo un fallu al aceptar l'espectador entrante."
+   "Hebo un error al aceptar l'espectador entrante."
    )
 MSG_HASH(
    MSG_FAILED_TO_CREATE_THE_DIRECTORY,
-   "Hebo un fallu al crear el direutoriu."
+   "Hebo un error al crear el direutoriu."
    )
 MSG_HASH(
    MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
-   "Hebo un fallu al estrayer el conteníu del ficheru comprimíu"
+   "Hebo un error al estrayer el conteníu del ficheru comprimíu"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD,
-   "Hebo un fallu al cargar"
+   "Hebo un error al cargar"
    )
 MSG_HASH(
    MSG_FAILED_TO_UNMUTE_AUDIO,
-   "Hebo un fallu al activar l'audiu."
+   "Hebo un error al activar l'audiu."
    )
 MSG_HASH(
    MSG_FILE_NOT_FOUND,
@@ -3510,11 +3502,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Hebo un fallu al espulsar la bandexa de discos virtual."
+   "Hebo un error al espulsar la bandexa de discos virtual."
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Hebo un fallu al zarrar la bandexa de discos virtual."
+   "Hebo un error al zarrar la bandexa de discos virtual."
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -3542,15 +3534,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Hebo un fallu al conectase al veceru"
+   "Hebo un error al conectase al veceru"
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Hebo un fallu al conectase al agospiador"
+   "Hebo un error al conectase al agospiador"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Hebo un fallu al recibir la testera del agospiador"
+   "Hebo un error al recibir la testera del agospiador"
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
@@ -3566,15 +3558,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
-   "Hebo un fallu al escribir nel discu. Albortóse'l volquiáu."
+   "Hebo un error al escribir nel discu. Albortóse'l volquiáu."
    )
 MSG_HASH(
    MSG_CORE_LOCK_FAILED,
-   "Hebo un fallu al bloquiar el nucleu: "
+   "Hebo un error al bloquiar el nucleu: "
    )
 MSG_HASH(
    MSG_CORE_UNLOCK_FAILED,
-   "Hebo un fallu al desbloquiar el nucleu: "
+   "Hebo un error al desbloquiar el nucleu: "
    )
 
 /* Lakka */
