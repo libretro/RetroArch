@@ -160,7 +160,7 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
 
 #ifndef IS_SALAMANDER
    params          = (struct rarch_main_wrap*)params_data;
-   params->verbose = true;
+   params->flags  |=   RARCH_MAIN_WRAP_FLAG_VERBOSE;
 
    if (!string_is_empty(argv[CONTENT_PATH_ARG_INDEX]))
    {
@@ -172,9 +172,9 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
       {
          strlcpy(path, argv[CONTENT_PATH_ARG_INDEX], sizeof(path));
 
-         args->touched        = true;
-         args->no_content     = false;
-         args->verbose        = false;
+         params->flags       &= ~(RARCH_MAIN_WRAP_FLAG_VERBOSE
+                                | RARCH_MAIN_WRAP_FLAG_NO_CONTENT);
+         params->flags       |=   RARCH_MAIN_WRAP_FLAG_TOUCHED;
          args->config_path    = NULL;
          args->sram_path      = NULL;
          args->state_path     = NULL;
