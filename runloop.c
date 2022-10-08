@@ -6902,7 +6902,7 @@ MENU_ST_FLAG_IS_BINDING;
                "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
 
          menu_st->selection_ptr      = 0;
-         menu_st->flags             &= MENU_ST_FLAG_PENDING_QUICK_MENU;
+         menu_st->flags             &= ~MENU_ST_FLAG_PENDING_QUICK_MENU;
       }
       else if (!menu_driver_iterate(
                menu_st,
