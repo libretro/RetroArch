@@ -408,7 +408,7 @@ void driver_set_nonblock_state(void)
    unsigned swap_interval      = runloop_get_video_swap_interval(
          settings->uints.video_swap_interval);
    bool video_driver_active    = video_st->active;
-   bool audio_driver_active    = audio_st->active;
+   bool audio_driver_active    = audio_st->flags & AUDIO_FLAG_ACTIVE;
    bool runloop_force_nonblock = runloop_st->force_nonblock;
 
    /* Only apply non-block-state for video if we're using vsync. */
@@ -837,8 +837,8 @@ void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    video_driver_set_cached_frame_ptr(NULL);
 
    /* Audio */
-   audio_state_get_ptr()->active                    = false;
-   audio_state_get_ptr()->current_audio             = NULL;
+   audio_state_get_ptr()->flags        &= ~AUDIO_FLAG_ACTIVE;
+   audio_state_get_ptr()->current_audio = NULL;
 
    if (input_st)
    {

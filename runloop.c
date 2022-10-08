@@ -3005,14 +3005,14 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             *video_st         = video_state_get_ptr();
          audio_driver_state_t 
             *audio_st         = audio_state_get_ptr();
-         if ( !audio_st->suspended &&
-               audio_st->active)
+         if (    !(audio_st->flags & AUDIO_FLAG_SUSPENDED)
+               && (audio_st->flags & AUDIO_FLAG_ACTIVE))
             result |= 2;
          if (       video_st->active
                && !(video_st->current_video->frame == video_null.frame))
             result |= 1;
 #ifdef HAVE_RUNAHEAD
-         if (audio_st->hard_disable)
+         if (audio_st->flags & AUDIO_FLAG_HARD_DISABLE)
             result |= 8;
 #endif
 #ifdef HAVE_NETWORKING
@@ -3119,7 +3119,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
          bool menu_opened = false;
          bool core_paused = runloop_st->paused;
-         bool no_audio    = (audio_st->suspended || !audio_st->active);
+         bool no_audio    = ((audio_st->flags & AUDIO_FLAG_SUSPENDED) 
+               || !(audio_st->flags & AUDIO_FLAG_ACTIVE));
          float core_fps   = (float)video_st->av_info.timing.fps;
 
 #ifdef HAVE_REWIND
@@ -4802,8 +4803,8 @@ static void do_runahead(
 
          if (suspended_frame)
          {
-            audio_st->suspended          = true;
-            video_st->active             = false;
+            audio_st->flags     |= AUDIO_FLAG_SUSPENDED;
+            video_st->active     = false;
          }
 
          if (frame_number == 0)
@@ -4814,7 +4815,7 @@ static void do_runahead(
          if (suspended_frame)
          {
             video_st->active        = video_st->runahead_is_active;
-            audio_st->suspended     = false;
+            audio_st->flags        &= ~AUDIO_FLAG_SUSPENDED;
          }
 
          if (frame_number == 0)
@@ -4887,21 +4888,21 @@ static void do_runahead(
          for (frame_number = 0; frame_number < runahead_count - 1; frame_number++)
          {
             video_st->active             = false;
-            audio_st->suspended          = true;
-            audio_st->hard_disable       = true;
+            audio_st->flags             |= AUDIO_FLAG_SUSPENDED
+                                         | AUDIO_FLAG_HARD_DISABLE;
             runloop_st->runahead_secondary_core_available =
                secondary_core_run_use_last_input();
-            audio_st->hard_disable       = false;
-            audio_st->suspended          = false;
+            audio_st->flags             &= ~(AUDIO_FLAG_SUSPENDED
+                                         | AUDIO_FLAG_HARD_DISABLE);
             video_st->active             = video_st->runahead_is_active;
          }
       }
-      audio_st->suspended                = true;
-      audio_st->hard_disable             = true;
+      audio_st->flags                   |= AUDIO_FLAG_SUSPENDED
+                                         | AUDIO_FLAG_HARD_DISABLE;
       runloop_st->runahead_secondary_core_available =
 secondary_core_run_use_last_input();
-      audio_st->hard_disable             = false;
-      audio_st->suspended                = false;
+      audio_st->flags                   &= ~(AUDIO_FLAG_SUSPENDED
+                                         | AUDIO_FLAG_HARD_DISABLE);
 #endif
    }
    runloop_st->runahead_force_input_dirty= false;
@@ -7641,12 +7642,12 @@ int runloop_iterate(void)
       unsigned audio_buf_occupancy = 0;
       bool audio_buf_underrun      = false;
 
-      if (!(runloop_st->paused         ||
-            !audio_st->active          ||
-            !audio_st->output_samples_buf) &&
-          audio_st->current_audio->write_avail &&
-          audio_st->context_audio_data &&
-          audio_st->buffer_size)
+      if (!(     runloop_st->paused
+            || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
+            || !(audio_st->output_samples_buf))
+          && audio_st->current_audio->write_avail
+          && audio_st->context_audio_data
+          && audio_st->buffer_size)
       {
          size_t audio_buf_avail;
 
@@ -7959,8 +7960,8 @@ end:
          if (runloop_st->fastforward_after_frames == 1)
          {
             /* Nonblocking audio */
-            if (audio_st->active &&
-                  audio_st->context_audio_data)
+            if (    (audio_st->flags & AUDIO_FLAG_ACTIVE)
+                 && (audio_st->context_audio_data))
                audio_st->current_audio->set_nonblock_state(
                      audio_st->context_audio_data, true);
             audio_st->chunk_size =
@@ -7972,8 +7973,8 @@ end:
          if (runloop_st->fastforward_after_frames == 6)
          {
             /* Blocking audio */
-            if (audio_st->active &&
-                  audio_st->context_audio_data)
+            if (     (audio_st->flags & AUDIO_FLAG_ACTIVE)
+                  && (audio_st->context_audio_data))
                audio_st->current_audio->set_nonblock_state(
                      audio_st->context_audio_data,
                      audio_sync ? false : true);

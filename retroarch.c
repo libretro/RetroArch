@@ -2951,8 +2951,8 @@ bool command_event(enum event_command cmd, void *data)
             if (!video_driver_has_windowed())
                return false;
 
-            audio_st->suspended                      = true;
-            video_st->is_switching_display_mode      = true;
+            audio_st->flags                     |= AUDIO_FLAG_SUSPENDED;
+            video_st->is_switching_display_mode  = true;
 
             /* we toggled manually, write the new value to settings */
             configuration_set_bool(settings, settings->bools.video_fullscreen,
@@ -2982,8 +2982,8 @@ bool command_event(enum event_command cmd, void *data)
                      input_st->grab_mouse_state = false;
             }
 
-            video_st->is_switching_display_mode      = false;
-            audio_st->suspended                      = false;
+            video_st->is_switching_display_mode  = false;
+            audio_st->flags                     &= ~AUDIO_FLAG_SUSPENDED;
 
             if (userdata && *userdata == true)
                video_driver_cached_frame();
@@ -3818,7 +3818,7 @@ int rarch_main(int argc, char *argv[], void *data)
    sthread_tls_set(&p_rarch->rarch_tls, MAGIC_POINTER);
 #endif
    video_st->active              = true;
-   audio_state_get_ptr()->active = true;
+   audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
 
    {
       unsigned i;
@@ -5210,29 +5210,29 @@ bool retroarch_main_init(int argc, char *argv[])
 #if defined(DEBUG) && defined(HAVE_DRMINGW)
    char log_file_name[128];
 #endif
-   bool verbosity_enabled       = false;
-   bool           init_failed   = false;
-   struct rarch_state *p_rarch  = &rarch_st;
-   runloop_state_t *runloop_st  = runloop_state_get_ptr();
+   bool verbosity_enabled        = false;
+   bool           init_failed    = false;
+   struct rarch_state *p_rarch   = &rarch_st;
+   runloop_state_t *runloop_st   = runloop_state_get_ptr();
    input_driver_state_t
-      *input_st                 = input_state_get_ptr();
-   video_driver_state_t*video_st= video_state_get_ptr();
-   settings_t *settings         = config_get_ptr();
+      *input_st                  = input_state_get_ptr();
+   video_driver_state_t*video_st = video_state_get_ptr();
+   settings_t *settings          = config_get_ptr();
    recording_state_t
-	   *recording_st             = recording_state_get_ptr();
-   global_t            *global  = global_get_ptr();
+	   *recording_st              = recording_state_get_ptr();
+   global_t            *global   = global_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
-   access_state_t *access_st    = access_state_get_ptr();
-   bool accessibility_enable    = false;
+   access_state_t *access_st     = access_state_get_ptr();
+   bool accessibility_enable     = false;
    unsigned accessibility_narrator_speech_speed = 0;
 #endif
 #ifdef HAVE_MENU
-   struct menu_state *menu_st   = menu_state_get_ptr();
+   struct menu_state *menu_st    = menu_state_get_ptr();
 #endif
 
-   input_st->osk_idx            = OSK_LOWERCASE_LATIN;
-   video_st->active             = true;
-   audio_state_get_ptr()->active= true;
+   input_st->osk_idx             = OSK_LOWERCASE_LATIN;
+   video_st->active              = true;
+   audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
 
    if (setjmp(global->error_sjlj_context) > 0)
    {
