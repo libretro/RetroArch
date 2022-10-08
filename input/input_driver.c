@@ -4127,7 +4127,7 @@ void input_driver_poll(void)
 #endif
 
 #ifdef HAVE_MENU
-   if (!menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
 #endif
    if (input_remap_binds_enable)
    {
