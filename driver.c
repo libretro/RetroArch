@@ -201,11 +201,8 @@ static const void *find_driver_nonempty(
       }
    }
 #endif
-
    return NULL;
 }
-
-
 
 int driver_find_index(const char *label, const char *drv)
 {
@@ -315,7 +312,7 @@ static void driver_adjust_system_rates(
     * switching is enabled */
    runloop_set_video_swap_interval(
          vrr_runloop_enable,
-         video_st->crt_switching_active,
+         video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE,
          video_swap_interval,
          audio_max_timing_skew,
          video_refresh_rate,
@@ -347,7 +344,7 @@ static void driver_adjust_system_rates(
    {
       float timing_skew_hz          = video_refresh_rate;
 
-      if (video_st->crt_switching_active)
+      if (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
          timing_skew_hz             = input_fps;
       video_st->core_hz             = input_fps;
 
@@ -359,7 +356,7 @@ static void driver_adjust_system_rates(
          video_swap_interval,
          input_fps))
       {
-         /* We won't be able to do VSync reliably 
+         /* We won't be able to do VSync reliably
             when game FPS > monitor FPS. */
          runloop_st->force_nonblock = true;
          RARCH_LOG("[Video]: Game FPS > Monitor FPS. Cannot rely on VSync.\n");
@@ -393,22 +390,22 @@ static void driver_adjust_system_rates(
 void driver_set_nonblock_state(void)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
-   input_driver_state_t 
+   input_driver_state_t
       *input_st                = input_state_get_ptr();
-   audio_driver_state_t 
+   audio_driver_state_t
       *audio_st                = audio_state_get_ptr();
-   video_driver_state_t 
+   video_driver_state_t
       *video_st                = video_state_get_ptr();
    bool                 enable = input_st ?
-      input_st->nonblocking_flag : false;
+      (input_st->flags & INP_FLAG_NONBLOCKING) : false;
    settings_t       *settings  = config_get_ptr();
    bool audio_sync             = settings->bools.audio_sync;
    bool video_vsync            = settings->bools.video_vsync;
    bool adaptive_vsync         = settings->bools.video_adaptive_vsync;
    unsigned swap_interval      = runloop_get_video_swap_interval(
          settings->uints.video_swap_interval);
-   bool video_driver_active    = video_st->active;
-   bool audio_driver_active    = audio_st->active;
+   bool video_driver_active    = video_st->flags & VIDEO_FLAG_ACTIVE;
+   bool audio_driver_active    = audio_st->flags & AUDIO_FLAG_ACTIVE;
    bool runloop_force_nonblock = runloop_st->force_nonblock;
 
    /* Only apply non-block-state for video if we're using vsync. */
@@ -442,18 +439,18 @@ void drivers_init(
       bool verbosity_enabled)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
-   audio_driver_state_t 
+   audio_driver_state_t
       *audio_st                = audio_state_get_ptr();
-   input_driver_state_t 
+   input_driver_state_t
       *input_st                = input_state_get_ptr();
-   video_driver_state_t 
+   video_driver_state_t
       *video_st                = video_state_get_ptr();
 #ifdef HAVE_MENU
    struct menu_state *menu_st  = menu_state_get_ptr();
 #endif
-   camera_driver_state_t 
+   camera_driver_state_t
       *camera_st               = camera_state_get_ptr();
-   location_driver_state_t 
+   location_driver_state_t
       *location_st             = location_state_get_ptr();
    bool video_is_threaded      = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
    gfx_display_t *p_disp       = disp_get_ptr();
@@ -464,7 +461,6 @@ void drivers_init(
    /* By default, we want display widgets to persist through driver reinits. */
    dispwidget_get_ptr()->flags |= DISPGFX_WIDGET_FLAG_PERSISTING;
 #endif
-
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
    if (menu_st)
@@ -497,10 +493,10 @@ void drivers_init(
                verbosity_enabled))
          retroarch_fail(1, "video_driver_init_internal()");
 
-      if (!video_st->cache_context_ack
+      if (   !(video_st->flags & VIDEO_FLAG_CACHE_CONTEXT_ACK)
             && hwr->context_reset)
          hwr->context_reset();
-      video_st->cache_context_ack = false;
+      video_st->flags            &= ~VIDEO_FLAG_CACHE_CONTEXT_ACK;
       runloop_st->frame_time_last = 0;
    }
 
@@ -510,9 +506,9 @@ void drivers_init(
       audio_driver_init_internal(
             settings,
             audio_st->callback.callback != NULL);
-      if (  audio_st->current_audio &&
-            audio_st->current_audio->device_list_new &&
-            audio_st->context_audio_data)
+      if (     audio_st->current_audio
+            && audio_st->current_audio->device_list_new
+            && audio_st->context_audio_data)
          audio_st->devices_list = (struct string_list*)
             audio_st->current_audio->device_list_new(
                   audio_st->context_audio_data);
@@ -528,12 +524,12 @@ void drivers_init(
       bool windowed_fullscreen             = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
       bool all_fullscreen                  = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
    
-      if (  refresh_rate > 0.0 &&
-            !settings->uints.crt_switch_resolution &&
-            !settings->bools.vrr_runloop_enable &&
-            video_display_server_has_resolution_list() &&
-            (autoswitch_refresh_rate != AUTOSWITCH_REFRESH_RATE_OFF) &&
-            fabs(settings->floats.video_refresh_rate - refresh_rate) > 1)
+      if (  refresh_rate > 0.0
+            && !settings->uints.crt_switch_resolution
+            && !settings->bools.vrr_runloop_enable
+            && video_display_server_has_resolution_list()
+            && (autoswitch_refresh_rate != AUTOSWITCH_REFRESH_RATE_OFF)
+            && (fabs(settings->floats.video_refresh_rate - refresh_rate) > 1))
       {
          if (((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN) && exclusive_fullscreen) ||
              ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN) && windowed_fullscreen)   ||
@@ -615,11 +611,12 @@ void drivers_init(
     * is true. 'video_font_enable' corresponds to the generic
     * 'On-Screen Notifications' setting, which should serve as
     * a global notifications on/off toggle switch */
-   if (video_font_enable &&
-       menu_enable_widgets &&
-       video_driver_has_widgets())
+   if (   video_font_enable
+       && menu_enable_widgets
+       && video_driver_has_widgets())
    {
-      bool rarch_force_fullscreen = video_st->force_fullscreen;
+      bool rarch_force_fullscreen = video_st->flags &
+         VIDEO_FLAG_FORCE_FULLSCREEN;
       bool video_is_fullscreen    = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
 
@@ -675,7 +672,7 @@ void drivers_init(
 
    /* Keep non-throttled state as good as possible. */
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
-      if (input_st && input_st->nonblocking_flag)
+      if (input_st && (input_st->flags & INP_FLAG_NONBLOCKING))
          driver_set_nonblock_state();
 
    /* Initialize LED driver */
@@ -814,39 +811,32 @@ void retroarch_deinit_drivers(struct retro_callbacks *cbs)
 
 #if defined(HAVE_CRTSWITCHRES)
    /* Switchres deinit */
-   if (video_st->crt_switching_active)
-   {
-#if defined(DEBUG)
-      RARCH_LOG("[CRT]: Getting video info\n");
-      RARCH_LOG("[CRT]: About to destroy SR\n");
-#endif
+   if (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
       crt_destroy_modes(&video_st->crt_switch_st);
-   }
 #endif
 
    /* Video */
    video_display_server_destroy();
 
-   video_st->use_rgba                   = false;
-   video_st->hdr_support                = false;
-   video_st->active                     = false;
-   video_st->cache_context              = false;
-   video_st->cache_context_ack          = false;
+   video_st->flags &= ~(VIDEO_FLAG_ACTIVE      | VIDEO_FLAG_USE_RGBA      |
+                        VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_CACHE_CONTEXT |
+                        VIDEO_FLAG_CACHE_CONTEXT_ACK
+                       );
    video_st->record_gpu_buffer          = NULL;
    video_st->current_video              = NULL;
    video_driver_set_cached_frame_ptr(NULL);
 
    /* Audio */
-   audio_state_get_ptr()->active                    = false;
-   audio_state_get_ptr()->current_audio             = NULL;
+   audio_state_get_ptr()->flags        &= ~AUDIO_FLAG_ACTIVE;
+   audio_state_get_ptr()->current_audio = NULL;
 
    if (input_st)
    {
       /* Input */
-      input_st->keyboard_linefeed_enable = false;
-      input_st->block_hotkey             = false;
-      input_st->block_libretro_input     = false;
-      input_st->nonblocking_flag         = false;
+      input_st->flags &= ~(INP_FLAG_KB_LINEFEED_ENABLE
+                         | INP_FLAG_BLOCK_HOTKEY
+                         | INP_FLAG_BLOCK_LIBRETRO_INPUT
+                         | INP_FLAG_NONBLOCKING);
 
       memset(&input_st->turbo_btns, 0, sizeof(turbo_buttons_t));
       memset(&input_st->analog_requested, 0,
@@ -906,7 +896,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 
             /* Sets audio monitor rate to new value. */
             audio_st->source_ratio_original   =
-            audio_st->source_ratio_current    = 
+            audio_st->source_ratio_current    =
             (double)audio_output_sample_rate / audio_st->input;
 
             driver_adjust_system_rates(

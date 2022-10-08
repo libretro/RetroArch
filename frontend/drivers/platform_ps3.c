@@ -263,9 +263,9 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
       params->state_path    = NULL;
       params->config_path   = NULL;
       params->libretro_path = NULL;
-      params->verbose       = false;
-      params->no_content    = false;
-      params->touched       = true;
+      params->flags        &= ~(RARCH_MAIN_WRAP_FLAG_VERBOSE
+                              | RARCH_MAIN_WRAP_FLAG_NO_CONTENT);
+      params->flags        |=   RARCH_MAIN_WRAP_FLAG_TOUCHED;
    }
 #endif
 #endif

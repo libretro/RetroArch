@@ -272,6 +272,13 @@ typedef struct retro_callbacks
    retro_input_poll_t poll_cb;
 } retro_callbacks_t;
 
+enum rarch_main_wrap_flags
+{
+   RARCH_MAIN_WRAP_FLAG_VERBOSE    = (1 << 0),
+   RARCH_MAIN_WRAP_FLAG_NO_CONTENT = (1 << 1),
+   RARCH_MAIN_WRAP_FLAG_TOUCHED    = (1 << 2)
+};
+
 struct rarch_main_wrap
 {
    char **argv;
@@ -281,9 +288,7 @@ struct rarch_main_wrap
    const char *config_path;
    const char *libretro_path;
    int argc;
-   bool verbose;
-   bool no_content;
-   bool touched;
+   uint8_t flags;
 };
 
 typedef struct rarch_resolution

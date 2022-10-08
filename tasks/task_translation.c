@@ -168,7 +168,8 @@ static void handle_translation_cb(
       video_driver_pix_fmt           = video_st->pix_fmt;
    access_state_t *access_st         = access_state_get_ptr();
 #ifdef HAVE_GFX_WIDGETS
-   bool gfx_widgets_paused           = video_st->widgets_paused;
+   bool gfx_widgets_paused           = video_st->flags &
+      VIDEO_FLAG_WIDGETS_PAUSED;
 #endif
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable         = settings->bools.accessibility_enable;

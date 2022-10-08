@@ -1394,7 +1394,7 @@ static void content_load_init_wrap(
    }
 #endif
 
-   if (args->verbose)
+   if (args->flags & RARCH_MAIN_WRAP_FLAG_VERBOSE)
       argv[(*argc)++] = strldup("-v", sizeof("-v"));
 }
 
@@ -1432,16 +1432,14 @@ static bool content_load(content_ctx_info_t *info,
    wrap_args->state_path     = NULL;
    wrap_args->config_path    = NULL;
    wrap_args->libretro_path  = NULL;
-   wrap_args->verbose        = false;
-   wrap_args->no_content     = false;
-   wrap_args->touched        = false;
+   wrap_args->flags          = 0;
    wrap_args->argc           = 0;
 
    if (info->environ_get)
       info->environ_get(rarch_argc_ptr,
             rarch_argv_ptr, info->args, wrap_args);
 
-   if (wrap_args->touched)
+   if (wrap_args->flags & RARCH_MAIN_WRAP_FLAG_TOUCHED)
    {
       content_load_init_wrap(wrap_args, &rarch_argc, rarch_argv);
       memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
@@ -1513,12 +1511,17 @@ void menu_content_environment_get(int *argc, char *argv[],
    if (!wrap_args)
       return;
 
-   wrap_args->no_content             = sys_info->load_no_content;
+   if (sys_info->load_no_content)
+      wrap_args->flags        |= RARCH_MAIN_WRAP_FLAG_NO_CONTENT;
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
-      wrap_args->verbose       = verbosity_is_enabled();
+   if (!retroarch_override_setting_is_set(
+            RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
+   {
+      if (verbosity_is_enabled())
+         wrap_args->flags     |= RARCH_MAIN_WRAP_FLAG_VERBOSE;
+   }
 
-   wrap_args->touched          = true;
+   wrap_args->flags           |= RARCH_MAIN_WRAP_FLAG_TOUCHED;
    wrap_args->config_path      = NULL;
    wrap_args->sram_path        = NULL;
    wrap_args->state_path       = NULL;
@@ -1532,9 +1535,11 @@ void menu_content_environment_get(int *argc, char *argv[],
       wrap_args->state_path    = dir_get_ptr(RARCH_DIR_SAVESTATE);
    if (!path_is_empty(RARCH_PATH_CONTENT))
       wrap_args->content_path  = path_get(RARCH_PATH_CONTENT);
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL))
-      wrap_args->libretro_path = string_is_empty(path_get(RARCH_PATH_CORE)) ? NULL :
-         path_get(RARCH_PATH_CORE);
+   if (!retroarch_override_setting_is_set(
+            RARCH_OVERRIDE_SETTING_LIBRETRO, NULL))
+      wrap_args->libretro_path = string_is_empty(path_get(RARCH_PATH_CORE)) 
+         ? NULL
+         : path_get(RARCH_PATH_CORE);
 }
 
 /**

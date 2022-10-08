@@ -207,9 +207,9 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
       if (args)
       {
          /* Auto-start game. */
-         args->touched        = true;
-         args->no_content     = false;
-         args->verbose        = false;
+         args->flags         &= ~(RARCH_MAIN_WRAP_FLAG_VERBOSE
+                                | RARCH_MAIN_WRAP_FLAG_NO_CONTENT);
+         args->flags         |=   RARCH_MAIN_WRAP_FLAG_TOUCHED;
          args->config_path    = NULL;
          args->sram_path      = NULL;
          args->state_path     = NULL;

@@ -290,6 +290,25 @@ enum
 extern const bluetooth_driver_t *bluetooth_drivers[];
 #endif
 
+
+enum rarch_state_flags
+{
+   RARCH_FLAGS_HAS_SET_USERNAME             = (1 << 0),
+   RARCH_FLAGS_HAS_SET_VERBOSITY            = (1 << 1),
+   RARCH_FLAGS_HAS_SET_LIBRETRO             = (1 << 2),
+   RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY   = (1 << 3),
+   RARCH_FLAGS_HAS_SET_SAVE_PATH            = (1 << 4),
+   RARCH_FLAGS_HAS_SET_STATE_PATH           = (1 << 5),
+   RARCH_FLAGS_HAS_SET_UPS_PREF             = (1 << 6),
+   RARCH_FLAGS_HAS_SET_BPS_PREF             = (1 << 7),
+   RARCH_FLAGS_HAS_SET_IPS_PREF             = (1 << 8),
+   RARCH_FLAGS_HAS_SET_LOG_TO_FILE          = (1 << 9),
+   RARCH_FLAGS_UPS_PREF                     = (1 << 10),
+   RARCH_FLAGS_BPS_PREF                     = (1 << 11),
+   RARCH_FLAGS_IPS_PREF                     = (1 << 12),
+   RARCH_FLAGS_BLOCK_CONFIG_READ            = (1 << 13)
+};
+
 /* MAIN GLOBAL VARIABLES */
 struct rarch_state
 {
@@ -301,6 +320,7 @@ struct rarch_state
    sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
    unsigned perf_ptr_rarch;
+   uint16_t flags;
 
    char launch_arguments[4096];
    char path_default_shader_preset[PATH_MAX_LENGTH];
@@ -312,25 +332,6 @@ struct rarch_state
    char dir_system[PATH_MAX_LENGTH];
    char dir_savefile[PATH_MAX_LENGTH];
    char dir_savestate[PATH_MAX_LENGTH];
-   bool has_set_username;
-   bool has_set_verbosity;
-   bool has_set_libretro;
-   bool has_set_libretro_directory;
-   bool has_set_save_path;
-   bool has_set_state_path;
-#ifdef HAVE_PATCH
-   bool has_set_ups_pref;
-   bool has_set_bps_pref;
-   bool has_set_ips_pref;
-#endif
-   bool has_set_log_to_file;
-   bool rarch_ups_pref;
-   bool rarch_bps_pref;
-   bool rarch_ips_pref;
-
-#ifdef HAVE_CONFIGFILE
-   bool rarch_block_config_read;
-#endif
 };
 
 /* Forward declarations */
@@ -1677,10 +1678,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_OSK_TOGGLE:
          {
             input_driver_state_t *input_st   = input_state_get_ptr();
-            if (input_st->keyboard_linefeed_enable)
-               input_st->keyboard_linefeed_enable = false;
+            if (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
+               input_st->flags &= ~INP_FLAG_KB_LINEFEED_ENABLE;
             else
-               input_st->keyboard_linefeed_enable = true;
+               input_st->flags |=  INP_FLAG_KB_LINEFEED_ENABLE;
          }
          break;
       case CMD_EVENT_SET_PER_GAME_RESOLUTION:
@@ -1930,7 +1931,7 @@ bool command_event(enum event_command cmd, void *data)
                   input_driver_state_t *input_st = input_state_get_ptr();
                   video_driver_show_mouse();
                   if (input_driver_ungrab_mouse())
-                     input_st->grab_mouse_state = false;
+                     input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
                }
             }
 #endif
@@ -2001,7 +2002,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_REINIT_FROM_TOGGLE:
-         video_st->force_fullscreen = false;
+         video_st->flags &= ~VIDEO_FLAG_FORCE_FULLSCREEN;
          /* this fallthrough is on purpose, it should do
             a CMD_EVENT_REINIT too */
       case CMD_EVENT_REINIT:
@@ -2944,14 +2945,15 @@ bool command_event(enum event_command cmd, void *data)
                *input_st              = input_state_get_ptr();
             bool *userdata            = (bool*)data;
             bool video_fullscreen     = settings->bools.video_fullscreen;
-            bool ra_is_forced_fs      = video_st->force_fullscreen;
+            bool ra_is_forced_fs      = video_st->flags &
+               VIDEO_FLAG_FORCE_FULLSCREEN;
             bool new_fullscreen_state = !video_fullscreen && !ra_is_forced_fs;
 
             if (!video_driver_has_windowed())
                return false;
 
-            audio_st->suspended                      = true;
-            video_st->is_switching_display_mode      = true;
+            audio_st->flags |= AUDIO_FLAG_SUSPENDED;
+            video_st->flags |= VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE;
 
             /* we toggled manually, write the new value to settings */
             configuration_set_bool(settings, settings->bools.video_fullscreen,
@@ -2961,7 +2963,7 @@ bool command_event(enum event_command cmd, void *data)
 
             /* we toggled manually, the CLI arg is irrelevant now */
             if (ra_is_forced_fs)
-               video_st->force_fullscreen = false;
+               video_st->flags &= ~VIDEO_FLAG_FORCE_FULLSCREEN;
 
             /* If we go fullscreen we drop all drivers and
              * reinitialize to be safe. */
@@ -2971,18 +2973,18 @@ bool command_event(enum event_command cmd, void *data)
                video_driver_hide_mouse();
                if (!settings->bools.video_windowed_fullscreen)
                   if (input_driver_grab_mouse())
-                     input_st->grab_mouse_state = true;
+                     input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
             }
             else
             {
                video_driver_show_mouse();
                if (!settings->bools.video_windowed_fullscreen)
                   if (input_driver_ungrab_mouse())
-                     input_st->grab_mouse_state = false;
+                     input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
             }
 
-            video_st->is_switching_display_mode      = false;
-            audio_st->suspended                      = false;
+            video_st->flags &= ~VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE;
+            audio_st->flags &= ~AUDIO_FLAG_SUSPENDED;
 
             if (userdata && *userdata == true)
                video_driver_cached_frame();
@@ -3145,17 +3147,18 @@ bool command_event(enum event_command cmd, void *data)
             bool ret              = false;
             input_driver_state_t
                *input_st          = input_state_get_ptr();
-            bool grab_mouse_state = !input_st->grab_mouse_state;
+            bool grab_mouse_state = !(input_st->flags &
+                  INP_FLAG_GRAB_MOUSE_STATE);
 
             if (grab_mouse_state)
             {
                if ((ret = input_driver_grab_mouse()))
-                  input_st->grab_mouse_state = true;
+                  input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
             }
             else
             {
                if ((ret = input_driver_ungrab_mouse()))
-                  input_st->grab_mouse_state = false;
+                  input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
             }
 
             if (!ret)
@@ -3187,7 +3190,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
             bool video_fullscreen                         =
-               settings->bools.video_fullscreen || video_st->force_fullscreen;
+                  settings->bools.video_fullscreen 
+               || (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN);
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_TOGGLE;
             input_driver_state_t
                *input_st                                  = input_state_get_ptr();
@@ -3250,7 +3254,7 @@ bool command_event(enum event_command cmd, void *data)
                if (input_st->game_focus_state.enabled)
                {
                   if (input_driver_grab_mouse())
-                     input_st->grab_mouse_state = true;
+                     input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
                   video_driver_hide_mouse();
                }
                /* Ungrab only if windowed and auto mouse grab is disabled */
@@ -3258,14 +3262,18 @@ bool command_event(enum event_command cmd, void *data)
                      !settings->bools.input_auto_mouse_grab)
                {
                   if (input_driver_ungrab_mouse())
-                     input_st->grab_mouse_state = false;
+                     input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
                   video_driver_show_mouse();
                }
 
-               input_st->block_hotkey =
-                  input_st->game_focus_state.enabled;
-               input_st->keyboard_mapping_blocked  =
-                  input_st->game_focus_state.enabled;
+               if (input_st->game_focus_state.enabled)
+                  input_st->flags |=  INP_FLAG_BLOCK_HOTKEY;
+               else
+                  input_st->flags &= ~INP_FLAG_BLOCK_HOTKEY;
+               if (input_st->game_focus_state.enabled)
+                  input_st->flags |=  INP_FLAG_KB_MAPPING_BLOCKED;
+               else
+                  input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
 
                if (show_message)
                   runloop_msg_queue_push(
@@ -3450,19 +3458,19 @@ void retroarch_override_setting_set(
          }
          break;
       case RARCH_OVERRIDE_SETTING_VERBOSITY:
-         p_rarch->has_set_verbosity = true;
+         p_rarch->flags |= RARCH_FLAGS_HAS_SET_VERBOSITY;
          break;
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
-         p_rarch->has_set_libretro = true;
+         p_rarch->flags |= RARCH_FLAGS_HAS_SET_LIBRETRO;
          break;
       case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
-         p_rarch->has_set_libretro_directory = true;
+         p_rarch->flags |= RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY;
          break;
       case RARCH_OVERRIDE_SETTING_SAVE_PATH:
-         p_rarch->has_set_save_path = true;
+         p_rarch->flags |= RARCH_FLAGS_HAS_SET_SAVE_PATH;
          break;
       case RARCH_OVERRIDE_SETTING_STATE_PATH:
-         p_rarch->has_set_state_path = true;
+         p_rarch->flags |= RARCH_FLAGS_HAS_SET_STATE_PATH;
          break;
 #ifdef HAVE_NETWORKING
       case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
@@ -3480,21 +3488,21 @@ void retroarch_override_setting_set(
 #endif
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
 #ifdef HAVE_PATCH
-         p_rarch->has_set_ups_pref = true;
+         p_rarch->flags |= RARCH_FLAGS_HAS_SET_UPS_PREF;
 #endif
          break;
       case RARCH_OVERRIDE_SETTING_BPS_PREF:
 #ifdef HAVE_PATCH
-         p_rarch->has_set_bps_pref = true;
+         p_rarch->flags |= RARCH_FLAGS_HAS_SET_BPS_PREF;
 #endif
          break;
       case RARCH_OVERRIDE_SETTING_IPS_PREF:
 #ifdef HAVE_PATCH
-         p_rarch->has_set_ips_pref = true;
+         p_rarch->flags |= RARCH_FLAGS_HAS_SET_IPS_PREF;
 #endif
          break;
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
-         p_rarch->has_set_log_to_file = true;
+         p_rarch->flags |= RARCH_FLAGS_HAS_SET_LOG_TO_FILE;
          break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
@@ -3524,19 +3532,19 @@ void retroarch_override_setting_unset(
          }
          break;
       case RARCH_OVERRIDE_SETTING_VERBOSITY:
-         p_rarch->has_set_verbosity = false;
+         p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_VERBOSITY;
          break;
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
-         p_rarch->has_set_libretro = false;
+         p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_LIBRETRO;
          break;
       case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
-         p_rarch->has_set_libretro_directory = false;
+         p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY;
          break;
       case RARCH_OVERRIDE_SETTING_SAVE_PATH:
-         p_rarch->has_set_save_path = false;
+         p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_SAVE_PATH;
          break;
       case RARCH_OVERRIDE_SETTING_STATE_PATH:
-         p_rarch->has_set_state_path = false;
+         p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_STATE_PATH;
          break;
 #ifdef HAVE_NETWORKING
       case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
@@ -3554,21 +3562,21 @@ void retroarch_override_setting_unset(
 #endif
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
 #ifdef HAVE_PATCH
-         p_rarch->has_set_ups_pref = false;
+         p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_UPS_PREF;
 #endif
          break;
       case RARCH_OVERRIDE_SETTING_BPS_PREF:
 #ifdef HAVE_PATCH
-         p_rarch->has_set_bps_pref = false;
+         p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_BPS_PREF;
 #endif
          break;
       case RARCH_OVERRIDE_SETTING_IPS_PREF:
 #ifdef HAVE_PATCH
-         p_rarch->has_set_ips_pref = false;
+         p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_IPS_PREF;
 #endif
          break;
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
-         p_rarch->has_set_log_to_file = false;
+         p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_LOG_TO_FILE;
          break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
@@ -3610,13 +3618,12 @@ static void global_free(struct rarch_state *p_rarch)
    runloop_st->is_sram_save_disabled                  = false;
    runloop_st->use_sram                               = false;
 #ifdef HAVE_PATCH
-   p_rarch->rarch_bps_pref                            = false;
-   p_rarch->rarch_ips_pref                            = false;
-   p_rarch->rarch_ups_pref                            = false;
+   p_rarch->flags &= ~(  RARCH_FLAGS_BPS_PREF | RARCH_FLAGS_IPS_PREF
+                       | RARCH_FLAGS_UPS_PREF);
    runloop_st->patch_blocked                          = false;
 #endif
 #ifdef HAVE_CONFIGFILE
-   p_rarch->rarch_block_config_read                   = false;
+   p_rarch->flags &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
    runloop_st->overrides_active                       = false;
    runloop_st->remaps_core_active                     = false;
    runloop_st->remaps_game_active                     = false;
@@ -3711,11 +3718,11 @@ void main_exit(void *args)
          path_get_realsize(RARCH_PATH_CORE),
          p_rarch->launch_arguments);
 
-   p_rarch->has_set_username        = false;
+   p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_USERNAME;
    runloop_st->is_inited            = false;
    global_get_ptr()->error_on_init  = false;
 #ifdef HAVE_CONFIGFILE
-   p_rarch->rarch_block_config_read = false;
+   p_rarch->flags &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
 #endif
 
    runloop_msg_queue_deinit();
@@ -3772,10 +3779,10 @@ int rarch_main(int argc, char *argv[], void *data)
    runloop_state_t *runloop_st         = runloop_state_get_ptr();
    video_driver_state_t *video_st      = video_state_get_ptr();
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   video_st->shader_presets_need_reload                          = true;
+   video_st->flags |= VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
 #endif
 #ifdef HAVE_RUNAHEAD
-   video_st->runahead_is_active                                  = true;
+   video_st->flags |= VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
    runloop_st->runahead_available                                = true;
    runloop_st->runahead_secondary_core_available                 = true;
    runloop_st->runahead_force_input_dirty                        = true;
@@ -3817,8 +3824,8 @@ int rarch_main(int argc, char *argv[], void *data)
    sthread_tls_create(&p_rarch->rarch_tls);
    sthread_tls_set(&p_rarch->rarch_tls, MAGIC_POINTER);
 #endif
-   video_st->active              = true;
-   audio_state_get_ptr()->active = true;
+   video_st->flags              |= VIDEO_FLAG_ACTIVE;
+   audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
 
    {
       unsigned i;
@@ -3896,7 +3903,8 @@ void emscripten_mainloop(void)
    settings_t        *settings            = config_get_ptr();
    input_driver_state_t *input_st         = input_state_get_ptr();
    bool black_frame_insertion             = settings->uints.video_black_frame_insertion;
-   bool input_driver_nonblock_state       = input_st ? input_st->nonblocking_flag : false;
+   bool input_driver_nonblock_state       = input_st ?
+      (input_st->flags & INP_FLAG_NONBLOCKING) : false;
    runloop_state_t *runloop_st            = runloop_state_get_ptr();
    bool runloop_is_slowmotion             = runloop_st->slowmotion;
    bool runloop_is_paused                 = runloop_st->paused;
@@ -4611,11 +4619,10 @@ static bool retroarch_parse_input_and_config(
 
    retroarch_override_setting_free_state();
 
-   p_rarch->has_set_username             = false;
+   p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_USERNAME;
 #ifdef HAVE_PATCH
-   p_rarch->rarch_ups_pref               = false;
-   p_rarch->rarch_ips_pref               = false;
-   p_rarch->rarch_bps_pref               = false;
+   p_rarch->flags &= ~(  RARCH_FLAGS_UPS_PREF | RARCH_FLAGS_IPS_PREF
+                       | RARCH_FLAGS_BPS_PREF);
    *runloop_st->name.ups                 = '\0';
    *runloop_st->name.bps                 = '\0';
    *runloop_st->name.ips                 = '\0';
@@ -4732,7 +4739,7 @@ static bool retroarch_parse_input_and_config(
 
    /* Load the config file now that we know what it is */
 #ifdef HAVE_CONFIGFILE
-   if (!p_rarch->rarch_block_config_read)
+   if (!(p_rarch->flags & RARCH_FLAGS_BLOCK_CONFIG_READ))
 #endif
    {
       /* If this is a static build, load salamander
@@ -4815,7 +4822,7 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case 'f':
-               video_st->force_fullscreen = true;
+               video_st->flags |= VIDEO_FLAG_FORCE_FULLSCREEN;
                break;
 
             case 'N':
@@ -4849,7 +4856,7 @@ static bool retroarch_parse_input_and_config(
                /* disable auto-shaders */
                if (string_is_empty(optarg))
                {
-                  video_st->cli_shader_disable = true;
+                  video_st->flags |= VIDEO_FLAG_CLI_SHADER_DISABLE;
                   break;
                }
 
@@ -4960,7 +4967,7 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_PATCH
                strlcpy(runloop_st->name.bps, optarg,
                      sizeof(runloop_st->name.bps));
-               p_rarch->rarch_bps_pref = true;
+               p_rarch->flags |= RARCH_FLAGS_BPS_PREF;
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL);
 #endif
                break;
@@ -4969,7 +4976,7 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_PATCH
                strlcpy(runloop_st->name.ups, optarg,
                      sizeof(runloop_st->name.ups));
-               p_rarch->rarch_ups_pref = true;
+               p_rarch->flags |= RARCH_FLAGS_UPS_PREF;
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL);
 #endif
                break;
@@ -4978,7 +4985,7 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_PATCH
                strlcpy(runloop_st->name.ips, optarg,
                      sizeof(runloop_st->name.ips));
-               p_rarch->rarch_ips_pref = true;
+               p_rarch->flags |= RARCH_FLAGS_IPS_PREF;
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL);
 #endif
                break;
@@ -4998,7 +5005,7 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case RA_OPT_NICK:
-               p_rarch->has_set_username = true;
+               p_rarch->flags |= RARCH_FLAGS_HAS_SET_USERNAME;
 
                configuration_set_string(settings,
                      settings->paths.username, optarg);
@@ -5211,29 +5218,29 @@ bool retroarch_main_init(int argc, char *argv[])
 #if defined(DEBUG) && defined(HAVE_DRMINGW)
    char log_file_name[128];
 #endif
-   bool verbosity_enabled       = false;
-   bool           init_failed   = false;
-   struct rarch_state *p_rarch  = &rarch_st;
-   runloop_state_t *runloop_st  = runloop_state_get_ptr();
+   bool verbosity_enabled        = false;
+   bool           init_failed    = false;
+   struct rarch_state *p_rarch   = &rarch_st;
+   runloop_state_t *runloop_st   = runloop_state_get_ptr();
    input_driver_state_t
-      *input_st                 = input_state_get_ptr();
-   video_driver_state_t*video_st= video_state_get_ptr();
-   settings_t *settings         = config_get_ptr();
+      *input_st                  = input_state_get_ptr();
+   video_driver_state_t*video_st = video_state_get_ptr();
+   settings_t *settings          = config_get_ptr();
    recording_state_t
-	   *recording_st             = recording_state_get_ptr();
-   global_t            *global  = global_get_ptr();
+	   *recording_st              = recording_state_get_ptr();
+   global_t            *global   = global_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
-   access_state_t *access_st    = access_state_get_ptr();
-   bool accessibility_enable    = false;
+   access_state_t *access_st     = access_state_get_ptr();
+   bool accessibility_enable     = false;
    unsigned accessibility_narrator_speech_speed = 0;
 #endif
 #ifdef HAVE_MENU
-   struct menu_state *menu_st   = menu_state_get_ptr();
+   struct menu_state *menu_st    = menu_state_get_ptr();
 #endif
 
-   input_st->osk_idx            = OSK_LOWERCASE_LATIN;
-   video_st->active             = true;
-   audio_state_get_ptr()->active= true;
+   input_st->osk_idx             = OSK_LOWERCASE_LATIN;
+   video_st->flags              |= VIDEO_FLAG_ACTIVE;
+   audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
 
    if (setjmp(global->error_sjlj_context) > 0)
    {
@@ -5584,19 +5591,19 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
 #ifdef HAVE_PATCH
       case RARCH_CTL_IS_BPS_PREF:
-         return p_rarch->rarch_bps_pref;
-      case RARCH_CTL_UNSET_BPS_PREF:
-         p_rarch->rarch_bps_pref = false;
-         break;
+         return ((p_rarch->flags & RARCH_FLAGS_BPS_PREF) > 0);
       case RARCH_CTL_IS_UPS_PREF:
-         return p_rarch->rarch_ups_pref;
-      case RARCH_CTL_UNSET_UPS_PREF:
-         p_rarch->rarch_ups_pref = false;
-         break;
+         return ((p_rarch->flags & RARCH_FLAGS_UPS_PREF) > 0);
       case RARCH_CTL_IS_IPS_PREF:
-         return p_rarch->rarch_ips_pref;
+         return ((p_rarch->flags & RARCH_FLAGS_IPS_PREF) > 0);
+      case RARCH_CTL_UNSET_BPS_PREF:
+         p_rarch->flags &= ~RARCH_FLAGS_BPS_PREF;
+         break;
+      case RARCH_CTL_UNSET_UPS_PREF:
+         p_rarch->flags &= ~RARCH_FLAGS_UPS_PREF;
+         break;
       case RARCH_CTL_UNSET_IPS_PREF:
-         p_rarch->rarch_ips_pref = false;
+         p_rarch->flags &= ~RARCH_FLAGS_IPS_PREF;
          break;
 #endif
       case RARCH_CTL_IS_DUMMY_CORE:
@@ -5629,7 +5636,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
                && (runloop_st->secondary_lib_handle != NULL);
 #endif
       case RARCH_CTL_HAS_SET_USERNAME:
-         return p_rarch->has_set_username;
+         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_USERNAME) > 0);
       case RARCH_CTL_IS_INITED:
          return runloop_st->is_inited;
       case RARCH_CTL_MAIN_DEINIT:
@@ -5684,10 +5691,10 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          break;
 #ifdef HAVE_CONFIGFILE
       case RARCH_CTL_SET_BLOCK_CONFIG_READ:
-         p_rarch->rarch_block_config_read = true;
+         p_rarch->flags |= RARCH_FLAGS_BLOCK_CONFIG_READ;
          break;
       case RARCH_CTL_UNSET_BLOCK_CONFIG_READ:
-         p_rarch->rarch_block_config_read = false;
+         p_rarch->flags &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
          break;
 #endif
       case RARCH_CTL_GET_CORE_OPTION_SIZE:
@@ -5893,15 +5900,15 @@ bool retroarch_override_setting_is_set(
          }
          break;
       case RARCH_OVERRIDE_SETTING_VERBOSITY:
-         return p_rarch->has_set_verbosity;
+         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_VERBOSITY) > 0);
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
-         return p_rarch->has_set_libretro;
+         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_LIBRETRO) > 0);
       case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
-         return p_rarch->has_set_libretro_directory;
+         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY) > 0);
       case RARCH_OVERRIDE_SETTING_SAVE_PATH:
-         return p_rarch->has_set_save_path;
+         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_SAVE_PATH) > 0);
       case RARCH_OVERRIDE_SETTING_STATE_PATH:
-         return p_rarch->has_set_state_path;
+         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_STATE_PATH) > 0);
 #ifdef HAVE_NETWORKING
       case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
          return net_st->has_set_netplay_mode;
@@ -5914,14 +5921,14 @@ bool retroarch_override_setting_is_set(
 #endif
 #ifdef HAVE_PATCH
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
-         return p_rarch->has_set_ups_pref;
+         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_UPS_PREF) > 0);
       case RARCH_OVERRIDE_SETTING_BPS_PREF:
-         return p_rarch->has_set_bps_pref;
+         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_BPS_PREF) > 0);
       case RARCH_OVERRIDE_SETTING_IPS_PREF:
-         return p_rarch->has_set_ips_pref;
+         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_IPS_PREF) > 0);
 #endif
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
-         return p_rarch->has_set_log_to_file;
+         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_LOG_TO_FILE) > 0);
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
