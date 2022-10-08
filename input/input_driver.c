@@ -3345,7 +3345,8 @@ static void input_overlay_loaded(retro_task_t *task,
    {
 #ifdef HAVE_MENU
       /* We can't display when the menu is up */
-      if (data->hide_in_menu && menu_state_get_ptr()->alive)
+      if (      data->hide_in_menu 
+            && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
          goto abort_load;
 #endif
 
@@ -3461,7 +3462,8 @@ void input_overlay_init(void)
    /* Cancel load if 'hide_in_menu' is enabled and
     * menu is currently active */
    if (overlay_hide_in_menu)
-      load_enabled = load_enabled && !menu_state_get_ptr()->alive;
+      load_enabled = load_enabled && !(menu_state_get_ptr()->flags &
+            MENU_ST_FLAG_ALIVE);
 #endif
 
    /* Cancel load if 'hide_when_gamepad_connected' is
@@ -3735,7 +3737,8 @@ int16_t input_state_device(
                    BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, id))
                {
 #ifdef HAVE_MENU
-                  bool menu_driver_alive        = menu_state_get_ptr()->alive;
+                  bool menu_driver_alive        = menu_state_get_ptr()->flags &
+MENU_ST_FLAG_ALIVE;
 #else
                   bool menu_driver_alive        = false;
 #endif
@@ -4124,7 +4127,7 @@ void input_driver_poll(void)
 #endif
 
 #ifdef HAVE_MENU
-   if (!menu_state_get_ptr()->alive)
+   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
 #endif
    if (input_remap_binds_enable)
    {
@@ -5364,7 +5367,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #endif
 #ifdef HAVE_MENU
    bool display_kb                     = menu_input_dialog_get_display_kb();
-   bool menu_is_alive                  = menu_state_get_ptr()->alive;
+   bool menu_is_alive                  = menu_state_get_ptr()->flags &
+      MENU_ST_FLAG_ALIVE;
    bool menu_input_active              = menu_is_alive &&
          !(settings->bools.menu_unified_controls && !display_kb);
 #endif
@@ -5665,7 +5669,7 @@ void input_keyboard_event(bool down, unsigned code,
     *   explicitly...
     * Otherwise, input is ignored whenever screensaver
     * is active */
-   if (menu_st->screensaver_active)
+   if (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE)
    {
       if (down &&
           (code != RETROK_UNKNOWN) &&
@@ -5687,7 +5691,7 @@ void input_keyboard_event(bool down, unsigned code,
          menu_ctx_environment_t menu_environ;
          menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
          menu_environ.data           = NULL;
-         menu_st->screensaver_active = false;
+         menu_st->flags             &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
          menu_st->input_last_time_us = menu_st->current_time_us;
          menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
       }

@@ -464,7 +464,7 @@ void drivers_init(
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
    if (menu_st)
-      menu_st->data_own = true;
+      menu_st->flags           |= MENU_ST_FLAG_DATA_OWN;
 #endif
 
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))

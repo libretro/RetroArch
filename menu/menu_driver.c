@@ -4213,7 +4213,7 @@ int menu_driver_deferred_push_content_list(file_list_t *list)
 bool menu_driver_screensaver_supported(void)
 {
    struct menu_state    *menu_st  = &menu_driver_state;
-   return menu_st->screensaver_supported;
+   return ((menu_st->flags & MENU_ST_FLAG_SCREENSAVER_SUPPORTED) > 0);
 }
 
 retro_time_t menu_driver_get_current_time(void)
@@ -4627,9 +4627,9 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             bool *nonblocking = (bool*)data;
 
             if (*nonblocking)
-               menu_st->entries_nonblocking_refresh = true;
+               menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
             else
-               menu_st->entries_need_refresh        = true;
+               menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
          }
          break;
       case MENU_ENTRIES_CTL_UNSET_REFRESH:
@@ -4637,9 +4637,9 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             bool *nonblocking = (bool*)data;
 
             if (*nonblocking)
-               menu_st->entries_nonblocking_refresh = false;
+               menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
             else
-               menu_st->entries_need_refresh        = false;
+               menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
          }
          break;
       case MENU_ENTRIES_CTL_SET_START:
@@ -4871,13 +4871,13 @@ void menu_driver_set_thumbnail_content(char *s, size_t len)
 void menu_driver_destroy(
       struct menu_state *menu_st)
 {
-   menu_st->pending_quick_menu          = false;
-   menu_st->prevent_populate            = false;
-   menu_st->data_own                    = false;
+   menu_st->flags &= ~(MENU_ST_FLAG_PENDING_QUICK_MENU
+                     | MENU_ST_FLAG_PREVENT_POPULATE
+                     | MENU_ST_FLAG_DATA_OWN
+                     | MENU_ST_FLAG_ALIVE);
    menu_st->driver_ctx                  = NULL;
    menu_st->userdata                    = NULL;
    menu_st->input_driver_flushing_input = 0;
-   menu_st->alive                       = false;
 }
 
 bool menu_driver_list_get_entry(menu_ctx_list_t *list)
@@ -5024,7 +5024,7 @@ void menu_input_dialog_end(void)
    struct menu_state *menu_st                 = &menu_driver_state;
    menu_st->input_dialog_kb_type              = 0;
    menu_st->input_dialog_kb_idx               = 0;
-   menu_st->input_dialog_kb_display           = false;
+   menu_st->flags &= ~MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
    menu_st->input_dialog_kb_label[0]          = '\0';
    menu_st->input_dialog_kb_label_setting[0]  = '\0';
 
@@ -5177,8 +5177,11 @@ static bool menu_driver_init_internal(
    menu_environ.type              = MENU_ENVIRON_DISABLE_SCREENSAVER;
    menu_environ.data              = NULL;
    menu_st->input_last_time_us    = cpu_features_get_time_usec();
-   menu_st->screensaver_active    = false;
-   menu_st->screensaver_supported = menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+   menu_st->flags    &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
+   if (menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ))
+      menu_st->flags |=  MENU_ST_FLAG_SCREENSAVER_SUPPORTED;
+   else
+      menu_st->flags &= ~MENU_ST_FLAG_SCREENSAVER_SUPPORTED;
 
    return true;
 }
@@ -5561,13 +5564,12 @@ bool menu_input_dialog_get_display_kb(void)
    if (typing)
       return false;
 
-
    /* swkbd only works on "real" titles */
    if (     __nx_applet_type != AppletType_Application
          && __nx_applet_type != AppletType_SystemApplication)
-      return menu_st->input_dialog_kb_display;
+      return (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY);
 
-   if (!menu_st->input_dialog_kb_display)
+   if (!(menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY))
       return false;
 
    rc = swkbdCreate(&kbd, 0);
@@ -5591,7 +5593,7 @@ bool menu_input_dialog_get_display_kb(void)
       for (i = 0; i < LIBNX_SWKBD_LIMIT; i++)
       {
          /* In case a previous "Enter" press closed the keyboard */
-         if (!menu_st->input_dialog_kb_display)
+         if (!(menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY))
             break;
 
          if (buf[i] == '\n' || buf[i] == '\0')
@@ -5601,11 +5603,12 @@ bool menu_input_dialog_get_display_kb(void)
             const char *word = &buf[i];
             /* input_keyboard_line_append expects a null-terminated
                string, so just make one (yes, the touch keyboard is
-               a list of "null-terminated characters") */
+               a list of "NULL-terminated characters") */
             char oldchar     = buf[i+1];
             buf[i+1]         = '\0';
 
-            input_keyboard_line_append(&input_st->keyboard_line, word, strlen(word));
+            input_keyboard_line_append(&input_st->keyboard_line,
+                  word, strlen(word));
 
             osk_update_last_codepoint(
                   &input_st->osk_last_codepoint,
@@ -5616,7 +5619,7 @@ bool menu_input_dialog_get_display_kb(void)
       }
 
       /* fail-safe */
-      if (menu_st->input_dialog_kb_display)
+      if (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY)
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
       typing = false;
@@ -5625,7 +5628,7 @@ bool menu_input_dialog_get_display_kb(void)
    }
    libnx_apply_overclock();
 #endif /* HAVE_LIBNX */
-   return menu_st->input_dialog_kb_display;
+   return ((menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY) > 0);
 }
 
 unsigned menu_event(
@@ -5776,7 +5779,7 @@ unsigned menu_event(
 
    /* If menu screensaver is active, any input
     * is intercepted and used to switch it off */
-   if (menu_st->screensaver_active)
+   if (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE)
    {
       /* Check pointer input */
       bool input_active = (menu_input->pointer.type != MENU_POINTER_DISABLED) &&
@@ -5795,7 +5798,7 @@ unsigned menu_event(
          menu_ctx_environment_t menu_environ;
          menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
          menu_environ.data           = NULL;
-         menu_st->screensaver_active = false;
+         menu_st->flags             &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
          menu_st->input_last_time_us = menu_st->current_time_us;
          menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
       }
@@ -6822,14 +6825,14 @@ void retroarch_menu_running(void)
       if (menu->driver_ctx && menu->driver_ctx->toggle)
          menu->driver_ctx->toggle(menu->userdata, true);
 
-      menu_st->alive               = true;
+      menu_st->flags |= MENU_ST_FLAG_ALIVE;
       menu_driver_toggle(
             video_st->current_video,
             video_st->data,
             menu,
             menu_input,
             settings,
-            menu_st->alive,
+            menu_st->flags & MENU_ST_FLAG_ALIVE,
 #ifdef HAVE_OVERLAY
             input_st->overlay_ptr &&
             input_st->overlay_ptr->alive,
@@ -6861,12 +6864,12 @@ void retroarch_menu_running(void)
 
    /* Ensure that menu screensaver is disabled when
     * first switching to the menu */
-   if (menu_st->screensaver_active)
+   if (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE)
    {
       menu_ctx_environment_t menu_environ;
       menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
       menu_environ.data           = NULL;
-      menu_st->screensaver_active = false;
+      menu_st->flags             &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
       menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
    }
    menu_st->input_last_time_us = cpu_features_get_time_usec();
@@ -6891,14 +6894,14 @@ void retroarch_menu_running_finished(bool quit)
       if (menu->driver_ctx && menu->driver_ctx->toggle)
          menu->driver_ctx->toggle(menu->userdata, false);
 
-      menu_st->alive   = false;
+      menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
       menu_driver_toggle(
             video_st->current_video,
             video_st->data,
             menu,
             menu_input,
             settings,
-            menu_st->alive,
+            menu_st->flags & MENU_ST_FLAG_ALIVE,
 #ifdef HAVE_OVERLAY
             input_st->overlay_ptr &&
             input_st->overlay_ptr->alive,
@@ -6944,12 +6947,12 @@ void retroarch_menu_running_finished(bool quit)
 
    /* Ensure that menu screensaver is disabled when
     * switching off the menu */
-   if (menu_st->screensaver_active)
+   if (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE)
    {
       menu_ctx_environment_t menu_environ;
       menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
       menu_environ.data           = NULL;
-      menu_st->screensaver_active = false;
+      menu_st->flags             &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
       menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
    }
    video_driver_set_texture_enable(false, false);
@@ -6972,23 +6975,23 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             bool flush_stack = !data ? true : *((bool *)data);
             if (flush_stack)
                menu_entries_flush_stack(NULL, MENU_SETTINGS);
-            menu_st->pending_quick_menu = true;
+            menu_st->flags |= MENU_ST_FLAG_PENDING_QUICK_MENU;
          }
          break;
       case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
-         menu_st->prevent_populate = true;
+         menu_st->flags |=  MENU_ST_FLAG_PREVENT_POPULATE;
          break;
       case RARCH_MENU_CTL_UNSET_PREVENT_POPULATE:
-         menu_st->prevent_populate = false;
+         menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
          break;
       case RARCH_MENU_CTL_IS_PREVENT_POPULATE:
-         return menu_st->prevent_populate;
+         return ((menu_st->flags & MENU_ST_FLAG_PREVENT_POPULATE) > 0);
       case RARCH_MENU_CTL_DEINIT:
          if (     menu_st->driver_ctx
                && menu_st->driver_ctx->context_destroy)
             menu_st->driver_ctx->context_destroy(menu_st->userdata);
 
-         if (menu_st->data_own)
+         if (menu_st->flags & MENU_ST_FLAG_DATA_OWN)
             return true;
 
          playlist_free_cached();
@@ -7054,8 +7057,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                free(menu_st->driver_data->core_buf);
             menu_st->driver_data->core_buf  = NULL;
 
-            menu_st->entries_need_refresh        = false;
-            menu_st->entries_nonblocking_refresh = false;
+            menu_st->flags &= ~(MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                              | MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH);
             menu_st->entries.begin               = 0;
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
@@ -7413,7 +7416,7 @@ static int generic_menu_iterate(
    menu->menu_state_msg[0]         = '\0';
 
    iterate_type                    = action_iterate_type(label);
-   menu_st->is_binding             = false;
+   menu_st->flags                 &= ~MENU_ST_FLAG_IS_BINDING;
 
    if (     action != MENU_ACTION_NOOP
          || MENU_ENTRIES_NEEDS_REFRESH(menu_st)
@@ -7460,7 +7463,7 @@ static int generic_menu_iterate(
          {
             menu_input_ctx_bind_t bind;
 
-            menu_st->is_binding = true;
+            menu_st->flags     |= MENU_ST_FLAG_IS_BINDING;
 
             bind.s              = menu->menu_state_msg;
             bind.len            = sizeof(menu->menu_state_msg);
@@ -8080,10 +8083,11 @@ int generic_menu_entry_action(
    }
 #endif
 
-   if (menu_st->pending_close_content ||
-       menu_st->pending_env_shutdown_flush)
+   if (   (menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT)
+       || (menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
    {
-      const char *content_path  = menu_st->pending_env_shutdown_flush ?
+      const char *content_path  = (menu_st->flags &
+            MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH) ?
             menu_st->pending_env_shutdown_content_path :
             path_get(RARCH_PATH_CONTENT);
       const char *deferred_path = menu ? menu->deferred_path : NULL;
@@ -8127,7 +8131,7 @@ int generic_menu_entry_action(
          stack_offset++;
       }
 
-      if (!menu_st->pending_env_shutdown_flush)
+      if (!(menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
          command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
       menu_entries_flush_stack(flush_target, 0);
@@ -8141,8 +8145,8 @@ int generic_menu_entry_action(
       if (reset_navigation)
          menu_st->selection_ptr = 0;
 
-      menu_st->pending_close_content                = false;
-      menu_st->pending_env_shutdown_flush           = false;
+      menu_st->flags &= ~(MENU_ST_FLAG_PENDING_CLOSE_CONTENT
+                        | MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH);
       menu_st->pending_env_shutdown_content_path[0] = '\0';
    }
 
@@ -8188,7 +8192,7 @@ bool menu_input_dialog_start_search(void)
 #ifdef HAVE_MIST
    steam_open_osk();
 #endif
-   menu_st->input_dialog_kb_display = true;
+   menu_st->flags |= MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
    strlcpy(menu_st->input_dialog_kb_label,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(menu_st->input_dialog_kb_label));
@@ -8239,7 +8243,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 #ifdef HAVE_MIST
    steam_open_osk();
 #endif
-   menu_st->input_dialog_kb_display = true;
+   menu_st->flags |= MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
 
    /* Only copy over the menu label and setting if they exist. */
    if (line->label)

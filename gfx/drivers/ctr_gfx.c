@@ -660,7 +660,7 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
    }
 
 #ifdef HAVE_MENU
-   if (menu_state_get_ptr()->alive)
+   if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
       ctr->bottom_menu = CTR_BOTTOM_MENU_SELECT;
    else
 #endif
@@ -1037,7 +1037,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
    }
 
 #ifdef HAVE_MENU
-   if (menu_state_get_ptr()->alive)
+   if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
       return;
 #endif
 

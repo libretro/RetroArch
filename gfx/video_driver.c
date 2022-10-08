@@ -2724,7 +2724,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->widgets_active              = false;
 #endif
 #ifdef HAVE_MENU
-   video_info->notifications_hidden        = settings->bools.notification_show_when_menu_is_alive && !menu_st->alive;
+   video_info->notifications_hidden        =
+      settings->bools.notification_show_when_menu_is_alive && !(menu_st->flags &
+      MENU_ST_FLAG_ALIVE);
 #endif
    video_info->refresh_rate                = settings->floats.video_refresh_rate;
    video_info->crt_switch_resolution       = settings->uints.crt_switch_resolution;
@@ -2793,8 +2795,9 @@ VIDEO_FLAG_WIDGETS_FAST_FORWARD;
    video_info->memory_update_interval      = settings->uints.memory_update_interval;
 
 #ifdef HAVE_MENU
-   video_info->menu_is_alive               = menu_st->alive;
-   video_info->menu_screensaver_active     = menu_st->screensaver_active;
+   video_info->menu_is_alive               = menu_st->flags & MENU_ST_FLAG_ALIVE;
+   video_info->menu_screensaver_active     = menu_st->flags &
+      MENU_ST_FLAG_SCREENSAVER_ACTIVE;
    video_info->menu_footer_opacity         = settings->floats.menu_footer_opacity;
    video_info->menu_header_opacity         = settings->floats.menu_header_opacity;
    video_info->materialui_color_theme      = settings->uints.menu_materialui_color_theme;

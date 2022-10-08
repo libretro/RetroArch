@@ -1519,7 +1519,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
                thumbnail_upscale_threshold);
    }
 
-   xmb->thumbnails.savestate.core_aspect = true;
+   xmb->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
 }
 
 /* Is called when the pointer position changes within a list/sub-list (vertically) */

@@ -63,6 +63,12 @@ enum gfx_thumbnail_shadow_type
    GFX_THUMBNAIL_SHADOW_OUTLINE
 };
 
+enum gfx_thumbnail_flags
+{
+   GFX_THUMB_FLAG_FADE_ACTIVE = (1 << 0),
+   GFX_THUMB_FLAG_CORE_ASPECT = (1 << 1)
+};
+
 /* Holds all runtime parameters associated with
  * an entry thumbnail */
 typedef struct
@@ -73,8 +79,7 @@ typedef struct
    float alpha;
    float delay_timer;
    enum gfx_thumbnail_status status;
-   bool fade_active;
-   bool core_aspect;
+   uint8_t flags;
 } gfx_thumbnail_t;
 
 /* Holds all configuration parameters associated
