@@ -1678,10 +1678,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_OSK_TOGGLE:
          {
             input_driver_state_t *input_st   = input_state_get_ptr();
-            if (input_st->keyboard_linefeed_enable)
-               input_st->keyboard_linefeed_enable = false;
+            if (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
+               input_st->flags &= ~INP_FLAG_KB_LINEFEED_ENABLE;
             else
-               input_st->keyboard_linefeed_enable = true;
+               input_st->flags |=  INP_FLAG_KB_LINEFEED_ENABLE;
          }
          break;
       case CMD_EVENT_SET_PER_GAME_RESOLUTION:
@@ -1931,7 +1931,7 @@ bool command_event(enum event_command cmd, void *data)
                   input_driver_state_t *input_st = input_state_get_ptr();
                   video_driver_show_mouse();
                   if (input_driver_ungrab_mouse())
-                     input_st->grab_mouse_state = false;
+                     input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
                }
             }
 #endif
@@ -2973,14 +2973,14 @@ bool command_event(enum event_command cmd, void *data)
                video_driver_hide_mouse();
                if (!settings->bools.video_windowed_fullscreen)
                   if (input_driver_grab_mouse())
-                     input_st->grab_mouse_state = true;
+                     input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
             }
             else
             {
                video_driver_show_mouse();
                if (!settings->bools.video_windowed_fullscreen)
                   if (input_driver_ungrab_mouse())
-                     input_st->grab_mouse_state = false;
+                     input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
             }
 
             video_st->flags &= ~VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE;
@@ -3147,17 +3147,18 @@ bool command_event(enum event_command cmd, void *data)
             bool ret              = false;
             input_driver_state_t
                *input_st          = input_state_get_ptr();
-            bool grab_mouse_state = !input_st->grab_mouse_state;
+            bool grab_mouse_state = !(input_st->flags &
+                  INP_FLAG_GRAB_MOUSE_STATE);
 
             if (grab_mouse_state)
             {
                if ((ret = input_driver_grab_mouse()))
-                  input_st->grab_mouse_state = true;
+                  input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
             }
             else
             {
                if ((ret = input_driver_ungrab_mouse()))
-                  input_st->grab_mouse_state = false;
+                  input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
             }
 
             if (!ret)
@@ -3253,7 +3254,7 @@ bool command_event(enum event_command cmd, void *data)
                if (input_st->game_focus_state.enabled)
                {
                   if (input_driver_grab_mouse())
-                     input_st->grab_mouse_state = true;
+                     input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
                   video_driver_hide_mouse();
                }
                /* Ungrab only if windowed and auto mouse grab is disabled */
@@ -3261,14 +3262,18 @@ bool command_event(enum event_command cmd, void *data)
                      !settings->bools.input_auto_mouse_grab)
                {
                   if (input_driver_ungrab_mouse())
-                     input_st->grab_mouse_state = false;
+                     input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
                   video_driver_show_mouse();
                }
 
-               input_st->block_hotkey =
-                  input_st->game_focus_state.enabled;
-               input_st->keyboard_mapping_blocked  =
-                  input_st->game_focus_state.enabled;
+               if (input_st->game_focus_state.enabled)
+                  input_st->flags |=  INP_FLAG_BLOCK_HOTKEY;
+               else
+                  input_st->flags &= ~INP_FLAG_BLOCK_HOTKEY;
+               if (input_st->game_focus_state.enabled)
+                  input_st->flags |=  INP_FLAG_KB_MAPPING_BLOCKED;
+               else
+                  input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
 
                if (show_message)
                   runloop_msg_queue_push(
@@ -3898,7 +3903,8 @@ void emscripten_mainloop(void)
    settings_t        *settings            = config_get_ptr();
    input_driver_state_t *input_st         = input_state_get_ptr();
    bool black_frame_insertion             = settings->uints.video_black_frame_insertion;
-   bool input_driver_nonblock_state       = input_st ? input_st->nonblocking_flag : false;
+   bool input_driver_nonblock_state       = input_st ?
+      (input_st->flags & INP_FLAG_NONBLOCKING) : false;
    runloop_state_t *runloop_st            = runloop_state_get_ptr();
    bool runloop_is_slowmotion             = runloop_st->slowmotion;
    bool runloop_is_paused                 = runloop_st->paused;

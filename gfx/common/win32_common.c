@@ -1056,11 +1056,11 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
          break;
 #ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
-         if (input_state_get_ptr()->grab_mouse_state)
+	 if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(true);
          break;
       case WM_KILLFOCUS:
-         if (input_state_get_ptr()->grab_mouse_state)
+	 if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(false);
          break;
 #endif
@@ -1133,7 +1133,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
          break;
       case WM_SETFOCUS:
 #ifdef HAVE_CLIP_WINDOW
-         if (input_state_get_ptr()->grab_mouse_state)
+	 if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(true);
 #endif
 #if !defined(_XBOX)
@@ -1143,7 +1143,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
          break;
       case WM_KILLFOCUS:
 #ifdef HAVE_CLIP_WINDOW
-         if (input_state_get_ptr()->grab_mouse_state)
+	 if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(false);
 #endif
 #if !defined(_XBOX)
@@ -1273,11 +1273,11 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
          break;
 #ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
-         if (input_state_get_ptr()->grab_mouse_state)
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(true);
          break;
       case WM_KILLFOCUS:
-         if (input_state_get_ptr()->grab_mouse_state)
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(false);
          break;
 #endif

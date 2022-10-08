@@ -4946,7 +4946,7 @@ static void ui_companion_qt_toggle(void *data, bool force)
    settings_t *settings        = config_get_ptr();
    bool ui_companion_toggle    = settings->bools.ui_companion_toggle;
    bool video_fullscreen       = settings->bools.video_fullscreen;
-   bool mouse_grabbed          = input_state_get_ptr()->grab_mouse_state;
+   bool mouse_grabbed          = input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE;
 
    if (ui_companion_toggle || force)
    {

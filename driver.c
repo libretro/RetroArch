@@ -397,7 +397,7 @@ void driver_set_nonblock_state(void)
    video_driver_state_t
       *video_st                = video_state_get_ptr();
    bool                 enable = input_st ?
-      input_st->nonblocking_flag : false;
+      (input_st->flags & INP_FLAG_NONBLOCKING) : false;
    settings_t       *settings  = config_get_ptr();
    bool audio_sync             = settings->bools.audio_sync;
    bool video_vsync            = settings->bools.video_vsync;
@@ -672,7 +672,7 @@ void drivers_init(
 
    /* Keep non-throttled state as good as possible. */
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
-      if (input_st && input_st->nonblocking_flag)
+      if (input_st && (input_st->flags & INP_FLAG_NONBLOCKING))
          driver_set_nonblock_state();
 
    /* Initialize LED driver */
@@ -833,10 +833,10 @@ void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    if (input_st)
    {
       /* Input */
-      input_st->keyboard_linefeed_enable = false;
-      input_st->block_hotkey             = false;
-      input_st->block_libretro_input     = false;
-      input_st->nonblocking_flag         = false;
+      input_st->flags &= ~(INP_FLAG_KB_LINEFEED_ENABLE
+                         | INP_FLAG_BLOCK_HOTKEY
+                         | INP_FLAG_BLOCK_LIBRETRO_INPUT
+                         | INP_FLAG_NONBLOCKING);
 
       memset(&input_st->turbo_btns, 0, sizeof(turbo_buttons_t));
       memset(&input_st->analog_requested, 0,

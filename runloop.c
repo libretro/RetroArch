@@ -2479,8 +2479,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             *input_st         = input_state_get_ptr();
 
          RARCH_LOG("[Environ]: GET_INPUT_DEVICE_CAPABILITIES.\n");
-         if (!input_st->current_driver->get_capabilities ||
-!input_st->current_data)
+         if (     !input_st->current_driver->get_capabilities
+               || !input_st->current_data)
             return false;
          *mask = input_driver_get_capabilities();
          break;
@@ -3171,7 +3171,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          /* VSync overrides the mode if the rate is limited by the display. */
          if (menu_opened || /* Menu currently always runs with vsync on. */
                (settings->bools.video_vsync && !runloop_st->force_nonblock
-                     && !input_state_get_ptr()->nonblocking_flag))
+                     && !(input_state_get_ptr()->flags & INP_FLAG_NONBLOCKING)))
          {
             float refresh_rate = video_driver_get_refresh_rate();
             if (refresh_rate == 0.0f)
@@ -5013,9 +5013,9 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
       if (input_st)
       {
          if (runloop_st->fastmotion)
-            input_st->nonblocking_flag = true;
+            input_st->flags |=  INP_FLAG_NONBLOCKING;
          else
-            input_st->nonblocking_flag = false;
+            input_st->flags &= ~INP_FLAG_NONBLOCKING;
       }
 
       if (!runloop_st->fastmotion)
@@ -6358,13 +6358,13 @@ static bool display_menu_libretro(
 
    if (libretro_running)
    {
-      if (!input_st->block_libretro_input)
-         input_st->block_libretro_input = true;
+      if (!(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT))
+         input_st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;
 
       core_run();
       runloop_st->core_runtime_usec       +=
          runloop_core_runtime_tick(runloop_st, slowmotion_ratio, current_time);
-      input_st->block_libretro_input    = false;
+      input_st->flags                     &= ~INP_FLAG_BLOCK_LIBRETRO_INPUT;
 
       return false;
    }
@@ -6474,11 +6474,11 @@ static enum runloop_state_enum runloop_check_state(
 
    BIT256_CLEAR_ALL_PTR(&current_bits);
 
-   input_st->block_libretro_input     = false;
-   input_st->block_hotkey             = false;
+   input_st->flags    &= ~(INP_FLAG_BLOCK_LIBRETRO_INPUT 
+                         | INP_FLAG_BLOCK_HOTKEY);
 
-   if (input_st->keyboard_mapping_blocked)
-      input_st->block_hotkey          = true;
+   if (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED)
+      input_st->flags |= INP_FLAG_BLOCK_HOTKEY;
 
    input_driver_collect_system_input(input_st, settings, &current_bits);
 
@@ -6545,10 +6545,10 @@ static enum runloop_state_enum runloop_check_state(
    HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE, true, NULL);
 
    /* Automatic mouse grab on focus */
-   if (settings->bools.input_auto_mouse_grab &&
-         is_focused &&
-         is_focused != runloop_st->focused &&
-         !input_st->grab_mouse_state)
+   if (     settings->bools.input_auto_mouse_grab 
+         && is_focused
+         && (is_focused != runloop_st->focused)
+         && !(input_st->flags & INP_FLAG_GRAB_MOUSE_STATE))
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
    runloop_st->focused = is_focused;
 
@@ -6587,7 +6587,7 @@ static enum runloop_state_enum runloop_check_state(
       HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
 
       /* Ensure overlay is restored after displaying osk */
-      if (input_st->keyboard_linefeed_enable)
+      if (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
          prev_overlay_restore = true;
       else if (prev_overlay_restore)
       {
@@ -7284,16 +7284,16 @@ static enum runloop_state_enum runloop_check_state(
 
       if (check2)
       {
-         if (input_st->nonblocking_flag)
+         if (input_st->flags & INP_FLAG_NONBLOCKING)
          {
-            input_st->nonblocking_flag        = false;
-            runloop_st->fastmotion            = false;
+            input_st->flags                     &= ~INP_FLAG_NONBLOCKING;
+            runloop_st->fastmotion               = false;
             runloop_st->fastforward_after_frames = 1;
          }
          else
          {
-            input_st->nonblocking_flag        = true;
-            runloop_st->fastmotion            = true;
+            input_st->flags                     |=  INP_FLAG_NONBLOCKING;
+            runloop_st->fastmotion               = true;
          }
 
          driver_set_nonblock_state();
@@ -7646,7 +7646,7 @@ int runloop_iterate(void)
       retro_usec_t runloop_last_frame_time = runloop_st->frame_time_last;
       retro_time_t current                 = current_time;
       bool is_locked_fps                   = (runloop_st->paused
-            || input_st->nonblocking_flag)
+            || (input_st->flags & INP_FLAG_NONBLOCKING))
             | !!recording_st->data;
       retro_time_t delta                   = (!runloop_last_frame_time || is_locked_fps)
          ? runloop_st->frame_time.reference
@@ -7837,7 +7837,7 @@ int runloop_iterate(void)
       }
    }
 
-   if (!input_st->nonblocking_flag)
+   if (!(input_st->flags & INP_FLAG_NONBLOCKING))
    {
       if (settings->bools.video_frame_delay_auto)
       {

@@ -1536,7 +1536,7 @@ VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
          tmp->destroy();
       }
 #endif
-      input_st->keyboard_mapping_blocked    = false;
+      input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
       input_st->current_data                = NULL;
    }
 
@@ -2838,8 +2838,9 @@ VIDEO_FLAG_WIDGETS_FAST_FORWARD;
    video_info->fastforward_frameskip         = settings->bools.fastforward_frameskip;
 
    video_info->input_driver_nonblock_state   = input_st ?
-      input_st->nonblocking_flag : false;
-   video_info->input_driver_grab_mouse_state = input_st->grab_mouse_state;
+      (input_st->flags & INP_FLAG_NONBLOCKING) : false;
+   video_info->input_driver_grab_mouse_state = (input_st->flags &
+         INP_FLAG_GRAB_MOUSE_STATE);
    video_info->disp_userdata                 = disp_get_ptr();
 
    video_info->userdata                      =
@@ -3588,18 +3589,18 @@ VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
    /* Ensure that we preserve the 'grab mouse'
     * state if it was enabled prior to driver
     * (re-)initialisation */
-   if (input_st->grab_mouse_state)
+   if (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE)
    {
       video_driver_hide_mouse();
       if (input_driver_grab_mouse())
-         input_st->grab_mouse_state = true;
+         input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
    }
    else if (video.fullscreen)
    {
       video_driver_hide_mouse();
       if (!settings->bools.video_windowed_fullscreen)
          if (input_driver_grab_mouse())
-            input_st->grab_mouse_state = true;
+            input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
    }
 
    return true;
