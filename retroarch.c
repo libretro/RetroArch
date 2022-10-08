@@ -3267,13 +3267,11 @@ bool command_event(enum event_command cmd, void *data)
                }
 
                if (input_st->game_focus_state.enabled)
-                  input_st->flags |=  INP_FLAG_BLOCK_HOTKEY;
+                  input_st->flags |=  INP_FLAG_BLOCK_HOTKEY
+                                   |  INP_FLAG_KB_MAPPING_BLOCKED;
                else
-                  input_st->flags &= ~INP_FLAG_BLOCK_HOTKEY;
-               if (input_st->game_focus_state.enabled)
-                  input_st->flags |=  INP_FLAG_KB_MAPPING_BLOCKED;
-               else
-                  input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+                  input_st->flags &= ~(INP_FLAG_BLOCK_HOTKEY
+                                     | INP_FLAG_KB_MAPPING_BLOCKED);
 
                if (show_message)
                   runloop_msg_queue_push(
