@@ -1216,7 +1216,7 @@ void MainWindow::reloadPlaylists()
 
       /* don't show view files */
       if (file.endsWith(".lvw", Qt::CaseInsensitive))
-         continue
+         continue;
 
       QString fileDisplayName = file;
       QString        fileName = file;
