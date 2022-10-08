@@ -3008,7 +3008,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          if (    !(audio_st->flags & AUDIO_FLAG_SUSPENDED)
                && (audio_st->flags & AUDIO_FLAG_ACTIVE))
             result |= 2;
-         if (       video_st->active
+         if (      (video_st->flags & VIDEO_FLAG_ACTIVE)
                && !(video_st->current_video->frame == video_null.frame))
             result |= 1;
 #ifdef HAVE_RUNAHEAD
@@ -4635,7 +4635,10 @@ static bool runahead_create(runloop_state_t *runloop_st)
    core_serialize_size_special(&info);
 
    runahead_save_state_list_init(runloop_st, info.size);
-   video_st->runahead_is_active             = video_st->active;
+   if (video_st->flags & VIDEO_FLAG_ACTIVE)
+      video_st->flags |=  VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
+   else
+      video_st->flags &= ~VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
 
    if (  (runloop_st->runahead_save_state_size == 0) ||
          !runloop_st->runahead_save_state_size_known)
@@ -4803,8 +4806,8 @@ static void do_runahead(
 
          if (suspended_frame)
          {
-            audio_st->flags     |= AUDIO_FLAG_SUSPENDED;
-            video_st->active     = false;
+            audio_st->flags     |=  AUDIO_FLAG_SUSPENDED;
+            video_st->flags     &= ~VIDEO_FLAG_ACTIVE;
          }
 
          if (frame_number == 0)
@@ -4814,8 +4817,12 @@ static void do_runahead(
 
          if (suspended_frame)
          {
-            video_st->active        = video_st->runahead_is_active;
-            audio_st->flags        &= ~AUDIO_FLAG_SUSPENDED;
+            if (video_st->flags & VIDEO_FLAG_RUNAHEAD_IS_ACTIVE)
+               video_st->flags |=  VIDEO_FLAG_ACTIVE;
+            else
+               video_st->flags &= ~VIDEO_FLAG_ACTIVE;
+
+            audio_st->flags    &= ~AUDIO_FLAG_SUSPENDED;
          }
 
          if (frame_number == 0)
@@ -4858,9 +4865,12 @@ static void do_runahead(
       }
 
       /* run main core with video suspended */
-      video_st->active     = false;
+      video_st->flags &= ~VIDEO_FLAG_ACTIVE;
       core_run();
-      video_st->active     = video_st->runahead_is_active;
+      if (video_st->flags & VIDEO_FLAG_RUNAHEAD_IS_ACTIVE)
+         video_st->flags |=  VIDEO_FLAG_ACTIVE;
+      else
+         video_st->flags &= ~VIDEO_FLAG_ACTIVE;
 
       if (     runloop_st->input_is_dirty
             || runloop_st->runahead_force_input_dirty)
@@ -4887,14 +4897,17 @@ static void do_runahead(
 
          for (frame_number = 0; frame_number < runahead_count - 1; frame_number++)
          {
-            video_st->active             = false;
+            video_st->flags             &= ~VIDEO_FLAG_ACTIVE;
             audio_st->flags             |= AUDIO_FLAG_SUSPENDED
                                          | AUDIO_FLAG_HARD_DISABLE;
             runloop_st->runahead_secondary_core_available =
                secondary_core_run_use_last_input();
             audio_st->flags             &= ~(AUDIO_FLAG_SUSPENDED
                                          | AUDIO_FLAG_HARD_DISABLE);
-            video_st->active             = video_st->runahead_is_active;
+            if (video_st->flags & VIDEO_FLAG_RUNAHEAD_IS_ACTIVE)
+               video_st->flags          |=  VIDEO_FLAG_ACTIVE;
+            else
+               video_st->flags          &= ~VIDEO_FLAG_ACTIVE;
          }
       }
       audio_st->flags                   |= AUDIO_FLAG_SUSPENDED
@@ -5022,7 +5035,7 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
        * is called during core de-initialisation) */
 #if defined(HAVE_GFX_WIDGETS)
       if (dispwidget_get_ptr()->active && !runloop_st->fastmotion)
-         video_st->widgets_fast_forward = false;
+         video_st->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
 #endif
    }
 
@@ -5543,7 +5556,7 @@ bool runloop_event_init_core(
 
    /* Load auto-shaders on the next occasion */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   video_st->shader_presets_need_reload       = true;
+   video_st->flags |= VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
    runloop_st->shader_delay_timer.timer_begin = false; /* not initialized */
    runloop_st->shader_delay_timer.timer_end   = false; /* not expired */
 #endif
@@ -5610,7 +5623,7 @@ void runloop_runahead_clear_variables(runloop_state_t *runloop_st)
       *video_st                                  = video_state_get_ptr();
    runloop_st->runahead_save_state_size          = 0;
    runloop_st->runahead_save_state_size_known    = false;
-   video_st->runahead_is_active                  = true;
+   video_st->flags |= VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
    runloop_st->runahead_available                = true;
    runloop_st->runahead_secondary_core_available = true;
    runloop_st->runahead_force_input_dirty        = true;
@@ -5631,7 +5644,12 @@ void runloop_pause_checks(void)
    video_driver_state_t *video_st = video_state_get_ptr();
    bool widgets_active            = dispwidget_get_ptr()->active;
    if (widgets_active)
-      video_st->widgets_paused    = is_paused;
+   {
+      if (is_paused)
+         video_st->flags |=  VIDEO_FLAG_WIDGETS_PAUSED;
+      else
+         video_st->flags &= ~VIDEO_FLAG_WIDGETS_PAUSED;
+   }
 #endif
 
    if (is_paused)
@@ -6756,7 +6774,8 @@ static enum runloop_state_enum runloop_check_state(
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
    {
-      bool rarch_force_fullscreen = video_st->force_fullscreen;
+      bool rarch_force_fullscreen = video_st->flags &
+         VIDEO_FLAG_FORCE_FULLSCREEN;
       bool video_is_fullscreen    = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
 
@@ -7298,9 +7317,17 @@ static enum runloop_state_enum runloop_check_state(
       /* > Use widgets, if enabled */
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
-         video_st->widgets_fast_forward =
-               settings->bools.notification_show_fast_forward ?
-                     runloop_st->fastmotion : false;
+      {
+         if (settings->bools.notification_show_fast_forward)
+         {
+            if (runloop_st->fastmotion)
+               video_st->flags |=  VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+            else
+               video_st->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+         }
+         else
+            video_st->flags    &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+      }
       else
 #endif
       {
@@ -7314,7 +7341,7 @@ static enum runloop_state_enum runloop_check_state(
    }
 #if defined(HAVE_GFX_WIDGETS)
    else
-      video_st->widgets_fast_forward = false;
+      video_st->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
 #endif
 
    /* Check if we have pressed any of the state slot buttons */
@@ -7388,7 +7415,12 @@ static enum runloop_state_enum runloop_check_state(
 
 #if defined(HAVE_GFX_WIDGETS)
          if (widgets_active)
-            video_st->widgets_rewinding = rewinding;
+         {
+            if (rewinding)
+               video_st->flags |=  VIDEO_FLAG_WIDGETS_REWINDING;
+            else
+               video_st->flags &= ~VIDEO_FLAG_WIDGETS_REWINDING;
+         }
          else
 #endif
          {

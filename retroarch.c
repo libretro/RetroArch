@@ -2002,7 +2002,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_REINIT_FROM_TOGGLE:
-         video_st->force_fullscreen = false;
+         video_st->flags &= ~VIDEO_FLAG_FORCE_FULLSCREEN;
          /* this fallthrough is on purpose, it should do
             a CMD_EVENT_REINIT too */
       case CMD_EVENT_REINIT:
@@ -2945,14 +2945,15 @@ bool command_event(enum event_command cmd, void *data)
                *input_st              = input_state_get_ptr();
             bool *userdata            = (bool*)data;
             bool video_fullscreen     = settings->bools.video_fullscreen;
-            bool ra_is_forced_fs      = video_st->force_fullscreen;
+            bool ra_is_forced_fs      = video_st->flags &
+               VIDEO_FLAG_FORCE_FULLSCREEN;
             bool new_fullscreen_state = !video_fullscreen && !ra_is_forced_fs;
 
             if (!video_driver_has_windowed())
                return false;
 
-            audio_st->flags                     |= AUDIO_FLAG_SUSPENDED;
-            video_st->is_switching_display_mode  = true;
+            audio_st->flags |= AUDIO_FLAG_SUSPENDED;
+            video_st->flags |= VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE;
 
             /* we toggled manually, write the new value to settings */
             configuration_set_bool(settings, settings->bools.video_fullscreen,
@@ -2962,7 +2963,7 @@ bool command_event(enum event_command cmd, void *data)
 
             /* we toggled manually, the CLI arg is irrelevant now */
             if (ra_is_forced_fs)
-               video_st->force_fullscreen = false;
+               video_st->flags &= ~VIDEO_FLAG_FORCE_FULLSCREEN;
 
             /* If we go fullscreen we drop all drivers and
              * reinitialize to be safe. */
@@ -2982,8 +2983,8 @@ bool command_event(enum event_command cmd, void *data)
                      input_st->grab_mouse_state = false;
             }
 
-            video_st->is_switching_display_mode  = false;
-            audio_st->flags                     &= ~AUDIO_FLAG_SUSPENDED;
+            video_st->flags &= ~VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE;
+            audio_st->flags &= ~AUDIO_FLAG_SUSPENDED;
 
             if (userdata && *userdata == true)
                video_driver_cached_frame();
@@ -3188,7 +3189,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
             bool video_fullscreen                         =
-               settings->bools.video_fullscreen || video_st->force_fullscreen;
+                  settings->bools.video_fullscreen 
+               || (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN);
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_TOGGLE;
             input_driver_state_t
                *input_st                                  = input_state_get_ptr();
@@ -3772,10 +3774,10 @@ int rarch_main(int argc, char *argv[], void *data)
    runloop_state_t *runloop_st         = runloop_state_get_ptr();
    video_driver_state_t *video_st      = video_state_get_ptr();
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   video_st->shader_presets_need_reload                          = true;
+   video_st->flags |= VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
 #endif
 #ifdef HAVE_RUNAHEAD
-   video_st->runahead_is_active                                  = true;
+   video_st->flags |= VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
    runloop_st->runahead_available                                = true;
    runloop_st->runahead_secondary_core_available                 = true;
    runloop_st->runahead_force_input_dirty                        = true;
@@ -3817,7 +3819,7 @@ int rarch_main(int argc, char *argv[], void *data)
    sthread_tls_create(&p_rarch->rarch_tls);
    sthread_tls_set(&p_rarch->rarch_tls, MAGIC_POINTER);
 #endif
-   video_st->active              = true;
+   video_st->flags              |= VIDEO_FLAG_ACTIVE;
    audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
 
    {
@@ -4814,7 +4816,7 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case 'f':
-               video_st->force_fullscreen = true;
+               video_st->flags |= VIDEO_FLAG_FORCE_FULLSCREEN;
                break;
 
             case 'N':
@@ -4848,7 +4850,7 @@ static bool retroarch_parse_input_and_config(
                /* disable auto-shaders */
                if (string_is_empty(optarg))
                {
-                  video_st->cli_shader_disable = true;
+                  video_st->flags |= VIDEO_FLAG_CLI_SHADER_DISABLE;
                   break;
                }
 
@@ -5231,7 +5233,7 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
 
    input_st->osk_idx             = OSK_LOWERCASE_LATIN;
-   video_st->active              = true;
+   video_st->flags              |= VIDEO_FLAG_ACTIVE;
    audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
 
    if (setjmp(global->error_sjlj_context) > 0)

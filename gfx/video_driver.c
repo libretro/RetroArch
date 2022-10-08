@@ -1400,7 +1400,7 @@ void video_driver_filter_free(void)
 
    video_st->state_scale     = 0;
    video_st->state_out_bpp   = 0;
-   video_st->state_out_rgb32 = false;
+   video_st->flags          &= ~(VIDEO_FLAG_STATE_OUT_RGB32);
 }
 
 void video_driver_init_filter(enum retro_pixel_format colfmt_int,
@@ -1456,13 +1456,14 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
 #endif
 
    video_st->state_scale     = maxsize / RARCH_SCALE_BASE;
-   video_st->state_out_rgb32 = rarch_softfilter_get_output_format(
-         video_st->state_filter) == RETRO_PIXEL_FORMAT_XRGB8888;
+   if (rarch_softfilter_get_output_format(
+         video_st->state_filter) == RETRO_PIXEL_FORMAT_XRGB8888)
+      video_st->flags |=  VIDEO_FLAG_STATE_OUT_RGB32;
+   else
+      video_st->flags &= ~VIDEO_FLAG_STATE_OUT_RGB32;
 
-   video_st->state_out_bpp   =
-      video_st->state_out_rgb32
-      ? sizeof(uint32_t)
-      : sizeof(uint16_t);
+   video_st->state_out_bpp   = (video_st->flags & VIDEO_FLAG_STATE_OUT_RGB32)
+      ? sizeof(uint32_t) : sizeof(uint16_t);
 
    /* TODO: Aligned output. */
 #ifdef _3DS
@@ -2062,7 +2063,7 @@ void video_driver_set_rgba(void)
 {
    video_driver_state_t *video_st       = &video_driver_st;
    VIDEO_DRIVER_LOCK(video_st);
-   video_st->use_rgba = true;
+   video_st->flags |= VIDEO_FLAG_USE_RGBA;
    VIDEO_DRIVER_UNLOCK(video_st);
 }
 
@@ -2070,7 +2071,7 @@ void video_driver_unset_rgba(void)
 {
    video_driver_state_t *video_st       = &video_driver_st;
    VIDEO_DRIVER_LOCK(video_st);
-   video_st->use_rgba = false;
+   video_st->flags &= ~VIDEO_FLAG_USE_RGBA;
    VIDEO_DRIVER_UNLOCK(video_st);
 }
 
@@ -2079,24 +2080,24 @@ bool video_driver_supports_rgba(void)
    bool tmp;
    video_driver_state_t *video_st       = &video_driver_st;
    VIDEO_DRIVER_LOCK(video_st);
-   tmp = video_st->use_rgba;
+   tmp = video_st->flags & VIDEO_FLAG_USE_RGBA;
    VIDEO_DRIVER_UNLOCK(video_st);
    return tmp;
 }
 
 void video_driver_set_hdr_support(void)
 {
-   video_driver_state_t *video_st       = &video_driver_st;
+   video_driver_state_t *video_st  = &video_driver_st;
    VIDEO_DRIVER_LOCK(video_st);
-   video_st->hdr_support = true;
+   video_st->flags                |= VIDEO_FLAG_HDR_SUPPORT;
    VIDEO_DRIVER_UNLOCK(video_st);
 }
 
 void video_driver_unset_hdr_support(void)
 {
-   video_driver_state_t *video_st       = &video_driver_st;
+   video_driver_state_t *video_st  = &video_driver_st;
    VIDEO_DRIVER_LOCK(video_st);
-   video_st->hdr_support = false;
+   video_st->flags                &= ~VIDEO_FLAG_HDR_SUPPORT;
    VIDEO_DRIVER_UNLOCK(video_st);
 }
 
@@ -2105,7 +2106,7 @@ bool video_driver_supports_hdr(void)
    bool tmp;
    video_driver_state_t *video_st       = &video_driver_st;
    VIDEO_DRIVER_LOCK(video_st);
-   tmp = video_st->hdr_support;
+   tmp = video_st->flags & VIDEO_FLAG_HDR_SUPPORT;
    VIDEO_DRIVER_UNLOCK(video_st);
    return tmp;
 }
@@ -2463,13 +2464,13 @@ const struct retro_hw_render_context_negotiation_interface *
 bool video_driver_is_video_cache_context(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   return video_st->cache_context;
+   return ((video_st->flags & VIDEO_FLAG_CACHE_CONTEXT) > 0);
 }
 
 void video_driver_set_video_cache_context_ack(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   video_st->cache_context_ack    = true;
+   video_st->flags               |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
 }
 
 bool video_driver_get_viewport_info(struct video_viewport *viewport)
@@ -2689,10 +2690,10 @@ bool video_driver_has_focus(void)
 size_t video_driver_get_window_title(char *buf, unsigned len)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   if (buf && video_st->window_title_update)
+   if (buf && (video_st->flags & VIDEO_FLAG_WINDOW_TITLE_UPDATE))
    {
       strlcpy(buf, video_st->window_title, len);
-      video_st->window_title_update = false;
+      video_st->flags &= ~VIDEO_FLAG_WINDOW_TITLE_UPDATE;
    }
    return video_st->window_title_len;
 }
@@ -2745,7 +2746,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->max_swapchain_images        = settings->uints.video_max_swapchain_images;
    video_info->windowed_fullscreen         = settings->bools.video_windowed_fullscreen;
    video_info->fullscreen                  = settings->bools.video_fullscreen
-      || video_st->force_fullscreen;
+      || (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN);
    video_info->menu_mouse_enable           = settings->bools.menu_mouse_enable;
    video_info->monitor_index               = settings->uints.video_monitor_index;
 
@@ -2764,9 +2765,12 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
 #if defined(HAVE_GFX_WIDGETS)
    video_info->widgets_userdata            = p_dispwidget;
-   video_info->widgets_is_paused           = video_st->widgets_paused;
-   video_info->widgets_is_fast_forwarding  = video_st->widgets_fast_forward;
-   video_info->widgets_is_rewinding        = video_st->widgets_rewinding;
+   video_info->widgets_is_paused           = video_st->flags &
+VIDEO_FLAG_WIDGETS_PAUSED;
+   video_info->widgets_is_fast_forwarding  = video_st->flags &
+VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+   video_info->widgets_is_rewinding        = video_st->flags &
+      VIDEO_FLAG_WIDGETS_REWINDING;
 #else
    video_info->widgets_userdata            = NULL;
    video_info->widgets_is_paused           = false;
@@ -2777,7 +2781,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->width                       = video_st->width;
    video_info->height                      = video_st->height;
 
-   video_info->use_rgba                    = video_st->use_rgba;
+   video_info->use_rgba                    = video_st->flags &
+      VIDEO_FLAG_USE_RGBA;
    video_info->hdr_enable                  = settings->bools.video_hdr_enable;
 
    video_info->libretro_running            = false;
@@ -3035,7 +3040,7 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
    if (!video_st->context_data)
       return false;
 
-   if (!video_st->crt_switching_active)
+   if (!(video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE))
    {
       if (refresh_rate)
          *refresh_rate =
@@ -3074,11 +3079,11 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
    if (!video_st->current_video_context.get_flags)
       return false;
 
-   if (video_st->deferred_video_context_driver_set_flags)
+   if (video_st->flags & VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS)
    {
       flags->flags                                     =
          video_st->deferred_flag_data.flags;
-      video_st->deferred_video_context_driver_set_flags = false;
+      video_st->flags &= ~VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS;
       return true;
    }
 
@@ -3143,7 +3148,7 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
    }
 
    video_st->deferred_flag_data.flags                = flags->flags;
-   video_st->deferred_video_context_driver_set_flags = true;
+   video_st->flags |= VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS;
    return false;
 }
 
@@ -3325,7 +3330,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
             aspectratio_lut[new_aspect_idx].value);
    }
 
-   if (settings->bools.video_fullscreen || video_st->force_fullscreen)
+   if (     settings->bools.video_fullscreen 
+         || (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN))
    {
       width  = settings->uints.video_fullscreen_x;
       height = settings->uints.video_fullscreen_y;
@@ -3449,7 +3455,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video.width                       = width;
    video.height                      = height;
    video.fullscreen                  = settings->bools.video_fullscreen ||
-                                       video_st->force_fullscreen;
+      (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN);
    video.vsync                       = settings->bools.video_vsync &&
       !runloop_st->force_nonblock;
    video.force_aspect                = settings->bools.video_force_aspect;
@@ -3469,7 +3475,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #ifdef HAVE_VIDEO_FILTER
    video.rgb32                       =
         video_st->state_filter
-      ? video_st->state_out_rgb32
+      ? (video_st->flags & VIDEO_FLAG_STATE_OUT_RGB32)
       : (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 #else
    video.rgb32                       =
@@ -3477,7 +3483,10 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
    video.parent                      = 0;
 
-   video_st->started_fullscreen      = video.fullscreen;
+   if (video.fullscreen)
+      video_st->flags |=  VIDEO_FLAG_STARTED_FULLSCREEN;
+   else
+      video_st->flags &= ~VIDEO_FLAG_STARTED_FULLSCREEN;
    /* Reset video frame count */
    video_st->frame_count             = 0;
 
@@ -3622,7 +3631,7 @@ void video_driver_frame(const void *data, unsigned width,
    const enum retro_pixel_format
       video_driver_pix_fmt       = video_st->pix_fmt;
    bool runloop_idle             = runloop_st->idle;
-   bool video_driver_active      = video_st->active;
+   bool video_driver_active      = video_st->flags & VIDEO_FLAG_ACTIVE;
 #if defined(HAVE_GFX_WIDGETS)
    bool widgets_active           = dispwidget_get_ptr()->active;
 #endif
@@ -3829,8 +3838,8 @@ void video_driver_frame(const void *data, unsigned width,
                   status_text, sizeof(video_st->window_title));
          }
 
-         curr_time                     = new_time;
-         video_st->window_title_update = true;
+         curr_time        = new_time;
+         video_st->flags |= VIDEO_FLAG_WINDOW_TITLE_UPDATE;
       }
    }
    else
@@ -3847,7 +3856,7 @@ void video_driver_frame(const void *data, unsigned width,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                sizeof(status_text));
 
-      video_st->window_title_update = true;
+      video_st->flags |= VIDEO_FLAG_WINDOW_TITLE_UPDATE;
    }
 
    /* Add core status message to status text */
@@ -4062,12 +4071,19 @@ void video_driver_frame(const void *data, unsigned width,
       /* TODO/FIXME - add OSD chat text here */
    }
 
-   if (render_frame && video_st->current_video && video_st->current_video->frame)
-      video_st->active = video_st->current_video->frame(
-            video_st->data, data, width, height,
-            video_st->frame_count, (unsigned)pitch,
-            video_info.menu_screensaver_active || video_info.notifications_hidden ? "" : video_driver_msg,
-            &video_info);
+   if (render_frame 
+         && video_st->current_video 
+         && video_st->current_video->frame)
+   {
+      if (video_st->current_video->frame(
+               video_st->data, data, width, height,
+               video_st->frame_count, (unsigned)pitch,
+               video_info.menu_screensaver_active || video_info.notifications_hidden ? "" : video_driver_msg,
+               &video_info))
+         video_st->flags |=  VIDEO_FLAG_ACTIVE;
+      else
+         video_st->flags &= ~VIDEO_FLAG_ACTIVE;
+   }
 
    video_st->frame_count++;
 
@@ -4100,10 +4116,10 @@ void video_driver_frame(const void *data, unsigned width,
    /* trigger set resolution*/
    if (video_info.crt_switch_resolution)
    {
-      unsigned native_width                      = width;
-      bool dynamic_super_width                   = false;
+      unsigned native_width     = width;
+      bool dynamic_super_width  = false;
 
-      video_st->crt_switching_active             = true;
+      video_st->flags          |= VIDEO_FLAG_CRT_SWITCHING_ACTIVE;
 
       switch (video_info.crt_switch_resolution_super)
       {
@@ -4135,7 +4151,7 @@ void video_driver_frame(const void *data, unsigned width,
    }
    else if (!video_info.crt_switch_resolution)
 #endif
-      video_st->crt_switching_active = false;
+      video_st->flags          &= ~VIDEO_FLAG_CRT_SWITCHING_ACTIVE;
 }
 
 static void video_driver_reinit_context(settings_t *settings, int flags)
@@ -4164,11 +4180,13 @@ void video_driver_reinit(int flags)
    video_driver_state_t *video_st          = &video_driver_st;
    struct retro_hw_render_callback *hwr    =
       VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
-
-   video_st->cache_context     = (hwr->cache_context != false);
-   video_st->cache_context_ack = false;
+   if (hwr->cache_context != false)
+	   video_st->flags    |=  VIDEO_FLAG_CACHE_CONTEXT;
+   else
+	   video_st->flags    &= ~VIDEO_FLAG_CACHE_CONTEXT;
+   video_st->flags            &= ~VIDEO_FLAG_CACHE_CONTEXT_ACK;
    video_driver_reinit_context(settings, flags);
-   video_st->cache_context     = false;
+   video_st->flags            &= ~VIDEO_FLAG_CACHE_CONTEXT;
 }
 
 #define FRAME_DELAY_AUTO_DEBUG 0

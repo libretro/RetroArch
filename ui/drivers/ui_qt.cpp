@@ -4963,8 +4963,8 @@ static void ui_companion_qt_toggle(void *data, bool force)
       win_handle->qtWindow->raise();
       win_handle->qtWindow->show();
 
-      if (   video_st
-          && video_st->started_fullscreen)
+      if (    video_st
+          && (video_st->flags & VIDEO_FLAG_STARTED_FULLSCREEN))
          win_handle->qtWindow->lower();
 
       if (!already_started)

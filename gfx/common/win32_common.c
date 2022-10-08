@@ -857,9 +857,9 @@ static void win32_save_position(void)
       video_driver_state_t *video_st = video_state_get_ptr();
       bool video_fullscreen          = settings->bools.video_fullscreen;
 
-      if (  !video_fullscreen && 
-            !video_st->force_fullscreen &&
-            !video_st->is_switching_display_mode)
+      if (     !video_fullscreen
+            && !(video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN)
+            && !(video_st->flags & VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE))
       {
          bool ui_menubar_enable = settings->bools.ui_menubar_enable;
          bool window_show_decor = settings->bools.video_window_show_decorations;
