@@ -1213,6 +1213,11 @@ void MainWindow::reloadPlaylists()
       QString iconPath;
       QListWidgetItem   *item = NULL;
       const QString     &file = m_playlistFiles.at(i);
+
+      /* don't show view files */
+      if (file.endsWith(".lvw", Qt::CaseInsensitive))
+         continue
+
       QString fileDisplayName = file;
       QString        fileName = file;
       bool            hasIcon = false;
