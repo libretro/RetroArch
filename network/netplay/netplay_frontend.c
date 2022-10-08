@@ -9112,7 +9112,8 @@ static void gfx_widget_netplay_chat_iterate(void *user_data,
       struct netplay_chat *chat     = &netplay->chat;
       settings_t          *settings = config_get_ptr();
 #ifdef HAVE_MENU
-      bool menu_open                = menu_state_get_ptr()->alive;
+      bool menu_open                = menu_state_get_ptr()->flags &
+         MENU_ST_FLAG_ALIVE;
 #endif
       bool fade_chat                = settings->bools.netplay_fade_chat;
 
@@ -9240,7 +9241,8 @@ static void gfx_widget_netplay_ping_iterate(void *user_data,
    netplay_t          *netplay  = net_st->data;
    settings_t         *settings = config_get_ptr();
 #ifdef HAVE_MENU
-   bool menu_open               = menu_state_get_ptr()->alive;
+   bool menu_open               = menu_state_get_ptr()->flags &
+      MENU_ST_FLAG_ALIVE;
 #endif
    bool show_ping               = settings->bools.netplay_ping_show;
 

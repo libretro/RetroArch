@@ -1914,7 +1914,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          {
             const char *content_path = path_get(RARCH_PATH_CONTENT);
 
-            menu_st->pending_env_shutdown_flush = true;
+            menu_st->flags |= MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH;
             if (!string_is_empty(content_path))
                strlcpy(menu_st->pending_env_shutdown_content_path,
                      content_path,
@@ -3133,7 +3133,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 #endif
 
 #ifdef HAVE_MENU
-         menu_opened = menu_state_get_ptr()->alive;
+         menu_opened = menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
          if (menu_opened)
 #ifdef HAVE_NETWORKING
             core_paused = settings->bools.menu_pause_libretro &&
@@ -6313,7 +6313,7 @@ void runloop_msg_queue_push(const char *msg,
             prio,
             flush,
 #ifdef HAVE_MENU
-            menu_state_get_ptr()->alive
+            menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE
 #else
             false
 #endif
@@ -6441,8 +6441,9 @@ static enum runloop_state_enum runloop_check_state(
    struct menu_state *menu_st          = menu_state_get_ptr();
    menu_handle_t *menu                 = menu_st->driver_data;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
-   bool menu_driver_binding_state      = menu_st->is_binding;
-   bool menu_is_alive                  = menu_st->alive;
+   bool menu_driver_binding_state      = menu_st->flags &
+MENU_ST_FLAG_IS_BINDING;
+   bool menu_is_alive                  = menu_st->flags & MENU_ST_FLAG_ALIVE;
    bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
 #if defined(HAVE_GFX_WIDGETS)
@@ -6866,16 +6867,16 @@ static enum runloop_state_enum runloop_check_state(
       }
 
       /* Check whether menu screensaver should be enabled */
-      if ((screensaver_timeout > 0) &&
-          menu_st->screensaver_supported &&
-          !menu_st->screensaver_active &&
-          ((menu_st->current_time_us - menu_st->input_last_time_us) >
+      if (   (screensaver_timeout > 0)
+          && (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_SUPPORTED)
+          && (!(menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE))
+          && ((menu_st->current_time_us - menu_st->input_last_time_us) >
                ((retro_time_t)screensaver_timeout * 1000000)))
       {
          menu_ctx_environment_t menu_environ;
          menu_environ.type           = MENU_ENVIRON_ENABLE_SCREENSAVER;
          menu_environ.data           = NULL;
-         menu_st->screensaver_active = true;
+         menu_st->flags             |= MENU_ST_FLAG_SCREENSAVER_ACTIVE;
          menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
       }
 
@@ -6884,7 +6885,7 @@ static enum runloop_state_enum runloop_check_state(
       /* If the user had requested that the Quick Menu
        * be spawned during the previous frame, do this now
        * and exit the function to go to the next frame. */
-      if (menu_st->pending_quick_menu)
+      if (menu_st->flags & MENU_ST_FLAG_PENDING_QUICK_MENU)
       {
          menu_ctx_list_t list_info;
 
@@ -6901,7 +6902,7 @@ static enum runloop_state_enum runloop_check_state(
                "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
 
          menu_st->selection_ptr      = 0;
-         menu_st->pending_quick_menu = false;
+         menu_st->flags             &= MENU_ST_FLAG_PENDING_QUICK_MENU;
       }
       else if (!menu_driver_iterate(
                menu_st,
@@ -6967,7 +6968,8 @@ static enum runloop_state_enum runloop_check_state(
                         runloop_st->idle);
             }
 
-            if (menu_st->alive && !runloop_st->idle)
+            if (      (menu_st->flags & MENU_ST_FLAG_ALIVE) 
+                  && !(runloop_st->idle))
                if (display_menu_libretro(runloop_st, input_st,
                         settings->floats.slowmotion_ratio,
                         libretro_running, current_time))
@@ -7023,7 +7025,7 @@ static enum runloop_state_enum runloop_check_state(
 
       if (menu_st->kb_key_state[RETROK_F1] == 1)
       {
-         if (menu_st->alive)
+         if (menu_st->flags & MENU_ST_FLAG_ALIVE)
          {
             if (rarch_is_initialized && !core_type_is_dummy)
             {
@@ -7037,7 +7039,7 @@ static enum runloop_state_enum runloop_check_state(
                (pressed && !old_pressed)) ||
             core_type_is_dummy)
       {
-         if (menu_st->alive)
+         if (menu_st->flags & MENU_ST_FLAG_ALIVE)
          {
             if (rarch_is_initialized && !core_type_is_dummy)
                retroarch_menu_running_finished(false);
@@ -7099,7 +7101,7 @@ static enum runloop_state_enum runloop_check_state(
    HOTKEY_CHECK(RARCH_MUTE, CMD_EVENT_AUDIO_MUTE_TOGGLE, true, NULL);
 
 #ifdef HAVE_MENU
-   if (menu_st->alive)
+   if (menu_st->flags & MENU_ST_FLAG_ALIVE)
    {
       float fastforward_ratio = runloop_get_fastforward_ratio(settings,
             &runloop_st->fastmotion_override.current);
@@ -7618,7 +7620,8 @@ int runloop_iterate(void)
 #else
    bool menu_pause_libretro                     = settings->bools.menu_pause_libretro;
 #endif
-   bool core_paused                             = runloop_st->paused || (menu_pause_libretro && menu_state_get_ptr()->alive);
+   bool core_paused                             = runloop_st->paused ||
+(menu_pause_libretro && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
 #else
    bool core_paused                             = runloop_st->paused;
 #endif
@@ -8131,7 +8134,7 @@ void runloop_task_msg_queue_push(
             prio,
             flush,
 #ifdef HAVE_MENU
-            menu_st->alive
+            menu_st->flags & MENU_ST_FLAG_ALIVE
 #else
             false
 #endif

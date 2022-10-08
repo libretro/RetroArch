@@ -69,7 +69,7 @@ RETRO_BEGIN_DECLS
 #define MENU_LIST_GET_STACK_SIZE(list, idx) ((list)->menu_stack[(idx)]->size)
 
 #define MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
-#define MENU_ENTRIES_NEEDS_REFRESH(menu_st) (!(menu_st->entries_nonblocking_refresh || !menu_st->entries_need_refresh))
+#define MENU_ENTRIES_NEEDS_REFRESH(menu_st) (!((menu_st->flags & MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH) || !(menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH)))
 
 #define MENU_SETTINGS_CORE_INFO_NONE             0xffff
 #define MENU_SETTINGS_CORE_OPTION_NONE           0xffff
@@ -450,6 +450,32 @@ typedef struct
    char detect_content_path[PATH_MAX_LENGTH];
 } menu_handle_t;
 
+enum menu_state_flags
+{
+   MENU_ST_FLAG_ALIVE                       = (1 << 0),
+   MENU_ST_FLAG_IS_BINDING                  = (1 << 1),
+   MENU_ST_FLAG_INP_DLG_KB_DISPLAY          = (1 << 2),
+   /* When enabled, on next iteration the 'Quick Menu' 
+    * list will be pushed onto the stack */
+   MENU_ST_FLAG_PENDING_QUICK_MENU          = (1 << 3),
+   MENU_ST_FLAG_PREVENT_POPULATE            = (1 << 4),
+   /* The menu driver owns the userdata */
+   MENU_ST_FLAG_DATA_OWN                    = (1 << 5),
+   /* Flagged when menu entries need to be refreshed */
+   MENU_ST_FLAG_ENTRIES_NEED_REFRESH        = (1 << 6),
+   MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH = (1 << 7),
+   /* 'Close Content'-hotkey menu resetting */
+   MENU_ST_FLAG_PENDING_CLOSE_CONTENT       = (1 << 8),
+   /* Flagged when a core calls RETRO_ENVIRONMENT_SHUTDOWN,
+    * requiring the menu to be flushed on the next iteration */
+   MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH  = (1 << 9),
+   /* Screensaver status
+    * - Does menu driver support screensaver functionality?
+    * - Is screensaver currently active? */
+   MENU_ST_FLAG_SCREENSAVER_SUPPORTED       = (1 << 10),
+   MENU_ST_FLAG_SCREENSAVER_ACTIVE          = (1 << 11)
+};
+
 struct menu_state
 {
    /* Timers */
@@ -496,11 +522,12 @@ struct menu_state
    unsigned input_dialog_kb_idx;
    unsigned input_driver_flushing_input;
    menu_dialog_t dialog_st;
+   enum menu_action prev_action;
 
    /* int16_t alignment */
    menu_input_pointer_hw_state_t input_pointer_hw_state;
 
-   enum menu_action prev_action;
+   uint16_t flags;
 
    /* When generating a menu list in menu_displaylist_build_list(),
     * the entry with a label matching 'pending_selection' will
@@ -521,31 +548,7 @@ struct menu_state
    char input_dialog_kb_label[256];
 #endif
    unsigned char kb_key_state[RETROK_LAST];
-
-   bool input_dialog_kb_display;
-   /* when enabled, on next iteration the 'Quick Menu' list will
-    * be pushed onto the stack */
-   bool pending_quick_menu;
-   bool prevent_populate;
-   /* The menu driver owns the userdata */
-   bool data_own;
-   /* Flagged when menu entries need to be refreshed */
-   bool entries_need_refresh;
-   bool entries_nonblocking_refresh;
-   /* 'Close Content'-hotkey menu resetting */
-   bool pending_close_content;
-   /* Flagged when a core calls RETRO_ENVIRONMENT_SHUTDOWN,
-    * requiring the menu to be flushed on the next iteration */
-   bool pending_env_shutdown_flush;
-   /* Screensaver status
-    * - Does menu driver support screensaver functionality?
-    * - Is screensaver currently active? */
-   bool screensaver_supported;
-   bool screensaver_active;
-   bool is_binding;
-   bool alive;
 };
-
 
 typedef struct menu_content_ctx_defer_info
 {

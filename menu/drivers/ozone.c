@@ -3535,7 +3535,7 @@ static void ozone_update_savestate_thumbnail_image(void *data)
       }
    }
 
-   ozone->thumbnails.savestate.core_aspect = true;
+   ozone->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
 }
 
 static void ozone_entries_update_thumbnail_bar(

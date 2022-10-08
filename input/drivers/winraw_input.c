@@ -410,7 +410,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
        * break multiple mice positions */
       bool getcursorpos = (mouse->device == RETRO_DEVICE_POINTER) ? true : false;
 #ifdef HAVE_MENU
-      if (menu_state_get_ptr()->alive)
+      if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
          getcursorpos = true;
 #endif
 

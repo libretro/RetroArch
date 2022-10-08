@@ -1808,7 +1808,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
-         if (menu_st->alive)
+         if (menu_st->flags & MENU_ST_FLAG_ALIVE)
             retroarch_menu_running_finished(false);
          else
             retroarch_menu_running();
@@ -1983,9 +1983,9 @@ bool command_event(enum event_command cmd, void *data)
          /* Closing content via hotkey requires toggling menu
           * and resetting the position later on to prevent
           * going to empty Quick Menu */
-         if (!menu_state_get_ptr()->alive)
+         if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
          {
-            menu_state_get_ptr()->pending_close_content = true;
+            menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
             command_event(CMD_EVENT_MENU_TOGGLE, NULL);
          }
 #else
@@ -2701,7 +2701,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
 #ifdef HAVE_MENU
-         if (menu_st->alive)
+         if (menu_st->flags & MENU_ST_FLAG_ALIVE)
          {
 #ifdef HAVE_NETWORKING
             bool menu_pause_libretro  = settings->bools.menu_pause_libretro &&
@@ -3228,7 +3228,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
                   /* If menu is currently active, disable
                    * 'toggle on' functionality */
-                  if (menu_st->alive)
+                  if (menu_st->flags & MENU_ST_FLAG_ALIVE)
                      input_st->game_focus_state.enabled = false;
 #endif
                   if (input_st->game_focus_state.enabled != current_enable_state)
@@ -3698,7 +3698,7 @@ void main_exit(void *args)
 #ifdef HAVE_MENU
    /* Do not want menu context to live any more. */
    if (menu_st)
-      menu_st->data_own = false;
+      menu_st->flags &= ~MENU_ST_FLAG_DATA_OWN;
 #endif
    retroarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
@@ -5431,7 +5431,7 @@ bool retroarch_main_init(int argc, char *argv[])
       if (   !global->launched_from_cli
           ||  global->cli_load_menu_on_error
 #ifdef HAVE_MENU
-          ||  menu_st->alive
+          ||  (menu_st->flags & MENU_ST_FLAG_ALIVE)
 #endif
          )
 #endif

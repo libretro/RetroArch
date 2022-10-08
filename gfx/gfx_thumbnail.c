@@ -96,11 +96,8 @@ void gfx_thumbnail_set_fade_missing(bool fade_missing)
 static void gfx_thumbnail_fade_cb(void *userdata)
 {
    gfx_thumbnail_t *thumbnail = (gfx_thumbnail_t*)userdata;
-
-   if (!thumbnail)
-      return;
-
-   thumbnail->fade_active = false;
+   if (thumbnail)
+      thumbnail->flags |= GFX_THUMB_FLAG_FADE_ACTIVE;
 }
 
 /* Initialises thumbnail 'fade in' animation */
@@ -124,7 +121,7 @@ static void gfx_thumbnail_init_fade(
          gfx_animation_ctx_entry_t animation_entry;
 
          thumbnail->alpha                 = 0.0f;
-         thumbnail->fade_active           = true;
+         thumbnail->flags                |= GFX_THUMB_FLAG_FADE_ACTIVE;
 
          animation_entry.easing_enum      = EASING_OUT_QUAD;
          animation_entry.tag              = (uintptr_t)&thumbnail->alpha;
@@ -397,7 +394,7 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
       video_driver_texture_unload(&thumbnail->texture);
 
    /* Ensure any 'fade in' animation is killed */
-   if (thumbnail->fade_active)
+   if (thumbnail->flags & GFX_THUMB_FLAG_FADE_ACTIVE)
    {
       uintptr_t tag = (uintptr_t)&thumbnail->alpha;
       gfx_animation_kill_by_tag(&tag);
@@ -410,8 +407,8 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
    thumbnail->height      = 0;
    thumbnail->alpha       = 0.0f;
    thumbnail->delay_timer = 0.0f;
-   thumbnail->fade_active = false;
-   thumbnail->core_aspect = false;
+   thumbnail->flags      &= ~(GFX_THUMB_FLAG_FADE_ACTIVE
+                            | GFX_THUMB_FLAG_CORE_ASPECT);
 }
 
 /* Stream processing */
@@ -805,7 +802,8 @@ void gfx_thumbnail_get_draw_dimensions(
     * differences */
    display_aspect   = (float)width            / (float)height;
    thumbnail_aspect = (float)thumbnail->width / (float)thumbnail->height;
-   core_aspect      = (thumbnail->core_aspect && video_st)
+   core_aspect      = ((thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT) 
+         && video_st)
          ? video_st->av_info.geometry.aspect_ratio : thumbnail_aspect;
 
    if (thumbnail_aspect > display_aspect)
@@ -813,7 +811,7 @@ void gfx_thumbnail_get_draw_dimensions(
       *draw_width  = (float)width;
       *draw_height = (float)thumbnail->height * (*draw_width / (float)thumbnail->width);
 
-      if (thumbnail->core_aspect)
+      if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
       {
          *draw_height = *draw_height * (thumbnail_aspect / core_aspect);
 
@@ -830,7 +828,7 @@ void gfx_thumbnail_get_draw_dimensions(
       *draw_height = (float)height;
       *draw_width  = (float)thumbnail->width * (*draw_height / (float)thumbnail->height);
 
-      if (thumbnail->core_aspect)
+      if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
          *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
    }
 
