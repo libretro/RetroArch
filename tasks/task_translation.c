@@ -170,12 +170,12 @@ static void handle_translation_cb(
 #ifdef HAVE_GFX_WIDGETS
    bool gfx_widgets_paused           = video_st->flags &
       VIDEO_FLAG_WIDGETS_PAUSED;
+   dispgfx_widget_t *p_dispwidget    = dispwidget_get_ptr();
 #endif
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable         = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #ifdef HAVE_GFX_WIDGETS
-   dispgfx_widget_t *p_dispwidget    = dispwidget_get_ptr();
    /* When auto mode is on, we turn off the overlay
     * once we have the result for the next call.*/
    if (p_dispwidget->ai_service_overlay_state != 0
