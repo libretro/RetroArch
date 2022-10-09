@@ -759,7 +759,7 @@ static bool content_file_load_into_memory(
                and then encode the CRC32 hash */
             strlcpy(p_content->pending_rom_crc_path, content_path,
                   sizeof(p_content->pending_rom_crc_path));
-            p_content->pending_rom_crc = true;
+            p_content->flags |= CONTENT_ST_FLAG_PENDING_ROM_CRC;
          }
       }
       else
@@ -1105,7 +1105,7 @@ static bool content_file_load(
                {
                   strlcpy(p_content->pending_rom_crc_path, content_path,
                         sizeof(p_content->pending_rom_crc_path));
-                  p_content->pending_rom_crc = true;
+                  p_content->flags |= CONTENT_ST_FLAG_PENDING_ROM_CRC;
                }
                else
                   p_content->rom_crc = 0;
@@ -1461,7 +1461,7 @@ static bool content_load(content_ctx_info_t *info,
    if (!success)
       return false;
 
-   if (p_content->pending_subsystem_init)
+   if (p_content->flags & CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT)
    {
       command_event(CMD_EVENT_CORE_INIT, NULL);
       content_clear_subsystem();
@@ -2747,7 +2747,7 @@ bool task_push_load_subsystem_with_core(
 {
    content_state_t  *p_content = content_state_get_ptr();
 
-   p_content->pending_subsystem_init = true;
+   p_content->flags |= CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT;
    /* Load content */
 #ifdef HAVE_MENU
    if (!task_load_content_internal(content_info, true, false, false))
@@ -2770,18 +2770,19 @@ void content_get_status(
 {
    content_state_t  *p_content = content_state_get_ptr();
 
-   *contentless = p_content->core_does_not_need_content;
-   *is_inited   = p_content->is_inited;
+   *contentless = (p_content->flags &
+         CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT);
+   *is_inited   = (p_content->flags & CONTENT_ST_FLAG_IS_INITED);
 }
 
 /* Clears the pending subsystem rom buffer*/
 void content_clear_subsystem(void)
 {
    unsigned i;
-   content_state_t  *p_content = content_state_get_ptr();
+   content_state_t  *p_content          = content_state_get_ptr();
 
-   p_content->pending_subsystem_rom_id    = 0;
-   p_content->pending_subsystem_init      = false;
+   p_content->pending_subsystem_rom_id  = 0;
+   p_content->flags                    &= ~CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT;
 
    for (i = 0; i < RARCH_MAX_SUBSYSTEM_ROMS; i++)
    {
@@ -2897,13 +2898,13 @@ void content_add_subsystem(const char* path)
 void content_set_does_not_need_content(void)
 {
    content_state_t *p_content = content_state_get_ptr();
-   p_content->core_does_not_need_content = true;
+   p_content->flags |= CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT;
 }
 
 void content_unset_does_not_need_content(void)
 {
    content_state_t *p_content = content_state_get_ptr();
-   p_content->core_does_not_need_content = false;
+   p_content->flags &= ~CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT;
 }
 
 #ifndef CRC32_BUFFER_SIZE
@@ -2960,9 +2961,9 @@ static uint32_t file_crc32(uint32_t crc, const char *path)
 uint32_t content_get_crc(void)
 {
    content_state_t *p_content = content_state_get_ptr();
-   if (p_content->pending_rom_crc)
+   if (p_content->flags & CONTENT_ST_FLAG_PENDING_ROM_CRC)
    {
-      p_content->pending_rom_crc   = false;
+      p_content->flags &= ~CONTENT_ST_FLAG_PENDING_ROM_CRC;
       /* TODO/FIXME - file_crc32 has a 64MB max limit -
        * get rid of this function and find a better
        * way to calculate CRC based on the file */
@@ -2983,7 +2984,7 @@ char* content_get_subsystem_rom(unsigned index)
 bool content_is_inited(void)
 {
    content_state_t *p_content = content_state_get_ptr();
-   return p_content->is_inited;
+   return ((p_content->flags & CONTENT_ST_FLAG_IS_INITED) > 0);
 }
 
 void content_deinit(void)
@@ -2995,16 +2996,18 @@ void content_deinit(void)
 
    p_content->content_list                 = NULL;
    p_content->rom_crc                      = 0;
-   p_content->is_inited                    = false;
-   p_content->core_does_not_need_content   = false;
-   p_content->pending_rom_crc              = false;
+   p_content->flags &= ~(CONTENT_ST_FLAG_PENDING_ROM_CRC
+                       | CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT
+                       | CONTENT_ST_FLAG_IS_INITED
+                        )
+                        ;
 }
 
 /* Set environment variables before a subsystem load */
 void content_set_subsystem_info(void)
 {
    content_state_t *p_content = content_state_get_ptr();
-   if (!p_content->pending_subsystem_init)
+   if (!(p_content->flags & CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT))
       return;
 
    path_set(RARCH_PATH_SUBSYSTEM, p_content->pending_subsystem_ident);
@@ -3067,28 +3070,28 @@ bool content_init(void)
 
    if (sys_info)
    {
-      struct retro_system_info *system        = &runloop_state_get_ptr()->system.info;
+      struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
 
       if (set_supports_no_game_enable)
          content_ctx.flags |= CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE;
 
       if (!string_is_empty(path_dir_system))
-         content_ctx.directory_system         = strdup(path_dir_system);
+         content_ctx.directory_system  = strdup(path_dir_system);
       if (!string_is_empty(path_dir_cache))
-         content_ctx.directory_cache          = strdup(path_dir_cache);
+         content_ctx.directory_cache   = strdup(path_dir_cache);
       if (!string_is_empty(system->valid_extensions))
-         content_ctx.valid_extensions         = strdup(system->valid_extensions);
+         content_ctx.valid_extensions  = strdup(system->valid_extensions);
 
       if (system->block_extract)
-         content_ctx.flags |= CONTENT_INFO_FLAG_BLOCK_EXTRACT;
+         content_ctx.flags            |= CONTENT_INFO_FLAG_BLOCK_EXTRACT;
       if (system->need_fullpath)
-         content_ctx.flags |= CONTENT_INFO_FLAG_NEED_FULLPATH;
+         content_ctx.flags            |= CONTENT_INFO_FLAG_NEED_FULLPATH;
 
-      content_ctx.subsystem.data              = sys_info->subsystem.data;
-      content_ctx.subsystem.size              = sys_info->subsystem.size;
+      content_ctx.subsystem.data       = sys_info->subsystem.data;
+      content_ctx.subsystem.size       = sys_info->subsystem.size;
    }
 
-   p_content->is_inited = true;
+   p_content->flags                   |= CONTENT_ST_FLAG_IS_INITED;
 
    if (string_list_initialize(&content))
    {

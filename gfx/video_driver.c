@@ -216,7 +216,7 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 static void *video_null_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   *input       = NULL;
+   *input      = NULL;
    *input_data = NULL;
 
    frontend_driver_install_signal_handler();
@@ -224,21 +224,15 @@ static void *video_null_init(const video_info_t *video,
    return (void*)-1;
 }
 
-static bool video_null_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t *video_info)
-{
-   return true;
-}
-
-static void video_null_free(void *data) { }
-static void video_null_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
-static bool video_null_alive(void *data) { return frontend_driver_get_signal_handler_state() != 1; }
-static bool video_null_focus(void *data) { return true; }
-static bool video_null_has_windowed(void *data) { return true; }
-static bool video_null_suppress_screensaver(void *data, bool enable) { return false; }
-static bool video_null_set_shader(void *data,
-      enum rarch_shader_type type, const char *path) { return false; }
+static bool video_null_frame(void *, const void *, unsigned, unsigned, uint64_t,
+unsigned, const char *, video_frame_info_t *) { return true; }
+static void video_null_free(void *) { }
+static void video_null_set_nonblock_state(void *, bool, bool, unsigned) { }
+static bool video_null_alive(void *) { return frontend_driver_get_signal_handler_state() != 1; }
+static bool video_null_focus(void *) { return true; }
+static bool video_null_has_windowed(void *) { return true; }
+static bool video_null_suppress_screensaver(void *, bool) { return false; }
+static bool video_null_set_shader(void *, enum rarch_shader_type, const char *) { return false; }
 
 video_driver_t video_null = {
    video_null_init,

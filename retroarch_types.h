@@ -367,6 +367,14 @@ typedef struct content_file_list
    size_t size;
 } content_file_list_t;
 
+enum content_state_flags
+{
+   CONTENT_ST_FLAG_IS_INITED                  = (1 << 0),
+   CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT = (1 << 1),
+   CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT     = (1 << 2),
+   CONTENT_ST_FLAG_PENDING_ROM_CRC            = (1 << 3)
+};
+
 typedef struct content_state
 {
    char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
@@ -378,16 +386,12 @@ typedef struct content_state
    int pending_subsystem_id;
    unsigned pending_subsystem_rom_id;
    uint32_t rom_crc;
+   uint8_t flags;
 
    char companion_ui_crc32[32];
    char pending_subsystem_ident[255];
    char pending_rom_crc_path[PATH_MAX_LENGTH];
    char companion_ui_db_name[PATH_MAX_LENGTH];
-
-   bool is_inited;
-   bool core_does_not_need_content;
-   bool pending_subsystem_init;
-   bool pending_rom_crc;
 } content_state_t;
 
 RETRO_END_DECLS
