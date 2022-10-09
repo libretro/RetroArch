@@ -224,15 +224,17 @@ static void *video_null_init(const video_info_t *video,
    return (void*)-1;
 }
 
-static bool video_null_frame(void *, const void *, unsigned, unsigned, uint64_t,
-unsigned, const char *, video_frame_info_t *) { return true; }
-static void video_null_free(void *) { }
-static void video_null_set_nonblock_state(void *, bool, bool, unsigned) { }
-static bool video_null_alive(void *) { return frontend_driver_get_signal_handler_state() != 1; }
-static bool video_null_focus(void *) { return true; }
-static bool video_null_has_windowed(void *) { return true; }
-static bool video_null_suppress_screensaver(void *, bool) { return false; }
-static bool video_null_set_shader(void *, enum rarch_shader_type, const char *) { return false; }
+static bool video_null_frame(void *a, const void *b, unsigned c, unsigned d,
+uint64_t e,
+unsigned f, const char *g, video_frame_info_t *h) { return true; }
+static void video_null_free(void *a) { }
+static void video_null_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static bool video_null_alive(void *a) { return frontend_driver_get_signal_handler_state() != 1; }
+static bool video_null_focus(void *a) { return true; }
+static bool video_null_has_windowed(void *a) { return true; }
+static bool video_null_suppress_screensaver(void *a, bool b) { return false; }
+static bool video_null_set_shader(void *a, enum rarch_shader_type b, const char
+*c) { return false; }
 
 video_driver_t video_null = {
    video_null_init,
