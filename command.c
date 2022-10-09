@@ -797,35 +797,35 @@ uint8_t *command_memory_get_pointer(
 
 bool command_get_status(command_t *cmd, const char* arg)
 {
-   char reply[4096]            = {0};
-   bool contentless            = false;
-   bool is_inited              = false;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   char reply[4096];
+   uint8_t flags                  = content_get_flags();
 
-   content_get_status(&contentless, &is_inited);
-
-   if (!is_inited)
-       strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
-   else
+   if (flags & CONTENT_ST_FLAG_IS_INITED)
    {
-       /* add some content info */
-       const char *status       = "PLAYING";
-       const char *content_name = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
-       int content_crc32        = content_get_crc();
-       const char* system_id    = NULL;
-       core_info_t *core_info   = NULL;
+      /* add some content info */
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+      const char *status          = "PLAYING";
+      const char *content_name    = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
+      int content_crc32           = content_get_crc();
+      const char* system_id       = NULL;
+      core_info_t *core_info      = NULL;
 
-       core_info_get_current_core(&core_info);
+      reply[0]                    = '\0';
 
-       if (runloop_st->paused)
-          status                = "PAUSED";
-       if (core_info)
-          system_id             = core_info->system_id;
-       if (!system_id)
-          system_id             = runloop_st->system.info.library_name;
+      core_info_get_current_core(&core_info);
 
-       snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n", status, system_id, content_name, content_crc32);
+      if (runloop_st->paused)
+         status                   = "PAUSED";
+      if (core_info)
+         system_id                = core_info->system_id;
+      if (!system_id)
+         system_id                = runloop_st->system.info.library_name;
+
+      snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n",
+            status, system_id, content_name, content_crc32);
    }
+   else
+       strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
 
    cmd->replier(cmd, reply, strlen(reply));
 

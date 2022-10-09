@@ -1321,12 +1321,8 @@ static void audio_driver_mixer_play_stream_internal(
 static void audio_driver_load_menu_bgm_callback(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
-   bool contentless = false;
-   bool is_inited   = false;
-
-   content_get_status(&contentless, &is_inited);
-
-   if (!is_inited)
+   uint8_t flags = content_get_flags();
+   if (!(flags & CONTENT_ST_FLAG_IS_INITED))
       audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 }
 

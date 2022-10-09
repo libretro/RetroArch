@@ -1880,13 +1880,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_UNLOAD_CORE:
          {
             bool load_dummy_core            = data ? *(bool*)data : true;
-            bool contentless                = false;
-            bool is_inited                  = false;
             content_ctx_info_t content_info = {0};
             global_t   *global              = global_get_ptr();
             rarch_system_info_t *sys_info   = &runloop_st->system;
-
-            content_get_status(&contentless, &is_inited);
+            uint8_t flags                   = content_get_flags();
 
             runloop_st->core_running        = false;
 
@@ -1941,11 +1938,15 @@ bool command_event(enum event_command cmd, void *data)
 
             video_driver_restore_cached(settings);
 
-            if (is_inited && load_dummy_core)
+            if (    (flags & CONTENT_ST_FLAG_IS_INITED)
+                  && load_dummy_core)
             {
 #ifdef HAVE_MENU
-               if (  (settings->uints.quit_on_close_content == QUIT_ON_CLOSE_CONTENT_CLI && global->launched_from_cli)
-                     || settings->uints.quit_on_close_content == QUIT_ON_CLOSE_CONTENT_ENABLED
+               if (       ((settings->uints.quit_on_close_content ==
+                           QUIT_ON_CLOSE_CONTENT_CLI)
+                        && global->launched_from_cli)
+                        || (settings->uints.quit_on_close_content ==
+                           QUIT_ON_CLOSE_CONTENT_ENABLED)
                   )
                   command_event(CMD_EVENT_QUIT, NULL);
 #endif
@@ -1971,7 +1972,7 @@ bool command_event(enum event_command cmd, void *data)
                audio_st->callback.callback   = NULL;
                audio_st->callback.set_state  = NULL;
             }
-            if (is_inited)
+            if (flags & CONTENT_ST_FLAG_IS_INITED)
             {
                runloop_st->subsystem_current_count = 0;
                content_clear_subsystem();

@@ -4024,12 +4024,11 @@ static void runloop_clear_controller_port_map(void)
 static bool secondary_core_create(runloop_state_t *runloop_st,
       settings_t *settings)
 {
-   bool contentless            = false;
-   bool is_inited              = false;
    const enum rarch_core_type
       last_core_type           = runloop_st->last_core_type;
    rarch_system_info_t *info   = &runloop_st->system;
    unsigned num_active_users   = settings->uints.input_max_users;
+   uint8_t flags               = content_get_flags();
 
    if (   last_core_type != CORE_TYPE_PLAIN          ||
          !runloop_st->load_content_info              ||
@@ -4062,8 +4061,7 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
 
    runloop_st->secondary_core.retro_init();
 
-   content_get_status(&contentless, &is_inited);
-   runloop_st->secondary_core.inited = is_inited;
+   runloop_st->secondary_core.inited = (flags & CONTENT_ST_FLAG_IS_INITED);
 
    /* Load Content */
    /* disabled due to crashes */
@@ -4080,7 +4078,7 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
       if (!runloop_st->secondary_core.game_loaded)
          goto error;
    }
-   else if (contentless)
+   else if (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
    {
       runloop_st->secondary_core.game_loaded = 
          runloop_st->secondary_core.retro_load_game(NULL);
@@ -5137,8 +5135,6 @@ static bool event_init_content(
       input_driver_state_t *input_st)
 {
    runloop_state_t *runloop_st                  = &runloop_state;
-   bool contentless                             = false;
-   bool is_inited                               = false;
 #ifdef HAVE_CHEEVOS
    bool cheevos_enable                          =
       settings->bools.cheevos_enable;
@@ -5146,8 +5142,7 @@ static bool event_init_content(
       settings->bools.cheevos_hardcore_mode_enable;
 #endif
    const enum rarch_core_type current_core_type = runloop_st->current_core_type;
-
-   content_get_status(&contentless, &is_inited);
+   uint8_t flags                                = content_get_flags();
 
    runloop_st->use_sram   = (current_core_type == CORE_TYPE_PLAIN);
 
@@ -5158,12 +5153,10 @@ static bool event_init_content(
 
    content_set_subsystem_info();
 
-   content_get_status(&contentless, &is_inited);
-
    /* If core is contentless, just initialise SRAM
     * interface, otherwise fill all content-related
     * paths */
-   if (contentless)
+   if (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
       runloop_path_init_savefile_internal();
    else
       runloop_path_fill_names();
@@ -8387,10 +8380,9 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
 
 bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
-   bool             contentless = false;
-   bool             is_inited   = false;
    bool             game_loaded = false;
    runloop_state_t *runloop_st  = &runloop_state;
+   uint8_t flags                = content_get_flags();
 
    video_driver_set_cached_frame_ptr(NULL);
 
@@ -8399,7 +8391,6 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    runloop_clear_controller_port_map();
 #endif
 
-   content_get_status(&contentless, &is_inited);
    set_save_state_in_background(false);
 
    if (load_info && load_info->special)
@@ -8407,7 +8398,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
             load_info->special->id, load_info->info, load_info->content->size);
    else if (load_info && !string_is_empty(load_info->content->elems[0].data))
       game_loaded = runloop_st->current_core.retro_load_game(load_info->info);
-   else if (contentless)
+   else if (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
       game_loaded = runloop_st->current_core.retro_load_game(NULL);
 
    runloop_st->current_core.game_loaded = game_loaded;

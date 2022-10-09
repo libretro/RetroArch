@@ -3637,12 +3637,9 @@ TreeView* MainWindow::dirTreeView()
 
 void MainWindow::onTimeout()
 {
-   bool contentless = false;
-   bool is_inited   = false;
+   uint8_t flags = content_get_flags();
 
-   content_get_status(&contentless, &is_inited);
-
-   if (is_inited)
+   if (flags & CONTENT_ST_FLAG_IS_INITED)
    {
       if (m_runPushButton->isVisible())
          m_runPushButton->hide();

@@ -1252,19 +1252,17 @@ static void content_file_set_attributes(
    }
    else
    {
-      const char *content_path = path_get(RARCH_PATH_CONTENT);
-      bool contentless         = false;
-      bool is_inited           = false;
       union string_list_elem_attr attr;
-
-      content_get_status(&contentless, &is_inited);
+      const char *content_path = path_get(RARCH_PATH_CONTENT);
+      uint8_t flags            = content_get_flags();
 
       CONTENT_FILE_ATTR_RESET(attr);
       CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(attr, content_ctx->flags &
 CONTENT_INFO_FLAG_BLOCK_EXTRACT);
       CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, content_ctx->flags &
 CONTENT_INFO_FLAG_NEED_FULLPATH);
-      CONTENT_FILE_ATTR_SET_REQUIRED(attr, !contentless);
+      CONTENT_FILE_ATTR_SET_REQUIRED(attr, (!(flags &
+               CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)));
 
 #if defined(HAVE_RUNAHEAD)
       /* If runahead is supported and we are not using
@@ -1277,8 +1275,9 @@ CONTENT_INFO_FLAG_NEED_FULLPATH);
 
       if (string_is_empty(content_path))
       {
-         if (contentless &&
-             content_ctx->flags & CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE)
+         if (  (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
+             && content_ctx->flags 
+             & CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE)
             string_list_append(content, "", attr);
       }
       else
@@ -1553,14 +1552,12 @@ static void task_push_to_history_list(
       bool launched_from_cli,
       bool launched_from_companion_ui)
 {
-   bool            contentless = false;
-   bool            is_inited   = false;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
-
-   content_get_status(&contentless, &is_inited);
+   uint8_t flags               = content_get_flags();
 
    /* Push entry to top of history playlist */
-   if (is_inited || contentless)
+   if (     (flags & CONTENT_ST_FLAG_IS_INITED) 
+         || (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT))
    {
       char tmp[PATH_MAX_LENGTH];
       const char *path_content       = path_get(RARCH_PATH_CONTENT);
@@ -2764,15 +2761,10 @@ bool task_push_load_subsystem_with_core(
 #endif
 }
 
-void content_get_status(
-      bool *contentless,
-      bool *is_inited)
+uint8_t content_get_flags(void)
 {
    content_state_t  *p_content = content_state_get_ptr();
-
-   *contentless = (p_content->flags &
-         CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT);
-   *is_inited   = (p_content->flags & CONTENT_ST_FLAG_IS_INITED);
+   return p_content->flags;
 }
 
 /* Clears the pending subsystem rom buffer*/
