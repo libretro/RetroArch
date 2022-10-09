@@ -1741,9 +1741,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_MESSAGE:
       {
          const struct retro_message *msg = (const struct retro_message*)data;
-         RARCH_LOG("[Environ]: SET_MESSAGE: %s\n", msg->msg);
 #if defined(HAVE_GFX_WIDGETS)
-         if (dispwidget_get_ptr()->active)
+         dispgfx_widget_t *p_dispwidget  = dispwidget_get_ptr();
+         if (p_dispwidget->active)
             gfx_widget_set_libretro_message(
                   msg->msg,
                   roundf((float)msg->frames / 60.0f * 1000.0f));
@@ -1752,6 +1752,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             runloop_msg_queue_push(msg->msg, 3, msg->frames,
                   true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
                   MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_LOG("[Environ]: SET_MESSAGE: %s\n", msg->msg);
          break;
       }
 
@@ -1837,7 +1838,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   {
                      video_driver_state_t *video_st = 
                         video_state_get_ptr();
-                     if (dispwidget_get_ptr()->active)
+                     dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
+                     if (p_dispwidget->active)
                         gfx_widget_set_libretro_message(
                               msg->msg, msg->duration);
                      else
@@ -1852,7 +1854,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   {
                      video_driver_state_t *video_st = 
                         video_state_get_ptr();
-                     if (dispwidget_get_ptr()->active)
+                     dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
+                     if (p_dispwidget->active)
                         gfx_widget_set_progress_message(
                               msg->msg, msg->duration,
                               msg->priority, msg->progress);
@@ -4984,6 +4987,7 @@ static bool core_unload_game(void)
 
 static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, settings_t *settings)
 {
+   float fastforward_ratio_current;
    video_driver_state_t *video_st                     = video_state_get_ptr();
    bool frame_time_counter_reset_after_fastforwarding = settings ?
          settings->bools.frame_time_counter_reset_after_fastforwarding : false;
@@ -4994,7 +4998,9 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
                   (runloop_st->fastmotion_override.current.ratio >= 0.0f)) ?
                         runloop_st->fastmotion_override.current.ratio :
                               fastforward_ratio_default;
-   float fastforward_ratio_current;
+#if defined(HAVE_GFX_WIDGETS)
+   dispgfx_widget_t *p_dispwidget                     = dispwidget_get_ptr();
+#endif
 
    memcpy(&runloop_st->fastmotion_override.current,
          &runloop_st->fastmotion_override.next,
@@ -5032,7 +5038,7 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
        * (required if RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
        * is called during core de-initialisation) */
 #if defined(HAVE_GFX_WIDGETS)
-      if (dispwidget_get_ptr()->active && !runloop_st->fastmotion)
+      if (p_dispwidget->active && !runloop_st->fastmotion)
          video_st->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
 #endif
    }
@@ -5635,7 +5641,8 @@ void runloop_pause_checks(void)
    bool is_idle                   = runloop_st->idle;
 #if defined(HAVE_GFX_WIDGETS)
    video_driver_state_t *video_st = video_state_get_ptr();
-   bool widgets_active            = dispwidget_get_ptr()->active;
+   dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
+   bool widgets_active            = p_dispwidget->active;
    if (widgets_active)
    {
       if (is_paused)
@@ -5679,7 +5686,7 @@ void runloop_pause_checks(void)
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
-   if (dispwidget_get_ptr()->ai_service_overlay_state == 1)
+   if (p_dispwidget->ai_service_overlay_state == 1)
       gfx_widgets_ai_service_overlay_unload();
 #endif
 }
@@ -6273,15 +6280,16 @@ void runloop_msg_queue_push(const char *msg,
       enum message_queue_category category)
 {
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active         = dispwidget_get_ptr()->active;
+   dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
+   bool widgets_active            = p_dispwidget->active;
 #endif
 #ifdef HAVE_ACCESSIBILITY
-   settings_t *settings        = config_get_ptr();
-   bool accessibility_enable   = settings->bools.accessibility_enable;
+   settings_t *settings           = config_get_ptr();
+   bool accessibility_enable      = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
-   access_state_t *access_st   = access_state_get_ptr();
+   access_state_t *access_st      = access_state_get_ptr();
 #endif
-   runloop_state_t *runloop_st = &runloop_state;
+   runloop_state_t *runloop_st    = &runloop_state;
 
    RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
 #ifdef HAVE_ACCESSIBILITY
@@ -6440,17 +6448,18 @@ MENU_ST_FLAG_IS_BINDING;
    bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active                 = dispwidget_get_ptr()->active;
+   dispgfx_widget_t *p_dispwidget      = dispwidget_get_ptr();
+   bool widgets_active                 = p_dispwidget->active;
 #endif
 #ifdef HAVE_CHEEVOS
    bool cheevos_hardcore_active        = false;
 #endif
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
-   if (dispwidget_get_ptr()->ai_service_overlay_state == 3)
+   if (p_dispwidget->ai_service_overlay_state == 3)
    {
       command_event(CMD_EVENT_PAUSE, NULL);
-      dispwidget_get_ptr()->ai_service_overlay_state = 1;
+      p_dispwidget->ai_service_overlay_state = 1;
    }
 #endif
 
@@ -6531,12 +6540,15 @@ MENU_ST_FLAG_IS_BINDING;
 #else
       ;
 #endif
-      HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE,
-            fullscreen_toggled, NULL);
+      HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY,
+                   CMD_EVENT_FULLSCREEN_TOGGLE,
+                   fullscreen_toggled, NULL);
    }
 
    /* Check mouse grab toggle */
-   HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE, true, NULL);
+   HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE,
+                CMD_EVENT_GRAB_MOUSE_TOGGLE,
+                true, NULL);
 
    /* Automatic mouse grab on focus */
    if (     settings->bools.input_auto_mouse_grab 
@@ -8092,16 +8104,17 @@ void runloop_task_msg_queue_push(
 {
 #if defined(HAVE_GFX_WIDGETS)
 #ifdef HAVE_MENU
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
 #endif
 #ifdef HAVE_ACCESSIBILITY
-   access_state_t *access_st   = access_state_get_ptr();
-   settings_t *settings        = config_get_ptr();
-   bool accessibility_enable   = settings->bools.accessibility_enable;
+   access_state_t *access_st      = access_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   bool accessibility_enable      = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
-   runloop_state_t *runloop_st = &runloop_state;
-   bool widgets_active         = dispwidget_get_ptr()->active;
+   runloop_state_t *runloop_st    = &runloop_state;
+   dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
+   bool widgets_active            = p_dispwidget->active;
 
    if (widgets_active && task->title && !task->mute)
    {

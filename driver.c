@@ -366,10 +366,9 @@ static void driver_adjust_system_rates(
             if (video_st->current_video->set_nonblock_state)
                video_st->current_video->set_nonblock_state(
                      video_st->data, true,
-                     video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
-                     video_adaptive_vsync,
-                     video_swap_interval
-                     );
+                     video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) 
+                     && video_adaptive_vsync,
+                     video_swap_interval);
          }
          return;
       }
@@ -438,33 +437,30 @@ void drivers_init(
       int flags,
       bool verbosity_enabled)
 {
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   audio_driver_state_t
-      *audio_st                = audio_state_get_ptr();
-   input_driver_state_t
-      *input_st                = input_state_get_ptr();
-   video_driver_state_t
-      *video_st                = video_state_get_ptr();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   audio_driver_state_t *audio_st = audio_state_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
 #ifdef HAVE_MENU
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
 #endif
    camera_driver_state_t
-      *camera_st               = camera_state_get_ptr();
+      *camera_st                  = camera_state_get_ptr();
    location_driver_state_t
-      *location_st             = location_state_get_ptr();
-   bool video_is_threaded      = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
-   gfx_display_t *p_disp       = disp_get_ptr();
+      *location_st                = location_state_get_ptr();
+   bool video_is_threaded         = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
+   gfx_display_t *p_disp          = disp_get_ptr();
 #if defined(HAVE_GFX_WIDGETS)
-   bool video_font_enable      = settings->bools.video_font_enable;
-   bool menu_enable_widgets    = settings->bools.menu_enable_widgets;
-
+   bool video_font_enable         = settings->bools.video_font_enable;
+   bool menu_enable_widgets       = settings->bools.menu_enable_widgets;
+   dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    /* By default, we want display widgets to persist through driver reinits. */
-   dispwidget_get_ptr()->flags |= DISPGFX_WIDGET_FLAG_PERSISTING;
+   p_dispwidget->flags           |= DISPGFX_WIDGET_FLAG_PERSISTING;
 #endif
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
    if (menu_st)
-      menu_st->flags           |= MENU_ST_FLAG_DATA_OWN;
+      menu_st->flags             |= MENU_ST_FLAG_DATA_OWN;
 #endif
 
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
@@ -620,11 +616,11 @@ void drivers_init(
       bool video_is_fullscreen    = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
 
-      dispwidget_get_ptr()->active= gfx_widgets_init(
+      p_dispwidget->active= gfx_widgets_init(
             p_disp,
             anim_get_ptr(),
             settings,
-            (uintptr_t)&dispwidget_get_ptr()->active,
+            (uintptr_t)&p_dispwidget->active,
             video_is_threaded,
             video_st->width,
             video_st->height,
@@ -692,11 +688,12 @@ void drivers_init(
 
 void driver_uninit(int flags)
 {
-   runloop_state_t *runloop_st  = runloop_state_get_ptr();
-   video_driver_state_t 
-      *video_st                 = video_state_get_ptr();
-   camera_driver_state_t 
-      *camera_st                = camera_state_get_ptr();
+   runloop_state_t *runloop_st      = runloop_state_get_ptr();
+   video_driver_state_t *video_st   = video_state_get_ptr();
+   camera_driver_state_t *camera_st = camera_state_get_ptr();
+#if defined(HAVE_GFX_WIDGETS)
+   dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
+#endif
 
    core_info_deinit_list();
    core_info_free_current_core();
@@ -705,10 +702,10 @@ void driver_uninit(int flags)
    /* This absolutely has to be done before video_driver_free_internal()
     * is called/completes, otherwise certain menu drivers
     * (e.g. Vulkan) will segfault */
-   if (dispwidget_get_ptr()->flags & DISPGFX_WIDGET_FLAG_INITED)
+   if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_INITED)
    {
-      gfx_widgets_deinit(dispwidget_get_ptr()->flags & DISPGFX_WIDGET_FLAG_PERSISTING);
-      dispwidget_get_ptr()->active = false;
+      gfx_widgets_deinit(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_PERSISTING);
+      p_dispwidget->active = false;
    }
 #endif
 
@@ -795,17 +792,17 @@ void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    location_driver_state_t 
       *location_st                 = location_state_get_ptr();
    runloop_state_t     *runloop_st = runloop_state_get_ptr();
-
 #if defined(HAVE_GFX_WIDGETS)
    /* Tear down display widgets no matter what
     * in case the handle is lost in the threaded
     * video driver in the meantime
     * (breaking video_driver_has_widgets) */
-   if (dispwidget_get_ptr()->flags & DISPGFX_WIDGET_FLAG_INITED)
+   dispgfx_widget_t *p_dispwidget  = dispwidget_get_ptr();
+   if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_INITED)
    {
       gfx_widgets_deinit(
-            dispwidget_get_ptr()->flags & DISPGFX_WIDGET_FLAG_PERSISTING);
-      dispwidget_get_ptr()->active = false;
+            p_dispwidget->flags & DISPGFX_WIDGET_FLAG_PERSISTING);
+      p_dispwidget->active         = false;
    }
 #endif
 

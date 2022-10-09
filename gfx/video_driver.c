@@ -3621,25 +3621,25 @@ void video_driver_frame(const void *data, unsigned width,
    static int8_t nonblock_active;
    /* Initialise 'last_frame_duped' to 'true'
     * to ensure that the first frame is rendered */
-   static bool last_frame_duped  = true;
-   bool render_frame             = true;
+   static bool last_frame_duped   = true;
+   bool render_frame              = true;
    retro_time_t new_time;
    video_frame_info_t video_info;
-   size_t buf_pos                = 0;
-   video_driver_state_t *video_st= &video_driver_st;
-   runloop_state_t *runloop_st   = runloop_state_get_ptr();
+   size_t buf_pos                 = 0;
+   video_driver_state_t *video_st = &video_driver_st;
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
    const enum retro_pixel_format
-      video_driver_pix_fmt       = video_st->pix_fmt;
-   bool runloop_idle             = runloop_st->idle;
-   bool video_driver_active      = video_st->flags & VIDEO_FLAG_ACTIVE;
+      video_driver_pix_fmt        = video_st->pix_fmt;
+   bool runloop_idle              = runloop_st->idle;
+   bool video_driver_active       = video_st->flags & VIDEO_FLAG_ACTIVE;
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active           = dispwidget_get_ptr()->active;
+   dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
+   bool widgets_active            = p_dispwidget->active;
 #endif
-   recording_state_t 
-      *recording_st              = recording_state_get_ptr();
+   recording_state_t *recording_st= recording_state_get_ptr();
 
-   status_text[0]                = '\0';
-   video_driver_msg[0]           = '\0';
+   status_text[0]                 = '\0';
+   video_driver_msg[0]            = '\0';
 
    if (!video_driver_active)
       return;
@@ -4100,9 +4100,9 @@ void video_driver_frame(const void *data, unsigned width,
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
          strlcpy(
-               dispwidget_get_ptr()->gfx_widgets_status_text,
+               p_dispwidget->gfx_widgets_status_text,
                status_text,
-               sizeof(dispwidget_get_ptr()->gfx_widgets_status_text)
+               sizeof(p_dispwidget->gfx_widgets_status_text)
                );
       else
 #endif
