@@ -2832,11 +2832,11 @@ VIDEO_FLAG_WIDGETS_FAST_FORWARD;
    video_info->overlay_behind_menu         = false;
 #endif
 
-   video_info->runloop_is_paused             = runloop_st->paused;
-   video_info->runloop_is_slowmotion         = runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION;
-   video_info->fastforward_frameskip         = settings->bools.fastforward_frameskip;
+   video_info->runloop_is_paused           = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
+   video_info->runloop_is_slowmotion       = runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION;
+   video_info->fastforward_frameskip       = settings->bools.fastforward_frameskip;
 
-   video_info->input_driver_nonblock_state   = input_st ?
+   video_info->input_driver_nonblock_state = input_st ?
       (input_st->flags & INP_FLAG_NONBLOCKING) : false;
    video_info->input_driver_grab_mouse_state = (input_st->flags &
          INP_FLAG_GRAB_MOUSE_STATE);
@@ -3630,7 +3630,7 @@ void video_driver_frame(const void *data, unsigned width,
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
    const enum retro_pixel_format
       video_driver_pix_fmt        = video_st->pix_fmt;
-   bool runloop_idle              = runloop_st->idle;
+   bool runloop_idle              = runloop_st->flags & RUNLOOP_FLAG_IDLE;
    bool video_driver_active       = video_st->flags & VIDEO_FLAG_ACTIVE;
 #if defined(HAVE_GFX_WIDGETS)
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();

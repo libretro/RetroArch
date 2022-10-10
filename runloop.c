@@ -3126,7 +3126,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             audio_state_get_ptr();
 
          bool menu_opened = false;
-         bool core_paused = runloop_st->paused;
+         bool core_paused = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
          bool no_audio    = ((audio_st->flags & AUDIO_FLAG_SUSPENDED) 
                || !(audio_st->flags & AUDIO_FLAG_ACTIVE));
          float core_fps   = (float)video_st->av_info.timing.fps;
@@ -5657,8 +5657,8 @@ void runloop_pause_checks(void)
    presence_userdata_t userdata;
 #endif
    runloop_state_t *runloop_st    = &runloop_state;
-   bool is_paused                 = runloop_st->paused;
-   bool is_idle                   = runloop_st->idle;
+   bool is_paused                 = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
+   bool is_idle                   = runloop_st->flags & RUNLOOP_FLAG_IDLE;
 #if defined(HAVE_GFX_WIDGETS)
    video_driver_state_t *video_st = video_state_get_ptr();
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
@@ -6384,7 +6384,7 @@ static bool display_menu_libretro(
       bool libretro_running,
       retro_time_t current_time)
 {
-   bool runloop_idle             = runloop_st->idle;
+   bool runloop_idle             = runloop_st->flags & RUNLOOP_FLAG_IDLE;
    video_driver_state_t*video_st = video_state_get_ptr();
 
    if (     video_st->poke
@@ -6469,7 +6469,7 @@ static enum runloop_state_enum runloop_check_state(
    uint64_t frame_count                = 0;
    bool focused                        = true;
    bool rarch_is_initialized           = runloop_st->is_inited;
-   bool runloop_paused                 = runloop_st->paused;
+   bool runloop_paused                 = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
    bool pause_nonactive                = settings->bools.pause_nonactive;
    unsigned quit_gamepad_combo         = settings->uints.input_quit_gamepad_combo;
 #ifdef HAVE_MENU
@@ -6586,11 +6586,14 @@ MENU_ST_FLAG_IS_BINDING;
 
    /* Automatic mouse grab on focus */
    if (     settings->bools.input_auto_mouse_grab 
-         && is_focused
-         && (is_focused != runloop_st->focused)
+         && (is_focused)
+         && (is_focused != (((runloop_st->flags & RUNLOOP_FLAG_FOCUSED)) > 0))
          && !(input_st->flags & INP_FLAG_GRAB_MOUSE_STATE))
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-   runloop_st->focused = is_focused;
+   if (is_focused)
+      runloop_st->flags |=  RUNLOOP_FLAG_FOCUSED;
+   else
+      runloop_st->flags &= ~RUNLOOP_FLAG_FOCUSED;
 
 #ifdef HAVE_OVERLAY
    if (settings->bools.input_overlay_enable)
@@ -6959,7 +6962,7 @@ MENU_ST_FLAG_IS_BINDING;
             retroarch_menu_running_finished(false);
       }
 
-      if (focused || !runloop_st->idle)
+      if (focused || !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
       {
          bool runloop_is_inited      = runloop_st->is_inited;
 #ifdef HAVE_NETWORKING
@@ -7004,11 +7007,11 @@ MENU_ST_FLAG_IS_BINDING;
                         menu->userdata,
                         video_st->width,
                         video_st->height,
-                        runloop_st->idle);
+                        runloop_st->flags & RUNLOOP_FLAG_IDLE);
             }
 
             if (      (menu_st->flags & MENU_ST_FLAG_ALIVE) 
-                  && !(runloop_st->idle))
+                  && !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
                if (display_menu_libretro(runloop_st, input_st,
                         settings->floats.slowmotion_ratio,
                         libretro_running, current_time))
@@ -7028,14 +7031,14 @@ MENU_ST_FLAG_IS_BINDING;
       old_input                 = current_bits;
       old_action                = action;
 
-      if (!focused || runloop_st->idle)
+      if (!focused || (runloop_st->flags & RUNLOOP_FLAG_IDLE))
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
    else
 #endif
 #endif
    {
-      if (runloop_st->idle)
+      if (runloop_st->flags & RUNLOOP_FLAG_IDLE)
       {
          cbs->poll_cb();
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
@@ -7203,8 +7206,10 @@ MENU_ST_FLAG_IS_BINDING;
       {
          static int unpaused_frames = 0;
 
+         if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+            unpaused_frames         = 0;
+         else
          /* Frame advance is not allowed when achievement hardcore is active */
-         if (!runloop_st->paused)
          {
             /* Limit pause to approximately three times per second (depending on core framerate) */
             if (unpaused_frames < 20)
@@ -7213,8 +7218,6 @@ MENU_ST_FLAG_IS_BINDING;
                pause_pressed        = false;
             }
          }
-         else
-            unpaused_frames         = 0;
       }
       else
 #endif
@@ -7223,7 +7226,7 @@ MENU_ST_FLAG_IS_BINDING;
          trig_frameadvance    = frameadvance_pressed && !old_frameadvance;
 
          /* FRAMEADVANCE will set us into pause mode. */
-         pause_pressed       |= !runloop_st->paused
+         pause_pressed       |= (!(runloop_st->flags & RUNLOOP_FLAG_PAUSED))
             && trig_frameadvance;
       }
 
@@ -7244,9 +7247,9 @@ MENU_ST_FLAG_IS_BINDING;
       old_pause_pressed   = pause_pressed;
       old_frameadvance    = frameadvance_pressed;
 
-      if (runloop_st->paused)
+      if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
       {
-         bool toggle = !runloop_st->idle ? true : false;
+         bool toggle = (!(runloop_st->flags & RUNLOOP_FLAG_IDLE)) ? true : false;
 
          HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY,
                CMD_EVENT_FULLSCREEN_TOGGLE, true, &toggle);
@@ -7451,7 +7454,7 @@ MENU_ST_FLAG_IS_BINDING;
                &runloop_st->current_core,
                BIT256_GET(current_bits, RARCH_REWIND),
                settings->uints.rewind_granularity,
-               runloop_st->paused,
+               runloop_st->flags & RUNLOOP_FLAG_PAUSED,
                s, sizeof(s), &t);
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -7499,7 +7502,7 @@ MENU_ST_FLAG_IS_BINDING;
          if (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
          {
             if (settings->uints.video_black_frame_insertion)
-               if (!runloop_st->idle)
+               if (!(runloop_st->flags & RUNLOOP_FLAG_IDLE))
                   video_driver_cached_frame();
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -7669,10 +7672,10 @@ int runloop_iterate(void)
 #else
    bool menu_pause_libretro                     = settings->bools.menu_pause_libretro;
 #endif
-   bool core_paused                             = runloop_st->paused ||
-(menu_pause_libretro && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
+   bool core_paused                             = (runloop_st->flags &
+RUNLOOP_FLAG_PAUSED) || (menu_pause_libretro && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
 #else
-   bool core_paused                             = runloop_st->paused;
+   bool core_paused                             = (runloop_st->flags & RUNLOOP_FLAG_PAUSED);
 #endif
    float slowmotion_ratio                       = settings->floats.slowmotion_ratio;
 #ifdef HAVE_CHEEVOS
@@ -7697,7 +7700,8 @@ int runloop_iterate(void)
        * Limits frame time if fast forward ratio throttle is enabled. */
       retro_usec_t runloop_last_frame_time = runloop_st->frame_time_last;
       retro_time_t current                 = current_time;
-      bool is_locked_fps                   = (runloop_st->paused
+      bool is_locked_fps                   = (
+               (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
             || (input_st->flags & INP_FLAG_NONBLOCKING))
             | !!recording_st->data;
       retro_time_t delta                   = (!runloop_last_frame_time || is_locked_fps)
@@ -7726,7 +7730,7 @@ int runloop_iterate(void)
       unsigned audio_buf_occupancy = 0;
       bool audio_buf_underrun      = false;
 
-      if (!(     runloop_st->paused
+      if (!(    (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
             || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
             || !(audio_st->output_samples_buf))
           && audio_st->current_audio->write_avail

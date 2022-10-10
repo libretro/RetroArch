@@ -807,9 +807,9 @@ void audio_driver_sample(int16_t left, int16_t right)
       recording_st->driver->push_audio(recording_st->data, &ffemu_data);
    }
 
-   if (!(    runloop_st->paused
+   if (!(    (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
 		   || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
-		   || !audio_st->output_samples_buf))
+		   || !(audio_st->output_samples_buf)))
       audio_driver_flush(audio_st,
             config_get_ptr()->floats.slowmotion_ratio,
             config_get_ptr()->bools.audio_fastforward_mute,
@@ -855,9 +855,9 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
          record_st->driver->push_audio(record_st->data, &ffemu_data);
       }
 
-      if (!(    runloop_st->paused
+      if (!(    (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
             || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
-            || !audio_st->output_samples_buf))
+            || !(audio_st->output_samples_buf)))
          audio_driver_flush(audio_st,
                config_get_ptr()->floats.slowmotion_ratio,
                config_get_ptr()->bools.audio_fastforward_mute,
@@ -1574,7 +1574,8 @@ bool audio_driver_disable_callback(void)
 bool audio_driver_callback(void)
 {
    settings_t *settings        = config_get_ptr();
-   bool runloop_paused         = runloop_state_get_ptr()->paused;
+   uint32_t runloop_flags      = runloop_get_flags();
+   bool runloop_paused         = runloop_flags & RUNLOOP_FLAG_PAUSED;
 #ifdef HAVE_MENU
 #ifdef HAVE_NETWORKING
    bool core_paused            = runloop_paused ||
@@ -1672,9 +1673,9 @@ void audio_driver_frame_is_reverse(void)
    }
 
    if (!(
-             runloop_st->paused
+             (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
          || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
-         || !audio_st->output_samples_buf))
+         || !(audio_st->output_samples_buf)))
       if (!(audio_st->flags & AUDIO_FLAG_SUSPENDED))
       {
          settings_t *settings = config_get_ptr();
@@ -1825,7 +1826,7 @@ void audio_driver_menu_sample(void)
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
    audio_driver_state_t *audio_st         = &audio_driver_st;
    bool check_flush                       = !(
-             (runloop_st->paused)
+             (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
          || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
          || !audio_st->output_samples_buf);
    if ((audio_st->flags & AUDIO_FLAG_SUSPENDED))

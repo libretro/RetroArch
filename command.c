@@ -814,7 +814,7 @@ bool command_get_status(command_t *cmd, const char* arg)
 
       core_info_get_current_core(&core_info);
 
-      if (runloop_st->paused)
+      if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
          status                   = "PAUSED";
       if (core_info)
          system_id                = core_info->system_id;

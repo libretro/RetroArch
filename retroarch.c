@@ -1571,13 +1571,8 @@ bool command_event(enum event_command cmd, void *data)
 
             if (ai_service_pause)
             {
-               /* pause on call, unpause on second press. */
-               if (!runloop_st->paused)
-               {
-                  command_event(CMD_EVENT_PAUSE, NULL);
-                  command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
-               }
-               else
+               /* Unpause on second press */
+               if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
                {
 #ifdef HAVE_ACCESSIBILITY
                   bool accessibility_enable = settings->bools.accessibility_enable;
@@ -1591,6 +1586,11 @@ bool command_event(enum event_command cmd, void *data)
                            (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
 #endif
                   command_event(CMD_EVENT_UNPAUSE, NULL);
+               }
+               else /* Pause on call */
+               {
+                  command_event(CMD_EVENT_PAUSE, NULL);
+                  command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
                }
             }
             else
@@ -2662,8 +2662,9 @@ bool command_event(enum event_command cmd, void *data)
             break;
 #endif
 
-            boolean                                      = runloop_st->paused;
-            boolean                                      = !boolean;
+            boolean               = ((runloop_st->flags & RUNLOOP_FLAG_PAUSED) >
+0);
+            boolean               = !boolean;
 
 #ifdef HAVE_ACCESSIBILITY
             if (is_accessibility_enabled(
@@ -2683,7 +2684,10 @@ bool command_event(enum event_command cmd, void *data)
             }
 #endif
 
-            runloop_st->paused   = boolean;
+            if (boolean)
+               runloop_st->flags |=  RUNLOOP_FLAG_PAUSED;
+            else
+               runloop_st->flags &= ~RUNLOOP_FLAG_PAUSED;
             runloop_pause_checks();
          }
          break;
@@ -2694,7 +2698,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
          boolean                 = false;
-         runloop_st->paused      = boolean;
+         runloop_st->flags      &= ~RUNLOOP_FLAG_PAUSED;
          runloop_pause_checks();
          break;
       case CMD_EVENT_PAUSE:
@@ -2704,7 +2708,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
          boolean                 = true;
-         runloop_st->paused      = boolean;
+         runloop_st->flags      |= RUNLOOP_FLAG_PAUSED;
          runloop_pause_checks();
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
@@ -3404,7 +3408,7 @@ bool command_event(enum event_command cmd, void *data)
             else
 #endif
             {
-               bool paused = runloop_st->paused;
+               bool paused = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
                if (data)
                   paused = *((bool*)data);
 
@@ -3917,9 +3921,9 @@ void emscripten_mainloop(void)
    bool black_frame_insertion             = settings->uints.video_black_frame_insertion;
    bool input_driver_nonblock_state       = input_st ?
       (input_st->flags & INP_FLAG_NONBLOCKING) : false;
-   runloop_state_t *runloop_st            = runloop_state_get_ptr();
-   bool runloop_is_slowmotion             = runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION;
-   bool runloop_is_paused                 = runloop_st->paused;
+   uint32_t runloop_flags                 = runloop_get_flags();
+   bool runloop_is_slowmotion             = runloop_flags & RUNLOOP_FLAG_SLOWMOTION;
+   bool runloop_is_paused                 = runloop_flags & RUNLOOP_FLAG_PAUSED;
 
    RWebAudioRecalibrateTime();
 
@@ -5798,13 +5802,13 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          {
             input_driver_state_t *input_st = input_state_get_ptr();
             runloop_st->perfcnt_enable     = false;
-            runloop_st->idle               = false;
-            runloop_st->paused             = false;
 #ifdef HAVE_CONFIGFILE
             runloop_st->flags             &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 #endif
             runloop_st->flags             &= ~(RUNLOOP_FLAG_AUTOSAVE
                                            |   RUNLOOP_FLAG_SLOWMOTION
+                                           |   RUNLOOP_FLAG_IDLE
+                                           |   RUNLOOP_FLAG_PAUSED
                                               );
             runloop_frame_time_free();
             runloop_audio_buffer_status_free();
@@ -5817,13 +5821,16 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_IS_IDLE:
-         return runloop_st->idle;
+         return ((runloop_st->flags & RUNLOOP_FLAG_IDLE) > 0);
       case RARCH_CTL_SET_IDLE:
          {
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            runloop_st->idle = *ptr;
+            if (*ptr)
+               runloop_st->flags |=  RUNLOOP_FLAG_IDLE;
+            else
+               runloop_st->flags &= ~RUNLOOP_FLAG_IDLE;
          }
          break;
       case RARCH_CTL_SET_PAUSED:
@@ -5831,11 +5838,14 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            runloop_st->paused = *ptr;
+            if (*ptr)
+               runloop_st->flags |=  RUNLOOP_FLAG_PAUSED;
+            else
+               runloop_st->flags &= ~RUNLOOP_FLAG_PAUSED;
          }
          break;
       case RARCH_CTL_IS_PAUSED:
-         return runloop_st->paused;
+         return ((runloop_st->flags & RUNLOOP_FLAG_PAUSED) > 0);
       case RARCH_CTL_SET_SHUTDOWN:
          runloop_st->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
          break;

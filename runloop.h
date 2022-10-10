@@ -159,7 +159,10 @@ enum runloop_flags
    RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE = (1 << 23),
    RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY        = (1 << 24),
    RUNLOOP_FLAG_SLOWMOTION                        = (1 << 25),
-   RUNLOOP_FLAG_FASTMOTION                        = (1 << 26)
+   RUNLOOP_FLAG_FASTMOTION                        = (1 << 26),
+   RUNLOOP_FLAG_PAUSED                            = (1 << 27),
+   RUNLOOP_FLAG_IDLE                              = (1 << 28),
+   RUNLOOP_FLAG_FOCUSED                           = (1 << 29)
 };
 
 struct runloop
@@ -296,9 +299,6 @@ struct runloop
    bool is_inited;
    bool missing_bios;
    bool force_nonblock;
-   bool paused;
-   bool idle;
-   bool focused;
    bool perfcnt_enable;
 };
 

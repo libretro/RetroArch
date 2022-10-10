@@ -53,7 +53,7 @@
 static void task_auto_translate_handler(retro_task_t *task)
 {
    int               *mode_ptr = (int*)task->user_data;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   uint32_t runloop_flags      = runloop_get_flags();
    access_state_t *access_st   = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = config_get_ptr();
@@ -91,7 +91,7 @@ task_finished:
 
    if (*mode_ptr == 1 || *mode_ptr == 2)
    {
-      bool was_paused = runloop_st->paused;
+      bool was_paused = runloop_flags & RUNLOOP_FLAG_PAUSED;
       command_event(CMD_EVENT_AI_SERVICE_CALL, &was_paused);
    }
    if (task->user_data)
@@ -157,11 +157,11 @@ static void handle_translation_cb(
    char* auto_string                 = NULL;
    char* key_string                  = NULL;
    settings_t* settings              = config_get_ptr();
-   runloop_state_t *runloop_st       = runloop_state_get_ptr();
+   uint32_t runloop_flags            = runloop_get_flags();
 #ifdef HAVE_ACCESSIBILITY
    input_driver_state_t *input_st    = input_state_get_ptr();
 #endif
-   bool was_paused                   = runloop_st->paused;
+   bool was_paused                   = runloop_flags & RUNLOOP_FLAG_PAUSED;
    video_driver_state_t 
       *video_st                      = video_state_get_ptr();
    const enum retro_pixel_format
