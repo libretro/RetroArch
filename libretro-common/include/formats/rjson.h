@@ -195,6 +195,14 @@ rjsonwriter_t *rjsonwriter_open_user(rjsonwriter_io_t io, void *user_data);
  * Returned buffer is only valid until writer is modified or freed. */
 char* rjsonwriter_get_memory_buffer(rjsonwriter_t *writer, int* len);
 
+/* When opened with rjsonwriter_open_memory, will return current length */
+int rjsonwriter_count_memory_buffer(rjsonwriter_t *writer);
+
+/* When opened with rjsonwriter_open_memory, will clear the buffer.
+   The buffer will be partially erased if keep_len is > 0.
+   No memory is freed or re-allocated with this function. */
+void rjsonwriter_erase_memory_buffer(rjsonwriter_t *writer, int keep_len);
+
 /* Free rjsonwriter handle and return result of final rjsonwriter_flush call */
 bool rjsonwriter_free(rjsonwriter_t *writer);
 

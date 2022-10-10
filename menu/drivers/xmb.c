@@ -337,7 +337,6 @@ typedef struct xmb_handle
    size_t categories_selection_ptr_old;
    size_t selection_ptr_old;
    size_t fullscreen_thumbnail_selection;
-   size_t playlist_collection_offset;
 
    /* size of the current list */
    size_t list_size;
@@ -1290,6 +1289,16 @@ static unsigned xmb_get_system_tab(xmb_handle_t *xmb, unsigned i)
    return UINT_MAX;
 }
 
+static unsigned xmb_get_horizontal_selection_type(xmb_handle_t *xmb)
+{
+   if (xmb->categories_selection_ptr > xmb->system_tab_end)
+   {
+      size_t i = xmb->categories_selection_ptr - xmb->system_tab_end-1;
+      return xmb->horizontal_list.list[i].type;
+   }
+   return 0;
+}
+
 static void xmb_refresh_thumbnail_image(void *data, unsigned i)
 {
    xmb_handle_t *xmb                = (xmb_handle_t*)data;
@@ -1406,48 +1415,17 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       /* Explore list */
       if (string_is_empty(s))
       {
+         /* Selected entry */
          menu_entry_t entry;
-         size_t selection         = menu_navigation_get_selection();
-
          MENU_ENTRY_INIT(entry);
          entry.label_enabled      = false;
          entry.rich_label_enabled = false;
          entry.value_enabled      = false;
          entry.sublabel_enabled   = false;
+         menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
 
-         /* First entry */
-         menu_entry_get(&entry, 0, 0, NULL, true);
-         if (string_is_empty(entry.path))
-            return;
-
-         /* No thumbnails for intermediate lists without playlist items */
-         if (!string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER)) &&
-             !string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME)))
-         {
-            gfx_thumbnail_set_content_playlist(xmb->thumbnail_path_data, NULL, 0);
-            xmb->fullscreen_thumbnails_available = false;
-            return;
-         }
-
-         /* Selected entry */
-         menu_entry_get(&entry, 0, selection, NULL, true);
-         if (string_is_empty(entry.path))
-            return;
-
-         /* No thumbnails for header non-items */
-         if (string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER)) ||
-             string_is_equal(entry.path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME)))
-         {
-            gfx_thumbnail_set_content_playlist(xmb->thumbnail_path_data, NULL, 0);
-            xmb->fullscreen_thumbnails_available = false;
-            return;
-         }
-         else
-         {
-            xmb->fullscreen_thumbnails_available =
-                  (menu_explore_set_entry_playlist_index(entry.type, xmb->thumbnail_path_data) >= 0 &&
-                  menu_explore_get_entry_icon(entry.type));
-         }
+         xmb->fullscreen_thumbnails_available =
+               (menu_explore_set_playlist_thumbnail(entry.type, xmb->thumbnail_path_data) >= 0);
       }
    }
 #endif
@@ -2423,6 +2401,12 @@ static void xmb_context_reset_horizontal_list(
             image_texture_free(&ti);
          }
       }
+      else if (string_ends_with_size(xmb->horizontal_list.list[i].label, ".lvw",
+              strlen(xmb->horizontal_list.list[i].label), STRLEN_CONST(".lvw")))
+      {
+         /* For now use a default icon for views */
+         node->icon = xmb->textures.list[XMB_TEXTURE_FILE];
+      }
    }
 
    xmb_toggle_horizontal_list(xmb);
@@ -2551,7 +2535,7 @@ static void xmb_populate_entries(void *data,
       const char *path,
       const char *label, unsigned k)
 {
-   unsigned xmb_system_tab;
+   unsigned xmb_system_tab, xmb_horizontal_type;
    xmb_handle_t *xmb    = (xmb_handle_t*)data;
    settings_t *settings = config_get_ptr();
    bool menu_dynamic_wallpaper_enable =
@@ -2561,9 +2545,9 @@ static void xmb_populate_entries(void *data,
    unsigned    depth    = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
    if (!xmb)
       return;
+   xmb_system_tab       = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
+   xmb_horizontal_type  = (xmb_system_tab == UINT_MAX ? xmb_get_horizontal_selection_type(xmb) : 0);
    /* Determine whether this is a playlist */
-   xmb_system_tab       = xmb_get_system_tab(xmb,
-         (unsigned)xmb->categories_selection_ptr);
    xmb->is_playlist     = (depth == 1
                       && ((xmb_system_tab == XMB_SYSTEM_TAB_FAVORITES)
                       || (xmb_system_tab == XMB_SYSTEM_TAB_HISTORY)
@@ -2575,7 +2559,7 @@ static void xmb_populate_entries(void *data,
                       || (xmb_system_tab == XMB_SYSTEM_TAB_VIDEO)
 #endif
                       ))
-                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
+                      || (xmb_horizontal_type == FILE_TYPE_PLAYLIST_COLLECTION)
                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
@@ -2614,34 +2598,20 @@ static void xmb_populate_entries(void *data,
 
    /* Explore list */
    xmb->is_explore_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST)) ||
-                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB));
+                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)) ||
+                          xmb_horizontal_type == MENU_EXPLORE_TAB;
 
-   /* Quick Menu under Explore list must also be Quick Menu */
+#if defined(HAVE_LIBRETRODB)
    if (xmb->is_explore_list)
    {
+      /* Quick Menu under Explore list must also be Quick Menu */
       xmb->is_quick_menu |= menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu();
-      if (xmb->is_quick_menu)
-         xmb->is_explore_list = false;
-      else
+      if (!menu_explore_is_content_list())
+         xmb->is_explore_list = show_entry_idx = false;
+      else if (!xmb->is_quick_menu)
          xmb->skip_thumbnail_reset = true;
    }
-
-   /* Determine the first playlist item under "Load Content > Playlists" */
-   xmb->playlist_collection_offset = 0;
-   if (settings->uints.menu_content_show_add_entry)
-      xmb->playlist_collection_offset++;
-   if (settings->uints.menu_content_show_contentless_cores)
-      xmb->playlist_collection_offset++;
-   if (settings->bools.menu_content_show_explore)
-      xmb->playlist_collection_offset++;
-   if (settings->bools.menu_content_show_favorites)
-      xmb->playlist_collection_offset++;
-   if (settings->bools.menu_content_show_images)
-      xmb->playlist_collection_offset++;
-   if (settings->bools.menu_content_show_music)
-      xmb->playlist_collection_offset++;
-   if (settings->bools.menu_content_show_video)
-      xmb->playlist_collection_offset++;
+#endif
 
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
    {
@@ -2662,7 +2632,7 @@ static void xmb_populate_entries(void *data,
    /* Determine whether to show entry index */
    /* Update list size & entry index texts */
    if ((xmb->entry_idx_enabled = show_entry_idx &&
-         (xmb->is_playlist || (xmb->is_explore_list && xmb->depth > 1))))
+         (xmb->is_playlist || xmb->is_explore_list)))
    {
       xmb->list_size = menu_entries_get_size();
       snprintf(xmb->entry_index_str, sizeof(xmb->entry_index_str),
@@ -3828,14 +3798,7 @@ static int xmb_draw_item(
       /* "Load Content" playlists */
       if (xmb->depth == 3 && entry_type == FILE_TYPE_PLAYLIST_COLLECTION)
       {
-         size_t i_playlist = 0;
-         xmb_node_t *sidebar_node;
-
-         if (i >= xmb->playlist_collection_offset)
-            i_playlist = i - xmb->playlist_collection_offset;
-
-         sidebar_node = (xmb_node_t*) file_list_get_userdata_at_offset(&xmb->horizontal_list, i_playlist);
-
+         xmb_node_t *sidebar_node = (xmb_node_t*) file_list_get_userdata_at_offset(&xmb->horizontal_list, list->list[i].entry_idx);
          if (sidebar_node && sidebar_node->icon)
             texture = sidebar_node->icon;
       }

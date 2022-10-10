@@ -1818,6 +1818,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
    BIND_ACTION_GET_TITLE(cbs, action_get_title_default);
 
    if (cbs->enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY &&
+       cbs->enum_idx != MENU_ENUM_LABEL_EXPLORE_ITEM &&
        menu_cbs_init_bind_title_compare_label(cbs, label) == 0)
       return 0;
 
