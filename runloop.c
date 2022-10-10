@@ -1541,15 +1541,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                      runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_st->core_options);
-               runloop_st->flags                &=
+               runloop_st->flags           &=
                   ~(RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE
                   | RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE);
-               runloop_st->core_options          = NULL;
+               runloop_st->core_options     = NULL;
             }
             if ((new_vars = runloop_init_core_variables(
                   settings,
                   (const struct retro_variable *)data)))
-               runloop_st->core_options = new_vars;
+               runloop_st->core_options     = new_vars;
          }
 
          break;
@@ -1913,8 +1913,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
           * requests a shutdown event */
          RARCH_LOG("[Environ]: SHUTDOWN.\n");
 
-         runloop_st->shutdown_initiated      = true;
-         runloop_st->core_shutdown_initiated = true;
+	 runloop_st->flags |= RUNLOOP_FLAG_CORE_SHUTDOWN_INITIATED
+                            | RUNLOOP_FLAG_SHUTDOWN_INITIATED;
 #ifdef HAVE_MENU
          /* Ensure that menu stack is flushed appropriately
           * after the core has stopped running */
@@ -5609,7 +5609,7 @@ bool runloop_event_init_core(
 
    if (!event_init_content(settings, input_st))
    {
-      runloop_st->core_running = false;
+      runloop_st->flags &= ~RUNLOOP_FLAG_CORE_RUNNING;
       return false;
    }
 
@@ -6757,27 +6757,27 @@ MENU_ST_FLAG_IS_BINDING;
          if (runloop_exec)
             runloop_exec = false;
 
-         if (runloop_st->core_shutdown_initiated)
+         if (runloop_st->flags & RUNLOOP_FLAG_CORE_SHUTDOWN_INITIATED)
          {
             bool load_dummy_core = false;
 
-            runloop_st->core_shutdown_initiated = false;
+	    runloop_st->flags   &= ~RUNLOOP_FLAG_CORE_SHUTDOWN_INITIATED;
 
             /* Check whether dummy core should be loaded
              * instead of exiting RetroArch completely
              * (aborts shutdown if invoked) */
             if (settings->bools.load_dummy_on_core_shutdown)
             {
-               load_dummy_core                = true;
-               runloop_st->shutdown_initiated = false;
+               load_dummy_core    = true;
+	       runloop_st->flags &= ~RUNLOOP_FLAG_SHUTDOWN_INITIATED;
             }
 
             /* Unload current core, and load dummy if
              * required */
             if (!command_event(CMD_EVENT_UNLOAD_CORE, &load_dummy_core))
             {
-               runloop_st->shutdown_initiated = true;
-               quit_runloop                   = true;
+	       runloop_st->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
+               quit_runloop       = true;
             }
 
             if (!load_dummy_core)
@@ -6786,7 +6786,7 @@ MENU_ST_FLAG_IS_BINDING;
          else
             quit_runloop                 = true;
 
-         runloop_st->core_running        = false;
+	 runloop_st->flags              &= ~RUNLOOP_FLAG_CORE_RUNNING;
 
          if (quit_runloop)
          {
@@ -7748,7 +7748,7 @@ int runloop_iterate(void)
    {
       case RUNLOOP_STATE_QUIT:
          runloop_st->frame_limit_last_time = 0.0;
-         runloop_st->core_running          = false;
+	 runloop_st->flags                &= ~RUNLOOP_FLAG_CORE_RUNNING;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
       case RUNLOOP_STATE_POLLED_AND_SLEEP:
@@ -7779,12 +7779,12 @@ int runloop_iterate(void)
 #endif
          return 0;
       case RUNLOOP_STATE_ITERATE:
-         runloop_st->core_running = true;
+	 runloop_st->flags       |= RUNLOOP_FLAG_CORE_RUNNING;
          break;
    }
 
 #ifdef HAVE_THREADS
-   if (runloop_st->autosave)
+   if (runloop_st->flags & RUNLOOP_FLAG_AUTOSAVE)
       autosave_lock();
 #endif
 
@@ -8015,7 +8015,7 @@ int runloop_iterate(void)
 #endif
 
 #ifdef HAVE_THREADS
-   if (runloop_st->autosave)
+   if (runloop_st->flags & RUNLOOP_FLAG_AUTOSAVE)
       autosave_unlock();
 #endif
 

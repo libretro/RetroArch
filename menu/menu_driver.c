@@ -6680,7 +6680,8 @@ void menu_driver_toggle(
    bool pause_libretro                = false;
    bool audio_enable_menu             = false;
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
-   bool runloop_shutdown_initiated    = runloop_st->shutdown_initiated;
+   bool runloop_shutdown_initiated    = runloop_st->flags &
+      RUNLOOP_FLAG_SHUTDOWN_INITIATED;
 #ifdef HAVE_OVERLAY
    bool input_overlay_hide_in_menu    = false;
    bool input_overlay_enable          = false;

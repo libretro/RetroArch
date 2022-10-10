@@ -167,9 +167,9 @@ static void gfx_ctx_mali_fbdev_destroy_really(void)
 
 static void gfx_ctx_mali_fbdev_maybe_restart(void)
 {
-   runloop_state_t *runloop_st   = runloop_state_get_ptr();
+   uint32_t flags = runloop_get_flags();
 
-   if (!runloop_st->shutdown_initiated)
+   if (!(flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
       frontend_driver_set_fork(FRONTEND_FORK_RESTART);
 }
 
@@ -183,9 +183,9 @@ All these workarounds should be reverted when and if egl_destroy issues in libma
 */
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
-   runloop_state_t *runloop_st   = runloop_state_get_ptr();
+   uint32_t flags = runloop_get_flags();
 
-   if (runloop_st->shutdown_initiated)
+   if (flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
    {
       if (!gfx_ctx_mali_fbdev_restart_pending)
       {

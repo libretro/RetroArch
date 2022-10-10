@@ -7445,9 +7445,10 @@ static int xmb_list_push(void *data, void *userdata,
       case DISPLAYLIST_MAIN_MENU:
          {
             rarch_system_info_t *system = &runloop_state_get_ptr()->system;
+            uint32_t flags              = runloop_get_flags();
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+            if (flags & RUNLOOP_FLAG_CORE_RUNNING)
             {
                if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                {

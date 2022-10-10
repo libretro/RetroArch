@@ -4594,6 +4594,7 @@ bool config_save_file(const char *path)
    struct config_float_setting     *float_settings   = NULL;
    struct config_array_setting     *array_settings   = NULL;
    struct config_path_setting     *path_settings     = NULL;
+   uint32_t flags                                    = runloop_get_flags();
    config_file_t                              *conf  = config_file_new_from_path_to_string(path);
    settings_t                              *settings = config_st;
    global_t *global                                  = global_get_ptr();
@@ -4608,7 +4609,7 @@ bool config_save_file(const char *path)
    if (!conf)
       conf = config_file_new_alloc();
 
-   if (!conf || retroarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   if (!conf || (flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE))
    {
       if (conf)
          config_file_free(conf);

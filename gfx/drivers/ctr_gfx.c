@@ -44,6 +44,7 @@
 #include "../../driver.h"
 
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../verbosity.h"
 
 #include "../common/ctr_common.h"
@@ -461,6 +462,7 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
    ctr_video_t *ctr     = (ctr_video_t*)data;
    settings_t *settings = config_get_ptr();
    int config_slot      = settings->ints.state_slot;
+   uint32_t flags       = runloop_get_flags();
 
    if (!ctr->init_bottom_menu)
    {
@@ -475,7 +477,7 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
-   if (!retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+   if (!(flags & RUNLOOP_FLAG_CORE_RUNNING))
    {
       if (!ctr->bottom_is_idle)
       {
@@ -618,8 +620,8 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
       ctr->refresh_bottom_menu = true;
    }
 
-   if (ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE ||
-         !retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+   if (      ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE
+         || (!(flags & RUNLOOP_FLAG_CORE_RUNNING)))
       return;
 
 
@@ -1308,6 +1310,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
    bool overlay_behind_menu       = video_info->overlay_behind_menu;
    bool lcd_bottom                = false;
+   uint32_t flags                 = runloop_get_flags();
 
    if (!width || !height || !settings)
    {
@@ -1318,7 +1321,7 @@ static bool ctr_frame(void* data, const void* frame,
    lcd_bottom = settings->bools.video_3ds_lcd_bottom;
    if (lcd_bottom != ctr_bottom_screen_enabled)
    {
-      if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+      if (flags & RUNLOOP_FLAG_CORE_RUNNING)
       {
          ctr_set_bottom_screen_enable(lcd_bottom, false);
          if (lcd_bottom)
@@ -1676,8 +1679,8 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
 
 #ifndef CONSOLE_LOG
-   if (ctr_bottom_screen_enabled && 
-         retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+   if (     ctr_bottom_screen_enabled 
+         && (flags & RUNLOOP_FLAG_CORE_RUNNING))
    {
       if ( !ctr->bottom_is_idle )
       {

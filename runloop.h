@@ -147,7 +147,11 @@ enum runloop_flags
    RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE     = (1 << 11),
    RUNLOOP_FLAG_REMAPS_CORE_ACTIVE        = (1 << 12),
    RUNLOOP_FLAG_REMAPS_GAME_ACTIVE        = (1 << 13),
-   RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE = (1 << 14)
+   RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE = (1 << 14),
+   RUNLOOP_FLAG_SHUTDOWN_INITIATED        = (1 << 15),
+   RUNLOOP_FLAG_CORE_SHUTDOWN_INITIATED   = (1 << 16),
+   RUNLOOP_FLAG_CORE_RUNNING              = (1 << 17),
+   RUNLOOP_FLAG_AUTOSAVE                  = (1 << 18)
 };
 
 struct runloop
@@ -289,11 +293,7 @@ struct runloop
    bool focused;
    bool slowmotion;
    bool fastmotion;
-   bool shutdown_initiated;
-   bool core_shutdown_initiated;
-   bool core_running;
    bool perfcnt_enable;
-   bool autosave;
 #ifdef HAVE_RUNAHEAD
    bool has_variable_update;
    bool input_is_dirty;
@@ -321,7 +321,7 @@ input_st->bsv_movie_state.eof_exit)
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-#define RUNLOOP_TIME_TO_EXIT(quit_key_pressed) (runloop_state.shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF() || ((runloop_state.max_frames != 0) && (frame_count >= runloop_state.max_frames)) || runloop_exec)
+#define RUNLOOP_TIME_TO_EXIT(quit_key_pressed) ((runloop_state.flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED) || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF() || ((runloop_state.max_frames != 0) && (frame_count >= runloop_state.max_frames)) || runloop_exec)
 
 RETRO_BEGIN_DECLS
 
