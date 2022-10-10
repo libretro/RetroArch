@@ -474,7 +474,8 @@ ifeq ($(HAVE_LANGEXTRA), 1)
           intl/msg_hash_uk.o \
           intl/msg_hash_cs.o \
           intl/msg_hash_val.o \
-          intl/msg_hash_ca.o
+          intl/msg_hash_ca.o \
+          intl/msg_hash_en.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)

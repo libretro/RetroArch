@@ -6283,8 +6283,9 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
       {"sv", RETRO_LANGUAGE_SWEDISH},
       {"uk", RETRO_LANGUAGE_UKRAINIAN},
       {"cs", RETRO_LANGUAGE_CZECH},
-      {"val", RETRO_LANGUAGE_CATALAN_VALENCIA},
+      {"ca_valencia", RETRO_LANGUAGE_CATALAN_VALENCIA},
       {"ca", RETRO_LANGUAGE_CATALAN},
+      {"en_GB", RETRO_LANGUAGE_BRITISH_ENGLISH},
    };
 
    if (string_is_empty(iso639))
