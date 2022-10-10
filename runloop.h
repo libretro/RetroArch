@@ -133,25 +133,33 @@ typedef struct my_list_t
 
 enum runloop_flags
 {
-   RUNLOOP_FLAG_MAX_FRAMES_SCREENSHOT     = (1 << 0),
-   RUNLOOP_FLAG_HAS_SET_CORE              = (1 << 1),
-   RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT   = (1 << 2),
-   RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB     = (1 << 3),
-   RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED     = (1 << 4),
-   RUNLOOP_FLAG_IS_SRAM_SAVE_DISABLED     = (1 << 5),
-   RUNLOOP_FLAG_USE_SRAM                  = (1 << 6),
-   RUNLOOP_FLAG_PATCH_BLOCKED             = (1 << 7),
-   RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE = (1 << 8),
-   RUNLOOP_FLAG_OVERRIDES_ACTIVE          = (1 << 9),
-   RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE       = (1 << 10),
-   RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE     = (1 << 11),
-   RUNLOOP_FLAG_REMAPS_CORE_ACTIVE        = (1 << 12),
-   RUNLOOP_FLAG_REMAPS_GAME_ACTIVE        = (1 << 13),
-   RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE = (1 << 14),
-   RUNLOOP_FLAG_SHUTDOWN_INITIATED        = (1 << 15),
-   RUNLOOP_FLAG_CORE_SHUTDOWN_INITIATED   = (1 << 16),
-   RUNLOOP_FLAG_CORE_RUNNING              = (1 << 17),
-   RUNLOOP_FLAG_AUTOSAVE                  = (1 << 18)
+   RUNLOOP_FLAG_MAX_FRAMES_SCREENSHOT             = (1 << 0),
+   RUNLOOP_FLAG_HAS_SET_CORE                      = (1 << 1),
+   RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT           = (1 << 2),
+   RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB             = (1 << 3),
+   RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED             = (1 << 4),
+   RUNLOOP_FLAG_IS_SRAM_SAVE_DISABLED             = (1 << 5),
+   RUNLOOP_FLAG_USE_SRAM                          = (1 << 6),
+   RUNLOOP_FLAG_PATCH_BLOCKED                     = (1 << 7),
+   RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE         = (1 << 8),
+   RUNLOOP_FLAG_OVERRIDES_ACTIVE                  = (1 << 9),
+   RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE               = (1 << 10),
+   RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE             = (1 << 11),
+   RUNLOOP_FLAG_REMAPS_CORE_ACTIVE                = (1 << 12),
+   RUNLOOP_FLAG_REMAPS_GAME_ACTIVE                = (1 << 13),
+   RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE         = (1 << 14),
+   RUNLOOP_FLAG_SHUTDOWN_INITIATED                = (1 << 15),
+   RUNLOOP_FLAG_CORE_SHUTDOWN_INITIATED           = (1 << 16),
+   RUNLOOP_FLAG_CORE_RUNNING                      = (1 << 17),
+   RUNLOOP_FLAG_AUTOSAVE                          = (1 << 18),
+   RUNLOOP_FLAG_HAS_VARIABLE_UPDATE               = (1 << 19),
+   RUNLOOP_FLAG_INPUT_IS_DIRTY                    = (1 << 20),
+   RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN    = (1 << 21),
+   RUNLOOP_FLAG_RUNAHEAD_AVAILABLE                = (1 << 22),
+   RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE = (1 << 23),
+   RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY        = (1 << 24),
+   RUNLOOP_FLAG_SLOWMOTION                        = (1 << 25),
+   RUNLOOP_FLAG_FASTMOTION                        = (1 << 26)
 };
 
 struct runloop
@@ -291,17 +299,7 @@ struct runloop
    bool paused;
    bool idle;
    bool focused;
-   bool slowmotion;
-   bool fastmotion;
    bool perfcnt_enable;
-#ifdef HAVE_RUNAHEAD
-   bool has_variable_update;
-   bool input_is_dirty;
-   bool runahead_save_state_size_known;
-   bool runahead_available;
-   bool runahead_secondary_core_available;
-   bool runahead_force_input_dirty;
-#endif
 };
 
 typedef struct runloop runloop_state_t;

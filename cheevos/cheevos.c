@@ -860,7 +860,7 @@ void rcheevos_leaderboards_enabled_changed(void)
 static void rcheevos_enforce_hardcore_settings(void)
 {
    /* disable slowdown */
-   runloop_state_get_ptr()->slowmotion = false;
+   runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_SLOWMOTION;
 }
 
 static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)

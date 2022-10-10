@@ -1755,15 +1755,16 @@ bool command_event(enum event_command cmd, void *data)
          break;
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
       case CMD_EVENT_LOAD_SECOND_CORE:
-         if (!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING) ||
-             !(runloop_st->runahead_secondary_core_available))
+         if (   !(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+             || !(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE))
             return false;
          if (runloop_st->secondary_lib_handle)
             return true;
          if (!secondary_core_ensure_exists(settings))
          {
             runloop_secondary_core_destroy();
-            runloop_st->runahead_secondary_core_available = false;
+            runloop_st->flags &=
+               ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
             return false;
          }
          return true;
@@ -2369,7 +2370,7 @@ bool command_event(enum event_command cmd, void *data)
              * runtime variables, otherwise runahead will
              * remain disabled until the user restarts
              * RetroArch */
-            if (!runloop_st->runahead_available)
+            if (!(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE))
                runloop_runahead_clear_variables(runloop_st);
 #endif
 
@@ -3788,13 +3789,15 @@ int rarch_main(int argc, char *argv[], void *data)
    runloop_state_t *runloop_st         = runloop_state_get_ptr();
    video_driver_state_t *video_st      = video_state_get_ptr();
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   video_st->flags |= VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
+   video_st->flags   |= VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
 #endif
 #ifdef HAVE_RUNAHEAD
-   video_st->flags |= VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
-   runloop_st->runahead_available                                = true;
-   runloop_st->runahead_secondary_core_available                 = true;
-   runloop_st->runahead_force_input_dirty                        = true;
+   video_st->flags   |= VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
+   runloop_st->flags |= (
+                         RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE
+                      |  RUNLOOP_FLAG_RUNAHEAD_AVAILABLE
+                      |  RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY
+                        );
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    if (FAILED(CoInitialize(NULL)))
@@ -3915,7 +3918,7 @@ void emscripten_mainloop(void)
    bool input_driver_nonblock_state       = input_st ?
       (input_st->flags & INP_FLAG_NONBLOCKING) : false;
    runloop_state_t *runloop_st            = runloop_state_get_ptr();
-   bool runloop_is_slowmotion             = runloop_st->slowmotion;
+   bool runloop_is_slowmotion             = runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION;
    bool runloop_is_paused                 = runloop_st->paused;
 
    RWebAudioRecalibrateTime();
@@ -5634,7 +5637,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_IS_SECOND_CORE_AVAILABLE:
          return
                   (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
-               && (runloop_st->runahead_secondary_core_available);
+               && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE);
       case RARCH_CTL_IS_SECOND_CORE_LOADED:
          return
                    (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
@@ -5797,11 +5800,12 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             runloop_st->perfcnt_enable     = false;
             runloop_st->idle               = false;
             runloop_st->paused             = false;
-            runloop_st->slowmotion         = false;
 #ifdef HAVE_CONFIGFILE
             runloop_st->flags             &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 #endif
-            runloop_st->flags             &= ~RUNLOOP_FLAG_AUTOSAVE;
+            runloop_st->flags             &= ~(RUNLOOP_FLAG_AUTOSAVE
+                                           |   RUNLOOP_FLAG_SLOWMOTION
+                                              );
             runloop_frame_time_free();
             runloop_audio_buffer_status_free();
             input_game_focus_free();

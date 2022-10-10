@@ -2833,7 +2833,7 @@ VIDEO_FLAG_WIDGETS_FAST_FORWARD;
 #endif
 
    video_info->runloop_is_paused             = runloop_st->paused;
-   video_info->runloop_is_slowmotion         = runloop_st->slowmotion;
+   video_info->runloop_is_slowmotion         = runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION;
    video_info->fastforward_frameskip         = settings->bools.fastforward_frameskip;
 
    video_info->input_driver_nonblock_state   = input_st ?
