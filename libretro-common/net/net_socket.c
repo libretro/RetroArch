@@ -762,15 +762,21 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
       return false;
 #elif defined(_3DS)
    /* libctru getsockopt does not return expected value */
-   if (connect(fd, addr->ai_addr, addr->ai_addrlen) < 0 && errno != EISCONN)
+   if ((connect(fd, addr->ai_addr, addr->ai_addrlen) < 0) && errno != EISCONN)
+      return false;
+#elif defined(WIIU)
+   /* On WiiU, getsockopt() returns -1 and sets lastsocketerr() (Wii's
+    * equivalent to errno) to 16. */
+   if ((connect(fd, addr->ai_addr, addr->ai_addrlen) == -1)
+         && socketlasterr() != SO_EISCONN)
       return false;
 #else
    {
       int       error = -1;
       socklen_t errsz = sizeof(error);
 
-      /* Only error out here if the getsockopt() call succeeds and error is still set. */
-      if(!getsockopt(fd, SOL_SOCKET, SO_ERROR, (char*)&error, &errsz) && error)
+      getsockopt(fd, SOL_SOCKET, SO_ERROR, (char*)&error, &errsz);
+      if (error)
          return false;
    }
 #endif
