@@ -81,6 +81,7 @@ static void ui_companion_cocoatouch_event_command(
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
+   uint32_t runloop_flags;
    int          ret   = runloop_iterate();
 
    task_queue_check();
@@ -93,9 +94,9 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
       return;
    }
 
-   if (retroarch_ctl(RARCH_CTL_IS_IDLE, NULL))
-      return;
-   CFRunLoopWakeUp(CFRunLoopGetMain());
+   runloop_flags = runloop_get_flags();
+   if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
+      CFRunLoopWakeUp(CFRunLoopGetMain());
 }
 
 apple_frontend_settings_t apple_frontend_settings;

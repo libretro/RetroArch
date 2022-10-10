@@ -5820,8 +5820,6 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
                   sizeof(input_st->analog_requested));
          }
          break;
-      case RARCH_CTL_IS_IDLE:
-         return ((runloop_st->flags & RUNLOOP_FLAG_IDLE) > 0);
       case RARCH_CTL_SET_IDLE:
          {
             bool *ptr = (bool*)data;
@@ -5844,8 +5842,6 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
                runloop_st->flags &= ~RUNLOOP_FLAG_PAUSED;
          }
          break;
-      case RARCH_CTL_IS_PAUSED:
-         return ((runloop_st->flags & RUNLOOP_FLAG_PAUSED) > 0);
       case RARCH_CTL_SET_SHUTDOWN:
          runloop_st->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
          break;
