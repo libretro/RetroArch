@@ -5295,7 +5295,7 @@ void input_remapping_update_port_map(void)
 
 void input_remapping_deinit(bool save_remap)
 {
-   runloop_state_t *runloop_st             = runloop_state_get_ptr();
+   runloop_state_t *runloop_st  = runloop_state_get_ptr();
    if (runloop_st->name.remapfile)
    {
       if (save_remap)
@@ -5303,10 +5303,10 @@ void input_remapping_deinit(bool save_remap)
 
       free(runloop_st->name.remapfile);
    }
-   runloop_st->name.remapfile              = NULL;
-   runloop_st->remaps_core_active          = false;
-   runloop_st->remaps_content_dir_active   = false;
-   runloop_st->remaps_game_active          = false;
+   runloop_st->name.remapfile   = NULL;
+   runloop_st->flags           &= ~(RUNLOOP_FLAG_REMAPS_CORE_ACTIVE
+                               |    RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE
+                               |    RUNLOOP_FLAG_REMAPS_GAME_ACTIVE);
 }
 
 void input_remapping_set_defaults(bool clear_cache)

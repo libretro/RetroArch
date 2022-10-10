@@ -1936,7 +1936,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-   if (runloop_st->patch_blocked)
+   if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
@@ -2023,7 +2023,7 @@ bool task_push_load_content_from_playlist_from_menu(
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-   if (runloop_st->patch_blocked)
+   if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
@@ -2161,7 +2161,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-   if (runloop_st->patch_blocked)
+   if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
@@ -2395,7 +2395,7 @@ bool task_push_load_content_with_new_core_from_menu(
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-   if (runloop_st->patch_blocked)
+   if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
@@ -2500,7 +2500,7 @@ static bool task_load_content_internal(
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-   if (runloop_st->patch_blocked)
+   if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
@@ -3040,7 +3040,7 @@ bool content_init(void)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-   if (runloop_st->patch_blocked)
+   if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
    content_ctx.directory_system               = NULL;

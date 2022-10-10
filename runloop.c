@@ -539,9 +539,9 @@ void libretro_get_environment_info(
     * Make sure we reset it to the actual environment callback.
     * Ignore any environment callbacks here in case we're running
     * on the non-current core. */
-   runloop_st->ignore_environment_cb = true;
+   runloop_st->flags |=  RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB;
    func(runloop_environment_cb);
-   runloop_st->ignore_environment_cb = false;
+   runloop_st->flags &= ~RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB;
 }
 
 static dylib_t load_dynamic_core(const char *path, char *buf, 
@@ -1201,8 +1201,8 @@ static void runloop_init_core_options_path(
       /* Notify system that we have a valid core options
        * override */
       path_set(RARCH_PATH_CORE_OPTIONS, game_options_path);
-      runloop_st->game_options_active   = true;
-      runloop_st->folder_options_active = false;
+      runloop_st->flags &= ~RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE;
+      runloop_st->flags |=  RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE;
 
       /* Copy options path */
       strlcpy(path, game_options_path, len);
@@ -1217,8 +1217,8 @@ static void runloop_init_core_options_path(
       /* Notify system that we have a valid core options
        * override */
       path_set(RARCH_PATH_CORE_OPTIONS, folder_options_path);
-      runloop_st->game_options_active   = false;
-      runloop_st->folder_options_active = true;
+      runloop_st->flags &= ~RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE;
+      runloop_st->flags |=  RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE;
 
       /* Copy options path */
       strlcpy(path, folder_options_path, len);
@@ -1280,8 +1280,8 @@ static void runloop_init_core_options_path(
 
       /* Notify system that we *do not* have a valid core options
        * options override */
-      runloop_st->game_options_active   = false;
-      runloop_st->folder_options_active = false;
+      runloop_st->flags &= ~(RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE
+                           | RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE);
    }
 }
 
@@ -1394,10 +1394,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
    unsigned p;
    runloop_state_t *runloop_st            = &runloop_state;
    recording_state_t *recording_st        = recording_state_get_ptr();
-
    settings_t         *settings           = config_get_ptr();
    rarch_system_info_t *system            = &runloop_st->system;
-   bool ignore_environment_cb             = runloop_st->ignore_environment_cb;
+   bool ignore_environment_cb             = runloop_st->flags &
+      RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB;
 
    if (ignore_environment_cb)
       return false;
@@ -1538,11 +1538,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_st->game_options_active,
+                     runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_st->core_options);
-               runloop_st->game_options_active   = false;
-               runloop_st->folder_options_active = false;
+               runloop_st->flags                &=
+                  ~(RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE
+                  | RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE);
                runloop_st->core_options          = NULL;
             }
             if ((new_vars = runloop_init_core_variables(
@@ -1566,11 +1567,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_st->game_options_active,
+                     runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_st->core_options);
-               runloop_st->game_options_active   = false;
-               runloop_st->folder_options_active = false;
+               runloop_st->flags                &=
+                  ~(RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE
+                  | RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE);
                runloop_st->core_options          = NULL;
             }
 
@@ -1599,11 +1601,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_st->game_options_active,
+                     runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_st->core_options);
-               runloop_st->game_options_active   = false;
-               runloop_st->folder_options_active = false;
+               runloop_st->flags                &=
+                  ~(RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE
+                  | RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE);
                runloop_st->core_options          = NULL;
             }
 
@@ -1634,11 +1637,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_st->game_options_active,
+                     runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_st->core_options);
-               runloop_st->game_options_active   = false;
-               runloop_st->folder_options_active = false;
+               runloop_st->flags                &=
+                  ~(RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE
+                  | RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE);
                runloop_st->core_options          = NULL;
             }
 
@@ -1673,11 +1677,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_st->game_options_active,
+                     runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_st->core_options);
-               runloop_st->game_options_active   = false;
-               runloop_st->folder_options_active = false;
+               runloop_st->flags                &=
+                  ~(RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE
+                  | RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE);
                runloop_st->core_options          = NULL;
             }
 
@@ -2940,7 +2945,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          return false;
 #else
          RARCH_LOG("[Environ]: SET_HW_SHARED_CONTEXT.\n");
-         runloop_st->core_set_shared_context = true;
+         runloop_st->flags |= RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT;
 #endif
          break;
 
@@ -3026,7 +3031,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          /* Deprecated.
             Use RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT instead. */
          /* TODO/FIXME: Get rid of this ugly hack. */
-         if (runloop_st->request_special_savestate)
+         if (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE)
             result |= 4;
 #endif
          if (data)
@@ -3042,7 +3047,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          int result = RETRO_SAVESTATE_CONTEXT_NORMAL;
 
 #if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
-         if (runloop_st->request_special_savestate)
+         if (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE)
          {
 #ifdef HAVE_NETWORKING
             if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
@@ -3361,9 +3366,9 @@ bool libretro_get_system_info(
        * Make sure we reset it to the actual environment callback.
        * Ignore any environment callbacks here in case we're running
        * on the non-current core. */
-      runloop_st->ignore_environment_cb = true;
+      runloop_st->flags |=  RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB;
       retro_set_environment(runloop_environment_cb);
-      runloop_st->ignore_environment_cb = false;
+      runloop_st->flags &= ~RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB;
    }
 
    retro_get_system_info(&dummy_info);
@@ -3540,10 +3545,10 @@ static bool init_libretro_symbols(
    return true;
 }
 
-bool libretro_get_shared_context(void)
+uint32_t runloop_get_flags(void)
 {
    runloop_state_t *runloop_st = &runloop_state;
-   return runloop_st->core_set_shared_context;
+   return runloop_st->flags;
 }
 
 void runloop_system_info_free(void)
@@ -3608,17 +3613,18 @@ static void uninit_libretro_symbols(
 
    memset(current_core, 0, sizeof(struct retro_core_t));
 
-   runloop_st->core_set_shared_context   = false;
+   runloop_st->flags &= ~RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT;
 
    if (runloop_st->core_options)
    {
       runloop_deinit_core_options(
-            runloop_st->game_options_active,
+            runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE,
             path_get(RARCH_PATH_CORE_OPTIONS),
             runloop_st->core_options);
-      runloop_st->game_options_active          = false;
-      runloop_st->folder_options_active        = false;
-      runloop_st->core_options                 = NULL;
+      runloop_st->flags                &=
+                  ~(RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE
+                  | RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE);
+      runloop_st->core_options          = NULL;
    }
    runloop_system_info_free();
    audio_st->callback.callback                   = NULL;
@@ -4150,9 +4156,9 @@ static bool secondary_core_deserialize(settings_t *settings,
    {
       runloop_state_t *runloop_st = &runloop_state;
 
-      runloop_st->request_special_savestate = true;
-      ret = runloop_st->secondary_core.retro_unserialize(data, size);
-      runloop_st->request_special_savestate = false;
+      runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
+      ret                = runloop_st->secondary_core.retro_unserialize(data, size);
+      runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
    }
    else
       runloop_secondary_core_destroy();
@@ -5085,9 +5091,9 @@ void runloop_event_deinit_core(void)
       runloop_st->fastmotion_override.pending = false;
    }
 
-   if (     runloop_st->remaps_core_active
-         || runloop_st->remaps_content_dir_active
-         || runloop_st->remaps_game_active
+   if (     (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE)
+         || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE)
+         || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE)
          || !string_is_empty(runloop_st->name.remapfile)
       )
    {
@@ -5113,11 +5119,11 @@ void runloop_event_deinit_core(void)
    driver_uninit(DRIVERS_CMD_ALL);
 
 #ifdef HAVE_CONFIGFILE
-   if (runloop_st->overrides_active)
+   if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
    {
       /* Reload the original config */
       config_unload_override();
-      runloop_st->overrides_active = false;
+      runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
    }
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -5150,7 +5156,10 @@ static bool event_init_content(
    const enum rarch_core_type current_core_type = runloop_st->current_core_type;
    uint8_t flags                                = content_get_flags();
 
-   runloop_st->use_sram   = (current_core_type == CORE_TYPE_PLAIN);
+   if (current_core_type == CORE_TYPE_PLAIN)
+      runloop_st->flags |=  RUNLOOP_FLAG_USE_SRAM;
+   else
+      runloop_st->flags &= ~RUNLOOP_FLAG_USE_SRAM;
 
    /* No content to be loaded for dummy core,
     * just successfully exit. */
@@ -5172,7 +5181,8 @@ static bool event_init_content(
 
    command_event_set_savestate_auto_index(settings);
 
-   if (!event_load_save_files(runloop_st->is_sram_load_disabled))
+   if (!event_load_save_files(runloop_st->flags &
+            RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED))
       RARCH_LOG("[SRAM]: %s\n",
             msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
@@ -5533,8 +5543,12 @@ bool runloop_event_init_core(
 
 #ifdef HAVE_CONFIGFILE
    if (auto_overrides_enable)
-      runloop_st->overrides_active =
-         config_load_override(&runloop_st->system);
+   {
+      if (config_load_override(&runloop_st->system))
+         runloop_st->flags |=  RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+      else
+         runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+   }
 #endif
 
    /* Cannot access these settings-related parameters
@@ -5902,10 +5916,16 @@ void runloop_path_fill_names(void)
 void runloop_path_init_savefile(void)
 {
    runloop_state_t *runloop_st = &runloop_state;
-   bool    should_sram_be_used = runloop_st->use_sram
-      && !runloop_st->is_sram_save_disabled;
+   bool    should_sram_be_used = 
+          (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
+      && !(runloop_st->flags & RUNLOOP_FLAG_IS_SRAM_SAVE_DISABLED);
 
-   if (!(runloop_st->use_sram = should_sram_be_used))
+   if (should_sram_be_used)
+      runloop_st->flags |=  RUNLOOP_FLAG_USE_SRAM;
+   else
+      runloop_st->flags &= ~RUNLOOP_FLAG_USE_SRAM;
+
+   if (!(runloop_st->flags & RUNLOOP_FLAG_USE_SRAM))
    {
       RARCH_LOG("[SRAM]: %s\n",
             msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
@@ -5939,7 +5959,7 @@ bool core_options_create_override(bool game_specific)
       /* Sanity check - cannot create a folder-specific
        * override if a game-specific override is
        * already active */
-      if (runloop_st->game_options_active)
+      if (runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE)
          goto error;
 
       /* Get options file path (folder-specific) */
@@ -5966,8 +5986,14 @@ bool core_options_create_override(bool game_specific)
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    path_set(RARCH_PATH_CORE_OPTIONS, options_path);
-   runloop_st->game_options_active   = game_specific;
-   runloop_st->folder_options_active = !game_specific;
+   if (game_specific)
+      runloop_st->flags |=  RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE;
+   else
+      runloop_st->flags &= ~RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE;
+   if (!game_specific)
+      runloop_st->flags |=  RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE;
+   else
+      runloop_st->flags &= ~RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE;
 
    config_file_free(conf);
    return true;
@@ -5996,19 +6022,21 @@ bool core_options_remove_override(bool game_specific)
    config_file_t *conf              = NULL;
    bool folder_options_active       = false;
 
-   new_options_path[0] = '\0';
+   new_options_path[0]              = '\0';
 
    /* Sanity check 1 - if there are no core options
     * or no overrides are active, there is nothing to do */
    if (          !coreopts ||
-         (       !runloop_st->game_options_active
-              && !runloop_st->folder_options_active)
-      )
+         (       (!(runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE))
+              && (!(runloop_st->flags & RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE))
+      ))
       return true;
 
    /* Sanity check 2 - can only remove an override
     * if the specified type is currently active */
-   if (game_specific && !runloop_st->game_options_active)
+   if (      game_specific 
+         && !(runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE)
+      )
       goto error;
 
    /* Get current options file path */
@@ -6103,14 +6131,14 @@ bool core_options_remove_override(bool game_specific)
    if (folder_options_active)
    {
       path_set(RARCH_PATH_CORE_OPTIONS, new_options_path);
-      runloop_st->game_options_active   = false;
-      runloop_st->folder_options_active = true;
+      runloop_st->flags &= ~RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE;
+      runloop_st->flags |=  RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE;
    }
    else
    {
       path_clear(RARCH_PATH_CORE_OPTIONS);
-      runloop_st->game_options_active   = false;
-      runloop_st->folder_options_active = false;
+      runloop_st->flags &= ~(RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE
+                           | RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE);
 
       /* Update config file path/object stored in
        * core option manager struct */
@@ -6701,7 +6729,7 @@ MENU_ST_FLAG_IS_BINDING;
 
          if ((runloop_max_frames != 0)
                && (frame_count >= runloop_max_frames)
-               && runloop_st->max_frames_screenshot)
+               && (runloop_st->flags & RUNLOOP_FLAG_MAX_FRAMES_SCREENSHOT))
          {
             const char *screenshot_path = NULL;
             bool fullpath               = false;
@@ -8200,12 +8228,12 @@ void runloop_set_current_core_type(
 {
    runloop_state_t *runloop_st                = &runloop_state;
 
-   if (runloop_st->has_set_core)
+   if (runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE)
       return;
 
    if (explicitly_set)
    {
-      runloop_st->has_set_core                = true;
+      runloop_st->flags                      |= RUNLOOP_FLAG_HAS_SET_CORE;
       runloop_st->explicit_current_core_type  = type;
    }
    runloop_st->current_core_type              = type;
@@ -8456,9 +8484,9 @@ bool core_unserialize_special(retro_ctx_serialize_info_t *info)
    if (!info)
       return false;
 
-   runloop_st->request_special_savestate = true;
+   runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
    ret = runloop_st->current_core.retro_unserialize(info->data_const, info->size);
-   runloop_st->request_special_savestate = false;
+   runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
 
 #ifdef HAVE_NETWORKING
    if (ret)
@@ -8484,9 +8512,9 @@ bool core_serialize_special(retro_ctx_serialize_info_t *info)
    if (!info)
       return false;
 
-   runloop_st->request_special_savestate = true;
-   ret = runloop_st->current_core.retro_serialize(info->data, info->size);
-   runloop_st->request_special_savestate = false;
+   runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
+   ret                = runloop_st->current_core.retro_serialize(info->data, info->size);
+   runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
 
    return ret;
 }
@@ -8507,9 +8535,9 @@ bool core_serialize_size_special(retro_ctx_size_info_t *info)
    if (!info)
       return false;
 
-   runloop_st->request_special_savestate = true;
-   info->size = runloop_st->current_core.retro_serialize_size();
-   runloop_st->request_special_savestate = false;
+   runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
+   info->size         = runloop_st->current_core.retro_serialize_size();
+   runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
 
    return true;
 }

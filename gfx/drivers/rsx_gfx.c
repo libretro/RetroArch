@@ -41,6 +41,7 @@
 #include "../../driver.h"
 
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../verbosity.h"
 
 #ifndef HAVE_THREADS
@@ -90,7 +91,7 @@ static const gfx_ctx_driver_t* rsx_get_context(rsx_t* rsx)
 
    rsx->shared_context_use = video_shared_context && hwr->context_type != RETRO_HW_CONTEXT_NONE;
    
-   if ((libretro_get_shared_context())
+   if ((runloop_get_flags() & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT)
       && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
       rsx->shared_context_use = true;
 

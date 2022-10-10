@@ -1529,13 +1529,13 @@ bool command_event_save_core_config(
             sizeof(config_path));
    }
 
-   if (runloop_st->overrides_active)
+   if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
    {
       /* Overrides block config file saving,
        * make it appear as overrides weren't enabled
        * for a manual save. */
-      runloop_st->overrides_active      = false;
-      overrides_active                  = true;
+      runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+      overrides_active   = true;
    }
 
 #ifdef HAVE_CONFIGFILE
@@ -1546,7 +1546,10 @@ bool command_event_save_core_config(
       runloop_msg_queue_push(msg, 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-   runloop_st->overrides_active = overrides_active;
+   if (overrides_active)
+      runloop_st->flags |=  RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+   else
+      runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 
    return true;
 }
@@ -1584,7 +1587,7 @@ void command_event_save_current_config(enum override_type type)
                strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
                /* set overrides to active so the original config can be
                   restored after closing content */
-               runloop_st->overrides_active = true;
+               runloop_st->flags |= RUNLOOP_FLAG_OVERRIDES_ACTIVE;
             }
             else
                strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
@@ -1720,7 +1723,7 @@ bool command_event_disk_control_append_image(
       return false;
 
 #ifdef HAVE_THREADS
-   if (runloop_st->use_sram)
+   if (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
       autosave_deinit();
 #endif
 

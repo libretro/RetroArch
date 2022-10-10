@@ -1493,7 +1493,7 @@ bool command_event(enum event_command cmd, void *data)
    switch (cmd)
    {
       case CMD_EVENT_SAVE_FILES:
-         event_save_files(runloop_st->use_sram);
+         event_save_files(runloop_st->flags & RUNLOOP_FLAG_USE_SRAM);
          break;
       case CMD_EVENT_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
@@ -1904,9 +1904,9 @@ bool command_event(enum event_command cmd, void *data)
                   settings->bools.savestate_auto_save,
                   runloop_st->current_core_type);
 
-            if (     runloop_st->remaps_core_active
-                  || runloop_st->remaps_content_dir_active
-                  || runloop_st->remaps_game_active
+            if (     (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE)
+                  || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE)
+                  || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE)
                   || !string_is_empty(runloop_st->name.remapfile)
                )
             {
@@ -1917,11 +1917,11 @@ bool command_event(enum event_command cmd, void *data)
                input_remapping_restore_global_config(true);
 
 #ifdef HAVE_CONFIGFILE
-            if (runloop_st->overrides_active)
+            if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
             {
                /* Reload the original config */
                config_unload_override();
-               runloop_st->overrides_active = false;
+               runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 
                if (!settings->bools.video_fullscreen)
                {
@@ -2070,7 +2070,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_AUTOSAVE_INIT:
 #ifdef HAVE_THREADS
-         if (runloop_st->use_sram)
+         if (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
             autosave_deinit();
          {
 #ifdef HAVE_NETWORKING
@@ -3613,20 +3613,26 @@ static void global_free(struct rarch_state *p_rarch)
 
    retro_main_log_file_deinit();
 
-   runloop_st->is_sram_load_disabled                  = false;
-   runloop_st->is_sram_save_disabled                  = false;
-   runloop_st->use_sram                               = false;
+   runloop_st->flags                                 &= ~(
+                                                          RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED
+                                                        | RUNLOOP_FLAG_IS_SRAM_SAVE_DISABLED
+                                                        | RUNLOOP_FLAG_USE_SRAM
+                                                         );
 #ifdef HAVE_PATCH
-   p_rarch->flags &= ~(  RARCH_FLAGS_BPS_PREF | RARCH_FLAGS_IPS_PREF
-                       | RARCH_FLAGS_UPS_PREF);
-   runloop_st->patch_blocked                          = false;
+   p_rarch->flags                                    &= ~(
+                                                          RARCH_FLAGS_BPS_PREF 
+                                                        | RARCH_FLAGS_IPS_PREF
+                                                        | RARCH_FLAGS_UPS_PREF);
+   runloop_st->flags                                 &= ~RUNLOOP_FLAG_PATCH_BLOCKED;
+      
 #endif
 #ifdef HAVE_CONFIGFILE
-   p_rarch->flags &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
-   runloop_st->overrides_active                       = false;
-   runloop_st->remaps_core_active                     = false;
-   runloop_st->remaps_game_active                     = false;
-   runloop_st->remaps_content_dir_active              = false;
+   p_rarch->flags    &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
+   runloop_st->flags &= ~(RUNLOOP_FLAG_OVERRIDES_ACTIVE
+                        | RUNLOOP_FLAG_REMAPS_CORE_ACTIVE
+                        | RUNLOOP_FLAG_REMAPS_GAME_ACTIVE
+                        | RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE
+                         );
 #endif
 
    runloop_st->current_core.has_set_input_descriptors = false;
@@ -4611,34 +4617,34 @@ static bool retroarch_parse_input_and_config(
     * bogus arguments.
     */
 
-   if (!runloop_st->has_set_core)
+   if (!(runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE))
       runloop_set_current_core_type(CORE_TYPE_DUMMY, false);
 
    path_clear(RARCH_PATH_SUBSYSTEM);
 
    retroarch_override_setting_free_state();
 
-   p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_USERNAME;
+   p_rarch->flags                 &= ~RARCH_FLAGS_HAS_SET_USERNAME;
 #ifdef HAVE_PATCH
-   p_rarch->flags &= ~(  RARCH_FLAGS_UPS_PREF | RARCH_FLAGS_IPS_PREF
-                       | RARCH_FLAGS_BPS_PREF);
-   *runloop_st->name.ups                 = '\0';
-   *runloop_st->name.bps                 = '\0';
-   *runloop_st->name.ips                 = '\0';
+   p_rarch->flags                 &= ~(  RARCH_FLAGS_UPS_PREF | RARCH_FLAGS_IPS_PREF
+                                       | RARCH_FLAGS_BPS_PREF);
+   *runloop_st->name.ups           = '\0';
+   *runloop_st->name.bps           = '\0';
+   *runloop_st->name.ips           = '\0';
 #endif
 #ifdef HAVE_CONFIGFILE
-   runloop_st->overrides_active          = false;
+   runloop_st->flags              &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 #endif
-   global->cli_load_menu_on_error        = false;
+   global->cli_load_menu_on_error  = false;
 
    /* Make sure we can call retroarch_parse_input several times ... */
-   optind    = 0;
-   optstring = "hs:fvS:A:U:DN:d:e:"
+   optind                          = 0;
+   optstring                       = "hs:fvS:A:U:DN:d:e:"
       BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
 
 #if defined(WEBOS)
-   argv      = &(argv[1]);
-   argc      = argc - 1;
+   argv                            = &(argv[1]);
+   argc                            = argc - 1;
 #endif
 
 #ifndef HAVE_MENU
@@ -4902,14 +4908,12 @@ static bool retroarch_parse_input_and_config(
 
             case 'M':
                if (string_is_equal(optarg, "noload-nosave"))
-               {
-                  runloop_st->is_sram_load_disabled = true;
-                  runloop_st->is_sram_save_disabled = true;
-               }
+                  runloop_st->flags |= RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED
+                                     | RUNLOOP_FLAG_IS_SRAM_SAVE_DISABLED;
                else if (string_is_equal(optarg, "noload-save"))
-                  runloop_st->is_sram_load_disabled = true;
+                  runloop_st->flags |= RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED;
                else if (string_is_equal(optarg, "load-nosave"))
-                  runloop_st->is_sram_save_disabled = true;
+                  runloop_st->flags |= RUNLOOP_FLAG_IS_SRAM_SAVE_DISABLED;
                else if (string_is_not_equal(optarg, "load-save"))
                {
                   RARCH_ERR("Invalid argument in --sram-mode.\n");
@@ -4991,7 +4995,7 @@ static bool retroarch_parse_input_and_config(
 
             case RA_OPT_NO_PATCH:
 #ifdef HAVE_PATCH
-               runloop_st->patch_blocked = true;
+               runloop_st->flags |= RUNLOOP_FLAG_PATCH_BLOCKED;
 #endif
                break;
 
@@ -5032,7 +5036,7 @@ static bool retroarch_parse_input_and_config(
 
             case RA_OPT_MAX_FRAMES_SCREENSHOT:
 #ifdef HAVE_SCREENSHOTS
-               runloop_st->max_frames_screenshot = true;
+               runloop_st->flags |= RUNLOOP_FLAG_MAX_FRAMES_SCREENSHOT;
 #endif
                break;
 
@@ -5411,9 +5415,9 @@ bool retroarch_main_init(int argc, char *argv[])
       frontend_driver_set_screen_brightness(settings->uints.screen_brightness);
 
    /* Attempt to initialize core */
-   if (runloop_st->has_set_core)
+   if (runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE)
    {
-      runloop_st->has_set_core = false;
+      runloop_st->flags &= ~RUNLOOP_FLAG_HAS_SET_CORE;
       if (!command_event(CMD_EVENT_CORE_INIT,
                &runloop_st->explicit_current_core_type))
          init_failed = true;
@@ -5439,9 +5443,9 @@ bool retroarch_main_init(int argc, char *argv[])
           * that we:
           * - Unload any active input remaps
           * - Disable any active config overrides */
-         if (     runloop_st->remaps_core_active
-               || runloop_st->remaps_content_dir_active
-               || runloop_st->remaps_game_active
+         if (     (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE)
+               || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE)
+               || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE)
                || !string_is_empty(runloop_st->name.remapfile)
             )
          {
@@ -5452,11 +5456,11 @@ bool retroarch_main_init(int argc, char *argv[])
             input_remapping_restore_global_config(true);
 
 #ifdef HAVE_CONFIGFILE
-         if (runloop_st->overrides_active)
+         if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
          {
             /* Reload the original config */
             config_unload_override();
-            runloop_st->overrides_active = false;
+            runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
          }
 #endif
 
@@ -5656,7 +5660,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             input_mapper_reset(&input_st->mapper);
 
 #ifdef HAVE_THREADS
-            if (runloop_st->use_sram)
+            if (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
                autosave_deinit();
 #endif
 
@@ -5735,31 +5739,31 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          }
          return false;
 #ifdef HAVE_CONFIGFILE
-      case RARCH_CTL_IS_OVERRIDES_ACTIVE:
-         return runloop_st->overrides_active;
       case RARCH_CTL_SET_REMAPS_CORE_ACTIVE:
          /* Only one type of remap can be active
           * at any one time */
-         runloop_st->remaps_core_active        = true;
-         runloop_st->remaps_content_dir_active = false;
-         runloop_st->remaps_game_active        = false;
+         runloop_st->flags &= ~(RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE
+                              | RUNLOOP_FLAG_REMAPS_GAME_ACTIVE);
+         runloop_st->flags |=   RUNLOOP_FLAG_REMAPS_CORE_ACTIVE;
          break;
-      case RARCH_CTL_IS_REMAPS_CORE_ACTIVE:
-         return runloop_st->remaps_core_active;
       case RARCH_CTL_SET_REMAPS_GAME_ACTIVE:
-         runloop_st->remaps_core_active        = false;
-         runloop_st->remaps_content_dir_active = false;
-         runloop_st->remaps_game_active        = true;
+         runloop_st->flags &= ~(RUNLOOP_FLAG_REMAPS_CORE_ACTIVE
+                              | RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE);
+         runloop_st->flags |=   RUNLOOP_FLAG_REMAPS_GAME_ACTIVE;
          break;
-      case RARCH_CTL_IS_REMAPS_GAME_ACTIVE:
-         return runloop_st->remaps_game_active;
       case RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE:
-         runloop_st->remaps_core_active        = false;
-         runloop_st->remaps_content_dir_active = true;
-         runloop_st->remaps_game_active        = false;
+         runloop_st->flags &= ~(RUNLOOP_FLAG_REMAPS_CORE_ACTIVE
+                              | RUNLOOP_FLAG_REMAPS_GAME_ACTIVE);
+         runloop_st->flags |=   RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE;
          break;
+      case RARCH_CTL_IS_OVERRIDES_ACTIVE:
+         return ((runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE) > 0);
+      case RARCH_CTL_IS_REMAPS_CORE_ACTIVE:
+         return ((runloop_st->flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE) > 0);
+      case RARCH_CTL_IS_REMAPS_GAME_ACTIVE:
+         return ((runloop_st->flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE) > 0);
       case RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE:
-         return runloop_st->remaps_content_dir_active;
+         return ((runloop_st->flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE) > 0);
 #endif
       case RARCH_CTL_SET_MISSING_BIOS:
          runloop_st->missing_bios = true;
@@ -5770,9 +5774,9 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_IS_MISSING_BIOS:
          return runloop_st->missing_bios;
       case RARCH_CTL_IS_GAME_OPTIONS_ACTIVE:
-         return runloop_st->game_options_active;
+         return ((runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE) > 0);
       case RARCH_CTL_IS_FOLDER_OPTIONS_ACTIVE:
-         return runloop_st->folder_options_active;
+         return ((runloop_st->flags & RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE) > 0);
       case RARCH_CTL_GET_PERFCNT:
          {
             bool **perfcnt = (bool**)data;
@@ -5805,7 +5809,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             runloop_st->paused           = false;
             runloop_st->slowmotion       = false;
 #ifdef HAVE_CONFIGFILE
-            runloop_st->overrides_active = false;
+            runloop_st->flags           &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 #endif
             runloop_st->autosave         = false;
             runloop_frame_time_free();
@@ -6213,9 +6217,9 @@ bool retroarch_main_quit(void)
        * save state file may be truncated) */
       content_wait_for_save_state_task();
 
-      if (     runloop_st->remaps_core_active
-            || runloop_st->remaps_content_dir_active
-            || runloop_st->remaps_game_active
+      if (     (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE)
+            || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE)
+            || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE)
             || !string_is_empty(runloop_st->name.remapfile)
          )
       {
@@ -6226,11 +6230,11 @@ bool retroarch_main_quit(void)
          input_remapping_restore_global_config(true);
 
 #ifdef HAVE_CONFIGFILE
-      if (runloop_st->overrides_active)
+      if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
       {
          /* Reload the original config */
          config_unload_override();
-         runloop_st->overrides_active = false;
+         runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
       }
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)

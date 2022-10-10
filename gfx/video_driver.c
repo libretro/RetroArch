@@ -2874,7 +2874,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(
    if (i >= 0)
    {
       const gfx_ctx_driver_t *ctx = video_context_driver_init(
-            runloop_st->core_set_shared_context,
+            runloop_st->flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
             settings,
             data,
             gfx_ctx_vk_drivers[i], ident,
@@ -2890,7 +2890,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(
    {
       const gfx_ctx_driver_t *ctx =
          video_context_driver_init(
-               runloop_st->core_set_shared_context,
+               runloop_st->flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
                settings,
                data,
                gfx_ctx_vk_drivers[i], ident,
@@ -2930,7 +2930,7 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(
    if (i >= 0)
    {
       const gfx_ctx_driver_t *ctx = video_context_driver_init(
-            runloop_st->core_set_shared_context,
+            runloop_st->flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
             settings,
             data,
             gfx_ctx_gl_drivers[i], ident,
@@ -2946,7 +2946,7 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(
    {
       const gfx_ctx_driver_t *ctx =
          video_context_driver_init(
-               runloop_st->core_set_shared_context,
+               runloop_st->flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
                settings,
                data,
                gfx_ctx_gl_drivers[i], ident,

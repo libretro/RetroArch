@@ -131,6 +131,25 @@ typedef struct my_list_t
 } my_list;
 #endif
 
+enum runloop_flags
+{
+   RUNLOOP_FLAG_MAX_FRAMES_SCREENSHOT     = (1 << 0),
+   RUNLOOP_FLAG_HAS_SET_CORE              = (1 << 1),
+   RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT   = (1 << 2),
+   RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB     = (1 << 3),
+   RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED     = (1 << 4),
+   RUNLOOP_FLAG_IS_SRAM_SAVE_DISABLED     = (1 << 5),
+   RUNLOOP_FLAG_USE_SRAM                  = (1 << 6),
+   RUNLOOP_FLAG_PATCH_BLOCKED             = (1 << 7),
+   RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE = (1 << 8),
+   RUNLOOP_FLAG_OVERRIDES_ACTIVE          = (1 << 9),
+   RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE       = (1 << 10),
+   RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE     = (1 << 11),
+   RUNLOOP_FLAG_REMAPS_CORE_ACTIVE        = (1 << 12),
+   RUNLOOP_FLAG_REMAPS_GAME_ACTIVE        = (1 << 13),
+   RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE = (1 << 14)
+};
+
 struct runloop
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -232,6 +251,8 @@ struct runloop
    enum rarch_core_type last_core_type;
 #endif
 
+   uint32_t flags;
+
    char runtime_content_path_basename[8192];
    char current_library_name[NAME_MAX_LENGTH];
    char current_library_version[256];
@@ -272,18 +293,7 @@ struct runloop
    bool core_shutdown_initiated;
    bool core_running;
    bool perfcnt_enable;
-   bool game_options_active;
-   bool folder_options_active;
    bool autosave;
-#ifdef HAVE_CONFIGFILE
-   bool overrides_active;
-#endif
-   bool remaps_core_active;
-   bool remaps_game_active;
-   bool remaps_content_dir_active;
-#ifdef HAVE_SCREENSHOTS
-   bool max_frames_screenshot;
-#endif
 #ifdef HAVE_RUNAHEAD
    bool has_variable_update;
    bool input_is_dirty;
@@ -292,16 +302,6 @@ struct runloop
    bool runahead_secondary_core_available;
    bool runahead_force_input_dirty;
 #endif
-   bool request_special_savestate;
-#ifdef HAVE_PATCH
-   bool patch_blocked;
-#endif
-   bool is_sram_load_disabled;
-   bool is_sram_save_disabled;
-   bool use_sram;
-   bool ignore_environment_cb;
-   bool core_set_shared_context;
-   bool has_set_core;
 };
 
 typedef struct runloop runloop_state_t;
@@ -457,6 +457,8 @@ void runloop_path_set_basename(const char *path);
 void runloop_path_init_savefile(void);
 
 void runloop_path_set_names(void);
+
+uint32_t runloop_get_flags(void);
 
 runloop_state_t *runloop_state_get_ptr(void);
 
