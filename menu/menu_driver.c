@@ -6781,7 +6781,7 @@ void menu_driver_toggle(
          *frontend_key_event          = *key_event;
          *key_event                   = menu_input_key_event;
 
-         runloop_st->frame_time_last= 0;
+         runloop_st->frame_time_last  = 0;
       }
    }
    else

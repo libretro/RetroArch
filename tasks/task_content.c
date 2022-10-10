@@ -1561,7 +1561,7 @@ static void task_push_to_history_list(
    {
       char tmp[PATH_MAX_LENGTH];
       const char *path_content       = path_get(RARCH_PATH_CONTENT);
-      struct retro_system_info *info = &runloop_state_get_ptr()->system.info;
+      struct retro_system_info *info = &runloop_st->system.info;
 
       if (!string_is_empty(path_content))
       {
@@ -2517,7 +2517,7 @@ static bool task_load_content_internal(
 
    if (sys_info)
    {
-      struct retro_system_info *system        = &runloop_state_get_ptr()->system.info;
+      struct retro_system_info *system        = &runloop_st->system.info;
 
       if (set_supports_no_game_enable)
          content_ctx.flags |= CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE;
@@ -2796,14 +2796,15 @@ void content_set_subsystem(unsigned idx)
 
    /* Core fully loaded, use the subsystem data */
    if (system->subsystem.data)
-      subsystem                    = system->subsystem.data + idx;
+      subsystem                                 = system->subsystem.data + idx;
    /* Core not loaded completely, use the data we peeked on load core */
    else
-      subsystem                    = runloop_st->subsystem_data + idx;
+      subsystem                                 = runloop_st->subsystem_data + idx;
 
-   p_content->pending_subsystem_id = idx;
+   p_content->pending_subsystem_id              = idx;
 
-   if (subsystem && runloop_st->subsystem_current_count > 0)
+   if (      subsystem 
+         && (runloop_st->subsystem_current_count > 0))
    {
       strlcpy(p_content->pending_subsystem_ident,
          subsystem->ident, sizeof(p_content->pending_subsystem_ident));
@@ -2986,13 +2987,11 @@ void content_deinit(void)
    content_file_override_free(p_content);
    content_file_list_free(p_content->content_list);
 
-   p_content->content_list                 = NULL;
-   p_content->rom_crc                      = 0;
-   p_content->flags &= ~(CONTENT_ST_FLAG_PENDING_ROM_CRC
-                       | CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT
-                       | CONTENT_ST_FLAG_IS_INITED
-                        )
-                        ;
+   p_content->content_list    = NULL;
+   p_content->rom_crc         = 0;
+   p_content->flags          &= ~(CONTENT_ST_FLAG_PENDING_ROM_CRC
+                              | CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT
+                              | CONTENT_ST_FLAG_IS_INITED);
 }
 
 /* Set environment variables before a subsystem load */
@@ -3062,10 +3061,10 @@ bool content_init(void)
 
    if (sys_info)
    {
-      struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
+      struct retro_system_info *system = &runloop_st->system.info;
 
       if (set_supports_no_game_enable)
-         content_ctx.flags |= CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE;
+         content_ctx.flags            |= CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE;
 
       if (!string_is_empty(path_dir_system))
          content_ctx.directory_system  = strdup(path_dir_system);

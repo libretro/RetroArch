@@ -2852,7 +2852,7 @@ VIDEO_DRIVER_GET_PTR_INTERNAL(video_st);
 
 #ifdef HAVE_VULKAN
 static const gfx_ctx_driver_t *vk_context_driver_init_first(
-      runloop_state_t *runloop_st,
+      uint32_t runloop_flags,
       settings_t *settings,
       void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
@@ -2874,7 +2874,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(
    if (i >= 0)
    {
       const gfx_ctx_driver_t *ctx = video_context_driver_init(
-            runloop_st->flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
+            runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
             settings,
             data,
             gfx_ctx_vk_drivers[i], ident,
@@ -2890,7 +2890,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(
    {
       const gfx_ctx_driver_t *ctx =
          video_context_driver_init(
-               runloop_st->flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
+               runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
                settings,
                data,
                gfx_ctx_vk_drivers[i], ident,
@@ -2908,7 +2908,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(
 #endif
 
 static const gfx_ctx_driver_t *gl_context_driver_init_first(
-      runloop_state_t *runloop_st,
+      uint32_t runloop_flags,
       settings_t *settings,
       void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
@@ -2930,7 +2930,7 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(
    if (i >= 0)
    {
       const gfx_ctx_driver_t *ctx = video_context_driver_init(
-            runloop_st->flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
+            runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
             settings,
             data,
             gfx_ctx_gl_drivers[i], ident,
@@ -2946,7 +2946,7 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(
    {
       const gfx_ctx_driver_t *ctx =
          video_context_driver_init(
-               runloop_st->flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
+               runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
                settings,
                data,
                gfx_ctx_gl_drivers[i], ident,
@@ -2980,7 +2980,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx, void **ctx_data)
 {
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   uint32_t runloop_flags      = runloop_get_flags();
    settings_t *settings        = config_get_ptr();
 
    switch (api)
@@ -2989,7 +2989,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
 #ifdef HAVE_VULKAN
          {
             const gfx_ctx_driver_t *ptr = vk_context_driver_init_first(
-                  runloop_st, settings,
+                  runloop_flags, settings,
                   data, ident, api, major, minor, hw_render_ctx, ctx_data);
             if (ptr && !string_is_equal(ptr->ident, "null"))
                return ptr;
@@ -3002,7 +3002,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
       case GFX_CTX_METAL_API:
       case GFX_CTX_RSX_API:
          return gl_context_driver_init_first(
-               runloop_st, settings,
+               runloop_flags, settings,
                data, ident, api, major, minor,
                hw_render_ctx, ctx_data);
       case GFX_CTX_NONE:

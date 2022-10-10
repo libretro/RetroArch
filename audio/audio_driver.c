@@ -560,25 +560,26 @@ bool audio_driver_init_internal(
       void *settings_data,
       bool audio_cb_inited)
 {
-   unsigned new_rate       = 0;
-   float  *samples_buf     = NULL;
-   settings_t *settings    = (settings_t*)settings_data;
-   size_t max_bufsamples   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
-   bool audio_enable       = settings->bools.audio_enable;
-   bool audio_sync         = settings->bools.audio_sync;
-   bool audio_rate_control = settings->bools.audio_rate_control;
-   float slowmotion_ratio  = settings->floats.slowmotion_ratio;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   unsigned audio_latency  = (runloop_st->audio_latency > settings->uints.audio_latency) ?
-         runloop_st->audio_latency : settings->uints.audio_latency;
+   unsigned new_rate              = 0;
+   float  *samples_buf            = NULL;
+   settings_t *settings           = (settings_t*)settings_data;
+   size_t max_bufsamples          = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
+   bool audio_enable              = settings->bools.audio_enable;
+   bool audio_sync                = settings->bools.audio_sync;
+   bool audio_rate_control        = settings->bools.audio_rate_control;
+   float slowmotion_ratio         = settings->floats.slowmotion_ratio;
+   unsigned setting_audio_latency = settings->uints.audio_latency;
+   unsigned runloop_audio_latency = runloop_state_get_ptr()->audio_latency;
+   unsigned audio_latency         = (runloop_audio_latency > setting_audio_latency) ?
+         runloop_audio_latency : setting_audio_latency;
 #ifdef HAVE_REWIND
-   int16_t *rewind_buf     = NULL;
+   int16_t *rewind_buf            = NULL;
 #endif
    /* Accomodate rewind since at some point we might have two full buffers. */
-   size_t outsamples_max   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO * slowmotion_ratio;
-   int16_t *conv_buf       = (int16_t*)memalign_alloc(64, outsamples_max * sizeof(int16_t));
-   float *audio_buf        = (float*)memalign_alloc(64, AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float));
-   bool verbosity_enabled  = verbosity_is_enabled();
+   size_t outsamples_max          = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO * slowmotion_ratio;
+   int16_t *conv_buf              = (int16_t*)memalign_alloc(64, outsamples_max * sizeof(int16_t));
+   float *audio_buf               = (float*)memalign_alloc(64, AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float));
+   bool verbosity_enabled         = verbosity_is_enabled();
 
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
@@ -781,9 +782,9 @@ error:
 
 void audio_driver_sample(int16_t left, int16_t right)
 {
+   uint32_t runloop_flags;
    audio_driver_state_t *audio_st  = &audio_driver_st;
    recording_state_t *recording_st = NULL;
-   runloop_state_t *runloop_st     = NULL;
    if (audio_st->flags & AUDIO_FLAG_SUSPENDED)
       return;
    audio_st->output_samples_conv_buf[audio_st->data_ptr++] = left;
@@ -792,7 +793,7 @@ void audio_driver_sample(int16_t left, int16_t right)
    if (audio_st->data_ptr < audio_st->chunk_size)
       return;
 
-   runloop_st                      = runloop_state_get_ptr();
+   runloop_flags                   = runloop_get_flags();
    recording_st                    = recording_state_get_ptr();
 
    if (  recording_st->data     &&
@@ -807,7 +808,7 @@ void audio_driver_sample(int16_t left, int16_t right)
       recording_st->driver->push_audio(recording_st->data, &ffemu_data);
    }
 
-   if (!(    (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+   if (!(    (runloop_flags & RUNLOOP_FLAG_PAUSED)
 		   || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
 		   || !(audio_st->output_samples_buf)))
       audio_driver_flush(audio_st,
@@ -815,21 +816,23 @@ void audio_driver_sample(int16_t left, int16_t right)
             config_get_ptr()->bools.audio_fastforward_mute,
             audio_st->output_samples_conv_buf,
             audio_st->data_ptr,
-            runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION,
-            runloop_st->flags & RUNLOOP_FLAG_FASTMOTION);
+            runloop_flags & RUNLOOP_FLAG_SLOWMOTION,
+            runloop_flags & RUNLOOP_FLAG_FASTMOTION);
 
    audio_st->data_ptr = 0;
 }
 
 size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
 {
+   uint32_t runloop_flags;
    size_t frames_remaining        = frames;
    recording_state_t *record_st   = recording_state_get_ptr();
-   runloop_state_t *runloop_st    = runloop_state_get_ptr();
    audio_driver_state_t *audio_st = &audio_driver_st;
 
    if ((audio_st->flags & AUDIO_FLAG_SUSPENDED) || (frames < 1))
       return frames;
+
+   runloop_flags                   = runloop_get_flags();
 
    /* We want to run this loop at least once, so use a
     * do...while (do...while has only a single conditional
@@ -855,7 +858,7 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
          record_st->driver->push_audio(record_st->data, &ffemu_data);
       }
 
-      if (!(    (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+      if (!(    (runloop_flags & RUNLOOP_FLAG_PAUSED)
             || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
             || !(audio_st->output_samples_buf)))
          audio_driver_flush(audio_st,
@@ -863,8 +866,8 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
                config_get_ptr()->bools.audio_fastforward_mute,
                data,
                frames_to_write << 1,
-               runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION,
-               runloop_st->flags & RUNLOOP_FLAG_FASTMOTION);
+               runloop_flags & RUNLOOP_FLAG_SLOWMOTION,
+               runloop_flags & RUNLOOP_FLAG_FASTMOTION);
 
       frames_remaining -= frames_to_write;
       data             += frames_to_write << 1;
@@ -1653,7 +1656,7 @@ void audio_driver_frame_is_reverse(void)
 {
    audio_driver_state_t *audio_st  = &audio_driver_st;
    recording_state_t *recording_st = recording_state_get_ptr();
-   runloop_state_t *runloop_st     = runloop_state_get_ptr();
+   uint32_t runloop_flags          = runloop_get_flags();
 
    /* We just rewound. Flush rewind audio buffer. */
    if (  recording_st->data   &&
@@ -1673,7 +1676,7 @@ void audio_driver_frame_is_reverse(void)
    }
 
    if (!(
-             (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+             (runloop_flags & RUNLOOP_FLAG_PAUSED)
          || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
          || !(audio_st->output_samples_buf)))
       if (!(audio_st->flags & AUDIO_FLAG_SUSPENDED))
@@ -1686,8 +1689,8 @@ void audio_driver_frame_is_reverse(void)
                audio_st->rewind_ptr,
                audio_st->rewind_size -
                audio_st->rewind_ptr,
-               runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION,
-               runloop_st->flags & RUNLOOP_FLAG_FASTMOTION);
+               runloop_flags & RUNLOOP_FLAG_SLOWMOTION,
+               runloop_flags & RUNLOOP_FLAG_FASTMOTION);
       }
 }
 #endif
@@ -1818,7 +1821,7 @@ void audio_driver_menu_sample(void)
    static int16_t samples_buf[1024]       = {0};
    settings_t *settings                   = config_get_ptr();
    video_driver_state_t *video_st         = video_state_get_ptr();
-   runloop_state_t *runloop_st            = runloop_state_get_ptr();
+   uint32_t runloop_flags                 = runloop_get_flags();
    recording_state_t *recording_st        = recording_state_get_ptr();
    struct retro_system_av_info *av_info   = &video_st->av_info;
    const struct retro_system_timing *info =
@@ -1826,7 +1829,7 @@ void audio_driver_menu_sample(void)
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
    audio_driver_state_t *audio_st         = &audio_driver_st;
    bool check_flush                       = !(
-             (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+             (runloop_flags & RUNLOOP_FLAG_PAUSED)
          || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
          || !audio_st->output_samples_buf);
    if ((audio_st->flags & AUDIO_FLAG_SUSPENDED))
@@ -1852,8 +1855,8 @@ void audio_driver_menu_sample(void)
                settings->bools.audio_fastforward_mute,
                samples_buf,
                1024,
-               runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION,
-               runloop_st->flags & RUNLOOP_FLAG_FASTMOTION);
+               runloop_flags & RUNLOOP_FLAG_SLOWMOTION,
+               runloop_flags & RUNLOOP_FLAG_FASTMOTION);
       sample_count -= 1024;
    }
    if (  recording_st->data   &&
@@ -1874,7 +1877,7 @@ void audio_driver_menu_sample(void)
             settings->bools.audio_fastforward_mute,
             samples_buf,
             sample_count,
-            runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION,
-            runloop_st->flags & RUNLOOP_FLAG_FASTMOTION);
+            runloop_flags & RUNLOOP_FLAG_SLOWMOTION,
+            runloop_flags & RUNLOOP_FLAG_FASTMOTION);
 }
 #endif
