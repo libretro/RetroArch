@@ -2024,6 +2024,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
    "Összes"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW,
+   "Nézet"
+   )
 
 /* Playlist > Playlist Item */
 

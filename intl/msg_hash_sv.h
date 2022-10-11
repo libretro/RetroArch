@@ -2720,6 +2720,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
    "Efter tagg"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW,
+   "Visa"
+   )
 
 /* Playlist > Playlist Item */
 

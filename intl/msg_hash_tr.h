@@ -6960,6 +6960,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
    "Sistem Adı"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW,
+   "Görünüm"
+   )
 
 /* Playlist > Playlist Item */
 
