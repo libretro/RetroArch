@@ -1921,6 +1921,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    rarch_system_info_t *sys_info              = &runloop_st->system;
    const char *path_dir_system                = settings->paths.directory_system;
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
+   uint16_t rarch_flags                       = retroarch_get_flags();
 
    if (!content_info)
       return false;
@@ -1930,11 +1931,11 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    if (check_firmware_before_loading)
       content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   if (retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_IPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
-   if (retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_BPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
-   if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
@@ -2011,17 +2012,18 @@ bool task_push_load_content_from_playlist_from_menu(
    bool force_core_reload                     = settings->bools.always_reload_core_on_run_content;
 #endif
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
+   uint16_t rarch_flags                       = retroarch_get_flags();
 
    content_ctx.flags     = 0;
 
    if (check_firmware_before_loading)
       content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   if (retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_IPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
-   if (retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_BPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
-   if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
@@ -2139,6 +2141,7 @@ end:
 
 bool task_push_start_current_core(content_ctx_info_t *content_info)
 {
+   uint16_t rarch_flags;
    content_information_ctx_t content_ctx;
    bool ret                           = true;
    content_state_t *p_content         = content_state_get_ptr();
@@ -2150,16 +2153,17 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    if (!content_info)
       return false;
 
-   content_ctx.flags     = 0;
+   rarch_flags                        = retroarch_get_flags();
+   content_ctx.flags                  = 0;
 
    if (check_firmware_before_loading)
       content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   if (retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_IPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
-   if (retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_BPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
-   if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
@@ -2362,8 +2366,8 @@ bool task_push_load_content_with_new_core_from_menu(
       retro_task_callback_t cb,
       void *user_data)
 {
+   uint16_t rarch_flags;
    content_information_ctx_t content_ctx;
-
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    settings_t *settings                       = config_get_ptr();
@@ -2384,16 +2388,17 @@ bool task_push_load_content_with_new_core_from_menu(
             type, cb, user_data);
 #endif
 
-   content_ctx.flags     = 0;
+   rarch_flags                        = retroarch_get_flags();
+   content_ctx.flags                  = 0;
 
    if (check_firmware_before_loading)
       content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   if (retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_IPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
-   if (retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_BPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
-   if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
@@ -2489,16 +2494,17 @@ static bool task_load_content_internal(
    const char *path_dir_system                = settings->paths.directory_system;
    const char *path_dir_cache                 = settings->paths.directory_cache;
 
-   content_ctx.flags     = 0;
+   uint16_t rarch_flags                       = retroarch_get_flags();
+   content_ctx.flags                          = 0;
 
    if (check_firmware_before_loading)
       content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   if (retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_IPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
-   if (retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_BPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
-   if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
@@ -3024,6 +3030,7 @@ bool content_init(void)
    bool set_supports_no_game_enable   = settings->bools.set_supports_no_game_enable;
    const char *path_dir_system        = settings->paths.directory_system;
    const char *path_dir_cache         = settings->paths.directory_cache;
+   uint16_t rarch_flags               = retroarch_get_flags();
 
    content_file_list_free(p_content->content_list);
    p_content->content_list            = NULL;
@@ -3033,11 +3040,11 @@ bool content_init(void)
    if (check_firmware_before_loading)
       content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   if (retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_IPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
-   if (retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_BPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
-   if (retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL))
+   if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;

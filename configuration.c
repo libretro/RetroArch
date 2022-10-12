@@ -3330,6 +3330,7 @@ static bool config_load_file(global_t *global,
    struct config_array_setting *array_settings     = NULL;
    struct config_path_setting *path_settings       = NULL;
    config_file_t *conf                             = path ? config_file_new_from_path_to_string(path) : open_default_config_file();
+   uint16_t rarch_flags                            = retroarch_get_flags();
 
    tmp_str[0]                                      = '\0';
 
@@ -3399,7 +3400,7 @@ static bool config_load_file(global_t *global,
 
    /* Overrides */
 
-   if (retroarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
+   if (rarch_flags & RARCH_FLAGS_HAS_SET_USERNAME)
       override_username = strdup(settings->paths.username);
 
    /* Boolean settings */
@@ -3541,7 +3542,8 @@ static bool config_load_file(global_t *global,
 
    /* Post-settings load */
 
-   if (retroarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL) && override_username)
+   if (     (rarch_flags & RARCH_FLAGS_HAS_SET_USERNAME)
+         && (override_username))
    {
       configuration_set_string(settings,
             settings->paths.username,
