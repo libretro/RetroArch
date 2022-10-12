@@ -7,4 +7,5 @@
   <short_description>The cross-platform entertainment system</short_description> 
   <long_description>A port of RetroArch to the GameCube/Wii.</long_description> 
   <no_ios_reload/>
+  <ahb_access/>
 </app>
