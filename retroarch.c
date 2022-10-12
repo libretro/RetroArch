@@ -3687,8 +3687,6 @@ static void sdl_exit(void)
  *
  * Cleanly exit RetroArch.
  *
- * Also saves configuration files to disk,
- * and (optionally) autosave state.
  **/
 void main_exit(void *args)
 {
@@ -3698,12 +3696,8 @@ void main_exit(void *args)
    struct menu_state  *menu_st  = menu_state_get_ptr();
 #endif
    settings_t     *settings     = config_get_ptr();
-   bool     config_save_on_exit = settings->bools.config_save_on_exit;
 
    video_driver_restore_cached(settings);
-
-   if (config_save_on_exit)
-      command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
 #if defined(HAVE_GFX_WIDGETS)
    /* Do not want display widgets to live any more. */
@@ -6164,18 +6158,16 @@ void retroarch_fail(int error_code, const char *error)
    longjmp(global->error_sjlj_context, error_code);
 }
 
+/*
+ * Also saves configuration files to disk,
+ * and (optionally) autosave state.
+ */
 bool retroarch_main_quit(void)
 {
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
-   /*Save configs before quitting
-    *as for UWP depending on `OnSuspending` is not important as we can call it directly here
-    *specifically we need to get width,height which requires UI thread and it will not be available on exit
-    */
-   bool config_save_on_exit = settings->bools.config_save_on_exit;
-   if (config_save_on_exit)
-      command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+
 #ifdef HAVE_PRESENCE
    {
       presence_userdata_t userdata;
@@ -6206,6 +6198,14 @@ bool retroarch_main_quit(void)
 
    if (!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
    {
+      /* Save configs before quitting
+       * as for UWP depending on `OnSuspending` is not important as we can call it directly here
+       * specifically we need to get width,height which requires UI thread and it will not be available on exit
+       */
+      bool config_save_on_exit = settings->bools.config_save_on_exit;
+      if (config_save_on_exit)
+         command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+
       command_event_save_auto_state(
             settings->bools.savestate_auto_save,
             runloop_st->current_core_type);

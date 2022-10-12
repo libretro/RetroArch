@@ -6770,7 +6770,7 @@ MENU_ST_FLAG_IS_BINDING;
          {
             bool load_dummy_core = false;
 
-	    runloop_st->flags   &= ~RUNLOOP_FLAG_CORE_SHUTDOWN_INITIATED;
+            runloop_st->flags   &= ~RUNLOOP_FLAG_CORE_SHUTDOWN_INITIATED;
 
             /* Check whether dummy core should be loaded
              * instead of exiting RetroArch completely
@@ -6778,14 +6778,14 @@ MENU_ST_FLAG_IS_BINDING;
             if (settings->bools.load_dummy_on_core_shutdown)
             {
                load_dummy_core    = true;
-	       runloop_st->flags &= ~RUNLOOP_FLAG_SHUTDOWN_INITIATED;
+               runloop_st->flags &= ~RUNLOOP_FLAG_SHUTDOWN_INITIATED;
             }
 
             /* Unload current core, and load dummy if
              * required */
             if (!command_event(CMD_EVENT_UNLOAD_CORE, &load_dummy_core))
             {
-	       runloop_st->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
+               runloop_st->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
                quit_runloop       = true;
             }
 
@@ -6795,12 +6795,11 @@ MENU_ST_FLAG_IS_BINDING;
          else
             quit_runloop                 = true;
 
-	 runloop_st->flags              &= ~RUNLOOP_FLAG_CORE_RUNNING;
+         runloop_st->flags              &= ~RUNLOOP_FLAG_CORE_RUNNING;
 
          if (quit_runloop)
          {
             old_quit_key                 = quit_key;
-            retroarch_main_quit();
             return RUNLOOP_STATE_QUIT;
          }
       }
@@ -7768,7 +7767,7 @@ RUNLOOP_FLAG_PAUSED) || (menu_pause_libretro && (menu_state_get_ptr()->flags & M
    {
       case RUNLOOP_STATE_QUIT:
          runloop_st->frame_limit_last_time = 0.0;
-	 runloop_st->flags                &= ~RUNLOOP_FLAG_CORE_RUNNING;
+         runloop_st->flags                &= ~RUNLOOP_FLAG_CORE_RUNNING;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
       case RUNLOOP_STATE_POLLED_AND_SLEEP:
