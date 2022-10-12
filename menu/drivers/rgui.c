@@ -1458,6 +1458,7 @@ static bool rgui_fonts_init(rgui_t *rgui)
    switch (language)
    {
       case RETRO_LANGUAGE_ENGLISH:
+      case RETRO_LANGUAGE_BRITISH_ENGLISH:
          goto english;
 
       case RETRO_LANGUAGE_FRENCH:
