@@ -72,7 +72,7 @@ static void cb_task_menu_explore_init(
       void *user_data, const char *err)
 {
    menu_explore_init_handle_t *menu_explore = NULL;
-   const char *menu_label                   = NULL;
+   unsigned menu_type                       = 0;
 
    if (!task)
       return;
@@ -88,18 +88,26 @@ static void cb_task_menu_explore_init(
 
    /* If the explore menu is currently displayed,
     * it must be refreshed */
-   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+   menu_entries_get_last_stack(NULL, NULL, &menu_type, NULL, NULL);
 
-   if (string_is_empty(menu_label))
-      return;
-
-   if (string_is_equal(menu_label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST)) ||
-      string_is_equal(menu_label,
-            msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
+   /* check if we are opening a saved view from the horizontal/tabs menu */
+   if (menu_type == MENU_SETTING_HORIZONTAL_MENU)
    {
-      bool refresh = false;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      menu_ctx_list_t tabs, horizontal;
+      tabs.type = MENU_LIST_TABS;
+      if (menu_driver_list_get_selection(&tabs) && menu_driver_list_get_size(&tabs))
+      {
+         horizontal.type = MENU_LIST_HORIZONTAL;
+         horizontal.idx = tabs.selection - (tabs.size + 1);
+         if (menu_driver_list_get_entry(&horizontal))
+            menu_type = ((struct item_file*)horizontal.entry)->type;
+      }
+   }
+
+   if (menu_type == MENU_EXPLORE_TAB)
+   {
+      bool refresh_nonblocking = false;
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh_nonblocking);
       menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    }
 }

@@ -94,8 +94,6 @@ struct retro_core_t
    bool has_set_input_descriptors;
 };
 
-bool libretro_get_shared_context(void);
-
 RETRO_END_DECLS
 
 #endif

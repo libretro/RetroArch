@@ -3280,6 +3280,10 @@ MSG_HASH(
    )
 
 /* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW,
+   "檢視"
+   )
 
 /* Playlist > Playlist Item */
 

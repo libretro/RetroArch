@@ -9412,6 +9412,7 @@ static int materialui_list_push(void *data, void *userdata,
          {
             settings_t   *settings      = config_get_ptr();
             rarch_system_info_t *system = &runloop_state_get_ptr()->system;
+            uint32_t flags              = runloop_get_flags();
 
             /* If navigation bar is hidden, use default
              * main menu */
@@ -9420,7 +9421,7 @@ static int materialui_list_push(void *data, void *userdata,
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+            if (flags & RUNLOOP_FLAG_CORE_RUNNING)
             {
                if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                {
@@ -10185,7 +10186,7 @@ static void materialui_list_insert(
       node->thumbnails.primary.height        = 0;
       node->thumbnails.primary.alpha         = 0.0f;
       node->thumbnails.primary.delay_timer   = 0.0f;
-      node->thumbnails.primary.fade_active   = false;
+      node->thumbnails.primary.flags        &= ~GFX_THUMB_FLAG_FADE_ACTIVE;
 
       node->thumbnails.secondary.status      = GFX_THUMBNAIL_STATUS_UNKNOWN;
       node->thumbnails.secondary.texture     = 0;
@@ -10193,7 +10194,7 @@ static void materialui_list_insert(
       node->thumbnails.secondary.height      = 0;
       node->thumbnails.secondary.alpha       = 0.0f;
       node->thumbnails.secondary.delay_timer = 0.0f;
-      node->thumbnails.secondary.fade_active = false;
+      node->thumbnails.secondary.flags      &= ~GFX_THUMB_FLAG_FADE_ACTIVE;
    }
    else
    {

@@ -115,11 +115,6 @@ enum gfx_display_driver_type
    GFX_VIDEO_DRIVER_RSX
 };
 
-typedef struct gfx_display_frame_info
-{
-   bool shadows_enable;
-} gfx_display_frame_info_t;
-
 typedef struct gfx_display_ctx_draw gfx_display_ctx_draw_t;
 
 typedef struct gfx_display gfx_display_t;

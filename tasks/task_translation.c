@@ -53,7 +53,7 @@
 static void task_auto_translate_handler(retro_task_t *task)
 {
    int               *mode_ptr = (int*)task->user_data;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   uint32_t runloop_flags      = runloop_get_flags();
    access_state_t *access_st   = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = config_get_ptr();
@@ -91,7 +91,7 @@ task_finished:
 
    if (*mode_ptr == 1 || *mode_ptr == 2)
    {
-      bool was_paused = runloop_st->paused;
+      bool was_paused = runloop_flags & RUNLOOP_FLAG_PAUSED;
       command_event(CMD_EVENT_AI_SERVICE_CALL, &was_paused);
    }
    if (task->user_data)
@@ -157,18 +157,20 @@ static void handle_translation_cb(
    char* auto_string                 = NULL;
    char* key_string                  = NULL;
    settings_t* settings              = config_get_ptr();
-   runloop_state_t *runloop_st       = runloop_state_get_ptr();
+   uint32_t runloop_flags            = runloop_get_flags();
 #ifdef HAVE_ACCESSIBILITY
    input_driver_state_t *input_st    = input_state_get_ptr();
 #endif
-   bool was_paused                   = runloop_st->paused;
+   bool was_paused                   = runloop_flags & RUNLOOP_FLAG_PAUSED;
    video_driver_state_t 
       *video_st                      = video_state_get_ptr();
    const enum retro_pixel_format
       video_driver_pix_fmt           = video_st->pix_fmt;
    access_state_t *access_st         = access_state_get_ptr();
 #ifdef HAVE_GFX_WIDGETS
-   bool gfx_widgets_paused           = video_st->widgets_paused;
+   bool gfx_widgets_paused           = video_st->flags &
+      VIDEO_FLAG_WIDGETS_PAUSED;
+   dispgfx_widget_t *p_dispwidget    = dispwidget_get_ptr();
 #endif
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable         = settings->bools.accessibility_enable;
@@ -176,7 +178,7 @@ static void handle_translation_cb(
 #ifdef HAVE_GFX_WIDGETS
    /* When auto mode is on, we turn off the overlay
     * once we have the result for the next call.*/
-   if (dispwidget_get_ptr()->ai_service_overlay_state != 0
+   if (p_dispwidget->ai_service_overlay_state != 0
        && access_st->ai_service_auto == 2)
       gfx_widgets_ai_service_overlay_unload();
 #endif
@@ -274,7 +276,7 @@ static void handle_translation_cb(
       if (gfx_widgets_paused)
       {
          /* In this case we have to unpause and then repause for a frame */
-         dispwidget_get_ptr()->ai_service_overlay_state = 2;
+         p_dispwidget->ai_service_overlay_state = 2;
          command_event(CMD_EVENT_UNPAUSE, NULL);
       }
 #endif
@@ -339,7 +341,7 @@ static void handle_translation_cb(
          {
             /* In this case we have to unpause and then repause for a frame */
             /* Unpausing state */
-            dispwidget_get_ptr()->ai_service_overlay_state = 2;
+            p_dispwidget->ai_service_overlay_state = 2;
             command_event(CMD_EVENT_UNPAUSE, NULL);
          }
       }
@@ -775,37 +777,37 @@ bool run_translation_service(settings_t *settings, bool paused)
    uint8_t header[54];
    size_t pitch;
    unsigned width, height;
-   const void *data                      = NULL;
-   uint8_t *bit24_image                  = NULL;
-   uint8_t *bit24_image_prev             = NULL;
-   struct scaler_ctx *scaler             = (struct scaler_ctx*)
+   const void *data                  = NULL;
+   uint8_t *bit24_image              = NULL;
+   uint8_t *bit24_image_prev         = NULL;
+   struct scaler_ctx *scaler         = (struct scaler_ctx*)
       calloc(1, sizeof(struct scaler_ctx));
-   bool error                            = false;
+   bool error                        = false;
 
-   uint8_t *bmp_buffer                   = NULL;
-   uint64_t buffer_bytes                 = 0;
-   char *bmp64_buffer                    = NULL;
-   rjsonwriter_t* jsonwriter             = NULL;
-   const char *json_buffer               = NULL;
+   uint8_t *bmp_buffer               = NULL;
+   uint64_t buffer_bytes             = 0;
+   char *bmp64_buffer                = NULL;
+   rjsonwriter_t* jsonwriter         = NULL;
+   const char *json_buffer           = NULL;
 
-   int bmp64_length                      = 0;
-   bool TRANSLATE_USE_BMP                = false;
+   int bmp64_length                  = 0;
+   bool TRANSLATE_USE_BMP            = false;
 
-   const char *label                     = NULL;
-   char* system_label                    = NULL;
-   core_info_t *core_info                = NULL;
-   video_driver_state_t 
-      *video_st                          = video_state_get_ptr();
+   const char *label                 = NULL;
+   char* system_label                = NULL;
+   core_info_t *core_info            = NULL;
+   video_driver_state_t *video_st    = video_state_get_ptr();
    const enum retro_pixel_format
-      video_driver_pix_fmt               = video_st->pix_fmt;
-   access_state_t *access_st             = access_state_get_ptr();
+      video_driver_pix_fmt           = video_st->pix_fmt;
+   access_state_t *access_st         = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
-   input_driver_state_t *input_st        = input_state_get_ptr();
+   input_driver_state_t *input_st    = input_state_get_ptr();
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
+   dispgfx_widget_t *p_dispwidget    = dispwidget_get_ptr();
    /* For the case when ai service pause is disabled. */
-   if (  (dispwidget_get_ptr()->ai_service_overlay_state != 0)
+   if (     (p_dispwidget->ai_service_overlay_state != 0)
          && (access_st->ai_service_auto == 1))
    {
       gfx_widgets_ai_service_overlay_unload();

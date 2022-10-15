@@ -203,9 +203,9 @@ static void frontend_psp_get_env_settings(int *argc, char *argv[],
       params->state_path    = NULL;
       params->config_path   = NULL;
       params->libretro_path = NULL;
-      params->verbose       = false;
-      params->no_content    = false;
-      params->touched       = true;
+      params->flags        &= ~(RARCH_MAIN_WRAP_FLAG_VERBOSE
+                              | RARCH_MAIN_WRAP_FLAG_NO_CONTENT);
+      params->flags        |=   RARCH_MAIN_WRAP_FLAG_TOUCHED;
    }
 
    dir_check_defaults("custom.ini");

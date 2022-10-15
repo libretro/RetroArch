@@ -57,12 +57,17 @@ typedef struct xaudio2 xaudio2_t;
 
 #define XAUDIO2_WRITE_AVAILABLE(handle) ((handle)->bufsize * (MAX_BUFFERS - (handle)->buffers - 1))
 
+enum xa_flags
+{
+   XA2_FLAG_NONBLOCK  = (1 << 0),
+   XA2_FLAG_IS_PAUSED = (1 << 1)
+};
+
 typedef struct
 {
    xaudio2_t *xa;
    size_t bufsize;
-   bool nonblock;
-   bool is_paused;
+   uint8_t flags;
 } xa_t;
 
 /* Forward declarations */
@@ -323,8 +328,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
    bufsize     = latency * rate / 1000;
    xa->bufsize = bufsize * 2 * sizeof(float);
 
-   xa->xa = xaudio2_new(rate, 2, xa->bufsize, device);
-   if (!xa->xa)
+   if (!(xa->xa = xaudio2_new(rate, 2, xa->bufsize, device)))
    {
       RARCH_ERR("[XAudio2] Failed to init driver.\n");
       free(xa);
@@ -344,7 +348,7 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
    xaudio2_t *handle     = xa->xa;
    const uint8_t *buffer = (const uint8_t*)buf;
 
-   if (xa->nonblock)
+   if (xa->flags & XA2_FLAG_NONBLOCK)
    {
       size_t avail = XAUDIO2_WRITE_AVAILABLE(xa->xa);
 
@@ -403,8 +407,8 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
 
 static bool xa_stop(void *data)
 {
-   xa_t *xa = (xa_t*)data;
-   xa->is_paused = true;
+   xa_t *xa   = (xa_t*)data;
+   xa->flags |= XA2_FLAG_IS_PAUSED;
    return true;
 }
 
@@ -413,20 +417,25 @@ static bool xa_alive(void *data)
    xa_t *xa = (xa_t*)data;
    if (!xa)
       return false;
-   return !xa->is_paused;
+   return !(xa->flags & XA2_FLAG_IS_PAUSED);
 }
 
 static void xa_set_nonblock_state(void *data, bool state)
 {
    xa_t *xa = (xa_t*)data;
    if (xa)
-      xa->nonblock = state;
+   {
+      if (state)
+         xa->flags |=  XA2_FLAG_NONBLOCK;
+      else
+         xa->flags &= ~XA2_FLAG_NONBLOCK;
+   }
 }
 
 static bool xa_start(void *data, bool is_shutdown)
 {
-   xa_t *xa      = (xa_t*)data;
-   xa->is_paused = false;
+   xa_t *xa   = (xa_t*)data;
+   xa->flags &= ~(XA2_FLAG_IS_PAUSED);
    return true;
 }
 

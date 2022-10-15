@@ -98,6 +98,7 @@
 #include "../core_option_manager.h"
 #include "../paths.h"
 #include "../retroarch.h"
+#include "../runloop.h"
 #include "../core.h"
 #include "../frontend/frontend_driver.h"
 #include "../ui/ui_companion_driver.h"
@@ -1235,10 +1236,11 @@ static unsigned menu_displaylist_parse_core_option_override_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
    unsigned count               = 0;
+   uint32_t flags               = runloop_get_flags();
    bool core_has_options        = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) &&
          retroarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL);
-   bool game_options_active     = retroarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL);
-   bool folder_options_active   = retroarch_ctl(RARCH_CTL_IS_FOLDER_OPTIONS_ACTIVE, NULL);
+   bool game_options_active     = flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE;
+   bool folder_options_active   = flags & RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE;
    bool show_core_options_flush = settings ?
          settings->bools.quick_menu_show_core_options_flush : false;
 
@@ -1332,16 +1334,17 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
    unsigned count                = 0;
+   uint32_t flags                = runloop_get_flags();
    bool has_content              = !string_is_empty(path_get(RARCH_PATH_CONTENT));
-   bool core_remap_active        = retroarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL);
-   bool content_dir_remap_active = retroarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL);
-   bool game_remap_active        = retroarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL);
+   bool core_remap_active        = flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE;
+   bool content_dir_remap_active = flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE;
+   bool game_remap_active        = flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE;
    bool remap_save_on_exit       = settings->bools.remap_save_on_exit;
 
    /* Sanity check - cannot handle remap files
     * unless a valid core is running */
-   if (!retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL) ||
-       retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if ( !(flags & RUNLOOP_FLAG_CORE_RUNNING)
+       || retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       goto end;
 
    /* Show currently 'active' remap file */
@@ -3352,6 +3355,13 @@ static int menu_displaylist_parse_horizontal_list(
    if (!item)
       return -1;
 
+   if (item->type == MENU_EXPLORE_TAB)
+   {
+      /* when opening a saved view the explore menu will handle the list */
+      menu_displaylist_ctl(DISPLAYLIST_EXPLORE, info, settings);
+      return 0;
+   }
+
    if (!string_is_empty(item->path))
    {
       char lpl_basename[256];
@@ -4039,6 +4049,7 @@ static unsigned menu_displaylist_parse_playlists(
    size_t i, list_size;
    struct string_list str_list  = {0};
    unsigned count               = 0;
+   unsigned content_count       = 0;
    const char *path             = info->path;
    bool show_hidden_files       = settings->bools.show_hidden_files;
 
@@ -4136,9 +4147,39 @@ static unsigned menu_displaylist_parse_playlists(
          show_hidden_files, true, false))
       return count;
 
+   content_count = count;
+
    dir_list_sort(&str_list, true);
 
    list_size = str_list.size;
+
+#if defined(HAVE_LIBRETRODB)
+   if (settings->bools.menu_content_show_explore)
+   {
+      /* list any custom explore views above playlists */
+      for (i = 0; i < list_size; i++)
+      {
+         char label[512];
+         const char *path = str_list.elems[i].data;
+         const char *fname = path_basename(path);
+         const char *fext = path_get_extension(fname);
+         if (!string_is_equal_noncase(fext, "lvw"))
+            continue;
+
+         snprintf(label, sizeof(label), "%s: %.*s",
+               msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW),
+               (int)(fext - 1 - fname), fname);
+         if (menu_entries_append(info->list, label, path,
+               MENU_ENUM_LABEL_GOTO_EXPLORE,
+               MENU_EXPLORE_TAB, 0, (count - content_count), NULL))
+         {
+            menu_file_list_cbs_t *cbs = ((menu_file_list_cbs_t*)info->list->list[info->list->size-1].actiondata);
+            cbs->action_sublabel = NULL;
+            count++;
+         }
+      }
+   }
+#endif
 
    for (i = 0; i < list_size; i++)
    {
@@ -4188,7 +4229,7 @@ static unsigned menu_displaylist_parse_playlists(
 
       if (menu_entries_append(info->list, path, "",
             MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY,
-            file_type, 0, 0, NULL))
+            file_type, 0, (count - content_count), NULL))
          count++;
    }
 
@@ -6102,6 +6143,7 @@ unsigned menu_displaylist_build_list(
 {
    unsigned i;
    unsigned count = 0;
+   uint32_t flags = runloop_get_flags();
 
    switch (type)
    {
@@ -9165,8 +9207,8 @@ unsigned menu_displaylist_build_list(
             }
 
 #ifdef HAVE_RUNAHEAD
-            if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL) &&
-                !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+            if (  (flags & RUNLOOP_FLAG_CORE_RUNNING)
+                && !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                runahead_supported = core_info_current_supports_runahead();
 
             if (runahead_supported)
@@ -10156,8 +10198,8 @@ unsigned menu_displaylist_build_list(
             };
 
 #ifdef HAVE_REWIND
-            if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL) &&
-                !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+            if (  (flags & RUNLOOP_FLAG_CORE_RUNNING)
+                && !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                rewind_supported = core_info_current_supports_rewind();
 
             if (rewind_supported)
@@ -13510,8 +13552,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #if defined(HAVE_RGUI) || defined(HAVE_MATERIALUI) || defined(HAVE_OZONE) || defined(HAVE_XMB)
             const char *menu_ident         = menu_driver_ident();
 #endif
+            uint32_t flags                 = runloop_get_flags();
 
-            if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+            if (flags & RUNLOOP_FLAG_CORE_RUNNING)
             {
                if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,

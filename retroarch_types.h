@@ -61,13 +61,8 @@ enum rarch_ctl_state
    RARCH_CTL_IS_SECOND_CORE_LOADED,
 #endif
 
-   RARCH_CTL_IS_BPS_PREF,
    RARCH_CTL_UNSET_BPS_PREF,
-
-   RARCH_CTL_IS_UPS_PREF,
    RARCH_CTL_UNSET_UPS_PREF,
-
-   RARCH_CTL_IS_IPS_PREF,
    RARCH_CTL_UNSET_IPS_PREF,
 
 #ifdef HAVE_CONFIGFILE
@@ -76,26 +71,15 @@ enum rarch_ctl_state
    RARCH_CTL_UNSET_BLOCK_CONFIG_READ,
 #endif
 
-   /* Username */
-   RARCH_CTL_HAS_SET_USERNAME,
-
    RARCH_CTL_HAS_SET_SUBSYSTEMS,
 
-   RARCH_CTL_IS_IDLE,
    RARCH_CTL_SET_IDLE,
 
    RARCH_CTL_SET_WINDOWED_SCALE,
 
 #ifdef HAVE_CONFIGFILE
-   RARCH_CTL_IS_OVERRIDES_ACTIVE,
-
-   RARCH_CTL_IS_REMAPS_CORE_ACTIVE,
    RARCH_CTL_SET_REMAPS_CORE_ACTIVE,
-
-   RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE,
    RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE,
-
-   RARCH_CTL_IS_REMAPS_GAME_ACTIVE,
    RARCH_CTL_SET_REMAPS_GAME_ACTIVE,
 #endif
 
@@ -103,10 +87,6 @@ enum rarch_ctl_state
    RARCH_CTL_SET_MISSING_BIOS,
    RARCH_CTL_UNSET_MISSING_BIOS,
 
-   RARCH_CTL_IS_GAME_OPTIONS_ACTIVE,
-   RARCH_CTL_IS_FOLDER_OPTIONS_ACTIVE,
-
-   RARCH_CTL_IS_PAUSED,
    RARCH_CTL_SET_PAUSED,
 
    RARCH_CTL_SET_SHUTDOWN,
@@ -127,7 +107,6 @@ enum rarch_ctl_state
    RARCH_CTL_CORE_OPTION_PREV,
    RARCH_CTL_CORE_OPTION_NEXT,
    RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY,
-   RARCH_CTL_CORE_IS_RUNNING,
 
    /* BSV Movie */
    RARCH_CTL_BSV_MOVIE_IS_INITED
@@ -272,6 +251,13 @@ typedef struct retro_callbacks
    retro_input_poll_t poll_cb;
 } retro_callbacks_t;
 
+enum rarch_main_wrap_flags
+{
+   RARCH_MAIN_WRAP_FLAG_VERBOSE    = (1 << 0),
+   RARCH_MAIN_WRAP_FLAG_NO_CONTENT = (1 << 1),
+   RARCH_MAIN_WRAP_FLAG_TOUCHED    = (1 << 2)
+};
+
 struct rarch_main_wrap
 {
    char **argv;
@@ -281,9 +267,7 @@ struct rarch_main_wrap
    const char *config_path;
    const char *libretro_path;
    int argc;
-   bool verbose;
-   bool no_content;
-   bool touched;
+   uint8_t flags;
 };
 
 typedef struct rarch_resolution
@@ -362,6 +346,14 @@ typedef struct content_file_list
    size_t size;
 } content_file_list_t;
 
+enum content_state_flags
+{
+   CONTENT_ST_FLAG_IS_INITED                  = (1 << 0),
+   CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT = (1 << 1),
+   CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT     = (1 << 2),
+   CONTENT_ST_FLAG_PENDING_ROM_CRC            = (1 << 3)
+};
+
 typedef struct content_state
 {
    char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
@@ -373,16 +365,12 @@ typedef struct content_state
    int pending_subsystem_id;
    unsigned pending_subsystem_rom_id;
    uint32_t rom_crc;
+   uint8_t flags;
 
    char companion_ui_crc32[32];
    char pending_subsystem_ident[255];
    char pending_rom_crc_path[PATH_MAX_LENGTH];
    char companion_ui_db_name[PATH_MAX_LENGTH];
-
-   bool is_inited;
-   bool core_does_not_need_content;
-   bool pending_subsystem_init;
-   bool pending_rom_crc;
 } content_state_t;
 
 RETRO_END_DECLS

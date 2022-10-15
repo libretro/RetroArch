@@ -1500,6 +1500,7 @@ void gfx_widgets_frame(void *data)
    gfx_display_t            *p_disp = (gfx_display_t*)video_info->disp_userdata;
    gfx_display_ctx_driver_t *dispctx= p_disp->dispctx;
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)video_info->widgets_userdata;
+   bool fps_show                    = video_info->fps_show;
    bool framecount_show             = video_info->framecount_show;
    bool memory_show                 = video_info->memory_show;
    bool core_status_msg_show        = video_info->core_status_msg_show;
@@ -1507,12 +1508,12 @@ void gfx_widgets_frame(void *data)
    unsigned video_width             = video_info->width;
    unsigned video_height            = video_info->height;
    bool widgets_is_paused           = video_info->widgets_is_paused;
-   bool fps_show                    = video_info->fps_show;
    bool widgets_is_fastforwarding   = video_info->widgets_is_fast_forwarding;
    bool widgets_is_rewinding        = video_info->widgets_is_rewinding;
    bool runloop_is_slowmotion       = video_info->runloop_is_slowmotion;
    bool menu_screensaver_active     = video_info->menu_screensaver_active;
-   bool notifications_hidden        = video_info->notifications_hidden;
+   bool notifications_hidden        = video_info->notifications_hidden ||
+         video_info->msg_queue_delay;
    int top_right_x_advance          = video_width;
 
    p_dispwidget->gfx_widgets_frame_count++;

@@ -228,7 +228,8 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
    frontend_driver_install_signal_handler();
 
 #ifdef HAVE_MENU
-   if (config_get_ptr()->bools.video_ctx_scaling && !menu_state_get_ptr()->alive)
+   if (      config_get_ptr()->bools.video_ctx_scaling 
+         && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
    {
        drm->fb_width  = av_info->geometry.base_width;
        drm->fb_height = av_info->geometry.base_height;
@@ -277,7 +278,8 @@ static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
    settings_t *settings = config_get_ptr();
    bool use_ctx_scaling = settings->bools.video_ctx_scaling;
 
-   if (use_ctx_scaling && !menu_state_get_ptr()->alive)
+   if (      use_ctx_scaling 
+         && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
    {
       struct retro_system_av_info* 
          av_info  = video_viewport_get_system_av_info();

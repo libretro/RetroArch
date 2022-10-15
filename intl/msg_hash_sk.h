@@ -2456,6 +2456,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
    "Všetko"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW,
+   "Zobrazenie"
+   )
 
 /* Playlist > Playlist Item */
 

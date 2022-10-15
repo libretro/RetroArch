@@ -797,35 +797,35 @@ uint8_t *command_memory_get_pointer(
 
 bool command_get_status(command_t *cmd, const char* arg)
 {
-   char reply[4096]            = {0};
-   bool contentless            = false;
-   bool is_inited              = false;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   char reply[4096];
+   uint8_t flags                  = content_get_flags();
 
-   content_get_status(&contentless, &is_inited);
-
-   if (!is_inited)
-       strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
-   else
+   if (flags & CONTENT_ST_FLAG_IS_INITED)
    {
-       /* add some content info */
-       const char *status       = "PLAYING";
-       const char *content_name = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
-       int content_crc32        = content_get_crc();
-       const char* system_id    = NULL;
-       core_info_t *core_info   = NULL;
+      /* add some content info */
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+      const char *status          = "PLAYING";
+      const char *content_name    = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
+      int content_crc32           = content_get_crc();
+      const char* system_id       = NULL;
+      core_info_t *core_info      = NULL;
 
-       core_info_get_current_core(&core_info);
+      reply[0]                    = '\0';
 
-       if (runloop_st->paused)
-          status                = "PAUSED";
-       if (core_info)
-          system_id             = core_info->system_id;
-       if (!system_id)
-          system_id             = runloop_st->system.info.library_name;
+      core_info_get_current_core(&core_info);
 
-       snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n", status, system_id, content_name, content_crc32);
+      if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+         status                   = "PAUSED";
+      if (core_info)
+         system_id                = core_info->system_id;
+      if (!system_id)
+         system_id                = runloop_st->system.info.library_name;
+
+      snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n",
+            status, system_id, content_name, content_crc32);
    }
+   else
+       strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
 
    cmd->replier(cmd, reply, strlen(reply));
 
@@ -1529,13 +1529,13 @@ bool command_event_save_core_config(
             sizeof(config_path));
    }
 
-   if (runloop_st->overrides_active)
+   if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
    {
       /* Overrides block config file saving,
        * make it appear as overrides weren't enabled
        * for a manual save. */
-      runloop_st->overrides_active      = false;
-      overrides_active                  = true;
+      runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+      overrides_active   = true;
    }
 
 #ifdef HAVE_CONFIGFILE
@@ -1546,7 +1546,10 @@ bool command_event_save_core_config(
       runloop_msg_queue_push(msg, 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-   runloop_st->overrides_active = overrides_active;
+   if (overrides_active)
+      runloop_st->flags |=  RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+   else
+      runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 
    return true;
 }
@@ -1584,7 +1587,7 @@ void command_event_save_current_config(enum override_type type)
                strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
                /* set overrides to active so the original config can be
                   restored after closing content */
-               runloop_st->overrides_active = true;
+               runloop_st->flags |= RUNLOOP_FLAG_OVERRIDES_ACTIVE;
             }
             else
                strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
@@ -1720,7 +1723,7 @@ bool command_event_disk_control_append_image(
       return false;
 
 #ifdef HAVE_THREADS
-   if (runloop_st->use_sram)
+   if (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
       autosave_deinit();
 #endif
 
@@ -1779,7 +1782,7 @@ void command_event_reinit(const int flags)
    p_disp->flags |= GFX_DISP_FLAG_FB_DIRTY;
    if (video_fullscreen)
       video_driver_hide_mouse();
-   if (     menu_st->alive 
+   if (     (menu_st->flags & MENU_ST_FLAG_ALIVE)
          && video_st->current_video->set_nonblock_state)
       video_st->current_video->set_nonblock_state(
             video_st->data, false,

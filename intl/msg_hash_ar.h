@@ -4472,6 +4472,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
    "حسب اسم النظام"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW,
+   "عرض"
+   )
 
 /* Playlist > Playlist Item */
 

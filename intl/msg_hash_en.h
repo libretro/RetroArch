@@ -1244,6 +1244,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
    "By Art-style"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
+   "Enter name of the new view"
+   )
 
 /* Playlist > Playlist Item */
 

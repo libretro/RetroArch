@@ -545,7 +545,7 @@ bool take_screenshot(
       bool savestate, bool has_valid_framebuffer,
       bool fullpath, bool use_thread)
 {
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   uint32_t runloop_flags      = runloop_get_flags();
    settings_t *settings        = config_get_ptr();
    bool video_gpu_screenshot   = settings->bools.video_gpu_screenshot;
    bool is_paused              = false;
@@ -557,13 +557,10 @@ bool take_screenshot(
 
    /* Avoid GPU screenshots with savestates */
    if (supports_viewport_read && video_gpu_screenshot && !savestate)
-      prefer_viewport_read = true;
+      prefer_viewport_read     = true;
 
-   if (runloop_st)
-   {
-      is_paused                = runloop_st->paused;
-      is_idle                  = runloop_st->idle;
-   }
+   is_paused                   = runloop_flags & RUNLOOP_FLAG_PAUSED;
+   is_idle                     = runloop_flags & RUNLOOP_FLAG_IDLE;
 
    /* No way to infer screenshot directory. */
    if (     string_is_empty(screenshot_dir)

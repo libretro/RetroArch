@@ -2257,6 +2257,14 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
+   MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER,
+   MENU_ENUM_LABEL_EXPLORE_VIEW,
+   MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW,
+   MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
+   MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
+   MENU_ENUM_LABEL_EXPLORE_VIEW_EXISTS,
+   MENU_ENUM_LABEL_EXPLORE_VIEW_SAVED,
+   MENU_ENUM_LABEL_EXPLORE_VIEW_DELETED,
 
    /* Content information settings */
    MENU_LABEL(CONTENT_INFO_LABEL),
@@ -2911,6 +2919,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
 
    MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN,
+   MENU_ENUM_LABEL_VALUE_LANG_BRITISH_ENGLISH,
    MENU_ENUM_LABEL_VALUE_LANG_CZECH,
    MENU_ENUM_LABEL_VALUE_LANG_DANISH,
    MENU_ENUM_LABEL_VALUE_LANG_SWEDISH,
@@ -3628,6 +3637,9 @@ int msg_hash_get_help_val_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_ca(enum msg_hash_enums msg);
 int msg_hash_get_help_ca_enum(enum msg_hash_enums msg, char *s, size_t len);
+
+const char *msg_hash_to_str_en(enum msg_hash_enums msg);
+int msg_hash_get_help_en_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);
 
