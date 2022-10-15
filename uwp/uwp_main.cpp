@@ -456,7 +456,7 @@ void App::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^
 		content_state_t *p_content = content_state_get_ptr();
 		char *currentdriver        = settings->arrays.video_driver;
 		if (     strcmpi(currentdriver, "gl") == 0 
-            && !p_content->is_inited)
+            && !p_content->flags & CONTENT_ST_FLAG_IS_INITED)
 		{
 			/* Set driver to default */
 			configuration_set_string(settings,

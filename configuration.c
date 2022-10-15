@@ -3254,6 +3254,45 @@ static void video_driver_load_settings(global_t *global,
 }
 #endif
 
+static void check_verbosity_settings(config_file_t *conf,
+      settings_t *settings)
+{
+   unsigned tmp_uint                               = 0;
+   bool tmp_bool                                   = false;
+
+   /* Make sure log_to_file is true if 'log-file' command line argument was used. */
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL))
+   {
+      configuration_set_bool(settings, settings->bools.log_to_file, true);
+   }
+   else
+   {
+      /* Make sure current 'log_to_file' is effective */
+      if (config_get_bool(conf, "log_to_file", &tmp_bool))
+         configuration_set_bool(settings, settings->bools.log_to_file, tmp_bool);
+   }
+
+   /* Set frontend log level */
+   if (config_get_uint(conf, "frontend_log_level", &tmp_uint))
+      verbosity_set_log_level(tmp_uint);
+
+   /* Set verbosity according to config only if command line argument was not used. */
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
+   {
+      verbosity_enable();
+   }
+   else
+   {
+      if (config_get_bool(conf, "log_verbosity", &tmp_bool))
+      {
+         if (tmp_bool)
+            verbosity_enable();
+         else
+            verbosity_disable();
+      }
+   }
+}
+
 /**
  * config_load:
  * @path                : path to be read from.
@@ -3291,6 +3330,7 @@ static bool config_load_file(global_t *global,
    struct config_array_setting *array_settings     = NULL;
    struct config_path_setting *path_settings       = NULL;
    config_file_t *conf                             = path ? config_file_new_from_path_to_string(path) : open_default_config_file();
+   uint16_t rarch_flags                            = retroarch_get_flags();
 
    tmp_str[0]                                      = '\0';
 
@@ -3310,6 +3350,17 @@ static bool config_load_file(global_t *global,
    array_settings                                  = populate_settings_array (settings, &array_settings_size);
    path_settings                                   = populate_settings_path  (settings, &path_settings_size);
 
+   /* Initialize verbosity settings */
+   check_verbosity_settings(conf, settings);
+
+   if (!first_load)
+   {
+      if (!path)
+         RARCH_LOG("[Config]: Loading default config.\n");
+      else
+         RARCH_LOG("[Config]: Loading config: \"%s\".\n", path);
+   }
+
    if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
    {
       /* Don't destroy append_config_path, store in temporary
@@ -3324,12 +3375,18 @@ static bool config_load_file(global_t *global,
       {
          bool result = config_append_file(conf, extra_path);
 
-         RARCH_LOG("[Config]: Appending config \"%s\".\n", extra_path);
+         if (!first_load)
+         {
+            RARCH_LOG("[Config]: Appending config: \"%s\".\n", extra_path);
 
-         if (!result)
-            RARCH_ERR("[Config]: Failed to append config \"%s\".\n", extra_path);
+            if (!result)
+               RARCH_ERR("[Config]: Failed to append config: \"%s\".\n", extra_path);
+         }
          extra_path = strtok_r(NULL, "|", &save);
       }
+
+      /* Re-check verbosity settings */
+      check_verbosity_settings(conf, settings);
    }
 
 #if 0
@@ -3343,7 +3400,7 @@ static bool config_load_file(global_t *global,
 
    /* Overrides */
 
-   if (retroarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
+   if (rarch_flags & RARCH_FLAGS_HAS_SET_USERNAME)
       override_username = strdup(settings->paths.username);
 
    /* Boolean settings */
@@ -3367,28 +3424,6 @@ static bool config_load_file(global_t *global,
                settings->bools.network_remote_enable_user[i], tmp_bool);
    }
 #endif
-   /* Set verbosity according to config only if the 'v' command line argument was not used
-    * or if it is not the first config load. */
-   if (config_get_bool(conf, "log_verbosity", &tmp_bool) &&
-      (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL) ||
-      !first_load))
-   {
-      if (tmp_bool)
-         verbosity_enable();
-      else
-         verbosity_disable();
-   }
-   /* On first config load, make sure log_to_file is true if 'log-file' command line
-    * argument was used. */
-   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL) &&
-      first_load)
-   {
-      configuration_set_bool(settings,settings->bools.log_to_file,true);
-   }
-   if (config_get_uint(conf, "frontend_log_level", &tmp_uint))
-   {
-      verbosity_set_log_level(tmp_uint);
-   }
 
    /* Integer settings */
 
@@ -3507,7 +3542,8 @@ static bool config_load_file(global_t *global,
 
    /* Post-settings load */
 
-   if (retroarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL) && override_username)
+   if (     (rarch_flags & RARCH_FLAGS_HAS_SET_USERNAME)
+         && (override_username))
    {
       configuration_set_string(settings,
             settings->paths.username,
@@ -3906,14 +3942,33 @@ bool config_load_override(void *data)
          ".cfg",
          sizeof(core_path));
 
+   /* Prevent "--appendconfig" from being ignored */
+   if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
+      should_append = true;
+
    /* per-core overrides */
    /* Create a new config file from core_path */
    if (path_is_valid(core_path))
    {
+      char tmp_path[PATH_MAX_LENGTH + 1];
+
       RARCH_LOG("[Overrides]: Core-specific overrides found at \"%s\".\n",
             core_path);
 
-      path_set(RARCH_PATH_CONFIG_APPEND, core_path);
+      if (should_append)
+      {
+         size_t _len      = strlcpy(tmp_path,
+               path_get(RARCH_PATH_CONFIG_APPEND),
+               sizeof(tmp_path));
+         tmp_path[_len  ] = '|';
+         tmp_path[_len+1] = '\0';
+         strlcat(tmp_path, core_path, sizeof(tmp_path));
+         RARCH_LOG("[Overrides]: Core-specific overrides stacking on top of previous overrides.\n");
+      }
+      else
+         strlcpy(tmp_path, core_path, sizeof(tmp_path));
+
+      path_set(RARCH_PATH_CONFIG_APPEND, tmp_path);
 
       should_append = true;
    }
@@ -4174,19 +4229,11 @@ success:
 static void config_parse_file(global_t *global)
 {
    const char *config_path = path_get(RARCH_PATH_CONFIG);
-   if (path_is_empty(RARCH_PATH_CONFIG))
-   {
-      RARCH_LOG("[Config]: Loading default config.\n");
-   }
-   else
-       RARCH_LOG("[Config]: Loading config from: \"%s\".\n", config_path);
 
+   if (!config_load_file(global, config_path, config_st))
    {
-      if (!config_load_file(global, config_path, config_st))
-      {
-         RARCH_ERR("[Config]: Couldn't find config at path: \"%s\".\n",
-               config_path);
-      }
+      RARCH_ERR("[Config]: Config not found at: \"%s\".\n",
+            config_path);
    }
 }
 
@@ -4594,6 +4641,7 @@ bool config_save_file(const char *path)
    struct config_float_setting     *float_settings   = NULL;
    struct config_array_setting     *array_settings   = NULL;
    struct config_path_setting     *path_settings     = NULL;
+   uint32_t flags                                    = runloop_get_flags();
    config_file_t                              *conf  = config_file_new_from_path_to_string(path);
    settings_t                              *settings = config_st;
    global_t *global                                  = global_get_ptr();
@@ -4608,7 +4656,7 @@ bool config_save_file(const char *path)
    if (!conf)
       conf = config_file_new_alloc();
 
-   if (!conf || retroarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   if (!conf || (flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE))
    {
       if (conf)
          config_file_free(conf);

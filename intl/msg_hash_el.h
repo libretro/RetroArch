@@ -3204,6 +3204,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
    "Βάσει Όνομα Συστήματος"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW,
+   "Προβολή"
+   )
 
 /* Playlist > Playlist Item */
 

@@ -2592,7 +2592,8 @@ const char *retroarch_get_shader_preset(void)
    bool video_shader_enable       = settings->bools.video_shader_enable;
    unsigned video_shader_delay    = settings->uints.video_shader_delay;
    bool auto_shaders_enable       = settings->bools.auto_shaders_enable;
-   bool cli_shader_disable        = video_st->cli_shader_disable;
+   bool cli_shader_disable        = video_st->flags &
+      VIDEO_FLAG_CLI_SHADER_DISABLE;
 
    if (!video_shader_enable)
       return NULL;
@@ -2608,9 +2609,10 @@ const char *retroarch_get_shader_preset(void)
       return runloop_st->runtime_shader_preset_path;
 
    /* load auto-shader once, --set-shader works like a global auto-shader */
-   if (video_st->shader_presets_need_reload && !cli_shader_disable)
+   if (     (video_st->flags & VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD) 
+         && !cli_shader_disable)
    {
-      video_st->shader_presets_need_reload = false;
+      video_st->flags &= ~VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
 
       if (video_shader_is_supported(
                video_shader_parse_type(video_st->cli_shader_path)))

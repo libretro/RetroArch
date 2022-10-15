@@ -2046,7 +2046,10 @@ void input_poll_overlay(
          (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_TOUCHED),
          input_overlay_show_inputs_port);
 
-   input_st->block_pointer_input = button_pressed;
+   if (button_pressed)
+      input_st->flags |=  INP_FLAG_BLOCK_POINTER_INPUT;
+   else
+      input_st->flags &= ~INP_FLAG_BLOCK_POINTER_INPUT;
 
    if (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_NONE)
       button_pressed = false;
@@ -3166,15 +3169,13 @@ void input_driver_init_command(
 #ifdef HAVE_NETWORK_CMD
    if (input_network_cmd_enable)
    {
-      input_st->command[1] = command_network_new(network_cmd_port);
-      if (!input_st->command[1])
+      if (!(input_st->command[1] = command_network_new(network_cmd_port)))
          RARCH_ERR("Failed to initialize the network command interface.\n");
    }
 #endif
 
 #ifdef HAVE_LAKKA
-   input_st->command[2] = command_uds_new();
-   if (!input_st->command[2])
+   if (!(input_st->command[2] = command_uds_new()))
       RARCH_ERR("Failed to initialize the UDS command interface.\n");
 #endif
 }
@@ -3344,7 +3345,8 @@ static void input_overlay_loaded(retro_task_t *task,
    {
 #ifdef HAVE_MENU
       /* We can't display when the menu is up */
-      if (data->hide_in_menu && menu_state_get_ptr()->alive)
+      if (      data->hide_in_menu 
+            && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
          goto abort_load;
 #endif
 
@@ -3460,7 +3462,8 @@ void input_overlay_init(void)
    /* Cancel load if 'hide_in_menu' is enabled and
     * menu is currently active */
    if (overlay_hide_in_menu)
-      load_enabled = load_enabled && !menu_state_get_ptr()->alive;
+      load_enabled = load_enabled && !(menu_state_get_ptr()->flags &
+            MENU_ST_FLAG_ALIVE);
 #endif
 
    /* Cancel load if 'hide_when_gamepad_connected' is
@@ -3568,19 +3571,19 @@ void input_keys_pressed(
                sec_joypad,
                joypad_info,
                &binds[port],
-               input_st->keyboard_mapping_blocked,
+               input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                port, RETRO_DEVICE_JOYPAD, 0,
                RARCH_ENABLE_HOTKEY))
       {
          if (input_st->input_hotkey_block_counter < input_hotkey_block_delay)
             input_st->input_hotkey_block_counter++;
          else
-            input_st->block_libretro_input    = true;
+            input_st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;
       }
       else
       {
          input_st->input_hotkey_block_counter = 0;
-         input_st->block_hotkey               = true;
+         input_st->flags |= INP_FLAG_BLOCK_HOTKEY;
       }
    }
    if (!is_menu && binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
@@ -3602,10 +3605,10 @@ void input_keys_pressed(
                   sec_joypad,
                   joypad_info,
                   &binds[port],
-                  input_st->keyboard_mapping_blocked,
+                  input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                   port,
                   RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
-            input_st->block_hotkey = false;
+            input_st->flags &= ~INP_FLAG_BLOCK_HOTKEY;
       }
    }
 
@@ -3613,14 +3616,14 @@ void input_keys_pressed(
       int16_t ret = 0;
 
       /* Check the libretro input first */
-      if (!input_st->block_libretro_input)
+      if (!(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT))
          ret = input_state_wrap(
                input_st->current_driver,
                input_st->current_data,
                input_st->primary_joypad,
                sec_joypad,
                joypad_info, &binds[port],
-               input_st->keyboard_mapping_blocked,
+               input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                port, RETRO_DEVICE_JOYPAD, 0,
                RETRO_DEVICE_ID_JOYPAD_MASK);
 
@@ -3637,7 +3640,7 @@ void input_keys_pressed(
    }
 
    /* Check the hotkeys */
-   if (input_st->block_hotkey)
+   if (input_st->flags & INP_FLAG_BLOCK_HOTKEY)
    {
       for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
       {
@@ -3662,7 +3665,7 @@ void input_keys_pressed(
                   sec_joypad,
                   joypad_info,
                   &binds[port],
-                  input_st->keyboard_mapping_blocked,
+                  input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                   port, RETRO_DEVICE_JOYPAD, 0, i);
          if (     bit_pressed
                || BIT64_GET(lifecycle_state, i)
@@ -3734,7 +3737,8 @@ int16_t input_state_device(
                    BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, id))
                {
 #ifdef HAVE_MENU
-                  bool menu_driver_alive        = menu_state_get_ptr()->alive;
+                  bool menu_driver_alive        = menu_state_get_ptr()->flags &
+MENU_ST_FLAG_ALIVE;
 #else
                   bool menu_driver_alive        = false;
 #endif
@@ -3998,7 +4002,7 @@ int16_t input_state_device(
       case RETRO_DEVICE_LIGHTGUN:
       case RETRO_DEVICE_POINTER:
 
-         if (input_st->block_pointer_input)
+         if (input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT)
             break;
 
          if (id < RARCH_FIRST_META_KEY)
@@ -4055,7 +4059,7 @@ void input_driver_poll(void)
 
    input_st->turbo_btns.count++;
 
-   if (input_st->block_libretro_input)
+   if (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
    {
       for (i = 0; i < max_users; i++)
          input_st->turbo_btns.frame_enable[i] = 0;
@@ -4079,7 +4083,7 @@ void input_driver_poll(void)
                sec_joypad,
                &joypad_info[i],
                (*input_st->libretro_input_binds),
-               input_st->keyboard_mapping_blocked,
+               input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                (unsigned)i,
                RETRO_DEVICE_JOYPAD,
                0,
@@ -4112,7 +4116,7 @@ void input_driver_poll(void)
       }
 
       input_poll_overlay(
-            input_st->keyboard_mapping_blocked,
+            input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
             settings,
             input_st->overlay_ptr,
             input_st->overlay_visibility,
@@ -4123,7 +4127,7 @@ void input_driver_poll(void)
 #endif
 
 #ifdef HAVE_MENU
-   if (!menu_state_get_ptr()->alive)
+   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
 #endif
    if (input_remap_binds_enable)
    {
@@ -4177,7 +4181,7 @@ void input_driver_poll(void)
                         sec_joypad,
                         &joypad_info[i],
                         (*input_st->libretro_input_binds),
-                        input_st->keyboard_mapping_blocked,
+                        input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                         (unsigned)i, RETRO_DEVICE_JOYPAD,
                         0, RETRO_DEVICE_ID_JOYPAD_MASK);
 
@@ -4761,7 +4765,7 @@ void bsv_movie_frame_rewind(void)
 bool bsv_movie_init(input_driver_state_t *input_st)
 {
    bsv_movie_t *state = NULL;
-   if (input_st->bsv_movie_state.movie_start_playback)
+   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK)
    {
       const char *starting_movie_str = NULL;
       if (!(state = bsv_movie_init_internal(
@@ -4774,8 +4778,8 @@ bool bsv_movie_init(input_driver_state_t *input_st)
          return false;
       }
 
-      input_st->bsv_movie_state_handle         = state;
-      input_st->bsv_movie_state.movie_playback = true;
+      input_st->bsv_movie_state_handle = state;
+      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_PLAYBACK;
       starting_movie_str                       =
          msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK);
 
@@ -4786,7 +4790,7 @@ bool bsv_movie_init(input_driver_state_t *input_st)
 
       return true;
    }
-   else if (input_st->bsv_movie_state.movie_start_recording)
+   else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_RECORDING)
    {
       char msg[8192];
       const char *movie_rec_str = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
@@ -4833,11 +4837,11 @@ bool bsv_movie_check(input_driver_state_t *input_st,
    if (!input_st->bsv_movie_state_handle)
       return runloop_check_movie_init(input_st, settings);
 
-   if (input_st->bsv_movie_state.movie_playback)
+   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
    {
       const char *movie_playback_end_str = NULL;
       /* Checks if movie is being played back. */
-      if (!input_st->bsv_movie_state.movie_end)
+      if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END))
          return false;
       movie_playback_end_str = msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED);
       runloop_msg_queue_push(
@@ -4847,9 +4851,9 @@ bool bsv_movie_check(input_driver_state_t *input_st,
 
       bsv_movie_deinit(input_st);
 
-      input_st->bsv_movie_state.movie_end      = false;
-      input_st->bsv_movie_state.movie_playback = false;
-
+      input_st->bsv_movie_state.flags &= ~(
+              BSV_FLAG_MOVIE_END
+            | BSV_FLAG_MOVIE_PLAYBACK);
       return true;
    }
 
@@ -4889,9 +4893,11 @@ int16_t input_state_internal(unsigned port, unsigned device,
 #ifdef HAVE_MENU
    struct menu_state *menu_st              = menu_state_get_ptr();
    bool input_blocked                      = (menu_st->input_driver_flushing_input > 0) ||
-                                             input_st->block_libretro_input;
+                                             (input_st->flags &
+INP_FLAG_BLOCK_LIBRETRO_INPUT);
 #else
-   bool input_blocked                      = input_st->block_libretro_input;
+   bool input_blocked                      = (input_st->flags &
+INP_FLAG_BLOCK_LIBETRO_INPUT);
 #endif
    bool bitmask_enabled                    = false;
    unsigned max_users                      = settings->uints.input_max_users;
@@ -4947,7 +4953,7 @@ int16_t input_state_internal(unsigned port, unsigned device,
             sec_joypad,
             &joypad_info,
             (*input_st->libretro_input_binds),
-            input_st->keyboard_mapping_blocked,
+            input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
             mapped_port, device, idx, id);
 
       if ((device == RETRO_DEVICE_ANALOG) &&
@@ -5096,7 +5102,7 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
          return swap_if_big16(bsv_result);
       }
 
-      input_st->bsv_movie_state.movie_end = true;
+      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
    }
 #endif
 
@@ -5199,14 +5205,14 @@ void input_remapping_cache_global_config(void)
       input_st->old_libretro_device[i]  = device;
    }
 
-   input_st->old_analog_dpad_mode_set = true;
-   input_st->old_libretro_device_set  = true;
+   input_st->flags |= INP_FLAG_OLD_ANALOG_DPAD_MODE_SET
+                    | INP_FLAG_OLD_LIBRETRO_DEVICE_SET;
 }
 
 void input_remapping_enable_global_config_restore(void)
 {
    input_driver_state_t *input_st   = &input_driver_st;
-   input_st->remapping_cache_active = true;
+   input_st->flags |= INP_FLAG_REMAPPING_CACHE_ACTIVE;
 }
 
 void input_remapping_restore_global_config(bool clear_cache)
@@ -5215,20 +5221,20 @@ void input_remapping_restore_global_config(bool clear_cache)
    settings_t *settings           = config_get_ptr();
    input_driver_state_t *input_st = &input_driver_st;
 
-   if (!input_st->remapping_cache_active)
+   if (!(input_st->flags & INP_FLAG_REMAPPING_CACHE_ACTIVE))
       goto end;
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      if (input_st->old_analog_dpad_mode_set &&
-          (settings->uints.input_analog_dpad_mode[i] !=
+      if ((input_st->flags & INP_FLAG_OLD_ANALOG_DPAD_MODE_SET)
+          && (settings->uints.input_analog_dpad_mode[i] !=
                input_st->old_analog_dpad_mode[i]))
          configuration_set_uint(settings,
                settings->uints.input_analog_dpad_mode[i],
                input_st->old_analog_dpad_mode[i]);
 
-      if (input_st->old_libretro_device_set &&
-          (settings->uints.input_libretro_device[i] !=
+      if (   (input_st->flags & INP_FLAG_OLD_LIBRETRO_DEVICE_SET)
+          && (settings->uints.input_libretro_device[i] !=
                input_st->old_libretro_device[i]))
          configuration_set_uint(settings,
                settings->uints.input_libretro_device[i],
@@ -5237,11 +5243,9 @@ void input_remapping_restore_global_config(bool clear_cache)
 
 end:
    if (clear_cache)
-   {
-      input_st->old_analog_dpad_mode_set = false;
-      input_st->old_libretro_device_set  = false;
-      input_st->remapping_cache_active   = false;
-   }
+      input_st->flags &= ~(INP_FLAG_OLD_ANALOG_DPAD_MODE_SET
+                         | INP_FLAG_OLD_LIBRETRO_DEVICE_SET
+                         | INP_FLAG_REMAPPING_CACHE_ACTIVE);
 }
 
 void input_remapping_update_port_map(void)
@@ -5291,7 +5295,7 @@ void input_remapping_update_port_map(void)
 
 void input_remapping_deinit(bool save_remap)
 {
-   runloop_state_t *runloop_st             = runloop_state_get_ptr();
+   runloop_state_t *runloop_st  = runloop_state_get_ptr();
    if (runloop_st->name.remapfile)
    {
       if (save_remap)
@@ -5299,10 +5303,10 @@ void input_remapping_deinit(bool save_remap)
 
       free(runloop_st->name.remapfile);
    }
-   runloop_st->name.remapfile              = NULL;
-   runloop_st->remaps_core_active          = false;
-   runloop_st->remaps_content_dir_active   = false;
-   runloop_st->remaps_game_active          = false;
+   runloop_st->name.remapfile   = NULL;
+   runloop_st->flags           &= ~(RUNLOOP_FLAG_REMAPS_CORE_ACTIVE
+                               |    RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE
+                               |    RUNLOOP_FLAG_REMAPS_GAME_ACTIVE);
 }
 
 void input_remapping_set_defaults(bool clear_cache)
@@ -5363,7 +5367,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #endif
 #ifdef HAVE_MENU
    bool display_kb                     = menu_input_dialog_get_display_kb();
-   bool menu_is_alive                  = menu_state_get_ptr()->alive;
+   bool menu_is_alive                  = menu_state_get_ptr()->flags &
+      MENU_ST_FLAG_ALIVE;
    bool menu_input_active              = menu_is_alive &&
          !(settings->bools.menu_unified_controls && !display_kb);
 #endif
@@ -5521,7 +5526,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                      joypad,
                      sec_joypad,
                      &joypad_info, (const retro_keybind_set *)input_config_binds,
-                     input_st->keyboard_mapping_blocked,
+                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      0,
                      RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
                BIT256_SET_PTR(current_bits, ids[i][1]);
@@ -5664,7 +5669,7 @@ void input_keyboard_event(bool down, unsigned code,
     *   explicitly...
     * Otherwise, input is ignored whenever screensaver
     * is active */
-   if (menu_st->screensaver_active)
+   if (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE)
    {
       if (down &&
           (code != RETROK_UNKNOWN) &&
@@ -5686,7 +5691,7 @@ void input_keyboard_event(bool down, unsigned code,
          menu_ctx_environment_t menu_environ;
          menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
          menu_environ.data           = NULL;
-         menu_st->screensaver_active = false;
+         menu_st->flags             &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
          menu_st->input_last_time_us = menu_st->current_time_us;
          menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
       }
@@ -5744,10 +5749,10 @@ void input_keyboard_event(bool down, unsigned code,
       if (down)
          return;
 
-      input_st->keyboard_press_cb                      = NULL;
-      input_st->keyboard_press_data                    = NULL;
-      input_st->keyboard_mapping_blocked               = false;
-      deferred_wait_keys                               = false;
+      input_st->keyboard_press_cb    = NULL;
+      input_st->keyboard_press_data  = NULL;
+      input_st->flags               &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+      deferred_wait_keys             = false;
    }
    else if (input_st->keyboard_press_cb)
    {
@@ -5778,15 +5783,15 @@ void input_keyboard_event(bool down, unsigned code,
       /* Line is complete, can free it now. */
       if (input_st->keyboard_line.buffer)
          free(input_st->keyboard_line.buffer);
-      input_st->keyboard_line.buffer                    = NULL;
-      input_st->keyboard_line.ptr                       = 0;
-      input_st->keyboard_line.size                      = 0;
-      input_st->keyboard_line.cb                        = NULL;
-      input_st->keyboard_line.userdata                  = NULL;
-      input_st->keyboard_line.enabled                   = false;
+      input_st->keyboard_line.buffer       = NULL;
+      input_st->keyboard_line.ptr          = 0;
+      input_st->keyboard_line.size         = 0;
+      input_st->keyboard_line.cb           = NULL;
+      input_st->keyboard_line.userdata     = NULL;
+      input_st->keyboard_line.enabled      = false;
 
       /* Unblock all hotkeys. */
-      input_st->keyboard_mapping_blocked               = false;
+      input_st->flags                     &= ~INP_FLAG_KB_MAPPING_BLOCKED;
    }
    else
    {

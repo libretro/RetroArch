@@ -55,6 +55,7 @@
 #include "../../dynamic.h"
 
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../record/record_driver.h"
 #include "../../verbosity.h"
 #include "../common/gl2_common.h"
@@ -3470,7 +3471,7 @@ static const gfx_ctx_driver_t *gl2_get_context(gl2_t *gl)
    gl->shared_context_use                = video_shared_context
       && hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
-   if (     (libretro_get_shared_context())
+   if (     (runloop_get_flags() & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT)
          && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
       gl->shared_context_use = true;
 

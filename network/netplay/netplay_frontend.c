@@ -3689,8 +3689,8 @@ static void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       /* FIXME: Duplication */
       if (netplay->catch_up)
       {
-         netplay->catch_up = false;
-         input_state_get_ptr()->nonblocking_flag = false;
+         netplay->catch_up             = false;
+	 input_state_get_ptr()->flags &= ~INP_FLAG_NONBLOCKING;
          driver_set_nonblock_state();
       }
       return;
@@ -3882,8 +3882,8 @@ static void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       /* Are we caught up? */
       if (netplay->self_frame_count + 1 >= lo_frame_count)
       {
-         netplay->catch_up = false;
-         input_state_get_ptr()->nonblocking_flag = false;
+         netplay->catch_up             = false;
+         input_state_get_ptr()->flags &= ~INP_FLAG_NONBLOCKING;
          driver_set_nonblock_state();
       }
 
@@ -3910,9 +3910,9 @@ static void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
             if (netplay->catch_up_behind <= cur_behind)
             {
                /* We're definitely falling behind! */
-               netplay->catch_up                       = true;
-               netplay->catch_up_time                  = 0;
-               input_state_get_ptr()->nonblocking_flag = true;
+               netplay->catch_up             = true;
+               netplay->catch_up_time        = 0;
+               input_state_get_ptr()->flags |= INP_FLAG_NONBLOCKING;
                driver_set_nonblock_state();
             }
             else
@@ -7850,7 +7850,7 @@ void input_poll_net(netplay_t *netplay)
    {
       input_driver_state_t *input_st = input_state_get_ptr();
 
-      netplay_poll(netplay, input_st->block_libretro_input);
+      netplay_poll(netplay, input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT);
    }
 }
 
@@ -9112,7 +9112,8 @@ static void gfx_widget_netplay_chat_iterate(void *user_data,
       struct netplay_chat *chat     = &netplay->chat;
       settings_t          *settings = config_get_ptr();
 #ifdef HAVE_MENU
-      bool menu_open                = menu_state_get_ptr()->alive;
+      bool menu_open                = menu_state_get_ptr()->flags &
+         MENU_ST_FLAG_ALIVE;
 #endif
       bool fade_chat                = settings->bools.netplay_fade_chat;
 
@@ -9240,7 +9241,8 @@ static void gfx_widget_netplay_ping_iterate(void *user_data,
    netplay_t          *netplay  = net_st->data;
    settings_t         *settings = config_get_ptr();
 #ifdef HAVE_MENU
-   bool menu_open               = menu_state_get_ptr()->alive;
+   bool menu_open               = menu_state_get_ptr()->flags &
+      MENU_ST_FLAG_ALIVE;
 #endif
    bool show_ping               = settings->bools.netplay_ping_show;
 

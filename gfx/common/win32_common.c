@@ -857,9 +857,9 @@ static void win32_save_position(void)
       video_driver_state_t *video_st = video_state_get_ptr();
       bool video_fullscreen          = settings->bools.video_fullscreen;
 
-      if (  !video_fullscreen && 
-            !video_st->force_fullscreen &&
-            !video_st->is_switching_display_mode)
+      if (     !video_fullscreen
+            && !(video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN)
+            && !(video_st->flags & VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE))
       {
          bool ui_menubar_enable = settings->bools.ui_menubar_enable;
          bool window_show_decor = settings->bools.video_window_show_decorations;
@@ -1056,11 +1056,11 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
          break;
 #ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
-         if (input_state_get_ptr()->grab_mouse_state)
+	 if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(true);
          break;
       case WM_KILLFOCUS:
-         if (input_state_get_ptr()->grab_mouse_state)
+	 if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(false);
          break;
 #endif
@@ -1133,7 +1133,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
          break;
       case WM_SETFOCUS:
 #ifdef HAVE_CLIP_WINDOW
-         if (input_state_get_ptr()->grab_mouse_state)
+	 if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(true);
 #endif
 #if !defined(_XBOX)
@@ -1143,7 +1143,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
          break;
       case WM_KILLFOCUS:
 #ifdef HAVE_CLIP_WINDOW
-         if (input_state_get_ptr()->grab_mouse_state)
+	 if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(false);
 #endif
 #if !defined(_XBOX)
@@ -1273,11 +1273,11 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
          break;
 #ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
-         if (input_state_get_ptr()->grab_mouse_state)
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(true);
          break;
       case WM_KILLFOCUS:
-         if (input_state_get_ptr()->grab_mouse_state)
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(false);
          break;
 #endif

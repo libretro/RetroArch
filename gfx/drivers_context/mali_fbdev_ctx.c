@@ -55,10 +55,20 @@ typedef struct
    float refresh_rate;
 } mali_ctx_data_t;
 
+#ifndef EGL_OPENGL_ES3_BIT
+#define EGL_OPENGL_ES3_BIT                  0x0040
+#endif
+
+enum gfx_ctx_mali_fbdev_flags
+{
+   GFX_CTX_MALI_FBDEV_FLAG_WAS_THREADED     = (1 << 0),
+   GFX_CTX_MALI_FBDEV_FLAG_HW_CTX_TRIGGER   = (1 << 1),
+   GFX_CTX_MALI_FBDEV_FLAG_RESTART_PENDING  = (1 << 2),
+   GFX_CTX_MALI_FBDEV_FLAG_GLES3            = (1 << 3)
+};
+
 mali_ctx_data_t *gfx_ctx_mali_fbdev_global=NULL;
-bool gfx_ctx_mali_fbdev_was_threaded=false;
-bool gfx_ctx_mali_fbdev_hw_ctx_trigger=false;
-bool gfx_ctx_mali_fbdev_restart_pending=false;
+static uint8_t mali_flags=0;
 
 static int gfx_ctx_mali_fbdev_get_vinfo(void *data)
 {
@@ -162,27 +172,23 @@ static void gfx_ctx_mali_fbdev_destroy_really(void)
 
 static void gfx_ctx_mali_fbdev_maybe_restart(void)
 {
-   runloop_state_t *runloop_st   = runloop_state_get_ptr();
-
-   if (!runloop_st->shutdown_initiated)
+   if (!(runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
       frontend_driver_set_fork(FRONTEND_FORK_RESTART);
 }
 
 /*TODO FIXME
 As egl_destroy does not work properly with libmali (big fps drop after destroy and initialization/creation of new context/surface), it is not used.
-A global pointers is initialized at startup in gfx_ctx_mali_fbdev_init, and returned each time gfx_ctx_mali_fbdev_init is called.
+A global pointer is initialized at startup in gfx_ctx_mali_fbdev_init, and returned each time gfx_ctx_mali_fbdev_init is called.
 Originally gfx_ctx_mali_fbdev_init initialized a new pointer each time (destroyed each time with egl_destroy), and context/surface creation occurred in gfx_ctx_mali_fbdev_set_video_mode.
 With this workaround it's all created once in gfx_ctx_mali_fbdev_init and never destroyed.
-Additional workarounds (RA restart) are applied in gfx_ctx_mali_fbdev_destroy in order to avoid segmentation fault when video threaded switch is activated or on exit from cores requesting gfx_ctx_mali_fbdev_hw_ctx_trigger.
+Additional workarounds (RA restart) are applied in gfx_ctx_mali_fbdev_destroy in order to avoid segmentation fault when video threaded switch is activated or on exit from cores checking GFX_CTX_MALI_FBDEV_FLAG_HW_CTX_TRIGGER flag.
 All these workarounds should be reverted when and if egl_destroy issues in libmali blobs are fixed.
 */
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
-   runloop_state_t *runloop_st   = runloop_state_get_ptr();
-
-   if (runloop_st->shutdown_initiated)
+   if (runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
    {
-      if (!gfx_ctx_mali_fbdev_restart_pending)
+      if (!(mali_flags & GFX_CTX_MALI_FBDEV_FLAG_RESTART_PENDING))
       {
          gfx_ctx_mali_fbdev_destroy_really();
          gfx_ctx_mali_fbdev_clear_screen();
@@ -190,11 +196,11 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
    }
    else
    {
-      if (gfx_ctx_mali_fbdev_hw_ctx_trigger || gfx_ctx_mali_fbdev_was_threaded!=*video_driver_get_threaded())
+      if ((mali_flags & GFX_CTX_MALI_FBDEV_FLAG_HW_CTX_TRIGGER) || (bool)(mali_flags & GFX_CTX_MALI_FBDEV_FLAG_WAS_THREADED)!=*video_driver_get_threaded())
       {
          gfx_ctx_mali_fbdev_destroy_really();
-         gfx_ctx_mali_fbdev_restart_pending=true;
-         if (!gfx_ctx_mali_fbdev_hw_ctx_trigger)
+         mali_flags |= GFX_CTX_MALI_FBDEV_FLAG_RESTART_PENDING;
+         if (!(mali_flags & GFX_CTX_MALI_FBDEV_FLAG_HW_CTX_TRIGGER))
             gfx_ctx_mali_fbdev_maybe_restart();
       }
    }
@@ -218,7 +224,7 @@ static void *gfx_ctx_mali_fbdev_init(void *video_driver)
    EGLint n;
    EGLint major, minor;
    EGLint format;
-   static const EGLint attribs_init[] = {
+   EGLint attribs_init[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
       EGL_BLUE_SIZE, 8,
@@ -228,8 +234,13 @@ static void *gfx_ctx_mali_fbdev_init(void *video_driver)
       EGL_NONE
    };
 
-   static const EGLint attribs_create[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2,
+   if (mali_flags & GFX_CTX_MALI_FBDEV_FLAG_GLES3){
+      attribs_init[1] = EGL_OPENGL_ES3_BIT;
+   }
+   RARCH_LOG("GLES version = %d.\n", (mali_flags & GFX_CTX_MALI_FBDEV_FLAG_GLES3) ? 3 : 2);
+
+   EGLint attribs_create[] = {
+      EGL_CONTEXT_CLIENT_VERSION, (mali_flags & GFX_CTX_MALI_FBDEV_FLAG_GLES3) ? 3 : 2,
       EGL_NONE
    };
 
@@ -253,7 +264,10 @@ static void *gfx_ctx_mali_fbdev_init(void *video_driver)
 #endif
 
    gfx_ctx_mali_fbdev_global=mali;
-   gfx_ctx_mali_fbdev_was_threaded=*video_driver_get_threaded();
+   if (*video_driver_get_threaded())
+          mali_flags |= GFX_CTX_MALI_FBDEV_FLAG_WAS_THREADED;
+   else
+          mali_flags &= ~GFX_CTX_MALI_FBDEV_FLAG_WAS_THREADED;
    return mali;
 
 error:
@@ -278,7 +292,7 @@ static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
 
    *quit   = (bool)frontend_driver_get_signal_handler_state();
 
-   if (gfx_ctx_mali_fbdev_restart_pending)
+   if (mali_flags & GFX_CTX_MALI_FBDEV_FLAG_RESTART_PENDING)
       gfx_ctx_mali_fbdev_maybe_restart();
 }
 
@@ -289,7 +303,7 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
 
    if (video_driver_is_hw_context())
-      gfx_ctx_mali_fbdev_hw_ctx_trigger=true;
+      mali_flags |= GFX_CTX_MALI_FBDEV_FLAG_HW_CTX_TRIGGER;
 
    if (gfx_ctx_mali_fbdev_get_vinfo(mali))
       goto error;
@@ -320,6 +334,12 @@ static enum gfx_ctx_api gfx_ctx_mali_fbdev_get_api(void *data)
 static bool gfx_ctx_mali_fbdev_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   unsigned version;
+   version = major * 100 + minor;
+
+   if (version >= 300)
+      mali_flags |= GFX_CTX_MALI_FBDEV_FLAG_GLES3;
+
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
    return false;

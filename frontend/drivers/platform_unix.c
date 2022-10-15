@@ -1370,9 +1370,9 @@ static void frontend_unix_get_env(int *argc,
 
    if (args)
    {
-      args->touched    = true;
-      args->no_content = false;
-      args->verbose    = false;
+      args->flags     &= ~(RARCH_MAIN_WRAP_FLAG_VERBOSE
+                         | RARCH_MAIN_WRAP_FLAG_NO_CONTENT);
+      args->flags     |=   RARCH_MAIN_WRAP_FLAG_TOUCHED;
       args->sram_path  = NULL;
       args->state_path = NULL;
    }

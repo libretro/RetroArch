@@ -1121,10 +1121,11 @@ void CoreOptionsDialog::buildLayout()
 
             if (!contentLabel.isEmpty())
             {
-               if (!retroarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
-                  label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE);
-               else
+               uint32_t flags = runloop_get_flags();
+               if (flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE)
                   label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE);
+               else
+                  label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE);
 
                if (!label.isEmpty())
                {

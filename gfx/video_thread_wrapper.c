@@ -28,6 +28,7 @@
 #include "font_driver.h"
 
 #include "../retroarch.h"
+#include "../runloop.h"
 #include "../verbosity.h"
 
 static void *video_thread_init_never_call(const video_info_t *video,
@@ -492,12 +493,15 @@ static void video_thread_loop(void *data)
 static bool video_thread_alive(void *data)
 {
    bool ret;
+   uint32_t runloop_flags;
    thread_video_t *thr = (thread_video_t*)data;
 
    if (!thr)
       return false;
+   
+   runloop_flags       = runloop_get_flags();
 
-   if (retroarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
+   if (runloop_flags & RUNLOOP_FLAG_PAUSED)
    {
       thread_packet_t pkt;
       pkt.type = CMD_ALIVE;
