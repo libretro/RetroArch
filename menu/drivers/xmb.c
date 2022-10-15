@@ -67,6 +67,8 @@
 #define XMB_RIBBON_COLS 64
 #define XMB_RIBBON_VERTICES 2*XMB_RIBBON_COLS*XMB_RIBBON_ROWS-2*XMB_RIBBON_COLS
 
+#define XMB_TAB_MAX_LENGTH 255
+
 #ifndef XMB_DELAY
 #define XMB_DELAY 166.66667f
 #endif
@@ -340,6 +342,7 @@ typedef struct xmb_handle
 
    /* size of the current list */
    size_t list_size;
+   size_t tab_selection[XMB_TAB_MAX_LENGTH];
 
    int depth;
    int old_depth;
@@ -2097,12 +2100,27 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
    }
 }
 
+static void xmb_tab_set_selection(void *data)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
+
+   if (xmb)
+   {
+      size_t tab_selection = xmb->tab_selection[xmb->categories_selection_ptr];
+      if (tab_selection)
+      {
+         menu_navigation_set_selection(tab_selection);
+         xmb_selection_pointer_changed(xmb, false);
+      }
+   }
+}
+
 static void xmb_list_switch(xmb_handle_t *xmb)
 {
    gfx_animation_ctx_entry_t anim_entry;
    int dir                        = -1;
    file_list_t *selection_buf     = menu_entries_get_selection_buf_ptr(0);
-   size_t selection               = menu_navigation_get_selection();
+   size_t selection               = 0;
    settings_t       *settings     = config_get_ptr();
    bool menu_horizontal_animation = settings->bools.menu_horizontal_animation;
 
@@ -2111,6 +2129,12 @@ static void xmb_list_switch(xmb_handle_t *xmb)
       dir = 1;
 
    xmb->categories_active_idx += dir;
+
+   /* Restore last selection per tab */
+   xmb_tab_set_selection(xmb);
+
+   /* Selection needs to be taken after tab restore */
+   selection               = menu_navigation_get_selection();
 
    xmb_list_switch_horizontal_list(xmb);
 
@@ -3579,13 +3603,7 @@ static int xmb_draw_item(
          new_alpha = (node->y + scr_margin) / factor;
       /* Bottom */
       else if (i > current)
-         new_alpha = (height - node->y - scr_margin + icon_space) 
-            / factor;
-      /* Rest need to reset after vertical wrap-around */
-      else if (node->x == 0 
-            && node->alpha > 0 
-            && node->alpha != max_alpha)
-         new_alpha = max_alpha;
+         new_alpha = (height - node->y - scr_margin + icon_space) / factor;
 
       /* Limits */
       if (new_alpha < min_alpha)
@@ -3594,7 +3612,7 @@ static int xmb_draw_item(
          new_alpha = max_alpha;
 
       /* Horizontal animation requires breathing room on x-axis */
-      if (new_alpha != node->alpha && node->x > (-icon_space * 2) && node->x < (icon_space * 2))
+      if (new_alpha < node->alpha && node->x > (-icon_space * 2) && node->x < (icon_space * 2))
          node->alpha = node->label_alpha = new_alpha;
    }
 
@@ -6244,6 +6262,9 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->system_tab_end                = 0;
    xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
 
+   for (i = 0; i < XMB_TAB_MAX_LENGTH; i++)
+      xmb->tab_selection[i]           = 0;
+
    if (      settings->bools.menu_content_show_settings 
          && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
@@ -7135,6 +7156,9 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
          break;
       case MENU_LIST_HORIZONTAL:
          xmb->categories_selection_ptr_old = xmb->categories_selection_ptr;
+
+         /* Remember last selection per tab */
+         xmb->tab_selection[xmb->categories_selection_ptr] = selection;
 
          switch (action)
          {
