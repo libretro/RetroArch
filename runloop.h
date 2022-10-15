@@ -246,6 +246,7 @@ struct runloop
 
    runloop_core_status_msg_t core_status_msg;
 
+   unsigned msg_queue_delay;
    unsigned pending_windowed_scale;
    unsigned max_frames;
    unsigned audio_latency;

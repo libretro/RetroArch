@@ -471,6 +471,7 @@ typedef struct video_frame_info
    unsigned black_frame_insertion;
    unsigned fps_update_interval;
    unsigned memory_update_interval;
+   unsigned msg_queue_delay;
 
    float menu_wallpaper_opacity;
    float menu_framebuffer_opacity;
