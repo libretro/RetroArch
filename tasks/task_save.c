@@ -1324,7 +1324,13 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
       state->flags              |= (SAVE_TASK_FLAG_AUTOSAVE |
                                     SAVE_TASK_FLAG_MUTE);
    if (settings->bools.savestate_thumbnail_enable)
-      state->flags              |= SAVE_TASK_FLAG_THUMBNAIL_ENABLE;
+   {
+      /* Delay OSD messages and widgets for a few frames
+       * to prevent GPU screenshots from having notifications */
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+      runloop_st->msg_queue_delay = 10;
+      state->flags               |= SAVE_TASK_FLAG_THUMBNAIL_ENABLE;
+   }
    state->state_slot             = settings->ints.state_slot;
    if (video_driver_cached_frame_has_valid_framebuffer())
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;

@@ -2832,18 +2832,19 @@ VIDEO_FLAG_WIDGETS_FAST_FORWARD;
    video_info->overlay_behind_menu         = false;
 #endif
 
+   video_info->msg_queue_delay             = runloop_st->msg_queue_delay;
    video_info->runloop_is_paused           = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
    video_info->runloop_is_slowmotion       = runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION;
    video_info->fastforward_frameskip       = settings->bools.fastforward_frameskip;
 
    video_info->input_driver_nonblock_state = input_st ?
-      (input_st->flags & INP_FLAG_NONBLOCKING) : false;
+         (input_st->flags & INP_FLAG_NONBLOCKING) : false;
    video_info->input_driver_grab_mouse_state = (input_st->flags &
          INP_FLAG_GRAB_MOUSE_STATE);
    video_info->disp_userdata                 = disp_get_ptr();
 
    video_info->userdata                      =
-VIDEO_DRIVER_GET_PTR_INTERNAL(video_st);
+         VIDEO_DRIVER_GET_PTR_INTERNAL(video_st);
 
 #ifdef HAVE_THREADS
    VIDEO_DRIVER_THREADED_UNLOCK(video_st, is_threaded);
@@ -3958,7 +3959,9 @@ void video_driver_frame(const void *data, unsigned width,
    }
 #endif
 
-   if (runloop_st->msg_queue_size > 0)
+   if (runloop_st->msg_queue_delay > 0)
+      runloop_st->msg_queue_delay--;
+   else if (runloop_st->msg_queue_size > 0)
    {
       /* If widgets are currently enabled, then
        * messages were pushed to the queue before
@@ -3970,12 +3973,12 @@ void video_driver_frame(const void *data, unsigned width,
       if (widgets_active)
       {
          msg_queue_entry_t msg_entry;
-         bool msg_found = false;
+         bool msg_found                  = false;
 
          RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
          msg_found                       = msg_queue_extract(
                &runloop_st->msg_queue, &msg_entry);
-         runloop_st->msg_queue_size = msg_queue_size(
+         runloop_st->msg_queue_size      = msg_queue_size(
                &runloop_st->msg_queue);
          RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
 
@@ -4002,7 +4005,8 @@ void video_driver_frame(const void *data, unsigned width,
          const char *msg                 = NULL;
          RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
          msg                             = msg_queue_pull(&runloop_st->msg_queue);
-         runloop_st->msg_queue_size = msg_queue_size(&runloop_st->msg_queue);
+         runloop_st->msg_queue_size      = msg_queue_size(&runloop_st->msg_queue);
+
          if (msg)
             strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
          RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
