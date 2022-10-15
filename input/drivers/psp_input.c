@@ -441,5 +441,6 @@ input_driver_t input_psp = {
 #endif
 
    NULL,                         /* grab_mouse */
+   NULL,
    NULL
 };

@@ -561,5 +561,6 @@ input_driver_t input_cocoa = {
    cocoa_input_get_capabilities,
    "cocoa",
    NULL,                         /* grab_mouse */
+   NULL,
    NULL
 };

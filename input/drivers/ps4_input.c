@@ -143,5 +143,6 @@ input_driver_t input_ps4 = {
    ps4_input_get_capabilities,
    "ps4",
    NULL,                         /* grab_mouse */
+   NULL,
    NULL
 };

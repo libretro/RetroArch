@@ -209,5 +209,6 @@ input_driver_t input_linuxraw = {
    linuxraw_get_capabilities,
    "linuxraw",
    NULL,                         /* grab_mouse */
-   linux_terminal_grab_stdin
+   linux_terminal_grab_stdin,
+   NULL
 };

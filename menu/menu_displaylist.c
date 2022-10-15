@@ -6249,23 +6249,25 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
          {
-            const char *input_driver_id  = settings->arrays.input_driver;
+            input_driver_t *current_input =
+                  input_state_get_ptr()->current_driver;
 
-            if (string_is_equal(input_driver_id, "android"))
-            {
+            if (current_input->keypress_vibrate)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS,
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
+
+            if (string_is_equal(current_input->ident, "android"))
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
-            }
+
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN,
                      PARSE_ONLY_UINT, false) == 0)
-                  count++;
+               count++;
          }
          break;
       case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:

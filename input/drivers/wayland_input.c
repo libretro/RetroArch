@@ -426,5 +426,6 @@ input_driver_t input_wayland = {
    input_wl_get_capabilities,
    "wayland",
    input_wl_grab_mouse,          /* grab_mouse */
+   NULL,
    NULL
 };

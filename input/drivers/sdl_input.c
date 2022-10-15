@@ -475,6 +475,7 @@ input_driver_t input_sdl = {
    "sdl",
    NULL,                   /* grab_mouse */
 #endif
+   NULL,
    NULL
 };
 

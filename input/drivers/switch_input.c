@@ -948,5 +948,6 @@ input_driver_t input_switch = {
    switch_input_get_capabilities,
    "switch",
    NULL,                            /* grab_mouse */
+   NULL,
    NULL
 };

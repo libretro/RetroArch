@@ -951,5 +951,6 @@ input_driver_t input_ps3 = {
    "ps3",
 
    NULL,                         /* grab_mouse */
+   NULL,
    NULL
 };

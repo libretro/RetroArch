@@ -615,5 +615,6 @@ input_driver_t input_x = {
    x_input_get_capabilities,
    "x",
    x_grab_mouse,
+   NULL,
    NULL
 };

@@ -168,9 +168,9 @@ bool (*engine_lookup_name)(char *buf,
       int *vendorId, int *productId, size_t size, int id);
 void (*engine_handle_dpad)(struct android_app *, AInputEvent*, int, int);
 
-static void android_input_poll_input_gingerbread(android_input_t *android, bool vibrate_on_keypress);
-static void android_input_poll_input_default(android_input_t *android, bool vibrate_on_keypress);
-static void (*android_input_poll_input)(android_input_t *android, bool vibrate_on_keypress);
+static void android_input_poll_input_gingerbread(android_input_t *android);
+static void android_input_poll_input_default(android_input_t *android);
+static void (*android_input_poll_input)(android_input_t *android);
 
 static bool android_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate);
@@ -436,17 +436,6 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_DESTROY:
          android_app->destroyRequested = 1;
          break;
-      case APP_CMD_VIBRATE_KEYPRESS:
-      {
-         JNIEnv *env = (JNIEnv*)jni_thread_getenv();
-
-         if (env && g_android && g_android->doVibrate)
-         {
-            CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
-                  g_android->doVibrate, (jint)-1, (jint)RETRO_RUMBLE_STRONG, (jint)255, (jint)1);
-         }
-         break;
-      }
    }
 }
 
@@ -636,7 +625,7 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
 
 static INLINE void android_input_poll_event_type_motion(
       android_input_t *android, AInputEvent *event,
-      int port, int source, bool vibrate_on_keypress)
+      int port, int source)
 {
    int btn;
    int getaction     = AMotionEvent_getAction(event);
@@ -706,9 +695,6 @@ static INLINE void android_input_poll_event_type_motion(
    {
       int      pointer_max     = MIN(
             AMotionEvent_getPointerCount(event), MAX_TOUCH);
-
-      if (vibrate_on_keypress && action != AMOTION_EVENT_ACTION_MOVE)
-         android_app_write_cmd(g_android, APP_CMD_VIBRATE_KEYPRESS);
 
       if (action == AMOTION_EVENT_ACTION_DOWN && ENABLE_TOUCH_SCREEN_MOUSE)
       {
@@ -1273,8 +1259,7 @@ static void engine_handle_touchpad(
 }
 
 static void android_input_poll_input_gingerbread(
-      android_input_t *android,
-      bool vibrate_on_keypress)
+      android_input_t *android)
 {
    AInputEvent              *event = NULL;
    struct android_app *android_app = (struct android_app*)g_android;
@@ -1307,7 +1292,7 @@ static void android_input_poll_input_gingerbread(
             else if ((source & (AINPUT_SOURCE_TOUCHSCREEN
                         | AINPUT_SOURCE_STYLUS | AINPUT_SOURCE_MOUSE)))
                android_input_poll_event_type_motion(android, event,
-                     port, source, vibrate_on_keypress);
+                     port, source);
             else
                engine_handle_dpad(android_app, event, port, source);
             handled = 1;
@@ -1335,8 +1320,7 @@ static void android_input_poll_input_gingerbread(
    }
 }
 
-static void android_input_poll_input_default(android_input_t *android,
-      bool vibrate_on_keypress)
+static void android_input_poll_input_default(android_input_t *android)
 {
    AInputEvent              *event = NULL;
    struct android_app *android_app = (struct android_app*)g_android;
@@ -1370,7 +1354,7 @@ static void android_input_poll_input_default(android_input_t *android,
                else if ((source & (AINPUT_SOURCE_TOUCHSCREEN 
                            | AINPUT_SOURCE_STYLUS | AINPUT_SOURCE_MOUSE)))
                   android_input_poll_event_type_motion(android, event,
-                        port, source, vibrate_on_keypress);
+                        port, source);
                else
                   engine_handle_dpad(android_app, event, port, source);
                break;
@@ -1466,15 +1450,10 @@ static void android_input_poll(void *data)
                ? -1 : settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {
-      bool vibrate_on_keypress     = settings 
-         ? settings->bools.vibrate_on_keypress 
-         : false;
-
       switch (ident)
       {
          case LOOPER_ID_INPUT:
-            android_input_poll_input(android,
-                  vibrate_on_keypress);
+            android_input_poll_input(android);
             break;
          case LOOPER_ID_USER:
             android_input_poll_user(android);
@@ -1848,6 +1827,18 @@ static float android_input_get_sensor_input(void *data,
    return 0.0f;
 }
 
+static void android_input_keypress_vibrate()
+{
+   static const int keyboard_press = 3;
+   JNIEnv *env = (JNIEnv*)jni_thread_getenv();
+
+   if (!env)
+      return;
+
+   CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+         g_android->doHapticFeedback, (jint)keyboard_press);
+}
+
 input_driver_t input_android = {
    android_input_init,
    android_input_poll,
@@ -1859,5 +1850,6 @@ input_driver_t input_android = {
    "android",
 
    NULL,                            /* grab_mouse */
-   NULL
+   NULL,
+   android_input_keypress_vibrate
 };
