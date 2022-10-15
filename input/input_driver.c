@@ -4765,7 +4765,7 @@ void bsv_movie_frame_rewind(void)
 bool bsv_movie_init(input_driver_state_t *input_st)
 {
    bsv_movie_t *state = NULL;
-   if (input_st->bsv_movie_state.movie_start_playback)
+   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK)
    {
       const char *starting_movie_str = NULL;
       if (!(state = bsv_movie_init_internal(
@@ -4778,8 +4778,8 @@ bool bsv_movie_init(input_driver_state_t *input_st)
          return false;
       }
 
-      input_st->bsv_movie_state_handle         = state;
-      input_st->bsv_movie_state.movie_playback = true;
+      input_st->bsv_movie_state_handle = state;
+      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_PLAYBACK;
       starting_movie_str                       =
          msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK);
 
@@ -4790,7 +4790,7 @@ bool bsv_movie_init(input_driver_state_t *input_st)
 
       return true;
    }
-   else if (input_st->bsv_movie_state.movie_start_recording)
+   else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_RECORDING)
    {
       char msg[8192];
       const char *movie_rec_str = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
@@ -4837,11 +4837,11 @@ bool bsv_movie_check(input_driver_state_t *input_st,
    if (!input_st->bsv_movie_state_handle)
       return runloop_check_movie_init(input_st, settings);
 
-   if (input_st->bsv_movie_state.movie_playback)
+   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
    {
       const char *movie_playback_end_str = NULL;
       /* Checks if movie is being played back. */
-      if (!input_st->bsv_movie_state.movie_end)
+      if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END))
          return false;
       movie_playback_end_str = msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED);
       runloop_msg_queue_push(
@@ -4851,9 +4851,9 @@ bool bsv_movie_check(input_driver_state_t *input_st,
 
       bsv_movie_deinit(input_st);
 
-      input_st->bsv_movie_state.movie_end      = false;
-      input_st->bsv_movie_state.movie_playback = false;
-
+      input_st->bsv_movie_state.flags &= ~(
+              BSV_FLAG_MOVIE_END
+            | BSV_FLAG_MOVIE_PLAYBACK);
       return true;
    }
 
@@ -5102,7 +5102,7 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
          return swap_if_big16(bsv_result);
       }
 
-      input_st->bsv_movie_state.movie_end = true;
+      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
    }
 #endif
 

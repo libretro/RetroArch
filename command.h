@@ -294,19 +294,22 @@ command_t* command_uds_new(void);
 bool command_network_send(const char *cmd_);
 
 #ifdef HAVE_BSV_MOVIE
+enum bsv_flags
+{
+   BSV_FLAG_MOVIE_START_RECORDING    = (1 << 0),
+   BSV_FLAG_MOVIE_START_PLAYBACK     = (1 << 1),
+   BSV_FLAG_MOVIE_PLAYBACK           = (1 << 2),
+   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 3),
+   BSV_FLAG_MOVIE_END                = (1 << 4)
+};
+
 struct bsv_state
 {
+   uint8_t flags;
    /* Movie playback/recording support. */
    char movie_path[PATH_MAX_LENGTH];
    /* Immediate playback/recording. */
    char movie_start_path[PATH_MAX_LENGTH];
-
-   bool movie_start_recording;
-   bool movie_start_playback;
-   bool movie_playback;
-   bool eof_exit;
-   bool movie_end;
-
 };
 
 struct bsv_movie

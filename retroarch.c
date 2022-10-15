@@ -4879,9 +4879,10 @@ static bool retroarch_parse_input_and_config(
                   input_driver_state_t *input_st = input_state_get_ptr();
                   strlcpy(input_st->bsv_movie_state.movie_start_path, optarg,
                         sizeof(input_st->bsv_movie_state.movie_start_path));
-
-                  input_st->bsv_movie_state.movie_start_playback  = true;
-                  input_st->bsv_movie_state.movie_start_recording = false;
+                  input_st->bsv_movie_state.flags |=
+                      BSV_FLAG_MOVIE_START_PLAYBACK;
+                  input_st->bsv_movie_state.flags &=
+                     ~BSV_FLAG_MOVIE_START_RECORDING;
                }
 #endif
                break;
@@ -4891,9 +4892,10 @@ static bool retroarch_parse_input_and_config(
                   input_driver_state_t *input_st = input_state_get_ptr();
                   strlcpy(input_st->bsv_movie_state.movie_start_path, optarg,
                         sizeof(input_st->bsv_movie_state.movie_start_path));
-
-                  input_st->bsv_movie_state.movie_start_playback  = false;
-                  input_st->bsv_movie_state.movie_start_recording = true;
+                  input_st->bsv_movie_state.flags &=
+                     ~BSV_FLAG_MOVIE_START_PLAYBACK;
+                  input_st->bsv_movie_state.flags |=
+                     BSV_FLAG_MOVIE_START_RECORDING;
                }
 #endif
                break;
@@ -5051,8 +5053,8 @@ static bool retroarch_parse_input_and_config(
             case RA_OPT_EOF_EXIT:
 #ifdef HAVE_BSV_MOVIE
                {
-                  input_driver_state_t *input_st = input_state_get_ptr();
-                  input_st->bsv_movie_state.eof_exit = true;
+                  input_driver_state_t *input_st   = input_state_get_ptr();
+                  input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_EOF_EXIT;
                }
 #endif
                break;

@@ -306,8 +306,7 @@ struct runloop
 typedef struct runloop runloop_state_t;
 
 #ifdef HAVE_BSV_MOVIE
-#define BSV_MOVIE_IS_EOF() || (input_st->bsv_movie_state.movie_end && \
-input_st->bsv_movie_state.eof_exit)
+#define BSV_MOVIE_IS_EOF() || (((input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END) && (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_EOF_EXIT)))
 #else
 #define BSV_MOVIE_IS_EOF()
 #endif
