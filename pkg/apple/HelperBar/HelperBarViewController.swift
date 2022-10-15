@@ -15,12 +15,15 @@ class HelperBarViewController: UIViewController {
       imageView.tintColor = .white
       imageView.translatesAutoresizingMaskIntoConstraints = false
       imageView.alpha = 0
+      imageView.isUserInteractionEnabled = true
       return imageView
    }()
    
    private let navigationBar: UINavigationBar = {
       let navBar = UINavigationBar()
       navBar.barTintColor = .black
+      navBar.isTranslucent = true
+      navBar.alpha = 0.7
       navBar.tintColor = .white
       navBar.isHidden = true
       return navBar
@@ -61,6 +64,8 @@ class HelperBarViewController: UIViewController {
       tap.delegate = self
       view.addGestureRecognizer(tap)
       view.isUserInteractionEnabled = true
+      let indicatorTap = UITapGestureRecognizer(target: self, action: #selector(didTapIndicator(_:)))
+      indicatorImageView.addGestureRecognizer(indicatorTap)
       navigationBar.delegate = self
    }
    
@@ -90,7 +95,7 @@ class HelperBarViewController: UIViewController {
    }
    
    private func showIndicatorAndFadeAway() {
-      UIView.animateKeyframes(withDuration: 7.0, delay: 0) {
+      UIView.animateKeyframes(withDuration: 4.0, delay: 0) {
          UIView.addKeyframe(withRelativeStartTime: 0, relativeDuration: 1/7) { [weak self] in
             self?.indicatorImageView.alpha = 1.0
          }
@@ -101,8 +106,28 @@ class HelperBarViewController: UIViewController {
       }
    }
 
-   @objc func didTap(_ sender: UIGestureRecognizer) {
+   var tappedIndicator = false
+   
+   @objc func didTap(_ sender: UITapGestureRecognizer) {
+      let point = sender.location(in: view)
+      guard point.y <= 60 else { return }   // detect top portion of view only
+      if point.x <= 60 {
+         indicatorImageView.layer.removeAllAnimations()
+         indicatorImageView.alpha = 1.0
+         tappedIndicator = false
+         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            if !(self?.tappedIndicator ?? false) {
+               self?.showIndicatorAndFadeAway()
+            }
+         }
+      }
+   }
+   
+   @objc func didTapIndicator(_ sender: UITapGestureRecognizer) {
       viewModel.didInteractWithBar = true
+      indicatorImageView.layer.removeAllAnimations()
+      indicatorImageView.alpha = 0
+      tappedIndicator = true
    }
 }
 

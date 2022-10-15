@@ -57,6 +57,13 @@
 		928F7B2727D196D100377C40 /* EmulatorKeyCoded.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B2627D196D100377C40 /* EmulatorKeyCoded.swift */; };
 		928F7B2927D197B400377C40 /* EmulatorKeyboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B2827D197B400377C40 /* EmulatorKeyboardViewModel.swift */; };
 		928F7B2B27D198C000377C40 /* EmulatorKeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B2A27D198C000377C40 /* EmulatorKeyboardViewController.swift */; };
+		9292D6E328F549D000E47A75 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9292D6E228F549D000E47A75 /* WidgetKit.framework */; };
+		9292D6E528F549D000E47A75 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9292D6E428F549D000E47A75 /* SwiftUI.framework */; };
+		9292D6E828F549D100E47A75 /* RetroArchWidgetExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9292D6E728F549D100E47A75 /* RetroArchWidgetExtension.swift */; };
+		9292D6EB28F549D200E47A75 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9292D6EA28F549D200E47A75 /* Assets.xcassets */; };
+		9292D6ED28F549D200E47A75 /* RetroArchWidgetExtension.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 9292D6E928F549D100E47A75 /* RetroArchWidgetExtension.intentdefinition */; };
+		9292D6EE28F549D200E47A75 /* RetroArchWidgetExtension.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 9292D6E928F549D100E47A75 /* RetroArchWidgetExtension.intentdefinition */; };
+		9292D6F128F549D200E47A75 /* RetroArchWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9292D6E128F549D000E47A75 /* RetroArchWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		929784502200EEE400989A60 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
 		92A1F81827006CAE00DEAD2A /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 92A1F81727006CAE00DEAD2A /* JITSupport.m */; };
 		92CC05A221FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC058221FE3C1700FF79F0 /* GCDWebServerResponse.m */; };
@@ -96,6 +103,30 @@
 		92DAF33F277A370600FE2A9E /* EmulatorTouchMouse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92DAF33E277A370600FE2A9E /* EmulatorTouchMouse.swift */; };
 		92E5DCD4231A5786006491BF /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 92E5DCD3231A5786006491BF /* modules */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9292D6EF28F549D200E47A75 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 96AFAE1C16C1D4EA009DE44C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9292D6E028F549D000E47A75;
+			remoteInfo = RetroArchWidgetExtensionExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		9292D6F528F549D500E47A75 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				9292D6F128F549D200E47A75 /* RetroArchWidgetExtensionExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
@@ -138,6 +169,13 @@
 		928F7B2627D196D100377C40 /* EmulatorKeyCoded.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulatorKeyCoded.swift; sourceTree = "<group>"; };
 		928F7B2827D197B400377C40 /* EmulatorKeyboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulatorKeyboardViewModel.swift; sourceTree = "<group>"; };
 		928F7B2A27D198C000377C40 /* EmulatorKeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulatorKeyboardViewController.swift; sourceTree = "<group>"; };
+		9292D6E128F549D000E47A75 /* RetroArchWidgetExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RetroArchWidgetExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		9292D6E228F549D000E47A75 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		9292D6E428F549D000E47A75 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		9292D6E728F549D100E47A75 /* RetroArchWidgetExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetroArchWidgetExtension.swift; sourceTree = "<group>"; };
+		9292D6E928F549D100E47A75 /* RetroArchWidgetExtension.intentdefinition */ = {isa = PBXFileReference; lastKnownFileType = file.intentdefinition; path = RetroArchWidgetExtension.intentdefinition; sourceTree = "<group>"; };
+		9292D6EA28F549D200E47A75 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9292D6EC28F549D200E47A75 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		92A1F81727006CAE00DEAD2A /* JITSupport.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = JITSupport.m; sourceTree = "<group>"; };
 		92A1F81927006CCB00DEAD2A /* JITSupport.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = JITSupport.h; sourceTree = "<group>"; };
 		92B9EB5724E0518700E6CFB2 /* base64.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = base64.h; sourceTree = "<group>"; };
@@ -411,6 +449,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9292D6DE28F549D000E47A75 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9292D6E528F549D000E47A75 /* SwiftUI.framework in Frameworks */,
+				9292D6E328F549D000E47A75 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -466,6 +513,17 @@
 				9289D22725E88A63004B5D52 /* CocoaView+KeyboardSupport.swift */,
 			);
 			path = OnScreenKeyboard;
+			sourceTree = "<group>";
+		};
+		9292D6E628F549D100E47A75 /* RetroArchWidgetExtension */ = {
+			isa = PBXGroup;
+			children = (
+				9292D6E728F549D100E47A75 /* RetroArchWidgetExtension.swift */,
+				9292D6E928F549D100E47A75 /* RetroArchWidgetExtension.intentdefinition */,
+				9292D6EA28F549D200E47A75 /* Assets.xcassets */,
+				9292D6EC28F549D200E47A75 /* Info.plist */,
+			);
+			path = RetroArchWidgetExtension;
 			sourceTree = "<group>";
 		};
 		92B9EAE024E04F8800E6CFB2 /* Sources */ = {
@@ -1049,6 +1107,7 @@
 				83D632D719ECFCC4009E3161 /* iOS */,
 				926C77D821FD1E6500103EDE /* tvOS */,
 				92CC05CC21FF782C00FF79F0 /* WebServer */,
+				9292D6E628F549D100E47A75 /* RetroArchWidgetExtension */,
 				96AFAE2816C1D4EA009DE44C /* Frameworks */,
 				96AFAE2616C1D4EA009DE44C /* Products */,
 				96AFAE3416C1D4EA009DE44C /* Supporting Files */,
@@ -1062,6 +1121,7 @@
 			children = (
 				9204BE2B1D319EF300BD49DB /* RetroArch.app */,
 				926C77D721FD1E6500103EDE /* RetroArchTV.app */,
+				9292D6E128F549D000E47A75 /* RetroArchWidgetExtensionExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1091,6 +1151,8 @@
 				96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */,
 				96AFAE2F16C1D4EA009DE44C /* GLKit.framework */,
 				96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */,
+				9292D6E228F549D000E47A75 /* WidgetKit.framework */,
+				9292D6E428F549D000E47A75 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -1134,10 +1196,12 @@
 				9204BE111D319EF300BD49DB /* Frameworks */,
 				9204BE271D319EF300BD49DB /* ShellScript */,
 				9204BE211D319EF300BD49DB /* Resources */,
+				9292D6F528F549D500E47A75 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				9292D6F028F549D200E47A75 /* PBXTargetDependency */,
 			);
 			name = RetroArchiOS;
 			productName = RetroArch;
@@ -1162,12 +1226,30 @@
 			productReference = 926C77D721FD1E6500103EDE /* RetroArchTV.app */;
 			productType = "com.apple.product-type.application";
 		};
+		9292D6E028F549D000E47A75 /* RetroArchWidgetExtensionExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9292D6F228F549D500E47A75 /* Build configuration list for PBXNativeTarget "RetroArchWidgetExtensionExtension" */;
+			buildPhases = (
+				9292D6DD28F549D000E47A75 /* Sources */,
+				9292D6DE28F549D000E47A75 /* Frameworks */,
+				9292D6DF28F549D000E47A75 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RetroArchWidgetExtensionExtension;
+			productName = RetroArchWidgetExtensionExtension;
+			productReference = 9292D6E128F549D000E47A75 /* RetroArchWidgetExtensionExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
 		96AFAE1C16C1D4EA009DE44C /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastSwiftUpdateCheck = 1400;
 				LastUpgradeCheck = 0450;
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
@@ -1178,6 +1260,11 @@
 					};
 					926C77D621FD1E6500103EDE = {
 						CreatedOnToolsVersion = 10.1;
+						DevelopmentTeam = UK699V5ZS8;
+						ProvisioningStyle = Automatic;
+					};
+					9292D6E028F549D000E47A75 = {
+						CreatedOnToolsVersion = 14.0;
 						DevelopmentTeam = UK699V5ZS8;
 						ProvisioningStyle = Automatic;
 					};
@@ -1199,6 +1286,7 @@
 			targets = (
 				9204BE091D319EF300BD49DB /* RetroArchiOS */,
 				926C77D621FD1E6500103EDE /* RetroArchTV */,
+				9292D6E028F549D000E47A75 /* RetroArchWidgetExtensionExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -1226,6 +1314,14 @@
 				92E5DCD4231A5786006491BF /* modules in Resources */,
 				9222F2002314BA7C0097C0FD /* assets.zip in Resources */,
 				926C77E321FD1E6700103EDE /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9292D6DF28F549D000E47A75 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9292D6EB28F549D200E47A75 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1282,6 +1378,7 @@
 				92CC05AC21FE3C1700FF79F0 /* GCDWebServerErrorResponse.m in Sources */,
 				92CC05A621FE3C1700FF79F0 /* GCDWebServerFunctions.m in Sources */,
 				9210C2F824B3A32D00E6FE7C /* griffin_glslang.cpp in Sources */,
+				9292D6EE28F549D200E47A75 /* RetroArchWidgetExtension.intentdefinition in Sources */,
 				92CC05A821FE3C1700FF79F0 /* GCDWebServer.m in Sources */,
 				9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */,
 				9204BE101D319EF300BD49DB /* griffin.c in Sources */,
@@ -1335,7 +1432,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9292D6DD28F549D000E47A75 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9292D6E828F549D100E47A75 /* RetroArchWidgetExtension.swift in Sources */,
+				9292D6ED28F549D200E47A75 /* RetroArchWidgetExtension.intentdefinition in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		9292D6F028F549D200E47A75 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9292D6E028F549D000E47A75 /* RetroArchWidgetExtensionExtension */;
+			targetProxy = 9292D6EF28F549D200E47A75 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		967894611788EBD800D6CA69 /* InfoPlist.strings */ = {
@@ -1352,6 +1466,7 @@
 		9204BE291D319EF300BD49DB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
@@ -1481,6 +1596,7 @@
 		9204BE2A1D319EF300BD49DB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
@@ -1954,6 +2070,136 @@
 			};
 			name = Release;
 		};
+		9292D6F328F549D500E47A75 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = UK699V5ZS8;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RetroArchWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RetroArchWidgetExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2022 RetroArch. All rights reserved.";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11.RetroArchWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		9292D6F428F549D500E47A75 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RetroArchWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RetroArchWidgetExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2022 RetroArch. All rights reserved.";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11.RetroArchWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		96AFAE5216C1D4EA009DE44C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2132,6 +2378,15 @@
 			buildConfigurations = (
 				926C77E721FD1E6700103EDE /* Debug */,
 				926C77E821FD1E6700103EDE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9292D6F228F549D500E47A75 /* Build configuration list for PBXNativeTarget "RetroArchWidgetExtensionExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9292D6F328F549D500E47A75 /* Debug */,
+				9292D6F428F549D500E47A75 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
