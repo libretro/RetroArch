@@ -3658,7 +3658,7 @@ static int xmb_draw_item(
          new_alpha = max_alpha;
 
       /* Horizontal animation requires breathing room on x-axis */
-      if (new_alpha < node->alpha && node->x > (-icon_space * 2) && node->x < (icon_space * 2))
+      if (node->x > (-icon_space * 2) && node->x < (icon_space * 2))
          node->alpha = node->label_alpha = new_alpha;
    }
 
