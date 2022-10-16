@@ -29,6 +29,9 @@
 
 #define SPLASH_SHM_NAME "retroarch-wayland-vk-splash"
 
+#define APP_ID "org.libretro.RetroArch"
+#define WINDOW_TITLE "RetroArch"
+
 #ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
 #endif
@@ -544,8 +547,8 @@ bool gfx_ctx_wl_init_common(
             goto error;
          }
 
-         wl->libdecor_frame_set_app_id(wl->libdecor_frame, "retroarch");
-         wl->libdecor_frame_set_title(wl->libdecor_frame, "RetroArch");
+         wl->libdecor_frame_set_app_id(wl->libdecor_frame, APP_ID);
+         wl->libdecor_frame_set_title(wl->libdecor_frame, WINDOW_TITLE);
          wl->libdecor_frame_map(wl->libdecor_frame);
       }
 
@@ -571,8 +574,8 @@ bool gfx_ctx_wl_init_common(
       wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
       xdg_toplevel_add_listener(wl->xdg_toplevel, &toplevel_listener->xdg_toplevel_listener, wl);
 
-      xdg_toplevel_set_app_id(wl->xdg_toplevel, "retroarch");
-      xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
+      xdg_toplevel_set_app_id(wl->xdg_toplevel, APP_ID);
+      xdg_toplevel_set_title(wl->xdg_toplevel, WINDOW_TITLE);
 
       if (wl->deco_manager)
          wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
