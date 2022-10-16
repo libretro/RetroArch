@@ -19,6 +19,7 @@
 - LOCALIZATION/ENGLISH: Add British English language option
 - LOGGING/QT: Increase log buffer to 2048 characters - Vulkan validation layer
   messages output correctly now.
+- MENU/XMB: Remember selection per main tabs. Addresses the following : collection playlists can contain hundreds or thousands of items. When scrolling through one, pressing left or right by accident can be common. This resets the playlist to the top
 - MIST/STEAM/STEAMDECK: Don't expose Black Frame Insertion (BFI) if we are running on a Steam Deck
 - NETWORKING/WINDOWS: Disable poll support for MSVC 2010 and earlier. WSAPoll is not supported on Windows XP and earlier.
 - NETWORKING/WIIU: Fix socket_connect_with_timeout for WIIU
