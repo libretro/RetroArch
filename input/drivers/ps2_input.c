@@ -44,5 +44,6 @@ input_driver_t input_ps2 = {
    ps2_input_get_capabilities,
    "ps2",
    NULL,                         /* grab_mouse */
-   NULL 
+   NULL,
+   NULL
 };

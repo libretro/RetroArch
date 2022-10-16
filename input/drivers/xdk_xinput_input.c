@@ -50,5 +50,6 @@ input_driver_t input_xinput = {
    xdk_input_get_capabilities,
    "xinput",
    NULL,                         /* grab_mouse */
+   NULL,
    NULL
 };

@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.system.Os;
+import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.Surface;
 import android.view.WindowManager;
@@ -114,6 +115,13 @@ public class RetroActivityCommon extends NativeActivity
     }else{
       vibrator.vibrate(pattern, repeat);
     }
+  }
+
+  public void doHapticFeedback(int effect)
+  {
+    getWindow().getDecorView().performHapticFeedback(effect,
+        HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING | HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+    Log.i("RetroActivity", "Haptic Feedback effect " + effect);
   }
 
   // Exiting cleanly from NDK seems to be nearly impossible.

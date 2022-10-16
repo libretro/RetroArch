@@ -168,5 +168,6 @@ input_driver_t input_wiiu = {
    wiiu_input_get_capabilities,
    "wiiu",
    NULL,                            /* grab_mouse */
+   NULL,
    NULL
 };

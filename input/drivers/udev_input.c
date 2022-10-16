@@ -1540,8 +1540,9 @@ input_driver_t input_udev = {
    "udev",
    udev_input_grab_mouse,
 #ifdef __linux__
-   linux_terminal_grab_stdin
+   linux_terminal_grab_stdin,
 #else
-   NULL
+   NULL,
 #endif
+   NULL
 };

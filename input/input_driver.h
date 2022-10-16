@@ -340,6 +340,12 @@ struct input_driver
     * @return True if the input driver has claimed stdin.
     */
    bool (*grab_stdin)(void *data);
+
+   /**
+    * Haptic feedback for touchscreen key presses. This function pointer can be
+    * set to NULL if haptic feedback / vibration is not supported.
+    */
+   void (*keypress_vibrate)(void);
 };
 
 struct rarch_joypad_driver

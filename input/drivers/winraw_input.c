@@ -1087,5 +1087,6 @@ input_driver_t input_winraw = {
    winraw_get_capabilities,
    "raw",
    winraw_grab_mouse,
+   NULL,
    NULL
 };

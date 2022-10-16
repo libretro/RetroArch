@@ -74,6 +74,17 @@ static INLINE bool bits_any_set(uint32_t* ptr, uint32_t count)
    return false;
 }
 
+static INLINE bool bits_any_different(uint32_t *a, uint32_t *b, uint32_t count)
+{
+   uint32_t i;
+   for (i = 0; i < count; i++)
+   {
+      if (a[i] != b[i])
+         return true;
+   }
+   return false;
+}
+
 #ifndef PATH_MAX_LENGTH
 #if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(PS2) || defined(GEKKO)|| defined(WIIU) || defined(__PSL1GHT__) || defined(__PS3__)
 #define PATH_MAX_LENGTH 512

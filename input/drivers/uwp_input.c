@@ -168,5 +168,6 @@ input_driver_t input_uwp = {
    uwp_input_get_capabilities,
    "uwp",
    NULL,                         /* grab_mouse */
+   NULL,
    NULL
 };

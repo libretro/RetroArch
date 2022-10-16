@@ -2088,6 +2088,8 @@ static void frontend_unix_init(void *data)
          "setScreenOrientation", "(I)V");
    GET_METHOD_ID(env, android_app->doVibrate, class,
          "doVibrate", "(IIII)V");
+   GET_METHOD_ID(env, android_app->doHapticFeedback, class,
+         "doHapticFeedback", "(I)V");
    GET_METHOD_ID(env, android_app->getUserLanguageString, class,
          "getUserLanguageString", "()Ljava/lang/String;");
    GET_METHOD_ID(env, android_app->isPlayStoreBuild, class,

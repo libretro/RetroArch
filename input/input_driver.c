@@ -109,6 +109,7 @@ static float input_null_get_sensor_input(void *data, unsigned port, unsigned id)
 static uint64_t input_null_get_capabilities(void *data) { return 0; }
 static void input_null_grab_mouse(void *data, bool state) { }
 static bool input_null_grab_stdin(void *data) { return false; }
+static void input_null_keypress_vibrate() { }
 
 static input_driver_t input_null = {
    input_null_init,
@@ -120,7 +121,8 @@ static input_driver_t input_null = {
    input_null_get_capabilities,
    "null",
    input_null_grab_mouse,
-   input_null_grab_stdin
+   input_null_grab_stdin,
+   input_null_keypress_vibrate
 };
 
 static input_device_driver_t null_joypad = {
@@ -1860,7 +1862,7 @@ void input_poll_overlay(
       unsigned analog_dpad_mode,
       float axis_threshold)
 {
-   input_overlay_state_t old_key_state;
+   input_overlay_state_t old_ol_state;
    int i, j;
    input_overlay_t *ol                     = (input_overlay_t*)ol_data;
    uint16_t key_mod                        = 0;
@@ -1875,12 +1877,15 @@ void input_poll_overlay(
                settings->uints.input_overlay_show_inputs;
    unsigned input_overlay_show_inputs_port = settings->uints.input_overlay_show_inputs_port;
    float touch_scale                       = (float)settings->uints.input_touch_scale;
+   bool osk_state_changed                  = false;
+   unsigned pointer_count                  = 0;
+   static unsigned old_pointer_count;
 
    if (!ol_state)
       return;
 
-   memcpy(old_key_state.keys, ol_state->keys,
-         sizeof(ol_state->keys));
+   memcpy(&old_ol_state, ol_state,
+         sizeof(old_ol_state));
    memset(ol_state, 0, sizeof(*ol_state));
 
    if (current_input->input_state)
@@ -1963,6 +1968,8 @@ void input_poll_overlay(
 
          polled = true;
       }
+
+      pointer_count = i;
    }
 
    if (  OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT) ||
@@ -1984,10 +1991,11 @@ void input_poll_overlay(
    /* CAPSLOCK SCROLLOCK NUMLOCK */
    for (i = 0; i < ARRAY_SIZE(ol_state->keys); i++)
    {
-      if (ol_state->keys[i] != old_key_state.keys[i])
+      if (ol_state->keys[i] != old_ol_state.keys[i])
       {
-         uint32_t orig_bits = old_key_state.keys[i];
+         uint32_t orig_bits = old_ol_state.keys[i];
          uint32_t new_bits  = ol_state->keys[i];
+         osk_state_changed  = true;
 
          for (j = 0; j < 32; j++)
             if ((orig_bits & (1 << j)) != (new_bits & (1 << j)))
@@ -2059,6 +2067,24 @@ void input_poll_overlay(
             button_pressed, opacity);
    else
       input_overlay_poll_clear(overlay_visibility, ol, opacity);
+
+   /* Create haptic feedback for any change in button/key state,
+    * unless pointer_count decreased. */
+   if (     current_input->keypress_vibrate
+         && settings->bools.vibrate_on_keypress
+         && pointer_count && pointer_count >= old_pointer_count
+         && !ol->blocked)
+   {
+      if (     osk_state_changed
+            || bits_any_different(
+                     ol_state->buttons.data,
+                     old_ol_state.buttons.data,
+                     ARRAY_SIZE(old_ol_state.buttons.data))
+         )
+         current_input->keypress_vibrate();
+   }
+
+   old_pointer_count = pointer_count;
 }
 #endif
 
