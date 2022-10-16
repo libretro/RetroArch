@@ -1,6 +1,6 @@
 Name:           retroarch
-Version:        1.11.1
-Release:        v1.11.1
+Version:        1.12.0
+Release:        v1.12.0
 Summary:        Official reference frontend for libretro
 
 Group:          Applications/Emulators
@@ -75,7 +75,6 @@ sed -i \
 %doc README.md
 %config /etc/retroarch.cfg
 %{_prefix}/bin/retroarch
-%{_prefix}/bin/retroarch-cg2glsl
 %{_prefix}/share/applications/retroarch.desktop
 %{_prefix}/share/man/man6/*.6*
 %{_prefix}/share/icons/hicolor/86x86/apps/retroarch.*
