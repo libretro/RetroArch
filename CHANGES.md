@@ -29,6 +29,7 @@
 - SAVESTATES/SCREENSHOTS: Avoid 'video_gpu_screenshot' with savestates. Allow GPU screenshots with savestates only when there is no other way of getting a screenshot.
 - SCREENSHOTS/VULKAN: Unload screenshot widget texture early. Fixes Vulkan crash when closing content while a screenshot widget is still on-screen
 - SCREENSHOTS/VULKAN: Fix screenshot widget crash when ticker animating
+- WAYLAND: Set correct app ID
 - WIIU: Add some missing default directories
 - WIIU: Get mkdir working on WiiU (directory creation)
 
