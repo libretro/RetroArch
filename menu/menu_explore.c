@@ -986,7 +986,7 @@ static int explore_action_ok_find(const char *path, const char *label, unsigned 
    return 0;
 }
 
-static const char* explore_get_view_path()
+static const char* explore_get_view_path(void)
 {
    file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
    struct item_file *cur = (struct item_file *)&menu_stack->list[menu_stack->size - 1];
@@ -1767,7 +1767,7 @@ ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
    return -1;
 }
 
-bool menu_explore_is_content_list()
+bool menu_explore_is_content_list(void)
 {
    if (explore_state)
       return (explore_state->show_icons == EXPLORE_ICONS_CONTENT);
