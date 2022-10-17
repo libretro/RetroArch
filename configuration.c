@@ -3307,7 +3307,6 @@ static bool config_load_file(global_t *global,
 {
    unsigned i;
    char tmp_str[PATH_MAX_LENGTH];
-   unsigned tmp_uint                               = 0;
    bool tmp_bool                                   = false;
    static bool first_load                          = true;
    unsigned msg_color                              = 0;

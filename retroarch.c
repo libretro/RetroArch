@@ -2683,8 +2683,6 @@ bool command_event(enum event_command cmd, void *data)
          if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
             break;
 #endif
-
-         boolean                 = false;
          runloop_st->flags      &= ~RUNLOOP_FLAG_PAUSED;
          runloop_pause_checks();
          break;
@@ -2693,8 +2691,6 @@ bool command_event(enum event_command cmd, void *data)
          if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
             break;
 #endif
-
-         boolean                 = true;
          runloop_st->flags      |= RUNLOOP_FLAG_PAUSED;
          runloop_pause_checks();
          break;

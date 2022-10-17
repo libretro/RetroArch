@@ -672,7 +672,7 @@ ssize_t menu_explore_get_entry_playlist_index(unsigned type,
       file_list_t *list, size_t *list_pos, size_t *list_size);
 ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
       gfx_thumbnail_path_data_t *thumbnail_path_data); /* returns list index */
-bool menu_explore_is_content_list();
+bool menu_explore_is_content_list(void);
 void menu_explore_context_init(void);
 void menu_explore_context_deinit(void);
 void menu_explore_free_state(explore_state_t *state);
