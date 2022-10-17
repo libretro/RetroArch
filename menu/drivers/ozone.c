@@ -114,6 +114,7 @@
 #endif
 
 #define OZONE_WIGGLE_DURATION 15
+#define OZONE_TAB_MAX_LENGTH 255
 
 /* Returns true if specified entry is currently
  * displayed on screen */
@@ -455,6 +456,7 @@ struct ozone_handle
    size_t categories_selection_ptr; /* active tab id  */
    size_t categories_active_idx_old;
    size_t playlist_index;
+   size_t tab_selection[OZONE_TAB_MAX_LENGTH];
 
    size_t selection; /* currently selected entry */
    size_t selection_old; /* previously selected entry (for fancy animation) */
@@ -3770,6 +3772,9 @@ static void ozone_go_to_sidebar(ozone_handle_t *ozone,
    ozone->cursor_in_sidebar_old   = ozone->cursor_in_sidebar;
    ozone->cursor_in_sidebar       = true;
 
+   /* Remember last selection per tab */
+   ozone->tab_selection[ozone->categories_selection_ptr] = ozone->selection;
+
    /* Cursor animation */
    ozone->animations.cursor_alpha = 0.0f;
 
@@ -4007,6 +4012,22 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
    }
 }
 
+static void ozone_navigation_pointer_changed(void *data);
+
+static void ozone_tab_set_selection(void *data)
+{
+   ozone_handle_t *ozone = (ozone_handle_t*)data;
+
+   if (ozone)
+   {
+      size_t tab_selection = ozone->tab_selection[ozone->categories_selection_ptr];
+      if (tab_selection)
+      {
+         menu_navigation_set_selection(tab_selection);
+         ozone_navigation_pointer_changed(ozone);
+      }
+   }
+}
 
 static void ozone_leave_sidebar(ozone_handle_t *ozone,
       bool ozone_collapse_sidebar,
@@ -4019,6 +4040,9 @@ static void ozone_leave_sidebar(ozone_handle_t *ozone,
    ozone->categories_active_idx_old = ozone->categories_selection_ptr;
    ozone->cursor_in_sidebar_old     = ozone->cursor_in_sidebar;
    ozone->cursor_in_sidebar         = false;
+
+   /* Restore last selection per tab */
+   ozone_tab_set_selection(ozone);
 
    /* Cursor animation */
    ozone->animations.cursor_alpha   = 0.0f;
@@ -7940,6 +7964,9 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
          MENU_CONTENTLESS_CORES_DISPLAY_NONE)
       ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_CONTENTLESS_CORES;
 #endif
+
+   for (i = 0; i < OZONE_TAB_MAX_LENGTH; i++)
+      ozone->tab_selection[i]                   = 0;
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
