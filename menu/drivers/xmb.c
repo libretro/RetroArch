@@ -4228,6 +4228,23 @@ static void xmb_show_fullscreen_thumbnails(
    xmb->show_fullscreen_thumbnails     = true;
 }
 
+static bool INLINE xmb_fullscreen_thumbnails_available(xmb_handle_t *xmb)
+{
+   bool ret =
+         xmb->fullscreen_thumbnails_available
+      && (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
+          gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+      && (xmb->thumbnails.left.status  == GFX_THUMBNAIL_STATUS_AVAILABLE ||
+          xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE);
+
+   if (xmb->is_state_slot &&
+         (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_MISSING ||
+          xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN))
+      ret = false;
+
+   return ret;
+}
+
 /* Common thumbnail switch requires FILE_TYPE_RPL_ENTRY,
  * which only works with playlists, therefore activate it
  * manually for Quick Menu, Explore and Database */
@@ -4282,7 +4299,7 @@ static enum menu_action xmb_parse_menu_entry_action(
 
          /* If this is a menu with thumbnails, attempt
           * to show fullscreen thumbnail view */
-         if (xmb->fullscreen_thumbnails_available &&
+         if (xmb_fullscreen_thumbnails_available(xmb) &&
                !xmb->show_fullscreen_thumbnails)
          {
             xmb_hide_fullscreen_thumbnails(xmb, false);

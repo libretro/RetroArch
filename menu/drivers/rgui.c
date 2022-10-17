@@ -7619,6 +7619,11 @@ static enum menu_action rgui_parse_menu_entry_action(
          {
             settings_t *settings = config_get_ptr();
 
+            new_action = MENU_ACTION_NOOP;
+
+            if (!rgui->entry_has_thumbnail && !rgui->entry_has_left_thumbnail)
+               break;
+
             if (!rgui->show_fs_thumbnail && rgui->gfx_thumbnails_prev < 0)
                rgui->gfx_thumbnails_prev = settings->uints.gfx_thumbnails;
 
@@ -7644,7 +7649,6 @@ static enum menu_action rgui_parse_menu_entry_action(
                rgui_thumbnail_cycle_dupe(rgui);
 
             rgui_toggle_fs_thumbnail(rgui, config_get_ptr()->bools.menu_rgui_inline_thumbnails);
-            new_action = MENU_ACTION_NOOP;
 
             if (!rgui->show_fs_thumbnail)
                rgui->gfx_thumbnails_prev = -1;

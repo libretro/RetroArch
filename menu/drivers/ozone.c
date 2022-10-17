@@ -7095,12 +7095,10 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
 #endif
             case OZONE_SYSTEM_TAB_MUSIC:
                ozone->want_thumbnail_bar              = false;
-               ozone->fullscreen_thumbnails_available = false;
                break;
 
             default:
                ozone->want_thumbnail_bar              = true;
-               ozone->fullscreen_thumbnails_available = true;
                break;
          }
       }
@@ -7262,11 +7260,14 @@ static bool INLINE ozone_fullscreen_thumbnails_available(ozone_handle_t *ozone)
          ozone->fullscreen_thumbnails_available
       && !ozone->cursor_in_sidebar
       && ozone->show_thumbnail_bar
-      && ((ozone->thumbnails.right.status     != GFX_THUMBNAIL_STATUS_MISSING) ||
-          (ozone->thumbnails.left.status      != GFX_THUMBNAIL_STATUS_MISSING) ||
-          (ozone->thumbnails.savestate.status != GFX_THUMBNAIL_STATUS_MISSING))
       && (gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
-          gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_LEFT));
+          gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+      && (  (ozone->thumbnails.left.status == GFX_THUMBNAIL_STATUS_AVAILABLE ||
+               (ozone->thumbnails.left.status < GFX_THUMBNAIL_STATUS_AVAILABLE
+                  && ozone->thumbnails_left_status_prev <= GFX_THUMBNAIL_STATUS_AVAILABLE))
+         || (ozone->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE ||
+               (ozone->thumbnails.right.status < GFX_THUMBNAIL_STATUS_AVAILABLE
+                  && ozone->thumbnails_right_status_prev <= GFX_THUMBNAIL_STATUS_AVAILABLE)));
 
    if (ozone->is_state_slot &&
          (ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_MISSING ||
@@ -7472,7 +7473,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          /* If this is a menu with thumbnails and cursor
           * is not in the sidebar, attempt to show
           * fullscreen thumbnail view */
-         if (ozone->fullscreen_thumbnails_available &&
+         if (ozone_fullscreen_thumbnails_available(ozone) &&
                !ozone->show_fullscreen_thumbnails &&
                !ozone->cursor_in_sidebar)
          {
