@@ -610,26 +610,27 @@ static void playlist_free_entry(struct playlist_entry *entry)
    if (entry->path_id)
       playlist_path_id_free(entry->path_id);
 
-   entry->path      = NULL;
-   entry->label     = NULL;
-   entry->core_path = NULL;
-   entry->core_name = NULL;
-   entry->db_name   = NULL;
-   entry->crc32     = NULL;
-   entry->subsystem_ident = NULL;
-   entry->subsystem_name = NULL;
-   entry->runtime_str = NULL;
-   entry->last_played_str = NULL;
-   entry->subsystem_roms = NULL;
-   entry->path_id = NULL;
-   entry->runtime_status = PLAYLIST_RUNTIME_UNKNOWN;
-   entry->runtime_hours = 0;
-   entry->runtime_minutes = 0;
-   entry->runtime_seconds = 0;
-   entry->last_played_year = 0;
-   entry->last_played_month = 0;
-   entry->last_played_day = 0;
-   entry->last_played_hour = 0;
+   entry->path               = NULL;
+   entry->label              = NULL;
+   entry->core_path          = NULL;
+   entry->core_name          = NULL;
+   entry->db_name            = NULL;
+   entry->crc32              = NULL;
+   entry->subsystem_ident    = NULL;
+   entry->subsystem_name     = NULL;
+   entry->runtime_str        = NULL;
+   entry->last_played_str    = NULL;
+   entry->subsystem_roms     = NULL;
+   entry->path_id            = NULL;
+   entry->entry_slot         = 0;
+   entry->runtime_status     = PLAYLIST_RUNTIME_UNKNOWN;
+   entry->runtime_hours      = 0;
+   entry->runtime_minutes    = 0;
+   entry->runtime_seconds    = 0;
+   entry->last_played_year   = 0;
+   entry->last_played_month  = 0;
+   entry->last_played_day    = 0;
+   entry->last_played_hour   = 0;
    entry->last_played_minute = 0;
    entry->last_played_second = 0;
 }

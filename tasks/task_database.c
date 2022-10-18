@@ -686,6 +686,7 @@ static int database_info_list_iterate_found_match(
    char* db_playlist_base_str     = (char*)malloc(str_len);
    char* db_playlist_path         = (char*)malloc(str_len);
    char* entry_path_str           = (char*)malloc(str_len);
+   char* entry_label              = (char*)malloc(str_len);
    char *hash                     = NULL;
    playlist_t   *playlist         = NULL;
    const char         *db_path    =
@@ -722,6 +723,23 @@ static int database_info_list_iterate_found_match(
 
    if (entry_path)
       strlcpy(entry_path_str, entry_path, str_len);
+
+   /* Use database name for label if found,
+    * otherwise use filename without extension */
+   if (!string_is_empty(db_info_entry->name))
+      strlcpy(entry_label, db_info_entry->name, str_len);
+   else if (!string_is_empty(entry_path))
+   {
+      char *delim = strchr(entry_path, '#');
+
+      if (delim)
+         *delim = '\0';
+      fill_pathname(entry_label,
+            path_basename_nocompression(entry_path), "", str_len);
+      path_remove_extension(entry_label);
+
+      RARCH_LOG("[Database]: No match for: \"%s\", CRC: 0x%08X\n", entry_path_str, db_state->crc);
+   }
 
    if (!string_is_empty(archive_name))
       fill_pathname_join_delim(entry_path_str,
@@ -763,7 +781,7 @@ static int database_info_list_iterate_found_match(
       /* the push function reads our entry as const,
        * so these casts are safe */
       entry.path              = entry_path_str;
-      entry.label             = db_info_entry->name;
+      entry.label             = entry_label;
       entry.core_path         = (char*)"DETECT";
       entry.core_name         = (char*)"DETECT";
       entry.db_name           = db_playlist_base_str;
@@ -771,6 +789,7 @@ static int database_info_list_iterate_found_match(
       entry.subsystem_ident   = NULL;
       entry.subsystem_name    = NULL;
       entry.subsystem_roms    = NULL;
+      entry.entry_slot        = 0;
       entry.runtime_hours     = 0;
       entry.runtime_minutes   = 0;
       entry.runtime_seconds   = 0;
@@ -810,6 +829,7 @@ static int database_info_list_iterate_found_match(
    free(db_playlist_base_str);
    free(db_playlist_path);
    free(entry_path_str);
+   free(entry_label);
    return 0;
 }
 
@@ -965,6 +985,7 @@ static int task_database_iterate_playlist_lutro(
       entry.subsystem_ident       = NULL;
       entry.subsystem_name        = NULL;
       entry.subsystem_roms        = NULL;
+      entry.entry_slot            = 0;
       entry.runtime_hours         = 0;
       entry.runtime_minutes       = 0;
       entry.runtime_seconds       = 0;

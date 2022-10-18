@@ -1675,7 +1675,6 @@ static void task_push_to_history_list(
             /* The push function reads our entry as const, 
              * so these casts are safe */
             entry.path            = (char*)tmp;
-            entry.entry_slot      = runloop_st->entry_state_slot;
             entry.label           = (char*)label;
             entry.core_path       = (char*)core_path;
             entry.core_name       = (char*)core_name;
@@ -1684,6 +1683,7 @@ static void task_push_to_history_list(
             entry.subsystem_ident = (char*)path_get(RARCH_PATH_SUBSYSTEM);
             entry.subsystem_name  = (char*)subsystem_name;
             entry.subsystem_roms  = (struct string_list*)path_get_subsystem_list();
+            entry.entry_slot      = runloop_st->entry_state_slot;
 
             command_playlist_push_write(playlist_hist, &entry);
          }
