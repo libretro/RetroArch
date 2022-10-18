@@ -1603,9 +1603,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("frame_time_counter_reset_after_save_state", &settings->bools.frame_time_counter_reset_after_save_state, true, false, false);
    SETTING_BOOL("crt_switch_resolution_use_custom_refresh_rate", &settings->bools.crt_switch_custom_refresh_enable, true, false, false);
    SETTING_BOOL("crt_switch_hires_menu", &settings->bools.crt_switch_hires_menu, true, false, true);
-   SETTING_BOOL("ui_companion_start_on_boot",    &settings->bools.ui_companion_start_on_boot, true, ui_companion_start_on_boot, false);
-   SETTING_BOOL("ui_companion_enable",           &settings->bools.ui_companion_enable, true, ui_companion_enable, false);
-   SETTING_BOOL("ui_companion_toggle",           &settings->bools.ui_companion_toggle, false, ui_companion_toggle, false);
+   SETTING_BOOL("ui_companion_start_on_boot",    &settings->bools.ui_companion_start_on_boot, true, DEFAULT_UI_COMPANION_START_ON_BOOT, false);
+   SETTING_BOOL("ui_companion_enable",           &settings->bools.ui_companion_enable, true, DEFAULT_UI_COMPANION_ENABLE, false);
+   SETTING_BOOL("ui_companion_toggle",           &settings->bools.ui_companion_toggle, false, DEFAULT_UI_COMPANION_TOGGLE, false);
    SETTING_BOOL("desktop_menu_enable",           &settings->bools.desktop_menu_enable, true, DEFAULT_DESKTOP_MENU_ENABLE, false);
    SETTING_BOOL("video_gpu_record",              &settings->bools.video_gpu_record, true, DEFAULT_GPU_RECORD, false);
    SETTING_BOOL("input_remap_binds_enable",      &settings->bools.input_remap_binds_enable, true, true, false);
@@ -1641,8 +1641,8 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("netplay_ping_show",             &settings->bools.netplay_ping_show, true, DEFAULT_NETPLAY_PING_SHOW, false);
    SETTING_BOOL("network_on_demand_thumbnails",  &settings->bools.network_on_demand_thumbnails, true, DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS, false);
 #endif
-   SETTING_BOOL("input_descriptor_label_show",   &settings->bools.input_descriptor_label_show, true, input_descriptor_label_show, false);
-   SETTING_BOOL("input_descriptor_hide_unbound", &settings->bools.input_descriptor_hide_unbound, true, input_descriptor_hide_unbound, false);
+   SETTING_BOOL("input_descriptor_label_show",   &settings->bools.input_descriptor_label_show, true, DEFAULT_INPUT_DESCRIPTOR_LABEL_SHOW, false);
+   SETTING_BOOL("input_descriptor_hide_unbound", &settings->bools.input_descriptor_hide_unbound, true, DEFAULT_INPUT_DESCRIPTOR_HIDE_UNBOUND, false);
    SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->bools.load_dummy_on_core_shutdown, true, DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN, false);
    SETTING_BOOL("check_firmware_before_loading", &settings->bools.check_firmware_before_loading, true, DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING, false);
    SETTING_BOOL("core_option_category_enable",   &settings->bools.core_option_category_enable, true, DEFAULT_CORE_OPTION_CATEGORY_ENABLE, false);
@@ -1903,17 +1903,17 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("rgui_border_filler_thickness_enable",     &settings->bools.menu_rgui_border_filler_thickness_enable, true, true, false);
    SETTING_BOOL("rgui_border_filler_enable",               &settings->bools.menu_rgui_border_filler_enable, true, true, false);
    SETTING_BOOL("menu_rgui_transparency",                  &settings->bools.menu_rgui_transparency, true, DEFAULT_RGUI_TRANSPARENCY, false);
-   SETTING_BOOL("menu_rgui_shadows",                       &settings->bools.menu_rgui_shadows, true, rgui_shadows, false);
+   SETTING_BOOL("menu_rgui_shadows",                       &settings->bools.menu_rgui_shadows, true, DEFAULT_RGUI_SHADOWS, false);
    SETTING_BOOL("menu_rgui_full_width_layout",             &settings->bools.menu_rgui_full_width_layout, true, rgui_full_width_layout, false);
    SETTING_BOOL("rgui_inline_thumbnails",                  &settings->bools.menu_rgui_inline_thumbnails, true, rgui_inline_thumbnails, false);
    SETTING_BOOL("rgui_swap_thumbnails",                    &settings->bools.menu_rgui_swap_thumbnails, true, rgui_swap_thumbnails, false);
-   SETTING_BOOL("rgui_extended_ascii",                     &settings->bools.menu_rgui_extended_ascii, true, rgui_extended_ascii, false);
+   SETTING_BOOL("rgui_extended_ascii",                     &settings->bools.menu_rgui_extended_ascii, true, DEFAULT_RGUI_EXTENDED_ASCII, false);
    SETTING_BOOL("rgui_switch_icons",                       &settings->bools.menu_rgui_switch_icons, true, DEFAULT_RGUI_SWITCH_ICONS, false);
    SETTING_BOOL("rgui_particle_effect_screensaver",        &settings->bools.menu_rgui_particle_effect_screensaver, true, DEFAULT_RGUI_PARTICLE_EFFECT_SCREENSAVER, false);
 #endif
 #ifdef HAVE_XMB
    SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, DEFAULT_XMB_SHADOWS_ENABLE, false);
-   SETTING_BOOL("xmb_vertical_thumbnails",       &settings->bools.menu_xmb_vertical_thumbnails, true, xmb_vertical_thumbnails, false);
+   SETTING_BOOL("xmb_vertical_thumbnails",       &settings->bools.menu_xmb_vertical_thumbnails, true, DEFAULT_XMB_VERTICAL_THUMBNAILS, false);
    SETTING_BOOL("menu_xmb_show_title_header",    &settings->bools.menu_xmb_show_title_header, true, DEFAULT_XMB_SHOW_TITLE_HEADER, false);
 #endif
 #endif
@@ -1943,8 +1943,8 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_layout_enable",          &settings->bools.video_layout_enable, true, true, false);
 #endif
 #ifdef HAVE_COMMAND
-   SETTING_BOOL("network_cmd_enable",           &settings->bools.network_cmd_enable, true, network_cmd_enable, false);
-   SETTING_BOOL("stdin_cmd_enable",             &settings->bools.stdin_cmd_enable, true, stdin_cmd_enable, false);
+   SETTING_BOOL("network_cmd_enable",           &settings->bools.network_cmd_enable, true, DEFAULT_NETWORK_CMD_ENABLE, false);
+   SETTING_BOOL("stdin_cmd_enable",             &settings->bools.stdin_cmd_enable, true, DEFAULT_STDIN_CMD_ENABLE, false);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    SETTING_BOOL("network_remote_enable",        &settings->bools.network_remote_enable, false, false /* TODO */, false);
@@ -1953,10 +1953,10 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("netplay_nat_traversal",        &settings->bools.netplay_nat_traversal, true, true, false);
 #endif
    SETTING_BOOL("block_sram_overwrite",         &settings->bools.block_sram_overwrite, true, DEFAULT_BLOCK_SRAM_OVERWRITE, false);
-   SETTING_BOOL("savestate_auto_index",         &settings->bools.savestate_auto_index, true, savestate_auto_index, false);
-   SETTING_BOOL("savestate_auto_save",          &settings->bools.savestate_auto_save, true, savestate_auto_save, false);
-   SETTING_BOOL("savestate_auto_load",          &settings->bools.savestate_auto_load, true, savestate_auto_load, false);
-   SETTING_BOOL("savestate_thumbnail_enable",   &settings->bools.savestate_thumbnail_enable, true, savestate_thumbnail_enable, false);
+   SETTING_BOOL("savestate_auto_index",         &settings->bools.savestate_auto_index, true, DEFAULT_SAVESTATE_AUTO_INDEX, false);
+   SETTING_BOOL("savestate_auto_save",          &settings->bools.savestate_auto_save, true, DEFAULT_SAVESTATE_AUTO_SAVE, false);
+   SETTING_BOOL("savestate_auto_load",          &settings->bools.savestate_auto_load, true, DEFAULT_SAVESTATE_AUTO_LOAD, false);
+   SETTING_BOOL("savestate_thumbnail_enable",   &settings->bools.savestate_thumbnail_enable, true, DEFAULT_SAVESTATE_THUMBNAIL_ENABLE, false);
    SETTING_BOOL("save_file_compression",        &settings->bools.save_file_compression, true, DEFAULT_SAVE_FILE_COMPRESSION, false);
    SETTING_BOOL("savestate_file_compression",   &settings->bools.savestate_file_compression, true, DEFAULT_SAVESTATE_FILE_COMPRESSION, false);
    SETTING_BOOL("history_list_enable",          &settings->bools.history_list_enable, true, DEFAULT_HISTORY_LIST_ENABLE, false);
@@ -1976,7 +1976,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("remap_save_on_exit",           &settings->bools.remap_save_on_exit, true, DEFAULT_REMAP_SAVE_ON_EXIT, false);
    SETTING_BOOL("show_hidden_files",            &settings->bools.show_hidden_files, true, DEFAULT_SHOW_HIDDEN_FILES, false);
    SETTING_BOOL("use_last_start_directory",     &settings->bools.use_last_start_directory, true, DEFAULT_USE_LAST_START_DIRECTORY, false);
-   SETTING_BOOL("input_autodetect_enable",      &settings->bools.input_autodetect_enable, true, input_autodetect_enable, false);
+   SETTING_BOOL("input_autodetect_enable",      &settings->bools.input_autodetect_enable, true, DEFAULT_INPUT_AUTODETECT_ENABLE, false);
    SETTING_BOOL("input_auto_mouse_grab",        &settings->bools.input_auto_mouse_grab, true, false, false);
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
    SETTING_BOOL("input_nowinkey_enable",        &settings->bools.input_nowinkey_enable, true, false, false);
@@ -1998,7 +1998,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_window_save_positions", &settings->bools.video_window_save_positions, true, DEFAULT_WINDOW_SAVE_POSITIONS, false);
    SETTING_BOOL("video_window_custom_size_enable", &settings->bools.video_window_custom_size_enable, true, DEFAULT_WINDOW_CUSTOM_SIZE_ENABLE, false);
 
-   SETTING_BOOL("sustained_performance_mode",    &settings->bools.sustained_performance_mode, true, sustained_performance_mode, false);
+   SETTING_BOOL("sustained_performance_mode",    &settings->bools.sustained_performance_mode, true, DEFAULT_SUSTAINED_PERFORMANCE_MODE, false);
 
 #ifdef _3DS
    SETTING_BOOL("new3ds_speedup_enable",         &settings->bools.new3ds_speedup_enable, true, new3ds_speedup_enable,      false);
@@ -2021,8 +2021,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("playlist_portable_paths",       &settings->bools.playlist_portable_paths, true, DEFAULT_PLAYLIST_PORTABLE_PATHS, false);
 
    SETTING_BOOL("quit_press_twice", &settings->bools.quit_press_twice, true, DEFAULT_QUIT_PRESS_TWICE, false);
-   SETTING_BOOL("vibrate_on_keypress", &settings->bools.vibrate_on_keypress, true, vibrate_on_keypress, false);
-   SETTING_BOOL("enable_device_vibration", &settings->bools.enable_device_vibration, true, enable_device_vibration, false);
+   SETTING_BOOL("vibrate_on_keypress", &settings->bools.vibrate_on_keypress,
+true, DEFAULT_VIBRATE_ON_KEYPRESS, false);
+   SETTING_BOOL("enable_device_vibration", &settings->bools.enable_device_vibration, true, DEFAULT_ENABLE_DEVICE_VIBRATION, false);
 
 #ifdef HAVE_OZONE
    SETTING_BOOL("ozone_collapse_sidebar",       &settings->bools.ozone_collapse_sidebar, true, DEFAULT_OZONE_COLLAPSE_SIDEBAR, false);
@@ -2136,12 +2137,12 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("screen_brightness",	  		&settings->uints.screen_brightness, true, DEFAULT_SCREEN_BRIGHTNESS, false);
    SETTING_UINT("crt_switch_resolution",  		&settings->uints.crt_switch_resolution, true, DEFAULT_CRT_SWITCH_RESOLUTION, false);
    SETTING_UINT("video_autoswitch_refresh_rate", &settings->uints.video_autoswitch_refresh_rate, true, DEFAULT_AUTOSWITCH_REFRESH_RATE, false);
-   SETTING_UINT("input_bind_timeout",           &settings->uints.input_bind_timeout,     true, input_bind_timeout, false);
-   SETTING_UINT("input_bind_hold",              &settings->uints.input_bind_hold,        true, input_bind_hold, false);
-   SETTING_UINT("input_turbo_period",           &settings->uints.input_turbo_period,     true, turbo_period, false);
-   SETTING_UINT("input_duty_cycle",             &settings->uints.input_turbo_duty_cycle, true, turbo_duty_cycle, false);
-   SETTING_UINT("input_turbo_mode",             &settings->uints.input_turbo_mode, true, turbo_mode, false);
-   SETTING_UINT("input_turbo_default_button",   &settings->uints.input_turbo_default_button, true, turbo_default_btn, false);
+   SETTING_UINT("input_bind_timeout",           &settings->uints.input_bind_timeout,     true, DEFAULT_INPUT_BIND_TIMEOUT, false);
+   SETTING_UINT("input_bind_hold",              &settings->uints.input_bind_hold,        true, DEFAULT_INPUT_BIND_HOLD, false);
+   SETTING_UINT("input_turbo_period",           &settings->uints.input_turbo_period,     true, DEFAULT_TURBO_PERIOD, false);
+   SETTING_UINT("input_duty_cycle",             &settings->uints.input_turbo_duty_cycle, true, DEFAULT_TURBO_DUTY_CYCLE, false);
+   SETTING_UINT("input_turbo_mode",             &settings->uints.input_turbo_mode, true, DEFAULT_TURBO_MODE, false);
+   SETTING_UINT("input_turbo_default_button",   &settings->uints.input_turbo_default_button, true, DEFAULT_TURBO_DEFAULT_BTN, false);
    SETTING_UINT("input_max_users",              &settings->uints.input_max_users,          true, input_max_users, false);
    SETTING_UINT("fps_update_interval",          &settings->uints.fps_update_interval, true, DEFAULT_FPS_UPDATE_INTERVAL, false);
    SETTING_UINT("memory_update_interval",       &settings->uints.memory_update_interval, true, DEFAULT_MEMORY_UPDATE_INTERVAL, false);
@@ -2167,7 +2168,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("frontend_log_level",           &settings->uints.frontend_log_level, true, DEFAULT_FRONTEND_LOG_LEVEL, false);
    SETTING_UINT("libretro_log_level",           &settings->uints.libretro_log_level, true, DEFAULT_LIBRETRO_LOG_LEVEL, false);
    SETTING_UINT("keyboard_gamepad_mapping_type",&settings->uints.input_keyboard_gamepad_mapping_type, true, 1, false);
-   SETTING_UINT("input_poll_type_behavior",     &settings->uints.input_poll_type_behavior, true, 2, false);
+   SETTING_UINT("input_poll_type_behavior",     &settings->uints.input_poll_type_behavior, true, DEFAULT_INPUT_POLL_TYPE_BEHAVIOR, false);
    SETTING_UINT("video_monitor_index",          &settings->uints.video_monitor_index, true, DEFAULT_MONITOR_INDEX, false);
 #ifdef __WINRT__
    SETTING_UINT("video_fullscreen_x", &settings->uints.video_fullscreen_x, true, uwp_get_width(), false);
@@ -2183,10 +2184,10 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
    SETTING_UINT("video_shader_delay",           &settings->uints.video_shader_delay, true, DEFAULT_SHADER_DELAY, false);
 #ifdef HAVE_COMMAND
-   SETTING_UINT("network_cmd_port",             &settings->uints.network_cmd_port,    true, network_cmd_port, false);
+   SETTING_UINT("network_cmd_port",             &settings->uints.network_cmd_port,    true, DEFAULT_NETWORK_CMD_PORT, false);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
-   SETTING_UINT("network_remote_base_port",     &settings->uints.network_remote_base_port, true, network_remote_base_port, false);
+   SETTING_UINT("network_remote_base_port",     &settings->uints.network_remote_base_port, true, DEFAULT_NETWORK_REMOTE_BASE_PORT, false);
 #endif
 #ifdef GEKKO
    SETTING_UINT("video_viwidth",                    &settings->uints.video_viwidth, true, DEFAULT_VIDEO_VI_WIDTH, false);
@@ -2214,7 +2215,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("rgui_internal_upscale_level",  &settings->uints.menu_rgui_internal_upscale_level, true, rgui_internal_upscale_level, false);
    SETTING_UINT("rgui_aspect_ratio",            &settings->uints.menu_rgui_aspect_ratio, true, rgui_aspect, false);
    SETTING_UINT("rgui_aspect_ratio_lock",       &settings->uints.menu_rgui_aspect_ratio_lock, true, rgui_aspect_lock, false);
-   SETTING_UINT("rgui_particle_effect",         &settings->uints.menu_rgui_particle_effect, true, rgui_particle_effect, false);
+   SETTING_UINT("rgui_particle_effect",         &settings->uints.menu_rgui_particle_effect, true, DEFAULT_RGUI_PARTICLE_EFFECT, false);
 #endif
 #ifdef HAVE_LIBNX
    SETTING_UINT("split_joycon_p1", &settings->uints.input_split_joycon[0], true, 0, false);
@@ -2237,7 +2238,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_font_color_red",          &settings->uints.menu_font_color_red, true, menu_font_color_red, false);
    SETTING_UINT("menu_font_color_green",        &settings->uints.menu_font_color_green, true, menu_font_color_green, false);
    SETTING_UINT("menu_font_color_blue",         &settings->uints.menu_font_color_blue, true, menu_font_color_blue, false);
-   SETTING_UINT("menu_xmb_thumbnail_scale_factor", &settings->uints.menu_xmb_thumbnail_scale_factor, true, xmb_thumbnail_scale_factor, false);
+   SETTING_UINT("menu_xmb_thumbnail_scale_factor", &settings->uints.menu_xmb_thumbnail_scale_factor, true, DEFAULT_XMB_THUMBNAIL_SCALE_FACTOR, false);
    SETTING_UINT("menu_xmb_vertical_fade_factor",&settings->uints.menu_xmb_vertical_fade_factor, true, DEFAULT_XMB_VERTICAL_FADE_FACTOR, false);
 #endif
    SETTING_UINT("materialui_menu_color_theme",  &settings->uints.menu_materialui_color_theme, true, DEFAULT_MATERIALUI_THEME, false);
@@ -2256,7 +2257,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("custom_viewport_height",       &settings->video_viewport_custom.height, false, 0 /* TODO */, false);
    SETTING_UINT("custom_viewport_x",            (unsigned*)&settings->video_viewport_custom.x, false, 0 /* TODO */, false);
    SETTING_UINT("custom_viewport_y",            (unsigned*)&settings->video_viewport_custom.y, false, 0 /* TODO */, false);
-   SETTING_UINT("content_history_size",         &settings->uints.content_history_size,   true, default_content_history_size, false);
+   SETTING_UINT("content_history_size",         &settings->uints.content_history_size,   true, DEFAULT_CONTENT_HISTORY_SIZE, false);
    SETTING_UINT("video_hard_sync_frames",       &settings->uints.video_hard_sync_frames, true, DEFAULT_HARD_SYNC_FRAMES, false);
    SETTING_UINT("video_frame_delay",            &settings->uints.video_frame_delay,      true, DEFAULT_FRAME_DELAY, false);
    SETTING_UINT("video_max_swapchain_images",   &settings->uints.video_max_swapchain_images, true, DEFAULT_MAX_SWAPCHAIN_IMAGES, false);
@@ -2304,7 +2305,7 @@ static struct config_uint_setting *populate_settings_uint(
 
    SETTING_UINT("run_ahead_frames",           &settings->uints.run_ahead_frames, true, 1,  false);
 
-   SETTING_UINT("midi_volume",                  &settings->uints.midi_volume, true, midi_volume, false);
+   SETTING_UINT("midi_volume",                  &settings->uints.midi_volume, true, DEFAULT_MIDI_VOLUME, false);
 
    SETTING_UINT("video_stream_port",            &settings->uints.video_stream_port,    true, RARCH_STREAM_DEFAULT_PORT, false);
    SETTING_UINT("video_record_quality",            &settings->uints.video_record_quality,    true, RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY, false);
@@ -2419,7 +2420,7 @@ static struct config_int_setting *populate_settings_int(
    SETTING_INT("video_window_offset_x",        &settings->ints.video_window_offset_x, true, DEFAULT_WINDOW_OFFSET_X, false);
    SETTING_INT("video_window_offset_y",        &settings->ints.video_window_offset_y, true, DEFAULT_WINDOW_OFFSET_Y, false);
 #endif
-   SETTING_INT("content_favorites_size",       &settings->ints.content_favorites_size, true, default_content_favorites_size, false);
+   SETTING_INT("content_favorites_size",       &settings->ints.content_favorites_size, true, DEFAULT_CONTENT_FAVORITES_SIZE, false);
 #ifdef _3DS
    SETTING_INT("bottom_font_color_red",        &settings->ints.bottom_font_color_red,     true, DEFAULT_BOTTOM_FONT_COLOR, false);
    SETTING_INT("bottom_font_color_green",      &settings->ints.bottom_font_color_green,   true, DEFAULT_BOTTOM_FONT_COLOR, false);

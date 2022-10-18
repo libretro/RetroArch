@@ -817,11 +817,11 @@ static const unsigned rgui_internal_upscale_level = RGUI_UPSCALE_NONE;
 static const bool rgui_full_width_layout = true;
 static const unsigned rgui_aspect = RGUI_ASPECT_RATIO_4_3;
 static const unsigned rgui_aspect_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
-static const bool rgui_shadows = false;
-static const unsigned rgui_particle_effect = RGUI_PARTICLE_EFFECT_NONE;
+#define DEFAULT_RGUI_SHADOWS false
+#define DEFAULT_RGUI_PARTICLE_EFFECT RGUI_PARTICLE_EFFECT_NONE
 #define DEFAULT_RGUI_PARTICLE_EFFECT_SPEED 1.0f
 #define DEFAULT_RGUI_PARTICLE_EFFECT_SCREENSAVER true
-static const bool rgui_extended_ascii = false;
+#define DEFAULT_RGUI_EXTENDED_ASCII false
 #define DEFAULT_RGUI_SWITCH_ICONS true
 #endif
 
@@ -1265,7 +1265,7 @@ static const unsigned netplay_share_analog  = RARCH_NETPLAY_SHARE_ANALOG_NO_SHAR
  * incremented before saving.
  * When the content is loaded, state index will be set
  * to the highest existing value. */
-static const bool savestate_auto_index = false;
+#define DEFAULT_SAVESTATE_AUTO_INDEX false
 
 /* Specifies the maximum number of savestates to keep
  * when savestate auto index is enabled
@@ -1280,10 +1280,10 @@ static const bool savestate_auto_index = false;
  * The path is $SRAM_PATH.auto.
  * RetroArch will automatically load any savestate with this path on
  * startup if savestate_auto_load is set. */
-static const bool savestate_auto_save = false;
-static const bool savestate_auto_load = false;
+#define DEFAULT_SAVESTATE_AUTO_SAVE false
+#define DEFAULT_SAVESTATE_AUTO_LOAD false
 
-static const bool savestate_thumbnail_enable = false;
+#define DEFAULT_SAVESTATE_THUMBNAIL_ENABLE false
 
 /* When creating save (srm) files, compress
  * written data */
@@ -1320,11 +1320,10 @@ static const bool savestate_thumbnail_enable = false;
 #define DEFAULT_RUN_AHEAD_HIDE_WARNINGS false
 
 /* Enable stdin/network command interface. */
-static const bool network_cmd_enable = false;
-static const uint16_t network_cmd_port = 55355;
-static const bool stdin_cmd_enable = false;
-
-static const uint16_t network_remote_base_port = 55400;
+#define DEFAULT_NETWORK_CMD_ENABLE false
+#define DEFAULT_NETWORK_CMD_PORT 55355
+#define DEFAULT_NETWORK_REMOTE_BASE_PORT 55400
+#define DEFAULT_STDIN_CMD_ENABLE false
 
 #define DEFAULT_NETWORK_BUILDBOT_AUTO_EXTRACT_ARCHIVE true
 #define DEFAULT_NETWORK_BUILDBOT_SHOW_EXPERIMENTAL_CORES false
@@ -1350,11 +1349,11 @@ static const uint16_t network_remote_base_port = 55400;
 #endif
 
 /* Number of entries that will be kept in content history playlist file. */
-static const unsigned default_content_history_size = 200;
+#define DEFAULT_CONTENT_HISTORY_SIZE 200
 
 /* Number of entries that will be kept in content favorites playlist file.
  * -1 == 'unlimited' (99999) */
-static const int default_content_favorites_size = 200;
+#define DEFAULT_CONTENT_FAVORITES_SIZE 200
 
 /* Sort all playlists (apart from histories) alphabetically */
 #define DEFAULT_PLAYLIST_SORT_ALPHABETICAL true
@@ -1441,20 +1440,18 @@ static const int default_content_favorites_size = 200;
 /* Axis threshold (between 0.0 and 1.0)
  * How far an axis must be tilted to result in a button press. */
 #define DEFAULT_AXIS_THRESHOLD 0.5f
-
 #define DEFAULT_ANALOG_DEADZONE 0.0f
-
 #define DEFAULT_ANALOG_SENSITIVITY 1.0f
 
 /* Describes speed of which turbo-enabled buttons toggle. */
-static const unsigned turbo_period        = 6;
-static const unsigned turbo_duty_cycle    = 3;
-static const unsigned turbo_mode          = 0;
-static const unsigned turbo_default_btn   = RETRO_DEVICE_ID_JOYPAD_B;
+#define DEFAULT_TURBO_PERIOD 6
+#define DEFAULT_TURBO_DUTY_CYCLE 3
+#define DEFAULT_TURBO_MODE 0
+#define DEFAULT_TURBO_DEFAULT_BTN RETRO_DEVICE_ID_JOYPAD_B
 
 /* Enable input auto-detection. Will attempt to autoconfigure
  * gamepads, plug-and-play style. */
-static const bool input_autodetect_enable = true;
+#define DEFAULT_INPUT_AUTODETECT_ENABLE true
 
 /* Enables accelerometer/gyroscope/illuminance
  * sensor input, if supported */
@@ -1472,9 +1469,8 @@ static const bool input_autodetect_enable = true;
 
 /* Show the input descriptors set by the core instead
  * of the default ones. */
-static const bool input_descriptor_label_show = true;
-
-static const bool input_descriptor_hide_unbound = false;
+#define DEFAULT_INPUT_DESCRIPTOR_LABEL_SHOW true
+#define DEFAULT_INPUT_DESCRIPTOR_HIDE_UNBOUND false
 
 #if defined(DINGUX)
 static const unsigned input_max_users = 1;
@@ -1482,12 +1478,9 @@ static const unsigned input_max_users = 1;
 static const unsigned input_max_users = 5;
 #endif
 
-static const unsigned input_poll_type_behavior = 2;
-
-static const unsigned input_bind_timeout = 5;
-
-static const unsigned input_bind_hold = 2;
-
+#define DEFAULT_INPUT_BIND_TIMEOUT 5
+#define DEFAULT_INPUT_BIND_HOLD 2
+#define DEFAULT_INPUT_POLL_TYPE_BEHAVIOR 2
 #define DEFAULT_INPUT_HOTKEY_BLOCK_DELAY 5
 
 static const unsigned gfx_thumbnails_default = 3;
@@ -1509,20 +1502,19 @@ static const unsigned gfx_thumbnail_upscale_threshold = 0;
 #define DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 #endif
 
-static const bool xmb_vertical_thumbnails = false;
+#define DEFAULT_XMB_VERTICAL_THUMBNAILS false
 
-static const unsigned xmb_thumbnail_scale_factor = 100;
+#define DEFAULT_XMB_THUMBNAIL_SCALE_FACTOR 100
 
 #ifdef IOS
-static const bool ui_companion_start_on_boot = false;
+#define DEFAULT_UI_COMPANION_START_ON_BOOT false
 #else
-static const bool ui_companion_start_on_boot = true;
+#define DEFAULT_UI_COMPANION_START_ON_BOOT true
 #endif
 
-static const bool ui_companion_enable = false;
-
+#define DEFAULT_UI_COMPANION_ENABLE false
 /* Currently only used to show the WIMP UI on startup */
-static const bool ui_companion_toggle = false;
+#define DEFAULT_UI_COMPANION_TOGGLE false
 
 /* Only init the WIMP UI for this session if this is enabled */
 #define DEFAULT_DESKTOP_MENU_ENABLE true
@@ -1553,10 +1545,8 @@ static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QU
 
 /* MIDI */
 #define DEFAULT_MIDI_INPUT  "Off"
-
 #define DEFAULT_MIDI_OUTPUT "Off"
-
-static const unsigned midi_volume = 100;
+#define DEFAULT_MIDI_VOLUME 100
 
 #ifdef HAVE_MIST
 /* Steam */
@@ -1564,10 +1554,15 @@ static const unsigned midi_volume = 100;
 #endif
 
 /* Only applies to Android 7.0 (API 24) and up */
-static const bool sustained_performance_mode = false;
+#define DEFAULT_SUSTAINED_PERFORMANCE_MODE false
 
-static const bool vibrate_on_keypress        = false;
-static const bool enable_device_vibration    = false;
+#if defined(ANDROID)
+#define DEFAULT_VIBRATE_ON_KEYPRESS true
+#else
+#define DEFAULT_VIBRATE_ON_KEYPRESS false
+#endif
+
+#define DEFAULT_ENABLE_DEVICE_VIBRATION false
 
 /* Defines the strength of rumble effects
  * on OpenDingux devices */
