@@ -1072,7 +1072,7 @@ static unsigned menu_displaylist_parse_core_manager_steam_list(
    }
 
    return count;
-   
+
 error:
    /* TODO: Send error notification */
    RARCH_ERR("[Steam] Error enumerating core dlcs for core manager (%d-%d)\n", MIST_UNPACK_RESULT(result));
@@ -1095,7 +1095,7 @@ static unsigned menu_displaylist_parse_core_information_steam(
    /* Get the core dlc information */
    core_dlc = steam_get_core_dlc_by_name(dlc_list, info->path);
    if (core_dlc == NULL) return count;
-   
+
    /* Check if installed */
    result = mist_steam_apps_is_dlc_installed(core_dlc->app_id, &installed);
    if (MIST_IS_ERROR(result)) goto error;
@@ -1120,7 +1120,7 @@ static unsigned menu_displaylist_parse_core_information_steam(
             0, 0, NULL))
          count++;
    }
-   
+
    return count;
 error:
    /* TODO: Send error notification */
@@ -1800,7 +1800,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          if (string_is_equal(menu_driver, "rgui"))
          {
             strlcpy(tmp, " Device display name: ", sizeof(tmp));
-            strlcat(tmp, 
+            strlcat(tmp,
                input_config_get_device_display_name(controller) ?
                input_config_get_device_display_name(controller) :
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -1810,7 +1810,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
                count++;
             strlcpy(tmp, " Device config name: ", sizeof(tmp));
-            strlcat(tmp, 
+            strlcat(tmp,
                input_config_get_device_config_name(controller) ?
                input_config_get_device_config_name(controller)  :
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -2459,20 +2459,20 @@ static int create_string_list_rdb_entry_int(
 
 static enum msg_file_type extension_to_file_hash_type(const char *ext)
 {
-   if (     ext[0] == 's' 
+   if (     ext[0] == 's'
          && ext[1] == 'h'
          && ext[2] == 'a'
          && ext[3] == '1'
          && ext[4] == '\0')
       return FILE_TYPE_SHA1;
-   else if (     ext[0] == 'c' 
-              && ext[1] == 'r' 
-              && ext[2] == 'c' 
+   else if (     ext[0] == 'c'
+              && ext[1] == 'r'
+              && ext[2] == 'c'
               && ext[3] == '\0')
       return FILE_TYPE_CRC;
-   else if (     ext[0] == 'm' 
-              && ext[1] == 'd' 
-              && ext[2] == '5' 
+   else if (     ext[0] == 'm'
+              && ext[1] == 'd'
+              && ext[2] == '5'
               && ext[3] == '\0')
       return FILE_TYPE_MD5;
    return FILE_TYPE_NONE;
@@ -4889,7 +4889,7 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[_len  ] = ':';
       tmp[_len+1] = ' ';
       tmp[_len+2] = '\0';
-      strlcat(tmp,!string_is_empty(content_path) 
+      strlcat(tmp,!string_is_empty(content_path)
                   ? content_path
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                   sizeof(tmp)
@@ -5185,7 +5185,6 @@ static int menu_displaylist_parse_input_device_index_list(
    unsigned port                = 0;
    unsigned map                 = 0;
    int current_device           = -1;
-   unsigned max_devices         = input_config_get_device_count();
 
    device_id[0]                 = '\0';
    device_label[0]              = '\0';
@@ -5203,13 +5202,13 @@ static int menu_displaylist_parse_input_device_index_list(
    val_na       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
    val_port     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT);
 
-   for (i = max_devices + 1; i--;)
+   for (i = MAX_INPUT_DEVICES + 1; i--;)
    {
       snprintf(device_id, sizeof(device_id), "%d", i);
 
       device_label[0] = '\0';
 
-      if (i < max_devices)
+      if (i < MAX_INPUT_DEVICES)
       {
          const char *device_name = input_config_get_device_display_name(i) ?
                input_config_get_device_display_name(i) : input_config_get_device_name(i);
@@ -5225,35 +5224,34 @@ static int menu_displaylist_parse_input_device_index_list(
                snprintf(device_label         + _len,
                         sizeof(device_label) - _len, " (#%u)", idx);
          }
-         else
-            snprintf(device_label, sizeof(device_label), "%s (%s %u)", val_na,
-                  val_port, map);
       }
       else
          strlcpy(device_label, val_disabled, sizeof(device_label));
 
-      /* Add menu entry */
-      if (menu_entries_append(info->list,
-            device_label,
-            device_id,
-            MENU_ENUM_LABEL_INPUT_BIND_DEVICE_INDEX,
-            MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_INDEX,
-            0, i, NULL))
+      if (!string_is_empty(device_label))
       {
-         /* Add checkmark if input is currently
-          * mapped to this entry */
-         if (i == map)
-         {
-            menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
-            if (cbs)
-               cbs->checked = true;
-            menu_navigation_set_selection(menu_index);
-            current_device = i;
-         }
-
-         count++;
-         menu_index++;
-      }
+        /* Add menu entry */
+        if (menu_entries_append(info->list,
+              device_label,
+              device_id,
+              MENU_ENUM_LABEL_INPUT_BIND_DEVICE_INDEX,
+              MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_INDEX,
+              0, i, NULL))
+          {
+           /* Add checkmark if input is currently
+            * mapped to this entry */
+           if (i == map)
+           {
+              menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+              if (cbs)
+                 cbs->checked = true;
+              menu_navigation_set_selection(menu_index);
+              current_device = i;
+           }
+           count++;
+           menu_index++;
+        }
+     }
    }
 
    /* Disabled is the last device, which is the first entry */
@@ -7147,7 +7145,7 @@ unsigned menu_displaylist_build_list(
             char key_split_joycon[PATH_MAX_LENGTH];
             const char *split_joycon_str =
                msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON);
-            size_t _len                  = strlcpy(key_split_joycon, split_joycon_str, 
+            size_t _len                  = strlcpy(key_split_joycon, split_joycon_str,
                   sizeof(key_split_joycon));
 
             for (user = 0; user < 8; user++)
@@ -9565,22 +9563,22 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_FORMAT, PARSE_ONLY_UINT, false},
             };
 
-            for (i = 0; i < ARRAY_SIZE(build_list); i++) 
-            { 
-               switch (build_list[i].enum_idx) 
-               { 
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
+               {
                   case MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_FORMAT:
                      if (settings->bools.steam_rich_presence_enable)
-                        build_list[i].checked = true; 
-                     break; 
-                  default: 
-                     break; 
-               } 
+                        build_list[i].checked = true;
+                     break;
+                  default:
+                     break;
+               }
             }
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
-               if (!build_list[i].checked) 
+               if (!build_list[i].checked)
                   continue;
 
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -11099,8 +11097,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         size_t _len        = strlcpy(desc_label,
                                              msg_hash_to_str(keyptr->enum_idx),
                                              sizeof(desc_label));
-                        desc_label[_len  ] = ' '; 
-                        desc_label[_len+1] = '\0'; 
+                        desc_label[_len  ] = ' ';
+                        desc_label[_len+1] = '\0';
                         strlcat(desc_label, descriptor, sizeof(desc_label));
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
@@ -11154,8 +11152,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         size_t _len        = strlcpy(desc_label,
                                              msg_hash_to_str(keyptr->enum_idx),
                                              sizeof(desc_label));
-                        desc_label[_len  ] = ' '; 
-                        desc_label[_len+1] = '\0'; 
+                        desc_label[_len  ] = ' ';
+                        desc_label[_len+1] = '\0';
                         strlcat(desc_label, descriptor, sizeof(desc_label));
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
@@ -11949,7 +11947,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS);
                const char *val_filter =
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILTER);
-               const char *val_scale = 
+               const char *val_scale =
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCALE);
 
                if (frontend_driver_can_watch_for_changes())
@@ -12615,7 +12613,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if ((count != prev_count) ||
                 (selection >= count))
             {
-               info->flags |= MD_FLAG_NEED_REFRESH 
+               info->flags |= MD_FLAG_NEED_REFRESH
                             | MD_FLAG_NEED_NAVIGATION_CLEAR;
                prev_count   = count;
             }
@@ -12627,9 +12625,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_parse_core_manager_steam_list(info, settings);
          info->flags       &= ~MD_FLAG_NEED_REFRESH;
-         info->flags       |=  MD_FLAG_NEED_PUSH 
+         info->flags       |=  MD_FLAG_NEED_PUSH
                             |  MD_FLAG_NEED_NAVIGATION_CLEAR;
-         
+
          /* No core dlcs were found */
          if (count == 0)
             if (menu_entries_append(info->list,
@@ -12638,17 +12636,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
                   FILE_TYPE_NONE, 0, 0, NULL))
                count++;
-         
+
          break;
       case DISPLAYLIST_CORE_INFORMATION_STEAM_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-      
+
          info->flags                &= ~MD_FLAG_NEED_REFRESH;
-         info->flags                |=  MD_FLAG_NEED_PUSH 
+         info->flags                |=  MD_FLAG_NEED_PUSH
                                      |  MD_FLAG_NEED_NAVIGATION_CLEAR;
-         count                       = 
+         count                       =
             menu_displaylist_parse_core_information_steam(info, settings);
-      
+
          if (count == 0)
             if (menu_entries_append(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
@@ -12656,7 +12654,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
                   FILE_TYPE_NONE, 0, 0, NULL))
                count++;
-      
+
          break;
 #endif
       case DISPLAYLIST_CONTENTLESS_CORES:
