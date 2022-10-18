@@ -101,7 +101,6 @@ typedef struct
 struct playlist_entry
 {
    char *path;
-   unsigned entry_slot;
    char *label;
    char *core_path;
    char *core_name;
@@ -113,6 +112,7 @@ struct playlist_entry
    char *last_played_str;
    struct string_list *subsystem_roms;
    playlist_path_id_t *path_id;
+   unsigned entry_slot;
    unsigned runtime_hours;
    unsigned runtime_minutes;
    unsigned runtime_seconds;
