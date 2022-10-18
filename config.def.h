@@ -698,9 +698,9 @@ static const bool menu_show_core_updater       = true;
 static const bool menu_show_core_manager_steam = true;
 #endif
 static const bool menu_show_legacy_thumbnail_updater = false;
-static const bool menu_show_sublabels                = true;
-static const bool menu_dynamic_wallpaper_enable      = true;
-static const bool menu_scroll_fast                   = false;
+#define DEFAULT_MENU_SHOW_SUBLABELS true
+#define DEFAULT_MENU_DYNAMIC_WALLPAPER_ENABLE true
+#define DEFAULT_MENU_SCROLL_FAST false
 
 #define DEFAULT_MENU_SCROLL_DELAY 256
 
@@ -710,9 +710,9 @@ static const float menu_ticker_speed        = 2.0f;
 #define DEFAULT_MENU_TICKER_SMOOTH true
 
 #if defined(HAVE_THREADS)
-static const bool menu_savestate_resume     = true;
+#define DEFAULT_MENU_SAVESTATE_RESUME true
 #else
-static const bool menu_savestate_resume     = false;
+#define DEFAULT_MENU_SAVESTATE_RESUME false
 #endif
 
 #define DEFAULT_MENU_INSERT_DISK_RESUME true
@@ -809,8 +809,8 @@ static const float menu_header_opacity = 1.000;
 #define DEFAULT_RGUI_COLOR_THEME RGUI_THEME_CLASSIC_GREEN
 #define DEFAULT_RGUI_TRANSPARENCY true
 
-static const bool rgui_inline_thumbnails = false;
-static const bool rgui_swap_thumbnails = false;
+#define DEFAULT_RGUI_INLINE_THUMBNAILS false
+#define DEFAULT_RGUI_SWAP_THUMBNAILS false
 static const unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
 static const unsigned rgui_thumbnail_delay = 0;
 static const unsigned rgui_internal_upscale_level = RGUI_UPSCALE_NONE;
@@ -919,18 +919,18 @@ static const unsigned input_backtouch_toggle       = false;
 
 /* Offset for where messages will be placed on-screen.
  * Values are in range [0.0, 1.0]. */
-static const float message_pos_offset_x = 0.05;
-static const float message_pos_offset_y = 0.05;
+#define DEFAULT_MESSAGE_POS_OFFSET_X 0.05f
+#define DEFAULT_MESSAGE_POS_OFFSET_Y 0.05f
 
 /* Color of the message.
  * RGB hex value. */
-static const uint32_t message_color = 0xffff00;
+#define DEFAULT_MESSAGE_COLOR 0xffff00
 
-static const bool message_bgcolor_enable = false;
-static const uint32_t message_bgcolor_red = 0;
-static const uint32_t message_bgcolor_green = 0;
-static const uint32_t message_bgcolor_blue = 0;
-static const float message_bgcolor_opacity = 1.0f;
+#define DEFAULT_MESSAGE_BGCOLOR_ENABLE false
+#define DEFAULT_MESSAGE_BGCOLOR_RED 0
+#define DEFAULT_MESSAGE_BGCOLOR_GREEN 0
+#define DEFAULT_MESSAGE_BGCOLOR_BLUE 0
+#define DEFAULT_MESSAGE_BGCOLOR_OPACITY 1.0f
 
 /* Record post-filtered (CPU filter) video,
  * rather than raw game output. */
@@ -1473,9 +1473,9 @@ static const unsigned netplay_share_analog  = RARCH_NETPLAY_SHARE_ANALOG_NO_SHAR
 #define DEFAULT_INPUT_DESCRIPTOR_HIDE_UNBOUND false
 
 #if defined(DINGUX)
-static const unsigned input_max_users = 1;
+#define DEFAULT_INPUT_MAX_USERS 1
 #else
-static const unsigned input_max_users = 5;
+#define DEFAULT_INPUT_MAX_USERS 5
 #endif
 
 #define DEFAULT_INPUT_BIND_TIMEOUT 5
