@@ -4923,7 +4923,7 @@ int16_t input_state_internal(unsigned port, unsigned device,
 INP_FLAG_BLOCK_LIBRETRO_INPUT);
 #else
    bool input_blocked                      = (input_st->flags &
-INP_FLAG_BLOCK_LIBETRO_INPUT);
+INP_FLAG_BLOCK_LIBRETRO_INPUT);
 #endif
    bool bitmask_enabled                    = false;
    unsigned max_users                      = settings->uints.input_max_users;
