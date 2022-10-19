@@ -2576,8 +2576,10 @@ bool command_event(enum event_command cmd, void *data)
             command_playlist_update_write(
                   NULL, *playlist_index, &entry);
 
+#ifdef HAVE_MENU
             /* Update playlist metadata */
             menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, &i);
+#endif
 
             runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             break;
