@@ -2809,7 +2809,7 @@ unsigned *input_config_get_device_ptr(unsigned port)
 
 unsigned input_config_get_device_count(void)
 {
-   unsigned num_devices;
+   unsigned num_devices = 0;
    input_driver_state_t *input_st = &input_driver_st;
 
    for (int i = 0; i < MAX_INPUT_DEVICES; ++i)
