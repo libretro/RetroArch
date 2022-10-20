@@ -7930,6 +7930,10 @@ MSG_HASH(
    "Suchen:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
+   "Miniaturansichten umlaufend"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Zurück"
    )

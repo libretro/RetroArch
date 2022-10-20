@@ -8130,6 +8130,10 @@ MSG_HASH(
    "Ara"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
+   "Küçük resim döngüsü"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Geri"
    )
