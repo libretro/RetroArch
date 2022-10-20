@@ -421,7 +421,7 @@ static int16_t cocoa_input_state(
             return ret;
          }
 
-         if (binds[port][id].valid)
+         if (!keyboard_mapping_blocked && binds[port][id].valid)
          {
             if (id < RARCH_BIND_LIST_END)
                if (apple_key_state[rarch_keysym_lut[binds[port][id].key]])
