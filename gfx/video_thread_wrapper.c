@@ -1384,28 +1384,15 @@ bool video_init_thread(const video_driver_t **out_driver, void **out_data,
       const video_driver_t *drv, const video_info_t info)
 {
    thread_video_t *thr = (thread_video_t*)calloc(1, sizeof(*thr));
-
    if (!thr)
-      goto error;
+      return false;
 
    video_thread_set_callbacks(thr, drv);
 
-   if (!video_thread_init(thr, info, input, input_data))
-   {
-      thr->video_thread.free(thr);
-      goto error;
-   }
-
+   thr->driver = drv;
    *out_driver = &thr->video_thread;
    *out_data   = thr;
-
-   return true;
-
-error:
-   *out_driver = NULL;
-   *out_data   = NULL;
-
-   return false;
+   return video_thread_init(thr, info, input, input_data);
 }
 
 bool video_thread_font_init(const void **font_driver, void **font_handle,
