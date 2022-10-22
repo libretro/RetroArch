@@ -22,7 +22,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   "歷史紀錄"
+   "歷史記錄"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
@@ -131,15 +131,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "關閉展示模式 (需要重新啟動)"
+   "關閉展示模式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   "顯示全部的設定項目。"
+   "密碼輸入正確後，顯示設定相關的全部選項，需要重新啟動應用程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   "線上更新器"
+   "線上更新"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
@@ -210,7 +210,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "透過網路更新&安裝核心"
+   "透過網路安裝與更新核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
@@ -218,7 +218,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   "從\"下載\"資料夾中安裝或還原模擬器核心。"
+   "從「下載資料夾」中安裝或還原核心。"
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
@@ -233,7 +233,7 @@ MSG_HASH( /* FIXME Maybe add a description? */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES,
-   "開始目錄"
+   "開始資料夾"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
@@ -272,7 +272,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   "先前瀏覽過的圖片在此顯示。"
+   "瀏覽圖片的歷史記錄列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
@@ -303,7 +303,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "下載模擬器核心"
+   "核心下載"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
@@ -315,27 +315,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   "轉換模擬核心到 Play Store 版本"
+   "轉換核心至 Play Store 版本"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   "如果有可能, 將所有 \"上古\" 及 \"手動安裝\" 版的模擬核心升級至 Play Store 的最新版本"
+   "如果有可用更新，使用 Play Store 中最新版本的核心，替換全部舊版與手動安裝的核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-   "更新預覽縮圖"
+   "更新預覽縮圖 (舊版)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "下載指定主機的所有預覽縮圖。"
+   "選擇遊戲列表，下載並更新全部預覽縮圖。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   "遊戲清單預覽縮圖更新器"
+   "更新預覽縮圖"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "選擇遊戲列表下載全部的預覽縮圖。"
+   "選擇列表下載並更新全部預覽縮圖。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -355,7 +355,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   "更新模擬器核心資料庫"
+   "更新核心資料庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
@@ -449,7 +449,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-   "模擬器核心標籤"
+   "核心標籤"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
@@ -465,7 +465,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-   "分類目錄"
+   "類別"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
@@ -529,11 +529,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "鎖定已安裝的模擬核心"
+   "鎖定已安裝的核心"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "防止當前以安裝的模擬核心被修改. 可用於避免當某內容需要特定版本的模擬核心時導致的非理想的更新 (例如: 一些街機 ROM 集只適用於特定版本的模擬核心)"
+   "防止修改目前使用的核心。如遊戲需要此核心版本才可執行時，可用於避免不必要的更新。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -541,27 +541,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   "刪除模擬核心"
+   "刪除核心"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE,
-   "從硬碟中刪除模擬核心"
+   "※ 注意：目前無再確認提示，按下後即刪除目前使用的核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   "備份模擬核心"
+   "備份核心"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   "爲目前已安裝的模擬核心建立存檔備份"
+   "爲目前使用的核心建立備份。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
-   "還原模擬核心的存檔備份"
+   "還原備份"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
-   "從存檔備份列表中安裝一個之前版本的模擬核心"
+   "從備份列表中選擇已備份的核心，取代目前使用的核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
@@ -1094,11 +1094,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-   "模擬核心"
+   "核心"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "更改模擬核心設定"
+   "變更核心的相關設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
@@ -1222,7 +1222,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-   "目錄"
+   "資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
@@ -2041,19 +2041,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
-   "開啟'OK'音效"
+   "開啟「確認」音效"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
-   "開啟'取消'音效"
+   "開啟「取消」音效"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
-   "開啟'通知'音效"
+   "開啟「通知」音效"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
-   "開啟'背景音樂'音效"
+   "開啟背景音樂"
    )
 
 /* Settings > Input */
@@ -2597,7 +2597,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "既時存檔縮圖"
+   "即時存檔附加截圖"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+   "使用即時存檔儲存遊戲時，額外儲存截圖。並在快捷選單中顯示縮圖。"
    )
 
 /* Settings > Logging */
@@ -2863,19 +2867,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   "開啟 Kiosk 模式"
+   "展示模式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   "隱藏相關設定"
+   "隱藏設定相關的全部選項。(※ 目前此選項有錯誤，系統無預設關閉密碼，開啟此選項後，必須設定關閉密碼。)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
-   "設定取消 Kiosk 模式的密碼"
+   "設定關閉展示模式的密碼"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
-   "設定開啟 Kiosk 模式的密碼.事後可在選項中取消."
+   "在主選單「關閉展示模式」選項輸入密碼即可關閉展示模式。密碼設定完成後，需要重新啟動應用程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
@@ -2980,15 +2984,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-   "在線上更新選項中顯示「核心下載」選項。"
+   "在「載入核心」選項中顯示「核心下載」選項，在「線上更新」選項中顯示「核心下載」和「更新核心資料庫」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-   "顯示「更新縮略圖」"
+   "顯示「更新預覽縮圖 (舊版)」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-   "在線上更新選項中顯示「更新縮略圖」選項。"
+   "在「線上更新」選項中顯示「更新預覽縮圖 (舊版)」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
@@ -3080,11 +3084,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
-   "顯示「歷史紀錄」"
+   "顯示「歷史記錄」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "顯示「歷史紀錄」列表，使用Ozone 與 XMB 佈景主題時，更改此選項需要重新啟動。"
+   "顯示「歷史記錄」列表，使用Ozone 與 XMB 佈景主題時，變更此選項需要重新啟動。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
@@ -3146,6 +3150,14 @@ MSG_HASH( /* FIXME Not RGUI specific */
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   "顯示「下載預覽縮圖」"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   "遊戲未執行時，在快捷選單中顯示「下載預覽縮圖」選項。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    "顯示「資訊」"
    )
@@ -3182,7 +3194,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "縮略圖"
+   "主要的預覽縮圖"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS,
+   "設定預覽縮圖顯示類型。開啟後在遊戲列表中，支援按鈕切換預覽縮圖的類型。"
    )
 
 /* Settings > AI Service */
@@ -3259,6 +3275,14 @@ MSG_HASH(
    "Enable stdin command interface."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
+   "自動下載預覽縮圖"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+   "瀏覽遊戲列表時，自動下載缺少的預覽縮圖。開啟後將嚴重影響效能。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
    "更新程序"
    )
@@ -3290,7 +3314,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   "歷史紀錄"
+   "歷史記錄"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
@@ -3306,7 +3330,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
-   "核心目錄:"
+   "核心："
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
@@ -3401,15 +3425,15 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
-   "系統/BIOS目錄"
+   "系統"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
-   "設定系統文件儲存位置。"
+   "設定系統相關檔案儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-   "下載目錄"
+   "下載資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
@@ -3417,7 +3441,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   "資源目錄"
+   "佈景主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
@@ -3425,7 +3449,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
-   "動態壁紙目錄"
+   "動態壁紙"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
@@ -3433,15 +3457,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
-   "縮略圖目錄"
+   "預覽縮圖"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
-   "設定縮略圖儲存位置。"
+   "設定預覽縮圖儲存位置。"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "文件瀏覽器目錄"
+   "開始資料夾"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -3453,23 +3477,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
-   "核心訊息目錄"
+   "核心資料庫"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
-   "設定應用程式資料庫與核心資料庫儲存位置。"
+   "設定核心資料庫儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
-   "設定遊戲的資料庫儲存位置。"
+   "設定遊戲資料庫儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "游標"
+   "指標"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-   "設定指標搜尋紀錄儲存位置。"
+   "設定指標搜尋記錄儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
@@ -3505,23 +3529,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
-   "抓圖"
+   "截圖"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
-   "設定遊戲截圖儲存位置。"
+   "設定截圖儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
-   "設定控制器自動設定文件儲存位置。"
+   "設定控制器自動設定檔儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
-   "設定自訂控制器文件儲存位置。"
+   "設定控制器自訂檔儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   "遊戲列表目錄"
+   "遊戲列表"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
@@ -3529,27 +3553,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_DIRECTORY,
-   "設定我的最愛儲存位置。預設儲存位置於應用程式根目錄。"
+   "設定「我的最愛」列表儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_DIRECTORY,
-   "設定遊戲執行歷史紀錄位置。預設儲存位置於應用程式根目錄。"
+   "設定「歷史記錄」列表儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_IMAGE_HISTORY_DIRECTORY,
-   "設定圖片瀏覽紀錄儲存位置。預設儲存位置於應用程式根目錄。"
+   "設定「圖片」列表儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_MUSIC_HISTORY_DIRECTORY,
-   "設定音樂播放列表儲存位置。預設儲存位置於應用程式根目錄。"
+   "設定「音樂」列表儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
-   "設定影片播放列表儲存位置。預設儲存位置於應用程式根目錄。"
+   "設定「影片」列表儲存位置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
+   "執行日誌"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
-   "設定應用程式執行日誌儲存位置。預設儲存位置於應用程式根目錄。"
+   "設定應用程式執行日誌儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
@@ -3566,6 +3594,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
    "設定暫存檔案儲存位置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_DIR,
+   "系統事件日誌"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_DIR,
@@ -3647,6 +3679,10 @@ MSG_HASH(
    "系統名稱"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "設定列表名稱，用於建立與資料庫和預覽縮圖的關聯名稱。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "預設核心"
    )
@@ -3706,6 +3742,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
    "顯示更多的相關資訊。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+   "下載預覽縮圖"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+   "下載此項目的預覽縮圖。"
    )
 
 /* Playlist Item > Set Core Association */
@@ -4122,7 +4166,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
-   "歷史紀錄與我的最愛"
+   "歷史記錄與我的最愛"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
@@ -4130,7 +4174,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
-   "歷史紀錄與我的最愛"
+   "歷史記錄與我的最愛"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
@@ -4209,8 +4253,16 @@ MSG_HASH(
    "系統預設"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
+   "封面"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
-   "螢幕截圖目錄"
+   "截圖"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
+   "標題"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
@@ -4413,6 +4465,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    "選單顏色主題"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+   "預覽縮圖垂直排列"
+   )
 
 /* XMB: Settings Options */
 
@@ -4522,6 +4578,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "選單顏色主題"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "次要的預覽縮圖"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "開啟後覆蓋遊戲列表的資訊面板，支援按鈕切換顯示。當「主要的預覽縮圖」關閉時不顯示。"
    )
 
 /* MaterialUI: Settings > User Interface > Appearance */
@@ -4702,19 +4766,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
-   "文件瀏覽器目錄"
+   "檔案瀏覽器"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
+   "上一層目錄"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
+   "封面"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
-   "螢幕截圖目錄"
+   "截圖"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   "標題"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE,
-   "核心目錄"
+   "核心"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
-   "核心訊息目錄"
+   "核心資料庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
@@ -4735,6 +4811,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOG,
    "記錄"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
+   "不要再顯示此訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_STOP,
@@ -4806,11 +4886,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
-   "核心目錄:"
+   "核心："
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
-   "遊戲內容數據庫目錄:"
+   "資料庫："
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
+   "※ 如未設定，將使用此列表名稱，建立與資料庫和預覽縮圖的關聯名稱。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE,
@@ -4867,6 +4951,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_APPLY,
    "套用"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
+   "下載全部預覽縮圖"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
+   "全部列表"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
+   "此列表"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
+   "預覽縮圖下載完成。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
@@ -4929,7 +5029,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-   "歷史紀錄"
+   "歷史記錄"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
@@ -6053,6 +6153,10 @@ MSG_HASH(
    "截屏。"
    )
 MSG_HASH(
+   MSG_SCREENSHOT_SAVED,
+   "螢幕截圖已存檔"
+   )
+MSG_HASH(
    MSG_TO,
    "到"
    )
@@ -6150,7 +6254,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
-   "密碼正確"
+   "密碼正確。"
    )
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
@@ -6481,11 +6585,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
-   "下螢幕佈景主題目錄"
+   "下螢幕佈景主題資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
-   "設定下螢幕佈景主題目錄位置，目錄中必須包含「bottom_menu.png」檔案。"
+   "設定下螢幕佈景主題資料夾位置，資料夾中必須包含「bottom_menu.png」檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
