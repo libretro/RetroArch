@@ -2,7 +2,7 @@
 - ANDROID: Enable 'Vibrate On Key Press' by default
 - COMPILATION: Fixed compiling with --disable-menu
 - DATABASE/PLAYLISTS: Playlist + database changes - Cleanup 'entry_slot', fallback label + logging
-- INPUT: Fixed the way devices were previously indexed
+- INPUT: Fixed the way devices were previously indexed. Input devices were only being indexed in order and would stop at the first time an input has no device connected to it. The problem is when a device gets disconnected, that input will have no devices connected to it, but the next input may still have a device connected. So, that makes changing the port of the currently connected devices impossible.
 - LOCALIZATION: Updates
 - MENU: Thumbnail fullscreen toggle behavior correction
 - MENU/OZONE: Footer improvements - Add "Cycle thumbnails" helper when suitable
