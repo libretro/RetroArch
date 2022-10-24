@@ -6793,7 +6793,6 @@ static bool xmb_context_reset_textures(
                   && !(menu_xmb_theme == XMB_ICON_THEME_CUSTOM)
                )
             {
-               runloop_msg_queue_push(msg_hash_to_str(MSG_MISSING_ASSETS), 1, 256, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                /* Do not draw icons if subsetting is missing */
                return false;
             }

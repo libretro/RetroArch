@@ -8517,11 +8517,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone->animations.scroll_y       = 0.0f;
       ozone->animations.list_alpha     = 1.0f;
 
-      /* Missing assets message */
-      if (!ozone->has_all_assets)
-         runloop_msg_queue_push(msg_hash_to_str(MSG_MISSING_ASSETS),
-               1, 256, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
       /* Thumbnails */
       ozone_update_thumbnail_image(ozone);
       ozone_update_savestate_thumbnail_image(ozone);
