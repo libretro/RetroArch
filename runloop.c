@@ -3179,7 +3179,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
          /* VSync overrides the mode if the rate is limited by the display. */
          if (menu_opened || /* Menu currently always runs with vsync on. */
-               (settings->bools.video_vsync && !runloop_st->force_nonblock
+               (    settings->bools.video_vsync 
+                && (!(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
                      && !(input_state_get_ptr()->flags & INP_FLAG_NONBLOCKING)))
          {
             float refresh_rate = video_driver_get_refresh_rate();
@@ -6468,7 +6469,7 @@ static enum runloop_state_enum runloop_check_state(
    bool is_alive                       = false;
    uint64_t frame_count                = 0;
    bool focused                        = true;
-   bool rarch_is_initialized           = runloop_st->is_inited;
+   bool rarch_is_initialized           = runloop_st->flags & RUNLOOP_FLAG_IS_INITED;
    bool runloop_paused                 = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
    bool pause_nonactive                = settings->bools.pause_nonactive;
    unsigned quit_gamepad_combo         = settings->uints.input_quit_gamepad_combo;
@@ -6963,7 +6964,7 @@ MENU_ST_FLAG_IS_BINDING;
 
       if (focused || !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
       {
-         bool runloop_is_inited      = runloop_st->is_inited;
+         bool runloop_is_inited      = runloop_st->flags & RUNLOOP_FLAG_IS_INITED;
 #ifdef HAVE_NETWORKING
          bool menu_pause_libretro    = settings->bools.menu_pause_libretro &&
             netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);

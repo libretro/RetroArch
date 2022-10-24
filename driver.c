@@ -338,7 +338,7 @@ static void driver_adjust_system_rates(
             audio_st->input);
    }
 
-   runloop_st->force_nonblock       = false;
+   runloop_st->flags &= ~RUNLOOP_FLAG_FORCE_NONBLOCK;
 
    if (input_fps > 0.0)
    {
@@ -358,7 +358,7 @@ static void driver_adjust_system_rates(
       {
          /* We won't be able to do VSync reliably
             when game FPS > monitor FPS. */
-         runloop_st->force_nonblock = true;
+         runloop_st->flags |= RUNLOOP_FLAG_FORCE_NONBLOCK;
          RARCH_LOG("[Video]: Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 
          if (VIDEO_DRIVER_GET_PTR_INTERNAL(video_st))
@@ -403,9 +403,9 @@ void driver_set_nonblock_state(void)
    bool adaptive_vsync         = settings->bools.video_adaptive_vsync;
    unsigned swap_interval      = runloop_get_video_swap_interval(
          settings->uints.video_swap_interval);
-   bool video_driver_active    = video_st->flags & VIDEO_FLAG_ACTIVE;
-   bool audio_driver_active    = audio_st->flags & AUDIO_FLAG_ACTIVE;
-   bool runloop_force_nonblock = runloop_st->force_nonblock;
+   bool video_driver_active    = video_st->flags   & VIDEO_FLAG_ACTIVE;
+   bool audio_driver_active    = audio_st->flags   & AUDIO_FLAG_ACTIVE;
+   bool runloop_force_nonblock = runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK;
 
    /* Only apply non-block-state for video if we're using vsync. */
    if (video_driver_active && VIDEO_DRIVER_GET_PTR_INTERNAL(video_st))

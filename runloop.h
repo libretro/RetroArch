@@ -162,7 +162,9 @@ enum runloop_flags
    RUNLOOP_FLAG_FASTMOTION                        = (1 << 26),
    RUNLOOP_FLAG_PAUSED                            = (1 << 27),
    RUNLOOP_FLAG_IDLE                              = (1 << 28),
-   RUNLOOP_FLAG_FOCUSED                           = (1 << 29)
+   RUNLOOP_FLAG_FOCUSED                           = (1 << 29),
+   RUNLOOP_FLAG_FORCE_NONBLOCK                    = (1 << 30),
+   RUNLOOP_FLAG_IS_INITED                         = (1 << 31)
 };
 
 struct runloop
@@ -297,9 +299,7 @@ struct runloop
       char label[8192];
    } name;
 
-   bool is_inited;
    bool missing_bios;
-   bool force_nonblock;
    bool perfcnt_enable;
 };
 

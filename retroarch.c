@@ -3711,11 +3711,11 @@ void main_exit(void *args)
          path_get_realsize(RARCH_PATH_CORE),
          p_rarch->launch_arguments);
 
-   p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_USERNAME;
-   runloop_st->is_inited            = false;
+   p_rarch->flags                  &= ~RARCH_FLAGS_HAS_SET_USERNAME;
+   runloop_st->flags               &= ~RUNLOOP_FLAG_IS_INITED;
    global_get_ptr()->error_on_init  = false;
 #ifdef HAVE_CONFIGFILE
-   p_rarch->flags &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
+   p_rarch->flags                  &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
 #endif
 
    runloop_msg_queue_deinit();
@@ -3812,7 +3812,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
    frontend_driver_init_first(data);
 
-   if (runloop_st->is_inited)
+   if (runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
       driver_uninit(DRIVERS_CMD_ALL);
 
 #ifdef HAVE_THREAD_STORAGE
@@ -5513,7 +5513,7 @@ bool retroarch_main_init(int argc, char *argv[])
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
 
    global->error_on_init            = false;
-   runloop_st->is_inited            = true;
+   runloop_st->flags               |= RUNLOOP_FLAG_IS_INITED;
 
 #ifdef HAVE_DISCORD
    {
@@ -5540,7 +5540,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
 error:
    command_event(CMD_EVENT_CORE_DEINIT, NULL);
-   runloop_st->is_inited         = false;
+   runloop_st->flags            &= ~RUNLOOP_FLAG_IS_INITED;
 
    return false;
 }
@@ -5622,12 +5622,10 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
                    (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
                &&  (runloop_st->secondary_lib_handle != NULL);
 #endif
-      case RARCH_CTL_IS_INITED:
-         return runloop_st->is_inited;
       case RARCH_CTL_MAIN_DEINIT:
          {
             input_driver_state_t *input_st = input_state_get_ptr();
-            if (!runloop_st->is_inited)
+            if (!(runloop_st->flags & RUNLOOP_FLAG_IS_INITED))
                return false;
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 #ifdef HAVE_COMMAND
@@ -5667,7 +5665,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             path_deinit_subsystem(runloop_st);
             path_deinit_savefile();
 
-            runloop_st->is_inited         = false;
+            runloop_st->flags &= ~RUNLOOP_FLAG_IS_INITED;
 
 #ifdef HAVE_THREAD_STORAGE
             sthread_tls_delete(&p_rarch->rarch_tls);

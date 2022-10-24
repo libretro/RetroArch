@@ -51,8 +51,6 @@ enum rarch_ctl_state
    /* Deinitializes RetroArch. */
    RARCH_CTL_MAIN_DEINIT,
 
-   RARCH_CTL_IS_INITED,
-
    RARCH_CTL_IS_DUMMY_CORE,
    RARCH_CTL_IS_CORE_LOADED,
 

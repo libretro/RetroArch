@@ -3458,7 +3458,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video.fullscreen                  = settings->bools.video_fullscreen ||
       (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN);
    video.vsync                       = settings->bools.video_vsync &&
-      !runloop_st->force_nonblock;
+      (!(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK));
    video.force_aspect                = settings->bools.video_force_aspect;
    video.font_enable                 = settings->bools.video_font_enable;
    video.swap_interval               = runloop_get_video_swap_interval(
