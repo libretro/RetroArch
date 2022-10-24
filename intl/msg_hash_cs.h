@@ -8026,6 +8026,10 @@ MSG_HASH(
    "Hledat"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
+   "Cyklus miniatur"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Zpět"
    )

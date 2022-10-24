@@ -61,7 +61,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "快速存取所有遊戲中相關設定"
+   "已載入檔案使用的快捷選單。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
@@ -73,15 +73,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   "載入遊戲內容"
+   "載入檔案"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   "選擇要啟動的遊戲"
+   "選擇要啟動的遊戲檔案，支援播放圖片、影片、音樂等多種檔案格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "讀取碟片"
+   "載入光碟"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
@@ -89,7 +89,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   "將碟片轉存為映像檔"
+   "轉存光碟"
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
@@ -102,7 +102,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
-   "從CD/DVD光碟機中退出光碟。"
+   "從實體CD/DVD光碟機中退出光碟。"
    )
 #endif
 MSG_HASH(
@@ -127,7 +127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   "開啟桌面選單。"
+   "開啟傳統風格的桌面選單。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
@@ -151,7 +151,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
-   "加入或者主持多人連線遊戲"
+   "加入或建立多人連線遊戲伺服器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -187,11 +187,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "重新啟動 RetroArch"
+   "重新啟動"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "重新啟動程式"
+   "重新啟動應用程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
@@ -199,7 +199,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "關閉應用程式。"
+   "結束復古電玩應用程式。"
    )
 
 /* Main Menu > Load Core */
@@ -237,7 +237,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-   "下載目錄"
+   "下載資料夾"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
@@ -245,7 +245,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   "讀取壓縮檔"
+   "載入壓縮檔"
    )
 
 /* Main Menu > Load Content > Playlists */
@@ -288,7 +288,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   "透過資料庫的類別搜尋遊戲。"
+   "透過資料庫的類別搜尋符合條件的遊戲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
@@ -327,7 +327,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "選擇遊戲列表，下載並更新全部預覽縮圖。"
+   "選擇列表，下載並更新全部預覽縮圖。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
@@ -379,15 +379,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   "更新 OpenGL 著色器"
+   "更新著色器 (GLSL)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   "更新 Cg 著色器"
+   "更新著色器 (Cg)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   "更新 Slang 著色器"
+   "更新著色器 (Slang)"
    )
 
 /* Main Menu > Information */
@@ -418,11 +418,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   "系統資訊"
+   "裝置資訊"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   "查看裝置的支援資訊。"
+   "顯示裝置的支援資訊。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -489,7 +489,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "支援即時存檔"
+   "核心其他支援"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
@@ -497,15 +497,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
-   "基本 (可讀寫)"
+   "即時存檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   "序列化 (可讀寫、回溯)"
+   "即時存檔、回溯"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   "反序列化 (可讀寫、回溯、超前執行、連線對戰)"
+   "即時存檔、回溯、超前執行、連線對戰"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
@@ -541,7 +541,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "在「獨立核心」列表中不顯示此核心。僅限於「獨立核心」類型設定為「自定義」時使用。"
+   "在「獨立核心」列表中不顯示此核心。僅限於「獨立核心」設定為 <自定義> 時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -549,7 +549,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE,
-   "※ 注意：目前無再確認提示，按下後即刪除目前使用的核心。"
+   "※ 注意: 目前無再確認提示，按下後即刪除目前使用的核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
@@ -573,7 +573,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
-   "從備份存檔列表中刪除一個檔案。"
+   "從備份列表中永久刪除已備份的核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
@@ -588,7 +588,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
-   "Git版本"
+   "Git 版本"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    MSG_COMPILER,
@@ -604,7 +604,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "CPU 架構"
+   "中央處理器架構"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
@@ -612,7 +612,7 @@ MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CPU_CORES,
-   "中央處理器核心總數"
+   "中央處理器核心總數。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -1047,7 +1047,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-   "退出"
+   "結束"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
@@ -2184,11 +2184,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "退出確認"
+   "結束前確認"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "當按下退出快捷鍵，會顯示退出的確認訊息，再按一次即退出復古電玩。"
+   "變更「結束復古電玩」快捷鍵，需按兩下才能結束復古電玩。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "結束的控制器組合鍵"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "設定「結束復古電玩」快捷鍵，使用控制器操作的按鍵組合。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
@@ -2228,7 +2236,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "退出復古電玩"
+   "結束復古電玩"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
+   "結束復古電玩，確保儲存全部的記錄存檔與設定檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
@@ -2304,7 +2316,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
-   "將有關您的裝置與相關設定的診斷信息，發送到我們的服務器進行分析。"
+   "將有關您的裝置與設定相關的診斷信息，發送到我們的服務器進行分析。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -2554,7 +2566,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
-   "退出時儲存設定"
+   "結束時儲存設定"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
+   "結束復古電玩時，儲存變更的設定到設定檔。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   "結束時儲存自訂控制器"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   "「關閉」與「結束復古電玩」時，儲存變更的控制器按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
@@ -2667,7 +2691,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "記住本次執行開始資料夾最後載入的檔案位置。重新啟動復古電玩後，將還原開始資料夾設定位置。"
+   "記住本次執行「開始資料夾」最後載入的檔案，在重新啟動後還原為設定位置。"
    )
 
 /* Settings > Frame Throttle */
@@ -2914,6 +2938,14 @@ MSG_HASH(
    "當選單啟用時暫停遊戲內容"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "關閉時結束"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   "載入內容「關閉」時結束復古電玩。設定為 <CLI> 時，僅限使用命令介面載入時啟用此功能。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "滑鼠支援"
    )
@@ -3052,11 +3084,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-   "顯示「退出復古電玩」"
+   "顯示「結束復古電玩」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-   "在主選單中顯示「退出復古電玩」選項。"
+   "在主選單中顯示「結束復古電玩」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
@@ -3136,7 +3168,7 @@ MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_A
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "在主選單或遊戲列表項目中顯示「匯入遊戲」選項。"
+   "在主選單與載入遊戲列表中顯示「匯入遊戲」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -3164,7 +3196,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "設定獨立核心列表顯示類型。設定為「自定義」時，可透過「管理核心」選項，設定支援的核心是否顯示於獨立核心列表中。使用 Ozone 與 XMB 佈景主題，變更此選項需要重新啟動。"
+   "設定獨立核心列表顯示類型。設定為 <自定義> 時，可透過「管理核心」選項，設定支援的核心是否顯示於獨立核心列表中。使用 Ozone 與 XMB 佈景主題，變更此選項需要重新啟動。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -3216,6 +3248,10 @@ MSG_HASH(
 
 /* Settings > User Interface > Views > Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
+   "顯示「驅動程式」"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
    "顯示「成就」"
@@ -3398,7 +3434,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
-   "核心："
+   "核心:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
@@ -3794,7 +3830,7 @@ MSG_HASH(
 /* Explore tab */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
-   "%u 項目"
+   "%u 個項目"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_EXPLORE_VIEW,
@@ -4430,7 +4466,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
-   "不可用"
+   "無法使用"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
@@ -4587,7 +4623,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
-   "Select a different theme for the icon. Changes will take effect after you restart the program."
+   "變更選單使用的圖示主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
@@ -4794,7 +4830,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFO,
-   "訊息"
+   "資訊"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
@@ -4838,11 +4874,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
-   "記住窗格位置與大小："
+   "記住窗格位置與大小:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
-   "記住視窗位置與大小："
+   "記住視窗位置與大小:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
@@ -4946,7 +4982,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
-   "資訊"
+   "訊息"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_WARNING,
@@ -4966,7 +5002,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT,
-   "%1 項目"
+   "%1 個項目"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
@@ -5026,7 +5062,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
-   "請輸入新的名稱："
+   "請輸入新的名稱:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
@@ -5054,23 +5090,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
-   "名稱："
+   "名稱:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH,
-   "路徑："
+   "路徑:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
-   "核心："
+   "核心:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
-   "資料庫："
+   "資料庫:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS,
-   "副檔名："
+   "副檔名:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
@@ -5109,6 +5145,14 @@ MSG_HASH(
    "選取資料夾"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
+   "更新復古電玩 (每夜版本)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
+   "復古電玩更新成功。請重新啟動應用程式，使更新內容生效。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    "更新失敗."
    )
@@ -5139,6 +5183,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_APPLY,
    "套用"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
+   "下載預覽縮圖"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
@@ -5408,7 +5456,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
-   "將有關您的裝置與相關設定的診斷信息，發送到我們的服務器進行分析。"
+   "將有關您的裝置與設定相關的診斷信息，發送到我們的服務器進行分析。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
@@ -5479,7 +5527,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
-   "Rating庫訊息"
+   "資料庫資訊"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
@@ -5523,7 +5571,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
-   "退出"
+   "結束"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
@@ -5573,7 +5621,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-   "抱歉，發生錯誤：模擬器核心未請求內容，無法加入連線遊戲。"
+   "很抱歉，發生錯誤: 核心未載入檔案，無法加入連線遊戲。"
    )
 MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
@@ -5589,11 +5637,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM,
-   "連接來自： \"%s\""
+   "連接來自: \"%s\""
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
-   "連接來自： \"%s (%s)\""
+   "連接來自: \"%s (%s)\""
    )
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
@@ -5613,7 +5661,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
-   "輸入連線遊戲伺服器的密碼："
+   "輸入連線遊戲伺服器的密碼:"
    )
 MSG_HASH(
    MSG_NETPLAY_INCORRECT_PASSWORD,
@@ -5758,7 +5806,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "獲得成就：開啟硬核模式！即時存檔與回溯功能被禁用。"
+   "獲得成就: 開啟硬核模式！即時存檔與回溯功能被禁用。"
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -6350,7 +6398,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
-   "再按一次退出復古電玩。"
+   "再按一次結束復古電玩。"
    )
 MSG_HASH(
    MSG_TO,
@@ -6534,11 +6582,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "無法從獨立核心列表中刪除核心："
+   "無法從獨立核心列表中刪除核心: "
    )
 MSG_HASH(
    MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "無法加入核心到獨立核心列表中："
+   "無法加入核心到獨立核心列表中: "
    )
 
 /* Lakka */
@@ -6676,11 +6724,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_READ_WRITE,
-   "內部存儲狀態：可讀寫"
+   "內部存儲狀態: 可讀寫"
    )
 MSG_HASH(
    MSG_READ_ONLY,
-   "內部存儲狀態：唯讀"
+   "內部存儲狀態: 唯讀"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
@@ -6847,7 +6895,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "掃描完成。<br><br>\n為了正確掃描內容。您必須：\n<ul><li>下載對應的核心。</li>\n<li>線上更新核心資料庫。</li>\n<li>線上更新資料庫。</li>\n<li>上述任何一項剛完成，請先重新啟動復古電玩。</li></ul>\n最後，掃描內容必須與資料庫數據相同 <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">連結至資料庫</a>。\n如果仍然無法掃描，請使用<a href=\"https://www.github.com/libretro/RetroArch/issues\">錯誤回報</a>。"
+   "掃描完成。<br><br>\n為了正確掃描內容。您必須:\n<ul><li>下載對應的核心。</li>\n<li>線上更新核心資料庫。</li>\n<li>線上更新資料庫。</li>\n<li>上述任何一項剛完成，請先重新啟動復古電玩。</li></ul>\n最後，掃描內容必須與資料庫數據相同 <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">連結至資料庫</a>。\n如果仍然無法掃描，請使用<a href=\"https://www.github.com/libretro/RetroArch/issues\">錯誤回報</a>。"
    )
 #endif
 MSG_HASH(
