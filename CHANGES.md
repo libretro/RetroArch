@@ -3,6 +3,7 @@
 - COMPILATION: Fixed compiling with --disable-menu
 - DATABASE/PLAYLISTS: Playlist + database changes - Cleanup 'entry_slot', fallback label + logging
 - INPUT: Fixed the way devices were previously indexed
+- LOCALIZATION: Updates
 - MENU: Thumbnail fullscreen toggle behavior correction
 - MENU/OZONE: Footer improvements - Add "Cycle thumbnails" helper when suitable
 - MENU/OZONE: Footer improvements - Show "Search" helper only when search function is enabled
