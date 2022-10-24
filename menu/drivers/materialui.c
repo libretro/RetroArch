@@ -2399,16 +2399,14 @@ static uintptr_t materialui_get_playlist_icon(
 
 static void materialui_context_reset_textures(materialui_handle_t *mui)
 {
-   bool has_all_assets = true;
-   unsigned i;
+   int i;
 
    /* Loop through all textures */
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
    {
-      if (!gfx_display_reset_textures_list(
+      gfx_display_reset_textures_list(
             materialui_texture_path(i), mui->icons_path, &mui->textures.list[i],
-            TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-         has_all_assets = false;
+            TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
    }
 }
 
@@ -2609,7 +2607,7 @@ static void materialui_render_messagebox(
       unsigned video_height,
       int y_centre, const char *message)
 {
-   unsigned i;
+   int i;
    int x                    = 0;
    int y                    = 0;
    int usable_width         = 0;
@@ -6029,7 +6027,7 @@ static void materialui_render_nav_bar_bottom(
       unsigned video_width, unsigned video_height,
       math_matrix_4x4 *mymat)
 {
-   unsigned i;
+   int i;
    unsigned nav_bar_width           = video_width;
    unsigned nav_bar_height          = mui->nav_bar.width;
    int nav_bar_x                    = 0;
@@ -6154,7 +6152,7 @@ static void materialui_render_nav_bar_right(
       unsigned video_height,
       math_matrix_4x4 *mymat)
 {
-   unsigned i;
+   int i;
    unsigned nav_bar_width           = mui->nav_bar.width;
    unsigned nav_bar_height          = video_height;
    int nav_bar_x                    = (int)video_width - (int)mui->nav_bar.width;
@@ -7978,7 +7976,7 @@ static void materialui_init_nav_bar(materialui_handle_t *mui)
 {
    /* Assign action tab textures and types, and ensure sane
     * menu tab starting values */
-   unsigned i;
+   int i;
 
    /* Back tab */
    mui->nav_bar.back_tab.type          = MUI_NAV_BAR_ACTION_TAB_BACK;
@@ -8210,8 +8208,8 @@ static void materialui_context_bg_destroy(materialui_handle_t *mui)
 
 static void materialui_reset_thumbnails(void)
 {
+   int i;
    file_list_t *list = menu_entries_get_selection_buf_ptr(0);
-   unsigned i;
 
    if (!list)
       return;
@@ -9272,9 +9270,9 @@ static enum menu_action materialui_parse_menu_entry_action(
          if ((mui->nav_bar.location == MUI_NAV_BAR_LOCATION_HIDDEN) &&
              (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1))
          {
+            int i;
             unsigned main_menu_tab_index                 = 0;
             materialui_nav_bar_menu_tab_t *main_menu_tab = NULL;
-            unsigned i;
 
             /* Find index of main menu tab */
             for (i = 0; i < mui->nav_bar.num_menu_tabs; i++)
@@ -10808,7 +10806,7 @@ static void materialui_list_insert(
             else if (string_ends_with_size(label, "_input_binds_list",
                      strlen(label), STRLEN_CONST("_input_binds_list")))
             {
-               unsigned i;
+               int i;
 
                for (i = 0; i < MAX_USERS; i++)
                {
