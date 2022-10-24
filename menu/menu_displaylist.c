@@ -5172,8 +5172,6 @@ static int menu_displaylist_parse_input_device_index_list(
 {
    char device_id[10];
    char device_label[128];
-   const char *val_port         = NULL;
-   const char *val_na           = NULL;
    const char *val_disabled     = NULL;
    rarch_system_info_t *system  = &runloop_state_get_ptr()->system;
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
@@ -5199,8 +5197,6 @@ static int menu_displaylist_parse_input_device_index_list(
       goto end;
 
    val_disabled = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED);
-   val_na       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
-   val_port     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT);
 
    for (i = MAX_INPUT_DEVICES + 1; i--;)
    {
