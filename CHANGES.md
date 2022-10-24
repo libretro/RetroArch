@@ -1,4 +1,20 @@
 # Future
+- ANDROID: Enable 'Vibrate On Key Press' by default
+- COMPILATION: Fixed compiling with --disable-menu
+- DATABASE/PLAYLISTS: Playlist + database changes - Cleanup 'entry_slot', fallback label + logging
+- INPUT: Fixed the way devices were previously indexed
+- MENU: Thumbnail fullscreen toggle behavior correction
+- MENU/OZONE: Footer improvements - Add "Cycle thumbnails" helper when suitable
+- MENU/OZONE: Footer improvements - Show "Search" helper only when search function is enabled
+- MENU/OZONE: Footer improvements - Fix "Thumbnails available" helper for save states
+- MENU/OZONE: Footer improvements - Tighten padding between icon and title, and widen between helpers
+- MENU/OZONE: Remember selection per main tabs
+- MENU/OZONE: Remove incomplete assets warning
+- MENU/XMB: Remove incomplete assets warning
+- MENU/MATERIALUI: Remove incomplete assets warning
+- OSX: Fixed Z/X keys not working on the macOS port
+- OSX: Fixed RETROK_LMETA not working on macOS port. The RETROK_LMETA key was not defined in the rarch_key_map_apple_hid
+- THREADED VIDEO/GLCORE: Fix regression 'Shader presets dont load, when video driver is set to glcore'
 
 # 1.12.0
 - CONFIG/CLI: Allow use of --appendconfig with override cfgs instead of getting ignored
