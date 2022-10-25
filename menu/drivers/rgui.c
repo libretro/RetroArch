@@ -5300,10 +5300,9 @@ static void rgui_render(void *data,
          type_str_buf[0]    = '\0';
 
          /* Get current entry */
-         MENU_ENTRY_INIT(entry);
-         entry.path_enabled     = false;
-         entry.label_enabled    = false;
-         entry.sublabel_enabled = false;
+         MENU_ENTRY_INITIALIZE(entry);
+         entry.flags |= MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
+                      | MENU_ENTRY_FLAG_VALUE_ENABLED;
          menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
 
          if (entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
@@ -6597,11 +6596,8 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
    {
       menu_entry_t entry;
 
-      MENU_ENTRY_INIT(entry);
-      entry.path_enabled       = false;
-      entry.rich_label_enabled = false;
-      entry.value_enabled      = false;
-      entry.sublabel_enabled   = false;
+      MENU_ENTRY_INITIALIZE(entry);
+      entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED;
       menu_entry_get(&entry, 0, i, NULL, true);
 
       if (!string_is_empty(entry.label))
@@ -6741,11 +6737,8 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
          {
             /* Selected entry */
             menu_entry_t entry;
-            MENU_ENTRY_INIT(entry);
-            entry.label_enabled      = false;
-            entry.rich_label_enabled = false;
-            entry.value_enabled      = false;
-            entry.sublabel_enabled   = false;
+            MENU_ENTRY_INITIALIZE(entry);
+            entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
             menu_entry_get(&entry, 0, selection, NULL, true);
 
             rgui->playlist_index =
@@ -6877,11 +6870,8 @@ static void rgui_update_menu_sublabel(rgui_t *rgui, size_t selection)
 {
    menu_entry_t entry;
 
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled       = false;
-   entry.label_enabled      = false;
-   entry.rich_label_enabled = false;
-   entry.value_enabled      = false;
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
    menu_entry_get(&entry, 0, (unsigned)selection, NULL, true);
 
    if (!string_is_empty(entry.sublabel))

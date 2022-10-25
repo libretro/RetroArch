@@ -1180,11 +1180,8 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
    {
       menu_entry_t entry;
 
-      MENU_ENTRY_INIT(entry);
-      entry.path_enabled       = false;
-      entry.rich_label_enabled = false;
-      entry.value_enabled      = false;
-      entry.sublabel_enabled   = false;
+      MENU_ENTRY_INITIALIZE(entry);
+      entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED;
       menu_entry_get(&entry, 0, i, NULL, true);
 
       if (!string_is_empty(entry.label))
@@ -1399,11 +1396,8 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
          menu_entry_t entry;
          size_t selection         = menu_navigation_get_selection();
 
-         MENU_ENTRY_INIT(entry);
-         entry.label_enabled      = false;
-         entry.rich_label_enabled = false;
-         entry.value_enabled      = false;
-         entry.sublabel_enabled   = false;
+         MENU_ENTRY_INITIALIZE(entry);
+         entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
          menu_entry_get(&entry, 0, selection, NULL, true);
 
          if (!string_is_empty(entry.path))
@@ -1421,11 +1415,8 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       {
          /* Selected entry */
          menu_entry_t entry;
-         MENU_ENTRY_INIT(entry);
-         entry.label_enabled      = false;
-         entry.rich_label_enabled = false;
-         entry.value_enabled      = false;
-         entry.sublabel_enabled   = false;
+         MENU_ENTRY_INITIALIZE(entry);
+         entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
          menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
 
          xmb->fullscreen_thumbnails_available =
@@ -1443,11 +1434,8 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
 
       if (node)
       {
-         MENU_ENTRY_INIT(entry);
-         entry.label_enabled      = false;
-         entry.rich_label_enabled = false;
-         entry.value_enabled      = false;
-         entry.sublabel_enabled   = false;
+         MENU_ENTRY_INITIALIZE(entry);
+         entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
          menu_entry_get(&entry, 0, selection, NULL, true);
          if (  !string_is_empty(entry.path) &&
                !string_is_empty(node->fullpath))
@@ -1604,12 +1592,7 @@ static void xmb_selection_pointer_changed(
             {
                menu_entry_t entry;
                unsigned entry_type;
-               MENU_ENTRY_INIT(entry);
-               entry.path_enabled       = false;
-               entry.label_enabled      = false;
-               entry.rich_label_enabled = false;
-               entry.value_enabled      = false;
-               entry.sublabel_enabled   = false;
+               MENU_ENTRY_INITIALIZE(entry);
                menu_entry_get(&entry, 0, selection, NULL, true);
                entry_type               = entry.type;
 
@@ -3493,9 +3476,14 @@ static int xmb_draw_item(
    if (icon_x < -half_size || icon_x > width)
       return 0;
 
-   MENU_ENTRY_INIT(entry);
-   entry.label_enabled      = xmb->is_contentless_cores;
-   entry.sublabel_enabled   = (i == current);
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
+                | MENU_ENTRY_FLAG_VALUE_ENABLED;
+   if (xmb->is_contentless_cores)
+      entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED;
+   if (i == current)
+      entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
    menu_entry_get(&entry, 0, i, list, true);
    entry_type               = entry.type;
 
@@ -4551,12 +4539,7 @@ static void xmb_render(void *data,
 
          if (get_entry)
          {
-            MENU_ENTRY_INIT(entry);
-            entry.path_enabled       = false;
-            entry.label_enabled      = false;
-            entry.rich_label_enabled = false;
-            entry.value_enabled      = false;
-            entry.sublabel_enabled   = false;
+            MENU_ENTRY_INITIALIZE(entry);
             menu_entry_get(&entry, 0, selection, NULL, true);
          }
 

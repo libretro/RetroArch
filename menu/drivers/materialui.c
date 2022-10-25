@@ -2775,11 +2775,9 @@ static uint8_t materialui_count_sublabel_lines(
    wrapped_sublabel_str[0] = '\0';
 
    /* Get entry sublabel */
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled       = false;
-   entry.label_enabled      = false;
-   entry.rich_label_enabled = false;
-   entry.value_enabled      = false;
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
+
    menu_entry_get(&entry, 0, entry_idx, NULL, true);
 
    /* If sublabel is empty, return immediately */
@@ -5215,10 +5213,15 @@ static void materialui_render_menu_list(
          break;
 
       /* Get current entry */
-      MENU_ENTRY_INIT(entry);
-      entry.path_enabled     = false;
-      entry.value_enabled    = entry_value_enabled;
-      entry.sublabel_enabled = entry_sublabel_enabled;
+      MENU_ENTRY_INITIALIZE(entry);
+
+      entry.flags    |= MENU_ENTRY_FLAG_LABEL_ENABLED
+                      | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
+      if (entry_value_enabled)
+         entry.flags |= MENU_ENTRY_FLAG_VALUE_ENABLED;
+      if (entry_sublabel_enabled)
+         entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
+
       menu_entry_get(&entry, 0, i, NULL, true);
 
       /* Render entry: label, value + associated icons */
@@ -6427,10 +6430,9 @@ static void materialui_show_fullscreen_thumbnails(
    mui->fullscreen_thumbnail_label[0] = '\0';
 
    /* > Get menu entry */
-   MENU_ENTRY_INIT(selected_entry);
-   selected_entry.path_enabled     = false;
-   selected_entry.value_enabled    = false;
-   selected_entry.sublabel_enabled = false;
+   MENU_ENTRY_INITIALIZE(selected_entry);
+   selected_entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
+                         | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
    menu_entry_get(&selected_entry, 0, selection, NULL, true);
 
    /* > Get entry label */
@@ -9335,12 +9337,12 @@ static int materialui_menu_entry_action(
       /* Selection has changed - must update entry
        * pointer (we could probably get away without
        * doing this, but it would break the API...) */
-      MENU_ENTRY_INIT(new_entry);
-      new_entry.path_enabled       = false;
-      new_entry.label_enabled      = false;
-      new_entry.rich_label_enabled = false;
-      new_entry.value_enabled      = false;
-      new_entry.sublabel_enabled   = false;
+      MENU_ENTRY_INITIALIZE(new_entry);
+      new_entry.flags &= ~(MENU_ENTRY_FLAG_PATH_ENABLED
+                         | MENU_ENTRY_FLAG_LABEL_ENABLED
+                         | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
+                         | MENU_ENTRY_FLAG_VALUE_ENABLED
+                         | MENU_ENTRY_FLAG_SUBLABEL_ENABLED);
       menu_entry_get(&new_entry, 0, new_selection, NULL, true);
       entry_ptr                    = &new_entry;
    }
@@ -9794,11 +9796,8 @@ static int materialui_pointer_up_swipe_horz_default(
          menu_entry_t last_entry;
 
          /* Get entry */
-         MENU_ENTRY_INIT(last_entry);
-         last_entry.path_enabled       = false;
-         last_entry.label_enabled      = false;
-         last_entry.rich_label_enabled = false;
-         last_entry.sublabel_enabled   = false;
+         MENU_ENTRY_INITIALIZE(last_entry);
+         last_entry.flags |= MENU_ENTRY_FLAG_VALUE_ENABLED;
 
          menu_entry_get(&last_entry, 0, selection, NULL, true);
 

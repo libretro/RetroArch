@@ -365,6 +365,7 @@ void menu_navigation_set_selection(size_t val)
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation)
 {
+   bool path_enabled;
    char newpath[255];
    const char *path            = NULL;
    const char *entry_label     = NULL;
@@ -372,12 +373,14 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    struct menu_state *menu_st  = &menu_driver_state;
    file_list_t *selection_buf  = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, stack_idx);
    file_list_t *list           = (userdata) ? (file_list_t*)userdata : selection_buf;
-   bool path_enabled           = entry->path_enabled;
+   uint8_t entry_flags         = entry->flags;
 
    newpath[0]                  = '\0';
 
    if (!list)
       return;
+  
+   path_enabled               = entry_flags & MENU_ENTRY_FLAG_PATH_ENABLED;
 
    path                       = list->list[i].path;
    entry_label                = list->list[i].label;
@@ -387,7 +390,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    cbs                        = (menu_file_list_cbs_t*)list->list[i].actiondata;
    entry->idx                 = (unsigned)i;
 
-   if (entry->label_enabled && !string_is_empty(entry_label))
+   if (    (entry_flags & MENU_ENTRY_FLAG_LABEL_ENABLED) 
+         && !string_is_empty(entry_label))
       strlcpy(entry->label, entry_label, sizeof(entry->label));
 
    if (cbs)
@@ -401,7 +405,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       if (menu_stack && menu_stack->size)
          label = menu_stack->list[menu_stack->size - 1].label;
 
-      if (entry->rich_label_enabled && cbs->action_label)
+      if (    (entry_flags & MENU_ENTRY_FLAG_RICH_LABEL_ENABLED)
+            && cbs->action_label)
       {
          cbs->action_label(list,
                entry->type, (unsigned)i,
@@ -409,11 +414,11 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
                entry->rich_label,
                sizeof(entry->rich_label));
 
-         if (string_is_empty(entry->rich_label))
+         if (!path_enabled && string_is_empty(entry->rich_label))
             path_enabled = true;
       }
 
-      if ((path_enabled || entry->value_enabled) &&
+      if ((path_enabled || (entry_flags & MENU_ENTRY_FLAG_VALUE_ENABLED)) &&
           cbs->action_get_value &&
           use_representation)
       {
@@ -421,7 +426,9 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
                &entry->spacing, entry->type,
                (unsigned)i, label,
                entry->value,
-               entry->value_enabled ? sizeof(entry->value) : 0,
+               (entry_flags & MENU_ENTRY_FLAG_VALUE_ENABLED)
+               ? sizeof(entry->value) 
+               : 0,
                path,
                newpath,
                path_enabled ? sizeof(newpath) : 0);
@@ -439,7 +446,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
          }
       }
 
-      if (entry->sublabel_enabled)
+      if (entry_flags & MENU_ENTRY_FLAG_SUBLABEL_ENABLED)
       {
          if (!string_is_empty(cbs->action_sublabel_cache))
             strlcpy(entry->sublabel,
@@ -578,9 +585,10 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
        * entry here, since we need the exact label
        * that is currently displayed by the menu
        * driver */
-      MENU_ENTRY_INIT(entry);
-      entry.value_enabled    = false;
-      entry.sublabel_enabled = false;
+      MENU_ENTRY_INITIALIZE(entry);
+      entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                   | MENU_ENTRY_FLAG_LABEL_ENABLED
+                   | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
       menu_entry_get(&entry, 0, i, NULL, true);
 
       /* When using the file browser, one or more
@@ -4111,11 +4119,8 @@ void get_current_menu_value(struct menu_state *menu_st,
    menu_entry_t     entry;
    const char*      entry_label;
 
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled          = false;
-   entry.label_enabled         = false;
-   entry.rich_label_enabled    = false;
-   entry.sublabel_enabled      = false;
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_VALUE_ENABLED;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
 
    if (entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
@@ -4132,7 +4137,12 @@ void get_current_menu_label(struct menu_state *menu_st,
    menu_entry_t     entry;
    const char*      entry_label;
 
-   MENU_ENTRY_INIT(entry);
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                | MENU_ENTRY_FLAG_LABEL_ENABLED
+                | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
+                | MENU_ENTRY_FLAG_VALUE_ENABLED
+                | MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
 
    if (!string_is_empty(entry.rich_label))
@@ -4148,11 +4158,8 @@ void get_current_menu_sublabel(struct menu_state *menu_st,
 {
    menu_entry_t     entry;
 
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled          = false;
-   entry.label_enabled         = false;
-   entry.rich_label_enabled    = false;
-   entry.value_enabled         = false;
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
    strlcpy(s, entry.sublabel, len);
 }
@@ -6647,13 +6654,12 @@ int menu_input_post_iterate(
       (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
       : NULL;
 
-   MENU_ENTRY_INIT(entry);
+   MENU_ENTRY_INITIALIZE(entry);
    /* Note: If menu_input_pointer_post_iterate() is
     * modified, will have to verify that these
     * parameters remain unused... */
-   entry.rich_label_enabled   = false;
-   entry.value_enabled        = false;
-   entry.sublabel_enabled     = false;
+   entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                | MENU_ENTRY_FLAG_LABEL_ENABLED;
    menu_entry_get(&entry, 0, selection, NULL, false);
    return menu_input_pointer_post_iterate(p_disp,
          current_time, cbs, &entry, action);
@@ -7680,17 +7686,15 @@ static int generic_menu_iterate(
              * should not rely on a hack like this in order to work. */
             selection = MAX(MIN(selection, (menu_list_size - 1)), 0);
 
-            MENU_ENTRY_INIT(entry);
+            MENU_ENTRY_INITIALIZE(entry);
             /* NOTE: If menu_entry_action() is modified,
              * will have to verify that these parameters
              * remain unused... */
-            entry.rich_label_enabled = false;
-            entry.value_enabled      = false;
-            entry.sublabel_enabled   = false;
+            entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                         | MENU_ENTRY_FLAG_LABEL_ENABLED;
             menu_entry_get(&entry, 0, selection, NULL, false);
-            ret                      = menu_entry_action(&entry,
-                  selection, (enum menu_action)action);
-            if (ret)
+            if ((ret = menu_entry_action(&entry,
+                  selection, (enum menu_action)action)))
                return -1;
 
             BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
@@ -8296,10 +8300,9 @@ size_t menu_update_fullscreen_thumbnail_label(
    tmpstr[0]                       = '\0';
 
    /* > Get menu entry */
-   MENU_ENTRY_INIT(selected_entry);
-   selected_entry.path_enabled     = false;
-   selected_entry.value_enabled    = false;
-   selected_entry.sublabel_enabled = false;
+   MENU_ENTRY_INITIALIZE(selected_entry);
+   selected_entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
+                         | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
    menu_entry_get(&selected_entry, 0, menu_navigation_get_selection(), NULL, true);
 
    /* > Get entry label */
@@ -8340,10 +8343,9 @@ bool menu_is_running_quick_menu(void)
 {
    menu_entry_t entry;
 
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled     = false;
-   entry.value_enabled    = false;
-   entry.sublabel_enabled = false;
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
+                | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
    menu_entry_get(&entry, 0, 0, NULL, true);
 
    return string_is_equal(entry.label, "resume_content") ||
@@ -8354,10 +8356,9 @@ bool menu_is_nonrunning_quick_menu(void)
 {
    menu_entry_t entry;
 
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled     = false;
-   entry.value_enabled    = false;
-   entry.sublabel_enabled = false;
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
+                | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
    menu_entry_get(&entry, 0, 0, NULL, true);
 
    return string_is_equal(entry.label, "collection");

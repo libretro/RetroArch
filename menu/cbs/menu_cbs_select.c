@@ -91,14 +91,13 @@ static int action_select_default(
    if (action != MENU_ACTION_NOOP)
    {
       menu_entry_t entry;
-      MENU_ENTRY_INIT(entry);
+      MENU_ENTRY_INITIALIZE(entry);
 
+      entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                   | MENU_ENTRY_FLAG_LABEL_ENABLED;
       /* Note: If menu_entry_action() is modified,
        * will have to verify that these parameters
        * remain unused... */
-      entry.rich_label_enabled = false;
-      entry.value_enabled      = false;
-      entry.sublabel_enabled   = false;
       menu_entry_get(&entry, 0, idx, NULL, false);
 
       ret = menu_entry_action(&entry, idx, action);

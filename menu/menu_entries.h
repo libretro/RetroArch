@@ -137,6 +137,15 @@ typedef struct menu_file_list_cbs
    bool checked;
 } menu_file_list_cbs_t;
 
+enum menu_entry_flags
+{
+   MENU_ENTRY_FLAG_PATH_ENABLED       = (1 << 0),
+   MENU_ENTRY_FLAG_LABEL_ENABLED      = (1 << 1),
+   MENU_ENTRY_FLAG_RICH_LABEL_ENABLED = (1 << 2),
+   MENU_ENTRY_FLAG_VALUE_ENABLED      = (1 << 3),
+   MENU_ENTRY_FLAG_SUBLABEL_ENABLED   = (1 << 4)
+};
+
 typedef struct menu_entry
 {
    size_t entry_idx;
@@ -144,6 +153,7 @@ typedef struct menu_entry
    unsigned type;
    unsigned spacing;
    enum msg_hash_enums enum_idx;
+   uint8_t flags;
    char path[255];
    char label[255];
    char sublabel[MENU_SUBLABEL_MAX_LENGTH];
@@ -151,11 +161,6 @@ typedef struct menu_entry
    char value[255];
    char password_value[255];
    bool checked;
-   bool path_enabled;
-   bool label_enabled;
-   bool rich_label_enabled;
-   bool value_enabled;
-   bool sublabel_enabled;
 } menu_entry_t;
 
 int menu_entries_get_title(char *title, size_t title_len);
@@ -231,7 +236,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 int menu_entry_action(
       menu_entry_t *entry, size_t i, enum menu_action action);
 
-#define MENU_ENTRY_INIT(entry) \
+#define MENU_ENTRY_INITIALIZE(entry) \
    entry.path[0]            = '\0'; \
    entry.label[0]           = '\0'; \
    entry.sublabel[0]        = '\0'; \
@@ -243,11 +248,7 @@ int menu_entry_action(
    entry.idx                = 0; \
    entry.type               = 0; \
    entry.spacing            = 0; \
-   entry.path_enabled       = true; \
-   entry.label_enabled      = true; \
-   entry.rich_label_enabled = true; \
-   entry.value_enabled      = true; \
-   entry.sublabel_enabled   = true
+   entry.flags              = 0
 
 RETRO_END_DECLS
 

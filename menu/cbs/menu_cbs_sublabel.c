@@ -1469,12 +1469,10 @@ static int action_bind_sublabel_input_remap_port(
    unsigned display_port = 0;
    menu_entry_t entry;
 
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled       = false;
-   entry.label_enabled      = true;
-   entry.rich_label_enabled = false;
-   entry.value_enabled      = false;
-   entry.sublabel_enabled   = false;
+   MENU_ENTRY_INITIALIZE(entry);
+
+   entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED; 
+
    menu_entry_get(&entry, 0, i, NULL, false);
 
    /* We need the actual frontend port index.
