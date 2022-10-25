@@ -64,11 +64,6 @@ extern "C" {
 #include <locale.h>
 #endif
 
-#ifdef HAVE_OPENSSL
-#include <openssl/ssl.h>
-#include <openssl/opensslv.h>
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -1594,22 +1589,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
    resizeDocks(QList<QDockWidget*>() << m_searchDock, QList<int>() << 1, Qt::Vertical);
-#endif
-
-#ifdef HAVE_OPENSSL
-   {
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-      const SSL_METHOD *method = TLS_method();
-      SSL_CTX *ctx = SSL_CTX_new(method);
-
-      if (ctx)
-         SSL_CTX_free(ctx);
-#else
-      const SSL_METHOD *method = TLSv1_method();
-      RARCH_LOG("[Qt]: TLS supports %d ciphers.\n", method->num_ciphers());
-#endif
-      RARCH_LOG("[Qt]: Using %s\n", OPENSSL_VERSION_TEXT);
-   }
 #endif
 }
 
