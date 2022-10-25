@@ -3836,7 +3836,7 @@ static int xmb_draw_item(
          (!xmb->assets_missing) &&
          (color[3] != 0) &&
          (
-            (entry.checked) ||
+            (entry.flags & MENU_ENTRY_FLAG_CHECKED) ||
             !((entry_type >= MENU_SETTING_DROPDOWN_ITEM) && (entry_type <= MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL))
          )
       )
@@ -3844,7 +3844,7 @@ static int xmb_draw_item(
       math_matrix_4x4 mymat_tmp;
       uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
             entry.enum_idx, entry.path, entry.label,
-            entry_type, (i == current), entry.checked);
+            entry_type, (i == current), entry.flags & MENU_ENTRY_FLAG_CHECKED);
       float x                  = icon_x;
       float y                  = icon_y;
       float scale_factor       = node->zoom;

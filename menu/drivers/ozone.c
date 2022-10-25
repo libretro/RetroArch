@@ -4741,7 +4741,7 @@ static void ozone_draw_entry_value(
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    /* check icon */
-   if (entry->checked)
+   if (entry->flags & MENU_ENTRY_FLAG_CHECKED)
    {
       float *col = ozone->theme_dynamic.entries_checkmark;
       if (dispctx && dispctx->blend_begin)

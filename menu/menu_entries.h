@@ -143,7 +143,8 @@ enum menu_entry_flags
    MENU_ENTRY_FLAG_LABEL_ENABLED      = (1 << 1),
    MENU_ENTRY_FLAG_RICH_LABEL_ENABLED = (1 << 2),
    MENU_ENTRY_FLAG_VALUE_ENABLED      = (1 << 3),
-   MENU_ENTRY_FLAG_SUBLABEL_ENABLED   = (1 << 4)
+   MENU_ENTRY_FLAG_SUBLABEL_ENABLED   = (1 << 4),
+   MENU_ENTRY_FLAG_CHECKED            = (1 << 5)
 };
 
 typedef struct menu_entry
@@ -160,7 +161,6 @@ typedef struct menu_entry
    char rich_label[255];
    char value[255];
    char password_value[255];
-   bool checked;
 } menu_entry_t;
 
 int menu_entries_get_title(char *title, size_t title_len);

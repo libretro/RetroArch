@@ -400,7 +400,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       file_list_t *menu_stack       = MENU_LIST_GET(menu_st->entries.list, 0);
 
       entry->enum_idx               = cbs->enum_idx;
-      entry->checked                = cbs->checked;
+      if (cbs->checked)
+         entry->flags |= MENU_ENTRY_FLAG_CHECKED;
 
       if (menu_stack && menu_stack->size)
          label = menu_stack->list[menu_stack->size - 1].label;

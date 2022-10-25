@@ -5352,7 +5352,8 @@ static void rgui_render(void *data,
 
          /* Get 'type' of entry value component */
          entry_value_type = rgui_get_entry_value_type(
-               entry_value, entry.checked, rgui_switch_icons);
+               entry_value, entry.flags & MENU_ENTRY_FLAG_CHECKED,
+               rgui_switch_icons);
 
          switch (entry_value_type)
          {

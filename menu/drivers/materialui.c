@@ -4020,7 +4020,8 @@ static void materialui_render_menu_entry_default(
    entry_file_type         = msg_hash_to_file_type(
          msg_hash_calculate(entry_value));
    entry_value_type        = materialui_get_entry_value_type(
-         mui, entry_value, entry->checked, entry_type, entry_file_type);
+         mui, entry_value, entry->flags & MENU_ENTRY_FLAG_CHECKED,
+         entry_type, entry_file_type);
 
    /* Draw entry icon
     * > Has to be done first, since it affects the left
@@ -4029,7 +4030,7 @@ static void materialui_render_menu_entry_default(
    {
       case MUI_ICON_TYPE_INTERNAL:
          /* Note: Checked entries never have icons */
-         if (!entry->checked)
+         if (!(entry->flags & MENU_ENTRY_FLAG_CHECKED))
             icon_texture = mui->textures.list[node->icon_texture_index];
          break;
 #if defined(HAVE_LIBRETRODB)
@@ -9810,7 +9811,8 @@ static int materialui_pointer_up_swipe_horz_default(
          entry_file_type                = msg_hash_to_file_type(
                msg_hash_calculate(entry_value));
          entry_value_type               = materialui_get_entry_value_type(
-               mui, entry_value, last_entry.checked, entry_type, entry_file_type);
+               mui, entry_value, last_entry.flags & MENU_ENTRY_FLAG_CHECKED,
+               entry_type, entry_file_type);
 
          /* If entry has a 'settings' type, reset scroll position */
          if ((entry_value_type == MUI_ENTRY_VALUE_TEXT) ||
