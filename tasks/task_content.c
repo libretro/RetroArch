@@ -1575,7 +1575,7 @@ static void task_push_to_history_list(
          tmp[0] = '\0';
 
 #ifdef HAVE_MENU
-      /* Push quick menu onto menu stack */
+      /* Push Quick Menu onto menu stack */
       if (launched_from_cli)
          menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
@@ -2222,7 +2222,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    task_push_to_history_list(p_content, true, false, false);
 
 #ifdef HAVE_MENU
-   /* Push quick menu onto menu stack */
+   /* Push Quick Menu onto menu stack */
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
 
@@ -2340,13 +2340,13 @@ bool task_push_load_contentless_core_from_menu(
    command_event(CMD_EVENT_QUIT, NULL);
 #endif
 
-   /* Push quick menu onto menu stack */
    menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 
    if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
        string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))
       flush_menu = false;
 
+   /* Push Quick Menu onto menu stack */
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, &flush_menu);
 
 #ifdef HAVE_DYNAMIC
@@ -2456,7 +2456,7 @@ bool task_push_load_content_with_new_core_from_menu(
    command_event(CMD_EVENT_QUIT, NULL);
 #endif
 
-   /* Push quick menu onto menu stack */
+   /* Push Quick Menu onto menu stack */
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 
@@ -2590,6 +2590,29 @@ end:
    return ret;
 }
 
+static bool task_load_content_internal_wrap(
+      content_ctx_info_t *content_info,
+      enum rarch_core_type type,
+      bool load_from_companion_ui)
+{
+   /* Load content */
+   if (!task_load_content_internal(content_info, true, false,
+            load_from_companion_ui))
+      goto error;
+#ifdef HAVE_MENU
+   /* Push Quick Menu onto menu stack */
+   if (type != CORE_TYPE_DUMMY)
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
+   return true;
+
+error:
+#ifdef HAVE_MENU
+   retroarch_menu_running();
+#endif
+   return false;
+}
+
 bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
@@ -2604,11 +2627,11 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    content_state_t  *p_content = content_state_get_ptr();
 
-   path_set(RARCH_PATH_CONTENT, fullpath);
-   path_set(RARCH_PATH_CORE, core_path);
-
    p_content->companion_ui_db_name[0] = '\0';
    p_content->companion_ui_crc32[0]   = '\0';
+
+   path_set(RARCH_PATH_CONTENT, fullpath);
+   path_set(RARCH_PATH_CORE,    core_path);
 
    if (!string_is_empty(db_name))
       strlcpy(p_content->companion_ui_db_name,
@@ -2629,16 +2652,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    else
       runloop_st->name.label[0] = '\0';
 
-   /* Load content */
-   if (!task_load_content_internal(content_info, true, false, true))
-      return false;
-
-#ifdef HAVE_MENU
-   /* Push quick menu onto menu stack */
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
-
-   return true;
+   return task_load_content_internal_wrap(content_info, CORE_TYPE_PLAIN, true);
 }
 
 bool task_push_load_content_from_cli(
@@ -2665,20 +2679,9 @@ bool task_push_start_builtin_core(
     * load the actual content. Can differ per mode. */
    runloop_set_current_core_type(type, true);
 
-   /* Load content */
-#ifdef HAVE_MENU
-   if (!task_load_content_internal(content_info, true, false, false))
-   {
-      retroarch_menu_running();
-      return false;
-   }
-   /* Push quick menu onto menu stack */
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-   return true;
-#else
-   return task_load_content_internal(content_info, true, false, false);
-#endif
+   return task_load_content_internal_wrap(content_info, type, false);
 }
+
 
 bool task_push_load_content_with_core(
       const char *fullpath,
@@ -2688,20 +2691,7 @@ bool task_push_load_content_with_core(
       void *user_data)
 {
    path_set(RARCH_PATH_CONTENT, fullpath);
-   /* Load content */
-#ifdef HAVE_MENU
-   if (!task_load_content_internal(content_info, true, false, false))
-   {
-      retroarch_menu_running();
-      return false;
-   }
-   /* Push quick menu onto menu stack */
-   if (type != CORE_TYPE_DUMMY)
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-   return true;
-#else
-   return task_load_content_internal(content_info, true, false, false);
-#endif
+   return task_load_content_internal_wrap(content_info, type, false);
 }
 
 bool task_push_load_content_with_current_core_from_companion_ui(
@@ -2723,21 +2713,7 @@ bool task_push_load_content_with_current_core_from_companion_ui(
     *   now, until someone can implement the required higher
     *   level functionality in 'win32_common.c' and 'ui_cocoa.m' */
    path_set(RARCH_PATH_CONTENT, fullpath);
-
-   /* Load content */
-#ifdef HAVE_MENU
-   if (!task_load_content_internal(content_info, true, false, false))
-   {
-      retroarch_menu_running();
-      return false;
-   }
-   /* Push quick menu onto menu stack */
-   if (type != CORE_TYPE_DUMMY)
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-   return true;
-#else
-   return task_load_content_internal(content_info, true, false, false);
-#endif
+   return task_load_content_internal_wrap(content_info, type, false);
 }
 
 
@@ -2751,20 +2727,7 @@ bool task_push_load_subsystem_with_core(
    content_state_t  *p_content = content_state_get_ptr();
 
    p_content->flags |= CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT;
-   /* Load content */
-#ifdef HAVE_MENU
-   if (!task_load_content_internal(content_info, true, false, false))
-   {
-      retroarch_menu_running();
-      return false;
-   }
-   /* Push quick menu onto menu stack */
-   if (type != CORE_TYPE_DUMMY)
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-   return true;
-#else
-   return task_load_content_internal(content_info, true, false, false);
-#endif
+   return task_load_content_internal_wrap(content_info, type, false);
 }
 
 uint8_t content_get_flags(void)
