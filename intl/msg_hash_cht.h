@@ -135,7 +135,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   "密碼輸入正確後，顯示設定相關的全部選項，需要重新啟動應用程式。"
+   "顯示設定相關的全部選項。密碼輸入正確後，需要重新啟動應用程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -327,7 +327,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "選擇列表，下載並更新全部預覽縮圖。"
+   "選擇列表下載並更新全部預覽縮圖。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
@@ -636,234 +636,234 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   "顯示器寬度(mm)"
+   "顯示器寬度 (毫米)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   "顯示器高度(mm)"
+   "顯示器高度 (毫米)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   "顯示器寸點數"
+   "顯示器像素密度 (DPI)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
-   "支持 Libretro 數據庫"
+   "支援唯讀資料庫 (LibretroDB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   "支持 覆蓋圖層"
+   "支援覆蓋圖層"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-   "支持指令界面"
+   "支援命令行介面 (CLI)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-   "支持網路指令界面"
+   "支援網路命令行介面"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
-   "支持網路控制器"
+   "支援網路控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
-   "Cocoa 支持"
+   "支援 Cocoa 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
-   "支持PNG (RPNG)"
+   "支援 PNG (RPNG) 圖片格式"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
-   "支持JPEG (RJPEG)"
+   "支援 JPEG (RJPEG) 圖片格式"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
-   "支持BMP (RBMP)"
+   "支援 BMP (RBMP) 圖片格式"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
-   "支持TGA (RTGA)"
+   "支援 TGA (RTGA) 圖片格式"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
-   "SDL1.2 支持"
+   "支援 SDL 1.2 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
-   "SDL2 支持"
+   "支援 SDL 2 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
-   "Vulkan 支持"
+   "支援 Vulkan 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
-   "支持 Metal"
+   "支援 Metal 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
-   "OpenGL 支持"
+   "支援 OpenGL 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
-   "OpenGL ES 支持"
+   "支援 OpenGL ES 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
-   "多線程支持"
+   "支援多執行緒"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
-   "KMS/EGL 支持"
+   "支援 KMS/EGL 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
-   "Udev 支持"
+   "支援 udev 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
-   "OpenVG 支持"
+   "支援 OpenVG 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
-   "EGL 支持"
+   "支援 EGL 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
-   "X11 支持"
+   "支援 X11 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
-   "Wayland 支持"
+   "支援 Wayland 通訊協定"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
-   "XVideo 支持"
+   "支援 XVideo 擴充套件"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
-   "ALSA 支持"
+   "支援進階Linux聲音體系函式庫 (ALSA)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
-   "支持 OSS"
+   "支援開源軟體 (OSS)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
-   "支持 OpenAL"
+   "支援 OpenAL"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
-   "支持 OpenSL"
+   "支援 OpenSL"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
-   "支持 RSound"
+   "支援 RSound"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
-   "支持 RoarAudio"
+   "支援 RoarAudio"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
-   "支持 JACK"
+   "支援 JACK"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
-   "支持 PulseAudio"
+   "支援 PulseAudio"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
-   "支持 CoreAudio"
+   "支援 CoreAudio"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
-   "支持 CoreAudio V3"
+   "支援 CoreAudio V3"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
-   "支持 DirectSound"
+   "支援 DirectSound"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
-   "支持 WASAPI"
+   "支援 WASAPI"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
-   "支持 XAudio2"
+   "支援 XAudio2"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
-   "支持 Zlib"
+   "支援 Zlib"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
-   "支持 7zip"
+   "支援 7zip"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
-   "支持動態函數庫"
+   "支援動態函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-   "執行時動態載入 libretro 函數庫"
+   "執行時動態載入 libretro 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
-   "支持 Cg"
+   "支援C語言著色器 (Cg)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
-   "支持 GLSL"
+   "支援開放式圖形庫著色器 (GLSL)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
-   "支持 HLSL"
+   "支援高階著色器 (HLSL)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
-   "支持 SDL 圖像"
+   "支援 SDL 圖形"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
-   "支持 FFmpeg"
+   "支援 FFmpeg 函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
-   "支持 mpv"
+   "支援 mpv"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
-   "支持 CoreText"
+   "支援 CoreText"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
-   "支持 FreeType"
+   "支援 FreeType"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
-   "支持 STB TrueType"
+   "支援 STB TrueType"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-   "支持 Netplay (P2P)"
+   "支援連線對戰使用對等式網路(點對點)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
-   "支持 Video4Linux2"
+   "支援 Video4Linux2"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
-   "支持 Libusb"
+   "支援 Libusb"
    )
 
 /* Main Menu > Information > Database Manager */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
-   "選擇資料庫"
+   "資料庫"
    )
 
 /* Main Menu > Information > Database Manager > Information */
@@ -882,7 +882,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
-   "Retro 成就"
+   "成就"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
@@ -897,8 +897,16 @@ MSG_HASH(
    "地區"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   "主機獨佔"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   "平臺獨佔"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
-   "分數"
+   "評分"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
@@ -906,11 +914,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
-   "控制"
+   "操作"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
+   "風格"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
+   "玩法"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   "故事"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
+   "節奏"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
+   "人稱"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
    "設定"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
+   "虛擬"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
+   "載具"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
@@ -934,7 +970,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
-   "「Fami 通」雜誌評分"
+   "電玩通雜誌評分 (ファミ通)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
@@ -947,6 +983,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
    "Edge 雜誌期數"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "發行月份"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "發行年份"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -966,7 +1010,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
-   "強化硬件"
+   "增強硬體"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
@@ -978,15 +1022,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   "支持搖桿輸入"
+   "支援類比搖桿"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   "支持震動回饋"
+   "支援震動回饋"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   "支持多人遊戲"
+   "支援多人合作"
    )
 
 /* Main Menu > Configuration File */
@@ -2110,19 +2154,43 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
-   "Turbo區間"
+   "連發週期"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "設定按鍵連發的週期 (以幀為單位)。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
+   "連發工作週期"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
+   "設定按鍵連發的工作週期，此設定需小於連發週期設定值 (以幀為單位)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
-   "渦輪加速模式"
+   "連發模式"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   "設定按鍵連發使用的模式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "預設按鈕"
+   "設定預設鍵"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "預設渦輪加速模式的啟用按鈕 '單一按鈕'"
+   "設定連發模式 <單鍵 (開/關)>  <單鍵 (組合鍵)> 選項的使用按鍵。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   "連發設定"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "變更控制器按鍵連發設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -2196,7 +2264,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
-   "設定「結束復古電玩」快捷鍵，使用控制器操作的按鍵組合。"
+   "設定「結束復古電玩」使用控制器操作的按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
@@ -2495,7 +2563,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "TURBO開關"
+   "單次連發快捷鍵 (限單次作用，使用時需先按住要連發的按鍵。)"
    )
 
 /* Settings > Latency */
@@ -2566,15 +2634,15 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
-   "結束時儲存設定"
+   "結束時儲存設定檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
-   "結束復古電玩時，儲存變更的設定到設定檔。"
+   "「關閉」時儲存變更的核心設定，「結束復古電玩」時儲存變更的相關設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
-   "結束時儲存自訂控制器"
+   "結束時儲存控制器"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
@@ -2943,7 +3011,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   "載入內容「關閉」時結束復古電玩。設定為 <CLI> 時，僅限使用命令介面載入時啟用此功能。"
+   "載入檔案關閉時結束復古電玩。設定為 <CLI> 時，僅限使用命令行介面載入時啟用此功能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
@@ -3438,7 +3506,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
-   "運行時間:"
+   "執行總時數:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
+   "上一次執行:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
@@ -3782,7 +3854,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
-   "掃瞄文件夾"
+   "掃描資料夾"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
@@ -3902,6 +3974,10 @@ MSG_HASH(
    "檔案路徑"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX,
+   "項目: %lu/%lu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
    "核心"
    )
@@ -4007,9 +4083,21 @@ MSG_HASH(
 
 /* Quick Menu > Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST,
+   "管理控制器設定檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST,
+   "載入、儲存或刪除目前使用的控制器設定檔。"
+   )
 
 /* Quick Menu > Controls > Manage Remap Files */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
+   "控制器設定檔:"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
    "載入重新映射檔案"
@@ -4021,6 +4109,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "儲存遊戲重映射文件"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "將變更的按鍵設定，儲存在目前使用的控制器設定檔。"
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -4103,6 +4195,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
    "描述"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
+   "類型"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
@@ -4882,7 +4978,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
-   "佈景主題"
+   "佈景主題:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT,
@@ -4914,11 +5010,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
-   "說明文件"
+   "線上說明文件"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
-   "載入自定的核心..."
+   "載入其他核心..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
@@ -4942,7 +5038,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
-   "檔案瀏覽器"
+   "所有資料夾"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
@@ -4974,7 +5070,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
-   "核心資料庫"
+   "核心資訊"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
@@ -5014,7 +5110,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
-   "關聯核心"
+   "設定預設核心"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
@@ -5089,6 +5185,10 @@ MSG_HASH(
    "檔案無法重新命名。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
+   "列表項目設定"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
    "名稱:"
    )
@@ -5110,11 +5210,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
-   "(空格分隔類型，預設包含全部。)"
+   "(空格分隔副檔名，預設包含全部。)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
+   "壓縮檔中搜尋"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
-   "※ 如未設定，將使用此列表名稱，建立與資料庫和預覽縮圖的關聯名稱。"
+   "※ 無法使用：將使用此列表名稱，建立與資料庫和預覽縮圖的關聯名稱。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
@@ -5123,6 +5227,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE,
    "刪除"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY,
+   "加入項目"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ADD_FILES,
@@ -5181,12 +5289,20 @@ MSG_HASH(
    "移除"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_REMOVE_PASSES,
+   "清除著色器"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_APPLY,
    "套用"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
    "下載預覽縮圖"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
+   "圖示縮圖"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
@@ -6397,6 +6513,14 @@ MSG_HASH(
    "螢幕截圖已存檔"
    )
 MSG_HASH(
+   MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
+   "全螢幕顯示預覽縮圖"
+   )
+MSG_HASH(
+   MSG_TOGGLE_CONTENT_METADATA,
+   "詮釋資訊 (開/關)"
+   )
+MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "再按一次結束復古電玩。"
    )
@@ -6895,7 +7019,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "掃描完成。<br><br>\n為了正確掃描內容。您必須:\n<ul><li>下載對應的核心。</li>\n<li>線上更新核心資料庫。</li>\n<li>線上更新資料庫。</li>\n<li>上述任何一項剛完成，請先重新啟動復古電玩。</li></ul>\n最後，掃描內容必須與資料庫數據相同 <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">連結至資料庫</a>。\n如果仍然無法掃描，請使用<a href=\"https://www.github.com/libretro/RetroArch/issues\">錯誤回報</a>。"
+   "掃描完成。<br><br>\n為了正確的掃描內容。<br><br>\n您必須:\n<ul><li>下載對應的核心。</li>\n<li>線上更新核心資料庫。</li>\n<li>線上更新資料庫。</li>\n<li>上述任何一項剛完成，請先重新啟動復古電玩。</li></ul>\n掃描檔案必須與資料庫數據相同<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">連結至資料庫</a>。<br>\n最後，如果仍然無法掃描，請使用<a href=\"https://www.github.com/libretro/RetroArch/issues\">錯誤回報</a>。"
    )
 #endif
 MSG_HASH(
