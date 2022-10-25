@@ -1940,10 +1940,6 @@ MSG_HASH(
    "Adatbázisok"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Kurzor"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
    "Videószűrők"
    )

@@ -6124,14 +6124,6 @@ MSG_HASH(
    "Tietokannat on tallennettu tähän kansioon."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Kohdistin"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-   "Kohdistimen kyselyt on tallennettu tähän kansioon."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
    "Huijaustiedostot"
    )

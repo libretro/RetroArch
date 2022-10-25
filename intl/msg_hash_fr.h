@@ -6300,14 +6300,6 @@ MSG_HASH(
    "Les bases de données sont conservées dans ce dossier."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Pointeurs "
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-   "Les requêtes de curseur sont conservées dans ce dossier."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
    "Fichier de cheats "
    )

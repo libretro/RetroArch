@@ -4156,10 +4156,6 @@ MSG_HASH(
    "معلومات أساسية"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "المؤشر"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
    "شرائح الفيديو"
    )

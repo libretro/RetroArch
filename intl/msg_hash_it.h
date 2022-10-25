@@ -6268,14 +6268,6 @@ MSG_HASH(
    "I database sono memorizzati in questa directory."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Cursore"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-   "Le query del cursore sono memorizzate in questa directory."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
    "File Di Trucchi"
    )

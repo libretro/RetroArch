@@ -107,7 +107,6 @@ GENERIC_DEFERRED_PUSH(deferred_push_content_settings,               DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_add_content_list,               DISPLAYLIST_ADD_CONTENT_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_history_list,                   DISPLAYLIST_HISTORY)
 GENERIC_DEFERRED_PUSH(deferred_push_database_manager_list,          DISPLAYLIST_DATABASES)
-GENERIC_DEFERRED_PUSH(deferred_push_cursor_manager_list,            DISPLAYLIST_DATABASE_CURSORS)
 GENERIC_DEFERRED_PUSH(deferred_push_content_collection_list,        DISPLAYLIST_DATABASE_PLAYLISTS)
 GENERIC_DEFERRED_PUSH(deferred_push_configurations_list,            DISPLAYLIST_CONFIGURATIONS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_load_content_special,           DISPLAYLIST_LOAD_CONTENT_LIST)
@@ -839,7 +838,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_CONFIGURATIONS, deferred_push_configurations},
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST, deferred_push_accounts_cheevos_list},
       {MENU_ENUM_LABEL_DATABASE_MANAGER_LIST, deferred_push_database_manager_list},
-      {MENU_ENUM_LABEL_CURSOR_MANAGER_LIST, deferred_push_cursor_manager_list},
 #ifdef HAVE_LIBRETRODB
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST, deferred_push_cursor_manager_list_deferred},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER, deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher},
@@ -1029,9 +1027,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list);
-            break;
-         case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list);
             break;
          case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_file_load);

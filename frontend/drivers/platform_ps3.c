@@ -164,9 +164,6 @@ static void fill_derived_paths(void)
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
 		       "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
-    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR],
-		       g_defaults.dirs[DEFAULT_DIR_CORE],
-		       "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE],
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
 		       "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));

@@ -383,7 +383,6 @@ uint32_t msg_hash_calculate(const char *s)
 #define MENU_VALUE_IMAGE                                                       0xbab7ebf9U
 #define MENU_VALUE_MOVIE                                                       0xc43c4bf6U
 #define MENU_VALUE_CORE                                                        0x6a167f7fU
-#define MENU_VALUE_CURSOR                                                      0x57bba8b4U
 #define MENU_VALUE_FILE                                                        0x6a496536U
 #define MENU_VALUE_RDB                                                         0x0b00f54eU
 #define MENU_VALUE_DIR                                                         0x0af95f55U
@@ -430,8 +429,6 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
          return FILE_TYPE_CORE;
       case MENU_VALUE_RDB:
          return FILE_TYPE_RDB;
-      case MENU_VALUE_CURSOR:
-         return FILE_TYPE_CURSOR;
       case MENU_VALUE_FILE:
          return FILE_TYPE_PLAIN;
       case MENU_VALUE_DIR:

@@ -1848,10 +1848,6 @@ MSG_HASH(
    "Core Info Danh mục"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Mục Cursor"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "Playlists Danh mục"
    )

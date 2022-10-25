@@ -1619,9 +1619,6 @@ static void frontend_unix_get_env(int *argc,
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE],
                   app_dir, "database/rdb",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR],
-                  app_dir, "database/cursors",
-                  sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
                   app_dir, "assets/wallpapers",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
@@ -1886,8 +1883,6 @@ static void frontend_unix_get_env(int *argc,
          "records_config", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], base_path,
          "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], base_path,
-         "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
          "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,

@@ -3936,10 +3936,6 @@ MSG_HASH(
    "Інформація про ядро"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Вказівник"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
    "Відеошейдери"
    )

@@ -21019,21 +21019,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_cursor,
-               sizeof(settings->paths.directory_cursor),
-               MENU_ENUM_LABEL_CURSOR_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_CURSOR],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 #endif
 
          CONFIG_DIR(

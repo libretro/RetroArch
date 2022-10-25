@@ -6184,14 +6184,6 @@ MSG_HASH(
    "Datenbanken werden in diesem Verzeichnis gespeichert."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Suchanfragen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-   "Suchanfragen werden in diesem Verzeichnis gespeichert."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
    "Cheat-Dateien"
    )

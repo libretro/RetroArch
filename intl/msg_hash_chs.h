@@ -5968,14 +5968,6 @@ MSG_HASH(
    "保存游戏内容数据库文件的文件夹。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "指针"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-   "保存指针文件的文件夹。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
    "金手指文件"
    )

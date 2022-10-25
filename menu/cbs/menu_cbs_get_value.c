@@ -1377,18 +1377,6 @@ static void menu_action_setting_disp_set_label_menu_file_rdb(
          path, "(RDB)", STRLEN_CONST("(RDB)"), s2, len2);
 }
 
-static void menu_action_setting_disp_set_label_menu_file_cursor(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *path,
-      char *s2, size_t len2)
-{
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
-         path, "(CURSOR)", STRLEN_CONST("(CURSOR)"), s2, len2);
-}
-
 static void menu_action_setting_disp_set_label_menu_file_cheat(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -2204,10 +2192,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       case FILE_TYPE_RDB:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_rdb);
-         break;
-      case FILE_TYPE_CURSOR:
-         BIND_ACTION_GET_VALUE(cbs,
-               menu_action_setting_disp_set_label_menu_file_cursor);
          break;
       case FILE_TYPE_CHEAT:
          BIND_ACTION_GET_VALUE(cbs,

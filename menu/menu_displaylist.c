@@ -4013,12 +4013,6 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
          MENU_ENUM_LABEL_DATABASE_MANAGER_LIST,
          MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
-   if (menu_entries_append(info_list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER),
-         msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST),
-         MENU_ENUM_LABEL_CURSOR_MANAGER_LIST,
-         MENU_SETTING_ACTION, 0, 0, NULL))
-      count++;
 #endif
 
    if (retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
@@ -10005,7 +9999,6 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_LIBRETRO_DIR_PATH,               PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_LIBRETRO_INFO_PATH,              PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,      PARSE_ONLY_DIR},
-               {MENU_ENUM_LABEL_CURSOR_DIRECTORY,                PARSE_ONLY_DIR},
 #ifdef HAVE_CHEATS
                {MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,             PARSE_ONLY_DIR},
 #endif
@@ -13792,21 +13785,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             load_content       = false;
             use_filebrowser    = true;
             info->path         = strdup(settings->paths.path_content_database);
-         }
-         break;
-      case DISPLAYLIST_DATABASE_CURSORS:
-         {
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-            filebrowser_clear_type();
-            if (!string_is_empty(info->exts))
-               free(info->exts);
-            if (info->path)
-               free(info->path);
-            info->type_default = FILE_TYPE_CURSOR;
-            info->exts         = strldup("dbc", sizeof("dbc"));
-            load_content       = false;
-            use_filebrowser    = true;
-            info->path         = strdup(settings->paths.directory_cursor);
          }
          break;
       case DISPLAYLIST_SHADER_PASS:

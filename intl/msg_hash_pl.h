@@ -6120,14 +6120,6 @@ MSG_HASH(
    "Bazy danych są przechowywane w tym katalogu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Kursor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-   "Zapytania kursora są przechowywane w tym katalogu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
    "Pliki Cheat"
    )

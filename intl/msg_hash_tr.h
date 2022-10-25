@@ -6328,14 +6328,6 @@ MSG_HASH(
    "Veritabanları bu dizinde saklanır."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "İmleç"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-   "İmleç sorguları bu dizinde saklanır."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
    "Hile Dosyaları"
    )

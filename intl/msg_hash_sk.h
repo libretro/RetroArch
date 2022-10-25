@@ -2396,10 +2396,6 @@ MSG_HASH(
    "Informácie o jadre"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Kurzor"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
    "Profily herného ovládača"
    )

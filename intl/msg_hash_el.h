@@ -2988,10 +2988,6 @@ MSG_HASH(
    "Πληροφορίες Πυρήνα"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Δρομείς"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    "Στιγμιότυπα Οθόνης"
    )

@@ -495,7 +495,6 @@ typedef struct settings
       char directory_video_filter[PATH_MAX_LENGTH];
       char directory_video_shader[PATH_MAX_LENGTH];
       char directory_libretro[PATH_MAX_LENGTH];
-      char directory_cursor[PATH_MAX_LENGTH];
       char directory_input_remapping[PATH_MAX_LENGTH];
       char directory_overlay[PATH_MAX_LENGTH];
 #ifdef HAVE_VIDEO_LAYOUT

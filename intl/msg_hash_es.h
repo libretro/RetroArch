@@ -6328,14 +6328,6 @@ MSG_HASH(
    "En este directorio se guardarán las bases de datos."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Cursores"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-   "En este directorio se guardarán las peticiones de cursores."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
    "Archivos de trucos"
    )

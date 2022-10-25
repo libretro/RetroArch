@@ -4540,10 +4540,6 @@ MSG_HASH(
    "Les bases de dades es desen en aquest directori."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Cursors"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
    "Arxius de trucs"
    )

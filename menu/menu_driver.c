@@ -7621,9 +7621,6 @@ static int generic_menu_iterate(
                   case FILE_TYPE_RECORD_CONFIG:
                      enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_RECORD_CONFIG;
                      break;
-                  case FILE_TYPE_CURSOR:
-                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_CURSOR;
-                     break;
                   case FILE_TYPE_CONFIG:
                      enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_CONFIG;
                      break;

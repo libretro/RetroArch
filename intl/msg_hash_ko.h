@@ -6364,14 +6364,6 @@ MSG_HASH(
    "데이터베이스가 저장되는 디렉토리입니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "커서"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-   "커서 정보가 저장되는 디렉토리입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
    "치트 파일"
    )

@@ -6284,10 +6284,6 @@ MSG_HASH(
    "Os bancos de dados são armazenados neste diretório."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-   "As consultas salvas são armazenadas neste diretório."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
    "Arquivos de trapaça"
    )

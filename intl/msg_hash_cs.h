@@ -6248,14 +6248,6 @@ MSG_HASH(
    "V tomto adresáři jsou uloženy databáze."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "Kurzor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-   "V tomto adresáři jsou uloženy kurzorové dotazy."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
    "Soubory Cheatů"
    )

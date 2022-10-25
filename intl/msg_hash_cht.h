@@ -3676,14 +3676,6 @@ MSG_HASH(
    "設定遊戲資料庫儲存位置。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
-   "指標"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-   "設定指標搜尋記錄儲存位置。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
    "設定作弊碼文件儲存位置。"
    )

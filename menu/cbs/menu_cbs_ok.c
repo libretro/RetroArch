@@ -1381,18 +1381,6 @@ int generic_action_ok_displaylist_push(const char *path,
             dl_type            = DISPLAYLIST_GENERIC;
          }
          break;
-      case ACTION_OK_DL_CURSOR_MANAGER_LIST:
-         filebrowser_clear_type();
-         fill_pathname_join_special(tmp, settings->paths.directory_cursor,
-               path, sizeof(tmp));
-
-         info.directory_ptr = idx;
-         info_path          = tmp;
-         info_label         = msg_hash_to_str(
-               MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST);
-         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST;
-         dl_type            = DISPLAYLIST_GENERIC;
-         break;
          /* Pending clear */
       case ACTION_OK_DL_CORE_UPDATER_LIST:
          info.type          = type;
@@ -5806,7 +5794,6 @@ DEFAULT_ACTION_OK_FUNC(action_ok_wifi_list, ACTION_OK_DL_WIFI_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_wifi_networks_list, ACTION_OK_DL_WIFI_NETWORKS_LIST)
 #endif
 #endif
-DEFAULT_ACTION_OK_FUNC(action_ok_cursor_manager_list, ACTION_OK_DL_CURSOR_MANAGER_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH)
 DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push_detect_core, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE)
 DEFAULT_ACTION_OK_FUNC(action_ok_logging_list, ACTION_OK_DL_LOGGING_SETTINGS_LIST)
@@ -8321,7 +8308,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,                 action_ok_file_load_detect_core},
          {MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE,    action_ok_file_load_current_core},
          {MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,                action_ok_push_generic_list},
-         {MENU_ENUM_LABEL_CURSOR_MANAGER_LIST,                 action_ok_push_generic_list},
          {MENU_ENUM_LABEL_DATABASE_MANAGER_LIST,               action_ok_push_generic_list},
 #ifdef HAVE_CHEATS
          {MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,                 action_ok_cheat_apply_changes},
@@ -8889,17 +8875,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_push_netplay_ban);
 #endif
-            break;
-         case FILE_TYPE_CURSOR:
-            if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST)))
-            {
-               BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
-            }
-            else if (string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST)))
-            {
-               BIND_ACTION_OK(cbs, action_ok_cursor_manager_list);
-            }
             break;
          case FILE_TYPE_VIDEOFILTER:
             BIND_ACTION_OK(cbs, action_ok_set_path_videofilter);
