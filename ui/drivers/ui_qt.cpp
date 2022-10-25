@@ -1021,7 +1021,7 @@ static void scan_finished_handler(retro_task_t *task,
 #endif
 
 /* https://stackoverflow.com/questions/7246622/how-to-create-a-slider-with-a-non-linear-scale */
-static double expScale(double inputValue, double midValue, double maxValue)
+static double exp_scale(double inputValue, double midValue, double maxValue)
 {
    double           M = maxValue / midValue;
    double        base = M - 1;
@@ -1032,10 +1032,7 @@ static double expScale(double inputValue, double midValue, double maxValue)
    return returnValue;
 }
 
-TreeView::TreeView(QWidget *parent) :
-   QTreeView(parent)
-{
-}
+TreeView::TreeView(QWidget *parent) : QTreeView(parent) { }
 
 void TreeView::columnCountChanged(int oldCount, int newCount)
 {
@@ -1051,20 +1048,14 @@ void TreeView::selectionChanged(const QItemSelection &selected, const QItemSelec
    emit itemsSelected(list);
 }
 
-TableView::TableView(QWidget *parent) :
-   QTableView(parent)
-{
-}
+TableView::TableView(QWidget *parent) : QTableView(parent) { }
 
 bool TableView::isEditorOpen()
 {
    return (state() == QAbstractItemView::EditingState);
 }
 
-ListWidget::ListWidget(QWidget *parent) :
-   QListWidget(parent)
-{
-}
+ListWidget::ListWidget(QWidget *parent) : QListWidget(parent) { }
 
 bool ListWidget::isEditorOpen()
 {
@@ -1107,11 +1098,7 @@ void CoreInfoWidget::resizeEvent(QResizeEvent *event)
    m_scrollArea->resize(event->size());
 }
 
-LogTextEdit::LogTextEdit(QWidget *parent) :
-   QPlainTextEdit(parent)
-{
-
-}
+LogTextEdit::LogTextEdit(QWidget *parent) : QPlainTextEdit(parent) { }
 
 void LogTextEdit::appendMessage(const QString& text)
 {
@@ -1122,7 +1109,7 @@ void LogTextEdit::appendMessage(const QString& text)
    verticalScrollBar()->setValue(verticalScrollBar()->maximum());
 }
 
-/* only accept indexes from current path. https://www.qtcentre.org/threads/50700-QFileSystemModel-and-QSortFilterProxyModel-don-t-work-well-together */
+/* Only accept indexes from current path. https://www.qtcentre.org/threads/50700-QFileSystemModel-and-QSortFilterProxyModel-don-t-work-well-together */
 bool FileSystemProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
    QFileSystemModel  *sm = qobject_cast<QFileSystemModel*>(sourceModel());
@@ -1652,15 +1639,13 @@ void MainWindow::onFileSystemDirLoaded(const QString &path)
 /* workaround for columns being resized */
 void MainWindow::onFileBrowserTableDirLoaded(const QString &path)
 {
-   if (path.isEmpty())
-      return;
-
-   m_fileTableView->horizontalHeader()->restoreState(m_fileTableHeaderState);
+   if (!path.isEmpty())
+      m_fileTableView->horizontalHeader()->restoreState(m_fileTableHeaderState);
 }
 
 QVector<QPair<QString, QString> > MainWindow::getPlaylists()
 {
-   unsigned i;
+   int i;
    QVector<QPair<QString, QString> > playlists;
    size_t size  = m_listWidget->count();
 
@@ -1707,20 +1692,8 @@ QString MainWindow::getSpecialPlaylistPath(SpecialPlaylist playlist)
    return QString();
 }
 
-double MainWindow::lerp(double x, double y, double a, double b, double d)
-{
-   return a + (b - a) * ((double)(d - x) / (double)(y - x));
-}
-
-void MainWindow::onIconViewClicked()
-{
-   setCurrentViewType(VIEW_TYPE_ICONS);
-}
-
-void MainWindow::onListViewClicked()
-{
-   setCurrentViewType(VIEW_TYPE_LIST);
-}
+void MainWindow::onIconViewClicked() { setCurrentViewType(VIEW_TYPE_ICONS); }
+void MainWindow::onListViewClicked() { setCurrentViewType(VIEW_TYPE_LIST);  }
 
 void MainWindow::onBoxartThumbnailClicked()
 {
@@ -1744,13 +1717,13 @@ void MainWindow::setIconViewZoom(int zoomValue)
 
 void MainWindow::onZoomValueChanged(int zoomValue)
 {
-   int newSize               = 0;
+   int newSize = 0;
 
    if (zoomValue < 50)
-      newSize                = expScale(
+      newSize                = exp_scale(
             lerp(0, 49, 25, 49, zoomValue) / 50.0, 102, 256);
    else
-      newSize                = expScale(zoomValue / 100.0, 256, 1024);
+      newSize                = exp_scale(zoomValue / 100.0, 256, 1024);
 
    m_gridView->setGridSize(newSize);
 
@@ -1759,7 +1732,7 @@ void MainWindow::onZoomValueChanged(int zoomValue)
 
 void MainWindow::showWelcomeScreen()
 {
-   bool dontAsk              = false;
+   bool dont_ask             = false;
    bool answer               = false;
    const QString welcomeText = QStringLiteral(""
       "Welcome to the RetroArch Desktop Menu!<br>\n"
@@ -1782,9 +1755,11 @@ void MainWindow::showWelcomeScreen()
    if (!m_settings->value("show_welcome_screen", true).toBool())
       return;
 
-   answer = showMessageBox(welcomeText, MainWindow::MSGBOX_TYPE_QUESTION_OKCANCEL, Qt::ApplicationModal, true, &dontAsk);
+   answer = showMessageBox(welcomeText,
+         MainWindow::MSGBOX_TYPE_QUESTION_OKCANCEL, Qt::ApplicationModal,
+         true, &dont_ask);
 
-   if (answer && dontAsk)
+   if (answer && dont_ask)
       m_settings->setValue("show_welcome_screen", false);
 }
 
@@ -1842,7 +1817,8 @@ void MainWindow::setCustomThemeString(QString qss)
    m_customThemeString = qss;
 }
 
-bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowModality modality, bool showDontAsk, bool *dontAsk)
+bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType,
+      Qt::WindowModality modality, bool showDontAsk, bool *dont_ask)
 {
    QCheckBox *checkBox             = NULL;
 
@@ -1900,8 +1876,8 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowM
       return false;
 
    if (checkBox)
-      if (dontAsk)
-         *dontAsk = checkBox->isChecked();
+      if (dont_ask)
+         *dont_ask = checkBox->isChecked();
 
    return true;
 }
@@ -1935,9 +1911,7 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
 
    actions.append(scanAction.data());
 
-   action                        = QMenu::exec(actions, QCursor::pos(), NULL, m_dirTree);
-
-   if (!action)
+   if (!(action = QMenu::exec(actions, QCursor::pos(), NULL, m_dirTree)))
       return;
 
    dirArray                      = currentDirString.toUtf8();
@@ -1961,31 +1935,25 @@ void MainWindow::showStatusMessage(QString msg,
 void MainWindow::onGotStatusMessage(
       QString msg, unsigned priority, unsigned duration, bool flush)
 {
-   int msecDuration   = 0;
-   QScreen *screen    = qApp->primaryScreen();
    QStatusBar *status = statusBar();
 
-   Q_UNUSED(priority)
-
-   if (msg.isEmpty())
+   if (msg.isEmpty() || !status)
       return;
-
-   if (!status)
-      return;
-
-   if (screen)
-      msecDuration    = (duration / screen->refreshRate()) * 1000;
-
-   if (msecDuration <= 0)
-      msecDuration    = 1000;
 
    if (status->currentMessage().isEmpty() || flush)
    {
       if (m_statusMessageElapsedTimer.elapsed() >= STATUS_MSG_THROTTLE_MSEC)
       {
-         qint64 msgDuration = qMax(msecDuration, STATUS_MSG_THROTTLE_MSEC);
+         qint64 msg_duration;
+         QScreen *screen    = qApp->primaryScreen();
+         int msec_duration  = 0;
+         if (screen)
+            msec_duration   = (duration / screen->refreshRate()) * 1000;
+         if (msec_duration <= 0)
+            msec_duration   = 1000;
+         msg_duration       = qMax(msec_duration, STATUS_MSG_THROTTLE_MSEC);
          m_statusMessageElapsedTimer.restart();
-         status->showMessage(msg, msgDuration);
+         status->showMessage(msg, msg_duration);
       }
    }
 }
@@ -2187,13 +2155,12 @@ QString MainWindow::changeThumbnail(const QImage &image, QString type)
 
    if (!dir.exists())
    {
-      if (dir.mkpath("."))
-         RARCH_LOG("[Qt]: Created directory: %s\n", dirData);
-      else
+      if (!dir.mkpath("."))
       {
          RARCH_ERR("[Qt]: Could not create directory: %s\n", dirData);
          return QString();
       }
+      RARCH_LOG("[Qt]: Created directory: %s\n", dirData);
    }
 
    if (m_settings->contains("thumbnail_max_size"))
@@ -2758,8 +2725,7 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
 
    if (m_pendingRun)
       coreSelection = CORE_SELECTION_CURRENT;
-
-   if (coreSelection == CORE_SELECTION_ASK)
+   else if (coreSelection == CORE_SELECTION_ASK)
    {
       QStringList extensionFilters;
 
@@ -2920,26 +2886,8 @@ void MainWindow::onRunClicked()
          break;
    }
 
-   if (contentHash.isEmpty())
-      return;
-
-   loadContent(contentHash);
-}
-
-bool MainWindow::isContentLessCore()
-{
-   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
-
-   return system->load_no_content;
-}
-
-bool MainWindow::isCoreLoaded()
-{
-   if (  m_currentCore.isEmpty() ||
-         m_currentCore == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
-      return false;
-
-   return true;
+   if (!contentHash.isEmpty())
+      loadContent(contentHash);
 }
 
 PlaylistEntryDialog* MainWindow::playlistEntryDialog()
@@ -2958,15 +2906,18 @@ void MainWindow::setCoreActions()
    ViewType                    viewType = getCurrentViewType();
    QHash<QString, QString>         hash = getCurrentContentHash();
    QString      currentPlaylistFileName = QString();
+   rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
 
    m_launchWithComboBox->clear();
 
-   if (isContentLessCore())
+   if (system->load_no_content) /* Is contentless core? */
       m_startCorePushButton->show();
    else
       m_startCorePushButton->hide();
 
-   if (     isCoreLoaded() 
+   /* Is core loaded? */
+   if (    !m_currentCore.isEmpty()
+         && m_currentCore != msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)
          && m_settings->value("suggest_loaded_core_first", false).toBool())
    {
       QVariantMap comboBoxMap;
@@ -3339,7 +3290,6 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
    QFileInfo info;
    QFileInfo playlistInfo;
    QString playlistPath;
-   bool specialPlaylist          = false;
    settings_t *settings          = config_get_ptr();
    const char *path_dir_playlist = settings->paths.directory_playlist;
    QDir playlistDir(path_dir_playlist);
@@ -3353,22 +3303,17 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
 
    /* Don't just compare strings in case there are
     * case differences on Windows that should be ignored. */
+   /* special playlists like history etc. can't have an association */
    if (QDir(playlistInfo.absoluteDir()) != QDir(playlistDir))
    {
-      /* special playlists like history etc. can't have an association */
-      specialPlaylist = true;
-   }
-
-   if (specialPlaylist)
-   {
-      /* special playlists shouldn't be editable already,
+      /* Special playlists shouldn't be editable already,
        * but just in case, set the old name back and
        * early return if they rename it */
       item->setText(oldName);
       return;
    }
 
-   /* block this signal because setData() would trigger
+   /* Block this signal because setData() would trigger
     * an infinite loop here */
    disconnect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
 
@@ -3779,7 +3724,7 @@ void MainWindow::initContentTableWidget()
 
    if (path == ALL_PLAYLISTS_TOKEN)
    {
-      unsigned i;
+      int i;
       settings_t *settings = config_get_ptr();
       QDir playlistDir(settings->paths.directory_playlist);
       QStringList playlists;
@@ -3965,7 +3910,7 @@ void MainWindow::onShowInfoMessage(QString msg)
 
 int MainWindow::onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb)
 {
-   unsigned i;
+   int i;
    file_archive_transfer_t state;
    struct archive_extract_userdata userdata;
    QByteArray pathArray          = path.toUtf8();
@@ -3973,7 +3918,6 @@ int MainWindow::onExtractArchive(QString path, QString extractionDir, QString te
    const char *file              = pathArray.constData();
    const char *dir               = dirArray.constData();
    struct string_list *file_list = file_archive_get_file_list(file, NULL);
-   bool returnerr                = true;
    retro_task_t *decompress_task = NULL;
 
    if (!file_list || file_list->size == 0)
@@ -4031,18 +3975,16 @@ int MainWindow::onExtractArchive(QString path, QString extractionDir, QString te
    m_updateProgressDialog->setCancelButtonText(QString());
    m_updateProgressDialog->show();
 
-   decompress_task = (retro_task_t*)task_push_decompress(
+   if (!(decompress_task = (retro_task_t*)task_push_decompress(
          file, dir,
          NULL, NULL, NULL,
-         cb, this, NULL, false);
-
-   if (!decompress_task)
+         cb, this, NULL, false)))
    {
       m_updateProgressDialog->cancel();
       return -1;
    }
 
-   return returnerr;
+   return 1;
 }
 
 QString MainWindow::getScrubbedString(QString str)
@@ -4065,6 +4007,7 @@ static void* ui_window_qt_init(void)
 
 static void ui_window_qt_destroy(void *data)
 {
+   /* TODO/FIXME - implement? */
 #if 0
    ui_window_qt_t *window = (ui_window_qt_t*)data;
 
@@ -4074,6 +4017,7 @@ static void ui_window_qt_destroy(void *data)
 
 static void ui_window_qt_set_focused(void *data)
 {
+   /* TODO/FIXME - implement */
 #if 0
    ui_window_qt_t *window = (ui_window_qt_t*)data;
 
@@ -4085,13 +4029,12 @@ static void ui_window_qt_set_focused(void *data)
 static void ui_window_qt_set_visible(void *data,
         bool set_visible)
 {
-   (void)data;
-   (void)set_visible;
-   /* TODO/FIXME */
+   /* TODO/FIXME - implement */
 }
 
 static void ui_window_qt_set_title(void *data, char *buf)
 {
+   /* TODO/FIXME - implement? */
 #if 0
    ui_window_qt_t *window = (ui_window_qt_t*)data;
 
@@ -4101,6 +4044,7 @@ static void ui_window_qt_set_title(void *data, char *buf)
 
 static void ui_window_qt_set_droppable(void *data, bool droppable)
 {
+   /* TODO/FIXME - implement */
 #if 0
    ui_window_qt_t *window = (ui_window_qt_t*)data;
 
@@ -4110,6 +4054,7 @@ static void ui_window_qt_set_droppable(void *data, bool droppable)
 
 static bool ui_window_qt_focused(void *data)
 {
+   /* TODO/FIXME - implement? */
 #if 0
    ui_window_qt_t *window = (ui_window_qt_t*)data;
    return window->qtWindow->isActiveWindow() && !window->qtWindow->isMinimized();
@@ -4326,9 +4271,7 @@ bool AppHandler::isExiting() const
    return ui_application_qt.exiting;
 }
 
-void AppHandler::onLastWindowClosed()
-{
-}
+void AppHandler::onLastWindowClosed() { }
 
 typedef struct ui_companion_qt
 {
@@ -5010,13 +4953,7 @@ void ui_companion_qt_msg_queue_push(void *data,
 {
    ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = NULL;
-
-   if (!handle)
-      return;
-
-   win_handle                 = (ui_window_qt_t*)handle->window;
-
-   if (win_handle)
+   if (handle && (win_handle = (ui_window_qt_t*)handle->window))
       win_handle->qtWindow->showStatusMessage(msg, priority, duration, flush);
 }
 

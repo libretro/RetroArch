@@ -2620,7 +2620,7 @@ void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, QF
       QSpinBox *spinBox             = NULL;
       QHBoxLayout *box              = new QHBoxLayout();
       QSlider *slider               = new QSlider(Qt::Horizontal, this);
-      double value                  = MainWindow::lerp(
+      double value                  = lerp(
             param->minimum, param->maximum, 0, 100, param->current);
       double intpart                = 0;
       bool stepIsFractional         = modf(param->step, &intpart);
@@ -2761,7 +2761,7 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
 
          if (param)
          {
-            newValue = MainWindow::lerp(0, 100, param->minimum, param->maximum, slider->value());
+            newValue = lerp(0, 100, param->minimum, param->maximum, slider->value());
             newValue = round(newValue / param->step) * param->step;
             param->current = newValue;
          }
@@ -2782,7 +2782,7 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
 
          if (param)
          {
-            newValue = MainWindow::lerp(0, 100, param->minimum, param->maximum, slider->value());
+            newValue = lerp(0, 100, param->minimum, param->maximum, slider->value());
             newValue = round(newValue / param->step) * param->step;
             param->current = newValue;
          }
@@ -2864,7 +2864,7 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
          if (param)
          {
             param->current = value;
-            newValue       = MainWindow::lerp(
+            newValue       = lerp(
                   param->minimum, param->maximum, 0, 100, param->current);
             slider->blockSignals(true);
             slider->setValue(newValue);
@@ -2888,7 +2888,7 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
          if (param)
          {
             param->current = value;
-            newValue       = MainWindow::lerp(
+            newValue       = lerp(
                   param->minimum, param->maximum, 0, 100, param->current);
             slider->blockSignals(true);
             slider->setValue(newValue);
@@ -2947,7 +2947,7 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
          if (param)
          {
             param->current = value;
-            newValue = MainWindow::lerp(
+            newValue       = lerp(
                   param->minimum, param->maximum, 0, 100, param->current);
             slider->blockSignals(true);
             slider->setValue(newValue);
@@ -2971,7 +2971,7 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
          if (param)
          {
             param->current = value;
-            newValue       = MainWindow::lerp(
+            newValue       = lerp(
                   param->minimum, param->maximum, 0, 100, param->current);
             slider->blockSignals(true);
             slider->setValue(newValue);

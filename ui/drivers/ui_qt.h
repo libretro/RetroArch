@@ -120,6 +120,11 @@ enum ThumbnailType
    THUMBNAIL_TYPE_TITLE_SCREEN,
 };
 
+static inline double lerp(double x, double y, double a, double b, double d)
+{
+   return a + (b - a) * ((double)(d - x) / (double)(y - x));
+}
+
 class PlaylistModel : public QAbstractListModel
 {
    Q_OBJECT
@@ -398,7 +403,6 @@ public:
    QModelIndex getCurrentContentIndex();
    QHash<QString, QString> getCurrentContentHash();
    QHash<QString, QString> getFileContentHash(const QModelIndex &index);
-   static double lerp(double x, double y, double a, double b, double d);
    QString getSpecialPlaylistPath(SpecialPlaylist playlist);
    QVector<QPair<QString, QString> > getPlaylists();
    QString getScrubbedString(QString str);
@@ -533,10 +537,7 @@ private slots:
 private:
    void setCurrentCoreLabel();
    void getPlaylistFiles();
-   bool isCoreLoaded();
-   bool isContentLessCore();
    bool updateCurrentPlaylistEntry(const QHash<QString, QString> &contentHash);
-   int extractArchive(QString path);
    bool addDirectoryFilesToList(QProgressDialog *dialog, QStringList &list, QDir &dir, QStringList &extensions);
    void renamePlaylistItem(QListWidgetItem *item, QString newName);
    bool currentPlaylistIsSpecial();
