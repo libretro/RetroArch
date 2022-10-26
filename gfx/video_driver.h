@@ -1399,6 +1399,8 @@ void video_driver_set_viewport_config(
 
 void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom);
 
+uint32_t video_driver_get_st_flags(void);
+
 bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled);
 
 /**

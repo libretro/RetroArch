@@ -4358,3 +4358,9 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
       );
 #endif
 }
+
+uint32_t video_driver_get_st_flags(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   return video_st->flags;
+}

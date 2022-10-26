@@ -3823,7 +3823,7 @@ int rarch_main(int argc, char *argv[], void *data)
    audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
 
    {
-      unsigned i;
+      int i;
       for (i = 0; i < MAX_USERS; i++)
          input_config_set_device(i, RETRO_DEVICE_JOYPAD);
    }
