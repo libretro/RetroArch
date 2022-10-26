@@ -3629,8 +3629,8 @@ static void global_free(struct rarch_state *p_rarch)
                         | RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE);
 #endif
 
-   runloop_st->current_core.has_set_input_descriptors = false;
-   runloop_st->current_core.has_set_subsystems        = false;
+   runloop_st->current_core.flags &= ~(RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS
+                                     | RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS);
 
    global                                             = global_get_ptr();
    path_clear_all();
@@ -4729,8 +4729,8 @@ static bool retroarch_parse_input_and_config(
 
    /* Flush out some states that could have been set
     * by core environment variables. */
-   runloop_st->current_core.has_set_input_descriptors = false;
-   runloop_st->current_core.has_set_subsystems        = false;
+   runloop_st->current_core.flags &= ~(RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS
+                                     | RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS);
 
    /* Load the config file now that we know what it is */
 #ifdef HAVE_CONFIGFILE
@@ -5577,7 +5577,8 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
    switch(state)
    {
       case RARCH_CTL_HAS_SET_SUBSYSTEMS:
-         return runloop_st->current_core.has_set_subsystems;
+         return ((runloop_st->current_core.flags &
+               RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS) > 0);
 #ifdef HAVE_BSV_MOVIE
       case RARCH_CTL_BSV_MOVIE_IS_INITED:
          return (input_state_get_ptr()->bsv_movie_state_handle != NULL);

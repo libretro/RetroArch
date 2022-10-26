@@ -2665,7 +2665,7 @@ void video_driver_cached_frame(void)
    /* Cannot allow recording when pushing duped frames. */
    recording_st->data             = NULL;
 
-   if (runloop_st->current_core.inited)
+   if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
       cbs->frame_cb(
             (video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
             ? video_st->frame_cache_data 
@@ -2813,7 +2813,8 @@ VIDEO_FLAG_WIDGETS_FAST_FORWARD;
       settings->floats.menu_framebuffer_opacity;
    video_info->overlay_behind_menu         = settings->bools.input_overlay_behind_menu;
 
-   video_info->libretro_running            = runloop_st->current_core.game_loaded;
+   video_info->libretro_running            = runloop_st->current_core.flags &
+RETRO_CORE_FLAG_GAME_LOADED;
 #else
    video_info->menu_is_alive               = false;
    video_info->menu_screensaver_active     = false;
@@ -3572,7 +3573,7 @@ VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
    }
 #endif
 
-   if (!runloop_st->current_core.game_loaded)
+   if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
       video_driver_cached_frame_set(&dummy_pixels, 4, 4, 8);
 
 #if defined(PSP)
