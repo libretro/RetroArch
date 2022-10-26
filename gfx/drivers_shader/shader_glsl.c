@@ -1092,7 +1092,7 @@ static void *gl_glsl_init(void *data, const char *path)
 #endif
 
 #ifdef HAVE_OPENGLES
-   if (!glsl->shader->flags & SHDR_FLAG_MODERN)
+   if (!(glsl->shader->flags & SHDR_FLAG_MODERN))
    {
       RARCH_ERR("[GL]: GLES context is used, but shader is not modern. Cannot use it.\n");
       goto error;
