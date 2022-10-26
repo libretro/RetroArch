@@ -348,7 +348,9 @@ static void dinput_poll(void *data)
       else
       {
          if (mouse_state.rgbButtons[0])
-            di->flags |= DINP_FLAG_MOUSE_L_BTN;
+            di->flags |=  DINP_FLAG_MOUSE_L_BTN;
+         else
+            di->flags &= ~DINP_FLAG_MOUSE_L_BTN;
       }
       if (mouse_state.rgbButtons[1])
          di->flags    |= DINP_FLAG_MOUSE_R_BTN;
