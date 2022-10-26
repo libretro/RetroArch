@@ -208,7 +208,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
    if (win32_hrc)
    {
       if (wglMakeCurrent(win32_hdc, win32_hrc))
-         g_win32_inited = true;
+         g_win32_flags |= WIN32_CMN_FLAG_INITED;
       else
          *quit          = true;
    }
@@ -404,7 +404,7 @@ static void create_gles_context(HWND hwnd, bool *quit)
    if (!egl_create_surface(&win32_egl, hwnd))
       goto error;
 
-   g_win32_inited = true;
+   g_win32_flags   |= WIN32_CMN_FLAG_INITED;
    return;
 
 error:
@@ -582,10 +582,10 @@ static void gfx_ctx_wgl_destroy(void *data)
       win32_destroy_window();
    }
 
-   if (g_win32_restore_desktop)
+   if (g_win32_flags & WIN32_CMN_FLAG_RESTORE_DESKTOP)
    {
       win32_monitor_get_info();
-      g_win32_restore_desktop     = false;
+      g_win32_flags &= ~WIN32_CMN_FLAG_RESTORE_DESKTOP;
    }
 
 #ifdef HAVE_DYNAMIC
@@ -597,7 +597,7 @@ static void gfx_ctx_wgl_destroy(void *data)
 
    wgl_adaptive_vsync           = false;
    win32_core_hw_context_enable = false;
-   g_win32_inited               = false;
+   g_win32_flags               &= ~WIN32_CMN_FLAG_INITED;
    win32_major                  = 0;
    win32_minor                  = 0;
    p_swap_interval              = NULL;
@@ -608,11 +608,12 @@ static void *gfx_ctx_wgl_init(void *video_driver)
 {
    WNDCLASSEX wndclass     = {0};
    gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)calloc(1, sizeof(*wgl));
+   uint8_t win32_flags     = win32_get_flags();
 
    if (!wgl)
       return NULL;
 
-   if (g_win32_inited)
+   if (win32_flags & WIN32_CMN_FLAG_INITED)
       gfx_ctx_wgl_destroy(NULL);
 
 #ifdef HAVE_DYNAMIC

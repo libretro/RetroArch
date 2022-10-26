@@ -171,6 +171,7 @@ static bool win32_display_server_set_window_opacity(
 static bool win32_display_server_set_window_progress(
       void *data, int progress, bool finished)
 {
+   uint8_t win32_flags    = 0;
    HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
@@ -178,7 +179,8 @@ static bool win32_display_server_set_window_progress(
       return false;
 
 #ifdef HAS_TASKBAR_EXT
-   if (!serv->taskbar_list || !win32_taskbar_is_created())
+   win32_flags            = win32_get_flags();
+   if (!serv->taskbar_list || !(win32_flags & WIN32_CMN_FLAG_TASKBAR_CREATED))
       return false;
 
    if (progress == -1)

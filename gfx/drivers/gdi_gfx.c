@@ -68,12 +68,12 @@ static void gfx_ctx_gdi_update_title(void)
 static void gfx_ctx_gdi_get_video_size(
       unsigned *width, unsigned *height)
 {
-   HWND         window  = win32_get_window();
+   HWND window                  = win32_get_window();
 
    if (window)
    {
-      *width  = g_win32_resize_width;
-      *height = g_win32_resize_height;
+      *width                    = g_win32_resize_width;
+      *height                   = g_win32_resize_height;
    }
    else
    {
@@ -84,8 +84,8 @@ static void gfx_ctx_gdi_get_video_size(
 
       win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
       mon_rect = current_mon.rcMonitor;
-      *width  = mon_rect.right - mon_rect.left;
-      *height = mon_rect.bottom - mon_rect.top;
+      *width   = mon_rect.right - mon_rect.left;
+      *height  = mon_rect.bottom - mon_rect.top;
    }
 }
 
@@ -93,8 +93,9 @@ static bool gfx_ctx_gdi_init(void)
 {
    WNDCLASSEX wndclass      = {0};
    settings_t *settings     = config_get_ptr();
+   uint8_t win32_flags      = win32_get_flags();
 
-   if (g_win32_inited)
+   if (win32_flags & WIN32_CMN_FLAG_INITED)
       return true;
 
    win32_window_reset();
@@ -130,13 +131,13 @@ static void gfx_ctx_gdi_destroy(void)
       win32_destroy_window();
    }
 
-   if (g_win32_restore_desktop)
+   if (g_win32_flags & WIN32_CMN_FLAG_RESTORE_DESKTOP)
    {
       win32_monitor_get_info();
-      g_win32_restore_desktop     = false;
+      g_win32_flags &= ~WIN32_CMN_FLAG_RESTORE_DESKTOP;
    }
 
-   g_win32_inited                   = false;
+   g_win32_flags &= ~WIN32_CMN_FLAG_INITED;
 }
 
 static bool gfx_ctx_gdi_set_video_mode(
@@ -188,7 +189,7 @@ void create_gdi_context(HWND hwnd, bool *quit)
 
    win32_setup_pixel_format(win32_gdi_hdc, false);
 
-   g_win32_inited = true;
+   g_win32_flags |= WIN32_CMN_FLAG_INITED;
 }
 
 static void gdi_gfx_create(gdi_t *gdi)

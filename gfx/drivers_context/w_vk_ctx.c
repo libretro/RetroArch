@@ -78,7 +78,7 @@ void create_vk_context(HWND hwnd, bool *quit)
             width, height, win32_vk_interval))
       *quit = true;
 
-   g_win32_inited = true;
+   g_win32_flags |= WIN32_CMN_FLAG_INITED;
 }
 
 static void gfx_ctx_w_vk_swap_interval(void *data, int interval)
@@ -210,27 +210,28 @@ static void gfx_ctx_w_vk_destroy(void *data)
       win32_destroy_window();
    }
 
-   if (g_win32_restore_desktop)
+   if (g_win32_flags & WIN32_CMN_FLAG_RESTORE_DESKTOP)
    {
       win32_monitor_get_info();
-      g_win32_restore_desktop     = false;
+      g_win32_flags &= ~WIN32_CMN_FLAG_RESTORE_DESKTOP;
    }
 
    if (vk)
       free(vk);
 
-   g_win32_inited               = false;
+   g_win32_flags &= ~WIN32_CMN_FLAG_INITED;
 }
 
 static void *gfx_ctx_w_vk_init(void *video_driver)
 {
    WNDCLASSEX wndclass     = {0};
    gfx_ctx_w_vk_data_t *vk = (gfx_ctx_w_vk_data_t*)calloc(1, sizeof(*vk));
+   uint8_t win32_flags     = win32_get_flags();
 
    if (!vk)
       return NULL;
 
-   if (g_win32_inited)
+   if (win32_flags & WIN32_CMN_FLAG_INITED)
       gfx_ctx_w_vk_destroy(NULL);
 
    win32_window_reset();
