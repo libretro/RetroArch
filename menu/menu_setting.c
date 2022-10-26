@@ -7817,7 +7817,7 @@ static void general_write_handler(rarch_setting_t *setting)
                struct video_shader *shader = menu_shader_get();
 
                shader->passes              = 0;
-               shader->modified            = true;
+               shader->flags              |= SHDR_FLAG_MODIFIED;
 
                menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
                menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);

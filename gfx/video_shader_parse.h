@@ -80,6 +80,13 @@ enum gfx_wrap_type
    RARCH_WRAP_MAX
 };
 
+enum gfx_fbo_scale_flags
+{
+   FBO_SCALE_FLAG_FP_FBO   = (1 << 0),
+   FBO_SCALE_FLAG_SRGB_FBO = (1 << 1),
+   FBO_SCALE_FLAG_VALID    = (1 << 2)
+};
+
 struct gfx_fbo_scale
 {
    unsigned abs_x;
@@ -88,9 +95,7 @@ struct gfx_fbo_scale
    float scale_y;
    enum gfx_scale_type type_x;
    enum gfx_scale_type type_y;
-   bool fp_fbo;
-   bool srgb_fbo;
-   bool valid;
+   uint8_t flags;
 };
 
 struct video_shader_parameter
@@ -143,6 +148,14 @@ struct video_shader_lut
    bool mipmap;
 };
 
+enum video_shader_flags
+{
+   SHDR_FLAG_MODERN    = (1 << 0), /* Only used for XML shaders. */
+   /* Indicative of whether shader was modified - 
+    * for instance from the menus */
+   SHDR_FLAG_MODIFIED  = (1 << 1)
+};
+
 /* This is pretty big, shouldn't be put on the stack.
  * Avoid lots of allocation for convenience. */
 struct video_shader
@@ -160,19 +173,18 @@ struct video_shader
    unsigned num_parameters;
    unsigned variables;
 
+   uint8_t flags;
+
    char prefix[64];
 
    /* Path to the root preset */
    char path[PATH_MAX_LENGTH];
 
-   /* Path to the original preset loaded, if this is a preset with the #reference
-    * directive then this will be different than the path*/
+   /* Path to the original preset loaded, if this is a preset 
+    * with the #reference directive, then this will be different 
+    * than the path */
    char loaded_preset_path[PATH_MAX_LENGTH];
 
-   bool modern; /* Only used for XML shaders. */
-   /* indicative of whether shader was modified - 
-    * for instance from the menus */
-   bool modified;
 };
 
 

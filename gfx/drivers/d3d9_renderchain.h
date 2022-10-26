@@ -115,8 +115,8 @@ static INLINE bool d3d9_renderchain_add_pass(d3d9_renderchain_t *chain,
          info->tex_h,
          1,
          D3DUSAGE_RENDERTARGET,
-         chain->passes->data[
-         chain->passes->count - 1].info.pass->fbo.fp_fbo
+         (chain->passes->data[
+         chain->passes->count - 1].info.pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
          ? D3DFMT_A32B32G32R32F : D3D9_ARGB8888_FORMAT,
          D3DPOOL_DEFAULT, 0, 0, 0, NULL, NULL, false);
 
@@ -285,8 +285,9 @@ static INLINE bool d3d9_renderchain_set_pass_size(
          d3d9_texture_new(dev,
             width, height, 1,
             D3DUSAGE_RENDERTARGET,
-            pass2->info.pass->fbo.fp_fbo ?
-            D3DFMT_A32B32G32R32F : D3D9_ARGB8888_FORMAT,
+            (pass2->info.pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
+            ? D3DFMT_A32B32G32R32F 
+            : D3D9_ARGB8888_FORMAT,
             D3DPOOL_DEFAULT, 0, 0, 0,
             NULL, NULL, false);
 

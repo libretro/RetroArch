@@ -1178,11 +1178,11 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    pass                                  = (struct video_shader_pass*)
       &d3d->shader.pass[0];
 
-   pass->fbo.valid                       = true;
    pass->fbo.scale_y                     = 1.0;
    pass->fbo.type_y                      = RARCH_SCALE_VIEWPORT;
    pass->fbo.scale_x                     = pass->fbo.scale_y;
    pass->fbo.type_x                      = pass->fbo.type_y;
+   pass->fbo.flags                      |= FBO_SCALE_FLAG_VALID;
 
    if (!string_is_empty(d3d->shader_path))
       strlcpy(pass->source.path, d3d->shader_path,

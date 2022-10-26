@@ -159,6 +159,15 @@ typedef struct __GLsync *GLsync;
 #endif
 #endif
 
+enum gl2_renderchain_flags
+{
+   GL2_CHAIN_FLAG_EGL_IMAGES           = (1 << 0),
+   GL2_CHAIN_FLAG_HAS_FP_FBO           = (1 << 1),
+   GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3   = (1 << 2),
+   GL2_CHAIN_FLAG_HAS_SRGB_FBO         = (1 << 3),
+   GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT = (1 << 4)
+};
+
 typedef struct gl2_renderchain_data
 {
    int fbo_pass;
@@ -175,12 +184,7 @@ typedef struct gl2_renderchain_data
    unsigned fence_count;
 
    struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
-
-   bool egl_images;
-   bool has_fp_fbo;
-   bool has_srgb_fbo_gles3;
-   bool has_srgb_fbo;
-   bool hw_render_depth_init;
+   uint8_t flags;
 } gl2_renderchain_data_t;
 
 #if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
@@ -273,7 +277,7 @@ static bool gl2_shader_scale(gl2_t *gl,
    if (!scaler || !scaler->scale)
       return false;
 
-   scaler->scale->valid = false;
+   scaler->scale->flags &= ~FBO_SCALE_FLAG_VALID;
 
    gl->shader->shader_scale(gl->shader_data,
          scaler->idx, scaler->scale);
@@ -585,7 +589,7 @@ static void gl2_renderchain_render(
    }
 
 #if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
-   if (chain->has_srgb_fbo)
+   if (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO)
       glDisable(GL_FRAMEBUFFER_SRGB);
 #endif
 
@@ -694,7 +698,7 @@ static void gl2_renderchain_deinit_hw_render(
 
    if (gl->hw_render_fbo_init)
       gl2_delete_fb(gl->textures, gl->hw_render_fbo);
-   if (chain->hw_render_depth_init)
+   if (chain->flags & GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT)
       gl2_delete_rb(gl->textures, chain->hw_render_depth);
    gl->hw_render_fbo_init = false;
 
@@ -830,16 +834,17 @@ static void gl2_create_fbo_texture(gl2_t *gl,
 
    GL2_BIND_TEXTURE(texture, wrap_enum, mag_filter, min_filter);
 
-   fp_fbo   = chain->fbo_scale[i].fp_fbo;
+   fp_fbo   = chain->fbo_scale[i].flags & FBO_SCALE_FLAG_FP_FBO;
 
    if (fp_fbo)
    {
-      if (!chain->has_fp_fbo)
+      if (!(chain->flags & GL2_CHAIN_FLAG_HAS_FP_FBO))
          RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM. Result may band/clip/etc.!\n");
    }
 
 #if !defined(HAVE_OPENGLES2)
-   if (fp_fbo && chain->has_fp_fbo)
+   if (     fp_fbo 
+         && (chain->flags & GL2_CHAIN_FLAG_HAS_FP_FBO))
    {
       RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
       gl2_load_texture_image(GL_TEXTURE_2D, 0, GL_RGBA32F,
@@ -850,18 +855,19 @@ static void gl2_create_fbo_texture(gl2_t *gl,
 #endif
    {
 #ifndef HAVE_OPENGLES
-      bool srgb_fbo = chain->fbo_scale[i].srgb_fbo;
+      bool srgb_fbo = chain->fbo_scale[i].flags & FBO_SCALE_FLAG_SRGB_FBO;
 
       if (!fp_fbo && srgb_fbo)
       {
-         if (!chain->has_srgb_fbo)
+         if (!(chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO))
                RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result may have banding!\n");
       }
 
       if (force_srgb_disable)
          srgb_fbo = false;
 
-      if (srgb_fbo && chain->has_srgb_fbo)
+      if (      srgb_fbo 
+            && (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO))
       {
          RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
 #ifdef HAVE_OPENGLES2
@@ -870,7 +876,9 @@ static void gl2_create_fbo_texture(gl2_t *gl,
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_SRGB_ALPHA_EXT,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-               chain->has_srgb_fbo_gles3 ? GL_RGBA : GL_SRGB_ALPHA_EXT,
+               (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3) 
+               ? GL_RGBA 
+               : GL_SRGB_ALPHA_EXT,
                GL_UNSIGNED_BYTE, NULL);
 #else
          gl2_load_texture_image(GL_TEXTURE_2D,
@@ -1062,7 +1070,7 @@ static void gl2_renderchain_start_render(
    gl->coords.vertex = fbo_vertexes;
 
 #if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
-   if (chain->has_srgb_fbo)
+   if (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO)
       glEnable(GL_FRAMEBUFFER_SRGB);
 #endif
 }
@@ -1099,7 +1107,8 @@ static void gl2_renderchain_init(
    gl2_shader_scale(gl, &scaler);
 
    /* we always want FBO to be at least initialized on startup for consoles */
-   if (shader_info.num == 1 && !scale.valid)
+   if (      shader_info.num == 1 
+         && (!(scale.flags & FBO_SCALE_FLAG_VALID)))
       return;
 
    if (!gl->has_fbo)
@@ -1109,15 +1118,16 @@ static void gl2_renderchain_init(
    }
 
    chain->fbo_pass = shader_info.num - 1;
-   if (scale_last.valid)
+   if (scale_last.flags & FBO_SCALE_FLAG_VALID)
       chain->fbo_pass++;
 
-   if (!scale.valid)
+   if (!(scale.flags & FBO_SCALE_FLAG_VALID))
    {
-      scale.scale_x = 1.0f;
-      scale.scale_y = 1.0f;
-      scale.type_x  = scale.type_y = RARCH_SCALE_INPUT;
-      scale.valid   = true;
+      scale.scale_x    = 1.0f;
+      scale.scale_y    = 1.0f;
+      scale.type_x     = RARCH_SCALE_INPUT;
+      scale.type_y     = RARCH_SCALE_INPUT;
+      scale.flags     |= FBO_SCALE_FLAG_VALID;
    }
 
    chain->fbo_scale[0] = scale;
@@ -1129,12 +1139,12 @@ static void gl2_renderchain_init(
 
       gl2_shader_scale(gl, &scaler);
 
-      if (!chain->fbo_scale[i].valid)
+      if (!(chain->fbo_scale[i].flags & FBO_SCALE_FLAG_VALID))
       {
          chain->fbo_scale[i].scale_x = chain->fbo_scale[i].scale_y = 1.0f;
          chain->fbo_scale[i].type_x  = chain->fbo_scale[i].type_y  =
             RARCH_SCALE_INPUT;
-         chain->fbo_scale[i].valid   = true;
+         chain->fbo_scale[i].flags  |= FBO_SCALE_FLAG_VALID;
       }
    }
 
@@ -1215,7 +1225,7 @@ static bool gl2_renderchain_init_hw_render(
    if (depth)
    {
       gl2_gen_rb(gl->textures, chain->hw_render_depth);
-      chain->hw_render_depth_init = true;
+      chain->flags |= GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT;
    }
 
    for (i = 0; i < gl->textures; i++)
@@ -1438,7 +1448,7 @@ static void gl2_renderchain_copy_frame(
    }
 #elif defined(HAVE_OPENGLES)
 #if defined(HAVE_EGL)
-   if (chain->egl_images)
+   if (chain->flags & GL2_CHAIN_FLAG_EGL_IMAGES)
    {
       bool new_egl    = false;
       EGLImageKHR img = 0;
@@ -1631,7 +1641,7 @@ static void gl2_renderchain_init_texture_reference(
          gl->tex_w * gl->base_size,
          gl->tex_w * gl->tex_h * i * gl->base_size);
 #else
-   if (chain->egl_images)
+   if (chain->flags & GL2_CHAIN_FLAG_EGL_IMAGES)
       return;
 
    gl2_load_texture_image(GL_TEXTURE_2D,
@@ -1655,19 +1665,33 @@ static void gl2_renderchain_resolve_extensions(gl2_t *gl,
    if (!chain)
       return;
 
-   chain->has_srgb_fbo              = false;
-   chain->has_fp_fbo                = gl_check_capability(GL_CAPS_FP_FBO);
+   chain->flags    &= ~GL2_CHAIN_FLAG_HAS_SRGB_FBO;
+   if (gl_check_capability(GL_CAPS_FP_FBO))
+      chain->flags |=  GL2_CHAIN_FLAG_HAS_FP_FBO;
+   else
+      chain->flags &= ~GL2_CHAIN_FLAG_HAS_FP_FBO;
    /* GLES3 has unpack_subimage and sRGB in core. */
-   chain->has_srgb_fbo_gles3        = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
+   if (gl_check_capability(GL_CAPS_SRGB_FBO_ES3))
+      chain->flags |=  GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3;
+   else
+      chain->flags &= ~GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3;
 
    if (!force_srgb_disable)
-      chain->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
+   {
+      if (gl_check_capability(GL_CAPS_SRGB_FBO))
+         chain->flags |=  GL2_CHAIN_FLAG_HAS_SRGB_FBO;
+      else
+         chain->flags &= ~GL2_CHAIN_FLAG_HAS_SRGB_FBO;
+   }
 
    /* Use regular textures if we use HW render. */
-   chain->egl_images                = !gl->hw_render_use 
+   if ( !gl->hw_render_use 
       && gl_check_capability(GL_CAPS_EGLIMAGE) 
       && gl->ctx_driver->image_buffer_init
-      && gl->ctx_driver->image_buffer_init(gl->ctx_data, video);
+      && gl->ctx_driver->image_buffer_init(gl->ctx_data, video))
+      chain->flags |=  GL2_CHAIN_FLAG_EGL_IMAGES;
+   else
+      chain->flags &= ~GL2_CHAIN_FLAG_EGL_IMAGES;
 }
 
 static void gl_load_texture_data(
@@ -1729,10 +1753,17 @@ static void gl_load_texture_data(
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
    glTexImage2D(GL_TEXTURE_2D,
          0,
-         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+         (use_rgba || !rgb32) 
+         ? GL_RGBA 
+         : RARCH_GL_INTERNAL_FORMAT32,
          width, height, 0,
-         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-         (rgb32) ? RARCH_GL_FORMAT32 : GL_UNSIGNED_SHORT_4_4_4_4, frame);
+         (use_rgba || !rgb32) 
+         ? GL_RGBA 
+         : RARCH_GL_TEXTURE_TYPE32,
+         (rgb32) 
+         ? RARCH_GL_FORMAT32 
+         : GL_UNSIGNED_SHORT_4_4_4_4,
+         frame);
 
    if (want_mipmap && have_mipmap)
       glGenerateMipmap(GL_TEXTURE_2D);

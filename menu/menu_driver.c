@@ -2772,7 +2772,7 @@ int menu_shader_manager_clear_num_passes(struct video_shader *shader)
 
    video_shader_resolve_parameters(shader);
 
-   shader->modified = true;
+   shader->flags |= SHDR_FLAG_MODIFIED;
 
    return 0;
 }
@@ -2790,7 +2790,7 @@ int menu_shader_manager_clear_parameter(struct video_shader *shader,
    param->current = MIN(MAX(param->minimum,
             param->current), param->maximum);
 
-   shader->modified = true;
+   shader->flags |= SHDR_FLAG_MODIFIED;
 
    return 0;
 }
@@ -2805,8 +2805,7 @@ int menu_shader_manager_clear_pass_filter(struct video_shader *shader,
       return -1;
 
    shader_pass->filter = RARCH_FILTER_UNSPEC;
-
-   shader->modified = true;
+   shader->flags      |= SHDR_FLAG_MODIFIED;
 
    return 0;
 }
@@ -2822,9 +2821,9 @@ void menu_shader_manager_clear_pass_scale(struct video_shader *shader,
 
    shader_pass->fbo.scale_x = 0;
    shader_pass->fbo.scale_y = 0;
-   shader_pass->fbo.valid   = false;
+   shader_pass->fbo.flags  &= ~FBO_SCALE_FLAG_VALID;
 
-   shader->modified         = true;
+   shader->flags           |=  SHDR_FLAG_MODIFIED;
 }
 
 void menu_shader_manager_clear_pass_path(struct video_shader *shader,
@@ -2839,7 +2838,7 @@ void menu_shader_manager_clear_pass_path(struct video_shader *shader,
       *shader_pass->source.path = '\0';
 
    if (shader)
-      shader->modified          = true;
+      shader->flags            |= SHDR_FLAG_MODIFIED;
 }
 
 /**
@@ -7315,7 +7314,7 @@ bool menu_shader_manager_init(void)
          ret = false;
          goto end;
       }
-      menu_shader->modified = false;
+      menu_shader->flags   &= ~SHDR_FLAG_MODIFIED;
    }
    else
    {

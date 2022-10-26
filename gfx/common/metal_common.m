@@ -1025,7 +1025,7 @@ typedef struct MTLALIGN(16)
    {
       struct video_shader_pass *shader_pass = &_shader->pass[i];
 
-      if (shader_pass->fbo.valid)
+      if (shader_pass->fbo.flags & FBO_SCALE_FLAG_VALID)
       {
          switch (shader_pass->fbo.type_x)
          {

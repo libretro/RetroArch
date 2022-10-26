@@ -1935,7 +1935,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
    {
       struct video_shader_pass* pass = &d3d12->shader_preset->pass[i];
 
-      if (pass->fbo.valid)
+      if (pass->fbo.flags & FBO_SCALE_FLAG_VALID)
       {
 
          switch (pass->fbo.type_x)

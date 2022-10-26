@@ -873,10 +873,12 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 #if 0
          wiiu->pass[i].texture.surface.mipLevels   = 1;
 #endif
-         wiiu->pass[i].texture.surface.format      = pass->fbo.fp_fbo ?
-               GX2_SURFACE_FORMAT_FLOAT_R32_G32_B32_A32 :
-               pass->fbo.srgb_fbo ? GX2_SURFACE_FORMAT_SRGB_R8_G8_B8_A8 :
-               GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
+         wiiu->pass[i].texture.surface.format      = 
+              (pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
+            ? GX2_SURFACE_FORMAT_FLOAT_R32_G32_B32_A32
+            : (pass->fbo.flags & FBO_SCALE_FLAG_SRGB_FBO)
+            ? GX2_SURFACE_FORMAT_SRGB_R8_G8_B8_A8
+            : GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
          wiiu->pass[i].texture.surface.use         = (GX2_SURFACE_USE_TEXTURE |
                GX2_SURFACE_USE_COLOR_BUFFER);
          wiiu->pass[i].texture.viewNumSlices       = 1;

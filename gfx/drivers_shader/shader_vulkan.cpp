@@ -2898,7 +2898,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
     if (!video_shader_load_preset_into_shader(path, shader.get()))
         return nullptr;
 
-   bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.valid;
+   bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.flags &
+      FBO_SCALE_FLAG_VALID;
    auto tmpinfo          = *info;
    tmpinfo.num_passes    = shader->passes + (last_pass_is_fbo ? 1 : 0);
 
@@ -3029,7 +3030,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       if (output.meta.rt_format == SLANG_FORMAT_UNKNOWN)
          output.meta.rt_format     = SLANG_FORMAT_R8G8B8A8_UNORM;
 
-      if (!pass->fbo.valid)
+      if (!(pass->fbo.flags & FBO_SCALE_FLAG_VALID))
       {
          pass_info.scale_type_x    = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
          pass_info.scale_type_y    = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
@@ -3067,9 +3068,9 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       {
          /* Preset overrides shader.
           * Kinda ugly ... */
-         if (pass->fbo.srgb_fbo)
+         if (pass->fbo.flags & FBO_SCALE_FLAG_SRGB_FBO)
             output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_SRGB;
-         else if (pass->fbo.fp_fbo)
+         else if (pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
             output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
 
          pass_info.rt_format      = glslang_format_to_vk(output.meta.rt_format);

@@ -89,7 +89,7 @@ static int generic_shader_action_parameter_right_internal(unsigned type, const c
    ret = generic_shader_action_parameter_right(param_prev, type, label, wraparound);
 
    param_menu->current = param_prev->current;
-   shader->modified    = true;
+   shader->flags      |= SHDR_FLAG_MODIFIED;
 
    return ret;
 }
@@ -349,14 +349,17 @@ static int action_right_shader_scale_pass(unsigned type, const char *label,
       return menu_cbs_exit();
 
    /* A 20x scale is used to support scaling handheld border shaders up to 8K resolutions */
-   current_scale            = shader_pass->fbo.scale_x;
-   delta                    = 1;
-   current_scale            = (current_scale + delta) % 21;
+   current_scale              = shader_pass->fbo.scale_x;
+   delta                      = 1;
+   current_scale              = (current_scale + delta) % 21;
 
-   shader_pass->fbo.valid   = current_scale;
-   shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
+   shader_pass->fbo.scale_x   = shader_pass->fbo.scale_y = current_scale;
+   if (current_scale)
+      shader_pass->fbo.flags |=  FBO_SCALE_FLAG_VALID;
+   else
+      shader_pass->fbo.flags &= ~FBO_SCALE_FLAG_VALID;
 
-   shader->modified         = true;
+   shader->flags             |= SHDR_FLAG_MODIFIED;
 
    return 0;
 }
@@ -374,7 +377,7 @@ static int action_right_shader_filter_pass(unsigned type, const char *label,
 
    shader_pass->filter      = ((shader_pass->filter + delta) % 3);
 
-   shader->modified         = true;
+   shader->flags           |= SHDR_FLAG_MODIFIED;
 
    return 0;
 }
@@ -407,7 +410,7 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    video_shader_resolve_parameters(shader);
 
-   shader->modified         = true;
+   shader->flags           |= SHDR_FLAG_MODIFIED;
 
    return 0;
 }

@@ -775,7 +775,7 @@ static void d3d9_init_singlepass(d3d9_video_t *d3d)
    pass                                  = (struct video_shader_pass*)
       &d3d->shader.pass[0];
 
-   pass->fbo.valid                       = true;
+   pass->fbo.flags                      |= FBO_SCALE_FLAG_VALID;
    pass->fbo.scale_y                     = 1.0;
    pass->fbo.type_y                      = RARCH_SCALE_VIEWPORT;
    pass->fbo.scale_x                     = pass->fbo.scale_y;
@@ -801,7 +801,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
 
    for (i = 0; i < d3d->shader.passes; i++)
    {
-      if (d3d->shader.pass[i].fbo.valid)
+      if (d3d->shader.pass[i].fbo.flags & FBO_SCALE_FLAG_VALID)
          continue;
 
       d3d->shader.pass[i].fbo.scale_y = 1.0f;
@@ -811,7 +811,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
    }
 
    use_extra_pass       = d3d->shader.passes < GFX_MAX_SHADERS &&
-      d3d->shader.pass[d3d->shader.passes - 1].fbo.valid;
+      (d3d->shader.pass[d3d->shader.passes - 1].fbo.flags & FBO_SCALE_FLAG_VALID);
 
    if (use_extra_pass)
    {
