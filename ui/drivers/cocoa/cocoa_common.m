@@ -174,11 +174,10 @@ void *glkitview_init(void);
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
     int cmdData = self.keyboardController.view.isHidden ? 0 : 1;
     command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &cmdData);
-    if ( self.keyboardController.view.isHidden ) {
+    if (self.keyboardController.view.isHidden)
         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-    } else {
+    else
         command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-    }
 #endif
 }
 
@@ -353,24 +352,23 @@ void *glkitview_init(void);
 
 #pragma mark EmulatorTouchMouseHandlerDelegate
 
--(void)handleMouseClickWithIsLeftClick:(BOOL)isLeftClick isPressed:(BOOL)isPressed {
+-(void)handleMouseClickWithIsLeftClick:(BOOL)isLeftClick isPressed:(BOOL)isPressed
+{
     cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-    if (apple == NULL) {
+    if (!apple)
         return;
-    }
     NSUInteger buttonIndex = isLeftClick ? 0 : 1;
-    if (isPressed) {
+    if (isPressed)
         apple->mouse_buttons |= (1 << buttonIndex);
-    } else {
+    else
         apple->mouse_buttons &= ~(1 << buttonIndex);
-    }
 }
 
--(void)handleMouseMoveWithX:(CGFloat)x y:(CGFloat)y {
+-(void)handleMouseMoveWithX:(CGFloat)x y:(CGFloat)y
+{
     cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-    if (apple == NULL) {
+    if (!apple)
         return;
-    }
     apple->mouse_rel_x = (int16_t)x;
     apple->mouse_rel_y = (int16_t)y;
 }

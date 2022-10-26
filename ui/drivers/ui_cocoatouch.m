@@ -33,6 +33,7 @@
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_setting.h"
@@ -544,11 +545,10 @@ enum
 int main(int argc, char *argv[])
 {
 #if TARGET_OS_IOS
-    if (jb_enable_ptrace_hack()) {
-        NSLog(@"Ptrace hack complete, JIT support is enabled");
-    } else {
-        NSLog(@"Ptrace hack NOT available; Please use an app like Jitterbug.");
-    }
+    if (jb_enable_ptrace_hack())
+        RARCH_LOG("Ptrace hack complete, JIT support is enabled.\n");
+    else
+        RARCH_WARN("Ptrace hack NOT available; Please use an app like Jitterbug.\n");
 #endif
    @autoreleasepool {
       return UIApplicationMain(argc, argv, NSStringFromClass([RApplication class]), NSStringFromClass([RetroArch_iOS class]));
