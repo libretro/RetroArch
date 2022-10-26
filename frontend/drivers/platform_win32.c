@@ -65,6 +65,10 @@
 #include <ole2.h>
 #endif
 
+#ifndef SM_SERVERR2
+#define SM_SERVERR2 89
+#endif
+
 enum platform_win32_flags
 {
    PLAT_WIN32_FLAG_USE_POWERSHELL           = (1 << 0),
@@ -76,16 +80,12 @@ enum platform_win32_flags
 };
 
 #ifdef HAVE_SAPI
-static ISpVoice* pVoice        = NULL;
+static ISpVoice* pVoice           = NULL;
 #endif
 #ifdef HAVE_NVDA
-uint8_t g_plat_win32_flags     = PLAT_WIN32_FLAG_USE_NVDA;
+static uint8_t g_plat_win32_flags = PLAT_WIN32_FLAG_USE_NVDA;
 #else
-uint8_t g_plat_win32_flags     = PLAT_WIN32_FLAG_USE_POWERSHELL;
-#endif
-
-#ifndef SM_SERVERR2
-#define SM_SERVERR2 89
+static uint8_t g_plat_win32_flags = PLAT_WIN32_FLAG_USE_POWERSHELL;
 #endif
 
 /* static public global variable */
