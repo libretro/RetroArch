@@ -267,6 +267,7 @@ enum xmb_pending_thumbnail_type
 typedef struct
 {
    char *fullpath;
+   char *console_name;
    uintptr_t icon;
    uintptr_t content_icon;
    float alpha;
@@ -396,6 +397,7 @@ typedef struct xmb_handle
    uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
 
    char title_name[255];
+   char title_name_alt[255];
 
    /* Cached texts showing current entry index / current list size */
    char entry_index_str[32];
@@ -565,10 +567,11 @@ static xmb_node_t *xmb_alloc_node(void)
    if (!node)
       return NULL;
 
-   node->alpha    = node->label_alpha  = 0;
-   node->zoom     = node->x = node->y  = 0;
-   node->icon     = node->content_icon = 0;
-   node->fullpath = NULL;
+   node->alpha        = node->label_alpha  = 0;
+   node->zoom         = node->x = node->y  = 0;
+   node->icon         = node->content_icon = 0;
+   node->fullpath     = NULL;
+   node->console_name = NULL;
 
    return node;
 }
@@ -618,8 +621,9 @@ static xmb_node_t *xmb_copy_node(const xmb_node_t *old_node)
    if (!new_node)
       return NULL;
 
-   *new_node            = *old_node;
-   new_node->fullpath   = old_node->fullpath ? strdup(old_node->fullpath) : NULL;
+   *new_node              = *old_node;
+   new_node->fullpath     = old_node->fullpath ? strdup(old_node->fullpath) : NULL;
+   new_node->console_name = old_node->console_name ? strdup(old_node->console_name) : NULL;
 
    return new_node;
 }
@@ -1100,11 +1104,6 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
    const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
    unsigned depth                     = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
-   /* Do not update wallpaper in "Load Content" playlists */
-   if ((xmb->categories_selection_ptr == 0 && depth > 4) ||
-         (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1))
-      return strdup(xmb->bg_file_path);
-
    if (tmp)
    {
       len = fill_pathname_join_special(
@@ -1114,12 +1113,17 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
             sizeof(path));
       free(tmp);
    }
-  
+
    path[len  ] = '.';
    path[len+1] = 'p';
    path[len+2] = 'n';
    path[len+3] = 'g';
    path[len+4] = '\0';
+
+   /* Do not update wallpaper in "Load Content" playlists */
+   if ((xmb->categories_selection_ptr == 0 && depth > 4) ||
+         (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1))
+      return strdup(xmb->bg_file_path);
    
    if (!path_is_valid(path))
       fill_pathname_application_special(path, sizeof(path),
@@ -1980,17 +1984,28 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
 static void xmb_set_title(xmb_handle_t *xmb)
 {
+   xmb->title_name_alt[0] = '\0';
+
    if (xmb->categories_selection_ptr <= xmb->system_tab_end ||
          (xmb->is_quick_menu && !menu_is_running_quick_menu()) ||
          xmb->depth > 1)
       menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
    else
    {
+      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(
+            &xmb->horizontal_list,
+            xmb->categories_selection_ptr - (xmb->system_tab_end + 1));
       const char *path = xmb->horizontal_list.list[
             xmb->categories_selection_ptr - (xmb->system_tab_end + 1)].path;
 
       if (!path)
          return;
+
+      /* Set alternative title when available */
+      if (node && node->console_name)
+         strlcpy(xmb->title_name_alt,
+               node->console_name,
+               sizeof(xmb->title_name_alt));
 
       fill_pathname_base(
             xmb->title_name, path, sizeof(xmb->title_name));
@@ -2237,9 +2252,11 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
 static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 {
    menu_displaylist_info_t info;
-   settings_t *settings             = config_get_ptr();
-   const char *dir_playlist         = settings->paths.directory_playlist;
-   bool menu_content_show_playlists = settings->bools.menu_content_show_playlists;
+   settings_t *settings              = config_get_ptr();
+   const char *dir_playlist          = settings->paths.directory_playlist;
+   bool menu_content_show_playlists  = settings->bools.menu_content_show_playlists;
+   bool ozone_truncate_playlist_name = settings->bools.ozone_truncate_playlist_name;
+   bool ozone_sort_after_truncate    = settings->bools.ozone_sort_after_truncate_playlist_name;
 
    menu_displaylist_info_init(&info);
 
@@ -2253,15 +2270,75 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 
    if (menu_content_show_playlists && !string_is_empty(info.path))
    {
+      size_t i;
+
       if (menu_displaylist_ctl(
                DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info,
                settings))
       {
-         size_t i;
          for (i = 0; i < xmb->horizontal_list.size; i++)
             xmb_node_allocate_userdata(xmb, (unsigned)i);
          menu_displaylist_process(&info);
       }
+
+      /* Loop through list and set console names */
+      for (i = 0; i < xmb->horizontal_list.size; i++)
+      {
+         char playlist_file_noext[255];
+         char *console_name        = NULL;
+         const char *playlist_file = xmb->horizontal_list.list[i].path;
+
+         if (!playlist_file)
+         {
+            file_list_set_alt_at_offset(&xmb->horizontal_list, i, NULL);
+            continue;
+         }
+
+         /* Remove extension */
+         fill_pathname_base(playlist_file_noext,
+               playlist_file, sizeof(playlist_file_noext));
+         path_remove_extension(playlist_file_noext);
+
+         console_name = playlist_file_noext;
+
+         /* Truncate playlist names, if required
+          * > Format: "Vendor - Console"
+              Remove everything before the hyphen
+              and the subsequent space */
+         if (ozone_truncate_playlist_name)
+         {
+            bool hyphen_found = false;
+
+            for (;;)
+            {
+               /* Check for "- " */
+               if (*console_name == '\0')
+                  break;
+               else if (*console_name == '-' && *(console_name + 1) == ' ')
+               {
+                  hyphen_found = true;
+                  break;
+               }
+
+               console_name++;
+            }
+
+            if (hyphen_found)
+               console_name += 2;
+            else
+               console_name = playlist_file_noext;
+         }
+
+         /* Assign console name to list */
+         file_list_set_alt_at_offset(&xmb->horizontal_list, i, console_name);
+      }
+
+      /* If playlist names were truncated and option is
+       * enabled, re-sort list by console name */
+      if (ozone_truncate_playlist_name &&
+          ozone_sort_after_truncate &&
+          (xmb->horizontal_list.size > 0))
+         file_list_sort_on_alt(&xmb->horizontal_list);
    }
 
    menu_displaylist_info_free(&info);
@@ -2339,6 +2416,7 @@ static void xmb_context_reset_horizontal_list(
          char sysname[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
          char content_texturepath[PATH_MAX_LENGTH];
+         const char *console_name = NULL;
 
          /* Add current node to playlist database name map */
          RHMAP_SET_STR(xmb->playlist_db_node_map, path, node);
@@ -2408,8 +2486,7 @@ static void xmb_context_reset_horizontal_list(
          fill_pathname_join_special(content_texturepath, iconpath, sysname,
                sizeof(content_texturepath));
 
-         /* If the content icon doesn't exist return default-content */
-
+         /* If the content icon doesn't exist, return default-content */
          if (!path_is_valid(content_texturepath))
             fill_pathname_join_delim(content_texturepath, icons_path_default,
                   FILE_PATH_CONTENT_BASENAME, '-', sizeof(content_texturepath));
@@ -2425,6 +2502,22 @@ static void xmb_context_reset_horizontal_list(
 
             image_texture_free(&ti);
          }
+
+         /* Console name */
+         console_name = xmb->horizontal_list.list[i].alt
+            ? xmb->horizontal_list.list[i].alt
+            : xmb->horizontal_list.list[i].path;
+
+         if (node->console_name)
+            free(node->console_name);
+
+         /* Note: console_name will *always* be valid here,
+          * but provide a fallback to prevent NULL pointer
+          * dereferencing in case of unknown errors... */
+         if (console_name)
+            node->console_name = strdup(console_name);
+         else
+            node->console_name = strdup(path);
       }
       else if (string_ends_with_size(xmb->horizontal_list.list[i].label, ".lvw",
               strlen(xmb->horizontal_list.list[i].label), STRLEN_CONST(".lvw")))
@@ -5401,8 +5494,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    selection = menu_navigation_get_selection();
 
+   /* Use alternative title if available */
    strlcpy(title_truncated,
-         xmb->title_name, sizeof(title_truncated));
+         !string_is_empty(xmb->title_name_alt) ? xmb->title_name_alt : xmb->title_name,
+         sizeof(title_truncated));
 
    if (!menu_xmb_vertical_fade_factor && selection > 1)
    {
