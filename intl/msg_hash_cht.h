@@ -363,7 +363,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   "更新控制器配置檔"
+   "更新控制器預設檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
@@ -1521,11 +1521,11 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   "自動延遲渲染"
+   "預設著色器延遲"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "延遲自動載入渲染(於毫秒)。可以在使用 \"螢幕擷取\" 軟體時降低破圖的產生。"
+   "設定預設著色器自動載入的延遲(以毫秒為單位)。可解決使用螢幕擷取軟體時的圖形異常。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -2347,8 +2347,16 @@ MSG_HASH(
    "下一個著色器"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
+   "載入「影像著色器」根目錄中的著色器配置檔，載入順序依照檔案名稱排序。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
    "上一個著色器"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
+   "載入「影像著色器」根目錄中的著色器配置檔，載入順序依照檔案名稱顛倒排序。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
@@ -2364,7 +2372,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
-   "營幕截圖"
+   "螢幕截圖"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
@@ -2682,7 +2690,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-   "自動載入著色器配置"
+   "自動載入預設著色器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
@@ -2767,7 +2775,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "記住本次執行「開始資料夾」最後載入的檔案，在重新啟動後還原為設定位置。"
+   "記住本次執行「開始資料夾」最後載入的檔案位置，在重新啟動後還原為設定位置。"
    )
 
 /* Settings > Frame Throttle */
@@ -3314,6 +3322,14 @@ MSG_HASH( /* FIXME Not RGUI specific */
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+   "顯示「著色器」"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
+   "顯示「著色器」選項。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    "顯示「下載預覽縮圖」"
    )
@@ -3700,8 +3716,12 @@ MSG_HASH(
    "設定音頻數位訊號處理過濾器儲存位置。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
+   "影像著色器"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
-   "設定圖形處理器架構的著色器儲存位置。"
+   "設定圖形處理器架構的著色器配置檔儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
@@ -4073,6 +4093,10 @@ MSG_HASH(
    "著色器"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
+   "設定影像著色器。協助復古像素藝術增加新時代的光彩。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
    "成就列表"
    )
@@ -4227,16 +4251,40 @@ MSG_HASH(
 /* Quick Menu > Shaders */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
+   "影像著色器"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
+   "監視著色器設置變更"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
+   "自動建立應用替換著色器配置檔到硬碟。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "記住最後使用的著色器"
+   "記住最後載入的著色器位置"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "記住本次執行「載入」著色器配置檔最後的位置，在重新啟動後還原為預設位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
    "載入"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
+   "載入著色器配置檔，自動設置著色器通道參數。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
    "儲存"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
+   "儲存目前著色器設置為預設。預設載入的優先順序為遊戲、資料夾、核心、復古電玩。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
@@ -4244,19 +4292,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "刪除儲存的著色器配置。"
+   "刪除已儲存的預設著色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
-   "套用變更"
+   "應用替換"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
+   "儲存目前設置至「影像著色器」根目錄「retroarch.slangp」配置檔，可使用著色器快捷鍵載入。儲存為應用替換配置檔後，可變更著色器通道數量，加入單通道的著色器繼續應用替換。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
    "著色器參數"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
+   "變更載入的著色器參數，修改的參數不會儲存到配置檔中。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
    "著色器通道"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
+   "設定著色器管線通道的數量。每個通道可加入單通道的著色器，需與應用替換選項配合使用。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER,
+   "著色器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
@@ -4264,38 +4328,106 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCALE,
-   "刻度"
+   "比例"
    )
 
 /* Quick Menu > Shaders > Save */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "簡易預設"
+   )
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "儲存為預設時，只建立載入位置與變更設定的資料。"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "著色器配置另存新檔"
+   "另存新檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+   "儲存目前著色器設置，為新的配置檔，可使用著色器快捷鍵載入。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "儲存為復古電玩預設"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "儲存目前著色器設置，並預設為復古電玩使用的著色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
    "儲存為核心預設"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+   "儲存目前著色器設置，並預設為此核心使用的著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "儲存為資料夾預設"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "儲存目前著色器設置，並預設為同一個資料夾載入時，所使用的著色器。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
    "儲存為遊戲預設"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "儲存目前著色器設置，並預設為此遊戲使用的著色器。"
    )
 
 /* Quick Menu > Shaders > Remove */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
+   "沒有預設的著色器配置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "刪除復古電玩預設"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "刪除復古電玩預設使用的著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   "刪除此核心預設"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   "刪除此核心預設使用的著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   "刪除此資料夾預設"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   "刪除同一個資料夾載入預設使用的著色器。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
-   "刪除遊戲預設"
+   "刪除此遊戲預設"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   "刪除此遊戲預設使用的著色器。"
    )
 
 /* Quick Menu > Shaders > Shader Parameters */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
-   "沒有著色器參數"
+   "沒有著色器參數。"
    )
 
 /* Quick Menu > Overrides */
@@ -4388,6 +4520,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SEARCH,
    "搜尋"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
+   "切換預覽縮圖"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
@@ -4581,6 +4717,10 @@ MSG_HASH(
    "未鎖定"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DONT_CARE,
+   "預設"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LINEAR,
    "線性"
    )
@@ -4735,7 +4875,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
-   "選擇背景動畫效果。部分效果將占用圖形處理器資源，如裝置效能太低不建議開啟。"
+   "選擇背景動畫效果。部份效果將占用圖形處理器資源，如裝置效能太低不建議開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
@@ -5138,7 +5278,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE,
-   "拖曳圖片至此 (PNG、BMP)"
+   "拖曳圖片至此\n(PNG、BMP)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
@@ -5258,7 +5398,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
-   "※ 無法使用：將使用此列表名稱，建立與資料庫和預覽縮圖的關聯名稱。"
+   "※ 無法使用時，使用此列表名稱，建立與資料庫和預覽縮圖的關聯名稱。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
@@ -5309,6 +5449,10 @@ MSG_HASH(
    "貢獻者"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
+   "目前著色器"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
    "下移"
    )
@@ -5334,7 +5478,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_APPLY,
-   "套用"
+   "應用替換"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SHADER_ADD_PASS,
@@ -5513,7 +5657,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
-   "載入著色器配置"
+   "著色器配置"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
@@ -6090,7 +6234,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ERROR_SAVING_SHADER_PRESET,
-   "儲存時發生錯誤，未建立著色器配置參數。"
+   "儲存時發生錯誤，未載入著色器配置。"
    )
 MSG_HASH(
    MSG_EXTERNAL_APPLICATION_DIR,
@@ -6119,6 +6263,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_APPLY_SHADER,
    "套用著色器失敗。"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER_PRESET,
+   "套用著色器配置失敗:"
    )
 MSG_HASH(
    MSG_FAILED_TO_BIND_SOCKET,
@@ -6302,7 +6450,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_PRESET_FILENAME,
-   "目前檔案"
+   "請輸入檔案名稱"
    )
 MSG_HASH(
    MSG_INPUT_RENAME_ENTRY,
@@ -6529,6 +6677,10 @@ MSG_HASH(
    "發送指令"
    )
 MSG_HASH(
+   MSG_SHADER,
+   "著色器"
+   )
+MSG_HASH(
    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
    "著色器配置已成功儲存。"
    )
@@ -6574,11 +6726,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
-   "全螢幕顯示預覽縮圖"
+   "全螢幕顯示縮圖"
    )
 MSG_HASH(
    MSG_TOGGLE_CONTENT_METADATA,
-   "詮釋資訊 (開/關)"
+   "資訊"
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
@@ -7087,7 +7239,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "掃描完成。<br><br>\n為了正確的掃描遊戲檔案。<br><br>\n您必須:<ul><li>下載對應的核心。</li>\n<li>更新核心資料庫。</li>\n<li>更新資料庫。</li>\n<li>上述任一項剛完成，請先重新啟動復古電玩。</li></ul>\n最後，掃描的檔案必須符合資料庫數據，想了解更多信息，請使用<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">線上說明</a>。<br>\n如果仍然無法掃描，請使用<a href=\"https://www.github.com/libretro/RetroArch/issues\">錯誤回報</a>。"
+   "掃描完成。<br><br>\n為了正確的掃描遊戲檔案。<br><br>\n您必須:\n<ul><li>下載對應的核心。</li>\n<li>更新核心資料庫。</li>\n<li>更新資料庫。</li>\n<li>上述任一項剛完成，請先重新啟動復古電玩。</li></ul>\n最後，掃描的檔案必須符合資料庫數據，想了解更多信息，請使用<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">線上說明</a>。<br>\n如果仍然無法掃描，請使用<a href=\"https://www.github.com/libretro/RetroArch/issues\">錯誤回報</a>。"
    )
 #endif
 MSG_HASH(

@@ -4764,6 +4764,34 @@ MSG_HASH(
 
 /* Import Content */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
+   "Cerca en un directori"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
+   "Cerca contingut que coincideixi amb la base de dades en un directori."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
+   "<Cerca en aquest directori>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_FILE,
+   "Cerca en un fitxer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_FILE,
+   "Cerca contingut que coincideixi amb la base de dades en un fitxer."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
+   "Cerca manual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
+   "Cerca configurable basada en noms de fitxer de contingut. No cal que el contingut coincideixi amb la base de dades."
+   )
 
 /* Import Content > Scan File */
 
@@ -5260,6 +5288,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
    "D'acord"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
+   "Directori pare"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ITEMS,
+   "No hi ha elements"
    )
 
 /* Settings Options */

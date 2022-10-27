@@ -1283,6 +1283,18 @@ MSG_HASH(
    "Медіа"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Продуктивність"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "Звук"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   "Пам'ять"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    "Система"
    )
@@ -2587,6 +2599,22 @@ MSG_HASH(
    "Використовуйте одне і те ж керування для меню і гри. Застосовується до клавіатури."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
+   "Вимкнути кнопку «Інформація»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
+   "Якщо буде увімкнено, натискання кнопки \"Інформація\" буде проігноровано."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
+   "Вимкнути кнопку «Пошук»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   "Якщо буде увімкнено, натискання кнопки \"Пошук\" буде проігноровано."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
    "Поміняти місцями кнопки ОК та Скасувати"
    )
@@ -2769,6 +2797,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
    "Вимкнути звук (перемикач)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
+   "Вмикає/вимикає виведення звуку."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
