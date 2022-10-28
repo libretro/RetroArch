@@ -166,6 +166,24 @@ typedef struct thread_packet
    enum thread_cmd type;
 } thread_packet_t;
 
+enum thread_video_flags
+{
+   THR_FLAG_APPLY_STATE_CHANGES     = (1 << 0),
+   THR_FLAG_ALIVE                   = (1 << 1),
+   THR_FLAG_FOCUS                   = (1 << 2),
+   THR_FLAG_SUPPRESS_SCREENSAVER    = (1 << 3),
+   THR_FLAG_HAS_WINDOWED            = (1 << 4),
+   THR_FLAG_NONBLOCK                = (1 << 5),
+   THR_FLAG_IS_IDLE                 = (1 << 6),
+   THR_FLAG_ALPHA_UPDATE            = (1 << 7),
+   THR_FLAG_FRAME_WITHIN_THREAD     = (1 << 8),
+   THR_FLAG_FRAME_UPDATED           = (1 << 9),
+   THR_FLAG_TEXTURE_FRAME_UPDATED   = (1 << 10),
+   THR_FLAG_TEXTURE_RGB32           = (1 << 11),
+   THR_FLAG_TEXTURE_ENABLE          = (1 << 12),
+   THR_FLAG_TEXTURE_FULLSCREEN      = (1 << 13)
+};
+
 typedef struct thread_video
 {
    retro_time_t last_time;
@@ -197,10 +215,6 @@ typedef struct thread_video
       unsigned width;
       unsigned height;
       float alpha;
-      bool frame_updated;
-      bool rgb32;
-      bool enable;
-      bool full_screen;
    } texture;
 
    unsigned hit_count;
@@ -216,7 +230,7 @@ typedef struct thread_video
    enum thread_cmd send_cmd;
    enum thread_cmd reply_cmd;
 
-   bool alpha_update;
+   uint16_t flags;
 
    struct
    {
@@ -227,18 +241,7 @@ typedef struct thread_video
       unsigned height;
       unsigned pitch;
       char msg[NAME_MAX_LENGTH];
-      bool updated;
-      bool within_thread;
    } frame;
-
-   bool apply_state_changes;
-
-   bool alive;
-   bool focus;
-   bool suppress_screensaver;
-   bool has_windowed;
-   bool nonblock;
-   bool is_idle;
 } thread_video_t;
 
 /**
