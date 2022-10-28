@@ -554,7 +554,10 @@ error:
 
 static void d3d10_gfx_free(void* data)
 {
-   unsigned       i;
+   int i;
+#if 0
+   uint32_t video_st_flags;
+#endif
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
    if (!d3d10)
@@ -601,10 +604,11 @@ static void d3d10_gfx_free(void* data)
    font_driver_free_osd();
 
 #if 0
-   if (video_driver_is_video_cache_context())
+   video_st_flags = video_driver_get_st_flags();
+   if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
    {
       cached_device_d3d10 = d3d10->device;
-      cached_context = d3d10->context;
+      cached_context      = d3d10->context;
    }
    else
 #endif

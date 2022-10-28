@@ -1510,7 +1510,7 @@ VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
 
    command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 
-   if (!video_driver_is_video_cache_context())
+   if (!(video_st->flags & VIDEO_FLAG_CACHE_CONTEXT))
       video_driver_free_hw_context();
 
    if (!(input_st->current_data == video_st->data))
@@ -2457,12 +2457,6 @@ const struct retro_hw_render_context_negotiation_interface *
    return video_st->hw_render_context_negotiation;
 }
 
-bool video_driver_is_video_cache_context(void)
-{
-   video_driver_state_t *video_st = &video_driver_st;
-   return ((video_st->flags & VIDEO_FLAG_CACHE_CONTEXT) > 0);
-}
-
 void video_driver_set_video_cache_context_ack(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
@@ -3042,14 +3036,7 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
    if (!video_st->context_data)
       return false;
 
-   if (!(video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE))
-   {
-      if (refresh_rate)
-         *refresh_rate =
-             video_st->current_video_context.get_refresh_rate(
-                   video_st->context_data);
-   }
-   else
+   if (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
    {
       float refresh_holder      = 0;
       if (refresh_rate)
@@ -3061,6 +3048,13 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
        * HARD SET VSYNC TO REQUIRED REFRESH FOR CRT*/
       if (refresh_holder != video_st->core_hz)
          *refresh_rate          = video_st->core_hz;
+   }
+   else
+   {
+      if (refresh_rate)
+         *refresh_rate =
+             video_st->current_video_context.get_refresh_rate(
+                   video_st->context_data);
    }
 
    return true;
@@ -3083,8 +3077,7 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
 
    if (video_st->flags & VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS)
    {
-      flags->flags                                     =
-         video_st->deferred_flag_data.flags;
+      flags->flags     = video_st->deferred_flag_data.flags;
       video_st->flags &= ~VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS;
       return true;
    }
@@ -3149,7 +3142,7 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
       return true;
    }
 
-   video_st->deferred_flag_data.flags                = flags->flags;
+   video_st->deferred_flag_data.flags  = flags->flags;
    video_st->flags |= VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS;
    return false;
 }

@@ -544,10 +544,12 @@ static void gfx_ctx_wgl_destroy(void *data)
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
          if (win32_hrc)
          {
+            uint32_t video_st_flags;
             gl_finish();
             wglMakeCurrent(NULL, NULL);
 
-            if (!video_driver_is_video_cache_context())
+            video_st_flags = video_driver_get_st_flags();
+            if (!(video_st_flags & VIDEO_FLAG_CACHE_CONTEXT))
             {
                if (win32_hw_hrc)
                   wglDeleteContext(win32_hw_hrc);
