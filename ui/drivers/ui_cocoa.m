@@ -525,7 +525,7 @@ static ui_application_t ui_application_cocoa = {
 }
 #endif
 
-#define NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY (1 << 17)
+#define NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY (1 << 7)
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
