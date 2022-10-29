@@ -1047,7 +1047,7 @@ static bool frontend_unix_powerstate_check_acpi(
    bool have_battery   = false;
    bool have_ac        = false;
    bool charging       = false;
-   struct RDIR *entry  = retro_opendir(proc_acpi_battery_path);
+   struct RDIR *entry  = retro_opendir(PROC_ACPI_BATTERY_PATH);
    if (!entry)
       return false;
 
