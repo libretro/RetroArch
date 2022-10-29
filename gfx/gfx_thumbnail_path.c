@@ -665,7 +665,8 @@ bool gfx_thumbnail_update_path(
             path_data->content_img, PATH_MAX_LENGTH * sizeof(char));
       
       /* Thumbnail fallback 1 - rom_name.png */
-      if ( !path_is_valid(thumbnail_path) )						//  :\thumbnails\db_name\Named_Snaps\rom_name.png
+      /*  :\thumbnails\db_name\Named_Snaps\rom_name.png */
+      if (!path_is_valid(thumbnail_path))
       {	
          char content_name[PATH_MAX_LENGTH]; 
          char* cp = find_last_slash(path_data->content_path);
@@ -678,7 +679,8 @@ bool gfx_thumbnail_update_path(
          fill_pathname_join(thumbnail_path, thumbnail_path,	content_name, PATH_MAX_LENGTH);
       }
       /* Thumbnail fallback 2 - rom_path/rom_name.png */
-      if ( !path_is_valid(thumbnail_path) )						//  :\roms\db_name\rom_name.png
+      /*  :\roms\db_name\rom_name.png */
+      if (!path_is_valid(thumbnail_path))
       {	
          char*  cp;
          char content_name[PATH_MAX_LENGTH]; 

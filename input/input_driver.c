@@ -3231,20 +3231,27 @@ bool input_keyboard_line_event(
 
    if ( character & 0xFF000000 )  /* COMPSTR:0x08000000, RESULTSTR:0x80000000   END:0x01000000*/  
    {	
-      int len = strlen((char*)&composition);
-      if( len>0 && state->ptr>=len && state->buffer )
+      size_t len = strlen((char*)&composition);
+      if (     (len > 0)
+            && (state->ptr >= len)
+            && state->buffer)
       {
-         memmove(state->buffer + state->ptr-len, state->buffer+state->ptr,  len + 1);
-         state->ptr -=len; 
-         state->size-=len;
+         memmove(state->buffer + state->ptr-len,
+               state->buffer+state->ptr,  len + 1);
+         state->ptr  -= len; 
+         state->size -= len;
       }
-      if(character & 0xF0000000 ) 	composition = 0;
-      else							composition = character &0xffffff; // GCS_COMPSTR
-      if(len && composition==0) word	= state->buffer; 
+      if (character & 0xF0000000)
+         composition = 0;
+      else
+         composition = character &0xffffff; /* GCS_COMPSTR */
+      if (len && composition==0)
+         word	= state->buffer; 
       character &= 0xffffff;
    }
 
-   if ( character==0x0000000D || character==0x0000000A )	/*(c == '\r' || c == '\n')	*/
+   /*(c == '\r' || c == '\n')	*/
+   if (character==0x0000000D || character==0x0000000A)	
    {
       state->cb(state->userdata, state->buffer);
       ret      = true;
@@ -3255,7 +3262,9 @@ bool input_keyboard_line_event(
       {
         unsigned i;
         int len = input_st->osk_last_codepoint_len;
-        if( len>0 && state->ptr>=len && state->buffer )
+        if (     (len > 0)
+              && (state->ptr >= len)
+              && state->buffer)
         {
            memmove(state->buffer + state->ptr-len, state->buffer + state->ptr, (state->size - state->ptr) + 1);
            state->ptr -=len; 
@@ -3264,13 +3273,10 @@ bool input_keyboard_line_event(
         word     = state->buffer;		//??
       }
    }  else
-   if (character ) 
-   {   
+   if (character) 
 	   input_keyboard_line_append(   state, (char*)&character, strlen((char*)&character));
-   }  else
-   {   
+   else
 	   return false;
-   }
 
    /* OSK - update last character */
    if (word)
@@ -3723,11 +3729,7 @@ int16_t input_state_device(
                unsigned remap_button = settings->uints.input_remap_ids[port][id];
 
                /* TODO/FIXME: What on earth is this code doing...? */
-               if (!
-                     (      bind_valid
-                            && id != remap_button
-                     )
-                  )
+               if (!(bind_valid && (id != remap_button)))
                {
                   if (button_mask)
                   {
@@ -3736,7 +3738,6 @@ int16_t input_state_device(
                   }
                   else
                      res = ret;
-
                }
 
                if (BIT256_GET(handle->buttons[port], id))
@@ -4396,10 +4397,12 @@ void input_driver_poll(void)
                   unsigned remap_axis        = settings->uints.input_remap_ids[i][k];
 
                   if (
-                        (abs(current_axis_value) > 0 &&
-                         (k != remap_axis)            &&
-                         (remap_axis != RARCH_UNMAPPED)
-                        ))
+                        (
+                            abs(current_axis_value) > 0
+                        && (k != remap_axis)
+                        && (remap_axis != RARCH_UNMAPPED)
+                        )
+                     )
                   {
                      if (remap_axis < RARCH_FIRST_CUSTOM_BIND &&
                            abs(current_axis_value) >
