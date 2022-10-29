@@ -107,7 +107,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   "遊戲列表"
+   "列表"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
@@ -119,11 +119,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "掃描檔案並建立及更新遊戲列表。"
+   "掃描檔案並建立及更新列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "顯示桌面選單"
+   "桌面選單"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
@@ -143,7 +143,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "下載並更新RetroArch的附加程式、元件。"
+   "下載復古電玩的附加元件與相關內容。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
@@ -501,11 +501,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   "即時存檔、回溯"
+   "即時存檔、回溯模式"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   "即時存檔、回溯、超前執行、連線對戰"
+   "即時存檔、回溯模式、快轉模式、連線對戰"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
@@ -1037,7 +1037,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   "載入設定"
+   "載入設定檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
@@ -1053,7 +1053,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   "儲存新設定"
+   "儲存為備份 (暫無刪除的選項，使用時注意)"
    )
 
 /* Main Menu > Help */
@@ -1110,19 +1110,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
-   "影像"
+   "顯示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   "調整視訊輸出的選項。"
+   "變更顯示相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   "聲音"
+   "音效"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "更改聲音輸出設定"
+   "變更音效相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
@@ -1130,7 +1130,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   "更改遊戲控制器、鍵盤、和滑鼠設定"
+   "變更遊戲控制器、鍵盤、滑鼠的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -1138,7 +1138,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   "更改影像、聲音、和输入的延遲設定。"
+   "變更顯示、音效、遊戲控制器的延遲設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
@@ -1146,7 +1146,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "變更核心的相關設定。"
+   "變更核心相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
@@ -1162,7 +1162,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   "更改存檔設定"
+   "變更遊戲存檔相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1170,7 +1170,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "更改系統記錄設定"
+   "變更系統記錄相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -1178,7 +1178,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "更改檔案瀏覽器設定"
+   "變更檔案瀏覽器相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1186,23 +1186,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   "變更倒帶、快轉、慢動作設定"
+   "變更回溯模式、快轉模式、慢動作的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   "錄影"
+   "錄製"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   "變更錄影設定"
+   "變更錄製相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   "營幕顯示"
+   "螢幕選單"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   "變更資訊、虛擬鍵盤和通知的顯示設定"
+   "變更通知、覆層、影像佈局的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
@@ -1210,7 +1210,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   "變更使用者界面設定"
+   "變更界面相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
@@ -1218,7 +1218,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   "變更 AI 服務設定 （翻譯/語音/雜項）"
+   "變更人工智慧服務(翻譯/文字轉語音/其他)的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
@@ -1226,7 +1226,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   "變更輔助旁白設定"
+   "變更無障礙閱讀的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
@@ -1234,7 +1234,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   "電源管理設定"
+   "變更電源管理的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
@@ -1242,7 +1242,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   "變更成就設定"
+   "變更成就的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
@@ -1250,15 +1250,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   "變更伺服器與網路設定。"
+   "變更伺服器與網路的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   "遊戲列表"
+   "列表"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   "變更遊戲列表設定。"
+   "變更列表的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
@@ -1266,7 +1266,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "變更帳號、使用者名稱和語言"
+   "變更帳號、名稱、語言的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
@@ -1425,7 +1425,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   "變更影像輸出選項"
+   "變更螢幕輸出相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
@@ -1433,7 +1433,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "變更全螢幕模式設定"
+   "變更全螢幕模式的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
@@ -1441,7 +1441,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-   "變更視窗模式設定"
+   "變更視窗模式的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
@@ -1449,7 +1449,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   "變更縮放設定"
+   "變更影像縮放的設定。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
@@ -1461,7 +1461,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   "變更影像同步設定"
+   "變更影像同步的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -1633,7 +1633,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   "應用程式估計的目前螢幕更新率(Hz)。"
+   "由應用程式計算的目前螢幕更新率(Hz)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
@@ -1839,7 +1839,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   "調整聲音輸出的選項。"
+   "變更音效相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
@@ -1847,7 +1847,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
-   "變更音訊重新取樣器設定。"
+   "變更音訊重新取樣器的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
@@ -1855,7 +1855,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "變更聲音同步設定"
+   "變更音頻同步的設定"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
@@ -1863,7 +1863,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
-   "變更MIDI設定"
+   "變更音樂數位介面的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
@@ -1871,7 +1871,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   "變更混音器設定"
+   "變更混音器的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
@@ -1879,7 +1879,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SOUNDS,
-   "變更選單音效設定。"
+   "變更選單音效的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -1891,11 +1891,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "向前快轉時設定為靜音"
+   "快轉時靜音"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
-   "當使用快轉向前功能時自動設定為靜音"
+   "使用快轉模式時，音量自動設定為靜音。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -2206,7 +2206,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "變更控制器按鍵連發設定。"
+   "變更控制器按鍵連發的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -2214,7 +2214,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   "更改觸覺反饋和振動設定。"
+   "變更觸覺反饋與振動的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -2222,7 +2222,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
-   "更改選單控制設定。"
+   "變更選單控制相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
@@ -2284,11 +2284,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
-   "快進(切換)"
+   "快轉模式 (開/關)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
+   "正常模式與快轉模式的切換開關。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
-   "快進(保持)"
+   "快轉模式 (按住)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "按住時啟用快轉模式，放開後恢復正常模式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
@@ -2452,7 +2460,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
-   "錄製 (開關)"
+   "錄製 (開/關)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
@@ -2670,7 +2678,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
-   "「關閉」時儲存變更的核心設定，「結束復古電玩」時儲存變更的相關設定。"
+   "「關閉」時儲存變更的核心設定，「結束復古電玩」時儲存變更的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
@@ -2801,6 +2809,22 @@ MSG_HASH(
    "回溯"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
+   "快轉倍速"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
+   "限制快轉模式執行時的最高倍速，設定為零時不限制。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+   "快轉跳幀"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "依據快轉倍速跳幀。可節省裝置的電力，並允許使用第三方的幀數限制應用程式。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    "慢動作倍率"
    )
@@ -2818,6 +2842,14 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "快轉後重置"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "快轉後重置幀生成時間計數器。"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
    "儲存存狀態後重置"
@@ -2939,6 +2971,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
    "顯示記憶體使用量"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
+   "快轉通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
+   "使用快轉模式時，顯示螢幕指示器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
@@ -3071,7 +3111,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-   "桌面選單(需要重新啟動)"
+   "允許使用桌面選單 (需要重新啟動)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
@@ -3196,11 +3236,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
-   "顯示「重新啟動復古電玩」"
+   "顯示「重新啟動」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
-   "在主選單中顯示「重新啟動復古電玩」選項。"
+   "在主選單中顯示「重新啟動」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
@@ -3208,7 +3248,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "顯示「設定」選項。使用 Ozone 與 XMB 佈景主題，變更此選項需要重新啟動。"
+   "顯示「設定」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
@@ -3216,7 +3256,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "顯示「我的最愛」列表。使用 Ozone 與 XMB 佈景主題，變更此選項需要重新啟動。"
+   "顯示「我的最愛」列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
@@ -3224,7 +3264,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "顯示「圖片」列表。使用 Ozone 與 XMB 佈景主題，變更此選項需要重新啟動。"
+   "顯示「圖片」列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
@@ -3232,7 +3272,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "顯示「音樂」列表。使用 Ozone 與 XMB 佈景主題，變更此選項需要重新啟動。"
+   "顯示「音樂」列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
@@ -3240,7 +3280,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "顯示「影片」列表。使用 Ozone 與 XMB 佈景主題，變更此選項需要重新啟動。"
+   "顯示「影片」列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
@@ -3248,7 +3288,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "顯示「連線對戰」選項。使用 Ozone 與 XMB 佈景主題，變更此選項需要重新啟動。"
+   "顯示「連線對戰」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -3256,7 +3296,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "顯示「歷史記錄」列表。使用 Ozone 與 XMB 佈景主題，變更此選項需要重新啟動。"
+   "顯示「歷史記錄」列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
@@ -3264,7 +3304,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-   "顯示「匯入遊戲」選項。使用 Ozone 與 XMB 佈景主題，變更此選項需要重新啟動。"
+   "顯示「匯入遊戲」選項。"
    )
 MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -3272,7 +3312,7 @@ MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_A
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "在主選單與載入遊戲列表中顯示「匯入遊戲」選項。"
+   "在主選單與載入檔案的列表中顯示「匯入遊戲」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -3280,11 +3320,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
-   "顯示「遊戲列表」"
+   "顯示「列表」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "顯示「遊戲列表」項目。使用 Ozone 與 XMB 佈景主題，變更此選項需要重新啟動。"
+   "顯示全部列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
@@ -3292,7 +3332,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "顯示「搜尋」選項。使用 Ozone 與 XMB 佈景主題，變更此選項需要重新啟動。"
+   "顯示「搜尋」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
@@ -3300,7 +3340,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "設定獨立核心列表顯示類型。設定為 <自定義> 時，可透過「管理核心」選項，設定支援的核心是否顯示於獨立核心列表中。使用 Ozone 與 XMB 佈景主題，變更此選項需要重新啟動。"
+   "設定獨立核心列表顯示類型。設定為 <自定義> 時，可透過「管理核心」選項，設定支援的核心是否顯示於獨立核心列表中。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -3378,7 +3418,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
-   "顯示「遊戲列表」"
+   "顯示「列表」"
    )
 
 
@@ -3410,7 +3450,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
-   "設定預覽縮圖顯示類型。開啟後在遊戲列表中，支援按鈕切換預覽縮圖的類型。"
+   "設定預覽縮圖顯示類型。開啟後在列表中，支援按鈕切換預覽縮圖的類型。"
    )
 
 /* Settings > AI Service */
@@ -3496,7 +3536,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-   "瀏覽遊戲列表時，自動下載缺少的預覽縮圖。開啟後將嚴重影響效能。"
+   "瀏覽列表時，自動下載缺少的預覽縮圖。開啟後將嚴重影響效能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
@@ -3705,7 +3745,7 @@ MSG_HASH( /* FIXME Not RGUI specific */
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "設定核心設定檔與著色器預設檔的儲存位置。"
+   "設定核心、著色器、控制器等多種設定檔的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -3817,11 +3857,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   "遊戲列表"
+   "列表"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-   "設定遊戲列表儲存位置。"
+   "設定列表儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_DIRECTORY,
@@ -3865,11 +3905,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
-   "執行日誌"
+   "執行記錄"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
-   "設定應用程式執行日誌儲存位置。"
+   "設定應用程式執行記錄儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
@@ -3897,11 +3937,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_DIR,
-   "系統事件日誌"
+   "系統事件記錄"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_DIR,
-   "設定系統事件日誌儲存位置。"
+   "設定系統事件記錄儲存位置。"
    )
 
 #ifdef HAVE_MIST
@@ -3969,12 +4009,24 @@ MSG_HASH(
    "掃描資料夾"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
+   "掃描資料夾中全部檔案，並建立符合資料庫數據的遊戲。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
-   "<掃瞄當前目錄>"
+   "<從此處開始掃描全部檔案>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_FILE,
-   "掃瞄檔案"
+   "掃描檔案"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_FILE,
+   "掃描檔案或壓縮檔，並建立符合資料庫數據的遊戲。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
+   "手動掃描"
    )
 
 /* Import Content > Scan File */
@@ -4007,8 +4059,16 @@ MSG_HASH(
    "當啟用後，指定的“Rom目錄”內的所有子目錄將包含在掃描中。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "驗證現有項目"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
    "開始掃描"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
+   "依據選項的設定開始掃描。"
    )
 
 /* Explore tab */
@@ -4034,6 +4094,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
    "重新命名"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RENAME_ENTRY,
+   "重新命名此項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
@@ -4205,7 +4269,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST,
-   "載入、儲存或刪除目前使用的控制器設定檔。"
+   "載入、儲存、刪除目前使用的控制器設定檔。"
    )
 
 /* Quick Menu > Controls > Manage Remap Files */
@@ -4270,7 +4334,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
-   "金手指一但變更會立該生效."
+   "變更作弊碼會立即生效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -4825,6 +4889,14 @@ MSG_HASH(
    "<遊戲內容目錄>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
+   "<自定義>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
+   "<未指定>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "左側搖桿"
    )
@@ -5298,7 +5370,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   "遊戲清單"
+   "清單"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
@@ -5430,7 +5502,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
-   "刪除播放清單"
+   "刪除清單"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST,
@@ -5438,7 +5510,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
-   "您確定要永久刪除「%1」播放清單？"
+   "您確定要永久刪除「%1」清單？"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_QUESTION,
@@ -5613,6 +5685,10 @@ MSG_HASH(
    "預覽縮圖下載完成。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
+   "成功: %1 個   失敗: %2 個"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
    "核心選項"
    )
@@ -5693,7 +5769,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
-   "沒有遊戲列表。"
+   "沒有列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
@@ -5852,7 +5928,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
-   "掃瞄遊戲內容"
+   "掃描檔案"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
@@ -5876,7 +5952,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
-   "掃瞄本地網路"
+   "搜尋區域網路"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
@@ -6029,7 +6105,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCAN_COMPLETE,
-   "連線遊戲主機掃瞄完成。"
+   "連線主機搜尋完成。"
    )
 MSG_HASH(
    MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
@@ -6138,7 +6214,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LATEST_CORE_INSTALLED,
-   "最新的版本已經安裝: "
+   "已安裝最新的版本: "
    )
 MSG_HASH(
    MSG_UPDATING_CORE,
@@ -6470,11 +6546,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_START_MOVIE_RECORD,
-   "啟動視訊錄製失敗."
+   "啟動錄製影片失敗。"
    )
 MSG_HASH(
    MSG_FAILED_TO_START_RECORDING,
-   "建用錄製視訊失敗."
+   "啟動錄製失敗。"
    )
 MSG_HASH(
    MSG_FAILED_TO_TAKE_SCREENSHOT,
@@ -6550,7 +6626,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_RENAME_ENTRY,
-   "變更 Title 名稱"
+   "重新命名標題"
    )
 MSG_HASH(
    MSG_INTERFACE,
@@ -6634,7 +6710,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MOVIE_RECORD_STOPPED,
-   "停止視訊錄製。"
+   "錄製影片停止。"
    )
 MSG_HASH(
    MSG_NETPLAY_FAILED,
@@ -6674,7 +6750,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
-   "錄製因改變大小而停止。"
+   "錄製因調整大小而中止。"
    )
 MSG_HASH(
    MSG_RECORDING_TO,
@@ -6738,7 +6814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
-   "已儲存新設定到"
+   "已儲存設定到"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
@@ -6762,11 +6838,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING,
-   "掃瞄中"
+   "掃描中"
    )
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "已完成對文件夾的掃瞄"
+   "掃描完成。"
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,
@@ -6790,7 +6866,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAST_FORWARD,
-   "快進。"
+   "快轉模式。"
    )
 MSG_HASH(
    MSG_SLOW_MOTION_REWIND,
@@ -6885,6 +6961,10 @@ MSG_HASH(
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   "成功從「%s」自動載入即時存檔。"
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "未設定"
    )
@@ -6898,7 +6978,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,
-   "Wi-Fi 掃瞄完成。"
+   "無線網路搜尋完成。"
    )
 MSG_HASH(
    MSG_SCANNING_BLUETOOTH_DEVICES,
@@ -6906,11 +6986,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
-   "掃瞄無線網路..."
+   "搜尋無線網路中..."
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,
-   "掃瞄連線遊戲主機..."
+   "搜尋連線主機中..."
    )
 MSG_HASH(
    MSG_PREPARING_FOR_CONTENT_SCAN,
@@ -6942,7 +7022,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
-   "掃瞄檔案結束"
+   "掃描完成。"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
@@ -6981,6 +7061,10 @@ MSG_HASH(
    "載入 Arcade DAT 檔案失敗 (無效的格式？)"
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   "無效的手動掃描設定。"
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
    "沒有偵測到有效的遊戲內容"
    )
@@ -6990,7 +7074,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
-   "掃瞄中: "
+   "掃描中: "
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_END,
@@ -7060,7 +7144,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
-   "營幕分辨率"
+   "螢幕解析度"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -7101,6 +7185,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    "設定 VI 營幕寬度"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "手動"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
