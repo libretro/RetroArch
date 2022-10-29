@@ -2034,10 +2034,10 @@ static void win32_localize_menu(HMENU menu)
          /* Append localized name, tab character, and Shortcut Key */
          if (meta_key_name && string_is_not_equal(meta_key_name, "nul"))
          {
-            int len1       = strlen(new_label);
-            int len2       = strlen(meta_key_name);
-            int buf_size   = len1 + len2 + 2;
-            new_label_text = (char*)malloc(buf_size);
+            size_t len1     = strlen(new_label);
+            size_t len2     = strlen(meta_key_name);
+            size_t buf_size = len1 + len2 + 2;
+            new_label_text  = (char*)malloc(buf_size);
 
             if (new_label_text)
             {

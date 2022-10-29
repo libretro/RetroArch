@@ -183,7 +183,7 @@ int system_property_get(const char *command,
    {
       if (fgets(buffer, sizeof(buffer), pipe))
       {
-         int curlen = strlen(buffer);
+         size_t curlen = strlen(buffer);
 
          memcpy(curpos, buffer, curlen);
 
