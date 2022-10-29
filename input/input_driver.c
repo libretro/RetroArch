@@ -3229,7 +3229,8 @@ bool input_keyboard_line_event(
    const char    * word = (char*) &character; 
    static unsigned composition = 0;		
 
-   if ( character & 0xFF000000 )  /* COMPSTR:0x08000000, RESULTSTR:0x80000000   END:0x01000000*/  
+   /* COMPSTR:0x08000000, RESULTSTR:0x80000000   END:0x01000000*/
+   if (character & 0xFF000000)
    {	
       size_t len = strlen((char*)&composition);
       if (     (len > 0)
@@ -3251,12 +3252,12 @@ bool input_keyboard_line_event(
    }
 
    /*(c == '\r' || c == '\n')	*/
-   if (character==0x0000000D || character==0x0000000A)	
+   if (character == 0x0000000D || character == 0x0000000A)	
    {
       state->cb(state->userdata, state->buffer);
       ret      = true;
    }  else
-   if ( character==0x00000008 || character==0x0000007f)    /* c == '\b' || c == '\x7f')  0x7f is ASCII for del */ 
+   if ( character == 0x00000008 || character == 0x0000007f)    /* c == '\b' || c == '\x7f')  0x7f is ASCII for del */ 
    {
       if (state->ptr)
       {
@@ -3746,10 +3747,10 @@ int16_t input_state_device(
 #ifdef HAVE_OVERLAY
                /* Check if overlay is active and button
                 * corresponding to 'id' has been pressed */
-               if ((port == 0) &&
-                   input_st->overlay_ptr &&
-                   input_st->overlay_ptr->alive &&
-                   BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, id))
+               if (  (port == 0)
+                   && input_st->overlay_ptr
+                   && input_st->overlay_ptr->alive
+                   && BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, id))
                {
 #ifdef HAVE_MENU
                   bool menu_driver_alive        = menu_state_get_ptr()->flags &
