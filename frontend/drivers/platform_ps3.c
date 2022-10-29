@@ -142,9 +142,9 @@ static void fill_derived_paths(void)
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
 		       "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
-    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_REMAPS],
+    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
 		       g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-		       "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_REMAPS]));
+		       "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
 		       "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
