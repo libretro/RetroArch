@@ -5664,7 +5664,6 @@ static const char *accessibility_lut_name(char key)
 void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
-   static bool deferred_wait_keys;
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    retro_keyboard_event_t
 	   *key_event            = &runloop_st->key_event;
@@ -5698,21 +5697,21 @@ void input_keyboard_event(bool down, unsigned code,
     * is active */
    if (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE)
    {
-      if (down &&
-          (code != RETROK_UNKNOWN) &&
-          (menu_input_dialog_get_display_kb() ||
-               !((code == RETROK_SPACE)     || /* RETRO_DEVICE_ID_JOYPAD_START */
-                 (code == RETROK_SLASH)     || /* RETRO_DEVICE_ID_JOYPAD_X */
-                 (code == RETROK_RSHIFT)    || /* RETRO_DEVICE_ID_JOYPAD_SELECT */
-                 (code == RETROK_RIGHT)     || /* RETRO_DEVICE_ID_JOYPAD_RIGHT */
-                 (code == RETROK_LEFT)      || /* RETRO_DEVICE_ID_JOYPAD_LEFT */
-                 (code == RETROK_DOWN)      || /* RETRO_DEVICE_ID_JOYPAD_DOWN */
-                 (code == RETROK_UP)        || /* RETRO_DEVICE_ID_JOYPAD_UP */
-                 (code == RETROK_PAGEUP)    || /* RETRO_DEVICE_ID_JOYPAD_L */
-                 (code == RETROK_PAGEDOWN)  || /* RETRO_DEVICE_ID_JOYPAD_R */
-                 (code == RETROK_BACKSPACE) || /* RETRO_DEVICE_ID_JOYPAD_B */
-                 (code == RETROK_RETURN)    || /* RETRO_DEVICE_ID_JOYPAD_A */
-                 (code == RETROK_DELETE)    || /* RETRO_DEVICE_ID_JOYPAD_Y */
+      if (   (down)
+          && (code != RETROK_UNKNOWN)
+          && (menu_input_dialog_get_display_kb() ||
+              !((code == RETROK_SPACE)    || /* RETRO_DEVICE_ID_JOYPAD_START */
+                (code == RETROK_SLASH)    || /* RETRO_DEVICE_ID_JOYPAD_X */
+                (code == RETROK_RSHIFT)   || /* RETRO_DEVICE_ID_JOYPAD_SELECT */
+                (code == RETROK_RIGHT)    || /* RETRO_DEVICE_ID_JOYPAD_RIGHT */
+                (code == RETROK_LEFT)     || /* RETRO_DEVICE_ID_JOYPAD_LEFT */
+                (code == RETROK_DOWN)     || /* RETRO_DEVICE_ID_JOYPAD_DOWN */
+                (code == RETROK_UP)       || /* RETRO_DEVICE_ID_JOYPAD_UP */
+                (code == RETROK_PAGEUP)   || /* RETRO_DEVICE_ID_JOYPAD_L */
+                (code == RETROK_PAGEDOWN) || /* RETRO_DEVICE_ID_JOYPAD_R */
+                (code == RETROK_BACKSPACE)|| /* RETRO_DEVICE_ID_JOYPAD_B */
+                (code == RETROK_RETURN)   || /* RETRO_DEVICE_ID_JOYPAD_A */
+                (code == RETROK_DELETE)   || /* RETRO_DEVICE_ID_JOYPAD_Y */
                  BIT512_GET(input_st->keyboard_mapping_bits, code))))
       {
          menu_ctx_environment_t menu_environ;
@@ -5740,7 +5739,7 @@ void input_keyboard_event(bool down, unsigned code,
 
          if (say_char)
          {
-            char c      = (char) character;
+            char c      = (char)character;
             *say_char   = c;
             say_char[1] = '\0';
 
@@ -5752,7 +5751,6 @@ void input_keyboard_event(bool down, unsigned code,
             else
             {
                const char *lut_name = accessibility_lut_name(c);
-
                if (lut_name)
                   accessibility_speak_priority(
                         accessibility_enable,
@@ -5771,15 +5769,15 @@ void input_keyboard_event(bool down, unsigned code,
 #endif
 #endif
 
-   if (deferred_wait_keys)
+   if (input_st->flags & INP_FLAG_DEFERRED_WAIT_KEYS)
    {
       if (down)
          return;
-
       input_st->keyboard_press_cb    = NULL;
       input_st->keyboard_press_data  = NULL;
-      input_st->flags               &= ~INP_FLAG_KB_MAPPING_BLOCKED;
-      deferred_wait_keys             = false;
+      input_st->flags               &= ~(INP_FLAG_KB_MAPPING_BLOCKED
+                                     |   INP_FLAG_DEFERRED_WAIT_KEYS
+                                       );
    }
    else if (input_st->keyboard_press_cb)
    {
@@ -5787,7 +5785,7 @@ void input_keyboard_event(bool down, unsigned code,
          return;
       if (input_st->keyboard_press_cb(input_st->keyboard_press_data, code))
          return;
-      deferred_wait_keys = true;
+      input_st->flags               |= INP_FLAG_DEFERRED_WAIT_KEYS;
    }
    else if (input_st->keyboard_line.enabled)
    {
@@ -5839,9 +5837,9 @@ void input_keyboard_event(bool down, unsigned code,
 
          if (!(MAPPER_GET_KEY(handle, code)) &&
                !(!hotkey_pressed && (
-                  hotkey.key     != RETROK_UNKNOWN ||
-                  hotkey.joykey  != NO_BTN ||
-                  hotkey.joyaxis != AXIS_NONE
+                     (hotkey.key     != RETROK_UNKNOWN)
+                  || (hotkey.joykey  != NO_BTN)
+                  || (hotkey.joyaxis != AXIS_NONE)
                )))
             return;
       }
