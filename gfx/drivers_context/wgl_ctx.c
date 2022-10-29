@@ -86,13 +86,18 @@
 
 static BOOL (APIENTRY *p_swap_interval)(int);
 
+enum wgl_flags
+{
+   WGL_FLAG_USE_HW_CTX         = (1 << 0),
+   WGL_FLAG_CORE_HW_CTX_ENABLE = (1 << 1),
+   WGL_FLAG_ADAPTIVE_VSYNC     = (1 << 2)
+};
+
 /* TODO/FIXME - static globals */
 static HGLRC win32_hrc;
 static HGLRC win32_hw_hrc;
 static HDC   win32_hdc;
-static bool  win32_use_hw_ctx             = false;
-static bool  win32_core_hw_context_enable = false;
-static bool  wgl_adaptive_vsync           = false;
+static uint8_t wgl_flags;
 #ifdef HAVE_EGL
 static egl_ctx_data_t win32_egl;
 #endif
@@ -303,7 +308,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
                   break;
                }
 
-               if (win32_use_hw_ctx)
+               if (wgl_flags & WGL_FLAG_USE_HW_CTX)
                {
                   win32_hw_hrc = pcreate_context(win32_hdc, context, attribs);
 
@@ -353,7 +358,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
          if (wgl_has_extension("WGL_EXT_swap_control_tear", extensions))
          {
             RARCH_LOG("[WGL]: Adaptive VSync supported.\n");
-            wgl_adaptive_vsync = true;
+            wgl_flags |= WGL_FLAG_ADAPTIVE_VSYNC;
          }
       }
    }
@@ -597,12 +602,13 @@ static void gfx_ctx_wgl_destroy(void *data)
    if (wgl)
       free(wgl);
 
-   wgl_adaptive_vsync           = false;
-   win32_core_hw_context_enable = false;
-   g_win32_flags               &= ~WIN32_CMN_FLAG_INITED;
    win32_major                  = 0;
    win32_minor                  = 0;
    p_swap_interval              = NULL;
+   wgl_flags                   &= ~(WGL_FLAG_CORE_HW_CTX_ENABLE
+                                |   WGL_FLAG_ADAPTIVE_VSYNC
+                                  );
+   g_win32_flags               &= ~WIN32_CMN_FLAG_INITED;
 }
 
 
@@ -744,7 +750,7 @@ static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
    {
       case GFX_CTX_OPENGL_API:
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
-         win32_use_hw_ctx = enable;
+         wgl_flags |= WGL_FLAG_USE_HW_CTX;
 
          if (win32_hdc)
          {
@@ -775,10 +781,10 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-         if (wgl_adaptive_vsync)
+         if (wgl_flags & WGL_FLAG_ADAPTIVE_VSYNC)
             BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
 
-         if (win32_core_hw_context_enable)
+         if (wgl_flags & WGL_FLAG_CORE_HW_CTX_ENABLE)
             BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
          if (string_is_equal(video_driver_get_ident(), "gl1")) { }
@@ -791,7 +797,7 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
          else
          {
 #ifdef HAVE_CG
-            if (!win32_core_hw_context_enable)
+            if (!(wgl_flags & WGL_FLAG_CORE_HW_CTX_ENABLE))
                BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
 #endif
 #ifdef HAVE_GLSL
@@ -825,10 +831,9 @@ static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
       case GFX_CTX_OPENGL_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
          if (BIT32_GET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
-            wgl_adaptive_vsync = true;
-
+            wgl_flags |= WGL_FLAG_ADAPTIVE_VSYNC;
          if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
-            win32_core_hw_context_enable = true;
+            wgl_flags |= WGL_FLAG_CORE_HW_CTX_ENABLE;
 #endif
          break;
       case GFX_CTX_NONE:

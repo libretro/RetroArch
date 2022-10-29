@@ -56,7 +56,7 @@
 /* TODO/FIXME - static globals */
 static egl_ctx_data_t uwp_egl;
 #ifdef HAVE_DYNAMIC
-static dylib_t          dll_handle = NULL; /* Handle to libGLESv2.dll */
+static dylib_t  dll_handle = NULL; /* Handle to libGLESv2.dll */
 #endif
 
 typedef struct gfx_ctx_cgl_data

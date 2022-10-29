@@ -33,10 +33,9 @@ typedef struct
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
-
    EGLNativeWindowType native_window;
-   bool resize;
    unsigned width, height;
+   bool resize;
 } vivante_ctx_data_t;
 
 static void gfx_ctx_vivante_destroy(void *data)
