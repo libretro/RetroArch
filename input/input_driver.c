@@ -3271,7 +3271,7 @@ bool input_keyboard_line_event(
            state->ptr -=len; 
            state->size-=len;
         }
-        word     = state->buffer;		//??
+        word     = state->buffer; /* ?? */
       }
    }  else
    if (character) 
