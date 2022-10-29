@@ -335,7 +335,7 @@ static bool task_overlay_resolve_targets(struct overlay *ol,
    {
       struct overlay_desc *desc = (struct overlay_desc*)&current->descs[i];
       const char *next          = desc->next_index_name;
-      ssize_t         next_idx  = (idx + 1) & size;
+      ssize_t         next_idx  = (idx + 1) % size;
 
       if (!string_is_empty(next))
       {
