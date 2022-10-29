@@ -663,6 +663,32 @@ bool gfx_thumbnail_update_path(
       thumbnail_path[0] = '\0';
       fill_pathname_join_special(thumbnail_path, tmp_buf,
             path_data->content_img, PATH_MAX_LENGTH * sizeof(char));
+      
+      /* Thumbnail fallback 1 - rom_name.png */
+      if ( !path_is_valid(thumbnail_path) )						//  :\thumbnails\db_name\Named_Snaps\rom_name.png
+      {	
+         char content_name[PATH_MAX_LENGTH]; 
+         char* cp = find_last_slash(path_data->content_path);
+         if( cp ) cp++; else cp = path_data->content_path;
+         strcpy(content_name,cp);
+         cp = strchr( content_name,'.'); 
+         if(cp) 	strcpy(cp,".png");
+         fill_pathname_join(thumbnail_path, dir_thumbnails,	system_name,  PATH_MAX_LENGTH);
+         fill_pathname_join(thumbnail_path, thumbnail_path,	type,		  PATH_MAX_LENGTH);
+         fill_pathname_join(thumbnail_path, thumbnail_path,	content_name, PATH_MAX_LENGTH);
+      }
+      /* Thumbnail fallback 2 - rom_path/rom_name.png */
+      if ( !path_is_valid(thumbnail_path) )						//  :\roms\db_name\rom_name.png
+      {	
+         char*  cp;
+         char content_name[PATH_MAX_LENGTH]; 
+         strcpy(content_name,path_data->content_path);
+         cp = strstr(content_name, ".zip#");
+         if( cp ) cp[4]=0;
+         cp = strrchr( content_name,'.'); 
+         strcpy(cp,".png");
+         strcpy(thumbnail_path,content_name);
+      }      
    }
    
    /* Final error check - is cached path empty? */

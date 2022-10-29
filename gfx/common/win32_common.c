@@ -1161,6 +1161,11 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
 }
 #endif
 
+/* IME for CJK (-limm32) */
+#ifdef _MSC_VER
+#pragma comment(lib, "Imm32")
+#endif
+
 #ifdef HAVE_DINPUT
 static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       UINT message, WPARAM wparam, LPARAM lparam)
@@ -1172,6 +1177,32 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
 
    switch (message)
    {
+      case WM_IME_ENDCOMPOSITION:
+         input_keyboard_event(true, 1,  0x80000000, 0, RETRO_DEVICE_KEYBOARD); 
+         break;
+      case WM_IME_COMPOSITION:
+      {  
+         wchar_t wstr[4]={0,};
+         char    utf8[8]={0,};
+         HIMC    hIMC = ImmGetContext(hwnd);
+         unsigned gcs = lparam & (GCS_COMPSTR|GCS_RESULTSTR);			/* GCS_COMPSTR:0x0008    GCS_RESULTSTR:0x0800 */
+         if( gcs )
+         {
+            int i;
+            int len1=ImmGetCompositionStringW(hIMC, gcs, wstr, 4);		/* len:2 - usally (byte) */
+            for( i=0; i<len1/2; i++)			                           /* len:4 - input ascii character while MBC composition  */
+            {
+                int len2=WideCharToMultiByte( CP_UTF8, 0, wstr+i, -1, utf8, 8, NULL, NULL );	
+                if (len2)
+                {
+                  utf8[3] = (gcs) | (gcs>>4);	                        /* COMPSTR:0x08000000, RESULTSTR:0x80000000 */
+                  input_keyboard_event(true, 1, *((int*)utf8), 0, RETRO_DEVICE_KEYBOARD); 
+                }
+            }
+         }
+         ImmReleaseContext(hwnd, hIMC);
+         return 0;                  /* block WM_CHAR */
+      } break;
       case WM_KEYUP:                /* Key released */
       case WM_SYSKEYUP:             /* Key released */
          keydown                  = false;
