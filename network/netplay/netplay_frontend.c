@@ -3690,7 +3690,7 @@ static void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       if (netplay->catch_up)
       {
          netplay->catch_up             = false;
-	 input_state_get_ptr()->flags &= ~INP_FLAG_NONBLOCKING;
+         input_state_get_ptr()->flags &= ~INP_FLAG_NONBLOCKING;
          driver_set_nonblock_state();
       }
       return;
@@ -4008,8 +4008,7 @@ static void remote_unpaused(netplay_t *netplay,
     for (i = 0; i < netplay->connections_size; i++)
     {
        struct netplay_connection *sc = &netplay->connections[i];
-       if (   (sc->flags & NETPLAY_CONN_FLAG_ACTIVE)
-           && (sc->flags & NETPLAY_CONN_FLAG_PAUSED))
+       if (sc->flags & (NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED))
        {
           netplay->remote_paused = true;
           break;
@@ -7134,8 +7133,8 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
    for (i = 0; i < netplay->connections_size; i++)
    {
       struct netplay_connection *connection = &netplay->connections[i];
-      if (     (connection->flags & NETPLAY_CONN_FLAG_ACTIVE) 
-            && (connection->flags & NETPLAY_CONN_FLAG_PAUSED))
+      if (connection->flags & 
+            (NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED))
          paused_ct++;
    }
 

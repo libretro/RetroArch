@@ -193,8 +193,8 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
    for (;;)
    {
       slock_lock(mailbox->lock);
-      while (  !(mailbox->flags & VK_MAILBOX_FLAG_DEAD) 
-		      && !(mailbox->flags & VK_MAILBOX_FLAG_REQUEST_ACQUIRE))
+      while (   !(mailbox->flags & VK_MAILBOX_FLAG_DEAD) 
+             && !(mailbox->flags & VK_MAILBOX_FLAG_REQUEST_ACQUIRE))
          scond_wait(mailbox->cond, mailbox->lock);
 
       if (mailbox->flags & VK_MAILBOX_FLAG_DEAD)
@@ -2905,7 +2905,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       vulkan_create_wait_fences(vk);
 
       if (     (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
-            && vk->mailbox.swapchain == VK_NULL_HANDLE)
+            && (vk->mailbox.swapchain == VK_NULL_HANDLE))
       {
          vulkan_emulated_mailbox_init(
                &vk->mailbox, vk->context.device, vk->swapchain);
@@ -2920,7 +2920,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          /* We are tearing down, and entering a state 
           * where we are supposed to have
           * acquired an image, so block until we have acquired. */
-         if (!(vk->context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
+         if (! (vk->context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
             if (vk->mailbox.swapchain != VK_NULL_HANDLE)
                res = vulkan_emulated_mailbox_acquire_next_image_blocking(
                      &vk->mailbox,
