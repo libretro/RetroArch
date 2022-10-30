@@ -78,12 +78,11 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
 #endif
 
 #ifdef SCE_LIBC_SIZE
-unsigned int sceLibcHeapSize = SCE_LIBC_SIZE;
+unsigned int sceLibcHeapSize            = SCE_LIBC_SIZE;
 #endif
 
-char eboot_path[512];
-char user_path[512];
-
+static char eboot_path[512]             = {0};
+static char user_path[512]              = {0};
 static enum frontend_fork psp_fork_mode = FRONTEND_FORK_NONE;
 
 static void frontend_psp_get_env_settings(int *argc, char *argv[],

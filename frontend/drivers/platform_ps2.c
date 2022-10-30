@@ -61,11 +61,11 @@
 #endif
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
-static char cwd[FILENAME_MAX];
-static char mountString[10];
-static char mountPoint[50];
-static int hdd_mounted     = 0;
-static int pfsModuleLoaded = 0;
+static char cwd[FILENAME_MAX]           = {0};
+static char mountString[10]             = {0};
+static char mountPoint[50]              = {0};
+static int hdd_mounted                  = 0;
+static int pfsModuleLoaded              = 0;
 
 static void create_path_names(void)
 {
