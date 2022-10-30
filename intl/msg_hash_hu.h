@@ -45,6 +45,10 @@ MSG_HASH(
    "Felfedezés"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   "Önálló magok"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Tartalom importálása"
    )
@@ -95,6 +99,10 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EJECT_DISC,
    "Lemez kiadása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Lemez kiadása a valódi CD/DVD meghajtóból."
    )
 #endif
 MSG_HASH(
@@ -282,6 +290,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Böngésszen egy kategorizált keresőfelületen összes tartalom között."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   "Önálló magok"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
+   "Azok a telepített magok jelennek meg itt, amelyek tartalom betöltése nélkül is tudnak működni."
+   )
 
 /* Main Menu > Online Updater */
 
@@ -324,6 +340,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Tartalom letöltő"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Ingyenes tartalom letöltése a kiválasztott maghoz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Mag rendszerfájl letöltő"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Kisegítő rendszerfájlok letöltése, amelyek szükségesek a mag helyes/optimális működéséhez."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
@@ -424,6 +452,10 @@ MSG_HASH(
    "Core címke"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   "Mag verzió"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
    "Rendszer neve"
    )
@@ -452,6 +484,22 @@ MSG_HASH(
    "Szükséges grafikus API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   "Nincs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   "Egyszerű (Mentés/Visszatöltés)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   "Soros formátum (Mentés/Visszatöltés, Visszatekerés)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   "Determinisztikus (Mentés/Visszatöltés, Visszatekerés, Túlfutás, Hálózati játék)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Hiányzik, kötelező:"
    )
@@ -474,6 +522,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "Megakadályozza a jelenleg telepített mag módosítását. Használható a nemkívánatos frissítések elkerülésére (pl. Arcade ROM készletek)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "Kihagyás az \"Önálló magok\" menüből"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "Ez a mag ne jelenjen meg az \"Önálló magok\" fülön/menüben. Csak \"Egyéni\" megjelenítési mód esetén érvényes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -529,6 +585,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "CPU jellemzők"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   "CPU architektúra"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
@@ -797,12 +857,20 @@ MSG_HASH(
    "Eredmények"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   "Kategória"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
    "Nyelv"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
    "Terület"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   "Pontszám"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
@@ -835,6 +903,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
    "Edge Magazine probléma"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "Megjelenés hónapja"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "Megjelenés éve"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -1118,8 +1194,20 @@ MSG_HASH(
    )
 
 /* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Teljesítmény"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "Hang"
+   )
 
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+   "A Steam-hez kapcsolódó beállítások."
+   )
 #endif
 
 /* Settings > Drivers */
@@ -1260,6 +1348,14 @@ MSG_HASH(
    "Megakadályozza, hogy a rendszer képernyővédője aktiválódjon."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   "Megjelenítés külön szálon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   "Javítja a teljesítményt a késleltetés és a megjelenítés folyamatosságának rovására. Csak akkor, ha egyébként nem érhető el a teljes sebesség."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Fekete képkocka beszúrása"
    )
@@ -1272,13 +1368,25 @@ MSG_HASH(
    "GPU képernyőkép"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "A képernyőkép tartalmazza a GPU shader effektet, ha elérhető."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Bilinear szűrő"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "Egy enyhe elmosást ad a képhez, hogy a pixelek élét elsimítsa. Nagyon kis hatással van a teljesítményre."
    )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
    "Kép Interpoláció"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "A belső IPU által használt interpolációs eljárás. CPU alapú videoszűrőkhöz a kettős köbös vagy bilineáris ajánlott. Ennek a beállításnak nincs hatása a teljesítményre."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
@@ -1534,6 +1642,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Képarány"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   "A képarány beállítása."
+   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -1594,8 +1706,32 @@ MSG_HASH(
    "Keverő némítása"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
+   "Hangerőnövelés (dB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+   "Hangerő (dB). A normál, erősítés nélküli hangerő 0 dB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
+   "Keverő hangereje (dB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+   "A globális hangkeverő hangereje (dB). A normál, erősítés nélküli hangerő 0 dB."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+   "DSP (digitális jelfeldolgozó) hangbővítmény, amely még a meghajtóhoz továbbítás előtt dolgozza fel a hangot."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
    "DSP Bővítmény törlése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   "Az aktív DSP hangbővítmények eltávolítása."
    )
 
 /* Settings > Audio > Output */
@@ -1605,18 +1741,42 @@ MSG_HASH(
    "Hang"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   "Hangkimenet engedélyezése."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    "Eszköz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+   "A meghajtó által használt alapértelmezett hangeszköz felülbírálata. Meghajtófüggő."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   "Hangkésleltetés (ms)"
    )
 
 /* Settings > Audio > Resampler */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
+   "Újramintavételező minősége"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
+   "Kisebb értékek esetén a késleltetés/teljesítmény jobb a minőség rovására, nagyobb értékeknél a hangminőség jobb a teljesítmény/késleltetés rovására."
+   )
 
 /* Settings > Audio > Synchronization */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    "Szinkronizálás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   "Hangidőzítés szinkronizálása. Ajánlott bekapcsolni."
    )
 
 /* Settings > Audio > MIDI */
@@ -1640,6 +1800,10 @@ MSG_HASH(
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
+   "Lejátszás"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    "Eltávolítás"
