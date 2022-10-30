@@ -114,6 +114,16 @@ typedef struct ALIGN(16)
 } vulkan_hdr_uniform_t;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
+enum vulkan_context_flags
+{
+   VK_CTX_FLAG_INVALID_SWAPCHAIN            = (1 << 0),
+   VK_CTX_FLAG_HDR_ENABLE                   = (1 << 1),
+   /* Used by screenshot to get blits with correct colorspace. */
+   VK_CTX_FLAG_SWAPCHAIN_IS_SRGB            = (1 << 2),
+   VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK = (1 << 3),
+   VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN       = (1 << 4)
+};
+
 typedef struct vulkan_context
 {
    slock_t *queue_lock;
@@ -152,17 +162,9 @@ typedef struct vulkan_context
    unsigned swap_interval;
    unsigned num_recycled_acquire_semaphores;
 
-   bool swapchain_fences_signalled[VULKAN_MAX_SWAPCHAIN_IMAGES];
-   bool invalid_swapchain;
-   /* Used by screenshot to get blits with correct colorspace. */
-   bool swapchain_is_srgb;
-   bool swap_interval_emulation_lock;
-   bool has_acquired_swapchain;
-   
-#ifdef VULKAN_HDR_SWAPCHAIN
-   bool hdr_enable;
-#endif /* VULKAN_HDR_SWAPCHAIN */
+   uint8_t flags;
 
+   bool swapchain_fences_signalled[VULKAN_MAX_SWAPCHAIN_IMAGES];
 } vulkan_context_t;
 
 enum vulkan_emulated_mailbox_flags

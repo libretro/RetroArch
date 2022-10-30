@@ -178,9 +178,9 @@ static void cocoa_vk_gfx_ctx_swap_buffers(void *data)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
-   if (cocoa_ctx->vk.context.has_acquired_swapchain)
+   if (cocoa_ctx->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
-      cocoa_ctx->vk.context.has_acquired_swapchain = false;
+      cocoa_ctx->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
       if (cocoa_ctx->vk.swapchain == VK_NULL_HANDLE)
       {
          retro_sleep(10);
@@ -320,7 +320,7 @@ static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
       return false;
    }
 
-   cocoa_ctx->vk.context.invalid_swapchain = true;
+   cocoa_ctx->vk.context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
    if (cocoa_ctx->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       vulkan_acquire_next_image(&cocoa_ctx->vk);
 

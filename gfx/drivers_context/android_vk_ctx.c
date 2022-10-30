@@ -145,7 +145,7 @@ static bool android_gfx_ctx_vk_set_resize(void *data,
 
    if (and->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       vulkan_acquire_next_image(&and->vk);
-   and->vk.context.invalid_swapchain = true;
+   and->vk.context.flags            |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
    and->vk.flags                    &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
    return true;
@@ -254,9 +254,9 @@ static void android_gfx_ctx_vk_swap_buffers(void *data)
 {
    android_ctx_data_vk_t *and  = (android_ctx_data_vk_t*)data;
 
-   if (and->vk.context.has_acquired_swapchain)
+   if (and->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
-      and->vk.context.has_acquired_swapchain = false;
+      and->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
       if (and->vk.swapchain == VK_NULL_HANDLE)
       {
          retro_sleep(10);

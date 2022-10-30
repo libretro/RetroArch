@@ -95,11 +95,11 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 
    if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
    {
-      wl->vk.context.invalid_swapchain = true;
+      wl->vk.context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
       if (wl->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
          vulkan_acquire_next_image(&wl->vk);
 
-      wl->vk.flags &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+      wl->vk.flags         &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
       wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
@@ -273,9 +273,9 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   if (wl->vk.context.has_acquired_swapchain)
+   if (wl->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
-      wl->vk.context.has_acquired_swapchain = false;
+      wl->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
       if (wl->vk.swapchain == VK_NULL_HANDLE)
       {
          retro_sleep(10);

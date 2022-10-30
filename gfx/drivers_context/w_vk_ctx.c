@@ -125,9 +125,9 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
 
 static void gfx_ctx_w_vk_swap_buffers(void *data)
 {
-   if (win32_vk.context.has_acquired_swapchain)
+   if (win32_vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
-      win32_vk.context.has_acquired_swapchain = false;
+      win32_vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
       /* We're still waiting for a proper swapchain, so just fake it. */
       if (win32_vk.swapchain == VK_NULL_HANDLE)
          retro_sleep(10);
@@ -144,7 +144,7 @@ static bool gfx_ctx_w_vk_set_resize(void *data,
    {
       if (win32_vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
          vulkan_acquire_next_image(&win32_vk);
-      win32_vk.context.invalid_swapchain = true;
+      win32_vk.context.flags            |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
       win32_vk.flags                    &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
       return true;

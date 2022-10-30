@@ -929,7 +929,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   if (vk->context->hdr_enable)
+   if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
    {
       struct video_shader* shader_preset = vulkan_filter_chain_get_preset(
       vk->filter_chain); 
@@ -997,7 +997,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   if (vk->context->hdr_enable)
+   if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
    {
       struct video_shader* shader_preset = vulkan_filter_chain_get_preset(vk->filter_chain); 
       VkFormat rt_format                 = (shader_preset && shader_preset->passes) ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_UNDEFINED;
@@ -1656,7 +1656,7 @@ static void vulkan_check_swapchain(vk_t *vk)
                &info, &vk->swapchain[i].cmd);
       }
    }
-   vk->context->invalid_swapchain   = false;
+   vk->context->flags              &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
 
    filter_info.viewport             = vk->vk_vp;
    filter_info.format               = vk->context->swapchain_format;
@@ -1691,7 +1691,7 @@ static void vulkan_set_nonblock_state(void *data, bool state,
 
    /* Changing vsync might require recreating the swapchain,
     * which means new VkImages to render into. */
-   if (vk->context->invalid_swapchain)
+   if (vk->context->flags & VK_CTX_FLAG_INVALID_SWAPCHAIN)
       vulkan_check_swapchain(vk);
 }
 
@@ -2019,15 +2019,16 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
    submit_info.commandBufferCount      = 1;
    submit_info.pCommandBuffers         = &vk->cmd;
    if (
-            vk->context->has_acquired_swapchain
-         && vk->context->swapchain_semaphores[swapchain_index] != VK_NULL_HANDLE)
+            (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+         && (vk->context->swapchain_semaphores[swapchain_index] !=
+            VK_NULL_HANDLE))
    {
       submit_info.signalSemaphoreCount = 1;
       submit_info.pSignalSemaphores    = &vk->context->swapchain_semaphores[swapchain_index];
    }
 
-   if (     vk->context->has_acquired_swapchain
-         && vk->context->swapchain_acquire_semaphore != VK_NULL_HANDLE)
+   if (     (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+         && (vk->context->swapchain_acquire_semaphore != VK_NULL_HANDLE))
    {
       static const VkPipelineStageFlags wait_stage        =
          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -2090,8 +2091,9 @@ static bool vulkan_frame(void *data, const void *frame,
    bool overlay_behind_menu                      = video_info->overlay_behind_menu;
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   bool use_main_buffer                          = vk->context->hdr_enable &&
-      (!vk->filter_chain || !vulkan_filter_chain_emits_hdr10(vk->filter_chain));
+   bool use_main_buffer                          = (vk->context->flags &
+         VK_CTX_FLAG_HDR_ENABLE)
+      && (!vk->filter_chain || !vulkan_filter_chain_emits_hdr10(vk->filter_chain));
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Bookkeeping on start of frame. */
@@ -2335,7 +2337,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
    /* Render to backbuffer. */
    if (     (backbuffer->image != VK_NULL_HANDLE)
-         && vk->context->has_acquired_swapchain)
+         && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
    {
       rp_info.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
       rp_info.pNext                    = NULL;
@@ -2579,8 +2581,8 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_filter_chain_end_frame((vulkan_filter_chain_t*)vk->filter_chain, vk->cmd);
 
    if ( 
-         backbuffer->image != VK_NULL_HANDLE
-         && vk->context->has_acquired_swapchain
+            (backbuffer->image != VK_NULL_HANDLE)
+         && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
       )
    {
       if (vk->readback.pending || vk->readback.streamed)
@@ -2679,8 +2681,8 @@ static bool vulkan_frame(void *data, const void *frame,
       vk->hw.valid_semaphore         = false;
 
       /* We allocated space for this. */
-      if (vk->context->has_acquired_swapchain &&
-            vk->context->swapchain_acquire_semaphore != VK_NULL_HANDLE)
+      if (    (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+           && (vk->context->swapchain_acquire_semaphore != VK_NULL_HANDLE))
       {
          assert(!vk->context->swapchain_wait_semaphores[frame_index]);
          vk->context->swapchain_wait_semaphores[frame_index] =
@@ -2692,8 +2694,8 @@ static bool vulkan_frame(void *data, const void *frame,
          submit_info.waitSemaphoreCount++;
       }
    }
-   else if (vk->context->has_acquired_swapchain &&
-         vk->context->swapchain_acquire_semaphore != VK_NULL_HANDLE)
+   else if ((vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+         && (vk->context->swapchain_acquire_semaphore != VK_NULL_HANDLE))
    {
       static const VkPipelineStageFlags wait_stage =
          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -2716,9 +2718,9 @@ static bool vulkan_frame(void *data, const void *frame,
 
    submit_info.signalSemaphoreCount  = 0;
 
-   if (vk->context->swapchain_semaphores[swapchain_index] 
-         != VK_NULL_HANDLE &&
-         vk->context->has_acquired_swapchain)
+   if ((vk->context->swapchain_semaphores[swapchain_index] 
+         != VK_NULL_HANDLE)
+         && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
       signal_semaphores[submit_info.signalSemaphoreCount++] = vk->context->swapchain_semaphores[swapchain_index];
 
    if (vk->hw.signal_semaphore != VK_NULL_HANDLE)
@@ -2741,7 +2743,7 @@ static bool vulkan_frame(void *data, const void *frame,
    if (vk->ctx_driver->swap_buffers)
       vk->ctx_driver->swap_buffers(vk->ctx_data);
 
-   if (!vk->context->swap_interval_emulation_lock)
+   if (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK))
    {
       if (vk->ctx_driver->update_window_title)
          vk->ctx_driver->update_window_title(vk->ctx_data);
@@ -2751,16 +2753,17 @@ static bool vulkan_frame(void *data, const void *frame,
     * i.e. right after swap buffers. */
 #ifdef VULKAN_HDR_SWAPCHAIN
    bool video_hdr_enable          = video_info->hdr_enable;
-   if (vk->should_resize || (vk->context->hdr_enable != video_hdr_enable))
+   if (      vk->should_resize 
+         || (((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) > 0) 
+         != video_hdr_enable))
 #else
    if (vk->should_resize)
 #endif /* VULKAN_HDR_SWAPCHAIN */
    {
 #ifdef VULKAN_HDR_SWAPCHAIN
-      vk->context->hdr_enable           = video_hdr_enable;
-
-      if (vk->context->hdr_enable)
+      if (video_hdr_enable)
       {
+         vk->context->flags |= VK_CTX_FLAG_HDR_ENABLE;
 #ifdef HAVE_THREADS
          slock_lock(vk->context->queue_lock);
 #endif
@@ -2768,9 +2771,11 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_THREADS
          slock_unlock(vk->context->queue_lock);
 #endif
-
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->main_buffer);
       }
+      else
+         vk->context->flags &= ~VK_CTX_FLAG_HDR_ENABLE;
+
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
       gfx_ctx_mode_t mode;
@@ -2782,9 +2787,9 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (!(vk->hdr.support = vk->context->swapchain_colour_space == VK_COLOR_SPACE_HDR10_ST2084_EXT))
-         vk->context->hdr_enable                = false;
+         vk->context->flags &= ~VK_CTX_FLAG_HDR_ENABLE;
 
-      if (vk->context->hdr_enable)
+      if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
       {
          VkMemoryRequirements mem_reqs;
          VkImageCreateInfo image_info;
@@ -2869,14 +2874,14 @@ static bool vulkan_frame(void *data, const void *frame,
       vk->should_resize = false;
    }
 
-   if (vk->context->invalid_swapchain)
+   if (vk->context->flags & VK_CTX_FLAG_INVALID_SWAPCHAIN)
       vulkan_check_swapchain(vk); 
 
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
-            backbuffer->image != VK_NULL_HANDLE 
-         && vk->context->has_acquired_swapchain
+            (backbuffer->image != VK_NULL_HANDLE)
+         && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
          && black_frame_insertion
          && !input_driver_nonblock_state
          && !runloop_is_slowmotion
@@ -2896,21 +2901,21 @@ static bool vulkan_frame(void *data, const void *frame,
 
    /* Vulkan doesn't directly support swap_interval > 1, 
     * so we fake it by duping out more frames. */
-   if (      vk->context->swap_interval > 1
-         && !vk->context->swap_interval_emulation_lock)
+   if (      (vk->context->swap_interval > 1)
+         && (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)))
    {
       unsigned i;
-      vk->context->swap_interval_emulation_lock = true;
+      vk->context->flags |= VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
       for (i = 1; i < vk->context->swap_interval; i++)
       {
          if (!vulkan_frame(vk, NULL, 0, 0, frame_count, 0, msg,
                   video_info))
          {
-            vk->context->swap_interval_emulation_lock = false;
+            vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
             return false;
          }
       }
-      vk->context->swap_interval_emulation_lock = false;
+      vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
    }
 
    return true;

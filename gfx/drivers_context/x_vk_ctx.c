@@ -149,9 +149,9 @@ static void gfx_ctx_x_vk_swap_buffers(void *data)
 {
    gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
 
-   if (x->vk.context.has_acquired_swapchain)
+   if (x->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
-      x->vk.context.has_acquired_swapchain = false;
+      x->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
       if (x->vk.swapchain == VK_NULL_HANDLE)
       {
          retro_sleep(10);
@@ -200,8 +200,8 @@ static bool gfx_ctx_x_vk_set_resize(void *data,
 
    if (x->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       vulkan_acquire_next_image(&x->vk);
-   x->vk.context.invalid_swapchain = true;
-   x->vk.flags &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+   x->vk.context.flags            |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   x->vk.flags                    &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    return true;
 }
 
