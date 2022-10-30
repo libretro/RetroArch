@@ -2459,6 +2459,11 @@ bool command_event(enum event_command cmd, void *data)
          }
 #endif
          break;
+      case CMD_EVENT_OVERLAY_SET_EIGHTWAY_DIAGONAL_SENSITIVITY:
+#ifdef HAVE_OVERLAY
+         input_overlay_set_eightway_diagonal_sensitivity();
+#endif
+         break;
       case CMD_EVENT_AUDIO_REINIT:
          driver_uninit(DRIVER_AUDIO_MASK);
          drivers_init(settings, DRIVER_AUDIO_MASK, verbosity_is_enabled());

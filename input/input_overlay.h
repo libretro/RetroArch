@@ -32,6 +32,8 @@
 
 #define MAX_VISIBILITY 32
 
+#define CUSTOM_BINDS_U32_COUNT ((RARCH_CUSTOM_BIND_LIST_END - 1) / 32 + 1)
+
 RETRO_BEGIN_DECLS
 
 /* Overlay driver acts as a medium between input drivers
@@ -68,6 +70,8 @@ enum overlay_type
    OVERLAY_TYPE_BUTTONS = 0,
    OVERLAY_TYPE_ANALOG_LEFT,
    OVERLAY_TYPE_ANALOG_RIGHT,
+   OVERLAY_TYPE_DPAD_AREA,
+   OVERLAY_TYPE_ABXY_AREA,
    OVERLAY_TYPE_KEYBOARD
 };
 
@@ -116,6 +120,23 @@ enum overlay_show_input_type
    OVERLAY_SHOW_INPUT_LAST
 };
 
+typedef struct overlay_eightway_config
+{
+   input_bits_t up;
+   input_bits_t right;
+   input_bits_t down;
+   input_bits_t left;
+
+   input_bits_t up_right;
+   input_bits_t up_left;
+   input_bits_t down_right;
+   input_bits_t down_left;
+
+   /* diagonal sensitivity */
+   float* slope_high;
+   float* slope_low;
+} overlay_eightway_config_t;
+
 struct overlay_desc
 {
    struct texture_image image;
@@ -151,6 +172,8 @@ struct overlay_desc
 
    /* This is a bit mask of all input binds to set with this overlay control */
    input_bits_t button_mask;
+
+   overlay_eightway_config_t *eightway_config;
 
    char next_index_name[64];
 };
@@ -290,6 +313,7 @@ typedef struct
    bool overlay_enable;
    bool hide_in_menu;
    bool hide_when_gamepad_connected;
+   uint16_t overlay_types;
 } overlay_task_data_t;
 
 void input_overlay_free_overlay(struct overlay *overlay);
@@ -386,6 +410,13 @@ void input_overlay_set_alpha_mod(
 enum overlay_visibility input_overlay_get_visibility(
       enum overlay_visibility *visibility,
       int overlay_idx);
+
+/**
+ * input_overlay_set_eightway_diagonal_sensitivity:
+ *
+ * Gets the slope limits defining each eightway type's diagonal zones.
+ */
+void input_overlay_set_eightway_diagonal_sensitivity();
 
 /**
  * input_overlay_free:

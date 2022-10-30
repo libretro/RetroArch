@@ -1703,6 +1703,14 @@ MSG_HASH(
    "input_overlay_auto_scale"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "input_overlay_dpad_diagonal_sensitivity"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "input_overlay_abxy_diagonal_sensitivity"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
    "input_poll_type_behavior"
    )

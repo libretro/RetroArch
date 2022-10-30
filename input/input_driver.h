@@ -427,6 +427,8 @@ typedef struct
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
    enum overlay_visibility *overlay_visibility;
+   float overlay_eightway_dpad_slopes[2];
+   float overlay_eightway_abxy_slopes[2];
 #endif
    uint16_t flags;
 #ifdef HAVE_NETWORKGAMEPAD

@@ -299,8 +299,12 @@ typedef struct settings
       unsigned camera_width;
       unsigned camera_height;
 
+#ifdef HAVE_OVERLAY
       unsigned input_overlay_show_inputs;
       unsigned input_overlay_show_inputs_port;
+      unsigned input_overlay_dpad_diagonal_sensitivity;
+      unsigned input_overlay_abxy_diagonal_sensitivity;
+#endif
 
       unsigned run_ahead_frames;
 
