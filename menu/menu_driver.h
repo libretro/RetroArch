@@ -548,6 +548,10 @@ struct menu_state
    char input_dialog_kb_label[256];
 #endif
    unsigned char kb_key_state[RETROK_LAST];
+
+#ifdef HAVE_OVERLAY
+   uint16_t overlay_types;
+#endif
 };
 
 typedef struct menu_content_ctx_defer_info

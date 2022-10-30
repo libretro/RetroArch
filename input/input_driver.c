@@ -18,6 +18,7 @@
  *  with RetroArch. If not, see <http://www.gnu.org/licenses/>.
  **/
 
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
@@ -1220,6 +1221,10 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
          }
          break;
 
+      case OVERLAY_TYPE_DPAD_AREA:
+      case OVERLAY_TYPE_ABXY_AREA:
+         return desc->updated;
+
       case OVERLAY_TYPE_KEYBOARD:
          if (ol_state ?
                OVERLAY_GET_KEY(ol_state, desc->retro_key_idx) :
@@ -1255,6 +1260,120 @@ static bool input_overlay_add_inputs(input_overlay_t *ol,
    }
 
    return button_pressed;
+}
+
+static void input_overlay_get_eightway_slope_limits(
+      const unsigned diagonal_sensitivity,
+      float* low_slope, float* high_slope)
+{
+   /* Sensitivity setting is the relative size of diagonal zones to
+    * cardinal zones. Convert to fraction of 45 deg span (max diagonal).
+    */
+   float f = 2.0f * diagonal_sensitivity
+         / (100.0f + diagonal_sensitivity);
+
+   float high_angle  /* 67.5 deg max */
+         = (f * (0.375*M_PI) + (1.0f - f) * (0.25*M_PI));
+   float low_angle   /* 22.5 deg min */
+         = (f * (0.125*M_PI) + (1.0f - f) * (0.25*M_PI));
+
+   *high_slope = tan(high_angle);
+   *low_slope  = tan(low_angle);
+}
+
+/**
+ * input_overlay_set_eightway_diagonal_sensitivity:
+ *
+ * Gets the slope limits defining each eightway type's diagonal zones.
+ */
+void input_overlay_set_eightway_diagonal_sensitivity()
+{
+   settings_t           *settings = config_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+
+   input_overlay_get_eightway_slope_limits(
+         settings->uints.input_overlay_dpad_diagonal_sensitivity,
+         &input_st->overlay_eightway_dpad_slopes[0],
+         &input_st->overlay_eightway_dpad_slopes[1]);
+
+   input_overlay_get_eightway_slope_limits(
+         settings->uints.input_overlay_abxy_diagonal_sensitivity,
+         &input_st->overlay_eightway_abxy_slopes[0],
+         &input_st->overlay_eightway_abxy_slopes[1]);
+}
+
+/**
+ * input_overlay_get_eightway_state:
+ * @desc : overlay descriptor handle for an eightway area
+ * @out : current input state to be OR'd with eightway state
+ * @x_dist : X offset from eightway area center
+ * @y_dist : Y offset from eightway area center
+ *
+ * Gets the eightway area's current input state based on (@x_dist, @y_dist).
+ **/
+static INLINE void input_overlay_get_eightway_state(
+      const struct overlay_desc *desc, input_bits_t *out,
+      float x_dist, float y_dist)
+{
+   overlay_eightway_config_t *eightway = desc->eightway_config;
+   uint32_t *data;
+   float abs_slope;
+
+   x_dist /= desc->range_x;
+   y_dist /= desc->range_y;
+
+   if (x_dist == 0.0f)
+      x_dist = 0.0001f;
+   abs_slope = fabs(y_dist / x_dist);
+
+   if (x_dist > 0.0f)
+   {
+      if (y_dist < 0.0f)
+      {
+         /* Q1 */
+         if (abs_slope > *eightway->slope_high)
+            data = eightway->up.data;
+         else if (abs_slope < *eightway->slope_low)
+            data = eightway->right.data;
+         else
+            data = eightway->up_right.data;
+      }
+      else
+      {
+         /* Q4 */
+         if (abs_slope > *eightway->slope_high)
+            data = eightway->down.data;
+         else if (abs_slope < *eightway->slope_low)
+            data = eightway->right.data;
+         else
+            data = eightway->down_right.data;
+      }
+   }
+   else
+   {
+      if (y_dist < 0.0f)
+      {
+         /* Q2 */
+         if (abs_slope > *eightway->slope_high)
+            data = eightway->up.data;
+         else if (abs_slope < *eightway->slope_low)
+            data = eightway->left.data;
+         else
+            data = eightway->up_left.data;
+      }
+      else
+      {
+         /* Q3 */
+         if (abs_slope > *eightway->slope_high)
+            data = eightway->down.data;
+         else if (abs_slope < *eightway->slope_low)
+            data = eightway->left.data;
+         else
+            data = eightway->down_left.data;
+      }
+   }
+
+   bits_or_bits(out->data, data, CUSTOM_BINDS_U32_COUNT);
 }
 
 /**
@@ -1346,6 +1465,11 @@ void input_overlay_poll(
          case OVERLAY_TYPE_KEYBOARD:
             if (desc->retro_key_idx < RETROK_LAST)
                OVERLAY_SET_KEY(out, desc->retro_key_idx);
+            break;
+         case OVERLAY_TYPE_DPAD_AREA:
+         case OVERLAY_TYPE_ABXY_AREA:
+            input_overlay_get_eightway_state(
+                  desc, &out->buttons, x_dist, y_dist);
             break;
          case OVERLAY_TYPE_ANALOG_RIGHT:
             base = 2;
@@ -1761,7 +1885,12 @@ void input_overlay_free_overlay(struct overlay *overlay)
       return;
 
    for (i = 0; i < overlay->size; i++)
+   {
       image_texture_free(&overlay->descs[i].image);
+      if (overlay->descs[i].eightway_config)
+         free(overlay->descs[i].eightway_config);
+      overlay->descs[i].eightway_config = NULL;
+   }
 
    if (overlay->load_images)
       free(overlay->load_images);
@@ -3365,9 +3494,16 @@ static void input_overlay_loaded(retro_task_t *task,
    if (data->overlay_enable)
    {
 #ifdef HAVE_MENU
+      struct menu_state *menu_st = menu_state_get_ptr();
+      bool refresh               = false;
+
+      /* Update menu entries */
+      menu_st->overlay_types     = data->overlay_types;
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+
       /* We can't display when the menu is up */
       if (      data->hide_in_menu
-            && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+            && (menu_st->flags & MENU_ST_FLAG_ALIVE))
          goto abort_load;
 #endif
 
@@ -3433,6 +3569,8 @@ static void input_overlay_loaded(retro_task_t *task,
             input_overlay_enable,
             input_st->overlay_ptr);
 
+   input_overlay_set_eightway_diagonal_sensitivity();
+
    return;
 
 abort_load:
@@ -3478,14 +3616,6 @@ void input_overlay_init(void)
 #endif
 
    input_overlay_deinit();
-
-#ifdef HAVE_MENU
-   /* Cancel load if 'hide_in_menu' is enabled and
-    * menu is currently active */
-   if (overlay_hide_in_menu)
-      load_enabled = load_enabled && !(menu_state_get_ptr()->flags &
-            MENU_ST_FLAG_ALIVE);
-#endif
 
    /* Cancel load if 'hide_when_gamepad_connected' is
     * enabled and a gamepad is currently connected */

@@ -136,6 +136,8 @@ enum event_command
    CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
    /* Sets current alpha modulation for overlay. */
    CMD_EVENT_OVERLAY_SET_ALPHA_MOD,
+   /* Sets diagonal sensitivities of overlay eightway areas. */
+   CMD_EVENT_OVERLAY_SET_EIGHTWAY_DIAGONAL_SENSITIVITY,
    /* Cycle to next overlay. */
    CMD_EVENT_OVERLAY_NEXT,
    /* Deinitializes overlay. */

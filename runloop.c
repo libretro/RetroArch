@@ -6616,7 +6616,6 @@ MENU_ST_FLAG_IS_BINDING;
       unsigned video_driver_width                    = video_st->width;
       unsigned video_driver_height                   = video_st->height;
       bool check_next_rotation                       = true;
-      bool input_overlay_hide_in_menu                = settings->bools.input_overlay_hide_in_menu;
       bool input_overlay_hide_when_gamepad_connected = settings->bools.input_overlay_hide_when_gamepad_connected;
       bool input_overlay_auto_rotate                 = settings->bools.input_overlay_auto_rotate;
 
@@ -6646,8 +6645,7 @@ MENU_ST_FLAG_IS_BINDING;
          prev_overlay_restore = true;
       else if (prev_overlay_restore)
       {
-         if (!input_overlay_hide_in_menu)
-            input_overlay_init();
+         input_overlay_init();
          prev_overlay_restore = false;
       }
 

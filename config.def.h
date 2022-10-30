@@ -889,6 +889,9 @@ static const unsigned input_backtouch_toggle       = false;
 
 #define DEFAULT_OVERLAY_SHOW_INPUTS_PORT 0
 
+#define DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY 80
+#define DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY 50
+
 #if defined(ANDROID) || defined(_WIN32) || defined(HAVE_STEAM)
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS true
 #else

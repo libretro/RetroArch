@@ -56,6 +56,8 @@ struct overlay_loader
    bool overlay_enable;
    bool overlay_hide_in_menu;
    bool overlay_hide_when_gamepad_connected;
+
+   uint16_t overlay_types;
 };
 
 static void task_overlay_image_done(struct overlay *overlay)
@@ -101,6 +103,124 @@ static void task_overlay_load_desc_image(
    }
 
    input_overlay->pos ++;
+}
+
+static void task_overlay_redefine_eightway_direction(
+      char *str, input_bits_t *data)
+{
+   char *tok, *save;
+   unsigned bit;
+
+   BIT256_CLEAR_ALL(*data);
+
+   for (tok = strtok_r(str, "|", &save); tok;
+         tok = strtok_r(NULL, "|", &save))
+   {
+      bit = input_config_translate_str_to_bind_id(tok);
+      if (bit < RARCH_CUSTOM_BIND_LIST_END)
+         BIT256_SET(*data, bit);
+   }
+}
+
+static void task_overlay_desc_populate_eightway_config(
+      overlay_loader_t *loader,
+      struct overlay_desc *desc,
+      unsigned ol_idx, unsigned desc_idx)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   overlay_eightway_config_t *eightway;
+   char conf_key[64];
+   char *str;
+
+   desc->eightway_config = (overlay_eightway_config_t *)
+         calloc(1, sizeof(overlay_eightway_config_t));
+   eightway              = desc->eightway_config;
+
+   /* Populate default vals for the eightway type.
+    */
+   switch (desc->type)
+   {
+      case OVERLAY_TYPE_DPAD_AREA:
+         BIT256_SET(eightway->up,    RETRO_DEVICE_ID_JOYPAD_UP);
+         BIT256_SET(eightway->down,  RETRO_DEVICE_ID_JOYPAD_DOWN);
+         BIT256_SET(eightway->left,  RETRO_DEVICE_ID_JOYPAD_LEFT);
+         BIT256_SET(eightway->right, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+
+         eightway->slope_low  = &input_st->overlay_eightway_dpad_slopes[0];
+         eightway->slope_high = &input_st->overlay_eightway_dpad_slopes[1];
+         break;
+
+      case OVERLAY_TYPE_ABXY_AREA:
+         BIT256_SET(eightway->up,    RETRO_DEVICE_ID_JOYPAD_X);
+         BIT256_SET(eightway->down,  RETRO_DEVICE_ID_JOYPAD_B);
+         BIT256_SET(eightway->left,  RETRO_DEVICE_ID_JOYPAD_Y);
+         BIT256_SET(eightway->right, RETRO_DEVICE_ID_JOYPAD_A);
+
+         eightway->slope_low  = &input_st->overlay_eightway_abxy_slopes[0];
+         eightway->slope_high = &input_st->overlay_eightway_abxy_slopes[1];
+         break;
+
+      default:
+         free(eightway);
+         desc->eightway_config = NULL;
+         return;
+   }
+
+   /* Redefine eightway vals if specified in conf
+    */
+   snprintf(conf_key, sizeof(conf_key),
+         "overlay%u_desc%u_up", ol_idx, desc_idx);
+   if (config_get_string(loader->conf, conf_key, &str))
+   {
+      task_overlay_redefine_eightway_direction(str, &eightway->up);
+      free(str);
+   }
+
+   snprintf(conf_key, sizeof(conf_key),
+         "overlay%u_desc%u_down", ol_idx, desc_idx);
+   if (config_get_string(loader->conf, conf_key, &str))
+   {
+      task_overlay_redefine_eightway_direction(str, &eightway->down);
+      free(str);
+   }
+
+   snprintf(conf_key, sizeof(conf_key),
+         "overlay%u_desc%u_right", ol_idx, desc_idx);
+   if (config_get_string(loader->conf, conf_key, &str))
+   {
+      task_overlay_redefine_eightway_direction(str, &eightway->right);
+      free(str);
+   }
+
+   snprintf(conf_key, sizeof(conf_key),
+         "overlay%u_desc%u_left", ol_idx, desc_idx);
+   if (config_get_string(loader->conf, conf_key, &str))
+   {
+      task_overlay_redefine_eightway_direction(str, &eightway->left);
+      free(str);
+   }
+
+   /* Prepopulate diagonals.
+    */
+   bits_or_bits(eightway->up_right.data, eightway->up.data,
+         CUSTOM_BINDS_U32_COUNT);
+   bits_or_bits(eightway->up_right.data, eightway->right.data,
+         CUSTOM_BINDS_U32_COUNT);
+
+   bits_or_bits(eightway->up_left.data, eightway->up.data,
+         CUSTOM_BINDS_U32_COUNT);
+   bits_or_bits(eightway->up_left.data, eightway->left.data,
+         CUSTOM_BINDS_U32_COUNT);
+
+   bits_or_bits(eightway->down_right.data, eightway->down.data,
+         CUSTOM_BINDS_U32_COUNT);
+   bits_or_bits(eightway->down_right.data, eightway->right.data,
+         CUSTOM_BINDS_U32_COUNT);
+
+   bits_or_bits(eightway->down_left.data, eightway->down.data,
+         CUSTOM_BINDS_U32_COUNT);
+   bits_or_bits(eightway->down_left.data, eightway->left.data,
+         CUSTOM_BINDS_U32_COUNT);
 }
 
 static bool task_overlay_load_desc(
@@ -183,6 +303,10 @@ static bool task_overlay_load_desc(
       desc->type          = OVERLAY_TYPE_ANALOG_LEFT;
    else if (string_is_equal(key, "analog_right"))
       desc->type          = OVERLAY_TYPE_ANALOG_RIGHT;
+   else if (string_is_equal(key, "dpad_area"))
+      desc->type          = OVERLAY_TYPE_DPAD_AREA;
+   else if (string_is_equal(key, "abxy_area"))
+      desc->type          = OVERLAY_TYPE_ABXY_AREA;
    else if (strstr(key, "retrok_") == key)
    {
       desc->type          = OVERLAY_TYPE_KEYBOARD;
@@ -211,6 +335,8 @@ static bool task_overlay_load_desc(
                desc->next_index_name, sizeof(desc->next_index_name));
       }
    }
+
+   BIT16_SET(loader->overlay_types, desc->type);
 
    width_mod  = 1.0f;
    height_mod = 1.0f;
@@ -262,6 +388,11 @@ static bool task_overlay_load_desc(
             else
                desc->analog_saturate_pct = 1.0f;
          }
+         break;
+      case OVERLAY_TYPE_DPAD_AREA:
+      case OVERLAY_TYPE_ABXY_AREA:
+         task_overlay_desc_populate_eightway_config(
+               loader, desc, ol_idx, desc_idx);
          break;
       default:
          /* OVERLAY_TYPE_BUTTONS  - unhandled */
@@ -746,6 +877,7 @@ static void task_overlay_handler(retro_task_t *task)
       data->overlay_enable              = loader->overlay_enable;
       data->hide_in_menu                = loader->overlay_hide_in_menu;
       data->hide_when_gamepad_connected = loader->overlay_hide_when_gamepad_connected;
+      data->overlay_types               = loader->overlay_types;
 
       memcpy(&data->layout_desc, &loader->layout_desc,
             sizeof(overlay_layout_desc_t));
