@@ -107,13 +107,13 @@ static void android_gfx_ctx_vk_check_window(void *data, bool *quit,
 
    if (android_app->content_rect.changed)
    {
-      and->vk.need_new_swapchain = true;
+      and->vk.flags                    |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
       android_app->content_rect.changed = false;
    }
 
    /* Swapchains are recreated in set_resize as a
     * central place, so use that to trigger swapchain reinit. */
-   *resize    = and->vk.need_new_swapchain;
+   *resize    = and->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    new_width  = android_app->content_rect.width;
    new_height = android_app->content_rect.height;
 
@@ -143,10 +143,10 @@ static bool android_gfx_ctx_vk_set_resize(void *data,
       return false;
    }
 
-   if (and->vk.created_new_swapchain)
+   if (and->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       vulkan_acquire_next_image(&and->vk);
    and->vk.context.invalid_swapchain = true;
-   and->vk.need_new_swapchain        = false;
+   and->vk.flags                    &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
    return true;
 }
@@ -276,7 +276,7 @@ static void android_gfx_ctx_vk_set_swap_interval(void *data, int swap_interval)
       RARCH_LOG("[Vulkan]: Setting swap interval: %u.\n", swap_interval);
       and->swap_interval = swap_interval;
       if (and->vk.swapchain)
-         and->vk.need_new_swapchain = true;
+         and->vk.flags |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    }
 }
 

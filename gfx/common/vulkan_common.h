@@ -186,28 +186,29 @@ struct vulkan_emulated_mailbox
    uint8_t flags;
 };
 
-typedef struct gfx_ctx_vulkan_data
+enum gfx_ctx_vulkan_data_flags
 {
-   struct string_list *gpu_list;
-
-   vulkan_context_t context;
-   VkSurfaceKHR vk_surface;      /* ptr alignment */
-   VkSwapchainKHR swapchain;     /* ptr alignment */
-
-   struct vulkan_emulated_mailbox mailbox;
-
-   /* Used to check if we need to use mailbox emulation or not.
-    * Only relevant on Windows for now. */
-   bool fullscreen;
-
-   bool need_new_swapchain;
-   bool created_new_swapchain;
-   bool emulate_mailbox;
-   bool emulating_mailbox;
    /* If set, prefer a path where we use
     * semaphores instead of fences for vkAcquireNextImageKHR.
     * Helps workaround certain performance issues on some drivers. */
-   bool use_wsi_semaphore;
+   VK_DATA_FLAG_USE_WSI_SEMAPHORE       = (1 << 0),
+   VK_DATA_FLAG_NEED_NEW_SWAPCHAIN      = (1 << 1),
+   VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN   = (1 << 2),
+   VK_DATA_FLAG_EMULATE_MAILBOX         = (1 << 3),
+   VK_DATA_FLAG_EMULATING_MAILBOX       = (1 << 4),
+   /* Used to check if we need to use mailbox emulation or not.
+    * Only relevant on Windows for now. */
+   VK_DATA_FLAG_FULLSCREEN              = (1 << 5)
+};
+
+typedef struct gfx_ctx_vulkan_data
+{
+   struct string_list *gpu_list;
+   vulkan_context_t context;
+   VkSurfaceKHR vk_surface;      /* ptr alignment */
+   VkSwapchainKHR swapchain;     /* ptr alignment */
+   struct vulkan_emulated_mailbox mailbox;
+   uint8_t flags;
 } gfx_ctx_vulkan_data_t;
 
 struct vulkan_display_surface_info

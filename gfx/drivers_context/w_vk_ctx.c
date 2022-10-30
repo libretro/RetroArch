@@ -87,7 +87,7 @@ static void gfx_ctx_w_vk_swap_interval(void *data, int interval)
    {
       win32_vk_interval = interval;
       if (win32_vk.swapchain)
-         win32_vk.need_new_swapchain = true;
+         win32_vk.flags |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    }
 }
 
@@ -99,7 +99,7 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
 
    win32_check_window(NULL, quit, resize, width, height);
 
-   if (win32_vk.need_new_swapchain)
+   if (win32_vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN)
       *resize = true;
 
    /* Trigger video driver init when changing refresh rate
@@ -111,11 +111,12 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
     * Bigger than zero difference required in order to prevent
     * constant reinit when adjusting rate option in 0.001 increments.
     */
-   if (win32_vk.fullscreen && g_win32_refresh_rate &&
-         g_win32_refresh_rate  != refresh_rate &&
-         abs(g_win32_refresh_rate - refresh_rate) > 0 &&
-         g_win32_resize_width  == *width &&
-         g_win32_resize_height == *height)
+   if (     (win32_vk.flags & VK_DATA_FLAG_FULLSCREEN)
+         && (g_win32_refresh_rate)
+         && (g_win32_refresh_rate  != refresh_rate) 
+         && (abs(g_win32_refresh_rate - refresh_rate) > 0)
+         && (g_win32_resize_width  == *width) 
+         && (g_win32_resize_height == *height))
    {
       g_win32_refresh_rate = settings->floats.video_refresh_rate;
       command_event(CMD_EVENT_REINIT, NULL);
@@ -141,10 +142,10 @@ static bool gfx_ctx_w_vk_set_resize(void *data,
 {
    if (vulkan_create_swapchain(&win32_vk, width, height, win32_vk_interval))
    {
-      if (win32_vk.created_new_swapchain)
+      if (win32_vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
          vulkan_acquire_next_image(&win32_vk);
       win32_vk.context.invalid_swapchain = true;
-      win32_vk.need_new_swapchain        = false;
+      win32_vk.flags                    &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
       return true;
    }
@@ -267,7 +268,10 @@ static bool gfx_ctx_w_vk_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   win32_vk.fullscreen = fullscreen;
+   if (fullscreen)
+      win32_vk.flags |=  VK_DATA_FLAG_FULLSCREEN;
+   else
+      win32_vk.flags &= ~VK_DATA_FLAG_FULLSCREEN;
 
    if (win32_set_video_mode(NULL, width, height, fullscreen))
    {

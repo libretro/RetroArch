@@ -84,7 +84,7 @@ static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
 
-   *resize = khr->vk.need_new_swapchain;
+   *resize = khr->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
    if (khr->width != *width || khr->height != *height)
    {
@@ -112,11 +112,11 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
       return false;
    }
 
-   if (khr->vk.created_new_swapchain)
+   if (khr->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       vulkan_acquire_next_image(&khr->vk);
 
    khr->vk.context.invalid_swapchain = true;
-   khr->vk.need_new_swapchain        = false;
+   khr->vk.flags &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    return true;
 }
 
@@ -224,7 +224,7 @@ static void gfx_ctx_khr_display_set_swap_interval(void *data,
    {
       khr->swap_interval = swap_interval;
       if (khr->vk.swapchain)
-         khr->vk.need_new_swapchain = true;
+         khr->vk.flags  |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    }
 }
 

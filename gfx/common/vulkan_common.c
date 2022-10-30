@@ -1636,21 +1636,24 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 #ifdef VULKAN_EMULATE_MAILBOX
    /* Win32 windowed mode seems to deal just fine with toggling VSync.
     * Fullscreen however ... */
-   vk->emulate_mailbox = vk->fullscreen;
+   if (vk->flags & VK_DATA_FLAG_FULLSCREEN)
+      vk->flags |=  VK_DATA_FLAG_EMULATE_MAILBOX;
+   else
+      vk->flags &= ~VK_DATA_FLAG_EMULATE_MAILBOX;
 #endif
 
    /* If we're emulating mailbox, stick to using fences rather than semaphores.
     * Avoids some really weird driver bugs. */
-   if (!vk->emulate_mailbox)
+   if (!(vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX))
    {
       if (vk->context.gpu_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
       {
-         vk->use_wsi_semaphore = true;
+         vk->flags |= VK_DATA_FLAG_USE_WSI_SEMAPHORE;
          RARCH_LOG("[Vulkan]: Using semaphores for WSI acquire.\n");
       }
       else
       {
-         vk->use_wsi_semaphore = false;
+         vk->flags &= ~VK_DATA_FLAG_USE_WSI_SEMAPHORE;
          RARCH_LOG("[Vulkan]: Using fences for WSI acquire.\n");
       }
    }
@@ -2733,7 +2736,7 @@ retry:
 
    retro_assert(!vk->context.has_acquired_swapchain);
 
-   if (vk->emulating_mailbox)
+   if (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
    {
       /* Non-blocking acquire. If we don't get a swapchain frame right away,
        * just skip rendering to the swapchain this frame, similar to what
@@ -2746,7 +2749,7 @@ retry:
    }
    else
    {
-      if (vk->use_wsi_semaphore)
+      if (vk->flags & VK_DATA_FLAG_USE_WSI_SEMAPHORE)
           semaphore = vulkan_get_wsi_acquire_semaphore(&vk->context);
       else
           vkCreateFence(vk->context.device, &fence_info, NULL, &fence);
@@ -2877,15 +2880,17 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
        !surface_properties.currentExtent.height)
       return false;
 
-   if (swap_interval == 0 && vk->emulate_mailbox && vsync)
+   if (     (swap_interval == 0)
+         && (vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX)
+         && vsync)
    {
-      swap_interval          = 1;
-      vk->emulating_mailbox  = true;
+      swap_interval  =  1;
+      vk->flags     |=  VK_DATA_FLAG_EMULATING_MAILBOX;
    }
    else
-      vk->emulating_mailbox  = false;
+      vk->flags     &= ~VK_DATA_FLAG_EMULATING_MAILBOX;
 
-   vk->created_new_swapchain = true;
+   vk->flags                |= VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
 
    if (vk->swapchain != VK_NULL_HANDLE &&
          !vk->context.invalid_swapchain &&
@@ -2899,17 +2904,17 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 #endif
       vulkan_create_wait_fences(vk);
 
-      if (     vk->emulating_mailbox 
+      if (     (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
             && vk->mailbox.swapchain == VK_NULL_HANDLE)
       {
          vulkan_emulated_mailbox_init(
                &vk->mailbox, vk->context.device, vk->swapchain);
-         vk->created_new_swapchain = false;
+         vk->flags                &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
          return true;
       }
       else if (
-               !vk->emulating_mailbox 
-            &&  vk->mailbox.swapchain != VK_NULL_HANDLE)
+               (!(vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX))
+            &&   (vk->mailbox.swapchain != VK_NULL_HANDLE))
       {
          VkResult res = VK_SUCCESS;
          /* We are tearing down, and entering a state 
@@ -2926,7 +2931,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          if (res == VK_SUCCESS)
          {
             vk->context.has_acquired_swapchain = true;
-            vk->created_new_swapchain          = false;
+            vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
             return true;
          }
 
@@ -2935,7 +2940,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       }
       else
       {
-         vk->created_new_swapchain             = false;
+         vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
          return true;
       }
    }
@@ -3212,7 +3217,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    vk->context.has_acquired_swapchain = false;
    vulkan_create_wait_fences(vk);
 
-   if (vk->emulating_mailbox)
+   if (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
       vulkan_emulated_mailbox_init(&vk->mailbox, vk->context.device, vk->swapchain);
 
    return true;
