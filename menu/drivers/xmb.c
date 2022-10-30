@@ -438,35 +438,35 @@ typedef struct xmb_handle
 } xmb_handle_t;
 
 static float xmb_scale_mod[8]   = {
-   1, 1, 1, 1, 1, 1, 1, 1
+   1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f
 };
 
-static float xmb_coord_shadow[] = {
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, 0, 0
+static float xmb_coord_shadow[]       = {
+   0.0f, 0.0f, 0.0f, 0.0f,
+   0.0f, 0.0f, 0.0f, 0.0f,
+   0.0f, 0.0f, 0.0f, 0.0f,
+   0.0f, 0.0f, 0.0f, 0.0f,
 };
 
-static float xmb_coord_black[]  = {
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, 0, 0
+static float xmb_coord_black[]       = {
+   0.0f, 0.0f, 0.0f, 0.0f,
+   0.0f, 0.0f, 0.0f, 0.0f,
+   0.0f, 0.0f, 0.0f, 0.0f,
+   0.0f, 0.0f, 0.0f, 0.0f,
 };
 
-static float xmb_coord_white[]  = {
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1
+static float xmb_coord_white[]       = {
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
 };
 
 static float xmb_item_color[]       = {
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
 };
 
 static INLINE float xmb_item_y(const xmb_handle_t *xmb, int i, size_t current)
