@@ -109,7 +109,8 @@ enum
 enum platform_android_flags
 {
    PLAT_ANDROID_FLAG_GAME_CONSOLE_DEVICE = (1 << 0),
-   PLAT_ANDROID_FLAG_ANDROID_TV_DEVICE   = (1 << 1)
+   PLAT_ANDROID_FLAG_ANDROID_TV_DEVICE   = (1 << 1),
+   PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE  = (1 << 2)
 };
 
 static pthread_key_t thread_key;
@@ -1146,8 +1147,8 @@ static int frontend_unix_get_rating(void)
 {
 #ifdef ANDROID
    char device_model[PROP_VALUE_MAX] = {0};
-   frontend_android_get_name(device_model, sizeof(device_model));
-   if (device_is_xperia_play(device_model))
+   system_property_get("getprop", "ro.product.model", device_model);
+   if (g_platform_android_flags & PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE)
       return 6;
    else if (strstr(device_model, "GT-I9505"))
       return 12;
@@ -1340,26 +1341,20 @@ static void frontend_unix_get_env(int *argc,
 #ifdef ANDROID
    int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX]  = {0};
-   char device_id[PROP_VALUE_MAX]     = {0};
    struct rarch_main_wrap      *args  = NULL;
    JNIEnv                       *env  = NULL;
    jobject                       obj  = NULL;
    jstring                      jstr  = NULL;
-   jboolean                     jbool = JNI_FALSE;
    struct android_app   *android_app  = (struct android_app*)data;
    char parent_path[PATH_MAX_LENGTH];
 
    if (!android_app)
       return;
 
-   env = jni_thread_getenv();
-
-   if (!env)
+   if (!(env = jni_thread_getenv()))
       return;
 
-   args = (struct rarch_main_wrap*)params_data;
-
-   if (args)
+   if ((args = (struct rarch_main_wrap*)params_data))
    {
       args->flags     &= ~(RARCH_MAIN_WRAP_FLAG_VERBOSE
                          | RARCH_MAIN_WRAP_FLAG_NO_CONTENT);
@@ -1582,8 +1577,8 @@ static void frontend_unix_get_env(int *argc,
          {
 
             /* this section populates the paths for the assets that are bundled
-               with the apk.
-               TO-DO: change the extraction method so it honors the user defined paths instead
+               with the APK.
+               TODO/FIXME: change the extraction method so it honors the user defined paths instead
             */
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], app_dir,
                   "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
@@ -1700,25 +1695,10 @@ static void frontend_unix_get_env(int *argc,
       }
    }
 
-   /* Check if we are an Android TV device */
-   if (env && android_app->isAndroidTV)
-   {
-      CALL_BOOLEAN_METHOD(env, jbool,
-            android_app->activity->clazz, android_app->isAndroidTV);
-
-      if (jbool != JNI_FALSE)
-         g_platform_android_flags |= PLAT_ANDROID_FLAG_ANDROID_TV_DEVICE;
-   }
-
-   frontend_android_get_name(device_model, sizeof(device_model));
-   system_property_get("getprop", "ro.product.id", device_id);
-
-   /* Check if we are a game console device */
-   if (device_is_game_console(device_model))
-      g_platform_android_flags |= PLAT_ANDROID_FLAG_GAME_CONSOLE_DEVICE;
+   system_property_get("getprop", "ro.product.model", device_model);
 
    /* Set automatic default values per device */
-   if (device_is_xperia_play(device_model))
+   if (g_platform_android_flags & PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE)
       g_defaults.settings_out_latency = 128;
    else if (strstr(device_model, "GAMEMID_BT"))
       g_defaults.settings_out_latency = 160;
@@ -2024,11 +2004,13 @@ static void frontend_unix_deinit(void *data)
 static void frontend_unix_init(void *data)
 {
 #ifdef ANDROID
-   JNIEnv                     *env = NULL;
-   ALooper                 *looper = NULL;
-   jclass                    class = NULL;
-   jobject                     obj = NULL;
-   struct android_app* android_app = (struct android_app*)data;
+   char device_model[PROP_VALUE_MAX] = {0};
+   JNIEnv                     *env   = NULL;
+   ALooper                 *looper   = NULL;
+   jboolean                  jbool   = JNI_FALSE;
+   jclass                    class   = NULL;
+   jobject                     obj   = NULL;
+   struct android_app* android_app   = (struct android_app*)data;
 
    if (!android_app)
       return;
@@ -2104,8 +2086,27 @@ static void frontend_unix_init(void *data)
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
          "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
-#endif
 
+   /* Check if we are an Android TV device */
+   if (env && android_app->isAndroidTV)
+   {
+      CALL_BOOLEAN_METHOD(env, jbool,
+            android_app->activity->clazz, android_app->isAndroidTV);
+
+      if (jbool != JNI_FALSE)
+         g_platform_android_flags |= PLAT_ANDROID_FLAG_ANDROID_TV_DEVICE;
+   }
+
+   system_property_get("getprop", "ro.product.model", device_model);
+
+   /* Check if we are a game console device */
+   if (device_is_game_console(device_model))
+      g_platform_android_flags       |= PLAT_ANDROID_FLAG_GAME_CONSOLE_DEVICE;
+
+   /* Set automatic default values per device */
+   if (device_is_xperia_play(device_model))
+      g_platform_android_flags       |= PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE;
+#endif
 }
 
 static int frontend_unix_parse_drive_list(void *data, bool load_content)
