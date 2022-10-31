@@ -4009,8 +4009,8 @@ static void remote_unpaused(netplay_t *netplay,
     {
        struct netplay_connection *sc = &netplay->connections[i];
        if (sc->flags &  
-                 (NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED)
-             ==  (NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED))
+                 ((NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED)
+             ==   (NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED)))
        {
           netplay->remote_paused = true;
           break;
@@ -7136,8 +7136,8 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
    {
       struct netplay_connection *connection = &netplay->connections[i];
       if (connection->flags &  
-                (NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED)
-            ==  (NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED))
+                ((NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED)
+            ==  (NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED)))
          paused_ct++;
    }
 

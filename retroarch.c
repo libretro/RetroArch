@@ -3474,16 +3474,16 @@ void retroarch_override_setting_set(
          break;
 #ifdef HAVE_NETWORKING
      case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
-         net_st->has_set_netplay_mode = true;
+         net_st->flags |= NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_MODE;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
-         net_st->has_set_netplay_ip_address = true;
+         net_st->flags |= NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_IP_ADDRESS;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
-         net_st->has_set_netplay_ip_port = true;
+         net_st->flags |= NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_IP_PORT;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
-         net_st->has_set_netplay_check_frames = true;
+         net_st->flags |= NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_CHECK_FRAMES;
          break;
 #endif
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
@@ -3548,16 +3548,16 @@ void retroarch_override_setting_unset(
          break;
 #ifdef HAVE_NETWORKING
     case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
-         net_st->has_set_netplay_mode = false;
+         net_st->flags &= ~NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_MODE;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
-         net_st->has_set_netplay_ip_address = false;
+         net_st->flags &= ~NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_IP_ADDRESS;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
-         net_st->has_set_netplay_ip_port = false;
+         net_st->flags &= ~NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_IP_PORT;
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
-         net_st->has_set_netplay_check_frames = false;
+         net_st->flags &= ~NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_CHECK_FRAMES;
          break;
 #endif
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
@@ -5889,13 +5889,13 @@ bool retroarch_override_setting_is_set(
          return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_STATE_PATH) > 0);
 #ifdef HAVE_NETWORKING
       case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
-	 return net_st->has_set_netplay_mode;
+         return ((net_st->flags & NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_MODE) > 0);
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
-	 return net_st->has_set_netplay_ip_address;
+         return ((net_st->flags & NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_IP_ADDRESS) > 0);
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
-	 return net_st->has_set_netplay_ip_port;
+         return ((net_st->flags & NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_IP_PORT) > 0);
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
-	 return net_st->has_set_netplay_check_frames;
+         return ((net_st->flags & NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_CHECK_FRAMES) > 0);
 #endif
 #ifdef HAVE_PATCH
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
