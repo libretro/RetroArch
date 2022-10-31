@@ -2,9 +2,15 @@
 - ANDROID: Enable 'Vibrate On Key Press' by default
 - COMPILATION: Fixed compiling with --disable-menu
 - DATABASE/PLAYLISTS: Playlist + database changes - Cleanup 'entry_slot', fallback label + logging
+- FRONTEND: Fix default remaps folder for various cores: remap should …
+…be nested in config folder
 - INPUT: Fixed the way devices were previously indexed. Input devices were only being indexed in order and would stop at the first time an input has no device connected to it. The problem is when a device gets disconnected, that input will have no devices connected to it, but the next input may still have a device connected. So, that makes changing the port of the currently connected devices impossible.
+- INPUT/WIN32: Extended character IME.
+- INPUT/OVERLAY: Add eightway area types. The playlist supports UTF8, but edit control replaces the extended character with #. The following code enables extended character input in Netplay Chatting, Search, and Rename titles.
+- INPUT/OVERLAY: Fix overlay next_index for unnamed targets
 - LOCALIZATION: Updates
 - MENU: Thumbnail fullscreen toggle behavior correction
+- MENU/QT/WIMP: Remove SSL/TLS check at startup
 - MENU/OZONE: Footer improvements - Add "Cycle thumbnails" helper when suitable
 - MENU/OZONE: Footer improvements - Show "Search" helper only when search function is enabled
 - MENU/OZONE: Footer improvements - Fix "Thumbnails available" helper for save states
@@ -12,9 +18,17 @@
 - MENU/OZONE: Remember selection per main tabs
 - MENU/OZONE: Remove incomplete assets warning
 - MENU/XMB: Remove incomplete assets warning
+- MENU/XMB: Add truncate playlist name option
 - MENU/MATERIALUI: Remove incomplete assets warning
 - OSX: Fixed Z/X keys not working on the macOS port
 - OSX: Fixed RETROK_LMETA not working on macOS port. The RETROK_LMETA key was not defined in the rarch_key_map_apple_hid
+- OSX: Fix broken fullscreen mode in macOS Ventura
+- PS2: Fix Error saving remaps and runtime logs
+- PS3: Fix Core Remap Overwrite Fail
+- SCANNER/PS1: Improved scanning of PS1 discs
+- SCANNER/PS2: Added serial scanning of PS2 discs - should now scan DVDs and other discs which were previously missed
+- THUMBNAIL: If you rename title, you cannot use the thumbnail image. because the thumbnail filename and the title must be the same.
+If there is no thumbnail with title, find the thumbnail image with rom-name. This has nothing to do with IME.
 - THREADED VIDEO/GLCORE: Fix regression 'Shader presets dont load, when video driver is set to glcore'
 
 # 1.12.0
