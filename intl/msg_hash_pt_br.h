@@ -10872,6 +10872,14 @@ MSG_HASH(
    "ATENÇÃO: Um par de jogo em rede está executando uma versão diferente do núcleo. Se ocorrerem problemas, use a mesma versão."
    )
 MSG_HASH(
+   MSG_NETPLAY_ENDIAN_DEPENDENT,
+   "Este núcleo não suporta netplay entre essas plataformas"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PLATFORM_DEPENDENT,
+   "Este núcleo não suporta netplay entre plataformas diferentes"
+   )
+MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
    "Digite a senha do servidor de jogo em rede:"
    )
