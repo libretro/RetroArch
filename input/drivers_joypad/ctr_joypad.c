@@ -189,14 +189,6 @@ static void ctr_joypad_poll(void)
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = -ctr_joypad_fix_range(state_tmp_left_analog.dy);
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] =  ctr_joypad_fix_range(state_tmp_right_analog.dx);
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = -ctr_joypad_fix_range(state_tmp_right_analog.dy);
-
-   /* panic button */
-   if((state_tmp & KEY_START) &&
-         (state_tmp & KEY_SELECT) &&
-         (state_tmp & KEY_L) &&
-         (state_tmp & KEY_R))
-      command_event(CMD_EVENT_QUIT, NULL);
-
 }
 
 static bool ctr_joypad_query_pad(unsigned pad)
