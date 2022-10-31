@@ -7,8 +7,16 @@ import android.content.Intent;
 import android.content.Context;
 import android.hardware.input.InputManager;
 import android.os.Build;
+import android.os.Bundle;
 import com.retroarch.browser.preferences.util.ConfigFile;
 import com.retroarch.browser.preferences.util.UserPreferences;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -16,6 +24,62 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
   // If set to true then Retroarch will completely exit when it loses focus
   private boolean quitfocus = false;
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
+    Intent retro = getIntent();
+
+    if (!retro.hasExtra("LIBRETRO")) {
+      // No core file passed in
+      return;
+    }
+
+    // Copies the core to the necessary folder if needed (for sideloading cores)
+    File providedCoreFile = new File(retro.getStringExtra("LIBRETRO"));
+    File coresFolder = new File(UserPreferences.getPreferences(this).getString("libretro_path", this.getApplicationInfo().dataDir + "/cores/"));
+
+    // Check that both exist
+    if (!coresFolder.exists())
+      coresFolder.mkdirs();
+
+    if (!providedCoreFile.exists())
+        return;
+
+    File destination = new File(coresFolder, providedCoreFile.getName());
+
+    if (destination.getAbsolutePath() == providedCoreFile.getAbsolutePath()){
+      // Nothing needs to be done if the provided core path is already in the correct folder
+      return;
+    }
+
+    // Otherwise, copy the core file to the correct folder
+    Log.d("sideload", "Copying " + providedCoreFile.getAbsolutePath() + " to " + destination.getAbsolutePath());
+
+    try
+    {
+        InputStream is = new FileInputStream(providedCoreFile);
+        OutputStream os = new FileOutputStream(destination);
+
+        byte[] buf = new byte[1024];
+        int length;
+
+        while ((length = is.read(buf)) > 0)
+        {
+            os.write(buf, 0, length);
+        }
+
+        is.close();
+        os.close();
+        retro.putExtra("LIBRETRO", destination.getAbsolutePath());
+    }
+    catch (IOException ex)
+    {
+        ex.printStackTrace();
+        return;
+    }
+  }
 
   @Override
   public void onResume() {
