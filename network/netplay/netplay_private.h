@@ -340,6 +340,18 @@ typedef struct netplay_address
    uint8_t addr[16];
 } netplay_address_t;
 
+enum netplay_connection_flags
+{
+   /* Is this connection buffer in use? */
+   NETPLAY_CONN_FLAG_ACTIVE         = (1 << 0),
+   /* Is this player paused? */
+   NETPLAY_CONN_FLAG_PAUSED         = (1 << 1),
+   /* Is this connection allowed to play (server only)? */
+   NETPLAY_CONN_FLAG_CAN_PLAY       = (1 << 2),
+   /* Did we request a ping response? */
+   NETPLAY_CONN_FLAG_PING_REQUESTED = (1 << 3)
+};
+
 /* Each connection gets a connection struct */
 struct netplay_connection
 {
@@ -392,20 +404,10 @@ struct netplay_connection
    /* Is this connection stalling? */
    enum rarch_netplay_stall_reason stall;
 
+   uint8_t flags;
+
    /* Nickname of peer */
    char nick[NETPLAY_NICK_LEN];
-
-   /* Is this connection buffer in use? */
-   bool active;
-
-   /* Is this player paused? */
-   bool paused;
-
-   /* Is this connection allowed to play (server only)? */
-   bool can_play;
-
-   /* Did we request a ping response? */
-   bool ping_requested;
 };
 
 /* Compression transcoder */

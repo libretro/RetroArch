@@ -241,6 +241,18 @@ struct netplay_chat_buffer
    uint32_t color_msg;
 };
 
+enum net_driver_state_flags
+{
+   NET_DRIVER_ST_FLAG_NETPLAY_CLIENT_DEFERRED      = (1 << 0),
+   /* Only used before init_netplay */
+   NET_DRIVER_ST_FLAG_NETPLAY_ENABLED              = (1 << 1),
+   NET_DRIVER_ST_FLAG_NETPLAY_IS_CLIENT            = (1 << 2),
+   NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_MODE         = (1 << 3),
+   NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_IP_ADDRESS   = (1 << 4),
+   NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_IP_PORT      = (1 << 5),
+   NET_DRIVER_ST_FLAG_HAS_SET_NETPLAY_CHECK_FRAMES = (1 << 6)
+};
+
 typedef struct
 {
 #ifndef HAVE_DYNAMIC
@@ -268,16 +280,9 @@ typedef struct
    int room_count;
    int latest_ping;
    unsigned server_port_deferred;
+   uint8_t flags;
    char server_address_deferred[256];
    char server_session_deferred[32];
-   bool netplay_client_deferred;
-   /* Only used before init_netplay */
-   bool netplay_enabled;
-   bool netplay_is_client;
-   bool has_set_netplay_mode;
-   bool has_set_netplay_ip_address;
-   bool has_set_netplay_ip_port;
-   bool has_set_netplay_check_frames;
 } net_driver_state_t;
 
 net_driver_state_t *networking_state_get_ptr(void);
