@@ -245,6 +245,34 @@ typedef struct
    unsigned height;
 } frame_buf_t;
 
+enum rgui_flags
+{
+   RGUI_FLAG_BG_MODIFIED               = (1 << 0),
+   RGUI_FLAG_FORCE_REDRAW              = (1 << 1),
+   RGUI_FLAG_FORCE_MENU_REFRESH        = (1 << 2),
+   RGUI_FLAG_RESTORE_ASPECT_LOCK       = (1 << 3),
+   RGUI_FLAG_SHOW_MOUSE                = (1 << 4),
+   RGUI_FLAG_SHOW_SCREENSAVER          = (1 << 5),
+   RGUI_FLAG_SHOW_WALLPAPER            = (1 << 6),
+   RGUI_FLAG_IGNORE_RESIZE_EVENTS      = (1 << 7),
+   RGUI_FLAG_BG_THICKNESS              = (1 << 8),
+   RGUI_FLAG_BORDER_THICKNESS          = (1 << 9),
+   RGUI_FLAG_BORDER_ENABLE             = (1 << 10),
+   RGUI_FLAG_TRANSPARENCY_SUPPORTED    = (1 << 11),
+   RGUI_FLAG_TRANSPARENCY_ENABLE       = (1 << 12),
+   RGUI_FLAG_SHADOW_ENABLE             = (1 << 13),
+   RGUI_FLAG_EXTENDED_ASCII_ENABLE     = (1 << 14),
+   RGUI_FLAG_IS_PLAYLIST               = (1 << 15),
+   RGUI_FLAG_IS_EXPLORE_LIST           = (1 << 16),
+   RGUI_FLAG_IS_STATE_SLOT             = (1 << 17),
+   RGUI_FLAG_WIDGETS_SUPPORTED         = (1 << 18),
+   RGUI_FLAG_THUMBNAIL_LOAD_PENDING    = (1 << 19),
+   RGUI_FLAG_ASPECT_UPDATE_PENDING     = (1 << 20),
+   RGUI_FLAG_ENTRY_HAS_THUMBNAIL       = (1 << 21),
+   RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL  = (1 << 22),
+   RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL = (1 << 23)
+};
+
 typedef struct
 {
    retro_time_t thumbnail_load_trigger_time; /* uint64_t */
@@ -299,6 +327,7 @@ typedef struct
 
    uint32_t thumbnail_queue_size;
    uint32_t left_thumbnail_queue_size;
+   uint32_t flags;
    int8_t gfx_thumbnails_prev;
 
    rgui_particle_t particles[RGUI_NUM_PARTICLES]; /* float alignment */
@@ -324,33 +353,7 @@ typedef struct
    char menu_title[255];                          /* Must be a fixed length array... */
    char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH];  /* Must be a fixed length array... */
 
-   bool bg_modified;
-   bool force_redraw;
-   bool force_menu_refresh;
-   bool restore_aspect_lock;
-   bool show_mouse;
-   bool show_screensaver;
-   bool ignore_resize_events;
-   bool bg_thickness;
-   bool border_thickness;
-   bool border_enable;
-   bool transparency_supported;
-   bool transparency_enable;
-   bool shadow_enable;
-   bool extended_ascii_enable;
-   bool is_playlist;
-   bool is_explore_list;
    bool is_quick_menu;
-   bool is_state_slot;
-   bool entry_has_thumbnail;
-   bool entry_has_left_thumbnail;
-   bool show_fs_thumbnail;
-   bool thumbnail_load_pending;
-   bool show_wallpaper;
-   bool aspect_update_pending;
-#ifdef HAVE_GFX_WIDGETS
-   bool widgets_supported;
-#endif
 } rgui_t;
 
 static const rgui_theme_t rgui_theme_classic_red = {
@@ -1354,19 +1357,18 @@ static uint16_t (*argb32_to_pixel_platform_format)(uint32_t col) = argb32_to_rgb
 static bool rgui_set_pixel_format_function(void)
 {
    const char *driver_ident    = video_driver_get_ident();
-   bool transparency_supported = true;
    
    /* Default fallback... */
    if (string_is_empty(driver_ident))
    {
       argb32_to_pixel_platform_format = argb32_to_rgba4444;
-      return transparency_supported;
+      return true; /* Transparency supported */
    }
-   
-   if (     string_is_equal(driver_ident, "ps2"))             /* PS2 */
+
+   if (string_is_equal(driver_ident, "ps2"))                  /* PS2 */
    {
       argb32_to_pixel_platform_format = argb32_to_abgr1555;
-      transparency_supported          = false;
+      return false; /* Transparency not supported */
    }
    else if (string_is_equal(driver_ident, "gx"))              /* GEKKO */
       argb32_to_pixel_platform_format = argb32_to_rgb5a3;
@@ -1382,12 +1384,11 @@ static bool rgui_set_pixel_format_function(void)
             string_is_equal(driver_ident, "sdl_rs90"))
    {
       argb32_to_pixel_platform_format = argb32_to_rgb565;
-      transparency_supported          = false;
+      return false; /* Transparency not supported */
    }
    else
       argb32_to_pixel_platform_format = argb32_to_rgba4444;
-   
-   return transparency_supported;
+   return true; /* Transparency supported */
 }
 
 /* ==============================
@@ -1482,7 +1483,7 @@ static bool rgui_fonts_init(rgui_t *rgui)
             settings_t *settings  = config_get_ptr();
             configuration_set_bool(settings,
                   settings->bools.menu_rgui_extended_ascii, true);
-            rgui->extended_ascii_enable = true;
+            rgui->flags                |= RGUI_FLAG_EXTENDED_ASCII_ENABLE;
             rgui->language              = language;
             goto english;
          }
@@ -1790,7 +1791,7 @@ static void rgui_render_border(rgui_t *rgui, uint16_t *data,
 {
    uint16_t dark_color   = rgui->colors.border_dark_color;
    uint16_t light_color  = rgui->colors.border_light_color;
-   bool thickness        = rgui->border_thickness;
+   bool thickness        = rgui->flags & RGUI_FLAG_BORDER_THICKNESS;
    
    /* Draw border */
    rgui_fill_rect(data, fb_width, fb_height,
@@ -1807,7 +1808,7 @@ static void rgui_render_border(rgui_t *rgui, uint16_t *data,
          dark_color, light_color, thickness);
    
    /* Draw drop shadow, if required */
-   if (rgui->shadow_enable)
+   if (rgui->flags & RGUI_FLAG_SHADOW_ENABLE)
    {
       uint16_t shadow_color = rgui->colors.shadow_color;
       
@@ -1976,7 +1977,7 @@ static void rgui_render_particle_effect(
    float global_speed_factor        = 1.0f;
    
    /* Check whether screensaver is currently active */
-   if (rgui->show_screensaver)
+   if (rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)
    {
       /* Return early if screensaver animation is
        * disabled */
@@ -2238,9 +2239,9 @@ static void rgui_render_particle_effect(
    /* If border is enabled, it must be drawn *above*
     * particle effect
     * (Wastes CPU cycles, but nothing we can do about it...) */
-   if (rgui->border_enable &&
-       !rgui->show_wallpaper &&
-       !rgui->show_screensaver)
+   if (     (rgui->flags & RGUI_FLAG_BORDER_ENABLE)
+       && (!(rgui->flags & RGUI_FLAG_SHOW_WALLPAPER))
+       && (!(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)))
       rgui_render_border(rgui, frame_buf_data, fb_width, fb_height);
 }
 
@@ -2284,9 +2285,9 @@ static void rgui_process_wallpaper(rgui_t *rgui, struct texture_image *image)
       }
    }
 
-   rgui->show_wallpaper = true;
    /* Tell menu that a display update is required */
-   rgui->force_redraw   = true;
+   rgui->flags         |= RGUI_FLAG_FORCE_REDRAW
+                        | RGUI_FLAG_SHOW_WALLPAPER;
 }
 
 static bool rgui_request_thumbnail(
@@ -2510,7 +2511,7 @@ static void rgui_process_thumbnail(
    thumbnail->is_valid    = true;
 
    /* Tell menu that a display update is required */
-   rgui->force_redraw     = true;
+   rgui->flags           |= RGUI_FLAG_FORCE_REDRAW;
 
    /* Clean up */
    image                  = NULL;
@@ -2564,7 +2565,7 @@ static bool rgui_load_image(void *userdata, void *data, enum menu_image_type typ
             unsigned menu_rgui_thumbnail_downscaler =
                settings->uints.menu_rgui_thumbnail_downscaler;
             
-            if (rgui->show_fs_thumbnail)
+            if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
                rgui_process_thumbnail(rgui, &rgui->fs_thumbnail, &rgui->thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
                      image);
@@ -2595,8 +2596,9 @@ static bool rgui_load_image(void *userdata, void *data, enum menu_image_type typ
             unsigned menu_rgui_thumbnail_downscaler =
                settings->uints.menu_rgui_thumbnail_downscaler;
 
-            if (rgui->show_fs_thumbnail)
-               rgui_process_thumbnail(rgui, &rgui->fs_thumbnail, &rgui->left_thumbnail_queue_size,
+            if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+               rgui_process_thumbnail(rgui,
+                     &rgui->fs_thumbnail, &rgui->left_thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
                      image);
             else if (menu_rgui_inline_thumbnails || savestate_thumbnail_enable)
@@ -2632,7 +2634,7 @@ static void rgui_render_background(rgui_t *rgui,
       return;
 
    /* If screensaver is active, 'zero out' framebuffer */
-   if (rgui->show_screensaver)
+   if (rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)
    {
       size_t i;
       uint16_t ss_bg_color    = rgui->colors.ss_bg_color;
@@ -2704,7 +2706,7 @@ static void rgui_render_fs_thumbnail(rgui_t *rgui,
       }
 
       /* Draw drop shadow, if required */
-      if (rgui->shadow_enable)
+      if (rgui->flags & RGUI_FLAG_SHADOW_ENABLE)
       {
          unsigned shadow_x;
          unsigned shadow_y;
@@ -2799,7 +2801,7 @@ static void rgui_render_mini_thumbnail(
       }
 
       /* Draw drop shadow, if required */
-      if (rgui->shadow_enable)
+      if (rgui->flags & RGUI_FLAG_SHADOW_ENABLE)
       {
          rgui_color_rect(frame_buf_data, fb_width, fb_height,
                fb_x_offset + thumbnail->width, fb_y_offset + 1,
@@ -2813,8 +2815,8 @@ static void rgui_render_mini_thumbnail(
 
 static const rgui_theme_t *get_theme(rgui_t *rgui)
 {
-   bool transparent = rgui->transparency_supported &&
-         rgui->transparency_enable;
+   bool transparent = (rgui->flags & RGUI_FLAG_TRANSPARENCY_SUPPORTED)
+                   && (rgui->flags & RGUI_FLAG_TRANSPARENCY_ENABLE);
 
    switch (rgui->color_theme)
    {
@@ -2977,7 +2979,8 @@ static void update_dynamic_theme_path(rgui_t *rgui, const char *theme_dir)
       return;
    }
 
-   if (rgui->is_playlist && !string_is_empty(rgui->menu_title))
+   if (     (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
+         && (!string_is_empty(rgui->menu_title)))
    {
       size_t len = fill_pathname_join_special(rgui->theme_dynamic_path, theme_dir,
             rgui->menu_title, sizeof(rgui->theme_dynamic_path));
@@ -3128,8 +3131,10 @@ end:
    {
       /* Use 'Classic Green' fallback */
       const rgui_theme_t *fallback_theme =
-            (rgui->transparency_supported && rgui->transparency_enable) ?
-                  &rgui_theme_classic_green : &rgui_theme_opaque_classic_green;
+            (   (rgui->flags & RGUI_FLAG_TRANSPARENCY_SUPPORTED)
+             && (rgui->flags & RGUI_FLAG_TRANSPARENCY_ENABLE))
+                  ? &rgui_theme_classic_green 
+                  : &rgui_theme_opaque_classic_green;
 
       theme_colors->normal_color       = fallback_theme->normal_color;
       theme_colors->hover_color        = fallback_theme->hover_color;
@@ -3162,10 +3167,11 @@ static void rgui_cache_background(rgui_t *rgui,
    /* Fill background buffer with standard chequer pattern */
    rgui_fill_rect(background_buf->data, fb_width, fb_height,
          0, 0, fb_width, fb_height,
-         rgui->colors.bg_dark_color, rgui->colors.bg_light_color, rgui->bg_thickness);
+         rgui->colors.bg_dark_color, rgui->colors.bg_light_color,
+         rgui->flags & RGUI_FLAG_BG_THICKNESS);
 
    /* Draw border, if required */
-   if (rgui->border_enable)
+   if (rgui->flags & RGUI_FLAG_BORDER_ENABLE)
       rgui_render_border(rgui, background_buf->data, fb_width, fb_height);
 }
 
@@ -3178,9 +3184,12 @@ static void prepare_rgui_colors(rgui_t *rgui,
    rgui_theme_t theme_colors;
    uint32_t ss_particle_color_argb32  = 0;
 
-   rgui->color_theme                  = menu_rgui_color_theme;
-   rgui->transparency_enable          = menu_rgui_transparency;
-   rgui->show_wallpaper               = false;
+   rgui->color_theme                  =  menu_rgui_color_theme;
+   if (menu_rgui_transparency)
+      rgui->flags                    |=  RGUI_FLAG_TRANSPARENCY_ENABLE;
+   else
+      rgui->flags                    &= ~RGUI_FLAG_TRANSPARENCY_ENABLE;
+   rgui->flags                       &= ~RGUI_FLAG_SHOW_WALLPAPER;
 
    if (rgui->color_theme == RGUI_THEME_CUSTOM)
    {
@@ -3236,8 +3245,8 @@ static void prepare_rgui_colors(rgui_t *rgui,
    rgui->colors.ss_particle_color       = argb32_to_pixel_platform_format(
          ss_particle_color_argb32 | 0xFF000000);
 
-   rgui->bg_modified                    = true;
-   rgui->force_redraw                   = true;
+   rgui->flags                         |= RGUI_FLAG_BG_MODIFIED
+                                        | RGUI_FLAG_FORCE_REDRAW;
 }
 
 /* ==============================
@@ -4278,7 +4287,7 @@ static void rgui_set_message(void *data, const char *message)
    if (!string_is_empty(message))
       strlcpy(rgui->msgbox, message, sizeof(rgui->msgbox));
 
-   rgui->force_redraw = true;
+   rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
 }
 
 static void rgui_render_messagebox(rgui_t *rgui, const char *message,
@@ -4334,18 +4343,19 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message,
    {
       uint16_t border_dark_color  = rgui->colors.border_dark_color;
       uint16_t border_light_color = rgui->colors.border_light_color;
-      bool border_thickness       = rgui->border_thickness;
+      bool border_thickness       = rgui->flags & RGUI_FLAG_BORDER_THICKNESS;
 
       rgui_fill_rect(frame_buf_data, fb_width, fb_height,
             x + 5, y + 5, width - 10, height - 10,
-            rgui->colors.bg_dark_color, rgui->colors.bg_light_color, rgui->bg_thickness);
+            rgui->colors.bg_dark_color, rgui->colors.bg_light_color,
+            rgui->flags & RGUI_FLAG_BG_THICKNESS);
 
       /* Note: We draw borders around message boxes regardless
        * of the rgui->border_enable setting, because they look
        * ridiculous without... */
 
       /* Draw drop shadow, if required */
-      if (rgui->shadow_enable)
+      if (rgui->flags & RGUI_FLAG_SHADOW_ENABLE)
       {
          uint16_t shadow_color = rgui->colors.shadow_color;
 
@@ -4532,17 +4542,18 @@ static void rgui_render_osk(
    /* Draw background */
    rgui_fill_rect(frame_buf_data, fb_width, fb_height,
          osk_x + 5, osk_y + 5, osk_width - 10, osk_height - 10,
-         rgui->colors.bg_dark_color, rgui->colors.bg_light_color, rgui->bg_thickness);
+         rgui->colors.bg_dark_color, rgui->colors.bg_light_color,
+         rgui->flags & RGUI_FLAG_BG_THICKNESS);
    
    /* Draw border */
-   if (rgui->border_enable)
+   if (rgui->flags & RGUI_FLAG_BORDER_ENABLE)
    {
       uint16_t border_dark_color  = rgui->colors.border_dark_color;
       uint16_t border_light_color = rgui->colors.border_light_color;
-      bool border_thickness       = rgui->border_thickness;
+      bool border_thickness       = rgui->flags & RGUI_FLAG_BORDER_THICKNESS;
       
       /* Draw drop shadow, if required */
-      if (rgui->shadow_enable)
+      if (rgui->flags & RGUI_FLAG_SHADOW_ENABLE)
       {
          uint16_t shadow_color    = rgui->colors.shadow_color;
          
@@ -4707,7 +4718,7 @@ static void rgui_render_osk(
          unsigned osk_ptr_y = osk_y + keyboard_offset_y + ptr_offset_y + (key_row    * key_height);
          
          /* Draw drop shadow, if required */
-         if (rgui->shadow_enable)
+         if (rgui->flags & RGUI_FLAG_SHADOW_ENABLE)
          {
             rgui_color_rect(frame_buf_data, fb_width, fb_height,
                   osk_ptr_x + 1, osk_ptr_y + 1, 1, ptr_height, rgui->colors.shadow_color);
@@ -4827,9 +4838,10 @@ static void rgui_render(void *data,
    bool current_display_cb                    = false;
 
    bool show_fs_thumbnail                     =
-         rgui->show_fs_thumbnail &&
-         (rgui->entry_has_thumbnail || !string_is_empty(rgui->savestate_thumbnail_file_path)) &&
-         (rgui->fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
+                  (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+         && (     (rgui->flags & RGUI_FLAG_ENTRY_HAS_THUMBNAIL)
+               || !string_is_empty(rgui->savestate_thumbnail_file_path))
+         && (rgui->fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
    gfx_animation_t *p_anim                    = anim_get_ptr();
    gfx_display_t *p_disp                      = disp_get_ptr();
 
@@ -4845,14 +4857,14 @@ static void rgui_render(void *data,
    }
 
    /* Apply pending aspect ratio update */
-   if (rgui->aspect_update_pending)
+   if (rgui->flags & RGUI_FLAG_ASPECT_UPDATE_PENDING)
    {
       command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
-      rgui->aspect_update_pending = false;
+      rgui->flags &= ~RGUI_FLAG_ASPECT_UPDATE_PENDING;
    }
 
    /* Refresh current menu, if required */
-   if (rgui->force_menu_refresh)
+   if (rgui->flags & RGUI_FLAG_FORCE_MENU_REFRESH)
    {
       bool refresh = false;
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
@@ -4862,14 +4874,14 @@ static void rgui_render(void *data,
        * refresh; skip rendering of the 'obsolete'
        * menu this frame, and force a redraw of the
        * updated menu on the next frame */
-      rgui->force_redraw       = true;
-      rgui->force_menu_refresh = false;
+      rgui->flags             |=  RGUI_FLAG_FORCE_REDRAW;
+      rgui->flags             &= ~RGUI_FLAG_FORCE_MENU_REFRESH;
       return;
    }
 
    current_display_cb = menu_input_dialog_get_display_kb();
 
-   if (!rgui->force_redraw)
+   if (!(rgui->flags & RGUI_FLAG_FORCE_REDRAW))
    {
       msg_force = p_disp->flags & GFX_DISP_FLAG_MSG_FORCE;
 
@@ -4902,29 +4914,30 @@ static void rgui_render(void *data,
       rgui_set_aspect_ratio(rgui, p_disp, false);
 #endif
 
-   if (rgui->bg_modified || fb_size_changed)
+   if (     (rgui->flags & RGUI_FLAG_BG_MODIFIED)
+         || (fb_size_changed))
    {
       /* Only regenerate the background if we are *not*
        * currently showing a wallpaper image */
-      if (!rgui->show_wallpaper)
+      if (!(rgui->flags & RGUI_FLAG_SHOW_WALLPAPER))
          rgui_cache_background(rgui, fb_width, fb_height, fb_pitch);
 
       /* Reinitialise particle effect, if required */
-      if (fb_size_changed && 
-            (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE))
+      if (      fb_size_changed
+            && (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE))
          rgui_init_particle_effect(rgui, p_disp);
 
       rgui->last_width  = fb_width;
       rgui->last_height = fb_height;
    }
 
-   if (rgui->bg_modified)
-      rgui->bg_modified      = false;
+   if (rgui->flags & RGUI_FLAG_BG_MODIFIED)
+      rgui->flags           &= ~RGUI_FLAG_BG_MODIFIED;
 
-   p_disp->flags            |= GFX_DISP_FLAG_FB_DIRTY;
+   p_disp->flags            |=  GFX_DISP_FLAG_FB_DIRTY;
    GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 
-   rgui->force_redraw        = false;
+   rgui->flags              &= ~RGUI_FLAG_FORCE_REDRAW;
 
    entries_end               = menu_entries_get_size();
 
@@ -5001,7 +5014,7 @@ static void rgui_render(void *data,
 
    /* If screensaver is active, skip drawing of
     * text/thumbnails */
-   if (rgui->show_screensaver)
+   if (rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)
       return;
 
    /* We use a single ticker for all text animations,
@@ -5047,8 +5060,8 @@ static void rgui_render(void *data,
       rgui_render_fs_thumbnail(rgui, fb_width, fb_height, fb_pitch);
 
       /* Get thumbnail title */
-      if (gfx_thumbnail_get_label(rgui->thumbnail_path_data, &thumbnail_title) ||
-            is_state_slot)
+      if (gfx_thumbnail_get_label(rgui->thumbnail_path_data, &thumbnail_title) 
+            || is_state_slot)
       {
          /* State slot title */
          if (is_state_slot)
@@ -5064,7 +5077,7 @@ static void rgui_render(void *data,
                      config_get_ptr()->ints.state_slot);
                thumbnail_title = thumbnail_title_buf;
             }
-            else if (rgui->is_state_slot)
+            else if (rgui->flags & RGUI_FLAG_IS_STATE_SLOT)
             {
                snprintf(thumbnail_title_buf      + _len,
                      sizeof(thumbnail_title_buf) - _len,
@@ -5107,7 +5120,8 @@ static void rgui_render(void *data,
          /* Draw thumbnail title background */
          rgui_fill_rect(rgui->frame_buf.data, fb_width, fb_height,
                title_x - 5, 0, title_width + 10, rgui->font_height_stride,
-               rgui->colors.bg_dark_color, rgui->colors.bg_light_color, rgui->bg_thickness);
+               rgui->colors.bg_dark_color, rgui->colors.bg_light_color,
+               rgui->flags & RGUI_FLAG_BG_THICKNESS);
 
          /* Draw thumbnail title */
          blit_line(rgui, fb_width, ticker_x_offset + title_x,
@@ -5130,11 +5144,16 @@ static void rgui_render(void *data,
             ((timedate_x - rgui->term_layout.start_x) / rgui->font_width_stride) - 3 :
                   rgui->term_layout.width - 1;
       bool show_mini_thumbnails      = rgui_inline_thumbnails &&
-            (rgui->is_playlist || rgui->is_explore_list || (rgui->is_quick_menu && !menu_is_running_quick_menu()));
+            (    (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
+             ||  (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
+             || ((rgui->is_quick_menu)
+                && !menu_is_running_quick_menu()));
       bool show_thumbnail            = false;
       bool show_left_thumbnail       = false;
       bool show_savestate_thumbnail  = (!string_is_empty(rgui->savestate_thumbnail_file_path) &&
-            (rgui->is_state_slot || (rgui->is_quick_menu && menu_is_running_quick_menu())));
+            (     (rgui->flags & RGUI_FLAG_IS_STATE_SLOT)
+              || ((rgui->is_quick_menu)
+                 &&  menu_is_running_quick_menu())));
       unsigned thumbnail_panel_width = 0;
       unsigned term_mid_point        = 0;
       size_t powerstate_len          = 0;
@@ -5143,17 +5162,19 @@ static void rgui_render(void *data,
       if (show_mini_thumbnails)
       {
          /* Get whether each thumbnail type is enabled */
-         show_thumbnail      = rgui->entry_has_thumbnail &&
-               (rgui->mini_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
-         show_left_thumbnail = rgui->entry_has_left_thumbnail &&
-               (rgui->mini_left_thumbnail.is_valid || (rgui->left_thumbnail_queue_size > 0));
+         show_thumbnail      = (rgui->flags & RGUI_FLAG_ENTRY_HAS_THUMBNAIL)
+            && (rgui->mini_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
+         show_left_thumbnail = (rgui->flags & RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL)
+               && (rgui->mini_left_thumbnail.is_valid || (rgui->left_thumbnail_queue_size > 0));
 
          /* Get maximum width of thumbnail 'panel' on right side
           * of screen */
          thumbnail_panel_width = rgui_get_mini_thumbnail_fullwidth(rgui);
 
-         if ((rgui->entry_has_thumbnail && rgui->thumbnail_queue_size > 0) ||
-             (rgui->entry_has_left_thumbnail && rgui->left_thumbnail_queue_size > 0))
+         if (    (  (rgui->flags & RGUI_FLAG_ENTRY_HAS_THUMBNAIL) 
+                  && rgui->thumbnail_queue_size > 0) ||
+             (      (rgui->flags & RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL) 
+              &&    (rgui->left_thumbnail_queue_size > 0)))
             thumbnail_panel_width = rgui->mini_thumbnail_max_width;
 
          /* Index (relative to first displayed menu entry) of
@@ -5618,10 +5639,10 @@ static void rgui_render(void *data,
    {
       rgui_render_messagebox(rgui, rgui->msgbox, fb_width, fb_height);
       rgui->msgbox[0]    = '\0';
-      rgui->force_redraw = true;
+      rgui->flags       |=  RGUI_FLAG_FORCE_REDRAW;
    }
 
-   if (rgui->show_mouse)
+   if (rgui->flags & RGUI_FLAG_SHOW_MOUSE)
    {
       bool cursor_visible   = video_fullscreen 
          && menu_mouse_enable;
@@ -5703,11 +5724,11 @@ static void rgui_set_video_config(rgui_t *rgui, settings_t *settings,
       (float)custom_vp->width / custom_vp->height;
    
    if (delay_update)
-      rgui->aspect_update_pending = true;
+      rgui->flags |=  RGUI_FLAG_ASPECT_UPDATE_PENDING;
    else
    {
       command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
-      rgui->aspect_update_pending = false;
+      rgui->flags &= ~RGUI_FLAG_ASPECT_UPDATE_PENDING;
    }
 }
 
@@ -6151,13 +6172,13 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui,
    /* Trigger background/display update */
    rgui->theme_preset_path[0]       = '\0';
    rgui->last_theme_dynamic_path[0] = '\0';
-   rgui->bg_modified                = true;
-   rgui->force_redraw               = true;
+   rgui->flags                     |= RGUI_FLAG_BG_MODIFIED
+                                    | RGUI_FLAG_FORCE_REDRAW;
    
    /* If aspect ratio lock is enabled, notify
     * video driver of change */
-   if ((aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE) &&
-       !rgui->ignore_resize_events)
+   if (   (aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
+       && (!(rgui->flags & RGUI_FLAG_IGNORE_RESIZE_EVENTS)))
    {
       rgui_update_menu_viewport(rgui, p_disp, settings->uints.menu_rgui_aspect_ratio_lock);
       rgui_set_video_config(rgui, settings, &rgui->menu_video_settings, delay_update);
@@ -6217,43 +6238,46 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
     * but for extra safety we will only permit display widget
     * additions when the current gfx driver reports that it
     * has widget support */
-   rgui->widgets_supported = gfx_widgets_ready();
-
-   if (rgui->widgets_supported)
+   if (gfx_widgets_ready())
+   {
+      rgui->flags |= RGUI_FLAG_WIDGETS_SUPPORTED;
       gfx_display_init_white_texture();
+   }
 #endif
 
    rgui->menu_title[0]    = '\0';
    rgui->menu_sublabel[0] = '\0';
-   rgui->is_playlist      = false;
+   rgui->flags           &= ~RGUI_FLAG_IS_PLAYLIST;
 
    /* Set pixel format conversion function */
-   rgui->transparency_supported = rgui_set_pixel_format_function();
+   if (rgui_set_pixel_format_function())
+      rgui->flags        |=  RGUI_FLAG_TRANSPARENCY_SUPPORTED;
 
    /* Initialise fonts */
    if (!rgui_fonts_init(rgui))
       goto error;
 
    /* Cache initial video settings */
-   rgui_get_video_config(&rgui->content_video_settings, settings->uints.video_aspect_ratio_idx);
+   rgui_get_video_config(&rgui->content_video_settings,
+                          settings->uints.video_aspect_ratio_idx);
 
    /* Get initial 'window' dimensions */
    video_driver_get_viewport_info(&vp);
    rgui->window_width          = vp.full_width;
    rgui->window_height         = vp.full_height;
-   rgui->ignore_resize_events  = false;
+   rgui->flags                &= ~RGUI_FLAG_IGNORE_RESIZE_EVENTS;
 
    /* Set aspect ratio
     * - Allocates frame buffer
     * - Configures variable 'menu display' settings */
-   rgui->menu_aspect_ratio_lock = aspect_ratio_lock;
-   rgui->aspect_update_pending  = false;
+   rgui->menu_aspect_ratio_lock     = aspect_ratio_lock;
+   rgui->flags                     &= ~RGUI_FLAG_ASPECT_UPDATE_PENDING;
    if (!rgui_set_aspect_ratio(rgui, p_disp, false))
       goto error;
 
    /* Fixed 'menu display' settings */
-   new_font_height = rgui->font_height_stride * 2;
-   p_disp->header_height = new_font_height;
+   new_font_height                  = rgui->font_height_stride * 2;
+   p_disp->header_height            = new_font_height;
 
    /* Prepare RGUI colors, to improve performance */
    rgui->theme_preset_path[0]       = '\0';
@@ -6271,18 +6295,23 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
    rgui->scroll_y              = 0;
 
-   rgui->bg_thickness          = settings->bools.menu_rgui_background_filler_thickness_enable;
-   rgui->border_thickness      = settings->bools.menu_rgui_border_filler_thickness_enable;
-   rgui->border_enable         = settings->bools.menu_rgui_border_filler_enable;
-   rgui->shadow_enable         = settings->bools.menu_rgui_shadows;
+   if (settings->bools.menu_rgui_background_filler_thickness_enable)
+      rgui->flags             |=  RGUI_FLAG_BG_THICKNESS;
+   if (settings->bools.menu_rgui_border_filler_thickness_enable)
+      rgui->flags             |=  RGUI_FLAG_BORDER_THICKNESS;
+   if (settings->bools.menu_rgui_border_filler_enable)
+      rgui->flags             |=  RGUI_FLAG_BORDER_ENABLE;
+   if (settings->bools.menu_rgui_shadows)
+      rgui->flags             |=  RGUI_FLAG_SHADOW_ENABLE;
    rgui->particle_effect       = settings->uints.menu_rgui_particle_effect;
-   rgui->extended_ascii_enable = settings->bools.menu_rgui_extended_ascii;
+   if (settings->bools.menu_rgui_extended_ascii)
+      rgui->flags             |= RGUI_FLAG_EXTENDED_ASCII_ENABLE;
 
    rgui->last_width            = rgui->frame_buf.width;
    rgui->last_height           = rgui->frame_buf.height;
 
-   rgui->show_mouse            = false;
-   rgui->show_screensaver      = false;
+   rgui->flags                &= ~(RGUI_FLAG_SHOW_MOUSE
+                                 | RGUI_FLAG_SHOW_SCREENSAVER);
 
    /* Initialise particle effect, if required */
    if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
@@ -6301,10 +6330,10 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->thumbnail_queue_size        = 0;
    rgui->left_thumbnail_queue_size   = 0;
    rgui->gfx_thumbnails_prev         = -1;
-   rgui->thumbnail_load_pending      = false;
+   rgui->flags                      &= ~RGUI_FLAG_THUMBNAIL_LOAD_PENDING;
    rgui->thumbnail_load_trigger_time = 0;
    /* Ensure that we start with fullscreen thumbnails disabled */
-   rgui->show_fs_thumbnail           = false;
+   rgui->flags                      &= ~RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL;
 
    rgui->savestate_thumbnail_file_path[0]      = '\0';
    rgui->prev_savestate_thumbnail_file_path[0] = '\0';
@@ -6344,7 +6373,7 @@ static void rgui_free(void *data)
       return;
 
 #ifdef HAVE_GFX_WIDGETS
-   if (rgui->widgets_supported)
+   if (rgui->flags & RGUI_FLAG_WIDGETS_SUPPORTED)
       gfx_display_deinit_white_texture();
 #endif
    if (rgui->thumbnail_path_data)
@@ -6509,46 +6538,61 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
    if (gfx_thumbnail_get_path(rgui->thumbnail_path_data,
          GFX_THUMBNAIL_RIGHT, &thumbnail_path))
    {
-      rgui->entry_has_thumbnail = rgui_request_thumbnail(
-            rgui->show_fs_thumbnail ? &rgui->fs_thumbnail : &rgui->mini_thumbnail,
+      if (rgui_request_thumbnail(
+              (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+            ? &rgui->fs_thumbnail 
+            : &rgui->mini_thumbnail,
             GFX_THUMBNAIL_RIGHT,
             &rgui->thumbnail_queue_size,
             thumbnail_path,
-            &thumbnails_missing);
+            &thumbnails_missing))
+            rgui->flags |=  RGUI_FLAG_ENTRY_HAS_THUMBNAIL;
+         else
+            rgui->flags &= ~RGUI_FLAG_ENTRY_HAS_THUMBNAIL;
    }
    
    /* Left thumbnail
     * (Note: there is no need to load this when viewing
     * fullscreen thumbnails) */
-   if (!rgui->show_fs_thumbnail && string_is_empty(rgui->savestate_thumbnail_file_path))
+   if (    (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
+         &&   string_is_empty(rgui->savestate_thumbnail_file_path))
    {
       if (gfx_thumbnail_get_path(rgui->thumbnail_path_data,
             GFX_THUMBNAIL_LEFT, &left_thumbnail_path))
-         rgui->entry_has_left_thumbnail = rgui_request_thumbnail(
-               &rgui->mini_left_thumbnail,
-               GFX_THUMBNAIL_LEFT,
-               &rgui->left_thumbnail_queue_size,
-               left_thumbnail_path,
-               &thumbnails_missing);
+      {
+         if (rgui_request_thumbnail(
+                  &rgui->mini_left_thumbnail,
+                  GFX_THUMBNAIL_LEFT,
+                  &rgui->left_thumbnail_queue_size,
+                  left_thumbnail_path,
+                  &thumbnails_missing))
+            rgui->flags |=  RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
+         else
+            rgui->flags &= ~RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
+      }
    }
    else if (!string_is_empty(rgui->savestate_thumbnail_file_path))
    {
       if (gfx_thumbnail_get_path(rgui->thumbnail_path_data,
             GFX_THUMBNAIL_LEFT, &left_thumbnail_path))
-         rgui->entry_has_left_thumbnail = rgui_request_thumbnail(
-               &rgui->mini_left_thumbnail,
-               GFX_THUMBNAIL_LEFT,
-               &rgui->left_thumbnail_queue_size,
-               rgui->savestate_thumbnail_file_path,
-               &thumbnails_missing);
+      {
+         if (rgui_request_thumbnail(
+                  &rgui->mini_left_thumbnail,
+                  GFX_THUMBNAIL_LEFT,
+                  &rgui->left_thumbnail_queue_size,
+                  rgui->savestate_thumbnail_file_path,
+                  &thumbnails_missing))
+            rgui->flags |=  RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
+         else
+            rgui->flags &= ~RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
+      }
    }
 
    /* Reset 'load pending' state */
-   rgui->thumbnail_load_pending = false;
-   
+   rgui->flags                 &= ~RGUI_FLAG_THUMBNAIL_LOAD_PENDING;
    /* Force a redraw (so 'entry_has_thumbnail' values are
     * applied immediately) */
-   rgui->force_redraw           = true;
+   rgui->flags                 |=  RGUI_FLAG_FORCE_REDRAW;
    
 #ifdef HAVE_NETWORKING
    /* On demand thumbnail downloads */
@@ -6559,7 +6603,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
       size_t selection     = menu_navigation_get_selection();
 
       /* Explore list needs cached selection index */
-      if (rgui->is_explore_list)
+      if (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
          selection = gfx_thumbnail_get_playlist_index(rgui->thumbnail_path_data);
 
       if (gfx_thumbnail_get_system(rgui->thumbnail_path_data, &system))
@@ -6590,7 +6634,9 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
-   if (!((rgui->is_quick_menu && menu_is_running_quick_menu()) || rgui->is_state_slot))
+   if (!((        (rgui->is_quick_menu) 
+               &&  menu_is_running_quick_menu()) 
+               || (rgui->flags & RGUI_FLAG_IS_STATE_SLOT)))
       return;
 
    if (savestate_thumbnail_enable)
@@ -6615,7 +6661,7 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
             if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
             {
                state_slot          = i - 1;
-               rgui->is_state_slot = true;
+               rgui->flags        |= RGUI_FLAG_IS_STATE_SLOT;
             }
 
             if (state_slot < 0)
@@ -6664,7 +6710,9 @@ static void rgui_update_savestate_thumbnail_image(void *data)
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
-   if (!((rgui->is_quick_menu && menu_is_running_quick_menu()) || rgui->is_state_slot))
+   if (!((        (rgui->is_quick_menu)
+               &&  menu_is_running_quick_menu()) 
+               || (rgui->flags & RGUI_FLAG_IS_STATE_SLOT)))
       return;
 
    /* If path is empty, just reset thumbnail */
@@ -6672,13 +6720,16 @@ static void rgui_update_savestate_thumbnail_image(void *data)
       rgui_reset_savestate_thumbnail(rgui);
    else
    {
-      bool thumbnails_missing = false;
-      rgui->entry_has_left_thumbnail = rgui_request_thumbnail(
-            &rgui->mini_left_thumbnail,
-            GFX_THUMBNAIL_LEFT,
-            &rgui->left_thumbnail_queue_size,
-            rgui->savestate_thumbnail_file_path,
-            &thumbnails_missing);
+      bool thumbnails_missing        = false;
+      if (rgui_request_thumbnail(
+               &rgui->mini_left_thumbnail,
+               GFX_THUMBNAIL_LEFT,
+               &rgui->left_thumbnail_queue_size,
+               rgui->savestate_thumbnail_file_path,
+               &thumbnails_missing))
+         rgui->flags |=  RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
+      else
+         rgui->flags &= ~RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
    }
 }
 
@@ -6689,13 +6740,17 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    bool menu_rgui_inline_thumbnails  = settings->bools.menu_rgui_inline_thumbnails;
    unsigned menu_rgui_thumbnail_delay= settings->uints.menu_rgui_thumbnail_delay;
    bool network_on_demand_thumbnails = settings->bools.network_on_demand_thumbnails;
-   rgui->entry_has_thumbnail         = false;
-   rgui->entry_has_left_thumbnail    = false;
-   rgui->thumbnail_load_pending      = false;
+   rgui->flags                      &= ~(RGUI_FLAG_THUMBNAIL_LOAD_PENDING
+                                       | RGUI_FLAG_ENTRY_HAS_THUMBNAIL
+                                       | RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL
+                                        );
 
    /* Update thumbnail content/path */
-   if ((rgui->show_fs_thumbnail || menu_rgui_inline_thumbnails) 
-         && (rgui->is_playlist || rgui->is_explore_list || rgui->is_quick_menu))
+   if (       ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+            || menu_rgui_inline_thumbnails)
+         && (  (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
+            || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
+            || (rgui->is_quick_menu)))
    {
       size_t selection      = menu_navigation_get_selection();
       size_t list_size      = menu_entries_get_size();
@@ -6703,7 +6758,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
       bool playlist_valid   = false;
       size_t playlist_index = selection;
 
-      if (rgui->is_playlist)
+      if (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
       {
          /* Get playlist index corresponding
           * to the selected entry */
@@ -6730,7 +6785,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
                playlist_valid ? playlist_get_cached() : NULL, playlist_index);
       }
 #if defined(HAVE_LIBRETRODB)
-      else if (rgui->is_explore_list)
+      else if (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
       {
          /* Get playlist index corresponding
           * to the selected entry */
@@ -6756,7 +6811,8 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    }
 
    /* Save state thumbnails */
-   if (rgui->is_quick_menu || rgui->is_state_slot)
+   if (     (rgui->is_quick_menu)
+         || (rgui->flags & RGUI_FLAG_IS_STATE_SLOT))
    {
       size_t selection = menu_navigation_get_selection();
       size_t list_size = menu_entries_get_size();
@@ -6777,7 +6833,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
       else
       {
          /* Schedule a delayed load */
-         rgui->thumbnail_load_pending      = true;
+         rgui->flags                      |=  RGUI_FLAG_THUMBNAIL_LOAD_PENDING;
          rgui->thumbnail_load_trigger_time = menu_driver_get_current_time();
       }
    }
@@ -6787,14 +6843,18 @@ static void rgui_update_thumbnail_image(void *data)
 {
    rgui_t *rgui     = (rgui_t*)data;
 
-   if (rgui->is_playlist || rgui->is_explore_list)
+   if (     (rgui->flags & RGUI_FLAG_IS_PLAYLIST) 
+         || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST))
       rgui_scan_selected_entry_thumbnail(rgui, true);
 }
 
 static void rgui_toggle_fs_thumbnail(rgui_t *rgui,
       bool menu_rgui_inline_thumbnails)
 {
-   rgui->show_fs_thumbnail     = !rgui->show_fs_thumbnail;
+   if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+      rgui->flags &= ~RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL;
+   else
+      rgui->flags |=  RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL;
 
    /* It is possible that we are waiting for a 'right' thumbnail
     * image to load at this point. If so, and we are displaying
@@ -6806,7 +6866,7 @@ static void rgui_toggle_fs_thumbnail(rgui_t *rgui,
       if (!string_is_empty(rgui->savestate_thumbnail_file_path))
          rgui_reset_savestate_thumbnail(rgui);
 
-      if (rgui->show_fs_thumbnail)
+      if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
       {
          rgui->mini_thumbnail.width    = 0;
          rgui->mini_thumbnail.height   = 0;
@@ -6839,8 +6899,9 @@ static void rgui_refresh_thumbnail_image(void *userdata, unsigned i)
    rgui_inline_thumbnails      = settings->bools.menu_rgui_inline_thumbnails;
 
    /* Only refresh thumbnails if thumbnails are enabled */
-   if ((rgui->show_fs_thumbnail || rgui_inline_thumbnails) &&
-       (gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
+   if (       ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+            || rgui_inline_thumbnails)
+            && (gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
         gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT)))
    {
       /* In all cases, reset current thumbnails */
@@ -6862,7 +6923,9 @@ static void rgui_refresh_thumbnail_image(void *userdata, unsigned i)
       /* Only load thumbnails if currently viewing a
        * playlist (note that thumbnails are loaded
        * immediately, for an optimal user experience) */
-      if (rgui->is_playlist || rgui->is_explore_list || rgui->is_quick_menu)
+      if (     (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
+            || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
+            || (rgui->is_quick_menu))
          rgui_scan_selected_entry_thumbnail(rgui, true);
    }
 }
@@ -6990,8 +7053,8 @@ static void rgui_populate_entries(void *data,
       /* Update blit_line functions */
       rgui_set_blit_functions(
             rgui->language,
-            rgui->shadow_enable,
-            rgui->extended_ascii_enable);
+            rgui->flags & RGUI_FLAG_SHADOW_ENABLE,
+            rgui->flags & RGUI_FLAG_EXTENDED_ASCII_ENABLE);
 
       /* Need to recalculate terminal dimensions
        * > easiest method is to call
@@ -7001,25 +7064,41 @@ static void rgui_populate_entries(void *data,
 #endif
    
    /* Check whether we are currently viewing a playlist */
-   rgui->is_playlist =    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
                        || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
-                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST));
+                       || string_is_equal(label,
+msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)))
+      rgui->flags |= RGUI_FLAG_IS_PLAYLIST;
+   else
+      rgui->flags &= ~RGUI_FLAG_IS_PLAYLIST;
 
-   rgui->is_explore_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST)) ||
-                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB));
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST)) ||
+                           string_is_equal(label,
+msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
+      rgui->flags |=  RGUI_FLAG_IS_EXPLORE_LIST;
+   else
+      rgui->flags &= ~RGUI_FLAG_IS_EXPLORE_LIST;
 
    /* Determine whether this is the quick menu */
-   rgui->is_quick_menu = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) ||
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) ||
                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS)) ||
-                         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST));
-   rgui->is_state_slot = string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT;
+                         string_is_equal(label,
+msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST)))
+      rgui->is_quick_menu = true;
+   else
+      rgui->is_quick_menu = false;
+
+   if (string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT)
+      rgui->flags |=  RGUI_FLAG_IS_STATE_SLOT;
+   else
+      rgui->flags &= ~RGUI_FLAG_IS_STATE_SLOT;
 
    /* Quick Menu under Explore list must also be Quick Menu */
-   if (rgui->is_explore_list)
+   if (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
    {
       rgui->is_quick_menu |= menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu();
       if (rgui->is_quick_menu)
-         rgui->is_explore_list = false;
+         rgui->flags &= ~RGUI_FLAG_IS_EXPLORE_LIST;
    }
    
    /* Set menu title */
@@ -7030,7 +7109,7 @@ static void rgui_populate_entries(void *data,
       update_dynamic_theme_path(rgui, dynamic_theme_dir);
    
    /* Cancel any pending thumbnail load operations */
-   rgui->thumbnail_load_pending = false;
+   rgui->flags &= ~RGUI_FLAG_THUMBNAIL_LOAD_PENDING;
    
    rgui_navigation_set(data, true);
    
@@ -7060,14 +7139,14 @@ static void rgui_populate_entries(void *data,
             rgui_set_video_config(rgui, settings, &rgui->content_video_settings, false);
             /* Menu viewport has been overridden - must ignore
              * resize events until the menu is next toggled off */
-            rgui->ignore_resize_events = true;
+            rgui->flags             |=  RGUI_FLAG_IGNORE_RESIZE_EVENTS;
 #if !defined(GEKKO)
             /* Changing the video config may alter the list
              * of entries that should be displayed in the
              * video scaling menu. The current menu layout
              * was generated using the previous video config;
              * we therefore have to force a menu refresh */
-            rgui->force_menu_refresh = true;
+            rgui->flags             |=  RGUI_FLAG_FORCE_MENU_REFRESH;
 #endif
          }
       }
@@ -7086,20 +7165,20 @@ static int rgui_environ(enum menu_environ_cb type,
    switch (type)
    {
       case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
-         rgui->show_mouse          = true;
-         p_disp->flags            |= GFX_DISP_FLAG_FB_DIRTY;
+         rgui->flags              |=  RGUI_FLAG_SHOW_MOUSE;
+         p_disp->flags            |=  GFX_DISP_FLAG_FB_DIRTY;
          break;
       case MENU_ENVIRON_DISABLE_MOUSE_CURSOR:
-         rgui->show_mouse          = false;
+         rgui->flags              &= ~RGUI_FLAG_SHOW_MOUSE;
          p_disp->flags            &= ~GFX_DISP_FLAG_FB_DIRTY;
          break;
       case MENU_ENVIRON_ENABLE_SCREENSAVER:
-         rgui->show_screensaver    = true;
-         rgui->force_redraw        = true;
+         rgui->flags              |=  RGUI_FLAG_FORCE_REDRAW
+                                   |  RGUI_FLAG_SHOW_SCREENSAVER;
          break;
       case MENU_ENVIRON_DISABLE_SCREENSAVER:
-         rgui->show_screensaver    = false;
-         rgui->force_redraw        = true;
+         rgui->flags              &= ~RGUI_FLAG_SHOW_SCREENSAVER;
+         rgui->flags              |=  RGUI_FLAG_FORCE_REDRAW;
          break;
       default:
          return -1;
@@ -7132,9 +7211,9 @@ static int rgui_pointer_up(void *data,
       case MENU_INPUT_GESTURE_SHORT_PRESS:
          {
             bool show_fs_thumbnail =
-               rgui->show_fs_thumbnail &&
-               rgui->entry_has_thumbnail &&
-               (rgui->fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
+                  (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+               && (rgui->flags & RGUI_FLAG_ENTRY_HAS_THUMBNAIL)
+               && (rgui->fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
             gfx_display_t *p_disp  = disp_get_ptr();
             unsigned header_height = p_disp->header_height;
 
@@ -7200,37 +7279,50 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    unsigned video_height               = video_info->height;
    gfx_display_t *p_disp               = disp_get_ptr();
 
-   if (bg_filler_thickness_enable != rgui->bg_thickness)
+   if (bg_filler_thickness_enable != ((rgui->flags & RGUI_FLAG_BG_THICKNESS) > 0))
    {
-      rgui->bg_thickness     = bg_filler_thickness_enable;
-      rgui->bg_modified      = true;
-      rgui->force_redraw     = true;
+      if (bg_filler_thickness_enable)
+         rgui->flags        |=  RGUI_FLAG_BG_THICKNESS;
+      else
+         rgui->flags        &= ~RGUI_FLAG_BG_THICKNESS;
+      rgui->flags           |=  RGUI_FLAG_BG_MODIFIED
+                             |  RGUI_FLAG_FORCE_REDRAW;
    }
 
-   if (border_filler_thickness_enable != rgui->border_thickness)
+   if (border_filler_thickness_enable != ((rgui->flags & RGUI_FLAG_BORDER_THICKNESS) > 0))
    {
-      rgui->border_thickness = border_filler_thickness_enable;
-      rgui->bg_modified      = true;
-      rgui->force_redraw     = true;
+      if (border_filler_thickness_enable)
+         rgui->flags        |=  RGUI_FLAG_BORDER_THICKNESS;
+      else
+         rgui->flags        &= ~RGUI_FLAG_BORDER_THICKNESS;
+      rgui->flags           |=  RGUI_FLAG_BG_MODIFIED
+                             |  RGUI_FLAG_FORCE_REDRAW;
    }
 
-   if (border_filler_enable != rgui->border_enable)
+   if (border_filler_enable != ((rgui->flags & RGUI_FLAG_BORDER_ENABLE) > 0))
    {
-      rgui->border_enable    = border_filler_enable;
-      rgui->bg_modified      = true;
-      rgui->force_redraw     = true;
+      if (border_filler_enable)
+         rgui->flags        |=  RGUI_FLAG_BORDER_ENABLE;
+      else
+         rgui->flags        &= ~RGUI_FLAG_BORDER_ENABLE;
+      rgui->flags           |=  RGUI_FLAG_BG_MODIFIED
+                             |  RGUI_FLAG_FORCE_REDRAW;
    }
 
-   if (settings->bools.menu_rgui_shadows != rgui->shadow_enable)
+   if (settings->bools.menu_rgui_shadows != ((rgui->flags &
+               RGUI_FLAG_SHADOW_ENABLE) > 0))
    {
       rgui_set_blit_functions(
             rgui->language,
             settings->bools.menu_rgui_shadows,
             settings->bools.menu_rgui_extended_ascii);
 
-      rgui->shadow_enable    = settings->bools.menu_rgui_shadows;
-      rgui->bg_modified      = true;
-      rgui->force_redraw     = true;
+      if (settings->bools.menu_rgui_shadows)
+         rgui->flags        |=  RGUI_FLAG_SHADOW_ENABLE;
+      else
+         rgui->flags        &= ~RGUI_FLAG_SHADOW_ENABLE;
+      rgui->flags           |=  RGUI_FLAG_BG_MODIFIED
+                             |  RGUI_FLAG_FORCE_REDRAW;
    }
 
    if (settings->uints.menu_rgui_particle_effect != rgui->particle_effect)
@@ -7240,27 +7332,33 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
          rgui_init_particle_effect(rgui, p_disp);
 
-      rgui->force_redraw     = true;
+      rgui->flags           |= RGUI_FLAG_FORCE_REDRAW;
    }
 
-   if ((rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE) &&
-       (!rgui->show_screensaver || settings->bools.menu_rgui_particle_effect_screensaver))
-      rgui->force_redraw     = true;
+   if (    (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
+        && ((!(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER))
+        || (settings->bools.menu_rgui_particle_effect_screensaver)))
+      rgui->flags           |= RGUI_FLAG_FORCE_REDRAW;
 
-   if (settings->bools.menu_rgui_extended_ascii != rgui->extended_ascii_enable)
+   if (     settings->bools.menu_rgui_extended_ascii
+       != ((rgui->flags & RGUI_FLAG_EXTENDED_ASCII_ENABLE) > 0))
    {
       rgui_set_blit_functions(
             rgui->language,
             settings->bools.menu_rgui_shadows,
             settings->bools.menu_rgui_extended_ascii);
 
-      rgui->extended_ascii_enable = settings->bools.menu_rgui_extended_ascii;
-      rgui->force_redraw          = true;
+      if (settings->bools.menu_rgui_extended_ascii)
+         rgui->flags             |=  RGUI_FLAG_EXTENDED_ASCII_ENABLE;
+      else
+         rgui->flags             &= ~RGUI_FLAG_EXTENDED_ASCII_ENABLE;
+      rgui->flags                |=  RGUI_FLAG_FORCE_REDRAW;
    }
 
    if ((settings->uints.menu_rgui_color_theme != rgui->color_theme) ||
-       (rgui->transparency_supported &&
-            (settings->bools.menu_rgui_transparency != rgui->transparency_enable)))
+       (       (rgui->flags & RGUI_FLAG_TRANSPARENCY_SUPPORTED)
+            && (settings->bools.menu_rgui_transparency !=
+               ((rgui->flags & RGUI_FLAG_TRANSPARENCY_ENABLE) > 0))))
    {
       if (settings->uints.menu_rgui_color_theme == RGUI_THEME_DYNAMIC)
          update_dynamic_theme_path(rgui,
@@ -7312,14 +7410,14 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
        * - we can no longer guarantee that changes to aspect ratio
        * and custom viewport settings will be preserved. So it
        * no longer makes sense to ignore resize events */
-      rgui->ignore_resize_events = false;
+      rgui->flags               &= ~RGUI_FLAG_IGNORE_RESIZE_EVENTS;
 
       rgui_set_aspect_ratio(rgui, p_disp, true);
    }
 
    /* > Check for changes in aspect ratio lock setting */
-   if ((aspect_ratio_lock != rgui->menu_aspect_ratio_lock) ||
-       rgui->restore_aspect_lock)
+   if (   (aspect_ratio_lock != rgui->menu_aspect_ratio_lock)
+       || (rgui->flags & RGUI_FLAG_RESTORE_ASPECT_LOCK))
    {
       rgui->menu_aspect_ratio_lock = aspect_ratio_lock;
 
@@ -7330,14 +7428,13 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          /* As with changes in aspect ratio, if we reach this point
           * after visiting the video scaling settings menu, resize
           * events should be monitored again */
-         rgui->ignore_resize_events = false;
-
+         rgui->flags               &= ~RGUI_FLAG_IGNORE_RESIZE_EVENTS;
          rgui_update_menu_viewport(rgui, p_disp, settings->uints.menu_rgui_aspect_ratio_lock);
          rgui_set_video_config(rgui, settings, &rgui->menu_video_settings, true);
       }
 
       /* Clear any pending 'restore aspect lock' flags */
-      rgui->restore_aspect_lock = false;
+      rgui->flags &= ~RGUI_FLAG_RESTORE_ASPECT_LOCK;
    }
 
    /* > Check for changes in window (display) dimensions */
@@ -7388,8 +7485,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 #endif
 
       /* If aspect ratio is locked, have to update viewport */
-      if ((aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE) &&
-          !rgui->ignore_resize_events)
+      if (   (aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
+          && (!(rgui->flags & RGUI_FLAG_IGNORE_RESIZE_EVENTS)))
       {
          rgui_update_menu_viewport(rgui, p_disp, settings->uints.menu_rgui_aspect_ratio_lock);
          rgui_set_video_config(rgui, settings, &rgui->menu_video_settings, true);
@@ -7400,14 +7497,17 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Handle pending thumbnail load operations */
-   if (rgui->thumbnail_load_pending)
+   if (rgui->flags & RGUI_FLAG_THUMBNAIL_LOAD_PENDING)
    {
       /* Check whether current 'load delay' duration has elapsed
        * Note: Delay is increased when viewing fullscreen thumbnails,
        * since the flicker when switching between playlist view and
        * fullscreen thumbnail view is incredibly jarring...) */
       if ((menu_driver_get_current_time() - rgui->thumbnail_load_trigger_time) >=
-          (settings->uints.menu_rgui_thumbnail_delay * 1000 * (rgui->show_fs_thumbnail ? 1.5f : 1.0f)))
+          (settings->uints.menu_rgui_thumbnail_delay * 1000 
+           * ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) 
+              ? 1.5f 
+              : 1.0f)))
          rgui_load_current_thumbnails(rgui,
                settings->bools.network_on_demand_thumbnails);
    }
@@ -7420,7 +7520,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 
       /* Screen must be redrawn whenever pointer is active */
       if ((rgui->pointer.type != MENU_POINTER_DISABLED) && rgui->pointer.active)
-         rgui->force_redraw = true;
+         rgui->flags    |= RGUI_FLAG_FORCE_REDRAW;
    }
    else
       rgui->pointer.type = MENU_POINTER_DISABLED;
@@ -7484,7 +7584,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
          /* Any modified video scaling settings have now been
           * registered, so it is again 'safe' to respond to window
           * resize events */
-         rgui->ignore_resize_events = false;
+         rgui->flags &= ~RGUI_FLAG_IGNORE_RESIZE_EVENTS;
       }
 
       /* Upscaling buffer is only required while menu is on. Save
@@ -7506,7 +7606,7 @@ static void rgui_context_reset(void *data, bool is_threaded)
       return;
 
 #ifdef HAVE_GFX_WIDGETS
-   if (rgui->widgets_supported)
+   if (rgui->flags & RGUI_FLAG_WIDGETS_SUPPORTED)
    {
       gfx_display_deinit_white_texture();
       gfx_display_init_white_texture();
@@ -7523,7 +7623,7 @@ static void rgui_context_destroy(void *data)
       return;
 
 #ifdef HAVE_GFX_WIDGETS
-   if (rgui->widgets_supported)
+   if (rgui->flags & RGUI_FLAG_WIDGETS_SUPPORTED)
       gfx_display_deinit_white_texture();
 #endif
 }
@@ -7583,21 +7683,23 @@ static enum menu_action rgui_parse_menu_entry_action(
                rgui_set_video_config(rgui, settings, &rgui->content_video_settings, false);
                /* Schedule a restoration of the aspect ratio
                 * lock on the next frame */
-               rgui->restore_aspect_lock = true;
+               rgui->flags |= RGUI_FLAG_RESTORE_ASPECT_LOCK;
             }
          }
 
-         if (rgui->show_fs_thumbnail)
+         if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
          {
             rgui_thumbnail_cycle_dupe(rgui);
             rgui_toggle_fs_thumbnail(rgui, config_get_ptr()->bools.menu_rgui_inline_thumbnails);
 
-            if (!rgui->is_state_slot && !rgui->is_playlist && !rgui->is_explore_list)
+            if (     (!(rgui->flags & RGUI_FLAG_IS_STATE_SLOT))
+                  && (!(rgui->flags & RGUI_FLAG_IS_PLAYLIST))
+                  && (!(rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)))
                new_action = MENU_ACTION_NOOP;
          }
          break;
       case MENU_ACTION_CANCEL:
-         if (rgui->show_fs_thumbnail)
+         if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
          {
             rgui_thumbnail_cycle_dupe(rgui);
             rgui_toggle_fs_thumbnail(rgui, config_get_ptr()->bools.menu_rgui_inline_thumbnails);
@@ -7606,28 +7708,34 @@ static enum menu_action rgui_parse_menu_entry_action(
          break;
       case MENU_ACTION_START:
          /* Playlist thumbnail fullscreen toggle */
-         if (rgui->is_playlist || rgui->is_explore_list || (rgui->is_quick_menu && !menu_is_running_quick_menu()))
+         if (        (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
+               ||    (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
+               || (  (rgui->is_quick_menu)
+                  && !menu_is_running_quick_menu()))
          {
             settings_t *settings = config_get_ptr();
 
             new_action = MENU_ACTION_NOOP;
 
-            if (!rgui->entry_has_thumbnail && !rgui->entry_has_left_thumbnail)
+            if (     (!(rgui->flags & RGUI_FLAG_ENTRY_HAS_THUMBNAIL))
+                  && (!(rgui->flags & RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL)))
                break;
 
-            if (!rgui->show_fs_thumbnail && rgui->gfx_thumbnails_prev < 0)
+            if ((!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)) 
+                  && rgui->gfx_thumbnails_prev < 0)
                rgui->gfx_thumbnails_prev = settings->uints.gfx_thumbnails;
 
             /* Show fullscreen image from the left slot if main slot is empty */
             if (!rgui->mini_thumbnail.is_valid && rgui->mini_left_thumbnail.is_valid)
             {
-               if (rgui->show_fs_thumbnail && rgui->gfx_thumbnails_prev > 0)
+               if (    (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+                     && rgui->gfx_thumbnails_prev > 0)
                {
                   configuration_set_uint(settings,
                         settings->uints.gfx_thumbnails,
                         rgui->gfx_thumbnails_prev);
                }
-               else if (!rgui->show_fs_thumbnail)
+               else if ((!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)))
                {
                   configuration_set_uint(settings,
                         settings->uints.gfx_thumbnails,
@@ -7636,25 +7744,28 @@ static enum menu_action rgui_parse_menu_entry_action(
             }
 
             /* Avoid showing the same thumbnail after returning from fullscreen mode after cycling images */
-            if (rgui->show_fs_thumbnail)
+            if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
                rgui_thumbnail_cycle_dupe(rgui);
 
             rgui_toggle_fs_thumbnail(rgui, config_get_ptr()->bools.menu_rgui_inline_thumbnails);
 
-            if (!rgui->show_fs_thumbnail)
+            if (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
                rgui->gfx_thumbnails_prev = -1;
          }
          break;
       case MENU_ACTION_SCAN:
          /* Save state slot fullscreen toggle */
-         if ((rgui->is_state_slot || rgui->is_quick_menu) &&
-               !string_is_empty(rgui->savestate_thumbnail_file_path))
+         if ((       (rgui->flags & RGUI_FLAG_IS_STATE_SLOT) 
+                  || (rgui->is_quick_menu))
+               && !string_is_empty(rgui->savestate_thumbnail_file_path))
          {
             rgui_toggle_fs_thumbnail(rgui, true);
             new_action = MENU_ACTION_NOOP;
          }
          /* Playlist thumbnail cycle */
-         else if (rgui->is_playlist || rgui->is_explore_list || rgui->is_quick_menu)
+         else if ((rgui->flags & RGUI_FLAG_IS_PLAYLIST)
+               || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
+               || (rgui->is_quick_menu))
          {
             settings_t *settings = config_get_ptr();
 
@@ -7664,8 +7775,8 @@ static enum menu_action rgui_parse_menu_entry_action(
                      settings->uints.menu_left_thumbnails,
                      settings->uints.menu_left_thumbnails + 1);
 
-               if (!rgui->show_fs_thumbnail &&
-                     settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+               if (    (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
+                     && settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
                   configuration_set_uint(settings,
                         settings->uints.menu_left_thumbnails,
                         settings->uints.menu_left_thumbnails + 1);
@@ -7674,8 +7785,9 @@ static enum menu_action rgui_parse_menu_entry_action(
                   configuration_set_uint(settings,
                         settings->uints.menu_left_thumbnails, 1);
 
-               if (!rgui->show_fs_thumbnail &&
-                     settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+               if (    (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
+                     && (settings->uints.gfx_thumbnails ==
+                        settings->uints.menu_left_thumbnails))
                   configuration_set_uint(settings,
                         settings->uints.menu_left_thumbnails,
                         settings->uints.menu_left_thumbnails + 1);
@@ -7686,8 +7798,9 @@ static enum menu_action rgui_parse_menu_entry_action(
                      settings->uints.gfx_thumbnails,
                      settings->uints.gfx_thumbnails + 1);
 
-               if (!rgui->show_fs_thumbnail &&
-                     settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+               if (   (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
+                     && (settings->uints.gfx_thumbnails ==
+                        settings->uints.menu_left_thumbnails))
                   configuration_set_uint(settings,
                         settings->uints.gfx_thumbnails,
                         settings->uints.gfx_thumbnails + 1);
@@ -7696,8 +7809,9 @@ static enum menu_action rgui_parse_menu_entry_action(
                   configuration_set_uint(settings,
                         settings->uints.gfx_thumbnails, 1);
 
-               if (!rgui->show_fs_thumbnail &&
-                     settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+               if (     (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
+                     && (settings->uints.gfx_thumbnails ==
+                        settings->uints.menu_left_thumbnails))
                   configuration_set_uint(settings,
                         settings->uints.gfx_thumbnails,
                         settings->uints.gfx_thumbnails + 1);
@@ -7710,12 +7824,16 @@ static enum menu_action rgui_parse_menu_entry_action(
       case MENU_ACTION_DOWN:
       case MENU_ACTION_SCROLL_UP:
       case MENU_ACTION_SCROLL_DOWN:
-         if (rgui->show_fs_thumbnail && rgui->is_quick_menu)
+         if (     (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+               && (rgui->is_quick_menu))
             new_action = MENU_ACTION_NOOP;
          break;
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
-         if (rgui->show_fs_thumbnail && (rgui->is_quick_menu && !menu_is_running_quick_menu()))
+         if (        (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+                  && (
+                     (rgui->is_quick_menu)
+                  && !menu_is_running_quick_menu()))
             new_action = MENU_ACTION_NOOP;
          break;
       default:
