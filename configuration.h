@@ -612,6 +612,7 @@ typedef struct settings
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;
       bool input_menu_swap_ok_cancel_buttons;
+      bool input_menu_swap_scroll_buttons;
       bool input_backtouch_enable;
       bool input_backtouch_toggle;
       bool input_small_keyboard_enable;

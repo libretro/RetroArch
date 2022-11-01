@@ -1535,6 +1535,10 @@ MSG_HASH(
    "menu_swap_ok_cancel"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_INPUT_SWAP_SCROLL,
+   "menu_swap_scroll"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,
    "input_autodetect_enable"
    )
