@@ -1,7 +1,6 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2017 - Jean-André Santoni
+ *  Copyright (C) 2017      - Jean-André Santoni
  *  Copyright (C) 2017-2019 - Andrés Suárez
- *  Copyright (C) 2021-2022 - Roberto V. Rampim
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
