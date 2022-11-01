@@ -897,6 +897,7 @@ static const unsigned input_backtouch_toggle       = false;
 #else
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS false
 #endif
+#define DEFAULT_MENU_SWAP_SCROLL_BUTTONS false
 
 #if defined(WIIU)
 #define DEFAULT_ALL_USERS_CONTROL_MENU true

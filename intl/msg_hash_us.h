@@ -2675,6 +2675,14 @@ MSG_HASH(
    "Swap buttons for OK/Cancel. Disabled is the Japanese button orientation, enabled is the western orientation."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "Menu Swap Scroll Buttons"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "Swap buttons for scrolling. Disabled scrolls 10 items with L/R and alphabetically with L2/R2."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
    "All Users Control Menu"
    )
