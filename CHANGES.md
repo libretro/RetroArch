@@ -1,4 +1,6 @@
 # Future
+- 3DS: Remove debug button combo to shutdown RA
+- 3DS: Remove MaterialUI as per MrHuu recommendation
 - ANDROID: Enable 'Vibrate On Key Press' by default
 - COMPILATION: Fixed compiling with --disable-menu
 - DATABASE/PLAYLISTS: Playlist + database changes - Cleanup 'entry_slot', fallback label + logging
