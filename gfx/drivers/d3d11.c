@@ -2306,7 +2306,7 @@ D3D11_ST_FLAG_HAS_ALLOW_TEARING)) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
 
 #ifdef HAVE_MENU
 #ifndef HAVE_GFX_WIDGETS
-   if (d3d11->menu.enabled)
+   if (d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE)
 #endif
    {
       context->lpVtbl->RSSetViewports(context, 1, &d3d11->viewport);

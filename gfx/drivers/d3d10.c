@@ -220,7 +220,10 @@ static void d3d10_overlay_enable(void* data, bool state)
    if (!d3d10)
       return;
 
-   d3d10->overlays.enabled = state;
+   if (state)
+      d3d10->flags |=  D3D10_ST_FLAG_OVERLAYS_ENABLE;
+   else
+      d3d10->flags &= ~D3D10_ST_FLAG_OVERLAYS_ENABLE;
    win32_show_cursor(d3d10, state);
 }
 
@@ -231,7 +234,10 @@ static void d3d10_overlay_full_screen(void* data, bool enable)
    if (!d3d10)
       return;
 
-   d3d10->overlays.fullscreen = enable;
+   if (enable)
+      d3d10->flags |=  D3D10_ST_FLAG_OVERLAYS_FULLSCREEN;
+   else
+      d3d10->flags &= ~D3D10_ST_FLAG_OVERLAYS_FULLSCREEN;
 }
 
 static void d3d10_get_overlay_interface(void* data, const video_overlay_interface_t** iface)
@@ -248,7 +254,7 @@ static void d3d10_render_overlay(d3d10_video_t *d3d10)
 {
    unsigned       i;
 
-   if (d3d10->overlays.fullscreen)
+   if (d3d10->flags & D3D10_ST_FLAG_OVERLAYS_FULLSCREEN)
       d3d10->device->lpVtbl->RSSetViewports(d3d10->device, 1, &d3d10->viewport);
    else
       d3d10->device->lpVtbl->RSSetViewports(d3d10->device, 1, &d3d10->frame.viewport);
@@ -317,7 +323,8 @@ static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
 
 static void d3d10_update_viewport(d3d10_video_t *d3d10, bool force_full)
 {
-   video_driver_update_viewport(&d3d10->vp, force_full, d3d10->keep_aspect);
+   video_driver_update_viewport(&d3d10->vp, force_full,
+         d3d10->flags & D3D10_ST_FLAG_KEEP_ASPECT);
 
    d3d10->frame.viewport.TopLeftX  = d3d10->vp.x;
    d3d10->frame.viewport.TopLeftY  = d3d10->vp.y;
@@ -328,14 +335,13 @@ static void d3d10_update_viewport(d3d10_video_t *d3d10, bool force_full)
 
    if (d3d10->shader_preset && (d3d10->frame.output_size.x != d3d10->vp.width ||
             d3d10->frame.output_size.y != d3d10->vp.height))
-      d3d10->resize_render_targets = true;
+      d3d10->flags                |= D3D10_ST_FLAG_RESIZE_RTS;
 
    d3d10->frame.output_size.x      = d3d10->vp.width;
    d3d10->frame.output_size.y      = d3d10->vp.height;
    d3d10->frame.output_size.z      = 1.0f / d3d10->vp.width;
    d3d10->frame.output_size.w      = 1.0f / d3d10->vp.height;
-
-   d3d10->resize_viewport          = false;
+   d3d10->flags                   &= ~D3D10_ST_FLAG_RESIZE_VIEWPORT;
 }
 
 static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
@@ -382,8 +388,8 @@ static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
 
    free(d3d10->shader_preset);
    d3d10->shader_preset         = NULL;
-   d3d10->init_history          = false;
-   d3d10->resize_render_targets = false;
+   d3d10->flags                &= ~(D3D10_ST_FLAG_INIT_HISTORY
+                                  | D3D10_ST_FLAG_RESIZE_RTS);
 }
 
 static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
@@ -540,8 +546,8 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       image_texture_free(&image);
    }
 
-   d3d10->resize_render_targets = true;
-   d3d10->init_history          = true;
+   d3d10->flags                |=  (D3D10_ST_FLAG_INIT_HISTORY
+                                |   D3D10_ST_FLAG_RESIZE_RTS);
 
    return true;
 
@@ -750,9 +756,15 @@ static void *d3d10_gfx_init(const video_info_t* video,
    video_driver_set_size(d3d10->vp.full_width, d3d10->vp.full_height);
    d3d10->viewport.Width  = d3d10->vp.full_width;
    d3d10->viewport.Height = d3d10->vp.full_height;
-   d3d10->resize_viewport = true;
-   d3d10->keep_aspect     = video->force_aspect;
-   d3d10->vsync           = video->vsync;
+   d3d10->flags          |= D3D10_ST_FLAG_RESIZE_VIEWPORT;
+   if (video->force_aspect)
+      d3d10->flags       |=  D3D10_ST_FLAG_KEEP_ASPECT;
+   else
+      d3d10->flags       &= ~D3D10_ST_FLAG_KEEP_ASPECT;
+   if (video->vsync)
+      d3d10->flags       |=  D3D10_ST_FLAG_VSYNC;
+   else
+      d3d10->flags       &= ~D3D10_ST_FLAG_VSYNC;
    d3d10->format          = video->rgb32 ?
       DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
 
@@ -1134,9 +1146,10 @@ error:
    return NULL;
 }
 
-static void d3d10_init_history(d3d10_video_t* d3d10, unsigned width, unsigned height)
+static void d3d10_init_history(d3d10_video_t* d3d10,
+      unsigned width, unsigned height)
 {
-   unsigned i;
+   int i;
 
    /* TODO/FIXME: should we init history to max_width/max_height instead ?
     * to prevent out of memory errors happening several frames later
@@ -1153,7 +1166,7 @@ static void d3d10_init_history(d3d10_video_t* d3d10, unsigned width, unsigned he
       d3d10_init_texture(d3d10->device, &d3d10->frame.texture[i]);
       /* TODO/FIXME: clear texture ?  */
    }
-   d3d10->init_history = false;
+   d3d10->flags &= ~D3D10_ST_FLAG_INIT_HISTORY;
 }
 
 static void d3d10_init_render_targets(d3d10_video_t* d3d10,
@@ -1250,7 +1263,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
       }
    }
 
-   d3d10->resize_render_targets = false;
+   d3d10->flags &= ~D3D10_ST_FLAG_RESIZE_RTS;
 }
 
 static bool d3d10_gfx_frame(
@@ -1280,7 +1293,7 @@ static bool d3d10_gfx_frame(
    bool widgets_active        = video_info->widgets_active;
 #endif
 
-   if (d3d10->resize_chain)
+   if (d3d10->flags & D3D10_ST_FLAG_RESIZE_CHAIN)
    {
       D3D10Texture2D backBuffer;
 
@@ -1301,8 +1314,8 @@ static bool d3d10_gfx_frame(
       d3d10->ubo_values.OutputSize.width  = d3d10->viewport.Width;
       d3d10->ubo_values.OutputSize.height = d3d10->viewport.Height;
 
-      d3d10->resize_chain    = false;
-      d3d10->resize_viewport = true;
+      d3d10->flags                       &= ~D3D10_ST_FLAG_RESIZE_CHAIN;
+      d3d10->flags                       |=  D3D10_ST_FLAG_RESIZE_VIEWPORT;
 
       video_driver_set_size(video_width, video_height);
    }
@@ -1330,13 +1343,12 @@ static bool d3d10_gfx_frame(
       {
          if (d3d10->frame.texture[0].desc.Width != width ||
                d3d10->frame.texture[0].desc.Height != height)
-            d3d10->resize_render_targets = true;
+            d3d10->flags |= D3D10_ST_FLAG_RESIZE_RTS;
 
-         if (d3d10->resize_render_targets)
+         if (d3d10->flags & D3D10_ST_FLAG_RESIZE_RTS)
          {
-            unsigned i;
-
-            /* release all render targets first to avoid memory fragmentation */
+            int i;
+            /* Release all render targets first to avoid memory fragmentation */
             for (i = 0; i < d3d10->shader_preset->passes; i++)
             {
                d3d10_release_texture(&d3d10->pass[i].rt);
@@ -1348,7 +1360,7 @@ static bool d3d10_gfx_frame(
 
          if (d3d10->shader_preset->history_size)
          {
-            if (d3d10->init_history)
+            if (d3d10->flags & D3D10_ST_FLAG_INIT_HISTORY)
                d3d10_init_history(d3d10, width, height);
             else
             {
@@ -1373,7 +1385,7 @@ static bool d3d10_gfx_frame(
          d3d10_init_texture(d3d10->device, &d3d10->frame.texture[0]);
       }
 
-      if (d3d10->resize_render_targets)
+      if (d3d10->flags & D3D10_ST_FLAG_RESIZE_RTS)
          d3d10_init_render_targets(d3d10, width, height);
 
       if (frame != RETRO_HW_FRAME_BUFFER_VALID)
@@ -1523,9 +1535,10 @@ static bool d3d10_gfx_frame(
    context->lpVtbl->OMSetBlendState(context, d3d10->blend_enable, NULL,
          D3D10_DEFAULT_SAMPLE_MASK);
 
-   if (d3d10->menu.enabled && d3d10->menu.texture.handle)
+   if (    (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE) 
+         && d3d10->menu.texture.handle)
    {
-      if (d3d10->menu.fullscreen)
+      if (d3d10->flags & D3D10_ST_FLAG_MENU_FULLSCREEN)
          context->lpVtbl->RSSetViewports(context, 1, &d3d10->viewport);
 
       d3d10_set_shader(context, &d3d10->shaders[VIDEO_SHADER_STOCK_BLEND]);
@@ -1542,16 +1555,17 @@ static bool d3d10_gfx_frame(
    context->lpVtbl->PSSetConstantBuffers(context, 0, 1, (ID3D10Buffer **
             const)&d3d10->ubo);
 
-   d3d10->sprites.enabled = true;
+   d3d10->flags |= D3D10_ST_FLAG_SPRITES_ENABLE;
 
 #ifdef HAVE_OVERLAY
-   if (d3d10->overlays.enabled && overlay_behind_menu)
+   if (    (d3d10->flags & D3D10_ST_FLAG_OVERLAYS_ENABLE)
+         && overlay_behind_menu)
       d3d10_render_overlay(d3d10);
 #endif
 
 #ifdef HAVE_MENU
 #ifndef HAVE_GFX_WIDGETS
-   if (d3d10->menu.enabled)
+   if (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE)
 #endif
    {
       context->lpVtbl->RSSetViewports(context, 1, &d3d10->viewport);
@@ -1560,7 +1574,7 @@ static bool d3d10_gfx_frame(
 #endif
 
 #ifdef HAVE_MENU
-   if (d3d10->menu.enabled)
+   if (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE)
       menu_driver_frame(menu_is_alive, video_info);
    else
 #endif
@@ -1580,7 +1594,8 @@ static bool d3d10_gfx_frame(
       }
 
 #ifdef HAVE_OVERLAY
-   if (d3d10->overlays.enabled && !overlay_behind_menu)
+   if (     (d3d10->flags & D3D10_ST_FLAG_OVERLAYS_ENABLE)
+         && !overlay_behind_menu)
       d3d10_render_overlay(d3d10);
 #endif
 
@@ -1598,7 +1613,7 @@ static bool d3d10_gfx_frame(
       D3D10SetVertexBuffer(d3d10->device, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
       font_driver_render_msg(d3d10, msg, NULL, NULL);
    }
-   d3d10->sprites.enabled = false;
+   d3d10->flags &= ~D3D10_ST_FLAG_SPRITES_ENABLE;
 
 #ifndef __WINRT__
    win32_update_title();
@@ -1617,22 +1632,36 @@ static void d3d10_gfx_set_nonblock_state(void* data, bool toggle,
    if (!d3d10)
       return;
 
-   d3d10->vsync         = !toggle;
-   d3d10->swap_interval = (!toggle) ? swap_interval : 0;
+   if (toggle)
+   {
+      d3d10->flags        &= ~D3D10_ST_FLAG_VSYNC;
+      d3d10->swap_interval =  0;
+   }
+   else
+   {
+      d3d10->flags        |=  D3D10_ST_FLAG_VSYNC;
+      d3d10->swap_interval =  swap_interval;
+   }
 }
 
 static bool d3d10_gfx_alive(void* data)
 {
    bool           quit;
+   bool resize_chain    = false;
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
    win32_check_window(NULL,
-         &quit, &d3d10->resize_chain, &d3d10->vp.full_width,
+         &quit, &resize_chain, &d3d10->vp.full_width,
          &d3d10->vp.full_height);
 
-   if (     d3d10->resize_chain 
-         && d3d10->vp.full_width != 0 
-         && d3d10->vp.full_height != 0)
+   if (resize_chain)
+      d3d10->flags |=  D3D10_ST_FLAG_RESIZE_CHAIN;
+   else
+      d3d10->flags &= ~D3D10_ST_FLAG_RESIZE_CHAIN;
+
+   if (     (d3d10->flags & D3D10_ST_FLAG_RESIZE_CHAIN)
+         && (d3d10->vp.full_width  != 0)
+         && (d3d10->vp.full_height != 0))
       video_driver_set_size(d3d10->vp.full_width, d3d10->vp.full_height);
 
    return !quit;
@@ -1685,15 +1714,22 @@ static void d3d10_set_menu_texture_frame(
       ? RARCH_FILTER_LINEAR
          : RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
 }
-static void d3d10_set_menu_texture_enable(void* data, bool state, bool full_screen)
+static void d3d10_set_menu_texture_enable(
+      void* data, bool state, bool fullscreen)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
    if (!d3d10)
       return;
 
-   d3d10->menu.enabled    = state;
-   d3d10->menu.fullscreen = full_screen;
+   if (state)
+      d3d10->flags |=  D3D10_ST_FLAG_MENU_ENABLE;
+   else
+      d3d10->flags &= ~D3D10_ST_FLAG_MENU_ENABLE;
+   if (fullscreen)
+      d3d10->flags |=  D3D10_ST_FLAG_MENU_FULLSCREEN;
+   else
+      d3d10->flags &= ~D3D10_ST_FLAG_MENU_FULLSCREEN;
 }
 
 static void d3d10_gfx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
@@ -1703,16 +1739,15 @@ static void d3d10_gfx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
    if (!d3d10)
       return;
 
-   d3d10->keep_aspect     = true;
-   d3d10->resize_viewport = true;
+   d3d10->flags |= D3D10_ST_FLAG_RESIZE_VIEWPORT
+                 | D3D10_ST_FLAG_KEEP_ASPECT;
 }
 
 static void d3d10_gfx_apply_state_changes(void* data)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
-
    if (d3d10)
-      d3d10->resize_viewport = true;
+	   d3d10->flags |= D3D10_ST_FLAG_RESIZE_VIEWPORT;
 }
 
 static void d3d10_gfx_set_osd_msg(
@@ -1723,7 +1758,7 @@ static void d3d10_gfx_set_osd_msg(
 
    if (d3d10)
    {
-      if (d3d10->sprites.enabled)
+      if (d3d10->flags & D3D10_ST_FLAG_SPRITES_ENABLE)
          font_driver_render_msg(d3d10, msg,
                (const struct font_params*)params, font);
    }

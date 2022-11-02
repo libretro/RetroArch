@@ -126,6 +126,21 @@ typedef struct d3d10_shader_t
    D3D10InputLayout    layout;
 } d3d10_shader_t;
 
+enum d3d10_video_flags
+{
+   D3D10_ST_FLAG_VSYNC               = (1 << 0),
+   D3D10_ST_FLAG_RESIZE_CHAIN        = (1 << 1),
+   D3D10_ST_FLAG_KEEP_ASPECT         = (1 << 2),
+   D3D10_ST_FLAG_RESIZE_VIEWPORT     = (1 << 3),
+   D3D10_ST_FLAG_RESIZE_RTS          = (1 << 4), /* RT = Render Target */
+   D3D10_ST_FLAG_INIT_HISTORY        = (1 << 5),
+   D3D10_ST_FLAG_SPRITES_ENABLE      = (1 << 6),
+   D3D10_ST_FLAG_OVERLAYS_ENABLE     = (1 << 7),
+   D3D10_ST_FLAG_OVERLAYS_FULLSCREEN = (1 << 8),
+   D3D10_ST_FLAG_MENU_ENABLE         = (1 << 9),
+   D3D10_ST_FLAG_MENU_FULLSCREEN     = (1 << 10)
+};
+
 typedef struct
 {
    unsigned              cur_mon_id;
@@ -146,12 +161,6 @@ typedef struct
    DXGI_FORMAT           format;
    float                 clearcolor[4];
    unsigned              swap_interval;
-   bool                  vsync;
-   bool                  resize_chain;
-   bool                  keep_aspect;
-   bool                  resize_viewport;
-   bool                  resize_render_targets;
-   bool                  init_history;
    d3d10_shader_t        shaders[GFX_MAX_SHADERS];
 #ifdef __WINRT__
    DXGIFactory2 factory;
@@ -167,7 +176,6 @@ typedef struct
       D3D10Buffer    vbo;
       int            offset;
       int            capacity;
-      bool           enabled;
    } sprites;
 
 #ifdef HAVE_OVERLAY
@@ -175,8 +183,6 @@ typedef struct
    {
       D3D10Buffer      vbo;
       d3d10_texture_t* textures;
-      bool             enabled;
-      bool             fullscreen;
       int              count;
    } overlays;
 #endif
@@ -185,8 +191,6 @@ typedef struct
    {
       d3d10_texture_t   texture;
       D3D10Buffer       vbo;
-      bool              enabled;
-      bool              fullscreen;
    } menu;
    struct
    {
@@ -215,6 +219,7 @@ typedef struct
    struct string_list *gpu_list;
    IDXGIAdapter1 *adapters[D3D10_MAX_GPU_COUNT];
    IDXGIAdapter1 *current_adapter;
+   uint16_t flags;
 } d3d10_video_t;
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
