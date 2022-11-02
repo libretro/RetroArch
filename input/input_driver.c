@@ -110,7 +110,7 @@ static float input_null_get_sensor_input(void *data, unsigned port, unsigned id)
 static uint64_t input_null_get_capabilities(void *data) { return 0; }
 static void input_null_grab_mouse(void *data, bool state) { }
 static bool input_null_grab_stdin(void *data) { return false; }
-static void input_null_keypress_vibrate() { }
+static void input_null_keypress_vibrate(void) { }
 
 static input_driver_t input_null = {
    input_null_init,
