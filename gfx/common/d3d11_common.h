@@ -181,7 +181,14 @@ enum d3d11_state_flags
    D3D11_ST_FLAG_INIT_HISTORY        = (1 << 7),
    D3D11_ST_FLAG_HAS_FLIP_MODEL      = (1 << 8),
    D3D11_ST_FLAG_HAS_ALLOW_TEARING   = (1 << 9),
-   D3D11_ST_FLAG_HW_IFACE_ENABLE     = (1 << 10)
+   D3D11_ST_FLAG_HW_IFACE_ENABLE     = (1 << 10),
+   D3D11_ST_FLAG_HDR_SUPPORT         = (1 << 11),
+   D3D11_ST_FLAG_HDR_ENABLE          = (1 << 12),
+   D3D11_ST_FLAG_SPRITES_ENABLE      = (1 << 13),
+   D3D11_ST_FLAG_OVERLAYS_ENABLE     = (1 << 14),
+   D3D11_ST_FLAG_OVERLAYS_FULLSCREEN = (1 << 15),
+   D3D11_ST_FLAG_MENU_ENABLE         = (1 << 16),
+   D3D11_ST_FLAG_MENU_FULLSCREEN     = (1 << 17)
 };
 
 typedef struct
@@ -211,7 +218,7 @@ typedef struct
    DXGI_FORMAT           format;
    float                 clearcolor[4];
    unsigned              swap_interval;
-   uint16_t              flags;
+   uint32_t              flags;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
 #ifdef HAVE_DXGI_HDR
    enum dxgi_swapchain_bit_depth 
@@ -237,8 +244,6 @@ typedef struct
       float                            min_output_nits;
       float                            max_cll;
       float                            max_fall;
-      bool                             support;
-      bool                             enable;
    } hdr;
 #endif
 
@@ -249,7 +254,6 @@ typedef struct
       D3D11Buffer    vbo;
       int            offset;
       int            capacity;
-      bool           enabled;
    } sprites;
 
 #ifdef HAVE_OVERLAY
@@ -257,8 +261,6 @@ typedef struct
    {
       D3D11Buffer      vbo;
       d3d11_texture_t* textures;
-      bool             enabled;
-      bool             fullscreen;
       int              count;
    } overlays;
 #endif
@@ -267,8 +269,6 @@ typedef struct
    {
       d3d11_texture_t texture;
       D3D11Buffer     vbo;
-      bool            enabled;
-      bool            fullscreen;
    } menu;
 
    struct

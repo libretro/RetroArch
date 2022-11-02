@@ -87,7 +87,8 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
    if (draw->coords->vertex && draw->coords->tex_coord && draw->coords->color)
       vertex_count = draw->coords->vertices;
 
-   if (!d3d11->sprites.enabled || vertex_count > d3d11->sprites.capacity)
+   if (     (!(d3d11->flags & D3D11_ST_FLAG_SPRITES_ENABLE))
+         || (vertex_count > d3d11->sprites.capacity))
       return;
 
    if (d3d11->sprites.offset + vertex_count > d3d11->sprites.capacity)
@@ -137,7 +138,7 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
       }
       else
       {
-         int          i;
+         int i;
          const float* vertex    = draw->coords->vertex;
          const float* tex_coord = draw->coords->tex_coord;
          const float* color     = draw->coords->color;

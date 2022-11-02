@@ -247,7 +247,7 @@ static void d3d11_font_render_message(
 
    if (!msg || !*msg)
       return;
-   if (!d3d11->sprites.enabled)
+   if (!(d3d11->flags & D3D11_ST_FLAG_SPRITES_ENABLE))
       return;
 
    /* If font line metrics are not supported just draw as usual */
