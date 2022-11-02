@@ -64,7 +64,7 @@ ifneq ($(findstring FPGA,$(OS)),)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
-   LDFLAGS += -static-libgcc -lwinmm -limm32
+   LDFLAGS += -static-libgcc -lwinmm
 endif
 
 include Makefile.common

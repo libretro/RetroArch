@@ -3354,59 +3354,65 @@ bool input_keyboard_line_event(
       input_driver_state_t *input_st,
       input_keyboard_line_t *state, uint32_t character)
 {
+   char array[2];
    bool            ret         = false;
-   const char    * word = (char*) &character; 
-   static unsigned composition = 0;		
+   const char            *word = NULL;
+   char            c           = (character >= 128) ? '?' : character;
 
-   /* COMPSTR:0x08000000, RESULTSTR:0x80000000   END:0x01000000*/
-   if (character & 0xFF000000)
-   {	
-      size_t len = strlen((char*)&composition);
-      if (     (len > 0)
-            && (state->ptr >= len)
-            && state->buffer)
-      {
-         memmove(state->buffer + state->ptr-len,
-               state->buffer+state->ptr,  len + 1);
-         state->ptr  -= len; 
-         state->size -= len;
-      }
-      if (character & 0xF0000000)
-         composition = 0;
-      else
-         composition = character &0xffffff; /* GCS_COMPSTR */
-      if (len && composition==0)
-         word	= state->buffer; 
-      character &= 0xffffff;
-   }
+   /* Treat extended chars as ? as we cannot support
+    * printable characters for unicode stuff. */
 
-   /*(c == '\r' || c == '\n')	*/
-   if (character == 0x0000000D || character == 0x0000000A)	
+   if (c == '\r' || c == '\n')
    {
       state->cb(state->userdata, state->buffer);
+
+      array[0] = c;
+      array[1] = 0;
+
       ret      = true;
-   }  else
-   if ( character == 0x00000008 || character == 0x0000007f)    /* c == '\b' || c == '\x7f')  0x7f is ASCII for del */ 
+      word     = array;
+   }
+   else if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
    {
       if (state->ptr)
       {
-        unsigned i;
-        int len = input_st->osk_last_codepoint_len;
-        if (     (len > 0)
-              && (state->ptr >= len)
-              && state->buffer)
-        {
-           memmove(state->buffer + state->ptr-len, state->buffer + state->ptr, (state->size - state->ptr) + 1);
-           state->ptr -=len; 
-           state->size-=len;
-        }
-        word     = state->buffer; /* ?? */
+         unsigned i;
+
+         for (i = 0; i < input_st->osk_last_codepoint_len; i++)
+         {
+            memmove(state->buffer + state->ptr - 1,
+                  state->buffer + state->ptr,
+                  state->size - state->ptr + 1);
+            state->ptr--;
+            state->size--;
+         }
+
+         word     = state->buffer;
       }
-   }  else
-   if (character) 
-	   input_keyboard_line_append(   state, (char*)&character, strlen((char*)&character));
-   else
-	   return false;
+   }
+   else if (ISPRINT(c))
+   {
+      /* Handle left/right here when suitable */
+      char *newbuf = (char*)
+         realloc(state->buffer, state->size + 2);
+      if (!newbuf)
+         return false;
+
+      memmove(newbuf + state->ptr + 1,
+            newbuf + state->ptr,
+            state->size - state->ptr + 1);
+      newbuf[state->ptr] = c;
+      state->ptr++;
+      state->size++;
+      newbuf[state->size] = '\0';
+
+      state->buffer = newbuf;
+
+      array[0] = c;
+      array[1] = 0;
+
+      word     = array;
+   }
 
    /* OSK - update last character */
    if (word)
