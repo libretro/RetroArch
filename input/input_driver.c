@@ -5555,10 +5555,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       if (menu_is_alive)
       {
          int k;
-         unsigned x_plus  = RARCH_ANALOG_LEFT_X_PLUS;
-         unsigned y_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
-         unsigned x_minus = RARCH_ANALOG_LEFT_X_MINUS;
-         unsigned y_minus = RARCH_ANALOG_LEFT_Y_MINUS;
+         int s;
 
          /* Push analog to D-Pad mappings to binds. */
          for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
@@ -5567,20 +5564,43 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             (general_binds)[k].orig_joyaxis = (general_binds)[k].joyaxis;
          }
 
-         if (!INHERIT_JOYAXIS(auto_binds))
+         /* Read input from both analog sticks. */
+         for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
          {
-            unsigned j = x_plus + 3;
-            /* Inherit joyaxis from analogs. */
-            for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-               (auto_binds)[k].joyaxis = (auto_binds)[j--].joyaxis;
-         }
+            unsigned x_plus  = RARCH_ANALOG_LEFT_X_PLUS;
+            unsigned y_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
+            unsigned x_minus = RARCH_ANALOG_LEFT_X_MINUS;
+            unsigned y_minus = RARCH_ANALOG_LEFT_Y_MINUS;
 
-         if (!INHERIT_JOYAXIS(general_binds))
-         {
-            unsigned j = x_plus + 3;
-            /* Inherit joyaxis from analogs. */
-            for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-               (general_binds)[k].joyaxis = (general_binds)[j--].joyaxis;
+            if (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+            {
+               x_plus  = RARCH_ANALOG_RIGHT_X_PLUS;
+               y_plus  = RARCH_ANALOG_RIGHT_Y_PLUS;
+               x_minus = RARCH_ANALOG_RIGHT_X_MINUS;
+               y_minus = RARCH_ANALOG_RIGHT_Y_MINUS;
+            }
+
+            if (!INHERIT_JOYAXIS(auto_binds))
+            {
+               unsigned j = x_plus + 3;
+               /* Inherit joyaxis from analogs. */
+               for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+               {
+                  if ((auto_binds)[j].joyaxis != AXIS_NONE &&
+                        ((float)abs(joypad->axis(port, (uint32_t)(auto_binds)[j].joyaxis))
+                         / 0x8000) > joypad_info.axis_threshold)
+                     (auto_binds)[k].joyaxis = (auto_binds)[j].joyaxis;
+                  j--;
+               }
+            }
+
+            if (!INHERIT_JOYAXIS(general_binds))
+            {
+               unsigned j = x_plus + 3;
+               /* Inherit joyaxis from analogs. */
+               for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+                  (general_binds)[k].joyaxis = (general_binds)[j--].joyaxis;
+            }
          }
       }
 #endif /* HAVE_MENU */
