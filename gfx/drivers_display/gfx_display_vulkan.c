@@ -249,9 +249,9 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
          {
             struct vk_draw_triangles call;
             unsigned 
-               disp_pipeline  = ((draw->prim_type == 
-                        GFX_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | 
-               (vk->display.blend << 0);
+               disp_pipeline  = 
+                 ((draw->prim_type == GFX_DISPLAY_PRIM_TRIANGLESTRIP) << 1)
+               | (((vk->flags & VK_FLAG_DISPLAY_BLEND) > 0) << 0);
             call.pipeline     = vk->display.pipelines[disp_pipeline];
             call.texture      = texture;
             call.sampler      = (texture->flags & VK_TEX_FLAG_MIPMAP) ?
@@ -275,7 +275,7 @@ static void gfx_display_vk_blend_begin(void *data)
    vk_t *vk = (vk_t*)data;
 
    if (vk)
-      vk->display.blend = true;
+      vk->flags |=  VK_FLAG_DISPLAY_BLEND;
 }
 
 static void gfx_display_vk_blend_end(void *data)
@@ -283,7 +283,7 @@ static void gfx_display_vk_blend_end(void *data)
    vk_t *vk = (vk_t*)data;
 
    if (vk)
-      vk->display.blend = false;
+      vk->flags &= ~VK_FLAG_DISPLAY_BLEND;
 }
 
 static void gfx_display_vk_scissor_begin(
@@ -294,11 +294,11 @@ static void gfx_display_vk_scissor_begin(
 {
    vk_t *vk                          = (vk_t*)data;
 
-   vk->tracker.use_scissor           = true;
    vk->tracker.scissor.offset.x      = x;
    vk->tracker.scissor.offset.y      = y;
    vk->tracker.scissor.extent.width  = width;
    vk->tracker.scissor.extent.height = height;
+   vk->flags                        |= VK_FLAG_TRACKER_USE_SCISSOR;
    vk->tracker.dirty                |= VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
@@ -308,8 +308,8 @@ static void gfx_display_vk_scissor_end(void *data,
 {
    vk_t *vk                 = (vk_t*)data;
 
-   vk->tracker.use_scissor  = false;
-   vk->tracker.dirty       |= VULKAN_DIRTY_DYNAMIC_BIT;
+   vk->flags               &= ~VK_FLAG_TRACKER_USE_SCISSOR;
+   vk->tracker.dirty       |=  VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
 gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {

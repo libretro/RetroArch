@@ -349,6 +349,26 @@ struct vk_draw_triangles
    unsigned vertices;
 };
 
+enum vk_flags
+{
+   VK_FLAG_VSYNC               = (1 << 0),
+   VK_FLAG_KEEP_ASPECT         = (1 << 1),
+   VK_FLAG_FULLSCREEN          = (1 << 2),
+   VK_FLAG_QUITTING            = (1 << 3),
+   VK_FLAG_SHOULD_RESIZE       = (1 << 4),
+   VK_FLAG_TRACKER_USE_SCISSOR = (1 << 5),
+   VK_FLAG_HW_ENABLE           = (1 << 6),
+   VK_FLAG_HW_VALID_SEMAPHORE  = (1 << 7),
+   VK_FLAG_MENU_ENABLE         = (1 << 8),
+   VK_FLAG_MENU_FULLSCREEN     = (1 << 9),
+   VK_FLAG_HDR_SUPPORT         = (1 << 10),
+   VK_FLAG_DISPLAY_BLEND       = (1 << 11),
+   VK_FLAG_READBACK_PENDING    = (1 << 12),
+   VK_FLAG_READBACK_STREAMED   = (1 << 13),
+   VK_FLAG_OVERLAY_ENABLE      = (1 << 14),
+   VK_FLAG_OVERLAY_FULLSCREEN  = (1 << 15)
+};
+
 typedef struct vk
 {
    vulkan_filter_chain_t *filter_chain;
@@ -391,8 +411,6 @@ typedef struct vk
       struct scaler_ctx scaler_bgr;
       struct scaler_ctx scaler_rgb;
       struct vk_texture staging[VULKAN_MAX_SWAPCHAIN_IMAGES];
-      bool pending;
-      bool streamed;
    } readback;
 
    struct
@@ -400,8 +418,6 @@ typedef struct vk
       struct vk_texture *images;
       struct vk_vertex *vertex;
       unsigned count;
-      bool enable;
-      bool full_screen;
    } overlay;
 
    struct
@@ -420,7 +436,6 @@ typedef struct vk
    {
       VkPipeline pipelines[8 * 2];
       struct vk_texture blank_texture;
-      bool blend;
    } display;
 
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -431,7 +446,6 @@ typedef struct vk
       float             min_output_nits;
       float             max_cll;
       float             max_fall;
-      bool              support;
    } hdr;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -442,8 +456,6 @@ typedef struct vk
       unsigned last_index;
       float alpha;
       bool dirty[VULKAN_MAX_SWAPCHAIN_IMAGES];
-      bool enable;
-      bool full_screen;
    } menu;
 
    struct
@@ -471,8 +483,6 @@ typedef struct vk
       uint32_t num_cmd;
       uint32_t src_queue_family;
 
-      bool enable;
-      bool valid_semaphore;
    } hw;
 
    struct
@@ -483,15 +493,8 @@ typedef struct vk
       VkSampler sampler;   /* ptr alignment */
       math_matrix_4x4 mvp;
       VkRect2D scissor;    /* int32_t alignment */
-      bool use_scissor;
    } tracker;
-
-   bool vsync;
-   bool keep_aspect;
-   bool fullscreen;
-   bool quitting;
-   bool should_resize;
-
+   uint32_t flags;
 } vk_t;
 
 #define VK_BUFFER_CHAIN_DISCARD(chain) \

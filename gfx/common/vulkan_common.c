@@ -953,7 +953,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
       /* Changing pipeline invalidates dynamic state. */
       vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 
-      if (vk->tracker.use_scissor)
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
          sci               = vk->tracker.scissor;
       else
       {
@@ -972,7 +972,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
    else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
    {
       VkRect2D sci;
-      if (vk->tracker.use_scissor)
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
          sci               = vk->tracker.scissor;
       else
       {
@@ -1051,7 +1051,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
       vk->tracker.pipeline = quad->pipeline;
       /* Changing pipeline invalidates dynamic state. */
       vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
-      if (vk->tracker.use_scissor)
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
          sci               = vk->tracker.scissor;
       else
       {
@@ -1070,7 +1070,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
    else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
    {
       VkRect2D sci;
-      if (vk->tracker.use_scissor)
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
          sci               = vk->tracker.scissor;
       else
       {
