@@ -70,7 +70,8 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
    if (draw->coords->vertex && draw->coords->tex_coord && draw->coords->color)
       vertex_count = draw->coords->vertices;
 
-   if (!d3d12->sprites.enabled || vertex_count > d3d12->sprites.capacity)
+   if (   (!(d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE)) 
+         || (vertex_count > d3d12->sprites.capacity))
       return;
 
    if (d3d12->sprites.offset + vertex_count > d3d12->sprites.capacity)

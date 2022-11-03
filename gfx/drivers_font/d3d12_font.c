@@ -249,7 +249,7 @@ static void d3d12_font_render_message(
 
    if (!msg || !*msg)
       return;
-   if (!d3d12 || !d3d12->sprites.enabled)
+   if (!d3d12 || (!(d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE)))
       return;
 
    /* If font line metrics are not supported just draw as usual */
