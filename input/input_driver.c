@@ -5599,7 +5599,13 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                unsigned j = x_plus + 3;
                /* Inherit joyaxis from analogs. */
                for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-                  (general_binds)[k].joyaxis = (general_binds)[j--].joyaxis;
+               {
+                  if ((general_binds)[j].joyaxis != AXIS_NONE &&
+                        ((float)abs(joypad->axis(port, (uint32_t)(general_binds)[j].joyaxis))
+                         / 0x8000) > joypad_info.axis_threshold)
+                     (general_binds)[k].joyaxis = (general_binds)[j].joyaxis;
+                  j--;
+               }
             }
          }
       }
