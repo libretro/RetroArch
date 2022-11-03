@@ -1382,6 +1382,8 @@ ifeq ($(HAVE_HID), 1)
           input/connect/connect_nesusb.o \
           input/connect/connect_snesusb.o \
           input/connect/connect_wiiupro.o \
+		  input/connect/connect_kade.o \
+		  input/connect/connect_zerodelay_dragonrise.o \
           input/connect/connect_wiiugca.o
 endif
 
