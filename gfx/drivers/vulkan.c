@@ -933,16 +933,20 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    {
       struct video_shader* shader_preset = vulkan_filter_chain_get_preset(
       vk->filter_chain); 
-      VkFormat rt_format                 = (shader_preset && shader_preset->passes) ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_UNDEFINED;
+      VkFormat rt_format = (shader_preset && shader_preset->passes) ?
+         vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_UNDEFINED;
+      bool emits_hdr10 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain);
 
       switch (rt_format)
       {
          case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
             /* If the last shader pass uses a RGB10A2 back buffer 
              * and HDR has been enabled, assume we want to skip 
-             * the inverse tonemapper and HDR10 conversion */
-            vulkan_set_hdr_inverse_tonemap(vk, false);
-            vulkan_set_hdr10(vk, false);
+             * the inverse tonemapper and HDR10 conversion.
+             * If we just inherited HDR10 format based on backbuffer,
+             * we would have used RGBA8, and thus we should do inverse tonemap as expected. */
+            vulkan_set_hdr_inverse_tonemap(vk, !emits_hdr10);
+            vulkan_set_hdr10(vk, !emits_hdr10);
             vk->flags |= VK_FLAG_SHOULD_RESIZE;
             break;
          case VK_FORMAT_R16G16B16A16_SFLOAT:
@@ -1000,16 +1004,19 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
    {
       struct video_shader* shader_preset = vulkan_filter_chain_get_preset(vk->filter_chain); 
-      VkFormat rt_format                 = (shader_preset && shader_preset->passes) ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_UNDEFINED;
+      VkFormat rt_format = (shader_preset && shader_preset->passes) ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_UNDEFINED;
+      bool emits_hdr10 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain);
 
       switch (rt_format)
       {
          case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
             /* If the last shader pass uses a RGB10A2 backbuffer 
              * and HDR has been enabled, assume we want to 
-             * skip the inverse tonemapper and HDR10 conversion */
-            vulkan_set_hdr_inverse_tonemap(vk, false);
-            vulkan_set_hdr10(vk, false);
+             * skip the inverse tonemapper and HDR10 conversion
+             * If we just inherited HDR10 format based on backbuffer,
+             * we would have used RGBA8, and thus we should do inverse tonemap as expected. */
+            vulkan_set_hdr_inverse_tonemap(vk, !emits_hdr10);
+            vulkan_set_hdr10(vk, !emits_hdr10);
             vk->flags |= VK_FLAG_SHOULD_RESIZE;
             break;
          case VK_FORMAT_R16G16B16A16_SFLOAT:
