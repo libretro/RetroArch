@@ -1952,12 +1952,104 @@ MSG_HASH(
    "Papírfehér luminancia"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "A papírfehér szín fényerejének beállítása. Ez legyen az olvasható szöveg vagy az SDR (Standard Dynamic Range) luminanciájának teteje. Arra jó, hogy a környezet különféle megvilágításához alkalmazkodni lehessen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
    "Kontraszt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "HDR gamma/kontraszt beállítás. A legfényesebb és legsötétebb részek színe közt növeli meg az eltérést. Minél magasabb a HDR kontraszt, annál nagyobb ez az eltérés, minél kisebb, annál fakóbb a kép. Saját ízlés és képernyő szerint állítható, ami a legjobban néz ki."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Kiterjesztett színskála"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "A színtér lineáris térre átalakítása után kiterjesztett színskála használata a HDR10 konverzióhoz."
    )
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   "Függőleges szinkronjelhez igazodás (VSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   "A grafikus kártya kimenetének időzítése a képernyő frissítési frekvenciájához. Ajánlott."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   "VSync váltóperiódus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   "Egyedi VSync váltóperiódus. A megadott szorzóval csökkenti a monitor frissítési frekvenciáját. Az \"Automatikus\" beállítás a mag által megadott képfrissítés alapján állítja ezt, így jobb a képkövetés, ha például 30 fps-es tartalom fut 60 Hz-es képernyőn, vagy 60 fps-es tartalom 120 Hz-es képernyőn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   "Automatikus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+   "Adaptív VSync"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   "A VSync aktív, amíg a teljesítmény a megcélzott képfrissítés alá nem esik. Minimalizálja a döcögősséget, amikor a teljesítmény nem éri el a valós időt, és energiát takaríthat meg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "Képvárakoztatás (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "Csökkenti a késleltetést a kép döcögésének kockázata mellett. Ennyi ezredmásodpercet vár VSync után."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "Automatikus képvárakoztatás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Időlegesen csökkenti a \"Képvárakoztatás\" mértékét, hogy elkerülje a képkockák eldobását. A kezdőérték a kép előállítási idejének a fele 0-s \"Képvárakoztatás\" esetén."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "Automatikus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   "jelenleg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   "Szigorú GPU szinkronizáció"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   "A CPU és a GPU szigorú összehangolása. Csökkenti a késleltetést a teljesítmény rovására."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   "Szigorú GPU szinkronizáció képkockái"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   "A CPU ennyi képkockával járhat a GPU előtt, ha a \"Szigorú GPU szinkronizáció\" be van kapcsolva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   "Pontos igazítás a tartalom képfrissítéséhez (G-Sync, FreeSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+   "Nem lehet eltérés a mag által igényelt időzítéstől. A rugalmas frissítési frekvenciájú kijelzőkhöz (G-Sync, FreeSync, HDMI 2.1 VRR)."
+   )
 
 /* Settings > Audio */
 
@@ -1982,8 +2074,12 @@ MSG_HASH(
    "Szinkronizáció"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   "A hang szinkronizációs beállításai."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
-   "MIDI beállítások módosítása."
+   "MIDI beállítások."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
@@ -1991,11 +2087,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   "A hangkeverő beállításainak módosítása."
+   "A hangkeverő beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    "Menü hang"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "A menü hangbeállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -2010,8 +2110,12 @@ MSG_HASH(
    "Keverő némítása"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   "A hangkeverőből jövő hang némítása."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-   "Hangerőnövelés (dB)"
+   "Hangerő (dB)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
@@ -2026,12 +2130,16 @@ MSG_HASH(
    "A globális hangkeverő hangereje (dB). A normál, erősítés nélküli hangerő 0 dB."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
+   "DSP bővítmény"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
    "DSP (digitális jelfeldolgozó) hangbővítmény, amely még a meghajtóhoz továbbítás előtt dolgozza fel a hangot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
-   "DSP Bővítmény törlése"
+   "DSP bővítmény eltávolítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
@@ -2066,7 +2174,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   "Hang"
+   "Hangok"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
@@ -2117,6 +2225,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    "Hangidőzítés szinkronizálása. Ajánlott bekapcsolni."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
+   "Elcsúszás maximuma"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   "A bejövő hang ütemének legnagyobb megengedett eltérése. Megnövelve nagyon nagy eltéréseket is megenged, de cserébe a hangmagasság nem lesz pontos (pl. PAL magok futtatása NTSC kijelzőn)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+   "Dinamikus hangvezérlés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+   "Elsimítja az időzítés kisebb pontatlanságait a kép és a hang egymáshoz szinkronizálásánál. Figyelem, ha ki van kapcsolva, szinte lehetetlen a megfelelő szinkronizálás."
    )
 
 /* Settings > Audio > MIDI */
@@ -2226,6 +2350,38 @@ MSG_HASH(
 
 /* Settings > Input */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
+   "Felhasználók maximális száma"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+   "A RetroArch által támogatott felhasználók maximális száma."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "Lekérdezés módja"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+   "A RetroArch által használt módszer a bemenetek lekérdezésére. \"Korai\" vagy \"Késői\" beállítás konfigurációtól függően csökkentheti a késleltetést."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   "Módosított irányítás ehhez a maghoz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   "Felülírja az irányítás kiosztását a módosított kiosztással az aktuális maghoz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
+   "Automatikus beállítás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+   "A kontroller automatikus Plug-and-Play beállítása, ha van hozzá profil."
+   )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
@@ -2253,6 +2409,14 @@ MSG_HASH(
    "Engedélyezi az egérkurzor megragadását, amikor az alkalmazás előtérbe kerül."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   "\"Figyelj a játékra\" mód automatikus bekapcsolása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   "A \"Figyelj a játékra\" mód bekapcsolása tartalom indításakor és folytatásakor. Az \"Észlelés\" beállítás akkor kapcsolja be ezt a módot, ha az aktuális magban létezik a billentyűzetfigyelő funkció."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    "KI"
    )
@@ -2265,12 +2429,20 @@ MSG_HASH(
    "Észlelés"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   "Gomb-tengely határérték"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   "Analógról digitális bemenetre leképezés esetén mennyire kell a kart elmozdítani, hogy az gombnyomást eredményezzen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    "Analóg holtsáv"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
-   "A beállított értéknél kisebb mozgások hatástalanok maradnak."
+   "Az analóg kar beállított értéknél kisebb mozgásai hatástalanok maradnak."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
@@ -2281,20 +2453,92 @@ MSG_HASH(
    "Az analóg karok érzékenysége."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
+   "Turbó periódus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "Turbó gomb lenyomásakor ez lesz az ismétlés gyakorisága (képkockában)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
+   "Turbó kitöltési tényező"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
+   "A turbó periódusból ennyi képkockáig lesznek lenyomva a gombok. Ha ugyanannyi vagy nagyobb, mint a Turbó periódus, a gomb sosem lesz felengedve."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+   "Turbó mód"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   "A turbó mód általános viselkedése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
+   "Az alapértelmezett turbó gomb"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
+   "Alapértelmezett gomb a \"Single Button\" turbó módhoz."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Turbó mód"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "A turbó tüzelés beállításai."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   "Tapintható visszajelzés / rezgés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "A tapintható visszajelzés és rezgés beállításai."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+   "A menü irányítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+   "A menüirányítás beállításai."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "Gyorsbillentyűk"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
+   "Gyorsbillentyűk beállításai."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+   "%u. csatlakozó irányítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "Az ehhez a csatlakozóhoz rendelt irányítás."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+   "Rezgés gombnyomáskor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+   "Rezgő eszköz engedélyezése (a támogatott magoknál)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   "Rezgés erőssége"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    "A tapintható visszajelzés erőssége."
@@ -2334,17 +2578,105 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "Az OK és Mégse gombok felcserélése. A kikapcsolt állapot a Japánban szokásos gombkiosztás, a bekapcsolt a Nyugaton szokásos."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "A görgetőgombok felcserélése a menüben"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "A görgetőgombok felcserélése. Kikapcsolva az L/R tíz tételenként, az L2/R2 betűnként görget."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   "Minden felhasználó irányíthatja a menüt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "Bármelyik felhasználó irányíthatja a menüt. Kikapcsolt esetben csak az 1. felhasználó teheti ezt."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Kerülő megoldás az Androidos lecsatlakozásra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Kerülő megoldás a le- és visszacsatlakozó kontrollerekre, amikor két játékos ugyanolyan kontrollert használ."
+   )
 
 /* Settings > Input > Hotkeys */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+   "Kilépés megerősítése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+   "A Kilépés gyorsgombot kétszer kell megnyomni a Retroarch-ból kilépéshez."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "Kontroller kombináció a menühöz"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Kontroller gombkombináció a menü előhozásához."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Kontroller kombináció a kilépéshez"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    "Kontroller gombkombináció a Retroarch-ból való kilépéshez."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
+   "Gyorsgomb visszatartása (képkocka)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   "Az engedélyező gyorsgomb lenyomása (és nyomva tartása) csak ennyi képkocka eltelte után blokkolja a normál bemenetet. Ezzel tudja az engedélyező gyorsgomb a normál funkcióját ellátni (mint pl. \"Select\")."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
+   "Gyorsítás (váltókapcsoló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
+   "Váltás a gyorsítás és a normál sebesség közt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "Gyorsítás (pillanatkapcsoló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "Amíg a gomb le van nyomva, a gyorsítás aktív. Felengedve a tartalom normál sebességgel fut."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
+   "Lassítás (váltókapcsoló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
+   "Váltás a lassítás és a normál sebesség közt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
+   "Lassítás (pillanatkapcsoló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
+   "Amíg a gomb le van nyomva, a lassítás aktív. Felengedve a tartalom normál sebességgel fut."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   "Pontos igazítás a tartalom képfrissítéséhez (váltókapcsoló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   "Ki-be kapcsolja a pontos igazodást a tartalom képfrissítéséhez."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
@@ -2363,8 +2695,28 @@ MSG_HASH(
    "Játékállás elmentése az éppen kiválasztott rekeszbe."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   "Teljes képernyős mód (váltókapcsoló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   "Váltás a teljes képernyős és az ablakos megjelenítés közt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   "Tartalom bezárása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
+   "Az aktuális tartalom bezárása. Az el nem mentett változtatások elveszhetnek."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    "Kilépés a RetroArch-ból"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
+   "A RetroArch bezárása, minden mentés és konfigurációs fájl lemezre írása után."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
@@ -2387,16 +2739,56 @@ MSG_HASH(
    "Visszatekerés"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
+   "Visszatekeri az aktuális tartalmat, amíg a gomb le van nyomva.\nA \"Visszatekerés támogatása\" be kell legyen kapcsolva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
+   "Bemenetek rögzítése újrajátszáshoz (váltókapcsoló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
+   "Ki-be kapcsolja a játék bemeneteinek rögzítését .bsv formátumban."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
-   "Megállítás (váltógomb)"
+   "Megállítás (váltókapcsoló)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "A futó tartalmat állítja meg és engedi tovább futni."
+   "Váltás a futó tartalom megállítása és továbbengedése közt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
+   "Képkocka léptetés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE,
+   "Ha meg van állítva a tartalom, egy képkockával továbblépteti."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
    "Játék újraindítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RESET,
+   "Az aktuális tartalom újraindítása az elejéről."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
+   "Következő shader"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
+   "A \"Videoshaderek\" könyvtár gyökeréből a következő shader preset fájl betöltése és alkalmazása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
+   "Előző shader"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
+   "A \"Videoshaderek\" könyvtár gyökeréből az előző shader preset fájl betöltése és alkalmazása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
@@ -2405,6 +2797,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    "Készít egy képet az aktuális tartalomról."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
+   "Némítás (váltókapcsoló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
+   "Ki-be kapcsolja a hangkimenetet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -2419,8 +2819,16 @@ MSG_HASH(
    "Hangerő fel"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
+   "A kimenő hangerő növelése."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
    "Hangerő le"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
+   "A kimenő hangerő csökkentése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -2455,6 +2863,22 @@ MSG_HASH(
    "Az előző lemezre lépteti a mutatót. \nA virtuális lemeztálca nyitva kell legyen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
+   "Figyelj a játékra (váltókapcsoló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
+   "A \"Figyelj a játékra\" mód be- és kikapcsolása. Ilyenkor a gyorsbillentyűk nem működnek (a mag megkapja a teljes billentyűzetbemenetet), és az egér meg van ragadva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
+   "Asztali menü (váltókapcsoló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
+   "Az asztali WIMP (ablakok, ikonok, menük, kurzor) környezet megnyitása."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "MI Szolgáltatás"
    )
@@ -2465,6 +2889,14 @@ MSG_HASH(
 
 /* Settings > Input > Port # Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
+   "Hozzárendelt csatlakozó"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "A mag melyik csatlakozója (rendszerint: melyik játékos) kapja meg a bemenetet a frontend %u. bemeneti csatlakozójáról."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
    "B gomb (lent)"
@@ -2573,6 +3005,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "Pisztoly irányválasztó jobb"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "Turbó"
+   )
 
 /* Settings > Latency */
 
@@ -2672,6 +3108,10 @@ MSG_HASH(
 #endif
 /* Settings > Configuration */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
+   "Shaderek automatikus betöltése"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
    "Globális mag beállítófájl használata"
@@ -2871,8 +3311,172 @@ MSG_HASH(
    "Az érzékelt bemenetek megjelenítése a képernyőrátéten. \"Megérintett\" állásban a megnyomott/kattintott elemeket emeli ki, \"Fizikai (kontroller)\" állásban a magnak átadott bemeneteket, rendszerint egy csatlakoztatott kontroller vagy billentyűzet irányából."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   "Megérintett"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
+   "Fizikai (kontroller)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "Bejövő jelek megjelenítése erről a csatlakozóról"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
-   "A monitorozott bejövő csatlakozó, amikor az \"Aktivitás megjelenítése a rátéten\" \"Fizikai (kontroller)\" állásban van."
+   "A megfigyelt bejövő csatlakozó, amikor az \"Aktivitás megjelenítése a rátéten\" beállítás \"Fizikai (kontroller)\" állásban van."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   "Egérkurzor megjelenítése a rátéten"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   "Egérkurzor megjelenítése képernyőrátét használata közben."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
+   "Rátét automatikus elforgatása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
+   "Az elrendezés automatikus elforgatása a képernyő tájolása vagy a képarány szerint, ha az aktuális rátét azt támogatja."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
+   "Rátét automatikus méretezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
+   "A rátét méretének és a kezelőszervek távolságának automatikus hangolása a képarányhoz igazítva. A kontroller típusú rátétekkel adja a legjobb eredményt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "Irányválasztó átlós érzékenysége"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "Az átlós zónák mérete. 100% a nyolc irányban szimmetrikus beállítás."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "ABXY átfedés érzékenysége"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "A négy előlapi gomb átfedő zónáinak mérete. 100% a nyolc irányban szimmetrikus beállítás."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY,
+   "Képernyőrátétek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
+   "Rátét áttetszősége"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
+   "A rátét összes kezelőszervének áttetszősége."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+   "Rátét kiválasztása a fájlböngészővel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
+   "Rátét méretezése (fekvő)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
+   "A rátét felhasználói felülete összes elemének méretezése, fekvő tájolású képernyők esetén."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "Rátét képarány hangolás (fekvő)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "A rátét képarányt korrigáló méretezése, fekvő tájolású képernyők esetén. A pozitív értékek növelik a rátét szélességét (míg a negatívak csökkentik)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "Rátét vízszintes elválasztása (fekvő)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "A rátét jobb és bal oldali elemei közti távolság átállítása, ha a jelenlegi rátét támogatja, fekvő tájolású képernyők esetén. A pozitív értékek növelik a távolságot a két fél közt (míg a negatívak csökkentik)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "Rátét függőleges elválasztása (fekvő)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "A rátét alsó és felső elemei közti távolság átállítása, ha a jelenlegi rátét támogatja, fekvő tájolású képernyők esetén. A pozitív értékek növelik a távolságot a két fél közt (míg a negatívak csökkentik)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
+   "Rátét X irányú eltolása (fekvő)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
+   "A rátét vízszintes eltolása, fekvő tájolású képernyők esetén. Pozitív értékek jobbra mozdítják a rátétet, negatív értékek balra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "Rátét Y irányú eltolása (fekvő)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "A rátét függőleges eltolása, fekvő tájolású képernyők esetén. Pozitív értékek felfele mozdítják a rátétet, negatív értékek lefele."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
+   "Rátét méretezése (álló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
+   "A rátét felhasználói felülete összes elemének méretezése, álló tájolású képernyők esetén."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "Rátét képarány hangolás (álló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "A rátét képarányt korrigáló méretezése, álló tájolású képernyők esetén. A pozitív értékek növelik a rátét szélességét (míg a negatívak csökkentik)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
+   "Rátét vízszintes elválasztása (álló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+   "A rátét jobb és bal oldali elemei közti távolság átállítása, ha a jelenlegi rátét támogatja, álló tájolású képernyők esetén. A pozitív értékek növelik a távolságot a két fél közt (míg a negatívak csökkentik)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "Rátét függőleges elválasztása (álló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "A rátét alsó és felső elemei közti távolság átállítása, ha a jelenlegi rátét támogatja, álló tájolású képernyők esetén. A pozitív értékek növelik a távolságot a két fél közt (míg a negatívak csökkentik)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
+   "Rátét X irányú eltolása (álló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
+   "A rátét vízszintes eltolása, álló tájolású képernyők esetén. Pozitív értékek jobbra mozdítják a rátétet, negatív értékek balra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
+   "Rátét Y irányú eltolása (álló)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
+   "A rátét függőleges eltolása, álló tájolású képernyők esetén. Pozitív értékek felfele mozdítják a rátétet, negatív értékek lefele."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -3070,6 +3674,14 @@ MSG_HASH(
    "Játékállás mentése vagy betöltése után automatikusan becsukja a menüt és visszatér a tartalomhoz. Kikapcsolása javíthat a mentés teljesítményén nagyon lassú eszközöknél."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
+   "Csillagmező"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
+   "Örvény"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    "Tartalom megállítása, ha nem aktív"
    )
@@ -3245,6 +3857,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    "Összes"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   "Egyedi"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
@@ -3431,6 +4047,10 @@ MSG_HASH(
 /* Settings > Network */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   "Egyedi"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
    "Hálózati RetroPad"
    )
@@ -3582,6 +4202,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
    "Hangszűrők"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
+   "Videoshaderek"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
+   "A GPU alapú videoshaderek könyvtára."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
@@ -4005,6 +4633,14 @@ MSG_HASH(
    "Lemezképfájlok kezelése."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
+   "Shaderek"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
+   "Shaderek beállítása a kép kiegészítéséhez."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
    "Eredmények"
    )
@@ -4087,20 +4723,168 @@ MSG_HASH(
 /* Quick Menu > Shaders */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
+   "Videoshaderek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
+   "Megváltozott shader fájlok észlelése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
+   "A shader fájlok változásainak automatikus alkalmazása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Utoljára használt shader könyvtár megjegyzése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Shader presetek és feldolgozók betöltésekor a fájlböngésző a legutóbb használt könyvtárat nyitja meg."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
+   "Shader preset betöltése, a shader feldolgozó automatikus beállításával."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
+   "A jelenlegi shader preset elmentése."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
    "Eltávolítás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
+   "Automatikus shader preset eltávolítása."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
+   "A shader konfiguráció változásai rögtön életbe lépnek. Akkor szükséges külön alkalmazni, ha változott a shader feldolgozók száma, a szűrés, az FBO méretezés, stb."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
+   "A shader paraméterei"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
+   "Az aktuális shader közvetlen változtatása. A változások nem íródnak ki a preset fájlba."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
+   "Shader feldolgozók"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
+   "A shader feldolgozó pipeline sorok mennyiségének növelése vagy csökkentése. Minden feldolgozó sorhoz külön shader köthető, konfigurálható méretezéssel és szűréssel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FILTER,
+   "Szűrő"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCALE,
+   "Méretezés"
    )
 
 /* Quick Menu > Shaders > Save */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Egyszerű presetek"
+   )
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Olyan shader preset mentése, amely hivatkozik az eredeti betöltött shaderre és csak a paraméter változásokat tartalmazza."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
+   "Shader preset mentése másként"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+   "A jelenlegi shader beállítások mentése új shader presetként."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "Globális preset mentése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "A jelenlegi shader beállítások mentése mint globálisan alapértelmezett beállítás."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
+   "Mag preset mentése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+   "A jelenlegi shader beállítások mentése mint erre a magra alapértelmezett beállítás."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "Tartalomkönyvtár preset mentése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "A jelenlegi shader beállítások mentése mint a jelenlegi tartalomkönyvtárban levő összes fájlra alapértelmezett beállítás."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "Játék preset mentése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "A jelenlegi shader beállítások mentése mint erre a tartalomra alapértelmezett beállítás."
+   )
 
 /* Quick Menu > Shaders > Remove */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
+   "Nem található automatikus shader preset"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "Globális preset eltávolítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "A minden tartalom és minden mag által használt globális preset eltávolítása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   "Mag preset eltávolítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   "A jelenleg betöltött maggal futtatott minden tartalomra érvényes mag preset eltávolítása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   "Tartalomkönyvtár preset eltávolítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   "A jelenlegi tartalomkönyvtáron belüli összes tartalomra érvényes tartalomkönyvtár preset eltávolítása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   "Játék preset eltávolítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   "A csak az aktuális játék által használt játék preset eltávolítása."
+   )
 
 /* Quick Menu > Shaders > Shader Parameters */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
+   "A shadernek nincsenek paraméterei"
+   )
 
 /* Quick Menu > Overrides */
 
@@ -4146,12 +4930,76 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
    "RetroAchievements ellenőrzőkód"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
+   "Adatbázis bejegyzés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
+   "A jelenlegi tartalom információi az adatbázisban."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
+   "Nincs megjeleníthető bejegyzés"
+   )
 
 /* Miscellaneous UI Items */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
+   "Nincs elérhető mag"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE,
+   "Nincs elérhető maginformáció"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE_BACKUPS_AVAILABLE,
    "Nincs elérhető mentés a magokról"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
+   "Nincsenek kedvencek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
+   "Nincsenek előzmények"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
+   "Nincsenek képek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
+   "Nincsenek zenék"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
+   "Nincsenek videók"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
+   "Nincs elérhető információ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
+   "Nincs elérhető beállítás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
+   "Nem található Bluetooth eszköz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
+   "Nem található hálózat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE,
+   "Nincs mag"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SEARCH,
+   "Keresés"
    )
 
 /* Settings Options */
@@ -4177,8 +5025,28 @@ MSG_HASH(
    "RetroPad analóg karral"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NONE,
+   "Nincs"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN,
    "Ismeretlen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R,
+   "Le + Y + L1 + R1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HOLD_START,
+   "Start nyomvatartása (2 másodpercig)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HOLD_SELECT,
+   "Select nyomvatartása (2 másodpercig)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
+   "Le + Select"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -4256,6 +5124,22 @@ MSG_HASH(
 /* RGUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
+   "A menü színösszeállítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
+   "Más színösszeállítás választása. Az \"Egyedi\" lehetőségnél külön fájlból lehet betölteni a színösszeállítást."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+   "Egyedi színösszeállítás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
+   "Egyedi színösszeállítás fájl kiválasztása a fájlböngészővel."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Árnyék effekt"
    )
@@ -4275,16 +5159,60 @@ MSG_HASH(
 /* RGUI: Settings Options */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
+   "Legközelebbi szomszéd (gyors)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
    "Bilineáris"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
+   "Sinc/Lanczos3 (lassú)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   "Nincs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
+   "Automatikus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
+   "16:9 (középre igazított)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
+   "16:10 (középre igazított)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
+   "3:2 (középre igazított)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
+   "5:3 (középre igazított)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    "KI"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
+   "Képernyőhöz igazított"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    "Egész-szorzós felbontás skálázás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
+   "Képernyő kitöltése (kinyújtott)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
+   "Egyedi"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA,
@@ -4294,9 +5222,65 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
    "KI"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
+   "Hó (ritkás)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT,
+   "Hó (sűrű)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN,
+   "Eső"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX,
+   "Örvény"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD,
+   "Csillagmező"
+   )
 
 /* XMB: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_FONT,
+   "Menü betűtípusa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_FONT,
+   "Más betűtípus választása a menühöz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+   "A menü betűtípusának színe (piros)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   "A menü betűtípusának színe (zöld)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   "A menü betűtípusának színe (kék)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+   "Menü elrendezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_LAYOUT,
+   "Az XMB felület más elrendezése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_THEME,
+   "A menü ikontémája"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_THEME,
+   "Más ikonösszeállítás választása a Retroarch-hoz."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
    "Árnyékok megjelenítése"
@@ -4304,6 +5288,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
    "Az ikonok, bélyegképek, és betűk árnyékot vetnek. Kisebb hatása van a teljesítményre."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
+   "A menü színösszeállítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
+   "A háttérben látható színátmenet lecserélése."
    )
 
 /* XMB: Settings Options */
@@ -4348,15 +5340,71 @@ MSG_HASH(
 /* Ozone: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   "A menü színösszeállítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
+   "A színösszeállítás lecserélése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
+   "Egyszerű fehér"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
+   "Egyszerű fekete"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
    "Drakula"
    )
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+   "A menü színösszeállítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
+   "A háttérben látható színátmenet lecserélése."
+   )
 
 /* MaterialUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE,
+   "Kék"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY,
+   "Szürkés-kékes"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE,
+   "Sötétkék"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN,
+   "Zöld"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED,
+   "Vörös"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW,
+   "Sárga"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK,
+   "Material UI sötét"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
+   "Automatikus"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
    "KI"
@@ -4389,6 +5437,10 @@ MSG_HASH(
    "&Nézet"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS,
+   "A shader paraméterei"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
    "Sablon:"
    )
@@ -4411,6 +5463,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    "&Súgó"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
+   "A RetroArch névjegye"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
@@ -4497,6 +5553,14 @@ MSG_HASH(
    "Napló"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT,
+   "%1 tétel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   "Mag hozzárendelése"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_HIDE,
    "Elrejt"
    )
@@ -4548,6 +5612,10 @@ MSG_HASH(
 /* Unsorted */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
+   "Turbó/holtsáv"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_DISK,
    "Nincs kiválasztott lemez"
    )
@@ -4568,6 +5636,10 @@ MSG_HASH(
    "Felhasználó"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "A CPU és a GPU szigorú összehangolása. Csökkenti a késleltetést a teljesítmény rovására."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Indít"
    )
@@ -4585,6 +5657,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Súgó"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
+   "A hang és a kép hibáinak elhárítása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
+   "Tartalom betöltése"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
+   "Mi az a mag?"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
+   "Hibakeresési információk küldése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
@@ -4831,6 +5919,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
    "Érvénytelen lemezsorszám."
+   )
+MSG_HASH(
+   MSG_GAME_FOCUS_ON,
+   "\"Figyelj a játékra\" mód bekapcsolva"
+   )
+MSG_HASH(
+   MSG_GAME_FOCUS_OFF,
+   "\"Figyelj a játékra\" mód kikapcsolva"
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT,
