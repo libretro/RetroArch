@@ -860,7 +860,7 @@ static void gfx_widgets_layout(
    }
    else
    {
-      p_dispwidget->msg_queue_icon_size_x         = 0;
+      p_dispwidget->msg_queue_icon_size_x         = p_dispwidget->simple_widget_padding * 1.5f;
       p_dispwidget->msg_queue_icon_size_y         = 0;
    }
 
@@ -1400,7 +1400,7 @@ static void gfx_widgets_draw_regular_msg(
 
    /* Background */
    bar_width  = p_dispwidget->simple_widget_padding + msg->width + p_dispwidget->msg_queue_icon_size_x;
-   bar_margin = p_dispwidget->msg_queue_icon_size_x * 0.04f;
+   bar_margin = p_dispwidget->simple_widget_padding * 0.15f;
 
    gfx_display_draw_quad(
          p_disp,
