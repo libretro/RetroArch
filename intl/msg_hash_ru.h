@@ -7466,7 +7466,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
-   "Загрузить файл чит-кодов и добавить их в список."
+   "Загрузить и добавить в список чит-коды из файла."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,

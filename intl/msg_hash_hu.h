@@ -1174,7 +1174,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   "Módosítsa a felvételi beállításokat."
+   "Felvételek beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
@@ -1374,7 +1374,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "A felvételhez használ eszköz."
+   "A felvételhez használt eszköz."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
@@ -2114,6 +2114,14 @@ MSG_HASH(
    "A hangkeverőből jövő hang némítása."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "Hang kikapcsolása gyorsításkor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   "A hang automatikus elnémítása gyorsításkor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Hangerő (dB)"
    )
@@ -2640,7 +2648,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
-   "Gyorsítás (váltókapcsoló)"
+   "Gyorsítás (váltógomb)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
@@ -2648,7 +2656,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
-   "Gyorsítás (pillanatkapcsoló)"
+   "Gyorsítás (pillanatgomb)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
@@ -2656,7 +2664,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
-   "Lassítás (váltókapcsoló)"
+   "Lassítás (váltógomb)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -2664,7 +2672,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
-   "Lassítás (pillanatkapcsoló)"
+   "Lassítás (pillanatgomb)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
@@ -2672,7 +2680,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "Pontos igazítás a tartalom képfrissítéséhez (váltókapcsoló)"
+   "Pontos igazítás a tartalom képfrissítéséhez (váltógomb)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
@@ -2696,7 +2704,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "Teljes képernyős mód (váltókapcsoló)"
+   "Teljes képernyős mód (váltógomb)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -2744,7 +2752,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Bemenetek rögzítése újrajátszáshoz (váltókapcsoló)"
+   "Bemenetek rögzítése újrajátszáshoz (váltógomb)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
@@ -2752,7 +2760,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
-   "Megállítás (váltókapcsoló)"
+   "Megállítás (váltógomb)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
@@ -2800,11 +2808,43 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
-   "Némítás (váltókapcsoló)"
+   "Némítás (váltógomb)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
    "Ki-be kapcsolja a hangkimenetet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
+   "Képernyőbillentyűzet (váltógomb)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
+   "A képernyőn megjelenő billentyűzetet kapcsolja be-ki."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
+   "FPS megjelenítése (váltógomb)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
+   "Az FPS, képkocka per másodperc állapotjelzőt kapcsolja be-ki."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   "Műszaki statisztikák megjelenítése (váltógomb)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "A képernyőn megjelenő műszaki statisztikai adatokat kapcsolja be-ki."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
+   "Hibakeresési információk küldése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
+   "Diagnosztikai információk küldése az eszközről és a RetroArch beállításairól a kiszolgálóinknak, elemzés céljából."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -2840,7 +2880,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
-   "Lemezkiadás"
+   "Lemezkiadás/behúzás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
@@ -2864,7 +2904,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
-   "Figyelj a játékra (váltókapcsoló)"
+   "Figyelj a játékra (váltógomb)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
@@ -2872,11 +2912,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
-   "Asztali menü (váltókapcsoló)"
+   "Asztali menü (váltógomb)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
    "Az asztali WIMP (ablakok, ikonok, menük, kurzor) környezet megnyitása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
+   "Felvétel (váltógomb)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE,
+   "Elindítja / megállítja a tartalom rögzítését egy helyi videófájlba."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
+   "Közvetítés (váltógomb)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
+   "A tartalom közvetítése egy online videó platform felé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
@@ -2890,12 +2946,36 @@ MSG_HASH(
 /* Settings > Input > Port # Controls */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
+   "Analóg-digitális leképezés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "A kiválasztott analóg kart használja az irányváltó (D-Pad) bemenetéhez. Ha a mag támogatja az analóg bemenetet, ez a leképezés csak akkor aktív, ha \"(mindenképpen)\" jelű beállítás van kiválasztva, ez esetben a kiválasztott kar analóg bemenete nem jut el a maghoz."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Hozzárendelt csatlakozó"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    "A mag melyik csatlakozója (rendszerint: melyik játékos) kapja meg a bemenetet a frontend %u. bemeneti csatlakozójáról."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
+   "Az összes irányítás beállítása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
+   "Visszaállítás az alapértelmezett irányításra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+   "Kontrollerprofil mentése"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
+   "Egér sorszáma"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
@@ -2962,6 +3042,38 @@ MSG_HASH(
    "R3 gomb (jobb hüvelyk)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
+   "Bal analóg kar X+ (jobbra)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
+   "Bal analóg kar X- (balra)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+   "Bal analóg kar Y+ (lefele)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
+   "Bal analóg kar Y- (felfele)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
+   "Jobb analóg kar X+ (jobbra)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
+   "Jobb analóg kar X- (balra)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
+   "Jobb analóg kar Y+ (lefele)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
+   "Jobb analóg kar Y- (felfele)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
    "Pisztoly ravasz"
    )
@@ -3015,6 +3127,14 @@ MSG_HASH(
 
 /* Settings > Core */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+   "Megosztott hardveres context"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
+   "A hardveres képalkotású magoknak saját contextet biztosít. Ezzel nem kell feltételezni, hogy két képkocka közt változott a hardver állapota."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
    "Dummy betöltése a mag lekapcsolásakor"
@@ -3195,9 +3315,65 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Képernyőképek mentése a tartalom könyvtárába"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+   "Futásidő naplózása (magonként)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
+   "Megjegyzi, hogy meddig futott minden egyes tartalom, magok szerint külön nyilvántartva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+   "Futásidő naplózása (összesített)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
+   "Megjegyzi, hogy meddig futott minden egyes tartalom, összesítve az összes magra."
+   )
 
 /* Settings > Logging */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
+   "Részletes naplózás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
+   "Események naplózása a terminálablakba vagy fájlba."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
+   "A frontend naplózási szintje"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
+   "A frontend napló szintje. A beállított érték alatti naplóbejegyzések nem jelennek meg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
+   "A mag naplózási szintje"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
+   "A mag napló szintje. A beállított érték alatti naplóbejegyzések nem jelennek meg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+   "Napló készítése fájlba"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOG_TO_FILE,
+   "A rendszernapló üzeneteit fájlba irányítja át. A \"Részletes naplózás\" be kell legyen kapcsolva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
+   "Naplófájlok ellátása időbélyeggel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
+   "Fájlba naplózáskor minden RetroArch indítás egy új, időbélyeggel ellátott fájlba ír. Kikapcsolva a naplófájl minden indításkor felülíródik."
+   )
 
 /* Settings > File Browser */
 
@@ -3220,12 +3396,32 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    "Visszatekerés"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
+   "Gyorsítás aránya"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
+   "A gyorsított mód maximális sebessége (pl. 60 fps-es tartalomhoz 5.0x = 300 fps-es korlát). 0.0x esetén nincs korlátozás."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+   "Képkockák eldobása gyorsításkor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "A gyorsítás arányának megfelelő képkocka eldobása. Energiát takarít meg és megengedi külső képfrissítés-korlátozás használatát."
+   )
 
 /* Settings > Frame Throttle > Rewind */
 
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "Nullázás gyorsítás után"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
    "Nullázás játékállás betöltése után"
@@ -3237,6 +3433,46 @@ MSG_HASH(
 
 /* Settings > Recording */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+   "Felvétel minősége"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
+   "Egyedi felvételi beállítások"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+   "Felvételhez használt szálak"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
+   "Felvétel szűrők után"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
+   "Felvétel GPU-val"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
+   "A GPU kimenetének felvétele shaderekkel együtt, ha elérhető."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
+   "Közvetítés módja"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   "Közvetítés minősége"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+   "Egyedi közvetítési beállítások"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
+   "Közvetítés címe"
+   )
 
 /* Settings > On-Screen Display */
 
@@ -3541,6 +3777,14 @@ MSG_HASH(
    "Üzenet megjelenítése az M3U lejátszási listákból betöltött többlemezes tartalmak utoljára használt lemezének automatikus visszaállításáról."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
+   "Értesítés a gyorsításról"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
+   "Képernyőn megjelenő jelzés tartalom gyorsításakor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
    "Képernyőkép értesítések"
    )
@@ -3587,6 +3831,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
    "Be (gyors)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
+   "Értesítés a képfrissítési frekvenciáról"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
@@ -4172,6 +4420,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts > Facebook Gaming */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
+   "Facebook Gaming stream kulcs"
+   )
 
 /* Settings > Directory */
 
@@ -4216,6 +4468,18 @@ MSG_HASH(
    "Felvételek"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
+   "A felvételek ebbe a könyvtárba kerülnek."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
+   "Felvételkonfigurációk"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
+   "A felvételi konfigurációk ebbe a könyvtárba kerülnek."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    "Képernyőrátétek"
    )
@@ -4236,12 +4500,28 @@ MSG_HASH(
    "Lejátszási listák"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
+   "Futási napló"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   "A futásidő naplófájljai ebbe a könyvtárba kerülnek."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "Mentett játékállások"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
    "Itt tárolódnak az elmentett játékállások. Ha nincs beállítva, abba a könyvtárba keletkeznek, ahol a tartalom van."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_DIR,
+   "Rendszeresemények naplója"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOG_DIR,
+   "A rendszeresemények naplófájljai ebbe a könyvtárba kerülnek."
    )
 
 #ifdef HAVE_MIST
@@ -4615,6 +4895,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
    "Kedvencekhez ad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
+   "Felvétel indítása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
+   "Felvétel leállítása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
+   "Közvetítés indítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
+   "Közvetítés indítása a kiválasztott platform felé."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
+   "Közvetítés leállítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
+   "A közvetítés befejezése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
@@ -5115,6 +5419,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT,
    "Tartalom"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   "Bal analóg kar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Jobb analóg kar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Bal analóg kar (mindenképpen)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Jobb analóg kar (mindenképpen)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
@@ -5647,6 +5967,18 @@ MSG_HASH(
 /* Unused (Only Exist in Translation Files) */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
+   "Felvétel támogatása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_PATH,
+   "Felvétel mentése másként..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
+   "Felvételek mentése a kimeneti könyvtárba"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME,
    "Folytatás"
    )
@@ -5675,12 +6007,32 @@ MSG_HASH(
    "Hibakeresési információk küldése"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
+   "Diagnosztikai információk küldése az eszközről és a RetroArch beállításairól a kiszolgálóinknak, elemzés céljából."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
    "Leírás"
    )
 
 /* Unused (Needs Confirmation) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X,
+   "Bal analóg kar X tengely"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y,
+   "Bal analóg kar Y tengely"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X,
+   "Jobb analóg kar X tengely"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
+   "Jobb analóg kar Y tengely"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
    "Adatbázis infó"
@@ -5770,6 +6122,30 @@ MSG_HASH( /* FIXME Should be MSG_ */
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
    "A core telepítés sikertelen"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_DEBUG_INFO,
+   "Hibakeresési információk mentése sikertelen."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_DEBUG_INFO,
+   "Hibakeresési információk küldése a kiszolgálónak sikertelen."
+   )
+MSG_HASH(
+   MSG_SENDING_DEBUG_INFO,
+   "Hibakeresési információk küldése..."
+   )
+MSG_HASH(
+   MSG_SENT_DEBUG_INFO,
+   "Hibakeresési információk sikeresen beküldve a kiszolgálónak. Az azonosítószám %u."
+   )
+MSG_HASH(
+   MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
+   "Nyomd meg még kétszer, hogy elküldd a diagnosztikai információt a RetroArch csapatnak."
+   )
+MSG_HASH(
+   MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
+   "Nyomd meg még egyszer, hogy elküldd a diagnosztikai információt a RetroArch csapatnak."
    )
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
@@ -5897,6 +6273,14 @@ MSG_HASH(
    "Játékállás mentése sikertelen ide"
    )
 MSG_HASH(
+   MSG_FAILED_TO_START_MOVIE_RECORD,
+   "Nem sikerült a filmfelvétel."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_START_RECORDING,
+   "Felvétel indítása sikertelen."
+   )
+MSG_HASH(
    MSG_FAILED_TO_TAKE_SCREENSHOT,
    "Képernyőkép készítése sikertelen."
    )
@@ -5929,6 +6313,10 @@ MSG_HASH(
    "\"Figyelj a játékra\" mód kikapcsolva"
    )
 MSG_HASH(
+   MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
+   "Ez a Libretro mag hardveres képalkotású. Csak a shaderek utáni felvételi mód használható."
+   )
+MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT,
    "Játékállás betöltve a #%d. rekeszből."
    )
@@ -5949,6 +6337,10 @@ MSG_HASH(
    "Memória"
    )
 MSG_HASH(
+   MSG_MOVIE_RECORD_STOPPED,
+   "Filmfelvétel leállítása."
+   )
+MSG_HASH(
    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
    "Még nincs felülírt játékállás mentés."
    )
@@ -5961,6 +6353,14 @@ MSG_HASH(
    "Megállítva."
    )
 MSG_HASH(
+   MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
+   "A felvétel átméretezés miatt megszakadt."
+   )
+MSG_HASH(
+   MSG_RECORDING_TO,
+   "Felvétel ide"
+   )
+MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
    "Játékállás mentés átirányítása ide"
    )
@@ -5971,6 +6371,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESET,
    "Visszaállítás"
+   )
+MSG_HASH(
+   MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
+   "Felvétel újraindítása a meghajtó újrainicializálása miatt."
    )
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
@@ -5995,6 +6399,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCANNING,
    "Vizsgálat"
+   )
+MSG_HASH(
+   MSG_FAST_FORWARD,
+   "Gyorsítás."
+   )
+MSG_HASH(
+   MSG_STARTING_MOVIE_RECORD_TO,
+   "Filmfelvétel indítása ide"
    )
 MSG_HASH(
    MSG_STATE_SIZE,

@@ -363,7 +363,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   "更新控制器預設檔"
+   "更新控制器配置檔 (隨插即用)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
@@ -1222,11 +1222,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-   "輔助功能"
+   "協助工具"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   "變更無障礙閱讀的設定。"
+   "變更協助工具相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
@@ -2164,7 +2164,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-   "自動載入遊戲控制器預設檔。開啟後一直出現通知，可先關閉此選項。"
+   "自動載入遊戲控制器預設檔。開啟後如通知「未設定」在設定控制器按鍵選項中，支援儲存為預設檔。"
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
@@ -2275,6 +2275,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    "震動強度"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
+   "設定觸覺反饋震感效果的強弱。"
+   )
 
 /* Settings > Input > Menu Controls */
 
@@ -2301,6 +2305,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "交換確定與取消的按鍵。設定 <開啟> 美版操作方式，設定 <關閉> 日版操作方式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "交換選單滾動的按鍵"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "關閉時在選單中，使用 L/R 鍵滾動十個項目，使用 L2/R2 鍵按英文字母順序滾動。開啟時交換按鍵操作。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
@@ -2363,6 +2375,10 @@ MSG_HASH(
    "載入即時存檔"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
+   "載入即時存檔，用於練習經典硬核遊戲使用。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
    "儲存即時存檔"
    )
@@ -2392,11 +2408,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-   "存檔槽 +"
+   "即時儲存槽 +"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
+   "遞增目前即時儲存槽的編號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   "存檔槽 -"
+   "即時儲存槽 -"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
+   "遞減目前即時儲存槽的編號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
@@ -2543,15 +2567,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
-   "設定全部按鍵"
+   "自訂全部按鍵"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
-   "重置為預設按鍵"
+   "還原為預設檔 (隨插即用)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
-   "儲存目前按鍵設置"
+   "儲存為預設檔 (隨插即用)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
@@ -2828,20 +2852,60 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
+   "建立核心名稱資料夾儲存記憶存檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
+   "使用核心的名稱，建立資料夾儲存記憶存檔。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
+   "建立核心名稱資料夾儲存即時存檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
+   "使用核心的名稱，建立資料夾儲存即時存檔。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "建立載入位置資料夾儲存記憶存檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "使用遊戲載入位置的資料夾名稱，建立資料夾儲存記憶存檔。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "建立載入位置資料夾儲存即時存檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "使用遊戲載入位置的資料夾名稱，建立資料夾儲存即時存檔。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "載入儲存狀態時不覆蓋SaveRAM"
+   "載入即時存檔不覆蓋記錄記憶體"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
+   "載入即時存檔時，不覆蓋遊戲使用的記錄記憶體(SaveRAM)，可能會導致遊戲發生錯誤。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "SaveRAM自動儲存間隔"
+   "記錄記憶體自動儲存間隔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
+   "設定自動儲存非揮發性記錄記憶體的時間。設定關閉時，正確關閉或結束應用程式，才會將記錄記憶體轉存成記錄存檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "自動儲存狀態"
+   "自動儲存即時存檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "自動載入狀態"
+   "自動載入即時存檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
@@ -2850,6 +2914,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
    "使用即時存檔儲存遊戲時，額外儲存截圖。並在快捷選單中顯示縮圖。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+   "壓縮記錄記憶體"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "建立載入位置資料夾儲存遊戲截圖"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "使用遊戲載入位置的資料夾名稱，建立資料夾儲存遊戲截圖。"
    )
 
 /* Settings > Logging */
@@ -2961,7 +3037,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-   "開啟時遊戲支援倒帶模式，按快捷鍵即可倒帶。開啟此選項會嚴重降低效能。"
+   "開啟時遊戲支援倒帶模式，需要倒帶時按快捷鍵執行。開啟此選項會嚴重降低遊戲難度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
@@ -2981,7 +3057,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
-   "倒帶緩衝區間隔 (MB)"
+   "倒帶緩衝區間隔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
@@ -3000,7 +3076,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "儲存存狀態後重置"
+   "儲存即時存檔後重置"
    )
 
 /* Settings > Recording */
@@ -3586,12 +3662,60 @@ MSG_HASH( /* FIXME Not RGUI specific */
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+   "顯示「繼續」"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
+   "顯示「繼續」選項。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "顯示「重開」"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "顯示「重開」選項。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   "顯示「關閉」"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   "顯示「關閉」選項。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "顯示「即時存檔」子選單"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "顯示「即時存檔」的子選單，整合即時存檔相關選項。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+   "顯示「即時儲存槽」「儲存即時存檔」「載入即時存檔」"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+   "顯示「即時儲存槽」「儲存即時存檔」「載入即時存檔」選項。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "顯示「還原載入狀態」「還原即時存檔」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "顯示「還原載入狀態」「還原即時存檔」選項。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
+   "顯示「核心選項」"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
+   "顯示「核心選項」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
@@ -3777,6 +3901,22 @@ MSG_HASH(
    "顯示「人工智慧服務」選項。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACCESSIBILITY,
+   "顯示「協助工具」"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACCESSIBILITY,
+   "顯示「協助工具」選項。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
+   "顯示「電源管理」"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
+   "顯示「電源管理」選項。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
    "顯示「成就」"
    )
@@ -3869,7 +4009,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
-   "人工智慧服務模式"
+   "翻譯使用模式"
    )
 MSG_HASH( /* FIXME What does the Narrator mode do? */
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
@@ -3877,7 +4017,7 @@ MSG_HASH( /* FIXME What does the Narrator mode do? */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
-   "人工智慧服務網址"
+   "翻譯服務網址"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
@@ -3889,7 +4029,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
-   "開啟人工智慧服務。需要翻譯時，按人工智慧服務快捷鍵執行。"
+   "開啟人工智慧服務。需要翻譯時按快捷鍵執行。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
@@ -3905,7 +4045,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
-   "設定原文的語言，正確的設定會使翻譯更準確。設定 <預設> 為自動偵測原文語言。"
+   "設定原文的語言，正確的設定會使翻譯更準確。預設為自動偵測原文語言。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
@@ -3913,11 +4053,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
-   "設定譯文使用的語言。設定 <預設> 為英文。"
+   "設定譯文使用的語言。預設為使用英語。"
    )
 
 /* Settings > Accessibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+   "開啟文字轉語音"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+   "使用文字轉語音工具，語音協助瀏覽選單。無法正確朗讀中文。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   "設定朗讀語速"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   "設定朗讀時的語速。"
+   )
 
 /* Settings > Power Management */
 
@@ -4096,11 +4252,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
-   "帳戶"
+   "帳號"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
+   "管理目前使用的帳號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
    "使用者名稱"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
+   "請輸入您的網名，用於網路對戰時交談與其他服務。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
@@ -4134,40 +4298,64 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "Retro 成就"
+   "RetroAchievements 帳號"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "遊玩經典遊戲贏得成就！欲了解更多信息！請訪問 https://retroachievements.org 網站！等你來挑戰！"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
+   "YouTube 直播"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
+   "Twitch 直播"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_FACEBOOK,
+   "Facebook Gaming 直播"
    )
 
 /* Settings > User > Accounts > RetroAchievements */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
-   "使用者名稱"
+   "帳號"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
+   "輸入您的 RetroAchievements 帳號名稱。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
    "密碼"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
+   "輸入您的 RetroAchievements 帳號密碼。限制輸入二百五十五個字元。"
    )
 
 /* Settings > User > Accounts > YouTube */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
-   "YouTube 串流 Key"
+   "YouTube 串流金鑰"
    )
 
 /* Settings > User > Accounts > Twitch */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
-   "Twitch 串流 Key"
+   "Twitch 串流金鑰"
    )
 
 /* Settings > User > Accounts > Facebook Gaming */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
+   "Facebook Gaming 串流金鑰"
+   )
 
 /* Settings > Directory */
 
@@ -4325,15 +4513,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   "控制器預設檔"
+   "控制器配置檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
-   "設定遊戲控制器自動預設檔的儲存位置。"
+   "設定遊戲控制器配置檔的儲存位置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
+   "重新映射檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
-   "設定重新映射輸入裝置的儲存位置。"
+   "設定輸入裝置重新映射的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -4397,7 +4589,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
-   "設定記錄存檔的儲存位置。未設置的情況下，將嘗試儲存在遊戲的資料夾中。"
+   "設定遊戲的記錄存檔的儲存位置。未設置的情況下，將嘗試儲存在遊戲的資料夾中。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
@@ -4405,7 +4597,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "設定即時存檔的儲存位置。未設置的情況下，將嘗試儲存在遊戲的資料夾中。"
+   "設定應用程式的即時存檔的儲存位置。未設置的情況下，將嘗試儲存在遊戲的資料夾中。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -4548,7 +4740,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "掃描指定核心支援的副檔名，完成後設為列表的預設核心。追加「指定副檔名」的條件時，此選項的掃描會失效。\n設定為 <未指定> 時改用「指定副檔名」的條件掃描。"
+   "掃描指定核心支援的副檔名，完成後設為列表的預設核心。當「指定副檔名」的條件時，此選項的掃描會失效。\n設定為 <未指定> 時改用「指定副檔名」的條件掃描。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
@@ -4556,7 +4748,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
-   "預設為掃描全部類型。要指定時使用空格分隔副檔名。"
+   "未指定為掃描全部類型。要指定時使用空格分隔副檔名。例如:[ JPG MP3 MKV ]。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
@@ -4588,7 +4780,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "使用其他資料庫掃描時，比對資料庫數據，檔案符合時才加入到列表中。"
+   "僅限「使用其他資料庫」掃描時使用。開啟時比對使用的資料庫數據，檔案符合時才加入到列表中。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -4878,7 +5070,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "重置"
+   "重開"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
@@ -6673,7 +6865,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
-   "Cheevos帳戶"
+   "Cheevos 帳號"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
@@ -6682,10 +6874,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
    "渦輪/盲區"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
-   "Retro 成就"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
@@ -7262,7 +7450,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
-   "自動儲存狀態至"
+   "自動儲存即時存檔至"
    )
 MSG_HASH(
    MSG_BLOCKING_SRAM_OVERWRITE,
@@ -7306,7 +7494,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "核心不支持儲存狀態。"
+   "核心不支援儲存即時存檔。"
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
@@ -7462,7 +7650,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,
-   "載入狀態失敗於"
+   "載入即時存檔失敗於"
    )
 MSG_HASH(
    MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
@@ -7578,7 +7766,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FOUND_LAST_STATE_SLOT,
-   "找到最後一個狀態槽"
+   "已找到最後的即時儲存槽"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -7654,11 +7842,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT,
-   "載入即時存檔(# %d)。"
+   "載入即時存檔 (%d)。"
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "載入即時存檔(自動)。"
+   "載入即時存檔 (自動)。"
    )
 MSG_HASH(
    MSG_LOADING,
@@ -7714,7 +7902,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NO_STATE_HAS_BEEN_LOADED_YET,
-   "尚未載入狀態。"
+   "未載入即時存檔。"
    )
 MSG_HASH(
    MSG_OVERRIDES_ERROR_SAVING,
@@ -7774,7 +7962,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
-   "重載舊的存檔。"
+   "已載入還原的即時存檔。"
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
@@ -7806,11 +7994,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
-   "儲存即時存檔(# %d)。"
+   "儲存即時存檔 (%d)。"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "儲存即時存檔(自動)。"
+   "儲存即時存檔 (自動)。"
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
@@ -7906,11 +8094,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
-   "載入前的狀態已還原。"
+   "已還原載入前的狀態。"
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "即時存檔已還原。"
+   "已還原即時存檔 (%d)。"
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -7949,8 +8137,12 @@ MSG_HASH(
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FAILED,
+   "自動載入即時存檔失敗，位置: %s。"
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
-   "成功從「%s」自動載入即時存檔。"
+   "自動載入即時存檔成功，位置: %s。"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -8050,7 +8242,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "無效設定「未指定位置」或「未輸入列表名稱」。"
+   "無效設定，未指定資料夾或未輸入自訂列表名稱。"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
@@ -8350,6 +8542,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
    "2D (高解析度)"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "沒有\n資料"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   "沒有\n截圖"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,

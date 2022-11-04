@@ -2611,6 +2611,14 @@ MSG_HASH(
    "TAMAM/İptal için düğmeleri değiştirin. Devre dışı bırakılınca, Japonya düğme yönüne geçer, etkinleştirilirse Batı düğme yönüne geçer."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "Menü Kaydırma Düğmelerini Değiştir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "Kaydırmak için düğmeleri değiştirin. Devre dışı olduğunda, L/R ile 10 ögeyi ve L2/R2 ile alfabetik olarak kaydırır."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
    "Tüm Kullanıcılar Menüyü Kontrol Eder"
    )
@@ -3977,6 +3985,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
    "Kaplama ölçeğini ve arayüz ögesi aralığını ekran en boy oranına uyacak şekilde otomatik olarak ayarlayın. Denetleyici katmanları ile en iyi sonuçları verir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "D-Pad Çapraz Hassasiyeti"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "Çapraz bölgelerin boyutunu ayarlayın. 8 yönlü simetri için %100'e ayarlayın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "ABXY Örtüşme Hassasiyeti"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "Örtüşme hassasiyetini ayarlayın. 8 yönlü simetri için %100'e ayarlayın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
