@@ -3644,6 +3644,9 @@ int msg_hash_get_help_ca_enum(enum msg_hash_enums msg, char *s, size_t len);
 const char *msg_hash_to_str_en(enum msg_hash_enums msg);
 int msg_hash_get_help_en_enum(enum msg_hash_enums msg, char *s, size_t len);
 
+const char *msg_hash_to_str_hu(enum msg_hash_enums msg);
+int msg_hash_get_help_hu_enum(enum msg_hash_enums msg, char *s, size_t len);
+
 int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 enum msg_file_type msg_hash_to_file_type(uint32_t hash);

@@ -6845,6 +6845,7 @@ static void setting_get_string_representation_uint_user_language(
    modes[RETRO_LANGUAGE_CATALAN_VALENCIA]       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_CATALAN_VALENCIA);
    modes[RETRO_LANGUAGE_CATALAN]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_CATALAN);
    modes[RETRO_LANGUAGE_BRITISH_ENGLISH]        = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_BRITISH_ENGLISH);
+   modes[RETRO_LANGUAGE_HUNGARIAN]              = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN);
    strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
 }
 #endif

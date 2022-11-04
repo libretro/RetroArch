@@ -1548,10 +1548,10 @@ static bool rgui_fonts_init(rgui_t *rgui)
       case RETRO_LANGUAGE_TURKISH:
       case RETRO_LANGUAGE_SLOVAK:
       case RETRO_LANGUAGE_CZECH:
+      case RETRO_LANGUAGE_HUNGARIAN:
       /* These languages are not yet implemented
       case RETRO_LANGUAGE_ROMANIAN:
       case RETRO_LANGUAGE_CROATIAN:
-      case RETRO_LANGUAGE_HUNGARIAN:
       case RETRO_LANGUAGE_SERBIAN:
       case RETRO_LANGUAGE_WELSH:
       */
@@ -4214,6 +4214,7 @@ static void rgui_set_blit_functions(unsigned language,
          case RETRO_LANGUAGE_TURKISH:
          case RETRO_LANGUAGE_SLOVAK:
          case RETRO_LANGUAGE_CZECH:
+         case RETRO_LANGUAGE_HUNGARIAN:
             blit_line = blit_line_6x10_shadow;
             break;
          default:
@@ -4251,6 +4252,7 @@ static void rgui_set_blit_functions(unsigned language,
          case RETRO_LANGUAGE_TURKISH:
          case RETRO_LANGUAGE_SLOVAK:
          case RETRO_LANGUAGE_CZECH:
+         case RETRO_LANGUAGE_HUNGARIAN:
             blit_line = blit_line_6x10;
             break;
          default:
