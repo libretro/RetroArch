@@ -144,8 +144,7 @@ struct overlay_desc
    enum overlay_hitbox hitbox;
    enum overlay_type type;
 
-   bool updated;
-   bool movable;
+   uint16_t updated;  /* one bit per pointer */
 
    unsigned next_index;
    unsigned image_index;
@@ -166,6 +165,21 @@ struct overlay_desc
     * will be equal to x/y */
    float x_shift;
    float y_shift;
+
+   /* These values are used only for hitbox
+    * detection. A hitbox can be stretched in
+    * any direction(s) by its 'reach' values */
+   float x_hitbox;
+   float y_hitbox;
+   float range_x_hitbox, range_y_hitbox;
+   float reach_right, reach_left, reach_up, reach_down;
+
+   /* If true, blocks input from overlapped hitboxes */
+   bool exclusive;
+   /* Similar, but only applies after range_mod takes affect */
+   bool range_mod_exclusive;
+
+   bool movable;
 
    /* This is a retro_key value for keyboards */
    unsigned retro_key_idx;
@@ -332,7 +346,7 @@ void input_overlay_auto_rotate_(
 void input_overlay_poll(
       input_overlay_t *ol,
       input_overlay_state_t *out,
-      int16_t norm_x, int16_t norm_y, float touch_scale);
+      unsigned ptr_idx, int16_t norm_x, int16_t norm_y, float touch_scale);
 
 /**
  * input_overlay_poll_clear:
