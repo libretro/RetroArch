@@ -232,11 +232,12 @@ static bool task_overlay_load_desc(
       bool normalized, float alpha_mod, float range_mod)
 {
    float width_mod, height_mod;
-   char conf_key[32];
+   char conf_key[64];
    char overlay_desc_key[32];
    char overlay_desc_normalized_key[32];
    char overlay[256];
    float tmp_float                      = 0.0f;
+   int tmp_int                          = 0;
    bool tmp_bool                        = false;
    bool ret                             = true;
    bool by_pixel                        = false;
@@ -403,6 +404,46 @@ static bool task_overlay_load_desc(
    desc->range_x = (float)strtod(list.elems[4].data, NULL) * width_mod;
    desc->range_y = (float)strtod(list.elems[5].data, NULL) * height_mod;
 
+   snprintf(conf_key, sizeof(conf_key),
+         "overlay%u_desc%u_reach_right", ol_idx, desc_idx);
+   desc->reach_right = 1.0f;
+   if (config_get_float(conf, conf_key, &tmp_float))
+      desc->reach_right = tmp_float;
+
+   snprintf(conf_key, sizeof(conf_key),
+         "overlay%u_desc%u_reach_left", ol_idx, desc_idx);
+   desc->reach_left = 1.0f;
+   if (config_get_float(conf, conf_key, &tmp_float))
+      desc->reach_left = tmp_float;
+
+   snprintf(conf_key, sizeof(conf_key),
+         "overlay%u_desc%u_reach_up", ol_idx, desc_idx);
+   desc->reach_up = 1.0f;
+   if (config_get_float(conf, conf_key, &tmp_float))
+      desc->reach_up = tmp_float;
+
+   snprintf(conf_key, sizeof(conf_key),
+         "overlay%u_desc%u_reach_down", ol_idx, desc_idx);
+   desc->reach_down = 1.0f;
+   if (config_get_float(conf, conf_key, &tmp_float))
+      desc->reach_down = tmp_float;
+
+   snprintf(conf_key, sizeof(conf_key),
+         "overlay%u_desc%u_reach_x", ol_idx, desc_idx);
+   if (config_get_float(conf, conf_key, &tmp_float))
+   {
+      desc->reach_right = tmp_float;
+      desc->reach_left  = tmp_float;
+   }
+
+   snprintf(conf_key, sizeof(conf_key),
+         "overlay%u_desc%u_reach_y", ol_idx, desc_idx);
+   if (config_get_float(conf, conf_key, &tmp_float))
+   {
+      desc->reach_up   = tmp_float;
+      desc->reach_down = tmp_float;
+   }
+
    desc->mod_x   = desc->x - desc->range_x;
    desc->mod_w   = 2.0f * desc->range_x;
    desc->mod_y   = desc->y - desc->range_y;
@@ -421,6 +462,16 @@ static bool task_overlay_load_desc(
       desc->range_mod = tmp_float;
 
    snprintf(conf_key, sizeof(conf_key),
+         "overlay%u_desc%u_exclusive", ol_idx, desc_idx);
+   desc->exclusive = false;
+   config_get_bool(conf, conf_key, &desc->exclusive);
+
+   snprintf(conf_key, sizeof(conf_key),
+         "overlay%u_desc%u_range_mod_exclusive", ol_idx, desc_idx);
+   desc->range_mod_exclusive = false;
+   config_get_bool(conf, conf_key, &desc->range_mod_exclusive);
+
+   snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_movable", ol_idx, desc_idx);
    desc->movable     = false;
    desc->delta_x     = 0.0f;
@@ -428,9 +479,6 @@ static bool task_overlay_load_desc(
 
    if (config_get_bool(conf, conf_key, &tmp_bool))
       desc->movable = tmp_bool;
-
-   desc->range_x_mod = desc->range_x;
-   desc->range_y_mod = desc->range_y;
 
    input_overlay->pos ++;
 

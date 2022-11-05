@@ -1166,12 +1166,12 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                      {
                         /* We need ALL of the inputs to be active,
                          * abort. */
-                        desc->updated    = false;
+                        desc->updated    = 0;
                         return false;
                      }
 
                      all_buttons_pressed = true;
-                     desc->updated       = true;
+                     desc->updated       = 1;
                   }
 
                   bank_mask >>= 1;
@@ -1223,14 +1223,14 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
 
       case OVERLAY_TYPE_DPAD_AREA:
       case OVERLAY_TYPE_ABXY_AREA:
-         return desc->updated;
+         return (desc->updated != 0);
 
       case OVERLAY_TYPE_KEYBOARD:
          if (ol_state ?
                OVERLAY_GET_KEY(ol_state, desc->retro_key_idx) :
                input_state_internal(port, RETRO_DEVICE_KEYBOARD, 0, desc->retro_key_idx))
          {
-            desc->updated  = true;
+            desc->updated = 1;
             return true;
          }
          break;
@@ -1394,16 +1394,16 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
    {
       case OVERLAY_HITBOX_RADIAL:
       {
-         /* Ellipsis. */
-         float x_dist  = (x - desc->x_shift) / desc->range_x_mod;
-         float y_dist  = (y - desc->y_shift) / desc->range_y_mod;
+         /* Ellipse. */
+         float x_dist  = (x - desc->x_hitbox) / desc->range_x_mod;
+         float y_dist  = (y - desc->y_hitbox) / desc->range_y_mod;
          float sq_dist = x_dist * x_dist + y_dist * y_dist;
          return (sq_dist <= 1.0f);
       }
       case OVERLAY_HITBOX_RECT:
          return
-            (fabs(x - desc->x_shift) <= desc->range_x_mod) &&
-            (fabs(y - desc->y_shift) <= desc->range_y_mod);
+            (fabs(x - desc->x_hitbox) <= desc->range_x_mod) &&
+            (fabs(y - desc->y_hitbox) <= desc->range_y_mod);
    }
    return false;
 }
@@ -1411,6 +1411,7 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
 /**
  * input_overlay_poll:
  * @out                   : Polled output data.
+ * @ptr_idx               : Pointer index
  * @norm_x                : Normalized X coordinate.
  * @norm_y                : Normalized Y coordinate.
  *
@@ -1422,9 +1423,11 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
 void input_overlay_poll(
       input_overlay_t *ol,
       input_overlay_state_t *out,
-      int16_t norm_x, int16_t norm_y, float touch_scale)
+      unsigned ptr_idx, int16_t norm_x, int16_t norm_y, float touch_scale)
 {
-   size_t i;
+   size_t i, j;
+   struct overlay_desc *descs = ol->active->descs;
+   unsigned int highest_prio  = 0;
 
    /* norm_x and norm_y is in [-0x7fff, 0x7fff] range,
     * like RETRO_DEVICE_POINTER. */
@@ -1443,14 +1446,34 @@ void input_overlay_poll(
    {
       float x_dist, y_dist;
       unsigned int base         = 0;
-      struct overlay_desc *desc = &ol->active->descs[i];
+      unsigned int desc_prio    = 0;
+      struct overlay_desc *desc = &descs[i];
 
       if (!desc || !inside_hitbox(desc, x, y))
          continue;
 
-      desc->updated = true;
-      x_dist        = x - desc->x_shift;
-      y_dist        = y - desc->y_shift;
+      /* Check for exclusive hitbox, which blocks other input.
+       * range_mod_exclusive has priority over exclusive. */
+      if (desc->range_mod_exclusive
+            && desc->range_x_mod != desc->range_x_hitbox)
+         desc_prio = 2;
+      else if (desc->exclusive)
+         desc_prio = 1;
+
+      if (highest_prio > desc_prio)
+         continue;
+
+      if (desc_prio > highest_prio)
+      {
+         highest_prio = desc_prio;
+         memset(out, 0, sizeof(*out));
+         for (j = 0; j < i; j++)
+            BIT16_CLEAR(descs[j].updated, ptr_idx);
+      }
+
+      BIT16_SET(desc->updated, ptr_idx);
+      x_dist = x - desc->x_shift;
+      y_dist = y - desc->y_shift;
 
       switch (desc->type)
       {
@@ -1538,10 +1561,10 @@ void input_overlay_post_poll(
    {
       struct overlay_desc *desc = &ol->active->descs[i];
 
-      desc->range_x_mod = desc->range_x;
-      desc->range_y_mod = desc->range_y;
+      desc->range_x_mod = desc->range_x_hitbox;
+      desc->range_y_mod = desc->range_y_hitbox;
 
-      if (desc->updated)
+      if (desc->updated != 0)
       {
          /* If pressed this frame, change the hitbox. */
          desc->range_x_mod *= desc->range_mod;
@@ -1556,8 +1579,30 @@ void input_overlay_post_poll(
       }
 
       input_overlay_update_desc_geom(ol, desc);
-      desc->updated = false;
+      desc->updated = 0;
    }
+}
+
+static void input_overlay_desc_init_hitbox(struct overlay_desc *desc)
+{
+   desc->x_hitbox =
+         ((desc->x_shift + desc->range_x * desc->reach_right) +
+          (desc->x_shift - desc->range_x * desc->reach_left)) / 2.0f;
+
+   desc->y_hitbox =
+         ((desc->y_shift + desc->range_y * desc->reach_down) +
+          (desc->y_shift - desc->range_y * desc->reach_up)) / 2.0f;
+
+   desc->range_x_hitbox =
+         (desc->range_x * desc->reach_right +
+          desc->range_x * desc->reach_left) / 2.0f;
+
+   desc->range_y_hitbox =
+         (desc->range_y * desc->reach_down +
+          desc->range_y * desc->reach_up) / 2.0f;
+
+   desc->range_x_mod = desc->range_x_hitbox;
+   desc->range_y_mod = desc->range_y_hitbox;
 }
 
 /**
@@ -1644,6 +1689,8 @@ void input_overlay_scale(struct overlay *ol,
       desc->mod_h       = 2.0f * scale_h;
       desc->mod_x       = adj_center_x - scale_w;
       desc->mod_y       = adj_center_y - scale_h;
+
+      input_overlay_desc_init_hitbox(desc);
    }
 }
 
@@ -1823,9 +1870,9 @@ void input_overlay_poll_clear(
    {
       struct overlay_desc *desc = &ol->active->descs[i];
 
-      desc->range_x_mod = desc->range_x;
-      desc->range_y_mod = desc->range_y;
-      desc->updated     = false;
+      desc->range_x_mod = desc->range_x_hitbox;
+      desc->range_y_mod = desc->range_y_hitbox;
+      desc->updated     = 0;
 
       desc->delta_x     = 0.0f;
       desc->delta_y     = 0.0f;
@@ -2078,7 +2125,7 @@ void input_poll_overlay(
          memset(&polled_data, 0, sizeof(struct input_overlay_state));
 
          if (ol->enable)
-            input_overlay_poll(ol, &polled_data, x, y, touch_scale);
+            input_overlay_poll(ol, &polled_data, i, x, y, touch_scale);
          else
             ol->blocked = false;
 
