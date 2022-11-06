@@ -1217,7 +1217,11 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
             /* Maybe use some option here instead of 0, only display
              * changes greater than some magnitude */
             if ((dx * dx) > 0 || (dy * dy) > 0)
+            {
+               if (ol_state)
+                  desc->updated = 1;
                return true;
+            }
          }
          break;
 
@@ -3551,8 +3555,11 @@ static void input_overlay_loaded(retro_task_t *task,
       bool refresh               = false;
 
       /* Update menu entries */
-      menu_st->overlay_types     = data->overlay_types;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      if (menu_st->overlay_types != data->overlay_types)
+      {
+         menu_st->overlay_types = data->overlay_types;
+         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      }
 
       /* We can't display when the menu is up */
       if (      data->hide_in_menu
