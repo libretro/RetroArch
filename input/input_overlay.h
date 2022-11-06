@@ -176,7 +176,7 @@ struct overlay_desc
 
    /* If true, blocks input from overlapped hitboxes */
    bool exclusive;
-   /* Similar, but only applies after range_mod takes affect */
+   /* Similar, but only applies after range_mod takes effect */
    bool range_mod_exclusive;
 
    bool movable;
