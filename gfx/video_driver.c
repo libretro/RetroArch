@@ -3284,7 +3284,9 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #ifdef HAVE_VIDEO_FILTER
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
 
-   if (!string_is_empty(path_softfilter_plugin))
+   /* Init video filter only when game is running */
+   if ((runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED) &&
+         !string_is_empty(path_softfilter_plugin))
       video_driver_init_filter(video_driver_pix_fmt, settings);
 #endif
 
