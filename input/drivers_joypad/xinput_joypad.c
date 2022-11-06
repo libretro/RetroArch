@@ -246,33 +246,6 @@ static bool xinput_joypad_query_pad(unsigned pad)
    return false;
 }
 
-static void xinput_joypad_destroy(void)
-{
-   unsigned i;
-
-   for (i = 0; i < 4; ++i)
-   {
-      g_xinput_states[i].xstate.dwPacketNumber        = 0;
-      g_xinput_states[i].xstate.Gamepad.wButtons      = 0;
-      g_xinput_states[i].xstate.Gamepad.bLeftTrigger  = 0;
-      g_xinput_states[i].xstate.Gamepad.bRightTrigger = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbLX      = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
-      g_xinput_states[i].connected                    = false;
-   }
-
-#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
-   dylib_close(g_xinput_dll);
-
-   g_xinput_dll        = NULL;
-#endif
-   g_XInputGetStateEx  = NULL;
-   g_XInputSetState    = NULL;
-}
-
-
 static int32_t xinput_joypad_button(unsigned port, uint16_t joykey)
 {
    int xuser                  = pad_index_to_xuser_index(port);
@@ -383,6 +356,35 @@ static bool xinput_joypad_rumble(unsigned pad,
 
    return (g_XInputSetState(xuser, &g_xinput_rumble_states[xuser])
       == 0);
+}
+
+static void xinput_joypad_destroy(void)
+{
+   unsigned i;
+
+   /* Run poll one last time in order to detect disconnections */
+   xinput_joypad_poll();
+
+   for (i = 0; i < 4; ++i)
+   {
+      g_xinput_states[i].xstate.dwPacketNumber        = 0;
+      g_xinput_states[i].xstate.Gamepad.wButtons      = 0;
+      g_xinput_states[i].xstate.Gamepad.bLeftTrigger  = 0;
+      g_xinput_states[i].xstate.Gamepad.bRightTrigger = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
+      g_xinput_states[i].connected                    = false;
+   }
+
+#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
+   dylib_close(g_xinput_dll);
+
+   g_xinput_dll        = NULL;
+#endif
+   g_XInputGetStateEx  = NULL;
+   g_XInputSetState    = NULL;
 }
 
 input_device_driver_t xinput_joypad = {

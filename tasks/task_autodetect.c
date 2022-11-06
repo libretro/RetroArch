@@ -872,6 +872,7 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    autoconfig_handle_t *autoconfig_handle = NULL;
    task_finder_data_t find_data;
    settings_t *settings                   = config_get_ptr();
+   input_driver_state_t *input_st         = input_state_get_ptr();
    bool notification_show_autoconfig      = settings ?
          settings->bools.notification_show_autoconfig : true;
 
@@ -896,7 +897,13 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    if (!notification_show_autoconfig)
       autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS;
 
-   if (!string_is_empty(name))
+   /* Use display_name as name instead since autoconfig display_name
+    * is destroyed already, and real name does not matter at this point */
+   if (input_st && !string_is_empty(input_st->input_device_info[port].display_name))
+      strlcpy(autoconfig_handle->device_info.name,
+            input_st->input_device_info[port].display_name,
+            sizeof(autoconfig_handle->device_info.name));
+   else if (!string_is_empty(name))
       strlcpy(autoconfig_handle->device_info.name,
             name, sizeof(autoconfig_handle->device_info.name));
 
