@@ -29,12 +29,17 @@
 #include "../file_path_special.h"
 #include "../list_special.h"
 #include "../retroarch.h"
+#include "../verbosity.h"
 #include "../input/input_driver.h"
 #include "../input/input_remapping.h"
 
 #include "tasks_internal.h"
 #ifdef HAVE_BLISSBOX
 #include "../input/include/blissbox.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
 #endif
 
 enum autoconfig_handle_flags
@@ -578,7 +583,10 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    /* Update task title */
    task_free_title(task);
    if (!string_is_empty(task_title))
+   {
       task_set_title(task, strdup(task_title));
+      RARCH_LOG("[Autoconf]: %s.\n", task_title);
+   }
 
 task_finished:
 
@@ -798,6 +806,7 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 {
    size_t _len;
    autoconfig_handle_t *autoconfig_handle = NULL;
+   const char *device_display_name        = NULL;
    char task_title[NAME_MAX_LENGTH + 16];
 
    task_title[0] = '\0';
@@ -808,28 +817,31 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
    if (!(autoconfig_handle = (autoconfig_handle_t*)task->state))
       goto task_finished;
 
+   /* Get display name for task status message */
+   device_display_name = autoconfig_handle->device_info.display_name;
+   if (string_is_empty(device_display_name))
+      device_display_name = autoconfig_handle->device_info.name;
+   if (string_is_empty(device_display_name))
+      device_display_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+
    /* Set task title */
-   _len               = strlcpy(task_title, 
+   _len        = strlcpy(task_title,
+         device_display_name, sizeof(task_title));
+   task_title[_len  ] = ' ';
+   task_title[++_len] = '\0';
+   _len               = strlcat(task_title,
          msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
          sizeof(task_title));
-   task_title[_len  ] = ' '; 
-   task_title[++_len] = '\0'; 
-   _len              += snprintf(task_title + _len,
-         sizeof(task_title) - _len, "%u",
+   task_title[_len  ] = ' ';
+   task_title[++_len] = '\0';
+   snprintf(task_title + _len, sizeof(task_title) - _len, "%u",
          autoconfig_handle->port + 1);
-   if (!string_is_empty(autoconfig_handle->device_info.name))
-   {
-      task_title[_len  ] = ':';
-      task_title[_len+1] = ' ';
-      task_title[_len+2] = '\0';
-      _len               = strlcat(task_title,
-            autoconfig_handle->device_info.name,
-            sizeof(task_title));
-   }
 
    task_free_title(task);
    if (!(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS))
       task_set_title(task, strdup(task_title));
+   if (!string_is_empty(task_title))
+      RARCH_LOG("[Autoconf]: %s.\n", task_title);
 
 task_finished:
 
@@ -871,8 +883,9 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    task_finder_data_t find_data;
    settings_t *settings                   = config_get_ptr();
    input_driver_state_t *input_st         = input_state_get_ptr();
-   bool notification_show_autoconfig      = settings ?
-         settings->bools.notification_show_autoconfig : true;
+   bool notification_show_autoconfig      = settings ? settings->bools.notification_show_autoconfig : true;
+   bool pause_on_disconnect               = settings ? settings->bools.pause_on_disconnect : true;
+   bool core_is_running                   = runloop_state_get_ptr()->flags & RUNLOOP_FLAG_CORE_RUNNING;
 
    if (port >= MAX_INPUT_DEVICES)
       goto error;
@@ -916,6 +929,21 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    task->cleanup  = input_autoconfigure_free;
 
    task_queue_push(task);
+
+   if (pause_on_disconnect && core_is_running)
+   {
+#ifdef HAVE_MENU
+      bool menu_pause_libretro = settings->bools.menu_pause_libretro;
+      bool menu_is_alive       = menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
+
+      if (menu_pause_libretro && !menu_is_alive)
+         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+      else if (!menu_pause_libretro)
+         command_event(CMD_EVENT_PAUSE, NULL);
+#else
+      command_event(CMD_EVENT_PAUSE, NULL);
+#endif
+   }
 
    return true;
 
