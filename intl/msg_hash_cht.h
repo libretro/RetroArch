@@ -3025,7 +3025,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
-   "記錄每個項目的執行時間，儲存在核心名稱資料夾中(..\列表資料夾\logs\核心名稱)。"
+   "記錄每個項目的執行時間，儲存在核心名稱資料夾中(..\\列表資料夾\\logs\\核心名稱)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
@@ -3033,7 +3033,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "記錄每個項目的執行時間，儲存在共用資料夾中(..\列表資料夾\logs)。"
+   "記錄每個項目的執行時間，儲存在共用資料夾中(..\\列表資料夾\\logs)。"
    )
 
 /* Settings > Logging */
