@@ -2708,6 +2708,8 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
    {
       const input_device_driver_t *tmp  = input_driver_st.primary_joypad;
       input_driver_st.primary_joypad    = NULL;
+      /* Run poll one last time in order to detect disconnections */
+      tmp->poll();
       tmp->destroy();
    }
 #ifdef HAVE_MFI
@@ -2715,6 +2717,7 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
    {
       const input_device_driver_t *tmp  = input_driver_st.secondary_joypad;
       input_driver_st.secondary_joypad  = NULL;
+      tmp->poll();
       tmp->destroy();
    }
 #endif

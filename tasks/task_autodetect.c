@@ -819,14 +819,12 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
          autoconfig_handle->port + 1);
    if (!string_is_empty(autoconfig_handle->device_info.name))
    {
-      task_title[_len  ] = ' ';
-      task_title[_len+1] = '(';
+      task_title[_len  ] = ':';
+      task_title[_len+1] = ' ';
       task_title[_len+2] = '\0';
       _len               = strlcat(task_title,
             autoconfig_handle->device_info.name,
             sizeof(task_title));
-      task_title[_len  ] = ')';
-      task_title[_len+1] = '\0';
    }
 
    task_free_title(task);

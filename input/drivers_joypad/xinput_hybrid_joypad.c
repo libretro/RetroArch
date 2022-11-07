@@ -658,9 +658,6 @@ static void xinput_joypad_destroy(void)
 {
    unsigned i;
 
-   /* Run poll one last time in order to detect disconnections */
-   xinput_joypad_poll();
-
    for (i = 0; i < 4; ++i)
    {
       g_xinput_states[i].xstate.dwPacketNumber        = 0;
@@ -686,7 +683,6 @@ static void xinput_joypad_destroy(void)
 
    g_xinput_block_pads = false;
 }
-
 
 input_device_driver_t xinput_joypad = {
    xinput_joypad_init,
