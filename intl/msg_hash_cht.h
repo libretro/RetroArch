@@ -359,7 +359,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   "更新佈景主題"
+   "更新選單佈景主題"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
@@ -1202,7 +1202,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   "變更通知、覆蓋元件、影像佈局的設定。"
+   "變更通知、覆蓋元件、影像佈景的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
@@ -1386,7 +1386,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   "佈景主題"
+   "選單佈景主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
@@ -2334,6 +2334,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
    "所有用戶都能控制選單"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "開啟時允許全部用戶控制選單操作，關閉時僅限用戶一可以控制選單。"
+   )
 
 
 /* Settings > Input > Hotkeys */
@@ -2424,19 +2428,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-   "即時存檔編號 +"
+   "下一個即時存檔編號"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "遞增目前即時存檔的編號。"
+   "切換至下一個即時存檔編號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   "即時存檔編號 -"
+   "上一個即時存檔編號"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "遞減目前即時存檔的編號。"
+   "切換至上一個即時存檔編號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
@@ -2472,15 +2476,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
-   "下一個作弊碼索引"
+   "下一個金手指編號"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_PLUS,
+   "切換至下一個已載入金手指的編號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
-   "上一個作弊碼索引"
+   "上一個金手指編號"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_MINUS,
+   "切換至上一個已載入金手指的編號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
    "金手指 (開/關)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
+   "開啟或關閉金手指目前編號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
@@ -2834,7 +2850,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
-   "「關閉」與「結束復古電玩」時，儲存變更的按鍵至已儲存控制器。"
+   "「關閉」與「結束復古電玩」時，儲存變更按鍵至已儲存的控制器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
@@ -2846,11 +2862,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-   "執行時載入覆蓋元件"
+   "執行時載入佈景主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
-   "「執行」時自動載入自訂的覆蓋元件。"
+   "「執行」時自動載入自訂的覆蓋元件與影像佈景。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -2913,7 +2929,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-   "載入即時存檔時，不覆蓋遊戲使用的記錄記憶體(SaveRAM)，可能會導致遊戲發生錯誤。"
+   "載入即時存檔時，不覆蓋記錄記憶體(SaveRAM)，可能會導致發生錯誤。僅限支援SAV格式的核心使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -2921,7 +2937,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-   "設定自動儲存非揮發性記錄記憶體的時間。設定關閉時，正確關閉或結束應用程式，才會將記錄記憶體轉存成記錄存檔。"
+   "設定自動儲存非揮發性記錄記憶體的時間。僅限支援SAV格式的核心使用。\n設定關閉時，正確關閉或結束應用程式，才會將記錄記憶體轉存成記錄存檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -2933,19 +2949,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "設定即時存檔編號上限"
+   "設定即時存檔保留數量"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "設定自動增加即時存檔編號的上限，設定值為零時無上限。當自訂上限時，編號到達上限後回到最低編號循環。"
+   "設定零時全部保留。當自訂達上限時，會刪除最低編號檔案，編號不會重置，存檔維持在自訂的保留數量，加使用中的存檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "自動儲存即時存檔"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+   "「關閉」與「結束復古電玩」時，自動儲存即時存檔，儲存的編號為自動(.state.auto)。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
    "自動載入即時存檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
+   "「執行」時自動載入即時存檔，載入的編號為自動(.state.auto)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
@@ -2957,7 +2981,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "壓縮記錄記憶體"
+   "壓縮記錄存檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
+   "使用壓縮格式儲存記錄存檔，減少檔案的大小，但儲存與載入的速度變慢。僅限支援SAV格式的核心使用。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   "壓縮即時存檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
+   "使用壓縮格式儲存即時存檔，減少檔案的大小，但儲存與載入的速度變慢。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
@@ -2982,6 +3018,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "將遊戲截圖儲存到遊戲資料夾"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+   "儲存執行記錄 (各別)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
+   "記錄每個項目的執行時間，儲存在核心名稱資料夾中(..\列表資料夾\logs\核心名稱)。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+   "儲存執行記錄 (共用)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
+   "記錄每個項目的執行時間，儲存在共用資料夾中(..\列表資料夾\logs)。"
    )
 
 /* Settings > Logging */
@@ -3182,11 +3234,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "影像佈局"
+   "影像佈景"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "調整影像佈局相關的設定。"
+   "調整影像佈景相關的設定。僅限顯示的驅動程式為「gl」時使用(RetroArch 1.12.0)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
@@ -3239,7 +3291,27 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
-   "啟用影像佈局"
+   "開啟影像佈景"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
+   "使用畫面佈置完成的影像佈景。適用於覆蓋元件使用虛擬控制器時。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
+   "載入影像佈景"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
+   "載入要使用的影像佈景。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
+   "選擇畫面遮罩"
+   )
+MSG_HASH( /* FIXME Unused */
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
+   "選擇畫面遮罩顯示的方式。"
    )
 
 /* Settings > On-Screen Display > On-Screen Notifications */
@@ -3275,6 +3347,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
    "正常"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
+   "快速"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
+   "非常快"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
+   "開 (正常)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
+   "開 (快速)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -3419,7 +3507,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "選單滾動加速"
+   "選單滾動速度"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
@@ -3855,11 +3943,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
-   "顯示「影像佈局」"
+   "顯示「影像佈景」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
-   "顯示「影像佈局」選項。"
+   "顯示「影像佈景」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
@@ -3879,19 +3967,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-   "顯示「儲存為核心覆蓋元件」"
+   "顯示「儲存為核心佈景主題」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-   "在「儲存覆蓋元件」子選單中顯示「儲存為核心覆蓋元件」選項。"
+   "在「儲存佈景主題」子選單中顯示「儲存為核心佈景主題」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   "顯示「儲存為遊戲覆蓋元件」"
+   "顯示「儲存為遊戲佈景主題」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   "在「儲存覆蓋元件」子選單中顯示「儲存為遊戲覆蓋元件」選項。"
+   "在「儲存佈景主題」子選單中顯示「儲存為遊戲佈景主題」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
@@ -4573,11 +4661,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   "佈景主題"
+   "選單佈景主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
-   "設定佈景主題的儲存位置。"
+   "設定選單佈景主題的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
@@ -4693,11 +4781,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   "影像佈局"
+   "影像佈景"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
-   "設定影像佈局的儲存位置。"
+   "設定影像佈景的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
@@ -5294,7 +5382,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STATE_SLOT,
-   "設定目前即時存檔使用的編號。"
+   "設定即時存檔使用的編號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
@@ -5322,7 +5410,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
-   "還原之前存檔"
+   "還原儲存之前"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
@@ -5393,6 +5481,10 @@ MSG_HASH(
    "金手指"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
+   "設定遊戲作弊碼。可藉由金手指技術，使每款遊戲都震動。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    "光碟控制"
    )
@@ -5402,15 +5494,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
-   "設定影像著色器。協助復古像素藝術增加新時代的光彩。"
+   "設定影像著色器。協助復古像素藝術，增加新時代的光彩。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
-   "儲存覆蓋元件"
+   "儲存佈景主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
-   "儲存目前覆蓋元件的設定。"
+   "儲存目前覆蓋元件與影像佈景的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
@@ -5421,7 +5513,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST,
-   "儲存或刪除此項目的覆蓋元件。"
+   "儲存或刪除此項目的佈景主題。"
    )
 
 /* Quick Menu > Options > Manage Core Options */
@@ -5568,44 +5660,80 @@ MSG_HASH(
    "左/右鍵 設定搜尋目標數值。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
+   "搜尋目標: %u (%X)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LT,
    "低階搜尋 (<)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL,
+   "小於之前數值"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LTE,
-   "低階搜尋 (<)(=)"
+   "低階搜尋 (≤)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL,
+   "小於等於之前數值"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GT,
    "低階搜尋 (>)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL,
+   "大於之前數值"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GTE,
-   "低階搜尋 (>)(=)"
+   "低階搜尋 (≥)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL,
+   "大於等於之前數值"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQ,
    "低階搜尋 (=)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL,
+   "等於之前數值"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
    "低階搜尋 (≠)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL,
+   "不等於之前數值"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQPLUS,
-   "低階搜尋 (+數值)"
+   "低階搜尋 (+)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
-   "左/右鍵 設定搜尋目標增加數值。"
+   "左/右鍵 設定搜尋目標加數。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
+   "數值的加數: %u (%X)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
-   "低階搜尋 (-數值)"
+   "低階搜尋 (-)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
-   "左/右鍵 設定搜尋目標減少數值。"
+   "左/右鍵 設定搜尋目標減數。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
+   "數值的減數: %u (%X)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
@@ -5645,8 +5773,24 @@ MSG_HASH(
    "描述"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
+   "處理程序"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
+   "記憶體搜尋大小"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
    "類型"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
+   "數值"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
+   "記憶體位置"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
@@ -5858,15 +6002,27 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "儲存為核心覆蓋元件"
+   "儲存為核心佈景主題"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "儲存目前覆蓋元件與影像佈景的設定，並預設為此核心使用的佈景主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "儲存為載入位置覆蓋元件"
+   "儲存為載入位置佈景主題"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "儲存目前覆蓋元件與影像佈景的設定，並預設為同一個資料夾載入時，所使用的佈景主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "儲存為遊戲覆蓋元件"
+   "儲存為遊戲佈景主題"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "儲存目前覆蓋元件與影像佈景的設定，並預設為此遊戲使用的佈景主題。"
    )
 
 /* Quick Menu > Achievements */
@@ -5907,11 +6063,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE,
-   "沒有可用的核心訊息。"
+   "沒有可用的核心資訊。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE_BACKUPS_AVAILABLE,
+   "沒有可用的核心備份。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
-   "無可用項目。"
+   "沒有可用的我的最愛項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
@@ -5919,27 +6079,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
-   "無可用項目。"
+   "沒有可用的圖片項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
-   "無可用項目。"
+   "沒有可用的音樂項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
-   "無可用項目。"
+   "沒有可用的影片項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
-   "沒有可用的訊息。"
+   "沒有可用的資訊。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
-   "沒有可用的遊戲列表項目。"
+   "沒有可用的列表項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
-   "沒有找到設定。"
+   "沒有可用的設定選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
@@ -6093,6 +6253,38 @@ MSG_HASH(
    "按住選擇鍵(2秒)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_DISABLED,
+   "<關閉>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   "自訂數值"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_INCREASE_VALUE,
+   "自訂加數"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_DECREASE_VALUE,
+   "自訂減數"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
+   "數值等於記憶體時執行下一個金手指"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
+   "數值不等於記憶體時執行下一個金手指"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
+   "數值小於記憶體時執行下一個金手指"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
+   "數值大於記憶體時執行下一個金手指"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
    "模擬器"
    )
@@ -6151,6 +6343,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
    "正常"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
+   "快速"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ON,
@@ -7567,11 +7763,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-   "開發商相關遊戲"
+   "開發商"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "發行商相關遊戲"
+   "發行商"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
@@ -8358,7 +8554,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
-   "未覆蓋任何存檔。"
+   "未儲存即時存檔。"
    )
 MSG_HASH(
    MSG_NO_STATE_HAS_BEEN_LOADED_YET,
@@ -8366,7 +8562,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_OVERRIDES_ERROR_SAVING,
-   "儲存覆蓋元件時發生錯誤。"
+   "儲存佈景主題時發生錯誤。"
    )
 MSG_HASH(
    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
@@ -8669,12 +8865,20 @@ MSG_HASH(
    "成功建立新的搜尋。"
    )
 MSG_HASH(
+   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+   "未建立新的搜尋。"
+   )
+MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "搜尋結果: %u個。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
    "加入搜尋結果: %u個。"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   "加入到列表中失敗。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
@@ -8686,7 +8890,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
-   "列表上限一百個，請縮小搜尋結果範圍。"
+   "列表上限一百個，請縮小搜尋結果的範圍。"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
