@@ -1198,12 +1198,16 @@ static const bool audio_enable_menu_bgm    = false;
 /* How many frames to rewind at a time. */
 #define DEFAULT_REWIND_GRANULARITY 1
 #endif
-/* Pause gameplay when gameplay loses focus. */
+
+/* Pause gameplay when window loses focus. */
 #if defined(EMSCRIPTEN)
 #define DEFAULT_PAUSE_NONACTIVE false
 #else
 #define DEFAULT_PAUSE_NONACTIVE true
 #endif
+
+/* Pause gameplay when controller disconnects. */
+#define DEFAULT_PAUSE_ON_DISCONNECT true
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */

@@ -2509,6 +2509,14 @@ MSG_HASH(
    "Detect"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
+   "Pause Content When Controller Disconnects"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
+   "Pause content when any controller is disconnected."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Input Button Axis Threshold"
    )
@@ -11692,10 +11700,6 @@ MSG_HASH(
    "Native"
    )
 MSG_HASH(
-   MSG_DEVICE_DISCONNECTED_FROM_PORT,
-   "Device disconnected from port"
-   )
-MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
    "Unknown netplay command received"
    )
@@ -12909,6 +12913,14 @@ MSG_HASH(
    "Auto-loading save state from \"%s\" succeeded."
    )
 MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT,
+   "configured in port"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT,
+   "disconnected from port"
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "not configured"
    )
@@ -13111,10 +13123,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "Cheat deleted."
-   )
-MSG_HASH(
-   MSG_DEVICE_CONFIGURED_IN_PORT,
-   "Configured in port:"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,

@@ -2415,6 +2415,10 @@ MSG_HASH(
    "pause_nonactive"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_PAUSE_ON_DISCONNECT,
+   "pause_on_disconnect"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,
    "menu_screensaver_timeout"
    )
