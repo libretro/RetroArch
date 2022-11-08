@@ -115,15 +115,17 @@ OBJOUT   = -o
 $(TARGET).elf: $(OBJ)
 	$(LD) $(ORBISDEV)/usr/lib/crt0.o $(OBJ) $(LDFLAGS) $(LIBS) -o $(TARGET).elf
 
+$(TARGET).oelf: $(TARGET).elf
+	@orbis-elf-create $(TARGET).elf $(TARGET).oelf
+
+$(TARGET).self: $(TARGET).oelf
+	python $(ORBISDEV)/bin/make_fself.py --auth-info $(AUTH_INFO) $(TARGET).oelf $(TARGET).self
+
 install:
-	@cp homebrew.self $(SELF_PATH_INSTALL)
+	@cp $(TARGET).self $(SELF_PATH_INSTALL)/homebrew.self
 	@echo "Installed!"
-oelf:
-	@orbis-elf-create $(TARGET).elf homebrew.oelf
-eboot:
-	python $(ORBISDEV)/bin/make_fself.py --auth-info $(AUTH_INFO) homebrew.oelf homebrew.self
 
 clean:
-	rm -f $(OBJ) $(TARGET).elf $(TARGET).oelf
+	rm -f $(OBJ) $(TARGET).elf $(TARGET).oelf $(TARGET).self
 
 .PHONY: clean all
