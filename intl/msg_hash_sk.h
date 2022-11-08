@@ -1469,7 +1469,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertikálna obnovovacia frekvencia obrazovky. Použije sa na výpočet vhodného vzorkovania vstupu audia.\nIgnorované, ak je povolené 'Vláknové video'."
+   "Vertikálna obnovovacia frekvencia obrazovky. Použije sa na výpočet vhodného vzorkovania vstupu audia.\\nIgnorované, ak je povolené 'Vláknové video'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -2144,7 +2144,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "Previnie aktuálny obsah počas držania klávesy.\n'Podpora prevíjania' musí byť povolená."
+   "Previnie aktuálny obsah počas držania klávesy.\\n'Podpora prevíjania' musí byť povolená."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
@@ -3177,15 +3177,15 @@ MSG_HASH(
 #ifdef _3DS
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
-   "Dotknite sa dotykovej obrazovky, \naby ste prešli do ponuky Retroarch"
+   "Dotknite sa dotykovej obrazovky, \\naby ste prešli do ponuky Retroarch"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
-   "Žiadne \núdaje"
+   "Žiadne \\núdaje"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
-   "Žiadny\nsnímok obrazovky"
+   "Žiadny\\nsnímok obrazovky"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
@@ -3193,16 +3193,16 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Vytvoriť\nbod obnovy"
+   "Vytvoriť\\nbod obnovy"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Načítať \nbod obnovy"
+   "Načítať \\nbod obnovy"
    )
 #endif
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Skenovanie je dokončené.<br><br>\nAk chcete, aby bol obsah správne naskenovaný, musíte:\n<ul><li>mať už stiahnuté kompatibilné jadro</li>\n<li>mať aktualizované „Informačné súbory o jadre“ cez Online Updater</li>\n<li>aktualizovať \"Databázy\" cez Online Updater</li>\n<li>reštartovať RetroArch, ak ste práve vykonali čokoľvek z vyššie uvedeného</li></ul>\nNakoniec, obsah sa musí zhodovať s existujúcimi databázami z <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">nachádyajúcimi sa tu</a>. Ak to stále nefunguje, <a href=\"https://www.github.com/libretro/RetroArch/issues\">odošlite hlásenie o chybe</a>."
+   "Skenovanie je dokončené.<br><br>\\nAk chcete, aby bol obsah správne naskenovaný, musíte:\\n<ul><li>mať už stiahnuté kompatibilné jadro</li>\\n<li>mať aktualizované „Informačné súbory o jadre“ cez Online Updater</li>\\n<li>aktualizovať \"Databázy\" cez Online Updater</li>\\n<li>reštartovať RetroArch, ak ste práve vykonali čokoľvek z vyššie uvedeného</li></ul>\\nNakoniec, obsah sa musí zhodovať s existujúcimi databázami z <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">nachádyajúcimi sa tu</a>. Ak to stále nefunguje, <a href=\"https://www.github.com/libretro/RetroArch/issues\">odošlite hlásenie o chybe</a>."
    )
 #endif

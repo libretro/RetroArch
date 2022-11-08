@@ -2164,7 +2164,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-   "對此核心重新映射控制器"
+   "核心啟動載入自訂控制器 (進階選項)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   "執行時自動載入核心自訂控制器(部分主機的錯誤修正)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -2175,7 +2179,31 @@ MSG_HASH(
    "自動載入遊戲控制器預設檔。開啟後如通知「未設定」在設定控制器按鍵選項中，支援儲存為預設檔。"
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "禁用 Windows 快捷鍵 (需要重新啟動)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+   "應用程式中保留「Win鍵」組合。"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   "輔助感測器輸入"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   "裝置支援時，開啟重力感測器、陀螺儀、照度感測器等。開啟時可能會影響效能。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "自動滑鼠鎖定"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "啟動復古電玩時，限制滑鼠可移動位置在應用程式視窗中。"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    "關"
@@ -2190,19 +2218,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
-   "按鈕輸入軸心臨界值"
+   "方向軸臨界值輸入按鍵"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   "設定類比搖桿方向軸必須多傾斜，才能按下十字鍵方向。僅限自訂「十字鍵使用類比搖桿」使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
-   "類比輸入不作用盲區"
+   "類比搖桿死區"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
+   "設定類比搖桿方向軸死區，方向軸移動低於死區值時不作用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
-   "類比輸入靈敏度"
+   "類比搖桿靈敏度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   "調整類比搖桿的靈敏度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
-   "綁定超時時間"
+   "按鍵輸入等候"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
+   "設定控制器按鍵時，裝置輸入的等候時間。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
@@ -2222,19 +2266,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
-   "連發模式"
+   "連發功能鍵模式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
-   "設定按鍵連發使用的模式。"
+   "設定連發功能鍵使用的模式。需先「設定 - 輸入 - 連接埠 # 控制器」自訂「 連發功能鍵」的按鍵。\\n模式設定為 <Classic> 時需重複操作，先按住要連發按鍵，按「 連發功能鍵」開啟連發，連發中的按鍵放開時失效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "預設單鍵"
+   "指定連發按鍵 (限單鍵)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "設定「連發模式」選項中單鍵操作時的使用按鍵。"
+   "指定當按下「連發功能鍵」時的要連發的按鍵。\\n模式設定為 <Single Button (Toggle)> 時，按「連發功能鍵」開啟指定的按鍵自動連發功能，再按一次則關閉。\\n模式設定為 <Single Button (Hold)> 時，按住「連發功能鍵」開啟指定的按鍵連發功能，放開時則停止。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -2270,7 +2314,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-   "端口 %u 控制器"
+   "連接埠 %u 控制器"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "變更此連接埠的按鍵設定。"
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -2591,15 +2639,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
-   "十字鍵使用類比搖杆"
+   "十字鍵使用類比搖桿"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "設定使用類比搖桿取代十字鍵輸入。當核心支援模擬類比搖桿時，非強制的設定會使十字鍵映射被禁用。\n當設定為強制映射時，核心模擬類比搖桿輸入將無法使用。"
+   "設定使用類比搖桿取代十字鍵輸入。當核心支援模擬類比搖桿時，非強制的設定會使十字鍵映射被禁用。\\n當設定為強制映射時，核心模擬類比搖桿輸入將無法使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "手把配置"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
+   "用戶連接埠 (遊戲主機)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "設定控制器連接到用戶連接埠的編號(預設%u)。適用於不想交換手把時，可應用於多人控制一角色，或一人控制多角色。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -2607,7 +2663,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
-   "還原為預設檔 (套用隨插即用)"
+   "重置為預設值 (套用隨插即用)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
@@ -2759,7 +2815,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "連發功能鍵 (限單次作用，需先按住要連發的按鍵)"
+   "連發功能鍵"
    )
 
 /* Settings > Latency */
@@ -2850,7 +2906,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
-   "「關閉」與「結束復古電玩」時，儲存變更按鍵至已儲存的控制器。"
+   "「關閉」與「結束復古電玩」時，儲存變更按鍵至已儲存的自訂控制器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
@@ -2874,7 +2930,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
-   "「執行」時自動載入自訂的控制器。"
+   "「執行」時自動載入自訂控制器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -2937,7 +2993,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-   "設定自動儲存非揮發性記錄記憶體的時間。僅限支援SAV格式的核心使用。\n設定關閉時，正確關閉或結束應用程式，才會將記錄記憶體轉存成記錄存檔。"
+   "設定自動儲存非揮發性記錄記憶體的時間。僅限支援SAV格式的核心使用。\\n設定關閉時，正確關閉或結束應用程式，才會將記錄記憶體轉存成記錄存檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -3025,7 +3081,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
-   "記錄每個項目的執行時間，儲存在核心名稱資料夾中(..\\列表資料夾\\logs\\核心名稱)。"
+   "記錄每個項目的執行時間，儲存在核心名稱資料夾中(../列表資料夾/logs/核心名稱)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
@@ -3033,7 +3089,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "記錄每個項目的執行時間，儲存在共用資料夾中(..\\列表資料夾\\logs)。"
+   "記錄每個項目的執行時間，儲存在共用資料夾中(../列表資料夾/logs)。"
    )
 
 /* Settings > Logging */
@@ -3431,11 +3487,11 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
-   "顯示高級設定"
+   "顯示進階設定"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
-   "顯示高級用戶的進階設定"
+   "顯示進階的設定選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
@@ -3459,7 +3515,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   "開啟時選項與項目的可移動方向，到達邊界時則環繞到開頭或結尾。"
+   "開啟時選項與列表，可移動方向到達邊界時，則環繞到開頭或結尾。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
@@ -3470,6 +3526,22 @@ MSG_HASH(
    "當選單處於活動狀態時，暫停執行中的遊戲。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "選單操作即時存檔後自動關閉"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+   "使用快捷選單的載入或儲存即時存檔後，自動關閉選單回到遊戲中。關閉此功能時在低效能的裝置上，可能提高儲存速度。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   "選單操作虛擬光碟機後自動關閉"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   "使用快捷選單的虛擬光碟機載入光碟映像檔後，自動關閉選單回到遊戲中。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
    "關閉時結束"
    )
@@ -3478,20 +3550,56 @@ MSG_HASH(
    "載入檔案關閉時結束復古電玩。設定為 <CLI> 時，僅限使用命令行介面載入時套用此功能。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+   "選單螢幕保護程式"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
+   "當選單閒置到達設定的等候時間，顯示螢幕保護程式。未設定動畫時畫面全黑。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
+   "選單螢幕保護程式動畫"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
+   "當選單螢幕保護程式啟動時，顯示動畫效果，開啟後可能會影響效能。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
    "大雪紛飛"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
+   "星空"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
+   "漩渦"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "滑鼠支援"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+   "允許使用滑鼠控制選單。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
    "觸控支援"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+   "允許使用觸控螢幕控制選單。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   "啟用多線程數據執行循環"
+   "執行緒任務"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   "使用單一執行緒執行任務。當無法掃描檔案時，可嘗試關閉此選項，可能造成儲存即時存檔延遲，掃描完成後記得開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
@@ -3503,7 +3611,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
-   "禁用桌面元素"
+   "禁用桌面組件"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
+   "視窗管理員使用組件，應用視覺效果、檢測無回應的視窗等。僅限作業系統 Windows Vista、Windows 7 支援此組件。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
@@ -3523,7 +3635,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
-   "UI Companion Enable"
+   "桌面選單套件 (進階選項)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
+   "啟動時開啟桌面選單套件 (進階選項)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
@@ -4195,6 +4311,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
    "顯示「列表」"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
+   "顯示「列表」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
@@ -5024,7 +5144,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "掃描指定核心支援的副檔名，完成後設為列表的預設核心。當「指定副檔名」的條件時，此選項的掃描會失效。\n設定為 <未指定> 時改用「指定副檔名」的條件掃描。"
+   "掃描指定核心支援的副檔名，完成後設為列表的預設核心。當「指定副檔名」的條件時，此選項的掃描會失效。\\n設定為 <未指定> 時改用「指定副檔名」的條件掃描。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
@@ -5486,7 +5606,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
-   "光碟控制"
+   "虛擬光碟機"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_OPTIONS,
+   "變更光碟映像檔相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
@@ -5544,35 +5668,35 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
-   "已載入控制器:"
+   "已載入自訂控制器:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
-   "載入控制器"
+   "載入自訂控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
-   "儲存為核心控制器"
+   "儲存為核心自訂控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-   "刪除核心控制器"
+   "刪除核心自訂控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
-   "儲存為載入位置控制器"
+   "儲存為載入位置自訂控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "刪除載入位置控制器"
+   "刪除載入位置自訂控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
-   "儲存為遊戲控制器"
+   "儲存為遊戲自訂控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-   "刪除遊戲控制器"
+   "刪除遊戲自訂控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -5580,7 +5704,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
-   "重置所有按鍵為預設值。"
+   "重置所有按鍵為核心預設值。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "更新到自訂控制器"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "將目前變更的按鍵設定，更新到自訂控制器中覆蓋。"
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -5594,7 +5726,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
-   "開始或繼續搜尋金手指"
+   "手動搜尋金手指"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
@@ -5649,7 +5781,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "<開啟> 大端序: 258 = 0x0102\n<關閉> 小端序: 258 = 0x0201"
+   "<開啟> 大端序: 258 = 0x0102\\n<關閉> 小端序: 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -5812,6 +5944,10 @@ MSG_HASH(
    "追加光碟鏡像"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
+   "載入光碟映像檔"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    "光碟索引"
    )
@@ -5868,7 +6004,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
-   "儲存目前設置至「影像著色器」根目錄「retroarch.slangp」配置檔，可使用著色器快捷鍵載入。\n儲存為應用變化配置檔時，可變更著色器通道數量，加入單通道的著色器，每次變更都需應用變化一次。"
+   "儲存目前設置至「影像著色器」根目錄「retroarch.slangp」配置檔，可使用著色器快捷鍵載入。\\n儲存為應用變化配置檔時，可變更著色器通道數量，加入單通道的著色器，每次變更都需應用變化一次。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -5884,7 +6020,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
-   "設定著色器管線通道的數量。\n每個通道 <未使用> 可載入單通道的著色器，載入後「應用變化」即可套用設定。"
+   "設定著色器管線通道的數量。\\n每個通道 <未使用> 可載入單通道的著色器，載入後「應用變化」即可套用設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER,
@@ -6422,19 +6558,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-   "左類比搖杆"
+   "左類比搖桿"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "右類比搖杆"
+   "右類比搖桿"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
-   "左類比搖杆 (強制)"
+   "左類比搖桿 (強制)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
-   "右類比搖杆 (強制)"
+   "右類比搖桿 (強制)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
@@ -7142,7 +7278,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE,
-   "拖曳圖片至此\n(PNG、BMP)"
+   "拖曳圖片至此\\n(PNG、BMP)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
@@ -7509,7 +7645,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
-   "埠"
+   "連接埠"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
@@ -7517,7 +7653,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
-   "手動搜尋金手指"
+   "開始或繼續搜尋金手指"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
@@ -7739,23 +7875,23 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X,
-   "左類比搖杆 X"
+   "左類比搖桿 X"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y,
-   "左類比搖杆 Y"
+   "左類比搖桿 Y"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X,
-   "右類比搖杆 X"
+   "右類比搖桿 X"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
-   "右類比搖杆 Y"
+   "右類比搖桿 Y"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
-   "開始或繼續搜尋金手指"
+   "手動搜尋金手指"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
@@ -8198,7 +8334,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
-   "從連接埠離開."
+   "已中斷輸入裝置與連接埠的連接。"
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -8235,6 +8371,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ERROR_SAVING_REMAP_FILE,
    "無法儲存 remap 檔案."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_REMAP_FILE,
+   "無法刪除，請確認檔案是否設為唯讀。"
    )
 MSG_HASH(
    MSG_ERROR_SAVING_SHADER_PRESET,
@@ -8598,7 +8738,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
-   "Remap file 儲存成功."
+   "已儲存自訂控制器。"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
+   "已刪除自訂控制器。"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_RESET,
+   "已重置所有按鍵為預設值。"
    )
 MSG_HASH(
    MSG_REMOVED_DISK_FROM_TRAY,
@@ -8774,7 +8922,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
-   "從端口斷開設備"
+   "中斷裝置與連接埠的連接"
    )
 MSG_HASH(
    MSG_VALUE_REBOOTING,
@@ -8855,6 +9003,26 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    "密碼錯誤。"
+   )
+MSG_HASH(
+   MSG_GAME_REMAP_FILE_LOADED,
+   "已載入遊戲自訂控制器。"
+   )
+MSG_HASH(
+   MSG_DIRECTORY_REMAP_FILE_LOADED,
+   "已載入為載入位置自訂控制器。"
+   )
+MSG_HASH(
+   MSG_CORE_REMAP_FILE_LOADED,
+   "已載入核心自訂控制器。"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "已更新按鍵設定至:"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSH_FAILED,
+   "更新失敗(檔案唯讀):"
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
@@ -9219,6 +9387,14 @@ MSG_HASH(
    "滑鼠比例"
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+   "觸控感應區縮放"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+   "調整觸控感應區使用比例，適用於作業系統顯示縮放。"
+   )
 #ifdef HAVE_ODROIDGO2
 #else
 #endif
@@ -9233,19 +9409,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
-   "沒有\n資料"
+   "沒有\\n資料"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
-   "沒有\n截圖"
+   "沒有\\n截圖"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "建立\n還原點"
+   "建立\\n還原點"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "載入\n還原點"
+   "載入\\n還原點"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
@@ -9307,7 +9483,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "掃描完成。<br><br>\n為了正確的掃描遊戲檔案。<br><br>\n您必須:\n<ul><li>下載對應的核心。</li>\n<li>更新核心資料庫。</li>\n<li>更新遊戲資料庫。</li>\n<li>上述任一項剛完成，請先重新啟動復古電玩。</li></ul>\n最後，掃描的檔案必須符合資料庫數據，想了解更多信息，請使用<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">線上說明</a>。<br>\n如果仍然無法掃描，請使用<a href=\"https://www.github.com/libretro/RetroArch/issues\">錯誤回報</a>。"
+   "掃描完成。<br><br>\\n為了正確的掃描遊戲檔案。<br><br>\\n您必須:\\n<ul><li>下載對應的核心。</li>\\n<li>更新核心資料庫。</li>\\n<li>更新遊戲資料庫。</li>\\n<li>上述任一項剛完成，請先重新啟動復古電玩。</li></ul>\\n最後，掃描的檔案必須符合資料庫數據，想了解更多信息，請使用<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">線上說明</a>。<br>\\n如果仍然無法掃描，請使用<a href=\"https://www.github.com/libretro/RetroArch/issues\">錯誤回報</a>。"
    )
 #endif
 MSG_HASH(

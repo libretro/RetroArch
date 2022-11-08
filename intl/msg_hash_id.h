@@ -1553,7 +1553,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Laju penyegaran vertikal layar Anda. Digunakan untuk menghitung laju input audio yang sesuai.\nIni akan diabaikan jika 'Video Berulir' diaktifkan."
+   "Laju penyegaran vertikal layar Anda. Digunakan untuk menghitung laju input audio yang sesuai.\\nIni akan diabaikan jika 'Video Berulir' diaktifkan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1746,7 +1746,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Offset area pandang khusus yang digunakan untuk menentukan posisi sumbu X dari area pandang.\n Ini diabaikan jika 'Skala Bilangan Bulat' diaktifkan."
+   "Offset area pandang khusus yang digunakan untuk menentukan posisi sumbu X dari area pandang.\\n Ini diabaikan jika 'Skala Bilangan Bulat' diaktifkan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1754,7 +1754,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Offset area pandang khusus yang digunakan untuk menentukan posisi sumbu Y dari area pandang.\n Ini diabaikan jika 'Skala Bilangan Bulat' diaktifkan."
+   "Offset area pandang khusus yang digunakan untuk menentukan posisi sumbu Y dari area pandang.\\n Ini diabaikan jika 'Skala Bilangan Bulat' diaktifkan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2706,7 +2706,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Membatasi jumlah entri di daftar putar 'Kesukaan'. Ketika sudah di batasnya, tambahan yang baru akan ditolak sampai entri yang lama dihapus. Mengatur nilainya (value) ke -1 membolehkan entri 'tanpa batas'.\nPERINGATAN: Mengurangi nilai (value) akan menghapus entri yang ada!"
+   "Membatasi jumlah entri di daftar putar 'Kesukaan'. Ketika sudah di batasnya, tambahan yang baru akan ditolak sampai entri yang lama dihapus. Mengatur nilainya (value) ke -1 membolehkan entri 'tanpa batas'.\\nPERINGATAN: Mengurangi nilai (value) akan menghapus entri yang ada!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,

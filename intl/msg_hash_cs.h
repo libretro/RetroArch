@@ -1629,7 +1629,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertikální obnovovací frekvence obrazovky. Používá se k výpočtu vhodné vstupní frekvence zvuku.\nTento údaj bude ignorován, pokud je povolena funkce \"Threaded Video\"."
+   "Vertikální obnovovací frekvence obrazovky. Používá se k výpočtu vhodné vstupní frekvence zvuku.\\nTento údaj bude ignorován, pokud je povolena funkce \"Threaded Video\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1854,7 +1854,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Vlastní posun zobrazení, který se používá k určení polohy zobrazení v ose X.\nTyto údaje jsou ignorovány, pokud je povoleno 'Celočíselné Škálování'."
+   "Vlastní posun zobrazení, který se používá k určení polohy zobrazení v ose X.\\nTyto údaje jsou ignorovány, pokud je povoleno 'Celočíselné Škálování'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1862,7 +1862,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Vlastní posun zobrazení, který se používá k určení polohy osy Y zobrazení.\nTyto údaje jsou ignorovány, pokud je povoleno 'Celočíselné Škálování'."
+   "Vlastní posun zobrazení, který se používá k určení polohy osy Y zobrazení.\\nTyto údaje jsou ignorovány, pokud je povoleno 'Celočíselné Škálování'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2704,7 +2704,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "Převíjí aktuální obsah při podržení klávesy.\n'Podpora převíjení' musí být povolena."
+   "Převíjí aktuální obsah při podržení klávesy.\\n'Podpora převíjení' musí být povolena."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
@@ -2908,7 +2908,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Zvýší index aktuálně vybraného disku.\nVirtuální zásobník disků musí být otevřený."
+   "Zvýší index aktuálně vybraného disku.\\nVirtuální zásobník disků musí být otevřený."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -2916,7 +2916,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Sníží index aktuálně vybraného disku.\nVirtuální zásobník disků musí být otevřený."
+   "Sníží index aktuálně vybraného disku.\\nVirtuální zásobník disků musí být otevřený."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -2980,7 +2980,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "Zachytí obraz aktuálního obsahu a poté přeloží a/nebo nahlas přečte jakýkoli text na obrazovce.\n'AI Service' Musí být povolena a nakonfigurována."
+   "Zachytí obraz aktuálního obsahu a poté přeloží a/nebo nahlas přečte jakýkoli text na obrazovce.\\n'AI Service' Musí být povolena a nakonfigurována."
    )
 
 /* Settings > Input > Port # Controls */
@@ -3485,7 +3485,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "Zápis nevolatilních souborů Uložené Ram v archivovaném formátu. Dramaticky snižuje velikost souboru na úkor (zanedbatelně) prodloužené doby ukládání/načítání.\nPouze pro jádra, která umožňují ukládání přes standardní rozhraní libretro Uložené Ram."
+   "Zápis nevolatilních souborů Uložené Ram v archivovaném formátu. Dramaticky snižuje velikost souboru na úkor (zanedbatelně) prodloužené doby ukládání/načítání.\\nPouze pro jádra, která umožňují ukládání přes standardní rozhraní libretro Uložené Ram."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -3638,7 +3638,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Změna nastavení ovlivňujícího počítadlo času snímků.\nAktivní pouze při vypnutém vláknovém videu."
+   "Změna nastavení ovlivňujícího počítadlo času snímků.\\nAktivní pouze při vypnutém vláknovém videu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -5822,7 +5822,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Omezit počet položek v seznamu oblíbených. Po dosažení limitu nebude možné přidávat nové položky, dokud nebudou staré odstraněny. Nastavení hodnoty -1 umožňuje 'neomezený' počet záznamů.\nUpozornění: Snížení hodnoty odstraní stávající záznamy!"
+   "Omezit počet položek v seznamu oblíbených. Po dosažení limitu nebude možné přidávat nové položky, dokud nebudou staré odstraněny. Nastavení hodnoty -1 umožňuje 'neomezený' počet záznamů.\\nUpozornění: Snížení hodnoty odstraní stávající záznamy!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -5870,7 +5870,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Určete, kdy se mají položky v playlistu označit aktuálně přidruženým jádrem (pokud existuje).\nToto nastavení se ignoruje, pokud jsou povoleny podznačky v playlistu."
+   "Určete, kdy se mají položky v playlistu označit aktuálně přidruženým jádrem (pokud existuje).\\nToto nastavení se ignoruje, pokud jsou povoleny podznačky v playlistu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -5974,7 +5974,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Zvolte, který typ záznamu protokolu běhu se má zobrazit na podznačkách playlistu.\nPříslušný protokol běhu musí být povolen v nabídce možností 'Uložení'."
+   "Zvolte, který typ záznamu protokolu běhu se má zobrazit na podznačkách playlistu.\\nPříslušný protokol běhu musí být povolen v nabídce možností 'Uložení'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -6127,7 +6127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Umožňuje aplikaci Discord zobrazovat údaje o přehrávaném obsahu.\nK dispozici pouze s nativním desktopovým klientem."
+   "Umožňuje aplikaci Discord zobrazovat údaje o přehrávaném obsahu.\\nK dispozici pouze s nativním desktopovým klientem."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -6501,7 +6501,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Přidejte tuto zvukovou stopu do dostupného slotu pro zvukový proud.\nPokud nejsou aktuálně k dispozici žádné sloty, bude ignorována."
+   "Přidejte tuto zvukovou stopu do dostupného slotu pro zvukový proud.\\nPokud nejsou aktuálně k dispozici žádné sloty, bude ignorována."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -6509,7 +6509,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Přidejte tuto zvukovou stopu do dostupného slotu pro zvukový proud a přehrajte ji.\nPokud nejsou aktuálně k dispozici žádné sloty, bude ignorována."
+   "Přidejte tuto zvukovou stopu do dostupného slotu pro zvukový proud a přehrajte ji.\\nPokud nejsou aktuálně k dispozici žádné sloty, bude ignorována."
    )
 
 /* Netplay */
@@ -7681,11 +7681,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Vysuňte aktuální disk, vyberte nový disk ze systému souborů, vložte jej a zavřete přihrádku virtuálního disku.\nPOZNÁMKA: Jedná se o starší funkci. Místo toho se doporučuje načítat tituly z více disků prostřednictvím seznamů stop M3U, které umožňují výběr disku pomocí možností 'Vysunout/vložit disk' a 'Index aktuálního disku'."
+   "Vysuňte aktuální disk, vyberte nový disk ze systému souborů, vložte jej a zavřete přihrádku virtuálního disku.\\nPOZNÁMKA: Jedná se o starší funkci. Místo toho se doporučuje načítat tituly z více disků prostřednictvím seznamů stop M3U, které umožňují výběr disku pomocí možností 'Vysunout/vložit disk' a 'Index aktuálního disku'."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Vyberte nový disk ze systému souborů a vložte jej bez zavření přihrádky virtuálního disku.\nPOZNÁMKA: Jedná se o starší funkci. Místo toho se doporučuje načítat tituly z více disků prostřednictvím seznamů skladeb M3U, které umožňují výběr disku pomocí možnosti 'Current Disc Index'."
+   "Vyberte nový disk ze systému souborů a vložte jej bez zavření přihrádky virtuálního disku.\\nPOZNÁMKA: Jedná se o starší funkci. Místo toho se doporučuje načítat tituly z více disků prostřednictvím seznamů skladeb M3U, které umožňují výběr disku pomocí možnosti 'Current Disc Index'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -11930,7 +11930,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "Nerozpoznaný příkaz \"%s\" přijat.\n"
+   "Nerozpoznaný příkaz \"%s\" přijat.\\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -12516,11 +12516,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
-   "Použití: %dx%d\nSPUSTIT pro resetování"
+   "Použití: %dx%d\\nSPUSTIT pro resetování"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_DESC,
-   "Použití: %dx%d - %s\nSPUSTIT pro resetování"
+   "Použití: %dx%d - %s\\nSPUSTIT pro resetování"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
@@ -12965,7 +12965,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
-   "Klepnutím na dotykovou obrazovku přejděte do \nnabídky Retroarch"
+   "Klepnutím na dotykovou obrazovku přejděte do \\nnabídky Retroarch"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
@@ -12973,11 +12973,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
-   "Žádné\nData"
+   "Žádné\\nData"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
-   "Žádný\nSnímek Obrazovky"
+   "Žádný\\nSnímek Obrazovky"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
@@ -12985,11 +12985,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Vytvořit\nBod Obnovy"
+   "Vytvořit\\nBod Obnovy"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Načíst\nObnovit Bod"
+   "Načíst\\nObnovit Bod"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
@@ -13051,7 +13051,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Skenování dokončeno.<br><br>\nAby mohl být obsah správně naskenován, musíte:\n<ul><li>mít již stažené kompatibilní jádro</li>\n<li>aktualizované pomocí Online Updater</li>\n<li>mají \"Databázy\" aktualizované prostřednictvím Online Updater</li>\n<li>restartujte RetroArch, pokud je některý z výše uvedených právě proveden</li></ul>\nKonečně obsah musí odpovídat existujícím databázím z <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">zde</a>. Pokud to stále nefunguje, zvažte <a href=\"https://www.github.com/libretro/RetroArch/issues\">odeslání chybového hlášení</a>."
+   "Skenování dokončeno.<br><br>\\nAby mohl být obsah správně naskenován, musíte:\\n<ul><li>mít již stažené kompatibilní jádro</li>\\n<li>aktualizované pomocí Online Updater</li>\\n<li>mají \"Databázy\" aktualizované prostřednictvím Online Updater</li>\\n<li>restartujte RetroArch, pokud je některý z výše uvedených právě proveden</li></ul>\\nKonečně obsah musí odpovídat existujícím databázím z <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">zde</a>. Pokud to stále nefunguje, zvažte <a href=\"https://www.github.com/libretro/RetroArch/issues\">odeslání chybového hlášení</a>."
    )
 #endif
 MSG_HASH(

@@ -1763,7 +1763,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Permite que l'aplicación Discord amuese datos tocante al conteníu que ta en reproducción.\nEsta función namás ta disponible pal veceru nativu pa ordenadores."
+   "Permite que l'aplicación Discord amuese datos tocante al conteníu que ta en reproducción.\\nEsta función namás ta disponible pal veceru nativu pa ordenadores."
    )
 
 /* Settings > User > Accounts */
@@ -3677,7 +3677,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
-   "Toca la pantalla táctil pa\ndir al menú de Retroarch"
+   "Toca la pantalla táctil pa\\ndir al menú de Retroarch"
    )
 #endif
 #ifdef HAVE_QT

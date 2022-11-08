@@ -701,7 +701,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "Write non-volatile SaveRAM files in an archived format. Dramatically reduces file size at the expense of (negligibly) increased saving/loading times.\nOnly applies to cores that enable saving with the standard libretro SaveRAM interface."
+   "Write non-volatile SaveRAM files in an archived format. Dramatically reduces file size at the expense of (negligibly) increased saving/loading times.\\nOnly applies to cores that enable saving with the standard libretro SaveRAM interface."
    )
 
 /* Settings > Logging */
@@ -1074,7 +1074,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Limit the number of entries in the 'Favourites' playlist. Once the limit is reached, new additions will be prevented until old entries are removed. Setting a value of -1 allows 'unlimited' entries.\nWARNING: Reducing the value will delete existing entries!"
+   "Limit the number of entries in the 'Favourites' playlist. Once the limit is reached, new additions will be prevented until old entries are removed. Setting a value of -1 allows 'unlimited' entries.\\nWARNING: Reducing the value will delete existing entries!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -1086,7 +1086,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Specify when to tag playlist entries with the currently associated core (if any).\nThis setting is ignored when playlist sub-labels are enabled."
+   "Specify when to tag playlist entries with the currently associated core (if any).\\nThis setting is ignored when playlist sub-labels are enabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
@@ -1098,7 +1098,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Select which type of runtime log record to display on playlist sub-labels.\nThe corresponding runtime log must be enabled with the 'Saving' options menu."
+   "Select which type of runtime log record to display on playlist sub-labels.\\nThe corresponding runtime log must be enabled with the 'Saving' options menu."
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -1357,11 +1357,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Eject current disc, select a new disc from the filesystem then insert it and close the virtual disc tray.\nNOTE: This is a legacy feature. It is instead recommended to load multi-disc titles with M3U playlists, which allow disc selection using the 'Eject/Insert Disc' and 'Current Disc Index' options."
+   "Eject current disc, select a new disc from the filesystem then insert it and close the virtual disc tray.\\nNOTE: This is a legacy feature. It is instead recommended to load multi-disc titles with M3U playlists, which allow disc selection using the 'Eject/Insert Disc' and 'Current Disc Index' options."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Select a new disc from the filesystem and insert it without closing the virtual disc tray.\nNOTE: This is a legacy feature. It is instead recommended to load multi-disc titles with M3U playlists, which allow disc selection using the 'Current Disc Index' option."
+   "Select a new disc from the filesystem and insert it without closing the virtual disc tray.\\nNOTE: This is a legacy feature. It is instead recommended to load multi-disc titles with M3U playlists, which allow disc selection using the 'Current Disc Index' option."
    )
 
 /* Quick Menu > Shaders */
@@ -1970,7 +1970,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "Unrecognised command \"%s\" received.\n"
+   "Unrecognised command \"%s\" received.\\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -2121,7 +2121,7 @@ MSG_HASH(
 #ifdef _3DS
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
-   "Tap the Touch Screen to go\nto the RetroArch menu"
+   "Tap the Touch Screen to go\\nto the RetroArch menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
@@ -2159,6 +2159,6 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Scan Finished.<br><br>\nIn order for content to be correctly scanned, you must:\n<ul><li>have a compatible core already downloaded</li>\n<li>have \"Core Info Files\" updated with the Online Updater</li>\n<li>have \"Databases\" updated with the Online Updater</li>\n<li>restart RetroArch if any of the above was just done</li></ul>\nFinally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>."
+   "Scan Finished.<br><br>\\nIn order for content to be correctly scanned, you must:\\n<ul><li>have a compatible core already downloaded</li>\\n<li>have \"Core Info Files\" updated with the Online Updater</li>\\n<li>have \"Databases\" updated with the Online Updater</li>\\n<li>restart RetroArch if any of the above was just done</li></ul>\\nFinally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>."
    )
 #endif

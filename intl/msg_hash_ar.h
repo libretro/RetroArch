@@ -2924,7 +2924,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
-   "عدادات الأداء لـ RetroArch (والنماذج).\nيمكن أن تساعد بيانات العداد في تحديد اختناقات النظام وضبط أداء النظام والتطبيقات."
+   "عدادات الأداء لـ RetroArch (والنماذج).\\nيمكن أن تساعد بيانات العداد في تحديد اختناقات النظام وضبط أداء النظام والتطبيقات."
    )
 
 /* Settings > File Browser */
@@ -2997,7 +2997,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-   "ارتكب خطأ؟ ارجع ثم حاول مرة أخرى.\nحذر بأن هذا يسبب ضربة للأداء عند اللعب."
+   "ارتكب خطأ؟ ارجع ثم حاول مرة أخرى.\\nحذر بأن هذا يسبب ضربة للأداء عند اللعب."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
@@ -9433,12 +9433,12 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "تحميل\nنقطة الاستعادة"
+   "تحميل\\nنقطة الاستعادة"
    )
 #endif
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "انتهت عملية المسح.<br><br>\nلكي يتم مسح المحتوى بشكل صحيح، يجب عليك:\n<ul><li>أن تكون نواة متوافقة تم تنزيلها مسبقاً</li>\n<li>أن تكون \"ملفات معلومات أساسية\" محدثة عبر تحديثات الإنترنت</li>\n<li>لديها \"قواعد بيانات\" تم تحديثها عبر التحديث عبر الإنترنت</li>\n<li>إعادة تشغيل RetroArch إذا كان أي من المشار إليه أعلاه قد تم فقط</li></ul>\nأخيرًا. المحتوى يجب أن يتطابق مع قواعد البيانات الموجودة من <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">هنا</a>. إذا كانت لا تزال عاجزة عن العمل، فكر في <a href=\"https://www.github.com/libretro/RetroArch/issues\">تقديم تقرير عن الأخطاء</a>."
+   "انتهت عملية المسح.<br><br>\\nلكي يتم مسح المحتوى بشكل صحيح، يجب عليك:\\n<ul><li>أن تكون نواة متوافقة تم تنزيلها مسبقاً</li>\\n<li>أن تكون \"ملفات معلومات أساسية\" محدثة عبر تحديثات الإنترنت</li>\\n<li>لديها \"قواعد بيانات\" تم تحديثها عبر التحديث عبر الإنترنت</li>\\n<li>إعادة تشغيل RetroArch إذا كان أي من المشار إليه أعلاه قد تم فقط</li></ul>\\nأخيرًا. المحتوى يجب أن يتطابق مع قواعد البيانات الموجودة من <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">هنا</a>. إذا كانت لا تزال عاجزة عن العمل، فكر في <a href=\"https://www.github.com/libretro/RetroArch/issues\">تقديم تقرير عن الأخطاء</a>."
    )
 #endif

@@ -497,7 +497,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   "Determinisztikus (mentés/visszatöltés, visszatekerés, run-ahead, hálózati játék)"
+   "Determinisztikus (mentés/visszatöltés, visszatekerés, run-ahead, netplay)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -1657,7 +1657,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "A képernyő függőleges frissítési gyakorisága. A megfelelő hangbemeneti sebesség kiszámítására szolgál.\nEzt a rendszer figyelmen kívül hagyja, ha a \"Többszálas megjelenítés\" engedélyezve van."
+   "A képernyő függőleges frissítési gyakorisága. A megfelelő hangbemeneti sebesség kiszámítására szolgál.\\nEzt a rendszer figyelmen kívül hagyja, ha a \"Többszálas megjelenítés\" engedélyezve van."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1890,7 +1890,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Az egyedi nézőablak X irányú eltolása. \nNincs hatása egész-szorzós skálázáskor."
+   "Az egyedi nézőablak X irányú eltolása. \\nNincs hatása egész-szorzós skálázáskor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1898,7 +1898,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Az egyedi nézőablak Y irányú eltolása. \nNincs hatása egész-szorzós skálázáskor."
+   "Az egyedi nézőablak Y irányú eltolása. \\nNincs hatása egész-szorzós skálázáskor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2760,7 +2760,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "Visszatekeri az aktuális tartalmat, amíg a gomb le van nyomva.\nA \"Visszatekerés támogatása\" be kell legyen kapcsolva."
+   "Visszatekeri az aktuális tartalmat, amíg a gomb le van nyomva.\\nA \"Visszatekerés támogatása\" be kell legyen kapcsolva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
@@ -2968,7 +2968,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Kiválasztja a következő lemezt. \nA virtuális lemeztálca nyitva kell legyen."
+   "Kiválasztja a következő lemezt. \\nA virtuális lemeztálca nyitva kell legyen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -2976,7 +2976,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Az előző lemezre lépteti a mutatót. \nA virtuális lemeztálca nyitva kell legyen."
+   "Az előző lemezre lépteti a mutatót. \\nA virtuális lemeztálca nyitva kell legyen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -3040,7 +3040,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "Készít egy képet az aktuális tartalomról, majd a látható szöveget lefordítja és/vagy hangosan felolvassa.\nAz \"MI szolgáltatás\"-t be kell hozzá kapcsolni és állítani."
+   "Készít egy képet az aktuális tartalomról, majd a látható szöveget lefordítja és/vagy hangosan felolvassa.\\nAz \"MI szolgáltatás\"-t be kell hozzá kapcsolni és állítani."
    )
 
 /* Settings > Input > Port # Controls */
@@ -3549,7 +3549,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "A nem törlődő SaveRAM tartalmának írása tömörített formátumban. Nagymértékben csökkenti a fájlméretet, elhanyagolható mértékben növeli a mentés/töltés idejét.\nCsak olyan magokra érvényes, amelyek a szokásos libretro SaveRAM felületen keresztül intézik a mentést."
+   "A nem törlődő SaveRAM tartalmának írása tömörített formátumban. Nagymértékben csökkenti a fájlméretet, elhanyagolható mértékben növeli a mentés/töltés idejét.\\nCsak olyan magokra érvényes, amelyek a szokásos libretro SaveRAM felületen keresztül intézik a mentést."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -3702,7 +3702,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "A képkocka idejének mérését befolyásoló beállítások.\nCsak ha a többszálas megjelenítés ki van kapcsolva."
+   "A képkocka idejének mérését befolyásoló beállítások.\\nCsak ha a többszálas megjelenítés ki van kapcsolva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -3816,6 +3816,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
    "Felvétel szűrők után"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
+   "A szűrők (de nem a shaderek) utáni kép rögzítése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
@@ -4177,6 +4181,10 @@ MSG_HASH(
    "Képsebesség megjelenítése"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FPS_SHOW,
+   "Az FPS (képkocka per másodperc) érték megjelenítése."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
    "Képsebesség frissítési gyakorisága (képkocka)"
    )
@@ -4462,6 +4470,22 @@ MSG_HASH(
    "Haladó beállítások megjelenítése gyakorlott felhasználók számára."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
+   "Kioszk mód"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
+   "A konfiguráció védelme minden állítási lehetőség elrejtésével."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
+   "Jelszó a kioszk módból kilépéshez"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
+   "Ha a kioszk mód bekapcsolásakor meg volt adva jelszó, akkor később a mód menüből kikapcsolható a jelszó beírása után."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
    "Átforduló navigáció"
    )
@@ -4733,6 +4757,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
    "A \"Beállítások\" menü jelenjen meg. (Ozone / XMB esetén újraindítás szükséges.)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
+   "Jelszó beállítása a \"Beállítások\" engedélyezéséhez"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
+   "Ha a beállítások fül elrejtésekor meg volt adva jelszó, akkor később ez menüből visszaállítható, a jelszó beírása után."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
@@ -5563,16 +5595,48 @@ MSG_HASH(
    "Szerver címe"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
+   "A kiszolgáló címe a csatlakozáshoz."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
    "Netplay TCP portja"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
+   "A kiszolgáló IP címének portja. Lehet TCP vagy UDP port."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   "Egyidejű kapcsolatok legnagyobb száma"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "A kiszolgáló legfeljebb ennyi aktív kapcsolatot engedélyez, mielőtt az újakat visszautasítja."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
+   "Ping korlát"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
+   "A kapcsolat legnagyobb késleltetése (ping), amit a kiszolgáló elfogad. 0 esetén nincs korlát."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Szerver jelszava"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
+   "A jelszó, amelyet a kliensek használnak a kiszolgálóhoz csatlakozáskor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
    "Szerver csak-néző jelszava"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
+   "A jelszó, amelyet a kliensek használnak a kiszolgálóhoz nézőként csatlakozáskor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
@@ -5583,8 +5647,52 @@ MSG_HASH(
    "A Netplay menet néző módban indul."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+   "Elhalványuló csevegés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   "A csevegőüzenetek idővel elhalványulnak."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
+   "Csevegés színe (becenevek)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_NAME,
+   "Formátum: #RRGGBB vagy RRGGBB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
+   "Csevegés színe (üzenetek)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_MSG,
+   "Formátum: #RRGGBB vagy RRGGBB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Megállítás engedélyezése"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
    "A játékosok megállíthatják a játékot netplay közben."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
+   "Slave módú kliensek"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
+   "Slave módú kliensek engedélyezése. Ezek mindkét oldaltól kevés teljesítményt igényelnek, de nagyon érzékenyek a hálózat késleltetésére."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
+   "Kizárólag slave módú kliensek engedélyezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
+   "A nem slave módú kliensek nem csatlakozhatnak. Csak akkor ajánlott, ha a hálózat nagyon gyors, a gépek pedig nagyon gyengék."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -5595,8 +5703,48 @@ MSG_HASH(
    "A netplay kiszolgáló és kliens szinkronjának ellenőrzése ilyen gyakran (képkockában)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "Bemeneti késleltetés képkockái"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "A bemeneti késleltetés mértéke képkockában, amit a netplay arra használhat, hogy a hálózati késleltetést elrejtse. Csökkenti a rángatást és a CPU használatot, érezhető bemeneti késés árán."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "Bemeneti késleltetés tartománya"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "A bemeneti késleltetés tartománya képkockában, amit a netplay arra használhat, hogy a hálózati késleltetést elrejtse. Csökkenti a rángatást és a CPU használatot, érezhető bemeneti késés árán."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
    "Netplay NAT átjárás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
+   "Kiszolgálás esetén a nyilvános Internet felől bejövő kapcsolatok engedélyezése UPnP vagy hasonló technológiával."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
+   "Digitális bemenet megosztása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
+   "%u. eszköz igénylése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
+   "Igény benyújtása erre a bemeneti eszközre a játékhoz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
+   "Hálózati parancsok"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
+   "Hálózati parancsok portja"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
@@ -5689,6 +5837,10 @@ MSG_HASH(
    "Elözmény"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
+   "Lista karbantartása a nemrég használt játékokról, képekről, zenékről és filmekről."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
    "Előzmények mérete"
    )
@@ -5698,11 +5850,43 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "A kedvencek maximális száma. A korlát elérésekor új elemet nem lehet hozzáadni régiek törlése nélkül. A -1 beállítás nem szab korlátot.\nFigyelmeztetés: az érték csökkentése törli a meglevő elemeket!"
+   "A kedvencek maximális száma. A korlát elérésekor új elemet nem lehet hozzáadni régiek törlése nélkül. A -1 beállítás nem szab korlátot.\\nFigyelmeztetés: az érték csökkentése törli a meglevő elemeket!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "A bejegyzések átnevezhetők"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
+   "A játéklista elemei átnevezésének engedélyezése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
+   "Bejegyzések eltávolításának engedélyezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
+   "A játéklista elemei eltávolításának engedélyezése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+   "Játéklisták betűrendbe rendezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
+   "A játéklisták ábécé szerint rendezése, kivéve az \"Előzmények\", \"Képek\", \"Zenék\" és \"Filmek\" listákat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+   "Játéklisták mentése régi formátumban"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
+   "A játéklisták kiírása a már elavult szöveges formátumban. Kikapcsolva a játéklisták JSON formátumúak lesznek."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
+   "Játéklisták tömörítése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
@@ -5851,7 +6035,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "A Discord alkalmazás több adatot mutat meg az éppen játszott tartalomról.\nCsak a natív asztali klienssel elérhető."
+   "A Discord alkalmazás több adatot mutat meg az éppen játszott tartalomról.\\nCsak a natív asztali klienssel elérhető."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -6181,7 +6365,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "A hangsáv hozzáadása egy szabad hangfolyam helyre.\nHa nincs szabad hely, nem történik semmi."
+   "A hangsáv hozzáadása egy szabad hangfolyam helyre.\\nHa nincs szabad hely, nem történik semmi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -6189,7 +6373,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "A hangsáv hozzáadása egy szabad hangfolyam helyre, és annak elindítása.\nHa nincs szabad hely, nem történik semmi."
+   "A hangsáv hozzáadása egy szabad hangfolyam helyre, és annak elindítása.\\nHa nincs szabad hely, nem történik semmi."
    )
 
 /* Netplay */
@@ -6213,6 +6397,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
    "Aktív netplay kapcsolat megszakítása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
+   "Előszoba szűrése"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "Csak azok a szobák, amelyekhez lehet csatlakozni"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   "Csak olyan magok, amik már telepítve vannak"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
+   "Jelszavas szobák"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
@@ -6244,6 +6444,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
    "Netplay kiszolgáló leállítása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   "Kliens kirúgása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "Kliens kirúgása az épp üzemeltetett szobából."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
+   "Kliens kitiltása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "Kliens kitiltása az épp üzemeltetett szobából."
    )
 
 /* Import Content */
@@ -7293,11 +7509,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "A jelenlegi lemez kiadása, új lemez választása a fájlrendszerből, majd annak behelyezése és a virtuális lemeztálca becsukása. \n Figyelem: ez egy elavult funkció. A többlemezes tartalmakat ajánlott inkább M3U lejátszási listákon keresztül betölteni, amikor is a lemezek közt az \"Lemez kiadása/behelyezése\" és az \"Aktuális lemez sorszáma\" funkciókkal lehet váltogatni."
+   "A jelenlegi lemez kiadása, új lemez választása a fájlrendszerből, majd annak behelyezése és a virtuális lemeztálca becsukása. \\n Figyelem: ez egy elavult funkció. A többlemezes tartalmakat ajánlott inkább M3U lejátszási listákon keresztül betölteni, amikor is a lemezek közt az \"Lemez kiadása/behelyezése\" és az \"Aktuális lemez sorszáma\" funkciókkal lehet váltogatni."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Új lemez választása a fájlrendszerből, majd annak behelyezése, de a virtuális lemeztálca becsukása nélkül. \n Figyelem: ez egy elavult funkció. A többlemezes tartalmakat ajánlott inkább M3U lejátszási listákon keresztül betölteni, amikor is a lemezek közt az \"Aktuális lemez sorszáma\" funkcióval lehet váltogatni."
+   "Új lemez választása a fájlrendszerből, majd annak behelyezése, de a virtuális lemeztálca becsukása nélkül. \\n Figyelem: ez egy elavult funkció. A többlemezes tartalmakat ajánlott inkább M3U lejátszási listákon keresztül betölteni, amikor is a lemezek közt az \"Aktuális lemez sorszáma\" funkcióval lehet váltogatni."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -7681,6 +7897,38 @@ MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    "Ismeretlen fordító"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
+   "Megosztás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR,
+   "Elragadás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
+   "Szavazás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
+   "Analóg bemenet megosztása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
+   "Legnagyobb"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
+   "Átlag"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   "Nincs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE,
+   "Mindegy"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE,
    "Jobbra/balra pattogás"
    )
@@ -7895,6 +8143,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
    "32 bites, maximum érték = 0xFFFFFFFF"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   "Nincs"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
@@ -8320,6 +8572,34 @@ MSG_HASH(
    "A részecske alapú animációs effekt jelenik meg, amikor a menü képernyőkímélője aktív."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
+   "Felső bélyegkép"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
+   "Alsó bélyegkép"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
+   "Bélyegképek felcserélése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
+   "A felső és alsó bélyegkép helyzetének felcserélése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+   "Bélyegkép méretezésének módja"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+   "A túl nagy bélyegképek képernyőhöz igazításához használt újramintavételezési eljárás."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   "Bélyegképek késleltetése (ms)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
    "Kiterjesztett ASCII támogatás"
    )
@@ -8426,6 +8706,14 @@ MSG_HASH(
 /* XMB: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+   "Bal bélyegkép"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
+   "A bal oldalon megjelenő bélyegkép típusa."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    "Dinamikus hátterek"
    )
@@ -8528,6 +8816,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
    "A háttérben látható színátmenet lecserélése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+   "Bélyegképek függőleges elrendezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
+   "A bal bélyegkép áthelyezése a képernyő jobb oldalára, a jobb alá."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   "Bélyegkép méretezés szorzója"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   "A bélyegkép megjelenő méretének csökkentése a legnagyobb megengedett szélesség beállításával."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
@@ -8636,8 +8940,24 @@ MSG_HASH(
    "Drakula"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "Második bélyegkép"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "A tartalom metaadatai helyett egy második bélyegkép jelenjen meg."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
    "Gördülőszalag a tartalom metaadataihoz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "Bélyegkép méretezés szorzója"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "A bélyegkép oszlop méretezése."
    )
 
 /* MaterialUI: Settings > User Interface > Appearance */
@@ -9096,6 +9416,10 @@ MSG_HASH(
    "Nincsenek teljesítménymérések."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
+   "Csatlakoztatva"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
    "Csatlakozó"
    )
@@ -9168,12 +9492,44 @@ MSG_HASH(
    "A videóillesztő utasítása a megadott pufferelési mód használatára."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+   "A menü által használt preset módosítása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   "Shader preset"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Indít"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
+   "Becenév: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
+   "Kompatibilis tartalom keresése..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
+   "Nem található mag"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
+   "Kompatibilis tartalom érzékelve"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
+   "Nincs megfelelő tartalom se CRC, se fájlnév alapján"
    )
 
 /* Unused (Only Exist in Translation Files) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
+   "Becenév (LAN): %s"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
    "Felvétel támogatása"
@@ -9269,6 +9625,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
    "Diagnosztikai információk küldése az eszközről és a RetroArch beállításairól a kiszolgálóinknak, elemzés céljából."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
+   "Netplay késleltetés képkockában"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
+   "Helyi hálózat felderítése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
@@ -9516,6 +9880,10 @@ MSG_HASH(
    "A netplay indítása előtt be kell tölteni a tartalmat."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   "Nem található megfelelő mag vagy tartalom, kézi betöltés szükséges."
+   )
+MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    "A grafikus illesztő nem kompatibilis a RetroArch jelenlegi videóilleszőjével, visszaállás a %s illesztőre. Indítsa újra a RetroArch-ot a változtatások életbeléptetéséhez."
    )
@@ -9576,8 +9944,20 @@ MSG_HASH(
    "Eszköz lekapcsolódott a csatlakozóról"
    )
 MSG_HASH(
+   MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
+   "Ismeretlen netplay parancs érkezett"
+   )
+MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
    "A fájl már létezik. Mentés a tartalék pufferbe"
+   )
+MSG_HASH(
+   MSG_PUBLIC_ADDRESS,
+   "Netplay port kiosztás sikeres"
+   )
+MSG_HASH(
+   MSG_UPNP_FAILED,
+   "Netplay UPnP port kiosztása sikertelen"
    )
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
@@ -9588,12 +9968,32 @@ MSG_HASH(
    "Várakozás a kliensre..."
    )
 MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "Az internetről nem lehet a szobához csatlakozni."
+   )
+MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Kiléptél a játékból"
    )
 MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
-   "Csatlakoztál mint %u"
+   "Csatlakoztál mint %u. játékos"
+   )
+MSG_HASH(
+   MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
+   "Csatlakoztál a %.*s bemeneti eszközökkel"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PLAYER_S_LEFT,
+   "%.*s játékos elhagyta a játékot"
+   )
+MSG_HASH(
+   MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
+   "%.*s csatlakozott mint %u. játékos"
+   )
+MSG_HASH(
+   MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
+   "%.*s csatlakozott %.*s bemeneti eszközökkel"
    )
 MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
@@ -9624,8 +10024,24 @@ MSG_HASH(
    "Ez a mag nem támogatja a netplay-t eltérő platformok közt"
    )
 MSG_HASH(
+   MSG_NETPLAY_ENTER_PASSWORD,
+   "Adja meg a jelszót a netplay szerverhez:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Adja meg a netplay chatüzenetet:"
+   )
+MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
    "Engedélyezi-e a kapcsolatot ettől a felhasználótól:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_INCORRECT_PASSWORD,
+   "Hibás jelszó"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SERVER_NAMED_HANGUP,
+   "\"%s\" lekapcsolódott"
    )
 MSG_HASH(
    MSG_NETPLAY_SERVER_HANGUP,
@@ -9636,12 +10052,64 @@ MSG_HASH(
    "Netplay leválasztva"
    )
 MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
+   "Nincs jogosultságod játszani"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
+   "Nincsen szabad játékoshely"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
+   "A kívánt bemeneti eszközök nem elérhetőek"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY,
+   "Nem lehet játék módra váltani"
+   )
+MSG_HASH(
    MSG_NETPLAY_PEER_PAUSED,
    "A \"%s\" netplay partner megállította a játékot"
    )
 MSG_HASH(
+   MSG_NETPLAY_CHANGED_NICK,
+   "A beceneved megváltozott: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_KICKED_CLIENT_S,
+   "\"%s\" kliens kirúgva"
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "\"%s\" kliens kirúgása sikertelen"
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED_CLIENT_S,
+   "\"%s\" kliens kitiltva"
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   "\"%s\" kliens kitiltása sikertelen"
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Játékban"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "Nézőként"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "Eszközök"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CHAT_SUPPORTED,
+   "Csevegés támogatott"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SLOWDOWNS_CAUSED,
+   "Okozott lassulások"
    )
 
 MSG_HASH(
@@ -9661,8 +10129,32 @@ MSG_HASH(
    "Képességek"
    )
 MSG_HASH(
+   MSG_CONNECTING_TO_NETPLAY_HOST,
+   "Csatlakozás a netplay kiszolgálóhoz"
+   )
+MSG_HASH(
    MSG_FETCHING_CORE_LIST,
    "Magok listájának lekérése..."
+   )
+MSG_HASH(
+   MSG_UPDATING_CORE,
+   "Mag frissítése: "
+   )
+MSG_HASH(
+   MSG_DOWNLOADING_CORE,
+   "Mag letöltése: "
+   )
+MSG_HASH(
+   MSG_EXTRACTING_CORE,
+   "Mag kicsomagolása: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLED,
+   "Mag telepítve: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "Mag telepítése sikertelen: "
    )
 MSG_HASH(
    MSG_ALL_CORES_UPDATED,
@@ -9685,6 +10177,14 @@ MSG_HASH(
    "Frissítés sikertelen - túl nagy arcade DAT fájl (nincs elég memória): "
    )
 MSG_HASH(
+   MSG_ADDED_TO_FAVORITES,
+   "Hozzáadva a kedvencekhez"
+   )
+MSG_HASH(
+   MSG_SET_CORE_ASSOCIATION,
+   "Mag beállítva: "
+   )
+MSG_HASH(
    MSG_APPENDED_DISK,
    "Lemez hozzáadva"
    )
@@ -9693,8 +10193,24 @@ MSG_HASH(
    "Lemez hozzáadása sikertelen"
    )
 MSG_HASH(
+   MSG_APPLICATION_DIR,
+   "Alkalmazás könyvtára"
+   )
+MSG_HASH(
    MSG_APPLYING_CHEAT,
    "Csalás változtatásának alkalmazása."
+   )
+MSG_HASH(
+   MSG_APPLYING_SHADER,
+   "Shader alkalmazása"
+   )
+MSG_HASH(
+   MSG_AUDIO_MUTED,
+   "Hang elnémítva."
+   )
+MSG_HASH(
+   MSG_AUDIO_UNMUTED,
+   "Hang visszakapcsolva."
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_ERROR_SAVING,
@@ -9715,6 +10231,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_BLOCKING_SRAM_OVERWRITE,
    "SRAM felülírás megakadályozva"
+   )
+MSG_HASH(
+   MSG_BYTES,
+   "bájt"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -9861,6 +10381,10 @@ MSG_HASH(
    "Hiba a remap fájl eltávolításakor."
    )
 MSG_HASH(
+   MSG_ERROR_SAVING_SHADER_PRESET,
+   "Hiba a shader preset mentésekor."
+   )
+MSG_HASH(
    MSG_EXTERNAL_APPLICATION_DIR,
    "Külső alkalmazás könyvtára"
    )
@@ -9883,6 +10407,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_APPLY_SHADER,
    "Shader alkalmazása sikertelen."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER_PRESET,
+   "Shader preset alkalmazása sikertelen:"
    )
 MSG_HASH(
    MSG_FAILED_TO_CREATE_THE_DIRECTORY,
@@ -9953,6 +10481,10 @@ MSG_HASH(
    "Legutóbbi rekesz megtalálva"
    )
 MSG_HASH(
+   MSG_FOUND_SHADER,
+   "Shader érzékelve"
+   )
+MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
    "Játékspecifikus magbeállítások észlelve itt"
    )
@@ -9963,6 +10495,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
    "Érvénytelen lemezsorszám."
+   )
+MSG_HASH(
+   MSG_GRAB_MOUSE_STATE,
+   "Egérmegragadás állapota"
    )
 MSG_HASH(
    MSG_GAME_FOCUS_ON,
@@ -10057,6 +10593,10 @@ MSG_HASH(
    "A bemenetek rögzítése leáll."
    )
 MSG_HASH(
+   MSG_NETPLAY_FAILED,
+   "Netplay inicializálása sikertelen."
+   )
+MSG_HASH(
    MSG_NETPLAY_UNSUPPORTED,
    "A mag nem támogatja a netplay-t."
    )
@@ -10141,6 +10681,10 @@ MSG_HASH(
    "Régebbi mentett játékállás visszaállítva."
    )
 MSG_HASH(
+   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+   "Az alapértelmezett shader preset visszaállítva erre"
+   )
+MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
    "Mentés fájl könyvtárának visszaállítása ide"
    )
@@ -10203,6 +10747,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
    "Könyvtár beolvasása kész"
+   )
+MSG_HASH(
+   MSG_SENDING_COMMAND,
+   "Parancs küldése"
+   )
+MSG_HASH(
+   MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
+   "Shader preset mentése sikeres."
    )
 MSG_HASH(
    MSG_SKIPPING_SRAM_LOAD,
@@ -10545,6 +11097,14 @@ MSG_HASH(
    "Utoljára használt lemez behelyezése sikertelen..."
    )
 MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "A netplay kiszolgáló megtelt"
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Ki vagy tiltva erről a kiszolgálóról"
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "A Hardcore eredmény módot fel kell függeszteni vagy ki kell kapcsolni az állás betöltéséhez."
    )
@@ -10619,6 +11179,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_DISC_INSERTED,
    "Nincs lemez a meghajtóban."
+   )
+MSG_HASH(
+   MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
+   "Shader preset eltávolítása sikeres."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_SHADER_PRESET,
+   "Hiba a shader preset eltávolításakor."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
@@ -10800,11 +11368,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
-   "Alkalmazás: %dx%d\nA Start gombbal visszaállítható"
+   "Alkalmazás: %dx%d\\nA Start gombbal visszaállítható"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_DESC,
-   "Alkalmazás: %dx%d - %s\nA Start gombbal visszaállítható"
+   "Alkalmazás: %dx%d - %s\\nA Start gombbal visszaállítható"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
@@ -11043,6 +11611,22 @@ MSG_HASH(
    "A \"Leállítás\" lehetőség jelenjen meg."
    )
 MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Jelszavas"
+   )
+MSG_HASH(
+   MSG_INTERNET_RELAY,
+   "Internet (átjátszó)"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "Internet (kapcsolódás nem lehetséges)"
+   )
+MSG_HASH(
+   MSG_LOCAL,
+   "Helyi"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
    "Kijelző fényereje"
    )
@@ -11185,11 +11769,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
-   "Nincs\nadat"
+   "Nincs\\nadat"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
-   "Nincs\nképernyőkép"
+   "Nincs\\nképernyőkép"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
@@ -11197,11 +11781,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Játékállás\nlétrehozása"
+   "Játékállás\\nlétrehozása"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Játékállás\nbetöltése"
+   "Játékállás\\nbetöltése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
@@ -11263,7 +11847,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Beolvasás kész.<br><br>\nA sikeres beolvasáshoz ezek szükségesek:\n<ul><li>már letöltött, kompatibilis mag</li>\n<li>mag információs fájlok frissítése az online frissítővel</li>\n<li>adatbázisok frissítése az online frissítővel</li>\n<li>a RetroArch újraindítása, ha ezek még csak most történtek meg</li></ul>\nVégül, a tartalom megtalálható kell legyen az <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">itteni</a> adatbázisokban. Ha ennek ellenére nem működik, javasolt <a href=\"https://www.github.com/libretro/RetroArch/issues\">a hiba bejelentése</a>."
+   "Beolvasás kész.<br><br>\\nA sikeres beolvasáshoz ezek szükségesek:\\n<ul><li>már letöltött, kompatibilis mag</li>\\n<li>mag információs fájlok frissítése az online frissítővel</li>\\n<li>adatbázisok frissítése az online frissítővel</li>\\n<li>a RetroArch újraindítása, ha ezek még csak most történtek meg</li></ul>\\nVégül, a tartalom megtalálható kell legyen az <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">itteni</a> adatbázisokban. Ha ennek ellenére nem működik, javasolt <a href=\"https://www.github.com/libretro/RetroArch/issues\">a hiba bejelentése</a>."
    )
 #endif
 MSG_HASH(

@@ -1573,7 +1573,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Näytön pystysuora päivitysnopeus. Käytetään sopivan äänen syöttönopeuden laskemiseen.\nTämä jätetään huomiotta, jos 'säikeistetty video' on käytössä."
+   "Näytön pystysuora päivitysnopeus. Käytetään sopivan äänen syöttönopeuden laskemiseen.\\nTämä jätetään huomiotta, jos 'säikeistetty video' on käytössä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1802,7 +1802,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Näyttöportin X-akselin sijainnin määrittämiseen käytetty mukautettu porttipoikkeama.\nNäitä ei oteta huomioon, jos 'skaalaa kokonaisluvuin' on käytössä."
+   "Näyttöportin X-akselin sijainnin määrittämiseen käytetty mukautettu porttipoikkeama.\\nNäitä ei oteta huomioon, jos 'skaalaa kokonaisluvuin' on käytössä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1810,7 +1810,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Mukautettu näkymän siirtymä, jota käytetään näkymän X-akselin sijainnin määrittämiseen.\nNämä jätetään huomioimatta, jos 'skaalaa kokonaisluvuin' on käytössä."
+   "Mukautettu näkymän siirtymä, jota käytetään näkymän X-akselin sijainnin määrittämiseen.\\nNämä jätetään huomioimatta, jos 'skaalaa kokonaisluvuin' on käytössä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2632,7 +2632,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "Kelaa nykyistä sisältöä taaksepäin, kun näppäin pidetään pohjassa.\n'Takaisinkelauksen tuki' täytyy olla käytössä."
+   "Kelaa nykyistä sisältöä taaksepäin, kun näppäin pidetään pohjassa.\\n'Takaisinkelauksen tuki' täytyy olla käytössä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
@@ -2840,7 +2840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Nostaa valittua levyindeksiä.\nVirtuaalisen levyaseman on oltava auki."
+   "Nostaa valittua levyindeksiä.\\nVirtuaalisen levyaseman on oltava auki."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -2848,7 +2848,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Laskee valittua levyindeksiä.\nVirtuaalisen levyaseman on oltava auki."
+   "Laskee valittua levyindeksiä.\\nVirtuaalisen levyaseman on oltava auki."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -2912,7 +2912,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "Kaappaa nykyisestä sisällöstä kuvan ja kääntää ja/tai lukee ääneen minkä tahansa näytön tekstin.\n'Tekoälypalvelu' on otettava käyttöön ja määritettävä."
+   "Kaappaa nykyisestä sisällöstä kuvan ja kääntää ja/tai lukee ääneen minkä tahansa näytön tekstin.\\n'Tekoälypalvelu' on otettava käyttöön ja määritettävä."
    )
 
 /* Settings > Input > Port # Controls */
@@ -3397,7 +3397,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "Tallenna haihtumattomat SaveRAM-tiedostot arkistoidussa tiedostomuodossa. Pienentää huomattavasti tiedoston kokoa, lisäten (hiukan) tallennus-/latausaikoja.\nKoskee vain ytimiä, jotka mahdollistavat tallentamisen standardin libretro SaveRAM -liittymän kautta."
+   "Tallenna haihtumattomat SaveRAM-tiedostot arkistoidussa tiedostomuodossa. Pienentää huomattavasti tiedoston kokoa, lisäten (hiukan) tallennus-/latausaikoja.\\nKoskee vain ytimiä, jotka mahdollistavat tallentamisen standardin libretro SaveRAM -liittymän kautta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -3550,7 +3550,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Muuta kuva-aikalaskuriin vaikuttavia asetuksia.\nKäytössä vain kun säikeistetty video on pois käytöstä."
+   "Muuta kuva-aikalaskuriin vaikuttavia asetuksia.\\nKäytössä vain kun säikeistetty video on pois käytöstä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -5722,7 +5722,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Määritä, milloin soittolistan kohteet merkitään parhaillaan liitettyyn ytimeen (jos sellaisia on).\nTämä asetus ohitetaan, kun soittolistojen alatunnisteet ovat käytössä."
+   "Määritä, milloin soittolistan kohteet merkitään parhaillaan liitettyyn ytimeen (jos sellaisia on).\\nTämä asetus ohitetaan, kun soittolistojen alatunnisteet ovat käytössä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -5826,7 +5826,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Valitse minkä tyyppinen ajoaikainen lokitallenne näytetään soittolistan alatunnisteissa.\nVastaava ajonaikainen loki on otettava käyttöön \"Tallennus\"-valikosta."
+   "Valitse minkä tyyppinen ajoaikainen lokitallenne näytetään soittolistan alatunnisteissa.\\nVastaava ajonaikainen loki on otettava käyttöön \"Tallennus\"-valikosta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -5979,7 +5979,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Salli Discord-sovelluksen näyttää tietoja suoritettavasta sisällöstä.\nSaatavilla vain natiivilla työpöytäsovelluksella."
+   "Salli Discord-sovelluksen näyttää tietoja suoritettavasta sisällöstä.\\nSaatavilla vain natiivilla työpöytäsovelluksella."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -6345,7 +6345,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Lisää tämä ääniraita käytettävissä olevaan äänivirtalähtöön.\nJos lähtö ei ole tällä hetkellä saatavilla, se ohitetaan."
+   "Lisää tämä ääniraita käytettävissä olevaan äänivirtalähtöön.\\nJos lähtö ei ole tällä hetkellä saatavilla, se ohitetaan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -6353,7 +6353,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Lisää tämä ääniraita käytettävissä olevaan äänivirtalähtöön ja soita se.\nJos lähtö ei ole tällä hetkellä saatavilla, se ohitetaan."
+   "Lisää tämä ääniraita käytettävissä olevaan äänivirtalähtöön ja soita se.\\nJos lähtö ei ole tällä hetkellä saatavilla, se ohitetaan."
    )
 
 /* Netplay */
@@ -7525,11 +7525,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Poista nykyinen levy asemasta, valitse uusi levy tiedostojärjestelmästä, aseta se ja sulje virtuaalinen levyasema.\nHUOM: Tämä on vanhentunut ominaisuus. Sen sijaan on suositeltavaa ladata monilevyinen sisältö M3U-soittolistojen kautta, jotka sallivat levyn valinnan käyttämällä \"Poista/lisää levy asemaan\"- ja \"Nykyinen levyindeksi\"-valintoja."
+   "Poista nykyinen levy asemasta, valitse uusi levy tiedostojärjestelmästä, aseta se ja sulje virtuaalinen levyasema.\\nHUOM: Tämä on vanhentunut ominaisuus. Sen sijaan on suositeltavaa ladata monilevyinen sisältö M3U-soittolistojen kautta, jotka sallivat levyn valinnan käyttämällä \"Poista/lisää levy asemaan\"- ja \"Nykyinen levyindeksi\"-valintoja."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Valitse uusi levy tiedostojärjestelmästä ja aseta se sulkematta virtuaalista levyasemaa.\nHUOM: Tämä on vanhentunut ominaisuus. Sen sijaan on suositeltavaa ladata monilevyinen sisältö M3U-soittolistojen kautta, jotka sallivat levyn valinnan käyttämällä \"Poista/lisää levy asemaan\"- ja \"Nykyinen levyindeksi\"-valintoja."
+   "Valitse uusi levy tiedostojärjestelmästä ja aseta se sulkematta virtuaalista levyasemaa.\\nHUOM: Tämä on vanhentunut ominaisuus. Sen sijaan on suositeltavaa ladata monilevyinen sisältö M3U-soittolistojen kautta, jotka sallivat levyn valinnan käyttämällä \"Poista/lisää levy asemaan\"- ja \"Nykyinen levyindeksi\"-valintoja."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -11866,7 +11866,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "Tuntematon komento \"%s\" vastaanotettu.\n"
+   "Tuntematon komento \"%s\" vastaanotettu.\\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -12416,11 +12416,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
-   "Asetetaan: %dx%d\nSTART nollataksesi"
+   "Asetetaan: %dx%d\\nSTART nollataksesi"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_DESC,
-   "Asetetaan: %dx%d - %s\nSTART nollataksesi"
+   "Asetetaan: %dx%d - %s\\nSTART nollataksesi"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
@@ -12865,7 +12865,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
-   "Napauta kosketusnäyttöä\nsiirtyäksesi RetroArch-\nvalikkoon"
+   "Napauta kosketusnäyttöä\\nsiirtyäksesi RetroArch-\\nvalikkoon"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
@@ -12873,11 +12873,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
-   "Ei\ndataa"
+   "Ei\\ndataa"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
-   "Ei\nkuvakaappausta"
+   "Ei\\nkuvakaappausta"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
@@ -12885,11 +12885,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Luo\npalautuspiste"
+   "Luo\\npalautuspiste"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Lataa\npalautuspiste"
+   "Lataa\\npalautuspiste"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
@@ -12943,7 +12943,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Skannaus valmis.<br><br>\nJotta sisältöä voidaan skannata oikein, sinulla täytyy:\n<ul><li>yhteensopiva ydin olla ladattuna</li>\n<li>\"Ytimen tietotiedostot\" päivitettynä verkkopäivittäjästä</li>\n<li>\"Tietokanta\" päivitettynä verkkopäivittäjästä</li>\n<li>uudelleenkäynnistä RetroArch, jos jokin edellä mainituista on juuri tehty</li></ul>\nsisällön on vastattava olemassa olevia tietokantoja <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">täältä</a>. Jos se ei vieläkään toimi, harkitse <a href=\"https://www.github.com/libretro/RetroArch/issues\">vikailmoituksen lähettämistä</a>."
+   "Skannaus valmis.<br><br>\\nJotta sisältöä voidaan skannata oikein, sinulla täytyy:\\n<ul><li>yhteensopiva ydin olla ladattuna</li>\\n<li>\"Ytimen tietotiedostot\" päivitettynä verkkopäivittäjästä</li>\\n<li>\"Tietokanta\" päivitettynä verkkopäivittäjästä</li>\\n<li>uudelleenkäynnistä RetroArch, jos jokin edellä mainituista on juuri tehty</li></ul>\\nsisällön on vastattava olemassa olevia tietokantoja <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">täältä</a>. Jos se ei vieläkään toimi, harkitse <a href=\"https://www.github.com/libretro/RetroArch/issues\">vikailmoituksen lähettämistä</a>."
    )
 #endif
 MSG_HASH(
