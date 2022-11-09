@@ -3389,6 +3389,10 @@ MSG_HASH(
    "menu_ticker_smooth"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION,
+   "menu_remember_selection"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
    "ui_companion_enable"
    )
