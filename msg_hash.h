@@ -2614,6 +2614,7 @@ enum msg_hash_enums
    MENU_LABEL(CHEAT_SEARCH_SETTINGS),
 
    /* Core option category placeholders for icons */
+   MENU_LABEL(HACKS_SETTINGS),
    MENU_LABEL(MAPPING_SETTINGS),
    MENU_LABEL(MEDIA_SETTINGS),
    MENU_LABEL(PERFORMANCE_SETTINGS),
