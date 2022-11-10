@@ -88,8 +88,10 @@ def update(messages, template, source_messages):
         if tp_msg['key'] in messages and messages[tp_msg['key']] != source_messages[tp_msg['key']]:
             tp_msg_val = tp_msg['val']
             tl_msg_val = messages[tp_msg['key']]
-            # escape: reduce \\ -> \ (prevents 'over-expansion': \\ -> \\\\), then expand all \ -> \\
-            tl_msg_val = tl_msg_val.replace('\\\\', '\\').replace('\\', '\\\\')
+            # escape all \
+            tl_msg_val = tl_msg_val.replace('\\', r'\\')
+            # remove "double-dipping" on escape sequences
+            tl_msg_val = re.sub(r'\\\\(?=[nrt])', r'\\', tl_msg_val)
             # escape other symbols
             tl_msg_val = tl_msg_val.replace('"', '\\\"').replace('\n', '')
             if tp_msg['key'].find('_QT_') < 0:
