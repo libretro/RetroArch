@@ -10,1331 +10,1287 @@
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   ""
+   "Főmenü"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-   ""
+   "Beállítások"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   ""
+   "Kedvencek"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   ""
+   "Előzmények"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   ""
+   "Képek"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
-   ""
+   "Zenék"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   ""
+   "Videók"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   ""
+   "Felfedezés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   ""
+   "Önálló magok"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   ""
+   "Tartalom importálása"
    )
 
 /* Main Menu */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-   ""
+   "Gyorsmenü"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   ""
+   "Gyors hozzáférés az összes lényeges játékon belüli beállításhoz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   ""
+   "Mag betöltése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   ""
+   "A használni kívánt mag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   ""
+   "Tartalom betöltése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   ""
+   "A betölteni kívánt tartalom."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   ""
+   "Lemez betöltése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
-   ""
+   "Fizikai adathordozó betöltése. Először válaszd ki a lemezhez használni kívánt magot (Mag betöltése)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   ""
+   "Lemezkép mentése"
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
-   ""
+   "A fizikai adathordozó tartalmának mentése képfájlként a belső tárhelyre."
    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   ""
+   "Lemez kiadása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
-   ""
+   "Lemez kiadása a valódi CD/DVD meghajtóból."
    )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   ""
+   "Játéklisták"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   ""
+   "Az adatbázisban szereplő beolvasott tartalmak itt jelennek meg."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   ""
+   "Tartalom importálása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   ""
+   "Lejátszási listák létrehozása és frissítése tartalom beolvasásával."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   ""
+   "Asztali menü megjelenítése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   ""
+   "A hagyományos asztali menü megnyitása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   ""
+   "Kioszk mód kikapcsolása (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   ""
+   "Az összes konfigurációs beállítás megjelenítése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   ""
+   "Online frissítő"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY,
-   ""
+   "Kiegészítők, komponensek és egyéb tartalom letöltése a RetroArch-hoz."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
-   ""
+   "Hálózati játékhoz csatlakozás vagy kiszolgálás."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
-   ""
+   "Beálítások"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS,
-   ""
+   "A program konfigurálása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
-   ""
+   "Információk"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   ""
+   "Információk megjelenítése a rendszerről."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   ""
+   "Konfigurációs fájlok"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   ""
+   "Konfigurációs fájlok kezelése és létrehozása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   ""
+   "Súgó"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_LIST,
-   ""
+   "Tudj meg többet a program működéséről."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   ""
+   "A RetroArch újraindítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   ""
+   "A program újraindítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   ""
+   "Kilépés a RetroArch-ból"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   ""
+   "A program bezárása."
    )
 
 /* Main Menu > Load Core */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   ""
+   "Magok letöltése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   ""
+   "Magok letöltése és telepítése az online frissítővel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   ""
+   "Mag telepítése vagy visszaállítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   ""
+   "Telepítsen vagy állítson vissza egy magot a „Letöltések” könyvtárból."
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   ""
+   "Videofeldolgozó indítása"
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-   ""
+   "Távoli RetroPad indítása"
    )
 
 /* Main Menu > Load Content */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES,
-   ""
+   "Kezdő könyvtár"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-   ""
+   "Letöltések"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   ""
+   "Tallózás az archívumban"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   ""
+   "Archívum betöltése"
    )
 
 /* Main Menu > Load Content > Playlists */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-   ""
+   "Kedvencek"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   ""
+   "Itt jelenik meg a „Kedvencek”-hez hozzáadott tartalom."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-   ""
+   "Zenék"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   ""
+   "Itt jelennek meg a korábban lejátszott zenék."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-   ""
+   "Képek"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   ""
+   "Itt jelennek meg a korábban megtekintett képek."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   ""
+   "Videók"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   ""
+   "Itt jelennek meg a korábban lejátszott videók."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
-   ""
+   "Felfedezés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   ""
+   "Az adatbázisban megtalált tartalom böngészése egy kategorizált keresőfelületen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   ""
+   "Önálló magok"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
-   ""
+   "Már telepített magok, amelyek tartalom betöltése nélkül is tudnak működni."
    )
 
 /* Main Menu > Online Updater */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   ""
+   "Mag letöltése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   ""
+   "A telepített magok frissítése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
-   ""
+   "Aaz összes telepített mag frissítése az elérhető legújabb verzióra."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   ""
+   "Cserélje le a magokat a Play Áruház verzióira"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   ""
+   "Cserélje ki az összes régebbi és manuálisan telepített magot a Play Áruház legújabb verzióira, ahol elérhető."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-   ""
+   "Bélyegképfrissítő"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   ""
+   "Teljes bélyegkép csomag letöltése a kiválasztott rendszerhez."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   ""
+   "Lejátszási lista bélyegképfrissítője"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   ""
+   "Bélyegképek letöltése a kiválasztott lejátszási lista bejegyzéseihez."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   ""
+   "Tartalomletöltő"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   ""
+   "Ingyenes tartalom letöltése a kiválasztott maghoz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
-   ""
+   "Mag rendszerfájl letöltő"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-   ""
+   "Kisegítő rendszerfájlok letöltése, amelyek szükségesek a mag helyes/optimális működéséhez."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   ""
+   "Maginformációs fájlok frissítése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   ""
+   "Beépített médiafájlok frissítése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   ""
+   "Kontrollerprofilok frissítése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   ""
+   "Csalások frissítése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   ""
+   "Adatbázisok frissítése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   ""
+   "Rátétek frissítése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   ""
+   "GLSL shaderek frissítése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   ""
+   "Cg shaderek frissítése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   ""
+   "Slang shaderek frissítése"
    )
 
 /* Main Menu > Information */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   ""
+   "Információk a magról"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFORMATION,
-   ""
+   "Az alkalmazással/maggal kapcsolatos információk megtekintése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   ""
+   "Információ a lemezről"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   ""
+   "Információk megtekintése a behelyezett médialemezekről."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   ""
+   "Információk a hálózatról"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   ""
+   "A hálózati interfész(ek) és a kapcsolódó IP-címek megtekintése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   ""
+   "Információ a rendszerről"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   ""
+   "Az eszközre vonatkozó információk megtekintése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
-   ""
+   "Adatbázis-kezelő"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
-   ""
+   "Adatbázisok megtekintése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
-   ""
+   "Kurzorkezelő"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
-   ""
+   "Korábbi keresések megtekintése."
    )
 
 /* Main Menu > Information > Core Information */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
-   ""
+   "Mag neve"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-   ""
+   "Mag címkéje"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
-   ""
+   "Mag verziója"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
-   ""
+   "Rendszer neve"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
-   ""
+   "Rendszer gyártója"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-   ""
+   "Kategóriák"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-   ""
+   "Szerző"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-   ""
+   "Engedélyek"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-   ""
+   "Szoftverlicensz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-   ""
+   "Támogatott fájlkiterjesztések"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   ""
+   "Szükséges grafikus API"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   ""
+   "Játékállás mentés támogatása"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
-   ""
+   "Nincs"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
-   ""
+   "Egyszerű (mentés/visszatöltés)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   ""
+   "Soros formátum (mentés/visszatöltés, visszatekerés)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
-   ""
+   "Determinisztikus (mentés/visszatöltés, visszatekerés, run-ahead, netplay)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   ""
+   "Hiányzik, elvárt:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
-   ""
+   "Hiányzik, opcionális:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   ""
+   "Megvan, elvárt:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
-   ""
+   "Megvan, opcionális:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   ""
+   "Telepített mag zárolása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   ""
+   "A jelenleg telepített mag módosításának megakadályozása. Használható a nemkívánatos frissítések elkerülésére (pl. Arcade ROM készletek)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   ""
+   "Kihagyás az \"Önálló magok\" menüből"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   ""
+   "Ez a mag ne jelenjen meg az \"Önálló magok\" fülön/menüben. Csak \"Egyéni\" megjelenítési mód esetén érvényes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   ""
+   "Mag törlése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE,
-   ""
+   "A mag eltávolítása a lemezről."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   ""
+   "Mag mentése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   ""
+   "Készítsen egy archivált biztonsági másolatot a jelenleg telepített magról."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
-   ""
+   "Mentés visszaállítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
-   ""
+   "Telepítse a mag korábbi verzióját az archivált biztonsági másolatok közül."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
-   ""
+   "Biztonsági másolat törlése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC,
-   ""
+   "Egy mentési fájl eltávolítása a biztonsági másolatok listájáról."
    )
 
 /* Main Menu > Information > System Information */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-   ""
+   "Fordítás dátuma"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
-   ""
+   "Git verzió"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    MSG_COMPILER,
-   ""
+   "Fordító"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
-   ""
+   "CPU típusa"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-   ""
+   "CPU jellemzők"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   ""
+   "CPU architektúra"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   ""
+   "CPU magok:"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CPU_CORES,
-   ""
+   "A CPU magjainak száma."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
-   ""
+   "Frontend azonosító"
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
-   ""
+   "RetroRating szint"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
-   ""
+   "Tápellátás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
-   ""
+   "Videó context illesztő"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   ""
+   "Kijelző szélessége (mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   ""
+   "Kijelző magassága (mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   ""
+   "Kijelző DPI"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
-   ""
+   "LibretroDB támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   ""
+   "Rátét támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-   ""
+   "Parancs interfész támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-   ""
+   "Hálózati parancs interfész támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
-   ""
+   "Hálózati kontroller támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
-   ""
+   "Cocoa támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
-   ""
+   "PNG (RPNG) támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
-   ""
+   "JPEG (RJPEG) támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
-   ""
+   "BMP (RBMP) támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
-   ""
+   "TGA (RTGA) támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
-   ""
+   "SDL 1.2 támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
-   ""
+   "SDL 2 támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
-   ""
+   "Vulkan támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
-   ""
+   "Metal támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
-   ""
+   "OpenGL támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
-   ""
+   "OpenGL ES támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
-   ""
+   "Többszálas működés támogatása"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
-   ""
+   "KMS/EGL támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
-   ""
+   "udev támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
-   ""
+   "OpenVG támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
-   ""
+   "EGL támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
-   ""
+   "X11 támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
-   ""
+   "Wayland támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
-   ""
+   "XVideo támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
-   ""
+   "ALSA támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
-   ""
+   "OSS támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
-   ""
+   "OpenAL támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
-   ""
+   "OpenSL támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
-   ""
+   "RSound támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
-   ""
+   "RoarAudio támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
-   ""
+   "JACK támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
-   ""
+   "PulseAudio támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
-   ""
+   "CoreAudio támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
-   ""
+   "CoreAudio V3 támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
-   ""
+   "DirectSound támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
-   ""
+   "WASAPI támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
-   ""
+   "XAudio2 támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
-   ""
+   "zlib támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
-   ""
+   "7zip támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
-   ""
+   "Dynamic Library támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-   ""
+   "A libretro könyvtár dinamikus futásidejű betöltése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
-   ""
+   "Cg támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
-   ""
+   "GLSL támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
-   ""
+   "HLSL támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
-   ""
+   "SDL Image támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
-   ""
+   "FFmpeg támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
-   ""
+   "mpv támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
-   ""
+   "CoreText támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
-   ""
+   "FreeType támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
-   ""
+   "STB TrueType támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-   ""
+   "Netplay (Peer-to-Peer) támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
-   ""
+   "Video4Linux2 támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
-   ""
+   "libusb támogatás"
    )
 
 /* Main Menu > Information > Database Manager */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
-   ""
+   "Adatbázis kiválasztása"
    )
 
 /* Main Menu > Information > Database Manager > Information */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
-   ""
+   "Név"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
-   ""
+   "Leírás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
-   ""
+   "Műfaj"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
-   ""
+   "Trófeák"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
-   ""
+   "Kategória"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
-   ""
+   "Nyelv"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
-   ""
+   "Régió"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
-   ""
+   "Konzol exkluzív"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
-   ""
+   "Platform exkluzív"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
-   ""
+   "Pontszám"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
-   ""
+   "Hordozó"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
-   ""
+   "Irányítás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
-   ""
+   "Művészeti stílus"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
-   ""
+   "Játékmenet"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
-   ""
+   "Történetmesélés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
-   ""
+   "Tempó"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
-   ""
+   "Perspektíva"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   ""
+   "Környezet"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
-   ""
+   "Kinézet"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
-   ""
+   "Járművel kapcsolatos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
-   ""
+   "Kiadó"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
-   ""
+   "Fejlesztő"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
-   ""
+   "Származás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
-   ""
+   "TGDB értékelés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
-   ""
+   "Famitsu Magazine értékelés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
-   ""
+   "Edge Magazine értékelés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
-   ""
+   "Edge Magazine értékelés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
-   ""
+   "Edge Magazine probléma"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   ""
+   "Megjelenés hónapja"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   ""
+   "Megjelenés éve"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
-   ""
+   "BBFC értékelés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
-   ""
+   "ESRB értékelés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
-   ""
+   "ELSPA értékelés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
-   ""
+   "PEGI értékelés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
-   ""
+   "Javító hardver"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
-   ""
+   "CERO értékelés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
-   ""
+   "Sorozat"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   ""
+   "Analóg Támogatott"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   ""
+   "Rumble Támogatott"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5,
-   ""
+   "Co-op támogatott"
    )
 
 /* Main Menu > Configuration File */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   ""
+   "Konfiguráció betöltése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   ""
+   "Alapértékek visszaállítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   ""
+   "Konfigurációk visszaállítása az alapértelmezett értékekre."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   ""
+   "Az aktuális konfiguráció mentése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   ""
+   "Új konfiguráció mentése"
    )
 
 /* Main Menu > Help */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
-   ""
+   "Alapvető menüvezérlők"
    )
 
 /* Main Menu > Help > Basic Menu Controls */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
-   ""
+   "Felfelé görgetés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
-   ""
+   "Lefelé görgetés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-   ""
+   "Jóváhagy"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
-   ""
+   "Infó"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
-   ""
+   "Indít"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   ""
+   "Menü láthatósága"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-   ""
+   "Kilépés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
-   ""
+   "Billentyűzet láthatósága"
    )
 
 /* Settings */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-   ""
+   "Illesztőprogramok"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-   ""
+   "A rendszer által használt illesztőprogramok módosítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
-   ""
+   "Kép"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   ""
+   "A képkimenet beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   ""
+   "Hang"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   ""
+   "Hang beállítások módosítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   ""
+   "Bemenet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   ""
+   "A kontroller, a billentyűzet és az egér beállításainak módosítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
-   ""
+   "Késleltetés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   ""
+   "A kép, a hang, és a bemenet késleltetésével kapcsolatos beállítások."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-   ""
+   "Magok"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   ""
+   "A magok beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-   ""
+   "Konfigurációs fájlok"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   ""
+   "A konfigurációs fájlok alapértelmezett beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-   ""
+   "Mentés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   ""
+   "A mentések beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   ""
+   "Naplózás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   ""
+   "A naplózás beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   ""
+   "Fájlkezelő"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   ""
+   "A Fájlkezelő beállításainak módosítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-   ""
+   "Visszajátszás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   ""
+   "A visszatekerés, a gyorsítás és a lassítás beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   ""
+   "Felvétel"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   ""
+   "A felvételek beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   ""
+   "Képernyőn megjelenő elemek (OSD)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   ""
+   "A képernyő és billentyűzet rátétek, valamint a képernyőn megjelenő értesítések beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-   ""
+   "Felhasználói felület"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   ""
+   "A felhasználói felület beállításainak módosítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   ""
+   "MI Szolgáltatás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   ""
+   "A MI szolgáltatás beállításainak módosítása (fordítás/TTS/egyéb)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-   ""
+   "Kisegítő lehetőségek"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   ""
+   "A Kisegítő lehetőségek narrátor beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   ""
+   "Energiagazdálkodás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   ""
+   "Az energiagazdálkodás beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   ""
+   "Trófeák"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   ""
+   "Eredmények beállításainak változtatása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
-   ""
+   "Hálózat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   ""
+   "A szerver és a hálózat beállításainak módosítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   ""
+   "Játéklisták"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   ""
+   "A játéklisták beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
-   ""
+   "Felhasználó"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   ""
+   "Fiókok, felhasználónév, és a nyelv beállítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-   ""
+   "Könyvtárak"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-   ""
+   "A különféle fájlok alapértelmezett könyvtárai."
    )
 
 /* Core option category placeholders for icons */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
-   ""
+   "Hozzárendelések"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
-   ""
+   "Hordozó"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
-   ""
+   "Teljesítmény"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
-   ""
+   "Hang"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
-   ""
+   "Specifikációk"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
-   ""
+   "Tárhely"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
-   ""
+   "Rendszer"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
-   ""
+   "Időzítés"
    )
 
 #ifdef HAVE_MIST
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
-   ""
+   "A Steam-hez kapcsolódó beállítások."
    )
 #endif
 
@@ -1342,1171 +1298,1139 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-   ""
+   "Bevitel"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   ""
+   "A használni kívánt beviteli illesztőprogram. Egyes video-illesztőprogramok másik bemeneti illesztőprogramot kényszerítenek ki."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
-   ""
+   "Kontroller"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   ""
+   "A használt kontroller illesztő."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-   ""
+   "Videó"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   ""
+   "A használt videóillesztő."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-   ""
+   "Hang"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   ""
+   "A használt hangillesztő."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-   ""
+   "Hang-újramintavételező"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   ""
+   "A hang-újramintavételező eljárás típusa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-   ""
+   "Kamera"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
-   ""
+   "A használt kameraillesztő."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
-   ""
+   "A használt bluetooth illesztő."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   ""
+   "A használt wi-fi illesztő."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   ""
+   "Helymeghatározás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   ""
+   "Menü"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   ""
+   "A használt menüillesztő."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   ""
+   "Rögzítés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
-   ""
+   "A felvételhez használt eszköz."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   ""
+   "A használt MIDI illesztő."
    )
 
 /* Settings > Video */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
-   ""
+   "CRT felbontás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   ""
+   "Natív, kis felbontású jeleket ad ki katódsugárcsöves kijelzőkkel való használatra."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
-   ""
+   "Kimenet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   ""
+   "A képkimenet beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   ""
+   "Teljes képernyős mód"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   ""
+   "A teljes képernyős mód beállításainak módosítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   ""
+   "Ablakos mód"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-   ""
+   "Az ablakos mód beállításainak módosítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-   ""
+   "Méretezés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SETTINGS,
-   ""
+   "A képméretezés beállításai."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
-   ""
+   "A kép HDR beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   ""
+   "Szinkronizálás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   ""
+   "A kép szinkronizációs beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
-   ""
+   "Képernyővédő felfüggesztése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-   ""
+   "Megakadályozza, hogy a rendszer képernyővédője aktiválódjon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-   ""
+   "Többszálas megjelenítés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   ""
+   "Javítja a teljesítményt a késleltetés és a megjelenítés folyamatosságának rovására. Csak akkor, ha egyébként nem érhető el a teljes sebesség."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   ""
+   "Fekete képkocka beszúrása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   ""
+   "Helyezzen be egy fekete lépkockát a képkockák közé. Hasznos néhány nagy frissítési gyakoriságú képernyőn a szellemkép kiküszöbölésére."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   ""
+   "GPU képernyőkép"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   ""
+   "A képernyőkép tartalmazza a GPU shader effektet, ha elérhető."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-   ""
+   "Bilinear szűrő"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   ""
+   "Egy enyhe elmosást ad a képhez, hogy a pixelek élét elsimítsa. Nagyon kis hatással van a teljesítményre."
    )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   ""
+   "Kép Interpoláció"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   ""
+   "A belső IPU által használt interpolációs eljárás. CPU alapú videoszűrőkhöz a kettős köbös vagy bilineáris ajánlott. Ennek a beállításnak nincs hatása a teljesítményre."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
-   ""
+   "Kettős köbös (Bicubic)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
-   ""
+   "Bilineáris"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
-   ""
+   "Legközelebbi szomszéd"
    )
 #if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   ""
+   "Kép Interpoláció"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   ""
+   "Adja meg a kép interpolációs módszerét, ha az „Integer Scale” le van tiltva. A „Legközelebbi szomszéd” hatással van a legkisebb teljesítményre."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
-   ""
+   "Legközelebbi szomszéd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
-   ""
+   "Fél-lineáris"
    )
 #endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   ""
+   "Automatikus shader késleltetés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   ""
+   "Az automatikusan betöltődő shaderek késleltetése (ezredmásodperc). Segíthet a grafikai hibákon képernyőmentő szoftver használatakor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
-   ""
+   "Videószűrők"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   ""
+   "CPU alapú videoszűrő alkalmazása. Nagy teljesítményigénnyel járhat. Néhány videoszűrő csak 16 vagy 32 bit színmélységű magokkal működik."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
-   ""
+   "Videó Szűrő eltávolítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
-   ""
+   "Aktív CPU alapú videoszűrők eltávolítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   ""
+   "A teljes képernyő kiterjesztése a bevágásra Android eszközökön"
 )
 
 /* Settings > Video > CRT SwitchRes */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
-   ""
+   "CRT felbontás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-   ""
+   "Csak katódsugárcsöves kijelzőkhöz. A mag/játék pontos felbontását és frissítési gyakoriságát próbálja alkalmazni."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
-   ""
+   "CRT szuperfelbontás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-   ""
+   "Váltás az eredeti és az ultraszéles szuperfelbontások közt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   ""
+   "Vízszintes központosítás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-   ""
+   "Ha a kép nincs középen a megjelenítőn, próbáld változtatni az értékeket."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   ""
+   "Szinkronvállak állítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   ""
+   "A szinkronvállak különféle beállítása változtathat a képméreten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   ""
+   "Nagy felbontású menü használata"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   ""
+   "Váltson nagy felbontásra a nagy felbontású menük használatához, amikor nincs tartalom betöltve."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   ""
+   "Egyedi frissítési gyakoriság"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   ""
+   "Ha szükséges, használjon a konfigurációs fájlban megadott egyéni frissítési gyakoriságot."
    )
 
 /* Settings > Video > Output */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
-   ""
+   "Monitor sorszáma"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-   ""
+   "Válassza ki a használni kívánt képernyőt."
    )
 #if defined (WIIU)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   ""
+   "Optimalizálás a Wii U kontrollerhez (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
-   ""
+   "A kontroller pontosan kétszeresére nagyított nézetének használata. Kikapcsolva a TV saját felbontása jelenik meg."
    )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-   ""
+   "Képernyő elforgatás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-   ""
+   "A kép elforgatását kényszeríti ki. A forgatás hozzáadódik a mag által beállított forgatásokhoz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
-   ""
+   "Képernyő tájolása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
-   ""
+   "Kikényszeríti a képernyő tájolását az operációs rendszertől."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
-   ""
+   "GPU sorszáma"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
-   ""
+   "Válassza ki a használni kívánt grafikus kártyát."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
-   ""
+   "Vízszintes eltolás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
-   ""
+   "Vízszintes eltolást kényszerít a képernyőre. Az eltolás globálisan kerül alkalmazásra."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
-   ""
+   "Vízszintes eltolás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
-   ""
+   "Függőleges eltolást kényszerít a képernyőre. Az eltolás globálisan kerül alkalmazásra."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-   ""
+   "Függőleges képfrissítési gyakoriság"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   ""
+   "A képernyő függőleges frissítési gyakorisága. A megfelelő hangbemeneti sebesség kiszámítására szolgál.\\nEzt a rendszer figyelmen kívül hagyja, ha a \"Többszálas megjelenítés\" engedélyezve van."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   ""
+   "Becsült képfrissítési gyakoriság"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   ""
+   "A képernyő pontosan becsült frissítési gyakorisága Hz-ben."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   ""
+   "A kijelző által megadott frissítési gyakoriság beállítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-   ""
+   "A képernyő-illesztőprogram által megadott frissítési gyakoriság."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   ""
+   "Képfrissítési gyakoriság automatikus állítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   ""
+   "A képfrissítési gyakoriság automatikus állítása, amikor a megadott képernyőmód aktív, az éppen futó mag és/vagy tartalom szerint."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
-   ""
+   "Csak kizárólagos teljes képernyős módban"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
-   ""
+   "Csak teljes képernyőablakos módban"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
-   ""
+   "Minden teljes képernyős módban"
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
-   ""
+   "Függőleges frissítési gyakoriság"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ,
-   ""
+   "Állítsa be a képernyő függőleges frissítési gyakoriságát. Az „50 Hz” sima videózást tesz lehetővé PAL tartalom futtatásakor."
    )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
-   ""
+   "SRGB FBO kényszerített letiltása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   ""
+   "Erőszakkal tiltsa le az sRGB FBO támogatást. Néhány Intel OpenGL illesztőprogram Windows rendszeren videoproblémákkal küzd az sRGB FBO-kkal. Ennek engedélyezése megkerülheti."
    )
 
 /* Settings > Video > Fullscreen Mode */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   ""
+   "Indítás teljes képernyős módban"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   ""
+   "Indítás teljes képernyőn. Futás közben módosítható. Parancssori kapcsolóval felülírható."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   ""
+   "Teljes ablakos mód"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   ""
+   "Teljes képernyő esetén inkább használjon teljes képernyős ablakot, hogy megakadályozza a megjelenítési módváltást."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   ""
+   "Teljes képernyő szélessége"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   ""
+   "Egyedi szélesség beállítása a nem ablakos teljes képernyős módhoz. Beállítatlanul (0-s értéken) az asztali felbontást használja."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   ""
+   "Teljes képernyő magasság"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   ""
+   "Egyedi magasság beállítása a nem ablakos teljes képernyős módhoz. Beállítatlanul (0-s értéken) az asztali felbontást használja."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   ""
+   "Erőltetett felbontás az UWP-n"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   ""
+   "Kényszerítse a felbontást teljes képernyős méretre, ha 0-ra van állítva, a rendszer egy 3840 x 2160 fix értéket használ."
    )
 
 /* Settings > Video > Windowed Mode */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   ""
+   "Ablakméret szorzója"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   ""
+   "Állítsa be az ablakméretet az alapvető nézetablak méretének megadott többszörösére."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-   ""
+   "Ablak áttetszősége"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
-   ""
+   "Ablak áttetszőség beállítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-   ""
+   "Az ablakdíszek megjelenítése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
-   ""
+   "Az ablak címsorának és keretének megjelenítése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-   ""
+   "Menüsor megjelenítése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
-   ""
+   "Az ablak menüsorának megjelenítése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-   ""
+   "Emlékezzen az ablak helyzetére és méretére"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   ""
+   "Minden tartalom az \"Ablak szélessége\" és az \"Ablak magassága\" által meghatározott, rögzített méretű ablakban jelenik meg, a pozíciót és a méretet a RetroArch bezárásakor megjegyzi. Kikapcsolt állapotban az ablakméret az „Ablakméret szorzója” alapján dinamikusan változik."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   ""
+   "Egyedi ablakméret használata"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   ""
+   "Minden tartalom az \"Ablak szélessége\" és az \"Ablak magassága\" által meghatározott, rögzített méretű ablakban jelenik meg. Kikapcsolt állapotban az ablakméret az „Ablakméret szorzója” alapján dinamikusan változik."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   ""
+   "Ablak szélessége"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   ""
+   "Állítsa be a kijelzőablak egyéni szélességét."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   ""
+   "Ablak magassága"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   ""
+   "Állítsa be a kijelzőablak egyéni magasságát."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   ""
+   "Ablak maximális szélessége"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   ""
+   "A megjelenítő ablak maximális szélessége az ablakos skálának megfelelő automata átméretezés esetén."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   ""
+   "Ablak maximális magassága"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   ""
+   "A megjelenítő ablak maximális magassága az ablakos skálának megfelelő automata átméretezés esetén."
    )
 
 /* Settings > Video > Scaling */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   ""
+   "Egész-szorzós felbontás skálázás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   ""
+   "A kép csak egész szorzóval történő méretezése. Az alap a rendszer által megadott képgeometriától és képaránytól függ. Ha a képarány nem rögzített, a vízszintes és függőleges irányokat egymástól függetlenül méretezi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   ""
+   "Egész-szorzós túlskálázás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   ""
+   "Lefele helyett felfele kerekítés az egész szorzóval történő méretezés során."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-   ""
+   "Képarány"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
-   ""
+   "A képarány beállítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   ""
+   "Képarány beállítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   ""
+   "A képarány tizedestört formájú értéke (szélesség / magasság)."
    )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   ""
+   "Képarány megtartása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   ""
+   "Tartsa meg az 1:1 pixel képarányt a belső IPU-val történő méretezés során. Kikapcsolva kinyújtja a képeket a teljes kijelzőre."
    )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-   ""
+   "Egyedi képarány (X pozíció)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   ""
+   "Az egyedi nézőablak X irányú eltolása. \\nNincs hatása egész-szorzós skálázáskor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-   ""
+   "Egyedi képarány (Y pozíció)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   ""
+   "Az egyedi nézőablak Y irányú eltolása. \\nNincs hatása egész-szorzós skálázáskor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   ""
+   "Egyedi képarány (szélesség)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   ""
+   "Az egyedi nézőablak szélessége, ha a képarány \"Egyedi\" állásra van állítva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   ""
+   "Egyedi képarány (magasság)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   ""
+   "Az egyedi nézőablak magassága, ha a képarány \"Egyedi\" állásra van állítva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   ""
+   "Overscan levágása (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-   ""
+   "Levág néhány pixelt a kép keretéről, amelyeket rendszerint a fejlesztők üresen hagynak, vagy szemetet tartalmaznak."
    )
 
 /* Settings > Video > HDR */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
-   ""
+   "HDR engedélyezése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
-   ""
+   "HDR engedélyezése, ha a kijelző támogatja."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   ""
+   "Csúcs-luminancia"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   ""
+   "A kijelző által visszaadható csúcs-luminancia (cd/m2). A kijelzők csúcs-luminanciája az RTings-en megtalálható."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   ""
+   "Papírfehér luminancia"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   ""
+   "A papírfehér szín fényerejének beállítása. Ez legyen az olvasható szöveg vagy az SDR (Standard Dynamic Range) luminanciájának teteje. Arra jó, hogy a környezet különféle megvilágításához alkalmazkodni lehessen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   ""
+   "Kontraszt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   ""
+   "HDR gamma/kontraszt beállítás. A legfényesebb és legsötétebb részek színe közt növeli meg az eltérést. Minél magasabb a HDR kontraszt, annál nagyobb ez az eltérés, minél kisebb, annál fakóbb a kép. Saját ízlés és képernyő szerint állítható, ami a legjobban néz ki."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   ""
+   "Kiterjesztett színskála"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   ""
+   "A színtér lineáris térre átalakítása után kiterjesztett színskála használata a HDR10 konverzióhoz."
    )
 
 /* Settings > Video > Synchronization */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   ""
+   "Függőleges szinkronjelhez igazodás (VSync)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   ""
+   "A grafikus kártya kimenetének időzítése a képernyő frissítési frekvenciájához. Ajánlott."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   ""
+   "VSync váltóperiódus"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   ""
+   "Egyedi VSync váltóperiódus. A megadott szorzóval csökkenti a monitor frissítési frekvenciáját. Az \"Automatikus\" beállítás a mag által megadott képfrissítés alapján állítja ezt, így jobb a képkövetés, ha például 30 fps-es tartalom fut 60 Hz-es képernyőn, vagy 60 fps-es tartalom 120 Hz-es képernyőn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
-   ""
+   "Automatikus"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
-   ""
+   "Adaptív VSync"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   ""
+   "A VSync aktív, amíg a teljesítmény a megcélzott képfrissítés alá nem esik. Minimalizálja a döcögősséget, amikor a teljesítmény nem éri el a valós időt, és energiát takaríthat meg."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   ""
+   "Képvárakoztatás (ms)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   ""
+   "Csökkenti a késleltetést a kép döcögésének kockázata mellett. Ennyi ezredmásodpercet vár VSync után."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
-   ""
+   "Automatikus képvárakoztatás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   ""
+   "Időlegesen csökkenti a \"Képvárakoztatás\" mértékét, hogy elkerülje a képkockák eldobását. 0-s \"Képvárakoztatás\" esetén a kezdőérték a kép előállítási idejének a fele."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
-   ""
+   "Automatikus"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
-   ""
+   "jelenleg"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   ""
+   "Szigorú GPU szinkronizáció"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   ""
+   "A CPU és a GPU szigorú összehangolása. Csökkenti a késleltetést a teljesítmény rovására."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   ""
+   "Szigorú GPU szinkronizáció képkockái"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   ""
+   "A CPU ennyi képkockával járhat a GPU előtt, ha a \"Szigorú GPU szinkronizáció\" be van kapcsolva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   ""
+   "Pontos igazítás a tartalom képfrissítéséhez (G-Sync, FreeSync)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
-   ""
+   "Nem lehet eltérés a mag által igényelt időzítéstől. A rugalmas frissítési frekvenciájú kijelzőkhöz (G-Sync, FreeSync, HDMI 2.1 VRR)."
    )
 
 /* Settings > Audio */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
-   ""
+   "Kimenet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   ""
+   "Hang kimeneti beállítások módosítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
-   ""
+   "Újramintavételezés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
-   ""
+   "A hang-újramintavételező beállításainak módosítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   ""
+   "Szinkronizáció"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
-   ""
+   "A hang szinkronizációs beállításai."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
-   ""
+   "MIDI beállítások."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-   ""
+   "Keverő"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   ""
+   "A hangkeverő beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
-   ""
+   "Menühangok"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SOUNDS,
-   ""
+   "A menü hangbeállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
-   ""
+   "Némítás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-   ""
+   "Hang némítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-   ""
+   "Keverő némítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-   ""
+   "A hangkeverőből jövő hang némítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   ""
+   "Hang kikapcsolása gyorsításkor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
-   ""
+   "A hang automatikus elnémítása gyorsításkor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-   ""
+   "Hangerő (dB)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-   ""
+   "Hangerő (dB). A normál, erősítés nélküli hangerő 0 dB."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-   ""
+   "Keverő hangereje (dB)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   ""
+   "A globális hangkeverő hangereje (dB). A normál, erősítés nélküli hangerő 0 dB."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-   ""
+   "DSP bővítmény"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-   ""
+   "DSP (digitális jelfeldolgozó) hangbővítmény, amely még az illesztőhöz továbbítás előtt dolgozza fel a hangot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
-   ""
+   "DSP bővítmény eltávolítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
-   ""
+   "Az aktív DSP hangbővítmények eltávolítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   ""
+   "WASAPI kizárólagos mód"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   ""
+   "A WASAPI illesztő kizárólagos módban használhatja a hangeszközt. Kikapcsolt állapotban megosztott módot használ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
-   ""
+   "WASAPI lebegőpontos formátum"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-   ""
+   "Lebegőpontos formátum használata a WASAPI illesztőhöz, ha a hangeszköz támogatja."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   ""
+   "WASAPI megosztott puffer méret"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   ""
+   "A köztes puffer mérete (képkockákban), a WASAPI illesztő megosztott módú használata esetén."
    )
 
 /* Settings > Audio > Output */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   ""
+   "Hangok"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-   ""
+   "Hangkimenet engedélyezése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-   ""
+   "Eszköz"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   ""
+   "Az illesztő által használt alapértelmezett hangeszköz felülbírálata. Illesztőprogramtól függ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-   ""
+   "Hangkésleltetés (ms)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   ""
+   "A kívánt hangkésleltetés ezredmásodpercben. Előfordulhat, hogy a hang illesztőprogramja nem képes a kívánt késleltetést biztosítani."
    )
 
 /* Settings > Audio > Resampler */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-   ""
+   "Újramintavételezés minősége"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-   ""
+   "Kisebb értékek esetén a késleltetés/teljesítmény jobb a minőség rovására, nagyobb értékeknél a hangminőség jobb a teljesítmény/késleltetés rovására."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   ""
+   "Kimenő frissítési gyakoriság (Hz)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-   ""
+   "A hangkimenet mintavételi frekvenciája."
    )
 
 /* Settings > Audio > Synchronization */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-   ""
+   "Szinkronizálás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   ""
+   "Hangidőzítés szinkronizálása. Ajánlott bekapcsolni."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
-   ""
+   "Elcsúszás maximuma"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
-   ""
+   "A bejövő hang ütemének legnagyobb megengedett eltérése. Megnövelve nagyon nagy eltéréseket is megenged, de cserébe a hangmagasság nem lesz pontos (pl. PAL magok futtatása NTSC kijelzőn)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-   ""
+   "Dinamikus hangvezérlés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-   ""
+   "Elsimítja az időzítés kisebb pontatlanságait a kép és a hang egymáshoz szinkronizálásánál. Figyelem, ha ki van kapcsolva, szinte lehetetlen a megfelelő szinkronizálás."
    )
 
 /* Settings > Audio > MIDI */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-   ""
+   "Bemenet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_INPUT,
-   ""
+   "A bemeneti eszköz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-   ""
+   "Kimenet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
-   ""
+   "A kimeneti eszköz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
-   ""
+   "Hangerő"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_VOLUME,
-   ""
+   "A kimeneti hangerő (%)."
    )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
-   ""
+   "Lejátszás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
-   ""
+   "Elindítja a hangfolyam lejátszását. Amint vége, eltávolítja azt a memóriából."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
-   ""
+   "Lejátszás (ismételt)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
-   ""
+   "Elindítja a hangfolyam lejátszását. Amint vége, újrakezdi az elejéről."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
-   ""
+   "Lejátszás (sorrendben)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
-   ""
+   "Elindítja a hangfolyam lejátszását. Amint vége, átugrik a sorrendben következő hangfolyamra és így tovább. Albumok lejátszásakor hasznos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
-   ""
+   "Leállítás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
-   ""
+   "Megállítja a hangfolyam lejátszását, de nem távolítja el a memóriából, a \"Lejátszás\" kiválasztásával újra elindítható."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
-   ""
+   "Eltávolítás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
-   ""
+   "Megállítja a hangfolyam lejátszását és eltávolítja azt a memóriából."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
-   ""
+   "Hangerő"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
-   ""
+   "A hangfolyam hangereje."
    )
 
 /* Settings > Audio > Menu Sounds */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-   ""
+   "Keverő"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-   ""
+   "Több egyidejű hang lejátszása a menüben is."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
-   ""
+   "\"OK\" hang"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
-   ""
+   "\"Mégse\" hang"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
-   ""
+   "\"Figyelmeztetés\" hang"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
-   ""
+   "Háttérhang"
    )
 
 /* Settings > Input */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
-   ""
+   "Felhasználók maximális száma"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   ""
+   "A RetroArch által támogatott felhasználók maximális száma."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   ""
+   "Lekérdezés módja"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-   ""
+   "A RetroArch által használt módszer a bemenetek lekérdezésére. \"Korai\" vagy \"Késői\" beállítás konfigurációtól függően csökkentheti a késleltetést."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-   ""
+   "Irányítás remap ehhez a maghoz"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   ""
+   "Felülírja az irányítás kiosztását a módosított kiosztással az aktuális maghoz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-   ""
+   "Automatikus beállítás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-   ""
+   "A kontroller automatikus Plug-and-Play beállítása, ha van hozzá profil."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   ""
+   "Windows gyorsbillentyűk letiltása (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
-   ""
+   "A Windows gombos billentyűkombinációkat az alkalmazáson belül tartja."
    )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
-   ""
+   "Kiegészítő érzékelők használata"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
-   ""
+   "Engedélyezi a gyorsulásmérő, giroszkóp, és megvilágításérzékelő bemenetét, ha a hardver támogatja azt. Hatása lehet a teljesítményre vagy az energiahasználatra bizonyos platformokon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
-   ""
+   "Egér automatikus megragadása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
-   ""
+   "Engedélyezi az egérkurzor megragadását, amikor az alkalmazás előtérbe kerül."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
-   ""
+   "\"Figyelj a játékra\" mód automatikus bekapcsolása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   ""
+   "A \"Figyelj a játékra\" mód bekapcsolása tartalom indításakor és folytatásakor. Az \"Észlelés\" beállítás akkor kapcsolja be ezt a módot, ha az aktuális magban létezik a billentyűzetfigyelő funkció."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
-   ""
+   "Ki"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
-   ""
+   "Be"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
-   ""
+   "Észlelés"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
@@ -9067,6 +8991,10 @@ MSG_HASH(
    "Képernyőhöz igazított"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   "Egész-szorzós"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
    "Képernyő kitöltése (kinyújtott)"
    )
@@ -10282,6 +10210,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
    "Várakoztatott swapchain"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "A CPU és a GPU szigorú összehangolása. Csökkenti a késleltetést a teljesítmény rovására."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,

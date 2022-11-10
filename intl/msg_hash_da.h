@@ -10,2504 +10,1048 @@
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   ""
+   "Hovedmenu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-   ""
+   "Indstillinger"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   ""
+   "Favoritter"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   ""
+   "Historik"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   ""
+   "Billeder"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
-   ""
+   "Musik"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   ""
+   "Videoer"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   ""
+   "Udforsk"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   ""
+   "Importer indhold"
    )
 
 /* Main Menu */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-   ""
+   "Hurtig Menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   ""
+   "Få hurtigt adgang til alle relevante indstillinger i spillet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   ""
+   "Indlæs kerne"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   ""
+   "Vælg kerne der skal bruges."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   ""
+   "Indlæs indhold"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   ""
+   "Vælg hvilket indhold der skal startes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   ""
+   "Indlæs disk"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
-   ""
+   "Indlæs en fysisk medie disk. Vælg først kernen (Indlæs kerne) til brug med disken."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   ""
+   "Dump disk"
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
-   ""
+   "Dump den fysiske disk til intern opbevaring. Det vil blive gemt som en diskafbildningsfil."
    )
 #ifdef HAVE_LAKKA
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_EJECT_DISC,
-   ""
-   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   ""
+   "Spilleliste"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   ""
+   "Scannet indhold der matcher databasen vil blive vist her."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   ""
+   "Importer indhold"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   ""
+   "Opret og opdater spillelister ved at scanne indhold."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   ""
+   "Vis skrivebords menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   ""
+   "Åbn den traditionelle skrivebords menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   ""
+   "Deaktiver Kiosk-tilstand (Genstart Påkrævet)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   ""
+   "Vis alle konfigurationsrelaterede indstillinger."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   ""
+   "Opdater online"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY,
-   ""
+   "Hent tilføjelser, komponenter og indhold til RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
-   ""
+   "Deltag i eller vær vært for en netplay session."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
-   ""
+   "Indstillinger"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
-   ""
+   "Indstil programmet."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   ""
+   "Vis systemoplysninger."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   ""
+   "Konfigurationsfil"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   ""
+   "Håndter og opret konfigurationsfiler."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   ""
+   "Hjælp"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_LIST,
-   ""
+   "Læs mere om, hvordan programmet virker."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   ""
+   "Genstart RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   ""
+   "Genstart programmet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   ""
+   "Afslut RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   ""
+   "Afslut programmet."
    )
 
 /* Main Menu > Load Core */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   ""
+   "Hent en kerne"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   ""
+   "Hent og installer en kerne fra onlineopdateringsprogrammet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   ""
+   "Installer eller gendan en kerne"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   ""
+   "Installér eller gendan en kerne fra mappen 'Downloads'."
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   ""
-   )
-MSG_HASH( /* FIXME Maybe add a description? */
-   MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-   ""
+   "Start Videoprocessor"
    )
 
 /* Main Menu > Load Content */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-   ""
+   "Start Mappe"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   ""
+   "Gennemse Arkiv"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   ""
+   "Indlæs Arkiv"
    )
 
 /* Main Menu > Load Content > Playlists */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-   ""
+   "Favoritter"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   ""
+   "Indhold tilføjet til 'Favoritter' vises her."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-   ""
+   "Musik"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   ""
+   "Musik som tidligere er blevet afspillet vises her."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-   ""
+   "Billeder"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   ""
+   "Billeder som tidligere er blevet set vil blive vist her."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   ""
+   "Videoer"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   ""
+   "Videoer som tidligere er blevet afspillet vil blive vist her."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
-   ""
+   "Udforsk"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
-   ""
+   "Gennemse alt indhold, der matcher databasen via en kategoriseret søgegrænseflade."
    )
 
 /* Main Menu > Online Updater */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   ""
+   "Kerne downloader"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   ""
+   "Opdater installerede kerner"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
-   ""
+   "Opdater alle installerede kerner til den nyeste tilgængelige version."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   ""
+   "Skift kerner til Play Butik-versioner"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   ""
+   "Erstat alle ældre og manuelt installerede kerner med de nyeste versioner fra Play Butik, hvor de er tilgængelige."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-   ""
+   "Opdatering af miniaturer"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   ""
+   "Download komplet miniaturepakke for det valgte system."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   ""
+   "Opdatering af miniaturebilleder for spillelister"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   ""
+   "Download miniaturer for poster i den valgte spilleliste."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-   ""
+   "Indholdsdownloader"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   ""
+   "Opdater kerneinfofiler"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   ""
+   "Opdater aktiver"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   ""
+   "Opdater controllerprofiler"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   ""
+   "Opdater snydekoder"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   ""
+   "Opdater databaser"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   ""
+   "Opdater overlays"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   ""
+   "Opdater GLSL Shaders"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   ""
+   "Opdater Cg Shaders"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   ""
+   "Opdater Slang Shaders"
    )
 
 /* Main Menu > Information */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   ""
+   "Kerne information"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFORMATION,
-   ""
+   "Se information vedrørende applikationen/kerne."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   ""
+   "Disk information"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   ""
+   "Se information om indsatte mediediske."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   ""
+   "Netværksinformation"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   ""
+   "Vis netværksgrænseflade(r) og tilknyttede IP-adresser."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   ""
+   "Systeminformation"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   ""
+   "Se information specifikt for enheden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
-   ""
+   "Database manager"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
-   ""
+   "Se databaser."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
-   ""
+   "Markørhåndtering"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
-   ""
+   "Se tidligere søgninger."
    )
 
 /* Main Menu > Information > Core Information */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
-   ""
+   "Kernenavn"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
-   ""
+   "Kerneetiket"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
-   ""
+   "Systemnavn"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
-   ""
+   "Systemproducent"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-   ""
+   "Kategorier"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-   ""
+   "Forfatter"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-   ""
+   "Rettigheder"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-   ""
+   "Licens"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-   ""
+   "Understøttede udvidelser"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
-   ""
+   "Påkrævet Grafik API"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   ""
+   "Mangler, Påkrævet:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
-   ""
+   "Mangler, Valgfri:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   ""
+   "Tilstede, Påkrævet:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
-   ""
+   "Tilstede, Valgfri:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   ""
+   "Lås installeret kerne"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   ""
+   "Forhindre ændring af den aktuelt installerede kerne. Kan bruges til at undgå uønskede opdateringer, når indhold kræver en bestemt kerneversion (f.eks Arcade ROM sæt)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   ""
+   "Slet kerne"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE,
-   ""
+   "Fjern denne kerne fra disken."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   ""
+   "Sikkerhedskopiér kerne"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   ""
+   "Opret en arkiveret sikkerhedskopi af den aktuelt installerede kerne."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
-   ""
+   "Gendan sikkerhedskopi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
-   ""
+   "Installer en tidligere version af kernen fra en liste over arkiverede sikkerhedskopier."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
-   ""
+   "Slet sikkerhedskopi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC,
-   ""
+   "Fjern en fil fra listen over arkiverede sikkerhedskopier."
    )
 
 /* Main Menu > Information > System Information */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-   ""
+   "Build dato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
-   ""
-   )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_COMPILER,
-   ""
+   "Git version"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
-   ""
+   "CPU model"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-   ""
+   "CPU funktioner"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   ""
+   "CPU arkitektur"
    )
 MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   ""
+   "CPU kerner:"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CPU_CORES,
-   ""
+   "Mængden af kerner, som CPU'en har."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
-   ""
+   "Frontend identifikator"
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
-   ""
+   "RetroRating Niveau"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
-   ""
+   "Strømkilde"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
-   ""
+   "Video kontekst driver"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   ""
+   "Skærmbredde (mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   ""
+   "Skærmhøjde (mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   ""
+   "Skærmens DPI"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-   ""
+   "Command Interface understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-   ""
+   "Network Command Interface understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
-   ""
+   "Network Controller understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
-   ""
+   "Cocoa understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
-   ""
+   "PNG (RPNG) understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
-   ""
+   "JPEG (RJPEG) understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
-   ""
+   "BMP (RBMP) understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
-   ""
+   "TGA (RTGA) understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
-   ""
+   "SDL 1.2 understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
-   ""
+   "SDL 2 understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
-   ""
+   "Vulkan understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
-   ""
+   "Metal understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
-   ""
+   "OpenGL understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
-   ""
+   "OpenGL ES understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
-   ""
+   "Threading understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
-   ""
+   "KMS/EGL understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
-   ""
+   "udev understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
-   ""
+   "OpenVG understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
-   ""
+   "EGL understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
-   ""
+   "X11 understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
-   ""
+   "Wayland understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
-   ""
+   "XVideo understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
-   ""
+   "ALSA understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
-   ""
+   "OSS understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
-   ""
+   "OpenAL understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
-   ""
+   "OpenSL understøttelse"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
-   ""
+   "RSound understøttelse"
    )
 
 /* Main Menu > Information > Database Manager */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
-   ""
-   )
 
 /* Main Menu > Information > Database Manager > Information */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   ""
+   "Præstationer"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5,
-   ""
+   "Co-op Understøttet"
    )
 
 /* Main Menu > Configuration File */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   ""
+   "Indlæs konfiguration"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   ""
+   "Nulstil til standardindstillinger"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   ""
+   "Nulstil den aktuelle konfiguration til standardværdier."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   ""
+   "Gem aktuel konfiguration"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   ""
+   "Gem ny konfiguration"
    )
 
 /* Main Menu > Help */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
-   ""
+   "Grundlæggende menukontroller"
    )
 
 /* Main Menu > Help > Basic Menu Controls */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
-   ""
+   "Rul Op"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
-   ""
+   "Rul Ned"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
-   ""
+   "Bekræft"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   ""
+   "Åbn/luk menu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-   ""
+   "Luk"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
-   ""
+   "Slå Tastatur Til/Fra"
    )
 
 /* Settings */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-   ""
+   "Drivere"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
-   ""
+   "Skift drivere, der bruges af systemet."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   ""
+   "Skift indstillinger for videooutput."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   ""
+   "Lyd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   ""
+   "Skift indstillinger for lydudgang."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   ""
+   "Skift controller, tastatur og mus indstillinger."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
-   ""
+   "Latenstid"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   ""
+   "Skift indstillinger relateret til video, lyd og input latenstid."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-   ""
+   "Kerne"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   ""
+   "Skift kerneindstillinger."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-   ""
+   "Konfiguration"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   ""
+   "Skift standardindstillinger for konfigurationsfiler."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-   ""
+   "Gemmer"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   ""
+   "Skift gemmeindstillinger."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   ""
+   "Logning"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   ""
+   "Skift logføringsindstillinger."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   ""
+   "Filhåndtering"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-   ""
+   "Skift filhåndteringsindstillinger."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   ""
+   "Skift indstillingerne for spoling tilbage, spoling frem og slow motion."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   ""
+   "Optager"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   ""
+   "Skift optagelsesindstillinger."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   ""
+   "Ændre skærmoverlejring og tastaturoverlejring og notifikationsindstillinger på skærmen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-   ""
+   "Brugergrænseflade"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   ""
+   "Skift indstillinger for brugergrænseflade."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   ""
+   "AI Tjeneste"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   ""
+   "Skift indstillinger for AI-tjenesten (Oversættelse/TTS/Misc)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-   ""
+   "Tilgængelighed"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   ""
+   "Skift indstillinger for tilgængelighedsfortælleren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   ""
+   "Strømstyring"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   ""
+   "Skift indstillinger for strømstyring."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   ""
+   "Præstationer"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   ""
+   "Skift indstillinger for præstationer."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
-   ""
+   "Netværk"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   ""
+   "Skift server og netværksindstillinger."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   ""
+   "Spilleliste"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   ""
+   "Skift indstillinger for spillelister."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
-   ""
+   "Bruger"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   ""
+   "Skift konto, brugernavn og sprogindstillinger."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-   ""
+   "Mappe"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-   ""
+   "Skift standardmapper hvor filer er placeret."
    )
 
 /* Core option category placeholders for icons */
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
-   ""
-   )
 
 #ifdef HAVE_MIST
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
-   ""
-   )
 #endif
 
 /* Settings > Drivers */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
-   ""
+   "Input driver til brug. Nogle videodrivere tvinger en anden inputdriver."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-   ""
+   "Controller driver der skal bruges."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   ""
+   "Videodriver der skal bruges."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-   ""
+   "Lyd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   ""
+   "Lyddriver der skal bruges."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-   ""
+   "Lyd resampler"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   ""
+   "Lyd resampler driver der skal bruges."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-   ""
+   "Kamera"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
-   ""
+   "Kameradriver der skal bruges."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
-   ""
+   "Bluetoothdriver der skal bruges."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   ""
+   "Wi-Fi-driver, der skal bruges."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-   ""
+   "Placering"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   ""
+   "Placeringsdriver der skal bruges."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   ""
+   "Menudriver der skal bruges."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   ""
+   "Optag"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
-   ""
+   "Optagedriver der skal bruges."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   ""
+   "MIDI-driver der skal bruges."
    )
 
 /* Settings > Video */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
-   ""
+   "Output native, lavopløsningssignaler til brug med CRT-skærme."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   ""
+   "Skift indstillinger for videooutput."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   ""
+   "Fuldskærmstilstand"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   ""
+   "Skift indstillinger for fuldskærmstilstand."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   ""
+   "Vinduestilstand"
    )
 #if defined(DINGUX)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
-   ""
-   )
 #if defined(RS90) || defined(MIYOO)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
-   ""
-   )
 #endif
 #endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   ""
-)
 
 /* Settings > Video > CRT SwitchRes */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   ""
-   )
 
 /* Settings > Video > Output */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-   ""
-   )
 #if defined (WIIU)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
-   ""
-   )
 #endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
-   ""
-   )
 #if defined(DINGUX) && defined(DINGUX_BETA)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ,
-   ""
-   )
 #endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   ""
-   )
 
 /* Settings > Video > Fullscreen Mode */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   ""
-   )
 
 /* Settings > Video > Windowed Mode */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   ""
-   )
 
 /* Settings > Video > Scaling */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   ""
-   )
 #if defined(DINGUX)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   ""
-   )
 #endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-   ""
-   )
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   ""
-   )
 
 /* Settings > Video > Synchronization */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
-   ""
-   )
 
 /* Settings > Audio */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   ""
+   "Skift indstillinger for lydudgang."
    )
 
 /* Settings > Audio > Output */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   ""
+   "Lyd"
    )
 
 /* Settings > Audio > Resampler */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-   ""
-   )
 
 /* Settings > Audio > Synchronization */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-   ""
-   )
 
 /* Settings > Audio > MIDI */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_INPUT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_VOLUME,
-   ""
-   )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
-   ""
-   )
 
 /* Settings > Audio > Menu Sounds */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
-   ""
-   )
 
 /* Settings > Input */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-   ""
-   )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
-   ""
-   )
 #endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
-   ""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
-   ""
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
