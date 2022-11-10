@@ -4145,6 +4145,9 @@ static void ozone_leave_sidebar(
       uintptr_t tag)
 {
    struct gfx_animation_ctx_entry entry;
+   settings_t *settings             = config_get_ptr();
+   unsigned remember_selection_type = settings->uints.menu_remember_selection;
+   bool ozone_main_tab_selected     = false;
 
    ozone_update_content_metadata(ozone);
 
@@ -4156,8 +4159,15 @@ static void ozone_leave_sidebar(
       ozone->flags               &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
    ozone->flags                  &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR;
 
+   if    ((ozone->tabs[ozone->categories_selection_ptr] == OZONE_SYSTEM_TAB_MAIN)
+      || (ozone->tabs[ozone->categories_selection_ptr] == OZONE_SYSTEM_TAB_SETTINGS))
+      ozone_main_tab_selected = true;
+
    /* Restore last selection per tab */
-   ozone_tab_set_selection(ozone);
+   if    ((remember_selection_type == MENU_REMEMBER_SELECTION_ALWAYS)
+      || ((remember_selection_type == MENU_REMEMBER_SELECTION_PLAYLISTS) && (ozone->flags & OZONE_FLAG_IS_PLAYLIST))
+      || ((remember_selection_type == MENU_REMEMBER_SELECTION_MAIN) && (ozone_main_tab_selected)))
+      ozone_tab_set_selection(ozone);
 
    /* Cursor animation */
    ozone->animations.cursor_alpha   = 0.0f;

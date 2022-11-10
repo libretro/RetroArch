@@ -289,6 +289,7 @@ typedef struct settings
       unsigned menu_content_show_contentless_cores;
       unsigned menu_screensaver_timeout;
       unsigned menu_screensaver_animation;
+      unsigned menu_remember_selection;
 
       unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;

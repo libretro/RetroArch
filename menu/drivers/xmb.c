@@ -2134,11 +2134,14 @@ static void xmb_tab_set_selection(void *data)
 static void xmb_list_switch(xmb_handle_t *xmb)
 {
    gfx_animation_ctx_entry_t anim_entry;
-   int dir                        = -1;
-   file_list_t *selection_buf     = menu_entries_get_selection_buf_ptr(0);
-   size_t selection               = 0;
-   settings_t       *settings     = config_get_ptr();
-   bool menu_horizontal_animation = settings->bools.menu_horizontal_animation;
+   int dir                          = -1;
+   file_list_t *selection_buf       = menu_entries_get_selection_buf_ptr(0);
+   size_t selection                 = 0;
+   settings_t       *settings       = config_get_ptr();
+   bool xmb_main_tab_selected       = false;
+   bool menu_horizontal_animation   = settings->bools.menu_horizontal_animation;
+   unsigned remember_selection_type = settings->uints.menu_remember_selection;
+   unsigned xmb_system_tab          = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
 
    if (    xmb->categories_selection_ptr 
          > xmb->categories_selection_ptr_old)
@@ -2146,8 +2149,14 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
    xmb->categories_active_idx += dir;
 
+   if ((xmb_system_tab == XMB_SYSTEM_TAB_MAIN) || (xmb_system_tab == XMB_SYSTEM_TAB_SETTINGS))
+      xmb_main_tab_selected = true;
+
    /* Restore last selection per tab */
-   xmb_tab_set_selection(xmb);
+   if    ((remember_selection_type == MENU_REMEMBER_SELECTION_ALWAYS)
+      || ((remember_selection_type == MENU_REMEMBER_SELECTION_PLAYLISTS) && (xmb->is_playlist))
+      || ((remember_selection_type == MENU_REMEMBER_SELECTION_MAIN) && (xmb_main_tab_selected)))
+      xmb_tab_set_selection(xmb);
 
    /* Selection needs to be taken after tab restore */
    selection               = menu_navigation_get_selection();

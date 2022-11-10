@@ -6963,6 +6963,44 @@ static void setting_get_string_representation_uint_menu_screensaver_animation(
 }
 #endif
 
+#if defined(HAVE_XMB) || defined(HAVE_OZONE)
+static void setting_get_string_representation_uint_menu_remember_selection(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case MENU_REMEMBER_SELECTION_ALWAYS:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS),
+               len);
+         break;
+      case MENU_REMEMBER_SELECTION_PLAYLISTS:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS),
+               len);
+         break;
+      case MENU_REMEMBER_SELECTION_MAIN:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN),
+               len);
+         break;
+      case MENU_REMEMBER_SELECTION_OFF:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OFF),
+               len);
+         break;
+   }
+}
+#endif
+
 #ifdef HAVE_MIST
 static void setting_get_string_representation_steam_rich_presence_format(
       rarch_setting_t *setting,
@@ -15976,6 +16014,30 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.1, 10.0, 0.1, true, true);
+         }
+#endif
+#if defined(HAVE_XMB) || defined(HAVE_OZONE)
+         if (string_is_equal(settings->arrays.menu_driver, "xmb")  ||
+             string_is_equal(settings->arrays.menu_driver, "ozone"))
+         {
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_remember_selection,
+                  MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION,
+                  MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+                  DEFAULT_MENU_REMEMBER_SELECTION,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
+            (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_uint_menu_remember_selection;
+            menu_settings_list_current_add_range(list, list_info, 0, MENU_REMEMBER_SELECTION_LAST-1, 1, true, true);
+            (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_UINT_COMBOBOX;
          }
 #endif
          CONFIG_BOOL(

@@ -8400,6 +8400,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,                              PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION,                            PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION_SPEED,                      PARSE_ONLY_FLOAT,  false},
+               {MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION,                               PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_MOUSE_ENABLE,                                          PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_POINTER_ENABLE,                                        PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,                          PARSE_ONLY_BOOL,   true},
@@ -8436,6 +8437,11 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION_SPEED:
                      if (menu_screensaver_supported &&
                          (menu_screensaver_animation != MENU_SCREENSAVER_BLANK))
+                        build_list[i].checked = true;
+                     break;
+#endif
+#if defined(HAVE_XMB) || defined(HAVE_OZONE)
+                  case MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION:
                         build_list[i].checked = true;
                      break;
 #endif
