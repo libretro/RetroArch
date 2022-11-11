@@ -4780,6 +4780,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    "長いテキスト文字列を表示するときのスクロールをスムーズにします. パフォーマンスに少し影響します."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "常に表示する"
+   )
 
 /* Settings > AI Service */
 

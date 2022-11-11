@@ -5188,6 +5188,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    "显示过长菜单文本时，使用平滑滚动动画。有很小的性能影响。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "总是"
+   )
 
 /* Settings > AI Service */
 

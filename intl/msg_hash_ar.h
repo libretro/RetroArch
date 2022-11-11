@@ -3644,6 +3644,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    "نص المؤشر السلس"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "دائما"
+   )
 
 /* Settings > AI Service */
 

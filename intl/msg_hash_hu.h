@@ -115,7 +115,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Lejátszási listák létrehozása és frissítése tartalom beolvasásával."
+   "Játéklisták létrehozása és frissítése tartalom beolvasásával."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -206,11 +206,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   "Mag telepítése vagy visszaállítása"
+   "Magok telepítése vagy visszaállítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   "Telepítsen vagy állítson vissza egy magot a „Letöltések” könyvtárból."
+   "Magok telepítése vagy visszaállítása a \"Letöltések\" könyvtárból."
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
@@ -315,7 +315,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-   "Bélyegképfrissítő"
+   "Bélyegképek frissítése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
@@ -323,11 +323,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   "Lejátszási lista bélyegképfrissítője"
+   "Bélyegképek frissítése játéklistákhoz"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "Bélyegképek letöltése a kiválasztott lejátszási lista bejegyzéseihez."
+   "Bélyegképek letöltése a kiválasztott játéklista bejegyzéseihez."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -394,7 +394,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   "Információ a lemezről"
+   "Információk a lemezről"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
@@ -410,7 +410,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   "Információ a rendszerről"
+   "Információk a rendszerről"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
@@ -545,7 +545,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   "Készítsen egy archivált biztonsági másolatot a jelenleg telepített magról."
+   "Tömörített biztonsági másolat készítése a jelenleg telepített magról."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
@@ -1098,7 +1098,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Hang beállítások módosítása."
+   "A hang beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
@@ -1106,7 +1106,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   "A kontroller, a billentyűzet és az egér beállításainak módosítása."
+   "A kontroller, a billentyűzet és az egér beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -1154,7 +1154,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "A Fájlkezelő beállításainak módosítása."
+   "A fájlkezelő beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1186,15 +1186,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   "A felhasználói felület beállításainak módosítása."
+   "A felhasználói felület beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   "MI Szolgáltatás"
+   "AI szolgáltatás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   "A MI szolgáltatás beállításainak módosítása (fordítás/TTS/egyéb)."
+   "Az AI szolgáltatás beállításai (fordítás/TTS/egyebek)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
@@ -1218,7 +1218,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Eredmények beállításainak változtatása."
+   "A trófeák beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
@@ -1226,7 +1226,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   "A szerver és a hálózat beállításainak módosítása."
+   "A szerver és a hálózat beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -1254,6 +1254,10 @@ MSG_HASH(
    )
 
 /* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
+   "Trükkök"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
    "Hozzárendelések"
@@ -1298,11 +1302,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-   "Bevitel"
+   "Bemenet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "A használni kívánt beviteli illesztőprogram. Egyes video-illesztőprogramok másik bemeneti illesztőprogramot kényszerítenek ki."
+   "A használni kívánt bemeneti illesztőprogram. Egyes video-illesztőprogramok másik bemeneti illesztőprogramot kényszerítenek ki."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
@@ -1357,6 +1361,10 @@ MSG_HASH(
    "Helymeghatározás"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+   "A helymeghatározáshoz használt illesztő."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "Menü"
    )
@@ -1401,7 +1409,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "A teljes képernyős mód beállításainak módosítása."
+   "A teljes képernyős mód beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
@@ -1409,7 +1417,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-   "Az ablakos mód beállításainak módosítása."
+   "Az ablakos mód beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
@@ -1453,7 +1461,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Helyezzen be egy fekete lépkockát a képkockák közé. Hasznos néhány nagy frissítési gyakoriságú képernyőn a szellemkép kiküszöbölésére."
+   "Egy vagy több fekete képkocka beszúrása a képkockák közé. Néhány nagy frissítési gyakoriságú képernyőn hasznos a szellemkép kiküszöbölésére."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -1769,11 +1777,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-   "Ablak áttetszősége"
+   "Ablak átlátszatlansága"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
-   "Ablak áttetszőség beállítása."
+   "Az ablak átlátszatlanságának beállítása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
@@ -1801,7 +1809,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   "Egyedi ablakméret használata"
+   "Egyedi ablakméret"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
@@ -1829,7 +1837,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   "A megjelenítő ablak maximális szélessége az ablakos skálának megfelelő automata átméretezés esetén."
+   "Az ablak maximális szélessége, az ablakméret szorzója szerinti automatikus átméretezéskor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -1837,7 +1845,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   "A megjelenítő ablak maximális magassága az ablakos skálának megfelelő automata átméretezés esetén."
+   "Az ablak maximális magassága, az ablakméret szorzója szerinti automatikus átméretezéskor."
    )
 
 /* Settings > Video > Scaling */
@@ -1848,7 +1856,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "A kép csak egész szorzóval történő méretezése. Az alap a rendszer által megadott képgeometriától és képaránytól függ. Ha a képarány nem rögzített, a vízszintes és függőleges irányokat egymástól függetlenül méretezi."
+   "A kép csak egész szorzóval történő méretezése. Az alapméret a rendszer által megadott képgeometriától és képaránytól függ. Ha a képarány nem rögzített, a vízszintes és függőleges irányokat egymástól függetlenül szorozza."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
@@ -2055,7 +2063,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   "Hang kimeneti beállítások módosítása."
+   "A hangkimenet beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
@@ -2063,7 +2071,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
-   "A hang-újramintavételező beállításainak módosítása."
+   "A hang-újramintavételező beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
@@ -2376,7 +2384,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   "Felülírja az irányítás kiosztását a módosított kiosztással az aktuális maghoz."
+   "Az aktuális mag irányítás kiosztásának felülbírálása a módosított (remap) kiosztással."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -2542,7 +2550,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "Gyorsbillentyűk beállításai."
+   "A gyorsbillentyűk beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -2708,7 +2716,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "Játékállás mentése"
+   "Játékállás betöltése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
@@ -3325,7 +3333,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
-   "Engedélyezi a magoknak, hogy a beállításaikat kategóriákra bontott almenükben jelenítség meg. Figyelem: a magot újra be kell tölteni ahhoz, hogy a változtatás érvényre jusson."
+   "Engedélyezi a magoknak, hogy a beállításaikat kategóriákra bontott almenükben jelenítsék meg. Figyelem: a magot újra be kell tölteni ahhoz, hogy a változtatás érvényre jusson."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -4004,11 +4012,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
-   "Rátét áttetszősége"
+   "Rátét átlátszatlansága"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-   "A rátét összes kezelőszervének áttetszősége."
+   "A rátét összes kezelőszervének átlátszatlansága."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
@@ -4438,7 +4446,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-   "Értesítések hátterének áttetszősége"
+   "Értesítések hátterének átlátszatlansága"
    )
 
 /* Settings > User Interface */
@@ -5416,6 +5424,26 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    "Hosszú menüszöveg animálása finom görgetéssel. Kis hatása van a teljesítményre."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+   "Kiválasztott elem megjegyzése fülek közt váltáskor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
+   "A kurzor pozíciójának megjegyzése a menü fülei közt váltáskor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "Mindig"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
+   "Csak játéklistáknál"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
+   "Csak a főmenüben és a beállításoknál"
+   )
 
 /* Settings > AI Service */
 
@@ -5812,7 +5840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
-   "Bélyegképk letöltése szükség szerint"
+   "Bélyegképek letöltése szükség szerint"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
@@ -6109,7 +6137,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
-   "Mag-társítások törlése a lejátszási lista minden elemére."
+   "Mag-társítások törlése a játéklista minden elemére."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
@@ -7234,7 +7262,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "A futó tartalom beállításainak változtatása."
+   "A futó tartalom beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -8139,7 +8167,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
-   "Szülő könyvtár"
+   "Fel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,

@@ -1255,6 +1255,10 @@ MSG_HASH(
 
 /* Core option category placeholders for icons */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
+   "Hacky"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
    "Mapování"
    )
@@ -2383,6 +2387,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
    "Detekovat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
+   "Pozastavení obsahu při odpojení ovladače"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
+   "Pozastavení obsahu při odpojení libovolného ovladače."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -5351,6 +5363,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    "Při zobrazování dlouhého textu menu se použije plynulá animace posouvání. Má malý dopad na výkon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "Vždy"
    )
 
 /* Settings > AI Service */
@@ -11979,6 +11995,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT,
    "konfigurováno v portu"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT,
+   "odpojen od portu"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,

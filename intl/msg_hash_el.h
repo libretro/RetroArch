@@ -2716,6 +2716,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    "Σκίτσα"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "Πάντα"
+   )
 
 /* Settings > AI Service */
 

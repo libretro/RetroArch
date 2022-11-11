@@ -5212,6 +5212,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    "Käytä pehmeää vieritysanimaatiota, kun näytetään valikon pitkä teksti. Tällä on pieni vaikutus suorituskykyyn."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "Aina"
+   )
 
 /* Settings > AI Service */
 

@@ -1271,6 +1271,10 @@ MSG_HASH(
 
 /* Core option category placeholders for icons */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
+   "Arreglos"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
    "Mapeo"
    )
@@ -5436,6 +5440,26 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    "Muestra los textos de los menús que sean muy largos desplazándolos con una animación suavizada. Afecta levemente al rendimiento."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+   "Recordar la selección al cambiar entre secciones"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
+   "Recuerda la posición del cursor dentro del menú al cambiar a otra sección."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "Siempre"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
+   "Solo listas de reproducción"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
+   "Solo menú principal y ajustes"
+   )
 
 /* Settings > AI Service */
 
@@ -6998,7 +7022,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
-   "Eliminar esta vista"
+   "Eliminar vista"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
