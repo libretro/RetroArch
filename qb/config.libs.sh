@@ -638,8 +638,6 @@ if [ "$HAVE_GLSLANG" != no ]; then
    check_lib cxx GLSLANG_SPIRV_TOOLS -lSPIRV-Tools
 
    if [ "$HAVE_GLSLANG" = no ] ||
-      [ "$HAVE_GLSLANG_OSDEPENDENT" = no ] ||
-      [ "$HAVE_GLSLANG_OGLCOMPILER" = no ] ||
       [ "$HAVE_GLSLANG_HLSL" = no ] ||
       [ "$HAVE_GLSLANG_SPIRV" = no ] ||
       [ "$HAVE_GLSLANG_SPIRV_TOOLS_OPT" = no ] ||
