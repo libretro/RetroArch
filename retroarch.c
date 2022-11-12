@@ -1461,7 +1461,6 @@ bool is_accessibility_enabled(bool accessibility_enable, bool accessibility_enab
  **/
 bool command_event(enum event_command cmd, void *data)
 {
-   bool boolean                    = false;
 #if defined(HAVE_DISCORD) || defined(HAVE_NETWORKING)
    struct rarch_state *p_rarch     = &rarch_st;
 #endif
@@ -2646,26 +2645,27 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_PAUSE_TOGGLE:
          {
+            bool paused          = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
 #ifdef HAVE_ACCESSIBILITY
-            bool accessibility_enable                    = settings->bools.accessibility_enable;
-            unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+            bool accessibility_enable
+                                 = settings->bools.accessibility_enable;
+            unsigned accessibility_narrator_speech_speed
+                                 = settings->uints.accessibility_narrator_speech_speed;
 #endif
 
 #ifdef HAVE_NETWORKING
-         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
-            break;
+            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
+               break;
 #endif
 
-            boolean               = ((runloop_st->flags & RUNLOOP_FLAG_PAUSED) >
-0);
-            boolean               = !boolean;
+            paused               = !paused;
 
 #ifdef HAVE_ACCESSIBILITY
             if (is_accessibility_enabled(
                   accessibility_enable,
                   access_st->enabled))
             {
-               if (boolean)
+               if (paused)
                   accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
@@ -2677,8 +2677,7 @@ bool command_event(enum event_command cmd, void *data)
                      (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
             }
 #endif
-
-            if (boolean)
+            if (paused)
                runloop_st->flags |=  RUNLOOP_FLAG_PAUSED;
             else
                runloop_st->flags &= ~RUNLOOP_FLAG_PAUSED;

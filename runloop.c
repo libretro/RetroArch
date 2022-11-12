@@ -5693,7 +5693,6 @@ void runloop_pause_checks(void)
                1, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-
       if (!is_idle)
          video_driver_cached_frame();
 
@@ -6475,6 +6474,7 @@ static enum runloop_state_enum runloop_check_state(
    gfx_display_t            *p_disp    = disp_get_ptr();
    runloop_state_t *runloop_st         = &runloop_state;
    static bool old_focus               = true;
+   static bool runloop_paused_hotkey   = false;
    struct retro_callbacks *cbs         = &runloop_st->retro_ctx;
    bool is_focused                     = false;
    bool is_alive                       = false;
@@ -6488,8 +6488,7 @@ static enum runloop_state_enum runloop_check_state(
    struct menu_state *menu_st          = menu_state_get_ptr();
    menu_handle_t *menu                 = menu_st->driver_data;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
-   bool menu_driver_binding_state      = menu_st->flags &
-MENU_ST_FLAG_IS_BINDING;
+   bool menu_driver_binding_state      = menu_st->flags & MENU_ST_FLAG_IS_BINDING;
    bool menu_is_alive                  = menu_st->flags & MENU_ST_FLAG_ALIVE;
    bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
@@ -6551,12 +6550,21 @@ MENU_ST_FLAG_IS_BINDING;
       if (input_active || (menu_st->input_driver_flushing_input > 0))
       {
          BIT256_CLEAR_ALL(current_bits);
-         if (runloop_paused)
+         if (runloop_paused && !runloop_paused_hotkey && settings->bools.menu_pause_libretro)
             BIT256_SET(current_bits, RARCH_PAUSE_TOGGLE);
+         else if (runloop_paused_hotkey)
+         {
+            /* Restore pause if pause is triggered with both hotkey and menu,
+             * and restore cached video frame to continue properly to
+             * paused state from non-paused menu */
+            if (settings->bools.menu_pause_libretro)
+               command_event(CMD_EVENT_PAUSE, NULL);
+            else
+               video_driver_cached_frame();
+         }
       }
    }
 #endif
-
 
    if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
    {
@@ -6980,9 +6988,10 @@ MENU_ST_FLAG_IS_BINDING;
 #else
          bool menu_pause_libretro    = settings->bools.menu_pause_libretro;
 #endif
-         bool libretro_running       = !menu_pause_libretro
-            && runloop_is_inited
-            && (runloop_st->current_core_type != CORE_TYPE_DUMMY);
+         bool libretro_running       = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+               && !menu_pause_libretro
+               && runloop_is_inited
+               && (runloop_st->current_core_type != CORE_TYPE_DUMMY);
 
          if (menu)
          {
@@ -7074,6 +7083,7 @@ MENU_ST_FLAG_IS_BINDING;
          !string_is_equal(menu_driver, "null");
       bool core_type_is_dummy = runloop_st->current_core_type == CORE_TYPE_DUMMY;
 
+      /* TODO/FIXME: Remove this hardcoded F1 regardless of actual mapped key? */
       if (menu_st->kb_key_state[RETROK_F1] == 1)
       {
          if (menu_st->flags & MENU_ST_FLAG_ALIVE)
@@ -7083,6 +7093,9 @@ MENU_ST_FLAG_IS_BINDING;
                retroarch_menu_running_finished(false);
                menu_st->kb_key_state[RETROK_F1] =
                   ((menu_st->kb_key_state[RETROK_F1] & 1) << 1) | false;
+
+               if (runloop_paused)
+                  video_driver_cached_frame();
             }
          }
       }
@@ -7206,6 +7219,11 @@ MENU_ST_FLAG_IS_BINDING;
       bool frameadvance_pressed     = false;
       bool trig_frameadvance        = false;
       bool pause_pressed            = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
+
+      /* Allow unpausing with Start */
+      if (runloop_paused)
+         pause_pressed             |= BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
+
 #ifdef HAVE_CHEEVOS
       /* make sure not to evaluate this before calling menu_driver_iterate
        * as that may change its value */
@@ -7241,11 +7259,15 @@ MENU_ST_FLAG_IS_BINDING;
 
       /* Check if libretro pause key was pressed. If so, pause or
        * unpause the libretro core. */
-
       if (focused)
       {
          if (pause_pressed && !old_pause_pressed)
+         {
+            /* Keep track of hotkey triggered pause to
+             * distinguish it from menu triggered pause */
+            runloop_paused_hotkey = !runloop_paused;
             command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
+         }
          else if (!old_focus)
             command_event(CMD_EVENT_UNPAUSE, NULL);
       }
@@ -7677,12 +7699,13 @@ int runloop_iterate(void)
 #ifdef HAVE_MENU
 #ifdef HAVE_NETWORKING
    bool menu_pause_libretro                     = settings->bools.menu_pause_libretro &&
-      netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
    bool menu_pause_libretro                     = settings->bools.menu_pause_libretro;
 #endif
-   bool core_paused                             = (runloop_st->flags &
-RUNLOOP_FLAG_PAUSED) || (menu_pause_libretro && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
+   bool core_paused                             =
+         (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ||
+         (menu_pause_libretro && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
 #else
    bool core_paused                             = (runloop_st->flags & RUNLOOP_FLAG_PAUSED);
 #endif
@@ -7808,7 +7831,7 @@ RUNLOOP_FLAG_PAUSED) || (menu_pause_libretro && (menu_state_get_ptr()->flags & M
 #endif
          return 0;
       case RUNLOOP_STATE_ITERATE:
-	 runloop_st->flags       |= RUNLOOP_FLAG_CORE_RUNNING;
+         runloop_st->flags       |= RUNLOOP_FLAG_CORE_RUNNING;
          break;
    }
 
