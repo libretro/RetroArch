@@ -1408,6 +1408,8 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
          return
             (fabs(x - desc->x_hitbox) <= desc->range_x_mod) &&
             (fabs(y - desc->y_hitbox) <= desc->range_y_mod);
+      case OVERLAY_HITBOX_NONE:
+         return false;
    }
    return false;
 }
