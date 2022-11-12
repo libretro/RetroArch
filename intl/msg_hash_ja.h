@@ -1505,7 +1505,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "スクリーンの垂直リフレッシュレートです. 適切なオーディオ入力レートを計算するために使用します. \\n'ビデオをスレッド化'を有効にすると, この値は無視されます."
+   "スクリーンの垂直リフレッシュレートです. 適切なオーディオ入力レートを計算するために使用します. \n'ビデオをスレッド化'を有効にすると, この値は無視されます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1670,7 +1670,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "カスタム表示領域のX方向オフセット値です.\\n'整数スケール'が有効の場合は無視されます."
+   "カスタム表示領域のX方向オフセット値です.\n'整数スケール'が有効の場合は無視されます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1678,7 +1678,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "カスタム表示領域のY方向オフセット値です.\\n'整数スケール'が有効の場合は無視されます."
+   "カスタム表示領域のY方向オフセット値です.\n'整数スケール'が有効の場合は無視されます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2432,7 +2432,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "キーが押されている間, 現在のコンテンツを巻き戻します.\\n'巻き戻しサポート'をオンにする必要があります."
+   "キーが押されている間, 現在のコンテンツを巻き戻します.\n'巻き戻しサポート'をオンにする必要があります."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
@@ -2604,7 +2604,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "現在選択中のディスクのインデックスをひとつ増やします. \\n仮想ディスクトレイが開いている必要があります."
+   "現在選択中のディスクのインデックスをひとつ増やします. \n仮想ディスクトレイが開いている必要があります."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -2612,7 +2612,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "現在選択中のディスクのインデックスをひとつ減らします. \\n仮想ディスクトレイが開いている必要があります."
+   "現在選択中のディスクのインデックスをひとつ減らします. \n仮想ディスクトレイが開いている必要があります."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -2676,7 +2676,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "現在のコンテンツの画面をキャプチャし, 画面上のテキストを翻訳, および/または読み上げます.\\n 'AI サービス'を有効にして設定する必要があります."
+   "現在のコンテンツの画面をキャプチャし, 画面上のテキストを翻訳, および/または読み上げます.\n 'AI サービス'を有効にして設定する必要があります."
    )
 
 /* Settings > Input > Port # Controls */
@@ -3113,7 +3113,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "不揮発性セーブRAMファイルをアーカイブ形式で書き込みます. 保存/読み込み時間が長くなりますが, ファイルサイズを大幅に削減します.\\n 標準のlibretroセーブRAMインタフェースを介して保存をするコアにのみ適用されます."
+   "不揮発性セーブRAMファイルをアーカイブ形式で書き込みます. 保存/読み込み時間が長くなりますが, ファイルサイズを大幅に削減します.\n 標準のlibretroセーブRAMインタフェースを介して保存をするコアにのみ適用されます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -3266,7 +3266,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "フレームタイムカウンタに影響する設定を調整します\\nビデオのスレッド化が無効になっている場合のみ有効です."
+   "フレームタイムカウンタに影響する設定を調整します\nビデオのスレッド化が無効になっている場合のみ有効です."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -5214,7 +5214,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "(もしあれば)プレイリスト中の項目に関連付けられているコアを表示します.\\nプレイリストのサブラベル表示が有効になっている場合, この設定は無視されます."
+   "(もしあれば)プレイリスト中の項目に関連付けられているコアを表示します.\nプレイリストのサブラベル表示が有効になっている場合, この設定は無視されます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -5254,7 +5254,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "サブラベルに表示するプレイ記録の種類を選択します.\\n対応するプレイ記録は'保存'オプションメニューで有効にする必要があります."
+   "サブラベルに表示するプレイ記録の種類を選択します.\n対応するプレイ記録は'保存'オプションメニューで有効にする必要があります."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -5399,7 +5399,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Discordアプリに再生されたコンテンツのデータを表示することを許可します.\\nネイティブデスクトップクライアントでのみ使用できます."
+   "Discordアプリに再生されたコンテンツのデータを表示することを許可します.\nネイティブデスクトップクライアントでのみ使用できます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -5741,7 +5741,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "このオーディオトラックを利用可能なオーディオストリームスロットに追加します.\\n空きスロットが存在しない場合は無視されます."
+   "このオーディオトラックを利用可能なオーディオストリームスロットに追加します.\n空きスロットが存在しない場合は無視されます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -5749,7 +5749,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "このオーディオトラックを利用可能なオーディオストリームスロットに追加して再生します.\\n空きスロットが存在しない場合は無視されます."
+   "このオーディオトラックを利用可能なオーディオストリームスロットに追加して再生します.\n空きスロットが存在しない場合は無視されます."
    )
 
 /* Netplay */
@@ -6461,7 +6461,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "ビッグエンディアン: 258 = 0x0102\\nリトルエンディアン: 258 = 0x0201"
+   "ビッグエンディアン: 258 = 0x0102\nリトルエンディアン: 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -11151,6 +11151,6 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "スキャンが成功しました. <br><br>\\nコンテンツを正確にスキャンするには:\\n<ul><li>互換機コアがもうダウンロードされた</li>\\n<li>オンラインアップデータで'コア情報'がもうアップデートされた</li>\\n<li>オンラインアップデータで'データベース'がもうアップデートされた</li>\\n<li>上記タスクの後にRetroArchを再起動してください. </li></ul>\\nコンテンツが<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">存在データベース</a>の一致が必要です. \\nまだちゃんと動けないとバグを<a href=\"https://www.github.com/libretro/RetroArch/issues\">報告</a>できます. "
+   "スキャンが成功しました. <br><br>\nコンテンツを正確にスキャンするには:\n<ul><li>互換機コアがもうダウンロードされた</li>\n<li>オンラインアップデータで'コア情報'がもうアップデートされた</li>\n<li>オンラインアップデータで'データベース'がもうアップデートされた</li>\n<li>上記タスクの後にRetroArchを再起動してください. </li></ul>\nコンテンツが<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">存在データベース</a>の一致が必要です. \nまだちゃんと動けないとバグを<a href=\"https://www.github.com/libretro/RetroArch/issues\">報告</a>できます. "
    )
 #endif

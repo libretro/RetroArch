@@ -81,28 +81,28 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "載入光碟"
+   "載入光碟片"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "載入實體光碟片，需要先載入支援光碟資料的核心。"
+   "載入實體光碟片，需預先載入支援光碟片資料的核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   "轉存光碟"
+   "轉存光碟片"
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
-   "將光碟資料轉存為映像檔並儲存於內部空間。"
+   "將光碟片資料轉存為映像檔並儲存於內部空間。"
    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   "退出光碟"
+   "退出光碟片"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
-   "從實體CD/DVD光碟機中退出光碟。"
+   "從CD/DVD實體光碟機中退出光碟片。"
    )
 #endif
 MSG_HASH(
@@ -131,7 +131,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "關閉展示模式"
+   "關閉展示模式 (需要重新啟動)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -159,7 +159,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS,
-   "程式設定"
+   "設定應用程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
@@ -183,7 +183,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_LIST,
-   "深入瞭解程式運作"
+   "深入瞭解應用程式運作的原理。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
@@ -359,7 +359,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   "更新選單佈景主題"
+   "更新選單主題資源檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
@@ -398,15 +398,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFORMATION,
-   "查看核心相關的資訊。"
+   "查看應用程式與核心相關的資訊。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   "光碟資訊"
+   "光碟片資訊"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   "查看已載入光碟相關的資訊。"
+   "查看已載入光碟片相關的資訊。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
@@ -1386,7 +1386,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   "選單佈景主題"
+   "選單主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
@@ -2270,7 +2270,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "設定按鍵連發的週期(以幀為單位)。目前設定值最小值為二，小於二無法作用。"
+   "設定連發的週期(幀)。設定值小於二無法作用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
@@ -2278,31 +2278,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "設定按鍵連發的工作週期(以幀為單位)。此設定需小於連發週期的設定值。"
+   "設定連發的工作週期。設定值必須小於連發週期。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
-   "連發功能鍵模式"
+   "連發鍵模式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
-   "設定連發功能鍵使用的模式。需先「設定 - 輸入 - 連接埠 # 控制器」自訂「 連發功能鍵」的按鍵。\\n設定為 <Classic> 時需重複操作，先按住要連發按鍵，按「 連發功能鍵」開啟連發，連發中的按鍵放開時失效。"
+   "設定連發鍵使用的模式。必須先自訂控制器選項中的「連發鍵」按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "指定連發按鍵 (限單鍵)"
+   "指定連發單鍵"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "指定當按下「連發功能鍵」時的要連發的按鍵。\\n模式設定為 <Single Button (Toggle)> 時，按「連發功能鍵」開啟指定的按鍵自動連發功能，再按一次則關閉。\\n模式設定為 <Single Button (Hold)> 時，按住「連發功能鍵」開啟指定的按鍵連發功能，放開時則停止。"
+   "連發鍵模式為「單鍵」時，指定按下連發鍵要持續連發的按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   "連發設定"
+   "連發鍵設定"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "變更控制器按鍵連發的設定。"
+   "變更控制器連發鍵的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -2392,7 +2392,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
-   "關閉時在選單中，使用 L/R 鍵滾動十個項目，使用 L2/R2 鍵按英文字母順序滾動。開啟時交換按鍵操作。"
+   "關閉時使用 L/R鍵 滾動十個項目，L2/R2鍵 依字母順序滾動。開啟時對調按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
@@ -2827,7 +2827,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "設定使用類比搖桿取代十字鍵輸入。當核心支援模擬類比搖桿時，非強制的設定會使十字鍵映射被禁用。\\n當設定為強制映射時，核心模擬類比搖桿輸入將無法使用。"
+   "設定使用類比搖桿取代十字鍵輸入。當核心支援模擬類比搖桿時，非強制的設定會使十字鍵映射被禁用。\n當設定為強制映射時，核心模擬類比搖桿輸入將無法使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -2999,7 +2999,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "連發功能鍵"
+   "連發鍵"
    )
 
 /* Settings > Latency */
@@ -3177,7 +3177,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-   "設定自動儲存非揮發性記錄記憶體的時間。僅限支援SAV格式的核心使用。\\n設定關閉時，正確關閉或結束應用程式，才會將記錄記憶體轉存成記錄存檔。"
+   "設定自動儲存非揮發性記錄記憶體的時間。僅限支援SAV格式的核心使用。\n設定關閉時，正確關閉或結束應用程式，才會將記錄記憶體轉存成記錄存檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -4837,6 +4837,14 @@ MSG_HASH(
    "允許刪除項目"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+   "依字母順序排列項目"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
+   "依照字母的順序排列項目。不包含「歷史記錄」、「圖片」、「音樂」和「影片」列表。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "核心:"
    )
@@ -4852,6 +4860,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
    "秒"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+   "管理列表"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
+   "管理列表設定與進行維護。"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -4860,12 +4876,24 @@ MSG_HASH(
    "預設核心"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
+   "設定列表項目無預設核心時，所要使用的核心。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
    "重置全部預設核心"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
    "清除列表全部項目的預設核心。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+   "變更項目標籤在列表中顯示的方式。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
+   "變更列表項目的排序方式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
@@ -5009,11 +5037,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   "選單佈景主題"
+   "選單主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
-   "設定選單佈景主題的儲存位置。"
+   "設定選單主題的資源儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
@@ -5396,7 +5424,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "掃描指定核心支援的副檔名，完成後設為列表的預設核心。當「指定副檔名」的條件時，此選項的掃描會失效。\\n設定為 <未指定> 時改用「指定副檔名」的條件掃描。"
+   "掃描指定核心支援的副檔名，完成後設為列表的預設核心。當「指定副檔名」的條件時，此選項的掃描會失效。\n設定為 <未指定> 時改用「指定副檔名」的條件掃描。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
@@ -5905,7 +5933,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST,
-   "儲存或刪除此項目的佈景主題。"
+   "儲存或刪除此項目的核心選項設定。"
    )
 
 /* Quick Menu > Options > Manage Core Options */
@@ -6049,7 +6077,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "<開啟> 大端序: 258 = 0x0102\\n<關閉> 小端序: 258 = 0x0201"
+   "<開啟> 大端序: 258 = 0x0102\n<關閉> 小端序: 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -6272,7 +6300,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
-   "儲存目前設置至「影像著色器」根目錄「retroarch.slangp」配置檔，可使用著色器快捷鍵載入。\\n儲存為應用變化配置檔時，可變更著色器通道數量，加入單通道的著色器，每次變更都需應用變化一次。"
+   "儲存目前設置至「影像著色器」根目錄「retroarch.slangp」配置檔，可使用著色器快捷鍵載入。\n儲存為應用變化配置檔時，可變更著色器通道數量，加入單通道的著色器，每次變更都需應用變化一次。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -6288,7 +6316,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
-   "設定著色器管線通道的數量。\\n每個通道 <未使用> 可載入單通道的著色器，載入後「應用變化」即可套用設定。"
+   "設定著色器管線通道的數量。\n每個通道 <未使用> 可載入單通道的著色器，載入後「應用變化」即可套用設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER,
@@ -6737,8 +6765,36 @@ MSG_HASH(
    "系統預設"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_ALPHABETICAL,
+   "依字母順序"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
    "無"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
+   "隱藏 () 內容"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
+   "隱藏 [] 內容"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
+   "隱藏 () 與 [] 內容"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
+   "只顯示地區"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
+   "只顯示光碟片數"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
+   "只顯示地區與光碟片數"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
@@ -7265,7 +7321,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "隱藏列表連字號「-」之前的所有文字，列表名稱未變更。例如: Nintendo - Switch 只顯示 Switch。"
+   "隱藏列表連接號「-」之前的文字。例如: Sony - PlayStation 只顯示 PlayStation。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -7273,7 +7329,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "截斷列表名稱開啟時，連字號之後的文字，按英文字母順序重新排序。"
+   "截斷列表名稱開啟時，連接號之後的文字，依字母順序重新排序。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
@@ -7566,7 +7622,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE,
-   "拖曳圖片至此\\n(PNG、BMP)"
+   "拖曳圖片至此\n(PNG、BMP)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
@@ -9701,19 +9757,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
-   "沒有\\n資料"
+   "沒有\n資料"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
-   "沒有\\n截圖"
+   "沒有\n截圖"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "建立\\n還原點"
+   "建立\n還原點"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "載入\\n還原點"
+   "載入\n還原點"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
@@ -9775,7 +9831,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "掃描完成。<br><br>\\n為了正確的掃描遊戲檔案。<br><br>\\n您必須:\\n<ul><li>下載對應的核心。</li>\\n<li>更新核心資料庫。</li>\\n<li>更新遊戲資料庫。</li>\\n<li>上述任一項剛完成，請先重新啟動復古電玩。</li></ul>\\n最後，掃描的檔案必須符合資料庫數據，想了解更多信息，請使用<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">線上說明</a>。<br>\\n如果仍然無法掃描，請使用<a href=\"https://www.github.com/libretro/RetroArch/issues\">錯誤回報</a>。"
+   "掃描完成。<br><br>\n為了正確的掃描遊戲檔案。<br><br>\n您必須:\n<ul><li>下載對應的核心。</li>\n<li>更新核心資料庫。</li>\n<li>更新遊戲資料庫。</li>\n<li>上述任一項剛完成，請先重新啟動復古電玩。</li></ul>\n最後，掃描的檔案必須符合資料庫數據，想了解更多信息，請使用<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">線上說明</a>。<br>\n如果仍然無法掃描，請使用<a href=\"https://www.github.com/libretro/RetroArch/issues\">錯誤回報</a>。"
    )
 #endif
 MSG_HASH(

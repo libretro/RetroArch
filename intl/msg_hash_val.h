@@ -1641,7 +1641,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Usat per calcular una velocitat d'àudio idònia segons la freqüència d'actualització d'imatge de la teua pantalla.\\nAixò s'ignorarà si l'opció 'Vídeo multifil' es troba activada."
+   "Usat per calcular una velocitat d'àudio idònia segons la freqüència d'actualització d'imatge de la teua pantalla.\nAixò s'ignorarà si l'opció 'Vídeo multifil' es troba activada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1854,7 +1854,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Indica el diferencial de posició respecte a l'eix X de l'área de visualització.\\nEste valor s'ignorarà si l'opció «Escalar usant nombres sencers» hi és activa."
+   "Indica el diferencial de posició respecte a l'eix X de l'área de visualització.\nEste valor s'ignorarà si l'opció «Escalar usant nombres sencers» hi és activa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1862,7 +1862,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Indica el diferencial de posició respecte a l'eix Y de l'área de visualització.\\nEste valor s'ignorarà si l'opció «Escalar usant nombres sencers» hi és activa."
+   "Indica el diferencial de posició respecte a l'eix Y de l'área de visualització.\nEste valor s'ignorarà si l'opció «Escalar usant nombres sencers» hi és activa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2276,7 +2276,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "Captura una imatge del contingut actual i traduïx o llegix en veu alta els textos que hi hagen.\\nCal haver activat i configurat el servei d'IA."
+   "Captura una imatge del contingut actual i traduïx o llegix en veu alta els textos que hi hagen.\nCal haver activat i configurat el servei d'IA."
    )
 
 /* Settings > Input > Port # Controls */
@@ -2538,7 +2538,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Canvia els ajustos del comptador de duració de fotogrames.\\nNomés en funcionament quan estiga desactivat el vídeo multifil."
+   "Canvia els ajustos del comptador de duració de fotogrames.\nNomés en funcionament quan estiga desactivat el vídeo multifil."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,

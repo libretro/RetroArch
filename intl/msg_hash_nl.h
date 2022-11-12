@@ -1537,7 +1537,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Verticale verversingssnelheid van uw scherm. Wordt gebruikt om een geschikte audio-ingangssnelheid te berekenen.\\nDit wordt genegeerd als 'Video met Schroefdraad' is ingeschakeld."
+   "Verticale verversingssnelheid van uw scherm. Wordt gebruikt om een geschikte audio-ingangssnelheid te berekenen.\nDit wordt genegeerd als 'Video met Schroefdraad' is ingeschakeld."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1770,7 +1770,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Aangepaste weergave-offset gebruikt voor het definiëren van de X-as positie van de weergave.\\nDeze worden genegeerd als 'Integer Schaal' is ingeschakeld."
+   "Aangepaste weergave-offset gebruikt voor het definiëren van de X-as positie van de weergave.\nDeze worden genegeerd als 'Integer Schaal' is ingeschakeld."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1778,7 +1778,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Aangepaste weergave-offset gebruikt voor het definiëren van de Y-as positie van de weergave.\\nDeze worden genegeerd als 'Integer Schaal' is ingeschakeld."
+   "Aangepaste weergave-offset gebruikt voor het definiëren van de Y-as positie van de weergave.\nDeze worden genegeerd als 'Integer Schaal' is ingeschakeld."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2596,7 +2596,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "Spoelt de huidige inhoud terug terwijl de toets wordt ingedrukt.\\n'Terugspoelen Activeren' moet ingeschakeld zijn."
+   "Spoelt de huidige inhoud terug terwijl de toets wordt ingedrukt.\n'Terugspoelen Activeren' moet ingeschakeld zijn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
@@ -2804,7 +2804,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Verhoogt de momenteel geselecteerde schijfindex.\\nVirtuele schijflade moet open zijn."
+   "Verhoogt de momenteel geselecteerde schijfindex.\nVirtuele schijflade moet open zijn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -2812,7 +2812,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Verlaagt de momenteel geselecteerde schijfindex.\\nVirtuele schijflade moet open zijn."
+   "Verlaagt de momenteel geselecteerde schijfindex.\nVirtuele schijflade moet open zijn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -2876,7 +2876,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "Legt een afbeelding vast van de huidige inhoud en vertaalt en/of leest vervolgens alle tekst op het scherm voor.\\n'AI-service' Moet ingeschakeld en geconfigureerd zijn."
+   "Legt een afbeelding vast van de huidige inhoud en vertaalt en/of leest vervolgens alle tekst op het scherm voor.\n'AI-service' Moet ingeschakeld en geconfigureerd zijn."
    )
 
 /* Settings > Input > Port # Controls */
@@ -3381,7 +3381,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "Schrijf niet-vluchtige SaveRAM-bestanden in een gearchiveerd formaat. Verkleint de bestandsgrootte drastisch ten koste van (verwaarloosbaar) langere opslag-/laadtijden.\\nAlleen van toepassing op cores die opslaan mogelijk maken via de standaard libretro SaveRAM interface."
+   "Schrijf niet-vluchtige SaveRAM-bestanden in een gearchiveerd formaat. Verkleint de bestandsgrootte drastisch ten koste van (verwaarloosbaar) langere opslag-/laadtijden.\nAlleen van toepassing op cores die opslaan mogelijk maken via de standaard libretro SaveRAM interface."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -3534,7 +3534,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Instellingen wijzigen die de frame time teller beïnvloeden.\\nAlleen actief wanneer schroefdraad-video is uitgeschakeld."
+   "Instellingen wijzigen die de frame time teller beïnvloeden.\nAlleen actief wanneer schroefdraad-video is uitgeschakeld."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -5749,19 +5749,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
-   "Raak aan voor\\nRetroArch-menu"
+   "Raak aan voor\nRetroArch-menu"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
-   "Spel\\nhervatten"
+   "Spel\nhervatten"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Bewaarpunt\\ncreëren"
+   "Bewaarpunt\ncreëren"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Bewaarpunt\\nladen"
+   "Bewaarpunt\nladen"
    )
 #endif
 #ifdef HAVE_QT

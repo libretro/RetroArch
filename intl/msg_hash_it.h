@@ -1645,7 +1645,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Frequenza di aggiornamento verticale dello schermo. Usata per calcolare una frequenza di ingresso audio adatta.\\nQuesto verrà ignorato se 'Video filettato' è abilitato."
+   "Frequenza di aggiornamento verticale dello schermo. Usata per calcolare una frequenza di ingresso audio adatta.\nQuesto verrà ignorato se 'Video filettato' è abilitato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1878,7 +1878,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Scostamento visuale personalizzato usato per definire la posizione dell'asse X della porta di visualizzazione.\\nQuesti vengono ignorati se 'Scala intera' è abilitata."
+   "Scostamento visuale personalizzato usato per definire la posizione dell'asse X della porta di visualizzazione.\nQuesti vengono ignorati se 'Scala intera' è abilitata."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1886,7 +1886,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Scostamento visuale personalizzato usato per definire la posizione dell'asse Y della porta di visualizzazione.\\nQuesti vengono ignorati se 'Scala intera' è abilitata."
+   "Scostamento visuale personalizzato usato per definire la posizione dell'asse Y della porta di visualizzazione.\nQuesti vengono ignorati se 'Scala intera' è abilitata."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2948,7 +2948,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Incrementa l'indice del disco attualmente selezionato.\\nVassoio disco virtuale deve essere aperto."
+   "Incrementa l'indice del disco attualmente selezionato.\nVassoio disco virtuale deve essere aperto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -2956,7 +2956,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Diminuisce l'indice del disco attualmente selezionato.\\nIl vassoio del disco virtuale deve essere aperto."
+   "Diminuisce l'indice del disco attualmente selezionato.\nIl vassoio del disco virtuale deve essere aperto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -3020,7 +3020,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "Cattura un'immagine del contenuto corrente, quindi traduce e/o legge ad alta voce qualsiasi testo sullo schermo.\\nIl servizio AI deve essere abilitato e configurato."
+   "Cattura un'immagine del contenuto corrente, quindi traduce e/o legge ad alta voce qualsiasi testo sullo schermo.\nIl servizio AI deve essere abilitato e configurato."
    )
 
 /* Settings > Input > Port # Controls */
@@ -3525,7 +3525,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "Scrivere file non volatili SaveRAM in un formato archiviato. Dramaticamente riduce la dimensione del file a scapito (trascurabile) dei tempi di salvataggio/caricamento aumentati.\\nSi applica solo ai core che abilitano il salvataggio tramite l'interfaccia standard libretro SaveRAM."
+   "Scrivere file non volatili SaveRAM in un formato archiviato. Dramaticamente riduce la dimensione del file a scapito (trascurabile) dei tempi di salvataggio/caricamento aumentati.\nSi applica solo ai core che abilitano il salvataggio tramite l'interfaccia standard libretro SaveRAM."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -3678,7 +3678,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Modifica le impostazioni che influenzano il contatore di tempo fotogrammi.\\nAttivo solo quando il video filettato è disabilitato."
+   "Modifica le impostazioni che influenzano il contatore di tempo fotogrammi.\nAttivo solo quando il video filettato è disabilitato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -5882,7 +5882,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Limita il numero di voci nella scaletta 'Preferiti'. Una volta raggiunto il limite, le nuove aggiunte saranno evitate fino a quando le vecchie voci non saranno rimosse. Impostare un valore di -1 permette voci 'illimitate'.\\nATTENZIONE: Ridurre il valore eliminerà le voci esistenti!"
+   "Limita il numero di voci nella scaletta 'Preferiti'. Una volta raggiunto il limite, le nuove aggiunte saranno evitate fino a quando le vecchie voci non saranno rimosse. Impostare un valore di -1 permette voci 'illimitate'.\nATTENZIONE: Ridurre il valore eliminerà le voci esistenti!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -5930,7 +5930,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Specifica quando etichettare le voci della scaletta con il nucleo attualmente associato (se ce ne sono).\\nQuesta impostazione viene ignorata quando i sottomarini della scaletta sono abilitati."
+   "Specifica quando etichettare le voci della scaletta con il nucleo attualmente associato (se ce ne sono).\nQuesta impostazione viene ignorata quando i sottomarini della scaletta sono abilitati."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -6030,7 +6030,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Seleziona il tipo di registrazione del tempo di gioco da visualizzare nelle sotto-etichetta della scaletta.\\nIl corrispondente rapporto del tempo di gioco deve essere abilitato tramite il menu delle opzioni 'Salvataggio'."
+   "Seleziona il tipo di registrazione del tempo di gioco da visualizzare nelle sotto-etichetta della scaletta.\nIl corrispondente rapporto del tempo di gioco deve essere abilitato tramite il menu delle opzioni 'Salvataggio'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -6179,7 +6179,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Consenti all'app Discord di mostrare i dati relativi al contenuto riprodotto.\\nDisponibile solo con il client desktop nativo."
+   "Consenti all'app Discord di mostrare i dati relativi al contenuto riprodotto.\nDisponibile solo con il client desktop nativo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -6549,7 +6549,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Aggiungi questa traccia audio a uno slot disponibile per il flusso audio.\\nSe non ci sono slot disponibili, verrà ignorato."
+   "Aggiungi questa traccia audio a uno slot disponibile per il flusso audio.\nSe non ci sono slot disponibili, verrà ignorato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -6557,7 +6557,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Aggiunge questa traccia audio a uno slot di flusso audio disponibile e riproducibile.\\nSe non sono disponibili slot, questa verrà ignorata."
+   "Aggiunge questa traccia audio a uno slot di flusso audio disponibile e riproducibile.\nSe non sono disponibili slot, questa verrà ignorata."
    )
 
 /* Netplay */
@@ -7457,7 +7457,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "Big Endian: 258 = 0x0102\\nPiccolo Endian: 258 = 0x0201"
+   "Big Endian: 258 = 0x0102\nPiccolo Endian: 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -7729,11 +7729,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Espellere il disco corrente, selezionare un nuovo disco dal filesystem quindi inserirlo e chiudere il vassoio del disco virtuale.\\nNOTA: Questa è una funzione legacy. Si consiglia invece di caricare titoli multi-disco tramite playlist M3U, che consentono la selezione dei dischi usando le opzioni 'Eject/Insert Disc' e 'Current Disc Index'."
+   "Espellere il disco corrente, selezionare un nuovo disco dal filesystem quindi inserirlo e chiudere il vassoio del disco virtuale.\nNOTA: Questa è una funzione legacy. Si consiglia invece di caricare titoli multi-disco tramite playlist M3U, che consentono la selezione dei dischi usando le opzioni 'Eject/Insert Disc' e 'Current Disc Index'."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Selezionare un nuovo disco dal filesystem e inserirlo senza chiudere il vassoio del disco virtuale.\\nNOTA: Questa è una caratteristica legacy. Si consiglia invece di caricare titoli multi-disco tramite playlist M3U, che consentono la selezione dei dischi utilizzando l'opzione 'Indice disco corrente'."
+   "Selezionare un nuovo disco dal filesystem e inserirlo senza chiudere il vassoio del disco virtuale.\nNOTA: Questa è una caratteristica legacy. Si consiglia invece di caricare titoli multi-disco tramite playlist M3U, che consentono la selezione dei dischi utilizzando l'opzione 'Indice disco corrente'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -12010,7 +12010,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "Comando \"%s\" non riconosciuto ricevuto.\\n"
+   "Comando \"%s\" non riconosciuto ricevuto.\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -12600,11 +12600,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
-   "Applicazione: %dx%d\\nINIZIO per resettare"
+   "Applicazione: %dx%d\nINIZIO per resettare"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_DESC,
-   "Applicazione: %dx%d - %s\\nINIZIO per resettare"
+   "Applicazione: %dx%d - %s\nINIZIO per resettare"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
@@ -13061,7 +13061,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
-   "Tocca per aprire\\nil menu Retroarch"
+   "Tocca per aprire\nil menu Retroarch"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
@@ -13069,11 +13069,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
-   "No dati\\n"
+   "No dati\n"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
-   "No schermate\\n"
+   "No schermate\n"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
@@ -13081,11 +13081,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Crea\\nRecupero"
+   "Crea\nRecupero"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Carica\\nRecupero"
+   "Carica\nRecupero"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
@@ -13147,7 +13147,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Scansione Finita.<br><br>\\nAffinché i contenuti siano scansionati correttamente, devi\\n<ul><li>avere un core compatibile già scaricato</li>\\n<li>avere \"Core Info Files\" aggiornato tramite Online Updater</li>\\n<li>avere \"Databases\" aggiornato tramite Online Updater</li>\\n<li>riavviare RetroArch se uno qualsiasi dei precedenti è stato appena fatto</li></ul>\\nInfine, il contenuto deve corrispondere ai database esistenti da <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">qui</a>. Se ancora non funziona, considera <a href=\"https://www.github.com/libretro/RetroArch/issues\">di inviare una segnalazione di bug</a>."
+   "Scansione Finita.<br><br>\nAffinché i contenuti siano scansionati correttamente, devi\n<ul><li>avere un core compatibile già scaricato</li>\n<li>avere \"Core Info Files\" aggiornato tramite Online Updater</li>\n<li>avere \"Databases\" aggiornato tramite Online Updater</li>\n<li>riavviare RetroArch se uno qualsiasi dei precedenti è stato appena fatto</li></ul>\nInfine, il contenuto deve corrispondere ai database esistenti da <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">qui</a>. Se ancora non funziona, considera <a href=\"https://www.github.com/libretro/RetroArch/issues\">di inviare una segnalazione di bug</a>."
    )
 #endif
 MSG_HASH(

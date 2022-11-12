@@ -1505,7 +1505,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertikal oppdateringsrate på skjermen. Brukes til å kalkulere en passende lydinndata rate.\\nDette vil bli ignorert hvis \"Trådet Video\" er aktivert."
+   "Vertikal oppdateringsrate på skjermen. Brukes til å kalkulere en passende lydinndata rate.\nDette vil bli ignorert hvis \"Trådet Video\" er aktivert."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1690,7 +1690,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Tilpasset visningsregion forskyvning bruk for å definere X-aksen av visningsregionen.\\nDisse er ignorert hvis \"heltall skalering\" er aktivert."
+   "Tilpasset visningsregion forskyvning bruk for å definere X-aksen av visningsregionen.\nDisse er ignorert hvis \"heltall skalering\" er aktivert."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1698,7 +1698,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Tilpasset visningsregion forskyvning bruk for å definere Y-aksen av visningsregionen.\\nDisse er ignorert hvis \"heltall skalering\" er aktivert."
+   "Tilpasset visningsregion forskyvning bruk for å definere Y-aksen av visningsregionen.\nDisse er ignorert hvis \"heltall skalering\" er aktivert."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,

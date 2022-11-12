@@ -1665,7 +1665,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "A képernyő függőleges frissítési gyakorisága. A megfelelő hangbemeneti sebesség kiszámítására szolgál.\\nEzt a rendszer figyelmen kívül hagyja, ha a \"Többszálas megjelenítés\" engedélyezve van."
+   "A képernyő függőleges frissítési gyakorisága. A megfelelő hangbemeneti sebesség kiszámítására szolgál.\nEzt a rendszer figyelmen kívül hagyja, ha a \"Többszálas megjelenítés\" engedélyezve van."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1898,7 +1898,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Az egyedi nézőablak X irányú eltolása. \\nNincs hatása egész-szorzós skálázáskor."
+   "Az egyedi nézőablak X irányú eltolása. \nNincs hatása egész-szorzós skálázáskor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1906,7 +1906,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Az egyedi nézőablak Y irányú eltolása. \\nNincs hatása egész-szorzós skálázáskor."
+   "Az egyedi nézőablak Y irányú eltolása. \nNincs hatása egész-szorzós skálázáskor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2776,7 +2776,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "Visszatekeri az aktuális tartalmat, amíg a gomb le van nyomva.\\nA \"Visszatekerés támogatása\" be kell legyen kapcsolva."
+   "Visszatekeri az aktuális tartalmat, amíg a gomb le van nyomva.\nA \"Visszatekerés támogatása\" be kell legyen kapcsolva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
@@ -2984,7 +2984,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Kiválasztja a következő lemezt. \\nA virtuális lemeztálca nyitva kell legyen."
+   "Kiválasztja a következő lemezt. \nA virtuális lemeztálca nyitva kell legyen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -2992,7 +2992,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Az előző lemezre lépteti a mutatót. \\nA virtuális lemeztálca nyitva kell legyen."
+   "Az előző lemezre lépteti a mutatót. \nA virtuális lemeztálca nyitva kell legyen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -3056,7 +3056,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "Készít egy képet az aktuális tartalomról, majd a látható szöveget lefordítja és/vagy hangosan felolvassa.\\nAz \"AI szolgáltatás\"-t be kell hozzá kapcsolni és állítani."
+   "Készít egy képet az aktuális tartalomról, majd a látható szöveget lefordítja és/vagy hangosan felolvassa.\nAz \"AI szolgáltatás\"-t be kell hozzá kapcsolni és állítani."
    )
 
 /* Settings > Input > Port # Controls */
@@ -3565,7 +3565,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "A nem törlődő SaveRAM tartalmának írása tömörített formátumban. Nagymértékben csökkenti a fájlméretet, elhanyagolható mértékben növeli a mentés/töltés idejét.\\nCsak olyan magokra érvényes, amelyek a szokásos libretro SaveRAM felületen keresztül intézik a mentést."
+   "A nem törlődő SaveRAM tartalmának írása tömörített formátumban. Nagymértékben csökkenti a fájlméretet, elhanyagolható mértékben növeli a mentés/töltés idejét.\nCsak olyan magokra érvényes, amelyek a szokásos libretro SaveRAM felületen keresztül intézik a mentést."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -3718,7 +3718,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "A képkocka idejének mérését befolyásoló beállítások.\\nCsak ha a többszálas megjelenítés ki van kapcsolva."
+   "A képkocka idejének mérését befolyásoló beállítások.\nCsak ha a többszálas megjelenítés ki van kapcsolva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -5906,7 +5906,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   "Elözmény"
+   "Előzmények"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
@@ -5926,7 +5926,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "A kedvencek maximális száma. A korlát elérésekor új elemet nem lehet hozzáadni régiek törlése nélkül. A -1 beállítás nem szab korlátot.\\nFigyelmeztetés: az érték csökkentése törli a meglevő elemeket!"
+   "A kedvencek maximális száma. A korlát elérésekor új elemet nem lehet hozzáadni régiek törlése nélkül. A -1 beállítás nem szab korlátot.\nFigyelmeztetés: az érték csökkentése törli a meglevő elemeket!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -5974,7 +5974,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "A játéklista bejegyzéseinek felcímkézése a jelenleg társított magokkal (ha épp van).\\nEz a beállítás hatástalan, ha a játéklista alcimkéi be vannak kapcsolva."
+   "A játéklista bejegyzéseinek felcímkézése a jelenleg társított magokkal (ha épp van).\nEz a beállítás hatástalan, ha a játéklista alcimkéi be vannak kapcsolva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -6078,7 +6078,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "A játéklisták alcímkéin megjelenő játékidő fajtája.\\nAz ennek megfelelő naplózást engedélyezni kell a \"Mentések\" közt."
+   "A játéklisták alcímkéin megjelenő játékidő fajtája.\nAz ennek megfelelő naplózást engedélyezni kell a \"Mentések\" közt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -6231,7 +6231,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "A Discord alkalmazás több adatot mutat meg az éppen játszott tartalomról.\\nCsak a natív asztali klienssel elérhető."
+   "A Discord alkalmazás több adatot mutat meg az éppen játszott tartalomról.\nCsak a natív asztali klienssel elérhető."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -6605,7 +6605,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "A hangsáv hozzáadása egy szabad hangfolyam helyre.\\nHa nincs szabad hely, nem történik semmi."
+   "A hangsáv hozzáadása egy szabad hangfolyam helyre.\nHa nincs szabad hely, nem történik semmi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -6613,7 +6613,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "A hangsáv hozzáadása egy szabad hangfolyam helyre, és annak elindítása.\\nHa nincs szabad hely, nem történik semmi."
+   "A hangsáv hozzáadása egy szabad hangfolyam helyre, és annak elindítása.\nHa nincs szabad hely, nem történik semmi."
    )
 
 /* Netplay */
@@ -7797,11 +7797,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "A jelenlegi lemez kiadása, új lemez választása a fájlrendszerből, majd annak behelyezése és a virtuális lemeztálca becsukása. \\n Figyelem: ez egy elavult funkció. A többlemezes tartalmakat ajánlott inkább M3U lejátszási listákon keresztül betölteni, amikor is a lemezek közt az \"Lemez kiadása/behelyezése\" és az \"Aktuális lemez sorszáma\" funkciókkal lehet váltogatni."
+   "A jelenlegi lemez kiadása, új lemez választása a fájlrendszerből, majd annak behelyezése és a virtuális lemeztálca becsukása. \n Figyelem: ez egy elavult funkció. A többlemezes tartalmakat ajánlott inkább M3U lejátszási listákon keresztül betölteni, amikor is a lemezek közt az \"Lemez kiadása/behelyezése\" és az \"Aktuális lemez sorszáma\" funkciókkal lehet váltogatni."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Új lemez választása a fájlrendszerből, majd annak behelyezése, de a virtuális lemeztálca becsukása nélkül. \\n Figyelem: ez egy elavult funkció. A többlemezes tartalmakat ajánlott inkább M3U lejátszási listákon keresztül betölteni, amikor is a lemezek közt az \"Aktuális lemez sorszáma\" funkcióval lehet váltogatni."
+   "Új lemez választása a fájlrendszerből, majd annak behelyezése, de a virtuális lemeztálca becsukása nélkül. \n Figyelem: ez egy elavult funkció. A többlemezes tartalmakat ajánlott inkább M3U lejátszási listákon keresztül betölteni, amikor is a lemezek közt az \"Aktuális lemez sorszáma\" funkcióval lehet váltogatni."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -11910,7 +11910,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "Ismeretlen \"%s\" parancs fogadása.\\n"
+   "Ismeretlen \"%s\" parancs fogadása.\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -12500,11 +12500,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
-   "Alkalmazás: %dx%d\\nA Start gombbal visszaállítható"
+   "Alkalmazás: %dx%d\nA Start gombbal visszaállítható"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_DESC,
-   "Alkalmazás: %dx%d - %s\\nA Start gombbal visszaállítható"
+   "Alkalmazás: %dx%d - %s\nA Start gombbal visszaállítható"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
@@ -12961,7 +12961,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
-   "Érintsd meg az érintőképernyőt\\na RetroArch menübe lépéshez"
+   "Érintsd meg az érintőképernyőt\na RetroArch menübe lépéshez"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
@@ -12969,11 +12969,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
-   "Nincs\\nadat"
+   "Nincs\nadat"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
-   "Nincs\\nképernyőkép"
+   "Nincs\nképernyőkép"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
@@ -12981,11 +12981,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Játékállás\\nlétrehozása"
+   "Játékállás\nlétrehozása"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Játékállás\\nbetöltése"
+   "Játékállás\nbetöltése"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
@@ -13047,7 +13047,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Beolvasás kész.<br><br>\\nA sikeres beolvasáshoz ezek szükségesek:\\n<ul><li>már letöltött, kompatibilis mag</li>\\n<li>mag információs fájlok frissítése az online frissítővel</li>\\n<li>adatbázisok frissítése az online frissítővel</li>\\n<li>a RetroArch újraindítása, ha ezek még csak most történtek meg</li></ul>\\nVégül, a tartalom megtalálható kell legyen az <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">itteni</a> adatbázisokban. Ha ennek ellenére nem működik, javasolt <a href=\"https://www.github.com/libretro/RetroArch/issues\">a hiba bejelentése</a>."
+   "Beolvasás kész.<br><br>\nA sikeres beolvasáshoz ezek szükségesek:\n<ul><li>már letöltött, kompatibilis mag</li>\n<li>mag információs fájlok frissítése az online frissítővel</li>\n<li>adatbázisok frissítése az online frissítővel</li>\n<li>a RetroArch újraindítása, ha ezek még csak most történtek meg</li></ul>\nVégül, a tartalom megtalálható kell legyen az <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">itteni</a> adatbázisokban. Ha ennek ellenére nem működik, javasolt <a href=\"https://www.github.com/libretro/RetroArch/issues\">a hiba bejelentése</a>."
    )
 #endif
 MSG_HASH(

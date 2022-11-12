@@ -1649,7 +1649,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Prędkość odświeżania ekranu w pionie. Używane do obliczania odpowiedniej szybkości wprowadzania dźwięku.\\nZostanie to zignorowane, jeśli włączona jest opcja 'Wideo wątkowe'."
+   "Prędkość odświeżania ekranu w pionie. Używane do obliczania odpowiedniej szybkości wprowadzania dźwięku.\nZostanie to zignorowane, jeśli włączona jest opcja 'Wideo wątkowe'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1862,7 +1862,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Własne przesunięcie widoku używane do zdefiniowania pozycji osi X widoku.\\nSą one ignorowane, jeśli 'Skala całkowita' jest włączona."
+   "Własne przesunięcie widoku używane do zdefiniowania pozycji osi X widoku.\nSą one ignorowane, jeśli 'Skala całkowita' jest włączona."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1870,7 +1870,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Własne przesunięcie widoku używane do zdefiniowania położenia osi Y widoku.\\nSą one ignorowane, jeśli włączona jest „skala całkowita”."
+   "Własne przesunięcie widoku używane do zdefiniowania położenia osi Y widoku.\nSą one ignorowane, jeśli włączona jest „skala całkowita”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2688,7 +2688,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "Przerywa bieżącą zawartość podczas trzymania klucza.\\n'Wsparcie przewijania' musi być włączone."
+   "Przerywa bieżącą zawartość podczas trzymania klucza.\n'Wsparcie przewijania' musi być włączone."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
@@ -2896,7 +2896,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Zwiększa aktualnie wybrany indeks dysków.\\nPamięć dysku wirtualnego musi być otwarta."
+   "Zwiększa aktualnie wybrany indeks dysków.\nPamięć dysku wirtualnego musi być otwarta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -2904,7 +2904,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Zmniejsza aktualnie wybrany indeks dysków.\\nZestaw płyt wirtualnych musi być otwarty."
+   "Zmniejsza aktualnie wybrany indeks dysków.\nZestaw płyt wirtualnych musi być otwarty."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -2968,7 +2968,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "Przechwytuje obraz bieżącej zawartości, a następnie przetłumacza i/lub odczyta każdy tekst na ekranie.\\n\"Usługa AI\" musi być włączona i skonfigurowana."
+   "Przechwytuje obraz bieżącej zawartości, a następnie przetłumacza i/lub odczyta każdy tekst na ekranie.\n\"Usługa AI\" musi być włączona i skonfigurowana."
    )
 
 /* Settings > Input > Port # Controls */
@@ -3445,7 +3445,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "Napisz niezmienne pliki SaveRAM w formacie zarchiwizowanym. Dramatycznie zmniejsza rozmiar pliku kosztem (nieznacznego) zwiększonego czasu oszczędzania/wczytywania.\\nDotyczy tylko rdzeni umożliwiających oszczędzanie poprzez standardowy interfejs zapisu pamięci RAM libretro."
+   "Napisz niezmienne pliki SaveRAM w formacie zarchiwizowanym. Dramatycznie zmniejsza rozmiar pliku kosztem (nieznacznego) zwiększonego czasu oszczędzania/wczytywania.\nDotyczy tylko rdzeni umożliwiających oszczędzanie poprzez standardowy interfejs zapisu pamięci RAM libretro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -3598,7 +3598,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Zmień ustawienia mające wpływ na licznik czasu klatki.\\nAktywne tylko wtedy, gdy gwintowane wideo jest wyłączone."
+   "Zmień ustawienia mające wpływ na licznik czasu klatki.\nAktywne tylko wtedy, gdy gwintowane wideo jest wyłączone."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -5770,7 +5770,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Określ kiedy tagować wpisy z aktualnie przypisanym rdzeniem (jeśli istnieje).\\nTo ustawienie jest ignorowane gdy wyświetlane są podetykiety listy odtwarzania."
+   "Określ kiedy tagować wpisy z aktualnie przypisanym rdzeniem (jeśli istnieje).\nTo ustawienie jest ignorowane gdy wyświetlane są podetykiety listy odtwarzania."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -5862,7 +5862,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Wybierz typ rekordu dziennika czasu pracy do wyświetlenia na podetykietach listy odtwarzania.\\nOdpowiedni dziennik czasu pracy musi być włączony za pomocą menu opcji \"Oszczędzanie\"."
+   "Wybierz typ rekordu dziennika czasu pracy do wyświetlenia na podetykietach listy odtwarzania.\nOdpowiedni dziennik czasu pracy musi być włączony za pomocą menu opcji \"Oszczędzanie\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -6015,7 +6015,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Zezwalaj aplikacji Discorda na wyświetlanie danych o odtwarzanej treści.\\nDostępne tylko z natywnym klientem pulpitu."
+   "Zezwalaj aplikacji Discorda na wyświetlanie danych o odtwarzanej treści.\nDostępne tylko z natywnym klientem pulpitu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -6365,7 +6365,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Dodaj tę ścieżkę audio do dostępnego gniazda strumienia audio.\\nJeśli żadne gniazda nie są obecnie dostępne, zostanie ona zignorowana."
+   "Dodaj tę ścieżkę audio do dostępnego gniazda strumienia audio.\nJeśli żadne gniazda nie są obecnie dostępne, zostanie ona zignorowana."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -6373,7 +6373,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Dodaj tę ścieżkę audio do dostępnego gniazda strumienia audio i odtwarzaj ją.\\nJeśli nie ma dostępnych gniazd, zostanie ona zignorowana."
+   "Dodaj tę ścieżkę audio do dostępnego gniazda strumienia audio i odtwarzaj ją.\nJeśli nie ma dostępnych gniazd, zostanie ona zignorowana."
    )
 
 /* Netplay */
@@ -7449,11 +7449,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Usuń bieżący dysk, wybierz nowy dysk z systemu plików, a następnie wstaw go i zamknij wirtualną tarczę.\\nUWAGA: To jest starsza funkcja. Zamiast tego zaleca się wczytywanie wielodyskowych tytułów przez listy odtwarzania M3U, które pozwalają na wybór dysku przy użyciu opcji 'Eject/Insert Disc' i 'Current Disc Index'."
+   "Usuń bieżący dysk, wybierz nowy dysk z systemu plików, a następnie wstaw go i zamknij wirtualną tarczę.\nUWAGA: To jest starsza funkcja. Zamiast tego zaleca się wczytywanie wielodyskowych tytułów przez listy odtwarzania M3U, które pozwalają na wybór dysku przy użyciu opcji 'Eject/Insert Disc' i 'Current Disc Index'."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Wybierz nowy dysk z systemu plików i wstaw go bez zamykania wirtualnej tarczy dysku.\\nUWAGA: To jest starsza funkcja. Zamiast tego zaleca się wczytywanie wielodyskowych tytułów przez listy odtwarzania M3U, które umożliwiają wybór dysku przy użyciu opcji 'Aktualny indeks dysku'."
+   "Wybierz nowy dysk z systemu plików i wstaw go bez zamykania wirtualnej tarczy dysku.\nUWAGA: To jest starsza funkcja. Zamiast tego zaleca się wczytywanie wielodyskowych tytułów przez listy odtwarzania M3U, które umożliwiają wybór dysku przy użyciu opcji 'Aktualny indeks dysku'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -11714,7 +11714,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "Nieznane polecenie \"%s\".\\n"
+   "Nieznane polecenie \"%s\".\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -12228,11 +12228,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
-   "Zastosowanie: %dx%d\\nROZPOCZNIJ aby zresetować"
+   "Zastosowanie: %dx%d\nROZPOCZNIJ aby zresetować"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_DESC,
-   "Zastosowanie: %dx%d - %s\\nROZPOCZNIJ aby zresetować"
+   "Zastosowanie: %dx%d - %s\nROZPOCZNIJ aby zresetować"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
@@ -12673,7 +12673,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
-   "Dotknij ekranu dotykowego,\\naby przejść do menu"
+   "Dotknij ekranu dotykowego,\naby przejść do menu"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
@@ -12681,11 +12681,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
-   "Brak\\nDanych"
+   "Brak\nDanych"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
-   "Brak\\nZrzutu ekranu"
+   "Brak\nZrzutu ekranu"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
@@ -12693,16 +12693,16 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Utwórz\\nPunkt przywracania"
+   "Utwórz\nPunkt przywracania"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Załaduj\\nPunkt przywracania"
+   "Załaduj\nPunkt przywracania"
    )
 #endif
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Skanowanie zakończone.<br><br>\\nW celu poprawnego skanowania treści, musisz:\\n<ul><li>mieć już pobrany kompatybilny rdzeń</li>\\n<li>zaktualizować \"Pliki informacji rdzenia\" za pomocą aktualizatora online</li>\\n<li>mieć zaktualizowane \"Bazy Danych\" za pomocą aktualizatora online</li>\\n<li>zrestartować RetroArch, jeśli którakolwiek z powyższych operacji właśnie została wykonana</li></ul>\\nNa koniec, zawartość musi pasować do istniejących baz danych z <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">tutaj</a>. Jeśli nadal nie działa, rozważ <a href=\"https://www.github.com/libretro/RetroArch/issues\">wysłanie zgłoszenia błędu</a>."
+   "Skanowanie zakończone.<br><br>\nW celu poprawnego skanowania treści, musisz:\n<ul><li>mieć już pobrany kompatybilny rdzeń</li>\n<li>zaktualizować \"Pliki informacji rdzenia\" za pomocą aktualizatora online</li>\n<li>mieć zaktualizowane \"Bazy Danych\" za pomocą aktualizatora online</li>\n<li>zrestartować RetroArch, jeśli którakolwiek z powyższych operacji właśnie została wykonana</li></ul>\nNa koniec, zawartość musi pasować do istniejących baz danych z <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">tutaj</a>. Jeśli nadal nie działa, rozważ <a href=\"https://www.github.com/libretro/RetroArch/issues\">wysłanie zgłoszenia błędu</a>."
    )
 #endif

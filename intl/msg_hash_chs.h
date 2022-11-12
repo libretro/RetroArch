@@ -1689,7 +1689,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "屏幕的垂直刷新率。用于计算适当的音频输入速率。\\n如果启用了「视频独立线程」，此选项将被忽略。"
+   "屏幕的垂直刷新率。用于计算适当的音频输入速率。\n如果启用了「视频独立线程」，此选项将被忽略。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1902,7 +1902,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "自定义 X 轴视图偏移量。\\n如果启用「整数缩放」则忽略此选项。"
+   "自定义 X 轴视图偏移量。\n如果启用「整数缩放」则忽略此选项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1910,7 +1910,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "自定义 Y 轴视图偏移量。\\n如果启用「整数缩放」则忽略此选项。"
+   "自定义 Y 轴视图偏移量。\n如果启用「整数缩放」则忽略此选项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2712,7 +2712,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "按下按键时回溯当前游戏。\\n必须打开「启用回溯」选项。"
+   "按下按键时回溯当前游戏。\n必须打开「启用回溯」选项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
@@ -2888,7 +2888,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "增加当前选中光盘的编号。\\n虚拟光盘托盘必须打开。"
+   "增加当前选中光盘的编号。\n虚拟光盘托盘必须打开。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -2896,7 +2896,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "增加当前选中光盘的编号。\\n虚拟光盘托盘必须打开。"
+   "增加当前选中光盘的编号。\n虚拟光盘托盘必须打开。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -2960,7 +2960,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "抓取当前游戏画面，然后翻译或朗读文字。\\n必须启用和配置「AI 服务」。"
+   "抓取当前游戏画面，然后翻译或朗读文字。\n必须启用和配置「AI 服务」。"
    )
 
 /* Settings > Input > Port # Controls */
@@ -3425,7 +3425,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "以压缩包格式写入非易失卡带内存文件。这会大幅减小文件大小，但是会增加保存/加载时间(很小，可忽略)。\\n仅用于使用标准全能模拟器卡带内存接口的核心。"
+   "以压缩包格式写入非易失卡带内存文件。这会大幅减小文件大小，但是会增加保存/加载时间(很小，可忽略)。\n仅用于使用标准全能模拟器卡带内存接口的核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -3578,7 +3578,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "更改影响帧时间计数器的设置。\\n仅当线程视频禁用时才激活。"
+   "更改影响帧时间计数器的设置。\n仅当线程视频禁用时才激活。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -5305,7 +5305,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-   "为测试目的而打开或关闭非官方成就\\n和测试版特性。"
+   "为测试目的而打开或关闭非官方成就\n和测试版特性。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
@@ -5356,7 +5356,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-   "是否使用公共的在线游戏网络。\\n如果未设置，客户端必须手动连接而不使用\\n公共的在线游戏网络。"
+   "是否使用公共的在线游戏网络。\n如果未设置，客户端必须手动连接而不使用\n公共的在线游戏网络。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
@@ -5364,7 +5364,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "通过代理服务器进行网络连接。如果主机位于\\n防火墙之后或具有NAT／UPnP问题时，建议开启。"
+   "通过代理服务器进行网络连接。如果主机位于\n防火墙之后或具有NAT／UPnP问题时，建议开启。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
@@ -5372,7 +5372,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "选择一个代理服务器。服务器位置较近的\\n一般网络延迟更低。"
+   "选择一个代理服务器。服务器位置较近的\n一般网络延迟更低。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
@@ -5460,7 +5460,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "设置按键延迟以掩盖网络延迟。\\n用按键延迟换取在线游戏时降低 CPU 负载\\n并减少顿卡。"
+   "设置按键延迟以掩盖网络延迟。\n用按键延迟换取在线游戏时降低 CPU 负载\n并减少顿卡。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -5468,7 +5468,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "设置按键延迟范围以掩盖网络的延迟。\\n用一定的按键延迟换取在线游戏时\\n降低 CPU 负载并减少顿卡。"
+   "设置按键延迟范围以掩盖网络的延迟。\n用一定的按键延迟换取在线游戏时\n降低 CPU 负载并减少顿卡。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -5476,7 +5476,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-   "当联机时，侦听来自公共互联网的连接，\\n使用 UPnP 或类似的技术来规避局域网问题。"
+   "当联机时，侦听来自公共互联网的连接，\n使用 UPnP 或类似的技术来规避局域网问题。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
@@ -5650,7 +5650,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "指定何时将列表条目绑定当前关联的核心(如果有的话)。\\n当显示列表子标签时，此设置会被忽略。"
+   "指定何时将列表条目绑定当前关联的核心(如果有的话)。\n当显示列表子标签时，此设置会被忽略。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -5746,7 +5746,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "选择游戏列表子标签显示的运行时间记录类型。\\n对应的运行时间记录必须通过菜单的「保存」选项启用。"
+   "选择游戏列表子标签显示的运行时间记录类型。\n对应的运行时间记录必须通过菜单的「保存」选项启用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -5899,7 +5899,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "允许 Discord 应用显示您当前游玩的游戏信息。\\n此选项仅适用于官方桌面客户端。"
+   "允许 Discord 应用显示您当前游玩的游戏信息。\n此选项仅适用于官方桌面客户端。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -6261,7 +6261,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "添加音轨到可用的音频流位。\\n如果没有可用的位，将会被忽略。"
+   "添加音轨到可用的音频流位。\n如果没有可用的位，将会被忽略。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -6269,7 +6269,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "添加音轨到可用的音频流位并播放。\\n如果没有可用的位，将会被忽略。"
+   "添加音轨到可用的音频流位并播放。\n如果没有可用的位，将会被忽略。"
    )
 
 /* Netplay */
@@ -7093,7 +7093,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "大端：258 = 0x0102\\n小端：258 = 0x0201"
+   "大端：258 = 0x0102\n小端：258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -7365,11 +7365,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "弹出当前光盘，从文件系统中选择新光盘然后插入并关闭虚拟光驱托盘。\\n注意：这是一个遗留功能。建议使用 M3U 列表加载多光盘游戏代替这项功能，因为它的光盘选择功能支持「弹出/插入光盘」和「光盘编号」选项。"
+   "弹出当前光盘，从文件系统中选择新光盘然后插入并关闭虚拟光驱托盘。\n注意：这是一个遗留功能。建议使用 M3U 列表加载多光盘游戏代替这项功能，因为它的光盘选择功能支持「弹出/插入光盘」和「光盘编号」选项。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "从文件系统中选择新光盘并插入，而不关闭虚拟光驱托盘。\\n注意：这是一个遗留功能。建议使用 M3U 播放列表加载多光盘游戏代替这项功能，因为它的「光盘编号」选项支持光盘选择功能。"
+   "从文件系统中选择新光盘并插入，而不关闭虚拟光驱托盘。\n注意：这是一个遗留功能。建议使用 M3U 播放列表加载多光盘游戏代替这项功能，因为它的「光盘编号」选项支持光盘选择功能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -7432,7 +7432,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
-   "对渲染器配置的更改将立即生效。\\n建议调试渲染器各项属性的用户开启此项。"
+   "对渲染器配置的更改将立即生效。\n建议调试渲染器各项属性的用户开启此项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -11534,7 +11534,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "收到无法识别的命令 \"%s\"。\\n"
+   "收到无法识别的命令 \"%s\"。\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -12068,7 +12068,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
-   "正在应用： %dx%d\\n按“开始”键重置"
+   "正在应用： %dx%d\n按“开始”键重置"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
@@ -12551,7 +12551,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "扫描完成。<br><br>\\n为了是游戏被正确扫描，您必须：\\n<ul><li>已下载了兼容的核心</li>\\n<li>已更新了「核心信息文件」</li>\\n<li>已更新了「Databases」</li>\\n<li>更新后重启全能模拟器</li></ul>\\n最后，游戏 ROM 必须匹配<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">数据库</a>。如果仍然不行，<a href=\"https://www.github.com/libretro/RetroArch/issues\">请报告 BUG</a>。"
+   "扫描完成。<br><br>\n为了是游戏被正确扫描，您必须：\n<ul><li>已下载了兼容的核心</li>\n<li>已更新了「核心信息文件」</li>\n<li>已更新了「Databases」</li>\n<li>更新后重启全能模拟器</li></ul>\n最后，游戏 ROM 必须匹配<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">数据库</a>。如果仍然不行，<a href=\"https://www.github.com/libretro/RetroArch/issues\">请报告 BUG</a>。"
    )
 #endif
 MSG_HASH(

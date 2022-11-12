@@ -1493,7 +1493,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertikalna brzina osvežavanja ekrana. Koristi se za računanje pogodne ulazne stope zvuka.\\nOvo će biti ignorisano ako je uključena opcija 'Podeli video u niti'."
+   "Vertikalna brzina osvežavanja ekrana. Koristi se za računanje pogodne ulazne stope zvuka.\nOvo će biti ignorisano ako je uključena opcija 'Podeli video u niti'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1678,7 +1678,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Postavi ofset za prozor prikaza kada se definiše pozicija prozora prikaza na X osi.\\nOvo se ignoriše ako je 'Celobrojno skaliranje' uključeno."
+   "Postavi ofset za prozor prikaza kada se definiše pozicija prozora prikaza na X osi.\nOvo se ignoriše ako je 'Celobrojno skaliranje' uključeno."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1686,7 +1686,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Postavi ofset za prozor prikaza kada se definiše pozicija prozora prikaza na Y osi.\\nOvo se ignoriše ako je 'Celobrojno skaliranje' uključeno."
+   "Postavi ofset za prozor prikaza kada se definiše pozicija prozora prikaza na Y osi.\nOvo se ignoriše ako je 'Celobrojno skaliranje' uključeno."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,

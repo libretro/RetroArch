@@ -1661,7 +1661,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Renseigne la fréquence de rafraîchissement vertical actuelle de votre écran. Elle sera utilisée pour calculer un débit audio approprié.\\nCette option sera ignorée si 'Vidéo sur plusieurs fils d'exécution' est activé."
+   "Renseigne la fréquence de rafraîchissement vertical actuelle de votre écran. Elle sera utilisée pour calculer un débit audio approprié.\nCette option sera ignorée si 'Vidéo sur plusieurs fils d'exécution' est activé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1894,7 +1894,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Décalage de la fenêtre d'affichage sur l'axe X.\\nCette option sera ignorée si l'option 'Échelle à l'entier' est activée."
+   "Décalage de la fenêtre d'affichage sur l'axe X.\nCette option sera ignorée si l'option 'Échelle à l'entier' est activée."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1902,7 +1902,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Décalage de la fenêtre d'affichage sur l'axe Y.\\nCette option sera ignorée si l'option 'Échelle à l'entier' est activée."
+   "Décalage de la fenêtre d'affichage sur l'axe Y.\nCette option sera ignorée si l'option 'Échelle à l'entier' est activée."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2756,7 +2756,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "En maintenant la touche, cela active le rembobinage.\\n'Prise en charge du rembobinage' doit être activé."
+   "En maintenant la touche, cela active le rembobinage.\n'Prise en charge du rembobinage' doit être activé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
@@ -2964,7 +2964,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Incrémente le numéro du disque sélectionné actuellement.\\nLe plateau du lecteur de disque virtuel doit être ouvert."
+   "Incrémente le numéro du disque sélectionné actuellement.\nLe plateau du lecteur de disque virtuel doit être ouvert."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -2972,7 +2972,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Décrémente le numéro du disque sélectionné actuellement.\\nLe plateau du lecteur de disque virtuel doit être ouvert."
+   "Décrémente le numéro du disque sélectionné actuellement.\nLe plateau du lecteur de disque virtuel doit être ouvert."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -3036,7 +3036,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "Capture une image du contenu actuel puis traduit et/ou lit à haute voix tout texte à l'écran.\\n'Service IA' doit être activé et configuré."
+   "Capture une image du contenu actuel puis traduit et/ou lit à haute voix tout texte à l'écran.\n'Service IA' doit être activé et configuré."
    )
 
 /* Settings > Input > Port # Controls */
@@ -3541,7 +3541,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "Enregistrer la mémoire SRAM non volatile sous un format archivé. Réduit considérablement la taille du fichier au détriment de l'augmentation (négligeable) des temps de sauvegarde/chargement.\\nS'applique uniquement aux cœurs qui peuvent sauvegarder via l'interface Save RAM standard de libretro."
+   "Enregistrer la mémoire SRAM non volatile sous un format archivé. Réduit considérablement la taille du fichier au détriment de l'augmentation (négligeable) des temps de sauvegarde/chargement.\nS'applique uniquement aux cœurs qui peuvent sauvegarder via l'interface Save RAM standard de libretro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -3694,7 +3694,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Modifier les paramètres qui influent sur le compteur de temps par image.\\nActif uniquement lorsque la vidéo sur plusieurs fils d'exécution est désactivée."
+   "Modifier les paramètres qui influent sur le compteur de temps par image.\nActif uniquement lorsque la vidéo sur plusieurs fils d'exécution est désactivée."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -5409,8 +5409,24 @@ MSG_HASH(
    "Utiliser une animation lisse pour l'affichage de texte trop long dans le menu. A un faible impact sur les performances."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+   "Se souvenir de la sélection lors du changement d'onglets"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
+   "Se souvenir de la position du curseur dans le menu lors du passage à un autre onglet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
    "Toujours"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
+   "Uniquement pour les listes de lecture"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
+   "Uniquement pour le menu principal et les réglages"
    )
 
 /* Settings > AI Service */
@@ -5894,7 +5910,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Limite le nombre d'entrées dans la liste 'Favoris'. Une fois la limite atteinte, les nouveaux ajouts seront empêchés à moins que d'anciens éléments ne soient supprimés. Définir une valeur de -1 permet un nombre d'entrées 'illimitées'.\\nATTENTION : Diminuer la valeur effacera des entrées existantes !"
+   "Limite le nombre d'entrées dans la liste 'Favoris'. Une fois la limite atteinte, les nouveaux ajouts seront empêchés à moins que d'anciens éléments ne soient supprimés. Définir une valeur de -1 permet un nombre d'entrées 'illimitées'.\nATTENTION : Diminuer la valeur effacera des entrées existantes !"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -5942,7 +5958,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Indique quand marquer les entrées de la liste de lecture avec leur cœur actuellement associé (le cas échéant).\\nCe réglage sera ignoré si les sous-étiquettes de la liste de lecture sont activées."
+   "Indique quand marquer les entrées de la liste de lecture avec leur cœur actuellement associé (le cas échéant).\nCe réglage sera ignoré si les sous-étiquettes de la liste de lecture sont activées."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -6038,7 +6054,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "Sélectionner le type d'enregistrement du temps de jeu à afficher dans les sous-étiquettes des listes de lecture.\\nLe journal du temps de jeu correspondant doit être activé via le menu d'options 'Sauvegarde'."
+   "Sélectionner le type d'enregistrement du temps de jeu à afficher dans les sous-étiquettes des listes de lecture.\nLe journal du temps de jeu correspondant doit être activé via le menu d'options 'Sauvegarde'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -6191,7 +6207,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Permettre à l'application Discord d'afficher des données sur le contenu joué.\\nUniquement disponible avec le client de bureau natif."
+   "Permettre à l'application Discord d'afficher des données sur le contenu joué.\nUniquement disponible avec le client de bureau natif."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -6569,7 +6585,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Ajouter cette piste audio dans un emplacement de diffusion audio disponible.\\nSi aucun emplacement n'est disponible, elle sera ignorée."
+   "Ajouter cette piste audio dans un emplacement de diffusion audio disponible.\nSi aucun emplacement n'est disponible, elle sera ignorée."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -6577,7 +6593,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Ajouter cette piste audio dans un emplacement de diffusion audio disponible et la lire.\\nSi aucun emplacement n'est disponible, elle sera ignorée."
+   "Ajouter cette piste audio dans un emplacement de diffusion audio disponible et la lire.\nSi aucun emplacement n'est disponible, elle sera ignorée."
    )
 
 /* Netplay */
@@ -7481,7 +7497,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "Gros-boutienne : 258 = 0x0102\\nPetit-boutienne : 258 = 0x0201"
+   "Gros-boutienne : 258 = 0x0102\nPetit-boutienne : 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -7737,11 +7753,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Éjecte le disque actuel, sélectionne un nouveau disque dans le système de fichiers, puis l'insère et ferme le plateau du lecteur de disque virtuel.\\nREMARQUE : C'est une fonctionnalité obsolète. Il est plutôt recommandé de charger des titres multi-disques via des listes de lecture M3U, qui permettent la sélection du disque en utilisant les options 'Éjecter/Insérer le disque' et 'Numéro du disque actuel'."
+   "Éjecte le disque actuel, sélectionne un nouveau disque dans le système de fichiers, puis l'insère et ferme le plateau du lecteur de disque virtuel.\nREMARQUE : C'est une fonctionnalité obsolète. Il est plutôt recommandé de charger des titres multi-disques via des listes de lecture M3U, qui permettent la sélection du disque en utilisant les options 'Éjecter/Insérer le disque' et 'Numéro du disque actuel'."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Sélectionne un nouveau disque dans le système de fichiers puis l'insère sans fermer le plateau du lecteur de disque virtuel.\\nREMARQUE : C'est une fonctionnalité obsolète. Il est plutôt recommandé de charger des titres multi-disques via des listes de lecture M3U, qui permettent la sélection du disque en utilisant l'option 'Numéro du disque actuel'."
+   "Sélectionne un nouveau disque dans le système de fichiers puis l'insère sans fermer le plateau du lecteur de disque virtuel.\nREMARQUE : C'est une fonctionnalité obsolète. Il est plutôt recommandé de charger des titres multi-disques via des listes de lecture M3U, qui permettent la sélection du disque en utilisant l'option 'Numéro du disque actuel'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -12094,7 +12110,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "Commande \"%s\" reçue non reconnue.\\n"
+   "Commande \"%s\" reçue non reconnue.\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -12684,11 +12700,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
-   "Application de : %dx%d\\nSTART pour réinitialiser"
+   "Application de : %dx%d\nSTART pour réinitialiser"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_DESC,
-   "Application de : %dx%d - %s\\nSTART pour réinitialiser"
+   "Application de : %dx%d - %s\nSTART pour réinitialiser"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
@@ -13137,7 +13153,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
-   "Touchez l'écran tactile\\npour ouvrir le menu de\\nRetroarch."
+   "Touchez l'écran tactile\npour ouvrir le menu de\nRetroarch."
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
@@ -13145,23 +13161,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
-   "Aucunes\\ndonnées"
+   "Aucunes\ndonnées"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
-   "Pas de\\ncaptures d'écran"
+   "Pas de\ncaptures d'écran"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
-   "Continuer\\nla partie"
+   "Continuer\nla partie"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Établir le\\npoint de\\nrécupération"
+   "Établir le\npoint de\nrécupération"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Reprendre au\\npoint de\\nrécupération"
+   "Reprendre au\npoint de\nrécupération"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
@@ -13223,7 +13239,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Scan terminé.<br><br>\\nPour que le contenu soit correctement analysé, vous devez :\\n<ul><li>avoir un cœur compatible déjà téléchargé</li>\\n<li>avoir les \"Fichiers d'information de cœurs\" à jour via la mise à jour en ligne</li>\\n<li>avoir les \"Bases de données\" à jour via la mise à jour en ligne</li>\\n<li>redémarrer RetroArch si l'une des opérations ci-dessus vient d'être effectuée</li></ul>\\nEnfin, le contenu doit correspondre aux bases de données existantes <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">ici</a>. Si cela ne fonctionne toujours pas, veuillez envisager de <a href=\"https://www.github.com/libretro/RetroArch/issues\">soumettre un rapport d'erreur</a>."
+   "Scan terminé.<br><br>\nPour que le contenu soit correctement analysé, vous devez :\n<ul><li>avoir un cœur compatible déjà téléchargé</li>\n<li>avoir les \"Fichiers d'information de cœurs\" à jour via la mise à jour en ligne</li>\n<li>avoir les \"Bases de données\" à jour via la mise à jour en ligne</li>\n<li>redémarrer RetroArch si l'une des opérations ci-dessus vient d'être effectuée</li></ul>\nEnfin, le contenu doit correspondre aux bases de données existantes <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">ici</a>. Si cela ne fonctionne toujours pas, veuillez envisager de <a href=\"https://www.github.com/libretro/RetroArch/issues\">soumettre un rapport d'erreur</a>."
    )
 #endif
 MSG_HASH(
