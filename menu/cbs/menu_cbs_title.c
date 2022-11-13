@@ -869,8 +869,9 @@ static int action_get_title_default(const char *path, const char *label,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
    if (!string_is_empty(path))
    {
-      s[_len  ] = ' ';
-      s[_len+1] = '\0';
+      s[_len  ] = ':';
+      s[_len+1] = ' ';
+      s[_len+2] = '\0';
       strlcat(s, path, len);
    }
 

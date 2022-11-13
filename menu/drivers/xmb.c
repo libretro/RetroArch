@@ -2717,7 +2717,8 @@ static void xmb_populate_entries(void *data,
     * > Note: MENU_ENUM_LABEL_FAVORITES is always set
     *   as the 'label' when navigating directories after
     *   selecting 'load content' */
-   xmb->is_file_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES));
+   xmb->is_file_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER));
 
    /* Determine whether this is the quick menu */
    xmb->is_quick_menu = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) ||
@@ -2819,13 +2820,12 @@ static void xmb_populate_entries(void *data,
       xmb_set_thumbnail_content(xmb, "");
       xmb_update_thumbnail_image(xmb);
    }
-
    /* Hack: XMB gets into complete muddle when
     * performing 'complex' directory navigation
     * via 'load content'. We have to work around
     * this by resetting thumbnails whenever a
     * file list is populated... */
-   if (xmb->is_file_list)
+   else if (xmb->is_file_list)
    {
       xmb->fullscreen_thumbnails_available = false;
       xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
@@ -2833,6 +2833,9 @@ static void xmb_populate_entries(void *data,
       gfx_thumbnail_cancel_pending_requests();
       gfx_thumbnail_reset(&xmb->thumbnails.right);
       gfx_thumbnail_reset(&xmb->thumbnails.left);
+
+      xmb_set_thumbnail_content(xmb, "imageviewer");
+      xmb_update_thumbnail_image(xmb);
    }
 }
 
