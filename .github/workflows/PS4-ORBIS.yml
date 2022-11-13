@@ -12,7 +12,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: orbisdev/orbisdev:latest
+    container: 
+      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-orbis:latest
+      options: --user root
+
     steps:
     - uses: actions/checkout@v3
 
