@@ -1719,7 +1719,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   "Erőszakkal tiltsa le az sRGB FBO támogatást. Néhány Intel OpenGL illesztőprogram Windows rendszeren videoproblémákkal küzd az sRGB FBO-kkal. Ennek engedélyezése megkerülheti."
+   "Az sRGB FBO támogatás letiltása minden esetben. Windows alatt néhány Intel OpenGL illesztőprogramnak gondot okoz az sRGB FBO-k használata, ezzel a lehetőséggel ez megkerülhető."
    )
 
 /* Settings > Video > Fullscreen Mode */

@@ -5477,8 +5477,24 @@ MSG_HASH(
    "긴 메뉴 텍스트를 표시할 때 부드럽게 스크롤합니다. 성능에 작은 영향을 줄 수 있습니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+   "탭 전환 시 선택된 항목 기억하기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
+   "다른 탭으로 전환할 때 메뉴 커서의 위치를 기억해둡니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
    "항상"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
+   "실행목록만"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
+   "메인 메뉴와 설정만"
    )
 
 /* Settings > AI Service */
