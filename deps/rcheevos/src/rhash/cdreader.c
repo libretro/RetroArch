@@ -22,6 +22,7 @@ struct cdrom_t
   void* file_handle;        /* the file handle for reading the track data */
   int sector_size;          /* the size of each sector in the track data */
   int sector_header_size;   /* the offset to the raw data within a sector block */
+  int raw_data_size;        /* the amount of raw data within a sector block */
   int64_t file_track_offset;/* the offset of the track data within the file */
   int track_first_sector;   /* the first absolute sector associated to the track (includes pregap) */
   int track_pregap_sectors; /* the number of pregap sectors */
@@ -58,6 +59,7 @@ static void cdreader_determine_sector_size(struct cdrom_t* cdrom)
 
   cdrom->sector_size = 0;
   cdrom->sector_header_size = 0;
+  cdrom->raw_data_size = 2048;
 
   rc_file_seek(cdrom->file_handle, toc_sector * 2352 + cdrom->file_track_offset, SEEK_SET);
   if (rc_file_read(cdrom->file_handle, header, sizeof(header)) < sizeof(header))
@@ -219,6 +221,7 @@ static int cdreader_open_bin(struct cdrom_t* cdrom, const char* path, const char
     {
       cdrom->sector_size = 2352;
       cdrom->sector_header_size = 0;
+      cdrom->raw_data_size = 2352; /* no header or footer data on audio tracks */
     }
   }
 
@@ -282,6 +285,7 @@ static void* cdreader_open_cue_track(const char* path, uint32_t track)
   char* bin_filename = NULL;
   char *ptr, *ptr2, *end;
   int done = 0;
+  int session = 1;
   size_t num_read = 0;
   struct cdrom_t* cdrom = NULL;
 
@@ -389,6 +393,13 @@ static void* cdreader_open_cue_track(const char* path, uint32_t track)
             done = 1;
             break;
           }
+
+          if (track == RC_HASH_CDTRACK_FIRST_OF_SECOND_SESSION && session == 2)
+          {
+            track = current_track.id;
+            done = 1;
+            break;
+          }
         }
       }
       else if (strncasecmp(ptr, "TRACK ", 6) == 0)
@@ -464,6 +475,20 @@ static void* cdreader_open_cue_track(const char* path, uint32_t track)
 
         if (ptr2 - ptr < (int)sizeof(current_track.filename))
           memcpy(current_track.filename, ptr, ptr2 - ptr);
+      }
+      else if (strncasecmp(ptr, "REM ", 4) == 0)
+      {
+        ptr += 4;
+        while (*ptr == ' ')
+          ++ptr;
+
+        if (strncasecmp(ptr, "SESSION ", 8) == 0)
+        {
+          ptr += 8;
+          while (*ptr == ' ')
+            ++ptr;
+          session = atoi(ptr);
+        }
       }
 
       while (*ptr && *ptr != '\n')
@@ -794,18 +819,18 @@ static size_t cdreader_read_sector(void* track_handle, uint32_t sector, void* bu
   sector_start = (int64_t)(sector - cdrom->track_first_sector) * cdrom->sector_size + 
       cdrom->sector_header_size + cdrom->file_track_offset;
 
-  while (requested_bytes > 2048)
+  while (requested_bytes > (size_t)cdrom->raw_data_size)
   {
     rc_file_seek(cdrom->file_handle, sector_start, SEEK_SET);
-    num_read = rc_file_read(cdrom->file_handle, buffer_ptr, 2048);
+    num_read = rc_file_read(cdrom->file_handle, buffer_ptr, cdrom->raw_data_size);
     total_read += num_read;
 
-    if (num_read < 2048)
+    if (num_read < (size_t)cdrom->raw_data_size)
       return total_read;
 
-    buffer_ptr += 2048;
+    buffer_ptr += cdrom->raw_data_size;
     sector_start += cdrom->sector_size;
-    requested_bytes -= 2048;
+    requested_bytes -= cdrom->raw_data_size;
   }
 
   rc_file_seek(cdrom->file_handle, sector_start, SEEK_SET);

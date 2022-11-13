@@ -429,7 +429,7 @@ int rc_runtime_activate_richpresence(rc_runtime_t* self, const char* script, lua
   previous_ptr = NULL;
   previous = self->richpresence;
   while (previous) {
-    if (previous && memcmp(self->richpresence->md5, md5, 16) == 0) {
+    if (previous && self->richpresence->richpresence && memcmp(self->richpresence->md5, md5, 16) == 0) {
       /* unchanged. reset all of the conditions */
       rc_reset_richpresence(self->richpresence->richpresence);
 
@@ -685,7 +685,7 @@ void rc_runtime_reset(rc_runtime_t* self) {
       rc_reset_lboard(self->lboards[i].lboard);
   }
 
-  if (self->richpresence) {
+  if (self->richpresence && self->richpresence->richpresence) {
     rc_richpresence_display_t* display = self->richpresence->richpresence->first_display;
     while (display != 0) {
       rc_reset_trigger(&display->trigger);
