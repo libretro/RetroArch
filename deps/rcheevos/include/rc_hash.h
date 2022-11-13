@@ -95,6 +95,7 @@ extern "C" {
   #define RC_HASH_CDTRACK_FIRST_DATA ((uint32_t)-1)
   #define RC_HASH_CDTRACK_LAST ((uint32_t)-2)
   #define RC_HASH_CDTRACK_LARGEST ((uint32_t)-3)
+  #define RC_HASH_CDTRACK_FIRST_OF_SECOND_SESSION ((uint32_t)-4)
 
   /* opens a track from the specified file. track 0 indicates the largest data track should be opened.
    * returns a handle to be passed to the other functions, or NULL if the track could not be opened.

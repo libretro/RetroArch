@@ -154,6 +154,7 @@ int rc_condition_is_combining(const rc_condition_t* self);
 int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_indirect, rc_parse_state_t* parse);
 void rc_evaluate_operand(rc_typed_value_t* value, rc_operand_t* self, rc_eval_state_t* eval_state);
 int rc_operand_is_float_memref(const rc_operand_t* self);
+int rc_operand_is_float(const rc_operand_t* self);
 
 void rc_parse_value_internal(rc_value_t* self, const char** memaddr, rc_parse_state_t* parse);
 int rc_evaluate_value_typed(rc_value_t* self, rc_typed_value_t* value, rc_peek_t peek, void* ud, lua_State* L);

@@ -56,6 +56,7 @@ enum {
   RC_MEMSIZE_32_BITS_BE,
   RC_MEMSIZE_FLOAT,
   RC_MEMSIZE_MBF32,
+  RC_MEMSIZE_MBF32_LE,
   RC_MEMSIZE_VARIABLE
 };
 
@@ -169,7 +170,8 @@ enum {
   RC_OPERATOR_NONE,
   RC_OPERATOR_MULT,
   RC_OPERATOR_DIV,
-  RC_OPERATOR_AND
+  RC_OPERATOR_AND,
+  RC_OPERATOR_XOR
 };
 
 typedef struct rc_condition_t rc_condition_t;

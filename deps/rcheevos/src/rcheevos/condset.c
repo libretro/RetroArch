@@ -84,6 +84,7 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse, in
         switch ((*next)->oper)
         {
           case RC_OPERATOR_AND:
+          case RC_OPERATOR_XOR:
           case RC_OPERATOR_DIV:
           case RC_OPERATOR_MULT:
           case RC_OPERATOR_NONE:
@@ -185,6 +186,7 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, rc
   measured_value.type = RC_VALUE_TYPE_NONE;
   measured_from_hits = 0;
   can_measure = 1;
+  total_hits = 0;
 
   eval_state->primed = 1;
   set_valid = 1;

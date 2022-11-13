@@ -95,6 +95,7 @@ int rc_parse_memref(const char** memaddr, char* size, unsigned* address) {
     switch (*aux++) {
       case 'f': case 'F': *size = RC_MEMSIZE_FLOAT; break;
       case 'm': case 'M': *size = RC_MEMSIZE_MBF32; break;
+      case 'l': case 'L': *size = RC_MEMSIZE_MBF32_LE; break;
 
       default:
         return RC_INVALID_FP_OPERAND;
@@ -119,8 +120,9 @@ int rc_parse_memref(const char** memaddr, char* size, unsigned* address) {
 
 static float rc_build_float(unsigned mantissa_bits, int exponent, int sign) {
   /* 32-bit float has a 23-bit mantissa and 8-bit exponent */
-  const unsigned mantissa = mantissa_bits | 0x800000;
-  double dbl = ((double)mantissa) / ((double)0x800000);
+  const unsigned implied_bit = 1 << 23;
+  const unsigned mantissa = mantissa_bits | implied_bit;
+  double dbl = ((double)mantissa) / ((double)implied_bit);
 
   if (exponent > 127) {
     /* exponent above 127 is a special number */
@@ -151,7 +153,16 @@ static float rc_build_float(unsigned mantissa_bits, int exponent, int sign) {
   }
   else if (exponent < 0) {
     /* exponent from -1 to -127 is a number less than 1 */
-    exponent = -exponent;
+
+    if (exponent == -127) {
+      /* exponent -127 (all exponent bits were zero) is a denormalized value
+       * (no implied leading bit) with exponent -126 */
+      dbl = ((double)mantissa_bits) / ((double)implied_bit);
+      exponent = 126;
+    } else {
+      exponent = -exponent;
+    }
+
     while (exponent > 30) {
       dbl /= (double)(1 << 30);
       exponent -= 30;
@@ -170,12 +181,7 @@ static void rc_transform_memref_float(rc_typed_value_t* value) {
   const unsigned mantissa = (value->value.u32 & 0x7FFFFF);
   const int exponent = (int)((value->value.u32 >> 23) & 0xFF) - 127;
   const int sign = (value->value.u32 & 0x80000000);
-
-  if (mantissa == 0 && exponent == -127)
-    value->value.f32 = (sign) ? -0.0f : 0.0f;
-  else
-    value->value.f32 = rc_build_float(mantissa, exponent, sign);
-
+  value->value.f32 = rc_build_float(mantissa, exponent, sign);
   value->type = RC_VALUE_TYPE_FLOAT;
 }
 
@@ -187,6 +193,21 @@ static void rc_transform_memref_mbf32(rc_typed_value_t* value) {
                             ((value->value.u32 & 0x00007F00) << 8);
   const int exponent = (int)(value->value.u32 & 0xFF) - 129;
   const int sign = (value->value.u32 & 0x00008000);
+
+  if (mantissa == 0 && exponent == -129)
+    value->value.f32 = (sign) ? -0.0f : 0.0f;
+  else
+    value->value.f32 = rc_build_float(mantissa, exponent, sign);
+
+  value->type = RC_VALUE_TYPE_FLOAT;
+}
+
+static void rc_transform_memref_mbf32_le(rc_typed_value_t* value) {
+  /* decodes a Microsoft Binary Format float */
+  /* Locomotive BASIC (CPC) uses MBF40, but in little endian format */
+  const unsigned mantissa = value->value.u32 & 0x007FFFFF;
+  const int exponent = (int)(value->value.u32 >> 24) - 129;
+  const int sign = (value->value.u32 & 0x00800000);
 
   if (mantissa == 0 && exponent == -129)
     value->value.f32 = (sign) ? -0.0f : 0.0f;
@@ -288,6 +309,10 @@ void rc_transform_memref_value(rc_typed_value_t* value, char size) {
       rc_transform_memref_mbf32(value);
       break;
 
+    case RC_MEMSIZE_MBF32_LE:
+      rc_transform_memref_mbf32_le(value);
+      break;
+
     default:
       break;
   }
@@ -314,6 +339,7 @@ static const unsigned rc_memref_masks[] = {
   0xffffffff, /* RC_MEMSIZE_32_BITS_BE */
   0xffffffff, /* RC_MEMSIZE_FLOAT      */
   0xffffffff, /* RC_MEMSIZE_MBF32      */
+  0xffffffff, /* RC_MEMSIZE_MBF32_LE   */
   0xffffffff  /* RC_MEMSIZE_VARIABLE   */
 };
 
@@ -349,6 +375,7 @@ static const char rc_memref_shared_sizes[] = {
   RC_MEMSIZE_32_BITS, /* RC_MEMSIZE_32_BITS_BE */
   RC_MEMSIZE_32_BITS, /* RC_MEMSIZE_FLOAT      */
   RC_MEMSIZE_32_BITS, /* RC_MEMSIZE_MBF32      */
+  RC_MEMSIZE_32_BITS, /* RC_MEMSIZE_MBF32_LE   */
   RC_MEMSIZE_32_BITS  /* RC_MEMSIZE_VARIABLE   */
 };
 
