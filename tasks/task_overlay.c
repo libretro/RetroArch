@@ -237,7 +237,6 @@ static bool task_overlay_load_desc(
    char overlay_desc_normalized_key[32];
    char overlay[256];
    float tmp_float                      = 0.0f;
-   int tmp_int                          = 0;
    bool tmp_bool                        = false;
    bool ret                             = true;
    bool by_pixel                        = false;
@@ -444,6 +443,10 @@ static bool task_overlay_load_desc(
       desc->reach_down = tmp_float;
    }
 
+   if (     (desc->reach_left == 0.0f && desc->reach_right == 0.0f)
+         || (desc->reach_up   == 0.0f && desc->reach_down  == 0.0f))
+      desc->hitbox = OVERLAY_HITBOX_NONE;
+
    desc->mod_x   = desc->x - desc->range_x;
    desc->mod_w   = 2.0f * desc->range_x;
    desc->mod_y   = desc->y - desc->range_y;
@@ -464,12 +467,14 @@ static bool task_overlay_load_desc(
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_exclusive", ol_idx, desc_idx);
    desc->exclusive = false;
-   config_get_bool(conf, conf_key, &desc->exclusive);
+   if (config_get_bool(conf, conf_key, &tmp_bool))
+      desc->exclusive = tmp_bool;
 
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_range_mod_exclusive", ol_idx, desc_idx);
    desc->range_mod_exclusive = false;
-   config_get_bool(conf, conf_key, &desc->range_mod_exclusive);
+   if (config_get_bool(conf, conf_key, &tmp_bool))
+      desc->range_mod_exclusive = tmp_bool;
 
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_movable", ol_idx, desc_idx);

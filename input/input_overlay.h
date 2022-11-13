@@ -62,7 +62,8 @@ typedef struct video_overlay_interface
 enum overlay_hitbox
 {
    OVERLAY_HITBOX_RADIAL = 0,
-   OVERLAY_HITBOX_RECT
+   OVERLAY_HITBOX_RECT,
+   OVERLAY_HITBOX_NONE
 };
 
 enum overlay_type
