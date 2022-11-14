@@ -5544,10 +5544,6 @@ MSG_HASH(
    "Zorlu Kip"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Hileleri, geri sarma, duraklatma, ağır çekim ve durum kaydı yüklenmesini devre dışı bırakır. Zorlu kipte kazanılan başarılar benzersiz bir şekilde işaretlenir, böylece başkalarına yardım özellikleri olmadan neler başardığınızı gösterebilirsiniz. Çalışma zamanında bu ayarı değiştirmek, oyunu yeniden başlatır."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "Lider Tabloları"
    )
@@ -8064,16 +8060,8 @@ MSG_HASH(
    "Zorlu Kipte Başarıları Duraklat"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Mevcut oturum için zorlu kip başarımlarını duraklatır. Bu eylem durum kayıtları, hileler, geri sarma, duraklatma ve yavaş hareketi etkinleştirir."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Zorlu Kipte Başarılara Devam Et"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Mevcut oturum için zorlu kipta başarımları sürdürür. Bu eylem, durum kayıtlarını, hileleri, geri sarma, duraklatma ve yavaş hareketi devre dışı bırakır ve mevcut oyunu sıfırlar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,

@@ -6900,16 +6900,8 @@ MSG_HASH(
    "実績ハードコアモードを一時停止"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "現在のセッションについて, 実績ハードコアモードを一時停止します. これにより, ステートセーブ, チート, 巻き戻し, 一時停止, スローモーションを利用できます."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "実績ハードコアモードを再開"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "現在のセッションについて, 実績ハードコアモードを再開します. これにより, ステートセーブ, チート, 巻き戻し, 一時停止, スローモーションを利用できなくなり, ゲームはリセットされます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,

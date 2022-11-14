@@ -7696,16 +7696,8 @@ MSG_HASH(
    "Wstrzymaj tryb osiągnięć hardcore"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Wstrzymaj tryb hardcore dla bieżącej sesji. Ta akcja umożliwi zapisywanie stanów, oszustw, przewijanie, wstrzymanie i spowolnienie ruchu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Wznów tryb osiągnięć hardcore"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Wznów tryb twardy osiągnięć dla bieżącej sesji. Ta akcja spowoduje wyłączenie zapisywania stanów, oszustw, przewijania, wstrzymania i spowolnienia ruchu, a także zresetowania bieżącej gry."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,

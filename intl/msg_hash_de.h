@@ -5441,7 +5441,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Deaktiviert Cheats, Zurückspulen, Pause, Zeitlupe und Laden von Savestates. Errungenschaften, die im Hardcore-Modus erzielt wurden, sind einzigartig gekennzeichnet, so dass Du anderen zeigen kannst, was Du ohne Emulator-Hilfsfunktionen erreicht hast. Das Umschalten dieser Einstellung zur Laufzeit wird das Spiel neu starten."
+   "Deaktiviert Cheats, Zurückspulen, Zeitlupe und Laden von Savestates. Errungenschaften, die im Hardcore-Modus erzielt wurden, sind einzigartig gekennzeichnet, so dass Du anderen zeigen kannst, was Du ohne Emulator-Hilfsfunktionen erreicht hast. Das Umschalten dieser Einstellung zur Laufzeit wird das Spiel neu starten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -7865,7 +7865,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Den Errungenschaften-Hardcore-Modus für die aktuelle Sitzung pausieren. Dies aktiviert Savestates, Cheats, Zurückspulen, Pause und Zeitlupe."
+   "Pausiert den Hardcore-Modus der Errungenschaften für die aktuelle Sitzung. Diese Aktion aktiviert Cheats, Zurückspulen, Zeitlupe und Laden von Savestates."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
@@ -7873,7 +7873,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Den Errungenschaften-Hardcore-Modus für die aktuelle Sitzung fortsetzen. Dies deaktiviert Savestates, Cheats, Zurückspulen, Pause und Zeitlupe und setzt das aktuelle Spiel zurück."
+   "Setzt den Hardcore-Modus der Errungenschaften für die aktuelle Sitzung fort. Diese Aktion deaktiviert Cheats, Zurückspulen, Zeitlupe, und Laden von Savestates und setzt das aktuelle Spiel zurück."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,

@@ -5549,7 +5549,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Desactiva las funciones de trucos, rebobinado, pausa, cámara lenta y la carga de guardados rápidos. Los logros obtenidos en el modo Hardcore son señalizados de una forma especial para mostrar a los demás lo que eres capaz de hacer sin las ayudas de la emulación. Si cambias esta opción durante una partida, se reiniciará el juego."
+   "Desactiva las funciones de trucos, rebobinado, cámara lenta y la carga de guardados rápidos. Los logros obtenidos en el modo Hardcore son señalizados de una forma especial para mostrar a los demás lo que eres capaz de hacer sin las ayudas de la emulación. Si cambias esta opción durante una partida, se reiniciará el juego."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -8053,7 +8053,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Pausa el modo Hardcore de los logros en esta sesión. Se activarán los guardados rápidos, los trucos, el rebobinado, la pausa y la cámara lenta."
+   "Pausa el modo Hardcore de los logros para esta sesión. Esta acción activará los trucos, rebobinado, cámara lenta y la carga de guardados rápidos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
@@ -8061,7 +8061,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Reanuda el modo Hardcore de los logros en esta sesión. Se desactivarán los guardados rápidos, los trucos, el rebobinado, la pausa y la cámara lenta."
+   "Reanuda el modo Hardcore de los logros en esta sesión. Se desactivarán los trucos, el rebobinado, la pausa, la cámara lenta, el uso de guardados rápidos y se reiniciará la partida actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,

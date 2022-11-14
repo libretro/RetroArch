@@ -7788,16 +7788,8 @@ MSG_HASH(
    "Pysäytä saavutusten hardcore-tila"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Pysäytä saavutusten hardcore-tila nykyisessä istunnossa. Tämä toiminto ottaa käyttöön pelitilan tallennukset, huijaukset, takaisinkelauksen, taukotilan ja hidastuksen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Jatka saavutusten hardcore-tilaa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Jatka saavutusten hardcore-tilaa nykyisessä istunnossa. Poistaa käytöstä pelitilan tallennukset, huijaukset, takaisinkelauksen, taukotilan ja hidastuksen kaikista peleistä. Tämän asetuksen ottaminen käyttöön suorittaessa käynnistää pelin uudelleen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
