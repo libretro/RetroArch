@@ -122,7 +122,7 @@ static void thread_update_driver_state(thread_video_t *thr)
       if (thr->driver_data && thr->overlay && thr->overlay->set_alpha)
       {
          int i;
-         for (i = 0; i < thr->alpha_mods; i++)
+         for (i = 0; i < (int)thr->alpha_mods; i++)
             thr->overlay->set_alpha(thr->driver_data, i, thr->alpha_mod[i]);
       }
       thr->flags &= ~THR_FLAG_ALPHA_UPDATE;
@@ -263,7 +263,7 @@ static bool video_thread_handle_packet(
                {
                   /* Avoid temporary garbage data. */
                   int i;
-                  for (i = 0; i < tmp_alpha_mods; i++)
+                  for (i = 0; i < (int)tmp_alpha_mods; i++)
                      tmp_alpha_mod[i] = 1.0f;
                   thr->alpha_mods = tmp_alpha_mods;
                   thr->alpha_mod  = tmp_alpha_mod;
@@ -649,7 +649,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       if (src)
       {
          int i; /* TODO/FIXME - increment counter never meaningfully used */
-         for (i = 0; i < height; i++, src += pitch, dst += copy_stride)
+         for (i = 0; i < (int)height; i++, src += pitch, dst += copy_stride)
             memcpy(dst, src, copy_stride);
       }
 

@@ -237,7 +237,7 @@ static void rpng_reverse_filter_copy_line_rgb(uint32_t *data,
 
    bpp /= 8;
 
-   for (i = 0; i < width; i++)
+   for (i = 0; i < (int)width; i++)
    {
       uint32_t r, g, b;
 
@@ -258,7 +258,7 @@ static void rpng_reverse_filter_copy_line_rgba(uint32_t *data,
 
    bpp /= 8;
 
-   for (i = 0; i < width; i++)
+   for (i = 0; i < (int)width; i++)
    {
       uint32_t r, g, b, a;
       r        = *decoded;
@@ -283,7 +283,7 @@ static void rpng_reverse_filter_copy_line_bw(uint32_t *data,
 
    if (depth == 16)
    {
-      for (i = 0; i < width; i++)
+      for (i = 0; i < (int)width; i++)
       {
          uint32_t val = decoded[i << 1];
          data[i]      = (val * 0x010101) | (0xffu << 24);
@@ -295,7 +295,7 @@ static void rpng_reverse_filter_copy_line_bw(uint32_t *data,
    mask = (1 << depth) - 1;
    bit  = 0;
 
-   for (i = 0; i < width; i++, bit += depth)
+   for (i = 0; i < (int)width; i++, bit += depth)
    {
       unsigned byte = bit >> 3;
       unsigned val  = decoded[byte] >> (8 - depth - (bit & 7));
@@ -335,10 +335,9 @@ static void rpng_reverse_filter_copy_line_plt(uint32_t *data,
    {
       case 1:
          {
-            unsigned w = width / 8;
             int i;
-
-            for (i = 0; i < w; i++, decoded++)
+            unsigned w = width / 8;
+            for (i = 0; i < (int)w; i++, decoded++)
             {
                *data++ = palette[(*decoded >> 7) & 1];
                *data++ = palette[(*decoded >> 6) & 1];
@@ -373,10 +372,9 @@ static void rpng_reverse_filter_copy_line_plt(uint32_t *data,
 
       case 2:
          {
-            unsigned w = width / 4;
             int i;
-
-            for (i = 0; i < w; i++, decoded++)
+            unsigned w = width / 4;
+            for (i = 0; i < (int)w; i++, decoded++)
             {
                *data++ = palette[(*decoded >> 6) & 3];
                *data++ = palette[(*decoded >> 4) & 3];
@@ -399,10 +397,9 @@ static void rpng_reverse_filter_copy_line_plt(uint32_t *data,
 
       case 4:
          {
-            unsigned w = width / 2;
             int i;
-
-            for (i = 0; i < w; i++, decoded++)
+            unsigned w = width / 2;
+            for (i = 0; i < (int)w; i++, decoded++)
             {
                *data++ = palette[*decoded >> 4];
                *data++ = palette[*decoded & 0x0f];
@@ -416,8 +413,7 @@ static void rpng_reverse_filter_copy_line_plt(uint32_t *data,
       case 8:
          {
             int i;
-
-            for (i = 0; i < width; i++, decoded++, data++)
+            for (i = 0; i < (int)width; i++, decoded++, data++)
                *data = palette[*decoded];
          }
          break;
@@ -1086,7 +1082,7 @@ bool rpng_iterate_image(rpng_t *rpng)
             buf    += 8;
             palette = rpng->palette;
 
-            for (i = 0; i < chunk_size; i++, buf++, palette++)
+            for (i = 0; i < (int)chunk_size; i++, buf++, palette++)
                *palette = (*palette & 0x00ffffff) | (unsigned)*buf << 24;
          }
          /* TODO: support colorkey in grayscale and truecolor images */

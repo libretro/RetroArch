@@ -370,7 +370,7 @@ void runloop_log_counters(
       struct retro_perf_counter **counters, unsigned num)
 {
    int i;
-   for (i = 0; i < num; i++)
+   for (i = 0; i < (int)num; i++)
    {
       if (counters[i]->call_cnt)
       {

@@ -306,7 +306,7 @@ static void d3d11_render_overlay(d3d11_video_t *d3d11)
          d3d11->context, 0, 1,
          &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
 
-   for (i = 0; i < (unsigned)d3d11->overlays.count; i++)
+   for (i = 0; i < d3d11->overlays.count; i++)
    {
       d3d11->context->lpVtbl->PSSetShaderResources(
             d3d11->context, 0, 1,
@@ -495,7 +495,7 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
    if (!d3d11->shader_preset)
       return;
 
-   for (i = 0; i < d3d11->shader_preset->passes; i++)
+   for (i = 0; i < (int)d3d11->shader_preset->passes; i++)
    {
       int j;
 
@@ -520,14 +520,14 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
    memset(d3d11->pass, 0, sizeof(d3d11->pass));
 
    /* only free the history textures here */
-   for (i = 1; i <= (unsigned)d3d11->shader_preset->history_size; i++)
+   for (i = 1; i <= d3d11->shader_preset->history_size; i++)
       d3d11_release_texture(&d3d11->frame.texture[i]);
 
    memset(
          &d3d11->frame.texture[1], 0,
          sizeof(d3d11->frame.texture[1]) * d3d11->shader_preset->history_size);
 
-   for (i = 0; i < d3d11->shader_preset->luts; i++)
+   for (i = 0; i < (int)d3d11->shader_preset->luts; i++)
       d3d11_release_texture(&d3d11->luts[i]);
 
    memset(d3d11->luts, 0, sizeof(d3d11->luts));
@@ -1750,7 +1750,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
 
    assert(d3d11->shader_preset);
 
-   for (i = 0; i < d3d11->shader_preset->passes; i++)
+   for (i = 0; i < (int)d3d11->shader_preset->passes; i++)
    {
       struct video_shader_pass* pass = &d3d11->shader_preset->pass[i];
 

@@ -350,7 +350,7 @@ bool net_ifinfo_best(const char *dst, void *src, bool ipv6)
 #ifdef __WINRT__
       struct sockaddr_in dst_addr = {0};
 #endif
-      IPAddr dst_ip               = inet_addr(dst);
+      ULONG dst_ip               = (ULONG)inet_addr(dst);
 
       if (!src)
          return false;
