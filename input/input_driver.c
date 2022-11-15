@@ -2592,12 +2592,37 @@ void input_event_osk_append(
       *osk_idx = OSK_LOWERCASE_LATIN;
    else if (string_is_equal(word, "Next"))
 #endif
-      if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
-         *osk_idx = (enum osk_type)(*osk_idx + 1);
-      else
-         *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
-   else
    {
+      /* exception for kr osk - toggle Latin <-> korean */
+      int lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
+      if( lang == RETRO_LANGUAGE_KOREAN   )
+      {
+        static int prv_osk = OSK_TYPE_UNKNOWN+1;
+        if( *osk_idx < OSK_KOREAN_PAGE1 )
+        {
+          prv_osk = *osk_idx;
+          *osk_idx =  OSK_KOREAN_PAGE1;
+        } else	 
+		  *osk_idx = (enum osk_type)prv_osk;
+      }	else
+      {
+        if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))  
+          *osk_idx = (enum osk_type)(*osk_idx + 1);
+        else
+          *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+	  }
+   }
+   else      
+   if( *osk_idx==OSK_KOREAN_PAGE1 && word && word_len)
+   {
+      input_driver_state_t *input_st =  &input_driver_st;
+      unsigned uchar = 0;
+      memcpy( &uchar, word, word_len);
+      if( *osk_idx==OSK_KOREAN_PAGE1  && word_len==3)	uchar |= 0x1000000; 
+      input_keyboard_line_event(input_st,  keyboard_line, uchar);
+    }
+	else
+    {
       input_keyboard_line_append(keyboard_line, word, word_len);
       osk_update_last_codepoint(
             osk_last_codepoint,
@@ -3406,6 +3431,116 @@ void input_driver_deinit_command(input_driver_state_t *input_st)
 }
 #endif
 
+unsigned get_kr_composition( unsigned comp, unsigned* padd)
+{
+   static wchar_t cc1[] = { L"ㄱㄱㄲ ㄷㄷㄸ ㅂㅂㅃ ㅅㅅㅆ ㅈㅈㅉ"};
+   static wchar_t cc2[] = { L"ㅗㅏㅘ ㅗㅐㅙ ㅗㅣㅚ ㅜㅓㅝ ㅜㅔㅞ ㅜㅣㅟ ㅡㅣㅢ"};    
+   static wchar_t cc3[] = { L"ㄱㄱㄲ ㄱㅅㄳ ㅅㅈㄵ ㄴㅎㄶ ㄹㄱㄺ ㄹㅁㄻ ㄹㅂㄼ ㄹㅅㄽ ㄹㅌㄾ ㄹㅍㄿ ㄹㅎㅀ ㅂㅅㅄ ㅅㅅㅆ"};
+   static wchar_t s1[19+21+28+1] = { L"ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣㆍㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ"};
+   int c1 = -1;
+   int c2 = -1;
+   int c3 =  0;
+   int nv = -1;
+   char utf8[8]	= {0,};
+   wchar_t	new16[4]	= L"";
+   wchar_t  comp16[4]	= L"";
+   wchar_t*	tmp1;
+   wchar_t*	tmp2;
+   unsigned	tadd = *padd & 0xffffff;
+   if( !MultiByteToWideChar(CP_UTF8, 0, (char*)&comp, -1, comp16,2) ) return comp;
+   if( !MultiByteToWideChar(CP_UTF8, 0, (char*)&tadd, -1, comp16+1,2) ) return comp;
+   
+   if( (tmp1=wcschr(s1,comp16[0])) )  c1 = tmp1-s1;
+   if( (tmp1=wcschr(s1,comp16[1])) )  nv = tmp1-s1;
+
+   new16[1]=0;
+   comp16[2]=0;
+
+   if( nv == -1 || nv>=19+21  ) return comp;		
+
+   if( !(tmp2=wcsstr(cc1,comp16))) tmp2=wcsstr(cc2,comp16);
+   if( tmp2 )	
+   {
+      new16[0]= tmp2[2];
+      if( !WideCharToMultiByte( CP_UTF8, 0, new16, -1, utf8, 8, NULL, NULL )) return comp;	
+      *padd = *(unsigned*)utf8 | 0x1000000; 
+      return 0;
+   }
+
+   if( c1 >=19) return comp;
+   if( c1 == -1 )
+   {	
+      int tv = comp16[0] - 0xAC00;
+      c1 =  tv/(28*21);
+      c2 =  (tv%(28*21))/28;
+      c3 =  tv%28;
+      if( c1<0 || c1>=19 || c2<0 || c2>21 || c3<0 || c3>28 )	return comp;
+   }
+   if( c1==-1 && c2==-1 && c3==0) return comp;
+   if( c2==-1 && c3==0 )						/* 1st element */
+   {
+      if( nv<19 ) return comp;
+	  c2 = nv-19;								/*   - add 2nd element */
+   }  else
+   if( c2>=0 && c3==0 )							/* 1st+2nd element*/
+   {	
+      if(nv<19)									/*   - add 3rd element */
+      {
+        if( !(tmp1=wcschr(s1+19+21,comp16[1])) ) return comp;		
+        c3 = tmp1-s1-19-21;
+      }	else 
+   	  {	
+        comp16[0] = s1[19+c2];					/*   - remove 1st element (오->ㅗ) */
+        if( !(tmp2=wcsstr(cc2,comp16)) ) return comp;
+		if(	!(tmp1=wcschr(s1,tmp2[2])) ) return comp;
+		c2 = tmp1-s1-19;
+      }	
+   }  else
+   if( c3>0 )									/* 1st+2nd+3rd elements */
+   {
+      if( nv<19)
+      {
+         comp16[0]= s1[19+21+c3];				/*   - remove 1st,2nd element (강->ㅇ) */
+         tmp2 = wcsstr(cc3, comp16 ); 
+         if( tmp2 && (tmp1=wcschr(s1+19+21,tmp2[2])) ) c3 = tmp1-s1-19-21;
+         else	return comp;
+      }  else								
+   	  {
+        int tv = 0;
+		if( (tmp2=wcschr(cc3,s1[19+21+c3])) ) tv = tmp2-cc3;
+		if( tv%4==2)							 /*   - complex element */
+		{
+		   wchar_t n1 = *(tmp2-1);	
+		   wchar_t n3 = *(tmp2-2);	
+		   if( !(tmp1=wcschr(s1,n1)) ) return comp;
+		   tv = tmp1-s1;
+		   if( !(tmp1=wcschr(s1+19+21,n3)) ) return comp;
+		   c3 = tmp1-s1-19-21;
+		}  else
+		{	
+           if( !(tmp1=wcschr(s1,s1[19+21+c3])) || (tmp1-s1)>=19) return comp;
+           tv = tmp1-s1;
+           c3=0;
+		}
+        new16[0] = 0xAC00 + tv*(28*21) + (nv-19)*28;
+        if( WideCharToMultiByte( CP_UTF8, 0, new16, -1, utf8, 8, NULL, NULL ))	*padd = *(unsigned*)utf8 | 0x1000000;
+		new16[0] = 0xAC00 + c1*(28*21) +c2*28 + c3;
+        if( WideCharToMultiByte( CP_UTF8, 0, new16, -1, utf8, 8, NULL, NULL ))	comp = *(unsigned*)utf8;
+        return comp;
+   	  }	
+   }  else
+   {
+      return comp;
+   }
+   new16[0]= 0xAC00 + c1*(28*21) +c2*28+ c3;
+   if( !WideCharToMultiByte( CP_UTF8, 0, new16, -1, utf8, 8, NULL, NULL )) return comp;	
+   *padd = *(unsigned*)utf8 | 0x1000000; 
+   return 0;
+}
+
+#define EX_IME
+
+char tmp[256];
 bool input_keyboard_line_event(
       input_driver_state_t *input_st,
       input_keyboard_line_t *state, uint32_t character)
@@ -3415,6 +3550,41 @@ bool input_keyboard_line_event(
    const char            *word = NULL;
    char            c           = (character >= 128) ? '?' : character;
 
+
+
+   static unsigned composition = 0;		
+   if( state->size==0 )  composition = 0;
+   if( character && character<0xff) composition = 0;
+   composition = composition & 0xffffff;
+   if( character & 0xff000000)
+   {
+	  int len = strlen((char*)&composition);
+      if( composition && state->buffer &&  state->size>=len &&  state->ptr>= len )
+      {              
+         memmove(state->buffer + state->ptr-len, state->buffer+state->ptr,  len + 1);
+         state->ptr -=len; 
+         state->size-=len;
+      }
+      if( (character & 0x1000000) && composition) // korean osk input
+      {
+         unsigned new_comp =  get_kr_composition( composition, &character);
+         if( new_comp )	input_keyboard_line_append( state, (char*)&new_comp, strlen((char*)&new_comp));
+      }
+      if( character & 0xF0000000 )  composition = 0;
+      else                          composition = character &0xffffff; // GCS_COMPSTR
+      if( len && composition==0)    word = state->buffer; 
+      character &= 0xffffff;
+
+   	  if( character)  input_keyboard_line_append( state, (char*)&character, strlen((char*)&character));
+      word =  state->buffer;
+	   /* OSK - update last character */
+	   //if (word)
+		//  osk_update_last_codepoint(
+		//		&input_st->osk_last_codepoint,
+		//		&input_st->osk_last_codepoint_len,
+		//		word);
+	   //return 0;
+   } else
    /* Treat extended chars as ? as we cannot support
     * printable characters for unicode stuff. */
 
