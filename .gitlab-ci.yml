@@ -47,6 +47,7 @@ build-retroarch-windows-x64:
         --enforcedir /usr/lib/mxe/usr/x86_64-w64-mingw32.shared/qt5/plugins/styles/
         --copy
         --objdump x86_64-w64-mingw32.shared-objdump"
+    - "cp -f nvdaControllerClient64.dll ${MEDIA_PATH}/${CI_PROJECT_NAME}/redist/nvdaControllerClient64.dll"
     - "rm -f ${MEDIA_PATH}/${CI_PROJECT_NAME}/redist/opengl32.dll"
 
 build-retroarch-windows-i686:
