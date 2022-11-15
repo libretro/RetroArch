@@ -23,7 +23,6 @@
 #include "../font_driver.h"
 
 #include "../../configuration.h"
-#include "../../verbosity.h"
 
 typedef struct
 {
@@ -86,7 +85,6 @@ static void *vita2d_font_init(void *data,
    return font;
 
 error:
-   RARCH_WARN("Couldn't initialize font renderer.\n");
    free(font);
    return NULL;
 }
