@@ -3049,6 +3049,7 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
       if (!string_is_empty(label))
       {
          struct playlist_entry entry = {0};
+         bool refresh = false;
 
          /* the update function reads our entry as const,
           * so these casts are safe */
@@ -3057,6 +3058,8 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
          command_playlist_update_write(NULL,
                menu_input_dialog_get_kb_idx(),
                &entry);
+         /* update current menu title */
+         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
       }
    }
 
