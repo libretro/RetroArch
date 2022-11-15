@@ -1535,6 +1535,11 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 #endif
          break;
+      case CMD_EVENT_SHADER_TOGGLE:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         video_shader_toggle(settings);
+#endif
+         break;
       case CMD_EVENT_BSV_RECORDING_TOGGLE:
          {
 #ifdef HAVE_BSV_MOVIE

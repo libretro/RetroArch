@@ -2653,3 +2653,26 @@ const char *retroarch_get_shader_preset(void)
 
    return NULL;
 }
+
+void video_shader_toggle(settings_t *settings)
+{
+   bool toggle                 = !settings->bools.video_shader_enable;
+   bool refresh                = false;
+   struct video_shader *shader = menu_shader_get();
+
+   shader->flags              |=  SHDR_FLAG_MODIFIED;
+   if (toggle)
+      shader->flags           &= ~SHDR_FLAG_DISABLED;
+   else
+      shader->flags           |=  SHDR_FLAG_DISABLED;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+
+   /* TODO/FIXME: Due to general_write_handler being called twice,
+    * this has be done in this order in order to truly disable */
+   if (!toggle)
+      configuration_set_bool(settings, settings->bools.video_shader_enable, toggle);
+}

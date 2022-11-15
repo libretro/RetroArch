@@ -153,7 +153,8 @@ enum video_shader_flags
    SHDR_FLAG_MODERN    = (1 << 0), /* Only used for XML shaders. */
    /* Indicative of whether shader was modified - 
     * for instance from the menus */
-   SHDR_FLAG_MODIFIED  = (1 << 1)
+   SHDR_FLAG_MODIFIED  = (1 << 1),
+   SHDR_FLAG_DISABLED  = (1 << 2)
 };
 
 /* This is pretty big, shouldn't be put on the stack.
@@ -315,6 +316,8 @@ bool apply_shader(
       const char *preset_path, bool message);
 
 const char *video_shader_get_preset_extension(enum rarch_shader_type type);
+
+void video_shader_toggle(settings_t *settings);
 
 RETRO_END_DECLS
 
