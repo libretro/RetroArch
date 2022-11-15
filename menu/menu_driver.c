@@ -2908,7 +2908,9 @@ void menu_shader_manager_apply_changes(
 
    type = menu_shader_manager_get_type(shader);
 
-   if (shader->passes && type != RARCH_SHADER_NONE)
+   if (shader->passes
+         && type != RARCH_SHADER_NONE
+         && !(shader->flags & SHDR_FLAG_DISABLED))
    {
       menu_shader_manager_save_preset(shader, NULL,
             dir_video_shader, dir_menu_config, true);
@@ -3554,8 +3556,12 @@ bool rarch_menu_init(
    }
 #endif
 
+#if 0
+   /* TODO: No reason to do this here since shaders need
+    * content, and this is called in content_load() */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    menu_shader_manager_init();
+#endif
 #endif
 
    return true;

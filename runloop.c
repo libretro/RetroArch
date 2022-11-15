@@ -7565,10 +7565,6 @@ static enum runloop_state_enum runloop_check_state(
    /* Check movie record toggle */
    HOTKEY_CHECK(RARCH_BSV_RECORD_TOGGLE, CMD_EVENT_BSV_RECORDING_TOGGLE, true, NULL);
 
-   /* Check shader prev/next */
-   HOTKEY_CHECK(RARCH_SHADER_NEXT, CMD_EVENT_SHADER_NEXT, true, NULL);
-   HOTKEY_CHECK(RARCH_SHADER_PREV, CMD_EVENT_SHADER_PREV, true, NULL);
-
    /* Check if we have pressed any of the disk buttons */
    HOTKEY_CHECK3(
          RARCH_DISK_EJECT_TOGGLE, CMD_EVENT_DISK_EJECT_TOGGLE,
@@ -7585,6 +7581,12 @@ static enum runloop_state_enum runloop_check_state(
          RARCH_CHEAT_TOGGLE,      CMD_EVENT_CHEAT_TOGGLE);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   /* Check shader prev/next/toggle */
+   HOTKEY_CHECK3(
+         RARCH_SHADER_NEXT,   CMD_EVENT_SHADER_NEXT,
+         RARCH_SHADER_PREV,   CMD_EVENT_SHADER_PREV,
+         RARCH_SHADER_TOGGLE, CMD_EVENT_SHADER_TOGGLE);
+
    if (settings->bools.video_shader_watch_files)
    {
       static rarch_timer_t timer = {0};

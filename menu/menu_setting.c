@@ -7863,26 +7863,8 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
-            if (*setting->value.target.boolean)
-            {
-               bool refresh                = false;
-               menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-               menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-            }
-            else
-            {
-               bool refresh                = false;
-               settings_t *settings        = config_get_ptr();
-               struct video_shader *shader = menu_shader_get();
-
-               shader->passes              = 0;
-               shader->flags              |= SHDR_FLAG_MODIFIED;
-
-               menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-               menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-               command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
-               configuration_set_bool(settings, settings->bools.video_shader_enable, false);
-            }
+            settings_t *settings        = config_get_ptr();
+            video_shader_toggle(settings);
          }
 #endif
          break;
