@@ -5496,6 +5496,10 @@ MSG_HASH(
    "Modalità Hardcore"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Disabilita i trucchi, il riavvolgimento, il rallentamento e il caricamento degli stati di salvataggio. Gli obiettivi guadagnati in modalità hardcore sono contrassegnati in modo univoco in modo da poter mostrare agli altri ciò che hai ottenuto senza funzioni di assistenza emulatore. Attivando questa impostazione all'esecuzione si riavvierà la partita."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "Classifiche"
    )
@@ -7972,8 +7976,16 @@ MSG_HASH(
    "Pausa della modalità Hardcore dei Trofei"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+   "Metti in pausa la modalità hardcore per la sessione corrente. Questa azione abiliterà i trucchi, il riavvolgimento, il rallentamento e il caricamento degli stati di salvataggio."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Riprendi la Modalità Hardcore dei trofei"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+   "Riprendi il raggiungimento della modalità hardcore per la sessione corrente. Questa azione disabiliterà i trucchi, il riavvolgimento, il rallentamento e il caricamento degli stati di salvataggio e resetterà la partita corrente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,

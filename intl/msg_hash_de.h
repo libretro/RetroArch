@@ -5441,7 +5441,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Deaktiviert Cheats, Zurückspulen, Zeitlupe und Laden von Savestates. Errungenschaften, die im Hardcore-Modus erzielt wurden, sind einzigartig gekennzeichnet, so dass Du anderen zeigen kannst, was Du ohne Emulator-Hilfsfunktionen erreicht hast. Das Umschalten dieser Einstellung zur Laufzeit wird das Spiel neu starten."
+   "Deaktiviert Cheats, Zurückspulen, Zeitlupe und Laden von Savestates. Errungenschaften, die im Hardcore-Modus erzielt wurden, sind eindeutig gekennzeichnet, um anderen anzuzeigen, dass diese ohne Emulator-Hilfsfunktionen erreicht wurden. Das Umschalten dieser Einstellung zur Laufzeit startet das Spiel neu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,

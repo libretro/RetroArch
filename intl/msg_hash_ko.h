@@ -5584,6 +5584,10 @@ MSG_HASH(
    "도전과제 하드코어 모드"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "치트, 뒤로 감기, 슬로우 모션, 상태저장 불러오기를 비활성화합니다. 하드코어 모드에서 달성한 도전과제에는 특별한 표시가 붙어 에뮬레이터 기능을 사용하지 않고 달성했음을 자랑할 수 있습니다. 게임 실행 중에 이 기능을 켜거나 끄면 게임이 다시 시작됩니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "리더보드"
    )
@@ -8100,8 +8104,16 @@ MSG_HASH(
    "도전과제 하드코어 모드 일시정지"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+   "현재 세션에 대한 도전과제 하드코어 모드를 일시 정지합니다. 치트, 뒤로 감기, 슬로우 모션, 상태저장 불러오기를 활성화합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "도전과제 하드코어 모드 계속하기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+   "현재 세션에 대한 도전과제 하드코어 모드를 재개합니다. 치트, 뒤로 감기, 슬로우 모션, 상태저장 불러오기를 비활성화하고 게임을 초기화합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
