@@ -7441,7 +7441,7 @@ static void ozone_auto_select_onscreen_entry(
    menu_navigation_set_selection(selection);
 }
 
-static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone)
+static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone, settings_t *settings)
 {
    /* Ugly construct...
     * Content metadata display override may be
@@ -7458,6 +7458,7 @@ static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone)
             (ozone->flags   & OZONE_FLAG_IS_EXPLORE_LIST)
          )
          && (ozone->show_thumbnail_bar)
+         && (settings->uints.menu_left_thumbnails)
          && (!(ozone->flags2 & OZONE_FLAG2_SELECTION_CORE_IS_VIEWER))
          && (   ozone->thumbnails.left.status == GFX_THUMBNAIL_STATUS_AVAILABLE ||
                (ozone->thumbnails.left.status       < GFX_THUMBNAIL_STATUS_AVAILABLE &&
@@ -7639,6 +7640,7 @@ static enum menu_action ozone_parse_menu_entry_action(
       bool ozone_collapse_sidebar,
       enum menu_action action)
 {
+   settings_t *settings          = config_get_ptr();
    uintptr_t tag;
    int new_selection;
    enum menu_action new_action   = action;
@@ -7988,7 +7990,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          /* If we currently viewing a playlist with
           * dual thumbnails, toggle the content metadata
           * override */
-         if (ozone_metadata_override_available(ozone))
+         if (ozone_metadata_override_available(ozone, settings))
          {
             ozone_toggle_metadata_override(ozone);
             new_action = MENU_ACTION_NOOP;
@@ -10000,7 +10002,7 @@ static void ozone_draw_footer(
          ozone_fullscreen_thumbnails_available(ozone);
    bool metadata_override_available       =
          fullscreen_thumbnails_available &&
-         ozone_metadata_override_available(ozone);
+         ozone_metadata_override_available(ozone, settings);
    bool thumbnail_cycle_enabled           =
          fullscreen_thumbnails_available &&
          !((ozone->is_quick_menu && menu_is_running_quick_menu()) 
@@ -11648,7 +11650,7 @@ static int ozone_pointer_up(void *userdata,
              * upon it if the content metadata toggle is
              * available (i.e. viewing a playlist with dual
              * thumbnails) */
-            if (ozone_metadata_override_available(ozone))
+            if (ozone_metadata_override_available(ozone, settings))
                return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_INFO);
          }
          /* Tap/press sidebar: return to sidebar or select
