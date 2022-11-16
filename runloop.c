@@ -325,7 +325,7 @@ runloop_state_t *runloop_state_get_ptr(void)
 #ifdef HAVE_REWIND
 bool state_manager_frame_is_reversed(void)
 {
-   return runloop_state.rewind_st.frame_is_reversed;
+   return (runloop_state.rewind_st.flags & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED) > 0;
 }
 #endif
 
@@ -3134,7 +3134,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          float core_fps   = (float)video_st->av_info.timing.fps;
 
 #ifdef HAVE_REWIND
-         if (runloop_st->rewind_st.frame_is_reversed)
+         if (runloop_st->rewind_st.flags 
+               & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED)
          {
             throttle_state->mode = RETRO_THROTTLE_REWINDING;
             throttle_state->rate = 0.0f;
@@ -7543,7 +7544,8 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_REWIND
                struct state_manager_rewind_state
                   *rewind_st = &runloop_st->rewind_st;
-               if (rewind_st->frame_is_reversed)
+               if (rewind_st->flags 
+                     & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED)
                   runloop_msg_queue_push(
                         msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
