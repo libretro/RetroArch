@@ -24,7 +24,7 @@ import UIKit
    func handleMouseMove(x: CGFloat, y: CGFloat)
 }
 
-@objcMembers public class EmulatorTouchMouseHandler: NSObject {
+@objcMembers public class EmulatorTouchMouseHandler: NSObject, UIPointerInteractionDelegate {
    enum MouseHoldState {
       case notHeld, wait, held
    }
@@ -60,6 +60,8 @@ import UIKit
    
    private let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
    
+   private var previousPoint: CGPoint = CGPoint(x: 0, y: 0)
+
    public init(view: UIView, delegate: EmulatorTouchMouseHandlerDelegate? = nil) {
       self.view = view
       self.delegate = delegate
@@ -73,6 +75,12 @@ import UIKit
             self?.pendingMouseEvents.append(value)
             self?.processMouseEvents()
          })
+      if #available(iOS 13.4, *) {
+         // get pointer interactions
+         let pointerInteraction = UIPointerInteraction(delegate: self)
+         self.view.addInteraction(pointerInteraction)
+         self.view.isUserInteractionEnabled=true
+      }
    }
    
    private func processMouseEvents() {
@@ -111,8 +119,12 @@ import UIKit
       self.primaryTouch = TouchInfo(touch: primaryTouch.touch, origin: primaryTouch.origin, holdState: .notHeld)
    }
    
-   public func touchesBegan(touches: Set<UITouch>) {
+   public func touchesBegan(touches: Set<UITouch>, event: UIEvent?) {
       guard enabled, let touch = touches.first else {
+         if #available(iOS 13.4, *), let _ = touches.first {
+            let isLeftClick=(event?.buttonMask == UIEvent.ButtonMask.button(1))
+            delegate?.handleMouseClick(isLeftClick: isLeftClick, isPressed: true)
+         }
          return
       }
       if primaryTouch == nil {
@@ -125,8 +137,16 @@ import UIKit
       }
    }
    
-   public func touchesEnded(touches: Set<UITouch>) {
-      guard enabled else { return }
+   public func touchesEnded(touches: Set<UITouch>, event: UIEvent?) {
+      guard enabled else {
+         if #available(iOS 13.4, *) {
+            let isLeftClick=(event?.buttonMask == UIEvent.ButtonMask.button(1))
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+               self?.delegate?.handleMouseClick(isLeftClick: isLeftClick, isPressed: false)
+            }
+         }
+         return
+      }
       for touch in touches {
          if touch == primaryTouch?.touch {
             if touch.tapCount > 0 {
@@ -162,8 +182,14 @@ import UIKit
       }
    }
    
-   public func touchesCancelled(touches: Set<UITouch>) {
-      guard enabled else { return }
+   public func touchesCancelled(touches: Set<UITouch>, event: UIEvent?) {
+      guard enabled else {
+         if #available(iOS 13.4, *) {
+            let isLeftClick=(event?.buttonMask == UIEvent.ButtonMask.button(1))
+            delegate?.handleMouseClick(isLeftClick: isLeftClick, isPressed: false)
+         }
+         return
+      }
       for touch in touches {
          if touch == primaryTouch?.touch {
             endHold()
@@ -178,4 +204,25 @@ import UIKit
       let dy = pointA.y - pointB.y
       return sqrt(dx*dx*dy*dy)
    }
+
+   @available(iOS 13.4, *)
+   public func pointerInteraction(
+       _ interaction: UIPointerInteraction,
+       regionFor request: UIPointerRegionRequest,
+       defaultRegion: UIPointerRegion
+     ) -> UIPointerRegion? {
+        guard !enabled else { return defaultRegion }
+        let a = self.previousPoint
+        let b = request.location
+        delegate?.handleMouseMove(x: b.x-a.x, y: b.y-a.y)
+        self.previousPoint=b
+        return defaultRegion
+   }
+
+   @available(iOS 13.4, *)
+   public func pointerInteraction(_ interaction: UIPointerInteraction, styleFor region: UIPointerRegion) -> UIPointerStyle? {
+      guard !enabled else { return nil }
+      return UIPointerStyle.hidden()
+   }
+
 }
