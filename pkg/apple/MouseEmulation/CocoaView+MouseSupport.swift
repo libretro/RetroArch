@@ -12,7 +12,7 @@ extension CocoaView {
    }
    
    open override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-      mouseHandler.touchesBegan(touches: touches)
+      mouseHandler.touchesBegan(touches: touches, event: event)
    }
    
    open override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -20,10 +20,11 @@ extension CocoaView {
    }
    
    open override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-      mouseHandler.touchesCancelled(touches: touches)
+      mouseHandler.touchesCancelled(touches: touches, event: event)
    }
    
    open override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-      mouseHandler.touchesEnded(touches: touches)
+      mouseHandler.touchesEnded(touches: touches, event: event)
    }
+   
 }
