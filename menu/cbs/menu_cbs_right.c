@@ -1062,8 +1062,6 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_VIDEO_FONT:
          case MENU_SETTING_GROUP:
          case MENU_SETTINGS_CORE_INFO_NONE:
-         case MENU_SETTING_ACTION_FAVORITES_DIR:
-         case MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS:
             if (
                      string_ends_with_size(menu_label, "_tab",
                         strlen(menu_label), STRLEN_CONST("_tab"))
@@ -1073,6 +1071,17 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
                BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
                break;
             }
+         case MENU_SETTING_ACTION_RUN:
+         case MENU_SETTING_ACTION_CLOSE:
+         case MENU_SETTING_ACTION_CLOSE_HORIZONTAL:
+         case MENU_SETTING_ACTION_DELETE_ENTRY:
+         case MENU_SETTING_ACTION_CORE_OPTIONS:
+         case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
+         case MENU_SETTING_ACTION_SCREENSHOT:
+         case MENU_SETTING_ACTION_FAVORITES_DIR:
+         case MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS:
+         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION:
+         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD:
             BIND_ACTION_RIGHT(cbs, action_right_scroll);
             break;
          case MENU_SETTING_ACTION:
@@ -1088,10 +1097,6 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION_SAVESTATE:
          case MENU_SETTING_ACTION_LOADSTATE:
             BIND_ACTION_RIGHT(cbs, action_right_state_slot);
-            break;
-         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION:
-         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD:
-            BIND_ACTION_RIGHT(cbs, action_right_scroll);
             break;
          default:
             return -1;
@@ -1214,18 +1219,6 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                   BIND_ACTION_RIGHT(cbs, action_right_scroll);
                }
                break;
-            case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
-            case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
-               if (
-                        string_ends_with_size(menu_label, "_tab",
-                           strlen(menu_label),
-                           STRLEN_CONST("_tab"))
-                     || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
-                  )
-               {
-                  BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
-                  break;
-               }
             case MENU_ENUM_LABEL_VIDEO_GPU_INDEX:
                BIND_ACTION_RIGHT(cbs, action_right_video_gpu_index);
                break;
