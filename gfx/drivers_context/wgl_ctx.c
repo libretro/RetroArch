@@ -106,7 +106,7 @@ static unsigned         win32_major       = 0;
 static unsigned         win32_minor       = 0;
 static int              win32_interval    = 0;
 static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
 static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll/libGLESv2.dll */
 #endif
 
@@ -132,7 +132,7 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
          break;
    }
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
 #else
    return NULL;
@@ -595,7 +595,7 @@ static void gfx_ctx_wgl_destroy(void *data)
       g_win32_flags &= ~WIN32_CMN_FLAG_RESTORE_DESKTOP;
    }
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    dylib_close(dll_handle);
 #endif
 
@@ -624,7 +624,7 @@ static void *gfx_ctx_wgl_init(void *video_driver)
    if (win32_flags & WIN32_CMN_FLAG_INITED)
       gfx_ctx_wgl_destroy(NULL);
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
 #ifdef HAVE_OPENGL
    dll_handle = dylib_load("OpenGL32.dll");
 #else
