@@ -2835,6 +2835,14 @@ MSG_HASH(
    "Önceki gölgelendirici ön ayar dosyasını 'Video Gölgelendiriciler' dizininin köküne yükler ve uygular."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "Gölgelendirici (Değiştir)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
+   "Seçili olan gölgelendiriciyi açar/kapatır."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
    "Sonraki Hile Dizini"
    )
@@ -7829,6 +7837,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    "Video Gölgelendirici"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
+   "Video gölgelendirici iş çizgisini etkinleştirin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,

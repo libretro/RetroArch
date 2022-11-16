@@ -256,7 +256,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   "在此顯示已加入我的最愛的項目。"
+   "在此顯示加入我的最愛項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
@@ -1728,6 +1728,10 @@ MSG_HASH(
    "視窗不透明度"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   "設定視窗的不透明度。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    "顯示視窗裝飾"
    )
@@ -1855,8 +1859,20 @@ MSG_HASH(
    "自適應同步"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "幀數延遲 (毫秒)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "以增加畫面停頓風險來減少延遲，垂直同步後加入延遲(毫秒)。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
-   "自動畫格延遲"
+   "自動幀數延遲"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "自動有效的減少「幀數延遲」防止丟失影格。當「幀數延遲」設定 <0> 時，起點為幀間隔一半。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -1864,11 +1880,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   "強制GPU同步"
+   "強制圖形處理器同步"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   "強制同步CPU和GPU，以性能為代價換取低延遲。"
+   "強制同步中央處理器和圖形處理器，以效能為代價減少延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
@@ -1876,7 +1892,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   "準確同步遊戲影格率 (G-Sync, FreeSync)"
+   "準確同步執行幀率 (G-Sync, FreeSync)"
    )
 
 /* Settings > Audio */
@@ -2014,11 +2030,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-   "聲音時延(ms)"
+   "音頻延遲 (毫秒)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "設定您想要的聲音延遲(毫秒). 假設預設的裝置無法支援設定值時該值可能無法成功套用."
+   "設定音頻延遲(毫秒)。音效驅動程式不支援時設定無效。"
    )
 
 /* Settings > Audio > Resampler */
@@ -2492,11 +2508,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "準確同步遊戲影格率 (開/關)"
+   "準確同步執行幀率 (開/關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "顯示的同步選項中「準確同步遊戲影格率」的開關，僅限支援可變更新率的裝置。"
+   "顯示的同步選項中「準確同步執行幀率」的開關，僅限支援可變更新率的裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
@@ -2536,7 +2552,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
-   "結束復古電玩。必要時正確結束應用程式，可確保儲存全部的記錄存檔與設定檔。"
+   "結束復古電玩。必要時正確結束應用程式，可確保儲存全部的記憶存檔與設定檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
@@ -2560,7 +2576,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "按住時開啟倒帶模式，放開後恢復正常模式。必須開啟倒帶選項才可使用。"
+   "按住時開啟倒帶模式，放開後恢復正常模式。必須「開啟倒帶」才可使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
@@ -2672,7 +2688,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
-   "顯示技術統計資訊的開關。"
+   "執行時顯示技術統計資訊的開關。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
@@ -3024,6 +3040,14 @@ MSG_HASH(
 
 /* Settings > Latency */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
+   "超前執行降低延遲"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
+   "執行核心邏輯提前一幀或多幀後載入狀態，用於降低按鍵輸入延遲。"
+   )
 
 /* Settings > Core */
 
@@ -3061,7 +3085,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
-   "載入遊戲前檢查必須的韌體(BIOS)。"
+   "載入遊戲前檢查必需的韌體(BIOS)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
@@ -3181,7 +3205,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "建立核心名稱資料夾儲存記憶存檔"
+   "記憶存檔使用核心資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
@@ -3189,7 +3213,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "建立核心名稱資料夾儲存即時存檔"
+   "即時存檔使用核心資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
@@ -3197,7 +3221,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "建立載入位置資料夾儲存記憶存檔"
+   "記憶存檔使用載入位置資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -3205,7 +3229,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "建立載入位置資料夾儲存即時存檔"
+   "即時存檔使用載入位置資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
@@ -3213,7 +3237,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "載入即時存檔不覆蓋記錄記憶體"
+   "載入即時存檔不覆蓋記憶體"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
@@ -3225,7 +3249,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-   "設定自動儲存非揮發性記錄記憶體的時間。僅限支援SAV格式的核心使用。\n設定關閉時，正確關閉或結束應用程式，才會將記錄記憶體轉存成記錄存檔。"
+   "設定自動儲存記憶存檔的時間(秒)。僅限支援SAV格式的核心使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -3241,7 +3265,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "設定零時全部保留。當自訂達上限時，會刪除最低編號檔案，編號不會重置，存檔維持在自訂的保留數量，加使用中的存檔。"
+   "設定 <0> 時全部保留。當自訂達上限，會刪除最低編號檔案，維持在自訂的保留數量，加一個使用中的存檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -3269,11 +3293,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "壓縮記錄存檔"
+   "壓縮記憶存檔 (SaveRAM)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "使用壓縮格式儲存記錄存檔，減少檔案的大小，但儲存與載入的速度變慢。僅限支援SAV格式的核心使用。"
+   "使用壓縮格式儲存記憶存檔，減少檔案的大小，但儲存與載入的速度變慢。僅限支援SAV格式的核心使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -3293,7 +3317,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "將記錄存檔儲存到遊戲資料夾"
+   "記憶存檔儲存到遊戲資料夾"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -3364,15 +3388,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
-   "開啟時「儲存為記錄檔」變更為時間戳記錄檔，每次重新啟動依結束時間建立事件存檔。非必需時不推薦開啟。"
+   "開啟時「儲存為記錄檔」變更為時間戳記錄檔，依應用程式結束時間建立事件存檔。非必需時不推薦開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
-   "效能計數器"
+   "效能計數器 (僅限Switch)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
-   "應用程式和核心的效能計數器。計數器的數據，可協助確定系統限制和微調效能。"
+   "前端和核心的效能計數器。計數器的數據，可協助確定系統限制和微調效能。開啟時在主選單中資訊選項內使用。"
    )
 
 /* Settings > File Browser */
@@ -3426,7 +3450,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-   "限制快轉模式執行時的最高倍速，設定為零時不限制。"
+   "限制快轉模式執行時的最高倍速，設定 <0> 時不限制。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
@@ -3570,7 +3594,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "調整影像佈景相關的設定。僅限顯示驅動程式為「gl」時使用。"
+   "調整影像佈景相關的設定。僅限顯示驅動程式為 <gl> 時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
@@ -3593,15 +3617,47 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
-   "顯示覆層"
+   "開啟覆蓋元件"
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+   "在選單後顯示覆蓋元件"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-   "在選單中隱藏覆層"
+   "在選單中隱藏覆蓋元件"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "連接控制器時隱藏虛擬控制器"
    )
 #if defined(ANDROID)
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
+   "顯示動態按鍵"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "顯示連接埠輸入"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   "顯示滑鼠游標"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   "使用覆蓋元件時顯示滑鼠游標。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
+   "自動旋轉覆蓋元件"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
+   "自動縮放覆蓋元件"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "覆層"
@@ -3612,11 +3668,67 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
-   "覆層不透明度"
+   "覆蓋元件不透明度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
+   "覆蓋元件全部元件介面不透明度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
-   "覆層預設"
+   "預設覆蓋元件"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+   "設定要使用的預設覆蓋元件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
+   "(橫向) 覆蓋元件縮放"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "(橫向) 覆蓋元件寬高比調整"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "(橫向) 覆蓋元件水平間隔"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "(橫向) 覆蓋元件垂直間隔"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
+   "(橫向) 覆蓋元件水平偏移"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "(橫向) 覆蓋元件垂直偏移"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
+   "(直向) 覆蓋元件縮放"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "(直向) 覆蓋元件長寬比調整"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
+   "(直向) 覆蓋元件水平間隔"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "(直向) 覆蓋元件垂直間隔"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
+   "(直向) 覆蓋元件水平偏移"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
+   "(直向) 覆蓋元件垂直偏移"
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -3627,15 +3739,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
-   "使用畫面佈置完成的影像佈景。適用於覆蓋元件使用虛擬控制器時。"
+   "使用畫面佈置完成的影像佈景(MAME Artwork's)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
-   "載入影像佈景"
+   "預設影像佈景"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "載入要使用的影像佈景。"
+   "設定要使用的預設影像佈景。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -3650,15 +3762,47 @@ MSG_HASH( /* FIXME Unused */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
-   "顯示屏顯消息(OSD)"
+   "開啟螢幕通知"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
    "顯示螢幕消息。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+   "通知圖標"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
+   "通知使用圖標、裝飾動畫和自動調整。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+   "通知圖標自動縮放。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-   "顯示幀率"
+   "顯示幀率 (FPS)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FPS_SHOW,
+   "顯示目前每秒顯示影格數。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
+   "幀率更新間隔 (幀數)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
+   "設定幀率的更新間隔，以幀數為單位。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
+   "顯示總計幀數"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
+   "顯示目前總計幀數。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
@@ -3666,11 +3810,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
-   "顯示技術統計資訊。"
+   "執行時顯示技術統計資訊。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
    "顯示記憶體使用量"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MEMORY_SHOW,
+   "顯示系統記憶體的使用量和總量。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
+   "記憶體更新間隔 (幀數)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
+   "設定記憶體使用量的更新間隔，以幀數為單位。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
@@ -3678,7 +3834,63 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
-   "顯示目前連線遊戲中的網路延遲(PING值)。"
+   "連線遊戲中顯示目前的網路延遲(PING值)。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "執行標題通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "執行時顯示圖標加文字標題動畫。僅限「通知圖標」開啟時使用。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
+   "控制器隨插即用通知"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "金手指通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "套用金手指時顯示螢幕通知。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "修正檔通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "使用修正檔(ROMs)時顯示螢幕通知。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
+   "連接與斷開輸入裝置時顯示螢幕通知。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
+   "載入自訂控制器通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
+   "載入自訂控制器時顯示螢幕通知。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "載入佈景主題通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "載入佈景主題存檔時顯示螢幕通知。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "載入映像檔通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "執行 M3U 播放清單時，顯示目前載入編號的螢幕通知。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -3686,7 +3898,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "使用快轉模式時，顯示螢幕通知。"
+   "使用快轉模式時顯示螢幕通知。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
+   "螢幕截圖通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
+   "螢幕截圖時顯示螢幕通知。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "截圖通知停留"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "設定螢幕截圖通知的顯示時間。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
@@ -3701,6 +3929,14 @@ MSG_HASH(
    "非常快"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "截圖快門效果"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "設定螢幕截圖使用相機快門效果的顯示時間。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
    "開 (正常)"
    )
@@ -3709,12 +3945,44 @@ MSG_HASH(
    "開 (快速)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
+   "垂直更新率通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
+   "設定垂直更新率時顯示螢幕通知。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "連線遊戲額外通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "連線遊戲時顯示非必要的螢幕通知。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "僅在選單通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "僅在選單開啟時顯示通知。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
-   "屏顯消息(OSD)字體"
+   "自訂通知字型"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
+   "設定螢幕通知使用的字型。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
-   "屏顯消息(OSD)大小"
+   "設定字體大小"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "設定通知使用的字體大小(點值)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
@@ -3751,6 +4019,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
    "通知背景顏色(藍)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+   "通知背景不透明度"
    )
 
 /* Settings > User Interface */
@@ -4650,7 +4922,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-   "壁紙不透明度"
+   "背景不透明度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
+   "修改背景圖片的不透明度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
@@ -4805,7 +5081,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-   "啟用成就系統"
+   "開啟成就"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
@@ -4849,7 +5125,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
-   "解鎖成就時播放音效。"
+   "獲得成就時播放音效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
@@ -4873,7 +5149,7 @@ MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
-   "開啟所有成就的通知(包含之前解鎖的成就)。"
+   "開啟所有成就的通知(包含之前獲得的成就)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
@@ -4936,7 +5212,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
-   "設定主機接受的最大網路延遲(PING值)。設定為零時無限制。"
+   "設定主機接受的最大網路延遲(PING值)。設定 <0> 時無限制。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -5250,7 +5526,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   "設定「上一次執行」時間戳訊息，日期和時間的顯示方式。選項 <上午/下午> 對某些平台的效能影響很小。"
+   "設定 [上一次執行] 時間戳訊息，日期和時間的顯示方式。選項 <上午/下午> 對某些平台的效能影響很小。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
@@ -5681,11 +5957,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
-   "記錄存檔"
+   "記憶存檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
-   "設定遊戲的記錄存檔的儲存位置。未設置的情況下，將嘗試儲存在遊戲的資料夾中。"
+   "設定遊戲記憶存檔的儲存位置。未設置的情況下，將嘗試儲存在遊戲的資料夾中。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
@@ -5693,7 +5969,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "設定應用程式的即時存檔的儲存位置。未設置的情況下，將嘗試儲存在遊戲的資料夾中。"
+   "設定應用程式即時存檔的儲存位置。未設置的情況下，將嘗試儲存在遊戲的資料夾中。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -5868,11 +6144,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "指定核心支援"
+   "指定核心副檔名"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "掃描指定核心支援的副檔名，完成後設為列表的預設核心。當「指定副檔名」的條件時，此選項的掃描會失效。\n設定為 <未指定> 時改用「指定副檔名」的條件掃描。"
+   "只掃描核心支援的副檔名，完成後設為列表的預設核心。當自訂「指定副檔名」條件時，此選項的掃描將被忽略。\n設定為 <未指定> 時改用「指定副檔名」的條件掃描。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
@@ -6125,7 +6401,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-   "永久刪除此項目。"
+   "按下後永久刪除此項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
@@ -6717,15 +6993,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
-   "追加光碟鏡像"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "載入光碟映像檔"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   "載入所選擇的映像檔編號。開啟「當選單開啟時暫停遊戲」時，部分核心須等到繼續遊戲後幾秒才載入。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
+   "選擇其他映像檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "選擇其他的光碟映像檔載入執行，並加入到映像檔可使用編號中，加入編號後支援使用快捷鍵切換映像檔。\n注意事項：這是一項舊功能。建議使用 M3U 格式載入映像檔，可跳過此步驟，直接使用快捷鍵切換映像檔。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
+   "選擇其他的光碟映像檔，加入到映像檔可使用編號中等待載入。\n注意事項：這是一項舊功能。建議使用 M3U 格式載入映像檔，可跳過此步驟，直接使用快捷鍵切換映像檔。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "光碟索引"
+   "選擇映像檔編號"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "選擇要載入的光碟映像檔編號。按下「載入光碟映像檔」執行。"
    )
 
 /* Quick Menu > Shaders */
@@ -7174,7 +7466,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
-   "<檔案資料夾>"
+   "<使用資料夾名稱>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
@@ -7385,6 +7677,14 @@ MSG_HASH(
    "未鎖定"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY,
+   "僅使用追蹤器"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_NOTIFICATIONS_ONLY,
+   "僅顯示通知"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DONT_CARE,
    "預設"
    )
@@ -7406,7 +7706,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
-   "<資料夾的名稱>"
+   "<使用資料夾名稱>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
@@ -8557,7 +8857,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   "強制同步CPU和GPU，以性能為代價換取低延遲。"
+   "強制同步中央處理器和圖形處理器，以效能為代價減少延遲。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
@@ -8647,8 +8947,16 @@ MSG_HASH( /* FIXME Still exists in a comment about being removed */
    "底部不透明度"
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
+   "設定底部圖片的不透明度。"
+   )
+MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
    "頂部不透明度"
+   )
+MSG_HASH( /* FIXME Still exists in a comment about being removed */
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
+   "設定頂部圖片的不透明度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
@@ -10397,11 +10705,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
-   "說明文字透明度"
+   "字體顏色不透明度"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY,
-   "調整下螢幕說明文字透明度。"
+   "調整下螢幕字體不透明度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,

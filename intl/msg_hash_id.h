@@ -2546,6 +2546,10 @@ MSG_HASH(
 /* Settings > Input > Port # Controls */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+   "Simpan Profil Stik Kendali"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
    "Tombol Mulai"
    )
@@ -2642,6 +2646,10 @@ MSG_HASH(
 
 #if defined(ANDROID)
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
+   "Fisik (Stik Kendali)"
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -2758,6 +2766,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "Pencapaian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Mode Garis Keras"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -2974,6 +2986,14 @@ MSG_HASH(
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Perambah Berkas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
+   "Profil Stik Kendali"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
+   "Setelan otomatis profil stik kendali yang dulu digunakan akan ditampung di direktori ini."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -3753,6 +3773,14 @@ MSG_HASH(
    "Gagal menambahkan kesukaan: daftar putar penuh"
    )
 MSG_HASH(
+   MSG_AUTOCONFIG_FILE_ERROR_SAVING,
+   "Galat menyimpan profil stik kendali."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
+   "Profil stik kendali berhasil disimpan."
+   )
+MSG_HASH(
    MSG_FILE_NOT_FOUND,
    "Berkas tidak ditemukan"
    )
@@ -3826,10 +3854,34 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "Jalankan Ulang RetroArch"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+   "Pemetaan Stik Kendali Papan Ketik"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   "Jenis Pemetaan Stik Kendali Papan Ketik"
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
+   "Percepatan GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
+   "Mempercepat atau perlambat GPU permainan Switch."
+   )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+   "Percepatan CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+   "Mempercepat CPU permainan Switch."
+   )
 #endif
 #ifdef HAVE_LAKKA
 MSG_HASH(

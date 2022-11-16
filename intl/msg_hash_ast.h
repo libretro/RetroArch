@@ -14,7 +14,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-   "Axustes"
+   "Configuración"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
@@ -50,7 +50,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   "Importación"
+   "Importación de conteníu"
    )
 
 /* Main Menu */
@@ -58,6 +58,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
    "Menú rápidu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   "Accede aína a tola configuración rellacionada cola partida."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
@@ -68,6 +72,10 @@ MSG_HASH(
    "Seleiciona'l nucleu a usar."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+   "Cargar conteníu"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Seleiciona'l conteníu a aniciar."
    )
@@ -76,10 +84,18 @@ MSG_HASH(
    "Cargar un discu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_DISC,
+   "Carga un discu físicu. Primero seleiciona'l nucleu (Cargar un nucleu) que quies usar col discu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
    "Volquiar un discu"
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Espulsa'l discu de la unidá de CD/DVD."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -131,7 +147,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_LIST,
-   "Deprendi más tocante a cómo funciona'l programa."
+   "Conoz más tocante a cómo funciona'l programa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
@@ -168,6 +184,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    "Instala o restaura un nucleu del direutoriu «Descargues»."
    )
+MSG_HASH( /* FIXME Maybe add a description? */
+   MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   "Aniciar el procesador de videu"
+   )
 
 /* Main Menu > Load Content */
 
@@ -188,7 +208,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   "Equí va apaecer el conteníu que s'amieste a «Favoritos»."
+   "Equí apaez el conteníu que s'amieste a «Favoritos»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
@@ -196,7 +216,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   "Equí va apaecer la música que se reproduxere anteriormente."
+   "Equí apaez les canciones que se reproduxeren anteriormente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
@@ -204,7 +224,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   "Equí van apaecer les imáxenes que se vieren anteriormente."
+   "Equí apaecen les imáxenes que se vieren anteriormente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
@@ -212,7 +232,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   "Equí van apaecer los vídeos que se reproduxeren anteriormente."
+   "Equí apaecen los vídeos que se reproduxeren anteriormente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
@@ -225,6 +245,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
    "Nucleos independientes"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
+   "Equí apaecen los nucleos instalaos que puen funcionar ensin cargar conteníu."
    )
 
 /* Main Menu > Online Updater */
@@ -268,6 +292,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
    "Anovar les bases de datos"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+   "Anovar les superposiciones"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
@@ -345,7 +373,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-   "Estayes"
+   "Categoríes"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
@@ -433,6 +461,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
    "Compatibilidá con LibretroDB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
+   "Compatibilidá coles superposiciones"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
@@ -898,7 +930,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-   "Allugamientu"
+   "Llocalización"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -939,6 +971,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    "Suspender el curiapantalles"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+   "Filtru billinial"
+   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
@@ -947,6 +983,14 @@ MSG_HASH(
 #if defined(RS90) || defined(MIYOO)
 #endif
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   "Filtru de videu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   "Quitar el filtru de videu"
+   )
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -978,6 +1022,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    "Opacidá de la ventana"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   "Recordar la posición y el tamañu de la ventana"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1014,6 +1062,14 @@ MSG_HASH(
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   "Sincronización vertical"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   "Intervalu d'intercambéu de la sincronización vertical"
+   )
 
 /* Settings > Audio */
 
@@ -1040,6 +1096,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    "Soníos del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
+   "Plugin DSP"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -1243,6 +1303,10 @@ MSG_HASH(
    "Baxar el volume"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
+   "Superposición siguiente"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
    "Discu siguiente"
    )
@@ -1259,7 +1323,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
-   "Triba del preséu"
+   "Tipu de preséu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
@@ -1621,6 +1685,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
    "Permitir la posa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
+   "Comandos de la entrada estándar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
+   "La interfaz de comandos de la entrada estándar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,

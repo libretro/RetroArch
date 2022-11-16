@@ -5468,6 +5468,10 @@ MSG_HASH(
    "Hardcore Režim"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Vypne cheaty, přetáčení, zpomalené záběry a načítání uložených pozic. Úspěchy získané v hardcore režimu jsou jedinečně označeny, takže můžete ostatním ukázat, čeho jste dosáhli bez asistenčních funkcí emulátoru. Přepnutím tohoto nastavení za běhu se hra restartuje."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "Žebříčky"
    )
@@ -7956,8 +7960,16 @@ MSG_HASH(
    "Pauza Úspěchu v Režimu Hardcore"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+   "Pozastavení režimu hardcore úspěchů pro aktuální relaci. Tato akce povolí cheaty, přetáčení, zpomalené záběry a načítání uložených pozic."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Obnovení Úspěchů v Režimu Hardcore"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+   "Obnovení režimu hardcore úspěchů pro aktuální relaci. Tato akce zakáže cheaty, přetáčení, zpomalené záběry, načítání uložených pozic a resetuje aktuální hru."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
