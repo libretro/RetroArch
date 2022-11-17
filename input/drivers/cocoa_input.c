@@ -450,7 +450,12 @@ static int16_t cocoa_input_state(
 #endif
                   }
 #ifdef IOS
-                    val = apple->mouse_rel_x;
+                  if (apple->window_pos_x > 0) {
+                     val = apple->window_pos_x - apple->mouse_x_last;
+                     apple->mouse_x_last = apple->window_pos_x;
+                  } else {
+                     val = apple->mouse_rel_x;
+                  }
 #else
                   val = apple->window_pos_x - apple->mouse_x_last;
                   apple->mouse_x_last = apple->window_pos_x;
@@ -466,7 +471,12 @@ static int16_t cocoa_input_state(
 #endif
                   }
 #ifdef IOS
-                    val = apple->mouse_rel_y;
+                  if (apple->window_pos_y > 0) {
+                     val = apple->window_pos_y - apple->mouse_y_last;
+                     apple->mouse_y_last = apple->window_pos_y;
+                  } else {
+                     val = apple->mouse_rel_y;
+                  }
 #else
                   val = apple->window_pos_y - apple->mouse_y_last;
                   apple->mouse_y_last = apple->window_pos_y;
