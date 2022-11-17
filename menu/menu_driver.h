@@ -476,6 +476,12 @@ enum menu_state_flags
    MENU_ST_FLAG_SCREENSAVER_ACTIVE          = (1 << 11)
 };
 
+enum menu_scroll_mode
+{
+   MENU_SCROLL_PAGE = 0,
+   MENU_SCROLL_START_LETTER
+};
+
 struct menu_state
 {
    /* Timers */
@@ -514,7 +520,7 @@ struct menu_state
       size_t   index_list[SCROLL_INDEX_SIZE];
       unsigned index_size;
       unsigned acceleration;
-      bool     mode;
+      enum menu_scroll_mode mode;
    } scroll;
 
    /* unsigned alignment */
@@ -528,6 +534,9 @@ struct menu_state
    menu_input_pointer_hw_state_t input_pointer_hw_state;
 
    uint16_t flags;
+#ifdef HAVE_OVERLAY
+   uint16_t overlay_types;
+#endif
 
    /* When generating a menu list in menu_displaylist_build_list(),
     * the entry with a label matching 'pending_selection' will
@@ -549,9 +558,6 @@ struct menu_state
 #endif
    unsigned char kb_key_state[RETROK_LAST];
 
-#ifdef HAVE_OVERLAY
-   uint16_t overlay_types;
-#endif
 };
 
 typedef struct menu_content_ctx_defer_info
