@@ -6266,42 +6266,12 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
          {
-            bool hotkey_enable_found   = false;
-            size_t hotkey_enable_index = 0;
-
+            /* "Hotkey Enable" */
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
-                     PARSE_ONLY_BOOL, false) == 0)
+                     (enum msg_hash_enums)(
+                           MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + RARCH_FIRST_META_KEY),
+                     PARSE_ONLY_BIND, false) == 0)
                count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-
-            /* Hotkey enable bind comes first - due to the
-             * way binds are implemented, have to search the
-             * entire list for it... */
-            for (i = 0; i < RARCH_BIND_LIST_END; i++)
-            {
-               if (input_config_bind_map_get_retro_key(i) == RARCH_ENABLE_HOTKEY)
-               {
-                  hotkey_enable_found = true;
-                  hotkey_enable_index = i;
-
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           (enum msg_hash_enums)(
-                              MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i),
-                           PARSE_ONLY_BIND, false) == 0)
-                     count++;
-
-                  break;
-               }
-            }
-
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_INPUT_HOTKEY_BLOCK_DELAY,
                      PARSE_ONLY_UINT, false) == 0)
@@ -6310,8 +6280,24 @@ unsigned menu_displaylist_build_list(
             /* All other binds come last */
             for (i = 0; i < RARCH_BIND_LIST_END; i++)
             {
-               if (hotkey_enable_found && (hotkey_enable_index == i))
+               /* Skip "Hotkey Enable" */
+               if (i == RARCH_FIRST_META_KEY)
                   continue;
+               /* Show combo entries before normal binds */
+               else if (input_config_bind_map_get_retro_key(i) == RARCH_MENU_TOGGLE)
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+               }
+               else if (input_config_bind_map_get_retro_key(i) == RARCH_QUIT_KEY)
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+               }
 
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         (enum msg_hash_enums)(
@@ -7022,18 +7008,16 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_INPUT_MAX_USERS,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
-
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_SMALL_KEYBOARD_ENABLE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_INPUT_SMALL_KEYBOARD_ENABLE,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -7072,6 +7056,14 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,
                   PARSE_ONLY_FLOAT, false) == 0)
             count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
 #if defined(GEKKO)
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_MOUSE_SCALE,
@@ -7081,14 +7073,6 @@ unsigned menu_displaylist_build_list(
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_TOUCH_SCALE,
                   PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,
-                  PARSE_ONLY_FLOAT, false) == 0)
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,
@@ -7101,6 +7085,10 @@ unsigned menu_displaylist_build_list(
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_BIND_MODE,
                   PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
+                  PARSE_ONLY_BOOL, false) == 0)
             count++;
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
