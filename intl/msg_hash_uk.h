@@ -606,14 +606,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Архітектура процесора"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Ядра ЦП:"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "Кількість ядер процесора."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "Ідентифікатор зовнішнього інтерфейсу"

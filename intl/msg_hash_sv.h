@@ -582,14 +582,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Arkitektur"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Processorkärnor:"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "Antalet kärnor som processorn har."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "Frontend-identifikation"

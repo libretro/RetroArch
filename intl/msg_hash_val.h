@@ -594,14 +594,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "Característiques del processador"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Nuclis del processador"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "Quantitat de nuclis que té el processador del maquinari."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "Identificador del processador d'accés"

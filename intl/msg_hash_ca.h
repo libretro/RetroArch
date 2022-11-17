@@ -594,14 +594,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Arquitectura de la CPU"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Nuclis de la CPU:"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "Quantitat de nuclis de la CPU."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "Identificador de la interfície"

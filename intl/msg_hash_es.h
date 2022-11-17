@@ -602,13 +602,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Arquitectura de la CPU"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Núcleos de CPU:"
-   )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "Indica la cantidad de núcleos que tiene la CPU."
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "Núcleos de la CPU"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -2837,6 +2833,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    "Carga y aplica el preajuste de shaders anterior que se encuentre en la raíz del directorio de shaders de vídeo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "Shader (alternar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
+   "Activa o desactiva el shader seleccionado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
@@ -7825,6 +7829,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    "Shaders de vídeo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
+   "Activa el proceso de shaders de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,

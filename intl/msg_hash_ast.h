@@ -119,7 +119,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
-   "Axustes"
+   "Configuración"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS,
@@ -430,13 +430,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Arquiteutura de la CPU"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Nucleos de la CPU:"
-   )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "La cantidá de nucleos que tien la CPU."
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "Nucleos de la CPU"
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
@@ -1527,7 +1523,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
-   "Amosar los axustes avanzaos"
+   "Amosar la configuración avanzada"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
@@ -1562,7 +1558,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
-   "Axustes"
+   "Configuración"
    )
 #ifdef HAVE_LAKKA
 #endif
@@ -2133,7 +2129,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-   "Quitar esta entrada de la llista."
+   "Quita esta entrada de la llista."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
@@ -2254,7 +2250,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
-   "Triba"
+   "Tipu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
@@ -2391,7 +2387,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
-   "Aceptar"
+   "D'acuerdu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
@@ -3010,7 +3006,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
-   "Nun amosar más"
+   "Nun volver amosar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_STOP,

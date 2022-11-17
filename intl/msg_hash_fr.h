@@ -598,13 +598,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Architecture du processeur"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Cœurs du processeur :"
-   )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "Nombre de cœurs dont dispose le processeur."
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "Cœurs de processeur"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -2805,6 +2801,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    "Charge et applique le fichier de préréglages de shaders précédent à la racine du dossier 'Shaders vidéo'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "Activer/désactiver le shader"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
+   "Active/désactive le shader actuellement sélectionné."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
@@ -5516,6 +5520,10 @@ MSG_HASH(
    "Mode Hardcore"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Désactive les cheats, le rembobinage, le ralenti et le chargement des sauvegardes instantanées. Les succès gagnés en mode hardcore sont marquées de façon unique pour que vous puissiez montrer aux autres ce que vous avez accompli sans fonctionnalités d'assistance d'émulateur. La désactivation de ce paramètre lors de l'exécution redémarrera le jeu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "Classements "
    )
@@ -7771,6 +7779,10 @@ MSG_HASH(
    "Shaders vidéo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
+   "Activer le pipeline de shader vidéo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
    "Verifier les changements dans les fichiers de shaders"
    )
@@ -7996,8 +8008,16 @@ MSG_HASH(
    "Mettre en pause le mode Hardcore des succès"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+   "Mettre en pause le mode Hardcore des succès pour la session en cours. Cette action permettra d'activer les cheats, le rembobinage, le ralenti et le chargement de sauvegardes instantanées."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Reprendre le mode Hardcore des succès"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+   "Réactiver le mode Hardcore des succès pour la session en cours. Cette action désactivera les cheats, le rembobinage, le ralenti, les sauvegardes instantanées et réinitialisera le jeu en cours."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,

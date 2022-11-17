@@ -598,13 +598,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Architektura procesora"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Rdzenie procesora:"
-   )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "Ilość rdzeni procesora."
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "Rdzenie procesora"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -2737,6 +2733,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    "Wczytuje i stosuje poprzedni plik z ustawieniem cienia w katalogu 'Cieniowanie wideo'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "Cieniowanie (Przełącz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
+   "Włącza/wyłącza aktualnie wybrany cień."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,

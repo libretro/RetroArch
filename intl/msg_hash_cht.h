@@ -541,7 +541,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "在「獨立核心」列表中不顯示此核心。僅限於「獨立核心」設定為 <自定義> 時使用。"
+   "在「獨立核心」列表中不顯示此核心。僅限於「獨立核心」設定為 <自訂> 時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -605,14 +605,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "中央處理器架構"
-   )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "中央處理器核心:"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "中央處理器核心總數。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -1045,7 +1037,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "將應用程式全部設定重置為預設值。"
+   "將應用程式所有設定重置為預設值。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
@@ -1784,7 +1776,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-   "長寬比"
+   "寬高比"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
@@ -1802,19 +1794,19 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-   "自定義畫面X"
+   "自訂寬高比 (水平位置)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-   "自定義畫面Y"
+   "自訂寬高比 (垂直位置)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "自定義畫面寬度"
+   "自訂寬高比 (寬度)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "自定義畫面高度"
+   "自訂寬高比 (高度)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
@@ -1872,7 +1864,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "自動有效的減少「幀數延遲」防止丟失影格。當「幀數延遲」設定 <0> 時，起點為幀間隔一半。"
+   "自動有效的減少「幀數延遲」防止丟失影格。當「幀數延遲」設定 <0> 時，起點時間為半幀。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2200,11 +2192,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-   "核心啟動載入自訂控制器 (進階選項)"
+   "執行核心重新映射按鍵 (進階選項)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   "執行時自動載入核心自訂控制器(部分主機的錯誤修正)。"
+   "使用執行核心的重新映射覆蓋按鍵輸入(部分主機的錯誤修正)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -2241,6 +2233,14 @@ MSG_HASH(
    "啟動復古電玩時，限制滑鼠可移動位置在應用程式視窗中。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   "自動鍵盤與滑鼠鎖定"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   "開啟時禁用快捷鍵，鍵盤輸入只傳送到執行中的核心，並將滑鼠鎖定在視窗內。設定 <偵測> 核心支援回調時開啟。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    "關"
    )
@@ -2254,11 +2254,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "控制器連接中斷暫停遊戲"
+   "控制器斷開時暫停遊戲"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "當控制器連接中斷時暫停遊戲。"
+   "當控制器連接斷開時暫停遊戲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -2306,7 +2306,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "設定連發的週期(幀)。設定值小於二無法作用。"
+   "設定連發的週期(幀數)。設定值小於二無法作用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
@@ -2330,7 +2330,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "設定按下連發鍵要持續連發的單鍵。"
+   "設定「連發鍵」要持續連發的單鍵。僅限模式為 <單鍵 (按住/開關)> 時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -2468,7 +2468,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
-   "組合鍵延遲 (幀)"
+   "組合鍵延遲 (幀數)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
@@ -2476,7 +2476,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
-   "快轉模式 (開/關)"
+   "快轉模式 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
@@ -2492,7 +2492,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
-   "慢動作 (開/關)"
+   "慢動作 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -2508,7 +2508,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "準確同步執行幀率 (開/關)"
+   "準確同步執行幀率 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
@@ -2532,7 +2532,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "全螢幕 (開/關)"
+   "全螢幕 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -2580,7 +2580,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "錄製操作重播 (開/關)"
+   "錄製操作重播 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
@@ -2588,7 +2588,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
-   "暫停 (開/關)"
+   "暫停 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
@@ -2600,7 +2600,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE,
-   "每按一次播放一個影格並暫停執行。"
+   "每按一次播放一幀並暫停執行。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
@@ -2627,6 +2627,14 @@ MSG_HASH(
    "載入「影像著色器」根目錄中的著色器配置檔，載入順序依照檔案名稱顛倒排序。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "著色器 (開關)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
+   "著色器的開關。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
    "下一個金手指編號"
    )
@@ -2644,7 +2652,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
-   "金手指 (開/關)"
+   "金手指 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
@@ -2660,7 +2668,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
-   "靜音 (開/關)"
+   "靜音 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
@@ -2668,7 +2676,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "螢幕鍵盤 (開/關)"
+   "螢幕鍵盤 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OSK,
@@ -2676,7 +2684,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
-   "顯示FPS (開/關)"
+   "顯示FPS (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
@@ -2684,7 +2692,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
-   "顯示技術資訊 (開/關)"
+   "顯示技術資訊 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
@@ -2692,7 +2700,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
-   "顯示網路延遲 (開/關)"
+   "顯示網路延遲 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
@@ -2708,7 +2716,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
-   "建立連線遊戲 (開/關)"
+   "建立連線遊戲 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
@@ -2732,7 +2740,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "淡化對話訊息 (開/關)"
+   "淡化對話訊息 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
@@ -2796,11 +2804,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "滑鼠鎖定 (開/關)"
+   "滑鼠鎖定 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
    "將滑鼠鎖定在應用程式視窗的開關。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
+   "鍵盤與滑鼠鎖定 (開關)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
+   "將鍵盤與滑鼠鎖定在核心的開關。開啟時禁用快捷鍵，鍵盤輸入只傳送到執行中的核心，並將滑鼠鎖定在視窗內。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
@@ -2812,7 +2828,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
-   "選單 (開/關)"
+   "選單 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
@@ -2820,7 +2836,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
-   "錄影 (開/關)"
+   "錄影 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE,
@@ -2828,7 +2844,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
-   "直播 (開/關)"
+   "直播 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
@@ -2836,7 +2852,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
-   "超前執行 (開/關)"
+   "超前執行 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
@@ -3093,7 +3109,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
-   "允許核心選項依選項類別分類顯示。注意事項：執行時必須重新載入核心才能使變更生效。"
+   "允許核心選項依選項類別分類顯示。注意事項: 執行時必須重新載入核心才能使變更生效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -3162,7 +3178,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
-   "「關閉」與「結束復古電玩」時，儲存變更按鍵至已儲存的自訂控制器。"
+   "「關閉」與「結束復古電玩」時，儲存變更按鍵至已儲存的控制器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
@@ -3186,7 +3202,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
-   "「執行」時自動載入自訂控制器。"
+   "「執行」時自動載入已儲存的控制器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -3194,18 +3210,18 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
-   "開啟核心選項共用設定檔"
+   "使用核心選項共用設定檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
-   "開啟時將所有核心選項設定，儲存到根目錄 retroarch-core-options.cfg。關閉時每個核心各別儲存在設定檔資料夾中。"
+   "開啟時將所有核心選項設定，儲存到共用檔案(retroarch-core-options.cfg)。關閉時各別儲存在設定檔資料夾中。"
    )
 
 /* Settings > Saving */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "記憶存檔使用核心資料夾"
+   "記憶存檔建立核心資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
@@ -3213,7 +3229,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "即時存檔使用核心資料夾"
+   "即時存檔建立核心資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
@@ -3221,7 +3237,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "記憶存檔使用載入位置資料夾"
+   "記憶存檔建立位置資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -3229,7 +3245,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "即時存檔使用載入位置資料夾"
+   "即時存檔建立位置資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
@@ -3309,7 +3325,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "建立載入位置資料夾儲存遊戲截圖"
+   "遊戲截圖建立位置資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
@@ -3321,15 +3337,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "將即時存檔儲存到遊戲資料夾"
+   "即時存檔儲存到遊戲資料夾"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "從遊戲資料夾中載入系統檔案"
+   "從遊戲資料夾載入系統檔案"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "將遊戲截圖儲存到遊戲資料夾"
+   "遊戲截圖儲存到遊戲資料夾"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -3630,13 +3646,21 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-   "連接控制器時隱藏虛擬控制器"
+   "連接控制器時隱藏覆蓋元件"
    )
 #if defined(ANDROID)
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
    "顯示動態按鍵"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   "已觸控"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
+   "物理 (控制器)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
@@ -3766,19 +3790,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
-   "顯示螢幕消息。"
+   "顯示螢幕通知。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-   "通知圖標"
+   "螢幕通知圖標"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
-   "通知使用圖標、裝飾動畫和自動調整。"
+   "螢幕通知使用裝飾動畫、指示器和圖標。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
-   "通知圖標自動縮放。"
+   "通知圖標自動縮放"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
+   "依選單比例自動調整通知、指示器和圖標的大小。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   "通知圖標縮放 (全螢幕)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   "設定全螢幕模式下螢幕通知的縮放大小。可用於不與選單同時縮放。僅限「通知圖標自動縮放」關閉時使用。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   "通知圖標縮放 (視窗)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   "設定視窗模式下螢幕通知的縮放大小。可用於不與選單同時縮放。僅限「通知圖標自動縮放」關閉時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
@@ -3834,7 +3878,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
-   "連線遊戲中顯示目前的網路延遲(PING值)。"
+   "連線遊戲中顯示目前的網路延遲(PING值)。僅限「螢幕通知圖標」開啟時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -3842,7 +3886,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-   "執行時顯示圖標加文字標題動畫。僅限「通知圖標」開啟時使用。"
+   "執行時顯示圖標加文字標題動畫。僅限「螢幕通知圖標」開啟時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
@@ -3870,11 +3914,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
-   "載入自訂控制器通知"
+   "載入控制器通知"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
-   "載入自訂控制器時顯示螢幕通知。"
+   "載入控制器存檔時顯示螢幕通知。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
@@ -3890,7 +3934,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
-   "執行 M3U 播放清單時，顯示目前載入編號的螢幕通知。"
+   "執行 M3U 播放清單時，顯示載入映像檔編號的螢幕通知。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -3906,7 +3950,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
-   "螢幕截圖時顯示螢幕通知。"
+   "使用螢幕截圖時顯示螢幕通知。僅限「螢幕通知圖標」開啟時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
@@ -3914,7 +3958,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-   "設定螢幕截圖通知的顯示時間。"
+   "設定螢幕截圖時螢幕通知停留的時間。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
@@ -3929,12 +3973,16 @@ MSG_HASH(
    "非常快"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
+   "瞬間"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
    "截圖快門效果"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-   "設定螢幕截圖使用相機快門效果的顯示時間。"
+   "設定螢幕截圖使用相機快門效果的顯示時間。僅限「螢幕通知圖標」開啟時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
@@ -3966,7 +4014,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
-   "僅在選單開啟時顯示通知。"
+   "僅在選單開啟時顯示螢幕通知。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -3982,43 +4030,51 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "設定通知使用的字體大小(點值)。"
+   "設定螢幕通知使用的字體大小(點值)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
-   "通知的水平位置"
+   "通知位置 (水平)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
+   "調整通知的水平位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
-   "通知的垂直位置"
+   "通知位置 (垂直)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
+   "調整通知的垂直位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
-   "通知顏色(紅)"
+   "通知顏色 (紅)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
-   "通知顏色(綠)"
+   "通知顏色 (綠)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
-   "通知顏色(藍)"
+   "通知顏色 (藍)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
-   "通知背景"
+   "通知背景色"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
-   "通知背景顏色(紅)"
+   "通知背景顏色 (紅)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
-   "通知背景顏色(綠)"
+   "通知背景顏色 (綠)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
-   "通知背景顏色(藍)"
+   "通知背景顏色 (藍)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
@@ -4456,7 +4512,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
-   "自定義"
+   "自訂"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
@@ -4575,11 +4631,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
-   "顯示「儲存到已載入核心選項」"
+   "顯示「取代目前存檔」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
-   "在「核心選項」子選單選項「管理核心選項」中，顯示「儲存到已載入核心選項」選項。"
+   "在「核心選項」子選項「管理核心選項」中，顯示「取代目前存檔」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
@@ -5179,8 +5235,40 @@ MSG_HASH(
    "透過中繼伺服器進行網絡遊戲連接。如果主機位於防火牆之後或有 NAT/UPnP 問題時，推薦開啟。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
+   "中繼伺服器位置"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
+   "選擇要使用的中繼伺服器。選擇越近的地理位置，可使網路延遲越低。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
+   "自訂中繼伺服器地址"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   "輸入自訂的中繼伺服器地址。格式: [地址] 或 [地址|連接埠]。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
+   "北美洲 (美國東岸)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
+   "西歐"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
+   "南美洲 (東南部、巴西)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
+   "東南亞"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
-   "自定義"
+   "自訂"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
@@ -5422,7 +5510,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "限制「我的最愛」列表中的項目數量。當達上限時無法加入新項目，直到舊項目被刪除。設定 <-1> 時無上限。\n警告：減少數量將刪除現有的項目！"
+   "限制「我的最愛」列表中的項目數量。當達上限時無法加入新項目，直到舊項目被刪除。設定 <-1> 時無上限。\n警告: 減少數量將刪除現有的項目！"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -5753,7 +5841,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
-   "設定選單主題的資源儲存位置。"
+   "設定選單主題資源的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
@@ -5821,11 +5909,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
-   "影像過濾器"
+   "影像濾鏡"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
-   "設定中央處理器架構的影像過濾器儲存位置。"
+   "設定影像濾鏡(CPU架構)的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
@@ -5841,7 +5929,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
-   "設定圖形處理器架構的著色器配置檔儲存位置。"
+   "設定著色器配置檔(GPU架構)的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
@@ -5889,7 +5977,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
-   "設定遊戲控制器配置檔的儲存位置。"
+   "設定遊戲控制器配置檔(隨插即用)的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
@@ -6672,19 +6760,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
-   "儲存為遊戲選項"
+   "儲存為遊戲核心選項"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "刪除遊戲選項"
+   "刪除此遊戲核心選項"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
-   "儲存為載入位置選項"
+   "儲存為載入位置核心選項"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "刪除載入位置選項"
+   "刪除此載入位置核心選項"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
@@ -6696,11 +6784,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "重置核心選項為預設值。"
+   "重置所有核心選項為預設值。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
-   "儲存到已載入核心選項"
+   "取代目前存檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   "儲存目前的設定到已載入核心選項。避免應用程式意外結束而未儲存設定。"
    )
 
 /* - Legacy (unused) */
@@ -6720,35 +6812,35 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
-   "已載入自訂控制器:"
+   "已載入控制器:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
-   "載入自訂控制器"
+   "載入控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
-   "儲存為核心自訂控制器"
+   "儲存為核心控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-   "刪除核心自訂控制器"
+   "刪除此核心控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
-   "儲存為載入位置自訂控制器"
+   "儲存為載入位置控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "刪除載入位置自訂控制器"
+   "刪除此載入位置控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
-   "儲存為遊戲自訂控制器"
+   "儲存為遊戲控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-   "刪除遊戲自訂控制器"
+   "刪除此遊戲控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -6756,15 +6848,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
-   "重置控制器按鍵為預設值。"
+   "重置控制器所有按鍵為預設值。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
-   "更新到自訂控制器"
+   "取代目前存檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
-   "將目前變更的按鍵設定，更新到自訂控制器中覆蓋。"
+   "儲存目前的按鍵到已載入控制器。避免應用程式意外結束而未儲存設定。"
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -7005,11 +7097,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "選擇其他的光碟映像檔載入執行，並加入到映像檔可使用編號中，加入編號後支援使用快捷鍵切換映像檔。\n注意事項：這是一項舊功能。建議使用 M3U 格式載入映像檔，可跳過此步驟，直接使用快捷鍵切換映像檔。"
+   "選擇其他的光碟映像檔載入執行，並加入到映像檔可使用編號中，加入編號後支援使用快捷鍵切換映像檔。\n注意事項: 這是一項舊功能。建議使用 M3U 格式載入映像檔，可跳過此步驟，直接使用快捷鍵切換映像檔。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "選擇其他的光碟映像檔，加入到映像檔可使用編號中等待載入。\n注意事項：這是一項舊功能。建議使用 M3U 格式載入映像檔，可跳過此步驟，直接使用快捷鍵切換映像檔。"
+   "選擇其他的光碟映像檔，加入到編號中等待載入。\n注意事項: 這是一項舊功能。建議使用 M3U 格式載入映像檔，可跳過此步驟，直接使用快捷鍵切換映像檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -7025,6 +7117,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    "開啟著色器"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
+   "開啟影像著色器渲染管線。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
@@ -7145,7 +7241,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
-   "儲存目前著色器設置，並預設為同一個資料夾載入時，所使用的著色器。"
+   "儲存目前著色器設置，並預設為路徑相同時使用的著色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
@@ -7160,7 +7256,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
-   "沒有預設的著色器配置。"
+   "沒有預設的著色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
@@ -7184,7 +7280,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-   "刪除同一個資料夾載入時，預設使用的著色器。"
+   "刪除路徑相同時預設使用的著色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
@@ -7199,7 +7295,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
-   "沒有著色器參數。"
+   "沒有可用的著色器參數。"
    )
 
 /* Quick Menu > Overrides */
@@ -7214,11 +7310,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "儲存為載入位置佈景主題"
+   "儲存為位置佈景主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "儲存目前覆蓋元件與影像佈景的設定，並預設為同一個資料夾載入時，所使用的佈景主題。"
+   "儲存目前覆蓋元件與影像佈景的設定，並預設為路徑相同時的佈景主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -7895,6 +7991,22 @@ MSG_HASH(
    "自動"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
+   "16:9 (置中)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
+   "16:10 (置中)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
+   "3:2 (置中)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
+   "5:3 (置中)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    "關"
    )
@@ -7904,7 +8016,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
-   "自定義"
+   "自訂"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_RED,
+   "經典紅"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_ORANGE,
+   "經典橘"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_YELLOW,
+   "經典黃"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREEN,
+   "經典綠"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE,
+   "經典藍"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LEGACY_RED,
@@ -7916,7 +8048,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_MIDNIGHT_BLUE,
-   "藍黑色"
+   "午夜藍"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN,
@@ -7924,7 +8056,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ELECTRIC_BLUE,
-   "鐵藍色"
+   "電光藍"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
@@ -7937,6 +8069,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC,
    "動態"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_DARK,
+   "深灰色"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_LIGHT,
+   "亮灰色"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
@@ -7964,6 +8104,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
    "選單字體"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+   "選單字體顏色 (紅)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   "選單字體顏色 (綠)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   "選單字體顏色 (藍)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_THEME,
@@ -8038,7 +8190,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
-   "自定義"
+   "自訂"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
@@ -8110,7 +8262,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GAMECUBE_PURPLE,
-   "方糖紫"
+   "魔方紫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_FAMICOM_RED,
@@ -8162,6 +8314,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    "設定選單的配色方式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
+   "白色 (基本)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
+   "黑色 (基本)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
+   "深灰色"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
+   "亮灰色"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN,
+   "紫雨"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
@@ -8232,6 +8404,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW,
    "黃色"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN,
+   "可愛青"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN,
+   "可愛綠"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_ORANGE,
+   "可愛橘"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PURPLE,
+   "可愛紫"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED,
+   "可愛紅"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_DARK,
+   "深灰色"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
+   "亮灰色"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
@@ -8334,7 +8534,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
-   "自定義..."
+   "自訂..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
@@ -8678,7 +8878,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SHADER_NO_PASSES,
-   "沒有著色器通道。"
+   "沒有可用的著色器通道。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RESET_ALL_PASSES,
@@ -8912,7 +9112,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
-   "自定義比率"
+   "自訂比例"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
@@ -9256,6 +9456,10 @@ MSG_HASH(
    "連接來自: \"%s (%s)\""
    )
 MSG_HASH(
+   MSG_PRIVATE_OR_SHARED_ADDRESS,
+   "外部網路具有私人或共享地址。可以考慮使用中繼伺服器。"
+   )
+MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "設定光碟機裡光碟"
    )
@@ -9478,7 +9682,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
-   "核心設定檔建立成功。"
+   "已建立核心選項設定檔。"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
+   "已永久刪除核心選項設定檔。"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_RESET,
+   "已重置所有核心選項為預設值。"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "已儲存核心選項到:"
    )
 MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
@@ -9522,7 +9738,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
-   "已中斷輸入裝置與連接埠的連接。"
+   "已斷開輸入裝置與連接埠的連接。"
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -9546,7 +9762,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
-   "Libretro core 需載入相關特定遊戲內容, 但程式未找到可載入內容."
+   "缺少 Libretro 核心需要的特殊檔案。"
    )
 MSG_HASH(
    MSG_ERROR_PARSING_ARGUMENTS,
@@ -9769,6 +9985,14 @@ MSG_HASH(
    "抓取鼠標狀態"
    )
 MSG_HASH(
+   MSG_GAME_FOCUS_ON,
+   "開啟鍵盤與滑鼠鎖定。"
+   )
+MSG_HASH(
+   MSG_GAME_FOCUS_OFF,
+   "關閉鍵盤與滑鼠鎖定。"
+   )
+MSG_HASH(
    MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
    "比較檔案 CRC32 錯誤."
    )
@@ -9926,11 +10150,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
-   "已儲存自訂控制器。"
+   "已儲存控制器。"
    )
 MSG_HASH(
    MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
-   "已刪除自訂控制器。"
+   "已刪除控制器。"
    )
 MSG_HASH(
    MSG_REMAP_FILE_RESET,
@@ -10194,15 +10418,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_REMAP_FILE_LOADED,
-   "已載入遊戲自訂控制器。"
+   "已載入: 遊戲控制器。"
    )
 MSG_HASH(
    MSG_DIRECTORY_REMAP_FILE_LOADED,
-   "已載入為載入位置自訂控制器。"
+   "已載入: 載入位置控制器。"
    )
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
-   "已載入核心自訂控制器。"
+   "已載入: 核心控制器。"
    )
 MSG_HASH(
    MSG_REMAP_FILE_FLUSHED,
@@ -10373,6 +10597,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    "拆開搖桿"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+   "通知圖標縮放"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
+   "設定螢幕通知的縮放大小。可用於不與選單同時縮放。僅限「通知圖標自動縮放」關閉時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,

@@ -488,6 +488,10 @@ MSG_HASH(
    "Mendasar (Simpan/Muat)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   "Berserial (Simpan/Muat, Gerak Mundur)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Tidak ditemukan, yang diperlukan:"
    )
@@ -570,13 +574,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Arsitektur CPU"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Inti CPU:"
-   )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "Jumlah core yang dimiliki CPU."
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "'Core' CPU"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -1203,6 +1203,10 @@ MSG_HASH(
 
 /* Core option category placeholders for icons */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
+   "Retasan"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
    "Pemetaan"
    )
@@ -1582,6 +1586,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "Laju penyegaran seperti dilansir driver tampilan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+   "Hanya di Mode Layar Penuh Berjendela"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
@@ -2459,6 +2467,14 @@ MSG_HASH(
    "Tutup RetroArch"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
+   "Gerak Mundur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
+   "Menggerak mundur konten saat tombol ditahan.\n'Dukungan Gerak Mundur' harus nyala."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
    "Putar Ulang Masukan Rekaman (Mati/Nyala)"
    )
@@ -2604,9 +2620,29 @@ MSG_HASH(
 
 /* Settings > Frame Throttle */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
+   "Gerak Mundur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+   "Ubah pengaturan gerak mundur."
+   )
 
 /* Settings > Frame Throttle > Rewind */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
+   "Dukungan Gerak Mundur"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
+   "Laju Gerak Mundur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
+   "Jumlah laju bingkai saat gerak mundur per langkah. Semakin tinggi semakin cepat."
+   )
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
@@ -3781,6 +3817,10 @@ MSG_HASH(
    "Profil stik kendali berhasil disimpan."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Mode Capaian Garis Keras Diaktifkan: save state & gerak mundur dinonaktifkan."
+   )
+MSG_HASH(
    MSG_FILE_NOT_FOUND,
    "Berkas tidak ditemukan"
    )
@@ -3803,6 +3843,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_REMOVED_DISK_FROM_TRAY,
    "Piringan dikeluarkan dari baki."
+   )
+MSG_HASH(
+   MSG_REWINDING,
+   "Bergerak mundur."
+   )
+MSG_HASH(
+   MSG_REWIND_UNSUPPORTED,
+   "Gerak mundur tidak bisa karena core ini tidak ada dukungan save state berserial."
+   )
+MSG_HASH(
+   MSG_SLOW_MOTION_REWIND,
+   "Gerak mundur lambat."
    )
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
