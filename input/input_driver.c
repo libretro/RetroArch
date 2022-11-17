@@ -3447,8 +3447,8 @@ unsigned get_kr_composition( unsigned comp, unsigned* padd)
    wchar_t*	tmp1;
    wchar_t*	tmp2;
    unsigned	tadd = *padd & 0xffffff;
-   if( !MultiByteToWideChar(CP_UTF8, 0, (char*)&comp, -1, comp16,2) ) return comp;
-   if( !MultiByteToWideChar(CP_UTF8, 0, (char*)&tadd, -1, comp16+1,2) ) return comp;
+   if( !MultiByteToWideChar(CODEPAGE_UTF8, 0, (char*)&comp, -1, comp16,2) ) return comp;
+   if( !MultiByteToWideChar(CODEPAGE_UTF8, 0, (char*)&tadd, -1, comp16+1,2) ) return comp;
    
    if( (tmp1=wcschr(s1,comp16[0])) )  c1 = tmp1-s1;
    if( (tmp1=wcschr(s1,comp16[1])) )  nv = tmp1-s1;
@@ -3462,7 +3462,7 @@ unsigned get_kr_composition( unsigned comp, unsigned* padd)
    if( tmp2 )	
    {
       new16[0]= tmp2[2];
-      if( !WideCharToMultiByte( CP_UTF8, 0, new16, -1, utf8, 8, NULL, NULL )) return comp;	
+      if( !WideCharToMultiByte( CODEPAGE_UTF8, 0, new16, -1, utf8, 8, NULL, NULL )) return comp;	
       *padd = *(unsigned*)utf8 | 0x1000000; 
       return 0;
    }
@@ -3523,7 +3523,7 @@ unsigned get_kr_composition( unsigned comp, unsigned* padd)
            c3=0;
 		}
         new16[0] = 0xAC00 + tv*(28*21) + (nv-19)*28;
-        if( WideCharToMultiByte( CP_UTF8, 0, new16, -1, utf8, 8, NULL, NULL ))	*padd = *(unsigned*)utf8 | 0x1000000;
+        if( WideCharToMultiByte( CODEPAGE_UTF8, 0, new16, -1, utf8, 8, NULL, NULL ))	*padd = *(unsigned*)utf8 | 0x1000000;
 		new16[0] = 0xAC00 + c1*(28*21) +c2*28 + c3;
         if( WideCharToMultiByte( CP_UTF8, 0, new16, -1, utf8, 8, NULL, NULL ))	comp = *(unsigned*)utf8;
         return comp;
