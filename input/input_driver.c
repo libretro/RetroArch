@@ -272,15 +272,6 @@ input_driver_t *input_drivers[] = {
 #if defined(SWITCH)
    &input_switch,
 #endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
-   &input_sdl,
-#endif
-#if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
-   &input_sdl_dingux,
-#endif
-#ifdef HAVE_DINPUT
-   &input_dinput,
-#endif
 #ifdef HAVE_X11
    &input_x,
 #endif
@@ -290,8 +281,23 @@ input_driver_t *input_drivers[] = {
 #ifdef XENON
    &input_xenon360,
 #endif
+#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
+#ifdef HAVE_WINRAWINPUT
+   /* winraw only available since XP */
+   &input_winraw,
+#endif
+#endif
 #if defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1) || defined(__WINRT__)
    &input_xinput,
+#endif
+#ifdef HAVE_DINPUT
+   &input_dinput,
+#endif
+#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+   &input_sdl,
+#endif
+#if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+   &input_sdl_dingux,
 #endif
 #ifdef GEKKO
    &input_gx,
@@ -319,12 +325,6 @@ input_driver_t *input_drivers[] = {
 #endif
 #ifdef DJGPP
    &input_dos,
-#endif
-#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
-#ifdef HAVE_WINRAWINPUT
-   /* winraw only available since XP */
-   &input_winraw,
-#endif
 #endif
    &input_null,
    NULL,
