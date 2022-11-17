@@ -22,6 +22,7 @@ import UIKit
 @objc public protocol EmulatorTouchMouseHandlerDelegate: AnyObject {
    func handleMouseClick(isLeftClick: Bool, isPressed: Bool)
    func handleMouseMove(x: CGFloat, y: CGFloat)
+   func handlePointerMove(x: CGFloat, y: CGFloat)
 }
 
 @objcMembers public class EmulatorTouchMouseHandler: NSObject, UIPointerInteractionDelegate {
@@ -60,8 +61,6 @@ import UIKit
    
    private let mediumHaptic = UIImpactFeedbackGenerator(style: .medium)
    
-   private var previousPoint: CGPoint = CGPoint(x: 0, y: 0)
-
    public init(view: UIView, delegate: EmulatorTouchMouseHandlerDelegate? = nil) {
       self.view = view
       self.delegate = delegate
@@ -212,17 +211,8 @@ import UIKit
        defaultRegion: UIPointerRegion
      ) -> UIPointerRegion? {
         guard !enabled else { return defaultRegion }
-        let a = self.previousPoint
-        let b = request.location
-        delegate?.handleMouseMove(x: b.x-a.x, y: b.y-a.y)
-        self.previousPoint=b
+        let location = request.location;
+        delegate?.handlePointerMove(x: location.x, y: location.y)
         return defaultRegion
    }
-
-   @available(iOS 13.4, *)
-   public func pointerInteraction(_ interaction: UIPointerInteraction, styleFor region: UIPointerRegion) -> UIPointerStyle? {
-      guard !enabled else { return nil }
-      return UIPointerStyle.hidden()
-   }
-
 }
