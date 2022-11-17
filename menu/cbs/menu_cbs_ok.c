@@ -2561,22 +2561,19 @@ static int action_ok_playlist_entry_collection(const char *path,
          if (core_info && !string_is_empty(core_info->path))
             strlcpy(core_path, core_info->path, sizeof(core_path));
          else
-         {
             /* Core path is invalid - just copy what we have
              * and hope for the best... */
+#endif
+         {
             strlcpy(core_path, entry->core_path, sizeof(core_path));
             playlist_resolve_path(PLAYLIST_LOAD, true, core_path, sizeof(core_path));
          }
-#else
-         strlcpy(core_path, entry->core_path, sizeof(core_path));
-         playlist_resolve_path(PLAYLIST_LOAD, true, core_path, sizeof(core_path));
-#endif
       }
    }
 
    /* Ensure core path is valid */
-   if (string_is_empty(core_path) ||
-       (!core_is_builtin && !path_is_valid(core_path)))
+   if (    string_is_empty(core_path)
+       || (!core_is_builtin && !path_is_valid(core_path)))
       goto error;
 
    /* Subsystem codepath */
@@ -2936,7 +2933,7 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
          menu->scratch_buf, sizeof(combined_path));
 
    /* the push function reads our entry as const, so these casts are safe */
-   entry.path = combined_path;
+   entry.path      = combined_path;
    entry.core_path = (char*)"builtin";
    entry.core_name = (char*)"musicplayer";
 
@@ -2995,8 +2992,8 @@ static int action_ok_bluetooth(const char *path, const char *label,
 #ifdef HAVE_WIFI
 static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 {
-   unsigned idx = menu_input_dialog_get_kb_idx();
-   wifi_network_scan_t *scan = driver_wifi_get_ssids();
+   unsigned idx                 = menu_input_dialog_get_kb_idx();
+   wifi_network_scan_t *scan    = driver_wifi_get_ssids();
    wifi_network_info_t *netinfo = &scan->net_list[idx];
 
    if (idx < RBUF_LEN(scan->net_list) && passphrase)
@@ -3012,6 +3009,7 @@ static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 static int action_ok_wifi(const char *path, const char *label_setting,
       unsigned type, size_t idx, size_t entry_idx)
 {
+   menu_input_ctx_line_t line;
    wifi_network_scan_t* scan = driver_wifi_get_ssids();
    if (idx >= RBUF_LEN(scan->net_list))
       return -1;
@@ -3022,19 +3020,16 @@ static int action_ok_wifi(const char *path, const char *label_setting,
       task_push_wifi_connect(NULL, &scan->net_list[idx]);
       return 0;
    }
-   else
-   {
-      /* Show password input dialog */
-      menu_input_ctx_line_t line;
-      line.label         = "Passphrase";
-      line.label_setting = label_setting;
-      line.type          = type;
-      line.idx           = (unsigned)idx;
-      line.cb            = menu_input_wifi_cb;
-      if (!menu_input_dialog_start(&line))
-         return -1;
-      return 0;
-   }
+
+   /* Show password input dialog */
+   line.label         = "Passphrase";
+   line.label_setting = label_setting;
+   line.type          = type;
+   line.idx           = (unsigned)idx;
+   line.cb            = menu_input_wifi_cb;
+   if (!menu_input_dialog_start(&line))
+      return -1;
+   return 0;
 }
 #endif
 #endif
@@ -3083,12 +3078,10 @@ static void menu_input_st_string_cb_disable_kiosk_mode(void *userdata,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
-      {
          runloop_msg_queue_push(
             msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK),
             1, 100, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
    }
 
    menu_input_dialog_end();
@@ -3114,12 +3107,10 @@ static void menu_input_st_string_cb_enable_settings(void *userdata,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
-      {
          runloop_msg_queue_push(
             msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK),
             1, 100, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
    }
 
    menu_input_dialog_end();
@@ -3775,8 +3766,8 @@ static int action_ok_core_deferred_set(const char *new_core_path,
    char resolved_core_path[PATH_MAX_LENGTH];
    char msg[PATH_MAX_LENGTH];
 
-   if (!menu ||
-       string_is_empty(new_core_path))
+   if (  !menu
+       || string_is_empty(new_core_path))
       return menu_cbs_exit();
 
    /* Get core display name */
@@ -3963,18 +3954,16 @@ static int action_ok_audio_run(const char *path,
 int action_ok_core_option_dropdown_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   char option_path_str[256];
+   char option_lbl_str[256];
    core_option_manager_t *coreopts = NULL;
    struct core_option *option      = NULL;
    const char *value_label_0       = NULL;
    const char *value_label_1       = NULL;
-   size_t option_index;
-   char option_path_str[256];
-   char option_lbl_str[256];
+   size_t option_index             = type - MENU_SETTINGS_CORE_OPTION_START;
 
-   option_path_str[0] = '\0';
-   option_lbl_str[0]  = '\0';
-
-   option_index       = type - MENU_SETTINGS_CORE_OPTION_START;
+   option_path_str[0]              = '\0';
+   option_lbl_str[0]               = '\0';
 
    /* Boolean options are toggled directly,
     * without the use of a drop-down list */
@@ -3992,10 +3981,11 @@ int action_ok_core_option_dropdown_list(const char *path,
     *   it has exactly 2 values (i.e. on/off) */
    option = (struct core_option*)&coreopts->opts[option_index];
 
-   if (!option ||
-       (option->vals->size != 2) ||
-       ((option->index != 0) &&
-            (option->index != 1)))
+   if (   (!option)
+       ||  (option->vals->size != 2)
+       || ((option->index != 0)
+       &&  (option->index != 1))
+      )
       goto push_dropdown_list;
 
    /* > Check whether option values correspond
@@ -4003,12 +3993,12 @@ int action_ok_core_option_dropdown_list(const char *path,
    value_label_0 = option->val_labels->elems[0].data;
    value_label_1 = option->val_labels->elems[1].data;
 
-   if (string_is_empty(value_label_0) ||
-       string_is_empty(value_label_1) ||
-       !((string_is_equal(value_label_0,   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))   &&
-            string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))) ||
-         (string_is_equal(value_label_0,   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))  &&
-            string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))))
+   if (   string_is_empty(value_label_0)
+       || string_is_empty(value_label_1)
+       || !((string_is_equal(value_label_0,   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))
+       &&   string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+       ||  (string_is_equal(value_label_0,   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
+       &&   string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))))
       goto push_dropdown_list;
 
    /* > Update value and return */
