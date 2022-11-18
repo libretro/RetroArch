@@ -1110,7 +1110,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   "Ubah pengaturan gerak mundur, maju-cepat, dan lambat."
+   "Ubah pengaturan gerak mundur, maju-cepat, dan gerak lambat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
@@ -2015,7 +2015,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "Panjang buffer menengah (dalam bingkai) saat menggunakan driver WASAPI dalam mode bersama."
+   "Panjang penyangga data menengah (berbentuk bingkai) saat menggunakan pengandar WASAPI di 'mode bersama'."
    )
 
 /* Settings > Audio > Output */
@@ -2642,6 +2642,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
    "Jumlah laju bingkai saat gerak mundur per langkah. Semakin tinggi semakin cepat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
+   "Ukuran Penyangga Gerak Mundur (MB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
+   "Banyaknya memori (bentuk MB) untuk meluangkan penyangga gerak mundur. Meningkatkan jumlahnya akan menambah riwayat gerak mundur."
    )
 
 /* Settings > Frame Throttle > Frame Time Counter */
@@ -3763,6 +3771,10 @@ MSG_HASH(
 
 /* Notifications */
 
+MSG_HASH(
+   MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
+   "Berkasnya sudah ada. Menyimpan ke buffer cadangan"
+   )
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Mengatur piringan di baki"

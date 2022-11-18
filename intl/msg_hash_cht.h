@@ -303,7 +303,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "核心下載"
+   "下載核心"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
@@ -604,7 +604,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "中央處理器架構"
+   "CPU 架構"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -1685,8 +1685,16 @@ MSG_HASH(
    "以全螢幕模式開始"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "使用全螢幕模式。可在執行時切換為視窗。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "無邊框視窗全螢幕模式"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   "開啟時防止全螢幕模式變更為無框視窗顯示。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -1694,7 +1702,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   "設定全螢幕時的螢幕寬度，未設定時將使用桌面解析度"
+   "設定全螢幕的顯示寬度，未設定時使用桌面解析度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
@@ -1702,7 +1710,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   "設定全螢幕時的螢幕高度，未設定時將使用桌面解析度"
+   "設定全螢幕的顯示高度，未設定時使用桌面解析度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
@@ -1714,6 +1722,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    "視窗縮放"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   "變更視窗的大小(倍率)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1729,15 +1741,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
-   "顯示視窗的標題欄與邊框。"
+   "顯示視窗的標題列與邊框。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+   "顯示選單列"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   "顯示視窗選單列。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    "記住視窗位置與大小"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "使用滑鼠調整視窗大小和位置，結束應用程式時儲存視窗大小和位置。關閉時變更為「視窗縮放」選項的設定。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    "使用自訂視窗大小"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "開啟時使用「視窗寬度」和「視窗高度」固定視窗大小，結束應用程式時儲存視窗大小和位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1745,7 +1773,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   "自訂視窗寬度"
+   "視窗顯示的寬度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
@@ -1753,15 +1781,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   "自訂視窗高度"
+   "視窗顯示的高度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   "最大視窗寬度"
+   "限制縮放寬度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "限制「視窗縮放」調整時，視窗縮放的最大寬度。設定 <0> 時不限制。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   "最大視窗高度"
+   "限制縮放高度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "限制「視窗縮放」調整時，視窗縮放的最大高度。設定 <0> 時不限制。"
    )
 
 /* Settings > Video > Scaling */
@@ -1871,6 +1907,10 @@ MSG_HASH(
    "自動"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   "生效"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
    "強制圖形處理器同步"
    )
@@ -1880,7 +1920,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   "強制GPU同步幀數"
+   "圖形處理器同步幀數"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   "開啟「強制圖形處理器同步」時顯示，設定中央處理器快於圖形處理器的執行幀數。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
@@ -3057,12 +3101,44 @@ MSG_HASH(
 /* Settings > Latency */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
+   "[超前執行無法使用]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
+   "不支援儲存即時存檔，核心和超前執行不相容。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
    "超前執行降低延遲"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
    "執行核心邏輯提前一幀或多幀後載入狀態，用於降低按鍵輸入延遲。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
+   "超前執行提前幀數"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+   "設定提前執行的幀數。如果超過遊戲內設定的延遲幀數，會導致遊戲畫面發生錯誤。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
+   "第二實例超前執行"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
+   "使用第二個應用程式核心實例進行超前執行。防止載入即時存檔時產生音頻問題。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+   "隱藏超前執行警告"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+   "隱藏使用超前執行時，核心不支援儲存即時存檔的警告通知。"
    )
 
 /* Settings > Core */
@@ -3073,7 +3149,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
-   "為硬體渲染的核心提供私有環境。避免假設兩幀之間硬體狀態變化。"
+   "提供硬體渲染的核心私有環境。避免產生兩幀之間硬體狀態變化。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
@@ -3277,7 +3353,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "設定即時存檔保留數量"
+   "即時存檔保留數量"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
@@ -3408,7 +3484,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
-   "效能計數器 (僅限Switch)"
+   "效能計數器 (僅限Switch主機)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
@@ -3505,7 +3581,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
-   "設定每次倒帶播放的速度。"
+   "設定倒帶播放的幀數。較高的值會加快倒帶速度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
@@ -4336,11 +4412,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   "顯示「核心下載」"
+   "顯示「下載核心」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-   "在「載入核心」選項中顯示「核心下載」選項，在「線上更新」選項中顯示「核心下載」和「更新核心資料庫」選項。"
+   "在「載入核心」選項中顯示「下載核心」選項，在「線上更新」選項中顯示「下載核心」和「更新核心資料庫」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
@@ -5388,7 +5464,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "設定按鍵輸入延遲幀數，用於隱藏網路延遲。連線遊戲使用按鍵延遲，可降低CPU使用率並減少誤差。"
+   "設定按鍵輸入延遲幀數，用於隱藏網路延遲。可降低CPU使用率並減少畫面誤差，代價是明顯的按鍵延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -5396,7 +5472,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "設定按鍵輸入延遲幀數範圍，用於隱藏網路延遲。連線遊戲使用按鍵延遲，可降低CPU使用率並減少誤差。"
+   "設定按鍵輸入延遲幀數範圍，用於隱藏網路延遲。可降低CPU使用率並減少畫面誤差，代價是無預測的按鍵延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -5456,22 +5532,42 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "更新程序"
+   "更新設定"
    )
 
 /* Settings > Network > Updater */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-   "構建機器人核心URL"
+   "Buildbot 核心網址"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
+   "設定更新程式使用的 libretro buildbot 核心資料夾網址。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-   "構建機器人資源URL"
+   "Buildbot 資源網址"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
+   "設定更新程式使用的 libretro buildbot 資源資料夾網址。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-   "自動解壓下載的檔案"
+   "下載檔案自動解壓縮"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+   "下載檔案後自動解壓縮到儲存位置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "顯示實驗版核心"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "下載核心選項中顯示實驗版核心。實驗版用於開發與測試，不推薦用於預設載入核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
@@ -5484,6 +5580,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
    "核心備份保留數量"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "設定更新和下載時核心備份保留數量。達限制時自動刪除舊的備份檔案。手動備份不受此選項影響。"
    )
 
 /* Settings > Playlists */
@@ -5747,7 +5847,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "允許 Discord 應用程式，使用目前的動態作為狀態訊息。僅適用於電腦版本。"
+   "允許 Discord 應用程式，使用目前的動態作為狀態訊息。僅適用於 Discord 電腦版本。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -8067,6 +8167,30 @@ MSG_HASH(
    "火山紅"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA,
+   "德古拉紫"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK,
+   "暗橘色 (Gruvbox)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_HACKING_THE_KERNEL,
+   "駭客攻擊綠"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NORD,
+   "北方藍"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_DARK,
+   "暗青色 (Solarized)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_LIGHT,
+   "亮橘色 (Solarized)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC,
    "動態"
    )
@@ -8317,11 +8441,43 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-   "白色 (基本)"
+   "基本白"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
-   "黑色 (基本)"
+   "基本黑"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_NORD,
+   "北方藍"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
+   "暗橘色 (Gruvbox)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY,
+   "波森莓紫"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_HACKING_THE_KERNEL,
+   "駭客攻擊綠"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_TWILIGHT_ZONE,
+   "迷離境界紫"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
+   "德古拉紫"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
+   "暗青色 (Solarized)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
+   "亮橘色 (Solarized)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
@@ -8333,7 +8489,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN,
-   "紫雨"
+   "紫雨紫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
@@ -8406,6 +8562,18 @@ MSG_HASH(
    "黃色"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NORD,
+   "北方藍"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK,
+   "暗橘色 (Gruvbox)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
+   "暗青色 (Solarized)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN,
    "可愛青"
    )
@@ -8424,6 +8592,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED,
    "可愛紅"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_HACKING_THE_KERNEL,
+   "駭客攻擊綠"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_DARK,
@@ -8941,7 +9113,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "更新程序"
+   "更新設定"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
@@ -9424,6 +9596,14 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "核心安裝失敗"
    )
 MSG_HASH(
+   MSG_FAILED_TO_SAVE_DEBUG_INFO,
+   "無法儲存除錯資訊。"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_DEBUG_INFO,
+   "無法將除錯資訊傳送到服務器。"
+   )
+MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,
    "全區域混音器聲音大小"
    )
@@ -9515,6 +9695,14 @@ MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "你的暱稱已修改為 \"%s\""
    )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "無法移除用戶端: 「%s」"
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   "無法封鎖用戶端: 「%s」"
+   )
 
 MSG_HASH(
    MSG_AUDIO_VOLUME,
@@ -9598,7 +9786,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ADD_TO_FAVORITES_FAILED,
-   "加入到我的最愛失敗，列表已滿。"
+   "無法加入到我的最愛: 列表已滿。"
    )
 MSG_HASH(
    MSG_RESET_CORE_ASSOCIATION,
@@ -9607,6 +9795,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_APPENDED_DISK,
    "磁碟已加入"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "無法加入映像檔。"
    )
 MSG_HASH(
    MSG_APPLICATION_DIR,
@@ -9802,95 +9994,99 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
-   "無法讓觀眾加入."
+   "無法加入觀眾。"
    )
 MSG_HASH(
    MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
-   "無法配置記憶體給已俢改的遊戲"
+   "無法分配記憶體給使用修正檔的遊戲。"
    )
 MSG_HASH(
    MSG_FAILED_TO_APPLY_SHADER,
-   "套用著色器失敗。"
+   "無法套用著色器。"
    )
 MSG_HASH(
    MSG_FAILED_TO_APPLY_SHADER_PRESET,
-   "套用著色器配置失敗:"
+   "無法套用著色器配置:"
    )
 MSG_HASH(
    MSG_FAILED_TO_BIND_SOCKET,
-   "綁定網絡接口失敗。"
+   "無法綁定接口。"
    )
 MSG_HASH(
    MSG_FAILED_TO_CREATE_THE_DIRECTORY,
-   "創建目錄失敗。"
+   "無法建立資料夾。"
    )
 MSG_HASH(
    MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
-   "從壓縮文件中提取內容失敗"
+   "無法從壓縮檔中提取檔案。"
    )
 MSG_HASH(
    MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
-   "從客戶端獲取暱稱失敗."
+   "無法從用戶端取得暱稱。"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD,
-   "載入失敗"
+   "無法載入。"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
-   "載入內容失敗"
+   "無法載入檔案。"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "載入視訊文件失敗"
+   "無法載入影片。"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
-   "載入覆蓋圖層失敗。"
+   "無法載入覆蓋元件。"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,
-   "載入即時存檔失敗於"
+   "無法載入即時存檔。"
    )
 MSG_HASH(
    MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
-   "打開libretro核心失敗"
+   "無法開啟 libretro 核心。"
    )
 MSG_HASH(
    MSG_FAILED_TO_PATCH,
-   "補丁應用失敗"
+   "無法修正。"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
-   "無法接收連線端的資訊"
+   "無法從用戶端接收標頭。"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_NICKNAME,
-   "無法接收暱稱."
+   "無法接收暱稱。"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
-   "無法接收主控端的暱稱."
+   "無法從主機接收暱稱。"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
-   "無法接收主控端的暱稱大小."
+   "無法從主機接收暱稱長度。"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
-   "無法接收主控端 SRAM 資料."
+   "無法從主機接收 SRAM 資料。"
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "移除光碟失敗."
+   "無法從托盤中取出。"
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
-   "移除臨時文件失敗"
+   "無法刪除暫存檔案。"
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_SRAM,
-   "SRAM 存檔失敗"
+   "無法儲存 SRAM。"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "無法載入 SRAM。"
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
@@ -10437,8 +10633,36 @@ MSG_HASH(
    "更新失敗(檔案唯讀):"
    )
 MSG_HASH(
+   MSG_RUNAHEAD_ENABLED,
+   "已開啟超前執行。已刪除延遲幀數: %u。"
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   "已開啟第二實例超前執行。已刪除延遲幀數: %u。"
+   )
+MSG_HASH(
    MSG_RUNAHEAD_DISABLED,
    "已關閉超前執行。"
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "超前執行已關閉，此核心不支援儲存即時存檔。"
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
+   "超前執行已關閉，不確定此核心是否支援儲存即時存檔。"
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+   "無法儲存即時存檔。已關閉超前執行。"
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+   "無法載入即時存檔。已關閉超前執行。"
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+   "無法建立第二個實例。超前執行將使用一個實例執行。"
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
