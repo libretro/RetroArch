@@ -371,7 +371,23 @@ void *glkitview_init(void);
         return;
     apple->mouse_rel_x = (int16_t)x;
     apple->mouse_rel_y = (int16_t)y;
+   // use location position to track pointer
+   if (@available(iOS 13.4, *)) {
+      apple->window_pos_x = 0;
+      apple->window_pos_y = 0;
+   }
 }
+
+-(void)handlePointerMoveWithX:(CGFloat)x y:(CGFloat)y
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)
+      input_state_get_ptr()->current_data;
+   if (!apple)
+      return;
+   apple->window_pos_x = (int16_t)x;
+   apple->window_pos_y = (int16_t)y;
+}
+
 #endif
 
 #pragma mark GCDWebServerDelegate

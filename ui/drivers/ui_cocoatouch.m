@@ -298,7 +298,10 @@ enum
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
-
+    if (@available(iOS 13.4, *)) {
+        if (event.type == UIEventTypeHover)
+            return;
+    }
    if (event.allTouches.count)
       handle_touch_event(event.allTouches.allObjects);
 
