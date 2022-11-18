@@ -483,7 +483,7 @@ static int16_t cocoa_input_state(
                      val = apple->mouse_rel_y;
                   }
 #else
-                val = apple->mouse_rel_y;
+                  val = apple->mouse_rel_y;
 #endif
 #else
                   val = apple->window_pos_y - apple->mouse_y_last;
