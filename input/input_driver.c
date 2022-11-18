@@ -3525,7 +3525,7 @@ unsigned get_kr_composition( unsigned comp, unsigned* padd)
         new16[0] = 0xAC00 + tv*(28*21) + (nv-19)*28;
         if( WideCharToMultiByte( CODEPAGE_UTF8, 0, new16, -1, utf8, 8, NULL, NULL ))	*padd = *(unsigned*)utf8 | 0x1000000;
 		new16[0] = 0xAC00 + c1*(28*21) +c2*28 + c3;
-        if( WideCharToMultiByte( CP_UTF8, 0, new16, -1, utf8, 8, NULL, NULL ))	comp = *(unsigned*)utf8;
+        if( WideCharToMultiByte( CODEPAGE_UTF8, 0, new16, -1, utf8, 8, NULL, NULL ))	comp = *(unsigned*)utf8;
         return comp;
    	  }	
    }  else
@@ -3533,7 +3533,7 @@ unsigned get_kr_composition( unsigned comp, unsigned* padd)
       return comp;
    }
    new16[0]= 0xAC00 + c1*(28*21) +c2*28+ c3;
-   if( !WideCharToMultiByte( CP_UTF8, 0, new16, -1, utf8, 8, NULL, NULL )) return comp;	
+   if( !WideCharToMultiByte( CODEPAGE_UTF8, 0, new16, -1, utf8, 8, NULL, NULL )) return comp;	
    *padd = *(unsigned*)utf8 | 0x1000000; 
    return 0;
 }
