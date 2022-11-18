@@ -3538,8 +3538,6 @@ unsigned get_kr_composition( unsigned comp, unsigned* padd)
    return 0;
 }
 
-#define EX_IME
-
 char tmp[256];
 bool input_keyboard_line_event(
       input_driver_state_t *input_st,
@@ -3565,25 +3563,19 @@ bool input_keyboard_line_event(
          state->ptr -=len; 
          state->size-=len;
       }
-      if( (character & 0x1000000) && composition) // korean osk input
+      if( (character & 0x1000000) && composition) 
       {
          unsigned new_comp =  get_kr_composition( composition, &character);
          if( new_comp )	input_keyboard_line_append( state, (char*)&new_comp, strlen((char*)&new_comp));
       }
       if( character & 0xF0000000 )  composition = 0;
-      else                          composition = character &0xffffff; // GCS_COMPSTR
+      else                          composition = character &0xffffff; 
       if( len && composition==0)    word = state->buffer; 
       character &= 0xffffff;
 
    	  if( character)  input_keyboard_line_append( state, (char*)&character, strlen((char*)&character));
       word =  state->buffer;
 	   /* OSK - update last character */
-	   //if (word)
-		//  osk_update_last_codepoint(
-		//		&input_st->osk_last_codepoint,
-		//		&input_st->osk_last_codepoint_len,
-		//		word);
-	   //return 0;
    } else
    /* Treat extended chars as ? as we cannot support
     * printable characters for unicode stuff. */
