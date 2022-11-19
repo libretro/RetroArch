@@ -1,0 +1,60 @@
+# 1.13.0
+- 3DS: Remove debug button combo to shutdown RA
+- 3DS: Remove MaterialUI as per MrHuu recommendation
+- ANDROID: Enable 'Vibrate On Key Press' by default
+- ANDROID: Turn 'Threaded Video' off by default
+- CHEEVOS: Upgrade to rcheevos 10.5
+- COMPILATION: Fixed compiling with --disable-menu
+- CONFIG: Don't show override notification with appendconfig alone
+- DATABASE/PLAYLISTS: Playlist + database changes - Cleanup 'entry_slot', fallback label + logging
+- FRONTEND: Fix default remaps folder for various cores: remap should …
+…be nested in config folder
+- HOTKEYS: Fix shader toggle and add hotkey + sublabel
+- HOTKEYS: Cleanups and corrections - Keep hotkey pause and menu pause separate in order to not trigger unwanted pause when toggling menu regardless if menu will pause or not
+- HOTKEYS: Cleanups and corrections - Allow unpausing with Start (makes resuming more convenient after controller disconnect if menu does not pause)
+- IOS13+: Pointer movement accuracy. iPad Trackpad Pointer Movement Accuracy through absolute location (for iOS 13.4 and above)
+- IOS13+: Adds iPad Trackpad Support to iOS13 Project (for iOS 13.4 and above)
+- INPUT: Addition to analog stick menu navigation
+- INPUT: Fixed the way devices were previously indexed. Input devices were only being indexed in order and would stop at the first time an input has no device connected to it. The problem is when a device gets disconnected, that input will have no devices connected to it, but the next input may still have a device connected. So, that makes changing the port of the currently connected devices impossible.
+- INPUT/AUTOCONFIG: Add option for pause on controller disconnect
+- INPUT/AUTOCONFIG: Driver independent disconnection notification. Should show disconnect notification now properly on Windows with XInput and/or DirectInput pads
+- INPUT/HID: Added usb hid controllers for the famous ZeroDelay encoder and also for "Kade: Kick Ass Dynamic Encoder" to be able to use some custom arcade sticks.
+- INPUT/OVERLAY: Add eightway area types. The playlist supports UTF8, but edit control replaces the extended character with #. The following code enables extended character input in Netplay Chatting, Search, and Rename titles.
+- INPUT/OVERLAY: Fix overlay next_index for unnamed targets
+- LOCALIZATION: Updates
+- LOCALIZATION: Add Hungarian language option
+- MENU: Thumbnail fullscreen toggle behavior correction
+- MENU: Consistent left-right scrolling for Quick Menu items
+- MENU: Remove useless sublabel from System Information
+- MENU: Improve widget appearance with missing assets
+- MENU/INPUT: Add option for swapping menu scrolling buttons
+- MENU/QT/WIMP: Remove SSL/TLS check at startup
+- MENU/OZONE: Show metadata helper in footer only with second thumbnail
+- MENU/OZONE: Footer improvements - Add "Cycle thumbnails" helper when suitable
+- MENU/OZONE: Footer improvements - Show "Search" helper only when search function is enabled
+- MENU/OZONE: Footer improvements - Fix "Thumbnails available" helper for save states
+- MENU/OZONE: Footer improvements - Tighten padding between icon and title, and widen between helpers
+- MENU/OZONE: Remember selection per main tabs
+- MENU/OZONE: Remove incomplete assets warning
+- MENU/OZONE: Add option to adjust cursor memory when changing menu tabs
+- MENU/OZONE: Further extend texture support for Core Option categories
+- MENU/XMB: Remove incomplete assets warning
+- MENU/XMB: Add truncate playlist name option
+- MENU/XMB: Improve background image selector
+- MENU/XMB: Add option to adjust cursor memory when changing menu tabs
+- MENU/XMB: Further extend texture support for Core Option categories
+- MENU/MATERIALUI: Remove incomplete assets warning
+- OSX: Fixed Z/X keys not working on the macOS port
+- OSX: Fixed RETROK_LMETA not working on macOS port. The RETROK_LMETA key was not defined in the rarch_key_map_apple_hid
+- OSX: Fix broken fullscreen mode in macOS Ventura
+- OVERLAYS: Ignore hitboxes with zero area. I.e. Set 'reach_x' or 'reach_y' to zero to ensure no hitbox math is done. This simplifies designating animation-only descriptors (e.g. for eightway areas) or obsolete descriptors.
+- OVERLAYS: Add 'reach' and 'exclusive' for hitboxes. Allows stretching hitboxes and handling their overlap.
+- PS2: Fix Error saving remaps and runtime logs
+- PS3: Fix Core Remap Overwrite Fail
+- QB: Don't fail if OSDependent/OGLCompiler libraries are not present
+- SCANNER/PS1: Improved scanning of PS1 discs
+- SCANNER/PS2: Added serial scanning of PS2 discs - should now scan DVDs and other discs which were previously missed
+- THUMBNAIL: If you rename title, you cannot use the thumbnail image. because the thumbnail filename and the title must be the same.
+If there is no thumbnail with title, find the thumbnail image with rom-name. This has nothing to do with IME.
+- THREADED VIDEO/GLCORE: Fix regression 'Shader presets dont load, when video driver is set to glcore'
+- VULKAN: Fix HDR inverse tonemapping
