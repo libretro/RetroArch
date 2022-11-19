@@ -2015,7 +2015,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "Panjang penyangga data menengah (berbentuk bingkai) saat menggunakan pengandar WASAPI di 'mode bersama'."
+   "Panjang penyangga data menengah (berjumlah bingkai) saat menggunakan pengandar WASAPI di 'mode bersama'."
    )
 
 /* Settings > Audio > Output */
@@ -3773,7 +3773,7 @@ MSG_HASH(
 
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
-   "Berkasnya sudah ada. Menyimpan ke buffer cadangan"
+   "Berkasnya sudah ada. Menyimpan ke penyangga cadangan"
    )
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
@@ -3863,6 +3863,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
    "Gerak mundur tidak bisa karena core ini tidak ada dukungan save state berserial."
+   )
+MSG_HASH(
+   MSG_REWIND_REACHED_END,
+   "Sudah di ujung penyangga gerak mundur."
    )
 MSG_HASH(
    MSG_SLOW_MOTION_REWIND,
