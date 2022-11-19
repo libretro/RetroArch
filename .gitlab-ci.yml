@@ -388,6 +388,9 @@ build-retroarch-osx-opengl-x64:
 #    - "mv .retroarch-repo/ retroarch-repo/"
 
 build-retroarch-ios-arm64:
+  tags:
+    - mac-apple-silicon
+    - macosx-packaging
   extends: .build-retroarch-macos-xcode
   variables:
     XCPROJECT_NAME: RetroArch_iOS11_Metal
