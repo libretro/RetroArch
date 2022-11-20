@@ -960,11 +960,14 @@ static void xmb_draw_text(
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
 
-   a8       = 255 * alpha;
+   a8       = 0xFF * alpha;
 
    /* Avoid drawing 100% transparent text */
    if (a8 == 0)
       return;
+
+   if (string_is_equal(str, "null"))
+      a8    = 0x7F * alpha;
 
    color              = FONT_COLOR_RGBA(
          settings->uints.menu_font_color_red,

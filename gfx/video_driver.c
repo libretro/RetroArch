@@ -269,17 +269,17 @@ const video_driver_t *video_drivers[] = {
 #ifdef HAVE_VITA2D
    &video_vita2d,
 #endif
-#ifdef HAVE_OPENGL
-   &video_gl2,
+#ifdef HAVE_VULKAN
+   &video_vulkan,
 #endif
 #if defined(HAVE_OPENGL_CORE)
    &video_gl3,
 #endif
+#ifdef HAVE_OPENGL
+   &video_gl2,
+#endif
 #ifdef HAVE_OPENGL1
    &video_gl1,
-#endif
-#ifdef HAVE_VULKAN
-   &video_vulkan,
 #endif
 #ifdef HAVE_METAL
    &video_metal,

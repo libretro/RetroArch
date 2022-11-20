@@ -193,6 +193,8 @@ typedef struct
    /* Screensaver colors */
    uint16_t ss_bg_color;
    uint16_t ss_particle_color;
+   /* Null color */
+   uint16_t disabled_color;
 } rgui_colors_t;
 
 typedef struct
@@ -3183,6 +3185,7 @@ static void prepare_rgui_colors(rgui_t *rgui,
 {
    rgui_theme_t theme_colors;
    uint32_t ss_particle_color_argb32  = 0;
+   uint32_t disabled_color_argb32     = 0;
 
    rgui->color_theme                  =  menu_rgui_color_theme;
    if (menu_rgui_transparency)
@@ -3244,6 +3247,13 @@ static void prepare_rgui_colors(rgui_t *rgui,
                ((theme_colors.particle_color ^ ss_particle_color_argb32) & 0x1010101)) >> 1;
    rgui->colors.ss_particle_color       = argb32_to_pixel_platform_format(
          ss_particle_color_argb32 | 0xFF000000);
+
+   /* Disabled color is a mix of normal color and shadow color, with 50% opacity */
+   disabled_color_argb32                = (theme_colors.normal_color +
+         theme_colors.shadow_color +
+               (theme_colors.normal_color ^ theme_colors.shadow_color)) >> 1;
+   rgui->colors.disabled_color          = argb32_to_pixel_platform_format(
+         disabled_color_argb32 | 0x7F000000);
 
    rgui->flags                         |= RGUI_FLAG_BG_MODIFIED
                                         | RGUI_FLAG_FORCE_REDRAW;
@@ -5473,13 +5483,22 @@ static void rgui_render(void *data,
                   gfx_animation_ticker(&ticker);
                }
 
-               /* Print entry value */
-               blit_line(rgui,
-                     fb_width,
-                     ticker_x_offset + term_end_x - ((entry_value_len + 1) * rgui->font_width_stride),
-                     y,
-                     type_str_buf,
-                     entry_color, rgui->colors.shadow_color);
+               {
+                  uint16_t entry_value_color = entry_color;
+
+                  if (!entry_selected &&
+                        (     string_is_equal(entry_value, "null")
+                           || string_is_equal(entry_value, "...")))
+                     entry_value_color = rgui->colors.disabled_color;
+
+                  /* Print entry value */
+                  blit_line(rgui,
+                        fb_width,
+                        ticker_x_offset + term_end_x - ((entry_value_len + 1) * rgui->font_width_stride),
+                        y,
+                        type_str_buf,
+                        entry_value_color, rgui->colors.shadow_color);
+               }
                break;
             case RGUI_ENTRY_VALUE_SWITCH_ON:
                rgui_render_toggle_switch(rgui, fb_width,
@@ -5497,7 +5516,7 @@ static void rgui_render(void *data,
                                  (term_end_x - ((entry_value_len + 1) * rgui->font_width_stride)),
                      y,
                      false,
-                     entry_color, rgui->colors.shadow_color);
+                     rgui->colors.disabled_color, rgui->colors.shadow_color);
                break;
             case RGUI_ENTRY_VALUE_CHECKMARK:
                /* Print marker for currently selected

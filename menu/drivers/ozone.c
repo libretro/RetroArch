@@ -4960,7 +4960,9 @@ static void ozone_draw_entry_value(
             y,
             video_width,
             video_height,
-            COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32),
+            !string_is_equal(value, "null")
+                  ? COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32)
+                  : COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32 >> 1),
             TEXT_ALIGN_RIGHT,
             1.0f,
             false,
@@ -4977,9 +4979,9 @@ static void ozone_draw_entry_value(
             y,
             video_width,
             video_height,
-            COLOR_TEXT_ALPHA((switch_is_on
-                  ? ozone->theme->text_selected_rgba
-                  : ozone->theme->text_sublabel_rgba), alpha_uint32),
+            switch_is_on
+                  ? COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32)
+                  : COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32 >> 1),
             TEXT_ALIGN_RIGHT,
             1.0f,
             false,

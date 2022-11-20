@@ -365,6 +365,7 @@ typedef struct
    uint32_t list_hint_text;
    uint32_t list_hint_text_highlighted;
    uint32_t status_bar_text;
+   uint32_t disabled_text;
    /* Screensaver */
    uint32_t screensaver_tint;
    /* Background colours */
@@ -1905,6 +1906,8 @@ static void materialui_prepare_colors(
    mui->colors.list_hint_text             = (current_theme->list_hint_text             << 8) | 0xFF;
    mui->colors.list_hint_text_highlighted = (current_theme->list_hint_text_highlighted << 8) | 0xFF;
    mui->colors.status_bar_text            = (current_theme->status_bar_text            << 8) | 0xFF;
+   /* Disabled color */
+   mui->colors.disabled_text              = (current_theme->list_text                  << 8) | 0x7F;
 
    /* > Background colours */
    hex32_to_rgba_normalized(
@@ -4208,6 +4211,7 @@ static void materialui_render_menu_entry_default(
       case MUI_ENTRY_VALUE_TEXT:
          {
             int value_x_offset             = 0;
+            uint32_t entry_value_color     = 0;
             unsigned entry_value_width_max = (usable_width / 2) - mui->margin;
             char value_buf[255];
 
@@ -4266,13 +4270,18 @@ static void materialui_render_menu_entry_default(
                entry_value_width = (entry_value_len + 1) * mui->font_data.list.glyph_width;
             }
 
+            entry_value_color = (entry_selected || touch_feedback_active)
+                  ? mui->colors.list_text_highlighted : mui->colors.list_text;
+
+            if (string_is_equal(value_buf, "null"))
+               entry_value_color = mui->colors.disabled_text;
+
             /* Draw value string */
             gfx_display_draw_text(mui->font_data.list.font, value_buf,
                   entry_x + value_x_offset + node->entry_width - (int)mui->margin - (int)mui->landscape_optimization.entry_margin,
                   label_y,
                   video_width, video_height,
-                  (entry_selected || touch_feedback_active) ?
-                        mui->colors.list_text_highlighted : mui->colors.list_text,
+                  entry_value_color,
                   TEXT_ALIGN_RIGHT, 1.0f, false, 0.0f, draw_text_outside);
          }
          break;

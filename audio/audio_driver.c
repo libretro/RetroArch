@@ -117,8 +117,8 @@ audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_JACK
    &audio_jack,
 #endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
-   &audio_sdl,
+#ifdef HAVE_WASAPI
+   &audio_wasapi,
 #endif
 #ifdef HAVE_XAUDIO
    &audio_xa,
@@ -126,8 +126,8 @@ audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_DSOUND
    &audio_dsound,
 #endif
-#ifdef HAVE_WASAPI
-   &audio_wasapi,
+#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+   &audio_sdl,
 #endif
 #ifdef HAVE_PULSE
    &audio_pulse,
