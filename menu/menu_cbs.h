@@ -329,8 +329,6 @@ int bind_right_generic(unsigned type, const char *label,
 int action_ok_core_option_dropdown_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
 
-int menu_cbs_exit(void);
-
 void cb_generic_download(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err);

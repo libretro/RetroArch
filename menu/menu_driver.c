@@ -2623,12 +2623,6 @@ void menu_cbs_init(
             idx);
 }
 
-/* Pretty much a stub function. TODO/FIXME - Might as well remove this. */
-int menu_cbs_exit(void)
-{
-   return -1;
-}
-
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 void menu_driver_set_last_shader_preset_path(const char *path)
 {

@@ -87,16 +87,18 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
       s[_len+1] = ' ';
       s[_len+2] = '\0';
       strlcat(s, tmp, len);
-      return 1;
+   }
+   else
+   {
+      /* No license found - set to N/A */
+      _len      = strlcpy(s,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
+      s[_len  ] = ':';
+      s[_len+1] = ' ';
+      s[_len+2] = '\0';
+      strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
    }
 
-   /* No license found - set to N/A */
-   _len      = strlcpy(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-   s[_len  ] = ':';
-   s[_len+1] = ' ';
-   s[_len+2] = '\0';
-   strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
    return 1;
 }
 
@@ -185,12 +187,9 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
          {
             tmp[n  ] = '\n';
             tmp[n+1] = '\0';
-            n        = strlcat(tmp, entry->runtime.last_played_str, sizeof(tmp));
+            strlcat(tmp, entry->runtime.last_played_str, sizeof(tmp));
          }
 
-         if (n >= 64)
-            n = 0; /* Silence GCC warnings... */
-         (void)n;
          if (!string_is_empty(tmp))
             strlcat(s, tmp, len);
       }
@@ -1539,7 +1538,7 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
    unsigned room_index        = type - MENU_SETTINGS_NETPLAY_ROOMS_START;
 
    if (room_index >= (unsigned)net_st->room_count)
-      return menu_cbs_exit();
+      return -1;
 
    room = &net_st->room_list[room_index];
 
@@ -1593,7 +1592,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
    net_driver_state_t *net_st = networking_state_get_ptr();
 
    if (idx >= net_st->client_info_count)
-      return menu_cbs_exit();
+      return -1;
 
    client = &net_st->client_info[idx];
 
@@ -1809,12 +1808,9 @@ static int action_bind_sublabel_playlist_entry(
       {
          tmp[n  ] = '\n';
          tmp[n+1] = '\0';
-         n        = strlcat(tmp, entry->last_played_str, sizeof(tmp));
+         strlcat(tmp, entry->last_played_str, sizeof(tmp));
       }
 
-      if (n >= 64)
-         n = 0; /* Silence GCC warnings... */
-      (void)n;
       if (!string_is_empty(tmp))
          strlcat(s, tmp, len);
    }
@@ -1864,17 +1860,13 @@ static int action_bind_sublabel_core_option(
       char *s, size_t len)
 {
    core_option_manager_t *opt = NULL;
-   const char *info           = NULL;
-
-   if (!retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &opt))
-      return 0;
-
-   info = core_option_manager_get_info(opt,
-         type - MENU_SETTINGS_CORE_OPTION_START, true);
-
-   if (!string_is_empty(info))
-      strlcpy(s, info, len);
-
+   if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &opt))
+   {
+      const char *info = core_option_manager_get_info(opt,
+            type - MENU_SETTINGS_CORE_OPTION_START, true);
+      if (!string_is_empty(info))
+         strlcpy(s, info, len);
+   }
    return 0;
 }
 
@@ -1905,16 +1897,17 @@ static int action_bind_sublabel_core_updater_entry(
       s[_len+1] = ' ';
       s[_len+2] = '\0';
       strlcat(s, tmp, len);
-      return 1;
    }
-
-   /* No license found - set to N/A */
-   _len      = strlcpy(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-   s[_len  ] = ':';
-   s[_len+1] = ' ';
-   s[_len+2] = '\0';
-   strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+   else
+   {
+      /* No license found - set to N/A */
+      _len      = strlcpy(s,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
+      s[_len  ] = ':';
+      s[_len+1] = ' ';
+      s[_len+2] = '\0';
+      strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+   }
    return 1;
 }
 #endif

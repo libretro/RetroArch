@@ -120,52 +120,52 @@ int action_switch_thumbnail(const char *path,
     * changing thumbnail view mode.
     * For other menu drivers, we cycle through available thumbnail
     * types and skip if already visible. */
-   if (!switch_enabled)
-      return 0;
-
-   if (settings->uints.gfx_thumbnails == 0)
+   if (switch_enabled)
    {
-      configuration_set_uint(settings,
-            settings->uints.menu_left_thumbnails,
-            settings->uints.menu_left_thumbnails + 1);
-
-      if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+      if (settings->uints.gfx_thumbnails == 0)
+      {
          configuration_set_uint(settings,
                settings->uints.menu_left_thumbnails,
                settings->uints.menu_left_thumbnails + 1);
 
-      if (settings->uints.menu_left_thumbnails > 3)
-         configuration_set_uint(settings,
-               settings->uints.menu_left_thumbnails, 1);
+         if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+            configuration_set_uint(settings,
+                  settings->uints.menu_left_thumbnails,
+                  settings->uints.menu_left_thumbnails + 1);
 
-      if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
-         configuration_set_uint(settings,
-               settings->uints.menu_left_thumbnails,
-               settings->uints.menu_left_thumbnails + 1);
-   }
-   else
-   {
-      configuration_set_uint(settings,
-            settings->uints.gfx_thumbnails,
-            settings->uints.gfx_thumbnails + 1);
+         if (settings->uints.menu_left_thumbnails > 3)
+            configuration_set_uint(settings,
+                  settings->uints.menu_left_thumbnails, 1);
 
-      if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
-         configuration_set_uint(settings,
-               settings->uints.gfx_thumbnails,
-               settings->uints.gfx_thumbnails + 1);
-
-      if (settings->uints.gfx_thumbnails > 3)
-         configuration_set_uint(settings,
-               settings->uints.gfx_thumbnails, 1);
-
-      if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+         if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+            configuration_set_uint(settings,
+                  settings->uints.menu_left_thumbnails,
+                  settings->uints.menu_left_thumbnails + 1);
+      }
+      else
+      {
          configuration_set_uint(settings,
                settings->uints.gfx_thumbnails,
                settings->uints.gfx_thumbnails + 1);
-   }
 
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+         if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+            configuration_set_uint(settings,
+                  settings->uints.gfx_thumbnails,
+                  settings->uints.gfx_thumbnails + 1);
+
+         if (settings->uints.gfx_thumbnails > 3)
+            configuration_set_uint(settings,
+                  settings->uints.gfx_thumbnails, 1);
+
+         if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+            configuration_set_uint(settings,
+                  settings->uints.gfx_thumbnails,
+                  settings->uints.gfx_thumbnails + 1);
+      }
+
+      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
+      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+   }
 
    return 0;
 }

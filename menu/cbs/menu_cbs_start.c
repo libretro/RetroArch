@@ -127,7 +127,7 @@ static int action_start_video_filter_file_load(
    settings_t *settings = config_get_ptr();
 
    if (!settings)
-      return menu_cbs_exit();
+      return -1;
 
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
    {
@@ -152,7 +152,7 @@ static int action_start_audio_dsp_plugin_file_load(
    settings_t *settings = config_get_ptr();
 
    if (!settings)
-      return menu_cbs_exit();
+      return -1;
 
    if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
    {
@@ -302,7 +302,7 @@ static int action_start_shader_pass(
    menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
 
    if (!menu)
-      return menu_cbs_exit();
+      return -1;
 
    menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
 
@@ -480,10 +480,8 @@ static int action_start_menu_wallpaper(
 
    /* Reset wallpaper by menu context reset */
    if (menu_st->driver_ctx && menu_st->driver_ctx->context_reset)
-   {
       menu_st->driver_ctx->context_reset(menu_st->userdata,
             video_driver_is_threaded());
-   }
 
    return 0;
 }

@@ -72,7 +72,7 @@ static int deferred_push_dlist(
       settings_t *settings)
 {
    if (!menu_displaylist_ctl(state, info, settings))
-      return menu_cbs_exit();
+      return -1;
    menu_displaylist_process(info);
    return 0;
 }
@@ -411,7 +411,7 @@ static int general_push(menu_displaylist_info_t *info,
    bool filter_by_current_core                = settings->bools.filter_by_current_core;
 
    if (!menu)
-      return menu_cbs_exit();
+      return -1;
 
    core_info_get_list(&list);
 

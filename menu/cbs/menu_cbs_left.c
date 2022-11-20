@@ -85,7 +85,7 @@ static int shader_action_parameter_left_internal(unsigned type, const char *labe
    param_menu = shader ? &shader->parameters [type - offset] : NULL;
 
    if (!param_prev || !param_menu)
-      return menu_cbs_exit();
+      return -1;
    ret = generic_shader_action_parameter_left(param_prev, type, label, wraparound);
 
    param_menu->current = param_prev->current;
@@ -304,7 +304,7 @@ static int action_left_shader_scale_pass(unsigned type, const char *label,
    struct video_shader_pass *shader_pass = shader ? &shader->pass[pass] : NULL;
 
    if (!shader_pass)
-      return menu_cbs_exit();
+      return -1;
 
    /* A 20x scale is used to support scaling handheld border shaders up to 8K resolutions */
    current_scale              = shader_pass->fbo.scale_x;
@@ -332,7 +332,7 @@ static int action_left_shader_filter_pass(unsigned type, const char *label,
    struct video_shader_pass *shader_pass = shader ? &shader->pass[pass] : NULL;
 
    if (!shader_pass)
-      return menu_cbs_exit();
+      return -1;
 
    shader_pass->filter                   = ((shader_pass->filter + delta) % 3);
    shader->flags                        |= SHDR_FLAG_MODIFIED;
@@ -346,7 +346,7 @@ static int action_left_shader_filter_default(unsigned type, const char *label,
    rarch_setting_t *setting = menu_setting_find_enum(
          MENU_ENUM_LABEL_VIDEO_SMOOTH);
    if (!setting)
-      return menu_cbs_exit();
+      return -1;
    return menu_action_handle_setting(setting,
          setting->type, MENU_ACTION_LEFT, wraparound);
 }
@@ -378,7 +378,7 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
    unsigned pass_count         = shader ? shader->passes : 0;
 
    if (!shader)
-      return menu_cbs_exit();
+      return -1;
 
    if (pass_count > 0)
       shader->passes--;
@@ -419,7 +419,7 @@ static int playlist_association_left(unsigned type, const char *label,
 
    core_info_get_list(&core_info_list);
    if (!core_info_list)
-      return menu_cbs_exit();
+      return -1;
 
    /* Get current core path association */
    if (!string_is_empty(default_core_path) &&
