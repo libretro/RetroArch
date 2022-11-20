@@ -5930,169 +5930,169 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
 
             if (cpu & RETRO_SIMD_MMX)
             {
-               s[_len++] = ' ';
                s[_len++] = 'M';
                s[_len++] = 'M';
                s[_len++] = 'X';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_MMXEXT)
             {
-               s[_len++] = ' ';
                s[_len++] = 'M';
                s[_len++] = 'M';
                s[_len++] = 'X';
                s[_len++] = 'E';
                s[_len++] = 'X';
                s[_len++] = 'T';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_SSE)
             {
-               s[_len++] = ' ';
                s[_len++] = 'S';
                s[_len++] = 'S';
                s[_len++] = 'E';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_SSE2)
             {
-               s[_len++] = ' ';
                s[_len++] = 'S';
                s[_len++] = 'S';
                s[_len++] = 'E';
                s[_len++] = '2';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_SSE3)
             {
-               s[_len++] = ' ';
                s[_len++] = 'S';
                s[_len++] = 'S';
                s[_len++] = 'E';
                s[_len++] = '3';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_SSE4)
             {
-               s[_len++] = ' ';
                s[_len++] = 'S';
                s[_len++] = 'S';
                s[_len++] = 'E';
                s[_len++] = '4';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_SSE42)
             {
-               s[_len++] = ' ';
                s[_len++] = 'S';
                s[_len++] = 'S';
                s[_len++] = 'E';
                s[_len++] = '4';
                s[_len++] = '.';
                s[_len++] = '2';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_AES)
             {
-               s[_len++] = ' ';
                s[_len++] = 'A';
                s[_len++] = 'E';
                s[_len++] = 'S';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_AVX)
             {
-               s[_len++] = ' ';
                s[_len++] = 'A';
                s[_len++] = 'V';
                s[_len++] = 'X';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_AVX2)
             {
-               s[_len++] = ' ';
                s[_len++] = 'A';
                s[_len++] = 'V';
                s[_len++] = 'X';
                s[_len++] = '2';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_NEON)
             {
-               s[_len++] = ' ';
                s[_len++] = 'N';
                s[_len++] = 'E';
                s[_len++] = 'O';
                s[_len++] = 'N';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_VFPV3)
             {
-               s[_len++] = ' ';
                s[_len++] = 'V';
                s[_len++] = 'F';
                s[_len++] = 'P';
                s[_len++] = 'v';
                s[_len++] = '3';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_VFPV4)
             {
-               s[_len++] = ' ';
                s[_len++] = 'V';
                s[_len++] = 'F';
                s[_len++] = 'P';
                s[_len++] = 'v';
                s[_len++] = '4';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_VMX)
             {
-               s[_len++] = ' ';
                s[_len++] = 'V';
                s[_len++] = 'M';
                s[_len++] = 'X';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_VMX128)
             {
-               s[_len++] = ' ';
                s[_len++] = 'V';
                s[_len++] = 'M';
                s[_len++] = 'X';
                s[_len++] = '1';
                s[_len++] = '2';
                s[_len++] = '8';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_VFPU)
             {
-               s[_len++] = ' ';
                s[_len++] = 'V';
                s[_len++] = 'F';
                s[_len++] = 'P';
                s[_len++] = 'U';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_PS)
             {
-               s[_len++] = ' ';
                s[_len++] = 'P';
                s[_len++] = 'S';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
             if (cpu & RETRO_SIMD_ASIMD)
             {
-               s[_len++] = ' ';
                s[_len++] = 'A';
                s[_len++] = 'S';
                s[_len++] = 'I';
                s[_len++] = 'M';
                s[_len++] = 'D';
+               s[_len++] = ' ';
                s[_len+1] = '\0';
             }
-            s[_len++] = '\0';
+            s[_len-1] = '\0';
          }
          break;
       case RARCH_CAPABILITIES_COMPILER:

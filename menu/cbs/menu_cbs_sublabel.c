@@ -1231,7 +1231,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
    }
 
    /* TODO/FIXME - Localize */
-   snprintf(tmp, sizeof(tmp), "Device display name: %s\nDevice config name: %s\nDevice identifiers: %d/%d",
+   snprintf(tmp, sizeof(tmp), "Device display name: %s\nDevice config name: %s\nDevice VID/PID: %d/%d",
       input_config_get_device_display_name(controller) ? input_config_get_device_display_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
       input_config_get_device_display_name(controller) ? input_config_get_device_config_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
       input_config_get_device_vid(controller), input_config_get_device_pid(controller));
