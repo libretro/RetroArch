@@ -1799,7 +1799,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_RGUI
          if (string_is_equal(menu_driver, "rgui"))
          {
-            strlcpy(tmp, " Device display name: ", sizeof(tmp));
+            strlcpy(tmp, "- Device display name: ", sizeof(tmp));
             strlcat(tmp,
                input_config_get_device_display_name(controller) ?
                input_config_get_device_display_name(controller) :
@@ -1809,7 +1809,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
                count++;
-            strlcpy(tmp, " Device config name: ", sizeof(tmp));
+            strlcpy(tmp, "- Device config name: ", sizeof(tmp));
             strlcat(tmp,
                input_config_get_device_config_name(controller) ?
                input_config_get_device_config_name(controller)  :
@@ -1820,7 +1820,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
                count++;
             /* TODO/FIXME - Localize */
-            snprintf(tmp, sizeof(tmp), " Device VID/PID: %d/%d",
+            snprintf(tmp, sizeof(tmp), "- Device VID/PID: %d/%d",
                input_config_get_device_vid(controller),
                input_config_get_device_pid(controller));
             if (menu_entries_append(list, tmp, "",
@@ -1894,7 +1894,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       if (frontend->get_os)
       {
          frontend->get_os(tmp2, sizeof(tmp2), &major, &minor);
-         snprintf(tmp, sizeof(tmp), "%s : %s (v%d.%d)",
+         snprintf(tmp, sizeof(tmp), "%s: %s (v%d.%d)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
                tmp2,
                major, minor);
@@ -1906,7 +1906,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       if (frontend->get_rating)
       {
-         snprintf(tmp, sizeof(tmp), "%s : %d",
+         snprintf(tmp, sizeof(tmp), "%s: %d",
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL),
                frontend->get_rating());
@@ -1926,9 +1926,8 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          if (memory_used != 0 && memory_total != 0)
          {
             snprintf(tmp, sizeof(tmp),
-                  "%s %s: %" PRIu64 "/%" PRIu64 " MB",
+                  "%s: %" PRIu64 "/%" PRIu64 " MB",
                   msg_hash_to_str(MSG_MEMORY),
-                  msg_hash_to_str(MSG_IN_MEGABYTES),
                   BYTES_TO_MB(memory_used),
                   BYTES_TO_MB(memory_total)
                   );
@@ -1951,18 +1950,17 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          tmp2[0] = '\0';
 
          if (percent != 0)
-            snprintf(tmp2, sizeof(tmp2), "%d%%", percent);
+            snprintf(tmp2, sizeof(tmp2), "%d%% ", percent);
 
          switch (state)
          {
             case FRONTEND_POWERSTATE_NONE:
-               strlcat(tmp2, " ", sizeof(tmp2));
                strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), sizeof(tmp2));
                break;
             case FRONTEND_POWERSTATE_NO_SOURCE:
-               strlcat(tmp2, " (", sizeof(tmp2));
+               strlcat(tmp2, "(", sizeof(tmp2));
                strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE),
@@ -1970,7 +1968,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                strlcat(tmp2, ")", sizeof(tmp2));
                break;
             case FRONTEND_POWERSTATE_CHARGING:
-               strlcat(tmp2, " (", sizeof(tmp2));
+               strlcat(tmp2, "(", sizeof(tmp2));
                strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING),
@@ -1978,7 +1976,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                strlcat(tmp2, ")", sizeof(tmp2));
                break;
             case FRONTEND_POWERSTATE_CHARGED:
-               strlcat(tmp2, " (", sizeof(tmp2));
+               strlcat(tmp2, "(", sizeof(tmp2));
                strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED),
@@ -1986,7 +1984,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                strlcat(tmp2, ")", sizeof(tmp2));
                break;
             case FRONTEND_POWERSTATE_ON_POWER_SOURCE:
-               strlcat(tmp2, " (", sizeof(tmp2));
+               strlcat(tmp2, "(", sizeof(tmp2));
                strlcat(tmp2,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING),
