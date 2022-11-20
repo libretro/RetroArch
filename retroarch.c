@@ -241,8 +241,8 @@
 
 #define _PSUPP_BUF(buf, var, name, desc) \
    strlcat(buf, "  ", sizeof(buf)); \
-   strlcat(buf, name, sizeof(buf)); \
-   strlcat(buf, ":\n\t\t", sizeof(buf)); \
+   snprintf(buf + strlen(buf), sizeof(buf), "%-15s", name); \
+   strlcat(buf, " - ", sizeof(buf)); \
    strlcat(buf, desc, sizeof(buf)); \
    strlcat(buf, ": ", sizeof(buf)); \
    strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf))
@@ -3020,7 +3020,7 @@ bool command_event(enum event_command cmd, void *data)
                 * the disk tray eject status. If status has changed,
                 * must refresh the disk options menu */
                if (initial_disk_ejected != disk_control_get_eject_state(
-				       &sys_info->disk_control))
+                     &sys_info->disk_control))
                {
                   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
                   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -4024,27 +4024,27 @@ void libretro_free_system_info(struct retro_system_info *info)
 
 static void retroarch_print_features(void)
 {
-   char buf[2048];
+   char buf[4096];
    buf[0] = '\0';
+
    frontend_driver_attach_console();
 
-   strlcpy(buf, "\nFeatures:\n", sizeof(buf));
+   strlcpy(buf, "Features:\n", sizeof(buf));
 
    _PSUPP_BUF(buf, SUPPORTS_LIBRETRODB,      "LibretroDB",      "LibretroDB support");
    _PSUPP_BUF(buf, SUPPORTS_COMMAND,         "Command",         "Command interface support");
-   _PSUPP_BUF(buf, SUPPORTS_NETWORK_COMMAND, "Network Command", "Network Command interface "
-         "support");
+   _PSUPP_BUF(buf, SUPPORTS_NETWORK_COMMAND, "Network Command", "Network Command interface support");
    _PSUPP_BUF(buf, SUPPORTS_SDL,             "SDL",             "SDL input/audio/video drivers");
    _PSUPP_BUF(buf, SUPPORTS_SDL2,            "SDL2",            "SDL2 input/audio/video drivers");
    _PSUPP_BUF(buf, SUPPORTS_X11,             "X11",             "X11 input/video drivers");
-   _PSUPP_BUF(buf, SUPPORTS_WAYLAND,         "wayland",         "Wayland input/video drivers");
+   _PSUPP_BUF(buf, SUPPORTS_UDEV,            "UDEV",            "UDEV/EVDEV input driver");
+   _PSUPP_BUF(buf, SUPPORTS_WAYLAND,         "Wayland",         "Wayland input/video drivers");
    _PSUPP_BUF(buf, SUPPORTS_THREAD,          "Threads",         "Threading support");
-   _PSUPP_BUF(buf, SUPPORTS_VULKAN,          "Vulkan",          "Vulkan video driver");
-   _PSUPP_BUF(buf, SUPPORTS_METAL,           "Metal",           "Metal video driver");
-   _PSUPP_BUF(buf, SUPPORTS_OPENGL,          "OpenGL",          "OpenGL   video driver support");
-   _PSUPP_BUF(buf, SUPPORTS_OPENGLES,        "OpenGL ES",       "OpenGLES video driver support");
+   _PSUPP_BUF(buf, SUPPORTS_VULKAN,          "Vulkan",          "Video driver");
+   _PSUPP_BUF(buf, SUPPORTS_METAL,           "Metal",           "Video driver");
+   _PSUPP_BUF(buf, SUPPORTS_OPENGL,          "OpenGL",          "Video driver");
+   _PSUPP_BUF(buf, SUPPORTS_OPENGLES,        "OpenGLES",        "Video driver");
    _PSUPP_BUF(buf, SUPPORTS_XVIDEO,          "XVideo",          "Video driver");
-   _PSUPP_BUF(buf, SUPPORTS_UDEV,            "UDEV",            "UDEV/EVDEV input driver support");
    _PSUPP_BUF(buf, SUPPORTS_EGL,             "EGL",             "Video context driver");
    _PSUPP_BUF(buf, SUPPORTS_KMS,             "KMS",             "Video context driver");
    _PSUPP_BUF(buf, SUPPORTS_VG,              "OpenVG",          "Video context driver");
@@ -4057,40 +4057,38 @@ static void retroarch_print_features(void)
    _PSUPP_BUF(buf, SUPPORTS_ROAR,            "RoarAudio",       "Audio driver");
    _PSUPP_BUF(buf, SUPPORTS_PULSE,           "PulseAudio",      "Audio driver");
    _PSUPP_BUF(buf, SUPPORTS_DSOUND,          "DirectSound",     "Audio driver");
-   _PSUPP_BUF(buf, SUPPORTS_WASAPI,          "WASAPI",     "Audio driver");
+   _PSUPP_BUF(buf, SUPPORTS_WASAPI,          "WASAPI",          "Audio driver");
    _PSUPP_BUF(buf, SUPPORTS_XAUDIO,          "XAudio2",         "Audio driver");
    _PSUPP_BUF(buf, SUPPORTS_AL,              "OpenAL",          "Audio driver");
    _PSUPP_BUF(buf, SUPPORTS_SL,              "OpenSL",          "Audio driver");
    _PSUPP_BUF(buf, SUPPORTS_7ZIP,            "7zip",            "7zip extraction support");
-   _PSUPP_BUF(buf, SUPPORTS_ZLIB,            "zlib",            ".zip extraction support");
+   _PSUPP_BUF(buf, SUPPORTS_ZLIB,            "zlib",            "zip extraction support");
    _PSUPP_BUF(buf, SUPPORTS_DYLIB,           "External",        "External filter and plugin support");
    _PSUPP_BUF(buf, SUPPORTS_CG,              "Cg",              "Fragment/vertex shader driver");
    _PSUPP_BUF(buf, SUPPORTS_GLSL,            "GLSL",            "Fragment/vertex shader driver");
    _PSUPP_BUF(buf, SUPPORTS_HLSL,            "HLSL",            "Fragment/vertex shader driver");
    _PSUPP_BUF(buf, SUPPORTS_SDL_IMAGE,       "SDL_image",       "SDL_image image loading");
    _PSUPP_BUF(buf, SUPPORTS_RPNG,            "rpng",            "PNG image loading/encoding");
-   _PSUPP_BUF(buf, SUPPORTS_RJPEG,            "rjpeg",           "JPEG image loading");
-   _PSUPP_BUF(buf, SUPPORTS_DYNAMIC,         "Dynamic",         "Dynamic run-time loading of "
-                                              "libretro library");
-   _PSUPP_BUF(buf, SUPPORTS_FFMPEG,          "FFmpeg",          "On-the-fly recording of gameplay "
-                                              "with libavcodec");
+   _PSUPP_BUF(buf, SUPPORTS_RJPEG,           "rjpeg",           "JPEG image loading");
+   _PSUPP_BUF(buf, SUPPORTS_DYNAMIC,         "Dynamic",         "Dynamic run-time loading of libretro library");
+   _PSUPP_BUF(buf, SUPPORTS_FFMPEG,          "FFmpeg",          "On-the-fly recording of gameplay with libavcodec");
    _PSUPP_BUF(buf, SUPPORTS_FREETYPE,        "FreeType",        "TTF font rendering driver");
-   _PSUPP_BUF(buf, SUPPORTS_CORETEXT,        "CoreText",        "TTF font rendering driver ");
+   _PSUPP_BUF(buf, SUPPORTS_CORETEXT,        "CoreText",        "TTF font rendering driver");
    _PSUPP_BUF(buf, SUPPORTS_NETPLAY,         "Netplay",         "Peer-to-peer netplay");
    _PSUPP_BUF(buf, SUPPORTS_LIBUSB,          "Libusb",          "Libusb support");
-   _PSUPP_BUF(buf, SUPPORTS_COCOA,           "Cocoa",           "Cocoa UI companion support "
-                                              "(for OSX and/or iOS)");
+   _PSUPP_BUF(buf, SUPPORTS_COCOA,           "Cocoa",           "Cocoa UI companion support (for OSX and/or iOS)");
    _PSUPP_BUF(buf, SUPPORTS_QT,              "Qt",              "Qt UI companion support");
    _PSUPP_BUF(buf, SUPPORTS_V4L2,            "Video4Linux2",    "Camera driver");
 
-   puts(buf);
+   fputs(buf, stdout);
 }
 
 static void retroarch_print_version(void)
 {
    char str[255];
-   frontend_driver_attach_console();
    str[0] = '\0';
+
+   frontend_driver_attach_console();
 
    fprintf(stdout, "%s: %s -- v%s",
          msg_hash_to_str(MSG_PROGRAM),
@@ -4132,7 +4130,7 @@ static void retroarch_print_help(const char *arg0)
          "Verbose logging.\n"
          "      --log-file=FILE            "
          "Log messages to FILE.\n"
-         "      --version                  "
+         "  -V, --version                  "
          "Show version.\n"
          "      --features                 "
          "Print available features compiled into program.\n"
@@ -4344,7 +4342,6 @@ static void retroarch_print_help(const char *arg0)
          sizeof(buf));
 
    fputs(buf, stdout);
-   fputs("\n", stdout);
 }
 
 #ifdef HAVE_DYNAMIC
@@ -4564,7 +4561,7 @@ static bool retroarch_parse_input_and_config(
       { "max-frames-ss",      0, NULL, RA_OPT_MAX_FRAMES_SCREENSHOT },
       { "max-frames-ss-path", 1, NULL, RA_OPT_MAX_FRAMES_SCREENSHOT_PATH },
       { "eof-exit",           0, NULL, RA_OPT_EOF_EXIT },
-      { "version",            0, NULL, RA_OPT_VERSION },
+      { "version",            0, NULL, 'V' /* RA_OPT_VERSION */ },
       { "log-file",           1, NULL, RA_OPT_LOG_FILE },
       { "accessibility",      0, NULL, RA_OPT_ACCESSIBILITY},
       { "load-menu-on-error", 0, NULL, RA_OPT_LOAD_MENU_ON_ERROR },
@@ -4638,7 +4635,7 @@ static bool retroarch_parse_input_and_config(
 
    /* Make sure we can call retroarch_parse_input several times ... */
    optind                          = 0;
-   optstring                       = "hs:fvS:A:U:DN:d:e:"
+   optstring                       = "hs:fvVS:A:U:DN:d:e:"
       BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
 
 #if defined(WEBOS)
@@ -4670,10 +4667,29 @@ static bool retroarch_parse_input_and_config(
          if (c == -1)
             break;
 
+         /* Graceful failure with empty "-" parameter instead of allowing
+          * to continue to segmentation fault by trying to load content */
+         if (c == 0)
+         {
+            verbosity_enable();
+            fprintf(stderr, "%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
+            fprintf(stderr, "Try '%s --help' for more information\n", argv[0]);
+            exit(EXIT_FAILURE);
+         }
+
          switch (c)
          {
             case 'h':
                retroarch_print_help(argv[0]);
+               exit(0);
+
+            case 'V':
+            case RA_OPT_VERSION:
+               retroarch_print_version();
+               exit(0);
+
+            case RA_OPT_FEATURES:
+               retroarch_print_features();
                exit(0);
 
 #ifdef HAVE_CONFIGFILE
@@ -4698,6 +4714,7 @@ static bool retroarch_parse_input_and_config(
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
                break;
+
             case 'v':
                verbosity_enable();
                retroarch_override_setting_set(
@@ -5053,10 +5070,6 @@ static bool retroarch_parse_input_and_config(
                path_set(RARCH_PATH_SUBSYSTEM, optarg);
                break;
 
-            case RA_OPT_FEATURES:
-               retroarch_print_features();
-               exit(0);
-
             case RA_OPT_EOF_EXIT:
 #ifdef HAVE_BSV_MOVIE
                {
@@ -5066,11 +5079,10 @@ static bool retroarch_parse_input_and_config(
 #endif
                break;
 
-            case RA_OPT_VERSION:
-               retroarch_print_version();
-               exit(0);
-
             case 'h':
+            case 'V':
+            case RA_OPT_VERSION:
+            case RA_OPT_FEATURES:
 #ifdef HAVE_CONFIGFILE
             case 'c':
             case RA_OPT_APPENDCONFIG:
@@ -5231,7 +5243,7 @@ bool retroarch_main_init(int argc, char *argv[])
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    recording_state_t
-	   *recording_st              = recording_state_get_ptr();
+      *recording_st              = recording_state_get_ptr();
    global_t            *global   = global_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    access_state_t *access_st     = access_state_get_ptr();
@@ -5388,9 +5400,8 @@ bool retroarch_main_init(int argc, char *argv[])
    if (!video_driver_find_driver(settings,
          "video driver", verbosity_enabled))
       retroarch_fail(1, "video_driver_find_driver()");
-   if (!input_driver_find_driver(
-            settings,
-            "input driver", verbosity_enabled))
+   if (!input_driver_find_driver(settings,
+         "input driver", verbosity_enabled))
       retroarch_fail(1, "input_driver_find_driver()");
 
    if (!camera_driver_find_driver("camera driver", verbosity_enabled))
@@ -5528,8 +5539,8 @@ bool retroarch_main_init(int argc, char *argv[])
    {
       discord_state_t *discord_st = discord_state_get_ptr();
 
-	   if (command_event(CMD_EVENT_DISCORD_INIT, NULL))
-		   discord_st->inited = true;
+      if (command_event(CMD_EVENT_DISCORD_INIT, NULL))
+         discord_st->inited = true;
    }
 #endif
 
