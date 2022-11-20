@@ -1541,7 +1541,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "設定預設著色器自動載入的延遲(以毫秒為單位)。可解決使用螢幕擷取軟體時的圖形異常。"
+   "設定預設著色器自動載入的延遲(毫秒)。可解決使用螢幕擷取軟體時的圖形異常。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -1726,11 +1726,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   "無邊框視窗全螢幕模式"
+   "無邊框全螢幕模式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   "開啟時防止全螢幕模式變更為無框視窗顯示。"
+   "開啟時防止全螢幕模式變更為無邊框視窗模式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -1843,8 +1843,16 @@ MSG_HASH(
    "整數縮放"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "整數縮放影像。顯示基本尺寸由系統已記錄的大小和寬高比。設定「寬高比」為 <自訂> 時套用自訂的寬度和高度。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "整數縮放超出範圍"
+   "允許超出範圍"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "允許整數縮放超出螢幕可顯示範圍。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -1904,6 +1912,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
    "裁剪過掃描 (需要重新啟動)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+   "裁剪圖像邊緣像素，通常由開發人員保留為空，也可能是多餘的像素。"
+   )
 
 /* Settings > Video > HDR */
 
@@ -1940,7 +1952,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   "垂直同步交換間隔"
+   "垂直同步切換間隔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   "設定垂直同步切換的除數。顯示器更新率依除數降低。設定 <自動> 時自動與幀率同步，例如在 60FPS 螢幕上執行 30FPS 遊戲，或在 120FPS 螢幕上執行 60FPS 遊戲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
@@ -2023,7 +2039,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "啟用聲音同步"
+   "同步"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
@@ -2058,8 +2074,16 @@ MSG_HASH(
    "靜音"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   "靜音模式。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    "混音器靜音"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   "混音器靜音模式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
@@ -2079,11 +2103,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-   "混音器聲音大小(dB)"
+   "混音器音量增益 (分貝)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   "全區域混音器聲音大小 (dB). 0 dB 為原始聲音大小。未經過調整."
+   "設定混音器音頻通道音量增益(分貝)，設定 <0> 時正常音量未增益。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -2119,30 +2143,34 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "設定共用模式的緩衝間隔長度(以幀為單位)。"
+   "設定共用模式的緩衝間隔長度(幀數)。"
    )
 
 /* Settings > Audio > Output */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   "啟用聲音"
+   "音頻"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   "開啟音頻輸出。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-   "聲音設備"
+   "裝置"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "覆蓋音效驅動使用的預設聲音設備。 這取決於驅動程序。"
+   "左/右鍵 切換要使用的音訊輸出裝置。依據驅動程式顯示可使用的裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-   "音頻延遲 (毫秒)"
+   "音訊延遲 (毫秒)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "設定音頻延遲(毫秒)。音效驅動程式不支援時設定無效。"
+   "設定音頻訊號延遲(毫秒)。音效驅動程式不支援時設定無效。"
    )
 
 /* Settings > Audio > Resampler */
@@ -2157,22 +2185,22 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   "聲音輸出碼率(Hz)"
+   "輸出頻率 (Hz)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-   "音訊輸出取樣率"
+   "音頻輸出取樣率。"
    )
 
 /* Settings > Audio > Synchronization */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-   "啟用聲音同步"
+   "開啟聲音同步"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   "同步聲音。推薦。"
+   "同步聲音。推薦開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
@@ -2195,7 +2223,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_INPUT,
-   "選擇輸入裝置"
+   "選擇輸入裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
@@ -2203,7 +2231,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
-   "選擇輸出裝置"
+   "選擇輸出裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
@@ -2211,7 +2239,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_VOLUME,
-   "設定輸出音量(%)"
+   "設定輸出音量(%)。"
    )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
@@ -2234,7 +2262,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
-   "循序播放"
+   "順序播放"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
@@ -2242,7 +2270,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
-   "停止播放"
+   "停止"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
@@ -2269,7 +2297,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-   "即使位於選單，也同時播放音頻"
+   "即使位於選單，也同時播放音頻。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
@@ -3673,7 +3701,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-   "設定倒帶使用的記憶體緩衝區大小(以MB為單位)，增加記憶體用量可加長倒帶的時間。"
+   "設定倒帶使用的記憶體緩衝區大小(MB)，增加記憶體用量可加長倒帶的時間。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
@@ -6395,6 +6423,14 @@ MSG_HASH(
 
 /* Music > Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
+   "加入到混音器"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
+   "加入到混音器並播放"
+   )
 
 /* Netplay */
 
@@ -6499,6 +6535,14 @@ MSG_HASH(
 
 /* Import Content > Scan File */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
+   "加入到混音器"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
+   "加入到混音器並播放"
+   )
 
 /* Import Content > Manual Scan */
 
@@ -7064,11 +7108,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
-   "儲存為載入位置核心選項"
+   "儲存為路徑核心選項"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "刪除此載入位置核心選項"
+   "刪除此路徑核心選項"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
@@ -7124,11 +7168,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
-   "儲存為載入位置控制器"
+   "儲存為路徑控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "刪除此載入位置控制器"
+   "刪除此路徑控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
@@ -7170,27 +7214,59 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
-   "載入金手指文件(複寫)"
+   "載入金手指 (取代)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-   "載入一個金手指檔案並複寫現有檔案"
+   "載入金手指作弊檔並取代目前作弊檔。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
+   "載入金手指 (加入)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
+   "載入金手指作弊檔並加入到目前作弊檔。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
+   "重新載入此遊戲金手指"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
-   "另存金手指文件"
+   "另存新檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
+   "儲存目前金手指設置，為新的金手指作弊檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
-   "加入新的作弊碼在上方"
+   "頂部加入空白金手指"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
-   "加入新的作弊碼在下方"
+   "底部加入空白金手指"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
-   "刪除全部的作弊碼"
+   "刪除全部金手指"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+   "執行時自動套用金手指"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
+   "執行遊戲時自動套用設定的金手指。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+   "自動套用"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+   "自動套用開啟的金手指。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
@@ -7198,7 +7274,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
-   "修改金手指會立即生效。"
+   "套用金手指變更的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -7337,8 +7413,12 @@ MSG_HASH(
    "索引"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_IDX,
+   "金手指的編號。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
-   "啟用"
+   "開啟"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
@@ -7367,6 +7447,86 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
    "瀏覽位置數值: %08X (左/右鍵 瀏覽記憶體位置)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
+   "記憶體位置 遮罩"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
+   "搜尋記憶體小於八位元时的位置位元遮罩。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
+   "重複次數"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
+   "重複金手指的次數。當所有重複選項同時使用，可變更多個記憶體。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
+   "每次重複位置增加"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+   "每次重複時「記憶體位置」增加，使用此數值乘以「記憶體搜尋大小」。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
+   "每次重複增加數值"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+   "每次重複時「數值」加上此數值。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
+   "記憶體觸發震動"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
+   "觸發值"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PORT,
+   "震動對應連接埠"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
+   "主要震動強度"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
+   "主要震動時長 (毫秒)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
+   "次要震動強度"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
+   "次要震動時長 (毫秒)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
+   "代碼"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
+   "追加空白到下個編號"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
+   "追加空白到上個編號"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
+   "複製追加到下個編號"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE,
+   "複製追加到上個編號"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
@@ -7533,11 +7693,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
-   "儲存為載入位置著色器"
+   "儲存為路徑著色器"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
-   "儲存目前著色器設置，並預設為路徑相同時使用的著色器。"
+   "儲存目前著色器設置，並預設為此路徑使用的著色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
@@ -7572,11 +7732,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-   "刪除此載入位置著色器"
+   "刪除此路徑著色器"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-   "刪除路徑相同時預設使用的著色器。"
+   "刪除此路徑預設使用的著色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
@@ -7606,11 +7766,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "儲存為位置螢幕主題"
+   "儲存為路徑螢幕主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "儲存目前螢幕覆蓋和螢幕佈景的設定，並預設為路徑相同時的螢幕主題。"
+   "儲存目前螢幕覆蓋和螢幕佈景的設定，並預設為此路徑使用的螢幕主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -7893,6 +8053,46 @@ MSG_HASH(
    "<關閉>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
+   "變更"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
+   "不變"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE,
+   "增加"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE,
+   "減少"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_EQ_VALUE,
+   "等於觸發值"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
+   "不等於觸發值"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
+   "小於觸發值"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
+   "大於觸發值"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
+   "觸發值增加"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE_BY_VALUE,
+   "觸發值減少"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_PORT_16,
    "全部"
    )
@@ -8050,7 +8250,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLED,
-   "啟用"
+   "開啟"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISABLED,
@@ -9441,7 +9641,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_URL,
-   "URL路徑"
+   "網址連結"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
@@ -9496,7 +9696,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
-   "強制畫面比例"
+   "強制寬高比"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
@@ -9536,7 +9736,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
-   "內容歷史路徑"
+   "檔案歷史路徑"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
@@ -9805,7 +10005,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,
-   "全區域混音器聲音大小"
+   "混音器音頻通道音量"
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCAN_COMPLETE,
@@ -10138,7 +10338,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INDEX_FILE,
-   "索引"
+   "編號"
    )
 MSG_HASH(
    MSG_DOWNLOAD_FAILED,
@@ -10398,7 +10598,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_CHEAT_FILENAME,
-   "金手指檔案"
+   "請輸入檔案名稱"
    )
 MSG_HASH(
    MSG_INPUT_PRESET_FILENAME,
@@ -10813,12 +11013,16 @@ MSG_HASH(
    "密碼錯誤。"
    )
 MSG_HASH(
+   MSG_CONFIG_OVERRIDE_LOADED,
+   "已載入螢幕主題。"
+   )
+MSG_HASH(
    MSG_GAME_REMAP_FILE_LOADED,
    "已套用遊戲控制器。"
    )
 MSG_HASH(
    MSG_DIRECTORY_REMAP_FILE_LOADED,
-   "已套用載入位置控制器。"
+   "已套用路徑控制器。"
    )
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
@@ -10899,6 +11103,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
    "列表上限一百個，請縮小搜尋結果的範圍。"
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_TOP_SUCCESS,
+   "已加入空白金手指到頂部。"
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BOTTOM_SUCCESS,
+   "已加入空白金手指到底部。"
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BEFORE_SUCCESS,
+   "已追加空白金手指到上一個編號。"
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_AFTER_SUCCESS,
+   "已追加空白金手指到下一個編號。"
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_BEFORE_SUCCESS,
+   "已複製追加到上一個編號。"
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_AFTER_SUCCESS,
+   "已複製追加到下一個編號。"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
