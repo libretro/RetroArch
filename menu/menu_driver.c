@@ -1866,6 +1866,11 @@ void input_event_osk_iterate(
                katakana_page2_grid,
                sizeof(katakana_page2_grid));
          break;
+      case OSK_KOREAN_PAGE1:
+         memcpy(osk_grid,
+               korean_page1_grid,
+               sizeof(korean_page1_grid));
+         break;         
 #endif
       case OSK_SYMBOLS_PAGE1:
          memcpy(osk_grid,
