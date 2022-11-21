@@ -12119,10 +12119,6 @@ MSG_HASH(
    "Auto save state to"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "Blocking SRAM Overwrite"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "Bringing up command interface on port"
    )
@@ -12815,10 +12811,6 @@ MSG_HASH(
    "Shader preset saved successfully."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "Skipping SRAM load."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "Slow-Motion."
    )
@@ -12831,8 +12823,16 @@ MSG_HASH(
    "Slow-motion rewind."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Skipping SRAM load."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "SRAM will not be saved."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "Blocking SRAM Overwrite"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,
