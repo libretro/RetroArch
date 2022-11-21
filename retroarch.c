@@ -5800,12 +5800,8 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
                                            |   RUNLOOP_FLAG_IDLE
                                            |   RUNLOOP_FLAG_PAUSED
                                               );
-            runloop_frame_time_free();
-            runloop_audio_buffer_status_free();
-            input_game_focus_free();
-            runloop_fastmotion_override_free();
-            runloop_core_options_cb_free();
-            runloop_st->video_swap_interval_auto = 1;
+            runloop_state_free(runloop_st);
+
             memset(&input_st->analog_requested, 0,
                   sizeof(input_st->analog_requested));
          }

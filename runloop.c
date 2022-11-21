@@ -3589,6 +3589,61 @@ void runloop_system_info_free(void)
    memset(&runloop_st->system, 0, sizeof(rarch_system_info_t));
 }
 
+static void runloop_frame_time_free(runloop_state_t *runloop_st)
+{
+   memset(&runloop_st->frame_time, 0,
+         sizeof(struct retro_frame_time_callback));
+   runloop_st->frame_time_last    = 0;
+   runloop_st->max_frames         = 0;
+}
+
+static void runloop_audio_buffer_status_free(runloop_state_t *runloop_st)
+{
+   memset(&runloop_st->audio_buffer_status, 0,
+         sizeof(struct retro_audio_buffer_status_callback));
+   runloop_st->audio_latency = 0;
+}
+
+static void runloop_fastmotion_override_free(runloop_state_t *runloop_st)
+{
+   video_driver_state_t 
+      *video_st            = video_state_get_ptr();
+   settings_t *settings    = config_get_ptr();
+   float fastforward_ratio = settings->floats.fastforward_ratio;
+   bool reset_frame_limit  = runloop_st->fastmotion_override.current.fastforward &&
+         (runloop_st->fastmotion_override.current.ratio >= 0.0f) &&
+         (runloop_st->fastmotion_override.current.ratio != fastforward_ratio);
+
+   runloop_st->fastmotion_override.current.ratio          = 0.0f;
+   runloop_st->fastmotion_override.current.fastforward    = false;
+   runloop_st->fastmotion_override.current.notification   = false;
+   runloop_st->fastmotion_override.current.inhibit_toggle = false;
+
+   runloop_st->fastmotion_override.next.ratio             = 0.0f;
+   runloop_st->fastmotion_override.next.fastforward       = false;
+   runloop_st->fastmotion_override.next.notification      = false;
+   runloop_st->fastmotion_override.next.inhibit_toggle    = false;
+
+   runloop_st->fastmotion_override.pending                = false;
+
+   if (reset_frame_limit)
+      runloop_st->frame_limit_minimum_time                = 
+         runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
+}
+
+void runloop_state_free(runloop_state_t *runloop_st)
+{
+   runloop_frame_time_free(runloop_st);
+   runloop_audio_buffer_status_free(runloop_st);
+   input_game_focus_free();
+   runloop_fastmotion_override_free(runloop_st);
+
+   /* Only a single core options callback is used at present */
+   runloop_st->core_options_callback.update_display = NULL;
+
+   runloop_st->video_swap_interval_auto             = 1;
+}
+
 /**
  * uninit_libretro_symbols:
  *
@@ -3634,12 +3689,7 @@ static void uninit_libretro_symbols(
    runloop_system_info_free();
    audio_st->callback.callback                   = NULL;
    audio_st->callback.set_state                  = NULL;
-   runloop_frame_time_free();
-   runloop_audio_buffer_status_free();
-   input_game_focus_free();
-   runloop_fastmotion_override_free();
-   runloop_core_options_cb_free();
-   runloop_st->video_swap_interval_auto          = 1;
+   runloop_state_free(runloop_st);
    camera_st->active                             = false;
    location_st->active                           = false;
 
@@ -5150,22 +5200,132 @@ void runloop_event_deinit_core(void)
 #endif
 }
 
-static void runloop_path_init_savefile_internal(void)
+static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
 {
-   runloop_state_t *runloop_st = &runloop_state;
+   unsigned i, j;
+   const struct retro_subsystem_info *info = NULL;
+   rarch_system_info_t             *system = &runloop_st->system;
+   bool subsystem_path_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
+   const char                *savefile_dir = runloop_st->savefile_dir;
 
+   if (!system || subsystem_path_empty)
+      return false;
+
+   /* For subsystems, we know exactly which RAM types are supported. */
+   /* We'll handle this error gracefully later. */
+   if ((info = libretro_find_subsystem_info(
+         system->subsystem.data,
+         system->subsystem.size,
+         path_get(RARCH_PATH_SUBSYSTEM))))
+   {
+      unsigned num_content = MIN(info->num_roms,
+            subsystem_path_empty ?
+            0 : (unsigned)runloop_st->subsystem_fullpaths->size);
+
+      for (i = 0; i < num_content; i++)
+      {
+         for (j = 0; j < info->roms[i].num_memory; j++)
+         {
+            char ext[32];
+            union string_list_elem_attr attr;
+            char savename[PATH_MAX_LENGTH];
+            char path[PATH_MAX_LENGTH];
+            const struct retro_subsystem_memory_info *mem =
+               (const struct retro_subsystem_memory_info*)
+               &info->roms[i].memory[j];
+            ext[0]  = '.';
+            ext[1]  = '\0';
+            strlcat(ext, mem->extension, sizeof(ext));
+            strlcpy(savename,
+                  runloop_st->subsystem_fullpaths->elems[i].data,
+                  sizeof(savename));
+            path_remove_extension(savename);
+
+            if (path_is_directory(savefile_dir))
+            {
+               /* Use SRAM dir */
+               /* Redirect content fullpath to save directory. */
+               strlcpy(path, savefile_dir, sizeof(path));
+               fill_pathname_dir(path, savename, ext, sizeof(path));
+            }
+            else
+               fill_pathname(path, savename, ext, sizeof(path));
+
+            RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
+               path);
+
+            attr.i = mem->type;
+            string_list_append((struct string_list*)savefile_ptr_get(),
+                  path, attr);
+         }
+      }
+   }
+
+   /* Let other relevant paths be inferred 
+      from the main SRAM location. */
+   if (!retroarch_override_setting_is_set(
+            RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
+   {
+      size_t len = strlcpy(runloop_st->name.savefile,
+            runloop_st->runtime_content_path_basename,
+            sizeof(runloop_st->name.savefile));
+      runloop_st->name.savefile[len  ] = '.';
+      runloop_st->name.savefile[len+1] = 's';
+      runloop_st->name.savefile[len+2] = 'r';
+      runloop_st->name.savefile[len+3] = 'm';
+      runloop_st->name.savefile[len+4] = '\0';
+   }
+
+   if (path_is_directory(runloop_st->name.savefile))
+   {
+      fill_pathname_dir(runloop_st->name.savefile,
+            runloop_st->runtime_content_path_basename,
+            ".srm",
+            sizeof(runloop_st->name.savefile));
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
+            runloop_st->name.savefile);
+   }
+
+   return true;
+}
+
+static void runloop_path_init_savefile_internal(runloop_state_t *runloop_st)
+{
    path_deinit_savefile();
    path_init_savefile_new();
 
-   if (!runloop_path_init_subsystem())
+   if (!runloop_path_init_subsystem(runloop_st))
       path_init_savefile_rtc(runloop_st->name.savefile);
 }
 
+static void runloop_path_init_savefile(runloop_state_t *runloop_st)
+{
+   bool    should_sram_be_used = 
+          (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
+      && !(runloop_st->flags & RUNLOOP_FLAG_IS_SRAM_SAVE_DISABLED);
+
+   if (should_sram_be_used)
+      runloop_st->flags |=  RUNLOOP_FLAG_USE_SRAM;
+   else
+      runloop_st->flags &= ~RUNLOOP_FLAG_USE_SRAM;
+
+   if (!(runloop_st->flags & RUNLOOP_FLAG_USE_SRAM))
+   {
+      RARCH_LOG("[SRAM]: %s\n",
+            msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
+      return;
+   }
+
+   command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+}
+
 static bool event_init_content(
+      runloop_state_t *runloop_st,
       settings_t *settings,
       input_driver_state_t *input_st)
 {
-   runloop_state_t *runloop_st                  = &runloop_state;
 #ifdef HAVE_CHEEVOS
    bool cheevos_enable                          =
       settings->bools.cheevos_enable;
@@ -5191,7 +5351,7 @@ static bool event_init_content(
     * interface, otherwise fill all content-related
     * paths */
    if (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
-      runloop_path_init_savefile_internal();
+      runloop_path_init_savefile_internal(runloop_st);
    else
       runloop_path_fill_names();
 
@@ -5200,7 +5360,7 @@ static bool event_init_content(
 
    command_event_set_savestate_auto_index(settings);
 
-   runloop_path_init_savefile();
+   runloop_path_init_savefile(runloop_st);
 
    if (!event_load_save_files(runloop_st->flags &
             RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED))
@@ -5324,10 +5484,10 @@ void runloop_set_video_swap_interval(
     *   set swap interval to 1
     * > If core fps or display refresh rate are zero,
     *   set swap interval to 1 */
-   if (vrr_runloop_enable ||
-       (core_hz > timing_hz) ||
-       (core_hz <= 0.0f) ||
-       (timing_hz <= 0.0f))
+   if (   (vrr_runloop_enable)
+       || (core_hz    > timing_hz)
+       || (core_hz   <= 0.0f) 
+       || (timing_hz <= 0.0f))
    {
       runloop_st->video_swap_interval_auto = 1;
       return;
@@ -5335,7 +5495,7 @@ void runloop_set_video_swap_interval(
 
    /* Check whether display refresh rate is an integer
     * multiple of core fps (within timing skew tolerance) */
-   swap_ratio = timing_hz / core_hz;
+   swap_ratio   = timing_hz / core_hz;
    swap_integer = (unsigned)(swap_ratio + 0.5f);
 
    /* > Sanity check: swap interval must be in the
@@ -5372,23 +5532,20 @@ unsigned int retroarch_get_rotation(void)
 
 static void retro_run_null(void) { } /* Stub function callback impl. */
 
-static bool core_verify_api_version(void)
+static bool core_verify_api_version(runloop_state_t *runloop_st)
 {
-   runloop_state_t *runloop_st = &runloop_state;
    unsigned api_version        = runloop_st->current_core.retro_api_version();
-
+   if (api_version != RETRO_API_VERSION)
+   {
+      RARCH_WARN("[Core]: %s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
+      return false;
+   }
    RARCH_LOG("[Core]: %s: %u, %s: %u\n",
          msg_hash_to_str(MSG_VERSION_OF_LIBRETRO_API),
          api_version,
          msg_hash_to_str(MSG_COMPILED_AGAINST_API),
          RETRO_API_VERSION
          );
-
-   if (api_version != RETRO_API_VERSION)
-   {
-      RARCH_WARN("[Core]: %s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
-      return false;
-   }
    return true;
 }
 
@@ -5437,9 +5594,9 @@ static retro_input_state_t core_input_state_poll_return_cb(void)
  * Initializes libretro callbacks, and binds the libretro callbacks
  * to default callback functions.
  **/
-static bool core_init_libretro_cbs(struct retro_callbacks *cbs)
+static void core_init_libretro_cbs(runloop_state_t *runloop_st,
+      struct retro_callbacks *cbs)
 {
-   runloop_state_t *runloop_st  = &runloop_state;
    retro_input_state_t state_cb = core_input_state_poll_return_cb();
 
    runloop_st->current_core.retro_set_video_refresh(video_driver_frame);
@@ -5451,26 +5608,21 @@ static bool core_init_libretro_cbs(struct retro_callbacks *cbs)
    core_set_default_callbacks(cbs);
 
 #ifdef HAVE_NETWORKING
-   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-      return true;
-
-   core_set_netplay_callbacks();
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+      core_set_netplay_callbacks();
 #endif
-
-   return true;
 }
 
 
-static bool core_load(unsigned poll_type_behavior)
+static bool runloop_event_load_core(runloop_state_t *runloop_st,
+      unsigned poll_type_behavior)
 {
    video_driver_state_t *video_st     = video_state_get_ptr();
-   runloop_state_t *runloop_st        = &runloop_state;
    runloop_st->current_core.poll_type = poll_type_behavior;
 
-   if (!core_verify_api_version())
+   if (!core_verify_api_version(runloop_st))
       return false;
-   if (!core_init_libretro_cbs(&runloop_st->retro_ctx))
-      return false;
+   core_init_libretro_cbs(runloop_st, &runloop_st->retro_ctx);
 
    runloop_st->current_core.retro_get_system_av_info(&video_st->av_info);
    video_st->core_frame_time = 1000000 /
@@ -5628,7 +5780,7 @@ bool runloop_event_init_core(
          path_get(RARCH_PATH_CONTENT),
          runloop_st->savefile_dir);
 
-   if (!event_init_content(settings, input_st))
+   if (!event_init_content(runloop_st, settings, input_st))
    {
       runloop_st->flags &= ~RUNLOOP_FLAG_CORE_RUNNING;
       return false;
@@ -5638,7 +5790,7 @@ bool runloop_event_init_core(
    disk_control_verify_initial_index(&sys_info->disk_control,
          show_set_initial_disk_msg);
 
-   if (!core_load(poll_type_behavior))
+   if (!runloop_event_load_core(runloop_st, poll_type_behavior))
       return false;
 
    runloop_st->frame_limit_minimum_time = 
@@ -5725,156 +5877,10 @@ void runloop_pause_checks(void)
 #endif
 }
 
-void runloop_frame_time_free(void)
-{
-   runloop_state_t *runloop_st    = &runloop_state;
-   memset(&runloop_st->frame_time, 0,
-         sizeof(struct retro_frame_time_callback));
-   runloop_st->frame_time_last    = 0;
-   runloop_st->max_frames         = 0;
-}
-
-void runloop_audio_buffer_status_free(void)
-{
-   runloop_state_t *runloop_st    = &runloop_state;
-   memset(&runloop_st->audio_buffer_status, 0,
-         sizeof(struct retro_audio_buffer_status_callback));
-   runloop_st->audio_latency = 0;
-}
-
-void runloop_fastmotion_override_free(void)
-{
-   runloop_state_t 
-	   *runloop_st          = &runloop_state;
-   video_driver_state_t 
-      *video_st            = video_state_get_ptr();
-   settings_t *settings    = config_get_ptr();
-   float fastforward_ratio = settings->floats.fastforward_ratio;
-   bool reset_frame_limit  = runloop_st->fastmotion_override.current.fastforward &&
-         (runloop_st->fastmotion_override.current.ratio >= 0.0f) &&
-         (runloop_st->fastmotion_override.current.ratio != fastforward_ratio);
-
-   runloop_st->fastmotion_override.current.ratio          = 0.0f;
-   runloop_st->fastmotion_override.current.fastforward    = false;
-   runloop_st->fastmotion_override.current.notification   = false;
-   runloop_st->fastmotion_override.current.inhibit_toggle = false;
-
-   runloop_st->fastmotion_override.next.ratio             = 0.0f;
-   runloop_st->fastmotion_override.next.fastforward       = false;
-   runloop_st->fastmotion_override.next.notification      = false;
-   runloop_st->fastmotion_override.next.inhibit_toggle    = false;
-
-   runloop_st->fastmotion_override.pending                = false;
-
-   if (reset_frame_limit)
-      runloop_st->frame_limit_minimum_time                = 
-         runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
-}
-
-void runloop_core_options_cb_free(void)
-{
-   runloop_state_t 
-	   *runloop_st          = &runloop_state;
-   /* Only a single core options callback is used at present */
-   runloop_st->core_options_callback.update_display = NULL;
-}
-
 struct string_list *path_get_subsystem_list(void)
 {
    runloop_state_t *runloop_st = &runloop_state;
    return runloop_st->subsystem_fullpaths;
-}
-
-bool runloop_path_init_subsystem(void)
-{
-   unsigned i, j;
-   const struct retro_subsystem_info *info = NULL;
-   runloop_state_t             *runloop_st = &runloop_state;
-   rarch_system_info_t             *system = &runloop_st->system;
-   bool subsystem_path_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
-   const char                *savefile_dir = runloop_st->savefile_dir;
-
-   if (!system || subsystem_path_empty)
-      return false;
-
-   /* For subsystems, we know exactly which RAM types are supported. */
-   /* We'll handle this error gracefully later. */
-   if ((info = libretro_find_subsystem_info(
-         system->subsystem.data,
-         system->subsystem.size,
-         path_get(RARCH_PATH_SUBSYSTEM))))
-   {
-      unsigned num_content = MIN(info->num_roms,
-            subsystem_path_empty ?
-            0 : (unsigned)runloop_st->subsystem_fullpaths->size);
-
-      for (i = 0; i < num_content; i++)
-      {
-         for (j = 0; j < info->roms[i].num_memory; j++)
-         {
-            char ext[32];
-            union string_list_elem_attr attr;
-            char savename[PATH_MAX_LENGTH];
-            char path[PATH_MAX_LENGTH];
-            const struct retro_subsystem_memory_info *mem =
-               (const struct retro_subsystem_memory_info*)
-               &info->roms[i].memory[j];
-            ext[0]  = '.';
-            ext[1]  = '\0';
-            strlcat(ext, mem->extension, sizeof(ext));
-            strlcpy(savename,
-                  runloop_st->subsystem_fullpaths->elems[i].data,
-                  sizeof(savename));
-            path_remove_extension(savename);
-
-            if (path_is_directory(savefile_dir))
-            {
-               /* Use SRAM dir */
-               /* Redirect content fullpath to save directory. */
-               strlcpy(path, savefile_dir, sizeof(path));
-               fill_pathname_dir(path, savename, ext, sizeof(path));
-            }
-            else
-               fill_pathname(path, savename, ext, sizeof(path));
-
-            RARCH_LOG("%s \"%s\".\n",
-               msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
-               path);
-
-            attr.i = mem->type;
-            string_list_append((struct string_list*)savefile_ptr_get(),
-                  path, attr);
-         }
-      }
-   }
-
-   /* Let other relevant paths be inferred 
-      from the main SRAM location. */
-   if (!retroarch_override_setting_is_set(
-            RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-   {
-      size_t len = strlcpy(runloop_st->name.savefile,
-            runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.savefile));
-      runloop_st->name.savefile[len  ] = '.';
-      runloop_st->name.savefile[len+1] = 's';
-      runloop_st->name.savefile[len+2] = 'r';
-      runloop_st->name.savefile[len+3] = 'm';
-      runloop_st->name.savefile[len+4] = '\0';
-   }
-
-   if (path_is_directory(runloop_st->name.savefile))
-   {
-      fill_pathname_dir(runloop_st->name.savefile,
-            runloop_st->runtime_content_path_basename,
-            ".srm",
-            sizeof(runloop_st->name.savefile));
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
-            runloop_st->name.savefile);
-   }
-
-   return true;
 }
 
 void runloop_path_fill_names(void)
@@ -5884,7 +5890,7 @@ void runloop_path_fill_names(void)
    input_driver_state_t *input_st = input_state_get_ptr();
 #endif
 
-   runloop_path_init_savefile_internal();
+   runloop_path_init_savefile_internal(runloop_st);
 
 #ifdef HAVE_BSV_MOVIE
    strlcpy(input_st->bsv_movie_state.movie_path,
@@ -5930,29 +5936,6 @@ void runloop_path_fill_names(void)
       runloop_st->name.ips[len+3] = 's';
       runloop_st->name.ips[len+4] = '\0';
    }
-}
-
-
-void runloop_path_init_savefile(void)
-{
-   runloop_state_t *runloop_st = &runloop_state;
-   bool    should_sram_be_used = 
-          (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
-      && !(runloop_st->flags & RUNLOOP_FLAG_IS_SRAM_SAVE_DISABLED);
-
-   if (should_sram_be_used)
-      runloop_st->flags |=  RUNLOOP_FLAG_USE_SRAM;
-   else
-      runloop_st->flags &= ~RUNLOOP_FLAG_USE_SRAM;
-
-   if (!(runloop_st->flags & RUNLOOP_FLAG_USE_SRAM))
-   {
-      RARCH_LOG("[SRAM]: %s\n",
-            msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
-      return;
-   }
-
-   command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
 }
 
 
