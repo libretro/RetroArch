@@ -2565,6 +2565,16 @@ void input_event_osk_append(
    else if (string_is_equal(word, "\xe2\x87\xa9")) /* down arrow */
       *osk_idx = OSK_LOWERCASE_LATIN;
    else if (string_is_equal(word,"\xe2\x8a\x95")) /* plus sign (next button) */
+      if( *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_KOREAN   )
+      {
+         static int prv_osk = OSK_TYPE_UNKNOWN+1;
+         if( *osk_idx < OSK_KOREAN_PAGE1 )
+         {
+            prv_osk = *osk_idx;
+            *osk_idx =  OSK_KOREAN_PAGE1;
+         } else	 
+            *osk_idx = (enum osk_type)prv_osk;
+      }  else
 #else
    if (string_is_equal(word, "Bksp"))
       input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
@@ -2581,6 +2591,13 @@ void input_event_osk_append(
          *osk_idx = (enum osk_type)(*osk_idx + 1);
       else
          *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+#ifdef HAVE_LANGEXTRA
+   else if( *osk_idx==OSK_KOREAN_PAGE1 && word && word_len==3)
+   {
+      unsigned character = *((unsigned*)word) | 0x01000000;
+      input_keyboard_line_event(&input_driver_st,  keyboard_line, character);
+   }
+#endif
    else
    {
       input_keyboard_line_append(keyboard_line, word, word_len);
@@ -3391,6 +3408,127 @@ void input_driver_deinit_command(input_driver_state_t *input_st)
 }
 #endif
 
+#ifdef HAVE_LANGEXTRA
+/* combine 3 korean elements. make utf8 character */
+unsigned get_kr_utf8( int c1,int c2,int c3)
+{
+   int  uv = c1*(28*21) + c2*28 + c3 + 0xac00; 
+   int  tv = (uv>>12) | ((uv&0x0f00)<<2) | ((uv&0xc0)<<2) | ((uv&0x3f)<<16);
+   return  (tv | 0x8080e0);
+}
+
+/* utf8 korean composition */
+unsigned get_kr_composition( char* pcur, char* padd)
+{
+   static char cc1[] = {"ㄱㄱㄲ ㄷㄷㄸ ㅂㅂㅃ ㅅㅅㅆ ㅈㅈㅉ"};
+   static char cc2[] = {"ㅗㅏㅘ ㅗㅐㅙ ㅗㅣㅚ ㅜㅓㅝ ㅜㅔㅞ ㅜㅣㅟ ㅡㅣㅢ"};    
+   static char cc3[] = {"ㄱㄱㄲ ㄱㅅㄳ ㄴㅈㄵ ㄴㅎㄶ ㄹㄱㄺ ㄹㅁㄻ ㄹㅂㄼ ㄹㅅㄽ ㄹㅌㄾ ㄹㅍㄿ ㄹㅎㅀ ㅂㅅㅄ ㅅㅅㅆ"};
+   static char s1[]  = {"ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣㆍㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ"}; 
+   int c1 = -1;
+   int c2 = -1;
+   int c3 =  0;
+   int nv = -1;
+   char		utf8[8]	= {0,};
+   char*	tmp1;
+   char*	tmp2;
+   unsigned ret =  *((unsigned*)pcur);
+
+   /* check korean */
+   if( !pcur[0] || !pcur[1] || !pcur[2] || pcur[3] ) return ret;
+   if( !padd[0] || !padd[1] || !padd[2] || padd[3] ) return ret;
+   if( (tmp1=strstr(s1,pcur)) )  c1 = (tmp1-s1)/3;
+   if( (tmp1=strstr(s1,padd)) )  nv = (tmp1-s1)/3;
+   if( nv == -1 || nv>=19+21  ) return ret;
+
+   /* single element composition  */
+   sprintf(utf8,"%s%s",pcur,padd);
+   if( !(tmp2=strstr(cc1,utf8))) tmp2=strstr(cc2,utf8);
+   if( tmp2 && tmp2 < cc2+sizeof(cc2)-10 )	
+   {  
+	  *((unsigned*)padd) = *((unsigned*)(tmp2+6)) & 0xffffff;
+      return 0;
+   }
+   if( c1 >=19) return ret;
+
+   if( c1 == -1 )
+   {
+      int tv = ((pcur[0]&0x0f)<<12) | ((pcur[1]&0x3f)<<6) | (pcur[2]&0x03f);
+      tv = tv - 0xac00;
+      c1 = tv/(28*21);
+      c2 = (tv%(28*21))/28;
+      c3 = tv%28;
+      if( c1<0 || c1>=19 || c2<0 || c2>21 || c3<0 || c3>28 )	return ret;
+   }
+   if( c1==-1 && c2==-1 && c3==0) return ret;
+   if( c2==-1 && c3==0 )						
+   {
+      /* 2nd element attach */
+      if( nv<19 ) return ret;
+      c2 = nv-19;	
+      ret = 0;
+   }  else
+   if( c2>=0 && c3==0 )							
+   {
+      if(nv<19)
+      {
+         /* 3rd element attach */
+         if( !(tmp1=strstr(s1+(19+21)*3,padd)) ) return ret;		
+         c3 = (tmp1-s1)/3 - 19-21;
+      }  else
+      {	
+         /* 2nd element transform */
+         strncpy(utf8,s1+(19+c2)*3,3); utf8[3]=0;
+         strcat(utf8,padd);
+         if( !(tmp2=strstr(cc2,utf8)) || tmp2>=cc2+sizeof(cc2)-10 )	return ret;
+         strncpy(utf8,tmp2+6,3); utf8[3]=0;
+         if( !(tmp1=strstr(s1+(19)*3,utf8)) )	return ret;
+         c2 = (tmp1-s1)/3 - 19;
+      }	
+   }  else
+   if( c3>0 )								
+   {
+      strncpy(utf8,s1+(19+21+c3)*3,3); 
+      utf8[3]=0;
+      if( nv<19)
+      {
+         /* 3rd element transform */
+         strcat(utf8,padd);
+         if( !(tmp2=strstr(cc3,utf8)) || tmp2>=cc3+sizeof(cc3)-10 )	return ret;
+         strncpy(utf8,tmp2+6,3); utf8[3]=0;
+         if( !(tmp1=strstr(s1+(19+21)*3,utf8)) )	return ret;
+         c3 = (tmp1-s1)/3 -19-21;
+      }  else		
+      {   
+         int tv = 0;
+         if( (tmp2=strstr(cc3,utf8)) ) tv = (tmp2-cc3)%10;   
+         if(  tv==6)	
+         {
+            /*  complex 3rd element -> disassemble */
+            strncpy(utf8,tmp2-3,3);
+            if( !(tmp1=strstr(s1,utf8)) ) return ret;
+            tv = (tmp1-s1)/3;
+            strncpy(utf8,tmp2-6,3);
+            if( !(tmp1=strstr(s1+(19+21)*3,utf8)) ) return ret;
+            c3 = (tmp1-s1)/3 -19-21;
+         }	else
+         {
+            if( !(tmp1=strstr(s1,utf8)) || (tmp1-s1)>=19*3) return ret;
+            tv = (tmp1-s1)/3;
+            c3=0;
+         }
+         *((unsigned*)padd) = get_kr_utf8(tv,nv-19,0);
+         ret = get_kr_utf8(c1,c2,c3);
+         return ret;
+      }	
+   }  else
+   {
+      return ret;
+   }
+   *((unsigned*)padd) = get_kr_utf8(c1,c2,c3);
+   return 0;
+}
+#endif
+
 bool input_keyboard_line_event(
       input_driver_state_t *input_st,
       input_keyboard_line_t *state, uint32_t character)
@@ -3400,6 +3538,39 @@ bool input_keyboard_line_event(
    const char            *word = NULL;
    char            c           = (character >= 128) ? '?' : character;
 
+#ifdef HAVE_LANGEXTRA
+   static uint32_t composition = 0;		
+   if( state->size==0 )  composition = 0;
+   if( character && character<0xff) composition = 0;
+   composition = composition & 0xffffff;
+   if( character & 0xff000000)
+   {
+      int len = strlen((char*)&composition);
+      if( composition && state->buffer &&  state->size>=len && state->ptr>= len )
+      {              
+         memmove(state->buffer + state->ptr-len, state->buffer+state->ptr,  len + 1);
+         state->ptr -=len; 
+         state->size-=len;
+      }
+      if( (character & 0x1000000) && composition)
+	  {  
+         unsigned new_comp;
+         character = character & 0xffffff;
+         new_comp  = get_kr_composition( (char*) &composition, (char*) &character); 
+         if( new_comp )	input_keyboard_line_append( state, (char*)&new_comp, 3);
+         composition = character;
+      }	else
+	  {
+         if( character & 0xF0000000 )  composition = 0; 
+         else   composition = character &0xffffff;
+         character &= 0xffffff;
+      }
+      if( len && composition==0)    word = state->buffer;  
+      if( character)  input_keyboard_line_append( state, (char*)&character, strlen((char*)&character)); 
+      word =  state->buffer;
+   } else
+#endif
+   
    /* Treat extended chars as ? as we cannot support
     * printable characters for unicode stuff. */
 
