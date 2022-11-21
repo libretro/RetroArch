@@ -1207,7 +1207,7 @@ static const bool audio_enable_menu_bgm    = false;
 #endif
 
 /* Pause gameplay when controller disconnects. */
-#define DEFAULT_PAUSE_ON_DISCONNECT true
+#define DEFAULT_PAUSE_ON_DISCONNECT false
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
