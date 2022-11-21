@@ -3442,12 +3442,22 @@ unsigned get_kr_composition( char* pcur, char* padd)
 
    /* single element composition  */
    sprintf(utf8,"%s%s",pcur,padd);
-   if( !(tmp2=strstr(cc1,utf8))) tmp2=strstr(cc2,utf8);
+   if( (tmp2=strstr(cc1,utf8)) )
+   {   
+	   *((unsigned*)padd) = *((unsigned*)(tmp2+6)) & 0xffffff;
+       return 0;
+   }  else
+   if( (tmp2=strstr(cc2,utf8)) ) 
+   {   
+	   *((unsigned*)padd) = *((unsigned*)(tmp2+6)) & 0xffffff;
+       return 0;
+   }
    if( tmp2 && tmp2 < cc2+sizeof(cc2)-10 )	
    {  
 	  *((unsigned*)padd) = *((unsigned*)(tmp2+6)) & 0xffffff;
       return 0;
    }
+
    if( c1 >=19) return ret;
 
    if( c1 == -1 )
