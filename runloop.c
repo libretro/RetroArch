@@ -3777,6 +3777,24 @@ static void runahead_set_load_content_info(
    runloop_st->load_content_info = clone_retro_ctx_load_content_info(ctx);
 }
 
+static void runahead_runloop_remember_controller_port_device(long port, long device)
+{
+   runloop_state_t *runloop_st   = &runloop_state;
+   if (port >= 0 && port < MAX_USERS)
+      runloop_st->port_map[port] = (int)device;
+   if (     runloop_st->secondary_lib_handle
+         && runloop_st->secondary_core.retro_set_controller_port_device)
+      runloop_st->secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
+}
+
+static void runahead_runloop_clear_controller_port_map(runloop_state_t 
+      *runloop_st)
+{
+   int port;
+   for (port = 0; port < MAX_USERS; port++)
+      runloop_st->port_map[port] = -1;
+}
+
 /* RUNAHEAD - SECONDARY CORE  */
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static void strcat_alloc(char **dst, const char *s)
@@ -4050,14 +4068,6 @@ static bool runloop_environment_secondary_core_hook(
    return result;
 }
 
-static void runahead_runloop_clear_controller_port_map(runloop_state_t 
-      *runloop_st)
-{
-   int port;
-   for (port = 0; port < MAX_USERS; port++)
-      runloop_st->port_map[port] = -1;
-}
-
 static bool secondary_core_create(runloop_state_t *runloop_st,
       settings_t *settings)
 {
@@ -4201,16 +4211,6 @@ static bool secondary_core_deserialize(settings_t *settings,
    return ret;
 }
 #endif
-
-static void runahead_runloop_remember_controller_port_device(long port, long device)
-{
-   runloop_state_t *runloop_st   = &runloop_state;
-   if (port >= 0 && port < MAX_USERS)
-      runloop_st->port_map[port] = (int)device;
-   if (     runloop_st->secondary_lib_handle
-         && runloop_st->secondary_core.retro_set_controller_port_device)
-      runloop_st->secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
-}
 
 static void secondary_core_input_poll_null(void) { }
 
