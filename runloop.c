@@ -3768,7 +3768,7 @@ static struct retro_ctx_load_content_info
    return dest;
 }
 
-static void set_load_content_info(
+static void runahead_set_load_content_info(
       runloop_state_t *runloop_st,
       const retro_ctx_load_content_info_t *ctx)
 {
@@ -4092,9 +4092,7 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
    runloop_st->secondary_core.flags |= RETRO_CORE_FLAG_SYMBOLS_INITED;
    runloop_st->secondary_core.retro_set_environment(
          runloop_environment_secondary_core_hook);
-#ifdef HAVE_RUNAHEAD
    runloop_st->flags                |= RUNLOOP_FLAG_HAS_VARIABLE_UPDATE;
-#endif
 
    runloop_st->secondary_core.retro_init();
 
@@ -4183,7 +4181,7 @@ bool secondary_core_ensure_exists(settings_t *settings)
    return true;
 }
 
-#if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC)
+#if defined(HAVE_DYNAMIC)
 static bool secondary_core_deserialize(settings_t *settings,
       const void *data, size_t size)
 {
@@ -4204,7 +4202,7 @@ static bool secondary_core_deserialize(settings_t *settings,
 }
 #endif
 
-static void runahead_remember_controller_port_device(long port, long device)
+static void runahead_runloop_remember_controller_port_device(long port, long device)
 {
    runloop_state_t *runloop_st   = &runloop_state;
    if (port >= 0 && port < MAX_USERS)
@@ -4769,7 +4767,7 @@ static void runahead_core_run_use_last_input(runloop_state_t *runloop_st)
    runloop_st->current_core.retro_set_input_state(cbs->state_cb);
 }
 
-static void do_runahead(
+static void runahead_run(
       runloop_state_t *runloop_st,
       int runahead_count,
       bool runahead_hide_warnings,
@@ -7974,7 +7972,7 @@ int runloop_iterate(void)
 #endif
 
       if (want_runahead)
-         do_runahead(
+         runahead_run(
                runloop_st,
                run_ahead_num_frames,
                run_ahead_hide_warnings,
@@ -8423,7 +8421,7 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
          sizeof(input_st->analog_requested));
 
 #ifdef HAVE_RUNAHEAD
-   runahead_remember_controller_port_device(pad->port, pad->device);
+   runahead_runloop_remember_controller_port_device(pad->port, pad->device);
 #endif
 
    runloop_st->current_core.retro_set_controller_port_device(pad->port, pad->device);
@@ -8449,7 +8447,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    video_driver_set_cached_frame_ptr(NULL);
 
 #ifdef HAVE_RUNAHEAD
-   set_load_content_info(runloop_st, load_info);
+   runahead_set_load_content_info(runloop_st, load_info);
    runahead_runloop_clear_controller_port_map(runloop_st);
 #endif
 
