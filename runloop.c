@@ -5200,6 +5200,8 @@ static bool event_init_content(
 
    command_event_set_savestate_auto_index(settings);
 
+   runloop_path_init_savefile();
+
    if (!event_load_save_files(runloop_st->flags &
             RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED))
       RARCH_LOG("[SRAM]: %s\n",

@@ -5528,8 +5528,6 @@ bool retroarch_main_init(int argc, char *argv[])
    if (!string_is_empty(recording_st->path))
       command_event(CMD_EVENT_RECORD_INIT, NULL);
 
-   runloop_path_init_savefile();
-
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
 
    global->error_on_init            = false;
