@@ -541,7 +541,7 @@ static void gfx_widgets_msg_queue_kill_end(void *userdata)
    {
       int i;
       /* Remove it from the list */
-      for (i = p_dispwidget->msg_queue_kill; i < p_dispwidget->current_msgs_size - 1; i++)
+      for (i = p_dispwidget->msg_queue_kill; i < (int)(p_dispwidget->current_msgs_size - 1); i++)
          p_dispwidget->current_msgs[i] = p_dispwidget->current_msgs[i + 1];
 
       p_dispwidget->current_msgs_size--;

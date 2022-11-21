@@ -314,7 +314,7 @@ static void rpng_reverse_filter_copy_line_gray_alpha(uint32_t *data,
 
    bpp /= 8;
 
-   for (i = 0; i < width; i++)
+   for (i = 0; i < (int)width; i++)
    {
       uint32_t gray, alpha;
 

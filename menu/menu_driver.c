@@ -1984,14 +1984,14 @@ void menu_input_get_mouse_hw_state(
       hw_state->x                  = (int16_t)(((float)(hw_state->x - vp.x) / (float)vp.width) * (float)fb_width);
       if (hw_state->x < 0)
          hw_state->x               = 0;
-      else if (hw_state->x >= fb_width)
+      else if (hw_state->x >= (int)fb_width)
          hw_state->x               = (fb_width -1);
 
       /* Adjust Y position */
       hw_state->y                  = (int16_t)(((float)(hw_state->y - vp.y) / (float)vp.height) * (float)fb_height);
       if (hw_state->y <  0)
          hw_state->y               = 0;
-      else if (hw_state->y >= fb_height)
+      else if (hw_state->y >= (int)fb_height)
          hw_state->y               = (fb_height-1);
    }
 

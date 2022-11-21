@@ -980,7 +980,7 @@ void input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
       const char *word, size_t len)
 {
-   int i;
+   size_t i;
    char *newbuf                = (char*)realloc(
          keyboard_line->buffer,
          keyboard_line->size + len * 2);
@@ -1186,7 +1186,6 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
       case OVERLAY_TYPE_ANALOG_LEFT:
       case OVERLAY_TYPE_ANALOG_RIGHT:
          {
-            float dx, dy;
             if (ol_state)
             {
                unsigned index_offset = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;

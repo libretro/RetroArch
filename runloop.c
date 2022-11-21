@@ -4152,9 +4152,9 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
       int port;
       for (port = 0; port < MAX_USERS; port++)
       {
-         if (port < info->ports.size)
+         if (port < (int)info->ports.size)
          {
-            unsigned device = (port < num_active_users) ?
+            unsigned device = (port < (int)num_active_users) ?
                   runloop_st->port_map[port] : RETRO_DEVICE_NONE;
 
             runloop_st->secondary_core.retro_set_controller_port_device(
@@ -8001,7 +8001,7 @@ int runloop_iterate(void)
 #endif
 
    /* Restores analog D-pad binds temporarily overridden. */
-   for (i = 0; i < max_users; i++)
+   for (i = 0; i < (int)max_users; i++)
    {
       if (dpad_mode[i] != ANALOG_DPAD_NONE)
       {

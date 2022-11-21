@@ -10693,13 +10693,13 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          if the user opt-in. */
       if (show_only_installed_cores)
       {
-         for (j = 0; j < coreinfos->count; j++)
+         for (j = 0; j < (int)coreinfos->count; j++)
          {
             if (string_is_equal_case_insensitive(coreinfos->list[j].core_name,
                   room->corename))
                break;
          }
-         if (j >= coreinfos->count)
+         if (j >= (int)coreinfos->count)
             continue;
       }
 
