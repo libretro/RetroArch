@@ -383,7 +383,7 @@ void runloop_log_counters(
    }
 }
 
-void runloop_perf_log(void)
+static void runloop_perf_log(void)
 {
    RARCH_LOG("[PERF]: Performance counters (libretro):\n");
    runloop_log_counters(runloop_state.perf_counters_libretro,
@@ -656,7 +656,6 @@ void runloop_runtime_log_deinit(
 {
    if (verbosity_is_enabled())
    {
-      int n;
       char log[PATH_MAX_LENGTH] = {0};
       unsigned hours            = 0;
       unsigned minutes          = 0;
@@ -666,15 +665,11 @@ void runloop_runtime_log_deinit(
             runloop_st->core_runtime_usec,
             &hours, &minutes, &seconds);
 
-      n                         =
-         snprintf(log, sizeof(log),
-               "[Core]: Content ran for a total of:"
-               " %02u hours, %02u minutes, %02u seconds.",
-               hours, minutes, seconds);
-      if ((n < 0) || (n >= PATH_MAX_LENGTH))
-         n = 0; /* Just silence any potential gcc warnings... */
-      (void)n;
-      RARCH_LOG("%s\n",log);
+      snprintf(log, sizeof(log),
+            "[Core]: Content ran for a total of:"
+            " %02u hours, %02u minutes, %02u seconds.",
+            hours, minutes, seconds);
+      RARCH_LOG("%s\n", log);
    }
 
    /* Only write to file if content has run for a non-zero length of time */
@@ -715,37 +710,37 @@ static bool dynamic_verify_hw_context(
       enum retro_hw_context_type type,
       unsigned minor, unsigned major)
 {
-   if (driver_switch_enable)
-      return true;
-
-   switch (type)
+   if (!driver_switch_enable)
    {
-      case RETRO_HW_CONTEXT_VULKAN:
-         if (!string_is_equal(video_ident, "vulkan"))
-            return false;
-         break;
+      switch (type)
+      {
+         case RETRO_HW_CONTEXT_VULKAN:
+            if (!string_is_equal(video_ident, "vulkan"))
+               return false;
+            break;
 #if defined(HAVE_OPENGL_CORE)
-      case RETRO_HW_CONTEXT_OPENGL_CORE:
-         if (!string_is_equal(video_ident, "glcore"))
-            return false;
-         break;
+         case RETRO_HW_CONTEXT_OPENGL_CORE:
+            if (!string_is_equal(video_ident, "glcore"))
+               return false;
+            break;
 #else
-      case RETRO_HW_CONTEXT_OPENGL_CORE:
+         case RETRO_HW_CONTEXT_OPENGL_CORE:
 #endif
-      case RETRO_HW_CONTEXT_OPENGLES2:
-      case RETRO_HW_CONTEXT_OPENGLES3:
-      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-      case RETRO_HW_CONTEXT_OPENGL:
-         if (!string_is_equal(video_ident, "gl") &&
-             !string_is_equal(video_ident, "glcore"))
-            return false;
-         break;
-      case RETRO_HW_CONTEXT_DIRECT3D:
-         if (!(string_is_equal(video_ident, "d3d11") && major == 11))
-            return false;
-         break;
-      default:
-         break;
+         case RETRO_HW_CONTEXT_OPENGLES2:
+         case RETRO_HW_CONTEXT_OPENGLES3:
+         case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         case RETRO_HW_CONTEXT_OPENGL:
+            if (!string_is_equal(video_ident, "gl") &&
+                  !string_is_equal(video_ident, "glcore"))
+               return false;
+            break;
+         case RETRO_HW_CONTEXT_DIRECT3D:
+            if (!(string_is_equal(video_ident, "d3d11") && major == 11))
+               return false;
+            break;
+         default:
+            break;
+      }
    }
 
    return true;
@@ -981,25 +976,32 @@ static bool mmap_preprocess_descriptors(
          if ((desc->core.len & (desc->core.len - 1)) != 0)
             return false;
 
-         desc->core.select = top_addr & ~mmap_inflate(mmap_add_bits_down(desc->core.len - 1),
+         desc->core.select = top_addr 
+            & ~mmap_inflate(mmap_add_bits_down(desc->core.len - 1),
                desc->core.disconnect);
       }
 
       if (desc->core.len == 0)
-         desc->core.len = mmap_add_bits_down(mmap_reduce(top_addr & ~desc->core.select,
+         desc->core.len = mmap_add_bits_down(
+               mmap_reduce(top_addr & ~desc->core.select,
                   desc->core.disconnect)) + 1;
 
       if (desc->core.start & ~desc->core.select)
          return false;
 
-      highest_reachable = mmap_inflate(desc->core.len - 1, desc->core.disconnect);
+      highest_reachable = mmap_inflate(desc->core.len - 1,
+            desc->core.disconnect);
 
       /* Disconnect unselected bits that are too high to ever
        * index into the core's buffer. Higher addresses will
        * repeat / mirror the buffer as long as they match select */
-      while (mmap_highest_bit(top_addr & ~desc->core.select & ~desc->core.disconnect) >
+      while (mmap_highest_bit(top_addr 
+               & ~desc->core.select 
+               & ~desc->core.disconnect) >
                 mmap_highest_bit(highest_reachable))
-         desc->core.disconnect |= mmap_highest_bit(top_addr & ~desc->core.select & ~desc->core.disconnect);
+         desc->core.disconnect |= mmap_highest_bit(top_addr 
+               & ~desc->core.select 
+               & ~desc->core.disconnect);
    }
 
    return true;
@@ -3410,7 +3412,7 @@ bool libretro_get_system_info(
 }
 
 /**
- * init_libretro_symbols_custom:
+ * init_libretro_symbols:
  * @type                        : Type of core to be loaded.
  *                                If CORE_TYPE_DUMMY, will
  *                                load dummy symbols.
@@ -3419,7 +3421,7 @@ bool libretro_get_system_info(
  * 
  * @return true on success, or false if symbols could not be loaded.
  **/
-static bool init_libretro_symbols_custom(
+static bool init_libretro_symbols(
       runloop_state_t *runloop_st,
       enum rarch_core_type type,
       struct retro_core_t *current_core,
@@ -3518,35 +3520,6 @@ static bool init_libretro_symbols_custom(
          break;
    }
 
-   return true;
-}
-
-/**
- * init_libretro_symbols:
- * @type                        : Type of core to be loaded.
- *                                If CORE_TYPE_DUMMY, will
- *                                load dummy symbols.
- *
- * Initializes libretro symbols and
- * setups environment callback functions.
- *
- * @return true on success, or false if symbols could not be loaded.
- **/
-static bool init_libretro_symbols(
-      runloop_state_t *runloop_st,
-      enum rarch_core_type type,
-      struct retro_core_t *current_core)
-{
-   /* Load symbols */
-   if (!init_libretro_symbols_custom(runloop_st,
-            type, current_core, NULL, NULL))
-      return false;
-
-#ifdef HAVE_RUNAHEAD
-   /* remember last core type created, so creating a
-    * secondary core will know what core type to use. */
-   runloop_st->last_core_type = type;
-#endif
    return true;
 }
 
@@ -4077,10 +4050,10 @@ static bool runloop_environment_secondary_core_hook(
    return result;
 }
 
-static void runloop_clear_controller_port_map(void)
+static void runahead_runloop_clear_controller_port_map(runloop_state_t 
+      *runloop_st)
 {
    int port;
-   runloop_state_t *runloop_st   = &runloop_state;
    for (port = 0; port < MAX_USERS; port++)
       runloop_st->port_map[port] = -1;
 }
@@ -4110,7 +4083,7 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
       return false;
 
    /* Load Core */
-   if (!init_libretro_symbols_custom(runloop_st,
+   if (!init_libretro_symbols(runloop_st,
             CORE_TYPE_PLAIN, &runloop_st->secondary_core,
             runloop_st->secondary_library_path,
             &runloop_st->secondary_lib_handle))
@@ -4192,7 +4165,7 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
       }
    }
 
-   runloop_clear_controller_port_map();
+   runahead_runloop_clear_controller_port_map(runloop_st);
 
    return true;
 
@@ -4231,7 +4204,7 @@ static bool secondary_core_deserialize(settings_t *settings,
 }
 #endif
 
-static void remember_controller_port_device(long port, long device)
+static void runahead_remember_controller_port_device(long port, long device)
 {
    runloop_state_t *runloop_st   = &runloop_state;
    if (port >= 0 && port < MAX_USERS)
@@ -4279,8 +4252,6 @@ static bool secondary_core_run_use_last_input(void)
 }
 #else
 void runloop_secondary_core_destroy(void) { }
-static void remember_controller_port_device(long port, long device) { }
-static void runloop_clear_controller_port_map(void)                 { }
 #endif
 
 static void mylist_resize(my_list *list,
@@ -5632,7 +5603,6 @@ static bool runloop_event_load_core(runloop_state_t *runloop_st,
    return true;
 }
 
-
 bool runloop_event_init_core(
       settings_t *settings,
       void *input_data,
@@ -5681,9 +5651,15 @@ bool runloop_event_init_core(
    }
 #endif
 
+   /* Load symbols */
    if (!init_libretro_symbols(runloop_st,
-            type, &runloop_st->current_core))
+            type, &runloop_st->current_core, NULL, NULL))
       return false;
+#ifdef HAVE_RUNAHEAD
+   /* remember last core type created, so creating a
+    * secondary core will know what core type to use. */
+   runloop_st->last_core_type              = type;
+#endif
    if (!runloop_st->current_core.retro_run)
       runloop_st->current_core.retro_run   = retro_run_null;
    runloop_st->current_core.flags         |= RETRO_CORE_FLAG_SYMBOLS_INITED;
@@ -8447,7 +8423,7 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
          sizeof(input_st->analog_requested));
 
 #ifdef HAVE_RUNAHEAD
-   remember_controller_port_device(pad->port, pad->device);
+   runahead_remember_controller_port_device(pad->port, pad->device);
 #endif
 
    runloop_st->current_core.retro_set_controller_port_device(pad->port, pad->device);
@@ -8474,7 +8450,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 
 #ifdef HAVE_RUNAHEAD
    set_load_content_info(runloop_st, load_info);
-   runloop_clear_controller_port_map();
+   runahead_runloop_clear_controller_port_map(runloop_st);
 #endif
 
    set_save_state_in_background(false);
@@ -8561,7 +8537,8 @@ bool core_serialize_special(retro_ctx_serialize_info_t *info)
       return false;
 
    runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
-   ret                = runloop_st->current_core.retro_serialize(info->data, info->size);
+   ret                = runloop_st->current_core.retro_serialize(
+                        info->data, info->size);
    runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
 
    return ret;
@@ -8596,17 +8573,15 @@ uint64_t core_serialization_quirks(void)
    return runloop_st->current_core.serialization_quirks_v;
 }
 
-bool core_reset(void)
+void core_reset(void)
 {
    runloop_state_t *runloop_st  = &runloop_state;
 
    video_driver_set_cached_frame_ptr(NULL);
-
    runloop_st->current_core.retro_reset();
-   return true;
 }
 
-bool core_run(void)
+void core_run(void)
 {
    runloop_state_t *runloop_st = &runloop_state;
    struct retro_core_t *
@@ -8628,7 +8603,7 @@ bool core_run(void)
        * netplay peer pausing doesn't just hang. */
       input_driver_poll();
       video_driver_cached_frame();
-      return true;
+      return;
    }
 #endif
 
@@ -8646,8 +8621,6 @@ bool core_run(void)
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_POST_FRAME, NULL);
 #endif
-
-   return true;
 }
 
 bool core_has_set_input_descriptor(void)

@@ -36,9 +36,9 @@ bool core_unset_netplay_callbacks(void);
 bool core_set_poll_type(unsigned type);
 
 /* Runs the core for one frame. */
-bool core_run(void);
+void core_run(void);
 
-bool core_reset(void);
+void core_reset(void);
 
 bool core_serialize_size(retro_ctx_size_info_t *info);
 bool core_serialize_size_special(retro_ctx_size_info_t *info);

@@ -360,8 +360,6 @@ void runloop_set_current_core_type(
  **/
 int runloop_iterate(void);
 
-void runloop_perf_log(void);
-
 void runloop_system_info_free(void);
 
 /**
