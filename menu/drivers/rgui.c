@@ -4420,60 +4420,46 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message,
 static int rgui_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height)
 {
-   size_t key_index;
-   unsigned osk_x, osk_y;
-   unsigned key_width;
-   unsigned key_height;
-   unsigned ptr_width;
-   unsigned ptr_height;
-   unsigned keyboard_width;
-   unsigned keyboard_height;
-   unsigned keyboard_offset_y;
-   unsigned osk_width;
-   unsigned osk_height;
-   unsigned fb_width, fb_height;
-   unsigned key_text_offset_x  = 8;
-   unsigned key_text_offset_y  = 6;
-   unsigned ptr_offset_x       = 2;
-   unsigned ptr_offset_y       = 2;
-   unsigned keyboard_offset_x  = 10;
    /* This is a lazy copy/paste from rgui_render_osk(),
     * but it will do for now... */
    rgui_t *rgui                = (rgui_t*)data;
-   gfx_display_t *p_disp       = NULL;
 
-   if (!rgui)
-      return -1;
-   p_disp                      = disp_get_ptr();
-
-   key_width                   = rgui->font_width  + (key_text_offset_x * 2);
-   key_height                  = rgui->font_height + (key_text_offset_y * 2);
-   ptr_width                   = key_width  - (ptr_offset_x * 2);
-   ptr_height                  = key_height - (ptr_offset_y * 2);
-   keyboard_width              = key_width  * OSK_CHARS_PER_LINE;
-   keyboard_height             = key_height * 4;
-   keyboard_offset_y           = 10 + 15 + (2 * rgui->font_height_stride);
-   osk_width                   = keyboard_width + 20;
-   osk_height                  = keyboard_offset_y + keyboard_height + 10;
-
-   /* Get dimensions/layout */
-   fb_width                    = p_disp->framebuf_width;
-   fb_height                   = p_disp->framebuf_height;
-
-   osk_x                       = (fb_width  - osk_width)  / 2;
-   osk_y                       = (fb_height - osk_height) / 2;
-
-   for (key_index = 0; key_index < 44; key_index++)
+   if (rgui)
    {
-      unsigned key_row         = (unsigned)(key_index / OSK_CHARS_PER_LINE);
-      unsigned key_column      = (unsigned)(key_index - (key_row * OSK_CHARS_PER_LINE));
+      size_t key_index;
+      const unsigned key_text_offset_x  = 8;
+      const unsigned key_text_offset_y  = 6;
+      const unsigned ptr_offset_x       = 2;
+      const unsigned ptr_offset_y       = 2;
+      const unsigned keyboard_offset_x  = 10;
+      gfx_display_t *p_disp       = disp_get_ptr();
+      unsigned key_width          = rgui->font_width  +(key_text_offset_x * 2);
+      unsigned key_height         = rgui->font_height +(key_text_offset_y * 2);
+      unsigned ptr_width          = key_width  - (ptr_offset_x * 2);
+      unsigned ptr_height         = key_height - (ptr_offset_y * 2);
+      unsigned keyboard_width     = key_width  * OSK_CHARS_PER_LINE;
+      unsigned keyboard_height    = key_height * 4;
+      unsigned keyboard_offset_y  = 10 + 15 + (2 * rgui->font_height_stride);
+      unsigned osk_width          = keyboard_width + 20;
+      unsigned osk_height         = keyboard_offset_y + keyboard_height + 10;
+      /* Get dimensions/layout */
+      unsigned fb_width           = p_disp->framebuf_width;
+      unsigned fb_height          = p_disp->framebuf_height;
+      unsigned osk_x              = (fb_width  - osk_width)  / 2;
+      unsigned osk_y              = (fb_height - osk_height) / 2;
 
-      unsigned osk_ptr_x       = osk_x + keyboard_offset_x + ptr_offset_x + (key_column * key_width);
-      unsigned osk_ptr_y       = osk_y + keyboard_offset_y + ptr_offset_y + (key_row    * key_height);
+      for (key_index = 0; key_index < 44; key_index++)
+      {
+         unsigned key_row         = (unsigned)(key_index / OSK_CHARS_PER_LINE);
+         unsigned key_column      = (unsigned)(key_index - (key_row * OSK_CHARS_PER_LINE));
 
-      if (x > osk_ptr_x && x < osk_ptr_x + ptr_width &&
-          y > osk_ptr_y && y < osk_ptr_y + ptr_height)
-         return (int)key_index;
+         unsigned osk_ptr_x       = osk_x + keyboard_offset_x + ptr_offset_x + (key_column * key_width);
+         unsigned osk_ptr_y       = osk_y + keyboard_offset_y + ptr_offset_y + (key_row    * key_height);
+
+         if (  x > osk_ptr_x && x < osk_ptr_x + ptr_width &&
+               y > osk_ptr_y && y < osk_ptr_y + ptr_height)
+            return (int)key_index;
+      }
    }
 
    return -1;

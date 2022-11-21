@@ -3775,7 +3775,7 @@ void input_keys_pressed(
                port, RETRO_DEVICE_JOYPAD, 0,
                RARCH_ENABLE_HOTKEY))
       {
-         if (input_st->input_hotkey_block_counter < input_hotkey_block_delay)
+         if (input_st->input_hotkey_block_counter < (int)input_hotkey_block_delay)
             input_st->input_hotkey_block_counter++;
          else
             input_st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;

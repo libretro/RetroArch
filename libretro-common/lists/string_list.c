@@ -448,7 +448,7 @@ int string_list_find_elem(const struct string_list *list, const char *elem)
 {
    if (list)
    {
-      int i;
+      size_t i;
       for (i = 0; i < list->size; i++)
       {
          if (string_is_equal_noncase(list->elems[i].data, elem))

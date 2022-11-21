@@ -706,7 +706,7 @@ static void resampler_sinc_process_c(void *re_, struct resampler_data *data)
                unsigned phase           = resamp->time >> resamp->subphase_bits;
                float *phase_table       = resamp->phase_table + phase * taps;
 
-               for (i = 0; i < taps; i++)
+               for (i = 0; i < (int)taps; i++)
                {
                   float sinc_val        = phase_table[i];
 

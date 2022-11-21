@@ -468,9 +468,9 @@ typedef struct
    unsigned width;
    unsigned divider_width;
    unsigned selection_marker_width;
-   unsigned num_menu_tabs;
-   unsigned active_menu_tab_index;
-   unsigned last_active_menu_tab_index;
+   size_t   active_menu_tab_index;
+   size_t   last_active_menu_tab_index;
+   size_t   num_menu_tabs;
    materialui_nav_bar_action_tab_t back_tab;    /* unsigned alignment */
    materialui_nav_bar_action_tab_t resume_tab;  /* unsigned alignment */
    materialui_nav_bar_menu_tab_t menu_tabs[MUI_NAV_BAR_NUM_MENU_TABS_MAX]; /* unsigned alignment */
@@ -5295,9 +5295,9 @@ static size_t materialui_list_get_size(void *data, enum menu_list_type type)
       case MENU_LIST_PLAIN:
          return menu_entries_get_stack_size(0);
       case MENU_LIST_TABS:
-         if (!mui)
-            return 0;
-         return (size_t)mui->nav_bar.num_menu_tabs;
+         if (mui)
+            return mui->nav_bar.num_menu_tabs;
+         break;
       default:
          break;
    }
@@ -6058,12 +6058,12 @@ static void materialui_render_nav_bar_bottom(
       unsigned video_width, unsigned video_height,
       math_matrix_4x4 *mymat)
 {
-   int i;
+   size_t i;
    unsigned nav_bar_width           = video_width;
    unsigned nav_bar_height          = mui->nav_bar.width;
    int nav_bar_x                    = 0;
    int nav_bar_y                    = (int)video_height - (int)mui->nav_bar.width;
-   unsigned num_tabs                = mui->nav_bar.num_menu_tabs + MUI_NAV_BAR_NUM_ACTION_TABS;
+   size_t num_tabs                  = mui->nav_bar.num_menu_tabs + MUI_NAV_BAR_NUM_ACTION_TABS;
    float tab_width                  = (float)video_width / (float)num_tabs;
    unsigned tab_width_int           = (unsigned)(tab_width + 0.5f);
    unsigned selection_marker_width  = tab_width_int;
@@ -6183,12 +6183,12 @@ static void materialui_render_nav_bar_right(
       unsigned video_height,
       math_matrix_4x4 *mymat)
 {
-   int i;
+   size_t i;
    unsigned nav_bar_width           = mui->nav_bar.width;
    unsigned nav_bar_height          = video_height;
    int nav_bar_x                    = (int)video_width - (int)mui->nav_bar.width;
    int nav_bar_y                    = 0;
-   unsigned num_tabs                = mui->nav_bar.num_menu_tabs + MUI_NAV_BAR_NUM_ACTION_TABS;
+   size_t num_tabs                  = mui->nav_bar.num_menu_tabs + MUI_NAV_BAR_NUM_ACTION_TABS;
    float tab_height                 = (float)video_height / (float)num_tabs;
    unsigned tab_height_int          = (unsigned)(tab_height + 0.5f);
    unsigned selection_marker_width  = mui->nav_bar.selection_marker_width;
@@ -8404,7 +8404,7 @@ static void materialui_navigation_alphabet(void *data, size_t *unused)
 static void materialui_populate_nav_bar(
       materialui_handle_t *mui, const char *label, settings_t *settings)
 {
-   unsigned menu_tab_index          = 0;
+   size_t menu_tab_index            = 0;
    bool menu_content_show_playlists = 
       settings->bools.menu_content_show_playlists;
 
@@ -8546,14 +8546,16 @@ static void materialui_init_transition_animation(
       /* We're not changing menu levels here, so set
        * slide to match horizontal list 'movement'
        * direction */
-      if (mui->nav_bar.active_menu_tab_index < mui->nav_bar.last_active_menu_tab_index)
+      if (    mui->nav_bar.active_menu_tab_index 
+            < mui->nav_bar.last_active_menu_tab_index)
       {
          if (mui->nav_bar.menu_navigation_wrapped)
             mui->transition_x_offset = 1.0f;
          else
             mui->transition_x_offset = -1.0f;
       }
-      else if (mui->nav_bar.active_menu_tab_index > mui->nav_bar.last_active_menu_tab_index)
+      else if (mui->nav_bar.active_menu_tab_index 
+             > mui->nav_bar.last_active_menu_tab_index)
       {
          if (mui->nav_bar.menu_navigation_wrapped)
             mui->transition_x_offset = -1.0f;
@@ -9114,8 +9116,8 @@ static enum menu_action materialui_parse_menu_entry_action(
           *   there just aren't enough distinct inputs types
           *   to single out a rational Select/OK action
           *   when fullscreen thumbnails are shown) */
-         if ((action != MENU_ACTION_SELECT) &&
-             (action != MENU_ACTION_OK))
+         if (   (action != MENU_ACTION_SELECT)
+             && (action != MENU_ACTION_OK))
             return MENU_ACTION_NOOP;
       }
    }
@@ -9320,7 +9322,7 @@ static enum menu_action materialui_parse_menu_entry_action(
          if ((mui->nav_bar.location == MUI_NAV_BAR_LOCATION_HIDDEN) &&
              (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1))
          {
-            int i;
+            size_t i;
             unsigned main_menu_tab_index                 = 0;
             materialui_nav_bar_menu_tab_t *main_menu_tab = NULL;
 
@@ -9670,11 +9672,9 @@ static int materialui_list_push(void *data, void *userdata,
 static size_t materialui_list_get_selection(void *data)
 {
    materialui_handle_t *mui   = (materialui_handle_t*)data;
-
-   if (!mui)
-      return 0;
-
-   return (size_t)mui->nav_bar.active_menu_tab_index;
+   if (mui)
+      return mui->nav_bar.active_menu_tab_index;
+   return 0;
 }
 
 /* Pointer down event - used to:
@@ -10069,10 +10069,10 @@ static int materialui_pointer_up(void *userdata,
 
                /* Check if pointer location is within the
                 * bounds of the pointer item */
-               if ((x < entry_x) ||
-                   (x > (entry_x + node->entry_width)) ||
-                   (y < entry_y) ||
-                   (y > (entry_y + node->entry_height)))
+               if (   (x < entry_x)
+                   || (x > (entry_x + node->entry_width))
+                   || (y < entry_y)
+                   || (y > (entry_y + node->entry_height)))
                   break;
 
                /* Pointer input is valid - perform action */
