@@ -1827,13 +1827,21 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
-
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "Avslutt RetroArch"
+   "Avslutt"
    )
+
+
+
+
+
+
+
+
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
    "Neste overlegg"
@@ -1842,6 +1850,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT,
    "Bytter til neste tilgjengelige oppsett for det nåværende aktive overlegget på skjermen."
    )
+
+
 
 /* Settings > Input > Port # Controls */
 
