@@ -1143,10 +1143,9 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
       case OVERLAY_TYPE_BUTTONS:
          {
             int i;
-            bool all_buttons_pressed        = false;
 
             /* Check each bank of the mask */
-            for (i = 0; i < ARRAY_SIZE(desc->button_mask.data); ++i)
+            for (i = 0; i < CUSTOM_BINDS_U32_COUNT; ++i)
             {
                /* Get bank */
                uint32_t bank_mask = BITS_GET_ELEM(desc->button_mask,i);
@@ -1159,6 +1158,9 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                    * The button must be pressed.*/
                   if (bank_mask & 1)
                   {
+                     if (id >= RARCH_CUSTOM_BIND_LIST_END)
+                        break;
+
                      /* Light up the button if pressed */
                      if (ol_state ?
                            !BIT256_GET(ol_state->buttons, id) :
@@ -1166,12 +1168,11 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                      {
                         /* We need ALL of the inputs to be active,
                          * abort. */
-                        desc->updated    = 0;
+                        desc->updated = 0;
                         return false;
                      }
 
-                     all_buttons_pressed = true;
-                     desc->updated       = 1;
+                     desc->updated    = 1;
                   }
 
                   bank_mask >>= 1;
@@ -1179,7 +1180,7 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                }
             }
 
-            return all_buttons_pressed;
+            return (desc->updated != 0);
          }
 
       case OVERLAY_TYPE_ANALOG_LEFT:
@@ -1189,11 +1190,8 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
             if (ol_state)
             {
                unsigned index_offset = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
-               float analog_x        = (float)ol_state->analog[index_offset];
-               float analog_y        = (float)ol_state->analog[index_offset + 1];
-
-               dx                    = (analog_x / (float)0x8000) * (desc->range_x / 2.0f);
-               dy                    = (analog_y / (float)0x8000) * (desc->range_y / 2.0f);
+               desc->updated        |= (ol_state->analog[index_offset] |
+                     ol_state->analog[index_offset + 1]);
             }
             else
             {
@@ -1204,26 +1202,15 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                float analog_y        = input_state_internal(port, RETRO_DEVICE_ANALOG,
                      index, RETRO_DEVICE_ID_ANALOG_Y);
 
-               dx                    = (analog_x / (float)0x8000) * (desc->range_x / 2.0f);
-               dy                    = (analog_y / (float)0x8000) * (desc->range_y / 2.0f);
-
                /* Only modify overlay delta_x/delta_y values
                 * if we are monitoring input from a physical
                 * controller */
-               desc->delta_x = dx;
-               desc->delta_y = dy;
+               desc->delta_x         = (analog_x / (float)0x8000) * (desc->range_x / 2.0f);
+               desc->delta_y         = (analog_y / (float)0x8000) * (desc->range_y / 2.0f);
             }
 
-            /* Maybe use some option here instead of 0, only display
-             * changes greater than some magnitude */
-            if ((dx * dx) > 0 || (dy * dy) > 0)
-            {
-               if (ol_state)
-                  desc->updated = 1;
-               return true;
-            }
+            return (desc->updated != 0);
          }
-         break;
 
       case OVERLAY_TYPE_DPAD_AREA:
       case OVERLAY_TYPE_ABXY_AREA:
@@ -1880,8 +1867,6 @@ void input_overlay_poll_clear(
       desc->range_y_mod = desc->range_y_hitbox;
       desc->updated     = 0;
 
-      desc->delta_x     = 0.0f;
-      desc->delta_y     = 0.0f;
       input_overlay_update_desc_geom(ol, desc);
    }
 }
