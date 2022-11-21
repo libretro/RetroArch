@@ -8442,7 +8442,6 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
    bool             game_loaded = false;
    runloop_state_t *runloop_st  = &runloop_state;
-   uint8_t flags                = content_get_flags();
 
    video_driver_set_cached_frame_ptr(NULL);
 
@@ -8458,22 +8457,22 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
             load_info->special->id, load_info->info, load_info->content->size);
    else if (load_info && !string_is_empty(load_info->content->elems[0].data))
       game_loaded = runloop_st->current_core.retro_load_game(load_info->info);
-   else if (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
+   else if (content_get_flags() & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
       game_loaded = runloop_st->current_core.retro_load_game(NULL);
 
    if (game_loaded)
-      runloop_st->current_core.flags |=  RETRO_CORE_FLAG_GAME_LOADED;
-   else
-      runloop_st->current_core.flags &= ~RETRO_CORE_FLAG_GAME_LOADED;
-
-   /* If 'game_loaded' is true at this point, then
-    * core is actually running; register that any
-    * changes to global remap-related parameters
-    * should be reset once core is deinitialised */
-   if (game_loaded)
+   {
+      /* If 'game_loaded' is true at this point, then
+       * core is actually running; register that any
+       * changes to global remap-related parameters
+       * should be reset once core is deinitialised */
       input_remapping_enable_global_config_restore();
+      runloop_st->current_core.flags |=  RETRO_CORE_FLAG_GAME_LOADED;
+      return true;
+   }
 
-   return game_loaded;
+   runloop_st->current_core.flags &= ~RETRO_CORE_FLAG_GAME_LOADED;
+   return false;
 }
 
 bool core_get_system_info(struct retro_system_info *system)
