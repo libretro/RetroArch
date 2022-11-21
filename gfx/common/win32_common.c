@@ -2439,7 +2439,7 @@ float win32_get_refresh_rate(void *data)
    unsigned int NumModeInfoArrayElements   = 0;
    DISPLAYCONFIG_PATH_INFO_CUSTOM *PathInfoArray  = NULL;
    DISPLAYCONFIG_MODE_INFO_CUSTOM *ModeInfoArray  = NULL;
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
     static QUERYDISPLAYCONFIG pQueryDisplayConfig;
     static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes;
     if (!pQueryDisplayConfig)

@@ -93,14 +93,14 @@ VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
 
 /* TODO/FIXME - static global variables */
 static char win32_cpu_model_name[64] = {0};
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
 /* We only load this library once, so we let it be
  * unloaded at application shutdown, since unloading
  * it early seems to cause issues on some systems.
  */
-static dylib_t dwmlib;
-static dylib_t shell32lib;
-static dylib_t nvdalib;
+static dylib_t dwm_lib;
+static dylib_t shell32_lib;
+static dylib_t nvda_lib;
 #endif
 
 /* Dynamic loading for Non-Visual Desktop Access support */
@@ -194,13 +194,13 @@ enum retro_language win32_get_retro_lang_from_langid(unsigned short langid)
 
 static void gfx_dwm_shutdown(void)
 {
-#ifdef HAVE_DYNAMIC
-   if (dwmlib)
-      dylib_close(dwmlib);
-   if (shell32lib)
-      dylib_close(shell32lib);
-   dwmlib     = NULL;
-   shell32lib = NULL;
+#ifdef HAVE_DYLIB
+   if (dwm_lib)
+      dylib_close(dwm_lib);
+   if (shell32_lib)
+      dylib_close(shell32_lib);
+   dwm_lib     = NULL;
+   shell32_lib = NULL;
 #endif
 }
 
@@ -214,25 +214,23 @@ static bool gfx_init_dwm(void)
 
    atexit(gfx_dwm_shutdown);
 
-#ifdef HAVE_DYNAMIC
-   shell32lib = dylib_load("shell32.dll");
-   if (!shell32lib)
+#ifdef HAVE_DYLIB
+   if (!(shell32_lib = dylib_load("shell32.dll")))
    {
       RARCH_WARN("Did not find shell32.dll.\n");
    }
 
-   dwmlib = dylib_load("dwmapi.dll");
-   if (!dwmlib)
+   if (!(dwm_lib = dylib_load("dwmapi.dll")))
    {
       RARCH_WARN("Did not find dwmapi.dll.\n");
       return false;
    }
 
    DragAcceptFiles_func =
-      (VOID (WINAPI*)(HWND, BOOL))dylib_proc(shell32lib, "DragAcceptFiles");
+      (VOID (WINAPI*)(HWND, BOOL))dylib_proc(shell32_lib, "DragAcceptFiles");
 
    mmcss =
-      (HRESULT(WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
+      (HRESULT(WINAPI*)(BOOL))dylib_proc(dwm_lib, "DwmEnableMMCSS");
 #else
    DragAcceptFiles_func = DragAcceptFiles;
 #if 0
@@ -261,9 +259,9 @@ static void gfx_set_dwm(void)
             PLAT_WIN32_FLAG_DWM_COMPOSITION_DISABLED))
       return;
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    composition_enable =
-      (HRESULT (WINAPI*)(UINT))dylib_proc(dwmlib, "DwmEnableComposition");
+      (HRESULT (WINAPI*)(UINT))dylib_proc(dwm_lib, "DwmEnableComposition");
 #endif
 
    if (!composition_enable)
@@ -442,7 +440,7 @@ static void frontend_win32_init(void *data)
 {
    typedef BOOL (WINAPI *isProcessDPIAwareProc)();
    typedef BOOL (WINAPI *setProcessDPIAwareProc)();
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    HMODULE handle                         =
       GetModuleHandle("User32.dll");
    isProcessDPIAwareProc  isDPIAwareProc  =
@@ -464,16 +462,16 @@ static void frontend_win32_init(void *data)
 #ifdef HAVE_NVDA
 static void init_nvda(void)
 {
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    if (     (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA) 
-         && !nvdalib)
+         && !nvda_lib)
    {
-      if ((nvdalib = dylib_load("nvdaControllerClient64.dll")))
+      if ((nvda_lib = dylib_load("nvdaControllerClient64.dll")))
       {
-         nvdaController_testIfRunning_func  = (unsigned long (__stdcall*)(void))dylib_proc(nvdalib, "nvdaController_testIfRunning");
-         nvdaController_cancelSpeech_func   = (unsigned long(__stdcall *)(void))dylib_proc(nvdalib, "nvdaController_cancelSpeech");
-         nvdaController_brailleMessage_func = (unsigned long(__stdcall *)(wchar_t*))dylib_proc(nvdalib, "nvdaController_brailleMessage");
-         nvdaController_speakText_func      = (unsigned long(__stdcall *)(wchar_t*))dylib_proc(nvdalib, "nvdaController_speakText");
+         nvdaController_testIfRunning_func  = (unsigned long (__stdcall*)(void))dylib_proc(nvda_lib, "nvdaController_testIfRunning");
+         nvdaController_cancelSpeech_func   = (unsigned long(__stdcall *)(void))dylib_proc(nvda_lib, "nvdaController_cancelSpeech");
+         nvdaController_brailleMessage_func = (unsigned long(__stdcall *)(wchar_t*))dylib_proc(nvda_lib, "nvdaController_brailleMessage");
+         nvdaController_speakText_func      = (unsigned long(__stdcall *)(wchar_t*))dylib_proc(nvda_lib, "nvdaController_speakText");
          return;
       }
    }

@@ -21,7 +21,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
 static bool load_xinput_dll(void)
 {
    const char *version = "1.4";
