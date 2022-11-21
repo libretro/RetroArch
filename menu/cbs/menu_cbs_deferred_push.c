@@ -402,18 +402,14 @@ static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
    char newstring2[PATH_MAX_LENGTH];
-   core_info_list_t           *list           = NULL;
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
    bool 
       multimedia_builtin_mediaplayer_enable   = settings->bools.multimedia_builtin_mediaplayer_enable;
    bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
-   bool filter_by_current_core                = settings->bools.filter_by_current_core;
 
    if (!menu)
       return -1;
-
-   core_info_get_list(&list);
 
    switch (id)
    {
@@ -514,6 +510,7 @@ static int general_push(menu_displaylist_info_t *info,
             struct string_list str_list2     = {0};
             struct retro_system_info *system = 
                &runloop_state_get_ptr()->system.info;
+            bool filter_by_current_core      = settings->bools.filter_by_current_core;
 
             newstring[0]                     = '\0';
             attr.i                           = 0;
@@ -543,6 +540,8 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (!filter_by_current_core)
             {
+               core_info_list_t *list           = NULL;
+               core_info_get_list(&list);
                if (list && !string_is_empty(list->all_ext))
                {
                   unsigned x;
@@ -592,34 +591,30 @@ static int general_push(menu_displaylist_info_t *info,
          break;
    }
 
-   if (multimedia_builtin_mediaplayer_enable ||
-         multimedia_builtin_imageviewer_enable)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+   if (multimedia_builtin_mediaplayer_enable)
    {
       struct retro_system_info sysinfo = {0};
-
-      (void)sysinfo;
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-      if (multimedia_builtin_mediaplayer_enable)
-      {
 #if defined(HAVE_FFMPEG)
-         libretro_ffmpeg_retro_get_system_info(&sysinfo);
+      libretro_ffmpeg_retro_get_system_info(&sysinfo);
 #elif defined(HAVE_MPV)
-         libretro_mpv_retro_get_system_info(&sysinfo);
+      libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-         strlcat(newstring2, "|", sizeof(newstring2));
-         strlcat(newstring2, sysinfo.valid_extensions, sizeof(newstring2));
-      }
-#endif
-#ifdef HAVE_IMAGEVIEWER
-      if (multimedia_builtin_imageviewer_enable)
-      {
-         libretro_imageviewer_retro_get_system_info(&sysinfo);
-         strlcat(newstring2, "|", sizeof(newstring2));
-         strlcat(newstring2, sysinfo.valid_extensions,
-               sizeof(newstring2));
-      }
-#endif
+      strlcat(newstring2, "|", sizeof(newstring2));
+      strlcat(newstring2, sysinfo.valid_extensions, sizeof(newstring2));
    }
+#endif
+
+#ifdef HAVE_IMAGEVIEWER
+   if (multimedia_builtin_imageviewer_enable)
+   {
+      struct retro_system_info sysinfo = {0};
+      libretro_imageviewer_retro_get_system_info(&sysinfo);
+      strlcat(newstring2, "|", sizeof(newstring2));
+      strlcat(newstring2, sysinfo.valid_extensions,
+            sizeof(newstring2));
+   }
+#endif
 
    if (!string_is_empty(newstring2))
    {
