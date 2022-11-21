@@ -3777,24 +3777,6 @@ static void runahead_set_load_content_info(
    runloop_st->load_content_info = clone_retro_ctx_load_content_info(ctx);
 }
 
-static void runahead_runloop_remember_controller_port_device(long port, long device)
-{
-   runloop_state_t *runloop_st   = &runloop_state;
-   if (port >= 0 && port < MAX_USERS)
-      runloop_st->port_map[port] = (int)device;
-   if (     runloop_st->secondary_lib_handle
-         && runloop_st->secondary_core.retro_set_controller_port_device)
-      runloop_st->secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
-}
-
-static void runahead_runloop_clear_controller_port_map(runloop_state_t 
-      *runloop_st)
-{
-   int port;
-   for (port = 0; port < MAX_USERS; port++)
-      runloop_st->port_map[port] = -1;
-}
-
 /* RUNAHEAD - SECONDARY CORE  */
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static void strcat_alloc(char **dst, const char *s)
@@ -4068,6 +4050,14 @@ static bool runloop_environment_secondary_core_hook(
    return result;
 }
 
+static void runahead_runloop_clear_controller_port_map(runloop_state_t 
+      *runloop_st)
+{
+   int port;
+   for (port = 0; port < MAX_USERS; port++)
+      runloop_st->port_map[port] = -1;
+}
+
 static bool secondary_core_create(runloop_state_t *runloop_st,
       settings_t *settings)
 {
@@ -4077,9 +4067,9 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
    unsigned num_active_users   = settings->uints.input_max_users;
    uint8_t flags               = content_get_flags();
 
-   if (   last_core_type != CORE_TYPE_PLAIN          ||
-         !runloop_st->load_content_info              ||
-          runloop_st->load_content_info->special)
+   if (     (last_core_type != CORE_TYPE_PLAIN)
+         || (!runloop_st->load_content_info)
+         || ( runloop_st->load_content_info->special))
       return false;
 
    if (runloop_st->secondary_library_path)
@@ -4113,31 +4103,29 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
 
    /* Load Content */
    /* disabled due to crashes */
-   if ( !runloop_st->load_content_info ||
-         runloop_st->load_content_info->special)
+   if (    (!runloop_st->load_content_info)
+         || (runloop_st->load_content_info->special))
       return false;
 
-   if ( (runloop_st->load_content_info->content->size > 0) &&
-         runloop_st->load_content_info->content->elems[0].data)
+   if ( (   runloop_st->load_content_info->content->size > 0)
+         && runloop_st->load_content_info->content->elems[0].data)
    {
-      if (runloop_st->secondary_core.retro_load_game(
+      if (!runloop_st->secondary_core.retro_load_game(
                runloop_st->load_content_info->info))
-         runloop_st->secondary_core.flags |=  RETRO_CORE_FLAG_GAME_LOADED;
-      else
       {
          runloop_st->secondary_core.flags &= ~RETRO_CORE_FLAG_GAME_LOADED;
          goto error;
       }
+      runloop_st->secondary_core.flags    |=  RETRO_CORE_FLAG_GAME_LOADED;
    }
    else if (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
    {
-      if (runloop_st->secondary_core.retro_load_game(NULL))
-         runloop_st->secondary_core.flags |=  RETRO_CORE_FLAG_GAME_LOADED;
-      else
+      if (!runloop_st->secondary_core.retro_load_game(NULL))
       {
          runloop_st->secondary_core.flags &= ~RETRO_CORE_FLAG_GAME_LOADED;
          goto error;
       }
+      runloop_st->secondary_core.flags    |=  RETRO_CORE_FLAG_GAME_LOADED;
    }
    else
       runloop_st->secondary_core.flags    &= ~RETRO_CORE_FLAG_GAME_LOADED;
@@ -4173,7 +4161,9 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
       }
    }
 
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    runahead_runloop_clear_controller_port_map(runloop_st);
+#endif
 
    return true;
 
@@ -4182,6 +4172,7 @@ error:
    return false;
 }
 
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 bool secondary_core_ensure_exists(settings_t *settings)
 {
    runloop_state_t *runloop_st   = &runloop_state;
@@ -4190,6 +4181,7 @@ bool secondary_core_ensure_exists(settings_t *settings)
          return false;
    return true;
 }
+#endif
 
 #if defined(HAVE_DYNAMIC)
 static bool secondary_core_deserialize(settings_t *settings,
@@ -4248,6 +4240,17 @@ static bool secondary_core_run_use_last_input(void)
 
    return true;
 }
+
+static void runahead_runloop_remember_controller_port_device(long port, long device)
+{
+   runloop_state_t *runloop_st   = &runloop_state;
+   if (port >= 0 && port < MAX_USERS)
+      runloop_st->port_map[port] = (int)device;
+   if (     runloop_st->secondary_lib_handle
+         && runloop_st->secondary_core.retro_set_controller_port_device)
+      runloop_st->secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
+}
+
 #else
 void runloop_secondary_core_destroy(void) { }
 #endif
@@ -4404,7 +4407,7 @@ static void input_list_element_destructor(void* element_ptr)
    free(element_ptr);
 }
 
-static void input_state_set_last(
+static void runahead_input_state_set_last(
       runloop_state_t *runloop_st,
       unsigned port, unsigned device,
       unsigned index, unsigned id, int16_t value)
@@ -4448,7 +4451,7 @@ static void input_state_set_last(
    }
 }
 
-static int16_t input_state_with_logging(unsigned port,
+static int16_t runahead_input_state_with_logging(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
    runloop_state_t     *runloop_st  = &runloop_state;
@@ -4464,14 +4467,13 @@ static int16_t input_state_with_logging(unsigned port,
          runloop_st->flags         |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
       /*arbitrary limit of up to 65536 elements in state array*/
       if (id < 65536)
-         input_state_set_last(runloop_st, port, device, index, id, result);
-
+         runahead_input_state_set_last(runloop_st, port, device, index, id, result);
       return result;
    }
    return 0;
 }
 
-static void reset_hook(void)
+static void runahead_reset_hook(void)
 {
    runloop_state_t *runloop_st = &runloop_state;
    runloop_st->flags          |= RUNLOOP_FLAG_INPUT_IS_DIRTY;       
@@ -4479,7 +4481,7 @@ static void reset_hook(void)
       runloop_st->retro_reset_callback_original();
 }
 
-static bool unserialize_hook(const void *buf, size_t size)
+static bool runahead_unserialize_hook(const void *buf, size_t size)
 {
    runloop_state_t *runloop_st = &runloop_state;
    runloop_st->flags          |= RUNLOOP_FLAG_INPUT_IS_DIRTY;       
@@ -4488,14 +4490,14 @@ static bool unserialize_hook(const void *buf, size_t size)
    return false;
 }
 
-static void add_input_state_hook(runloop_state_t *runloop_st)
+static void runahead_add_input_state_hook(runloop_state_t *runloop_st)
 {
    struct retro_callbacks *cbs      = &runloop_st->retro_ctx;
 
    if (!runloop_st->input_state_callback_original)
    {
       runloop_st->input_state_callback_original = cbs->state_cb;
-      cbs->state_cb                             = input_state_with_logging;
+      cbs->state_cb                             = runahead_input_state_with_logging;
       runloop_st->current_core.retro_set_input_state(cbs->state_cb);
    }
 
@@ -4503,17 +4505,17 @@ static void add_input_state_hook(runloop_state_t *runloop_st)
    {
       runloop_st->retro_reset_callback_original 
          = runloop_st->current_core.retro_reset;
-      runloop_st->current_core.retro_reset   = reset_hook;
+      runloop_st->current_core.retro_reset   = runahead_reset_hook;
    }
 
    if (!runloop_st->retro_unserialize_callback_original)
    {
       runloop_st->retro_unserialize_callback_original = runloop_st->current_core.retro_unserialize;
-      runloop_st->current_core.retro_unserialize      = unserialize_hook;
+      runloop_st->current_core.retro_unserialize      = runahead_unserialize_hook;
    }
 }
 
-static void remove_input_state_hook(runloop_state_t *runloop_st)
+static void runahead_remove_input_state_hook(runloop_state_t *runloop_st)
 {
    struct retro_callbacks *cbs      = &runloop_st->retro_ctx;
 
@@ -4601,7 +4603,7 @@ static void runahead_remove_hooks(runloop_state_t *runloop_st)
          runloop_st->original_retro_unload;
       runloop_st->original_retro_unload          = NULL;
    }
-   remove_input_state_hook(runloop_st);
+   runahead_remove_input_state_hook(runloop_st);
 }
 
 static void runahead_destroy(runloop_state_t *runloop_st)
@@ -4611,7 +4613,7 @@ static void runahead_destroy(runloop_state_t *runloop_st)
    runloop_runahead_clear_variables(runloop_st);
 }
 
-static void unload_hook(void)
+static void runahead_unload_hook(void)
 {
    runloop_state_t     *runloop_st  = &runloop_state;
 
@@ -4646,9 +4648,9 @@ static void runahead_add_hooks(runloop_state_t *runloop_st)
    if (!runloop_st->original_retro_unload)
    {
       runloop_st->original_retro_unload          = runloop_st->current_core.retro_unload_game;
-      runloop_st->current_core.retro_unload_game = unload_hook;
+      runloop_st->current_core.retro_unload_game = runahead_unload_hook;
    }
-   add_input_state_hook(runloop_st);
+   runahead_add_input_state_hook(runloop_st);
 }
 
 /* Runahead Code */
@@ -8420,8 +8422,10 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
    memset(&input_st->analog_requested, 0,
          sizeof(input_st->analog_requested));
 
-#ifdef HAVE_RUNAHEAD
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    runahead_runloop_remember_controller_port_device(pad->port, pad->device);
+#endif
 #endif
 
    runloop_st->current_core.retro_set_controller_port_device(pad->port, pad->device);
@@ -8447,7 +8451,9 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 
 #ifdef HAVE_RUNAHEAD
    runahead_set_load_content_info(runloop_st, load_info);
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    runahead_runloop_clear_controller_port_map(runloop_st);
+#endif
 #endif
 
    set_save_state_in_background(false);
