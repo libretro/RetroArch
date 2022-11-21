@@ -40,7 +40,7 @@ bool g_egl_inited    = false;
 unsigned g_egl_major = 0;
 unsigned g_egl_minor = 0;
 
-#if defined(HAVE_DYNAMIC) && defined(HAVE_DYNAMIC_EGL)
+#if defined(HAVE_DYLIB) && defined(HAVE_DYNAMIC_EGL)
 #include <dynamic/dylib.h>
 
 typedef EGLBoolean(* PFN_EGL_QUERY_SURFACE)(
@@ -124,7 +124,7 @@ static PFN_EGL_SWAP_INTERVAL             _egl_swap_interval;
 
 bool egl_init_dll(void)
 {
-#if defined(HAVE_DYNAMIC) && defined(HAVE_DYNAMIC_EGL)
+#if defined(HAVE_DYLIB) && defined(HAVE_DYNAMIC_EGL)
    static dylib_t egl_dll;
 
    if (!egl_dll)
