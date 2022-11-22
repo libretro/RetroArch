@@ -452,7 +452,7 @@ enum overlay_visibility input_overlay_get_visibility(
  *
  * Gets the slope limits defining each eightway type's diagonal zones.
  */
-void input_overlay_set_eightway_diagonal_sensitivity();
+void input_overlay_set_eightway_diagonal_sensitivity(void);
 
 /**
  * input_overlay_free:

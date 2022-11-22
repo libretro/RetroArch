@@ -1274,7 +1274,7 @@ static void input_overlay_get_eightway_slope_limits(
  *
  * Gets the slope limits defining each eightway type's diagonal zones.
  */
-void input_overlay_set_eightway_diagonal_sensitivity()
+void input_overlay_set_eightway_diagonal_sensitivity(void)
 {
    settings_t           *settings = config_get_ptr();
    input_driver_state_t *input_st = input_state_get_ptr();
