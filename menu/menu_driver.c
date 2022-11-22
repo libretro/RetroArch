@@ -5669,7 +5669,7 @@ unsigned menu_event(
    bool input_overlay_enable                       = settings->bools.input_overlay_enable;
    bool overlay_active                             = input_overlay_enable 
       && (input_st->overlay_ptr)
-      && (input_st->overlay_ptr->alive);
+      && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE);
 #else
    bool input_overlay_enable                       = false;
    bool overlay_active                             = false;
@@ -6838,7 +6838,7 @@ void retroarch_menu_running(void)
             menu_st->flags & MENU_ST_FLAG_ALIVE,
 #ifdef HAVE_OVERLAY
             input_st->overlay_ptr &&
-            input_st->overlay_ptr->alive,
+            (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
 #else
             false,
 #endif
@@ -6907,7 +6907,7 @@ void retroarch_menu_running_finished(bool quit)
             menu_st->flags & MENU_ST_FLAG_ALIVE,
 #ifdef HAVE_OVERLAY
             input_st->overlay_ptr &&
-            input_st->overlay_ptr->alive,
+            (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
 #else
             false,
 #endif

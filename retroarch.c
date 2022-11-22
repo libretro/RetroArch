@@ -2134,7 +2134,7 @@ bool command_event(enum event_command cmd, void *data)
             input_overlay_load_active(input_st->overlay_visibility,
                   input_st->overlay_ptr, input_overlay_opacity);
 
-            input_st->overlay_ptr->blocked    = true;
+            input_st->overlay_ptr->flags     |= INPUT_OVERLAY_BLOCKED;
             input_st->overlay_ptr->next_index = (unsigned)((input_st->overlay_ptr->index + 1) % input_st->overlay_ptr->size);
 
             /* Check orientation, if required */

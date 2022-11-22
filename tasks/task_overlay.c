@@ -52,12 +52,9 @@ struct overlay_loader
    enum overlay_status state;
    enum overlay_image_transfer_status loading_status;
 
-   bool driver_rgba_support;
-   bool overlay_enable;
-   bool overlay_hide_in_menu;
-   bool overlay_hide_when_gamepad_connected;
-
    uint16_t overlay_types;
+
+   uint8_t flags;
 };
 
 static void task_overlay_image_done(struct overlay *overlay)
@@ -92,7 +89,7 @@ static void task_overlay_load_desc_image(
       fill_pathname_resolve_relative(path, loader->overlay_path,
             image_path, sizeof(path));
 
-      image_tex.supports_rgba = loader->driver_rgba_support;
+      image_tex.supports_rgba = (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT);
 
       if (image_texture_load(&image_tex, path))
       {
@@ -466,24 +463,27 @@ static bool task_overlay_load_desc(
 
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_exclusive", ol_idx, desc_idx);
-   desc->exclusive = false;
-   if (config_get_bool(conf, conf_key, &tmp_bool))
-      desc->exclusive = tmp_bool;
+   desc->flags &= ~OVERLAY_DESC_EXCLUSIVE;
+   if (config_get_bool(conf, conf_key, &tmp_bool)
+         && tmp_bool)
+      desc->flags |= OVERLAY_DESC_EXCLUSIVE;
 
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_range_mod_exclusive", ol_idx, desc_idx);
-   desc->range_mod_exclusive = false;
-   if (config_get_bool(conf, conf_key, &tmp_bool))
-      desc->range_mod_exclusive = tmp_bool;
+   desc->flags &= ~OVERLAY_DESC_RANGE_MOD_EXCLUSIVE;
+   if (config_get_bool(conf, conf_key, &tmp_bool)
+         && tmp_bool)
+      desc->flags |= OVERLAY_DESC_RANGE_MOD_EXCLUSIVE;
 
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_desc%u_movable", ol_idx, desc_idx);
-   desc->movable     = false;
-   desc->delta_x     = 0.0f;
-   desc->delta_y     = 0.0f;
+   desc->flags    &= ~OVERLAY_DESC_MOVABLE;
+   desc->delta_x   = 0.0f;
+   desc->delta_y   = 0.0f;
 
-   if (config_get_bool(conf, conf_key, &tmp_bool))
-      desc->movable = tmp_bool;
+   if (config_get_bool(conf, conf_key, &tmp_bool)
+         && tmp_bool)
+      desc->flags |= OVERLAY_DESC_MOVABLE;
 
    input_overlay->pos ++;
 
@@ -712,9 +712,10 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
       snprintf(overlay_full_screen_key, sizeof(overlay_full_screen_key),
             "overlay%u_full_screen", loader->pos);
-      overlay->full_screen = false;
-      if (config_get_bool(conf, overlay_full_screen_key, &tmp_bool))
-         overlay->full_screen = tmp_bool;
+      overlay->flags &= ~OVERLAY_FULL_SCREEN;
+      if (config_get_bool(conf, overlay_full_screen_key, &tmp_bool)
+            && tmp_bool)
+         overlay->flags |= OVERLAY_FULL_SCREEN;
 
       overlay->config.normalized = false;
       overlay->config.alpha_mod  = 1.0f;
@@ -723,7 +724,8 @@ static void task_overlay_deferred_load(retro_task_t *task)
       snprintf(conf_key, sizeof(conf_key),
             "overlay%u_normalized", loader->pos);
 
-      if (config_get_bool(conf, conf_key, &tmp_bool))
+      if (config_get_bool(conf, conf_key, &tmp_bool)
+            && tmp_bool)
          overlay->config.normalized = tmp_bool;
 
       snprintf(conf_key, sizeof(conf_key), "overlay%u_alpha_mod", loader->pos);
@@ -765,7 +767,8 @@ static void task_overlay_deferred_load(retro_task_t *task)
                loader->overlay_path,
                overlay->config.paths.path, sizeof(overlay_resolved_path));
 
-         image_tex.supports_rgba = loader->driver_rgba_support;
+         image_tex.supports_rgba =
+               (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT);
 
          if (!image_texture_load(&image_tex, overlay_resolved_path))
          {
@@ -837,7 +840,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
       /* Assume for now that scaling center is in the middle.
        * TODO: Make this configurable. */
-      overlay->block_scale = false;
+      overlay->flags      &= ~OVERLAY_BLOCK_SCALE;
       overlay->center_x    = overlay->x + 0.5f * overlay->w;
       overlay->center_y    = overlay->y + 0.5f * overlay->h;
 
@@ -845,15 +848,17 @@ static void task_overlay_deferred_load(retro_task_t *task)
        * for this overlay */
       snprintf(conf_key, sizeof(conf_key),
             "overlay%u_block_x_separation", loader->pos);
-      overlay->block_x_separation = false;
-      if (config_get_bool(conf, conf_key, &tmp_bool))
-         overlay->block_x_separation = tmp_bool;
+      overlay->flags    &= ~OVERLAY_BLOCK_X_SEPARATION;
+      if (config_get_bool(conf, conf_key, &tmp_bool)
+            && tmp_bool)
+         overlay->flags |=  OVERLAY_BLOCK_X_SEPARATION;
 
       snprintf(conf_key, sizeof(conf_key),
             "overlay%u_block_y_separation", loader->pos);
-      overlay->block_y_separation = false;
-      if (config_get_bool(conf, conf_key, &tmp_bool))
-         overlay->block_y_separation = tmp_bool;
+      overlay->flags    &= ~OVERLAY_BLOCK_Y_SEPARATION;
+      if (config_get_bool(conf, conf_key, &tmp_bool)
+            && tmp_bool)
+         overlay->flags |=  OVERLAY_BLOCK_Y_SEPARATION;
    }
 
    return;
@@ -927,9 +932,7 @@ static void task_overlay_handler(retro_task_t *task)
       data->active                      = loader->active;
       data->size                        = loader->size;
       data->overlay_opacity             = loader->overlay_opacity;
-      data->overlay_enable              = loader->overlay_enable;
-      data->hide_in_menu                = loader->overlay_hide_in_menu;
-      data->hide_when_gamepad_connected = loader->overlay_hide_when_gamepad_connected;
+      data->flags                       = loader->flags;
       data->overlay_types               = loader->overlay_types;
 
       memcpy(&data->layout_desc, &loader->layout_desc,
@@ -1010,21 +1013,26 @@ bool task_push_overlay_load_default(
       return false;
    }
 
-   loader->overlay_hide_in_menu                = overlay_hide_in_menu;
-   loader->overlay_hide_when_gamepad_connected = overlay_hide_when_gamepad_connected;
-   loader->overlay_enable                      = input_overlay_enable;
-   loader->overlay_opacity                     = input_overlay_opacity;
-   loader->conf                                = conf;
-   loader->state                               = OVERLAY_STATUS_DEFERRED_LOAD;
-   loader->pos_increment                       = (loader->size / 4) ? (loader->size / 4) : 4;
+   loader->overlay_opacity  = input_overlay_opacity;
+   loader->conf             = conf;
+   loader->state            = OVERLAY_STATUS_DEFERRED_LOAD;
+   loader->pos_increment    = (loader->size / 4) ? (loader->size / 4) : 4;
+
+   if (overlay_hide_in_menu)
+      loader->flags        |= OVERLAY_LOADER_HIDE_IN_MENU;
+   if (overlay_hide_when_gamepad_connected)
+      loader->flags        |= OVERLAY_LOADER_HIDE_WHEN_GAMEPAD_CONNECTED;
+   if (input_overlay_enable)
+      loader->flags        |= OVERLAY_LOADER_ENABLE;
 #ifdef RARCH_INTERNAL
-   loader->driver_rgba_support                 = video_driver_supports_rgba();
+   if (video_driver_supports_rgba())
+      loader->flags        |= OVERLAY_LOADER_RGBA_SUPPORT;
 #endif
 
    memcpy(&loader->layout_desc, layout_desc,
          sizeof(overlay_layout_desc_t));
 
-   t                                           = task_init();
+   t                        = task_init();
 
    if (!t)
    {
@@ -1034,13 +1042,13 @@ bool task_push_overlay_load_default(
       return false;
    }
 
-   loader->overlay_path         = strdup(overlay_path);
+   loader->overlay_path     = strdup(overlay_path);
 
-   t->handler                   = task_overlay_handler;
-   t->cleanup                   = task_overlay_free;
-   t->state                     = loader;
-   t->callback                  = cb;
-   t->user_data                 = user_data;
+   t->handler               = task_overlay_handler;
+   t->cleanup               = task_overlay_free;
+   t->state                 = loader;
+   t->callback              = cb;
+   t->user_data             = user_data;
 
    task_queue_push(t);
 
