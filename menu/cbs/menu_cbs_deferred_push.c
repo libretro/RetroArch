@@ -432,7 +432,8 @@ static int general_push(menu_displaylist_info_t *info,
    }
 
    info->type_default = FILE_TYPE_PLAIN;
-   info->setting      = menu_setting_find_enum(info->enum_idx);
+   if (id != PUSH_DETECT_CORE_LIST)
+      info->setting   = menu_setting_find_enum(info->enum_idx);
    newstring2[0]      = '\0';
 
    switch (id)
