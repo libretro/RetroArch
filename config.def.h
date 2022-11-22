@@ -1141,6 +1141,10 @@ static const bool audio_enable_menu_bgm    = false;
  * is enabled */
 #define DEFAULT_AUDIO_FASTFORWARD_MUTE false
 
+ /* Automatically mute audio when rewind
+  * is enabled */
+#define DEFAULT_AUDIO_REWIND_MUTE false
+
 /* MISC */
 
 /* Enables displaying the current frames per second. */

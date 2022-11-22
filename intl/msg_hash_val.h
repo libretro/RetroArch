@@ -2066,7 +2066,7 @@ MSG_HASH(
    "Silenciar el so quan s'use l'avançament ràpid"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE
    "Automàticament silencia l'àudio quan s'usa l'avançament ràpid."
    )
 MSG_HASH(
