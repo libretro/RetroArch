@@ -410,46 +410,30 @@ static int general_push(menu_displaylist_info_t *info,
 
    if (!menu)
       return -1;
-
-   switch (id)
+   
+   if (   (id == PUSH_ARCHIVE_OPEN_DETECT_CORE)
+       || (id == PUSH_ARCHIVE_OPEN))
    {
-      case PUSH_DEFAULT:
-      case PUSH_DETECT_CORE_LIST:
-         break;
-      default:
-         {
-            char tmp_str[PATH_MAX_LENGTH];
-            char tmp_str2[PATH_MAX_LENGTH];
-            fill_pathname_join_special(tmp_str, menu->scratch2_buf,
-                  menu->scratch_buf, sizeof(tmp_str));
-            fill_pathname_join_special(tmp_str2, menu->scratch2_buf,
-                  menu->scratch_buf, sizeof(tmp_str2));
+      /* Need to use the scratch buffer here */
+      char tmp_str[PATH_MAX_LENGTH];
+      char tmp_str2[PATH_MAX_LENGTH];
+      fill_pathname_join_special(tmp_str, menu->scratch2_buf,
+            menu->scratch_buf, sizeof(tmp_str));
+      fill_pathname_join_special(tmp_str2, menu->scratch2_buf,
+            menu->scratch_buf, sizeof(tmp_str2));
 
-            if (!string_is_empty(info->path))
-               free(info->path);
-            if (!string_is_empty(info->label))
-               free(info->label);
+      if (!string_is_empty(info->path))
+         free(info->path);
+      if (!string_is_empty(info->label))
+         free(info->label);
 
-            info->path  = strdup(tmp_str);
-            info->label = strdup(tmp_str2);
-         }
-         break;
+      info->path      = strdup(tmp_str);
+      info->label     = strdup(tmp_str2);
    }
 
    info->type_default = FILE_TYPE_PLAIN;
-
-   switch (id)
-   {
-      case PUSH_ARCHIVE_OPEN_DETECT_CORE:
-      case PUSH_ARCHIVE_OPEN:
-      case PUSH_DEFAULT:
-         info->setting      = menu_setting_find_enum(info->enum_idx);
-         break;
-      default:
-         break;
-   }
-
-   newstring2[0]                  = '\0';
+   info->setting      = menu_setting_find_enum(info->enum_idx);
+   newstring2[0]      = '\0';
 
    switch (id)
    {
@@ -466,13 +450,10 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_DEFAULT:
          {
             const char *valid_extensions     = NULL;
-            struct retro_system_info *system = NULL;
 
-            if (menu_setting_get_browser_selection_type(info->setting) 
-                  != ST_DIR)
+            if (menu_setting_get_browser_selection_type(info->setting) != ST_DIR)
             {
-               system = &runloop_state_get_ptr()->system.info;
-
+               struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
                if (system && !string_is_empty(system->valid_extensions))
                   valid_extensions = system->valid_extensions;
             }
@@ -540,7 +521,7 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (!filter_by_current_core)
             {
-               core_info_list_t *list           = NULL;
+               core_info_list_t *list = NULL;
                core_info_get_list(&list);
                if (list && !string_is_empty(list->all_ext))
                {
