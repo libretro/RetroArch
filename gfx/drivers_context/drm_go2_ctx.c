@@ -270,7 +270,7 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
 static void gfx_ctx_go2_drm_get_video_size(void *data,
 unsigned *width, unsigned *height)
 {
-   gfx_ctx_go2_drm_data_t drm = (gfx_ctx_go2_drm_data_t)data;
+   gfx_ctx_go2_drm_data_t *drm = (gfx_ctx_go2_drm_data_t*)data;
 
    if (!drm)
       return;
