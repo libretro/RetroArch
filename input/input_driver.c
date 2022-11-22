@@ -5723,7 +5723,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             {RETROK_DELETE,    RETRO_DEVICE_ID_JOYPAD_Y      },
             {0,                RARCH_UI_COMPANION_TOGGLE     },
             {0,                RARCH_FPS_TOGGLE              },
-            {0,                RARCH_SEND_DEBUG_INFO         },
             {0,                RARCH_NETPLAY_HOST_TOGGLE     },
             {0,                RARCH_MENU_TOGGLE             },
          };
@@ -5732,9 +5731,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          ids[10][0] = input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key;
          ids[14][0] = input_config_binds[0][RARCH_UI_COMPANION_TOGGLE].key;
          ids[15][0] = input_config_binds[0][RARCH_FPS_TOGGLE].key;
-         ids[16][0] = input_config_binds[0][RARCH_SEND_DEBUG_INFO].key;
-         ids[17][0] = input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE].key;
-         ids[18][0] = input_config_binds[0][RARCH_MENU_TOGGLE].key;
+         ids[16][0] = input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE].key;
+         ids[17][0] = input_config_binds[0][RARCH_MENU_TOGGLE].key;
 
          if (settings->bools.input_menu_swap_ok_cancel_buttons)
          {
