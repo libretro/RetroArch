@@ -6747,10 +6747,6 @@ MSG_HASH(
    "Desa l’estat automàticament a"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "S’està blocant la sobreescriptura de SRAM"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "S’està iniciant la interfície de comandes al port"
    )
@@ -7105,6 +7101,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
    "No està disponible el rebobinat perquè aquest nucli no té suport d'estat desats serialitzats."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "S’està blocant la sobreescriptura de SRAM"
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,

@@ -11159,10 +11159,6 @@ MSG_HASH(
    "Salva stato automatico su"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "Bloccare la sovrascrittura della SRAM"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "Portare l'interfaccia di comando sulla porta"
    )
@@ -11847,10 +11843,6 @@ MSG_HASH(
    "Shader predefinito salvato con successo."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "Carico SRAM saltato."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "Slow Motion."
    )
@@ -11863,8 +11855,16 @@ MSG_HASH(
    "Riavvolgimento lento."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Carico SRAM saltato."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "La SRAM non verrà salvata."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "Bloccare la sovrascrittura della SRAM"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,

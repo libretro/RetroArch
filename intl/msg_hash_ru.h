@@ -11387,10 +11387,6 @@ MSG_HASH(
    "Автосохранение в"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "Запрет перезаписи SRAM"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "Вывод командного интерфейса на порт"
    )
@@ -12079,10 +12075,6 @@ MSG_HASH(
    "Пресет шейдера успешно сохранён."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "Пропуск загрузки SRAM."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "Замедление."
    )
@@ -12095,8 +12087,16 @@ MSG_HASH(
    "Замедленная перемотка."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Пропуск загрузки SRAM."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "Невозможно сохранить SRAM."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "Запрет перезаписи SRAM"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,

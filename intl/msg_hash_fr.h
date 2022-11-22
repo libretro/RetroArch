@@ -11355,10 +11355,6 @@ MSG_HASH(
    "Sauvegarde instantanée automatique vers"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "Empêcher l'écrasement de la mémoire SRAM"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "Appeler l'interface de commande sur le port"
    )
@@ -12039,10 +12035,6 @@ MSG_HASH(
    "Préréglages de shaders enregistrés avec succès."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "Chargement de la SRAM ignoré."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "Ralenti."
    )
@@ -12055,8 +12047,16 @@ MSG_HASH(
    "Rembobinage au ralenti."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Chargement de la SRAM ignoré."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "La SRAM ne sera pas sauvegardée."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "Empêcher l'écrasement de la mémoire SRAM"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,

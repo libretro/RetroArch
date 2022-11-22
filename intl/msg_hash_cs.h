@@ -11115,10 +11115,6 @@ MSG_HASH(
    "Automaticky uložit pozici do"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "Blokování Přepsání SRAM"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "Zavedení příkazového rozhraní na port"
    )
@@ -11799,10 +11795,6 @@ MSG_HASH(
    "Předvolba shaderu byla úspěšně uložena."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "Přeskakuji načtení SRAM."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "Pomalý pohyb."
    )
@@ -11815,8 +11807,16 @@ MSG_HASH(
    "Zpomalené přetáčení."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Přeskakuji načtení SRAM."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "SRAM nebude uložen."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "Blokování Přepsání SRAM"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,

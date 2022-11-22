@@ -10911,10 +10911,6 @@ MSG_HASH(
    "Automatycznie zapisz stan do"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "Blokowanie nadpisywania SRAM"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "Wprowadzanie interfejsu poleceń na porcie"
    )
@@ -11583,10 +11579,6 @@ MSG_HASH(
    "Ustawienie wstępne shadera zostało pomyślnie zapisane."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "Pomijanie obciążenia SRAM."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "Spowolnienie."
    )
@@ -11599,8 +11591,16 @@ MSG_HASH(
    "Przewijanie spowolnienia."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Pomijanie obciążenia SRAM."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "SRAM nie zostanie zapisany."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "Blokowanie nadpisywania SRAM"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,

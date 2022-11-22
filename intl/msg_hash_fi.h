@@ -11011,10 +11011,6 @@ MSG_HASH(
    "Pelitilan tallenteen automaattinen tallennus kohteeseen"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "Estetään SRAM ylikirjoitus"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "Tuo komentoliittymä porttiin"
    )
@@ -11699,10 +11695,6 @@ MSG_HASH(
    "Varjostimen esiasetus tallennettu onnistuneesti."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "Ohitetaan SRAM-lataus."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "Hidastus."
    )
@@ -11715,8 +11707,16 @@ MSG_HASH(
    "Hidastettu takaisinkelaus."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Ohitetaan SRAM-lataus."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "SRAM:ia ei tallenneta."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "Estetään SRAM ylikirjoitus"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,
