@@ -182,7 +182,7 @@ static void try_shutdown_iosuhax(void)
       MCPHookClose();
    else
       IOSUHAX_Close();
-#endif //HAVE_IOSUHAX
+#endif /* HAVE_IOSUHAX */
 
    iosuhaxMount = false;
 }
