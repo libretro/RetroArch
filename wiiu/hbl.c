@@ -245,7 +245,7 @@ int HBL_loadToMemory(const char *filepath, u32 args_size)
    int ret;
    FILE *fp;
    u32 bytesRead = 0;
-   u3 fileSize   = 0;
+   u32 fileSize  = 0;
    if (!filepath || !*filepath)
       return -1;
 
