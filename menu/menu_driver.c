@@ -7664,7 +7664,9 @@ static int generic_menu_iterate(
          }
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_CANCEL)
+         if (     action == MENU_ACTION_OK
+               || action == MENU_ACTION_CANCEL
+               || action == MENU_ACTION_INFO)
          {
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          }
