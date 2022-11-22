@@ -1666,15 +1666,6 @@ bool command_event(enum event_command cmd, void *data)
          else
             command_event(CMD_EVENT_RECORD_INIT, NULL);
          break;
-      case CMD_EVENT_OSK_TOGGLE:
-         {
-            input_driver_state_t *input_st   = input_state_get_ptr();
-            if (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
-               input_st->flags &= ~INP_FLAG_KB_LINEFEED_ENABLE;
-            else
-               input_st->flags |=  INP_FLAG_KB_LINEFEED_ENABLE;
-         }
-         break;
       case CMD_EVENT_SET_PER_GAME_RESOLUTION:
 #if defined(GEKKO)
          {
@@ -2117,8 +2108,6 @@ bool command_event(enum event_command cmd, void *data)
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          break;
-      case CMD_EVENT_SEND_DEBUG_INFO:
-         break;
       case CMD_EVENT_FPS_TOGGLE:
          settings->bools.video_fps_show = !(settings->bools.video_fps_show);
          break;
@@ -2159,6 +2148,15 @@ bool command_event(enum event_command cmd, void *data)
                            input_st->overlay_ptr);
          }
 #endif
+         break;
+      case CMD_EVENT_OSK_TOGGLE:
+         {
+            input_driver_state_t *input_st   = input_state_get_ptr();
+            if (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
+               input_st->flags &= ~INP_FLAG_KB_LINEFEED_ENABLE;
+            else
+               input_st->flags |=  INP_FLAG_KB_LINEFEED_ENABLE;
+         }
          break;
       case CMD_EVENT_DSP_FILTER_INIT:
 #ifdef HAVE_DSP_FILTER
@@ -3433,6 +3431,10 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_NONE:
          return false;
+
+      /* Deprecated */
+      case CMD_EVENT_SEND_DEBUG_INFO:
+         break;
    }
 
    return true;

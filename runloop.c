@@ -6637,6 +6637,9 @@ static enum runloop_state_enum runloop_check_state(
          last_width  = video_driver_width;
          last_height = video_driver_height;
       }
+
+      /* Check if we have pressed the OSK toggle button */
+      HOTKEY_CHECK(RARCH_OSK, CMD_EVENT_OSK_TOGGLE, true, NULL);
    }
 #endif
 
@@ -7149,9 +7152,6 @@ static enum runloop_state_enum runloop_check_state(
    /* Check if we have pressed the screenshot toggle button */
    HOTKEY_CHECK(RARCH_SCREENSHOT, CMD_EVENT_TAKE_SCREENSHOT, true, NULL);
 #endif
-
-   /* Check if we have pressed the OSK toggle button */
-   HOTKEY_CHECK(RARCH_OSK, CMD_EVENT_OSK_TOGGLE, true, NULL);
 
    /* Check if we have pressed the recording toggle button */
    HOTKEY_CHECK(RARCH_RECORDING_TOGGLE, CMD_EVENT_RECORDING_TOGGLE, true, NULL);

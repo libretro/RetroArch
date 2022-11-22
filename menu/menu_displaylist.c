@@ -6281,6 +6281,10 @@ unsigned menu_displaylist_build_list(
                /* Skip "Hotkey Enable" */
                if (i == RARCH_FIRST_META_KEY)
                   continue;
+               /* Hidden items */
+               else if (input_config_bind_map_get_retro_key(i) == RARCH_OVERLAY_NEXT
+                     || input_config_bind_map_get_retro_key(i) == RARCH_OSK)
+                  continue;
                /* Show combo entries before normal binds */
                else if (input_config_bind_map_get_retro_key(i) == RARCH_MENU_TOGGLE)
                {

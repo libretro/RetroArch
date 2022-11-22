@@ -7027,13 +7027,6 @@ static int action_ok_load_archive_detect_core(const char *path,
    return ret;
 }
 
-static int action_ok_help_send_debug_info(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   command_event(CMD_EVENT_SEND_DEBUG_INFO, NULL);
-   return 0;
-}
-
 DEFAULT_ACTION_OK_HELP(action_ok_help_audio_video_troubleshooting, MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING, MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING)
 DEFAULT_ACTION_OK_HELP(action_ok_help, MENU_ENUM_LABEL_HELP, MENU_DIALOG_WELCOME)
 DEFAULT_ACTION_OK_HELP(action_ok_help_controls, MENU_ENUM_LABEL_HELP_CONTROLS, MENU_DIALOG_HELP_CONTROLS)
@@ -8159,7 +8152,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE,                 action_ok_help_what_is_a_core},
          {MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD,         action_ok_help_change_virtual_gamepad},
          {MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,    action_ok_help_audio_video_troubleshooting},
-         {MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,                action_ok_help_send_debug_info},
          {MENU_ENUM_LABEL_HELP_SCANNING_CONTENT,               action_ok_help_scanning_content},
          {MENU_ENUM_LABEL_HELP_LOADING_CONTENT,                action_ok_help_load_content},
 #ifdef HAVE_CHEATS

@@ -560,20 +560,6 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT, RETROK_UNKNOWN,
-      RARCH_OVERLAY_NEXT, NO_BTN, NO_BTN, 0,
-      true
-   },
-   {
-      NULL, NULL,
-      AXIS_NONE, AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_META_OSK, RETROK_UNKNOWN,
-      RARCH_OSK, NO_BTN, NO_BTN, 0,
-      true
-   },
-   {
-      NULL, NULL,
-      AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE, RETROK_UNKNOWN,
       RARCH_AI_SERVICE, NO_BTN, NO_BTN, 0,
       true
@@ -616,10 +602,27 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT, RETROK_UNKNOWN,
+      RARCH_OVERLAY_NEXT, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_OSK, RETROK_UNKNOWN,
+      RARCH_OSK, NO_BTN, NO_BTN, 0,
+      true
+   },
+#if 0
+   /* Deprecated */
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO, RETROK_UNKNOWN,
       RARCH_SEND_DEBUG_INFO, NO_BTN, NO_BTN, 0,
       true
    },
+#endif
 #elif defined(DINGUX)
    { 
       NULL, NULL,
@@ -1157,20 +1160,6 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT, RETROK_UNKNOWN,
-      RARCH_OVERLAY_NEXT, NO_BTN, NO_BTN, 0,
-      true
-   },
-   {
-      NULL, NULL,
-      AXIS_NONE, AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_META_OSK, RETROK_UNKNOWN,
-      RARCH_OSK, NO_BTN, NO_BTN, 0,
-      true
-   },
-   {
-      NULL, NULL,
-      AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE, RETROK_UNKNOWN,
       RARCH_AI_SERVICE, NO_BTN, NO_BTN, 0,
       true
@@ -1213,10 +1202,27 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT, RETROK_UNKNOWN,
+      RARCH_OVERLAY_NEXT, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_OSK, RETROK_UNKNOWN,
+      RARCH_OSK, NO_BTN, NO_BTN, 0,
+      true
+   },
+#if 0
+   /* Deprecated */
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO, RETROK_UNKNOWN,
       RARCH_SEND_DEBUG_INFO, NO_BTN, NO_BTN, 0,
       true
    },
+#endif
 #else
    { 
       NULL, NULL,
@@ -1764,20 +1770,6 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT, RETROK_UNKNOWN,
-      RARCH_OVERLAY_NEXT, NO_BTN, NO_BTN, 0,
-      true
-   },
-   {
-      NULL, NULL,
-      AXIS_NONE, AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_META_OSK, RETROK_F12,
-      RARCH_OSK, NO_BTN, NO_BTN, 0,
-      true
-   },
-   {
-      NULL, NULL,
-      AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE, RETROK_UNKNOWN,
       RARCH_AI_SERVICE, NO_BTN, NO_BTN, 0,
       true
@@ -1820,10 +1812,27 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT, RETROK_UNKNOWN,
+      RARCH_OVERLAY_NEXT, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_OSK, RETROK_UNKNOWN,
+      RARCH_OSK, NO_BTN, NO_BTN, 0,
+      true
+   },
+#if 0
+   /* Deprecated */
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO, RETROK_UNKNOWN,
       RARCH_SEND_DEBUG_INFO, NO_BTN, NO_BTN, 0,
       true
    },
+#endif
 #endif
 };
 
