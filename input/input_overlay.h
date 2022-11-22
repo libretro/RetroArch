@@ -121,6 +121,38 @@ enum overlay_show_input_type
    OVERLAY_SHOW_INPUT_LAST
 };
 
+enum OVERLAY_LOADER_FLAGS
+{
+   OVERLAY_LOADER_ENABLE                      = (1 << 0),
+   OVERLAY_LOADER_HIDE_IN_MENU                = (1 << 1),
+   OVERLAY_LOADER_HIDE_WHEN_GAMEPAD_CONNECTED = (1 << 2),
+   OVERLAY_LOADER_RGBA_SUPPORT                = (1 << 3)
+};
+
+enum INPUT_OVERLAY_FLAGS
+{
+   INPUT_OVERLAY_ENABLE  = (1 << 0),
+   INPUT_OVERLAY_ALIVE   = (1 << 1),
+   INPUT_OVERLAY_BLOCKED = (1 << 2)
+};
+
+enum OVERLAY_FLAGS
+{
+   OVERLAY_FULL_SCREEN        = (1 << 0),
+   OVERLAY_BLOCK_SCALE        = (1 << 1),
+   OVERLAY_BLOCK_X_SEPARATION = (1 << 2),
+   OVERLAY_BLOCK_Y_SEPARATION = (1 << 3)
+};
+
+enum OVERLAY_DESC_FLAGS
+{
+   OVERLAY_DESC_MOVABLE             = (1 << 0),
+   /* If true, blocks input from overlapped hitboxes */
+   OVERLAY_DESC_EXCLUSIVE           = (1 << 1),
+   /* Similar, but only applies after range_mod takes effect */
+   OVERLAY_DESC_RANGE_MOD_EXCLUSIVE = (1 << 2)
+};
+
 typedef struct overlay_eightway_config
 {
    input_bits_t up;
@@ -144,8 +176,6 @@ struct overlay_desc
 
    enum overlay_hitbox hitbox;
    enum overlay_type type;
-
-   uint16_t updated;  /* one bit per pointer */
 
    unsigned next_index;
    unsigned image_index;
@@ -175,13 +205,6 @@ struct overlay_desc
    float range_x_hitbox, range_y_hitbox;
    float reach_right, reach_left, reach_up, reach_down;
 
-   /* If true, blocks input from overlapped hitboxes */
-   bool exclusive;
-   /* Similar, but only applies after range_mod takes effect */
-   bool range_mod_exclusive;
-
-   bool movable;
-
    /* This is a retro_key value for keyboards */
    unsigned retro_key_idx;
 
@@ -191,6 +214,11 @@ struct overlay_desc
    overlay_eightway_config_t *eightway_config;
 
    char next_index_name[64];
+
+   /* Nonzero if pressed. One bit per input pointer */
+   uint16_t updated;
+
+   uint8_t flags;
 };
 
 
@@ -244,12 +272,9 @@ struct overlay
       bool normalized;
    } config;
 
-   bool full_screen;
-   bool block_scale;
-   bool block_x_separation;
-   bool block_y_separation;
-
    char name[64];
+
+   uint8_t flags;
 };
 
 typedef struct input_overlay_state
@@ -276,9 +301,7 @@ struct input_overlay
 
    enum overlay_status state;
 
-   bool enable;
-   bool blocked;
-   bool alive;
+   uint8_t flags;
 };
 
 /* Holds general layout information for an
@@ -325,10 +348,8 @@ typedef struct
    size_t size;
    float overlay_opacity;
    overlay_layout_desc_t layout_desc;
-   bool overlay_enable;
-   bool hide_in_menu;
-   bool hide_when_gamepad_connected;
    uint16_t overlay_types;
+   uint8_t flags;
 } overlay_task_data_t;
 
 void input_overlay_free_overlay(struct overlay *overlay);
