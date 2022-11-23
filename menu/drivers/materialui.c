@@ -3989,7 +3989,7 @@ static void materialui_render_menu_entry_default(
    const char *entry_label                           = NULL;
    unsigned entry_type                               = 0;
    enum materialui_entry_value_type entry_value_type = MUI_ENTRY_VALUE_NONE;
-   unsigned entry_value_width                        = 0;
+   size_t entry_value_width                          = 0;
    enum msg_file_type entry_file_type                = FILE_TYPE_NONE;
    int entry_x                                       = x_offset + node->x;
    int entry_y                                       = header_height - mui->scroll_y + node->y;
@@ -9323,7 +9323,7 @@ static enum menu_action materialui_parse_menu_entry_action(
              (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1))
          {
             size_t i;
-            unsigned main_menu_tab_index                 = 0;
+            size_t main_menu_tab_index                   = 0;
             materialui_nav_bar_menu_tab_t *main_menu_tab = NULL;
 
             /* Find index of main menu tab */
@@ -9883,8 +9883,8 @@ static int materialui_pointer_up_nav_bar(
       unsigned x, unsigned y, unsigned width, unsigned height, size_t selection,
       menu_file_list_cbs_t *cbs, menu_entry_t *entry, unsigned action)
 {
-   unsigned num_tabs = mui->nav_bar.num_menu_tabs + MUI_NAV_BAR_NUM_ACTION_TABS;
    unsigned tab_index;
+   size_t num_tabs = mui->nav_bar.num_menu_tabs + MUI_NAV_BAR_NUM_ACTION_TABS;
 
    /* If navigation bar is hidden, do nothing */
    if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_HIDDEN)
@@ -9895,7 +9895,7 @@ static int materialui_pointer_up_nav_bar(
    if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_RIGHT)
       tab_index = y / (height / num_tabs);
    else
-      tab_index = x / (width / num_tabs);
+      tab_index = x / (width  / num_tabs);
 
    /* Check if this is an action tab */
    if ((tab_index == 0) || (tab_index >= num_tabs - 1))
