@@ -1,4 +1,26 @@
 # Future
+- CLI: Fixed not getting any output when running --version or --features without --verbose
+- CLI: Fixed crash when running empty - parameter (it proceeded to content loading)
+- CLI: Reformatted --features to require less rows and to be more consistent
+- CLI: Added -V shorthand for --version
+- CLI: Tab removal + whitespace nits
+- DRM/ODROID GO2: Implement get_video_size for DRM GL context driver
+- HOTKEYS: Further reorder internal hotkey items for consistency and removed SEND_DEBUG_INFO, OVERLAY_NEXT and OSK from visible hotkey bind list. "Send Debug Info" stuff is removed as much as possible without breakage due to translation files.
+- INPUT/AUTOCONFIG: Disable 'pause on controller disconnect' by default - was enabled by default on 1.13.0
+- INPUT/OVERLAY: Fix analog drift blocking touch input (could occur on overlay_next if physical inputs shown on overlay)
+- INPUT/OVERLAY: Fix overlay_next buttons lighting up in unison
+- INPUT/OVERLAY: Skip meta keys in input_overlay_add_inputs (not supported by input_state_internal)
+- INPUT/WINDOWS/WINRAW: Fix mouse position when using input overlay with mouse cursor
+- INPUT/WINDOWS/WINRAW: Fixed mouse position to use the same method required for menu items and pointer when simulating input overlays with mouse, since it won't work with multi mouse method
+- INPUT/WINDOWS/WINRAW: Fixed passing mouse position to core also when using aforementioned method
+- LOCALIZATION: Updates
+- MENU: Allow toggling info off with the same button
+- MENU: Allow menu wallpaper/background reset. Let's also remove the current wallpaper from the screen when pressing Start.
+- MENU: Null driver shows with different color (Added for all menus the ability to show "disabled" items with a muted color)
+- MENU/DRIVERS: Menu driver first, Audio Resampler removed because it is enough to exist under audio settings
+- MENU/INPUT: Moved "Confirm Quit" to Input menu
+- MENU/INPUT/HOTKEYS: Input hotkey menu completely overhauled to keep related entries together, and also adjusted some labels and sublabels
+- SRAM: Don't init SRAM saving without content (gets rid of the redundant logging)
 
 # 1.13.0
 - 3DS: Remove debug button combo to shutdown RA
