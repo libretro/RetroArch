@@ -66,17 +66,6 @@ typedef struct ui_msg_window_state
 
 typedef struct ui_browser_window_state
 {
-   struct
-   {
-      bool can_choose_directories;
-      bool can_choose_directories_val;
-      bool can_choose_files;
-      bool can_choose_files_val;
-      bool allows_multiple_selection;
-      bool allows_multiple_selection_val;
-      bool treat_file_packages_as_directories;
-      bool treat_file_packages_as_directories_val;
-   } capabilities;
    void *window;
    char *filters;
    char *filters_title;
