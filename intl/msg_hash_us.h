@@ -2194,6 +2194,14 @@ MSG_HASH(
    "Automatically mute audio when using fast-forward."
    )
 MSG_HASH(
+  MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+  "Mute When Rewinding"
+  )
+MSG_HASH(
+  MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+  "Automatically mute audio when using rewinding."
+  )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Volume Gain (dB)"
    )
