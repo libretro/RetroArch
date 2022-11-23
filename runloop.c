@@ -6847,9 +6847,9 @@ static enum runloop_state_enum runloop_check_state(
 #endif
       {
          if (pause_nonactive)
-            focused = is_focused && !uico_st->is_on_foreground;
+            focused = is_focused && (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND));
          else
-            focused = !uico_st->is_on_foreground;
+            focused = (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND));
       }
 
       if (action == old_action)
@@ -6975,7 +6975,7 @@ static enum runloop_state_enum runloop_check_state(
                         menu->userdata,
                         menu->menu_state_msg);
 
-               if (uico_st->is_on_foreground)
+               if (uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND)
                {
                   if (     uico_st->drv
                         && uico_st->drv->render_messagebox)
@@ -7774,7 +7774,7 @@ int runloop_iterate(void)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
 #if defined(HAVE_COCOATOUCH)
-         if (!uico_st->is_on_foreground)
+         if (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
 #endif
             retro_sleep(10);
          return 1;
@@ -8102,7 +8102,7 @@ end:
          if (sleep_ms > 0)
          {
 #if defined(HAVE_COCOATOUCH)
-            if (!uico_state_get_ptr()->is_on_foreground)
+            if (!(uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
 #endif
                retro_sleep(sleep_ms);
          }

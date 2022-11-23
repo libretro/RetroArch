@@ -2511,7 +2511,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          retroarch_menu_running_finished(false);
 #endif
-         if (uico_st->is_on_foreground)
+         if (uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND)
          {
 #ifdef HAVE_QT
             bool desktop_menu_enable = settings->bools.desktop_menu_enable;
