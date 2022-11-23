@@ -1031,7 +1031,6 @@ const char *path_get(enum rarch_path_type type)
 size_t path_get_realsize(enum rarch_path_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    switch (type)
    {
@@ -1040,11 +1039,11 @@ size_t path_get_realsize(enum rarch_path_type type)
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return sizeof(p_rarch->path_default_shader_preset);
       case RARCH_PATH_BASENAME:
-         return sizeof(runloop_st->runtime_content_path_basename);
+         return sizeof(runloop_state_get_ptr()->runtime_content_path_basename);
       case RARCH_PATH_CORE_OPTIONS:
          return sizeof(p_rarch->path_core_options_file);
       case RARCH_PATH_SUBSYSTEM:
-         return sizeof(runloop_st->subsystem_path);
+         return sizeof(runloop_state_get_ptr()->subsystem_path);
       case RARCH_PATH_CONFIG:
          return sizeof(p_rarch->path_config_file);
       case RARCH_PATH_CONFIG_APPEND:
@@ -1062,17 +1061,13 @@ size_t path_get_realsize(enum rarch_path_type type)
 bool path_set(enum rarch_path_type type, const char *path)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   runloop_state_t *runloop_st = NULL;
 
    if (!path)
       return false;
 
    switch (type)
    {
-      case RARCH_PATH_BASENAME:
-         strlcpy(runloop_st->runtime_content_path_basename, path,
-               sizeof(runloop_st->runtime_content_path_basename));
-         break;
       case RARCH_PATH_NAMES:
          runloop_path_set_basename(path);
          runloop_path_set_names();
@@ -1094,10 +1089,6 @@ bool path_set(enum rarch_path_type type, const char *path)
          strlcpy(p_rarch->path_config_file, path,
                sizeof(p_rarch->path_config_file));
          break;
-      case RARCH_PATH_SUBSYSTEM:
-         strlcpy(runloop_st->subsystem_path, path,
-               sizeof(runloop_st->subsystem_path));
-         break;
       case RARCH_PATH_CORE_OPTIONS:
          strlcpy(p_rarch->path_core_options_file, path,
                sizeof(p_rarch->path_core_options_file));
@@ -1105,6 +1096,16 @@ bool path_set(enum rarch_path_type type, const char *path)
       case RARCH_PATH_CONTENT:
          strlcpy(p_rarch->path_content, path,
                sizeof(p_rarch->path_content));
+         break;
+      case RARCH_PATH_BASENAME:
+         runloop_st = runloop_state_get_ptr();
+         strlcpy(runloop_st->runtime_content_path_basename, path,
+               sizeof(runloop_st->runtime_content_path_basename));
+         break;
+      case RARCH_PATH_SUBSYSTEM:
+         runloop_st = runloop_state_get_ptr();
+         strlcpy(runloop_st->subsystem_path, path,
+               sizeof(runloop_st->subsystem_path));
          break;
       case RARCH_PATH_NONE:
          break;
@@ -1116,16 +1117,11 @@ bool path_set(enum rarch_path_type type, const char *path)
 bool path_is_empty(enum rarch_path_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    switch (type)
    {
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          if (string_is_empty(p_rarch->path_default_shader_preset))
-            return true;
-         break;
-      case RARCH_PATH_SUBSYSTEM:
-         if (string_is_empty(runloop_st->subsystem_path))
             return true;
          break;
       case RARCH_PATH_CONFIG:
@@ -1149,7 +1145,11 @@ bool path_is_empty(enum rarch_path_type type)
             return true;
          break;
       case RARCH_PATH_BASENAME:
-         if (string_is_empty(runloop_st->runtime_content_path_basename))
+         if (string_is_empty(runloop_state_get_ptr()->runtime_content_path_basename))
+            return true;
+         break;
+      case RARCH_PATH_SUBSYSTEM:
+         if (string_is_empty(runloop_state_get_ptr()->subsystem_path))
             return true;
          break;
       case RARCH_PATH_NONE:
@@ -1163,13 +1163,10 @@ bool path_is_empty(enum rarch_path_type type)
 void path_clear(enum rarch_path_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   runloop_state_t *runloop_st = NULL;
 
    switch (type)
    {
-      case RARCH_PATH_SUBSYSTEM:
-         *runloop_st->subsystem_path = '\0';
-         break;
       case RARCH_PATH_CORE:
          *p_rarch->path_libretro = '\0';
          break;
@@ -1178,9 +1175,6 @@ void path_clear(enum rarch_path_type type)
          break;
       case RARCH_PATH_CONTENT:
          *p_rarch->path_content = '\0';
-         break;
-      case RARCH_PATH_BASENAME:
-         *runloop_st->runtime_content_path_basename = '\0';
          break;
       case RARCH_PATH_CORE_OPTIONS:
          *p_rarch->path_core_options_file = '\0';
@@ -1193,6 +1187,14 @@ void path_clear(enum rarch_path_type type)
          break;
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
+         break;
+      case RARCH_PATH_BASENAME:
+         runloop_st = runloop_state_get_ptr();
+         *runloop_st->runtime_content_path_basename = '\0';
+         break;
+      case RARCH_PATH_SUBSYSTEM:
+         runloop_st = runloop_state_get_ptr();
+         *runloop_st->subsystem_path = '\0';
          break;
    }
 }
@@ -1328,26 +1330,28 @@ size_t dir_get_size(enum rarch_dir_type type)
 void dir_clear(enum rarch_dir_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   runloop_state_t *runloop_st = NULL;
 
    switch (type)
    {
       case RARCH_DIR_SAVEFILE:
          *p_rarch->dir_savefile = '\0';
          break;
-      case RARCH_DIR_CURRENT_SAVEFILE:
-         *runloop_st->savefile_dir = '\0';
-         break;
       case RARCH_DIR_SAVESTATE:
          *p_rarch->dir_savestate = '\0';
-         break;
-      case RARCH_DIR_CURRENT_SAVESTATE:
-         *runloop_st->savestate_dir = '\0';
          break;
       case RARCH_DIR_SYSTEM:
          *p_rarch->dir_system = '\0';
          break;
       case RARCH_DIR_NONE:
+         break;
+      case RARCH_DIR_CURRENT_SAVEFILE:
+         runloop_st = runloop_state_get_ptr();
+         *runloop_st->savefile_dir = '\0';
+         break;
+      case RARCH_DIR_CURRENT_SAVESTATE:
+         runloop_st = runloop_state_get_ptr();
+         *runloop_st->savestate_dir = '\0';
          break;
    }
 }
@@ -1387,21 +1391,13 @@ char *dir_get_ptr(enum rarch_dir_type type)
 void dir_set(enum rarch_dir_type type, const char *path)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   runloop_state_t *runloop_st = NULL;
 
    switch (type)
    {
-      case RARCH_DIR_CURRENT_SAVEFILE:
-         strlcpy(runloop_st->savefile_dir, path,
-               sizeof(runloop_st->savefile_dir));
-         break;
       case RARCH_DIR_SAVEFILE:
          strlcpy(p_rarch->dir_savefile, path,
                sizeof(p_rarch->dir_savefile));
-         break;
-      case RARCH_DIR_CURRENT_SAVESTATE:
-         strlcpy(runloop_st->savestate_dir, path,
-               sizeof(runloop_st->savestate_dir));
          break;
       case RARCH_DIR_SAVESTATE:
          strlcpy(p_rarch->dir_savestate, path,
@@ -1412,6 +1408,16 @@ void dir_set(enum rarch_dir_type type, const char *path)
                sizeof(p_rarch->dir_system));
          break;
       case RARCH_DIR_NONE:
+         break;
+      case RARCH_DIR_CURRENT_SAVEFILE:
+         runloop_st = runloop_state_get_ptr();
+         strlcpy(runloop_st->savefile_dir, path,
+               sizeof(runloop_st->savefile_dir));
+         break;
+      case RARCH_DIR_CURRENT_SAVESTATE:
+         runloop_st = runloop_state_get_ptr();
+         strlcpy(runloop_st->savestate_dir, path,
+               sizeof(runloop_st->savestate_dir));
          break;
    }
 }
