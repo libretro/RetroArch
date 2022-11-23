@@ -165,14 +165,14 @@ static void handle_touch_event(NSArray* touches)
  * defined in any standard iOS header */
 enum
 {
-   NSAlphaShiftKeyMask = 1 << 16,
-   NSShiftKeyMask      = 1 << 17,
-   NSControlKeyMask    = 1 << 18,
-   NSAlternateKeyMask  = 1 << 19,
-   NSCommandKeyMask    = 1 << 20,
-   NSNumericPadKeyMask = 1 << 21,
-   NSHelpKeyMask       = 1 << 22,
-   NSFunctionKeyMask   = 1 << 23,
+   NSAlphaShiftKeyMask                  = 1 << 16,
+   NSShiftKeyMask                       = 1 << 17,
+   NSControlKeyMask                     = 1 << 18,
+   NSAlternateKeyMask                   = 1 << 19,
+   NSCommandKeyMask                     = 1 << 20,
+   NSNumericPadKeyMask                  = 1 << 21,
+   NSHelpKeyMask                        = 1 << 22,
+   NSFunctionKeyMask                    = 1 << 23,
    NSDeviceIndependentModifierFlagsMask = 0xffff0000U
 };
 
@@ -187,9 +187,9 @@ enum
     if (last_time_stamp == event.timestamp)
        return [super handleKeyUIEvent:event];
 
-    last_time_stamp = event.timestamp;
+    last_time_stamp        = event.timestamp;
 
-    /* If the _hidEvent is null, [event _keyCode] will crash.
+    /* If the _hidEvent is NULL, [event _keyCode] will crash.
      * (This happens with the on screen keyboard). */
     if (event._hidEvent)
     {
@@ -357,14 +357,14 @@ enum
    switch (vt)
    {
 #ifdef HAVE_COCOA_METAL
-      case APPLE_VIEW_TYPE_VULKAN:
+       case APPLE_VIEW_TYPE_VULKAN:
        case APPLE_VIEW_TYPE_METAL:
          {
             MetalView *v = [MetalView new];
-            v.paused = YES;
+            v.paused                = YES;
             v.enableSetNeedsDisplay = NO;
 #if TARGET_OS_IOS
-            v.multipleTouchEnabled = YES;
+            v.multipleTouchEnabled  = YES;
 #endif
             _renderView = v;
          }
@@ -375,7 +375,7 @@ enum
          break;
 
        case APPLE_VIEW_TYPE_NONE:
-                         default:
+       default:
          return;
    }
 
@@ -394,7 +394,7 @@ enum
 {
 #ifdef HAVE_COCOA_METAL
    MetalView *metalView = (MetalView*) _renderView;
-   CGFloat scale = [[UIScreen mainScreen] scale];
+   CGFloat scale        = [[UIScreen mainScreen] scale];
    [metalView setDrawableSize:CGSizeMake(
          _renderView.bounds.size.width * scale,
          _renderView.bounds.size.height * scale
@@ -411,11 +411,10 @@ enum
    if (_documentsDirectory == nil)
    {
 #if TARGET_OS_IOS
-      NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+      NSArray *paths      = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
 #elif TARGET_OS_TV
-      NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+      NSArray *paths      = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
 #endif
-
       _documentsDirectory = paths.firstObject;
    }
    return _documentsDirectory;
@@ -481,8 +480,7 @@ enum
    if ([url startAccessingSecurityScopedResource]) {
       if (![[url path] containsString: self.documentsDirectory])
          if (![manager fileExistsAtPath:destination])
-            if (![manager copyItemAtPath:[url path] toPath:destination error:&error])
-               printf("%s\n", [[error description] UTF8String]);
+            [manager copyItemAtPath:[url path] toPath:destination error:&error];
       [url stopAccessingSecurityScopedResource];
    }
    return true;
@@ -561,8 +559,6 @@ int main(int argc, char *argv[])
 static void apple_rarch_exited(void)
 {
    RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-
-   if (!ap)
-      return;
-   [ap showPauseMenu:ap];
+   if (ap)
+      [ap showPauseMenu:ap];
 }

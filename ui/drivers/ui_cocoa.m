@@ -114,9 +114,7 @@ static void ui_window_cocoa_set_droppable(void *data, bool droppable)
 #endif
    }
    else
-   {
       [[cocoa_view window] unregisterDraggedTypes];
-   }
 }
 
 static bool ui_window_cocoa_focused(void *data)
@@ -407,22 +405,22 @@ static ui_application_t ui_application_cocoa = {
             NSUInteger mods           = event.modifierFlags;
             uint16_t keycode          = event.keyCode;
 
-               if (mods & NSEventModifierFlagCapsLock)
-                  mod |= RETROKMOD_CAPSLOCK;
-               if (mods & NSEventModifierFlagShift)
-                  mod |=  RETROKMOD_SHIFT;
-               if (mods & NSEventModifierFlagControl)
-                  mod |=  RETROKMOD_CTRL;
-               if (mods & NSEventModifierFlagOption)
-                  mod |= RETROKMOD_ALT;
-               if (mods & NSEventModifierFlagCommand)
-                  mod |= RETROKMOD_META;
-               if (mods & NSEventModifierFlagNumericPad)
-                  mod |=  RETROKMOD_NUMLOCK;
+            if (mods & NSEventModifierFlagCapsLock)
+               mod |= RETROKMOD_CAPSLOCK;
+            if (mods & NSEventModifierFlagShift)
+               mod |=  RETROKMOD_SHIFT;
+            if (mods & NSEventModifierFlagControl)
+               mod |=  RETROKMOD_CTRL;
+            if (mods & NSEventModifierFlagOption)
+               mod |= RETROKMOD_ALT;
+            if (mods & NSEventModifierFlagCommand)
+               mod |= RETROKMOD_META;
+            if (mods & NSEventModifierFlagNumericPad)
+               mod |=  RETROKMOD_NUMLOCK;
 
-               for (i = 1; i < ch.length; i++)
-                  apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
-                        0, inputTextUTF8[i], mod, RETRO_DEVICE_KEYBOARD);
+            for (i = 1; i < ch.length; i++)
+               apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
+                     0, inputTextUTF8[i], mod, RETRO_DEVICE_KEYBOARD);
 
             apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
                   keycode, character, mod, RETRO_DEVICE_KEYBOARD);
@@ -558,7 +556,7 @@ static ui_application_t ui_application_cocoa = {
       {
          waiting_argv[i]   = NULL;
          waiting_argv[i+1] = NULL;
-         waiting_argc -= 2;
+         waiting_argc     -= 2;
       }
    }
    if (rarch_main(waiting_argc, waiting_argv, NULL))
@@ -582,41 +580,40 @@ static ui_application_t ui_application_cocoa = {
    if (vt == _vt)
       return;
 
-   _vt = vt;
-   if (_renderView != nil)
+   _vt                              = vt;
+
+   if (_renderView)
    {
-      _renderView.wantsLayer  = NO;
-      _renderView.layer       = nil;
+      _renderView.wantsLayer        = NO;
+      _renderView.layer             = nil;
       [_renderView removeFromSuperview];
-      self.window.contentView = nil;
-      _renderView             = nil;
+      self.window.contentView       = nil;
+      _renderView                   = nil;
    }
 
    switch (vt)
    {
       case APPLE_VIEW_TYPE_VULKAN:
-       case APPLE_VIEW_TYPE_METAL:
+      case APPLE_VIEW_TYPE_METAL:
          {
-            MetalView *v = [MetalView new];
-            v.paused = YES;
+            MetalView *v            = [MetalView new];
+            v.paused                = YES;
             v.enableSetNeedsDisplay = NO;
-            _renderView = v;
+            _renderView             = v;
          }
          break;
-
-       case APPLE_VIEW_TYPE_OPENGL:
-         _renderView = [CocoaView get];
+      case APPLE_VIEW_TYPE_OPENGL:
+         _renderView                = [CocoaView get];
          break;
-
-       case APPLE_VIEW_TYPE_NONE:
-       default:
+      case APPLE_VIEW_TYPE_NONE:
+      default:
          return;
    }
 
    _renderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
    [_renderView setFrame: [[self.window contentView] bounds]];
 
-   self.window.contentView = _renderView;
+   self.window.contentView               = _renderView;
    self.window.contentView.nextResponder = _listener;
 }
 
@@ -628,14 +625,19 @@ static ui_application_t ui_application_cocoa = {
 {
    BOOL is_fullscreen = (self.window.styleMask 
          & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen;
-   if (mode.fullscreen && !is_fullscreen)
+   if (mode.fullscreen)
    {
-      [self.window toggleFullScreen:self];
-      return;
+      if (!is_fullscreen)
+      {
+         [self.window toggleFullScreen:self];
+         return;
+      }
    }
-
-   if (!mode.fullscreen && is_fullscreen)
-      [self.window toggleFullScreen:self];
+   else
+   {
+      if (is_fullscreen)
+         [self.window toggleFullScreen:self];
+   }
 
    /* HACK(sgc): ensure MTKView posts a drawable resize event */
    if (mode.width > 0)
@@ -653,12 +655,18 @@ static ui_application_t ui_application_cocoa = {
 
 - (bool)setDisableDisplaySleep:(bool)disable
 {
-   if (disable && _sleepActivity == nil)
-      _sleepActivity = [NSProcessInfo.processInfo beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled reason:@"disable screen saver"];
-   else if (!disable && _sleepActivity != nil)
+   if (disable)
    {
-      [NSProcessInfo.processInfo endActivity:_sleepActivity];
-      _sleepActivity = nil;
+      if (_sleepActivity == nil)
+         _sleepActivity = [NSProcessInfo.processInfo beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled reason:@"disable screen saver"];
+   }
+   else
+   {
+      if (_sleepActivity)
+      {
+         [NSProcessInfo.processInfo endActivity:_sleepActivity];
+         _sleepActivity = nil;
+      }
    }
    return YES;
 }
@@ -765,7 +773,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
    path_set(RARCH_PATH_CORE, state->result);
    ui_companion_event_command(CMD_EVENT_LOAD_CORE);
 
-   if (info
+   if (     info
          && info->load_no_content
          && set_supports_no_game_enable)
    {
@@ -937,7 +945,7 @@ int main(int argc, char *argv[])
 {
    if (argc == 2)
    {
-       if (argv[1] != NULL)
+       if (argv[1])
            if (!strncmp(argv[1], "-psn", 4))
                argc = 1;
    }
@@ -962,8 +970,7 @@ static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
    [performer performSelectorOnMainThread:@selector(perform) withObject:nil waitUntilDone:NO];
    RELEASE(performer);
 }
-static void ui_companion_cocoa_notify_list_pushed(void *data,
-    file_list_t *list, file_list_t *menu_list) { }
+static void ui_companion_cocoa_notify_list_pushed(void *data, file_list_t *a, file_list_t *b) { }
 
 static void *ui_companion_cocoa_get_main_window(void *data)
 {
