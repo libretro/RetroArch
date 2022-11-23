@@ -4882,7 +4882,7 @@ static void xmb_draw_bg(
          draw.x             = 0;
          draw.y             = 0;
 
-         gfx_display_draw_bg(p_disp, &draw, userdata, false,
+         gfx_display_draw_bg(p_disp, &draw, userdata, true,
                menu_wallpaper_opacity);
          if (draw.height > 0 && draw.width > 0)
             if (dispctx && dispctx->draw)

@@ -792,8 +792,11 @@ static float ozone_sidebar_gradient_bottom_solarized_light[16]        = {
    1.0000000f, 1.0000000f, 0.9294118f, 1.0f,
 };
 
-static float ozone_sidebar_background_gray[16]                        = 
+static float ozone_sidebar_background_gray_dark[16]                   =
    COLOR_HEX_TO_FLOAT(0x101010, 0.0f);
+
+static float ozone_sidebar_background_gray_light[16]                  =
+   COLOR_HEX_TO_FLOAT(0x303030, 0.0f);
 
 static float ozone_sidebar_background_light[16]                       = {
    0.94f, 0.94f, 0.94f, 1.00f,
@@ -872,8 +875,11 @@ static float ozone_sidebar_background_purple_rain[16] = {
    0.0862745f, 0.0f, 0.1294117f, 1.0f,
 };
 
-static float ozone_background_libretro_running_gray[16]               = 
+static float ozone_background_libretro_running_gray_dark[16]          =
    COLOR_HEX_TO_FLOAT(0x101010, 1.0f);
+
+static float ozone_background_libretro_running_gray_light[16]         =
+   COLOR_HEX_TO_FLOAT(0x303030, 1.0f);
 
 static float ozone_background_libretro_running_light[16]              = {
    0.690f, 0.690f, 0.690f, 0.75f,
@@ -1322,7 +1328,7 @@ static ozone_theme_t ozone_theme_solarized_dark = {
 static ozone_theme_t ozone_theme_solarized_light = {
    /* Background color */
    COLOR_HEX_TO_FLOAT(0xFDF6E3, 1.0f),                   /* background */
-   ozone_background_libretro_running_solarized_light,     /* background_libretro_running */
+   ozone_background_libretro_running_solarized_light,    /* background_libretro_running */
 
    /* Float colors for quads and icons */
    COLOR_HEX_TO_FLOAT(0x657B83, 1.0f),                   /* header_footer_separator */
@@ -1343,24 +1349,24 @@ static ozone_theme_t ozone_theme_solarized_light = {
    /* Screensaver 'tint' (RGB24) */
    0xEEE8D5,                                             /* screensaver_tint */
 
-  /* Sidebar color */
-   ozone_sidebar_background_solarized_light,              /* sidebar_background */
-   ozone_sidebar_gradient_top_solarized_light,            /* sidebar_top_gradient */
-   ozone_sidebar_gradient_bottom_solarized_light,         /* sidebar_bottom_gradient */
+   /* Sidebar color */
+   ozone_sidebar_background_solarized_light,             /* sidebar_background */
+   ozone_sidebar_gradient_top_solarized_light,           /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_solarized_light,        /* sidebar_bottom_gradient */
 
    /* Fancy cursor colors */
-   ozone_border_0_solarized_light,                        /* cursor_border_0 */
-   ozone_border_1_solarized_light,                        /* cursor_border_1 */
+   ozone_border_0_solarized_light,                       /* cursor_border_0 */
+   ozone_border_1_solarized_light,                       /* cursor_border_1 */
 
    {0},                                                  /* textures */
 
-   "solarized_light"                                      /* name */
+   "solarized_light"                                     /* name */
 };
 
 static ozone_theme_t ozone_theme_gray_dark = {
    /* Background color */
    COLOR_HEX_TO_FLOAT(0x101010, 1.0f),                   /* background */
-   ozone_background_libretro_running_gray,               /* background_libretro_running */
+   ozone_background_libretro_running_gray_dark,          /* background_libretro_running */
 
    /* Float colors for quads and icons */
    COLOR_HEX_TO_FLOAT(0x000000, 0.0f),                   /* header_footer_separator */
@@ -1382,9 +1388,9 @@ static ozone_theme_t ozone_theme_gray_dark = {
    0xFFFFFF,                                             /* screensaver_tint */
 
    /* Sidebar color */
-   ozone_sidebar_background_gray,                        /* sidebar_background */
-   ozone_sidebar_background_gray,                        /* sidebar_top_gradient */
-   ozone_sidebar_background_gray,                        /* sidebar_bottom_gradient */
+   ozone_sidebar_background_gray_dark,                   /* sidebar_background */
+   ozone_sidebar_background_gray_dark,                   /* sidebar_top_gradient */
+   ozone_sidebar_background_gray_dark,                   /* sidebar_bottom_gradient */
 
    /* Fancy cursor colors */
    ozone_border_gray,                                    /* cursor_border_0 */
@@ -1399,7 +1405,7 @@ static ozone_theme_t ozone_theme_gray_dark = {
 static ozone_theme_t ozone_theme_gray_light = {
    /* Background color */
    COLOR_HEX_TO_FLOAT(0x303030, 1.0f),                   /* background */
-   ozone_background_libretro_running_gray,               /* background_libretro_running */
+   ozone_background_libretro_running_gray_light,         /* background_libretro_running */
 
    /* Float colors for quads and icons */
    COLOR_HEX_TO_FLOAT(0x000000, 0.0f),                   /* header_footer_separator */
@@ -1421,9 +1427,9 @@ static ozone_theme_t ozone_theme_gray_light = {
    0xFFFFFF,                                             /* screensaver_tint */
 
    /* Sidebar color */
-   ozone_sidebar_background_gray,                        /* sidebar_background */
-   ozone_sidebar_background_gray,                        /* sidebar_top_gradient */
-   ozone_sidebar_background_gray,                        /* sidebar_bottom_gradient */
+   ozone_sidebar_background_gray_light,                  /* sidebar_background */
+   ozone_sidebar_background_gray_light,                  /* sidebar_top_gradient */
+   ozone_sidebar_background_gray_light,                  /* sidebar_bottom_gradient */
 
    /* Fancy cursor colors */
    ozone_border_gray,                                    /* cursor_border_0 */
@@ -1438,7 +1444,7 @@ static ozone_theme_t ozone_theme_gray_light = {
 static ozone_theme_t ozone_theme_purple_rain = {
    /* Background color */
    COLOR_HEX_TO_FLOAT(0x160021, 1.0f),                   /* background */
-   ozone_background_libretro_running_purple_rain,               /* background_libretro_running */
+   ozone_background_libretro_running_purple_rain,        /* background_libretro_running */
 
    /* Float colors for quads and icons */
    COLOR_HEX_TO_FLOAT(0xAA00CC, 1.0f),                   /* header_footer_separator */
@@ -1460,18 +1466,18 @@ static ozone_theme_t ozone_theme_purple_rain = {
    0xFFFFFF,                                             /* screensaver_tint */
 
    /* Sidebar color */
-   ozone_sidebar_background_purple_rain,                        /* sidebar_background */
-   ozone_sidebar_background_purple_rain,                        /* sidebar_top_gradient */
-   ozone_sidebar_background_purple_rain,                        /* sidebar_bottom_gradient */
+   ozone_sidebar_background_purple_rain,                 /* sidebar_background */
+   ozone_sidebar_background_purple_rain,                 /* sidebar_top_gradient */
+   ozone_sidebar_background_purple_rain,                 /* sidebar_bottom_gradient */
 
    /* Fancy cursor colors */
-   ozone_border_0_purple_rain,                                    /* cursor_border_0 */
-   ozone_border_1_purple_rain,                                    /* cursor_border_1 */
+   ozone_border_0_purple_rain,                           /* cursor_border_0 */
+   ozone_border_1_purple_rain,                           /* cursor_border_1 */
 
    {0},                                                  /* textures */
 
    /* No theme assets */
-   "purple_rain"                                                 /* name */
+   "purple_rain"                                         /* name */
 };
 
 static ozone_theme_t *ozone_themes[] = {
@@ -1674,10 +1680,14 @@ static unsigned ozone_get_system_theme(void)
 #endif
 }
 
+/* Running background gradient disabled for now due to
+ * rather jarring steps with certain themes because they
+ * already have background gradient */
 static void ozone_set_background_running_opacity(
       ozone_handle_t *ozone,
       float framebuffer_opacity)
 {
+#if USE_BG_GRADIENT
    static float background_running_alpha_top    = 1.0f;
    static float background_running_alpha_bottom = 0.75f;
    float *background                            = 
@@ -1708,8 +1718,25 @@ static void ozone_set_background_running_opacity(
    background[15]                               = background_running_alpha_top;
    background[3]                                = background_running_alpha_bottom;
    background[7]                                = background_running_alpha_bottom;
+#else
+   float *background                            =
+         ozone->theme->background_libretro_running;
+
+   background[11]                               = framebuffer_opacity;
+   background[15]                               = framebuffer_opacity;
+   background[3]                                = framebuffer_opacity;
+   background[7]                                = framebuffer_opacity;
+#endif
 
    ozone_last_framebuffer_opacity               = framebuffer_opacity;
+
+   /* Set sidebar background to half opacity if transparent */
+   if (ozone->theme->sidebar_background[3] > 0)
+   {
+      gfx_display_set_alpha(ozone->theme->sidebar_top_gradient, 0.5f);
+      gfx_display_set_alpha(ozone->theme->sidebar_background, 0.5f);
+      gfx_display_set_alpha(ozone->theme->sidebar_bottom_gradient, 0.5f);
+   }
 }
 
 static uintptr_t ozone_entries_icon_get_texture(
@@ -3147,7 +3174,7 @@ static void ozone_draw_sidebar(
          - ozone->dimensions.sidebar_gradient_height * 2
          - ozone->dimensions.footer_height;
 
-   if (!libretro_running || (menu_framebuffer_opacity >= 1.0f))
+   if (sidebar_height)
    {
       gfx_display_draw_quad(
             p_disp,
@@ -5885,7 +5912,7 @@ static void ozone_draw_thumbnail_bar(
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    /* Background */
-   if (!libretro_running || (menu_framebuffer_opacity >= 1.0f))
+   if (thumbnail_height)
    {
       gfx_display_draw_quad(
             p_disp,
@@ -5945,14 +5972,8 @@ static void ozone_draw_thumbnail_bar(
       show_right_thumbnail            = true;
       show_left_thumbnail             = false;
 
-      if (ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE ||
-          ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING)
-      {
-         thumbnail_width      = sidebar_width;
-         thumbnail_height     = (video_height - ozone->dimensions.header_height - ozone->dimensions.footer_height) / 2;
-         thumbnail_x_position = x_position - ozone->dimensions.sidebar_entry_icon_padding;
-      }
-      else
+      if (!(ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE ||
+            ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING))
       {
          if (ozone->flags & OZONE_FLAG_IS_STATE_SLOT)
             show_right_thumbnail = false;
@@ -10686,8 +10707,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone_font_bind(&ozone->fonts.entries_sublabel);
    ozone_font_bind(&ozone->fonts.sidebar);
 
-   /* Background */
-   if (libretro_running && (menu_framebuffer_opacity < 1.0f))
+   /* Background (Always use running background due to overlays) */
+   if (menu_framebuffer_opacity < 1.0f)
    {
       if (menu_framebuffer_opacity != ozone_last_framebuffer_opacity)
          if (ozone->theme->background_libretro_running)
