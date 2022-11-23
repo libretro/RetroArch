@@ -158,8 +158,6 @@ extern ui_msg_window_t ui_msg_window_win32;
 
 uint8_t ui_companion_get_flags(void);
 
-void ui_companion_set_foreground(unsigned enable);
-
 void ui_companion_event_command(enum event_command action);
 
 void ui_companion_driver_notify_refresh(void);

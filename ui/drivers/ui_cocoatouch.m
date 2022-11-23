@@ -56,9 +56,8 @@ static void apple_rarch_exited(void);
 
 static void rarch_enable_ui(void)
 {
-   bool boolean = true;
-
-   ui_companion_set_foreground(true);
+   bool boolean                 = true;
+   uico_state_get_ptr()->flags |= UICO_ST_FLAG_IS_ON_FOREGROUND;
 
    retroarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
    retroarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
@@ -67,9 +66,8 @@ static void rarch_enable_ui(void)
 
 static void rarch_disable_ui(void)
 {
-   bool boolean = false;
-
-   ui_companion_set_foreground(false);
+   bool boolean                 = false;
+   uico_state_get_ptr()->flags &= ~UICO_ST_FLAG_IS_ON_FOREGROUND;
 
    retroarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
    retroarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);

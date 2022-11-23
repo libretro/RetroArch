@@ -67,18 +67,6 @@ uico_driver_state_t *uico_state_get_ptr(void)
    return &uico_driver_st;
 }
 
-void ui_companion_set_foreground(unsigned enable)
-{
-   uico_driver_state_t *uico_st    = &uico_driver_st;
-   if (uico_st)
-   {
-      if (enable)
-         uico_st->flags           |=  UICO_ST_FLAG_IS_ON_FOREGROUND;
-      else
-         uico_st->flags           &= ~UICO_ST_FLAG_IS_ON_FOREGROUND;
-   }
-}
-
 uint8_t ui_companion_get_flags(void)
 {
    uico_driver_state_t *uico_st    = &uico_driver_st;
