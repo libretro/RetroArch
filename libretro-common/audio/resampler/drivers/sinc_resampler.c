@@ -640,7 +640,7 @@ static void resampler_sinc_process_c_kaiser(void *re_, struct resampler_data *da
                float delta              = (float)
                   (resamp->time & resamp->subphase_mask) * resamp->subphase_mod;
 
-               for (i = 0; i < taps; i++)
+               for (i = 0; i < (int)taps; i++)
                {
                   float sinc_val        = phase_table[i] + delta_table[i] * delta;
 

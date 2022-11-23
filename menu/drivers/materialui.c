@@ -2908,7 +2908,7 @@ static void materialui_compute_entries_box_playlist_list(
     * usable width by thumbnail width */
    else
    {
-      int thumbnail_margin = 0;
+      int thumbnail_margin   = 0;
 
       /* Account for additional padding in portrait mode */
       if (mui->flags & MUI_FLAG_IS_PORTRAIT)
@@ -2918,13 +2918,13 @@ static void materialui_compute_entries_box_playlist_list(
       }
       /* Account for additional padding in landscape mode */
       else
-         thumbnail_margin = (int)mui->margin;
+         thumbnail_margin    = (int)mui->margin;
 
-      usable_width -= mui->thumbnail_width_max + thumbnail_margin;
+      usable_width          -= mui->thumbnail_width_max + thumbnail_margin;
 
       /* Account for second thumbnail, if enabled */
       if (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
-         usable_width -= mui->thumbnail_width_max + thumbnail_margin;
+         usable_width       -= mui->thumbnail_width_max + thumbnail_margin;
    }
 
    for (i = 0; i < entries_end; i++)
@@ -7432,18 +7432,14 @@ static void materialui_set_landscape_optimisations_enable(
 
       if (landscape_margin > 1.0f)
       {
-         float entry_margin = 0.0f;
-         float border_width = 0.0f;
-
          /* When landscape optimisations are active,
           * we increase the effective width of the list
           * view by up to 'mui->margin', and any remaining
           * 'landscape_margin' space is filled with a
           * (shadow gradient) border */
-         entry_margin = (landscape_margin >= (float)mui->margin) ?
-                     (float)mui->margin : landscape_margin;
-         border_width = landscape_margin - entry_margin;
-
+         float entry_margin = (landscape_margin >= (float)mui->margin)
+                     ? (float)mui->margin : landscape_margin;
+         float border_width = landscape_margin - entry_margin;
          /* Note: In all cases, we want to round down
           * when converting these to integers */
          mui->landscape_optimization.entry_margin = (unsigned)entry_margin;
@@ -7465,8 +7461,8 @@ static void materialui_status_bar_init(
    uintptr_t          alpha_tag = (uintptr_t)&mui->status_bar.alpha;
 
    /* Kill any existing fade in animation */
-   if (mui->status_bar.enabled ||
-       (mui->status_bar.alpha > 0.0f))
+   if (   (mui->status_bar.enabled)
+       || (mui->status_bar.alpha > 0.0f))
       gfx_animation_kill_by_tag(&alpha_tag);
 
    /* Reset base parameters */
@@ -7637,7 +7633,7 @@ static void materialui_set_thumbnail_dimensions(materialui_handle_t *mui)
                mui->thumbnail_height_max = (usable_height >> 1);
 
                /* Set thumbnail width based on max height */
-               mui->thumbnail_width_max =
+               mui->thumbnail_width_max  =
                      (unsigned)(((float)mui->thumbnail_height_max *
                            MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO) + 0.5f);
             }
@@ -7887,17 +7883,17 @@ static void materialui_init_font(
   if (font_data->font)
    {
       /* Calculate a more realistic ticker_limit */
-      int char_width =
+      int char_width                =
          font_driver_get_message_width(font_data->font, str_latin, 1, 1.0f);
 
       if (char_width > 0)
-         font_data->glyph_width = (unsigned)char_width;
+         font_data->glyph_width     = (unsigned)char_width;
 
-      font_data->wideglyph_width = 100;
+      font_data->wideglyph_width    = 100;
 
       if (wideglyph_str)
       {
-         int wideglyph_width =
+         int wideglyph_width        =
             font_driver_get_message_width(font_data->font, wideglyph_str, strlen(wideglyph_str), 1.0f);
 
          if (wideglyph_width > 0 && char_width > 0) 
@@ -7938,7 +7934,7 @@ static void materialui_layout(
    list_font_size            = mui->dip_base_unit_size / 9;
    hint_font_size            = mui->dip_base_unit_size / 11;
 
-   mui->header_shadow_height = mui->dip_base_unit_size / 36;
+   mui->header_shadow_height           = mui->dip_base_unit_size / 36;
    mui->selection_marker_shadow_height = mui->dip_base_unit_size / 30;
 
    mui->margin               = mui->dip_base_unit_size / 9;
@@ -7947,8 +7943,8 @@ static void materialui_layout(
    mui->sys_bar_margin       = mui->dip_base_unit_size / 12;
    mui->sys_bar_icon_size    = mui->dip_base_unit_size / 7;
 
-   mui->entry_divider_width  = (mui->last_scale_factor > 1.0f) ?
-         (unsigned)(mui->last_scale_factor + 0.5f) : 1;
+   mui->entry_divider_width  = (mui->last_scale_factor > 1.0f)
+         ? (unsigned)(mui->last_scale_factor + 0.5f) : 1;
 
    /* Additional vertical spacing between label and
     * sublabel text */
@@ -8018,9 +8014,9 @@ static void materialui_init_nav_bar(materialui_handle_t *mui)
    int i;
 
    /* Back tab */
-   mui->nav_bar.back_tab.type          = MUI_NAV_BAR_ACTION_TAB_BACK;
-   mui->nav_bar.back_tab.texture_index = MUI_TEXTURE_TAB_BACK;
-   mui->nav_bar.back_tab.enabled       = false;
+   mui->nav_bar.back_tab.type            = MUI_NAV_BAR_ACTION_TAB_BACK;
+   mui->nav_bar.back_tab.texture_index   = MUI_TEXTURE_TAB_BACK;
+   mui->nav_bar.back_tab.enabled         = false;
 
    /* Resume tab */
    mui->nav_bar.resume_tab.type          = MUI_NAV_BAR_ACTION_TAB_RESUME;
@@ -8609,9 +8605,9 @@ static void materialui_populate_entries(
     * pressing an entry) */
    if (string_is_equal(label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)))
-      mui->flags |=  MUI_FLAG_IS_CORE_UPDATER_LIST;
+      mui->flags        |=   MUI_FLAG_IS_CORE_UPDATER_LIST;
    else
-      mui->flags &= ~MUI_FLAG_IS_CORE_UPDATER_LIST;
+      mui->flags        &= ~(MUI_FLAG_IS_CORE_UPDATER_LIST);
 
    /* Check whether we are currently viewing a playlist,
     * file-browser-type list or dropdown list
@@ -8684,9 +8680,9 @@ msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD
       file_list_t *list = menu_entries_get_selection_buf_ptr(0);
       size_t list_size  = menu_entries_get_size();
 
-      if (list &&
-          (list_size > 0) &&
-          (list->list[0].type == FILE_TYPE_RPL_ENTRY))
+      if (   (list)
+          && (list_size > 0)
+          && (list->list[0].type == FILE_TYPE_RPL_ENTRY))
          mui->playlist = playlist_get_cached();
    }
 
@@ -9064,8 +9060,8 @@ static void materialui_switch_list_view(materialui_handle_t *mui, settings_t *se
     * menu level change - or destroy context, etc.
     * - but it's cleanest to do it here) */
    if (     (mui->list_view_type == MUI_LIST_VIEW_DEFAULT)
-       ||   (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST)
-       ||  ((secondary_thumbnail_enabled_prev)
+        ||  (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST)
+        || ((secondary_thumbnail_enabled_prev)
         && (!(mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED))))
       materialui_reset_thumbnails();
 
@@ -9319,8 +9315,8 @@ static enum menu_action materialui_parse_menu_entry_action(
           *   user instigates a cancel action from any top
           *   level menu other than main *if* the navigation
           *   bar is hidden */
-         if ((mui->nav_bar.location == MUI_NAV_BAR_LOCATION_HIDDEN) &&
-             (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1))
+         if (   (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_HIDDEN)
+             && (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1))
          {
             size_t i;
             size_t main_menu_tab_index                   = 0;
@@ -9749,8 +9745,8 @@ static int materialui_pointer_down(void *userdata,
 
       /* Check whether pointer X position is within
        * scrollbar 'grab box' */
-      if (((int)x < mui->scrollbar.x - drag_margin_horz) ||
-          ((int)x > mui->scrollbar.x + (int)mui->scrollbar.width))
+      if (   ((int)x < mui->scrollbar.x - drag_margin_horz)
+          || ((int)x > mui->scrollbar.x + (int)mui->scrollbar.width))
          return 0;
 
       /* Determine vertical height of scrollbar
@@ -9763,8 +9759,8 @@ static int materialui_pointer_down(void *userdata,
 
       /* Check whether pointer Y position is within
        * scrollbar 'grab box' */
-      if (((int)y < mui->scrollbar.y - drag_margin_vert) ||
-          ((int)y > mui->scrollbar.y + (int)mui->scrollbar.height + drag_margin_vert))
+      if (   ((int)y < mui->scrollbar.y - drag_margin_vert)
+          || ((int)y > mui->scrollbar.y + (int)mui->scrollbar.height + drag_margin_vert))
          return 0;
 
       /* User has 'selected' scrollbar */
@@ -9796,10 +9792,10 @@ static int materialui_pointer_up_swipe_horz_plain_list(
       return materialui_menu_entry_action(
             mui, entry, selection,
             scroll_up ? MENU_ACTION_SCROLL_UP : MENU_ACTION_SCROLL_DOWN);
+
    /* A swipe in the bottom half of the screen scrolls
     * by 10% of the list size or one 'page', whichever
     * is largest */
-   else
    {
       float content_height_fraction = mui->content_height * 0.1f;
       float display_height          = (int)height - (int)header_height -
@@ -9820,12 +9816,10 @@ static int materialui_pointer_up_swipe_horz_default(
       materialui_handle_t *mui, menu_entry_t *entry,
       unsigned ptr, size_t selection, size_t entries_end, enum menu_action action)
 {
-   int ret = 0;
-
    if ((ptr < entries_end) && (ptr == selection))
    {
       size_t new_selection = menu_navigation_get_selection();
-      ret                  = materialui_menu_entry_action(
+      int ret              = materialui_menu_entry_action(
             mui, entry, selection, action);
 
       /* If we are changing a settings value, want to scroll
@@ -9840,11 +9834,11 @@ static int materialui_pointer_up_swipe_horz_default(
        * will always have a blank value component */
       if (selection == new_selection)
       {
+         menu_entry_t last_entry;
          const char *entry_value                           = NULL;
          unsigned entry_type                               = 0;
          enum msg_file_type entry_file_type                = FILE_TYPE_NONE;
          enum materialui_entry_value_type entry_value_type = MUI_ENTRY_VALUE_NONE;
-         menu_entry_t last_entry;
 
          /* Get entry */
          MENU_ENTRY_INITIALIZE(last_entry);
@@ -9873,9 +9867,11 @@ static int materialui_pointer_up_swipe_horz_default(
                   mui->pointer_start_scroll_y,
                   MUI_ANIM_DURATION_SCROLL_RESET);
       }
+
+      return ret;
    }
 
-   return ret;
+   return 0;
 }
 
 static int materialui_pointer_up_nav_bar(
@@ -10055,12 +10051,10 @@ static int materialui_pointer_up(void *userdata,
 
                /* Get node (entry) associated with current
                 * pointer item */
-               list = menu_entries_get_selection_buf_ptr(0);
-               if (!list)
+               if (!(list = menu_entries_get_selection_buf_ptr(0)))
                   break;
 
-               node = (materialui_node_t*)list->list[ptr].userdata;
-               if (!node)
+               if (!(node = (materialui_node_t*)list->list[ptr].userdata))
                   break;
 
                /* Get pointer item x/y position */
@@ -10095,20 +10089,18 @@ static int materialui_pointer_up(void *userdata,
                    *   on the correct target entry */
                   return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_SELECT);
                }
-               else
-               {
-                  /* A 'short' press is used only to activate (highlight)
-                   * an item - it does not invoke a MENU_ACTION_SELECT
-                   * action (this is intended for use in activating a
-                   * settings-type entry, prior to swiping)
-                   * Note: If everything is working correctly, the
-                   * ptr item should already by selected at this stage
-                   * - but menu_navigation_set_selection() just sets a
-                   * variable, so there's no real point in performing
-                   * a (selection != ptr) check here */
-                  menu_navigation_set_selection(ptr);
-                  menu_input_set_pointer_y_accel(0.0f);
-               }
+
+               /* A 'short' press is used only to activate (highlight)
+                * an item - it does not invoke a MENU_ACTION_SELECT
+                * action (this is intended for use in activating a
+                * settings-type entry, prior to swiping)
+                * Note: If everything is working correctly, the
+                * ptr item should already by selected at this stage
+                * - but menu_navigation_set_selection() just sets a
+                * variable, so there's no real point in performing
+                * a (selection != ptr) check here */
+               menu_navigation_set_selection(ptr);
+               menu_input_set_pointer_y_accel(0.0f);
             }
          }
          break;
@@ -10121,8 +10113,7 @@ static int materialui_pointer_up(void *userdata,
              * action */
             if (mui->flags & MUI_FLAG_IS_CORE_UPDATER_LIST)
                return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_INFO);
-            else
-               return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_START);
+            return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_START);
          }
          break;
       case MENU_INPUT_GESTURE_SWIPE_LEFT:
@@ -10912,20 +10903,18 @@ static void materialui_list_clear(file_list_t *list)
 static void materialui_set_thumbnail_system(void *userdata, char *s, size_t len)
 {
    materialui_handle_t *mui = (materialui_handle_t*)userdata;
-   if (!mui)
-      return;
-   gfx_thumbnail_set_system(
-         mui->thumbnail_path_data, s, playlist_get_cached());
+   if (mui)
+      gfx_thumbnail_set_system(
+            mui->thumbnail_path_data, s, playlist_get_cached());
 }
 
 static void materialui_get_thumbnail_system(void *userdata, char *s, size_t len)
 {
    materialui_handle_t *mui = (materialui_handle_t*)userdata;
    const char *system       = NULL;
-   if (!mui)
-      return;
-   if (gfx_thumbnail_get_system(mui->thumbnail_path_data, &system))
-      strlcpy(s, system, len);
+   if (mui)
+      if (gfx_thumbnail_get_system(mui->thumbnail_path_data, &system))
+         strlcpy(s, system, len);
 }
 
 static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
@@ -10939,8 +10928,8 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
 
    /* Only refresh thumbnails if we are currently viewing
     * a playlist with thumbnails enabled */
-   if ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT) ||
-       (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST))
+   if (   (mui->list_view_type == MUI_LIST_VIEW_DEFAULT) 
+       || (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST))
       return;
 
    /* Only refresh thumbnails if:
@@ -10961,10 +10950,7 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
       if (!list)
          return;
 
-      node                    = (materialui_node_t*)
-         list->list[(size_t)i].userdata;
-
-      if (!node)
+      if (!(node = (materialui_node_t*)list->list[(size_t)i].userdata))
          return;
 
       /* Reset existing thumbnails */
