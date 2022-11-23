@@ -2457,12 +2457,6 @@ const struct retro_hw_render_context_negotiation_interface *
    return video_st->hw_render_context_negotiation;
 }
 
-void video_driver_set_video_cache_context_ack(void)
-{
-   video_driver_state_t *video_st = &video_driver_st;
-   video_st->flags               |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
-}
-
 bool video_driver_get_viewport_info(struct video_viewport *viewport)
 {
    video_driver_state_t *video_st  = &video_driver_st;
@@ -3135,16 +3129,17 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
    if (!flags)
       return false;
 
-   if (video_st->current_video_context.set_flags)
+   if (!video_st->current_video_context.set_flags)
    {
-      video_st->current_video_context.set_flags(
-            video_st->context_data, flags->flags);
-      return true;
+      video_st->deferred_flag_data.flags  = flags->flags;
+      video_st->flags |= VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS;
+      return false;
    }
 
-   video_st->deferred_flag_data.flags  = flags->flags;
-   video_st->flags |= VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS;
-   return false;
+   video_st->current_video_context.set_flags(
+		   video_st->context_data, flags->flags);
+   return true;
+
 }
 
 enum gfx_ctx_api video_context_driver_get_api(void)
@@ -4181,12 +4176,12 @@ void video_driver_reinit(int flags)
    struct retro_hw_render_callback *hwr    =
       VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
    if (hwr->cache_context != false)
-	   video_st->flags    |=  VIDEO_FLAG_CACHE_CONTEXT;
+	   video_st->flags                     |=  VIDEO_FLAG_CACHE_CONTEXT;
    else
-	   video_st->flags    &= ~VIDEO_FLAG_CACHE_CONTEXT;
-   video_st->flags            &= ~VIDEO_FLAG_CACHE_CONTEXT_ACK;
+	   video_st->flags                     &= ~VIDEO_FLAG_CACHE_CONTEXT;
+   video_st->flags                        &= ~VIDEO_FLAG_CACHE_CONTEXT_ACK;
    video_driver_reinit_context(settings, flags);
-   video_st->flags            &= ~VIDEO_FLAG_CACHE_CONTEXT;
+   video_st->flags                        &= ~VIDEO_FLAG_CACHE_CONTEXT;
 }
 
 #define FRAME_DELAY_AUTO_DEBUG 0
@@ -4285,17 +4280,17 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
          mode = 3;
       /* Boost med/max spikes */
       else if (
-               frame_time_count_pos >= frame_time_frames_half
+               (  frame_time_count_pos >= frame_time_frames_half)
             && (  frame_time_count_max > 0
                || frame_time_count_med > 1)
-            && frame_time_count_max == frame_time_count_med
-            && frame_time_delta < frame_time_target
+            && (  frame_time_count_max == frame_time_count_med)
+            && (  frame_time_delta < frame_time_target)
          )
          mode = 4;
       /* Ignore */
       else if (
-               frame_time_delta > frame_time_target
-            && frame_time_count_med == 0
+               (frame_time_delta > frame_time_target)
+            && (frame_time_count_med == 0)
          )
          mode = -1;
 

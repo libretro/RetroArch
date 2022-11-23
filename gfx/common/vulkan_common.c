@@ -1756,7 +1756,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          vk->context.device = cached_device_vk;
          cached_device_vk   = NULL;
 
-         video_driver_set_video_cache_context_ack();
+         video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
          RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
       }
       else if (vkCreateDevice(vk->context.gpu, &device_info,
