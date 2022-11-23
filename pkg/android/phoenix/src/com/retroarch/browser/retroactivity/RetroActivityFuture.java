@@ -93,7 +93,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     if (!coresFolder.exists())
       coresFolder.mkdirs();
 
-    if (!providedCoreFile.exists())
+    if (!providedCoreFile.exists() || providedCoreFile.isDirectory())
         return;
 
     File destination = new File(coresFolder, providedCoreFile.getName());
