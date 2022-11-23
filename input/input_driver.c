@@ -465,9 +465,9 @@ bool input_driver_set_sensor(
    /* If sensors are disabled, inhibit any enable
     * actions (but always allow disable actions) */
    if (!sensors_enable &&
-       ((action == RETRO_SENSOR_ACCELEROMETER_ENABLE) ||
-        (action == RETRO_SENSOR_GYROSCOPE_ENABLE) ||
-        (action == RETRO_SENSOR_ILLUMINANCE_ENABLE)))
+       (   (action == RETRO_SENSOR_ACCELEROMETER_ENABLE)
+        || (action == RETRO_SENSOR_GYROSCOPE_ENABLE)
+        || (action == RETRO_SENSOR_ILLUMINANCE_ENABLE)))
       return false;
    if (   (current_driver = input_driver_st.current_driver)
        &&  current_driver->set_sensor_state)
@@ -522,7 +522,6 @@ const input_device_driver_t *input_joypad_init_driver(
 
    return input_joypad_init_first(data); /* fall back to first available driver */
 }
-
 
 bool input_driver_button_combo(
       unsigned mode,
@@ -662,7 +661,7 @@ bool input_driver_button_combo(
    return false;
 }
 
-int16_t input_state_wrap(
+static int16_t input_state_wrap(
       input_driver_t *current_input,
       void *data,
       const input_device_driver_t *joypad,
@@ -750,7 +749,7 @@ int16_t input_state_wrap(
    return ret;
 }
 
-int16_t input_joypad_axis(
+static int16_t input_joypad_axis(
       float input_analog_deadzone,
       float input_analog_sensitivity,
       const input_device_driver_t *drv,
@@ -791,7 +790,26 @@ int16_t input_joypad_axis(
    return val;
 }
 
-int16_t input_joypad_analog_button(
+/**
+ * input_joypad_analog_button:
+ * @drv                     : Input device driver handle.
+ * @port                    : User number.
+ * @idx                     : Analog key index.
+ *                            E.g.:
+ *                            - RETRO_DEVICE_INDEX_ANALOG_LEFT
+ *                            - RETRO_DEVICE_INDEX_ANALOG_RIGHT
+ * @ident                   : Analog key identifier.
+ *                            E.g.:
+ *                            - RETRO_DEVICE_ID_ANALOG_X
+ *                            - RETRO_DEVICE_ID_ANALOG_Y
+ * @binds                   : Binds of user.
+ *
+ * Gets analog value of analog key identifiers @idx and @ident
+ * from user with number @port with provided keybinds (@binds).
+ *
+ * Returns: analog value on success, otherwise 0.
+ **/
+static int16_t input_joypad_analog_button(
       float input_analog_deadzone,
       float input_analog_sensitivity,
       const input_device_driver_t *drv,
@@ -835,7 +853,7 @@ int16_t input_joypad_analog_button(
    return res;
 }
 
-int16_t input_joypad_analog_axis(
+static int16_t input_joypad_analog_axis(
       unsigned input_analog_dpad_mode,
       float input_analog_deadzone,
       float input_analog_sensitivity,
@@ -3386,7 +3404,16 @@ void input_driver_deinit_command(input_driver_state_t *input_st)
 }
 #endif
 
-bool input_keyboard_line_event(
+/**
+ * input_keyboard_line_event:
+ * @state                    : Input keyboard line handle.
+ * @character                : Inputted character.
+ *
+ * Called on every keyboard character event.
+ *
+ * Returns: true (1) on success, otherwise false (0).
+ **/
+static bool input_keyboard_line_event(
       input_driver_state_t *input_st,
       input_keyboard_line_t *state, uint32_t character)
 {
@@ -3713,7 +3740,7 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
           port, 0, 0);
 }
 
-bool input_keys_pressed_other_sources(
+static bool input_keys_pressed_other_sources(
       input_driver_state_t *input_st,
       unsigned i,
       input_bits_t* p_new_state)
@@ -3743,10 +3770,15 @@ bool input_keys_pressed_other_sources(
    return false;
 }
 
-void input_keys_pressed(
+/**
+ * input_keys_pressed:
+ *
+ * Grab an input sample for this frame.
+ */
+static void input_keys_pressed(
       unsigned port,
       bool is_menu,
-      int input_hotkey_block_delay,
+      unsigned input_hotkey_block_delay,
       input_bits_t *p_new_state,
       const retro_keybind_set *binds,
       const struct retro_keybind *binds_norm,
@@ -3774,7 +3806,7 @@ void input_keys_pressed(
                port, RETRO_DEVICE_JOYPAD, 0,
                RARCH_ENABLE_HOTKEY))
       {
-         if (input_st->input_hotkey_block_counter < (int)input_hotkey_block_delay)
+         if (input_st->input_hotkey_block_counter < input_hotkey_block_delay)
             input_st->input_hotkey_block_counter++;
          else
             input_st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;
@@ -3829,8 +3861,8 @@ void input_keys_pressed(
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
          if (
-               (ret & (UINT64_C(1) <<  i)) ||
-               input_keys_pressed_other_sources(input_st,
+                  (ret & (UINT64_C(1) <<  i))
+               || input_keys_pressed_other_sources(input_st,
                   i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
@@ -3877,7 +3909,7 @@ void input_keys_pressed(
    }
 }
 
-int16_t input_state_device(
+static int16_t input_state_device(
       input_driver_state_t *input_st,
       settings_t *settings,
       input_mapper_t *handle,
@@ -4266,11 +4298,11 @@ void input_driver_poll(void)
     * when mapping analog stick to dpad input. */
    for (i = 0; i < max_users; i++)
    {
-      joypad_info[i].axis_threshold              = settings->floats.input_axis_threshold;
-      joypad_info[i].joy_idx                     = settings->uints.input_joypad_index[i];
-      joypad_info[i].auto_binds                  = input_autoconf_binds[joypad_info[i].joy_idx];
+      joypad_info[i].axis_threshold           = settings->floats.input_axis_threshold;
+      joypad_info[i].joy_idx                  = settings->uints.input_joypad_index[i];
+      joypad_info[i].auto_binds               = input_autoconf_binds[joypad_info[i].joy_idx];
 
-      input_st->turbo_btns.frame_enable[i]       = (*input_st->libretro_input_binds[i])[RARCH_TURBO_ENABLE].valid ?
+      input_st->turbo_btns.frame_enable[i]    = (*input_st->libretro_input_binds[i])[RARCH_TURBO_ENABLE].valid ?
          input_state_wrap(
                input_st->current_driver,
                input_st->current_data,
@@ -4296,16 +4328,16 @@ void input_driver_poll(void)
          case ANALOG_DPAD_LSTICK:
          case ANALOG_DPAD_RSTICK:
             {
-               unsigned mapped_port = settings->uints.input_remap_ports[0];
+               unsigned mapped_port      = settings->uints.input_remap_ports[0];
                if (input_st->analog_requested[mapped_port])
                   input_analog_dpad_mode = ANALOG_DPAD_NONE;
             }
             break;
          case ANALOG_DPAD_LSTICK_FORCED:
-            input_analog_dpad_mode = ANALOG_DPAD_LSTICK;
+            input_analog_dpad_mode       = ANALOG_DPAD_LSTICK;
             break;
          case ANALOG_DPAD_RSTICK_FORCED:
-            input_analog_dpad_mode = ANALOG_DPAD_RSTICK;
+            input_analog_dpad_mode       = ANALOG_DPAD_RSTICK;
             break;
          default:
             break;
@@ -4328,13 +4360,13 @@ void input_driver_poll(void)
    if (input_remap_binds_enable)
    {
 #ifdef HAVE_OVERLAY
-      input_overlay_t *overlay_pointer = (input_overlay_t*)input_st->overlay_ptr;
-      bool poll_overlay                = (overlay_pointer &&
+      input_overlay_t *overlay_pointer   = (input_overlay_t*)input_st->overlay_ptr;
+      bool poll_overlay                  = (overlay_pointer &&
             (overlay_pointer->flags & INPUT_OVERLAY_ALIVE));
 #endif
-      input_mapper_t *handle           = &input_st->mapper;
-      float input_analog_deadzone      = settings->floats.input_analog_deadzone;
-      float input_analog_sensitivity   = settings->floats.input_analog_sensitivity;
+      input_mapper_t *handle             = &input_st->mapper;
+      float input_analog_deadzone        = settings->floats.input_analog_deadzone;
+      float input_analog_sensitivity     = settings->floats.input_analog_sensitivity;
 
       for (i = 0; i < max_users; i++)
       {
@@ -4353,10 +4385,10 @@ void input_driver_poll(void)
                   input_analog_dpad_mode = ANALOG_DPAD_NONE;
                break;
             case ANALOG_DPAD_LSTICK_FORCED:
-               input_analog_dpad_mode = ANALOG_DPAD_LSTICK;
+               input_analog_dpad_mode    = ANALOG_DPAD_LSTICK;
                break;
             case ANALOG_DPAD_RSTICK_FORCED:
-               input_analog_dpad_mode = ANALOG_DPAD_RSTICK;
+               input_analog_dpad_mode    = ANALOG_DPAD_RSTICK;
                break;
             default:
                break;
@@ -5555,7 +5587,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 {
    int port;
    rarch_joypad_info_t joypad_info;
-   int block_delay                     = settings->uints.input_hotkey_block_delay;
+   unsigned block_delay                = settings->uints.input_hotkey_block_delay;
    const input_device_driver_t *joypad = input_st->primary_joypad;
 #ifdef HAVE_MFI
    const input_device_driver_t
