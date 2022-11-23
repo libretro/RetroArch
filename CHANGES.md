@@ -20,6 +20,12 @@
 - MENU/DRIVERS: Menu driver first, Audio Resampler removed because it is enough to exist under audio settings
 - MENU/INPUT: Moved "Confirm Quit" to Input menu
 - MENU/INPUT/HOTKEYS: Input hotkey menu completely overhauled to keep related entries together, and also adjusted some labels and sublabels
+- MENU/OVERLAY: Fix overlays behind menu without core running. "Show Overlay Behind Menu" is currently broken with Ozone and XMB (with any other color theme than Plain) when running without a core.
+- MENU/OZONE: Allowed drawing sidebar and thumbnail bar background color also when core is running
+- MENU/OZONE: Stopped using different padding and position for savestate thumbnails vs imageviewer
+- MENU/OZONE: Removed gradient background effect when core is running, because some themes already have gradient background, which creates ugly rough steps
+- MENU/OZONE: Fixed "Gray Light" theme from using the same background as "Gray Dark", which makes selection cursor near impossible to see
+- MENU/OZONE: Some whitespace corrections
 - SRAM: Don't init SRAM saving without content (gets rid of the redundant logging)
 
 # 1.13.0
