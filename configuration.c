@@ -5333,7 +5333,7 @@ bool input_remapping_load_file(void *data, const char *path)
    /* Whenever a remap file is loaded, subsequent
     * changes to global remap-related parameters
     * must be reset at the next core deinitialisation */
-   input_remapping_enable_global_config_restore();
+   input_state_get_ptr()->flags   |=  INP_FLAG_REMAPPING_CACHE_ACTIVE;
 
    return true;
 }

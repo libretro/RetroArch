@@ -365,58 +365,9 @@ void input_overlay_auto_rotate_(
       bool input_overlay_enable,
       input_overlay_t *ol);
 
-void input_overlay_poll(
-      input_overlay_t *ol,
-      input_overlay_state_t *out,
-      unsigned ptr_idx, int16_t norm_x, int16_t norm_y, float touch_scale);
-
-/**
- * input_overlay_poll_clear:
- * @ol                    : overlay handle
- *
- * Call when there is nothing to poll. Allows overlay to
- * clear certain state.
- **/
-void input_overlay_poll_clear(
-      enum overlay_visibility *visibility,
-      input_overlay_t *ol, float opacity);
-
-/**
- * input_overlay_post_poll:
- *
- * Called after all the input_overlay_poll() calls to
- * update the range modifiers for pressed/unpressed regions
- * and alpha mods.
- **/
-void input_overlay_post_poll(
-      enum overlay_visibility *visibility,
-      input_overlay_t *ol,
-      bool show_input, float opacity);
-
 void input_overlay_load_active(
       enum overlay_visibility *visibility,
       input_overlay_t *ol, float opacity);
-
-void input_overlay_parse_layout(
-      const struct overlay *ol,
-      const overlay_layout_desc_t *layout_desc,
-      float display_aspect_ratio,
-      overlay_layout_t *overlay_layout);
-
-void input_overlay_set_vertex_geom(input_overlay_t *ol);
-
-void input_overlay_free_overlays(input_overlay_t *ol);
-
-/**
- * input_overlay_scale:
- * @ol                    : Overlay handle.
- * @layout                : Scale + offset factors.
- *
- * Scales the overlay and all its associated descriptors
- * and applies any aspect ratio/offset factors.
- **/
-void input_overlay_scale(struct overlay *ol,
-      const overlay_layout_t *layout);
 
 /**
  * input_overlay_set_scale_factor:
@@ -443,24 +394,12 @@ void input_overlay_set_alpha_mod(
       enum overlay_visibility *visibility,
       input_overlay_t *ol, float mod);
 
-enum overlay_visibility input_overlay_get_visibility(
-      enum overlay_visibility *visibility,
-      int overlay_idx);
-
 /**
  * input_overlay_set_eightway_diagonal_sensitivity:
  *
  * Gets the slope limits defining each eightway type's diagonal zones.
  */
 void input_overlay_set_eightway_diagonal_sensitivity(void);
-
-/**
- * input_overlay_free:
- * @ol                    : Overlay handle.
- *
- * Frees overlay handle.
- **/
-void input_overlay_free(input_overlay_t *ol);
 
 RETRO_END_DECLS
 

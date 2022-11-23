@@ -942,24 +942,7 @@ void input_driver_deinit_command(input_driver_state_t *input_st);
 #endif
 
 #ifdef HAVE_OVERLAY
-/*
- * input_poll_overlay:
- *
- * Poll pressed buttons/keys on currently active overlay.
- **/
-void input_poll_overlay(
-      bool keyboard_mapping_blocked,
-      settings_t *settings,
-      void *ol_data,
-      enum overlay_visibility *overlay_visibility,
-      float opacity,
-      unsigned analog_dpad_mode,
-      float axis_threshold);
-
 void input_overlay_deinit(void);
-
-void input_overlay_set_visibility(int overlay_idx,
-      enum overlay_visibility vis);
 
 void input_overlay_init(void);
 #endif

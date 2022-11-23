@@ -8472,7 +8472,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
        * core is actually running; register that any
        * changes to global remap-related parameters
        * should be reset once core is deinitialised */
-      input_remapping_enable_global_config_restore();
+      input_state_get_ptr()->flags   |=  INP_FLAG_REMAPPING_CACHE_ACTIVE;
       runloop_st->current_core.flags |=  RETRO_CORE_FLAG_GAME_LOADED;
       return true;
    }

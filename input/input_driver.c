@@ -1411,7 +1411,7 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
             (fabs(x - desc->x_hitbox) <= desc->range_x_mod) &&
             (fabs(y - desc->y_hitbox) <= desc->range_y_mod);
       case OVERLAY_HITBOX_NONE:
-         return false;
+	 break;
    }
    return false;
 }
@@ -1428,7 +1428,7 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
  * @norm_x and @norm_y are the result of
  * input_translate_coord_viewport().
  **/
-void input_overlay_poll(
+static void input_overlay_poll(
       input_overlay_t *ol,
       input_overlay_state_t *out,
       unsigned ptr_idx, int16_t norm_x, int16_t norm_y, float touch_scale)
@@ -1556,7 +1556,14 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
    desc->delta_y = 0.0f;
 }
 
-void input_overlay_post_poll(
+/**
+ * input_overlay_post_poll:
+ *
+ * Called after all the input_overlay_poll() calls to
+ * update the range modifiers for pressed/unpressed regions
+ * and alpha mods.
+ **/
+static void input_overlay_post_poll(
       enum overlay_visibility *visibility,
       input_overlay_t *ol,
       bool show_input, float opacity)
@@ -1614,43 +1621,14 @@ static void input_overlay_desc_init_hitbox(struct overlay_desc *desc)
 }
 
 /**
- * input_overlay_set_scale_factor:
+ * input_overlay_scale:
  * @ol                    : Overlay handle.
- * @layout_desc           : Scale + offset factors.
+ * @layout                : Scale + offset factors.
  *
- * Scales the overlay and applies any aspect ratio/
- * offset factors.
+ * Scales the overlay and all its associated descriptors
+ * and applies any aspect ratio/offset factors.
  **/
-void input_overlay_set_scale_factor(
-      input_overlay_t *ol, const overlay_layout_desc_t *layout_desc,
-      unsigned video_driver_width,
-      unsigned video_driver_height
-)
-{
-   size_t i;
-   float display_aspect_ratio = 0.0f;
-
-   if (!ol || !layout_desc)
-      return;
-
-   if (video_driver_height > 0)
-      display_aspect_ratio = (float)video_driver_width /
-         (float)video_driver_height;
-
-   for (i = 0; i < ol->size; i++)
-   {
-      struct overlay *current_overlay = &ol->overlays[i];
-      overlay_layout_t overlay_layout;
-
-      input_overlay_parse_layout(current_overlay,
-            layout_desc, display_aspect_ratio, &overlay_layout);
-      input_overlay_scale(current_overlay, &overlay_layout);
-   }
-
-   input_overlay_set_vertex_geom(ol);
-}
-
-void input_overlay_scale(struct overlay *ol,
+static void input_overlay_scale(struct overlay *ol,
       const overlay_layout_t *layout)
 {
    size_t i;
@@ -1702,7 +1680,7 @@ void input_overlay_scale(struct overlay *ol,
    }
 }
 
-void input_overlay_parse_layout(
+static void input_overlay_parse_layout(
       const struct overlay *ol,
       const overlay_layout_desc_t *layout_desc,
       float display_aspect_ratio,
@@ -1722,15 +1700,14 @@ void input_overlay_parse_layout(
       /* Sanity check - if scaling is blocked,
        * or aspect ratios are invalid, then we
        * can do nothing */
-      if ((ol->flags & OVERLAY_BLOCK_SCALE) ||
-          (ol->aspect_ratio <= 0.0f) ||
-          (display_aspect_ratio <= 0.0f))
+      if (   (ol->flags & OVERLAY_BLOCK_SCALE)
+          || (ol->aspect_ratio <= 0.0f)
+          || (display_aspect_ratio <= 0.0f))
          return;
 
       /* If display is wider than overlay,
        * reduce width */
-      if (display_aspect_ratio >
-            ol->aspect_ratio)
+      if (display_aspect_ratio > ol->aspect_ratio)
       {
          overlay_layout->x_scale = ol->aspect_ratio /
                display_aspect_ratio;
@@ -1777,9 +1754,8 @@ void input_overlay_parse_layout(
     * > Landscape display orientations */
    if (display_aspect_ratio > 1.0f)
    {
-      float scale         = layout_desc->scale_landscape;
-      float aspect_adjust = layout_desc->aspect_adjust_landscape;
-
+      float scale              = layout_desc->scale_landscape;
+      float aspect_adjust      = layout_desc->aspect_adjust_landscape;
       /* Note: Y offsets have their sign inverted,
        * since from a usability perspective positive
        * values should move the overlay upwards */
@@ -1827,7 +1803,7 @@ void input_overlay_parse_layout(
    }
 }
 
-void input_overlay_set_vertex_geom(input_overlay_t *ol)
+static void input_overlay_set_vertex_geom(input_overlay_t *ol)
 {
    size_t i;
 
@@ -1848,6 +1824,42 @@ void input_overlay_set_vertex_geom(input_overlay_t *ol)
    }
 }
 
+/**
+ * input_overlay_set_scale_factor:
+ * @ol                    : Overlay handle.
+ * @layout_desc           : Scale + offset factors.
+ *
+ * Scales the overlay and applies any aspect ratio/
+ * offset factors.
+ **/
+void input_overlay_set_scale_factor(
+      input_overlay_t *ol, const overlay_layout_desc_t *layout_desc,
+      unsigned video_driver_width,
+      unsigned video_driver_height
+)
+{
+   size_t i;
+   float display_aspect_ratio = 0.0f;
+
+   if (!ol || !layout_desc)
+      return;
+
+   if (video_driver_height > 0)
+      display_aspect_ratio = (float)video_driver_width /
+         (float)video_driver_height;
+
+   for (i = 0; i < ol->size; i++)
+   {
+      struct overlay *current_overlay = &ol->overlays[i];
+      overlay_layout_t overlay_layout;
+
+      input_overlay_parse_layout(current_overlay,
+            layout_desc, display_aspect_ratio, &overlay_layout);
+      input_overlay_scale(current_overlay, &overlay_layout);
+   }
+
+   input_overlay_set_vertex_geom(ol);
+}
 
 void input_overlay_load_active(
       enum overlay_visibility *visibility,
@@ -1865,7 +1877,14 @@ void input_overlay_load_active(
             (ol->active->flags & OVERLAY_FULL_SCREEN));
 }
 
-void input_overlay_poll_clear(
+/**
+ * input_overlay_poll_clear:
+ * @ol                    : overlay handle
+ *
+ * Call when there is nothing to poll. Allows overlay to
+ * clear certain state.
+ **/
+static void input_overlay_poll_clear(
       enum overlay_visibility *visibility,
       input_overlay_t *ol, float opacity)
 {
@@ -1887,6 +1906,17 @@ void input_overlay_poll_clear(
    }
 }
 
+static enum overlay_visibility input_overlay_get_visibility(
+      enum overlay_visibility *visibility,
+      int overlay_idx)
+{
+    if (!visibility)
+       return OVERLAY_VISIBILITY_DEFAULT;
+    if ((overlay_idx < 0) || (overlay_idx >= MAX_VISIBILITY))
+       return OVERLAY_VISIBILITY_DEFAULT;
+    return visibility[overlay_idx];
+}
+
 void input_overlay_set_alpha_mod(
       enum overlay_visibility *visibility,
       input_overlay_t *ol, float mod)
@@ -1906,18 +1936,7 @@ void input_overlay_set_alpha_mod(
    }
 }
 
-enum overlay_visibility input_overlay_get_visibility(
-      enum overlay_visibility *visibility,
-      int overlay_idx)
-{
-    if (!visibility)
-       return OVERLAY_VISIBILITY_DEFAULT;
-    if ((overlay_idx < 0) || (overlay_idx >= MAX_VISIBILITY))
-       return OVERLAY_VISIBILITY_DEFAULT;
-    return visibility[overlay_idx];
-}
-
-void input_overlay_free_overlays(input_overlay_t *ol)
+static void input_overlay_free_overlays(input_overlay_t *ol)
 {
    size_t i;
 
@@ -1955,7 +1974,13 @@ void input_overlay_free_overlay(struct overlay *overlay)
    image_texture_free(&overlay->image);
 }
 
-void input_overlay_free(input_overlay_t *ol)
+/**
+ * input_overlay_free:
+ * @ol                    : Overlay handle.
+ *
+ * Frees overlay handle.
+ **/
+static void input_overlay_free(input_overlay_t *ol)
 {
    if (!ol)
       return;
@@ -2036,7 +2061,12 @@ void input_overlay_auto_rotate_(
    }
 }
 
-void input_poll_overlay(
+/*
+ * input_poll_overlay:
+ *
+ * Poll pressed buttons/keys on currently active overlay.
+ **/
+static void input_poll_overlay(
       bool keyboard_mapping_blocked,
       settings_t *settings,
       void *ol_data,
@@ -5438,12 +5468,6 @@ void input_remapping_cache_global_config(void)
 
    input_st->flags |= INP_FLAG_OLD_ANALOG_DPAD_MODE_SET
                     | INP_FLAG_OLD_LIBRETRO_DEVICE_SET;
-}
-
-void input_remapping_enable_global_config_restore(void)
-{
-   input_driver_state_t *input_st   = &input_driver_st;
-   input_st->flags |= INP_FLAG_REMAPPING_CACHE_ACTIVE;
 }
 
 void input_remapping_restore_global_config(bool clear_cache)
