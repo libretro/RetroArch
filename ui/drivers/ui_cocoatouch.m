@@ -51,29 +51,6 @@ static id apple_platform;
 #endif
 static CFRunLoopObserverRef iterate_observer;
 
-/* Forward declaration */
-static void apple_rarch_exited(void);
-
-static void rarch_enable_ui(void)
-{
-   bool boolean                 = true;
-   uico_state_get_ptr()->flags |= UICO_ST_FLAG_IS_ON_FOREGROUND;
-
-   retroarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
-   retroarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
-   retroarch_menu_running();
-}
-
-static void rarch_disable_ui(void)
-{
-   bool boolean                 = false;
-   uico_state_get_ptr()->flags &= ~UICO_ST_FLAG_IS_ON_FOREGROUND;
-
-   retroarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
-   retroarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
-   retroarch_menu_running_finished(false);
-}
-
 static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd) { }
 
@@ -437,8 +414,7 @@ enum
    [self refreshSystemConfig];
    [self showGameView];
 
-   if (rarch_main(argc, argv, NULL))
-      apple_rarch_exited();
+   rarch_main(argc, argv, NULL);
 
    iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
          true, 0, rarch_draw_observer, 0);
@@ -507,19 +483,6 @@ enum
    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
          command_event(CMD_EVENT_AUDIO_START, NULL);
          });
-   rarch_disable_ui();
-}
-
-- (IBAction)showPauseMenu:(id)sender
-{
-   rarch_enable_ui();
-
-#if TARGET_OS_IOS
-   [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
-#endif
-
-   [[UIApplication sharedApplication] setIdleTimerDisabled:false];
-   [self.window setRootViewController:self];
 }
 
 - (void)refreshSystemConfig
@@ -552,11 +515,4 @@ int main(int argc, char *argv[])
    @autoreleasepool {
       return UIApplicationMain(argc, argv, NSStringFromClass([RApplication class]), NSStringFromClass([RetroArch_iOS class]));
    }
-}
-
-static void apple_rarch_exited(void)
-{
-   RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-   if (ap)
-      [ap showPauseMenu:ap];
 }
