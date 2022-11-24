@@ -7331,6 +7331,7 @@ static enum runloop_state_enum runloop_check_state(
          {
             input_st->flags                     |=  INP_FLAG_NONBLOCKING;
             runloop_st->flags                   |=  RUNLOOP_FLAG_FASTMOTION;
+            command_event(CMD_EVENT_SET_FRAME_LIMIT, NULL);
          }
 
          driver_set_nonblock_state();
