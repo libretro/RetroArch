@@ -36,6 +36,9 @@
 
 typedef struct
 {
+   void (*upscale_256_320x192_240)(
+         uint16_t *PICOSCALE_restrict di, uint16_t ds,
+         const uint16_t *PICOSCALE_restrict si, uint16_t ss);
    void (*upscale_256_320x224_240)(
          uint16_t *PICOSCALE_restrict di, uint16_t ds,
          const uint16_t *PICOSCALE_restrict si, uint16_t ss);
@@ -221,6 +224,36 @@ void picoscale_upscale_rgb_snn_256_320x224_240(uint16_t *PICOSCALE_restrict di, 
    memset(di + ds, 0, sizeof(uint16_t) * ds);
 }
 
+/* 256x192 -> 320x240, Fuse (ZX Spectrum) snn upscaler added by andymcca */
+void picoscale_upscale_rgb_snn_256_320x192_240(uint16_t *PICOSCALE_restrict di, uint16_t ds,
+      const uint16_t *PICOSCALE_restrict si, uint16_t ss)
+{
+   
+   uint16_t y, j;
+
+   for (y = 0; y < 192; y += 4)  // From 192 lines read 4 lines at a time, write 5 lines per loop, 5x48 = 240
+   {
+      // First two lines
+      PICOSCALE_H_UPSCALE_SNN_4_5(di, ds, si, ss, 256, PICOSCALE_F_NOP);
+      PICOSCALE_H_UPSCALE_SNN_4_5(di, ds, si, ss, 256, PICOSCALE_F_NOP);
+      // Blank line
+      di +=  ds;
+      // Next two lines
+      PICOSCALE_H_UPSCALE_SNN_4_5(di, ds, si, ss, 256, PICOSCALE_F_NOP);
+      PICOSCALE_H_UPSCALE_SNN_4_5(di, ds, si, ss, 256, PICOSCALE_F_NOP);
+      
+      /* mix lines 2-4 */
+
+      di -= ds*3;
+      PICOSCALE_V_MIX(&di[0], &di[-ds], &di[ds], 320, PICOSCALE_P_05, PICOSCALE_F_NOP);
+      PICOSCALE_V_MIX(&di[-ds], &di[-2*ds], &di[-ds], 320, PICOSCALE_P_05, PICOSCALE_F_NOP);
+      PICOSCALE_V_MIX(&di[ ds], &di[ ds], &di[ 2*ds], 320, PICOSCALE_P_05, PICOSCALE_F_NOP);
+      di += ds*3;
+    }
+
+}
+
+
 void picoscale_upscale_rgb_bl2_256_320x224_240(uint16_t *PICOSCALE_restrict di, uint16_t ds,
       const uint16_t *PICOSCALE_restrict si, uint16_t ss)
 {
@@ -328,6 +361,7 @@ static void picoscale_256x_320x240_initialize(struct filter_data *filt,
    char *filter_type = NULL;
 
    /* Assign default scaling functions */
+   filt->functions.upscale_256_320x192_240 = picoscale_upscale_rgb_snn_256_320x192_240;
    filt->functions.upscale_256_320x224_240 = picoscale_upscale_rgb_snn_256_320x224_240;
    filt->functions.upscale_256_320x___     = picoscale_upscale_rgb_snn_256_320x___;
 
@@ -384,7 +418,7 @@ static void picoscale_256x_320x240_generic_output(void *data,
       unsigned width, unsigned height)
 {
    if ((width == 256) &&
-       ((height == 224) || (height == 240) || (height == 239)))
+       ((height == 224) || (height == 240) || (height == 192) || (height == 239)))
    {
       *out_width  = 320;
       *out_height = 240;
@@ -424,6 +458,12 @@ static void picoscale_256x_320x240_work_cb_rgb565(void *data, void *thread_data)
          filt->functions.upscale_256_320x224_240(output, out_stride, input, in_stride);
          return;
       }
+      else if (height == 192)
+      {
+         filt->functions.upscale_256_320x192_240(output, out_stride, input, in_stride);
+         return;
+      }
+
       else if (height == 240)
       {
          filt->functions.upscale_256_320x___(output, out_stride, input, in_stride, 240);
