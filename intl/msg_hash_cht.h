@@ -22,7 +22,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   "歷史記錄"
+   "歷史"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
@@ -77,7 +77,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   "選擇要啟動的遊戲檔案，支援播放圖片、影片和音樂等多種檔案格式。"
+   "選擇要執行的遊戲檔案，支援播放圖片、影片和音樂等多種檔案格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -438,7 +438,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
-   "查看之前的搜尋記錄。"
+   "查看之前的搜尋結果。"
    )
 
 /* Main Menu > Information > Core Information */
@@ -485,7 +485,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   "所需圖像應用程式介面 (API)"
+   "圖形介面需求"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
@@ -513,23 +513,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   "缺少, 必需:"
+   "(缺) (必需):"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
-   "缺少, 可有可無:"
+   "(缺) (自選):"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   "現存, 必需:"
+   "(有) (必需):"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
-   "現存, 可有可無:"
+   "(有) (自選):"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "鎖定已安裝的核心"
+   "鎖定核心"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
@@ -624,7 +624,7 @@ MSG_HASH( /* FIXME Maybe add a description? */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
-   "電源"
+   "電源供應"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
@@ -882,7 +882,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
-   "類別"
+   "版本"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
@@ -918,7 +918,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
-   "玩法"
+   "遊戲玩法"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
@@ -934,7 +934,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   "設定"
+   "類別"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
@@ -954,7 +954,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
-   "產地"
+   "原產地"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
@@ -966,7 +966,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
-   "電玩通雜誌評分 (ファミ通)"
+   "電玩通(ファミ通)雜誌評分"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
@@ -1022,7 +1022,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   "支援震動回饋"
+   "支援震動"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
@@ -1037,7 +1037,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "重置為預設值"
+   "重置設定檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
@@ -1045,11 +1045,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   "儲存目前設定"
+   "儲存設定檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   "儲存為備份"
+   "備份設定檔"
    )
 
 /* Main Menu > Help */
@@ -1162,11 +1162,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   "系統記錄"
+   "系統日誌"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "變更系統記錄相關的設定。"
+   "變更系統日誌相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -1275,6 +1275,14 @@ MSG_HASH(
 
 /* Core option category placeholders for icons */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
+   "進階"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   "映射"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    "媒體"
    )
@@ -1297,6 +1305,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    "系統"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   "計時"
    )
 
 #ifdef HAVE_MIST
@@ -1876,7 +1888,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "整數縮放影像。顯示基本尺寸由系統登陸的大小和寬高比。設定「寬高比」為 <自訂> 時套用自訂的寬度和高度。"
+   "整數縮放影像。顯示基本尺寸由系統登錄的大小和寬高比。設定「寬高比」為 <自訂> 時套用自訂的寬度和高度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
@@ -2171,7 +2183,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-   "音效DSP插件，用於在音頻發送到驅動器之前先對其進行處理。"
+   "音頻數位訊號處理(DSP)，用於音頻發送到驅動程式之前處理音頻訊號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
@@ -3551,11 +3563,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-   "載入即時存檔時，不覆蓋記錄記憶體(SaveRAM)，可能會導致發生錯誤。僅限支援SAV格式的核心使用。"
+   "載入即時存檔時，不覆蓋存檔記憶體(SaveRAM)，可能會導致發生錯誤。僅限支援SAV格式的核心使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "記錄記憶體自動儲存間隔"
+   "存檔記憶體自動儲存間隔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -3643,62 +3655,62 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
-   "儲存執行記錄 (各別)"
+   "儲存執行日誌 (各別)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
-   "記錄每個項目的執行時間，儲存在列表資料夾中，依核心名稱建立資料夾。"
+   "儲存每個項目的執行時間，儲存在列表資料夾中，依核心名稱建立資料夾。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "儲存執行記錄 (共用)"
+   "儲存執行日誌 (共用)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "記錄每個項目的執行時間，儲存在列表資料夾中的共用資料夾。"
+   "儲存每個項目的執行時間，儲存在列表資料夾中的共用資料夾。"
    )
 
 /* Settings > Logging */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
-   "完整記錄"
+   "完整日誌"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
-   "開啟終端機顯示事件記錄。開啟「儲存為記錄檔」時，此選項變更為儲存到記錄檔。"
+   "開啟終端機顯示事件記錄。開啟「儲存為日誌檔」時，此選項變更為儲存到日誌檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
-   "前端記錄等級"
+   "前端日誌等級"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   "設定前端記錄等級。如果前端送出的記錄，低於設定將被忽略。"
+   "設定前端日誌事件等級。如果前端送出的事件等級，低於設定時將被忽略。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
-   "核心記錄等級"
+   "核心日誌等級"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
-   "設定核心記錄等級。如果核心送出的記錄，低於設定將被忽略。"
+   "設定核心日誌事件等級。如果核心送出的事件等級，低於設定時將被忽略。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
-   "儲存為記錄檔"
+   "儲存為日誌檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_TO_FILE,
-   "將系統事件記錄儲存到內部空間，結束應用程式時會覆蓋記錄檔。需要開啟「完整記錄」才會建立記錄檔。"
+   "將系統事件日誌儲存到內部空間，結束應用程式時會覆蓋日誌檔。需要開啟「完整日誌」才會建立日誌檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
-   "時間戳記錄檔"
+   "時間戳日誌檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
-   "開啟時「儲存為記錄檔」變更為時間戳記錄檔，依應用程式結束時間建立事件記錄檔。非必要時不推薦開啟。"
+   "開啟時「儲存為日誌檔」變更為時間戳日誌檔，依應用程式結束時間建立事件日誌檔。非必要時不推薦開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
@@ -3846,7 +3858,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "載入即時存檔後重置影格生成時間計數器。"
+   "載入即時存檔後，重置影格生成時間計數器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
@@ -3854,7 +3866,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "儲存即時存檔後重置影格生成時間計數器。"
+   "儲存即時存檔後，重置影格生成時間計數器。"
    )
 
 /* Settings > Recording */
@@ -4673,7 +4685,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
-   "按住方向滾動時游標的最大速度。"
+   "按住方向時滾動游標的最大速度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
@@ -4681,7 +4693,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   "維持滾動方向時的初始延遲(毫秒)。"
+   "按住方向時滾動的初始延遲(毫秒)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -4882,11 +4894,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
-   "顯示「歷史記錄」"
+   "顯示「歷史」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "顯示「歷史記錄」列表。(Ozone/XMB主題需要重新啟動)"
+   "顯示「歷史」列表。(Ozone/XMB主題需要重新啟動)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
@@ -5276,11 +5288,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,
-   "顯示「系統記錄」"
+   "顯示「系統日誌」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
-   "顯示「系統記錄」選項。"
+   "顯示「系統日誌」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FILE_BROWSER,
@@ -5627,7 +5639,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
-   "獲得成就時播放音效。"
+   "解鎖成就時播放音效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
@@ -5960,11 +5972,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   "歷史記錄"
+   "歷史儲存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
-   "使用歷史記錄、圖片、音樂和影片列表的記錄功能。"
+   "開啟歷史、圖片、音樂和影片列表的儲存瀏覽。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
@@ -5972,7 +5984,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
-   "限制歷史記錄、圖片、音樂和影片列表的項目數量。"
+   "限制歷史、圖片、音樂和影片列表的項目數量。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
@@ -6004,7 +6016,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
-   "依照字母的順序排列項目。不包含「歷史記錄」、「圖片」、「音樂」和「影片」列表。"
+   "依照字母的順序排列項目。不包含「歷史」、「圖片」、「音樂」和「影片」列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
@@ -6040,11 +6052,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
-   "設定歷史記錄和我的最愛項目圖示"
+   "歷史和我的最愛項目圖示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
-   "設定歷史記錄和我的最愛列表，項目圖示的顯示類型。依設定影響效能。"
+   "設定歷史和我的最愛列表，項目圖示的顯示類型。依設定影響效能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
@@ -6116,7 +6128,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   "之前"
+   "前"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
@@ -6128,11 +6140,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "項目子標籤記錄類型"
+   "項目子標籤日誌類型"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "設定顯示執行記錄的類型，用於列表項目子標籤訊息顯示。儲存執行記錄可透過選單「存檔」選項中開啟。"
+   "設定顯示執行日誌的類型，用於列表項目子標籤訊息顯示。儲存執行日誌(各別/共用)可透過「存檔」選項中開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -6148,7 +6160,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "列表中搜尋與壓縮檔關聯項目時，僅比對壓縮檔名稱而不是 [壓縮檔名稱]+[檔案名稱]。\n開啟時可避免載入壓縮檔後，出現重複的歷史記錄。"
+   "列表中搜尋與壓縮檔關聯項目時，僅比對壓縮檔名稱而不是 [壓縮檔名稱]+[檔案名稱]。\n開啟時可避免載入壓縮檔後，出現重複的歷史項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
@@ -6547,11 +6559,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_DIRECTORY,
-   "歷史記錄"
+   "歷史"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_DIRECTORY,
-   "設定「歷史記錄」列表的儲存位置。"
+   "設定「歷史」列表的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_IMAGE_HISTORY_DIRECTORY,
@@ -6579,11 +6591,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
-   "執行記錄"
+   "執行日誌"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
-   "設定應用程式執行記錄的儲存位置。"
+   "設定應用程式執行日誌的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
@@ -6611,11 +6623,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_DIR,
-   "系統記錄"
+   "系統日誌"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_DIR,
-   "設定系統事件記錄檔的儲存位置。"
+   "設定系統事件日誌檔的儲存位置。"
    )
 
 #ifdef HAVE_MIST
@@ -6924,11 +6936,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT,
-   "玩家人數"
+   "支援人數"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
    "地區"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,
+   "標籤"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
@@ -6937,6 +6953,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
    "顯示全部"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
+   "更多關鍵字"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
@@ -6952,115 +6972,115 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
-   "找開發商"
+   "找 開發商"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
-   "找發行商"
+   "找 發行商"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
-   "找發行年份"
+   "找 發行年份"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
-   "找遊戲支援人數"
+   "找 支援人數"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
-   "找遊戲類型"
+   "找 遊戲類型"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
-   "找成就"
+   "找 成就"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
-   "找遊戲版本"
+   "找 遊戲版本"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
-   "找語言"
+   "找 語言"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
-   "找發行地區"
+   "找 發行地區"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
-   "找主機獨占發行"
+   "找 主機獨占發行"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLATFORM_EXCLUSIVE,
-   "找平臺獨占發行"
+   "找 平臺獨占發行"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RUMBLE,
-   "找遊戲支援震動"
+   "找 支援震動"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
-   "找高評分遊戲"
+   "找 高評分"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_MEDIA,
-   "找媒體種類"
+   "找 媒體種類"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
-   "找輸入裝置"
+   "找 支援控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
-   "找遊戲風格"
+   "找 遊戲風格"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
-   "找遊戲玩法"
+   "找 遊戲玩法"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_NARRATIVE,
-   "找遊戲故事"
+   "找 遊戲故事"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
-   "找遊戲步調"
+   "找 遊戲步調"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
-   "找遊戲視角"
+   "找 遊戲視角"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
-   "找遊戲類別"
+   "找 遊戲類別"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VISUAL,
-   "找虛擬實境"
+   "找 虛擬實境"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VEHICULAR,
-   "找交通工具"
+   "找 交通工具"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
-   "找原產地"
+   "找 原產地"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
-   "找遊戲系列"
+   "找 遊戲系列"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
-   "找標籤"
+   "找 標籤"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
-   "找遊戲主機"
+   "找 遊戲主機"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER,
-   "設定搜尋範圍"
+   "追加關鍵字"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_EXPLORE_VIEW,
@@ -7572,7 +7592,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
-   "套用金手指變更的設定。"
+   "套用變更的金手指。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -7792,7 +7812,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
-   "記憶體觸發震動"
+   "震動觸發條件"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
@@ -7800,7 +7820,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PORT,
-   "震動對應連接埠"
+   "震動連接埠配置"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
@@ -8193,7 +8213,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
-   "沒有可用的歷史記錄。"
+   "沒有可用的歷史項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
@@ -8324,7 +8344,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
-   "歷史記錄和我的最愛"
+   "歷史和我的最愛"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
@@ -8336,7 +8356,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
-   "歷史記錄和我的最愛"
+   "歷史和我的最愛"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
@@ -8408,7 +8428,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R,
-   "↓ + Y + L1 + R1"
+   "下 + Y + L1 + R1"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_L1_R1_START_SELECT,
@@ -8428,7 +8448,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
-   "↓ + 選擇"
+   "下 + 選擇"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,
@@ -8886,6 +8906,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_HM_AMPM,
    "時:分 (上午/下午)"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
+   "前"
+   )
 
 /* RGUI: Settings > User Interface > Appearance */
 
@@ -8955,7 +8979,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "選單顏色主題"
+   "選單主題配色"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
@@ -9170,7 +9194,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_ORANGE,
-   "經典橘"
+   "經典橙"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_YELLOW,
@@ -9274,7 +9298,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_LIGHT,
-   "亮橘色"
+   "亮米色"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_DARK,
@@ -9572,11 +9596,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
-   "深色"
+   "暗色"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT,
-   "淡色"
+   "亮色"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MORNING_BLUE,
@@ -9651,7 +9675,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
-   "收起側邊欄"
+   "收起左側邊欄"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
@@ -9719,7 +9743,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
-   "亮橘色"
+   "亮米色"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
@@ -9933,7 +9957,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_ORANGE,
-   "可愛橘"
+   "可愛橙"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PINK,
@@ -10096,7 +10120,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
-   "深色"
+   "暗色"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
@@ -10151,6 +10175,10 @@ MSG_HASH(
    "所有資料夾"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
+   "頂端"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
    "上一層目錄"
    )
@@ -10188,7 +10216,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
-   "訊息"
+   "提示訊息"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_WARNING,
@@ -10208,7 +10236,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOG,
-   "記錄"
+   "日誌"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT,
@@ -10619,11 +10647,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-   "歷史記錄"
+   "歷史"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
-   "顯示最近執行的歷史記錄。"
+   "在此顯示最近執行的歷史項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
@@ -10706,6 +10734,10 @@ MSG_HASH(
    "使用者"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KEYBOARD,
+   "鍵盤"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    "使用內建的圖像瀏覽器"
    )
@@ -10726,8 +10758,16 @@ MSG_HASH(
    "強制同步中央處理器和圖形處理器，以效能為代價減少延遲。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   "最大影格延遲"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "強制顯示驅動程式，使用特定的緩衝模式。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+   "修改目前選單中使用的預設著色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
@@ -10758,12 +10798,20 @@ MSG_HASH(
    "沒有找到核心。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
+   "沒有可用的列表"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
    "找到相容遊戲"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
    "無法透過檔名與驗證碼找到符合的遊戲。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_START_GONG,
+   "執行乒"
    )
 
 /* Unused (Only Exist in Translation Files) */
@@ -10858,7 +10906,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
-   "啟動遊戲內容"
+   "執行檔案"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
@@ -11017,7 +11065,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
-   "產地"
+   "原產地"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
@@ -11117,7 +11165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
-   "向上捲動"
+   "向上滾動"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
@@ -11235,11 +11283,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM,
-   "連接來自: \"%s\""
+   "連接來自:「%s」"
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
-   "連接來自: \"%s (%s)\""
+   "連接來自:「%s (%s)」"
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
@@ -11516,7 +11564,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
-   "重新整理失敗 - 列表不包含有效的掃描記錄: "
+   "重新整理失敗 - 列表不包含有效的掃描結果: "
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
@@ -11568,7 +11616,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_APPLYING_CHEAT,
-   "套用金手指變更。"
+   "已套用金手指。"
    )
 MSG_HASH(
    MSG_APPLYING_PATCH,
@@ -11924,7 +11972,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_START_AUDIO_DRIVER,
-   "音效驅動啟動失敗，將使用無聲模式繼續啟動。"
+   "音效驅動開啟失敗，將使用無聲模式繼續執行。"
    )
 MSG_HASH(
    MSG_FAILED_TO_START_MOVIE_RECORD,
@@ -12012,7 +12060,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
-   "擴大驗證不符合驗證碼(CRC32)。"
+   "已擴大驗證不符合驗證碼(CRC32)。"
    )
 MSG_HASH(
    MSG_INPUT_CHEAT,
@@ -12248,7 +12296,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
-   "已儲存設定到"
+   "已儲存設定檔到"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
@@ -13194,7 +13242,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
-   "重啟 RetroArch"
+   "重新啟動"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY,
@@ -13390,7 +13438,7 @@ MSG_HASH(
 #ifdef GEKKO
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
-   "滑鼠比例"
+   "滑鼠縮放"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
@@ -13455,7 +13503,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
-   "2D (高解析度)"
+   "二維 (高解析度)"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
