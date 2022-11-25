@@ -319,7 +319,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   "如果有可用更新，使用 Play Store 中最新版本的核心，替換全部舊版和手動安裝的核心。"
+   "如果有可用更新，使用 Google Play Store 中最新版本的核心，替換全部舊版和手動安裝的核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
@@ -347,11 +347,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
-   "下載核心系統檔"
+   "下載核心系統"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-   "下載核心所需的系統檔。"
+   "下載核心需要的系統檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
@@ -359,15 +359,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   "更新選單主題資源檔"
+   "更新主題資源檔 (選單)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   "更新控制器預設檔 (隨插即用)"
+   "更新隨插即用檔 (手把)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   "更新金手指"
+   "更新遊戲金手指"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
@@ -375,19 +375,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   "更新螢幕覆蓋"
+   "更新螢幕覆蓋檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   "更新著色器 (GLSL)"
+   "更新影像著色器 (GLSL)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   "更新著色器 (Cg)"
+   "更新影像著色器 (Cg)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   "更新著色器 (Slang)"
+   "更新影像著色器 (Slang)"
    )
 
 /* Main Menu > Information */
@@ -800,11 +800,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
-   "支援 動態函數庫"
+   "支援 動態連結函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-   "執行時動態載入 libretro 函數庫"
+   "支援 動態載入libretro函式庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
@@ -859,7 +859,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
-   "遊戲項目"
+   "系統名稱"
    )
 
 /* Main Menu > Information > Database Manager > Information */
@@ -990,19 +990,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
-   "BBFC 分級"
+   "BBFC 年齡分級"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
-   "ESRB 分級"
+   "ESRB 年齡分級"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
-   "ELSPA 分級"
+   "ELSPA 年齡分級"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
-   "PEGI 分級"
+   "PEGI 年齡分級"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
@@ -1010,7 +1010,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
-   "CERO 分級"
+   "CERO 年齡分級"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
@@ -1126,7 +1126,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   "變更遊戲控制器、鍵盤和滑鼠的設定。"
+   "變更鍵盤、滑鼠和遊戲控制器的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -1158,7 +1158,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   "變更遊戲存檔相關的設定。"
+   "變更遊戲儲存和載入相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1198,7 +1198,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   "變更通知、覆蓋和佈景的設定。"
+   "變更螢幕上顯示通知、覆蓋和佈景的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
@@ -1214,7 +1214,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   "變更人工智慧服務，包含翻譯和文字轉語音的設定。"
+   "變更翻譯服務相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
@@ -1314,7 +1314,7 @@ MSG_HASH(
 #ifdef HAVE_MIST
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
-   "改變與Steam相關的設定"
+   "變更 Steam 相關的設定。"
    )
 #endif
 
@@ -1433,7 +1433,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   "變更螢幕輸出相關的設定。"
+   "變更影像輸出相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
@@ -1460,8 +1460,12 @@ MSG_HASH(
    "變更影像縮放的設定。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SETTINGS,
+   "高動態範圍 (HDR)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
-   "變更視訊 HDR 設定。"
+   "變更影像高動態範圍(HDR)相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
@@ -1509,7 +1513,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "開啟時圖像輕微模糊用於平滑邊緣。此選項對性能影響很小。"
+   "開啟時圖像輕微模糊用於平滑邊緣。此選項對效能影響很小。"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1518,7 +1522,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   "通過內部 IPU 縮放內容時指定圖像插值方法。使用CPU架構的影像濾鏡時，建議使用 <雙三次> 或 <雙線性> 插值算法。此選項對效能沒有影響。"
+   "設定圖像處理器(IPU)縮放的插值。使用影像濾鏡時建議使用 <雙三次> 或 <雙線性> 算法。此選項不影響效能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
@@ -1547,7 +1551,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
-   "半雙線過濾"
+   "半線性"
    )
 #endif
 #endif
@@ -1557,7 +1561,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "設定預設著色器自動載入的延遲(毫秒)。可解決使用螢幕擷取軟體時的圖形異常。"
+   "設定自動載入預設著色器的延遲(毫秒)。可解決使用螢幕擷取軟體時的圖形異常。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -1569,11 +1573,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
-   "移除影像濾鏡"
+   "關閉影像濾鏡"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
-   "移除目前使用的影像濾鏡。"
+   "關閉目前使用的影像濾鏡。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
@@ -1648,7 +1652,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
-   "開啟時使用控制器精準2倍比例作為顯示。關閉時使用原始電視解析度顯示。"
+   "開啟時使用控制器精準2倍比例作為顯示。關閉時使用原始解析度輸出顯示。"
    )
 #endif
 MSG_HASH(
@@ -1665,7 +1669,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
-   "設定畫面旋轉角度，用於可旋轉螢幕畫面方向調整。"
+   "設定畫面顯示方式，用於可旋轉螢幕的方向調整。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
@@ -1677,7 +1681,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
-   "螢幕水平位移"
+   "螢幕水平偏移"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
@@ -1758,11 +1762,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   "以全螢幕模式開始"
+   "用全螢幕模式啟動"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "使用全螢幕模式。可在執行時切換為視窗。"
+   "使用全螢幕模式啟動。可在執行時切換為視窗模式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
@@ -1790,11 +1794,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "在 UWP 上強制解析度"
+   "強制解析度 (UWP)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "強制解析度為全螢幕大小。設定 <0> 時解析度為3840x2160畫素。"
+   "強制通用Windows平台(UWP)解析度為全螢幕大小。設定 <0> 時解析度為3840x2160畫素。"
    )
 
 /* Settings > Video > Windowed Mode */
@@ -1841,11 +1845,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   "使用自訂視窗大小"
+   "自訂視窗大小"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   "開啟時使用「視窗寬度」和「視窗高度」固定視窗大小，結束應用程式時儲存視窗大小和位置。"
+   "開啟時使用「視窗寬度」和「視窗高度」固定視窗大小。關閉時變更為「視窗縮放」選項的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1853,7 +1857,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   "視窗顯示的寬度。"
+   "設定視窗顯示的寬度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
@@ -1861,7 +1865,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   "視窗顯示的高度。"
+   "設定視窗顯示的高度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
@@ -1917,11 +1921,11 @@ MSG_HASH(
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   "保持長寬比例"
+   "維持寬高比"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   "透過內部 IPU 縮放時保持 1:1 像素寬高比。關閉時圖像將延伸填充整個螢幕。"
+   "透過內部圖像處理器(IPU)縮放時，維持1:1像素寬高比。關閉時圖像將延伸填充整個螢幕。"
    )
 #endif
 MSG_HASH(
@@ -1969,11 +1973,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
-   "啟用 HDR"
+   "開啟高動態範圍 (HDR)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
-   "如果顯示器支援，則啟用 HDR。"
+   "開啟高動態範圍，僅限顯示器支援時有效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
@@ -1997,7 +2001,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "設定 HDR 伽瑪校正/對比度控制。取得圖像顏色並增加最亮和最暗部分之間的區別。HDR 對比度越高明暗差異越大，對比度越低就越褪色。協助用戶依愛好調整圖像。"
+   "設定伽瑪校正與對比度控制。取得圖像顏色並增加最亮和最暗部分之間的區別。\n對比度越高明暗差異越大，對比度越低就越褪色。協助用戶依愛好調整圖像。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2044,7 +2048,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "以增加畫面停頓風險來減少延遲，垂直同步後加入延遲(毫秒)。"
+   "增加畫面停頓風險來減少延遲，垂直同步後加入延遲(毫秒)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2183,7 +2187,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-   "音頻數位訊號處理(DSP)，用於音頻發送到驅動程式之前處理音頻訊號。"
+   "設定音頻數位訊號處理(DSP)插件，用於音頻發送到驅動程式之前處理音頻訊號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
@@ -3678,7 +3682,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
-   "開啟終端機顯示事件記錄。開啟「儲存為日誌檔」時，此選項變更為儲存到日誌檔。"
+   "開啟終端機顯示系統事件。開啟「儲存為日誌檔」時，此選項變更為儲存到日誌檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
@@ -3710,7 +3714,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
-   "開啟時「儲存為日誌檔」變更為時間戳日誌檔，依應用程式結束時間建立事件日誌檔。非必要時不推薦開啟。"
+   "開啟時「儲存為日誌檔」變更為時間戳日誌檔，依據應用程式結束時間建立日誌檔。非必需時不推薦開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
@@ -3972,7 +3976,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
-   "在選單後顯示螢幕覆蓋"
+   "在選單後顯示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
@@ -3980,7 +3984,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-   "在選單中隱藏螢幕覆蓋"
+   "在選單中隱藏"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -3988,16 +3992,16 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-   "連接控制器時隱藏螢幕覆蓋"
+   "控制器連接時隱藏"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-   "當遊戲控制器連接到連接埠 1 時隱藏螢幕覆蓋，在控制器斷開連接時再次顯示。"
+   "遊戲控制器連接到連接埠1時，隱藏螢幕覆蓋元件，控制器斷開連接時再次顯示。"
    )
 #if defined(ANDROID)
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
-   "當遊戲控制器連接到連接埠 1 時隱藏螢幕覆蓋，控制器斷開連接時不會自動恢復。"
+   "遊戲控制器連接到連接埠1時，隱藏螢幕覆蓋元件，控制器斷開連接時不會自動恢復。"
    )
 #endif
 MSG_HASH(
@@ -4038,7 +4042,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
-   "預設的螢幕覆蓋元件支援時，依螢幕旋轉方向自動調整顯示方式。"
+   "載入的螢幕覆蓋元件支援時，依據螢幕旋轉方向自動調整顯示方式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
@@ -4082,7 +4086,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
-   "預設的螢幕覆蓋"
+   "載入螢幕覆蓋 (預設)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
@@ -4110,7 +4114,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
-   "設定螢幕橫向顯示時，覆蓋元件感應區的水平間隔。正數為外擴，負數為內縮。"
+   "設定螢幕橫向顯示時，覆蓋感應元件的水平間隔。正數為外擴，負數為內縮。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
@@ -4118,7 +4122,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
-   "設定螢幕橫向顯示時，覆蓋元件感應區的垂直間隔。正數為外擴，負數為內縮。"
+   "設定螢幕橫向顯示時，覆蓋感應元件的垂直間隔。正數為外擴，負數為內縮。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
@@ -4158,7 +4162,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
-   "設定螢幕直向顯示時，覆蓋元件感應區的水平間隔。正數為外擴，負數為內縮。"
+   "設定螢幕直向顯示時，覆蓋感應元件的水平間隔。正數為外擴，負數為內縮。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
@@ -4166,7 +4170,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
-   "設定螢幕直向顯示時，覆蓋元件感應區的垂直間隔。正數為外擴，負數為內縮。"
+   "設定螢幕直向顯示時，覆蓋感應元件的垂直間隔。正數為外擴，負數為內縮。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
@@ -4197,7 +4201,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
-   "預設的螢幕佈景"
+   "載入螢幕佈景 (預設)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
@@ -7756,7 +7760,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
-   "處理程序"
+   "處理程式"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
@@ -8424,7 +8428,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN,
-   "未分類遊戲"
+   "資料庫未建檔的遊戲"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R,
@@ -8456,35 +8460,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
-   "變更"
+   "此數值改變時"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
-   "不變"
+   "此數值不變時"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE,
-   "增加"
+   "此數值增加時"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE,
-   "減少"
+   "此數值減少時"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_EQ_VALUE,
-   "等於觸發值"
+   "此數值等於觸發值"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
-   "不等於觸發值"
+   "此數值不等於觸發值"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
-   "小於觸發值"
+   "此數值小於觸發值"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
-   "大於觸發值"
+   "此數值大於觸發值"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
@@ -9250,7 +9254,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_BROGRAMMER,
-   "程序員黑"
+   "程式員黑"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA,
@@ -11073,43 +11077,43 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
-   "ESRB 分級"
+   "ESRB 年齡分級"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
-   "ELSPA 分級"
+   "ELSPA 年齡分級"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
-   "PEGI 分級"
+   "PEGI 年齡分級"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
-   "CERO 分級"
+   "CERO 年齡分級"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
-   "BBFC 分級"
+   "BBFC 年齡分級"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
-   "遊戲支援人數"
+   "支援人數"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
-   "同月發行遊戲 發行月份"
+   "同月發行遊戲 - 發行月份"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
-   "同年發行遊戲 發行年份"
+   "同年發行遊戲 - 發行年份"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
-   "Edge雜誌 期數"
+   "Edge雜誌 - 期數"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
-   "Edge雜誌 評分"
+   "Edge雜誌評分"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
@@ -11219,7 +11223,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
-   "與您裝置的圖形驅動不相容，設定變更回「%s 」驅動程序。請重新啟動復古電玩，使變更生效。"
+   "與您裝置的圖形驅動不相容，設定變更回「%s」驅動程式。請重新啟動復古電玩，使變更生效。"
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
@@ -11612,7 +11616,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_APPLICATION_DIR,
-   "應用程式目錄"
+   "應用程式資料夾"
    )
 MSG_HASH(
    MSG_APPLYING_CHEAT,
@@ -11836,7 +11840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_EXTERNAL_APPLICATION_DIR,
-   "外部應用程序目錄"
+   "外部應用程式資料夾"
    )
 MSG_HASH(
    MSG_EXTRACTING,
@@ -13451,7 +13455,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
-   "調整觸控感應區使用比例，適用於作業系統顯示縮放。"
+   "調整觸控感應區縮放大小，適用於作業系統顯示使用。"
    )
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
