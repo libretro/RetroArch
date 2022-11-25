@@ -1192,12 +1192,17 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             if (len1<=0 || len1>4 )  break;
             for( i=0; i<len1; i=i+2)					        
             {
-               char  utf8[8]={0,};
-               int len2 = WideCharToMultiByte( CP_UTF8, 0, wstr+i, -1, utf8, 8, NULL, NULL );	
-               if( len2<2 || len2>4) continue;			/* 2:eng  3:ex-latin 4:all  */
-               if( len2>2 ) utf8[3] = (gcs) | (gcs>>4);	                
-               input_keyboard_event(true, 1, *((int*)utf8), 0, RETRO_DEVICE_KEYBOARD); 
-           }
+               int len2;
+               char*  utf8 = utf16_to_utf8_string_alloc(wstr+i);
+               if ( !utf8 ) continue;
+               len2 = strlen(utf8)+1;
+               if( len2>=1 && len2<=3)
+               {
+                 if( len2>=2 ) utf8[3] = (gcs) | (gcs>>4);	                
+                 input_keyboard_event(true, 1, *((int*)utf8), 0, RETRO_DEVICE_KEYBOARD); 
+               }
+               free(utf8);
+            }
          }
          ImmReleaseContext(hwnd, hIMC);
          return 0;   
