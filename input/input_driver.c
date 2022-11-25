@@ -65,6 +65,10 @@
 
 #define INPUT_REMOTE_KEY_PRESSED(input_st, key, port) (input_st->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
 
+#define IS_COMPOSITION(c)       ( (c&0x0F000000) ? 1 : 0)
+#define IS_COMPOSITION_KR(c)    ( (c&0x01000000) ? 1 : 0)
+#define IS_END_COMPOSITION(c)   ( (c&0xF0000000) ? 1 : 0)
+
 /**
  * check_input_driver_block_hotkey:
  *
@@ -2565,6 +2569,7 @@ void input_event_osk_append(
    else if (string_is_equal(word, "\xe2\x87\xa9")) /* down arrow */
       *osk_idx = OSK_LOWERCASE_LATIN;
    else if (string_is_equal(word,"\xe2\x8a\x95")) /* plus sign (next button) */
+   {
       if( *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_KOREAN   )
       {
          static int prv_osk = OSK_TYPE_UNKNOWN+1;
@@ -2575,6 +2580,16 @@ void input_event_osk_append(
          } else	 
             *osk_idx = (enum osk_type)prv_osk;
       }  else
+      if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
+         *osk_idx = (enum osk_type)(*osk_idx + 1);
+      else
+         *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+   }
+   else if( *osk_idx==OSK_KOREAN_PAGE1 && word && word_len==3)
+   {
+      unsigned character = *((unsigned*)word) | 0x01000000;
+      input_keyboard_line_event(&input_driver_st,  keyboard_line, character);
+   }
 #else
    if (string_is_equal(word, "Bksp"))
       input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
@@ -2586,17 +2601,10 @@ void input_event_osk_append(
    else if (string_is_equal(word, "Lower"))
       *osk_idx = OSK_LOWERCASE_LATIN;
    else if (string_is_equal(word, "Next"))
-#endif
       if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
          *osk_idx = (enum osk_type)(*osk_idx + 1);
       else
          *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
-#ifdef HAVE_LANGEXTRA
-   else if( *osk_idx==OSK_KOREAN_PAGE1 && word && word_len==3)
-   {
-      unsigned character = *((unsigned*)word) | 0x01000000;
-      input_keyboard_line_event(&input_driver_st,  keyboard_line, character);
-   }
 #endif
    else
    {
@@ -3410,7 +3418,7 @@ void input_driver_deinit_command(input_driver_state_t *input_st)
 
 #ifdef HAVE_LANGEXTRA
 /* combine 3 korean elements. make utf8 character */
-unsigned get_kr_utf8( int c1,int c2,int c3)
+static unsigned get_kr_utf8( int c1,int c2,int c3)
 {
    int  uv = c1*(28*21) + c2*28 + c3 + 0xac00; 
    int  tv = (uv>>12) | ((uv&0x0f00)<<2) | ((uv&0xc0)<<2) | ((uv&0x3f)<<16);
@@ -3418,7 +3426,7 @@ unsigned get_kr_utf8( int c1,int c2,int c3)
 }
 
 /* utf8 korean composition */
-unsigned get_kr_composition( char* pcur, char* padd)
+static unsigned get_kr_composition( char* pcur, char* padd)
 {
    static char cc1[] = {"ㄱㄱㄲ ㄷㄷㄸ ㅂㅂㅃ ㅅㅅㅆ ㅈㅈㅉ"};
    static char cc2[] = {"ㅗㅏㅘ ㅗㅐㅙ ㅗㅣㅚ ㅜㅓㅝ ㅜㅔㅞ ㅜㅣㅟ ㅡㅣㅢ"};    
@@ -3441,7 +3449,7 @@ unsigned get_kr_composition( char* pcur, char* padd)
    if( nv == -1 || nv>=19+21  ) return ret;
 
    /* single element composition  */
-   sprintf(utf8,"%s%s",pcur,padd);
+   snprintf(utf8,8,"%s%s",pcur,padd);
    if( (tmp2=strstr(cc1,utf8)) )
    {   
 	   *((unsigned*)padd) = *((unsigned*)(tmp2+6)) & 0xffffff;
@@ -3487,24 +3495,24 @@ unsigned get_kr_composition( char* pcur, char* padd)
       }  else
       {	
          /* 2nd element transform */
-         strncpy(utf8,s1+(19+c2)*3,3); utf8[3]=0;
-         strcat(utf8,padd);
+         strlcpy(utf8,s1+(19+c2)*3,4); utf8[3]=0;
+         strlcat(utf8,padd,8);
          if( !(tmp2=strstr(cc2,utf8)) || tmp2>=cc2+sizeof(cc2)-10 )	return ret;
-         strncpy(utf8,tmp2+6,3); utf8[3]=0;
+         strlcpy(utf8,tmp2+6,4); utf8[3]=0;
          if( !(tmp1=strstr(s1+(19)*3,utf8)) )	return ret;
          c2 = (tmp1-s1)/3 - 19;
       }	
    }  else
    if( c3>0 )								
    {
-      strncpy(utf8,s1+(19+21+c3)*3,3); 
+      strlcpy(utf8,s1+(19+21+c3)*3,4); 
       utf8[3]=0;
       if( nv<19)
       {
          /* 3rd element transform */
          strcat(utf8,padd);
          if( !(tmp2=strstr(cc3,utf8)) || tmp2>=cc3+sizeof(cc3)-10 )	return ret;
-         strncpy(utf8,tmp2+6,3); utf8[3]=0;
+         strlcpy(utf8,tmp2+6,4); utf8[3]=0;
          if( !(tmp1=strstr(s1+(19+21)*3,utf8)) )	return ret;
          c3 = (tmp1-s1)/3 -19-21;
       }  else		
@@ -3514,10 +3522,10 @@ unsigned get_kr_composition( char* pcur, char* padd)
          if(  tv==6)	
          {
             /*  complex 3rd element -> disassemble */
-            strncpy(utf8,tmp2-3,3);
+            strlcpy(utf8,tmp2-3,4);
             if( !(tmp1=strstr(s1,utf8)) ) return ret;
             tv = (tmp1-s1)/3;
-            strncpy(utf8,tmp2-6,3);
+            strlcpy(utf8,tmp2-6,4);
             if( !(tmp1=strstr(s1+(19+21)*3,utf8)) ) return ret;
             c3 = (tmp1-s1)/3 -19-21;
          }	else
@@ -3549,11 +3557,13 @@ bool input_keyboard_line_event(
    char            c           = (character >= 128) ? '?' : character;
 
 #ifdef HAVE_LANGEXTRA
-   static uint32_t composition = 0;		
+   
+   static uint32_t composition = 0;	
+   /* reset composition, when edit box is opened.  */
    if( state->size==0 )  composition = 0;
+   /* reset composition, when 1 byte(=english) input */ 
    if( character && character<0xff) composition = 0;
-   composition = composition & 0xffffff;
-   if( character & 0xff000000)
+   if( IS_COMPOSITION(character) || IS_END_COMPOSITION(character) )
    {
       int len = strlen((char*)&composition);
       if( composition && state->buffer &&  state->size>=len && state->ptr>= len )
@@ -3562,7 +3572,7 @@ bool input_keyboard_line_event(
          state->ptr -=len; 
          state->size-=len;
       }
-      if( (character & 0x1000000) && composition)
+      if( IS_COMPOSITION_KR(character) && composition)
 	  {  
          unsigned new_comp;
          character = character & 0xffffff;
@@ -3571,7 +3581,7 @@ bool input_keyboard_line_event(
          composition = character;
       }	else
 	  {
-         if( character & 0xF0000000 )  composition = 0; 
+         if( IS_END_COMPOSITION(character) )  composition = 0; 
          else   composition = character &0xffffff;
          character &= 0xffffff;
       }
