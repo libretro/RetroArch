@@ -197,7 +197,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
 
    if (alsa->nonblock)
    {
-      while (size)
+      while (size > 0)
       {
          snd_pcm_sframes_t frames = snd_pcm_writei(alsa->pcm, buf, size);
 
@@ -222,7 +222,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
    {
       bool eagain_retry         = true;
 
-      while (size)
+      while (size > 0)
       {
          snd_pcm_sframes_t frames;
          int rc = snd_pcm_wait(alsa->pcm, -1);
