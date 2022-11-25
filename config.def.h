@@ -1634,7 +1634,7 @@ static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QU
 #if _MSC_VER >= 1910
 #ifndef __WINRT__
 #if defined(__x86_64__) || defined(_M_X64)
-#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x64/latest/"
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows/x86_64/latest/"
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x86/latest/"
 #elif defined(__arm__) || defined(_M_ARM)
