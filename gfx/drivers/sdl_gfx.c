@@ -380,31 +380,34 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
 
    video_driver_get_window_title(title, sizeof(title));
 
-   if (vid->menu.active) {
-      #ifdef HAVE_MENU
-         menu_driver_frame(menu_is_alive, video_info);
-      #endif
+   if (vid->menu.active)
+   {
+#ifdef HAVE_MENU
+      menu_driver_frame(menu_is_alive, video_info);
+#endif
       SDL_BlitSurface(vid->menu.frame, NULL, vid->screen, NULL);
-   } else {
+   }
+   else
+   {
       if (SDL_MUSTLOCK(vid->screen))
-        SDL_LockSurface(vid->screen);
+         SDL_LockSurface(vid->screen);
 
-       video_frame_scale(
-         &vid->scaler,
-         vid->screen->pixels,
-         frame,
-         vid->scaler.in_fmt,
-         vid->screen->w,
-         vid->screen->h,
-         vid->screen->pitch,
-         width,
-         height,
-         pitch); 
+      video_frame_scale(
+            &vid->scaler,
+            vid->screen->pixels,
+            frame,
+            vid->scaler.in_fmt,
+            vid->screen->w,
+            vid->screen->h,
+            vid->screen->pitch,
+            width,
+            height,
+            pitch); 
 
 
-    if (SDL_MUSTLOCK(vid->screen))
-       SDL_UnlockSurface(vid->screen);
-  }
+      if (SDL_MUSTLOCK(vid->screen))
+         SDL_UnlockSurface(vid->screen);
+   }
 
    if (title[0])
       SDL_WM_SetCaption(title, NULL);
