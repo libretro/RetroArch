@@ -339,7 +339,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   "下載附加元件"
+   "下載核心附加元件"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
@@ -347,7 +347,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
-   "下載核心系統"
+   "下載核心系統檔案"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -648,7 +648,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   "支援 螢幕覆蓋"
+   "支援 螢幕覆蓋元件"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
@@ -804,7 +804,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-   "支援 動態載入libretro函式庫"
+   "支援 Libretro函式庫動態載入"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
@@ -1350,7 +1350,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "設定音頻訊號使用的驅動程式。"
+   "設定音訊訊號使用的驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -1701,7 +1701,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "設定螢幕的垂直更新率。用於計算適合的音頻輸入速率。\n僅限顯示選項中「單執行緒影像處理」關閉時使用。"
+   "設定螢幕的垂直更新率。用於計算適合的音訊輸入速率。\n僅限顯示選項中「單執行緒影像處理」關閉時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1912,11 +1912,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "設定寬高比"
+   "設定浮點數"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "設定影像寬高比浮點值(寬度除以高度)。"
+   "設定影像寬高比浮點數(寬度除以高度)。"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1930,7 +1930,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-   "自訂寬高比 (水平位置)"
+   "自訂水平位置"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
@@ -1938,7 +1938,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-   "自訂寬高比 (垂直位置)"
+   "自訂垂直位置"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1946,7 +1946,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "自訂寬高比 (寬度)"
+   "自訂寬度"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -1954,7 +1954,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "自訂寬高比 (高度)"
+   "自訂高度"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -2115,7 +2115,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "變更音頻同步的設定"
+   "變更音訊同步的設定"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
@@ -2167,11 +2167,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-   "聲音音量級別(dB)"
+   "音量增益 (分貝)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-   "音量大小 (in dB). 0 dB 是標準大小."
+   "設定音訊音量增益(分貝)。設定 <0> 時正常音量未增益"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
@@ -2179,23 +2179,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   "設定混音器音頻通道音量增益(分貝)，設定 <0> 時正常音量未增益。"
+   "設定混音器音訊通道音量增益(分貝)，設定 <0> 時正常音量未增益。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-   "聲音DSP插件"
+   "音訊插件"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-   "設定音頻數位訊號處理(DSP)插件，用於音頻發送到驅動程式之前處理音頻訊號。"
+   "設定音訊數位訊號處理(DSP)插件，用於音訊發送到驅動程式之前處理音訊訊號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
-   "移除 DPS 插件"
+   "關閉音訊插件"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
-   "移除目前使用的數位訊號處理器(DSP)插件。"
+   "關閉目前使用的數位訊號處理插件。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -2203,7 +2203,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   "允許復古電玩獨占音效輸出。關閉此選項時變更為共用模式。"
+   "允許應用程式獨占音效輸出。關閉此選項時變更為共用模式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -2215,22 +2215,22 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "WASAPI 共用緩衝長度"
+   "WASAPI 共用緩衝區長度"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "設定共用模式的緩衝間隔長度(幀數)。"
+   "設定共用模式的間隔緩衝區長度(幀數)。"
    )
 
 /* Settings > Audio > Output */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   "音頻"
+   "音源"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-   "開啟音頻輸出。"
+   "開啟音源輸出。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -2238,7 +2238,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "左/右鍵 切換要使用的音訊輸出裝置。依據驅動程式顯示可使用的裝置。"
+   "左/右鍵 切換要使用的音訊輸出裝置。依據音效驅動程式顯示可使用的裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -2246,7 +2246,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "設定音頻訊號延遲(毫秒)。音效驅動程式不支援時設定無效。"
+   "設定音訊訊號延遲(毫秒)。音效驅動程式不支援時設定無效。"
    )
 
 /* Settings > Audio > Resampler */
@@ -2257,7 +2257,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-   "設定為降低時會降低音質，提升效能，設定為提高時會提升音質，降低效能。"
+   "設定降低時會降低音質，提升效能，設定提高時會提升音質，降低效能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
@@ -2265,34 +2265,34 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-   "音頻輸出取樣率。"
+   "音訊輸出取樣率。"
    )
 
 /* Settings > Audio > Synchronization */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-   "開啟聲音同步"
+   "同步音訊"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   "同步聲音。推薦開啟。"
+   "同步音訊輸出。推薦開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
-   "聲音最大採樣間隔"
+   "最大時序偏移"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
-   "設定音頻輸入速率最大變化值。提高時音頻間距不準確為代價實現時序變化，例如: NTSC 顯示器上執行 PAL 核心。"
+   "設定音訊輸入速率最大變化值。提高音訊間距不準確為代價實現時序變化，例如: NTSC 顯示器上執行 PAL 核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-   "動態聲音碼率控制間隔"
+   "動態音訊速率控制"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-   "同步聲音和視訊時，有助於消除時序上的瑕疵。 請注意，如果禁用，則無法獲得正確的同步。"
+   "同步影像和音訊消除時序偏移。此選項關閉時不可能正確同步。"
    )
 
 /* Settings > Audio > MIDI */
@@ -2330,7 +2330,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
-   "將開始播放音頻串流，並在結束時將音頻串流從記憶體中移除。"
+   "開始播放音訊串流，並在播放結束時，從記憶體中刪除此音訊串流。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
@@ -2338,7 +2338,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
-   "將開始播放音頻串流，並在結束時再次自起始點撥放當前音軌。"
+   "開始播放音訊串流，並在播放結束時，從重頭開始播放此音訊串流。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
@@ -2346,7 +2346,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
-   "將開始播放音頻串流，並在結束時依照播放順序跳轉至下一段音頻串流，且重複此一播放模式。適合專輯模式的播放。"
+   "開始播放音訊串流，並在播放結束時，播放下一個。用於專輯模式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
@@ -2354,7 +2354,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
-   "停止播放音頻串流，並不會從記憶體刪除，可再次點擊播放。"
+   "停止播放音訊串流，並不會從記憶體刪除，可再次點擊播放。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
@@ -2362,7 +2362,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
-   "這將停止播放串流聲音，並將其完全從記憶體中刪除。"
+   "停止播放此音訊串流，並完全從記憶體中刪除。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
@@ -2370,7 +2370,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
-   "調整音頻串流的音量。"
+   "調整音訊串流的音量。"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -2381,7 +2381,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-   "即使位於選單，也同時播放音頻。"
+   "開啟時選單中支援音訊通道音量。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
@@ -2404,11 +2404,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
-   "設定用戶數"
+   "控制器數量"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "設定應用程式的遊戲支援人數。"
+   "設定應用程式的控制器支援數量。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -2432,7 +2432,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-   "自動載入遊戲控制器預設檔。開啟後如通知「未設定」在設定控制器按鍵選項中，支援儲存為預設檔。"
+   "自動載入隨插即用檔。開啟時如通知「未設定」，設定控制器按鍵選項中，支援儲存為預設檔。"
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
@@ -2441,7 +2441,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
-   "關閉時應用程式中保留「Win鍵」組合。"
+   "開啟時禁用 Windows鍵 的組合快捷鍵。"
    )
 #endif
 MSG_HASH(
@@ -2458,7 +2458,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
-   "啟動復古電玩時，限制滑鼠可移動位置在應用程式視窗中。"
+   "啟動應用程式時，限制滑鼠可移動位置在應用程式視窗中。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
@@ -2466,7 +2466,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   "開啟時禁用快捷鍵，鍵盤輸入只傳送到執行中的核心，並將滑鼠鎖定在視窗內。設定 <偵測> 核心支援回調時開啟。"
+   "開啟時禁用快捷鍵，鍵盤輸入只傳送到執行的核心，並將滑鼠鎖定在視窗內。設定 <偵測> 核心登錄支援鍵盤時開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
@@ -2490,11 +2490,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
-   "方向軸輸入按鍵界限"
+   "類比搖桿輸入十字鍵"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "設定類比搖桿方向軸必須多傾斜，才能按下十字鍵方向。僅限自訂「十字鍵使用類比搖桿」時使用。"
+   "設定類比搖桿方向軸作用區，僅限自訂「十字鍵使用類比搖桿」時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
@@ -2502,7 +2502,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
-   "設定類比搖桿方向軸死區，方向軸移動低於死區值時不作用。"
+   "設定類比搖桿方向軸死區，方向軸移動低於死區時不作用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
@@ -2510,7 +2510,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
-   "調整類比搖桿的靈敏度。"
+   "設定類比搖桿的靈敏度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -2550,7 +2550,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
-   "設定控制器「連發鍵」使用的模式。"
+   "設定控制器「連發鍵」模式。設定 <經典> 時每次按住要連發按鍵後按連發鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
@@ -2570,7 +2570,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   "觸覺反饋/震動"
+   "觸覺反饋和震動"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -2606,7 +2606,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "控制器斷開後重新連接的解決方法。使用兩個相同的控制器中斷。"
+   "控制器斷開後重新連接的解決方法: 使用兩個相同的控制器中斷。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
@@ -2668,7 +2668,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "交換確定和取消的按鍵。開啟時為美版操作方式，關閉時為日版操作方式。"
+   "交換確定和取消的按鍵。開啟時美版操作方式，關閉時日版操作方式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
@@ -3336,7 +3336,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "使用第二個應用程式核心實例進行超前執行。防止載入即時存檔時產生音頻問題。"
+   "使用第二個應用程式核心實例進行超前執行。防止載入即時存檔時產生音訊問題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -3488,7 +3488,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
-   "「關閉」和「結束復古電玩」時，儲存變更按鍵至已儲存的控制器。"
+   "「關閉」和「結束復古電玩」時，儲存變更按鍵至自訂的控制器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
@@ -3504,7 +3504,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
-   "「執行」時自動載入自訂的螢幕覆蓋和螢幕佈景。"
+   "「執行」時自動載入自訂的螢幕主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -3512,7 +3512,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
-   "「執行」時自動載入已儲存的控制器。"
+   "「執行」時自動載入自訂的控制器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -3980,7 +3980,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
-   "開啟後在執行時覆蓋元件顯示圖層低於選單。僅限「在選單中隱藏螢幕覆蓋」關閉時顯示。"
+   "開啟時覆蓋元件顯示圖層低於選單。僅限「在選單中隱藏」關閉時顯示。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -4585,15 +4585,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "選單操作即時存檔後自動關閉"
+   "操作即時存檔後關閉"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "使用快捷選單的載入或儲存即時存檔後，自動關閉選單回到遊戲中。關閉此功能時在低效能的裝置上，可能提高儲存速度。"
+   "使用快捷選單的儲存、載入和還原即時存檔後，自動關閉選單回到遊戲中。關閉時低效能的裝置，可提高儲存速度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "選單操作虛擬光碟機後自動關閉"
+   "操作虛擬光碟機後關閉"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
@@ -4621,7 +4621,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
-   "當選單螢幕保護程式啟動時，顯示動畫效果，開啟後可能會影響效能。"
+   "設定選單螢幕保護程式顯示的動畫效果，開啟時可能會影響效能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
@@ -5460,7 +5460,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
-   "設定預覽縮圖顯示類型。開啟後在列表中，支援按鍵切換預覽縮圖的類型。"
+   "設定預覽縮圖顯示類型。開啟時在列表中，支援按鍵切換預覽縮圖的類型。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
@@ -6475,11 +6475,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
-   "音頻過濾器"
+   "音訊插件"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
-   "設定音頻數位訊號處理過濾器的儲存位置。"
+   "設定音訊數位訊號處理插件(DSP插件)的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
@@ -6531,11 +6531,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   "控制器配置檔"
+   "隨插即用檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
-   "設定遊戲控制器配置檔(隨插即用)的儲存位置。"
+   "設定控制器隨插即用配置檔的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
@@ -6563,7 +6563,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_DIRECTORY,
-   "歷史"
+   "歷史列表"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_DIRECTORY,
@@ -8460,35 +8460,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
-   "此數值改變時"
+   "數值改變時"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
-   "此數值不變時"
+   "數值不變時"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE,
-   "此數值增加時"
+   "數值增加時"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE,
-   "此數值減少時"
+   "數值減少時"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_EQ_VALUE,
-   "此數值等於觸發值"
+   "數值等於觸發值"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
-   "此數值不等於觸發值"
+   "數值不等於觸發值"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
-   "此數值小於觸發值"
+   "數值小於觸發值"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
-   "此數值大於觸發值"
+   "數值大於觸發值"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
@@ -9767,7 +9767,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "開啟後覆蓋列表的資訊欄，支援按鍵切換顯示。當「主要的預覽縮圖」關閉時不會顯示。"
+   "開啟時覆蓋列表的資訊欄，支援按鍵切換顯示。當「主要的預覽縮圖」關閉時不會顯示。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
@@ -11125,7 +11125,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "下載目錄"
+   "下載資料夾"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
@@ -11263,7 +11263,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,
-   "混音器音頻通道音量"
+   "混音器音訊通道音量"
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCAN_COMPLETE,
@@ -13238,7 +13238,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
-   "可提高效能、減少延遲並修復音頻噪音等問題。您需要下載「遊戲模式」擴展 https://github.com/FeralInteractive/gamemode 才能正常執行。"
+   "可提高效能、減少延遲並修復音訊噪音等問題。您需要下載「遊戲模式」擴展 https://github.com/FeralInteractive/gamemode 才能正常執行。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
