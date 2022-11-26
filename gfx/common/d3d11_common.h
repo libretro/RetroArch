@@ -211,7 +211,7 @@ typedef struct
    D3D11BlendState       blend_disable;
    D3D11BlendState       blend_pipeline;
    D3D11Buffer           menu_pipeline_vbo;
-   math_matrix_4x4       mvp, mvp_no_rot;
+   math_matrix_4x4       mvp, mvp_no_rot, identity;
    struct video_viewport vp;
    D3D11_VIEWPORT        viewport;
    D3D11_RECT            scissor;
