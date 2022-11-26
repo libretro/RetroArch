@@ -11155,10 +11155,6 @@ MSG_HASH(
    "Játékállás automatikus mentése ide"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "SRAM felülírás megakadályozva"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "Parancs interfész beüzemelése ezen a porton:"
    )
@@ -11839,10 +11835,6 @@ MSG_HASH(
    "Shader preset mentése sikeres."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "SRAM betöltés átugorva."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "Lassítás."
    )
@@ -11855,8 +11847,16 @@ MSG_HASH(
    "Lassított visszatekerés."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "SRAM betöltés átugorva."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "SRAM nem lesz mentve."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "SRAM felülírás megakadályozva"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,

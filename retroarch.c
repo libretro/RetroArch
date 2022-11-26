@@ -1031,7 +1031,6 @@ const char *path_get(enum rarch_path_type type)
 size_t path_get_realsize(enum rarch_path_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    switch (type)
    {
@@ -1040,11 +1039,11 @@ size_t path_get_realsize(enum rarch_path_type type)
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return sizeof(p_rarch->path_default_shader_preset);
       case RARCH_PATH_BASENAME:
-         return sizeof(runloop_st->runtime_content_path_basename);
+         return sizeof(runloop_state_get_ptr()->runtime_content_path_basename);
       case RARCH_PATH_CORE_OPTIONS:
          return sizeof(p_rarch->path_core_options_file);
       case RARCH_PATH_SUBSYSTEM:
-         return sizeof(runloop_st->subsystem_path);
+         return sizeof(runloop_state_get_ptr()->subsystem_path);
       case RARCH_PATH_CONFIG:
          return sizeof(p_rarch->path_config_file);
       case RARCH_PATH_CONFIG_APPEND:
@@ -1062,17 +1061,13 @@ size_t path_get_realsize(enum rarch_path_type type)
 bool path_set(enum rarch_path_type type, const char *path)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   runloop_state_t *runloop_st = NULL;
 
    if (!path)
       return false;
 
    switch (type)
    {
-      case RARCH_PATH_BASENAME:
-         strlcpy(runloop_st->runtime_content_path_basename, path,
-               sizeof(runloop_st->runtime_content_path_basename));
-         break;
       case RARCH_PATH_NAMES:
          runloop_path_set_basename(path);
          runloop_path_set_names();
@@ -1094,10 +1089,6 @@ bool path_set(enum rarch_path_type type, const char *path)
          strlcpy(p_rarch->path_config_file, path,
                sizeof(p_rarch->path_config_file));
          break;
-      case RARCH_PATH_SUBSYSTEM:
-         strlcpy(runloop_st->subsystem_path, path,
-               sizeof(runloop_st->subsystem_path));
-         break;
       case RARCH_PATH_CORE_OPTIONS:
          strlcpy(p_rarch->path_core_options_file, path,
                sizeof(p_rarch->path_core_options_file));
@@ -1105,6 +1096,16 @@ bool path_set(enum rarch_path_type type, const char *path)
       case RARCH_PATH_CONTENT:
          strlcpy(p_rarch->path_content, path,
                sizeof(p_rarch->path_content));
+         break;
+      case RARCH_PATH_BASENAME:
+         runloop_st = runloop_state_get_ptr();
+         strlcpy(runloop_st->runtime_content_path_basename, path,
+               sizeof(runloop_st->runtime_content_path_basename));
+         break;
+      case RARCH_PATH_SUBSYSTEM:
+         runloop_st = runloop_state_get_ptr();
+         strlcpy(runloop_st->subsystem_path, path,
+               sizeof(runloop_st->subsystem_path));
          break;
       case RARCH_PATH_NONE:
          break;
@@ -1116,16 +1117,11 @@ bool path_set(enum rarch_path_type type, const char *path)
 bool path_is_empty(enum rarch_path_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    switch (type)
    {
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          if (string_is_empty(p_rarch->path_default_shader_preset))
-            return true;
-         break;
-      case RARCH_PATH_SUBSYSTEM:
-         if (string_is_empty(runloop_st->subsystem_path))
             return true;
          break;
       case RARCH_PATH_CONFIG:
@@ -1149,7 +1145,11 @@ bool path_is_empty(enum rarch_path_type type)
             return true;
          break;
       case RARCH_PATH_BASENAME:
-         if (string_is_empty(runloop_st->runtime_content_path_basename))
+         if (string_is_empty(runloop_state_get_ptr()->runtime_content_path_basename))
+            return true;
+         break;
+      case RARCH_PATH_SUBSYSTEM:
+         if (string_is_empty(runloop_state_get_ptr()->subsystem_path))
             return true;
          break;
       case RARCH_PATH_NONE:
@@ -1163,13 +1163,10 @@ bool path_is_empty(enum rarch_path_type type)
 void path_clear(enum rarch_path_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   runloop_state_t *runloop_st = NULL;
 
    switch (type)
    {
-      case RARCH_PATH_SUBSYSTEM:
-         *runloop_st->subsystem_path = '\0';
-         break;
       case RARCH_PATH_CORE:
          *p_rarch->path_libretro = '\0';
          break;
@@ -1178,9 +1175,6 @@ void path_clear(enum rarch_path_type type)
          break;
       case RARCH_PATH_CONTENT:
          *p_rarch->path_content = '\0';
-         break;
-      case RARCH_PATH_BASENAME:
-         *runloop_st->runtime_content_path_basename = '\0';
          break;
       case RARCH_PATH_CORE_OPTIONS:
          *p_rarch->path_core_options_file = '\0';
@@ -1193,6 +1187,14 @@ void path_clear(enum rarch_path_type type)
          break;
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
+         break;
+      case RARCH_PATH_BASENAME:
+         runloop_st = runloop_state_get_ptr();
+         *runloop_st->runtime_content_path_basename = '\0';
+         break;
+      case RARCH_PATH_SUBSYSTEM:
+         runloop_st = runloop_state_get_ptr();
+         *runloop_st->subsystem_path = '\0';
          break;
    }
 }
@@ -1303,7 +1305,6 @@ static void path_deinit_subsystem(runloop_state_t *runloop_st)
 size_t dir_get_size(enum rarch_dir_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    switch (type)
    {
@@ -1312,11 +1313,11 @@ size_t dir_get_size(enum rarch_dir_type type)
       case RARCH_DIR_SAVESTATE:
          return sizeof(p_rarch->dir_savestate);
       case RARCH_DIR_CURRENT_SAVESTATE:
-         return sizeof(runloop_st->savestate_dir);
+         return sizeof(runloop_state_get_ptr()->savestate_dir);
       case RARCH_DIR_SAVEFILE:
          return sizeof(p_rarch->dir_savefile);
       case RARCH_DIR_CURRENT_SAVEFILE:
-         return sizeof(runloop_st->savefile_dir);
+         return sizeof(runloop_state_get_ptr()->savefile_dir);
       case RARCH_DIR_NONE:
          break;
    }
@@ -1329,26 +1330,28 @@ size_t dir_get_size(enum rarch_dir_type type)
 void dir_clear(enum rarch_dir_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   runloop_state_t *runloop_st = NULL;
 
    switch (type)
    {
       case RARCH_DIR_SAVEFILE:
          *p_rarch->dir_savefile = '\0';
          break;
-      case RARCH_DIR_CURRENT_SAVEFILE:
-         *runloop_st->savefile_dir = '\0';
-         break;
       case RARCH_DIR_SAVESTATE:
          *p_rarch->dir_savestate = '\0';
-         break;
-      case RARCH_DIR_CURRENT_SAVESTATE:
-         *runloop_st->savestate_dir = '\0';
          break;
       case RARCH_DIR_SYSTEM:
          *p_rarch->dir_system = '\0';
          break;
       case RARCH_DIR_NONE:
+         break;
+      case RARCH_DIR_CURRENT_SAVEFILE:
+         runloop_st = runloop_state_get_ptr();
+         *runloop_st->savefile_dir = '\0';
+         break;
+      case RARCH_DIR_CURRENT_SAVESTATE:
+         runloop_st = runloop_state_get_ptr();
+         *runloop_st->savestate_dir = '\0';
          break;
    }
 }
@@ -1365,18 +1368,17 @@ static void dir_clear_all(void)
 char *dir_get_ptr(enum rarch_dir_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    switch (type)
    {
       case RARCH_DIR_SAVEFILE:
          return p_rarch->dir_savefile;
       case RARCH_DIR_CURRENT_SAVEFILE:
-         return runloop_st->savefile_dir;
+         return runloop_state_get_ptr()->savefile_dir;
       case RARCH_DIR_SAVESTATE:
          return p_rarch->dir_savestate;
       case RARCH_DIR_CURRENT_SAVESTATE:
-         return runloop_st->savestate_dir;
+         return runloop_state_get_ptr()->savestate_dir;
       case RARCH_DIR_SYSTEM:
          return p_rarch->dir_system;
       case RARCH_DIR_NONE:
@@ -1389,21 +1391,13 @@ char *dir_get_ptr(enum rarch_dir_type type)
 void dir_set(enum rarch_dir_type type, const char *path)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   runloop_state_t *runloop_st = NULL;
 
    switch (type)
    {
-      case RARCH_DIR_CURRENT_SAVEFILE:
-         strlcpy(runloop_st->savefile_dir, path,
-               sizeof(runloop_st->savefile_dir));
-         break;
       case RARCH_DIR_SAVEFILE:
          strlcpy(p_rarch->dir_savefile, path,
                sizeof(p_rarch->dir_savefile));
-         break;
-      case RARCH_DIR_CURRENT_SAVESTATE:
-         strlcpy(runloop_st->savestate_dir, path,
-               sizeof(runloop_st->savestate_dir));
          break;
       case RARCH_DIR_SAVESTATE:
          strlcpy(p_rarch->dir_savestate, path,
@@ -1414,6 +1408,16 @@ void dir_set(enum rarch_dir_type type, const char *path)
                sizeof(p_rarch->dir_system));
          break;
       case RARCH_DIR_NONE:
+         break;
+      case RARCH_DIR_CURRENT_SAVEFILE:
+         runloop_st = runloop_state_get_ptr();
+         strlcpy(runloop_st->savefile_dir, path,
+               sizeof(runloop_st->savefile_dir));
+         break;
+      case RARCH_DIR_CURRENT_SAVESTATE:
+         runloop_st = runloop_state_get_ptr();
+         strlcpy(runloop_st->savestate_dir, path,
+               sizeof(runloop_st->savestate_dir));
          break;
    }
 }
@@ -1665,15 +1669,6 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          else
             command_event(CMD_EVENT_RECORD_INIT, NULL);
-         break;
-      case CMD_EVENT_OSK_TOGGLE:
-         {
-            input_driver_state_t *input_st   = input_state_get_ptr();
-            if (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
-               input_st->flags &= ~INP_FLAG_KB_LINEFEED_ENABLE;
-            else
-               input_st->flags |=  INP_FLAG_KB_LINEFEED_ENABLE;
-         }
          break;
       case CMD_EVENT_SET_PER_GAME_RESOLUTION:
 #if defined(GEKKO)
@@ -2117,8 +2112,6 @@ bool command_event(enum event_command cmd, void *data)
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          break;
-      case CMD_EVENT_SEND_DEBUG_INFO:
-         break;
       case CMD_EVENT_FPS_TOGGLE:
          settings->bools.video_fps_show = !(settings->bools.video_fps_show);
          break;
@@ -2145,7 +2138,7 @@ bool command_event(enum event_command cmd, void *data)
             input_overlay_load_active(input_st->overlay_visibility,
                   input_st->overlay_ptr, input_overlay_opacity);
 
-            input_st->overlay_ptr->blocked    = true;
+            input_st->overlay_ptr->flags     |= INPUT_OVERLAY_BLOCKED;
             input_st->overlay_ptr->next_index = (unsigned)((input_st->overlay_ptr->index + 1) % input_st->overlay_ptr->size);
 
             /* Check orientation, if required */
@@ -2159,6 +2152,15 @@ bool command_event(enum event_command cmd, void *data)
                            input_st->overlay_ptr);
          }
 #endif
+         break;
+      case CMD_EVENT_OSK_TOGGLE:
+         {
+            input_driver_state_t *input_st   = input_state_get_ptr();
+            if (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
+               input_st->flags &= ~INP_FLAG_KB_LINEFEED_ENABLE;
+            else
+               input_st->flags |=  INP_FLAG_KB_LINEFEED_ENABLE;
+         }
          break;
       case CMD_EVENT_DSP_FILTER_INIT:
 #ifdef HAVE_DSP_FILTER
@@ -2509,7 +2511,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          retroarch_menu_running_finished(false);
 #endif
-         if (uico_st->is_on_foreground)
+         if (uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND)
          {
 #ifdef HAVE_QT
             bool desktop_menu_enable = settings->bools.desktop_menu_enable;
@@ -3433,6 +3435,10 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_NONE:
          return false;
+
+      /* Deprecated */
+      case CMD_EVENT_SEND_DEBUG_INFO:
+         break;
    }
 
    return true;
@@ -5528,8 +5534,6 @@ bool retroarch_main_init(int argc, char *argv[])
    if (!string_is_empty(recording_st->path))
       command_event(CMD_EVENT_RECORD_INIT, NULL);
 
-   runloop_path_init_savefile();
-
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
 
    global->error_on_init            = false;
@@ -5802,12 +5806,8 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
                                            |   RUNLOOP_FLAG_IDLE
                                            |   RUNLOOP_FLAG_PAUSED
                                               );
-            runloop_frame_time_free();
-            runloop_audio_buffer_status_free();
-            input_game_focus_free();
-            runloop_fastmotion_override_free();
-            runloop_core_options_cb_free();
-            runloop_st->video_swap_interval_auto = 1;
+            runloop_state_free(runloop_st);
+
             memset(&input_st->analog_requested, 0,
                   sizeof(input_st->analog_requested));
          }

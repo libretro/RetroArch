@@ -11387,10 +11387,6 @@ MSG_HASH(
    "Autoguardar en:"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "Bloqueando sobrescritura de SRAM"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "Iniciando interfaz de comandos en el puerto"
    )
@@ -12067,10 +12063,6 @@ MSG_HASH(
    "Se ha guardado el preajuste de shaders."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "Omitiendo carga de SRAM."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "Cámara lenta."
    )
@@ -12083,8 +12075,16 @@ MSG_HASH(
    "Rebobinado lento."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Omitiendo carga de SRAM."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "No se guardará la SRAM."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "Bloqueando sobrescritura de SRAM"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,

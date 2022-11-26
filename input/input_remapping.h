@@ -54,24 +54,13 @@ bool input_remapping_save_file(const char *path);
 void input_remapping_cache_global_config(void);
 
 /**
- * Sets flags to enable the restoration of global configuration settings from
- * the internal cache. Should be called independently from 
- * `input_remapping_cache_global_config()`.
- * Must be called:
- *   - Whenever content is loaded
- *   - Whenever a remap file is loaded 
- */
-void input_remapping_enable_global_config_restore(void);
-
-/**
  * Restores any global configuration settings that were cached on the last core
- * init if `input_remapping_enable_global_config_restore()` has been called.
+ * init if INP_FLAG_REMAPPING_CACHE_ACTIVE is set.
  * Must be called on core deinitialization. 
  * 
  * @param clear_cache  If true, function becomes a NOOP until the next time
- *                     `input_remapping_cache_global_config()` and 
- *                     `input_remapping_enable_global_config_restore()` are
- *                     called.
+ *                     `input_remapping_cache_global_config()` is called, and 
+ *                     INP_FLAG_REMAPPING_CACHE_ACTIVE is set.
  */
 void input_remapping_restore_global_config(bool clear_cache);
 

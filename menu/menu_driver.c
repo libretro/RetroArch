@@ -335,7 +335,6 @@ static bool menu_should_pop_stack(const char *label)
             || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SCANNING_CONTENT))
             || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD))
             || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING))
-            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO))
             || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION)))
          return true;
    if (
@@ -1989,14 +1988,14 @@ void menu_input_get_mouse_hw_state(
       hw_state->x                  = (int16_t)(((float)(hw_state->x - vp.x) / (float)vp.width) * (float)fb_width);
       if (hw_state->x < 0)
          hw_state->x               = 0;
-      else if (hw_state->x >= fb_width)
+      else if (hw_state->x >= (int)fb_width)
          hw_state->x               = (fb_width -1);
 
       /* Adjust Y position */
       hw_state->y                  = (int16_t)(((float)(hw_state->y - vp.y) / (float)vp.height) * (float)fb_height);
       if (hw_state->y <  0)
          hw_state->y               = 0;
-      else if (hw_state->y >= fb_height)
+      else if (hw_state->y >= (int)fb_height)
          hw_state->y               = (fb_height-1);
    }
 
@@ -3041,8 +3040,7 @@ enum action_iterate_type action_iterate_type(const char *label)
             string_is_equal(label, "help_loading_content") ||
             string_is_equal(label, "help_scanning_content") ||
             string_is_equal(label, "help_change_virtual_gamepad") ||
-            string_is_equal(label, "help_audio_video_troubleshooting") ||
-            string_is_equal(label, "help_send_debug_info")
+            string_is_equal(label, "help_audio_video_troubleshooting")
          )
          return ITERATE_TYPE_HELP;
    if (string_is_equal(label, "cheevos_description"))
@@ -3350,11 +3348,6 @@ int menu_dialog_iterate(
       case MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
          msg_hash_get_help_enum(
                MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC,
-               s, len);
-         break;
-      case MENU_DIALOG_HELP_SEND_DEBUG_INFO:
-         msg_hash_get_help_enum(
-               MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO_DESC,
                s, len);
          break;
       case MENU_DIALOG_HELP_SCANNING_CONTENT:
@@ -5681,7 +5674,7 @@ unsigned menu_event(
    bool input_overlay_enable                       = settings->bools.input_overlay_enable;
    bool overlay_active                             = input_overlay_enable 
       && (input_st->overlay_ptr)
-      && (input_st->overlay_ptr->alive);
+      && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE);
 #else
    bool input_overlay_enable                       = false;
    bool overlay_active                             = false;
@@ -6850,7 +6843,7 @@ void retroarch_menu_running(void)
             menu_st->flags & MENU_ST_FLAG_ALIVE,
 #ifdef HAVE_OVERLAY
             input_st->overlay_ptr &&
-            input_st->overlay_ptr->alive,
+            (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
 #else
             false,
 #endif
@@ -6919,7 +6912,7 @@ void retroarch_menu_running_finished(bool quit)
             menu_st->flags & MENU_ST_FLAG_ALIVE,
 #ifdef HAVE_OVERLAY
             input_st->overlay_ptr &&
-            input_st->overlay_ptr->alive,
+            (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
 #else
             false,
 #endif
@@ -7676,7 +7669,9 @@ static int generic_menu_iterate(
          }
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_CANCEL)
+         if (     action == MENU_ACTION_OK
+               || action == MENU_ACTION_CANCEL
+               || action == MENU_ACTION_INFO)
          {
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          }

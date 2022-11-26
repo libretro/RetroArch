@@ -85,7 +85,7 @@ enum dinput_input_flags
 
 struct dinput_input
 {
-   char *joypad_driver_name;
+   char *joypad_drv_name;
    LPDIRECTINPUTDEVICE8 keyboard;
    LPDIRECTINPUTDEVICE8 mouse;
    const input_device_driver_t *joypad;
@@ -143,7 +143,7 @@ static void *dinput_init(const char *joypad_driver)
       return NULL;
 
    if (!string_is_empty(joypad_driver))
-      di->joypad_driver_name = strdup(joypad_driver);
+      di->joypad_drv_name = strdup(joypad_driver);
 
 #ifdef __cplusplus
    if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
@@ -990,7 +990,7 @@ bool dinput_handle_message(void *data,
 
                /* TODO/FIXME: Don't destroy everything, let's just 
                 * handle new devices gracefully */
-               joypad_driver_reinit(di, di->joypad_driver_name);
+               joypad_driver_reinit(di, di->joypad_drv_name);
             }
          }
 #endif
@@ -1038,9 +1038,9 @@ static void dinput_free(void *data)
    if (di->mouse)
       IDirectInputDevice8_Release(di->mouse);
 
-   if (di->joypad_driver_name)
-      free(di->joypad_driver_name);
-   di->joypad_driver_name = NULL;
+   if (di->joypad_drv_name)
+      free(di->joypad_drv_name);
+   di->joypad_drv_name = NULL;
 
    free(di);
 

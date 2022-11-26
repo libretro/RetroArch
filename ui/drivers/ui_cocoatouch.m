@@ -51,31 +51,6 @@ static id apple_platform;
 #endif
 static CFRunLoopObserverRef iterate_observer;
 
-/* Forward declaration */
-static void apple_rarch_exited(void);
-
-static void rarch_enable_ui(void)
-{
-   bool boolean = true;
-
-   ui_companion_set_foreground(true);
-
-   retroarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
-   retroarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
-   retroarch_menu_running();
-}
-
-static void rarch_disable_ui(void)
-{
-   bool boolean = false;
-
-   ui_companion_set_foreground(false);
-
-   retroarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
-   retroarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
-   retroarch_menu_running_finished(false);
-}
-
 static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd) { }
 
@@ -165,14 +140,14 @@ static void handle_touch_event(NSArray* touches)
  * defined in any standard iOS header */
 enum
 {
-   NSAlphaShiftKeyMask = 1 << 16,
-   NSShiftKeyMask      = 1 << 17,
-   NSControlKeyMask    = 1 << 18,
-   NSAlternateKeyMask  = 1 << 19,
-   NSCommandKeyMask    = 1 << 20,
-   NSNumericPadKeyMask = 1 << 21,
-   NSHelpKeyMask       = 1 << 22,
-   NSFunctionKeyMask   = 1 << 23,
+   NSAlphaShiftKeyMask                  = 1 << 16,
+   NSShiftKeyMask                       = 1 << 17,
+   NSControlKeyMask                     = 1 << 18,
+   NSAlternateKeyMask                   = 1 << 19,
+   NSCommandKeyMask                     = 1 << 20,
+   NSNumericPadKeyMask                  = 1 << 21,
+   NSHelpKeyMask                        = 1 << 22,
+   NSFunctionKeyMask                    = 1 << 23,
    NSDeviceIndependentModifierFlagsMask = 0xffff0000U
 };
 
@@ -187,9 +162,9 @@ enum
     if (last_time_stamp == event.timestamp)
        return [super handleKeyUIEvent:event];
 
-    last_time_stamp = event.timestamp;
+    last_time_stamp        = event.timestamp;
 
-    /* If the _hidEvent is null, [event _keyCode] will crash.
+    /* If the _hidEvent is NULL, [event _keyCode] will crash.
      * (This happens with the on screen keyboard). */
     if (event._hidEvent)
     {
@@ -357,14 +332,14 @@ enum
    switch (vt)
    {
 #ifdef HAVE_COCOA_METAL
-      case APPLE_VIEW_TYPE_VULKAN:
+       case APPLE_VIEW_TYPE_VULKAN:
        case APPLE_VIEW_TYPE_METAL:
          {
             MetalView *v = [MetalView new];
-            v.paused = YES;
+            v.paused                = YES;
             v.enableSetNeedsDisplay = NO;
 #if TARGET_OS_IOS
-            v.multipleTouchEnabled = YES;
+            v.multipleTouchEnabled  = YES;
 #endif
             _renderView = v;
          }
@@ -375,7 +350,7 @@ enum
          break;
 
        case APPLE_VIEW_TYPE_NONE:
-                         default:
+       default:
          return;
    }
 
@@ -394,7 +369,7 @@ enum
 {
 #ifdef HAVE_COCOA_METAL
    MetalView *metalView = (MetalView*) _renderView;
-   CGFloat scale = [[UIScreen mainScreen] scale];
+   CGFloat scale        = [[UIScreen mainScreen] scale];
    [metalView setDrawableSize:CGSizeMake(
          _renderView.bounds.size.width * scale,
          _renderView.bounds.size.height * scale
@@ -411,11 +386,10 @@ enum
    if (_documentsDirectory == nil)
    {
 #if TARGET_OS_IOS
-      NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+      NSArray *paths      = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
 #elif TARGET_OS_TV
-      NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+      NSArray *paths      = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
 #endif
-
       _documentsDirectory = paths.firstObject;
    }
    return _documentsDirectory;
@@ -440,8 +414,7 @@ enum
    [self refreshSystemConfig];
    [self showGameView];
 
-   if (rarch_main(argc, argv, NULL))
-      apple_rarch_exited();
+   rarch_main(argc, argv, NULL);
 
    iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
          true, 0, rarch_draw_observer, 0);
@@ -481,8 +454,7 @@ enum
    if ([url startAccessingSecurityScopedResource]) {
       if (![[url path] containsString: self.documentsDirectory])
          if (![manager fileExistsAtPath:destination])
-            if (![manager copyItemAtPath:[url path] toPath:destination error:&error])
-               printf("%s\n", [[error description] UTF8String]);
+            [manager copyItemAtPath:[url path] toPath:destination error:&error];
       [url stopAccessingSecurityScopedResource];
    }
    return true;
@@ -511,19 +483,6 @@ enum
    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
          command_event(CMD_EVENT_AUDIO_START, NULL);
          });
-   rarch_disable_ui();
-}
-
-- (IBAction)showPauseMenu:(id)sender
-{
-   rarch_enable_ui();
-
-#if TARGET_OS_IOS
-   [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
-#endif
-
-   [[UIApplication sharedApplication] setIdleTimerDisabled:false];
-   [self.window setRootViewController:self];
 }
 
 - (void)refreshSystemConfig
@@ -556,13 +515,4 @@ int main(int argc, char *argv[])
    @autoreleasepool {
       return UIApplicationMain(argc, argv, NSStringFromClass([RApplication class]), NSStringFromClass([RetroArch_iOS class]));
    }
-}
-
-static void apple_rarch_exited(void)
-{
-   RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-
-   if (!ap)
-      return;
-   [ap showPauseMenu:ap];
 }

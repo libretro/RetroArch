@@ -846,7 +846,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          }
          else
          {
-            video_driver_set_video_cache_context_ack();
+            video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
             RARCH_LOG("[GLX]: Using cached GL context.\n");
          }
 

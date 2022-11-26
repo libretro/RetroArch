@@ -864,62 +864,6 @@ bool input_driver_find_driver(
       const char *prefix,
       bool verbosity_enabled);
 
-int16_t input_state_wrap(
-      input_driver_t *current_input,
-      void *data,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      rarch_joypad_info_t *joypad_info,
-      const retro_keybind_set *binds,
-      bool keyboard_mapping_blocked,
-      unsigned _port,
-      unsigned device,
-      unsigned idx,
-      unsigned id);
-
-int16_t input_joypad_axis(
-      float input_analog_deadzone,
-      float input_analog_sensitivity,
-      const input_device_driver_t *drv,
-      unsigned port, uint32_t joyaxis, float normal_mag);
-
-/**
- * input_joypad_analog:
- * @drv                     : Input device driver handle.
- * @port                    : User number.
- * @idx                     : Analog key index.
- *                            E.g.:
- *                            - RETRO_DEVICE_INDEX_ANALOG_LEFT
- *                            - RETRO_DEVICE_INDEX_ANALOG_RIGHT
- * @ident                   : Analog key identifier.
- *                            E.g.:
- *                            - RETRO_DEVICE_ID_ANALOG_X
- *                            - RETRO_DEVICE_ID_ANALOG_Y
- * @binds                   : Binds of user.
- *
- * Gets analog value of analog key identifiers @idx and @ident
- * from user with number @port with provided keybinds (@binds).
- *
- * Returns: analog value on success, otherwise 0.
- **/
-int16_t input_joypad_analog_button(
-      float input_analog_deadzone,
-      float input_analog_sensitivity,
-      const input_device_driver_t *drv,
-      rarch_joypad_info_t *joypad_info,
-      unsigned ident,
-      const struct retro_keybind *bind);
-
-int16_t input_joypad_analog_axis(
-      unsigned input_analog_dpad_mode,
-      float input_analog_deadzone,
-      float input_analog_sensitivity,
-      const input_device_driver_t *drv,
-      rarch_joypad_info_t *joypad_info,
-      unsigned idx,
-      unsigned ident,
-      const struct retro_keybind *binds);
-
 void input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
       const char *word, size_t len);
@@ -970,19 +914,6 @@ bool input_key_pressed(int key, bool keyboard_pressed);
 bool input_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
 
-/**
- * input_keyboard_line_event:
- * @state                    : Input keyboard line handle.
- * @character                : Inputted character.
- *
- * Called on every keyboard character event.
- *
- * Returns: true (1) on success, otherwise false (0).
- **/
-bool input_keyboard_line_event(
-      input_driver_state_t *input_st,
-      input_keyboard_line_t *state, uint32_t character);
-
 bool input_set_rumble_gain(unsigned gain);
 
 float input_get_sensor_state(unsigned port, unsigned id);
@@ -1011,42 +942,10 @@ void input_driver_deinit_command(input_driver_state_t *input_st);
 #endif
 
 #ifdef HAVE_OVERLAY
-/*
- * input_poll_overlay:
- *
- * Poll pressed buttons/keys on currently active overlay.
- **/
-void input_poll_overlay(
-      bool keyboard_mapping_blocked,
-      settings_t *settings,
-      void *ol_data,
-      enum overlay_visibility *overlay_visibility,
-      float opacity,
-      unsigned analog_dpad_mode,
-      float axis_threshold);
-
 void input_overlay_deinit(void);
-
-void input_overlay_set_visibility(int overlay_idx,
-      enum overlay_visibility vis);
 
 void input_overlay_init(void);
 #endif
-
-bool input_keys_pressed_other_sources(
-      input_driver_state_t *input_st,
-      unsigned i,
-      input_bits_t* p_new_state);
-
-int16_t input_state_device(
-      input_driver_state_t *input_st,
-      settings_t *settings,
-      input_mapper_t *handle,
-      unsigned input_analog_dpad_mode,
-      int16_t ret,
-      unsigned port, unsigned device,
-      unsigned idx, unsigned id,
-      bool button_mask);
 
 #ifdef HAVE_BSV_MOVIE
 void bsv_movie_frame_rewind(void);
@@ -1080,25 +979,6 @@ void input_driver_poll(void);
  **/
 int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       unsigned idx, unsigned id);
-
-/**
- * input_keys_pressed:
- *
- * Grab an input sample for this frame.
- *
- * Returns: Input sample containing a mask of all pressed keys.
- */
-void input_keys_pressed(
-      unsigned port,
-      bool is_menu,
-      int input_hotkey_block_delay,
-      input_bits_t *p_new_state,
-      const retro_keybind_set *binds,
-      const struct retro_keybind *binds_norm,
-      const struct retro_keybind *binds_auto,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      rarch_joypad_info_t *joypad_info);
 
 void input_driver_collect_system_input(input_driver_state_t *input_st,
       settings_t *settings, input_bits_t *current_bits);

@@ -11063,10 +11063,6 @@ MSG_HASH(
    "Zustand automatisch speichern in"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "Überschreiben des SRAM blockieren"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "Starte Befehlsinterface auf Port"
    )
@@ -11751,10 +11747,6 @@ MSG_HASH(
    "Shader-Voreinstellung erfolgreich gespeichert."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "Überspringe Laden des SRAM."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "Zeitlupe."
    )
@@ -11767,8 +11759,16 @@ MSG_HASH(
    "In Zeitlupe zurückspulen."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Überspringe Laden des SRAM."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "SRAM wird nicht gespeichert."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "Überschreiben des SRAM blockieren"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,

@@ -11487,10 +11487,6 @@ MSG_HASH(
    "Durumu otomatik kaydet"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "SRAM Üzerine Yazma Engelleniyor"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "Komut arabirimini bağlantı noktasına getir"
    )
@@ -12179,10 +12175,6 @@ MSG_HASH(
    "Gölgelendirici hazır ayarı başarıyla kaydedildi."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "SRAM yüklemesi atlanıyor."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "Ağır Çekim."
    )
@@ -12195,8 +12187,16 @@ MSG_HASH(
    "Ağır çekim geri sar."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "SRAM yüklemesi atlanıyor."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "SRAM kaydedilmeyecek."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "SRAM Üzerine Yazma Engelleniyor"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,

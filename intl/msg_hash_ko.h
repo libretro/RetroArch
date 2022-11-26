@@ -11399,10 +11399,6 @@ MSG_HASH(
    "자동 상태 저장 to"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "SRAM 덮어쓰기 차단"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "포트에 명령줄 인터페이스 띄우기"
    )
@@ -12091,10 +12087,6 @@ MSG_HASH(
    "셰이더 프리셋 저장 성공."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "SRAM 불러오기 건너뛰는 중."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "슬로모션."
    )
@@ -12107,8 +12099,16 @@ MSG_HASH(
    "슬로모션 뒤로 감기."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "SRAM 불러오기 건너뛰는 중."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "SRAM이 저장되지 않을 것입니다."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "SRAM 덮어쓰기 차단"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,

@@ -186,8 +186,8 @@ static void create_gl_context(HWND hwnd, bool *quit)
 
    if (win32_hrc)
    {
+      video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
       RARCH_LOG("[WGL]: Using cached GL context.\n");
-      video_driver_set_video_cache_context_ack();
    }
    else
    {

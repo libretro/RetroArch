@@ -9559,10 +9559,6 @@ MSG_HASH(
    "自動ステートセーブ to"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "SRAMの上書きをブロックしています"
-   )
-MSG_HASH(
    MSG_BYTES,
    "バイト"
    )
@@ -10167,10 +10163,6 @@ MSG_HASH(
    "シェーダのプリセットの保存に成功しました"
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "SRAMのロードをスキップ中"
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "スローモーション"
    )
@@ -10183,8 +10175,16 @@ MSG_HASH(
    "スローモーション巻き戻し"
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "SRAMのロードをスキップ中"
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "SRAMはセーブされません"
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "SRAMの上書きをブロックしています"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,

@@ -66,17 +66,6 @@ typedef struct ui_msg_window_state
 
 typedef struct ui_browser_window_state
 {
-   struct
-   {
-      bool can_choose_directories;
-      bool can_choose_directories_val;
-      bool can_choose_files;
-      bool can_choose_files_val;
-      bool allows_multiple_selection;
-      bool allows_multiple_selection_val;
-      bool treat_file_packages_as_directories;
-      bool treat_file_packages_as_directories_val;
-   } capabilities;
    void *window;
    char *filters;
    char *filters_title;
@@ -144,15 +133,20 @@ typedef struct ui_companion_driver
    const char        *ident;
 } ui_companion_driver_t;
 
+enum uico_driver_state_flags
+{
+   UICO_ST_FLAG_QT_IS_INITED     = (1 << 0),
+   UICO_ST_FLAG_IS_ON_FOREGROUND = (1 << 1)
+};
+
 typedef struct
 {
    const ui_companion_driver_t *drv;
    void *data;
 #ifdef HAVE_QT
    void *qt_data;
-   bool qt_is_inited;
 #endif
-   bool is_on_foreground;
+   uint8_t flags;
 } uico_driver_state_t;
 
 extern ui_companion_driver_t ui_companion_cocoa;
@@ -162,9 +156,7 @@ extern ui_companion_driver_t ui_companion_win32;
 
 extern ui_msg_window_t ui_msg_window_win32;
 
-bool ui_companion_is_on_foreground(void);
-
-void ui_companion_set_foreground(unsigned enable);
+uint8_t ui_companion_get_flags(void);
 
 void ui_companion_event_command(enum event_command action);
 

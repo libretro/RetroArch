@@ -6281,6 +6281,10 @@ unsigned menu_displaylist_build_list(
                /* Skip "Hotkey Enable" */
                if (i == RARCH_FIRST_META_KEY)
                   continue;
+               /* Hidden items */
+               else if (input_config_bind_map_get_retro_key(i) == RARCH_OVERLAY_NEXT
+                     || input_config_bind_map_get_retro_key(i) == RARCH_OSK)
+                  continue;
                /* Show combo entries before normal binds */
                else if (input_config_bind_map_get_retro_key(i) == RARCH_MENU_TOGGLE)
                {
@@ -10693,13 +10697,13 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          if the user opt-in. */
       if (show_only_installed_cores)
       {
-         for (j = 0; j < coreinfos->count; j++)
+         for (j = 0; j < (int)coreinfos->count; j++)
          {
             if (string_is_equal_case_insensitive(coreinfos->list[j].core_name,
                   room->corename))
                break;
          }
-         if (j >= coreinfos->count)
+         if (j >= (int)coreinfos->count)
             continue;
       }
 

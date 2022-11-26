@@ -10671,10 +10671,6 @@ MSG_HASH(
    "自动保存状态至"
    )
 MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "阻止覆盖游戏存档"
-   )
-MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    "带上命令接口于端口"
    )
@@ -11355,10 +11351,6 @@ MSG_HASH(
    "预设着色器已加载。"
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "跳过游戏存档加载。"
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "慢动作。"
    )
@@ -11371,8 +11363,16 @@ MSG_HASH(
    "慢动作回溯。"
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "跳过游戏存档加载。"
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "游戏存档不会被保存。"
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "阻止覆盖游戏存档"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,
