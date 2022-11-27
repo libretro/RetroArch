@@ -36,6 +36,15 @@
 #include "../config.h"
 #endif
 
+#include "menu_input_bind_dialog.h"
+#include "menu_setting.h"
+#include "menu_cbs.h"
+#include "menu_driver.h"
+#include "menu_input.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+#include "menu_shader.h"
+#endif
+
 #if defined(HAVE_STEAM) && defined(HAVE_MIST)
 #include <mist.h>
 #endif
@@ -61,19 +70,10 @@
 
 #include "../frontend/frontend_driver.h"
 
-#include "menu_input_bind_dialog.h"
-
-#include "menu_setting.h"
-#include "menu_cbs.h"
-#include "menu_driver.h"
 #include "../camera/camera_driver.h"
 #include "../gfx/gfx_animation.h"
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx/gfx_widgets.h"
-#endif
-#include "menu_input.h"
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-#include "menu_shader.h"
 #endif
 
 #include "../core.h"
