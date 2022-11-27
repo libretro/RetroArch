@@ -1260,11 +1260,8 @@ static uint16_t argb32_to_rgb5a3(uint32_t col)
        * alpha and normal 4 bit alpha values... */
       unsigned a4    = a >> 4;
       float a_factor = 1.0f;
-      if (a3 > 0)
-      {
-         /* Avoid divide by zero errors... */
+      if (a3 > 0) /* Avoid divide by zero errors... */
          a_factor = ((float)a4 * (1.0f / 15.0f)) / ((float)a3 * (1.0f / 7.0f));
-      }
       r = (unsigned)(((float)r * a_factor) + 0.5f);
       g = (unsigned)(((float)g * a_factor) + 0.5f);
       b = (unsigned)(((float)b * a_factor) + 0.5f);
@@ -2255,10 +2252,10 @@ static void rgui_process_wallpaper(rgui_t *rgui, struct texture_image *image)
    frame_buf_t *background_buf = &rgui->background_buf;
 
    /* Sanity check */
-   if (!image->pixels ||
-       (image->width  < background_buf->width)  ||
-       (image->height < background_buf->height) ||
-       !background_buf->data)
+   if (   (!image->pixels)
+       || (image->width  < background_buf->width)
+       || (image->height < background_buf->height)
+       || (!background_buf->data))
       return;
 
    /* In most cases, image size will be identical
@@ -2815,7 +2812,7 @@ static void rgui_render_mini_thumbnail(
    }
 }
 
-static const rgui_theme_t *get_theme(rgui_t *rgui)
+static const rgui_theme_t *rgui_get_theme(rgui_t *rgui)
 {
    bool transparent = (rgui->flags & RGUI_FLAG_TRANSPARENCY_SUPPORTED)
                    && (rgui->flags & RGUI_FLAG_TRANSPARENCY_ENABLE);
@@ -2971,7 +2968,7 @@ static const rgui_theme_t *get_theme(rgui_t *rgui)
          &rgui_theme_opaque_classic_green;
 }
 
-static void update_dynamic_theme_path(rgui_t *rgui, const char *theme_dir)
+static void rgui_update_dynamic_theme_path(rgui_t *rgui, const char *theme_dir)
 {
    bool use_playlist_theme = false;
 
@@ -3177,7 +3174,7 @@ static void rgui_cache_background(rgui_t *rgui,
       rgui_render_border(rgui, background_buf->data, fb_width, fb_height);
 }
 
-static void prepare_rgui_colors(rgui_t *rgui, 
+static void rgui_prepare_colors(rgui_t *rgui, 
       unsigned menu_rgui_color_theme,
       const char *path_rgui_theme_preset,
       bool menu_rgui_transparency,
@@ -3212,7 +3209,7 @@ static void prepare_rgui_colors(rgui_t *rgui,
    }
    else
    {
-      const rgui_theme_t *current_theme = get_theme(rgui);
+      const rgui_theme_t *current_theme = rgui_get_theme(rgui);
 
       theme_colors.hover_color          = current_theme->hover_color;
       theme_colors.normal_color         = current_theme->normal_color;
@@ -3260,12 +3257,12 @@ static void prepare_rgui_colors(rgui_t *rgui,
 }
 
 /* ==============================
- * blit_line/symbol() START
+ * rgui_blit_line/rgui_blit_symbol() START
  * ============================== */
 
 /* NOTE 1: These functions are WET (Write Everything Twice).
  * This is bad design and difficult to maintain, but we have
- * no other choice here. blit_line() is so performance
+ * no other choice here. rgui_blit_line() is so performance
  * critical that we simply cannot afford to check user
  * settings internally. */
 
@@ -3290,9 +3287,9 @@ static void prepare_rgui_colors(rgui_t *rgui,
  * are 'active' - but other devs should be very careful
  * when adding new fonts in the future */
 
-/* blit_line() */
+/* rgui_blit_line() */
 
-static void blit_line_regular(
+static void rgui_blit_line_regular(
       rgui_t *rgui,
       unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
@@ -3328,7 +3325,7 @@ static void blit_line_regular(
    }
 }
 
-static void blit_line_regular_shadow(
+static void rgui_blit_line_regular_shadow(
       rgui_t *rgui,
       unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
@@ -3381,7 +3378,7 @@ static void blit_line_regular_shadow(
    }
 }
 
-static void blit_line_extended(
+static void rgui_blit_line_extended(
       rgui_t *rgui,
       unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
@@ -3431,7 +3428,7 @@ static void blit_line_extended(
    }
 }
 
-static void blit_line_extended_shadow(
+static void rgui_blit_line_extended_shadow(
       rgui_t *rgui,
       unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
@@ -3499,7 +3496,7 @@ static void blit_line_extended_shadow(
 }
 
 #ifdef HAVE_LANGEXTRA
-static void blit_line_cjk(
+static void rgui_blit_line_cjk(
       rgui_t *rgui,
       unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
@@ -3555,7 +3552,7 @@ static void blit_line_cjk(
    }
 }
 
-static void blit_line_cjk_shadow(
+static void rgui_blit_line_cjk_shadow(
       rgui_t *rgui,
       unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
@@ -3628,7 +3625,7 @@ static void blit_line_cjk_shadow(
    }
 }
 
-static void blit_line_rus(
+static void rgui_blit_line_rus(
       rgui_t *rgui,
       unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
@@ -3678,7 +3675,7 @@ static void blit_line_rus(
    }
 }
 
-static void blit_line_rus_shadow(
+static void rgui_blit_line_rus_shadow(
       rgui_t *rgui,
       unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
@@ -3745,7 +3742,7 @@ static void blit_line_rus_shadow(
    }
 }
 
-static void blit_line_6x10(
+static void rgui_blit_line_6x10(
       rgui_t *rgui,
       unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
@@ -3789,7 +3786,7 @@ static void blit_line_6x10(
    }
 }
 
-static void blit_line_6x10_shadow(
+static void rgui_blit_line_6x10_shadow(
       rgui_t *rgui,
       unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
@@ -3851,10 +3848,10 @@ static void blit_line_6x10_shadow(
 }
 #endif
 
-static void (*blit_line)(rgui_t *rgui, unsigned fb_width, int x, int y,
-      const char *message, uint16_t color, uint16_t shadow_color) = blit_line_regular;
+static void (*rgui_blit_line)(rgui_t *rgui, unsigned fb_width, int x, int y,
+      const char *message, uint16_t color, uint16_t shadow_color) = rgui_blit_line_regular;
 
-/* blit_symbol() */
+/* rgui_blit_symbol() */
 
 static const uint8_t *rgui_get_symbol_data(enum rgui_symbol_type symbol)
 {
@@ -4138,7 +4135,7 @@ static const uint8_t *rgui_get_symbol_data(enum rgui_symbol_type symbol)
 	return NULL;
 }
 
-static void blit_symbol_regular(rgui_t *rgui, unsigned fb_width, int x, int y,
+static void rgui_blit_symbol_regular(rgui_t *rgui, unsigned fb_width, int x, int y,
       enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color)
 {
    unsigned i, j;
@@ -4160,7 +4157,7 @@ static void blit_symbol_regular(rgui_t *rgui, unsigned fb_width, int x, int y,
    }
 }
 
-static void blit_symbol_shadow(rgui_t *rgui, unsigned fb_width, int x, int y,
+static void rgui_blit_symbol_shadow(rgui_t *rgui, unsigned fb_width, int x, int y,
       enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color)
 {
    unsigned i, j;
@@ -4199,8 +4196,8 @@ static void blit_symbol_shadow(rgui_t *rgui, unsigned fb_width, int x, int y,
    }
 }
 
-static void (*blit_symbol)(rgui_t *rgui, unsigned fb_width, int x, int y,
-      enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color) = blit_symbol_regular;
+static void (*rgui_blit_symbol)(rgui_t *rgui, unsigned fb_width, int x, int y,
+      enum rgui_symbol_type symbol, uint16_t color, uint16_t shadow_color) = rgui_blit_symbol_regular;
 
 static void rgui_set_blit_functions(unsigned language,
       bool draw_shadow, bool extended_ascii)
@@ -4214,10 +4211,10 @@ static void rgui_set_blit_functions(unsigned language,
          case RETRO_LANGUAGE_KOREAN:
          case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
          case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-            blit_line = blit_line_cjk_shadow;
+            rgui_blit_line    = rgui_blit_line_cjk_shadow;
             break;
          case RETRO_LANGUAGE_RUSSIAN:
-            blit_line = blit_line_rus_shadow;
+            rgui_blit_line    = rgui_blit_line_rus_shadow;
             break;
          case RETRO_LANGUAGE_ESPERANTO:
          case RETRO_LANGUAGE_POLISH:
@@ -4225,23 +4222,23 @@ static void rgui_set_blit_functions(unsigned language,
          case RETRO_LANGUAGE_SLOVAK:
          case RETRO_LANGUAGE_CZECH:
          case RETRO_LANGUAGE_HUNGARIAN:
-            blit_line = blit_line_6x10_shadow;
+            rgui_blit_line    = rgui_blit_line_6x10_shadow;
             break;
          default:
             if (extended_ascii)
-               blit_line = blit_line_extended_shadow;
+               rgui_blit_line = rgui_blit_line_extended_shadow;
             else
-               blit_line = blit_line_regular_shadow;
+               rgui_blit_line = rgui_blit_line_regular_shadow;
             break;
       }
 #else
       if (extended_ascii)
-         blit_line = blit_line_extended_shadow;
+         rgui_blit_line       = blit_line_extended_shadow;
       else
-         blit_line = blit_line_regular_shadow;
+         rgui_blit_line       = blit_line_regular_shadow;
 #endif
       
-      blit_symbol = blit_symbol_shadow;
+      rgui_blit_symbol        = rgui_blit_symbol_shadow;
    }
    else
    {
@@ -4252,10 +4249,10 @@ static void rgui_set_blit_functions(unsigned language,
          case RETRO_LANGUAGE_KOREAN:
          case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
          case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-            blit_line = blit_line_cjk;
+            rgui_blit_line = rgui_blit_line_cjk;
             break;
          case RETRO_LANGUAGE_RUSSIAN:
-            blit_line = blit_line_rus;
+            rgui_blit_line = rgui_blit_line_rus;
             break;
          case RETRO_LANGUAGE_ESPERANTO:
          case RETRO_LANGUAGE_POLISH:
@@ -4263,28 +4260,28 @@ static void rgui_set_blit_functions(unsigned language,
          case RETRO_LANGUAGE_SLOVAK:
          case RETRO_LANGUAGE_CZECH:
          case RETRO_LANGUAGE_HUNGARIAN:
-            blit_line = blit_line_6x10;
+            rgui_blit_line = rgui_blit_line_6x10;
             break;
          default:
             if (extended_ascii)
-               blit_line = blit_line_extended;
+               rgui_blit_line = rgui_blit_line_extended;
             else
-               blit_line = blit_line_regular;
+               rgui_blit_line = rgui_blit_line_regular;
             break;
       }
 #else
       if (extended_ascii)
-         blit_line = blit_line_extended;
+         rgui_blit_line = rgui_blit_line_extended;
       else
-         blit_line = blit_line_regular;
+         rgui_blit_line = rgui_blit_line_regular;
 #endif
       
-      blit_symbol = blit_symbol_regular;
+      rgui_blit_symbol  = rgui_blit_symbol_regular;
    }
 }
 
 /* ==============================
- * blit_line/symbol() END
+ * rgui_blit_line/rgui_blit_symbol() END
  * ============================== */
 
 static void rgui_set_message(void *data, const char *message)
@@ -4409,7 +4406,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message,
          if (text_y > (int)fb_height - 10 - (int)rgui->font_height_stride)
             break;
 
-         blit_line(rgui, fb_width, text_x, text_y, msg,
+         rgui_blit_line(rgui, fb_width, text_x, text_y, msg,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       }
    }
@@ -4623,7 +4620,7 @@ static void rgui_render_osk(
       input_label_x      = ticker_x_offset + osk_x + input_offset_x + ((input_label_max_length * rgui->font_width_stride) - input_label_length) / 2;
       input_label_y      = osk_y + input_offset_y;
       
-      blit_line(rgui, fb_width, input_label_x, input_label_y, input_label_buf,
+      rgui_blit_line(rgui, fb_width, input_label_x, input_label_y, input_label_buf,
             rgui->colors.normal_color, rgui->colors.shadow_color);
    }
    
@@ -4646,14 +4643,14 @@ static void rgui_render_osk(
       input_str_visible              = utf8skip(input_str, input_str_char_offset);
       
       if (!string_is_empty(input_str_visible))
-         blit_line(rgui, fb_width, input_str_x, input_str_y, input_str_visible,
+         rgui_blit_line(rgui, fb_width, input_str_x, input_str_y, input_str_visible,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       
       /* Draw text cursor */
       text_cursor_x                  = osk_x + input_offset_x
                                        + (input_str_length * rgui->font_width_stride);
       
-      blit_symbol(rgui, fb_width, text_cursor_x, input_str_y, RGUI_SYMBOL_TEXT_CURSOR,
+      rgui_blit_symbol(rgui, fb_width, text_cursor_x, input_str_y, RGUI_SYMBOL_TEXT_CURSOR,
             rgui->colors.normal_color, rgui->colors.shadow_color);
    }
    
@@ -4669,44 +4666,44 @@ static void rgui_render_osk(
       const char *key_text = osk_grid[key_index];
       
       /* 'Command' keys use custom symbols - have to
-       * detect them and use blit_symbol(). Everything
+       * detect them and use rgui_blit_symbol(). Everything
        * else is plain text, and can be drawn directly
-       * using blit_line(). */
+       * using rgui_blit_line(). */
 #ifdef HAVE_LANGEXTRA
       if (     string_is_equal(key_text, "\xe2\x87\xa6")) /* backspace character */
-         blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
+         rgui_blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "\xe2\x8f\x8e")) /* return character */
-         blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
+         rgui_blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "\xe2\x87\xa7")) /* up arrow */
-         blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
+         rgui_blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "\xe2\x87\xa9")) /* down arrow */
-         blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
+         rgui_blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "\xe2\x8a\x95")) /* plus sign (next button) */
-         blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
+         rgui_blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
                rgui->colors.normal_color, rgui->colors.shadow_color);
 #else
       if (     string_is_equal(key_text, "Bksp"))
-         blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
+         rgui_blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_BACKSPACE,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "Enter"))
-         blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
+         rgui_blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_ENTER,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "Upper"))
-         blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
+         rgui_blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_UP,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "Lower"))
-         blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
+         rgui_blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_SHIFT_DOWN,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       else if (string_is_equal(key_text, "Next"))
-         blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
+         rgui_blit_symbol(rgui, fb_width, key_text_x, key_text_y, RGUI_SYMBOL_NEXT,
                rgui->colors.normal_color, rgui->colors.shadow_color);
 #endif
       else
-         blit_line(rgui, fb_width, key_text_x, key_text_y, key_text,
+         rgui_blit_line(rgui, fb_width, key_text_x, key_text_y, key_text,
                rgui->colors.normal_color, rgui->colors.shadow_color);
       
       /* Draw selection pointer */
@@ -4750,17 +4747,17 @@ static void rgui_render_toggle_switch(rgui_t *rgui, unsigned fb_width, int x, in
     * > Note that we indent the left/right symbols
     *   by 1 pixel, to avoid the gap that is normally
     *   present between symbols/characters */
-   blit_symbol(rgui, fb_width, x_current + 1, y,
+   rgui_blit_symbol(rgui, fb_width, x_current + 1, y,
          on ? RGUI_SYMBOL_SWITCH_ON_LEFT : RGUI_SYMBOL_SWITCH_OFF_LEFT,
          color, shadow_color);
    x_current += RGUI_SYMBOL_WIDTH_STRIDE;
 
-   blit_symbol(rgui, fb_width, x_current, y,
+   rgui_blit_symbol(rgui, fb_width, x_current, y,
          on ? RGUI_SYMBOL_SWITCH_ON_CENTRE : RGUI_SYMBOL_SWITCH_OFF_CENTRE,
          color, shadow_color);
    x_current += RGUI_SYMBOL_WIDTH_STRIDE;
 
-   blit_symbol(rgui, fb_width, x_current - 1, y,
+   rgui_blit_symbol(rgui, fb_width, x_current - 1, y,
          on ? RGUI_SYMBOL_SWITCH_ON_RIGHT : RGUI_SYMBOL_SWITCH_OFF_RIGHT,
          color, shadow_color);
 }
@@ -5122,7 +5119,7 @@ static void rgui_render(void *data,
                rgui->flags & RGUI_FLAG_BG_THICKNESS);
 
          /* Draw thumbnail title */
-         blit_line(rgui, fb_width, ticker_x_offset + title_x,
+         rgui_blit_line(rgui, fb_width, ticker_x_offset + title_x,
                1, thumbnail_title_buf,
                rgui->colors.hover_color, rgui->colors.shadow_color);
       }
@@ -5232,11 +5229,11 @@ static void rgui_render(void *data,
                      (RGUI_SYMBOL_WIDTH_STRIDE + (powerstate_len * rgui->font_width_stride)));
 
                /* Draw symbol */
-               blit_symbol(rgui, fb_width, powerstate_x, title_y, powerstate_symbol,
+               rgui_blit_symbol(rgui, fb_width, powerstate_x, title_y, powerstate_symbol,
                            powerstate_color, rgui->colors.shadow_color);
 
                /* Print text */
-               blit_line(rgui, fb_width,
+               rgui_blit_line(rgui, fb_width,
                      powerstate_x + RGUI_SYMBOL_WIDTH_STRIDE + rgui->font_width_stride, title_y,
                      percent_str, powerstate_color, rgui->colors.shadow_color);
 
@@ -5290,7 +5287,7 @@ static void rgui_render(void *data,
          if (title_len > title_max_len - (powerstate_len - 5))
             title_x -= (powerstate_len - 5) * rgui->font_width_stride / 2;
 
-      blit_line(rgui, fb_width, title_x, title_y,
+      rgui_blit_line(rgui, fb_width, title_x, title_y,
             title_buf, rgui->colors.title_color, rgui->colors.shadow_color);
 
       /* Print menu entries */
@@ -5440,7 +5437,7 @@ static void rgui_render(void *data,
          }
 
          /* Print entry title */
-         blit_line(rgui, fb_width,
+         rgui_blit_line(rgui, fb_width,
                ticker_x_offset + x + (2 * rgui->font_width_stride), y,
                entry_title_buf,
                entry_color, rgui->colors.shadow_color);
@@ -5478,7 +5475,7 @@ static void rgui_render(void *data,
                      entry_value_color = rgui->colors.disabled_color;
 
                   /* Print entry value */
-                  blit_line(rgui,
+                  rgui_blit_line(rgui,
                         fb_width,
                         ticker_x_offset + term_end_x - ((entry_value_len + 1) * rgui->font_width_stride),
                         y,
@@ -5507,7 +5504,7 @@ static void rgui_render(void *data,
             case RGUI_ENTRY_VALUE_CHECKMARK:
                /* Print marker for currently selected
                 * item in drop-down lists */
-               blit_symbol(rgui, fb_width, x + rgui->font_width_stride, y,
+               rgui_blit_symbol(rgui, fb_width, x + rgui->font_width_stride, y,
                      RGUI_SYMBOL_CHECKMARK,
                      entry_color, rgui->colors.shadow_color);
                break;
@@ -5517,7 +5514,7 @@ static void rgui_render(void *data,
 
          /* Print selection marker, if required */
          if (entry_selected)
-            blit_line(rgui, fb_width, x, y, ">",
+            rgui_blit_line(rgui, fb_width, x, y, ">",
                   entry_color, rgui->colors.shadow_color);
       }
 
@@ -5574,7 +5571,7 @@ static void rgui_render(void *data,
             gfx_animation_ticker(&ticker);
          }
 
-         blit_line(rgui,
+         rgui_blit_line(rgui,
                fb_width,
                ticker_x_offset + rgui->term_layout.start_x + rgui->font_width_stride,
                (rgui->term_layout.height * rgui->font_height_stride) +
@@ -5610,7 +5607,7 @@ static void rgui_render(void *data,
             gfx_animation_ticker(&ticker);
          }
 
-         blit_line(rgui,
+         rgui_blit_line(rgui,
                fb_width,
                ticker_x_offset + rgui->term_layout.start_x + rgui->font_width_stride,
                (rgui->term_layout.height * rgui->font_height_stride) +
@@ -5633,7 +5630,7 @@ static void rgui_render(void *data,
 
          menu_display_timedate(&datetime);
 
-         blit_line(rgui,
+         rgui_blit_line(rgui,
                fb_width,
                timedate_x,
                (rgui->term_layout.height * rgui->font_height_stride) +
@@ -6291,8 +6288,8 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->theme_dynamic_path[0]      = '\0';
    rgui->last_theme_dynamic_path[0] = '\0';
    if (rgui_color_theme == RGUI_THEME_DYNAMIC)
-      update_dynamic_theme_path(rgui, dynamic_theme_dir);
-   prepare_rgui_colors(rgui,
+      rgui_update_dynamic_theme_path(rgui, dynamic_theme_dir);
+   rgui_prepare_colors(rgui,
          settings->uints.menu_rgui_color_theme,
          settings->paths.path_rgui_theme_preset,
          settings->bools.menu_rgui_transparency,
@@ -6324,7 +6321,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
       rgui_init_particle_effect(rgui, p_disp);
 
-   /* Set initial 'blit_line/symbol' functions */
+   /* Set initial 'rgui_blit_line/rgui_blit_symbol' functions */
    rgui_set_blit_functions(
          rgui->language,
          settings->bools.menu_rgui_shadows,
@@ -7057,7 +7054,7 @@ static void rgui_populate_entries(void *data,
       rgui_fonts_free(rgui);
       rgui_fonts_init(rgui);
 
-      /* Update blit_line functions */
+      /* Update rgui_blit_line functions */
       rgui_set_blit_functions(
             rgui->language,
             rgui->flags & RGUI_FLAG_SHADOW_ENABLE,
@@ -7113,7 +7110,7 @@ msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST)))
    
    /* If dynamic themes are enabled, update the theme path */
    if (rgui->color_theme == RGUI_THEME_DYNAMIC)
-      update_dynamic_theme_path(rgui, dynamic_theme_dir);
+      rgui_update_dynamic_theme_path(rgui, dynamic_theme_dir);
    
    /* Cancel any pending thumbnail load operations */
    rgui->flags &= ~RGUI_FLAG_THUMBNAIL_LOAD_PENDING;
@@ -7368,10 +7365,10 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
                ((rgui->flags & RGUI_FLAG_TRANSPARENCY_ENABLE) > 0))))
    {
       if (settings->uints.menu_rgui_color_theme == RGUI_THEME_DYNAMIC)
-         update_dynamic_theme_path(rgui,
+         rgui_update_dynamic_theme_path(rgui,
                settings->paths.directory_dynamic_wallpapers);
 
-      prepare_rgui_colors(rgui,
+      rgui_prepare_colors(rgui,
             settings->uints.menu_rgui_color_theme,
             settings->paths.path_rgui_theme_preset,
             settings->bools.menu_rgui_transparency,
@@ -7382,7 +7379,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    {
       if (!string_is_equal(settings->paths.path_rgui_theme_preset,
             rgui->theme_preset_path))
-         prepare_rgui_colors(rgui,
+         rgui_prepare_colors(rgui,
                settings->uints.menu_rgui_color_theme,
                settings->paths.path_rgui_theme_preset,
                settings->bools.menu_rgui_transparency,
@@ -7393,7 +7390,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    {
       if (!string_is_equal(rgui->last_theme_dynamic_path,
             rgui->theme_dynamic_path))
-         prepare_rgui_colors(rgui,
+         rgui_prepare_colors(rgui,
                settings->uints.menu_rgui_color_theme,
                settings->paths.path_rgui_theme_preset,
                settings->bools.menu_rgui_transparency,
