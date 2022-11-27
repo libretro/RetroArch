@@ -787,7 +787,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          d3d12_set_hdr10(d3d12, true);
       }
    } 
-#endif // HAVE_DXGI_HDR
+#endif /* HAVE_DXGI_HDR */
 
    for (i = 0; i < d3d12->shader_preset->luts; i++)
    {
@@ -1471,16 +1471,20 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
 
       if (SUCCEEDED(d3d12->device->lpVtbl->QueryInterface(d3d12->device, uuidof(ID3D12InfoQueue), (void*)&d3d12->info_queue)))
       {
-         //d3d12->info_queue->lpVtbl->SetBreakOnSeverity(d3d12->info_queue, D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+#if 0
+         d3d12->info_queue->lpVtbl->SetBreakOnSeverity(d3d12->info_queue, D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+#endif
          d3d12->info_queue->lpVtbl->SetBreakOnSeverity(d3d12->info_queue, D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
-         //d3d12->info_queue->lpVtbl->SetBreakOnSeverity(d3d12->info_queue, D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+#if 0
+         d3d12->info_queue->lpVtbl->SetBreakOnSeverity(d3d12->info_queue, D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+#endif
       }
    }
 
    if (!SUCCEEDED(D3D12GetDebugInterface(uuidof(ID3D12DeviceRemovedExtendedDataSettings), (void*)&d3d12->device_removed_info)))
       RARCH_WARN("[D3D12]: Could not create D3D12 device removed info.\n");
 
-   // Turn on AutoBreadcrumbs and Page Fault reporting
+   /* Turn on AutoBreadcrumbs and Page Fault reporting */
    d3d12->device_removed_info->lpVtbl->SetAutoBreadcrumbsEnablement(d3d12->device_removed_info, D3D12_DRED_ENABLEMENT_FORCED_ON);
    d3d12->device_removed_info->lpVtbl->SetPageFaultEnablement(d3d12->device_removed_info, D3D12_DRED_ENABLEMENT_FORCED_ON);
    d3d12->device_removed_info->lpVtbl->SetWatsonDumpEnablement(d3d12->device_removed_info, D3D12_DRED_ENABLEMENT_FORCED_ON);
@@ -2534,13 +2538,9 @@ static bool d3d12_gfx_frame(
                   &d3d12->pass[i].scissorRect);
 
             if (i == d3d12->shader_preset->passes - 1)
-            {
                D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
-            }
             else
-            {
                D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 4, 0);
-            }
 
             d3d12_resource_transition(
                   d3d12->queue.cmd, d3d12->pass[i].rt.handle,
@@ -2616,10 +2616,8 @@ static bool d3d12_gfx_frame(
    D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->frame.viewport);
    D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->frame.scissorRect);
 
-   if (d3d12->shader_preset == NULL || d3d12->pass[0].rt.handle)
-   {
+   if (!d3d12->shader_preset || d3d12->pass[0].rt.handle)
       D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
-   }   
 
    D3D12SetPipelineState(d3d12->queue.cmd,
          d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);

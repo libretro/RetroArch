@@ -2207,13 +2207,9 @@ D3D11_ST_FLAG_HAS_ALLOW_TEARING)) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
          context->lpVtbl->RSSetViewports(context, 1, &d3d11->pass[i].viewport);
 
          if (i == d3d11->shader_preset->passes - 1)
-         {
             context->lpVtbl->Draw(context, 4, 0);
-         }
          else
-         {
             context->lpVtbl->Draw(context, 4, 4);
-         }
 
          texture = &d3d11->pass[i].rt;
       }
