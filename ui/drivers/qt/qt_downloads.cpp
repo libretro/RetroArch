@@ -27,11 +27,9 @@ extern "C" {
 }
 #endif
 
-#undef TEMP_EXTENSION
 #undef USER_AGENT
 #define USER_AGENT "RetroArch-WIMP/" PACKAGE_VERSION
 #define PARTIAL_EXTENSION ".partial"
-#define TEMP_EXTENSION ".tmp"
 #define THUMBNAIL_URL_HEADER "https://thumbnails.libretro.com/"
 #define THUMBNAIL_IMAGE_EXTENSION ".png"
 
