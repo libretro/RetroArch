@@ -114,6 +114,10 @@
 
 #include "config.def.h"
 
+#ifdef HAVE_MENU
+#include "menu/menu_driver.h"
+#endif
+
 #include "runloop.h"
 #include "camera/camera_driver.h"
 #include "location_driver.h"

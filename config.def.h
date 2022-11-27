@@ -22,14 +22,14 @@
 #include <audio/audio_resampler.h>
 #include "configuration.h"
 #include "gfx/video_defines.h"
-#include "input/input_driver.h"
+#include "input/input_defines.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #ifdef HAVE_NETWORKING
-#include "network/netplay/netplay.h"
+#include "network/netplay/netplay_defines.h"
 #endif
 
 /* Required for 3DS display mode setting */
@@ -563,9 +563,9 @@
 #define DEFAULT_INPUT_OVERLAY_AUTO_SCALE false
 #endif
 
-#include "runtime_file.h"
+#include "runtime_file_defines.h"
 #ifdef HAVE_MENU
-#include "menu/menu_driver.h"
+#include "menu/menu_defines.h"
 
 #ifdef HAVE_LIBNX
 #define DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME true
