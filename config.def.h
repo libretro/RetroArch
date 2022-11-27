@@ -588,124 +588,92 @@
 #endif
 
 #define DEFAULT_SETTINGS_SHOW_DRIVERS true
-
 #define DEFAULT_SETTINGS_SHOW_VIDEO true
-
 #define DEFAULT_SETTINGS_SHOW_AUDIO true
-
 #define DEFAULT_SETTINGS_SHOW_INPUT true
-
 #define DEFAULT_SETTINGS_SHOW_LATENCY true
-
 #define DEFAULT_SETTINGS_SHOW_CORE true
-
 #define DEFAULT_SETTINGS_SHOW_CONFIGURATION true
-
 #define DEFAULT_SETTINGS_SHOW_SAVING true
-
 #define DEFAULT_SETTINGS_SHOW_LOGGING true
-
 #define DEFAULT_SETTINGS_SHOW_FILE_BROWSER true
-
 #define DEFAULT_SETTINGS_SHOW_FRAME_THROTTLE true
-
 #define DEFAULT_SETTINGS_SHOW_RECORDING true
-
 #define DEFAULT_SETTINGS_SHOW_ONSCREEN_DISPLAY true
-
 #define DEFAULT_SETTINGS_SHOW_USER_INTERFACE true
-
 #define DEFAULT_SETTINGS_SHOW_AI_SERVICE true
-
 #define DEFAULT_SETTINGS_SHOW_ACCESSIBILITY true
-
 #define DEFAULT_SETTINGS_SHOW_POWER_MANAGEMENT true
-
 #define DEFAULT_SETTINGS_SHOW_ACHIEVEMENTS true
-
 #define DEFAULT_SETTINGS_SHOW_NETWORK true
-
 #define DEFAULT_SETTINGS_SHOW_PLAYLISTS true
-
 #define DEFAULT_SETTINGS_SHOW_USER true
-
 #define DEFAULT_SETTINGS_SHOW_DIRECTORY true
-
 #define DEFAULT_SETTINGS_SHOW_STEAM true
 
 #define DEFAULT_QUICK_MENU_SHOW_RESUME_CONTENT true
-
 #define DEFAULT_QUICK_MENU_SHOW_RESTART_CONTENT true
-
 #define DEFAULT_QUICK_MENU_SHOW_CLOSE_CONTENT true
-
 #define DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT true
-
 #define DEFAULT_QUICK_MENU_SHOW_SAVESTATE_SUBMENU false
-
 #define DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE true
-
 #define DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE true
-
-static const bool quick_menu_show_add_to_favorites            = true;
-static const bool quick_menu_show_start_recording             = true;
-static const bool quick_menu_show_start_streaming             = true;
-static const bool quick_menu_show_set_core_association        = true;
-static const bool quick_menu_show_reset_core_association      = true;
-static const bool quick_menu_show_options                     = true;
-
+#define DEFAULT_QUICK_MENU_SHOW_ADD_TO_FAVORITES true
+#define DEFAULT_QUICK_MENU_SHOW_START_RECORDING true
+#define DEFAULT_QUICK_MENU_SHOW_START_STREAMING true
+#define DEFAULT_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION true
+#define DEFAULT_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION true
+#define DEFAULT_QUICK_MENU_SHOW_CORE_OPTIONS true
 #define DEFAULT_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH false
-
-static const bool quick_menu_show_controls                    = true;
-static const bool quick_menu_show_cheats                      = true;
-static const bool quick_menu_show_shaders                     = true;
-static const bool quick_menu_show_information                 = true;
-static const bool quick_menu_show_recording                   = true;
-static const bool quick_menu_show_streaming                   = true;
-
-static const bool quick_menu_show_save_core_overrides         = true;
-static const bool quick_menu_show_save_game_overrides         = true;
-static const bool quick_menu_show_save_content_dir_overrides  = true;
-
+#define DEFAULT_QUICK_MENU_SHOW_CONTROLS true
+#define DEFAULT_QUICK_MENU_SHOW_LATENCY true
+#define DEFAULT_QUICK_MENU_SHOW_REWIND true
+#define DEFAULT_QUICK_MENU_SHOW_OVERLAYS true
+#define DEFAULT_QUICK_MENU_SHOW_VIDEO_LAYOUT false
+#define DEFAULT_QUICK_MENU_SHOW_CHEATS true
+#define DEFAULT_QUICK_MENU_SHOW_SHADERS true
+#define DEFAULT_QUICK_MENU_SHOW_INFORMATION true
+#define DEFAULT_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES true
+#define DEFAULT_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES true
+#define DEFAULT_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES true
 #ifdef HAVE_NETWORKING
-static const bool quick_menu_show_download_thumbnails         = true;
+#define DEFAULT_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS true
 #endif
 
-#define DEFAULT_KIOSK_MODE_ENABLE false
-
-#define DEFAULT_MENU_HORIZONTAL_ANIMATION true
-
-static const bool menu_show_online_updater     = true;
-static const bool menu_show_load_core          = true;
-static const bool menu_show_load_content       = true;
+#define DEFAULT_MENU_SHOW_ONLINE_UPDATER true
+#if defined(HAVE_LAKKA) || defined(VITA)
+#define DEFAULT_MENU_SHOW_CORE_UPDATER false
+#else
+#define DEFAULT_MENU_SHOW_CORE_UPDATER true
+#endif
+#define DEFAULT_MENU_SHOW_LOAD_CORE true
+#define DEFAULT_MENU_SHOW_LOAD_CONTENT true
 #ifdef HAVE_CDROM
-static const bool menu_show_load_disc          = true;
-static const bool menu_show_dump_disc          = true;
+#define DEFAULT_MENU_SHOW_LOAD_DISC true
+#define DEFAULT_MENU_SHOW_DUMP_DISC true
 #ifdef HAVE_LAKKA
-static const bool menu_show_eject_disc         = true;
+#define DEFAULT_MENU_SHOW_EJECT_DISC true
 #endif /* HAVE_LAKKA */
 #endif
-static const bool menu_show_information        = true;
-static const bool menu_show_configurations     = true;
-static const bool menu_show_help               = true;
-static const bool menu_show_quit_retroarch     = true;
-static const bool menu_show_restart_retroarch  = true;
-static const bool menu_show_reboot             = true;
-static const bool menu_show_shutdown           = true;
-#if defined(HAVE_LAKKA) || defined(VITA)
-static const bool menu_show_core_updater       = false;
-#else
-static const bool menu_show_core_updater       = true;
-#endif
+#define DEFAULT_MENU_SHOW_INFORMATION true
+#define DEFAULT_MENU_SHOW_CONFIGURATIONS true
+#define DEFAULT_MENU_SHOW_HELP true
+#define DEFAULT_MENU_SHOW_QUIT true
+#define DEFAULT_MENU_SHOW_RESTART true
+#define DEFAULT_MENU_SHOW_REBOOT true
+#define DEFAULT_MENU_SHOW_SHUTDOWN true
 #ifdef HAVE_MIST
-static const bool menu_show_core_manager_steam = true;
+#define DEFAULT_MENU_SHOW_CORE_MANAGER_STEAM true
 #endif
-static const bool menu_show_legacy_thumbnail_updater = false;
+#define DEFAULT_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER false
+
 #define DEFAULT_MENU_SHOW_SUBLABELS true
 #define DEFAULT_MENU_DYNAMIC_WALLPAPER_ENABLE true
 #define DEFAULT_MENU_SCROLL_FAST false
-
 #define DEFAULT_MENU_SCROLL_DELAY 256
+
+#define DEFAULT_KIOSK_MODE_ENABLE false
+#define DEFAULT_MENU_HORIZONTAL_ANIMATION true
 
 #define DEFAULT_MENU_TICKER_TYPE (TICKER_TYPE_LOOP)
 static const float menu_ticker_speed        = 2.0f;
@@ -735,23 +703,23 @@ static const float menu_ticker_speed        = 2.0f;
 #define DEFAULT_MENU_SCREENSAVER_ANIMATION_SPEED 1.0f
 #endif
 
-static const bool content_show_settings     = true;
-static const bool content_show_favorites    = true;
+#define DEFAULT_CONTENT_SHOW_SETTINGS true
+#define DEFAULT_CONTENT_SHOW_HISTORY true
+#define DEFAULT_CONTENT_SHOW_FAVORITES true
 #ifdef HAVE_IMAGEVIEWER
-static const bool content_show_images       = true;
+#define DEFAULT_CONTENT_SHOW_IMAGES true
 #endif
-static const bool content_show_music        = true;
+#define DEFAULT_CONTENT_SHOW_MUSIC false
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-static const bool content_show_video        = true;
+#define DEFAULT_CONTENT_SHOW_VIDEO true
 #endif
 #if defined(HAVE_NETWORKING)
 #if defined(_3DS)
-static const bool content_show_netplay      = false;
+#define DEFAULT_CONTENT_SHOW_NETPLAY false
 #else
-static const bool content_show_netplay      = true;
+#define DEFAULT_CONTENT_SHOW_NETPLAY true
 #endif
 #endif
-static const bool content_show_history      = true;
 
 /* Specifies 'add content' visibility when using
  * menus WITH a dedicated 'Import Content' tab */
@@ -760,7 +728,8 @@ static const bool content_show_history      = true;
  * menus WITHOUT a dedicated 'Import Content' tab */
 #define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
 
-static const bool content_show_playlists    = true;
+#define DEFAULT_CONTENT_SHOW_PLAYLISTS true
+
 #if defined(HAVE_LIBRETRODB)
 #define DEFAULT_MENU_CONTENT_SHOW_EXPLORE true
 #endif
