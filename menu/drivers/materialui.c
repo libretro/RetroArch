@@ -8603,8 +8603,7 @@ static void materialui_populate_entries(
    /* Check whether this is the core updater menu
     * (this requires special handling when long
     * pressing an entry) */
-   if (string_is_equal(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)))
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)))
       mui->flags        |=   MUI_FLAG_IS_CORE_UPDATER_LIST;
    else
       mui->flags        &= ~(MUI_FLAG_IS_CORE_UPDATER_LIST);
@@ -8619,9 +8618,8 @@ static void materialui_populate_entries(
                            | MUI_FLAG_IS_DROPDOWN_LIST);
 
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)) ||
-                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) ||
-                      string_is_equal(label,
-msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)))
+         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) ||
+         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)))
       mui->flags |= MUI_FLAG_IS_PLAYLIST;
    else
    {
@@ -8630,39 +8628,37 @@ msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)))
        *   as the 'label' when navigating directories after
        *   selecting load content */
       if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) ||
-                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)) ||
-                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
-                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
-                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST)) ||
-                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
-                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)) ||
-                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS)) ||
-                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD)) ||
-                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND)) ||
-                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)) ||
-                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_OVERLAY)) ||
-                          string_is_equal(label,
-msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST)))
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_OVERLAY)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST)))
          mui->flags |= MUI_FLAG_IS_FILE_LIST;
       else
       {
          if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PARAMETER)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PRESET_PARAMETER)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX)) ||
-            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION)) ||
-            string_is_equal(label,
-msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD)))
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PARAMETER)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PRESET_PARAMETER)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD)))
             mui->flags |=  MUI_FLAG_IS_DROPDOWN_LIST;
          else
             mui->flags &= ~MUI_FLAG_IS_DROPDOWN_LIST;
@@ -10280,7 +10276,6 @@ static void materialui_list_insert(
          case MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS:
          case MENU_SETTING_ACTION_CORE_LOCK:
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
-         case MENU_EXPLORE_TAB:
          case MENU_CONTENTLESS_CORES_TAB:
             node->icon_texture_index = MUI_TEXTURE_CORES;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
@@ -10316,6 +10311,13 @@ static void materialui_list_insert(
             node->icon_texture_index = MUI_TEXTURE_DATABASE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
+         case MENU_EXPLORE_TAB:
+            if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE)))
+               node->icon_texture_index = MUI_TEXTURE_FOLDER;
+            else
+               node->icon_texture_index = MUI_TEXTURE_DATABASE;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            break;
          case FILE_TYPE_RDB_ENTRY:
             if (string_is_equal(fullpath, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION)))
                node->icon_texture_index = MUI_TEXTURE_DATABASE;
@@ -10324,10 +10326,21 @@ static void materialui_list_insert(
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_IN_CARCHIVE:
-         case FILE_TYPE_PLAIN:
          case FILE_TYPE_DOWNLOAD_CORE_CONTENT:
          case FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES:
             node->icon_texture_index = MUI_TEXTURE_FILE;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            break;
+         case FILE_TYPE_PLAIN:
+            if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_ITEM)))
+            {
+               if (string_is_equal(path, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW)))
+                  node->icon_texture_index = MUI_TEXTURE_SAVE_STATE;
+               else if (string_is_equal(path, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW)))
+                  node->icon_texture_index = MUI_TEXTURE_CLOSE;
+            }
+            else
+               node->icon_texture_index = MUI_TEXTURE_FILE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_MUSIC:
@@ -10447,7 +10460,8 @@ static void materialui_list_insert(
                node->icon_texture_index = MUI_TEXTURE_INFO;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST)) ||
+            else if (
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST))
                   )
             {
@@ -10563,10 +10577,8 @@ static void materialui_list_insert(
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE))
-                  ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN_MUSIC))
-                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN_MUSIC)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD))
                   )
             {
@@ -10850,7 +10862,10 @@ static void materialui_list_insert(
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_ITEM)))
+            {
+               node->icon_texture_index = MUI_TEXTURE_DATABASE;
                node->icon_type          = MUI_ICON_TYPE_MENU_EXPLORE;
+            }
             else if (string_ends_with_size(label, "_input_binds_list",
                      strlen(label), STRLEN_CONST("_input_binds_list")))
             {
@@ -10869,6 +10884,16 @@ static void materialui_list_insert(
                      node->icon_type          = MUI_ICON_TYPE_INTERNAL;
                   }
                }
+            }
+            /* Playlist manager icons */
+            else if (string_is_equal(fullpath, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST)))
+            {
+               /* Set defaults */
+               node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+               if (mui->textures.playlist.size >= 1)
+                  if (!string_is_empty(path))
+                     materialui_set_node_playlist_icon(mui, node, path);
             }
             break;
       }

@@ -245,10 +245,10 @@ enum
    XMB_SYSTEM_TAB_NETPLAY,
 #endif
    XMB_SYSTEM_TAB_ADD,
+   XMB_SYSTEM_TAB_CONTENTLESS_CORES,
 #if defined(HAVE_LIBRETRODB)
    XMB_SYSTEM_TAB_EXPLORE,
 #endif
-   XMB_SYSTEM_TAB_CONTENTLESS_CORES,
 
    /* End of this enum - use the last one to determine num of possible tabs */
    XMB_SYSTEM_TAB_MAX_LENGTH
@@ -303,10 +303,10 @@ typedef struct xmb_handle
    xmb_node_t history_tab_node;
    xmb_node_t favorites_tab_node;
    xmb_node_t add_tab_node;
+   xmb_node_t contentless_cores_tab_node;
 #if defined(HAVE_LIBRETRODB)
    xmb_node_t explore_tab_node;
 #endif
-   xmb_node_t contentless_cores_tab_node;
    xmb_node_t netplay_tab_node;
    menu_input_pointer_t pointer;
 
@@ -2534,8 +2534,7 @@ static void xmb_context_reset_horizontal_list(
       else if (string_ends_with_size(xmb->horizontal_list.list[i].label, ".lvw",
               strlen(xmb->horizontal_list.list[i].label), STRLEN_CONST(".lvw")))
       {
-         /* For now use a default icon for views */
-         node->icon = xmb->textures.list[XMB_TEXTURE_FILE];
+         node->icon = xmb->textures.list[XMB_TEXTURE_CURSOR];
       }
    }
 
@@ -2764,6 +2763,9 @@ static void xmb_populate_entries(void *data,
 
    /* Determine whether to show entry index */
    /* Update list size & entry index texts */
+   if (show_entry_idx)
+      xmb->entry_index_str[0] = '\0';
+
    if ((xmb->entry_idx_enabled = show_entry_idx &&
          !xmb->is_quick_menu &&
          (xmb->is_playlist || xmb->is_explore_list)))
@@ -2850,7 +2852,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 {
    switch (enum_idx)
    {
-      case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
       case MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST:
       case MENU_ENUM_LABEL_REMAP_FILE_MANAGER_LIST:
@@ -2861,7 +2863,9 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
       case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
       case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE:
       case MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION:
       case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES:
          return xmb->textures.list[XMB_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
@@ -2875,13 +2879,13 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_DISK_INDEX:
          return xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS];
       case MENU_ENUM_LABEL_SHADER_OPTIONS:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS:
          return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
       case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
       case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
          return xmb->textures.list[XMB_TEXTURE_ACHIEVEMENT_LIST];
       case MENU_ENUM_LABEL_SAVESTATE_LIST:
       case MENU_ENUM_LABEL_SAVE_STATE:
-      case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
       case MENU_ENUM_LABEL_CORE_CREATE_BACKUP:
       case MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE:
       case MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE:
@@ -2899,30 +2903,36 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
       case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
       case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
-      case MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD:
       case MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST:
          return xmb->textures.list[XMB_TEXTURE_LOADSTATE];
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT:
          return xmb->textures.list[XMB_TEXTURE_SCREENSHOT];
       case MENU_ENUM_LABEL_DELETE_ENTRY:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CLOSE_CONTENT:
          return xmb->textures.list[XMB_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_RESTART_CONTENT:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESTART_CONTENT:
       case MENU_ENUM_LABEL_REBOOT:
       case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
       case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
       case MENU_ENUM_LABEL_RESTART_RETROARCH:
-      case MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_REFRESH_RATE:
-      case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
-      case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
       case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS:
       case MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST:
       case MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST:
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
+      case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
+         /* Only show icon in Throttle settings */
+         if (xmb->depth < 3)
+            return xmb->textures.list[XMB_TEXTURE_RELOAD];
+         break;
       case MENU_ENUM_LABEL_RENAME_ENTRY:
          return xmb->textures.list[XMB_TEXTURE_RENAME];
       case MENU_ENUM_LABEL_RESUME_CONTENT:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESUME_CONTENT:
          return xmb->textures.list[XMB_TEXTURE_RESUME];
       case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY:
       case MENU_ENUM_LABEL_SCAN_DIRECTORY:
       case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
@@ -2934,12 +2944,14 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
          return xmb->textures.list[XMB_TEXTURE_ADD];
       case MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR:
+      case MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB:
          return xmb->textures.list[XMB_TEXTURE_RDB];
 
       /* Menu collection submenus */
       case MENU_ENUM_LABEL_PLAYLISTS_TAB:
          return xmb->textures.list[XMB_TEXTURE_ZIP];
       case MENU_ENUM_LABEL_GOTO_FAVORITES:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES:
          return xmb->textures.list[XMB_TEXTURE_FAVORITE];
       case MENU_ENUM_LABEL_GOTO_IMAGES:
          return xmb->textures.list[XMB_TEXTURE_IMAGE];
@@ -2948,9 +2960,11 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_GOTO_MUSIC:
          return xmb->textures.list[XMB_TEXTURE_MUSIC];
       case MENU_ENUM_LABEL_GOTO_EXPLORE:
-         return xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
+         if (!string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE)))
+            return xmb->textures.list[XMB_TEXTURE_CURSOR];
+         return xmb->textures.list[XMB_TEXTURE_RDB];
       case MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES:
-         return xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
+         return xmb->textures.list[XMB_TEXTURE_CORE];
       case MENU_ENUM_LABEL_LOAD_DISC:
       case MENU_ENUM_LABEL_DUMP_DISC:
 #ifdef HAVE_LAKKA
@@ -2958,7 +2972,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 #endif
       case MENU_ENUM_LABEL_DISC_INFORMATION:
          return xmb->textures.list[XMB_TEXTURE_DISC];
-
       case MENU_ENUM_LABEL_CONTENT_SETTINGS:
       case MENU_ENUM_LABEL_UPDATE_ASSETS:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
@@ -2971,12 +2984,14 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CORE_LIST:
       case MENU_ENUM_LABEL_SIDELOAD_CORE_LIST:
       case MENU_ENUM_LABEL_CORE_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_CORE:
       case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
       case MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES:
       case MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
       case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION:
       case MENU_ENUM_LABEL_CORE_INFORMATION:
          return xmb->textures.list[XMB_TEXTURE_CORE];
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
@@ -2990,15 +3005,19 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_UPDATE_LAKKA:
          return xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
       case MENU_ENUM_LABEL_UPDATE_CHEATS:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS:
          return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
       case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
       case MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST:
       case MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS:
          return xmb->textures.list[XMB_TEXTURE_IMAGE];
       case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
       case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS:
 #ifdef HAVE_VIDEO_LAYOUT
       case MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO_LAYOUT:
 #endif
          return xmb->textures.list[XMB_TEXTURE_OVERLAY];
       case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
@@ -3011,6 +3030,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_INFORMATION_LIST:
       case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
       case MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION:
          return xmb->textures.list[XMB_TEXTURE_INFO];
       case MENU_ENUM_LABEL_UPDATE_DATABASES:
       case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
@@ -3027,19 +3047,27 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
          return xmb->textures.list[XMB_TEXTURE_HELP];
       case MENU_ENUM_LABEL_QUIT_RETROARCH:
-      case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
          return xmb->textures.list[XMB_TEXTURE_EXIT];
+
+      /* Settings icons */
       case MENU_ENUM_LABEL_DRIVER_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_DRIVERS:
          return xmb->textures.list[XMB_TEXTURE_DRIVERS];
       case MENU_ENUM_LABEL_VIDEO_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_VIDEO:
          return xmb->textures.list[XMB_TEXTURE_VIDEO];
       case MENU_ENUM_LABEL_AUDIO_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_AUDIO:
          return xmb->textures.list[XMB_TEXTURE_AUDIO];
       case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_MIXER];
-      case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
-         return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
+      case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_CONFIGURATION:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_FILE_BROWSER:
+         return xmb->textures.list[XMB_TEXTURE_SETTING];
       case MENU_ENUM_LABEL_INPUT_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS:
       case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
       case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
       case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:
@@ -3062,8 +3090,12 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
       case MENU_ENUM_LABEL_LATENCY_SETTINGS:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_LATENCY:
+      case MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE:
          return xmb->textures.list[XMB_TEXTURE_LATENCY];
       case MENU_ENUM_LABEL_SAVING_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_SAVING:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG:
       case MENU_ENUM_LABEL_SAVE_NEW_CONFIG:
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
@@ -3071,16 +3103,23 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
       case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE:
          return xmb->textures.list[XMB_TEXTURE_SAVING];
       case MENU_ENUM_LABEL_LOGGING_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_LOGGING:
          return xmb->textures.list[XMB_TEXTURE_LOG];
       case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
       case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_FRAME_THROTTLE:
          return xmb->textures.list[XMB_TEXTURE_FRAMESKIP];
       case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING:
       case MENU_ENUM_LABEL_RECORDING_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_RECORDING:
          return xmb->textures.list[XMB_TEXTURE_RECORD];
       case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING:
          return xmb->textures.list[XMB_TEXTURE_STREAM];
       case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
       case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
@@ -3106,14 +3145,17 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_CORE_OPTIONS_FLUSH:
       case MENU_ENUM_LABEL_REMAP_FILE_FLUSH:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH:
          return xmb->textures.list[XMB_TEXTURE_FILE];
       case MENU_ENUM_LABEL_CORE_LOCK:
       case MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT:
          return xmb->textures.list[XMB_TEXTURE_CORE];
       case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY:
          return xmb->textures.list[XMB_TEXTURE_OSD];
       case MENU_ENUM_LABEL_SHOW_WIMP:
       case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_USER_INTERFACE:
          return xmb->textures.list[XMB_TEXTURE_UI];
 #ifdef HAVE_LAKKA_SWITCH
       case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
@@ -3123,18 +3165,26 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_POWER];
 #endif
       case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_POWER_MANAGEMENT:
+      case MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP:
          return xmb->textures.list[XMB_TEXTURE_POWER];
       case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_ACHIEVEMENTS:
          return xmb->textures.list[XMB_TEXTURE_ACHIEVEMENTS];
       case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_PLAYLISTS:
          return xmb->textures.list[XMB_TEXTURE_PLAYLIST];
       case MENU_ENUM_LABEL_USER_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_USER:
          return xmb->textures.list[XMB_TEXTURE_USER];
       case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_PRIVACY];
       case MENU_ENUM_LABEL_REWIND_SETTINGS:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_REWIND:
          return xmb->textures.list[XMB_TEXTURE_REWIND];
       case MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES:
          return xmb->textures.list[XMB_TEXTURE_OVERRIDE];
       case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_NOTIFICATIONS];
@@ -3153,6 +3203,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 #endif
       case MENU_ENUM_LABEL_NETWORK_INFORMATION:
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
+      case MENU_ENUM_LABEL_SETTINGS_SHOW_NETWORK:
       case MENU_ENUM_LABEL_WIFI_SETTINGS:
       case MENU_ENUM_LABEL_NETWORK_INFO_ENTRY:
       case MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS:
@@ -3176,7 +3227,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
          return xmb->textures.list[XMB_TEXTURE_MENU_APPLY_TOGGLE];
       case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:
-      case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
          return xmb->textures.list[XMB_TEXTURE_MENU_APPLY_COG];
       case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
          return xmb->textures.list[XMB_TEXTURE_RESUME];
@@ -3188,6 +3238,12 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          uintptr_t icon = menu_explore_get_entry_icon(type);
          if (icon)
             return icon;
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW)))
+            return xmb->textures.list[XMB_TEXTURE_SAVING];
+         else if (string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW)))
+            return xmb->textures.list[XMB_TEXTURE_CLOSE];
+         else if (type != FILE_TYPE_RDB)
+            return xmb->textures.list[XMB_TEXTURE_CURSOR];
          break;
       }
 #endif
@@ -3202,7 +3258,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          break;
    }
 
-   switch(type)
+   switch (type)
    {
       case FILE_TYPE_DIRECTORY:
          return xmb->textures.list[XMB_TEXTURE_FOLDER];
@@ -3872,6 +3928,10 @@ static int xmb_draw_item(
    {
       float entry_idx_margin = 12 * xmb->last_scale_factor;
 
+#if 0
+      /* Disabled due to overlap with arrow image
+       * and previous selection icon when enough items */
+
       /* Calculate position depending on the current
        * list and if Thumbnail Vertical Disposition
        * is enabled (branchless version) */
@@ -3888,6 +3948,10 @@ static int xmb_draw_item(
          (xmb->margins_screen_top + xmb->margins_label_top +
           xmb->icon_spacing_vertical * xmb->active_item_factor) *
          menu_xmb_vertical_thumbnails;
+#else
+      float x_position         = video_width - entry_idx_margin;
+      float y_position         = video_height - entry_idx_margin;
+#endif
 
       xmb_draw_text(xmb_shadows_enable, xmb, settings,
             xmb->entry_index_str, x_position, y_position,
@@ -3958,8 +4022,30 @@ static int xmb_draw_item(
       float y                  = icon_y;
       float scale_factor       = node->zoom;
 
+      /* Explore list correction hack for not showing wrong icons as "back" icon */
+      if (xmb->is_explore_list && !xmb->is_quick_menu && texture)
+      {
+         if (node->x < -xmb->icon_spacing_horizontal / 3)
+            texture = xmb->textures.list[XMB_TEXTURE_CURSOR];
+      }
+      /* Playlist manager icons */
+      else if (xmb->depth == 3 && entry.enum_idx == MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS)
+      {
+         if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
+            texture = xmb->textures.list[XMB_TEXTURE_HISTORY];
+         else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
+            texture = xmb->textures.list[XMB_TEXTURE_FAVORITES];
+         else if (i < xmb->horizontal_list.size)
+         {
+            xmb_node_t *sidebar_node = (xmb_node_t*)
+                  file_list_get_userdata_at_offset(&xmb->horizontal_list, i + 1);
+
+            if (sidebar_node && sidebar_node->icon)
+               texture = sidebar_node->icon;
+         }
+      }
       /* "Load Content" playlists */
-      if (xmb->depth == 3 && entry_type == FILE_TYPE_PLAYLIST_COLLECTION)
+      else if (xmb->depth == 3 && entry_type == FILE_TYPE_PLAYLIST_COLLECTION)
       {
          xmb_node_t *sidebar_node = (xmb_node_t*) file_list_get_userdata_at_offset(&xmb->horizontal_list, list->list[i].entry_idx);
          if (sidebar_node && sidebar_node->icon)
@@ -4122,11 +4208,15 @@ static void xmb_draw_items(
       if (node && (uint8_t)(255 * node->alpha) == 0)
          return;
 
-      i = 0;
+      /* Draw only current item for "back" icon */
+      first = (unsigned)current;
+      last  = (unsigned)current;
    }
-
-   first = (unsigned)i;
-   last  = (unsigned)(end - 1);
+   else
+   {
+      first = (unsigned)i;
+      last  = (unsigned)(end - 1);
+   }
 
    xmb_calculate_visible_range(xmb, height,
          end, (unsigned)current, &first, &last);
@@ -5041,18 +5131,9 @@ static void xmb_draw_fullscreen_thumbnails(
           (!xmb->is_quick_menu || xmb->show_fullscreen_thumbnails))
          goto error;
 
-      /* Get thumbnail pointers
-       * > Order is swapped when using 'vertical disposition' */
-      if (xmb_vertical_thumbnails)
-      {
-         right_thumbnail = &xmb->thumbnails.left;
-         left_thumbnail  = &xmb->thumbnails.right;
-      }
-      else
-      {
-         right_thumbnail = &xmb->thumbnails.right;
-         left_thumbnail  = &xmb->thumbnails.left;
-      }
+      /* Get thumbnail pointers */
+      right_thumbnail = &xmb->thumbnails.right;
+      left_thumbnail  = &xmb->thumbnails.left;
 
       /* Get number of 'active' thumbnails */
       show_right_thumbnail = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE);
@@ -5636,7 +5717,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                float thumb_y_base        = xmb->margins_title_top + (xmb->icon_size / 4.0f);
                float thumb_y_offset      = (thumb_height - scaled_thumb_height) / 2.0f;
                float right_thumb_y       = thumb_y_base + thumb_y_offset;
-               float left_thumb_y        = thumb_y_base + thumb_height + (xmb->icon_size / 4) + thumb_y_offset;
+               float left_thumb_y        = thumb_y_base + thumb_height + (xmb->icon_size / 8) + thumb_y_offset;
 
                gfx_thumbnail_draw(
                      userdata,
@@ -5933,8 +6014,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
 
-   /* Horizontal tab icons */
-   if (!xmb->assets_missing)
+   /* Horizontal tab icons only needed on root depth */
+   if (!xmb->assets_missing && xmb->depth == 1)
    {
       for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
             + xmb->system_tab_end; i++)
@@ -6023,7 +6104,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   &mymat_tmp);
          }
       }
-
    }
 
    /* Vertical icons */
@@ -6039,9 +6119,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          xmb,
          &xmb->selection_buf_old,
          xmb->selection_ptr_old,
-         (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
-         ? xmb->categories_selection_ptr :
-         xmb->categories_selection_ptr_old,
+         (xmb->depth > 1)
+               ? xmb->categories_selection_ptr
+               : xmb->categories_selection_ptr_old,
          &xmb_item_color[0],
          video_width,
          video_height,
@@ -6049,6 +6129,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    selection_buf = menu_entries_get_selection_buf_ptr(0);
 
+   /* List icons */
    xmb_draw_items(
          userdata,
          p_disp,
@@ -6450,15 +6531,15 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
          && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
 
-#if defined(HAVE_LIBRETRODB)
-   if (settings->bools.menu_content_show_explore)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_EXPLORE;
-#endif
-
 #if defined(HAVE_DYNAMIC)
    if (settings->uints.menu_content_show_contentless_cores !=
          MENU_CONTENTLESS_CORES_DISPLAY_NONE)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_CONTENTLESS_CORES;
+#endif
+
+#if defined(HAVE_LIBRETRODB)
+   if (settings->bools.menu_content_show_explore)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_EXPLORE;
 #endif
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
@@ -6940,20 +7021,20 @@ static bool xmb_context_reset_textures(
    xmb->add_tab_node.alpha        = xmb->categories_active_alpha;
    xmb->add_tab_node.zoom         = xmb->categories_active_zoom;
 
+   xmb->contentless_cores_tab_node.icon  = xmb->textures.list[XMB_TEXTURE_CORE];
+   xmb->contentless_cores_tab_node.alpha = xmb->categories_active_alpha;
+   xmb->contentless_cores_tab_node.zoom  = xmb->categories_active_zoom;
+
 #if defined(HAVE_LIBRETRODB)
-   xmb->explore_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
+   xmb->explore_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_RDB];
    xmb->explore_tab_node.alpha    = xmb->categories_active_alpha;
    xmb->explore_tab_node.zoom     = xmb->categories_active_zoom;
 #endif
 
-   xmb->contentless_cores_tab_node.icon  = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
-   xmb->contentless_cores_tab_node.alpha = xmb->categories_active_alpha;
-   xmb->contentless_cores_tab_node.zoom  = xmb->categories_active_zoom;
-
 #ifdef HAVE_NETWORKING
-   xmb->netplay_tab_node.icon            = xmb->textures.list[XMB_TEXTURE_NETPLAY];
-   xmb->netplay_tab_node.alpha           = xmb->categories_active_alpha;
-   xmb->netplay_tab_node.zoom            = xmb->categories_active_zoom;
+   xmb->netplay_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_NETPLAY];
+   xmb->netplay_tab_node.alpha    = xmb->categories_active_alpha;
+   xmb->netplay_tab_node.zoom     = xmb->categories_active_zoom;
 #endif
 
    /* Recolor */
@@ -7095,6 +7176,12 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       if (!xmb_context_reset_textures(xmb, iconpath, menu_xmb_theme))
          xmb->assets_missing  = true;
       xmb_context_reset_background(xmb, iconpath);
+
+      xmb_free_list_nodes(&xmb->selection_buf_old, false);
+      file_list_deinitialize(&xmb->selection_buf_old);
+      xmb->selection_buf_old.list        = NULL;
+      xmb->selection_buf_old.capacity    = 0;
+      xmb->selection_buf_old.size        = 0;
    }
 
    xmb_context_reset_horizontal_list(xmb);
