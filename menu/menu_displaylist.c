@@ -4081,26 +4081,6 @@ static unsigned menu_displaylist_parse_playlists(
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
 
-#if defined(HAVE_LIBRETRODB)
-      if (settings->bools.menu_content_show_explore)
-         if (menu_entries_append(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE),
-                  MENU_ENUM_LABEL_GOTO_EXPLORE,
-                  MENU_EXPLORE_TAB, 0, 0, NULL))
-            count++;
-#endif
-
-#if defined(HAVE_DYNAMIC)
-      if (settings->uints.menu_content_show_contentless_cores !=
-            MENU_CONTENTLESS_CORES_DISPLAY_NONE)
-         if (menu_entries_append(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES),
-                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES),
-                  MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES,
-                  MENU_CONTENTLESS_CORES_TAB, 0, 0, NULL))
-            count++;
-#endif
       if (settings->bools.menu_content_show_favorites)
          if (menu_entries_append(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
@@ -4108,6 +4088,7 @@ static unsigned menu_displaylist_parse_playlists(
                   MENU_ENUM_LABEL_GOTO_FAVORITES,
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
+
       if (settings->bools.menu_content_show_images)
          if (menu_entries_append(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
@@ -4133,6 +4114,28 @@ static unsigned menu_displaylist_parse_playlists(
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
 #endif
+
+#if defined(HAVE_DYNAMIC)
+      if (settings->uints.menu_content_show_contentless_cores !=
+            MENU_CONTENTLESS_CORES_DISPLAY_NONE)
+         if (menu_entries_append(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES),
+                  MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES,
+                  MENU_CONTENTLESS_CORES_TAB, 0, 0, NULL))
+            count++;
+#endif
+
+#if defined(HAVE_LIBRETRODB)
+      if (settings->bools.menu_content_show_explore)
+         if (menu_entries_append(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE),
+                  MENU_ENUM_LABEL_GOTO_EXPLORE,
+                  MENU_EXPLORE_TAB, 0, 0, NULL))
+            count++;
+#endif
+
    }
 
    if (!dir_list_initialize(&str_list, path, NULL, true,
@@ -6872,26 +6875,6 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION_FAVORITES_DIR, 0, 0, NULL))
                   count++;
 
-#if defined(HAVE_LIBRETRODB)
-            if (settings->bools.menu_content_show_explore)
-               if (menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE),
-                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE),
-                        MENU_ENUM_LABEL_GOTO_EXPLORE,
-                        MENU_EXPLORE_TAB, 0, 0, NULL))
-                  count++;
-#endif
-
-#if defined(HAVE_DYNAMIC)
-            if (settings->uints.menu_content_show_contentless_cores !=
-                  MENU_CONTENTLESS_CORES_DISPLAY_NONE)
-               if (menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES),
-                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES),
-                        MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES,
-                        MENU_CONTENTLESS_CORES_TAB, 0, 0, NULL))
-                  count++;
-#endif
             if (menu_content_show_favorites)
                if (menu_entries_append(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
@@ -6923,6 +6906,27 @@ unsigned menu_displaylist_build_list(
                         msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
                         MENU_ENUM_LABEL_GOTO_VIDEO,
                         MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+#endif
+
+#if defined(HAVE_DYNAMIC)
+            if (settings->uints.menu_content_show_contentless_cores !=
+                  MENU_CONTENTLESS_CORES_DISPLAY_NONE)
+               if (menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES),
+                        MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES,
+                        MENU_CONTENTLESS_CORES_TAB, 0, 0, NULL))
+                  count++;
+#endif
+
+#if defined(HAVE_LIBRETRODB)
+            if (settings->bools.menu_content_show_explore)
+               if (menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE),
+                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE),
+                        MENU_ENUM_LABEL_GOTO_EXPLORE,
+                        MENU_EXPLORE_TAB, 0, 0, NULL))
                   count++;
 #endif
          }
@@ -8906,7 +8910,7 @@ unsigned menu_displaylist_build_list(
          {
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS,                             PARSE_ACTION, true     },
-               {MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS,                             PARSE_ACTION, true     },
+               {MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS,                               PARSE_ACTION, true     },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE,                                   PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_LOAD_DISC,                                   PARSE_ONLY_BOOL, true  },
@@ -8932,18 +8936,18 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN,                                    PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS,                                 PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS_PASSWORD,                        PARSE_ONLY_STRING, true},
-               {MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE,                                  PARSE_ONLY_BOOL, true  },
-#if defined(HAVE_DYNAMIC)
-               {MENU_ENUM_LABEL_CONTENT_SHOW_CONTENTLESS_CORES,                        PARSE_ONLY_UINT, true },
-#endif
+               {MENU_ENUM_LABEL_CONTENT_SHOW_ADD,                                      PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_CONTENT_SHOW_ADD_ENTRY,                                PARSE_ONLY_UINT, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES,                                PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY,                                  PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES,                                   PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC,                                    PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO,                                    PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_NETPLAY,                                  PARSE_ONLY_BOOL, true  },
-               {MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY,                                  PARSE_ONLY_BOOL, true  },
-               {MENU_ENUM_LABEL_CONTENT_SHOW_ADD,                                      PARSE_ONLY_BOOL, true  },
-               {MENU_ENUM_LABEL_CONTENT_SHOW_ADD_ENTRY,                                PARSE_ONLY_UINT, true  },
+#if defined(HAVE_DYNAMIC)
+               {MENU_ENUM_LABEL_CONTENT_SHOW_CONTENTLESS_CORES,                        PARSE_ONLY_UINT, true },
+#endif
+               {MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE,                                  PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLISTS,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_TIMEDATE_ENABLE,                                       PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_TIMEDATE_STYLE,                                        PARSE_ONLY_UINT, true  },

@@ -3643,6 +3643,10 @@ MSG_HASH(
    "video_max_swapchain_images"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "video_waitable_swapchains"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
    "video_max_frame_latency"
    )
@@ -4430,19 +4434,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING,
-   "quick_menu_show_start_recording"
+   "quick_menu_start_recording"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING,
-   "quick_menu_show_start_streaming"
+   "quick_menu_start_streaming"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING,
-   "quick_menu_show_stop_recording"
+   "quick_menu_stop_recording"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING,
-   "quick_menu_show_stop_streaming"
+   "quick_menu_stop_streaming"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,

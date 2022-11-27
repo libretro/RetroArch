@@ -1383,8 +1383,11 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
             state->view_search);
 
-   state->show_icons = (current_cat == EXPLORE_BY_SYSTEM
-         ? EXPLORE_ICONS_SYSTEM_CATEGORY : EXPLORE_ICONS_OFF);
+   state->show_icons = (current_cat == EXPLORE_BY_SYSTEM)
+         ? EXPLORE_ICONS_SYSTEM_CATEGORY
+         : (current_type >= EXPLORE_TYPE_FIRSTITEM)
+               ? EXPLORE_ICONS_CONTENT
+               : EXPLORE_ICONS_OFF;
 
    if (     current_type == MENU_EXPLORE_TAB 
          || current_type == EXPLORE_TYPE_ADDITIONALFILTER)
@@ -1537,6 +1540,7 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
       else
       {
          /* Game list */
+         state->show_icons = EXPLORE_ICONS_CONTENT;
          explore_menu_entry(list, state,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER),
                EXPLORE_TYPE_ADDITIONALFILTER, explore_action_ok);
@@ -1544,7 +1548,6 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW),
                EXPLORE_TYPE_VIEW, explore_action_ok_saveview);
          explore_menu_add_spacer(list);
-         state->show_icons = EXPLORE_ICONS_CONTENT;
       }
 
       first_list_entry = list->size;
