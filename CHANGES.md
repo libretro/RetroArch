@@ -4,7 +4,15 @@
 - CLI: Reformatted --features to require less rows and to be more consistent
 - CLI: Added -V shorthand for --version
 - CLI: Tab removal + whitespace nits
+- D3D11: Fix when using shaders with TATE mode arcades etc
+- D3D12: Fix when using shaders with TATE mode arcades etc
+- D3D12: Added support for break on errors  (development aid - define DEVICE_DEBUG to use)
+- D3D12: Added support for DRED (device remove extended data) (development aid - define DEVICE_DEBUG to use)
+- D3D12: Made D3D12 viewport and scissors to behave more like Vulkan drivers (or be more correct)
+- D3D12: Fixed validation error on start up due to buffers not being setup correctly for one frame
 - DRM/ODROID GO2: Implement get_video_size for DRM GL context driver
+- FASTFORWARD: Restore framelimit on fastforward toggle. Fast-forward was broken after toggling vrr_runloop off, since it will force frame limit to 1.0 (even on every frame) and never restores it. So let's make sure the wanted ratio is applied when toggling FF (Fastforward).
+- GFX/VIDEO FILTERS: (picoscale_256x_320x240) Added snn function to upscale Fuse (ZX Spectrum) core borderless output to 320x240. ZX Spectrum resolution of 256x192 was previously unsupported.
 - HOTKEYS: Further reorder internal hotkey items for consistency and removed SEND_DEBUG_INFO, OVERLAY_NEXT and OSK from visible hotkey bind list. "Send Debug Info" stuff is removed as much as possible without breakage due to translation files.
 - INPUT/AUTOCONFIG: Disable 'pause on controller disconnect' by default - was enabled by default on 1.13.0
 - INPUT/OVERLAY: Fix analog drift blocking touch input (could occur on overlay_next if physical inputs shown on overlay)
@@ -26,6 +34,7 @@
 - MENU/OZONE: Removed gradient background effect when core is running, because some themes already have gradient background, which creates ugly rough steps
 - MENU/OZONE: Fixed "Gray Light" theme from using the same background as "Gray Dark", which makes selection cursor near impossible to see
 - MENU/OZONE: Some whitespace corrections
+- SDL GFX: Fix no menu on start/blank screen issue. 
 - SRAM: Don't init SRAM saving without content (gets rid of the redundant logging)
 
 # 1.13.0
