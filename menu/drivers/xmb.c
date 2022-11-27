@@ -5105,7 +5105,6 @@ static void xmb_draw_fullscreen_thumbnails(
       };
       bool show_header                  = !string_is_empty(xmb->fullscreen_thumbnail_label);
       int header_height                 = show_header ? (int)((float)xmb->font_size * 1.2f) + (frame_width * 2) : 0;
-      bool xmb_vertical_thumbnails      = settings->bools.menu_xmb_vertical_thumbnails;
       bool menu_ticker_smooth           = settings->bools.menu_ticker_smooth;
       enum gfx_animation_ticker_type
          menu_ticker_type               = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
