@@ -464,6 +464,17 @@ enum dingux_rs90_softfilter_type
 };
 #endif
 
+/* Specifies all available screensaver effects */
+enum menu_screensaver_effect
+{
+   MENU_SCREENSAVER_BLANK = 0,
+   MENU_SCREENSAVER_SNOW,
+   MENU_SCREENSAVER_STARFIELD,
+   MENU_SCREENSAVER_VORTEX,
+   MENU_SCREENSAVER_LAST
+};
+
+
 RETRO_END_DECLS
 
 #endif

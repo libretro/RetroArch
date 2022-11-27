@@ -43,11 +43,6 @@
 #include "dingux/dingux_utils.h"
 #endif
 
-/* Required for menu screensaver animation */
-#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
-#include "menu/menu_screensaver.h"
-#endif
-
 /* Required for 'show inputs on overlay' setting */
 #if defined(HAVE_OVERLAY)
 #include "../input/input_overlay.h"
