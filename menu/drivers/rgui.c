@@ -4233,9 +4233,9 @@ static void rgui_set_blit_functions(unsigned language,
       }
 #else
       if (extended_ascii)
-         rgui_blit_line       = blit_line_extended_shadow;
+         rgui_blit_line       = rgui_blit_line_extended_shadow;
       else
-         rgui_blit_line       = blit_line_regular_shadow;
+         rgui_blit_line       = rgui_blit_line_regular_shadow;
 #endif
       
       rgui_blit_symbol        = rgui_blit_symbol_shadow;
