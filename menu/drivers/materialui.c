@@ -8099,12 +8099,12 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
          false, false);
    mui->dip_base_unit_size                = mui->last_scale_factor 
       * MUI_DIP_BASE_UNIT_SIZE;
+   mui->flags                             = 0;
 
    if (settings->bools.menu_materialui_show_nav_bar)
       mui->flags |= MUI_FLAG_LAST_SHOW_NAVBAR;
    if (settings->bools.menu_materialui_auto_rotate_nav_bar)
       mui->flags |= MUI_FLAG_LAST_AUTO_ROTATE_NAVBAR;
-   mui->flags                             = 0;
 
    mui->first_onscreen_entry              = 0;
    mui->last_onscreen_entry               = 0;
