@@ -23,12 +23,14 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
+#include <string/stdstring.h>
 
 #include <libretro.h>
 
 #include "../../config.def.h"
 
 #include "../input_driver.h"
+#include "../../gfx/video_driver.h"
 
 /* TODO/FIXME -
  * fix game focus toggle */
