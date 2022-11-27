@@ -1200,9 +1200,6 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_thumbnailDownloadFile()
    ,m_thumbnailDownloadReply()
    ,m_pendingThumbnailDownloadTypes()
-   ,m_thumbnailPackDownloadProgressDialog(new QProgressDialog())
-   ,m_thumbnailPackDownloadFile()
-   ,m_thumbnailPackDownloadReply()
    ,m_playlistThumbnailDownloadProgressDialog(new QProgressDialog())
    ,m_playlistThumbnailDownloadFile()
    ,m_playlistThumbnailDownloadReply()
@@ -1248,7 +1245,6 @@ MainWindow::MainWindow(QWidget *parent) :
     * they show as soon as they're constructed. */
    m_updateProgressDialog->cancel();
    m_thumbnailDownloadProgressDialog->cancel();
-   m_thumbnailPackDownloadProgressDialog->cancel();
    m_playlistThumbnailDownloadProgressDialog->cancel();
 
    m_gridProgressWidget                   = new QWidget();
@@ -1521,9 +1517,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
    connect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()), m_thumbnailDownloadProgressDialog, SLOT(cancel()));
    connect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()), this, SLOT(onThumbnailDownloadCanceled()));
-
-   connect(m_thumbnailPackDownloadProgressDialog, SIGNAL(canceled()), m_thumbnailPackDownloadProgressDialog, SLOT(cancel()));
-   connect(m_thumbnailPackDownloadProgressDialog, SIGNAL(canceled()), this, SLOT(onThumbnailPackDownloadCanceled()));
 
    connect(this, SIGNAL(itemChanged()), this, SLOT(onItemChanged()));
    connect(this, SIGNAL(gotThumbnailDownload(QString,QString)), this, SLOT(onDownloadThumbnail(QString,QString)));

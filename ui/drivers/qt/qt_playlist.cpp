@@ -814,7 +814,6 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    QScopedPointer<QAction> newPlaylistAction;
    QScopedPointer<QAction> deletePlaylistAction;
    QScopedPointer<QAction> renamePlaylistAction;
-   QScopedPointer<QAction> downloadAllThumbnailsEntireSystemAction;
    QScopedPointer<QAction> downloadAllThumbnailsThisPlaylistAction;
    QPointer<QAction> selectedAction;
    playlist_config_t playlist_config;
@@ -966,10 +965,8 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
       downloadAllThumbnailsMenu->setObjectName("downloadAllThumbnailsMenu");
 
       downloadAllThumbnailsThisPlaylistAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST), downloadAllThumbnailsMenu.data()));
-      downloadAllThumbnailsEntireSystemAction.reset(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM), downloadAllThumbnailsMenu.data()));
 
       downloadAllThumbnailsMenu->addAction(downloadAllThumbnailsThisPlaylistAction.data());
-      downloadAllThumbnailsMenu->addAction(downloadAllThumbnailsEntireSystemAction.data());
 
       menu->addMenu(downloadAllThumbnailsMenu.data());
    }
@@ -1115,17 +1112,8 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    }
    else if (selectedItem && !specialPlaylist && selectedAction->parent() == downloadAllThumbnailsMenu.data())
    {
-      if (selectedAction == downloadAllThumbnailsEntireSystemAction.data())
-      {
-         int row = m_listWidget->row(selectedItem);
-
-         if (row >= 0)
-            downloadAllThumbnails(currentPlaylistFileInfo.completeBaseName());
-      }
-      else if (selectedAction == downloadAllThumbnailsThisPlaylistAction.data())
-      {
+       if (selectedAction == downloadAllThumbnailsThisPlaylistAction.data())
          downloadPlaylistThumbnails(currentPlaylistPath);
-      }
    }
 
    setCoreActions();

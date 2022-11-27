@@ -463,10 +463,8 @@ public slots:
    void onFileDropWidgetContextMenuRequested(const QPoint &pos);
    void showAbout();
    void showDocs();
-   void onThumbnailPackExtractFinished(bool success);
    void deferReloadShaderParams();
    void downloadThumbnail(QString system, QString title, QUrl url = QUrl());
-   void downloadAllThumbnails(QString system, QUrl url = QUrl());
    void downloadPlaylistThumbnails(QString playlistPath);
    void downloadNextPlaylistThumbnail(QString system, QString title, QString type, QUrl url = QUrl());
    void changeThumbnailType(ThumbnailType type);
@@ -515,13 +513,6 @@ private slots:
    void onThumbnailDownloadReadyRead();
    void onThumbnailDownloadCanceled();
    void onDownloadThumbnail(QString system, QString title);
-
-   void onThumbnailPackDownloadNetworkError(QNetworkReply::NetworkError code);
-   void onThumbnailPackDownloadNetworkSslErrors(const QList<QSslError> &errors);
-   void onThumbnailPackDownloadFinished();
-   void onThumbnailPackDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-   void onThumbnailPackDownloadReadyRead();
-   void onThumbnailPackDownloadCanceled();
 
    void onPlaylistThumbnailDownloadNetworkError(QNetworkReply::NetworkError code);
    void onPlaylistThumbnailDownloadNetworkSslErrors(const QList<QSslError> &errors);
@@ -618,10 +609,6 @@ private:
    QFile m_thumbnailDownloadFile;
    QPointer<QNetworkReply> m_thumbnailDownloadReply;
    QStringList m_pendingThumbnailDownloadTypes;
-
-   QProgressDialog *m_thumbnailPackDownloadProgressDialog;
-   QFile m_thumbnailPackDownloadFile;
-   QPointer<QNetworkReply> m_thumbnailPackDownloadReply;
 
    QProgressDialog *m_playlistThumbnailDownloadProgressDialog;
    QFile m_playlistThumbnailDownloadFile;
