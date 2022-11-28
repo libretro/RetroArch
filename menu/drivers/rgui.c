@@ -5607,6 +5607,7 @@ static void rgui_render(
 
                   if (!entry_selected &&
                         (     string_is_equal(entry_value, "null")
+                           || string_is_equal(entry_value, "OFF")
                            || string_is_equal(entry_value, "...")))
                      entry_value_color = rgui->colors.disabled_color;
 
