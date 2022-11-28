@@ -4041,9 +4041,9 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       size_t _len;
       const char *core_label             = NULL;
       const struct playlist_entry *entry = NULL;
+      ssize_t playlist_index             = selection;
       size_t list_size                   = menu_entries_get_size();
       file_list_t *list                  = menu_entries_get_selection_buf_ptr(0);
-      size_t playlist_index              = selection;
       bool content_runtime_log           = settings->bools.content_runtime_log;
       bool content_runtime_log_aggr      = settings->bools.content_runtime_log_aggregate;
 
@@ -4061,14 +4061,16 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
             && (selection < list_size)
             && (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST))
       {
-         playlist_index = menu_explore_get_entry_playlist_index(list->list[selection].type, &playlist, &entry, list, &selection, &list_size);
+         playlist_index = menu_explore_get_entry_playlist_index(
+               list->list[selection].type, &playlist, &entry, list, &selection, &list_size);
 
          /* Fill play time if applicable */
          if (content_runtime_log || content_runtime_log_aggr)
             playlist_get_index(playlist, playlist_index, &entry);
 
          /* Remember playlist index for metadata */
-         ozone->playlist_index = playlist_index;
+         if (playlist_index >= 0)
+            ozone->playlist_index = playlist_index;
       }
 #endif
       /* Get playlist index corresponding
@@ -11251,6 +11253,7 @@ static void ozone_populate_entries(
 
    ozone->flags               |=  OZONE_FLAG_NEED_COMPUTE;
    ozone->flags               &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
+
    if (ozone->is_quick_menu)
       ozone->flags            |=  OZONE_FLAG_WAS_QUICK_MENU;
    else
@@ -11286,6 +11289,7 @@ static void ozone_populate_entries(
       ozone->flags |=  OZONE_FLAG_IS_FILE_LIST;
    else
       ozone->flags &= ~OZONE_FLAG_IS_FILE_LIST;
+
    ozone->is_quick_menu        = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) ||
                                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS)) ||
                                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST));
@@ -11317,7 +11321,7 @@ static void ozone_populate_entries(
    {
       /* Quick Menu under Explore list must also be Quick Menu */
       ozone->is_quick_menu |= menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu();
-      if (!menu_explore_is_content_list())
+      if (!menu_explore_is_content_list() || ozone->is_quick_menu)
          ozone->flags &= ~OZONE_FLAG_IS_EXPLORE_LIST;
    }
 #endif
@@ -11341,6 +11345,10 @@ static void ozone_populate_entries(
                ozone->thumbnails.left.status  == GFX_THUMBNAIL_STATUS_MISSING ||
                ozone->thumbnails.right.status == GFX_THUMBNAIL_STATUS_MISSING))
       ozone->flags |= OZONE_FLAG_SKIP_THUMBNAIL_RESET;
+
+   /* Always allow thumbnail reset in Information page */
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION)))
+      ozone->flags &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
 
    if (ozone->is_quick_menu)
    {
