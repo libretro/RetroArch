@@ -5006,11 +5006,11 @@ static void ozone_draw_entry_value(
       return;
 
    /* Text value */
-   if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-         (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
+   if (     string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED))
+         || string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
       switch_is_on = false;
-   else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-         (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))) { }
+   else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED))
+         || string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))) { }
    else
    {
       if (!string_is_empty(entry->value))

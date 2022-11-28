@@ -966,10 +966,11 @@ static void xmb_draw_text(
    if (a8 == 0)
       return;
 
-   if (string_is_equal(str, "null"))
+   if (     string_is_equal(str, "null")
+         || string_is_equal(str, "OFF"))
       a8    = 0x7F * alpha;
 
-   color              = FONT_COLOR_RGBA(
+   color    = FONT_COLOR_RGBA(
          settings->uints.menu_font_color_red,
          settings->uints.menu_font_color_green,
          settings->uints.menu_font_color_blue, a8);
@@ -3662,20 +3663,16 @@ static int xmb_draw_item(
          strlcpy(entry.path, entry_path, sizeof(entry.path));
    }
 
-   if (string_is_equal(entry.value,
-            msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-         (string_is_equal(entry.value,
-                          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
+   if (     string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED))
+         || string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
    {
       if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
          texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
       else
          do_draw_text   = true;
    }
-   else if (string_is_equal(entry.value,
-            msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-         (string_is_equal(entry.value,
-                          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
+   else if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED))
+         || string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
    {
       if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
          texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
@@ -3689,9 +3686,8 @@ static int xmb_draw_item(
          bool found = false;
          if (string_is_equal(entry.value, "..."))
             found   = true;
-         else if (string_starts_with_size(entry.value, "(", STRLEN_CONST("(")) &&
-             string_ends_with  (entry.value, ")")
-            )
+         else if (string_starts_with_size(entry.value, "(", STRLEN_CONST("("))
+               && string_ends_with(entry.value, ")"))
          {
             if (
                   string_is_equal(entry.value, "(PRESET)") ||
@@ -3715,7 +3711,6 @@ static int xmb_draw_item(
       }
       else
          do_draw_text = true;
-
    }
 
    if (string_is_empty(entry.value))
@@ -4143,9 +4138,13 @@ static int xmb_draw_item(
             &mymat_tmp);
    }
 
-   gfx_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
-
    if (texture_switch != 0 && color[3] != 0 && !xmb->assets_missing)
+   {
+      if (texture_switch == xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
+         gfx_display_set_alpha(color, MIN(node->alpha / 2, xmb->alpha));
+      else
+         gfx_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
+
       xmb_draw_icon(
             userdata,
             p_disp,
@@ -4166,6 +4165,7 @@ static int xmb_draw_item(
             &color[0],
             xmb->shadow_offset,
             mymat);
+   }
 
    return 0;
 }
