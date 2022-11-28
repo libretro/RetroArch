@@ -16,24 +16,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <kernel.h>
 
 #include <sbv_patches.h>
 #include <sifrpc.h>
 #include <iopcontrol.h>
-#include <ps2_devices.h>
-#include <ps2_irx_variables.h>
-#include <loadfile.h>
 #include <elf-loader.h>
+#include <ps2_all_drivers.h>
 #include <libpwroff.h>
-#include <audsrv.h>
-#include <libmtap.h>
-#include <libpad.h>
-
-#define NEWLIB_PORT_AWARE
-#include <fileXio_rpc.h>
-#include <fileio.h>
-#include <hdd-ioctl.h>
+#include <ps2sdkapi.h>
 
 #if defined(SCREEN_DEBUG)
 #include <debug.h>
@@ -60,12 +50,15 @@
 #define DEFAULT_PARTITION "hdd0:__common:pfs"
 #endif
 
-static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
-static char cwd[FILENAME_MAX]           = {0};
-static char mountString[10]             = {0};
-static char mountPoint[50]              = {0};
-static int hdd_mounted                  = 0;
-static int pfsModuleLoaded              = 0;
+// Disable pthread functionality
+PS2_DISABLE_AUTOSTART_PTHREAD();
+
+static enum frontend_fork ps2_fork_mode      = FRONTEND_FORK_NONE;
+static char cwd[FILENAME_MAX]                = {0};
+static char mountString[10]                  = {0};
+static char mountPoint[50]                   = {0};
+static enum HDD_MOUNT_STATUS hddMountStatus  = HDD_MOUNT_INIT_STATUS_NOT_READY;
+static enum HDD_INIT_STATUS hddStatus        = HDD_INIT_STATUS_UNKNOWN;
 
 static void create_path_names(void)
 {
@@ -141,95 +134,46 @@ static void reset_IOP()
    sbv_patch_disable_prefix_check();
 }
 
-static int hddCheck(void)
+/* This method returns true if it can extract needed info from path, otherwise false.
+ * In case of true, it also updates mountString, mountPoint and newCWD parameters
+ * It splits path by ":", and requires a minimum of 3 elements
+ * Example: if path = hdd0:__common:pfs:/retroarch/ then
+ * mountString = "pfs:"
+ * mountPoint = "hdd0:__common"
+ * newCWD = pfs:/retroarch/
+ * return true
+*/
+bool getMountInfo(char *path, char *mountString, char *mountPoint, char *newCWD)
 {
-    int ret = fileXioDevctl("hdd0:", HDIOC_STATUS, NULL, 0, NULL, 0);
-    /* 0 = HDD connected and formatted, 1 = not formatted, 2 = HDD not usable, 3 = HDD not connected. */
-    if ((ret >= 3) || (ret < 0))
-        return -1;
-    return ret;
+   struct string_list *str_list = string_split(path, ":");
+   if (str_list->size < 3 )
+   {
+      return false;
+   }
+
+   sprintf(mountPoint, "%s:%s", str_list->elems[0].data, str_list->elems[1].data);
+   sprintf(mountString, "%s:", str_list->elems[2].data);
+   sprintf(newCWD, "%s%s", mountString, str_list->size == 4 ? str_list->elems[3].data : "");
+
+   return true;
 }
 
-static void load_hdd_modules()
+static void init_drivers()
 {
-   pfsModuleLoaded = 0;
-   int ret;
-   char hddarg[] = "-o" "\0" "4" "\0" "-n" "\0" "20";
-
-   ret = SifExecModuleBuffer(&ps2dev9_irx, size_ps2dev9_irx, 0, NULL, NULL);
-
-   ret = SifExecModuleBuffer(&ps2atad_irx, size_ps2atad_irx, 0, NULL, NULL);
-   if (ret < 0)
-   {
-      RARCH_WARN("HDD: No HardDisk Drive detected.\n");
-      return;
-   }
-
-   ret = SifExecModuleBuffer(&ps2hdd_irx, size_ps2hdd_irx, sizeof(hddarg), hddarg, NULL);
-   if (ret < 0)
-   {
-      RARCH_WARN("HDD: No HardDisk Drive detected.\n");
-      return;
-   }
-
-   /* Check if a HDD unit is connected */
-   if (hddCheck() < 0)
-   {
-      RARCH_WARN("HDD: No HardDisk Drive detected.\n");
-      return;
-   }
-
-   ret = SifExecModuleBuffer(&ps2fs_irx, size_ps2fs_irx, 0, NULL, NULL);
-   if (ret < 0)
-   {
-      RARCH_WARN("HDD: HardDisk Drive not formatted (PFS).\n");
-      return;
-   }
-
-   RARCH_LOG("HDDSUPPORT modules loaded\n");
-   pfsModuleLoaded = 1;
-}
-
-static void load_modules()
-{
-   /* I/O Files */
-   SifExecModuleBuffer(&iomanX_irx, size_iomanX_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&fileXio_irx, size_fileXio_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&sio2man_irx, size_sio2man_irx, 0, NULL, NULL);
-   fileXioInitSkipOverride();
-
-   /* Memory Card */
-   SifExecModuleBuffer(&mcman_irx, size_mcman_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&mcserv_irx, size_mcserv_irx, 0, NULL, NULL);
-
-   /* USB */
-   SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&bdm_irx, size_bdm_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&bdmfs_vfat_irx, size_bdmfs_vfat_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&usbmass_bd_irx, size_usbmass_bd_irx, 0, NULL, NULL);
-
-   /* Power off */
-   SifExecModuleBuffer(&poweroff_irx, size_poweroff_irx, 0, NULL, NULL);
-
-   /* HDD */
-   load_hdd_modules();
-#if !defined(DEBUG)
-   /* CDFS */
-   SifExecModuleBuffer(&cdfs_irx, size_cdfs_irx, 0, NULL, NULL);
-#endif
+   init_fileXio_driver();
+   init_memcard_driver(true);
+   init_usb_driver(true);
+   init_cdfs_driver();
+   init_poweroff_driver();
+   init_hdd_driver(true, true);
 
 #ifndef IS_SALAMANDER
-   /* Controllers */
-   SifExecModuleBuffer(&mtapman_irx, size_mtapman_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&padman_irx, size_padman_irx, 0, NULL, NULL);
-
-   /* Audio */
-   SifExecModuleBuffer(&libsd_irx, size_libsd_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
+   init_audio_driver();
+   init_joystick_driver(true);
 #endif
 }
 
-static int mount_hdd_partition(void)
+static void mount_partition(void)
 {
    char mount_path[FILENAME_MAX];
    char new_cwd[FILENAME_MAX];
@@ -252,18 +196,19 @@ static int mount_hdd_partition(void)
 #endif
 
    if (!should_mount)
-      return 0;
+      return;
 
    if (getMountInfo(mount_path, mountString, mountPoint, new_cwd) != 1)
    {
       RARCH_WARN("Partition info not readed\n");
-      return 0;
+      return;
    }
 
-   if (fileXioMount(mountString, mountPoint, FIO_MT_RDWR) < 0)
+   hddMountStatus = mount_hdd_partition(mountString, mountPoint);
+   if (hddMountStatus != HDD_MOUNT_STATUS_OK)
    {
       RARCH_WARN("Error mount mounting partition %s, %s\n", mountString, mountPoint);
-      return 0;
+      return;
    }
 
    if (bootDeviceID == BOOT_DEVICE_HDD || bootDeviceID == BOOT_DEVICE_HDD0)
@@ -278,26 +223,34 @@ static int mount_hdd_partition(void)
 	 with LoadELFFromFileWithPartition */
       strlcpy(mountPoint, "", sizeof(mountPoint));
    }
-
-   return 1;
 }
 
-static void prepare_for_exit(void)
+static void deinit_drivers(bool deinit_powerOff) 
 {
-   if (hdd_mounted)
-   {
-      fileXioUmount(mountString);
-      fileXioDevctl(mountString, PDIOC_CLOSEALL, NULL, 0, NULL, 0);
-      fileXioDevctl("hdd0:", HDIOC_IDLEIMM, NULL, 0, NULL, 0);
-   }
+#ifndef IS_SALAMANDER
+   deinit_audio_driver();
+   deinit_joystick_driver(false);
+#endif
 
-   if (pfsModuleLoaded)
-      fileXioDevctl("dev9x:", DDIOC_OFF, NULL, 0, NULL, 0);
+   deinit_hdd_driver(false);
+   deinit_usb_driver();
+   deinit_memcard_driver(true);
+   deinit_fileXio_driver();
+
+   if (deinit_powerOff)
+      deinit_poweroff_driver();
+}
+
+static void prepare_for_exit(bool deinit_powerOff) 
+{
+   umount_current_hdd_partition();
+
+   deinit_drivers(deinit_powerOff);
 }
 
 static void poweroffHandler(void *arg)
 {
-   prepare_for_exit();
+   prepare_for_exit(false);
    poweroffShutdown();
 }
 
@@ -346,29 +299,9 @@ static void frontend_ps2_init(void *data)
    init_scr();
    scr_printf("\n\nStarting RetroArch...\n");
 #endif
-   load_modules();
+   init_drivers();
 
-   poweroffInit();
    poweroffSetCallback(&poweroffHandler, NULL);
-
-
-#ifndef IS_SALAMANDER
-   /* Initializes audsrv library */
-   if (audsrv_init())
-   {
-      RARCH_ERR("audsrv library not initalizated\n");
-   }
-
-   /* Initializes pad un multitap libraries */
-   if (mtapInit() != 1)
-   {
-      RARCH_ERR("mtapInit library not initalizated\n");
-   }
-   if (padInit(0) != 1)
-   {
-      RARCH_ERR("padInit library not initalizated\n");
-   }
-#endif
 
    getcwd(cwd, sizeof(cwd));
 #if !defined(IS_SALAMANDER) && !defined(DEBUG)
@@ -376,8 +309,8 @@ static void frontend_ps2_init(void *data)
     * up for setting the CWD. */
    path_parent_dir(cwd, strlen(cwd));
 #endif
-   if (pfsModuleLoaded)
-      hdd_mounted = mount_hdd_partition();
+   if (hddStatus == HDD_INIT_STATUS_IRX_OK)
+      mount_partition();
 
 #if !defined(DEBUG)
    waitUntilDeviceIsReady(cwd);
@@ -388,24 +321,14 @@ static void frontend_ps2_deinit(void *data)
 {
 #ifndef IS_SALAMANDER
    if (ps2_fork_mode == FRONTEND_FORK_NONE)
-      prepare_for_exit();
-
-   if (audsrv_quit())
-   {
-      RARCH_ERR("audsrv library not deinitalizated\n");
-   }
-
-   if (padEnd() != 1)
-   {
-      RARCH_ERR("padEnd library not deinitalizated\n");
-   }
+      prepare_for_exit(true);
 #endif
 }
 
 static void frontend_ps2_exec(const char *path, bool should_load_game)
 {
    int args = 0;
-   static char *argv[1];
+   char *argv[1];
    RARCH_LOG("Attempt to load executable: [%s], partition [%s].\n", path, mountPoint);
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
@@ -501,7 +424,7 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0, NULL);
-   if (hdd_mounted)
+   if (hddMountStatus == HDD_MOUNT_STATUS_OK)
    {
       size_t _len = strlcpy(hdd, mountString, sizeof(hdd));
       hdd[_len  ] = '/';
