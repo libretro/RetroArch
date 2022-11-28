@@ -2738,7 +2738,7 @@ static void xmb_populate_entries(void *data,
    {
       /* Quick Menu under Explore list must also be Quick Menu */
       xmb->is_quick_menu |= menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu();
-      if (!menu_explore_is_content_list())
+      if (!menu_explore_is_content_list() || xmb->is_quick_menu)
          xmb->is_explore_list = false;
       else if (!xmb->is_quick_menu)
          xmb->skip_thumbnail_reset = true;
