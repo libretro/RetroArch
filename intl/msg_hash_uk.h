@@ -607,6 +607,10 @@ MSG_HASH(
    "Архітектура процесора"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "Ядра ЦП"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "Ідентифікатор зовнішнього інтерфейсу"
    )

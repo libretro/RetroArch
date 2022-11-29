@@ -2238,7 +2238,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "左/右鍵 切換要使用的音訊輸出裝置。依據音效驅動程式顯示可使用的裝置。"
+   "左/右鍵 切換要使用的音源輸出裝置。依據音效驅動程式顯示可使用的裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -3563,7 +3563,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "載入時不覆蓋存檔記憶體"
+   "存檔記憶體載入時不覆蓋"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
@@ -3575,7 +3575,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-   "設定自動儲存記憶存檔的時間(秒)。僅限支援SAV格式的核心使用。"
+   "設定自動儲存成記憶存檔的時間(秒)。僅限支援SAV格式的核心使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -3619,11 +3619,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "壓縮記憶存檔 (SaveRAM)"
+   "存檔記憶體使用壓縮格式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "使用壓縮格式儲存記憶存檔，減少檔案的大小，但儲存和載入的速度變慢。僅限支援SAV格式的核心使用。"
+   "使用壓縮格式儲存成記憶存檔，減少檔案的大小，但儲存和載入的速度變慢。僅限支援SAV格式的核心使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -3643,19 +3643,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "記憶存檔儲存到遊戲資料夾"
+   "遊戲資料夾儲存記憶存檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "即時存檔儲存到遊戲資料夾"
+   "遊戲資料夾儲存即時存檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "系統檔案載入從遊戲資料夾"
+   "遊戲資料夾載入系統檔案"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "遊戲截圖儲存到遊戲資料夾"
+   "遊戲資料夾儲存遊戲截圖"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -3710,11 +3710,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
-   "時間戳日誌檔"
+   "時戳式日誌檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
-   "開啟時「儲存為日誌檔」變更為時間戳日誌檔，依據應用程式結束時間建立日誌檔。非必需時不推薦開啟。"
+   "開啟時「儲存為日誌檔」變更為時戳式日誌檔，依據應用程式結束時間建立日誌檔。非必需時不推薦開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
@@ -4752,19 +4752,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
-   "顯示「載入光碟」"
+   "顯示「載入光碟片」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
-   "在主選單中顯示「載入光碟」選項。"
+   "在主選單中顯示「載入光碟片」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
-   "顯示「轉存光碟」"
+   "顯示「轉存光碟片」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
-   "在主選單中顯示「轉存光碟」選項。"
+   "在主選單中顯示「轉存光碟片」選項。"
    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -6156,7 +6156,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   "設定 [上一次執行] 時間戳訊息，日期和時間的顯示方式。選項 <上午/下午> 對某些平台的效能影響很小。"
+   "設定 [上一次執行] 時間戳記訊息，日期和時間的顯示方式。選項 <上午/下午> 對某些平台的效能影響很小。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
@@ -6726,7 +6726,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
-   "主機顯示設定"
+   "掃描設定"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
@@ -12784,11 +12784,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
-   "正在退出光碟片..."
+   "正在轉存光碟片..."
    )
 MSG_HASH(
    MSG_DRIVE_NUMBER,
-   "硬碟 %d"
+   "裝置 %d"
    )
 MSG_HASH(
    MSG_LOAD_CORE_FIRST,
@@ -12796,11 +12796,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
-   "無法從光碟機中讀取。轉存中止。"
+   "無法從光碟機中讀取資料。轉存中止。"
    )
 MSG_HASH(
    MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
-   "無法寫入內部空間。轉存中止。"
+   "無法將資料儲存到內部空間。轉存中止。"
    )
 MSG_HASH(
    MSG_NO_DISC_INSERTED,
