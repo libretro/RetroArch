@@ -1514,8 +1514,8 @@
 #endif
 
 /* MIDI */
-#define DEFAULT_MIDI_INPUT  "Off"
-#define DEFAULT_MIDI_OUTPUT "Off"
+#define DEFAULT_MIDI_INPUT  "OFF"
+#define DEFAULT_MIDI_OUTPUT "OFF"
 #define DEFAULT_MIDI_VOLUME 100
 
 #ifdef HAVE_MIST

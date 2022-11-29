@@ -23,6 +23,7 @@
 #include "verbosity.h"
 
 #define MIDI_DRIVER_BUF_SIZE 4096
+#define MIDI_DRIVER_OFF "OFF"
 
 static void *rarch_midi_drv_data;
 static struct string_list *rarch_midi_drv_inputs;
@@ -239,8 +240,8 @@ bool midi_driver_init(void *data)
 
    if (!rarch_midi_drv_inputs || !rarch_midi_drv_outputs)
       ret = false;
-   else if (!string_list_append(rarch_midi_drv_inputs, "Off", attr) ||
-            !string_list_append(rarch_midi_drv_outputs, "Off", attr))
+   else if (!string_list_append(rarch_midi_drv_inputs, MIDI_DRIVER_OFF, attr) ||
+            !string_list_append(rarch_midi_drv_outputs, MIDI_DRIVER_OFF, attr))
       ret = false;
    else
    {
@@ -262,7 +263,7 @@ bool midi_driver_init(void *data)
          ret = false;
       else
       {
-         if (string_is_not_equal(settings->arrays.midi_input, "Off"))
+         if (string_is_not_equal(settings->arrays.midi_input, MIDI_DRIVER_OFF))
          {
             if (string_list_find_elem(rarch_midi_drv_inputs, settings->arrays.midi_input))
                input = settings->arrays.midi_input;
@@ -271,11 +272,11 @@ bool midi_driver_init(void *data)
                RARCH_WARN("[MIDI]: Input device \"%s\" unavailable.\n",
                      settings->arrays.midi_input);
                configuration_set_string(settings,
-                     settings->arrays.midi_input, "Off");
+                     settings->arrays.midi_input, MIDI_DRIVER_OFF);
             }
          }
 
-         if (string_is_not_equal(settings->arrays.midi_output, "Off"))
+         if (string_is_not_equal(settings->arrays.midi_output, MIDI_DRIVER_OFF))
          {
             if (string_list_find_elem(rarch_midi_drv_outputs, settings->arrays.midi_output))
                output = settings->arrays.midi_output;
@@ -284,7 +285,7 @@ bool midi_driver_init(void *data)
                RARCH_WARN("[MIDI]: Output device \"%s\" unavailable.\n",
                      settings->arrays.midi_output);
                configuration_set_string(settings,
-                     settings->arrays.midi_output, "Off");
+                     settings->arrays.midi_output, MIDI_DRIVER_OFF);
             }
          }
 
@@ -301,11 +302,11 @@ bool midi_driver_init(void *data)
             else
             {
                if (input)
-                  RARCH_LOG("[MIDI]: Input device \"%s\".\n", input);
+                  RARCH_LOG("[MIDI]: Input device: \"%s\".\n", input);
 
                if (output)
                {
-                  RARCH_LOG("[MIDI]: Output device \"%s\".\n", output);
+                  RARCH_LOG("[MIDI]: Output device: \"%s\".\n", output);
                   midi_driver_set_volume(settings->uints.midi_volume);
                }
             }
@@ -332,7 +333,7 @@ bool midi_driver_set_input(const char *input)
       return false;
    }
 
-   if (string_is_equal(input, "Off"))
+   if (string_is_equal(input, MIDI_DRIVER_OFF))
       input = NULL;
 
    if (!midi_drv->set_input(rarch_midi_drv_data, input))
@@ -366,7 +367,7 @@ bool midi_driver_set_output(void *settings_data, const char *output)
       return false;
    }
 
-   if (string_is_equal(output, "Off"))
+   if (string_is_equal(output, MIDI_DRIVER_OFF))
       output = NULL;
 
    if (!midi_drv->set_output(rarch_midi_drv_data, output))
@@ -424,8 +425,7 @@ bool midi_driver_read(uint8_t *byte)
    if (i == rarch_midi_drv_input_event.data_size)
    {
       rarch_midi_drv_input_event.data_size = MIDI_DRIVER_BUF_SIZE;
-      if (!midi_drv->read(rarch_midi_drv_data,
-               &rarch_midi_drv_input_event))
+      if (!midi_drv->read(rarch_midi_drv_data, &rarch_midi_drv_input_event))
       {
          rarch_midi_drv_input_event.data_size = i;
          return false;
@@ -475,8 +475,8 @@ bool midi_driver_write(uint8_t byte, uint32_t delta_time)
 
    if (byte >= 0x80)
    {
-      if (  rarch_midi_drv_output_event.data_size &&
-            rarch_midi_drv_output_event.data[0] == 0xF0)
+      if (     rarch_midi_drv_output_event.data_size
+            && rarch_midi_drv_output_event.data[0] == 0xF0)
       {
          if (byte == 0xF7)
             event_size = (int)rarch_midi_drv_output_event.data_size + 1;
@@ -542,8 +542,7 @@ bool midi_driver_write(uint8_t byte, uint32_t delta_time)
 
    if (rarch_midi_drv_output_event.data_size == event_size)
    {
-      if (!midi_drv->write(rarch_midi_drv_data,
-               &rarch_midi_drv_output_event))
+      if (!midi_drv->write(rarch_midi_drv_data, &rarch_midi_drv_output_event))
          return false;
 
 #ifdef DEBUG
@@ -586,8 +585,7 @@ bool midi_driver_flush(void)
       return false;
 
    if (rarch_midi_drv_output_pending)
-      rarch_midi_drv_output_pending =
-         !midi_drv->flush(rarch_midi_drv_data);
+      rarch_midi_drv_output_pending = !midi_drv->flush(rarch_midi_drv_data);
 
    return !rarch_midi_drv_output_pending;
 }
