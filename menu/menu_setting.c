@@ -8276,8 +8276,7 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_MIDI_OUTPUT:
          {
             settings_t *settings       = config_get_ptr();
-            midi_driver_set_output(settings,
-                  settings->arrays.midi_output);
+            midi_driver_set_output(settings, settings->arrays.midi_output);
          }
          break;
       case MENU_ENUM_LABEL_MIDI_VOLUME:
