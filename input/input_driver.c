@@ -3334,20 +3334,6 @@ unsigned *input_config_get_device_ptr(unsigned port)
    return NULL;
 }
 
-unsigned input_config_get_device_count(void)
-{
-   int i;
-   unsigned num_devices = 0;
-   input_driver_state_t *input_st = &input_driver_st;
-
-   for (i = 0; i < MAX_INPUT_DEVICES; ++i)
-   {
-      if (string_is_empty(input_st->input_device_info[i].name))
-         num_devices++;
-   }
-   return num_devices;
-}
-
 /* Adds an index to devices with the same name,
  * so they can be uniquely identified in the
  * frontend */

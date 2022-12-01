@@ -2883,22 +2883,6 @@ static int setting_action_ok_libretro_device_type(
    return 0;
 }
 
-static int setting_action_ok_bind_device(
-      rarch_setting_t *setting, size_t idx, bool wraparound)
-{
-   char enum_idx[16];
-   if (!setting)
-      return -1;
-
-   snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
-
-   generic_action_ok_displaylist_push(
-         enum_idx, /* we will pass the enumeration index of the string as a path */
-         NULL, NULL, 0, idx, 0,
-         ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DEVICE_INDEX);
-   return 0;
-}
-
 static int setting_string_action_left_string_options(
    rarch_setting_t* setting, size_t idx, bool wraparound)
 {
@@ -5687,44 +5671,41 @@ static int setting_uint_action_left_crt_switch_resolution_super(
    return 0;
 }
 
-static int setting_action_left_bind_device(
+static int setting_action_left_input_device_index(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   unsigned               *p = NULL;
-   unsigned index_offset     = 0;
-   unsigned max_devices      = input_config_get_device_count();
    settings_t      *settings = config_get_ptr();
+   unsigned *p               = NULL;
 
-   if (!setting || max_devices == 0)
+   if (!setting || !settings)
       return -1;
 
-   index_offset = setting->index_offset;
+   p = &settings->uints.input_joypad_index[setting->index_offset];
 
-   p = &settings->uints.input_joypad_index[index_offset];
-
-   if ((*p) >= max_devices)
-      *p = max_devices - 1;
-   else if ((*p) > 0)
+   if (*p)
       (*p)--;
+   else
+      *p = MAX_INPUT_DEVICES - 1;
 
+   settings->modified = true;
    return 0;
 }
 
-static int setting_action_left_mouse_index(
+static int setting_action_left_input_mouse_index(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   unsigned index_offset    = 0;
-   settings_t *settings     = config_get_ptr();
+   settings_t      *settings = config_get_ptr();
+   unsigned *p               = NULL;
 
-   if (!setting)
+   if (!setting || !settings)
       return -1;
 
-   index_offset             = setting->index_offset;
+   p = &settings->uints.input_mouse_index[setting->index_offset];
 
-   if (settings->uints.input_mouse_index[index_offset])
-      --settings->uints.input_mouse_index[index_offset];
+   if (*p)
+      (*p)--;
    else
-      settings->uints.input_mouse_index[index_offset] = MAX_USERS - 1;
+      *p = MAX_INPUT_DEVICES - 1;
 
    settings->modified = true;
    return 0;
@@ -7314,7 +7295,7 @@ int menu_setting_set(unsigned type, unsigned action, bool wraparound)
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_action_start_bind_device(rarch_setting_t *setting)
+static int setting_action_start_input_device_index(rarch_setting_t *setting)
 {
    settings_t      *settings = config_get_ptr();
 
@@ -7322,7 +7303,8 @@ static int setting_action_start_bind_device(rarch_setting_t *setting)
       return -1;
 
    configuration_set_uint(settings,
-         settings->uints.input_joypad_index[setting->index_offset], setting->index_offset);
+         settings->uints.input_joypad_index[setting->index_offset],
+         setting->index_offset);
    return 0;
 }
 
@@ -7466,15 +7448,16 @@ static int setting_action_start_video_refresh_rate_polled(
    return setting_action_ok_video_refresh_rate_polled(setting, 0, false);
 }
 
-static int setting_action_start_mouse_index(rarch_setting_t *setting)
+static int setting_action_start_input_mouse_index(rarch_setting_t *setting)
 {
-   settings_t *settings     = config_get_ptr();
+   settings_t      *settings = config_get_ptr();
 
-   if (!setting)
+   if (!setting || !settings)
       return -1;
 
-   settings->uints.input_mouse_index[setting->index_offset] = setting->index_offset;
-   settings->modified = true;
+   configuration_set_uint(settings,
+         settings->uints.input_mouse_index[setting->index_offset],
+         setting->index_offset);
    return 0;
 }
 
@@ -7571,39 +7554,41 @@ static int setting_action_right_input_remap_port(
    return 0;
 }
 
-static int setting_action_right_bind_device(
+static int setting_action_right_input_device_index(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   unsigned index_offset;
-   unsigned               *p = NULL;
-   unsigned max_devices      = input_config_get_device_count();
    settings_t      *settings = config_get_ptr();
+   unsigned *p               = NULL;
 
-   if (!setting)
+   if (!setting || !settings)
       return -1;
 
-   index_offset = setting->index_offset;
+   p = &settings->uints.input_joypad_index[setting->index_offset];
 
-   p = &settings->uints.input_joypad_index[index_offset];
-
-   if (*p < max_devices)
+   if (*p < MAX_INPUT_DEVICES - 1)
       (*p)++;
+   else
+      *p = 0;
 
+   settings->modified = true;
    return 0;
 }
 
-static int setting_action_right_mouse_index(
+static int setting_action_right_input_mouse_index(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   settings_t *settings     = config_get_ptr();
+   settings_t      *settings = config_get_ptr();
+   unsigned *p               = NULL;
 
-   if (!setting)
+   if (!setting || !settings)
       return -1;
 
-   if (settings->uints.input_mouse_index[setting->index_offset] < MAX_USERS - 1)
-      ++settings->uints.input_mouse_index[setting->index_offset];
+   p = &settings->uints.input_mouse_index[setting->index_offset];
+
+   if (*p < MAX_INPUT_DEVICES - 1)
+      (*p)++;
    else
-      settings->uints.input_mouse_index[setting->index_offset] = 0;
+      *p = 0;
 
    settings->modified = true;
    return 0;
@@ -7657,61 +7642,59 @@ static void get_string_representation_split_joycon(rarch_setting_t *setting, cha
 }
 #endif
 
-static void get_string_representation_bind_device(rarch_setting_t *setting, char *s,
-      size_t len)
+static void get_string_representation_input_device_index(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   unsigned index_offset, map = 0;
-   unsigned max_devices      = input_config_get_device_count();
    settings_t      *settings = config_get_ptr();
+   unsigned map              = 0;
 
-   if (!setting)
+   if (!setting || !settings)
       return;
 
-   index_offset = setting->index_offset;
-   map          = settings->uints.input_joypad_index[index_offset];
+   map = settings->uints.input_joypad_index[setting->index_offset];
 
-   if (map < max_devices)
+   if (map < MAX_INPUT_DEVICES)
    {
-      const char *device_name = input_config_get_device_display_name(map) ?
-         input_config_get_device_display_name(map) : input_config_get_device_name(map);
+      const char *device_name = input_config_get_device_display_name(map)
+            ? input_config_get_device_display_name(map)
+            : input_config_get_device_name(map);
 
       if (!string_is_empty(device_name))
       {
          unsigned idx = input_config_get_device_name_index(map);
 
-         /*if idx is non-zero, it's part of a set*/
-         if ( idx > 0)
+         /* If idx is non-zero, it's part of a set */
+         if (idx > 0)
             snprintf(s, len,
-                  "%s (#%u)",
+                  "%s (%u)",
                   device_name,
                   idx);
          else
             strlcpy(s, device_name, len);
       }
       else
-         snprintf(s, len, "%s (%s %u)",
+         snprintf(s, len,
+               "%s (#%u)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
-               map);
+               map + 1);
    }
-   else
+
+   if (string_is_empty(s))
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
 
-static void get_string_representation_mouse_index(rarch_setting_t *setting, char *s,
-      size_t len)
+static void get_string_representation_input_mouse_index(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   unsigned index_offset, map = 0;
-   unsigned max_devices       = MAX_USERS;
-   settings_t      *settings  = config_get_ptr();
+   settings_t      *settings = config_get_ptr();
+   unsigned map              = 0;
 
-   if (!setting)
+   if (!setting || !settings)
       return;
 
-   index_offset = setting->index_offset;
-   map          = settings->uints.input_mouse_index[index_offset];
+   map = settings->uints.input_mouse_index[setting->index_offset];
 
-   if (map < max_devices)
+   if (map < MAX_INPUT_DEVICES)
    {
       const char *device_name = input_config_get_mouse_display_name(map);
 
@@ -7721,14 +7704,13 @@ static void get_string_representation_mouse_index(rarch_setting_t *setting, char
          snprintf(s, len,
                "%s (#%u)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               map);
+               map + 1);
       else
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    }
-   else
-      snprintf(s, len,
-         "#%u", map);
+
+   if (string_is_empty(s))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
 
 static void read_handler_audio_rate_control_delta(rarch_setting_t *setting)
@@ -8792,25 +8774,25 @@ static bool setting_append_list_input_player_options(
     * 2 is the length of '99'; we don't need more users than that.
     */
    static char buffer[MAX_USERS][13+2+1];
-   static char group_lbl[MAX_USERS][255];
+   static char group_label[MAX_USERS][255];
    unsigned i, j;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *system                = &runloop_state_get_ptr()->system;
-   const struct retro_keybind* const defaults =
-      (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
+   const struct retro_keybind* const defaults = (user == 0)
+         ? retro_keybinds_1 : retro_keybinds_rest;
    const char *temp_value                     = msg_hash_to_str
-      ((enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
+         ((enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
 
    group_info.name                            = NULL;
    subgroup_info.name                         = NULL;
 
    strlcat(buffer[user], "", sizeof(buffer[user]));
 
-   strlcpy(group_lbl[user], temp_value, sizeof(group_lbl[user]));
+   strlcpy(group_label[user], temp_value, sizeof(group_label[user]));
 
-   START_GROUP(list, list_info, &group_info, group_lbl[user], parent_group);
+   START_GROUP(list, list_info, &group_info, group_label[user], parent_group);
 
    parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
@@ -8824,60 +8806,54 @@ static bool setting_append_list_input_player_options(
 
    {
       char tmp_string[PATH_MAX_LENGTH];
-      /* These constants match the string lengths.
-       * Keep them up to date or you'll get some really obvious bugs.
-       * 2 is the length of '99'; we don't need more users than that.
-       */
-      /* FIXME/TODO - really need to clean up this mess in some way. */
-      static char key[MAX_USERS][64];
-      static char key_analog[MAX_USERS][64];
-      static char key_bind_all[MAX_USERS][64];
-      static char key_bind_all_save_autoconfig[MAX_USERS][64];
-      static char split_joycon[MAX_USERS][64];
-      static char split_joycon_lbl[MAX_USERS][64];
-      static char key_bind_defaults[MAX_USERS][64];
-      static char mouse_index[MAX_USERS][64];
 
-      static char label[MAX_USERS][64];
-      static char label_analog[MAX_USERS][64];
+      static char device_index[MAX_USERS][64];
+      static char mouse_index[MAX_USERS][64];
+      static char analog_to_digital[MAX_USERS][64];
+      static char bind_all[MAX_USERS][64];
+      static char bind_all_save_autoconfig[MAX_USERS][64];
+      static char bind_defaults[MAX_USERS][64];
+
+      static char label_device_index[MAX_USERS][64];
+      static char label_mouse_index[MAX_USERS][64];
+      static char label_analog_to_digital[MAX_USERS][64];
       static char label_bind_all[MAX_USERS][64];
       static char label_bind_all_save_autoconfig[MAX_USERS][64];
       static char label_bind_defaults[MAX_USERS][64];
-      static char label_mouse_index[MAX_USERS][64];
+
+#ifdef HAVE_LIBNX
+      static char split_joycon[MAX_USERS][64];
+      static char label_split_joycon[MAX_USERS][64];
+#endif
 
       tmp_string[0] = '\0';
 
       snprintf(tmp_string, sizeof(tmp_string), "input_player%u", user + 1);
 
-      fill_pathname_join_delim(key[user], tmp_string, "joypad_index", '_',
-            sizeof(key[user]));
-      snprintf(key_analog[user], sizeof(key_analog[user]),
-               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE),
-               user + 1);
-      snprintf(split_joycon[user], sizeof(split_joycon[user]),
-            "%s_%u",
-               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON),
-               user + 1);
-      fill_pathname_join_delim(key_bind_all[user], tmp_string, "bind_all", '_',
-            sizeof(key_bind_all[user]));
-      fill_pathname_join_delim(key_bind_all_save_autoconfig[user],
-            tmp_string, "bind_all_save_autoconfig", '_',
-            sizeof(key_bind_all_save_autoconfig[user]));
-      fill_pathname_join_delim(key_bind_defaults[user],
-            tmp_string, "bind_defaults", '_',
-            sizeof(key_bind_defaults[user]));
+      snprintf(analog_to_digital[user], sizeof(analog_to_digital[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), user + 1);
+      fill_pathname_join_delim(device_index[user], tmp_string, "joypad_index", '_',
+            sizeof(device_index[user]));
       fill_pathname_join_delim(mouse_index[user], tmp_string, "mouse_index", '_',
             sizeof(mouse_index[user]));
+      fill_pathname_join_delim(bind_all[user], tmp_string, "bind_all", '_',
+            sizeof(bind_all[user]));
+      fill_pathname_join_delim(bind_all_save_autoconfig[user],
+            tmp_string, "bind_all_save_autoconfig", '_',
+            sizeof(bind_all_save_autoconfig[user]));
+      fill_pathname_join_delim(bind_defaults[user],
+            tmp_string, "bind_defaults", '_',
+            sizeof(bind_defaults[user]));
 
-      snprintf(split_joycon_lbl[user], sizeof(label[user]),
-               "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON), user + 1);
-
-      strlcpy(label[user],
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX),
-            sizeof(label[user]));
-      strlcpy(label_analog[user],
+      strlcpy(label_analog_to_digital[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE),
-            sizeof(label_analog[user]));
+            sizeof(label_analog_to_digital[user]));
+      strlcpy(label_device_index[user],
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX),
+            sizeof(label_device_index[user]));
+      strlcpy(label_mouse_index[user],
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX),
+            sizeof(label_mouse_index[user]));
       strlcpy(label_bind_all[user], 
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL),
             sizeof(label_bind_all[user]));
@@ -8887,15 +8863,19 @@ static bool setting_append_list_input_player_options(
       strlcpy(label_bind_all_save_autoconfig[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG),
             sizeof(label_bind_all_save_autoconfig[user]));
-      strlcpy(label_mouse_index[user],
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX),
-            sizeof(label_mouse_index[user]));
+
+#ifdef HAVE_LIBNX
+      snprintf(split_joycon[user], sizeof(split_joycon[user]),
+            "%s_%u", msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SPLIT_JOYCON), user + 1);
+      snprintf(label_split_joycon[user], sizeof(label_split_joycon[user]),
+            "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON), user + 1);
+#endif
 
       CONFIG_UINT_ALT(
             list, list_info,
             &settings->uints.input_analog_dpad_mode[user],
-            key_analog[user],
-            label_analog[user],
+            analog_to_digital[user],
+            label_analog_to_digital[user],
             user,
             &group_info,
             &subgroup_info,
@@ -8920,7 +8900,7 @@ static bool setting_append_list_input_player_options(
             list, list_info,
             &settings->uints.input_split_joycon[user],
             split_joycon[user],
-            split_joycon_lbl[user],
+            label_split_joycon[user],
             user,
             &group_info,
             &subgroup_info,
@@ -8931,31 +8911,36 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].index_offset  = user;
 #if 0
       (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-      (*list)[list_info->index - 1].action_start  = &setting_action_start_bind_device;
-      (*list)[list_info->index - 1].action_left   = &setting_action_left_bind_device;
-      (*list)[list_info->index - 1].action_right  = &setting_action_right_bind_device;
-      (*list)[list_info->index - 1].action_select = &setting_action_right_bind_device;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_input_device_index;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_input_device_index;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_input_device_index;
+      (*list)[list_info->index - 1].action_select = &setting_action_right_input_device_index;
 #endif
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_split_joycon;
       menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0, true, true);
 #endif
 
-      CONFIG_ACTION_ALT(
+      CONFIG_UINT_ALT(
             list, list_info,
-            key[user],
-            label[user],
+            &settings->uints.input_joypad_index[user],
+            device_index[user],
+            label_device_index[user],
+            user,
             &group_info,
             &subgroup_info,
-            parent_group);
+            parent_group,
+            general_write_handler,
+            general_read_handler);
       (*list)[list_info->index - 1].index         = user + 1;
       (*list)[list_info->index - 1].index_offset  = user;
-      (*list)[list_info->index - 1].action_start  = &setting_action_start_bind_device;
-      (*list)[list_info->index - 1].action_left   = &setting_action_left_bind_device;
-      (*list)[list_info->index - 1].action_right  = &setting_action_right_bind_device;
-      (*list)[list_info->index - 1].action_select = &setting_action_right_bind_device;
-      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_bind_device;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_input_device_index;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_input_device_index;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_input_device_index;
+      (*list)[list_info->index - 1].action_select = &setting_action_right_input_device_index;
+      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
       (*list)[list_info->index - 1].get_string_representation =
-         &get_string_representation_bind_device;
+            &get_string_representation_input_device_index;
+      menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_DEVICE_INDEX + user));
 
@@ -8972,20 +8957,20 @@ static bool setting_append_list_input_player_options(
             general_read_handler);
       (*list)[list_info->index - 1].index         = user + 1;
       (*list)[list_info->index - 1].index_offset  = user;
-      (*list)[list_info->index - 1].action_start  = &setting_action_start_mouse_index;
-      (*list)[list_info->index - 1].action_left   = &setting_action_left_mouse_index;
-      (*list)[list_info->index - 1].action_right  = &setting_action_right_mouse_index;
-      (*list)[list_info->index - 1].action_select = &setting_action_right_mouse_index;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_input_mouse_index;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_input_mouse_index;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_input_mouse_index;
+      (*list)[list_info->index - 1].action_select = &setting_action_right_input_mouse_index;
       (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
       (*list)[list_info->index - 1].get_string_representation =
-         &get_string_representation_mouse_index;
-      menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS - 1, 1.0, true, true);
+            &get_string_representation_input_mouse_index;
+      menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX + user));
 
       CONFIG_ACTION_ALT(
             list, list_info,
-            key_bind_all[user],
+            bind_all[user],
             label_bind_all[user],
             &group_info,
             &subgroup_info,
@@ -8997,7 +8982,7 @@ static bool setting_append_list_input_player_options(
 
       CONFIG_ACTION_ALT(
             list, list_info,
-            key_bind_defaults[user],
+            bind_defaults[user],
             label_bind_defaults[user],
             &group_info,
             &subgroup_info,
@@ -9010,7 +8995,7 @@ static bool setting_append_list_input_player_options(
 #ifdef HAVE_CONFIGFILE
       CONFIG_ACTION_ALT(
             list, list_info,
-            key_bind_all_save_autoconfig[user],
+            bind_all_save_autoconfig[user],
             label_bind_all_save_autoconfig[user],
             &group_info,
             &subgroup_info,

@@ -5163,111 +5163,6 @@ end:
    return count;
 }
 
-static int menu_displaylist_parse_input_device_index_list(
-      menu_displaylist_info_t *info, settings_t *settings)
-{
-   char device_id[10];
-   char device_label[128];
-   const char *val_disabled     = NULL;
-   rarch_system_info_t *system  = &runloop_state_get_ptr()->system;
-   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
-   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
-   size_t menu_index            = 0;
-   unsigned count               = 0;
-
-   unsigned i                   = 0;
-   unsigned port                = 0;
-   unsigned map                 = 0;
-   int current_device           = -1;
-
-   device_id[0]                 = '\0';
-   device_label[0]              = '\0';
-
-   if (!system || !settings || !setting)
-      goto end;
-
-   port         = setting->index_offset;
-   map          = settings->uints.input_joypad_index[port];
-
-   if (port >= MAX_USERS)
-      goto end;
-
-   val_disabled = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED);
-
-   for (i = MAX_INPUT_DEVICES + 1; i--;)
-   {
-      snprintf(device_id, sizeof(device_id), "%d", i);
-
-      device_label[0] = '\0';
-
-      if (i < MAX_INPUT_DEVICES)
-      {
-         const char *device_name = input_config_get_device_display_name(i) ?
-               input_config_get_device_display_name(i) : input_config_get_device_name(i);
-
-         if (!string_is_empty(device_name))
-         {
-            unsigned idx = input_config_get_device_name_index(i);
-            size_t _len  = strlcpy(device_label, device_name,
-                  sizeof(device_label));
-
-            /*if idx is non-zero, it's part of a set*/
-            if (idx > 0)
-               snprintf(device_label         + _len,
-                        sizeof(device_label) - _len, " (#%u)", idx);
-         }
-      }
-      else
-         strlcpy(device_label, val_disabled, sizeof(device_label));
-
-      if (!string_is_empty(device_label))
-      {
-        /* Add menu entry */
-        if (menu_entries_append(info->list,
-              device_label,
-              device_id,
-              MENU_ENUM_LABEL_INPUT_BIND_DEVICE_INDEX,
-              MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_INDEX,
-              0, i, NULL))
-          {
-           /* Add checkmark if input is currently
-            * mapped to this entry */
-           if (i == map)
-           {
-              menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
-              if (cbs)
-                 cbs->checked = true;
-              menu_navigation_set_selection(menu_index);
-              current_device = i;
-           }
-           count++;
-           menu_index++;
-        }
-     }
-   }
-
-   /* Disabled is the last device, which is the first entry */
-   if (current_device < 0)
-   {
-      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[0].actiondata;
-      if (cbs)
-         cbs->checked = true;
-      menu_navigation_set_selection(0);
-   }
-
-end:
-   /* Fallback */
-   if (count == 0)
-      if (menu_entries_append(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-            FILE_TYPE_NONE, 0, 0, NULL))
-         count++;
-
-   return count;
-}
-
 static int menu_displaylist_parse_input_description_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
@@ -13011,12 +12906,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_TYPE:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count              = menu_displaylist_parse_input_device_type_list(info, settings);
-         info->flags       |= MD_FLAG_NEED_REFRESH
-                            | MD_FLAG_NEED_PUSH;
-         break;
-      case DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_INDEX:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count              = menu_displaylist_parse_input_device_index_list(info, settings);
          info->flags       |= MD_FLAG_NEED_REFRESH
                             | MD_FLAG_NEED_PUSH;
          break;
