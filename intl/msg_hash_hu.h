@@ -11944,7 +11944,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
-   "Eszköz leválasztása a csatlakozóról"
+   "Eszköz leválasztása a csatlakozóról:"
    )
 MSG_HASH(
    MSG_VALUE_REBOOTING,
@@ -11980,11 +11980,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT,
-   "beállítva ehhez a csatlakozóhoz"
+   "beállítva ehhez a csatlakozóhoz:"
    )
 MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
-   "leválasztva a csatlakozóról"
+   "leválasztva erről a csatlakozóról:"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
