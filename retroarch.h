@@ -59,7 +59,7 @@
 
 #define RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE (4 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
                                             /* unsigned * --
-                                            * Tells the frontend to override the poll type behavior. 
+                                            * Tells the frontend to override the poll type behavior.
                                             * Allows the frontend to influence the polling behavior of the
                                             * frontend.
                                             *
@@ -182,7 +182,7 @@ const char* config_get_microphone_driver_options(void);
 unsigned int retroarch_get_core_requested_rotation(void);
 
 /*
-   Returns final rotation including both user chosen video rotation 
+   Returns final rotation including both user chosen video rotation
    and core requested rotation if allowed by video_allow_rotate
 */
 unsigned int retroarch_get_rotation(void);
