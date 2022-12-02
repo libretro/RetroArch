@@ -1161,7 +1161,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
 }
 #endif
 
-#ifdef _MSC_VER && !defined(_XBOX)
+#if defined(_MSC_VER) && !defined(_XBOX)
 #pragma comment(lib, "Imm32")
 #endif
 
