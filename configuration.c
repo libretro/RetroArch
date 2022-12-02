@@ -3593,6 +3593,16 @@ static bool config_load_file(global_t *global,
    audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, settings->floats.audio_mixer_volume);
 #endif
 
+   /* MIDI fallback for old OFF-string */
+   if (string_is_equal(settings->arrays.midi_input, "Off"))
+      configuration_set_string(settings,
+            settings->arrays.midi_input,
+            DEFAULT_MIDI_INPUT);
+   if (string_is_equal(settings->arrays.midi_output, "Off"))
+      configuration_set_string(settings,
+            settings->arrays.midi_output,
+            DEFAULT_MIDI_OUTPUT);
+
    path_config = path_get(RARCH_PATH_CONFIG);
 
    if (string_is_empty(settings->paths.path_content_favorites))
