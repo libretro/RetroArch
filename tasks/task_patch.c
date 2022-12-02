@@ -36,6 +36,8 @@
 #include "../verbosity.h"
 #include "../configuration.h"
 
+#include <xdelta3.h>
+
 enum bps_mode
 {
    SOURCE_READ = 0,
@@ -611,6 +613,39 @@ static enum patch_error ips_apply_patch(
    return PATCH_PATCH_INVALID;
 }
 
+static enum patch_error xdelta_apply_patch(
+        const uint8_t *patchdata, uint64_t patchlen,
+        const uint8_t *sourcedata, uint64_t sourcelength,
+        uint8_t **targetdata, uint64_t *targetlength)
+{
+    uint32_t offset = 5;
+    enum patch_error error_patch = PATCH_UNKNOWN;
+    // Validate the magic number, as given by RFC 3284 section 4.1
+    if (  patchlen      < 8   ||
+          patchdata[0] != 0xD6 ||
+          patchdata[1] != 0xC3 ||
+          patchdata[2] != 0xC4 ||
+          patchdata[3] != 0x00)
+        return PATCH_PATCH_INVALID;
+
+
+    int err = xd3_decode_memory(patchdata, patchlen, sourcedata, sourcelength, *targetdata, targetlength, *targetlength, 0);
+
+    if (err == XD3_INTERNAL)
+    {
+        return PATCH_UNKNOWN;
+    }
+
+    if (err == ENOSPC)
+    {
+        // TODO: Free targetdata, then allocate a new targetdata
+        return PATCH_TARGET_ALLOC_FAILED;
+    }
+
+
+    return PATCH_SUCCESS;
+}
+
 static bool apply_patch_content(uint8_t **buf,
       ssize_t *size, const char *patch_desc, const char *patch_path,
       patch_func_t func, void *patch_data, int64_t patch_size)
@@ -738,6 +773,32 @@ static bool try_ips_patch(bool allow_ips,
    return false;
 }
 
+static bool try_xdelta_patch(bool allow_xdelta,
+                          const char *name_xdelta, uint8_t **buf, ssize_t *size)
+{
+    if (     allow_xdelta
+             && !string_is_empty(name_xdelta)
+             && path_is_valid(name_xdelta)
+            )
+    {
+        int64_t patch_size;
+        bool ret                 = false;
+        void *patch_data         = NULL;
+
+        if (!filestream_read_file(name_xdelta, &patch_data, &patch_size))
+            return false;
+
+        if (patch_size >= 0)
+            ret = apply_patch_content(buf, size, "Xdelta", name_xdelta,
+                                      xdelta_apply_patch, patch_data, patch_size);
+
+        if (patch_data)
+            free(patch_data);
+        return ret;
+    }
+    return false;
+}
+
 /**
  * patch_content:
  * @buf          : buffer of the content file.
@@ -750,20 +811,24 @@ bool patch_content(
       bool is_ips_pref,
       bool is_bps_pref,
       bool is_ups_pref,
+      bool is_xdelta_pref,
       const char *name_ips,
       const char *name_bps,
       const char *name_ups,
+      const char *name_xdelta,
       uint8_t **buf,
       void *data)
 {
-   ssize_t *size    = (ssize_t*)data;
-   bool allow_ups   = !is_bps_pref && !is_ips_pref;
-   bool allow_ips   = !is_ups_pref && !is_bps_pref;
-   bool allow_bps   = !is_ups_pref && !is_ips_pref;
+   ssize_t *size     = (ssize_t*)data;
+   bool allow_ups    = !is_bps_pref && !is_ips_pref && !is_xdelta_pref;
+   bool allow_ips    = !is_ups_pref && !is_bps_pref && !is_xdelta_pref;
+   bool allow_bps    = !is_ups_pref && !is_ips_pref && !is_xdelta_pref;
+   bool allow_xdelta = !is_bps_pref && !is_ups_pref && !is_ips_pref;
 
    if (    (unsigned)is_ips_pref
          + (unsigned)is_bps_pref
-         + (unsigned)is_ups_pref > 1)
+         + (unsigned)is_ups_pref
+         + (unsigned)is_xdelta_pref > 1)
    {
       RARCH_WARN("%s\n",
             msg_hash_to_str(MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED));
@@ -773,16 +838,19 @@ bool patch_content(
    /* Attempt to apply first (non-indexed) patch */
    if (     try_ips_patch(allow_ips, name_ips, buf, size)
          || try_bps_patch(allow_bps, name_bps, buf, size)
-         || try_ups_patch(allow_ups, name_ups, buf, size))
+         || try_ups_patch(allow_ups, name_ups, buf, size)
+         || try_xdelta_patch(allow_xdelta, name_xdelta, buf, size))
    {
       /* A patch has been found. Now attempt to apply
        * any additional 'indexed' patch files */
-      size_t name_ips_len    = strlen(name_ips);
-      size_t name_bps_len    = strlen(name_bps);
-      size_t name_ups_len    = strlen(name_ups);
-      char *name_ips_indexed = (char*)malloc((name_ips_len + 2) * sizeof(char));
-      char *name_bps_indexed = (char*)malloc((name_bps_len + 2) * sizeof(char));
-      char *name_ups_indexed = (char*)malloc((name_ups_len + 2) * sizeof(char));
+      size_t name_ips_len       = strlen(name_ips);
+      size_t name_bps_len       = strlen(name_bps);
+      size_t name_ups_len       = strlen(name_ups);
+      size_t name_xdelta_len    = strlen(name_xdelta);
+      char *name_ips_indexed    = (char*)malloc((name_ips_len + 2) * sizeof(char));
+      char *name_bps_indexed    = (char*)malloc((name_bps_len + 2) * sizeof(char));
+      char *name_ups_indexed    = (char*)malloc((name_ups_len + 2) * sizeof(char));
+      char *name_xdelta_indexed = (char*)malloc((name_xdelta_len + 2) * sizeof(char));
       /* First patch already applied -> index
        * for subsequent patches starts at 1 */
       size_t patch_index     = 1;
@@ -790,12 +858,14 @@ bool patch_content(
       strlcpy(name_ips_indexed, name_ips, (name_ips_len + 1) * sizeof(char));
       strlcpy(name_bps_indexed, name_bps, (name_bps_len + 1) * sizeof(char));
       strlcpy(name_ups_indexed, name_ups, (name_ups_len + 1) * sizeof(char));
+      strlcpy(name_xdelta_indexed, name_xdelta, (name_xdelta_len + 1) * sizeof(char));
 
       /* Ensure that we NUL terminate *after* the
        * index character */
       name_ips_indexed[name_ips_len + 1] = '\0';
       name_bps_indexed[name_bps_len + 1] = '\0';
       name_ups_indexed[name_ups_len + 1] = '\0';
+      name_xdelta_indexed[name_xdelta_len + 1] = '\0';
 
       /* try to patch "*.ipsX" */
       while (patch_index < 10)
@@ -815,10 +885,12 @@ bool patch_content(
          name_ips_indexed[name_ips_len] = index_char;
          name_bps_indexed[name_bps_len] = index_char;
          name_ups_indexed[name_ups_len] = index_char;
+         name_xdelta_indexed[name_xdelta_len] = index_char;
 
          if (     !try_ips_patch(allow_ips, name_ips_indexed, buf, size)
                && !try_bps_patch(allow_bps, name_bps_indexed, buf, size)
-               && !try_ups_patch(allow_ups, name_ups_indexed, buf, size))
+               && !try_ups_patch(allow_ups, name_ups_indexed, buf, size)
+               && !try_xdelta_patch(allow_xdelta, name_xdelta_indexed, buf, size))
             break;
 
          patch_index++;
@@ -827,6 +899,7 @@ bool patch_content(
       free(name_ips_indexed);
       free(name_bps_indexed);
       free(name_ups_indexed);
+      free(name_xdelta_indexed);
 
       return true;
    }
