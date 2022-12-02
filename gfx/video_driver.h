@@ -542,6 +542,8 @@ typedef struct video_frame_info
    bool overlay_behind_menu;
 } video_frame_info_t;
 
+
+
 typedef void (*update_window_title_cb)(void*);
 typedef bool (*get_metrics_cb)(void *data, enum display_metric_types type,
       float *value);
