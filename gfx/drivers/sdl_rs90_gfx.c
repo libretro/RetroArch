@@ -1122,13 +1122,16 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
 
       if (likely(vid->mode_valid))
       {
-         /* Blit frame to SDL surface */
-         if (vid->rgb32)
-            sdl_rs90_blit_frame32(vid, (uint32_t*)frame,
-                  width, height, pitch);
-         else
-            sdl_rs90_blit_frame16(vid, (uint16_t*)frame,
-                  width, height, pitch);
+         if (likely(frame))
+         {
+            /* Blit frame to SDL surface */
+            if (vid->rgb32)
+               sdl_rs90_blit_frame32(vid, (uint32_t*)frame,
+                     width, height, pitch);
+            else
+               sdl_rs90_blit_frame16(vid, (uint16_t*)frame,
+                     width, height, pitch);
+         }
       }
       /* If current display mode is invalid,
        * just display an error message */
