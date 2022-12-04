@@ -98,7 +98,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
     File destination = new File(coresFolder, providedCoreFile.getName());
 
-    if (destination.getAbsolutePath() == providedCoreFile.getAbsolutePath()){
+    if (destination.getAbsolutePath().equals(providedCoreFile.getAbsolutePath())){
       // Nothing needs to be done if the provided core path is already in the correct folder
       return;
     }
