@@ -1078,7 +1078,7 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
     * - Menu is inactive and input 'content' frame
     *   data is NULL (may happen when e.g. a running
     *   core skips a frame) */
-   if (unlikely(!vid || (!frame && !vid->menu_active)))
+   if (unlikely(!vid))
       return true;
 
    /* If fast forward is currently active, we may
