@@ -162,10 +162,15 @@ static void init_drivers()
 {
    init_fileXio_driver();
    init_memcard_driver(true);
-   init_usb_driver(true);
+   init_usb_driver();
    init_cdfs_driver();
+   bool only_if_booted_from_hdd = true;
+#if defined(DEBUG) && !defined(BUILD_FOR_PCSX2)
+   only_if_booted_from_hdd = false;
+#else
    init_poweroff_driver();
-   init_hdd_driver(true, true);
+#endif
+   hddStatus = init_hdd_driver(false, only_if_booted_from_hdd);
 
 #ifndef IS_SALAMANDER
    init_audio_driver();
@@ -243,7 +248,7 @@ static void deinit_drivers(bool deinit_powerOff)
 
 static void prepare_for_exit(bool deinit_powerOff) 
 {
-   umount_current_hdd_partition();
+   umount_hdd_partition(mountString);
 
    deinit_drivers(deinit_powerOff);
 }
@@ -312,9 +317,7 @@ static void frontend_ps2_init(void *data)
    if (hddStatus == HDD_INIT_STATUS_IRX_OK)
       mount_partition();
 
-#if !defined(DEBUG)
    waitUntilDeviceIsReady(cwd);
-#endif
 }
 
 static void frontend_ps2_deinit(void *data)
@@ -331,10 +334,14 @@ static void frontend_ps2_exec(const char *path, bool should_load_game)
    char *argv[1];
    RARCH_LOG("Attempt to load executable: [%s], partition [%s].\n", path, mountPoint);
 #ifndef IS_SALAMANDER
+   char game_path[FILENAME_MAX];
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
       args++;
-      argv[0] = (char *)path_get(RARCH_PATH_CONTENT);
+      const char *content = path_get(RARCH_PATH_CONTENT);
+      strlcpy(game_path, content, sizeof(game_path));
+      argv[0] = game_path;
+      RARCH_LOG("Attempt to load executable: [%s], partition [%s] with game [%s]\n", path, mountPoint, game_path);
    }
 #endif
    LoadELFFromFileWithPartition(path, mountPoint, args, argv);
