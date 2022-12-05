@@ -1879,7 +1879,6 @@ static void core_info_parse_config_file(
 static void core_info_list_resolve_all_extensions(
       core_info_list_t *core_info_list)
 {
-   size_t _len           = 0;
    size_t i              = 0;
    size_t all_ext_len    = 0;
    char *all_ext         = NULL;
@@ -1891,8 +1890,7 @@ static void core_info_list_resolve_all_extensions(
             (strlen(core_info_list->list[i].supported_extensions) + 2);
    }
 
-   all_ext_len += STRLEN_CONST("7z|") + STRLEN_CONST("zip|");
-
+   all_ext_len       += STRLEN_CONST("7z|") + STRLEN_CONST("zip|");
    if (!(all_ext      = (char*)calloc(1, all_ext_len)))
       return;
 
@@ -1903,23 +1901,15 @@ static void core_info_list_resolve_all_extensions(
       if (!core_info_list->list[i].supported_extensions)
          continue;
 
-             strlcat(core_info_list->all_ext,
+      strlcat(core_info_list->all_ext,
             core_info_list->list[i].supported_extensions, all_ext_len);
-      _len = strlcat(core_info_list->all_ext, "|", all_ext_len);
+      strlcat(core_info_list->all_ext, "|", all_ext_len);
    }
 #ifdef HAVE_7ZIP
-   core_info_list->all_ext[_len  ] = '7';
-   core_info_list->all_ext[_len+1] = 'z';
-   core_info_list->all_ext[_len+2] = '|';
-   core_info_list->all_ext[_len+3] = '\0';
-   _len                           += 3;
+   strlcat(core_info_list->all_ext, "7z|", all_ext_len);
 #endif
 #ifdef HAVE_ZLIB
-   core_info_list->all_ext[_len  ] = 'z';
-   core_info_list->all_ext[_len+1] = 'i';
-   core_info_list->all_ext[_len+2] = 'p';
-   core_info_list->all_ext[_len+3] = '|';
-   core_info_list->all_ext[_len+4] = '\0';
+   strlcat(core_info_list->all_ext, "zip|", all_ext_len);
 #endif
 }
 
