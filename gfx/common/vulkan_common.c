@@ -16,7 +16,11 @@
 
 #include <retro_assert.h>
 #include <dynamic/dylib.h>
+#include <lists/string_list.h>
 #include <string/stdstring.h>
+#include <retro_timers.h>
+#include <retro_assert.h>
+#include <retro_math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -29,14 +33,12 @@
 #endif
 
 #include "vulkan_common.h"
-#include <retro_timers.h>
-#include "../../configuration.h"
 #include "../include/vulkan/vulkan.h"
-#include <retro_assert.h>
 #include "vksym.h"
 #include <libretro_vulkan.h>
-#include <retro_math.h>
-#include <lists/string_list.h>
+
+#include "../../verbosity.h"
+#include "../../configuration.h"
 
 #define VENDOR_ID_AMD 0x1002
 #define VENDOR_ID_NV 0x10DE
