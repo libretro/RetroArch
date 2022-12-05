@@ -38,7 +38,7 @@
 #include "../video_display_server.h"
 #include "../common/x11_common.h"
 #include "../../retroarch.h"
-#include "../video_crt_switch.h" /* needed to set aspect for low res in linux */
+#include "../video_crt_switch.h" /* Needed to set aspect for low resolution in Linux */
 
 enum dispserv_x11_flags
 {
@@ -190,18 +190,18 @@ static bool x11_display_server_set_resolution(void *data,
       pixel_clock = (hmax * vmax * hz) / 2;
    /* above code is the modeline generator */
 
-   /* create interlaced newmode from modline variables */
+   /* Create interlaced new mode from modline variables */
    if (height < 300)
       crt_mode_flag = 10; 
 
-   /* create interlaced newmode from modline variables */
+   /* Create interlaced new mode from modline variables */
    if (height > 300)
       crt_mode_flag = 26; 
    strlcpy(dispserv->old_mode, dispserv->new_mode, sizeof(dispserv->old_mode));
    /* variable for new mode */
    strlcpy(dispserv->new_mode, dispserv->crt_name, sizeof(dispserv->new_mode));
 
-   /* need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to
+   /* Need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to
     * add and delete modes */
 
    dispserv->crt_rrmode.name          = dispserv->new_mode;
@@ -479,10 +479,9 @@ static void* x11_display_server_init(void)
 {
    dispserv_x11_t *dispserv = (dispserv_x11_t*)calloc(1, sizeof(*dispserv));
 
-   if (!dispserv)
-      return NULL;
-
-   return dispserv;
+   if (dispserv)
+      return dispserv;
+   return NULL;
 }
 
 static void x11_display_server_destroy(void *data)
@@ -590,6 +589,7 @@ static void x11_display_server_destroy(void *data)
             }  
             XRRFreeOutputInfo(outputs);
          }
+
          for (m = 0; m < resources->nmode; m++)
          {
             for (j = 0; j < res->noutput; j++)
@@ -648,7 +648,6 @@ static void x11_display_server_destroy(void *data)
 
          for (m = 0; m < resources->nmode; m++)
          {
-
             for (i = 1 ; i <= dispserv->crt_name_id; i++ )
             {
                XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[dispserv->monitor_index]);
@@ -666,8 +665,6 @@ static void x11_display_server_destroy(void *data)
                   }
                }
             }
-            
-         
          }
       }
 
@@ -675,7 +672,6 @@ static void x11_display_server_destroy(void *data)
       XRRFreeScreenResources(res);
       XCloseDisplay(dpy);
    }
-
 #endif
 
    if (dispserv)

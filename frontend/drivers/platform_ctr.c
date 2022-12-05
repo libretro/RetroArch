@@ -64,8 +64,6 @@
 static enum frontend_fork ctr_fork_mode = FRONTEND_FORK_NONE;
 static const char* elf_path_cst         = "sdmc:/retroarch/retroarch.3dsx";
 
-extern bool ctr_bottom_screen_enabled;
-
 #ifdef IS_SALAMANDER
 static void get_first_valid_core(char* path_return, size_t len)
 {
