@@ -21,6 +21,7 @@
 #include <retro_environment.h>
 #include <retro_inline.h>
 #include <gfx/math/matrix_4x4.h>
+#include <lists/string_list.h>
 
 #if defined(__APPLE__)
 #include <OpenGL/gl.h>
@@ -51,30 +52,29 @@
 #define RARCH_GL1_TEXTURE_TYPE32 GL_BGRA_EXT
 #define RARCH_GL1_FORMAT32 GL_UNSIGNED_BYTE
 
-struct string_list;
-
 typedef struct gl1
 {
-   bool fullscreen;
-   bool menu_rgb32;
-   bool menu_size_changed;
-   bool rgb32;
-   bool supports_bgra;
-   bool keep_aspect;
-   bool should_resize;
-   bool menu_texture_enable;
-   bool menu_texture_full_screen;
-   bool have_sync;
-   bool smooth;
-   bool menu_smooth;
-   bool overlay_enable;
-   bool overlay_full_screen;
-   bool shared_context_use;
+   struct video_viewport vp;
+   struct video_coords coords;
+   math_matrix_4x4 mvp, mvp_no_rot;
+
+   void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
+   struct string_list *extensions;
+   struct video_tex_info tex_info;
+   void *readback_buffer_screenshot;
+   GLuint *overlay_tex;
+   float *overlay_vertex_coord;
+   float *overlay_tex_coord;
+   float *overlay_color_coord;
+   const float *vertex_ptr;
+   const float *white_color_ptr;
+   unsigned char *menu_frame;
+   unsigned char *video_buf;
+   unsigned char *menu_video_buf;
 
    int version_major;
    int version_minor;
-
-
    unsigned video_width;
    unsigned video_height;
    unsigned video_pitch;
@@ -94,26 +94,23 @@ typedef struct gl1
 
    GLuint tex;
    GLuint menu_tex;
-
-   struct video_viewport vp;
-   struct video_coords coords;
-   math_matrix_4x4 mvp, mvp_no_rot;
-
-   void *ctx_data;
-   const gfx_ctx_driver_t *ctx_driver;
-   struct string_list *extensions;
-   struct video_tex_info tex_info;
-   void *readback_buffer_screenshot;
-   GLuint *overlay_tex;
-   float *overlay_vertex_coord;
-   float *overlay_tex_coord;
-   float *overlay_color_coord;
-   const float *vertex_ptr;
-   const float *white_color_ptr;
-   unsigned char *menu_frame;
-   unsigned char *video_buf;
-   unsigned char *menu_video_buf;
    GLuint texture[GFX_MAX_TEXTURES];
+
+   bool fullscreen;
+   bool menu_rgb32;
+   bool menu_size_changed;
+   bool rgb32;
+   bool supports_bgra;
+   bool keep_aspect;
+   bool should_resize;
+   bool menu_texture_enable;
+   bool menu_texture_full_screen;
+   bool have_sync;
+   bool smooth;
+   bool menu_smooth;
+   bool overlay_enable;
+   bool overlay_full_screen;
+   bool shared_context_use;
 } gl1_t;
 
 static INLINE void gl1_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,

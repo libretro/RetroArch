@@ -81,12 +81,12 @@ typedef struct
    {
       float u, v, w, h;
    } coords;
-   UINT32 colors[4];
    struct
    {
       float scaling;
       float rotation;
    } params;
+   UINT32 colors[4];
 } d3d12_sprite_t;
 
 typedef struct
@@ -115,8 +115,8 @@ typedef struct
    UINT64                             row_size_in_bytes;
    UINT64                             total_bytes;
    d3d12_descriptor_heap_t*           srv_heap;
-   bool                               dirty;
    float4_t                           size_data;
+   bool                               dirty;
 } d3d12_texture_t;
 
 #ifndef ALIGN
