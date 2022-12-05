@@ -2668,7 +2668,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "交換確定和取消的按鍵。開啟時美版操作方式，關閉時日版操作方式。"
+   "交換確定和取消的按鍵。開啟為美國版操作方式，關閉為日本版操作方式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
@@ -6730,11 +6730,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
-   "顯示可連線的主機"
+   "只顯示可連線的主機"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
-   "顯示核心對應的主機"
+   "只顯示已安裝的核心"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
