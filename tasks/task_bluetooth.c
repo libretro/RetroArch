@@ -21,7 +21,6 @@
 #include "tasks_internal.h"
 
 #include "../msg_hash.h"
-#include "../verbosity.h"
 #include "../bluetooth/bluetooth_driver.h"
 
 static void task_bluetooth_scan_handler(retro_task_t *task)

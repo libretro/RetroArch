@@ -22,7 +22,7 @@
 #include <string/stdstring.h>
 
 #include "../verbosity.h"
-#include "../retroarch.h"
+#include "../runloop.h"
 
 #include "tasks_internal.h"
 

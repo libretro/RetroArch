@@ -27,7 +27,6 @@
 #include <streams/file_stream.h>
 #include <streams/interface_stream.h>
 #include <string/stdstring.h>
-#include "../retroarch.h"
 #include "task_database_cue.h"
 
 #ifdef HAVE_CONFIG_H
@@ -38,7 +37,6 @@
 
 #include "tasks_internal.h"
 
-#include "../list_special.h"
 #include "../msg_hash.h"
 #include "../verbosity.h"
 

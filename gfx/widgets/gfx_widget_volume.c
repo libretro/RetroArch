@@ -18,7 +18,6 @@
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
 #include "../gfx_display.h"
-#include "../../retroarch.h"
 
 /* Constants */
 #define VOLUME_DURATION 3000

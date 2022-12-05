@@ -37,7 +37,6 @@
 #include "../playlist.h"
 #ifdef RARCH_INTERNAL
 #include "../configuration.h"
-#include "../retroarch.h"
 #include "../ui/ui_companion_driver.h"
 #include "../gfx/video_display_server.h"
 #endif

@@ -1783,7 +1783,7 @@ float *video_driver_get_hdr_paper_white_float(void)
 {
    static float paper_white[4] = { 0.5f, 0.5f, 0.5f, 1.0f};
    static float sdr_white  [4] = { 1.0f, 1.0f, 1.0f, 1.0f};
-   if(      video_driver_supports_hdr() 
+   if (     video_driver_supports_hdr() 
          && config_get_ptr()->bools.video_hdr_enable)
       return paper_white;
    return sdr_white;
@@ -1797,7 +1797,7 @@ float *video_driver_get_hdr_paper_white_float(void)
 float video_driver_get_hdr_luminance(float nits)
 {
    settings_t *settings                = config_get_ptr();
-   if(video_driver_supports_hdr() && settings->bools.video_hdr_enable)
+   if (video_driver_supports_hdr() && settings->bools.video_hdr_enable)
    {
       float luminance = nits / 
          settings->floats.video_hdr_paper_white_nits;
@@ -1812,7 +1812,7 @@ float video_driver_get_hdr_luminance(float nits)
  * after inverse tonemapping has been applied */
 unsigned video_driver_get_hdr_color(unsigned color)
 {
-   if(   video_driver_supports_hdr() 
+   if (  video_driver_supports_hdr() 
       && config_get_ptr()->bools.video_hdr_enable)
    {
       float luminance;

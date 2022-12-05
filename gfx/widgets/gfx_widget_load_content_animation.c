@@ -22,7 +22,6 @@
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
 #include "../gfx_display.h"
-#include "../../retroarch.h"
 #include "../../core_info.h"
 #include "../../playlist.h"
 #include "../../paths.h"
@@ -310,9 +309,9 @@ bool gfx_widget_start_load_content_animation(void)
     *   core is started (this higher level behaviour is
     *   deeply ingrained in RetroArch, and too difficult
     *   to change...) */
-   if (string_is_empty(content_path) ||
-       string_is_empty(core_path) ||
-       string_is_equal(core_path, "builtin"))
+   if (   string_is_empty(content_path)
+       || string_is_empty(core_path)
+       || string_is_equal(core_path, "builtin"))
       return false;
 
    /* Check core validity */

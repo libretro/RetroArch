@@ -49,10 +49,8 @@
 #include "../defaults.h"
 #include "../command.h"
 #include "../configuration.h"
-#include "../retroarch.h"
 #include "../paths.h"
 #include "../msg_hash.h"
-#include "../verbosity.h"
 
 #include "tasks_internal.h"
 

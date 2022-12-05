@@ -100,7 +100,8 @@ bool task_push_netplay_nat_close(void *data);
 
 void *task_push_get_core_updater_list(
       core_updater_list_t* core_list, bool mute, bool refresh_menu);
-/* Note: If crc is set to 0, crc of local core file
+
+/* NOTE: If CRC is set to 0, CRC of local core file
  * will be calculated automatically */
 void *task_push_core_updater_download(
       core_updater_list_t* core_list,
@@ -143,9 +144,9 @@ bool task_push_pl_thumbnail_download(
 
 /* Core backup/restore tasks */
 
-/* Note 1: If crc is set to 0, crc of core_path file will
+/* NOTE 1: If CRC is set to 0, CRC of core_path file will
  * be calculated automatically
- * Note 2: If core_display_name is set to NULL, display
+ * NOTE 2: If core_display_name is set to NULL, display
  * name will be determined automatically
  * > core_display_name *must* be set to a non-empty
  *   string if task_push_core_backup() is *not* called
@@ -155,7 +156,8 @@ void *task_push_core_backup(
       uint32_t crc, enum core_backup_mode backup_mode,
       size_t auto_backup_history_size,
       const char *dir_core_assets, bool mute);
-/* Note: If 'core_loaded' is true, menu stack should be
+
+/* NOTE: If 'core_loaded' is true, menu stack should be
  * flushed if task_push_core_restore() returns true */
 bool task_push_core_restore(const char *backup_path,
       const char *dir_libretro,
