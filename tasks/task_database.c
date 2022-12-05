@@ -251,7 +251,7 @@ static int task_database_cue_get_serial(const char *name, char* serial, size_t s
    track_path[0]                    = '\0';
 
    if (cue_find_track(name, true, &offset, &size, track_path,
-sizeof(track_path)) < 0)
+            sizeof(track_path)) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("%s\n",
