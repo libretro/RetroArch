@@ -51,6 +51,7 @@
 #include "../configuration.h"
 #include "../paths.h"
 #include "../msg_hash.h"
+#include "../runloop.h"
 
 #include "tasks_internal.h"
 
