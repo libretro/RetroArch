@@ -105,9 +105,9 @@ static bool CCJSONObjectMemberHandler(void *context,
 {
    CCJSONContext *pCtx = (CCJSONContext *)context;
 
-   if ((pCtx->object_depth == 2) &&
-       (pCtx->array_depth  == 1) &&
-       length)
+   if (   (pCtx->object_depth == 2)
+       && (pCtx->array_depth  == 1)
+       && length)
    {
       pCtx->current_string_val      = NULL;
       pCtx->current_string_list_val = NULL;
@@ -210,9 +210,9 @@ static bool CCJSONObjectMemberHandler(void *context,
             break;
       }
    }
-   else if ((pCtx->object_depth == 3) &&
-            (pCtx->array_depth  == 1) &&
-            length)
+   else if (   (pCtx->object_depth == 3)
+            && (pCtx->array_depth  == 1)
+            && length)
    {
       pCtx->current_string_val      = NULL;
       pCtx->current_entry_uint_val  = NULL;
@@ -225,16 +225,16 @@ static bool CCJSONObjectMemberHandler(void *context,
             pCtx->current_entry_uint_val     = &pCtx->core_info->core_file_id.hash;
       }
    }
-   else if ((pCtx->object_depth == 3) &&
-            (pCtx->array_depth  == 2) &&
-            length)
+   else if (   (pCtx->object_depth == 3)
+            && (pCtx->array_depth  == 2)
+            && length)
    {
-      pCtx->current_string_val      = NULL;
-      pCtx->current_entry_bool_val  = NULL;
+      pCtx->current_string_val               = NULL;
+      pCtx->current_entry_bool_val           = NULL;
 
       if (pCtx->to_firmware && (pCtx->core_info->firmware_count > 0))
       {
-         size_t firmware_idx = pCtx->core_info->firmware_count - 1;
+         size_t firmware_idx                 = pCtx->core_info->firmware_count - 1;
 
          if (string_is_equal(pValue,      "path"))
             pCtx->current_string_val         = &pCtx->core_info->firmware[firmware_idx].path;
@@ -244,11 +244,11 @@ static bool CCJSONObjectMemberHandler(void *context,
             pCtx->current_entry_bool_val     = &pCtx->core_info->firmware[firmware_idx].optional;
       }
    }
-   else if ((pCtx->object_depth == 1) &&
-            (pCtx->array_depth  == 0) &&
-            length)
+   else if (   (pCtx->object_depth == 1)
+            && (pCtx->array_depth  == 0)
+            && length)
    {
-      pCtx->current_string_val      = NULL;
+      pCtx->current_string_val               = NULL;
 
       if (string_is_equal(pValue,         "version"))
          pCtx->current_string_val            = &pCtx->core_info_cache_list->version;
@@ -288,19 +288,19 @@ static bool CCJSONStringHandler(void *context,
 static bool CCJSONNumberHandler(void *context,
       const char *pValue, size_t length)
 {
-   CCJSONContext *pCtx = (CCJSONContext*)context;
+   CCJSONContext *pCtx              = (CCJSONContext*)context;
 
    if (pCtx->current_entry_uint_val)
       *pCtx->current_entry_uint_val = string_to_unsigned(pValue);
 
-   pCtx->current_entry_uint_val = NULL;
+   pCtx->current_entry_uint_val     = NULL;
 
    return true;
 }
 
 static bool CCJSONBoolHandler(void *context, bool value)
 {
-   CCJSONContext *pCtx = (CCJSONContext *)context;
+   CCJSONContext *pCtx              = (CCJSONContext *)context;
 
    if (pCtx->current_entry_bool_val)
       *pCtx->current_entry_bool_val = value;
@@ -316,16 +316,16 @@ static bool CCJSONStartObjectHandler(void *context)
 
    pCtx->object_depth++;
 
-   if ((pCtx->object_depth == 1) && (pCtx->array_depth == 0))
+   if (     (pCtx->object_depth == 1) 
+         && (pCtx->array_depth  == 0))
    {
       if (pCtx->core_info_cache_list)
          return false;
-
-      pCtx->core_info_cache_list = core_info_cache_list_new();
-      if (!pCtx->core_info_cache_list)
+      if (!(pCtx->core_info_cache_list = core_info_cache_list_new()))
          return false;
    }
-   else if ((pCtx->object_depth == 2) && (pCtx->array_depth == 1))
+   else if ((pCtx->object_depth == 2) 
+         && (pCtx->array_depth  == 1))
    {
       if (pCtx->core_info)
       {
@@ -334,8 +334,7 @@ static bool CCJSONStartObjectHandler(void *context)
          pCtx->core_info = NULL;
       }
 
-      pCtx->core_info = (core_info_t*)calloc(1, sizeof(core_info_t));
-      if (!pCtx->core_info)
+      if (!(pCtx->core_info = (core_info_t*)calloc(1, sizeof(core_info_t))))
          return false;
 
       /* Assume all cores have 'full' savestate support
@@ -343,7 +342,8 @@ static bool CCJSONStartObjectHandler(void *context)
       pCtx->core_info->savestate_support_level =
             CORE_INFO_SAVESTATE_DETERMINISTIC;
    }
-   else if ((pCtx->object_depth == 3) && (pCtx->array_depth == 2))
+   else if ((pCtx->object_depth == 3) 
+         && (pCtx->array_depth  == 2))
    {
       if (pCtx->to_firmware)
       {
@@ -382,7 +382,8 @@ static bool CCJSONEndObjectHandler(void *context)
       free(pCtx->core_info);
       pCtx->core_info = NULL;
    }
-   else if ((pCtx->object_depth == 3) && (pCtx->array_depth == 1))
+   else if ((pCtx->object_depth == 3) 
+         && (pCtx->array_depth == 1))
       pCtx->to_core_file_id = false;
 
    retro_assert(pCtx->object_depth > 0);
@@ -607,8 +608,8 @@ static core_info_t *core_info_cache_find(
    uint32_t hash;
    size_t i;
 
-   if (!list ||
-       string_is_empty(core_file_id))
+   if (  !list
+       || string_is_empty(core_file_id))
       return NULL;
 
    hash = core_info_hash_string(core_file_id);
@@ -620,8 +621,8 @@ static core_info_t *core_info_cache_find(
       if (!info)
          continue;
 
-      if ((info->core_file_id.hash == hash) &&
-          string_is_equal(info->core_file_id.str, core_file_id))
+      if (  (info->core_file_id.hash == hash)
+          && string_is_equal(info->core_file_id.str, core_file_id))
       {
          info->is_installed = true;
          return info;
@@ -652,8 +653,8 @@ static void core_info_cache_add(
       if (!items_tmp)
          return;
 
-      list->capacity = list->capacity << 1;
-      list->items    = items_tmp;
+      list->capacity         = list->capacity << 1;
+      list->items            = items_tmp;
 
       memset(&list->items[prev_capacity], 0,
             (list->capacity - prev_capacity) * sizeof(core_info_t));
@@ -793,8 +794,8 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
 
    /* If info cache file has the wrong version
     * number, discard it */
-   if (string_is_empty(core_info_cache_list->version) ||
-       !string_is_equal(core_info_cache_list->version,
+   if (    string_is_empty(core_info_cache_list->version)
+       || !string_is_equal(core_info_cache_list->version,
             CORE_INFO_CACHE_VERSION))
    {
       RARCH_WARN("[Core Info] Core info cache has invalid version"
@@ -1342,19 +1343,23 @@ static void core_info_path_list_free(core_path_list_t *path_list)
 static core_path_list_t *core_info_path_list_new(const char *core_dir,
       const char *core_exts, bool show_hidden_files)
 {
-   core_path_list_t *path_list       = (core_path_list_t*)
-         calloc(1, sizeof(*path_list));
+   size_t i;
+   char exts[32];
+   core_path_list_t *path_list       = NULL;
    struct string_list *core_ext_list = NULL;
    bool dir_list_ok                  = false;
-   char exts[32];
-   size_t i;
 
-   if (string_is_empty(core_exts) ||
-       !path_list)
-      goto error;
+   if (string_is_empty(core_exts))
+      return NULL;
+
+   if (!(path_list = (core_path_list_t*)calloc(1, sizeof(*path_list))))
+      return NULL;
 
    if (!(core_ext_list = string_split(core_exts, "|")))
-      goto error;
+   {
+      core_info_path_list_free(path_list);
+      return NULL;
+   }
 
    /* Allocate list containers */
    path_list->dir_list               = string_list_new();
@@ -1418,9 +1423,9 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
          malloc(path_list->dir_list->size *
                sizeof(*path_list->standalone_exempt_list->list));
 
-   if (!path_list->core_list->list ||
-       !path_list->lock_list->list ||
-       !path_list->standalone_exempt_list->list)
+   if (   !path_list->core_list->list
+       || !path_list->lock_list->list 
+       || !path_list->standalone_exempt_list->list)
       goto error;
 
    /* Parse directory listing */
@@ -1499,8 +1504,8 @@ static bool core_info_path_is_locked(
    {
       core_aux_file_path_t *lock_file = &lock_list->list[i];
 
-      if ((lock_file->hash == hash) &&
-          string_is_equal(lock_file->filename, lock_filename))
+      if (  (lock_file->hash == hash)
+          && string_is_equal(lock_file->filename, lock_filename))
          return true;
    }
 
@@ -1533,8 +1538,8 @@ static bool core_info_path_is_standalone_exempt(
    {
       core_aux_file_path_t *exempt_file = &exempt_list->list[i];
 
-      if ((exempt_file->hash == hash) &&
-          string_is_equal(exempt_file->filename, exempt_filename))
+      if (  (exempt_file->hash == hash)
+          && string_is_equal(exempt_file->filename, exempt_filename))
          return true;
    }
 
@@ -1559,8 +1564,8 @@ static bool core_info_get_file_id(const char *core_filename,
    /* > Remove suffix */
    last_underscore = (char*)strrchr(core_file_id, '_');
 
-   if (!string_is_empty(last_underscore) &&
-       !string_is_equal(last_underscore, "_libretro"))
+   if (   !string_is_empty(last_underscore)
+       && !string_is_equal(last_underscore, "_libretro"))
       *last_underscore = '\0';
 
    return !string_is_empty(core_file_id);
@@ -1574,10 +1579,10 @@ static core_info_t *core_info_find_internal(
    uint32_t hash;
    char core_file_id[256];
 
-   if (!list ||
-       string_is_empty(core_path) ||
-       !core_info_get_file_id(path_basename_nocompression(core_path),
-            core_file_id, sizeof(core_file_id)))
+   if (   !list
+       || string_is_empty(core_path)
+       || !core_info_get_file_id(path_basename_nocompression(core_path),
+           core_file_id, sizeof(core_file_id)))
       return NULL;
 
    hash = core_info_hash_string(core_file_id);
@@ -1586,8 +1591,8 @@ static core_info_t *core_info_find_internal(
    {
       core_info_t *info = &list->list[i];
 
-      if ((info->core_file_id.hash == hash) &&
-          string_is_equal(info->core_file_id.str, core_file_id))
+      if (  (info->core_file_id.hash == hash)
+          && string_is_equal(info->core_file_id.str, core_file_id))
          return info;
    }
 
@@ -2158,18 +2163,18 @@ error:
 bool core_info_list_get_info(core_info_list_t *core_info_list,
       core_info_t *out_info, const char *core_path)
 {
-   core_info_t *info = core_info_find_internal(
-         core_info_list, core_path);
-
-   if (!out_info)
-      return false;
-
-   memset(out_info, 0, sizeof(*out_info));
-
-   if (info)
+   if (out_info)
    {
-      *out_info = *info;
-      return true;
+      core_info_t *info = core_info_find_internal(
+            core_info_list, core_path);
+
+      memset(out_info, 0, sizeof(*out_info));
+
+      if (info)
+      {
+         *out_info = *info;
+         return true;
+      }
    }
 
    return false;
@@ -2447,8 +2452,8 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
 
 #ifdef HAVE_COMPRESSION
    if (path_is_compressed_file(path))
-      list = file_archive_get_file_list(path, NULL);
-   p_coreinfo->tmp_list = list;
+      list                       = file_archive_get_file_list(path, NULL);
+   p_coreinfo->tmp_list          = list;
 #endif
 
    /* Let supported core come first in list so we can return
@@ -2598,9 +2603,9 @@ bool core_info_list_get_display_name(
    info = core_info_find_internal(
          core_info_list, core_path);
 
-   if (s &&
-       info &&
-       !string_is_empty(info->display_name))
+   if (   s 
+       && info
+       && !string_is_empty(info->display_name))
    {
       strlcpy(s, info->display_name, len);
       return true;
@@ -2778,7 +2783,7 @@ void core_info_qsort(core_info_list_t *core_info_list,
                core_info_qsort_func_system_name);
          break;
       default:
-         return;
+         break;
    }
 }
 
@@ -2953,11 +2958,11 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
          core_file_path = core_info->path;
    }
    else
-      core_file_path = core_path;
+      core_file_path    = core_path;
 
    /* A core cannot be locked if it does not exist... */
-   if (string_is_empty(core_file_path) ||
-       !path_is_valid(core_file_path))
+   if (    string_is_empty(core_file_path)
+       || !path_is_valid(core_file_path))
       return false;
 
    /* Get lock file path */
@@ -2993,6 +2998,8 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
  * > *Not* thread safe */
 bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
 {
+   /* Static platforms do not support the contentless
+    * cores menu */
 #if defined(HAVE_DYNAMIC)
    size_t _len;
    core_info_t *core_info = NULL;
@@ -3006,7 +3013,7 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
       return false;
 
    /* Get 'standalone exempt' file path */
-   _len = strlcpy(exempt_file_path, core_info->path,
+   _len                     = strlcpy(exempt_file_path, core_info->path,
          sizeof(exempt_file_path));
    exempt_file_path[_len  ] = '.';
    exempt_file_path[_len+1] = 'l';
@@ -3016,19 +3023,15 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
    exempt_file_path[_len+5] = '\0';
 
    /* Create or delete 'standalone exempt' file, as required */
-   if (!core_info_update_core_aux_file(exempt_file_path, exempt))
-      return false;
-
-   /* File operations were successful - update
-    * core info entry */
-   core_info->is_standalone_exempt = exempt;
-
-   return true;
-#else
-   /* Static platforms do not support the contentless
-    * cores menu */
-   return false;
+   if (core_info_update_core_aux_file(exempt_file_path, exempt))
+   {
+      /* File operations were successful - update
+       * core info entry */
+      core_info->is_standalone_exempt = exempt;
+      return true;
+   }
 #endif
+   return false;
 }
 
 /* Fetches 'standalone exempt' status of specified core
@@ -3038,10 +3041,11 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
  * > *Not* thread safe */
 bool core_info_get_core_standalone_exempt(const char *core_path)
 {
+   /* Static platforms do not support the contentless
+    * cores menu */
 #if defined(HAVE_DYNAMIC)
    size_t _len;
    core_info_t *core_info = NULL;
-   bool is_exempt         = false;
    char exempt_file_path[PATH_MAX_LENGTH];
 
    /* Search for specified core */
@@ -3063,16 +3067,13 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
    exempt_file_path[_len+5] = '\0';
 
    /* Check whether 'standalone exempt' file exists */
-   is_exempt = path_is_valid(exempt_file_path);
+   if (path_is_valid(exempt_file_path))
+   {
+      core_info->is_standalone_exempt = true;
+      return true;
+   }
 
-   /* Ensure that core info 'is_standalone_exempt'
-    * field is up to date */
-   core_info->is_standalone_exempt = is_exempt;
-
-   return is_exempt;
-#else
-   /* Static platforms do not support the contentless
-    * cores menu */
-   return false;
+   core_info->is_standalone_exempt    = false;
 #endif
+   return false;
 }
