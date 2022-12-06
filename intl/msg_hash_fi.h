@@ -2010,6 +2010,14 @@ MSG_HASH(
    "Mykistä pikakelattaessa"
    )
 MSG_HASH(
+  MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+  "Mykistys taaksepäin kelattaessa"
+  )
+MSG_HASH(
+  MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+  "Mykistä ääni automaattisesti, kun kelataan taaksepäin."
+  )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Mykistä ääni automaattisesti, kun pikakelaus on käytössä."
    )

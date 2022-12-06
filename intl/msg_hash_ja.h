@@ -1846,6 +1846,14 @@ MSG_HASH(
    "早送りを使用するときに自動的にオーディオを消音します."
    )
 MSG_HASH(
+  MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+  "巻き戻し時にミュート"
+  )
+MSG_HASH(
+  MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+  "巻き戻しを使用すると、オーディオが自動的にミュートされます。"
+  )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "音量(dB)"
    )

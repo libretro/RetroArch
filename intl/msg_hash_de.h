@@ -2050,6 +2050,14 @@ MSG_HASH(
    "Audio automatisch stummschalten, wenn vorgespult wird."
    )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "Beim Zurückspulen stummschalten"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "Audio automatisch stummschalten, wenn zurückgespult wird."
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Lautstärkeanpassung (dB)"
    )
