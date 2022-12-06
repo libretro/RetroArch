@@ -29,7 +29,6 @@
 
 #include "../file_path_special.h"
 #include "../audio/audio_driver.h"
-#include "../retroarch.h"
 #include "../verbosity.h"
 
 #include "task_file_transfer.h"

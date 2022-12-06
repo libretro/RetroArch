@@ -25,7 +25,6 @@
 #include "../common/d3d10_common.h"
 
 #include "../../configuration.h"
-#include "../../verbosity.h"
 
 typedef struct
 {
@@ -47,7 +46,6 @@ static void *d3d10_font_init(void* data, const char* font_path,
    if (!font_renderer_create_default(
              &font->font_driver, &font->font_data, font_path, font_size))
    {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
       free(font);
       return NULL;
    }
@@ -243,12 +241,12 @@ static void d3d10_font_render_message(
 
    if (!msg || !*msg)
       return;
-   if (!d3d10 || !d3d10->sprites.enabled)
+   if (!d3d10 || (!(d3d10->flags & D3D10_ST_FLAG_SPRITES_ENABLE)))
       return;
 
    /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics ||
-       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
+   if (   !font->font_driver->get_line_metrics
+       || !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       size_t msg_len = strlen(msg);
       if (msg_len <= (unsigned)d3d10->sprites.capacity)

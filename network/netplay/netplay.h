@@ -2,7 +2,6 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Gregor Richards
- *  Copyright (C) 2021-2022 - Roberto V. Rampim
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -32,119 +31,11 @@
 
 #include <net/net_compat.h>
 
+#include "netplay_defines.h"
+
 #include "../../msg_hash.h"
 
 #include "../natt.h"
-
-#ifndef HAVE_DYNAMIC
-#define NETPLAY_FORK_MAX_ARGS 64
-#endif
-
-#define NETPLAY_NICK_LEN         32
-#define NETPLAY_HOST_STR_LEN     32
-#define NETPLAY_HOST_LONGSTR_LEN 256
-
-#define NETPLAY_MITM_SERVERS 5
-
-#define NETPLAY_CHAT_MAX_MESSAGES   5
-#define NETPLAY_CHAT_MAX_SIZE       96
-#define NETPLAY_CHAT_FRAME_TIME     900
-
-enum rarch_netplay_ctl_state
-{
-   RARCH_NETPLAY_CTL_NONE = 0,
-   RARCH_NETPLAY_CTL_GAME_WATCH,
-   RARCH_NETPLAY_CTL_PLAYER_CHAT,
-   RARCH_NETPLAY_CTL_POST_FRAME,
-   RARCH_NETPLAY_CTL_PRE_FRAME,
-   RARCH_NETPLAY_CTL_ENABLE_SERVER,
-   RARCH_NETPLAY_CTL_ENABLE_CLIENT,
-   RARCH_NETPLAY_CTL_DISABLE,
-#ifndef HAVE_DYNAMIC
-   RARCH_NETPLAY_CTL_ADD_FORK_ARG,
-   RARCH_NETPLAY_CTL_GET_FORK_ARGS,
-   RARCH_NETPLAY_CTL_CLEAR_FORK_ARGS,
-#endif
-   RARCH_NETPLAY_CTL_REFRESH_CLIENT_INFO,
-   RARCH_NETPLAY_CTL_IS_ENABLED,
-   RARCH_NETPLAY_CTL_IS_REPLAYING,
-   RARCH_NETPLAY_CTL_IS_SERVER,
-   RARCH_NETPLAY_CTL_IS_CONNECTED,
-   RARCH_NETPLAY_CTL_IS_PLAYING,
-   RARCH_NETPLAY_CTL_IS_SPECTATING,
-   RARCH_NETPLAY_CTL_IS_DATA_INITED,
-   RARCH_NETPLAY_CTL_ALLOW_PAUSE,
-   RARCH_NETPLAY_CTL_PAUSE,
-   RARCH_NETPLAY_CTL_UNPAUSE,
-   RARCH_NETPLAY_CTL_LOAD_SAVESTATE,
-   RARCH_NETPLAY_CTL_RESET,
-   RARCH_NETPLAY_CTL_DISCONNECT,
-   RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL,
-   RARCH_NETPLAY_CTL_DESYNC_PUSH,
-   RARCH_NETPLAY_CTL_DESYNC_POP,
-   RARCH_NETPLAY_CTL_KICK_CLIENT,
-   RARCH_NETPLAY_CTL_BAN_CLIENT
-};
-
-/* The current status of a connection */
-enum rarch_netplay_connection_mode
-{
-   NETPLAY_CONNECTION_NONE = 0,
-
-   NETPLAY_CONNECTION_DELAYED_DISCONNECT, 
-   /* The connection is dead, but data
-      is still waiting to be forwarded */
-
-   /* Initialization: */
-   NETPLAY_CONNECTION_INIT,         /* Waiting for header */
-   NETPLAY_CONNECTION_PRE_NICK,     /* Waiting for nick */
-   NETPLAY_CONNECTION_PRE_PASSWORD, /* Waiting for password */
-   NETPLAY_CONNECTION_PRE_INFO,     /* Waiting for core/content info */
-   NETPLAY_CONNECTION_PRE_SYNC,     /* Waiting for sync */
-
-   /* Ready: */
-   NETPLAY_CONNECTION_CONNECTED, /* Modes above this are connected */
-   NETPLAY_CONNECTION_SPECTATING, /* Spectator mode */
-   NETPLAY_CONNECTION_SLAVE, /* Playing in slave mode */
-   NETPLAY_CONNECTION_PLAYING /* Normal ready state */
-};
-
-/* Preferences for sharing digital devices */
-enum rarch_netplay_share_digital_preference
-{
-   RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING = 0,
-   RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE,
-   RARCH_NETPLAY_SHARE_DIGITAL_OR,
-   RARCH_NETPLAY_SHARE_DIGITAL_XOR,
-   RARCH_NETPLAY_SHARE_DIGITAL_VOTE,
-   RARCH_NETPLAY_SHARE_DIGITAL_LAST
-};
-
-/* Preferences for sharing analog devices */
-enum rarch_netplay_share_analog_preference
-{
-   RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING = 0,
-   RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE,
-   RARCH_NETPLAY_SHARE_ANALOG_MAX,
-   RARCH_NETPLAY_SHARE_ANALOG_AVERAGE,
-   RARCH_NETPLAY_SHARE_ANALOG_LAST
-};
-
-enum netplay_host_method
-{
-   NETPLAY_HOST_METHOD_UNKNOWN = 0,
-   NETPLAY_HOST_METHOD_MANUAL,
-   NETPLAY_HOST_METHOD_UPNP,
-   NETPLAY_HOST_METHOD_MITM
-};
-
-enum rarch_netplay_discovery_ctl_state
-{
-   RARCH_NETPLAY_DISCOVERY_CTL_NONE = 0,
-   RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY,
-   RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES,
-   RARCH_NETPLAY_DISCOVERY_CTL_LAN_CLEAR_RESPONSES
-};
 
 typedef struct netplay netplay_t;
 
@@ -268,16 +159,9 @@ typedef struct
    int room_count;
    int latest_ping;
    unsigned server_port_deferred;
+   uint8_t flags;
    char server_address_deferred[256];
    char server_session_deferred[32];
-   bool netplay_client_deferred;
-   /* Only used before init_netplay */
-   bool netplay_enabled;
-   bool netplay_is_client;
-   bool has_set_netplay_mode;
-   bool has_set_netplay_ip_address;
-   bool has_set_netplay_ip_port;
-   bool has_set_netplay_check_frames;
 } net_driver_state_t;
 
 net_driver_state_t *networking_state_get_ptr(void);

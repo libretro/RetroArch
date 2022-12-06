@@ -164,9 +164,8 @@ char *_mem2_strdup(const char *s)
 
     if (s)
     {
-        int len = strlen(s) + 1;
-
-        ptr = _mem2_calloc(1, len);
+        size_t len = strlen(s) + 1;
+        ptr        = _mem2_calloc(1, len);
 
         if (ptr)
             memcpy(ptr, s, len);

@@ -1,0 +1,131 @@
+TARGET		    := retroarch_orbis_salamander
+
+DEBUG               ?= 0
+
+
+PS4_TITLE_ID	:= RETROARCH
+PS4_TITLE_NAME	:= RetroArch
+
+PC_DEVELOPMENT_IP_ADDRESS  = 192.168.1.137
+PC_DEVELOPMENT_UDP_PORT	   = 18194
+
+AUTH_INFO = 000000000000000000000000001C004000FF000000000080000000000000000000000000000000000000008000400040000000000000008000000000000000080040FFFF000000F000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+
+
+endif
+
+ifeq ($(strip $(ORBISDEV)),)
+$(error "Please set ORBISDEV in your environment. export ORBISDEV=<path to>orbisdev")
+endif
+
+PREFIX := orbis-
+CC      := clang
+CXX     := clang++
+AS      := $(PREFIX)as
+AR      := $(PREFIX)ar
+OBJCOPY := $(PREFIX)objcopy
+STRIP   := $(PREFIX)strip
+NM      := $(PREFIX)nm
+LD      := clang
+
+LIBDIRS += -L. -Lcores -Lbuild -L$(ORBISDEV)/usr/lib
+INCDIRS += -I. -Idefines -Ilibretro-common/include -I$(ORBISDEV)/usr/include -I$(ORBISDEV)/usr/include/c++/v1 -I$(ORBISDEV)/usr/include/orbis
+
+ARCHFLAGS += --target=x86_64-scei-ps4 -DORBIS -D__ORBIS__ -D__PS4__ -D_BSD_SOURCE
+
+
+DEFINES += -DORBIS -D__ORBIS__ -DIS_SALAMANDER -DRARCH_CONSOLE -D__PS4__ -D_BSD_SOURCE
+
+# Compiling with -Werror and disabling some warnings
+DEFINES += -Werror -Wno-macro-redefined -Wno-typedef-redefinition -Wno-non-literal-null-conversion -Wno-void-pointer-to-int-cast \
+	-Wno-format -Wno-tautological-constant-out-of-range-compare -Wno-implicit-function-declaration
+
+ifeq ($(HAVE_FILE_LOGGER), 1)
+  DEFINES += -DHAVE_FILE_LOGGER
+endif
+ifneq ($(PC_DEVELOPMENT_IP_ADDRESS),)
+  DEFINES += -DPC_DEVELOPMENT_IP_ADDRESS='"$(PC_DEVELOPMENT_IP_ADDRESS)"'
+endif
+
+ifneq ($(PC_DEVELOPMENT_UDP_PORT),)
+  DEFINES += -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
+endif
+
+PS4_LIBS += -luser_mem_sys -lkernel_stub -lSceLibcInternal_stub -lunwind -lc++ -lc++abi -lc++experimental \
+				-lorbisLink -lkernelUtil -ldebugnet -lorbisNfs -lSceSysmodule_stub -lSceSystemService_stub -lSceNet_stub \
+				-lSceUserService_stub -lScePigletv2VSH_stub -lSceVideoOut_stub -lSceGnmDriver_stub -lorbisPad \
+				-lScePad_stub -lSceAudioOut_stub -lSceIme_stub -lSceNetCtl_stub -lSQLite
+
+
+  LIBS	:= $(PS4_LIBS)
+
+
+CFLAGS   := $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
+CXXFLAGS := $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
+LDFLAGS  := $(LIBDIRS) -Wl,--gc-sections -Wl,-z -Wl,max-page-size=0x4000 -Wl,--dynamic-linker="/libexec/ld-elf.so.1" -Wl,-pie -Wl,--eh-frame-hdr -target x86_64-scei-ps4-elf -T $(ORBISDEV)/usr/lib/linker.x
+
+ifeq ($(DEBUG), 1)
+   CFLAGS += -O0 -fno-inline
+   CXXFLAGS += -O0 -fno-inline
+else
+   CFLAGS += -O3
+   CXXFLAGS += -O3
+endif
+
+OBJS = frontend/frontend_salamander.o \
+		 frontend/frontend_driver.o \
+		 frontend/drivers/platform_orbis.o \
+		 libretro-common/file/file_path.o \
+		 libretro-common/file/file_path_io.o \
+		 libretro-common/string/stdstring.o \
+		 libretro-common/lists/string_list.o \
+		 libretro-common/lists/dir_list.o \
+		 libretro-common/file/retro_dirent.o \
+		 libretro-common/encodings/encoding_utf.o \
+		 libretro-common/compat/compat_strl.o \
+		 libretro-common/compat/compat_strcasestr.o \
+		 libretro-common/compat/fopen_utf8.o \
+		 libretro-common/file/config_file.o \
+		 libretro-common/streams/file_stream.o \
+		 libretro-common/vfs/vfs_implementation.o \
+		 libretro-common/hash/lrc_hash.o \
+		 libretro-common/time/rtime.o \
+         network/net_logger.o \
+		 verbosity.o
+
+TARGETS := $(TARGET).elf
+
+all: $(TARGETS)
+
+OBJOUT   = -o
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $(OBJOUT)$@ $<
+
+%.o: %.S
+	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+
+%.o: %.s
+	$(CC) -c $(OBJOUT)$@ $<
+
+$(TARGET).elf: $(OBJ)
+	$(LD) $(ORBISDEV)/usr/lib/crt0.o $(OBJ) $(LDFLAGS) $(LIBS) -o $(TARGET).elf
+
+$(TARGET).oelf: $(TARGET).elf
+	@orbis-elf-create $(TARGET).elf $(TARGET).oelf
+
+$(TARGET).self: $(TARGET).oelf
+	python $(ORBISDEV)/bin/make_fself.py --auth-info $(AUTH_INFO) $(TARGET).oelf $(TARGET).self
+
+install:
+	@cp $(TARGET).self $(SELF_PATH_INSTALL)/homebrew.self
+	@echo "Installed!"
+
+clean:
+	rm -f $(OBJ) $(TARGET).elf $(TARGET).oelf $(TARGET).self
+
+.PHONY: clean all

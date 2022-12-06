@@ -55,8 +55,8 @@
 
 /* TODO/FIXME - static globals */
 static egl_ctx_data_t uwp_egl;
-#ifdef HAVE_DYNAMIC
-static dylib_t          dll_handle = NULL; /* Handle to libGLESv2.dll */
+#ifdef HAVE_DYLIB
+static dylib_t  dll_handle = NULL; /* Handle to libGLESv2.dll */
 #endif
 
 typedef struct gfx_ctx_cgl_data
@@ -127,7 +127,7 @@ static void gfx_ctx_uwp_swap_interval(void *data, int interval)
 
 static gfx_ctx_proc_t gfx_ctx_uwp_get_proc_address(const char* symbol)
 {
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
 #else
    return NULL;
@@ -161,7 +161,7 @@ static void *gfx_ctx_uwp_init(void *video_driver)
    if (!uwp)
       return NULL;
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    dll_handle = dylib_load("libGLESv2.dll");
 #endif
 
@@ -177,7 +177,7 @@ static void gfx_ctx_uwp_destroy(void *data)
 
    egl_destroy(&uwp_egl);
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    dylib_close(dll_handle);
 #endif
 }

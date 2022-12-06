@@ -65,12 +65,21 @@
 
 RETRO_BEGIN_DECLS
 
+enum win32_common_flags
+{
+   WIN32_CMN_FLAG_QUIT            = (1 << 0),
+   WIN32_CMN_FLAG_RESIZED         = (1 << 1),
+   WIN32_CMN_FLAG_TASKBAR_CREATED = (1 << 2),
+   WIN32_CMN_FLAG_RESTORE_DESKTOP = (1 << 3),
+   WIN32_CMN_FLAG_INITED          = (1 << 4)
+};
+
+extern uint8_t g_win32_flags;
+
 #if !defined(_XBOX)
 extern unsigned g_win32_resize_width;
 extern unsigned g_win32_resize_height;
 extern float g_win32_refresh_rate;
-extern bool g_win32_inited;
-extern bool g_win32_restore_desktop;
 extern ui_window_win32_t main_window;
 
 void win32_monitor_get_info(void);
@@ -151,7 +160,7 @@ void win32_window_reset(void);
 
 void win32_destroy_window(void);
 
-bool win32_taskbar_is_created(void);
+uint8_t win32_get_flags(void);
 
 float win32_get_refresh_rate(void *data);
 

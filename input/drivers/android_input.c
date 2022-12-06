@@ -188,7 +188,7 @@ static typeof(AMotionEvent_getButtonState) *p_AMotionEvent_getButtonState;
 
 #define AMotionEvent_getButtonState (*p_AMotionEvent_getButtonState)
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
 static void *libandroid_handle;
 #endif
 
@@ -451,7 +451,7 @@ static void engine_handle_dpad_default(struct android_app *android,
    android->analog_state[port][1] = (int16_t)(y * 32767.0f);
 }
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
 static void engine_handle_dpad_getaxisvalue(struct android_app *android,
       AInputEvent *event, int port, int source)
 {
@@ -490,7 +490,7 @@ static void engine_handle_dpad_getaxisvalue(struct android_app *android,
 
 static bool android_input_init_handle(void)
 {
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    if (libandroid_handle != NULL) /* already initialized */
       return true;
 #if defined (ANDROID_AARCH64) || defined(ANDROID_X64)
@@ -1664,7 +1664,7 @@ static void android_input_free_input(void *data)
 
    android_app->input_alive = false;
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    dylib_close((dylib_t)libandroid_handle);
    libandroid_handle = NULL;
 #endif

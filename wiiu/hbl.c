@@ -83,7 +83,7 @@ static inline void memoryAddArea(int start, int end, int cur_index)
 void *getApplicationEndAddr(void)
 {
    extern u32 _end[];
-   if((u32)_end >= 0x01000000)
+   if ((u32)_end >= 0x01000000)
       return APP_BASE_MEM;
    return _end;
 }
@@ -91,6 +91,7 @@ void *getApplicationEndAddr(void)
 /* Create memory areas arrays */
 static void memoryInitAreaTable(u32 args_size)
 {
+    int i = 0;
     u32 ApplicationMemoryEnd = (u32)getApplicationEndAddr() + args_size;
 
     /* This one seems to be available on every firmware and therefore its our code area but also our main RPX area behind our code */
@@ -100,7 +101,6 @@ static void memoryInitAreaTable(u32 args_size)
     const memory_values_t * mem_vals = mem_vals_540;
 
     /* Fill entries */
-    int i = 0;
     while (mem_vals[i].start_address)
     {
         memoryAddArea(mem_vals[i].start_address, mem_vals[i].end_address, i + 1);
@@ -124,8 +124,6 @@ static int HomebrewCopyMemory(u8 *address, u32 bytes, u32 args_size)
    if (*(u16 *)&address[7] != 0xCAFE)
    {
       /* assume ELF */
-      printf("loading ELF file \n");
-
       ELF_DATA_ADDR = (u32)getApplicationEndAddr() + args_size;
       if (ELF_DATA_ADDR >= 0x01000000)
          return -1;
@@ -133,8 +131,6 @@ static int HomebrewCopyMemory(u8 *address, u32 bytes, u32 args_size)
    else
    {
       /* RPX */
-      printf("loading RPX file \n");
-
       ELF_DATA_ADDR = MEM_AREA_TABLE->address;
    }
 
@@ -150,13 +146,14 @@ static int HomebrewCopyMemory(u8 *address, u32 bytes, u32 args_size)
    }
    else
    {
+      u32 done            = 0;
+      u32 mapPosition     = 0;
+
       DCFlushRange(address, bytes);
 
-      u32 done = 0;
       u32 addressPhysical = (u32)OSEffectiveToPhysical(address);
 
       s_mem_area *mem_map = MEM_AREA_TABLE;
-      u32 mapPosition = 0;
 
       while ((done < bytes) && mem_map)
       {
@@ -200,17 +197,17 @@ static int HomebrewCopyMemory(u8 *address, u32 bytes, u32 args_size)
  */
 void log_rpx(const char *filepath, unsigned char *buf, size_t len)
 {
+   int i;
    unsigned int line_buffer[LINE_LEN];
-   int i, offset;
 
    RARCH_LOG("=== BEGIN file=%s size=%d ===\n", filepath, len);
 
    for (i = 0; i < len; i++)
    {
-      offset = i % LINE_LEN;
+      int offset = i % LINE_LEN;
       line_buffer[offset] = buf[i];
 
-      if(offset == (LINE_LEN-1))
+      if (offset == (LINE_LEN-1))
       {
          RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
                line_buffer[0], line_buffer[1], line_buffer[2], line_buffer[3],
@@ -223,7 +220,7 @@ void log_rpx(const char *filepath, unsigned char *buf, size_t len)
                line_buffer[28], line_buffer[29], line_buffer[30], line_buffer[31]);
       }
    }
-   if((len % LINE_LEN) != 0)
+   if ((len % LINE_LEN) != 0)
    {
       for (i = (LINE_LEN - (len % LINE_LEN)); i < LINE_LEN; i++)
          line_buffer[i] = 0;
@@ -239,86 +236,66 @@ void log_rpx(const char *filepath, unsigned char *buf, size_t len)
 
    }
    RARCH_LOG("=== END %s ===\n", filepath);
-
 }
 
 #endif
 
 int HBL_loadToMemory(const char *filepath, u32 args_size)
 {
+   int ret;
+   FILE *fp;
+   u32 bytesRead = 0;
+   u32 fileSize  = 0;
    if (!filepath || !*filepath)
       return -1;
 
-   printf("Loading file %s\n", filepath);
-
-   FILE *fp = fopen(filepath, "rb");
-
-   if (!fp)
-   {
-      printf("failed to open file %s\n", filepath);
+   if (!(fp = fopen(filepath, "rb")))
       return -1;
-   }
 
-   u32 bytesRead = 0;
    fseek(fp, 0, SEEK_END);
-   u32 fileSize = ftell(fp);
+   fileSize = ftell(fp);
    fseek(fp, 0, SEEK_SET);
 
    size_t buffer_size = (fileSize + 0x3f) & ~0x3f;
    unsigned char *buffer = (unsigned char *) memalign(0x40, buffer_size);
 
    if (!buffer)
-   {
-      printf("Not enough memory\n");
       return -1;
-   }
 
    memset(buffer, 0, buffer_size);
 
    /* Copy rpl in memory */
    while (bytesRead < fileSize)
    {
-      printf("progress: %f        \r", 100.0f * (f32)bytesRead / (f32)fileSize);
-
+      int ret;
       u32 blockSize = 0x8000;
 
       if (blockSize > (fileSize - bytesRead))
          blockSize = fileSize - bytesRead;
 
-      int ret = fread(buffer + bytesRead, 1, blockSize, fp);
+      ret = fread(buffer + bytesRead, 1, blockSize, fp);
 
       if (ret <= 0)
-      {
-         printf("Failure on reading file %s\n", filepath);
          break;
-      }
 
       bytesRead += ret;
    }
 
-   printf("progress: %f         \n", 100.0f * (f32)bytesRead / (f32)fileSize);
-
    if (bytesRead != fileSize)
    {
       free(buffer);
-      printf("File loading not finished for file %s, finished %" PRIi32 " of %" PRIi32 " bytes\n", filepath, bytesRead,
-             fileSize);
-      printf("File read failure");
       return -1;
    }
 #ifdef WIIU_LOG_RPX
    log_rpx(filepath, buffer, bytesRead);
 #endif
 
-   int ret = HomebrewCopyMemory(buffer, bytesRead, args_size);
+   ret = HomebrewCopyMemory(buffer, bytesRead, args_size);
 
    free(buffer);
 
    if (ret < 0)
-   {
-      printf("Not enough memory");
       return -1;
-   }
 
    return fileSize;
 }

@@ -46,8 +46,6 @@
 #include "../common/egl_common.h"
 #endif
 
-static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
-
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
@@ -55,6 +53,8 @@ static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 #ifndef EGL_PLATFORM_WAYLAND_KHR
 #define EGL_PLATFORM_WAYLAND_KHR 0x31D8
 #endif
+
+static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
 /* Shell surface callbacks. */
 static void xdg_toplevel_handle_configure(void *data,

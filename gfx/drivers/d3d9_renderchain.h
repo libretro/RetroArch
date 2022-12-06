@@ -115,8 +115,8 @@ static INLINE bool d3d9_renderchain_add_pass(d3d9_renderchain_t *chain,
          info->tex_h,
          1,
          D3DUSAGE_RENDERTARGET,
-         chain->passes->data[
-         chain->passes->count - 1].info.pass->fbo.fp_fbo
+         (chain->passes->data[
+         chain->passes->count - 1].info.pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
          ? D3DFMT_A32B32G32R32F : D3D9_ARGB8888_FORMAT,
          D3DPOOL_DEFAULT, 0, 0, 0, NULL, NULL, false);
 
@@ -156,14 +156,14 @@ static INLINE bool d3d9_renderchain_add_lut(d3d9_renderchain_t *chain,
             NULL,
             false
             );
+   if (!lut)
+      return false;
 
    RARCH_LOG("[D3D9]: LUT texture loaded: %s.\n", path);
 
    info.tex    = lut;
    info.smooth = smooth;
    strlcpy(info.id, id, sizeof(info.id));
-   if (!lut)
-      return false;
 
    IDirect3DDevice9_SetTexture(chain->dev, 0, (IDirect3DBaseTexture9*)lut);
    IDirect3DDevice9_SetSamplerState(chain->dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
@@ -180,7 +180,7 @@ static INLINE void d3d9_renderchain_destroy_passes_and_luts(
 {
    if (chain->passes)
    {
-      unsigned i;
+      int i;
 
       for (i = 0; i < chain->passes->count; i++)
       {
@@ -237,8 +237,7 @@ static INLINE void d3d9_renderchain_end_render(d3d9_renderchain_t *chain)
 
 static INLINE void d3d9_renderchain_unbind_all(d3d9_renderchain_t *chain)
 {
-   unsigned i;
-
+   int i;
    /* Have to be a bit anal about it.
     * Render targets hate it when they have filters apparently.
     */
@@ -285,8 +284,9 @@ static INLINE bool d3d9_renderchain_set_pass_size(
          d3d9_texture_new(dev,
             width, height, 1,
             D3DUSAGE_RENDERTARGET,
-            pass2->info.pass->fbo.fp_fbo ?
-            D3DFMT_A32B32G32R32F : D3D9_ARGB8888_FORMAT,
+            (pass2->info.pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
+            ? D3DFMT_A32B32G32R32F 
+            : D3D9_ARGB8888_FORMAT,
             D3DPOOL_DEFAULT, 0, 0, 0,
             NULL, NULL, false);
 
@@ -346,7 +346,7 @@ static INLINE void d3d9_recompute_pass_sizes(
       d3d9_renderchain_t *chain,
       d3d9_video_t *d3d)
 {
-   unsigned i;
+   int i;
    struct LinkInfo link_info;
    unsigned input_scale              = d3d->video_info.input_scale
       * RARCH_SCALE_BASE;

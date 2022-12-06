@@ -142,10 +142,6 @@ void rarch_favorites_deinit(void);
  **/
 const char* config_get_audio_driver_options(void);
 
-/* BSV Movie */
-
-void bsv_movie_frame_rewind(void);
-
 /* Camera */
 
 unsigned int retroarch_get_rotation(void);

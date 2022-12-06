@@ -25,7 +25,6 @@
 #include "../font_driver.h"
 
 #include "../../configuration.h"
-#include "../../verbosity.h"
 
 #define RSX_FONT_EMIT(c, vx, vy) \
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
@@ -147,7 +146,6 @@ static void *rsx_font_init(void *data,
             &font->font_driver,
             &font->font_data, font_path, font_size))
    {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
       free(font);
       return NULL;
    }

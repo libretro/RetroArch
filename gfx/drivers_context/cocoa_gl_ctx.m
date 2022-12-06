@@ -55,6 +55,13 @@
 #define GLFrameworkID   CFSTR("com.apple.opengl")
 #endif
 
+enum cocoa_ctx_flags
+{
+   COCOA_CTX_FLAG_IS_SYNCING          = (1 << 0),
+   COCOA_CTX_FLAG_CORE_HW_CTX_ENABLE  = (1 << 1),
+   COCOA_CTX_FLAG_USE_HW_CTX          = (1 << 2)
+};
+
 typedef struct cocoa_ctx_data
 {
 #ifndef OSX
@@ -62,11 +69,7 @@ typedef struct cocoa_ctx_data
 #endif
    unsigned width;
    unsigned height;
-#ifndef OSX
-   bool is_syncing;
-#endif
-   bool core_hw_context_enable;
-   bool use_hw_ctx;
+   uint8_t flags;
 } cocoa_ctx_data_t;
 
 /* TODO/FIXME - static globals */
@@ -87,7 +90,7 @@ static uint32_t cocoa_gl_gfx_ctx_get_flags(void *data)
    uint32_t flags                 = 0;
    cocoa_ctx_data_t    *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
-   if (cocoa_ctx->core_hw_context_enable)
+   if (cocoa_ctx->flags & COCOA_CTX_FLAG_CORE_HW_CTX_ENABLE)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
    switch (cocoagl_api)
@@ -124,7 +127,7 @@ static void cocoa_gl_gfx_ctx_set_flags(void *data, uint32_t flags)
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
    if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
-      cocoa_ctx->core_hw_context_enable = true;
+      cocoa_ctx->flags |= COCOA_CTX_FLAG_CORE_HW_CTX_ENABLE;
 }
 
 #if defined(OSX)
@@ -242,26 +245,18 @@ static void cocoa_gl_gfx_ctx_bind_hw_render(void *data, bool enable)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
-   cocoa_ctx->use_hw_ctx = enable;
+   cocoa_ctx->flags |= COCOA_CTX_FLAG_USE_HW_CTX;
 
 #ifdef OSX
    if (enable)
-   {
       [g_hw_ctx makeCurrentContext];
-   }
    else
-   {
       [g_ctx makeCurrentContext];
-   }
 #else
    if (enable)
-   {
       [EAGLContext setCurrentContext:g_hw_ctx];
-   }
    else
-   {
       [EAGLContext setCurrentContext:g_ctx];
-   }
 #endif
 
 }
@@ -297,7 +292,10 @@ static void cocoa_gl_gfx_ctx_swap_interval(void *data, int i)
    cocoa_ctx_data_t *cocoa_ctx   = (cocoa_ctx_data_t*)data;
    /* < No way to disable Vsync on iOS? */
    /*   Just skip presents so fast forward still works. */
-   cocoa_ctx->is_syncing         = interval ? true : false;
+   if (interval)
+      cocoa_ctx->flags |=  COCOA_CTX_FLAG_IS_SYNCING;
+   else
+      cocoa_ctx->flags &= ~COCOA_CTX_FLAG_IS_SYNCING;
    cocoa_ctx->fast_forward_skips = interval ? 0 : 3;
 #endif
 }
@@ -313,7 +311,8 @@ static void cocoa_gl_gfx_ctx_swap_buffers(void *data)
       return;
    if (glk_view)
       [glk_view display];
-   cocoa_ctx->fast_forward_skips = cocoa_ctx->is_syncing ? 0 : 3;
+   cocoa_ctx->fast_forward_skips = 
+      (cocoa_ctx->flags & COCOA_CTX_FLAG_IS_SYNCING) ? 0 : 3;
 #endif
 }
 
@@ -397,7 +396,7 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
       }
 #endif
 
-      if (cocoa_ctx->use_hw_ctx)
+      if (cocoa_ctx->flags & COCOA_CTX_FLAG_USE_HW_CTX)
       {
          g_hw_ctx       = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:nil];
          g_ctx          = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:g_hw_ctx];
@@ -450,7 +449,7 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
       return NULL;
 
 #ifndef OSX
-   cocoa_ctx->is_syncing       = true;
+   cocoa_ctx->flags |= COCOA_CTX_FLAG_IS_SYNCING;
 #endif
 
 #if defined(HAVE_COCOA_METAL)
@@ -465,7 +464,7 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
-   if (cocoa_ctx->use_hw_ctx)
+   if (cocoa_ctx->flags & COCOA_CTX_FLAG_USE_HW_CTX)
       g_hw_ctx      = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
    g_ctx            = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
    glk_view.context = g_ctx;
@@ -490,7 +489,7 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
       return NULL;
 
 #ifndef OSX
-   cocoa_ctx->is_syncing       = true;
+   cocoa_ctx->flags |= COCOA_CTX_FLAG_IS_SYNCING;
 #endif
     
    switch (cocoagl_api)

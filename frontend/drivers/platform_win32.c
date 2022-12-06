@@ -65,38 +65,42 @@
 #include <ole2.h>
 #endif
 
-#ifdef HAVE_SAPI
-static ISpVoice* pVoice        = NULL;
-#endif
-#ifdef HAVE_NVDA
-static bool USE_POWERSHELL     = false;
-static bool USE_NVDA           = true;
-#else
-static bool USE_POWERSHELL     = true;
-static bool USE_NVDA           = false;
-#endif
-static bool USE_NVDA_BRAILLE   = false;
-
 #ifndef SM_SERVERR2
 #define SM_SERVERR2 89
+#endif
+
+enum platform_win32_flags
+{
+   PLAT_WIN32_FLAG_USE_POWERSHELL           = (1 << 0),
+   PLAT_WIN32_FLAG_USE_NVDA                 = (1 << 1),
+   PLAT_WIN32_FLAG_USE_NVDA_BRAILLE         = (1 << 2),
+   PLAT_WIN32_FLAG_DWM_COMPOSITION_DISABLED = (1 << 3),
+   PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE       = (1 << 4),
+   PLAT_WIN32_FLAG_PROCESS_INSTANCE_SET     = (1 << 5)
+};
+
+#ifdef HAVE_SAPI
+static ISpVoice* pVoice           = NULL;
+#endif
+#ifdef HAVE_NVDA
+static uint8_t g_plat_win32_flags = PLAT_WIN32_FLAG_USE_NVDA;
+#else
+static uint8_t g_plat_win32_flags = PLAT_WIN32_FLAG_USE_POWERSHELL;
 #endif
 
 /* static public global variable */
 VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
 
 /* TODO/FIXME - static global variables */
-static bool dwm_composition_disabled = false;
-static bool console_needs_free       = false;
 static char win32_cpu_model_name[64] = {0};
-static bool pi_set                   = false;
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
 /* We only load this library once, so we let it be
  * unloaded at application shutdown, since unloading
  * it early seems to cause issues on some systems.
  */
-static dylib_t dwmlib;
-static dylib_t shell32lib;
-static dylib_t nvdalib;
+static dylib_t dwm_lib;
+static dylib_t shell32_lib;
+static dylib_t nvda_lib;
 #endif
 
 /* Dynamic loading for Non-Visual Desktop Access support */
@@ -190,13 +194,13 @@ enum retro_language win32_get_retro_lang_from_langid(unsigned short langid)
 
 static void gfx_dwm_shutdown(void)
 {
-#ifdef HAVE_DYNAMIC
-   if (dwmlib)
-      dylib_close(dwmlib);
-   if (shell32lib)
-      dylib_close(shell32lib);
-   dwmlib     = NULL;
-   shell32lib = NULL;
+#ifdef HAVE_DYLIB
+   if (dwm_lib)
+      dylib_close(dwm_lib);
+   if (shell32_lib)
+      dylib_close(shell32_lib);
+   dwm_lib     = NULL;
+   shell32_lib = NULL;
 #endif
 }
 
@@ -210,25 +214,23 @@ static bool gfx_init_dwm(void)
 
    atexit(gfx_dwm_shutdown);
 
-#ifdef HAVE_DYNAMIC
-   shell32lib = dylib_load("shell32.dll");
-   if (!shell32lib)
+#ifdef HAVE_DYLIB
+   if (!(shell32_lib = dylib_load("shell32.dll")))
    {
       RARCH_WARN("Did not find shell32.dll.\n");
    }
 
-   dwmlib = dylib_load("dwmapi.dll");
-   if (!dwmlib)
+   if (!(dwm_lib = dylib_load("dwmapi.dll")))
    {
       RARCH_WARN("Did not find dwmapi.dll.\n");
       return false;
    }
 
    DragAcceptFiles_func =
-      (VOID (WINAPI*)(HWND, BOOL))dylib_proc(shell32lib, "DragAcceptFiles");
+      (VOID (WINAPI*)(HWND, BOOL))dylib_proc(shell32_lib, "DragAcceptFiles");
 
    mmcss =
-      (HRESULT(WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
+      (HRESULT(WINAPI*)(BOOL))dylib_proc(dwm_lib, "DwmEnableMMCSS");
 #else
    DragAcceptFiles_func = DragAcceptFiles;
 #if 0
@@ -253,12 +255,13 @@ static void gfx_set_dwm(void)
    if (!gfx_init_dwm())
       return;
 
-   if (disable_composition == dwm_composition_disabled)
+   if (disable_composition == (g_plat_win32_flags &
+            PLAT_WIN32_FLAG_DWM_COMPOSITION_DISABLED))
       return;
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    composition_enable =
-      (HRESULT (WINAPI*)(UINT))dylib_proc(dwmlib, "DwmEnableComposition");
+      (HRESULT (WINAPI*)(UINT))dylib_proc(dwm_lib, "DwmEnableComposition");
 #endif
 
    if (!composition_enable)
@@ -270,7 +273,8 @@ static void gfx_set_dwm(void)
    ret = composition_enable(!disable_composition);
    if (FAILED(ret))
       RARCH_ERR("Failed to set composition state ...\n");
-   dwm_composition_disabled = disable_composition;
+   if (disable_composition)
+      g_plat_win32_flags |= PLAT_WIN32_FLAG_DWM_COMPOSITION_DISABLED;
 }
 
 static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
@@ -436,7 +440,7 @@ static void frontend_win32_init(void *data)
 {
    typedef BOOL (WINAPI *isProcessDPIAwareProc)();
    typedef BOOL (WINAPI *setProcessDPIAwareProc)();
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    HMODULE handle                         =
       GetModuleHandle("User32.dll");
    isProcessDPIAwareProc  isDPIAwareProc  =
@@ -458,28 +462,22 @@ static void frontend_win32_init(void *data)
 #ifdef HAVE_NVDA
 static void init_nvda(void)
 {
-#ifdef HAVE_DYNAMIC
-   if (USE_NVDA && !nvdalib)
+#ifdef HAVE_DYLIB
+   if (     (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA) 
+         && !nvda_lib)
    {
-      nvdalib = dylib_load("nvdaControllerClient64.dll");
-      if (!nvdalib)
+      if ((nvda_lib = dylib_load("nvdaControllerClient64.dll")))
       {
-         USE_NVDA = false;
-         USE_POWERSHELL = true;
-      }
-      else
-      {
-         nvdaController_testIfRunning_func = ( unsigned long (__stdcall*)(void))dylib_proc(nvdalib, "nvdaController_testIfRunning");
-         nvdaController_cancelSpeech_func = (unsigned long(__stdcall *)(void))dylib_proc(nvdalib, "nvdaController_cancelSpeech");
-         nvdaController_brailleMessage_func = (unsigned long(__stdcall *)(wchar_t*))dylib_proc(nvdalib, "nvdaController_brailleMessage");
-         nvdaController_speakText_func = (unsigned long(__stdcall *)(wchar_t*))dylib_proc(nvdalib, "nvdaController_speakText");
-      
+         nvdaController_testIfRunning_func  = (unsigned long (__stdcall*)(void))dylib_proc(nvda_lib, "nvdaController_testIfRunning");
+         nvdaController_cancelSpeech_func   = (unsigned long(__stdcall *)(void))dylib_proc(nvda_lib, "nvdaController_cancelSpeech");
+         nvdaController_brailleMessage_func = (unsigned long(__stdcall *)(wchar_t*))dylib_proc(nvda_lib, "nvdaController_brailleMessage");
+         nvdaController_speakText_func      = (unsigned long(__stdcall *)(wchar_t*))dylib_proc(nvda_lib, "nvdaController_speakText");
+         return;
       }
    }
-#else
-   USE_NVDA = false;
-   USE_POWERSHELL = true;
 #endif
+   g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
+   g_plat_win32_flags |=  PLAT_WIN32_FLAG_USE_POWERSHELL;
 }
 #endif
 
@@ -675,12 +673,12 @@ static void frontend_win32_attach_console(void)
 {
 #ifdef _WIN32
 #ifdef _WIN32_WINNT_WINXP
-   /* msys will start the process with FILE_TYPE_PIPE connected.
-    *   cmd will start the process with FILE_TYPE_UNKNOWN connected
+   /* MSys will start the process with FILE_TYPE_PIPE connected.
+    * cmd will start the process with FILE_TYPE_UNKNOWN connected
     *   (since this is subsystem windows application
     * ... UNLESS stdout/stderr were redirected (then FILE_TYPE_DISK
     * will be connected most likely)
-    * explorer will start the process with NOTHING connected.
+    * Explorer will start the process with NOTHING connected.
     *
     * Now, let's not reconnect anything that's already connected.
     * If any are disconnected, open a console, and connect to them.
@@ -711,7 +709,7 @@ static void frontend_win32_attach_console(void)
       if (need_stderr)
          freopen("CONOUT$", "w", stderr);
 
-      console_needs_free = true;
+      g_plat_win32_flags |= PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE;
    }
 #endif
 #endif
@@ -721,13 +719,13 @@ static void frontend_win32_detach_console(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
 #ifdef _WIN32_WINNT_WINXP
-   if (console_needs_free)
+   if (g_plat_win32_flags & PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE)
    {
-      /* we don't reconnect stdout/stderr to anything here,
+      /* We don't reconnect stdout/stderr to anything here,
        * because by definition, they weren't connected to
        * anything in the first place. */
       FreeConsole();
-      console_needs_free = false;
+      g_plat_win32_flags &= ~PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE;
    }
 #endif
 #endif
@@ -735,12 +733,8 @@ static void frontend_win32_detach_console(void)
 
 static const char* frontend_win32_get_cpu_model_name(void)
 {
-#ifdef ANDROID
-   return NULL;
-#else
    cpu_features_get_model_name(win32_cpu_model_name, sizeof(win32_cpu_model_name));
    return win32_cpu_model_name;
-#endif
 }
 
 enum retro_language frontend_win32_get_user_language(void)
@@ -985,9 +979,9 @@ static bool is_narrator_running_windows(void)
    init_nvda();
 #endif
 
-   if (USE_POWERSHELL)
+   if (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_POWERSHELL)
    {
-      if (!pi_set)
+      if (!(g_plat_win32_flags & PLAT_WIN32_FLAG_PROCESS_INSTANCE_SET))
          return false;
       if (GetExitCodeProcess(g_pi.hProcess, &status))
          if (status == STILL_ACTIVE)
@@ -995,7 +989,7 @@ static bool is_narrator_running_windows(void)
       return false;
    }
 #ifdef HAVE_NVDA
-   else if (USE_NVDA)
+   else if (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA)
    {
       long res = nvdaController_testIfRunning_func();
 
@@ -1005,8 +999,8 @@ static bool is_narrator_running_windows(void)
             back to the powershell method
          */
          RARCH_ERR("Error communicating with NVDA\n");
-         USE_POWERSHELL = true;
-         USE_NVDA       = false;
+         g_plat_win32_flags |=  PLAT_WIN32_FLAG_USE_POWERSHELL;
+         g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
          return false;
       }
       return false;
@@ -1052,7 +1046,7 @@ static bool accessibility_speak_windows(int speed,
    init_nvda();
 #endif
    
-   if (USE_POWERSHELL)
+   if (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_POWERSHELL)
    {
       const char * template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak($input);\"";
       const char * template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak($input);\"";
@@ -1060,13 +1054,15 @@ static bool accessibility_speak_windows(int speed,
          snprintf(cmd, sizeof(cmd), template_lang, language, speeds[speed-1]);
       else
          snprintf(cmd, sizeof(cmd), template_nolang, speeds[speed-1]);
-
-      if (pi_set)
+      if (g_plat_win32_flags & PLAT_WIN32_FLAG_PROCESS_INSTANCE_SET)
          terminate_win32_process(g_pi);
-      pi_set = create_win32_process(cmd, speak_text);
+      if (create_win32_process(cmd, speak_text))
+         g_plat_win32_flags |=  PLAT_WIN32_FLAG_PROCESS_INSTANCE_SET;
+      else
+         g_plat_win32_flags &= ~PLAT_WIN32_FLAG_PROCESS_INSTANCE_SET;
    }
 #ifdef HAVE_NVDA
-   else if (USE_NVDA)
+   else if (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA)
    {
       wchar_t        *wc = utf8_to_utf16_string_alloc(speak_text);
       long res           = nvdaController_testIfRunning_func();
@@ -1081,7 +1077,7 @@ static bool accessibility_speak_windows(int speed,
 
       nvdaController_cancelSpeech_func();
 
-      if (USE_NVDA_BRAILLE)
+      if (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA_BRAILLE)
          nvdaController_brailleMessage_func(wc);
       else
          nvdaController_speakText_func(wc);

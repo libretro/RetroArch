@@ -518,13 +518,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "Nodweddion CPU"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Creiddiau CPU:"
-   )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "Nifer o greiddiau sydd gan y CPU."
+   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   "Pensaernïaeth CPU"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -1095,17 +1091,27 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
-
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "Gadael RetroArch"
+   "Cau"
    )
+
+
+
+
+
+
+
+
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "Gwasanaeth AI"
    )
+
+
 
 /* Settings > Input > Port # Controls */
 

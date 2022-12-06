@@ -1,21 +1,107 @@
 # Future
-- ANDROID: Enable 'Vibrate On Key Press' by default
-- COMPILATION: Fixed compiling with --disable-menu
-- DATABASE/PLAYLISTS: Playlist + database changes - Cleanup 'entry_slot', fallback label + logging
-- INPUT: Fixed the way devices were previously indexed. Input devices were only being indexed in order and would stop at the first time an input has no device connected to it. The problem is when a device gets disconnected, that input will have no devices connected to it, but the next input may still have a device connected. So, that makes changing the port of the currently connected devices impossible.
+- CLI: Fixed not getting any output when running --version or --features without --verbose
+- CLI: Fixed crash when running empty - parameter (it proceeded to content loading)
+- CLI: Reformatted --features to require less rows and to be more consistent
+- CLI: Added -V shorthand for --version
+- CLI: Tab removal + whitespace nits
+- D3D11: Fix when using shaders with TATE mode arcades etc
+- D3D12: Fix when using shaders with TATE mode arcades etc
+- D3D12: Added support for break on errors  (development aid - define DEVICE_DEBUG to use)
+- D3D12: Added support for DRED (device remove extended data) (development aid - define DEVICE_DEBUG to use)
+- D3D12: Made D3D12 viewport and scissors to behave more like Vulkan drivers (or be more correct)
+- D3D12: Fixed validation error on start up due to buffers not being setup correctly for one frame
+- DRM/ODROID GO2: Implement get_video_size for DRM GL context driver
+- FASTFORWARD: Restore framelimit on fastforward toggle. Fast-forward was broken after toggling vrr_runloop off, since it will force frame limit to 1.0 (even on every frame) and never restores it. So let's make sure the wanted ratio is applied when toggling FF (Fastforward).
+- GFX/VIDEO FILTERS: (picoscale_256x_320x240) Added snn function to upscale Fuse (ZX Spectrum) core borderless output to 320x240. ZX Spectrum resolution of 256x192 was previously unsupported.
+- HOTKEYS: Further reorder internal hotkey items for consistency and removed SEND_DEBUG_INFO, OVERLAY_NEXT and OSK from visible hotkey bind list. "Send Debug Info" stuff is removed as much as possible without breakage due to translation files.
+- INPUT/AUTOCONFIG: Disable 'pause on controller disconnect' by default - was enabled by default on 1.13.0
+- INPUT/OVERLAY: Fix analog drift blocking touch input (could occur on overlay_next if physical inputs shown on overlay)
+- INPUT/OVERLAY: Fix overlay_next buttons lighting up in unison
+- INPUT/OVERLAY: Skip meta keys in input_overlay_add_inputs (not supported by input_state_internal)
+- INPUT/WINDOWS/WINRAW: Fix mouse position when using input overlay with mouse cursor
+- INPUT/WINDOWS/WINRAW: Fixed mouse position to use the same method required for menu items and pointer when simulating input overlays with mouse, since it won't work with multi mouse method
+- INPUT/WINDOWS/WINRAW: Fixed passing mouse position to core also when using aforementioned method
 - LOCALIZATION: Updates
+- MENU: Allow toggling info off with the same button
+- MENU: Allow menu wallpaper/background reset. Let's also remove the current wallpaper from the screen when pressing Start.
+- MENU: Null driver shows with different color (Added for all menus the ability to show "disabled" items with a muted color)
+- MENU/DRIVERS: Menu driver first, Audio Resampler removed because it is enough to exist under audio settings
+- MENU/INPUT: Moved "Confirm Quit" to Input menu
+- MENU/INPUT/HOTKEYS: Input hotkey menu completely overhauled to keep related entries together, and also adjusted some labels and sublabels
+- MENU/OVERLAY: Fix overlays behind menu without core running. "Show Overlay Behind Menu" is currently broken with Ozone and XMB (with any other color theme than Plain) when running without a core.
+- MENU/OZONE: Allowed drawing sidebar and thumbnail bar background color also when core is running
+- MENU/OZONE: Stopped using different padding and position for savestate thumbnails vs imageviewer
+- MENU/OZONE: Removed gradient background effect when core is running, because some themes already have gradient background, which creates ugly rough steps
+- MENU/OZONE: Fixed "Gray Light" theme from using the same background as "Gray Dark", which makes selection cursor near impossible to see
+- MENU/OZONE: Some whitespace corrections
+- SDL GFX: Fix no menu on start/blank screen issue. 
+- SRAM: Don't init SRAM saving without content (gets rid of the redundant logging)
+
+# 1.13.0
+- 3DS: Remove debug button combo to shutdown RA
+- 3DS: Remove MaterialUI as per MrHuu recommendation
+- ANDROID: Enable 'Vibrate On Key Press' by default
+- ANDROID: Turn 'Threaded Video' off by default
+- CHEEVOS: Upgrade to rcheevos 10.5
+- COMPILATION: Fixed compiling with --disable-menu
+- CONFIG: Don't show override notification with appendconfig alone
+- DATABASE/PLAYLISTS: Playlist + database changes - Cleanup 'entry_slot', fallback label + logging
+- FRONTEND: Fix default remaps folder for various cores: remap should be nested in config folder
+- GFX/VIDEO FILTERS: Prevent video filter init if game is not running
+- HOTKEYS: Fix shader toggle and add hotkey + sublabel
+- HOTKEYS: Cleanups and corrections - Keep hotkey pause and menu pause separate in order to not trigger unwanted pause when toggling menu regardless if menu will pause or not
+- HOTKEYS: Cleanups and corrections - Allow unpausing with Start (makes resuming more convenient after controller disconnect if menu does not pause)
+- IOS13+: Pointer movement accuracy. iPad Trackpad Pointer Movement Accuracy through absolute location (for iOS 13.4 and above)
+- IOS13+: Adds iPad Trackpad Support to iOS13 Project (for iOS 13.4 and above)
+- INPUT: Fixed the way devices were previously indexed. Input devices were only being indexed in order and would stop at the first time an input has no device connected to it. The problem is when a device gets disconnected, that input will have no devices connected to it, but the next input may still have a device connected. So, that makes changing the port of the currently connected devices impossible.
+- INPUT/AUTOCONFIG: Add option for pause on controller disconnect
+- INPUT/AUTOCONFIG: Driver independent disconnection notification. Should show disconnect notification now properly on Windows with XInput and/or DirectInput pads
+- INPUT/HID: Added usb hid controllers for the famous ZeroDelay encoder and also for "Kade: Kick Ass Dynamic Encoder" to be able to use some custom arcade sticks.
+- INPUT/OVERLAY: Add eightway area types.
+- INPUT/OVERLAY: Ignore hitboxes with zero area. I.e. Set 'reach_x' or 'reach_y' to zero to ensure no hitbox math is done. This simplifies designating animation-only descriptors (e.g. for eightway areas) or obsolete descriptors.
+- INPUT/OVERLAY: Add 'reach' and 'exclusive' for hitboxes. Allows stretching hitboxes and handling their overlap.
+- INPUT/OVERLAY: Fix overlay next_index for unnamed targets
+- INPUT/MENU: Addition to analog stick menu navigation
+- INPUT/MENU: Enable menu navigation also with right analog stick
+- INPUT/MENU: Add option for swapping menu scrolling buttons
+- LOCALIZATION: Updates
+- LOCALIZATION: Add Hungarian language option
 - MENU: Thumbnail fullscreen toggle behavior correction
+- MENU: Consistent left-right scrolling for Quick Menu items
+- MENU: Remove useless sublabel from System Information
+- MENU: Improve widget appearance with missing assets
+- MENU/QT/WIMP: Remove SSL/TLS check at startup
+- MENU/OZONE: Show metadata helper in footer only with second thumbnail
 - MENU/OZONE: Footer improvements - Add "Cycle thumbnails" helper when suitable
 - MENU/OZONE: Footer improvements - Show "Search" helper only when search function is enabled
 - MENU/OZONE: Footer improvements - Fix "Thumbnails available" helper for save states
 - MENU/OZONE: Footer improvements - Tighten padding between icon and title, and widen between helpers
+- MENU/OZONE: Launching anything from a View no longer throws Quick Menu off the screen
+- MENU/OZONE: Save state thumbnails in slot dropdown obeys fullscreen toggle properly when content launched via CLI
+- MENU/OZONE: Save state thumbnail dropdown won’t allow fullscreen toggle when it shouldn’t
+- MENU/OZONE: Selection position remembering in non-playlists won’t flash the first entry
 - MENU/OZONE: Remember selection per main tabs
 - MENU/OZONE: Remove incomplete assets warning
+- MENU/OZONE: Add option to adjust cursor memory when changing menu tabs
+- MENU/OZONE: Further extend texture support for Core Option categories
 - MENU/XMB: Remove incomplete assets warning
+- MENU/XMB: Add truncate playlist name option
+- MENU/XMB: Improve background image selector
+- MENU/XMB: Add option to adjust cursor memory when changing menu tabs
+- MENU/XMB: Further extend texture support for Core Option categories
 - MENU/MATERIALUI: Remove incomplete assets warning
 - OSX: Fixed Z/X keys not working on the macOS port
 - OSX: Fixed RETROK_LMETA not working on macOS port. The RETROK_LMETA key was not defined in the rarch_key_map_apple_hid
+- OSX: Fix broken fullscreen mode in macOS Ventura
+- PS2: Fix Error saving remaps and runtime logs
+- PS3: Fix Core Remap Overwrite Fail
+- QB: Don't fail if OSDependent/OGLCompiler libraries are not present
+- SCANNER/PS1: Improved scanning of PS1 discs
+- SCANNER/PS2: Added serial scanning of PS2 discs - should now scan DVDs and other discs which were previously missed
+- THUMBNAIL: If you rename title, you cannot use the thumbnail image. because the thumbnail filename and the title must be the same.
+If there is no thumbnail with title, find the thumbnail image with rom-name. This has nothing to do with IME.
 - THREADED VIDEO/GLCORE: Fix regression 'Shader presets dont load, when video driver is set to glcore'
+- VULKAN: Fix HDR inverse tonemapping. Only skip tonemapper if HDR10 is explicitly enabled by last shader pass. Otherwise, we are simply just inheriting the bit-depth of the swapchain.
 
 # 1.12.0
 - CONFIG/CLI: Allow use of --appendconfig with override cfgs instead of getting ignored

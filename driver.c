@@ -860,13 +860,13 @@ void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    wifi_driver_ctl(RARCH_WIFI_CTL_DESTROY, NULL);
 #endif
 
-   cbs->frame_cb                                    = retro_frame_null;
-   cbs->poll_cb                                     = retro_input_poll_null;
-   cbs->sample_cb                                   = NULL;
-   cbs->sample_batch_cb                             = NULL;
-   cbs->state_cb                                    = NULL;
+   cbs->frame_cb                    = retro_frame_null;
+   cbs->poll_cb                     = retro_input_poll_null;
+   cbs->sample_cb                   = NULL;
+   cbs->sample_batch_cb             = NULL;
+   cbs->state_cb                    = NULL;
 
-   runloop_st->current_core.inited                  = false;
+   runloop_st->current_core.flags  &= ~RETRO_CORE_FLAG_INITED;
 }
 
 bool driver_ctl(enum driver_ctl_state state, void *data)

@@ -58,6 +58,9 @@ typedef ID3D12Debug*                              D3D12Debug;
 typedef ID3D12DebugDevice*                        D3D12DebugDevice;
 typedef ID3D12DebugCommandQueue*                  D3D12DebugCommandQueue;
 typedef ID3D12DebugCommandList*                   D3D12DebugCommandList;
+#ifdef DEVICE_DEBUG
+typedef ID3D12DeviceRemovedExtendedDataSettings*  D3D12DeviceRemovedExtendedDataSettings;
+#endif /* DEVICE_DEBUG */
 #endif
 typedef ID3D12InfoQueue*                          D3D12InfoQueue;
 
@@ -78,12 +81,12 @@ typedef struct
    {
       float u, v, w, h;
    } coords;
-   UINT32 colors[4];
    struct
    {
       float scaling;
       float rotation;
    } params;
+   UINT32 colors[4];
 } d3d12_sprite_t;
 
 typedef struct
@@ -112,8 +115,8 @@ typedef struct
    UINT64                             row_size_in_bytes;
    UINT64                             total_bytes;
    d3d12_descriptor_heap_t*           srv_heap;
-   bool                               dirty;
    float4_t                           size_data;
+   bool                               dirty;
 } d3d12_texture_t;
 
 #ifndef ALIGN
@@ -135,6 +138,25 @@ typedef struct ALIGN(16)
    float time;
 } d3d12_uniform_t;
 
+enum d3d12_video_flags
+{
+   D3D12_ST_FLAG_RESIZE_CHAIN          = (1 << 0),
+   D3D12_ST_FLAG_KEEP_ASPECT           = (1 << 1),
+   D3D12_ST_FLAG_RESIZE_VIEWPORT       = (1 << 2),
+   D3D12_ST_FLAG_RESIZE_RTS            = (1 << 3),
+   D3D12_ST_FLAG_INIT_HISTORY          = (1 << 4),
+   D3D12_ST_FLAG_OVERLAYS_ENABLE       = (1 << 5),
+   D3D12_ST_FLAG_OVERLAYS_FULLSCREEN   = (1 << 6),
+   D3D12_ST_FLAG_SPRITES_ENABLE        = (1 << 7),
+   D3D12_ST_FLAG_MENU_ENABLE           = (1 << 8),
+   D3D12_ST_FLAG_MENU_FULLSCREEN       = (1 << 9),
+   D3D12_ST_FLAG_HDR_SUPPORT           = (1 << 10),
+   D3D12_ST_FLAG_HDR_ENABLE            = (1 << 11),
+   D3D12_ST_FLAG_VSYNC                 = (1 << 12),
+   D3D12_ST_FLAG_WAITABLE_SWAPCHAINS   = (1 << 13),
+   D3D12_ST_FLAG_WAIT_FOR_VBLANK       = (1 << 14)
+};
+
 typedef struct
 {
    unsigned    cur_mon_id;
@@ -145,6 +167,14 @@ typedef struct
 #endif
    DXGIAdapter adapter;
    D3D12Device device;
+ 
+#ifdef DEVICE_DEBUG
+#ifdef DEBUG
+   D3D12DebugDevice debug_device;
+   D3D12InfoQueue info_queue;
+   D3D12DeviceRemovedExtendedDataSettings device_removed_info;
+#endif /* DEBUG */
+#endif /* DEVICE_DEBUG */
 
    IDXGIAdapter1 *adapters[D3D12_MAX_GPU_COUNT];
    struct string_list *gpu_list;
@@ -182,9 +212,6 @@ typedef struct
       D3D12_RECT                  scissorRect;
       float                       clearcolor[4];
       int                         frame_index;
-      bool                        vsync;
-      bool                        waitable_swapchains;
-      bool                        wait_for_vblank;
       unsigned                    swap_interval;
 #ifdef HAVE_DXGI_HDR
       enum dxgi_swapchain_bit_depth bit_depth;
@@ -216,8 +243,6 @@ typedef struct
       float                            min_output_nits;
       float                            max_cll;
       float                            max_fall;
-      bool                             support;
-      bool                             enable;
    } hdr;
 #endif
 
@@ -228,8 +253,6 @@ typedef struct
       d3d12_texture_t          texture;
 
       float alpha;
-      bool  enabled;
-      bool  fullscreen;
    } menu;
 
    struct
@@ -242,7 +265,6 @@ typedef struct
       D3D12_VERTEX_BUFFER_VIEW vbo_view;
       int                      offset;
       int                      capacity;
-      bool                     enabled;
    } sprites;
 
 #ifdef HAVE_OVERLAY
@@ -251,8 +273,6 @@ typedef struct
       D3D12Resource            vbo;
       D3D12_VERTEX_BUFFER_VIEW vbo_view;
       d3d12_texture_t*         textures;
-      bool                     enabled;
-      bool                     fullscreen;
       int                      count;
    } overlays;
 #endif
@@ -284,19 +304,15 @@ typedef struct
    D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
    DXGI_FORMAT                     format;
    D3D12_GPU_DESCRIPTOR_HANDLE     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
-   math_matrix_4x4                 mvp, mvp_no_rot;
+   math_matrix_4x4                 mvp, mvp_no_rot, identity;
    struct video_viewport           vp;
-   bool                            resize_chain;
-   bool                            keep_aspect;
-   bool                            resize_viewport;
-   bool                            resize_render_targets;
-   bool                            init_history;
    D3D12Resource                   menu_pipeline_vbo;
    D3D12_VERTEX_BUFFER_VIEW        menu_pipeline_vbo_view;
 
 #ifdef DEBUG
    D3D12Debug debugController;
 #endif
+   uint16_t flags;
 } d3d12_video_t;
 
 typedef enum

@@ -24,7 +24,6 @@
 #include "../common/d3d12_common.h"
 
 #include "../../configuration.h"
-#include "../../verbosity.h"
 
 typedef struct
 {
@@ -47,7 +46,6 @@ static void * d3d12_font_init(void* data, const char* font_path,
              &font->font_driver,
              &font->font_data, font_path, font_size))
    {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
       free(font);
       return NULL;
    }
@@ -249,7 +247,7 @@ static void d3d12_font_render_message(
 
    if (!msg || !*msg)
       return;
-   if (!d3d12 || !d3d12->sprites.enabled)
+   if (!d3d12 || (!(d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE)))
       return;
 
    /* If font line metrics are not supported just draw as usual */

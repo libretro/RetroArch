@@ -767,10 +767,6 @@ MSG_HASH(
    "deferred_dropdown_box_list_input_device_type"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_INDEX,
-   "deferred_dropdown_box_list_input_device_index"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION,
    "deferred_dropdown_box_list_input_description"
    )
@@ -1535,6 +1531,10 @@ MSG_HASH(
    "menu_swap_ok_cancel"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_INPUT_SWAP_SCROLL,
+   "menu_swap_scroll"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,
    "input_autodetect_enable"
    )
@@ -1701,6 +1701,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,
    "input_overlay_auto_scale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "input_overlay_dpad_diagonal_sensitivity"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "input_overlay_abxy_diagonal_sensitivity"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -2401,6 +2409,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_PAUSE_NONACTIVE,
    "pause_nonactive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PAUSE_ON_DISCONNECT,
+   "pause_on_disconnect"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,
@@ -3373,6 +3385,10 @@ MSG_HASH(
    "menu_ticker_smooth"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION,
+   "menu_remember_selection"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
    "ui_companion_enable"
    )
@@ -3621,6 +3637,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "video_max_swapchain_images"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   "video_waitable_swapchains"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
@@ -4410,19 +4430,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING,
-   "quick_menu_show_start_recording"
+   "quick_menu_start_recording"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING,
-   "quick_menu_show_start_streaming"
+   "quick_menu_start_streaming"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING,
-   "quick_menu_show_stop_recording"
+   "quick_menu_stop_recording"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING,
-   "quick_menu_show_stop_streaming"
+   "quick_menu_stop_streaming"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,

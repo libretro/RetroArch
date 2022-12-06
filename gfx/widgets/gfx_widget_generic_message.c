@@ -18,7 +18,6 @@
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
 #include "../gfx_display.h"
-#include "../../retroarch.h"
 
 #define GENERIC_MESSAGE_FADE_DURATION MSG_QUEUE_ANIMATION_DURATION
 

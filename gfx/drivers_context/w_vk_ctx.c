@@ -78,7 +78,7 @@ void create_vk_context(HWND hwnd, bool *quit)
             width, height, win32_vk_interval))
       *quit = true;
 
-   g_win32_inited = true;
+   g_win32_flags |= WIN32_CMN_FLAG_INITED;
 }
 
 static void gfx_ctx_w_vk_swap_interval(void *data, int interval)
@@ -87,7 +87,7 @@ static void gfx_ctx_w_vk_swap_interval(void *data, int interval)
    {
       win32_vk_interval = interval;
       if (win32_vk.swapchain)
-         win32_vk.need_new_swapchain = true;
+         win32_vk.flags |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    }
 }
 
@@ -99,7 +99,7 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
 
    win32_check_window(NULL, quit, resize, width, height);
 
-   if (win32_vk.need_new_swapchain)
+   if (win32_vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN)
       *resize = true;
 
    /* Trigger video driver init when changing refresh rate
@@ -111,11 +111,12 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
     * Bigger than zero difference required in order to prevent
     * constant reinit when adjusting rate option in 0.001 increments.
     */
-   if (win32_vk.fullscreen && g_win32_refresh_rate &&
-         g_win32_refresh_rate  != refresh_rate &&
-         abs(g_win32_refresh_rate - refresh_rate) > 0 &&
-         g_win32_resize_width  == *width &&
-         g_win32_resize_height == *height)
+   if (     (win32_vk.flags & VK_DATA_FLAG_FULLSCREEN)
+         && (g_win32_refresh_rate)
+         && (g_win32_refresh_rate  != refresh_rate) 
+         && (abs(g_win32_refresh_rate - refresh_rate) > 0)
+         && (g_win32_resize_width  == *width) 
+         && (g_win32_resize_height == *height))
    {
       g_win32_refresh_rate = settings->floats.video_refresh_rate;
       command_event(CMD_EVENT_REINIT, NULL);
@@ -124,9 +125,9 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
 
 static void gfx_ctx_w_vk_swap_buffers(void *data)
 {
-   if (win32_vk.context.has_acquired_swapchain)
+   if (win32_vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
-      win32_vk.context.has_acquired_swapchain = false;
+      win32_vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
       /* We're still waiting for a proper swapchain, so just fake it. */
       if (win32_vk.swapchain == VK_NULL_HANDLE)
          retro_sleep(10);
@@ -141,10 +142,10 @@ static bool gfx_ctx_w_vk_set_resize(void *data,
 {
    if (vulkan_create_swapchain(&win32_vk, width, height, win32_vk_interval))
    {
-      if (win32_vk.created_new_swapchain)
+      if (win32_vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
          vulkan_acquire_next_image(&win32_vk);
-      win32_vk.context.invalid_swapchain = true;
-      win32_vk.need_new_swapchain        = false;
+      win32_vk.context.flags            |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+      win32_vk.flags                    &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
       return true;
    }
@@ -210,27 +211,28 @@ static void gfx_ctx_w_vk_destroy(void *data)
       win32_destroy_window();
    }
 
-   if (g_win32_restore_desktop)
+   if (g_win32_flags & WIN32_CMN_FLAG_RESTORE_DESKTOP)
    {
       win32_monitor_get_info();
-      g_win32_restore_desktop     = false;
+      g_win32_flags &= ~WIN32_CMN_FLAG_RESTORE_DESKTOP;
    }
 
    if (vk)
       free(vk);
 
-   g_win32_inited               = false;
+   g_win32_flags &= ~WIN32_CMN_FLAG_INITED;
 }
 
 static void *gfx_ctx_w_vk_init(void *video_driver)
 {
    WNDCLASSEX wndclass     = {0};
    gfx_ctx_w_vk_data_t *vk = (gfx_ctx_w_vk_data_t*)calloc(1, sizeof(*vk));
+   uint8_t win32_flags     = win32_get_flags();
 
    if (!vk)
       return NULL;
 
-   if (g_win32_inited)
+   if (win32_flags & WIN32_CMN_FLAG_INITED)
       gfx_ctx_w_vk_destroy(NULL);
 
    win32_window_reset();
@@ -266,7 +268,10 @@ static bool gfx_ctx_w_vk_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   win32_vk.fullscreen = fullscreen;
+   if (fullscreen)
+      win32_vk.flags |=  VK_DATA_FLAG_FULLSCREEN;
+   else
+      win32_vk.flags &= ~VK_DATA_FLAG_FULLSCREEN;
 
    if (win32_set_video_mode(NULL, width, height, fullscreen))
    {

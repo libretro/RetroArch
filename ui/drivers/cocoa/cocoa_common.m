@@ -174,11 +174,10 @@ void *glkitview_init(void);
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
     int cmdData = self.keyboardController.view.isHidden ? 0 : 1;
     command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &cmdData);
-    if ( self.keyboardController.view.isHidden ) {
+    if (self.keyboardController.view.isHidden)
         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-    } else {
+    else
         command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-    }
 #endif
 }
 
@@ -301,9 +300,9 @@ void *glkitview_init(void);
     [super viewDidLoad];
 #if TARGET_OS_IOS
     UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showNativeMenu)];
-    swipe.numberOfTouchesRequired = 4;
-    swipe.delegate = self;
-    swipe.direction = UISwipeGestureRecognizerDirectionDown;
+    swipe.numberOfTouchesRequired   = 4;
+    swipe.delegate                  = self;
+    swipe.direction                 = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
 #ifdef HAVE_IOS_TOUCHMOUSE
     [self setupMouseSupport];
@@ -311,14 +310,14 @@ void *glkitview_init(void);
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
     [self setupEmulatorKeyboard];
     UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboardUsingSwipe:)];
-    showKeyboardSwipe.numberOfTouchesRequired = 3;
-    showKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionUp;
-    showKeyboardSwipe.delegate = self;
+    showKeyboardSwipe.numberOfTouchesRequired   = 3;
+    showKeyboardSwipe.direction                 = UISwipeGestureRecognizerDirectionUp;
+    showKeyboardSwipe.delegate                  = self;
     [self.view addGestureRecognizer:showKeyboardSwipe];
     UISwipeGestureRecognizer *hideKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboardUsingSwipe:)];
-    hideKeyboardSwipe.numberOfTouchesRequired = 3;
-    hideKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionDown;
-    hideKeyboardSwipe.delegate = self;
+    hideKeyboardSwipe.numberOfTouchesRequired   = 3;
+    hideKeyboardSwipe.direction                 = UISwipeGestureRecognizerDirectionDown;
+    hideKeyboardSwipe.delegate                  = self;
     [self.view addGestureRecognizer:hideKeyboardSwipe];
 #endif
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
@@ -353,27 +352,43 @@ void *glkitview_init(void);
 
 #pragma mark EmulatorTouchMouseHandlerDelegate
 
--(void)handleMouseClickWithIsLeftClick:(BOOL)isLeftClick isPressed:(BOOL)isPressed {
+-(void)handleMouseClickWithIsLeftClick:(BOOL)isLeftClick isPressed:(BOOL)isPressed
+{
     cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-    if (apple == NULL) {
+    if (!apple)
         return;
-    }
     NSUInteger buttonIndex = isLeftClick ? 0 : 1;
-    if (isPressed) {
+    if (isPressed)
         apple->mouse_buttons |= (1 << buttonIndex);
-    } else {
+    else
         apple->mouse_buttons &= ~(1 << buttonIndex);
-    }
 }
 
--(void)handleMouseMoveWithX:(CGFloat)x y:(CGFloat)y {
-    cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-    if (apple == NULL) {
-        return;
-    }
-    apple->mouse_rel_x = (int16_t)x;
-    apple->mouse_rel_y = (int16_t)y;
+-(void)handleMouseMoveWithX:(CGFloat)x y:(CGFloat)y
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+   if (!apple)
+      return;
+   apple->mouse_rel_x = (int16_t)x;
+   apple->mouse_rel_y = (int16_t)y;
+   /* use location position to track pointer */
+   if (@available(iOS 13.4, *))
+   {
+      apple->window_pos_x = 0;
+      apple->window_pos_y = 0;
+   }
 }
+
+-(void)handlePointerMoveWithX:(CGFloat)x y:(CGFloat)y
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)
+      input_state_get_ptr()->current_data;
+   if (!apple)
+      return;
+   apple->window_pos_x = (int16_t)x;
+   apple->window_pos_y = (int16_t)y;
+}
+
 #endif
 
 #pragma mark GCDWebServerDelegate
@@ -464,7 +479,7 @@ float cocoa_screen_get_backing_scale_factor(void) { return 1.0f; }
 #endif
 #else
 static float get_from_selector(
-                               Class obj_class, id obj_id, SEL selector, CGFloat *ret)
+      Class obj_class, id obj_id, SEL selector, CGFloat *ret)
 {
     NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
                                 [obj_class instanceMethodSignatureForSelector:selector]];
@@ -485,15 +500,14 @@ float cocoa_screen_get_native_scale(void)
     
     if (ret != 0.0f)
         return ret;
-    screen             = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
-    if (!screen)
+    if (!(screen = (BRIDGE RAScreen*)cocoa_screen_get_chosen()))
         return 0.0f;
     
     selector            = NSSelectorFromString(BOXSTRING("nativeScale"));
     
     if ([screen respondsToSelector:selector])
         ret                 = (float)get_from_selector(
-                                                       [screen class], screen, selector, &ret);
+              [screen class], screen, selector, &ret);
     else
     {
         ret                 = 1.0f;

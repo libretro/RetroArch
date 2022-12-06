@@ -31,7 +31,6 @@
 #include <retro_miscellaneous.h>
 
 #include "../../file_path_special.h"
-#include "../../verbosity.h"
 
 #include "bitmapfont_6x10.h"
 
@@ -99,10 +98,10 @@ bitmapfont_lut_t *bitmapfont_6x10_load(unsigned language)
       case RETRO_LANGUAGE_INDONESIAN:
       case RETRO_LANGUAGE_SWEDISH:
       case RETRO_LANGUAGE_CZECH:
+      case RETRO_LANGUAGE_HUNGARIAN:
       /* These languages are not yet added
       case RETRO_LANGUAGE_ROMANIAN:
       case RETRO_LANGUAGE_CROATIAN:
-      case RETRO_LANGUAGE_HUNGARIAN:
       case RETRO_LANGUAGE_SERBIAN:
       case RETRO_LANGUAGE_WELSH:
       */
@@ -120,10 +119,7 @@ bitmapfont_lut_t *bitmapfont_6x10_load(unsigned language)
 
    /* Sanity check: should only trigger on bug */
    if (string_is_empty(font_file))
-   {
-      RARCH_WARN("[bitmap 6x10] No font file found for specified language: %u\n", language);
       goto error;
-   }
 
    /* Get font path */
    fill_pathname_application_special(font_dir, sizeof(font_dir),
@@ -133,18 +129,12 @@ bitmapfont_lut_t *bitmapfont_6x10_load(unsigned language)
 
    /* Attempt to read bitmap file */
    if (!rzipstream_read_file(font_path, &bitmap_raw, &len))
-   {
-      RARCH_WARN("[bitmap 6x10] Failed to read font file: %s\n", font_path);
       goto error;
-   }
 
    /* Ensure that we have the correct number
     * of bytes */
    if (len != font_size)
-   {
-      RARCH_WARN("[bitmap 6x10] Font file has invalid size: %s\n", font_path);
       goto error;
-   }
 
    bitmap_char = (unsigned char *)bitmap_raw;
    num_glyphs  = (glyph_max - glyph_min) + 1;

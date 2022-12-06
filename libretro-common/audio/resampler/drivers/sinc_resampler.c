@@ -138,7 +138,7 @@ static void resampler_sinc_process_neon_kaiser(void *re_, struct resampler_data 
             float32x4_t p1 = {0, 0, 0, 0}, p2 = {0, 0, 0, 0};
             float32x2_t p3, p4;
 
-            for (i = 0; i < taps; i += 8)
+            for (i = 0; i < (int)taps; i += 8)
             {
                float32x4x2_t coeff8  = vld2q_f32(&phase_table[i]);
                float32x4x2_t delta8  = vld2q_f32(&delta_table[i]);
@@ -213,7 +213,7 @@ static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
             float32x4_t p1 = {0, 0, 0, 0}, p2 = {0, 0, 0, 0};
             float32x2_t p3, p4;
 
-            for (i = 0; i < taps; i += 8)
+            for (i = 0; i < (int)taps; i += 8)
             {
                float32x4x2_t coeff8  = vld2q_f32(&phase_table[i]);
                float32x4x2_t left8   = vld2q_f32(&buffer_l[i]);
@@ -289,7 +289,7 @@ static void resampler_sinc_process_avx_kaiser(void *re_, struct resampler_data *
                __m256 sum_l             = _mm256_setzero_ps();
                __m256 sum_r             = _mm256_setzero_ps();
 
-               for (i = 0; i < taps; i += 8)
+               for (i = 0; i < (int)taps; i += 8)
                {
                   __m256 buf_l  = _mm256_loadu_ps(buffer_l + i);
                   __m256 buf_r  = _mm256_loadu_ps(buffer_r + i);
@@ -371,7 +371,7 @@ static void resampler_sinc_process_avx(void *re_, struct resampler_data *data)
                __m256 sum_l             = _mm256_setzero_ps();
                __m256 sum_r             = _mm256_setzero_ps();
 
-               for (i = 0; i < taps; i += 8)
+               for (i = 0; i < (int)taps; i += 8)
                {
                   __m256 buf_l  = _mm256_loadu_ps(buffer_l + i);
                   __m256 buf_r  = _mm256_loadu_ps(buffer_r + i);
@@ -456,7 +456,7 @@ static void resampler_sinc_process_sse_kaiser(void *re_, struct resampler_data *
                __m128 sum_l             = _mm_setzero_ps();
                __m128 sum_r             = _mm_setzero_ps();
 
-               for (i = 0; i < taps; i += 4)
+               for (i = 0; i < (int)taps; i += 4)
                {
                   __m128 buf_l = _mm_loadu_ps(buffer_l + i);
                   __m128 buf_r = _mm_loadu_ps(buffer_r + i);
@@ -548,7 +548,7 @@ static void resampler_sinc_process_sse(void *re_, struct resampler_data *data)
                __m128 sum_l             = _mm_setzero_ps();
                __m128 sum_r             = _mm_setzero_ps();
 
-               for (i = 0; i < taps; i += 4)
+               for (i = 0; i < (int)taps; i += 4)
                {
                   __m128 buf_l = _mm_loadu_ps(buffer_l + i);
                   __m128 buf_r = _mm_loadu_ps(buffer_r + i);
@@ -640,7 +640,7 @@ static void resampler_sinc_process_c_kaiser(void *re_, struct resampler_data *da
                float delta              = (float)
                   (resamp->time & resamp->subphase_mask) * resamp->subphase_mod;
 
-               for (i = 0; i < taps; i++)
+               for (i = 0; i < (int)taps; i++)
                {
                   float sinc_val        = phase_table[i] + delta_table[i] * delta;
 
@@ -706,7 +706,7 @@ static void resampler_sinc_process_c(void *re_, struct resampler_data *data)
                unsigned phase           = resamp->time >> resamp->subphase_bits;
                float *phase_table       = resamp->phase_table + phase * taps;
 
-               for (i = 0; i < taps; i++)
+               for (i = 0; i < (int)taps; i++)
                {
                   float sinc_val        = phase_table[i];
 

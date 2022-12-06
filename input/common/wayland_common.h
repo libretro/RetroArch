@@ -147,7 +147,7 @@ typedef struct gfx_ctx_wayland_data
 #ifdef HAVE_LIBDECOR_H
    struct libdecor *libdecor_context;
    struct libdecor_frame *libdecor_frame;
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    struct dylib_t *libdecor;
 #define RA_WAYLAND_SYM(rc,fn,params) rc (*fn) params;
 #include "../../gfx/common/wayland/libdecor_sym.h"

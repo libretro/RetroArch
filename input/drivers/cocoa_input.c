@@ -421,15 +421,46 @@ static int16_t cocoa_input_state(
             return ret;
          }
 
-         if (!keyboard_mapping_blocked && binds[port][id].valid)
+         if (binds[port][id].valid)
          {
             if (id < RARCH_BIND_LIST_END)
-               if (apple_key_state[rarch_keysym_lut[binds[port][id].key]])
-                  return 1;
+               if (!keyboard_mapping_blocked || (id == RARCH_GAME_FOCUS_TOGGLE))
+                  if (apple_key_state[rarch_keysym_lut[binds[port][id].key]])
+                     return 1;
+
          }
          break;
       case RETRO_DEVICE_ANALOG:
+         {
+            int16_t ret           = 0;
+            int id_minus_key      = 0;
+            int id_plus_key       = 0;
+            unsigned id_minus     = 0;
+            unsigned id_plus      = 0;
+            bool id_plus_valid    = false;
+            bool id_minus_valid   = false;
+
+            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
+
+            id_minus_valid        = binds[port][id_minus].valid;
+            id_plus_valid         = binds[port][id_plus].valid;
+            id_minus_key          = binds[port][id_minus].key;
+            id_plus_key           = binds[port][id_plus].key;
+
+            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            {
+               if (apple_key_state[rarch_keysym_lut[(enum retro_key)id_plus_key]])
+                  ret = 0x7fff;
+            }
+            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            {
+               if (apple_key_state[rarch_keysym_lut[(enum retro_key)id_minus_key]])
+                  ret += -0x7fff;
+            }
+            return ret;
+         }
          break;
+
       case RETRO_DEVICE_KEYBOARD:
          return (id < RETROK_LAST) && apple_key_state[rarch_keysym_lut[(enum retro_key)id]];
       case RETRO_DEVICE_MOUSE:
@@ -448,7 +479,16 @@ static int16_t cocoa_input_state(
 #endif
                   }
 #ifdef IOS
-                    val = apple->mouse_rel_x;
+#ifdef HAVE_IOS_TOUCHMOUSE
+                  if (apple->window_pos_x > 0) {
+                     val = apple->window_pos_x - apple->mouse_x_last;
+                     apple->mouse_x_last = apple->window_pos_x;
+                  } else {
+                     val = apple->mouse_rel_x;
+                  }
+#else
+                  val = apple->mouse_rel_x;
+#endif
 #else
                   val = apple->window_pos_x - apple->mouse_x_last;
                   apple->mouse_x_last = apple->window_pos_x;
@@ -464,7 +504,16 @@ static int16_t cocoa_input_state(
 #endif
                   }
 #ifdef IOS
-                    val = apple->mouse_rel_y;
+#ifdef HAVE_IOS_TOUCHMOUSE
+                  if (apple->window_pos_y > 0) {
+                     val = apple->window_pos_y - apple->mouse_y_last;
+                     apple->mouse_y_last = apple->window_pos_y;
+                  } else {
+                     val = apple->mouse_rel_y;
+                  }
+#else
+                  val = apple->mouse_rel_y;
+#endif
 #else
                   val = apple->window_pos_y - apple->mouse_y_last;
                   apple->mouse_y_last = apple->window_pos_y;

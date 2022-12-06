@@ -22,7 +22,6 @@
 #include <string/stdstring.h>
 
 #include "../font_driver.h"
-#include "../../verbosity.h"
 
 #ifndef STB_TRUETYPE_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
@@ -71,10 +70,7 @@ static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
    stbtt_pack_context pc = {NULL};
 
    if (width > 2048 || height > 2048)
-   {
-      RARCH_WARN("[stb] Font atlas too big: %ux%u\n", width, height);
       goto error;
-   }
 
    if (self->atlas.buffer)
       free(self->atlas.buffer);

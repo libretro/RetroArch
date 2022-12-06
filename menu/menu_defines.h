@@ -108,6 +108,15 @@ enum menu_timedate_style_type
    MENU_TIMEDATE_STYLE_LAST
 };
 
+enum menu_remember_selection_type
+{
+   MENU_REMEMBER_SELECTION_OFF = 0,
+   MENU_REMEMBER_SELECTION_ALWAYS,
+   MENU_REMEMBER_SELECTION_PLAYLISTS,
+   MENU_REMEMBER_SELECTION_MAIN,
+   MENU_REMEMBER_SELECTION_LAST
+};
+
 /* Note: These must be kept synchronised with
  * 'enum playlist_sublabel_last_played_date_separator_type'
  * in 'runtime_file.h' */
@@ -454,6 +463,17 @@ enum dingux_rs90_softfilter_type
    DINGUX_RS90_SOFTFILTER_LAST
 };
 #endif
+
+/* Specifies all available screensaver effects */
+enum menu_screensaver_effect
+{
+   MENU_SCREENSAVER_BLANK = 0,
+   MENU_SCREENSAVER_SNOW,
+   MENU_SCREENSAVER_STARFIELD,
+   MENU_SCREENSAVER_VORTEX,
+   MENU_SCREENSAVER_LAST
+};
+
 
 RETRO_END_DECLS
 

@@ -139,6 +139,12 @@ static void fill_derived_paths(void)
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
 		       "info",
 		       sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+		       g_defaults.dirs[DEFAULT_DIR_CORE],
+		       "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
+		       g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+		       "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
 		       "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
@@ -414,7 +420,7 @@ static int frontend_ps3_exec_exitspawn(const char *path,
 #else
    ret = -1;
 #endif
-   
+
    if (ret <  0)
    {
       RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");

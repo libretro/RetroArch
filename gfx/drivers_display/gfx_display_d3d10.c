@@ -78,7 +78,8 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
    if (draw->coords->vertex && draw->coords->tex_coord && draw->coords->color)
       vertex_count = draw->coords->vertices;
 
-   if (!d3d10->sprites.enabled || vertex_count > d3d10->sprites.capacity)
+   if (     (!(d3d10->flags & D3D10_ST_FLAG_SPRITES_ENABLE))
+         || (vertex_count > d3d10->sprites.capacity))
       return;
 
    if (d3d10->sprites.offset + vertex_count > d3d10->sprites.capacity)
@@ -92,7 +93,7 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
             D3D10_MAP_WRITE_NO_OVERWRITE, 0,
             (void**)&mapped_vbo);
 
-      sprite                 = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
+      sprite = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
 
       if (vertex_count == 1)
       {
@@ -150,7 +151,8 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
             sprite++;
          }
 
-         d3d10_set_shader(d3d10->device, &d3d10->shaders[VIDEO_SHADER_STOCK_BLEND]);
+         d3d10_set_shader(d3d10->device,
+               &d3d10->shaders[VIDEO_SHADER_STOCK_BLEND]);
          d3d10->device->lpVtbl->IASetPrimitiveTopology(d3d10->device,
                D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
       }
@@ -158,7 +160,8 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       d3d10->sprites.vbo->lpVtbl->Unmap(d3d10->sprites.vbo);
    }
 
-   d3d10_set_texture_and_sampler(d3d10->device, 0, (d3d10_texture_t*)draw->texture);
+   d3d10_set_texture_and_sampler(d3d10->device, 0,
+         (d3d10_texture_t*)draw->texture);
    d3d10->device->lpVtbl->Draw(d3d10->device, vertex_count,
          d3d10->sprites.offset);
    d3d10->sprites.offset += vertex_count;
@@ -169,8 +172,6 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       d3d10->device->lpVtbl->IASetPrimitiveTopology(d3d10->device,
             D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
    }
-
-   return;
 }
 
 static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
@@ -206,7 +207,8 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
             d3d10->device->lpVtbl->CreateBuffer(d3d10->device, &desc,
                   &vertex_data, &d3d10->menu_pipeline_vbo);
          }
-         D3D10SetVertexBuffer(d3d10->device, 0, d3d10->menu_pipeline_vbo, 2 * sizeof(float), 0);
+         D3D10SetVertexBuffer(d3d10->device, 0,
+               d3d10->menu_pipeline_vbo, 2 * sizeof(float), 0);
          draw->coords->vertices = ca->coords.vertices;
          d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
                d3d10->blend_pipeline,
@@ -218,7 +220,8 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         D3D10SetVertexBuffer(d3d10->device, 0, d3d10->frame.vbo, sizeof(d3d10_vertex_t), 0);
+         D3D10SetVertexBuffer(d3d10->device, 0,
+               d3d10->frame.vbo, sizeof(d3d10_vertex_t), 0);
          draw->coords->vertices = 4;
          break;
       default:

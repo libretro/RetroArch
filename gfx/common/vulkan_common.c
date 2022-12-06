@@ -16,7 +16,11 @@
 
 #include <retro_assert.h>
 #include <dynamic/dylib.h>
+#include <lists/string_list.h>
 #include <string/stdstring.h>
+#include <retro_timers.h>
+#include <retro_assert.h>
+#include <retro_math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -29,14 +33,12 @@
 #endif
 
 #include "vulkan_common.h"
-#include <retro_timers.h>
-#include "../../configuration.h"
 #include "../include/vulkan/vulkan.h"
-#include <retro_assert.h>
 #include "vksym.h"
 #include <libretro_vulkan.h>
-#include <retro_math.h>
-#include <lists/string_list.h>
+
+#include "../../verbosity.h"
+#include "../../configuration.h"
 
 #define VENDOR_ID_AMD 0x1002
 #define VENDOR_ID_NV 0x10DE
@@ -193,8 +195,8 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
    for (;;)
    {
       slock_lock(mailbox->lock);
-      while (  !(mailbox->flags & VK_MAILBOX_FLAG_DEAD) 
-		      && !(mailbox->flags & VK_MAILBOX_FLAG_REQUEST_ACQUIRE))
+      while (   !(mailbox->flags & VK_MAILBOX_FLAG_DEAD) 
+             && !(mailbox->flags & VK_MAILBOX_FLAG_REQUEST_ACQUIRE))
          scond_wait(mailbox->cond, mailbox->lock);
 
       if (mailbox->flags & VK_MAILBOX_FLAG_DEAD)
@@ -953,7 +955,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
       /* Changing pipeline invalidates dynamic state. */
       vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 
-      if (vk->tracker.use_scissor)
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
          sci               = vk->tracker.scissor;
       else
       {
@@ -972,7 +974,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
    else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
    {
       VkRect2D sci;
-      if (vk->tracker.use_scissor)
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
          sci               = vk->tracker.scissor;
       else
       {
@@ -1051,7 +1053,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
       vk->tracker.pipeline = quad->pipeline;
       /* Changing pipeline invalidates dynamic state. */
       vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
-      if (vk->tracker.use_scissor)
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
          sci               = vk->tracker.scissor;
       else
       {
@@ -1070,7 +1072,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
    else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
    {
       VkRect2D sci;
-      if (vk->tracker.use_scissor)
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
          sci               = vk->tracker.scissor;
       else
       {
@@ -1636,21 +1638,24 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 #ifdef VULKAN_EMULATE_MAILBOX
    /* Win32 windowed mode seems to deal just fine with toggling VSync.
     * Fullscreen however ... */
-   vk->emulate_mailbox = vk->fullscreen;
+   if (vk->flags & VK_DATA_FLAG_FULLSCREEN)
+      vk->flags |=  VK_DATA_FLAG_EMULATE_MAILBOX;
+   else
+      vk->flags &= ~VK_DATA_FLAG_EMULATE_MAILBOX;
 #endif
 
    /* If we're emulating mailbox, stick to using fences rather than semaphores.
     * Avoids some really weird driver bugs. */
-   if (!vk->emulate_mailbox)
+   if (!(vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX))
    {
       if (vk->context.gpu_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
       {
-         vk->use_wsi_semaphore = true;
+         vk->flags |= VK_DATA_FLAG_USE_WSI_SEMAPHORE;
          RARCH_LOG("[Vulkan]: Using semaphores for WSI acquire.\n");
       }
       else
       {
-         vk->use_wsi_semaphore = false;
+         vk->flags &= ~VK_DATA_FLAG_USE_WSI_SEMAPHORE;
          RARCH_LOG("[Vulkan]: Using fences for WSI acquire.\n");
       }
    }
@@ -1753,7 +1758,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          vk->context.device = cached_device_vk;
          cached_device_vk   = NULL;
 
-         video_driver_set_video_cache_context_ack();
+         video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
          RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
       }
       else if (vkCreateDevice(vk->context.gpu, &device_info,
@@ -2438,7 +2443,7 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
       vkDestroySwapchainKHR(vk->context.device, vk->swapchain, NULL);
       memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));
       vk->swapchain                      = VK_NULL_HANDLE;
-      vk->context.has_acquired_swapchain = false;
+      vk->context.flags                 &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
    }
 
    for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
@@ -2523,6 +2528,7 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       bool destroy_surface)
 {
+   uint32_t video_st_flags = 0;
    if (!vk->context.instance)
       return;
 
@@ -2543,7 +2549,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       vkDestroyDebugUtilsMessengerEXT(vk->context.instance, vk->context.debug_callback, NULL);
 #endif
 
-   if (video_driver_is_video_cache_context())
+   video_st_flags = video_driver_get_st_flags();
+
+   if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
    {
       cached_device_vk         = vk->context.device;
       cached_instance_vk       = vk->context.instance;
@@ -2723,14 +2731,14 @@ retry:
          vk->context.current_frame_index     = 0;
          vulkan_acquire_clear_fences(vk);
          vulkan_acquire_wait_fences(vk);
-         vk->context.invalid_swapchain       = true;
+         vk->context.flags                  |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
          return;
       }
    }
 
-   retro_assert(!vk->context.has_acquired_swapchain);
+   retro_assert(!(vk->context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN));
 
-   if (vk->emulating_mailbox)
+   if (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
    {
       /* Non-blocking acquire. If we don't get a swapchain frame right away,
        * just skip rendering to the swapchain this frame, similar to what
@@ -2743,7 +2751,7 @@ retry:
    }
    else
    {
-      if (vk->use_wsi_semaphore)
+      if (vk->flags & VK_DATA_FLAG_USE_WSI_SEMAPHORE)
           semaphore = vulkan_get_wsi_acquire_semaphore(&vk->context);
       else
           vkCreateFence(vk->context.device, &fence_info, NULL, &fence);
@@ -2765,7 +2773,7 @@ retry:
    {
       if (fence != VK_NULL_HANDLE)
          vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
-      vk->context.has_acquired_swapchain = true;
+      vk->context.flags |= VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
 
       if (vk->context.swapchain_acquire_semaphore)
       {
@@ -2782,7 +2790,7 @@ retry:
    }
    else
    {
-      vk->context.has_acquired_swapchain = false;
+      vk->context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
       if (semaphore)
       {
          struct vulkan_context *ctx = &vk->context;
@@ -2828,7 +2836,7 @@ retry:
             if (err == VK_ERROR_SURFACE_LOST_KHR)
                RARCH_ERR("[Vulkan]: Got VK_ERROR_SURFACE_LOST_KHR.\n");
             /* Force driver to reset swapchain image handles. */
-            vk->context.invalid_swapchain = true;
+            vk->context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
             vulkan_acquire_clear_fences(vk);
             return;
          }
@@ -2859,8 +2867,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkSwapchainCreateInfoKHR info;
    VkSurfaceTransformFlagBitsKHR pre_transform;
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
-   settings_t                    *settings = config_get_ptr();
    VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+   settings_t                    *settings = config_get_ptr();
    bool vsync                              = settings->bools.video_vsync;
 
    vkDeviceWaitIdle(vk->context.device);
@@ -2874,21 +2882,23 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
        !surface_properties.currentExtent.height)
       return false;
 
-   if (swap_interval == 0 && vk->emulate_mailbox && vsync)
+   if (     (swap_interval == 0)
+         && (vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX)
+         && vsync)
    {
-      swap_interval          = 1;
-      vk->emulating_mailbox  = true;
+      swap_interval  =  1;
+      vk->flags     |=  VK_DATA_FLAG_EMULATING_MAILBOX;
    }
    else
-      vk->emulating_mailbox  = false;
+      vk->flags     &= ~VK_DATA_FLAG_EMULATING_MAILBOX;
 
-   vk->created_new_swapchain = true;
+   vk->flags        |= VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
 
-   if (vk->swapchain != VK_NULL_HANDLE &&
-         !vk->context.invalid_swapchain &&
-         vk->context.swapchain_width == width &&
-         vk->context.swapchain_height == height &&
-         vk->context.swap_interval == swap_interval)
+   if (       (vk->swapchain != VK_NULL_HANDLE)
+         && (!(vk->context.flags & VK_CTX_FLAG_INVALID_SWAPCHAIN))
+         &&   (vk->context.swapchain_width  == width)
+         &&   (vk->context.swapchain_height == height)
+         &&   (vk->context.swap_interval    == swap_interval))
    {
       /* Do not bother creating a swapchain redundantly. */
 #ifdef VULKAN_DEBUG
@@ -2896,23 +2906,23 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 #endif
       vulkan_create_wait_fences(vk);
 
-      if (     vk->emulating_mailbox 
-            && vk->mailbox.swapchain == VK_NULL_HANDLE)
+      if (     (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
+            && (vk->mailbox.swapchain == VK_NULL_HANDLE))
       {
          vulkan_emulated_mailbox_init(
                &vk->mailbox, vk->context.device, vk->swapchain);
-         vk->created_new_swapchain = false;
+         vk->flags                &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
          return true;
       }
       else if (
-               !vk->emulating_mailbox 
-            &&  vk->mailbox.swapchain != VK_NULL_HANDLE)
+               (!(vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX))
+            &&   (vk->mailbox.swapchain != VK_NULL_HANDLE))
       {
          VkResult res = VK_SUCCESS;
          /* We are tearing down, and entering a state 
           * where we are supposed to have
           * acquired an image, so block until we have acquired. */
-         if (!vk->context.has_acquired_swapchain)
+         if (! (vk->context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
             if (vk->mailbox.swapchain != VK_NULL_HANDLE)
                res = vulkan_emulated_mailbox_acquire_next_image_blocking(
                      &vk->mailbox,
@@ -2922,17 +2932,17 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
          if (res == VK_SUCCESS)
          {
-            vk->context.has_acquired_swapchain = true;
-            vk->created_new_swapchain          = false;
+            vk->context.flags |=  VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
+            vk->flags         &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
             return true;
          }
 
          /* We failed for some reason, so create a new swapchain. */
-         vk->context.has_acquired_swapchain    = false;
+         vk->context.flags    &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
       }
       else
       {
-         vk->created_new_swapchain             = false;
+         vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
          return true;
       }
    }
@@ -3007,7 +3017,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       }  
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-      vk->context.hdr_enable          = settings->bools.video_hdr_enable;
+      if (settings->bools.video_hdr_enable)
+         vk->context.flags |=  VK_CTX_FLAG_HDR_ENABLE;
+      else
+         vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
 
       video_driver_unset_hdr_support();
 
@@ -3020,10 +3033,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          }
       }
 
-      if (!vk->context.hdr_enable || format.format == VK_FORMAT_UNDEFINED)
-         vk->context.hdr_enable = false;
+      if (     (!(vk->context.flags & VK_CTX_FLAG_HDR_ENABLE))
+            || (format.format == VK_FORMAT_UNDEFINED))
+         vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
 
-      if (!vk->context.hdr_enable)
+      if (!(vk->context.flags & VK_CTX_FLAG_HDR_ENABLE))
 #endif /* VULKAN_HDR_SWAPCHAIN */
       {
          for (i = 0; i < format_count; i++)
@@ -3172,22 +3186,22 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    {
       case VK_FORMAT_B8G8R8A8_SRGB:
          vk->context.swapchain_format  = VK_FORMAT_B8G8R8A8_UNORM;
-         vk->context.swapchain_is_srgb = true;
+         vk->context.flags            |= VK_CTX_FLAG_SWAPCHAIN_IS_SRGB;
          break;
 
       case VK_FORMAT_R8G8B8A8_SRGB:
          vk->context.swapchain_format  = VK_FORMAT_R8G8B8A8_UNORM;
-         vk->context.swapchain_is_srgb = true;
+         vk->context.flags            |= VK_CTX_FLAG_SWAPCHAIN_IS_SRGB;
          break;
 
       case VK_FORMAT_R8G8B8_SRGB:
          vk->context.swapchain_format  = VK_FORMAT_R8G8B8_UNORM;
-         vk->context.swapchain_is_srgb = true;
+         vk->context.flags            |= VK_CTX_FLAG_SWAPCHAIN_IS_SRGB;
          break;
 
       case VK_FORMAT_B8G8R8_SRGB:
          vk->context.swapchain_format  = VK_FORMAT_B8G8R8_UNORM;
-         vk->context.swapchain_is_srgb = true;
+         vk->context.flags            |= VK_CTX_FLAG_SWAPCHAIN_IS_SRGB;
          break;
 
       default:
@@ -3205,11 +3219,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
             vk->context.num_swapchain_images);
 
    /* Force driver to reset swapchain image handles. */
-   vk->context.invalid_swapchain      = true;
-   vk->context.has_acquired_swapchain = false;
+   vk->context.flags                 |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   vk->context.flags                 &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
    vulkan_create_wait_fences(vk);
 
-   if (vk->emulating_mailbox)
+   if (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
       vulkan_emulated_mailbox_init(&vk->mailbox, vk->context.device, vk->swapchain);
 
    return true;

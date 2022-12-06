@@ -25,7 +25,6 @@
 
 #include "../font_driver.h"
 #include "../../configuration.h"
-#include "../../verbosity.h"
 #include "../common/sixel_common.h"
 
 typedef struct
@@ -49,10 +48,7 @@ static void *sixel_font_init(void *data,
    if (!font_renderer_create_default(
             &font->font_driver,
             &font->font_data, font_path, font_size))
-   {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
       return NULL;
-   }
 
    return font;
 }

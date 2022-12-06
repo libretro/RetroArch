@@ -174,11 +174,13 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
             if (x->ctx)
             {
+               uint32_t video_st_flags;
                glXSwapBuffers(g_x11_dpy, x->glx_win);
                gl_finish();
                glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
-               if (!video_driver_is_video_cache_context())
+               video_st_flags = video_driver_get_st_flags();
+               if (!(video_st_flags & VIDEO_FLAG_CACHE_CONTEXT))
                {
                   if (x->hw_ctx)
                      glXDestroyContext(g_x11_dpy, x->hw_ctx);
@@ -844,7 +846,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          }
          else
          {
-            video_driver_set_video_cache_context_ack();
+            video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
             RARCH_LOG("[GLX]: Using cached GL context.\n");
          }
 

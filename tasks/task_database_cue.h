@@ -28,6 +28,8 @@ struct magic_entry
 
 int detect_ps1_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
+int detect_ps2_game(intfstream_t *fd, char *s, size_t len,
+      const char *filename);
 int detect_psp_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
 int detect_gc_game(intfstream_t *fd, char *s, size_t len,
@@ -45,11 +47,11 @@ int detect_system(intfstream_t *fd, const char **system_name,
 int cue_find_track(const char *cue_path, bool first, uint64_t *offset,
       uint64_t *size, char *track_path, uint64_t max_len);
 bool cue_next_file(intfstream_t *fd, const char *cue_path,
-       char *s, uint64_t len);
+      char *s, uint64_t len);
 int gdi_find_track(const char *gdi_path, bool first, char *track_path,
       uint64_t max_len);
 bool gdi_next_file(intfstream_t *fd, const char *gdi_path, char *path,
-       uint64_t max_len);
+      uint64_t max_len);
 
 RETRO_END_DECLS
 

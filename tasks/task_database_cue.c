@@ -27,7 +27,6 @@
 #include <streams/file_stream.h>
 #include <streams/interface_stream.h>
 #include <string/stdstring.h>
-#include "../retroarch.h"
 #include "task_database_cue.h"
 
 #ifdef HAVE_CONFIG_H
@@ -38,7 +37,6 @@
 
 #include "tasks_internal.h"
 
-#include "../list_special.h"
 #include "../msg_hash.h"
 #include "../verbosity.h"
 
@@ -59,8 +57,9 @@ static struct magic_entry MAGIC_NUMBERS[] = {
    { "Sega - Dreamcast",            "SEGA SEGAKATANA",  0x000010},
    { "Sega - Mega-CD - Sega CD",    "SEGADISCSYSTEM",   0x000010},
    { "Sega - Saturn",               "SEGA SEGASATURN",  0x000010},
-   { "Sony - PlayStation",          "PLAYSTATION",      0x008008},
-   { "Sony - PlayStation",          "PLAYSTATION",      0x009320},
+   { "Sony - PlayStation",          "Sony Computer ",   0x0024f8}, /* PS1 CD license string, PS2 CD doesnt have this string */
+   { "Sony - PlayStation 2",        "PLAYSTATION",      0x009320}, /* PS1 CD and PS2 CD */
+   { "Sony - PlayStation 2",        "PLAYSTATION",      0x008008}, /* PS2 DVD */
    { "Sony - PlayStation Portable", "PSP GAME",         0x008008},
    { NULL,                          NULL,               0}
 };
@@ -202,21 +201,22 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    {
       strncpy(raw_game_id, &disc_data[pos], 12);
       raw_game_id[12] = '\0';
-      if (     string_is_equal_fast(raw_game_id, "S", STRLEN_CONST("S")) 
+      if (     string_is_equal_fast(raw_game_id, "S", STRLEN_CONST("S"))
             || string_is_equal_fast(raw_game_id, "E", STRLEN_CONST("E")))
       {
-         if (
-            (   string_is_equal_fast(raw_game_id, "SCUS_", STRLEN_CONST("SCUS_")))
-            || (string_is_equal_fast(raw_game_id, "SLUS_", STRLEN_CONST("SLUS_")))
-            || (string_is_equal_fast(raw_game_id, "SLES_", STRLEN_CONST("SLES_")))
-            || (string_is_equal_fast(raw_game_id, "SCED_", STRLEN_CONST("SCED_")))
-            || (string_is_equal_fast(raw_game_id, "SLPS_", STRLEN_CONST("SLPS_")))
-            || (string_is_equal_fast(raw_game_id, "SLPM_", STRLEN_CONST("SLPM_")))
-            || (string_is_equal_fast(raw_game_id, "SCPS_", STRLEN_CONST("SCPS_")))
-            || (string_is_equal_fast(raw_game_id, "SLED_", STRLEN_CONST("SLED_")))
-            || (string_is_equal_fast(raw_game_id, "SIPS_", STRLEN_CONST("SIPS_")))
-            || (string_is_equal_fast(raw_game_id, "ESPM_", STRLEN_CONST("ESPM_")))
-            || (string_is_equal_fast(raw_game_id, "SCES_", STRLEN_CONST("SCES_")))
+         if (  string_is_equal_fast(raw_game_id, "SCUS_", STRLEN_CONST("SCUS_"))
+            || string_is_equal_fast(raw_game_id, "SLUS_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SLES_", STRLEN_CONST("SLES_"))
+            || string_is_equal_fast(raw_game_id, "SCED_", STRLEN_CONST("SCED_"))
+            || string_is_equal_fast(raw_game_id, "SLPS_", STRLEN_CONST("SLPS_"))
+            || string_is_equal_fast(raw_game_id, "SLPM_", STRLEN_CONST("SLPM_"))
+            || string_is_equal_fast(raw_game_id, "SCPS_", STRLEN_CONST("SCPS_"))
+            || string_is_equal_fast(raw_game_id, "SLED_", STRLEN_CONST("SLED_"))
+            || string_is_equal_fast(raw_game_id, "SIPS_", STRLEN_CONST("SIPS_"))
+            || string_is_equal_fast(raw_game_id, "ESPM_", STRLEN_CONST("ESPM_"))
+            || string_is_equal_fast(raw_game_id, "SCES_", STRLEN_CONST("SCES_"))
+            || string_is_equal_fast(raw_game_id, "SLKA_", STRLEN_CONST("SLKA_"))
+            || string_is_equal_fast(raw_game_id, "SCAJ_", STRLEN_CONST("SCAJ_"))
             )
          {
             raw_game_id[4] = '-';
@@ -239,10 +239,138 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
             cue_append_multi_disc_suffix(s, filename);
             return true;
          }
-         else if (string_is_equal_fast(&disc_data[pos], "LSP-", STRLEN_CONST("LSP-")))
+      }
+      else if (string_is_equal_fast(raw_game_id, "LSP-", STRLEN_CONST("LSP-")))
+      {
+         raw_game_id[10] = '\0';
+
+         string_remove_all_whitespace(s, raw_game_id);
+         cue_append_multi_disc_suffix(s, filename);
+         return true;
+      }
+      else if (string_is_equal_fast(raw_game_id, "PSX.EXE", STRLEN_CONST("PSX.EXE")))
+      {
+         raw_game_id[7] = '\0';
+
+         string_remove_all_whitespace(s, raw_game_id);
+         cue_append_multi_disc_suffix(s, filename);
+         return true;
+      }
+   }
+
+   s[0 ] = 'X';
+   s[1 ] = 'X';
+   s[2 ] = 'X';
+   s[3 ] = 'X';
+   s[4 ] = 'X';
+   s[5 ] = 'X';
+   s[6 ] = 'X';
+   s[7 ] = 'X';
+   s[8 ] = 'X';
+   s[9 ] = 'X';
+   s[10] = '\0';
+   cue_append_multi_disc_suffix(s, filename);
+   return false;
+}
+
+int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
+{
+   #define DISC_DATA_SIZE_PS2 0x84000
+   int pos;
+   char raw_game_id[50];
+   char disc_data[DISC_DATA_SIZE_PS2];
+
+   /* Load data into buffer and use pointers */
+   if (intfstream_seek(fd, 0, SEEK_SET) < 0)
+      return false;
+
+   if (intfstream_read(fd, disc_data, DISC_DATA_SIZE_PS2) <= 0)
+      return false;
+
+   disc_data[DISC_DATA_SIZE_PS2 - 1] = '\0';
+
+   for (pos = 0; pos < DISC_DATA_SIZE_PS2; pos++)
+   {
+      strncpy(raw_game_id, &disc_data[pos], 12);
+      raw_game_id[12] = '\0';
+      if (     string_is_equal_fast(raw_game_id, "S", STRLEN_CONST("S"))
+            || string_is_equal_fast(raw_game_id, "P", STRLEN_CONST("P"))
+            || string_is_equal_fast(raw_game_id, "T", STRLEN_CONST("T"))
+            || string_is_equal_fast(raw_game_id, "C", STRLEN_CONST("C"))
+            || string_is_equal_fast(raw_game_id, "H", STRLEN_CONST("H"))
+            || string_is_equal_fast(raw_game_id, "A", STRLEN_CONST("A"))
+            || string_is_equal_fast(raw_game_id, "V", STRLEN_CONST("A"))
+            || string_is_equal_fast(raw_game_id, "L", STRLEN_CONST("A"))
+            || string_is_equal_fast(raw_game_id, "M", STRLEN_CONST("A"))
+            || string_is_equal_fast(raw_game_id, "N", STRLEN_CONST("A"))
+            || string_is_equal_fast(raw_game_id, "U", STRLEN_CONST("A"))
+            || string_is_equal_fast(raw_game_id, "W", STRLEN_CONST("A"))
+            || string_is_equal_fast(raw_game_id, "G", STRLEN_CONST("A"))
+            || string_is_equal_fast(raw_game_id, "K", STRLEN_CONST("A"))
+            || string_is_equal_fast(raw_game_id, "R", STRLEN_CONST("A"))
+         )
+      {
+         if (  string_is_equal_fast(raw_game_id, "SLPM_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SLES_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SCES_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SLUS_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SLPS_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SCED_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SCUS_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SCPS_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SCAJ_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SLKA_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SCKA_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SLAJ_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "TCPS_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "KOEI_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "PBPX_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "PCPX_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "PAPX_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SCCS_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "ALCH_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "TCES_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "CPCS_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SLED_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "TLES_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "GUST_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "CF00_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SCPN_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SCPM_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "PSXC_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SLPN_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "ULKS_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "LDTL_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "PKP2_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "WLFD_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "CZP2_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "HAKU_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "SRPM_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "MTP2_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "NMP2_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "ARZE_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "VUGJ_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "ARP2_", STRLEN_CONST("SLUS_"))
+            || string_is_equal_fast(raw_game_id, "ROSE_", STRLEN_CONST("SLUS_"))
+            )
          {
+            raw_game_id[4] = '-';
+            if (string_is_equal_fast(&raw_game_id[8], ".", STRLEN_CONST(".")))
+            {
+               raw_game_id[8] = raw_game_id[9];
+               raw_game_id[9] = raw_game_id[10];
+            }
+            /* A few games have their serial in the form of xx.xxx */
+            /* Tanaka Torahiko no Ultra-ryuu Shougi - Ibisha Anaguma-hen (Japan) -> SLPS_02.261 */
+            else if (string_is_equal_fast(&raw_game_id[7], ".", STRLEN_CONST(".")))
+            {
+               raw_game_id[7] = raw_game_id[8];
+               raw_game_id[8] = raw_game_id[9];
+               raw_game_id[9] = raw_game_id[10];
+            }
+            raw_game_id[10] = '\0';
+
             string_remove_all_whitespace(s, raw_game_id);
-            s[10] = '\0';
             cue_append_multi_disc_suffix(s, filename);
             return true;
          }
@@ -283,7 +411,7 @@ int detect_psp_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    {
       strncpy(s, &disc_data[pos], 10);
       s[10] = '\0';
-      if (     string_is_equal_fast(s, "U", STRLEN_CONST("U")) 
+      if (     string_is_equal_fast(s, "U", STRLEN_CONST("U"))
             || string_is_equal_fast(s, "N", STRLEN_CONST("N")))
       {
          if (
@@ -455,7 +583,7 @@ int detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          s[_len+4] = '\0';
          return true;
       default:
-	 break;
+    break;
    }
 
    return false;
@@ -545,7 +673,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          && pre_game_id[1] == 'K'
          && pre_game_id[2] == '-')
    {
-      if (     check_suffix_50[0] == '5' 
+      if (     check_suffix_50[0] == '5'
             && check_suffix_50[1] == '0')
       {
          strncpy(lgame_id, &pre_game_id[3], 4);
@@ -640,7 +768,7 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       case 'E':
          strncpy(lgame_id, &raw_game_id[0], 2);
          lgame_id[2] = '\0';
-         if (     !strcmp(check_suffix_5, "-5") 
+         if (     !strcmp(check_suffix_5, "-5")
                || !strcmp(check_suffix_50, "50"))
          {
             strncpy(rgame_id, &raw_game_id[2], length - 4);
@@ -873,7 +1001,7 @@ int detect_wii_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
    if (intfstream_read(fd, raw_game_id, 6) <= 0)
       return false;
-   
+
    if (string_is_equal_fast(raw_game_id, "WBFS", STRLEN_CONST("WBFS")))
    {
       if (intfstream_seek(fd, 0x0200, SEEK_SET) < 0)
@@ -934,15 +1062,15 @@ static int detect_serial_ascii_game(intfstream_t *fd, char *s, size_t len)
          for (i = 0; i < 15; i++)
          {
             /* Is the given character ASCII? A-Z, 0-9, - */
-            if (  (s[i] == 45) || 
-                  (s[i] >= 48 && s[i] <= 57) || 
+            if (  (s[i] == 45) ||
+                  (s[i] >= 48 && s[i] <= 57) ||
                   (s[i] >= 65 && s[i] <= 90))
                number_of_ascii++;
             else
                break;
          }
 
-         /* If the length of the text is between 3 and 9 characters, 
+         /* If the length of the text is between 3 and 9 characters,
           * it could be a serial. */
          if (number_of_ascii > 3 && number_of_ascii < 9)
          {

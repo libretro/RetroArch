@@ -72,7 +72,7 @@ static int deferred_push_dlist(
       settings_t *settings)
 {
    if (!menu_displaylist_ctl(state, info, settings))
-      return menu_cbs_exit();
+      return -1;
    menu_displaylist_process(info);
    return 0;
 }
@@ -402,58 +402,43 @@ static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
    char newstring2[PATH_MAX_LENGTH];
-   core_info_list_t           *list           = NULL;
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    bool 
       multimedia_builtin_mediaplayer_enable   = settings->bools.multimedia_builtin_mediaplayer_enable;
+#endif
+#ifdef HAVE_IMAGEVIEWER
    bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
-   bool filter_by_current_core                = settings->bools.filter_by_current_core;
+#endif
 
    if (!menu)
-      return menu_cbs_exit();
-
-   core_info_get_list(&list);
-
-   switch (id)
+      return -1;
+   
+   if (   (id == PUSH_ARCHIVE_OPEN_DETECT_CORE)
+       || (id == PUSH_ARCHIVE_OPEN))
    {
-      case PUSH_DEFAULT:
-      case PUSH_DETECT_CORE_LIST:
-         break;
-      default:
-         {
-            char tmp_str[PATH_MAX_LENGTH];
-            char tmp_str2[PATH_MAX_LENGTH];
-            fill_pathname_join_special(tmp_str, menu->scratch2_buf,
-                  menu->scratch_buf, sizeof(tmp_str));
-            fill_pathname_join_special(tmp_str2, menu->scratch2_buf,
-                  menu->scratch_buf, sizeof(tmp_str2));
+      /* Need to use the scratch buffer here */
+      char tmp_str[PATH_MAX_LENGTH];
+      char tmp_str2[PATH_MAX_LENGTH];
+      fill_pathname_join_special(tmp_str, menu->scratch2_buf,
+            menu->scratch_buf, sizeof(tmp_str));
+      fill_pathname_join_special(tmp_str2, menu->scratch2_buf,
+            menu->scratch_buf, sizeof(tmp_str2));
 
-            if (!string_is_empty(info->path))
-               free(info->path);
-            if (!string_is_empty(info->label))
-               free(info->label);
+      if (!string_is_empty(info->path))
+         free(info->path);
+      if (!string_is_empty(info->label))
+         free(info->label);
 
-            info->path  = strdup(tmp_str);
-            info->label = strdup(tmp_str2);
-         }
-         break;
+      info->path      = strdup(tmp_str);
+      info->label     = strdup(tmp_str2);
    }
 
    info->type_default = FILE_TYPE_PLAIN;
-
-   switch (id)
-   {
-      case PUSH_ARCHIVE_OPEN_DETECT_CORE:
-      case PUSH_ARCHIVE_OPEN:
-      case PUSH_DEFAULT:
-         info->setting      = menu_setting_find_enum(info->enum_idx);
-         break;
-      default:
-         break;
-   }
-
-   newstring2[0]                  = '\0';
+   if (id != PUSH_DETECT_CORE_LIST)
+      info->setting   = menu_setting_find_enum(info->enum_idx);
+   newstring2[0]      = '\0';
 
    switch (id)
    {
@@ -470,13 +455,10 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_DEFAULT:
          {
             const char *valid_extensions     = NULL;
-            struct retro_system_info *system = NULL;
 
-            if (menu_setting_get_browser_selection_type(info->setting) 
-                  != ST_DIR)
+            if (menu_setting_get_browser_selection_type(info->setting) != ST_DIR)
             {
-               system = &runloop_state_get_ptr()->system.info;
-
+               struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
                if (system && !string_is_empty(system->valid_extensions))
                   valid_extensions = system->valid_extensions;
             }
@@ -514,6 +496,7 @@ static int general_push(menu_displaylist_info_t *info,
             struct string_list str_list2     = {0};
             struct retro_system_info *system = 
                &runloop_state_get_ptr()->system.info;
+            bool filter_by_current_core      = settings->bools.filter_by_current_core;
 
             newstring[0]                     = '\0';
             attr.i                           = 0;
@@ -543,6 +526,8 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (!filter_by_current_core)
             {
+               core_info_list_t *list = NULL;
+               core_info_get_list(&list);
                if (list && !string_is_empty(list->all_ext))
                {
                   unsigned x;
@@ -592,34 +577,30 @@ static int general_push(menu_displaylist_info_t *info,
          break;
    }
 
-   if (multimedia_builtin_mediaplayer_enable ||
-         multimedia_builtin_imageviewer_enable)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+   if (multimedia_builtin_mediaplayer_enable)
    {
       struct retro_system_info sysinfo = {0};
-
-      (void)sysinfo;
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-      if (multimedia_builtin_mediaplayer_enable)
-      {
 #if defined(HAVE_FFMPEG)
-         libretro_ffmpeg_retro_get_system_info(&sysinfo);
+      libretro_ffmpeg_retro_get_system_info(&sysinfo);
 #elif defined(HAVE_MPV)
-         libretro_mpv_retro_get_system_info(&sysinfo);
+      libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-         strlcat(newstring2, "|", sizeof(newstring2));
-         strlcat(newstring2, sysinfo.valid_extensions, sizeof(newstring2));
-      }
-#endif
-#ifdef HAVE_IMAGEVIEWER
-      if (multimedia_builtin_imageviewer_enable)
-      {
-         libretro_imageviewer_retro_get_system_info(&sysinfo);
-         strlcat(newstring2, "|", sizeof(newstring2));
-         strlcat(newstring2, sysinfo.valid_extensions,
-               sizeof(newstring2));
-      }
-#endif
+      strlcat(newstring2, "|", sizeof(newstring2));
+      strlcat(newstring2, sysinfo.valid_extensions, sizeof(newstring2));
    }
+#endif
+
+#ifdef HAVE_IMAGEVIEWER
+   if (multimedia_builtin_imageviewer_enable)
+   {
+      struct retro_system_info sysinfo = {0};
+      libretro_imageviewer_retro_get_system_info(&sysinfo);
+      strlcat(newstring2, "|", sizeof(newstring2));
+      strlcat(newstring2, sysinfo.valid_extensions,
+            sizeof(newstring2));
+   }
+#endif
 
    if (!string_is_empty(newstring2))
    {
@@ -658,7 +639,6 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_manual_content_sca
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_core_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_disk_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_device_type, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_TYPE)
-GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_device_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_INDEX)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description_kbd, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD)
 #ifdef HAVE_NETWORKING
@@ -696,7 +676,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE, deferred_push_dropdown_box_list_playlist_sort_mode},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX, deferred_push_dropdown_box_list_disk_index},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE, deferred_push_dropdown_box_list_input_device_type},
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_INDEX, deferred_push_dropdown_box_list_input_device_index},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION, deferred_push_dropdown_box_list_input_description},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD, deferred_push_dropdown_box_list_input_description_kbd},
 #ifdef HAVE_NETWORKING

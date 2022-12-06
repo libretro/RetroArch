@@ -467,11 +467,9 @@ bool gfx_ctx_wl_init_common(
    if (!wl)
       return false;
 
-
 #ifdef HAVE_LIBDECOR_H
-#ifdef HAVE_DYNAMIC
-   wl->libdecor = dylib_load("libdecor-0.so");
-   if (wl->libdecor)
+#ifdef HAVE_DYLIB
+   if ((wl->libdecor = dylib_load("libdecor-0.so")))
    {
 #define RA_WAYLAND_SYM(rc,fn,params) wl->fn = (rc (*) params)dylib_proc(wl->libdecor, #fn);
 #include "wayland/libdecor_sym.h"

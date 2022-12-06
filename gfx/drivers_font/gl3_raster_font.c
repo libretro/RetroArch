@@ -24,7 +24,6 @@
 #include "../common/gl3_common.h"
 #include "../font_driver.h"
 #include "../../configuration.h"
-#include "../../verbosity.h"
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
@@ -111,7 +110,6 @@ static void *gl3_raster_font_init(void *data,
             &font->font_driver,
             &font->font_data, font_path, font_size))
    {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
       free(font);
       return NULL;
    }

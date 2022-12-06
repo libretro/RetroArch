@@ -582,13 +582,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "CPU-Architektur"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "CPU-Kerne:"
-   )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "Anzahl der verfügbaren CPU-Kerne."
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "CPU-Kerne"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -2361,6 +2357,14 @@ MSG_HASH(
    "Erkennen"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
+   "Inhalt pausieren, wenn Controller getrennt wird"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
+   "Inhalt pausieren, wenn ein Controller getrennt ist."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Analog-zu-digital-Grenzwert"
    )
@@ -2468,6 +2472,22 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
    "Steuerung für diesen Port ändern."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Problemumgehung für Verbindungstrennung auf Android"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Problembehebung für Controller, die die Verbindung trennen und wiederherstellen. Betrifft 2 Spieler mit den gleichen Controllern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+   "Beenden bestätigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+   "Zum Beenden von RetroArch muss der Beenden-Hotkey zweimal gedrückt werden."
+   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -2523,6 +2543,14 @@ MSG_HASH(
    "Die Tasten für 'OK' und 'Zurück' vertauschen. \"Aus\" verwendet die japanische Tastenbelegung; \"An\" die westliche Tastenbelegung."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "Vertausche Scroll-Tasten im Menü"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "Die Tasten für Scrolling vertauschen. \"Aus\" scrollt 10 Einträge mit L/R und alphabetisch mit L2/R2."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
    "Alle Benutzer können das Menü steuern"
    )
@@ -2531,40 +2559,15 @@ MSG_HASH(
    "Jedem Benutzer ermöglichen, das Menü zu steuern. Wenn deaktiviert, kann nur Benutzer 1 das Menü steuern."
    )
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Problemumgehung für Verbindungstrennung auf Android"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Problembehebung für Controller, die die Verbindung trennen und wiederherstellen. Betrifft 2 Spieler mit den gleichen Controllern."
-   )
-
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Beenden bestätigen"
+   MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
+   "Hotkeys aktivieren"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Zum Beenden von RetroArch muss der Beenden-Hotkey zweimal gedrückt werden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   "Controller-Kombination 'Menü'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   "Controller-Tastenkombination, mit der das Menü aufgerufen wird."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
-   "Controller-Kombination 'Beenden'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
-   "Controller-Tastenkombination, mit der RetroArch geschlossen wird."
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "Wenn zugewiesen, muss die Taste \"Hotkeys aktivieren\" gedrückt (und gehalten) werden, bevor andere Hotkeys erkannt werden. Ermöglicht die Zuordnung von Controller-Tasten zu Hotkey-Funktionen, ohne die normale Eingabe zu beeinträchtigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -2573,6 +2576,54 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    "Eine Verzögerung in Frames hinzufügen, bevor die normale Eingabe nach Drücken (und Halten) der zugewiesenen Taste \"Hotkeys aktivieren\" blockiert wird. Ermöglicht die normale Eingabe der \"Hotkeys aktivieren\"-Taste, wenn sie einer anderen Aktion zugeordnet ist (z.B. RetroPad \"Select\")."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "Menü (Controller-Kombination)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "Controller-Tastenkombination, mit der das Menü aufgerufen wird."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
+   "Menü umschalten"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
+   "Wechselt die aktuelle Anzeige zwischen dem Menü und dem laufenden Inhalt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Beenden (Controller-Kombination)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "Controller-Tastenkombination, mit der RetroArch geschlossen wird."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   "Beenden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
+   "Schließt RetroArch und stellt sicher, dass alle Speicherdaten und Konfigurationsdateien auf den Datenträger übertragen werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   "Schließen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
+   "Schließt den aktuellen Inhalt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
+   "Inhalt neu starten"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RESET,
+   "Starte den aktuellen Inhalt neu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
@@ -2607,88 +2658,12 @@ MSG_HASH(
    "Aktiviert Zeitlupe, solange gedrückt. Inhalte laufen mit normaler Geschwindigkeit, wenn Taste losgelassen wird."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "Mit exakter Inhaltssignalfrequenz synchronisieren (Umschalten)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "Synchronisierung mit exakter Signalfrequenz des Inhalts umschalten."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "Savestate laden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "Lade ein Savestate aus dem aktuellen Speicherplatz."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   "Savestate speichern"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
-   "Sichert ein Savestate im aktuellen Speicherplatz."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "Vollbildmodus (Umschalten)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "Wechselt zwischen Vollbild- und Fensteranzeigemodus."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
-   "Schließen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
-   "Schließt den aktuellen Inhalt. Ungespeicherte Änderungen können verloren gehen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "RetroArch beenden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
-   "Schließt RetroArch und stellt sicher, dass alle Speicherdaten und Konfigurationsdateien auf den Datenträger übertragen werden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-   "Savestate-Speicherplatz +"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "Erhöht den aktuell ausgewählten Speicherplatz-Index."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   "Savestate-Speicherplatz -"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "Verringert den aktuell ausgewählten Speicherplatz-Index."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "Zurückspulen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "Spult den aktuellen Inhalt zurück, solange Taste gedrückt wird.\n'Zurückspulen-Unterstützung' muss aktiviert sein."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Eingaben-Aufnahme (Umschalten)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Schaltet die Aufnahme von Gameplay-Eingaben im .bsv-Format ein/aus."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
-   "Pause (Umschalten)"
+   "Spult den aktuellen Inhalt zurück, solange Taste gedrückt wird. 'Zurückspulen-Unterstützung' muss aktiviert sein."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
@@ -2702,13 +2677,97 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE,
    "Setzt den Inhalt im pausierten Zustand um einen Frame fort."
    )
+
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
-   "Spiel zurücksetzen"
+   MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
+   "Audio stumm schalten"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_RESET,
-   "Starte den aktuellen Inhalt neu."
+   MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
+   "Schaltet die Audioausgabe ein/aus."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
+   "Lautstärke erhöhen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
+   "Erhöht Audio-Lautstärkepegel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
+   "Lautstärke reduzieren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
+   "Verringert Audio-Lautstärkepegel."
+   )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
+   "Savestate laden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
+   "Lädt Savestate aus dem aktuell gewählten Speicherplatz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
+   "Savestate speichern"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
+   "Speichert Savestate im aktuell gewählten Speicherplatz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
+   "Nächster Savestate-Speicherplatz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
+   "Erhöht den aktuell ausgewählten Speicherplatz-Index."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
+   "Vorheriger Savestate-Speicherplatz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
+   "Verringert den aktuell ausgewählten Speicherplatz-Index."
+   )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
+   "Disc auswerfen (Umschalten)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
+   "Wenn das virtuelle Disc-Fach geschlossen ist, wird es geöffnet und die geladene Disc entfernt. Andernfalls wird die aktuell ausgewählte Disc eingelegt und das Fach geschlossen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
+   "Nächste Disc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   "Erhöht den aktuell ausgewählten Disc-Index. Virtuelles Laufwerk muss geöffnet sein."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
+   "Vorherige Disc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
+   "Verringert den aktuell ausgewählten Disc-Index. Virtuelles Laufwerk muss geöffnet sein."
+   )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "Shader (Umschalten)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
+   "Schaltet den aktuell ausgewählten Shader ein/aus."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
@@ -2726,6 +2785,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    "Lädt und wendet die vorherige Shader-Preset-Datei im 'Video-Shader'-Verzeichnis an."
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
+   "Cheats (Umschalten)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
+   "Schaltet den ausgewählten Cheat ein/aus."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
    "Nächster Cheat-Index"
@@ -2742,14 +2810,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_MINUS,
    "Verringert den aktuell ausgewählten Cheat-Index."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
-   "Cheats (Umschalten)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
-   "Schaltet den ausgewählten Cheat ein/aus."
-   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
    "Screenshot erstellen"
@@ -2759,21 +2820,80 @@ MSG_HASH(
    "Fertigt ein Foto des aktuellen Inhalts an."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
-   "Audio (Umschalten)"
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
+   "Aufnahme (Umschalten)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
-   "Schaltet die Audioausgabe ein/aus."
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE,
+   "Startet/stoppt die Aufzeichnung der aktuellen Sitzung in einer lokalen Videodatei."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "Bildschirmtastatur (Umschalten)"
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
+   "Streaming (Umschalten)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "Schaltet die Bildschirmtastatur ein/aus."
+   MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
+   "Startet/stoppt das Streaming der aktuellen Sitzung zu einer Online-Video-Plattform."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
+   "Eingaben-Aufnahme (Umschalten)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
+   "Schaltet die Aufnahme von Gameplay-Eingaben im .bsv-Format ein/aus."
+   )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
+   "Mauszeiger einfangen (Umschalten)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
+   "Fängt die Maus ein oder lässt sie los. Wenn eingefangen, wird der Mauszeiger ausgeblendet und auf das RetroArch-Fenster beschränkt, was relative Mauseingaben verbessert."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
+   "Spielfokus (Umschalten)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
+   "Schaltet den 'Spielfokus'-Modus an/aus. Wenn der Inhalt fokussiert ist, sind Hotkeys deaktiviert (volle Tastatureingabe wird an den laufenden Core übergeben) und die Maus wird eingefangen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   "Vollbildmodus (Umschalten)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   "Wechselt zwischen Vollbild- und Fensteranzeigemodus."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
+   "Desktop-Menü (Umschalten)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
+   "Öffnet die WIMP(Windows, Icons, Menus, Pointer)-Desktop-Benutzeroberfläche."
+   )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   "Mit exakter Inhaltssignalfrequenz synchronisieren (Umschalten)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   "Synchronisierung mit exakter Signalfrequenz des Inhalts umschalten."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
+   "Run-Ahead (Umschalten)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
+   "Schaltet Run-Ahead ein/aus."
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "FPS anzeigen (Umschalten)"
@@ -2791,20 +2911,37 @@ MSG_HASH(
    "Blendet die Anzeige der technischen Statistiken auf dem Bildschirm ein/aus."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
+   "Bildschirmtastatur (Umschalten)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
+   "Schaltet die Bildschirmtastatur ein/aus."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
+   "Nächstes Overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT,
+   "Wechselt zum nächsten verfügbaren Layout des aktuell aktiven Overlays."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   "KI-Dienst"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
+   "Erfasst ein Bild des aktuellen Inhalts für eine Übersetzung und/oder liest den Text auf dem Bildschirm vor. 'KI-Dienst' muss aktiviert und konfiguriert sein."
+   )
+
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
-   "Netzwerkspiel-Ping anzeigen (Umschalten)"
+   "Netzwerkspiel-Ping (Umschalten)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
    "Blendet den Ping-Zähler für den aktuellen Netzwerkspielraum ein/aus."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
-   "Debugging-Informationen senden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
-   "Sendet Diagnoseinformationen über das Gerät und die RetroArch-Konfiguration zur Analyse an unsere Server."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
@@ -2838,125 +2975,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Zwischen verblassenden und statischen Netzwerkspiel-Chatnachrichten umschalten."
    )
+
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
-   "Hotkeys aktivieren"
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
+   "Debugging-Informationen senden"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   "Wenn zugewiesen, muss die Taste \"Hotkeys aktivieren\" gedrückt (und gehalten) werden, bevor andere Hotkeys erkannt werden. Ermöglicht die Zuordnung von Controller-Tasten zu Hotkey-Funktionen, ohne die normale Eingabe zu beeinträchtigen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
-   "Lautstärke erhöhen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
-   "Erhöht Audio-Lautstärkepegel."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
-   "Lautstärke reduzieren"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
-   "Verringert Audio-Lautstärkepegel."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
-   "Nächstes Overlay"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT,
-   "Wechselt zum nächsten verfügbaren Layout des aktuell aktiven Overlays."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
-   "Disc einlegen/auswerfen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
-   "Wenn das virtuelle Disc-Fach geschlossen ist, wird es geöffnet und die geladene Disc entfernt. Andernfalls wird die aktuell ausgewählte Disc eingelegt und das Fach geschlossen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
-   "Nächste Disc"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Erhöht den aktuell ausgewählten Disc-Index.\nVirtuelles Laufwerk muss geöffnet sein."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
-   "Vorherige Disc"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Verringert den aktuell ausgewählten Disc-Index.\nVirtuelles Laufwerk muss geöffnet sein."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "Mauszeiger einfangen (Umschalten)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "Fängt die Maus ein oder lässt sie los. Wenn eingefangen, wird der Mauszeiger ausgeblendet und auf das RetroArch-Fenster beschränkt, was relative Mauseingaben verbessert."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
-   "Spielfokus (Umschalten)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
-   "Aktiviert oder deaktiviert den \"Spielfokus\"-Modus. Wenn der Inhalt fokussiert ist, werden Hotkeys deaktiviert (alle Tastatureingaben werden an den laufenden Core übergeben) und die Maus wird eingefangen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
-   "Desktop-Menü (Umschalten)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
-   "Öffnet die WIMP(Windows, Icons, Menus, Pointer)-Desktop-Benutzeroberfläche."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
-   "Menü (Umschalten)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Wechselt die aktuelle Anzeige zwischen dem Menü und dem laufenden Inhalt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
-   "Aufnahme (Umschalten)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE,
-   "Startet/stoppt die Aufzeichnung der aktuellen Sitzung in einer lokalen Videodatei."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
-   "Streaming (Umschalten)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
-   "Startet/stoppt das Streaming der aktuellen Sitzung zu einer Online-Video-Plattform."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
-   "Run-Ahead (Umschalten)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
-   "Schaltet Run-Ahead ein/aus."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   "KI-Dienst"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "Erfasst ein Bild des aktuellen Inhalts und übersetzt und/oder liest den Text auf dem Bildschirm vor.\n'KI-Dienst' muss aktiviert und konfiguriert sein."
+   MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
+   "Sendet Diagnoseinformationen über das Gerät und die RetroArch-Konfiguration zur Analyse an unsere Server."
    )
 
 /* Settings > Input > Port # Controls */
@@ -3881,6 +3907,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
    "Overlay-Maßstab und den Abstand der UI-Elemente automatisch an das Seitenverhältnis des Bildschirms anpassen. Erzielt die besten Ergebnisse mit Controller-Overlays."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "D-Pad Diagonale Empfindlichkeit"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "Größe der diagonalen Zonen anpassen. Für 8-Wege-Symmetrie auf 100 % einstellen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "ABXY Überlappungsempfindlichkeit"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "Größe der Überlappungszonen für ABXY-Tastenbereich anpassen. Für 8-Wege-Symmetrie auf 100 % setzen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
@@ -5300,6 +5342,26 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    "Eine flüssige Bildlaufanimation verwenden, wenn langer Menütext angezeigt wird. Hat einen geringen Einfluss auf die Leistung."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+   "Auswahl beim Wechseln von Tabs merken"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
+   "Beim Wechseln zu einem anderen Tab die Position des Cursors im Menü merken."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "Immer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
+   "Nur für Wiedergabelisten"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
+   "Nur für Hauptmenü und Einstellungen"
+   )
 
 /* Settings > AI Service */
 
@@ -5389,7 +5451,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Deaktiviert Cheats, Zurückspulen, Pause, Zeitlupe und Laden von Savestates. Errungenschaften, die im Hardcore-Modus erzielt wurden, sind einzigartig gekennzeichnet, so dass Du anderen zeigen kannst, was Du ohne Emulator-Hilfsfunktionen erreicht hast. Das Umschalten dieser Einstellung zur Laufzeit wird das Spiel neu starten."
+   "Deaktiviert Cheats, Zurückspulen, Zeitlupe und Laden von Savestates. Errungenschaften, die im Hardcore-Modus erzielt wurden, sind eindeutig gekennzeichnet, um anderen anzuzeigen, dass diese ohne Emulator-Hilfsfunktionen erreicht wurden. Das Umschalten dieser Einstellung zur Laufzeit startet das Spiel neu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -7591,6 +7653,10 @@ MSG_HASH(
    "Video-Shader"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
+   "Video-Shader-Pipeline aktivieren."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
    "Shader-Dateien auf Änderungen beobachten"
    )
@@ -7813,7 +7879,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Den Errungenschaften-Hardcore-Modus für die aktuelle Sitzung pausieren. Dies aktiviert Savestates, Cheats, Zurückspulen, Pause und Zeitlupe."
+   "Pausiert den Hardcore-Modus der Errungenschaften für die aktuelle Sitzung. Diese Aktion aktiviert Cheats, Zurückspulen, Zeitlupe und Laden von Savestates."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
@@ -7821,7 +7887,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Den Errungenschaften-Hardcore-Modus für die aktuelle Sitzung fortsetzen. Dies deaktiviert Savestates, Cheats, Zurückspulen, Pause und Zeitlupe und setzt das aktuelle Spiel zurück."
+   "Setzt den Hardcore-Modus der Errungenschaften für die aktuelle Sitzung fort. Diese Aktion deaktiviert Cheats, Zurückspulen, Zeitlupe, und Laden von Savestates und setzt das aktuelle Spiel zurück."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
@@ -10620,10 +10686,6 @@ MSG_HASH(
    "Nativ"
    )
 MSG_HASH(
-   MSG_DEVICE_DISCONNECTED_FROM_PORT,
-   "Gerät getrennt von Port"
-   )
-MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
    "Unbekannten Netzwerkspiel-Befehl empfangen"
    )
@@ -10999,10 +11061,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
    "Zustand automatisch speichern in"
-   )
-MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "Überschreiben des SRAM blockieren"
    )
 MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -11689,10 +11747,6 @@ MSG_HASH(
    "Shader-Voreinstellung erfolgreich gespeichert."
    )
 MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "Überspringe Laden des SRAM."
-   )
-MSG_HASH(
    MSG_SLOW_MOTION,
    "Zeitlupe."
    )
@@ -11705,8 +11759,16 @@ MSG_HASH(
    "In Zeitlupe zurückspulen."
    )
 MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Überspringe Laden des SRAM."
+   )
+MSG_HASH(
    MSG_SRAM_WILL_NOT_BE_SAVED,
    "SRAM wird nicht gespeichert."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "Überschreiben des SRAM blockieren"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,
@@ -11827,6 +11889,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
    "Automatisches Laden des Savestates aus \"%s\" erfolgreich."
+   )
+MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT,
+   "in Port konfiguriert"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT,
+   "von Port getrennt"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -12031,10 +12101,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "Cheat gelöscht."
-   )
-MSG_HASH(
-   MSG_DEVICE_CONFIGURED_IN_PORT,
-   "Konfiguriert in Port:"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
@@ -12676,10 +12742,6 @@ MSG_HASH(
    )
 #endif
 #ifdef HAVE_LAKKA
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
-   "Bluetooth aktivieren"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
    "Aktiviere oder deaktiviere Bluetooth."

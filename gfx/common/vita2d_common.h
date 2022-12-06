@@ -30,10 +30,10 @@
 
 typedef struct vita_menu_frame
 {
-   bool active;
+   vita2d_texture *texture;
    int width;
    int height;
-   vita2d_texture *texture;
+   bool active;
 } vita_menu_t;
 
 #ifdef HAVE_OVERLAY
@@ -62,31 +62,30 @@ typedef struct vita_video
    int height;
    SceGxmTextureFilter tex_filter;
 
-   bool fullscreen;
-   bool vsync;
-   bool rgb32;
-
    video_viewport_t vp;
 
-   unsigned rotation;
    math_matrix_4x4 mvp, mvp_no_rot;
-
-   bool vblank_not_reached;
-   bool keep_aspect;
-   bool should_resize;
 
    vita_menu_t menu;
 
 #ifdef HAVE_OVERLAY
    struct vita_overlay_data *overlay;
    unsigned overlays;
+#endif
+   unsigned video_width;
+   unsigned video_height;
+   unsigned rotation;
+
+#ifdef HAVE_OVERLAY
    bool overlay_enable;
    bool overlay_full_screen;
 #endif
-
-   unsigned video_width;
-   unsigned video_height;
-
+   bool fullscreen;
+   bool vsync;
+   bool rgb32;
+   bool vblank_not_reached;
+   bool keep_aspect;
+   bool should_resize;
 } vita_video_t;
 
 #endif

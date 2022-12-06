@@ -94,6 +94,8 @@
 #endif
 
 #ifdef ANDROID
+static void frontend_unix_set_sustained_performance_mode(bool on);
+
 enum
 {
    /* Internal SDCARD writable */
@@ -104,40 +106,38 @@ enum
    INTERNAL_STORAGE_NOT_WRITABLE
 };
 
-unsigned storage_permissions = 0;
-
-static void frontend_unix_set_sustained_performance_mode(bool on);
-
-struct android_app *g_android = NULL;
+enum platform_android_flags
+{
+   PLAT_ANDROID_FLAG_GAME_CONSOLE_DEVICE = (1 << 0),
+   PLAT_ANDROID_FLAG_ANDROID_TV_DEVICE   = (1 << 1),
+   PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE  = (1 << 2)
+};
 
 static pthread_key_t thread_key;
-
-static char screenshot_dir[PATH_MAX_LENGTH];
-static char downloads_dir[PATH_MAX_LENGTH];
-static char apk_dir[PATH_MAX_LENGTH];
 static char app_dir[PATH_MAX_LENGTH];
-static bool is_android_tv_device = false;
-
+unsigned storage_permissions             = 0;
+struct android_app *g_android            = NULL;
+static uint8_t g_platform_android_flags  = 0;
 #else
-static const char *proc_apm_path                   = "/proc/apm";
-static const char *proc_acpi_battery_path          = "/proc/acpi/battery";
-static const char *proc_acpi_sysfs_ac_adapter_path = "/sys/class/power_supply/ACAD";
-static const char *proc_acpi_sysfs_battery_path    = "/sys/class/power_supply";
-static const char *proc_acpi_ac_adapter_path       = "/proc/acpi/ac_adapter";
-static char unix_cpu_model_name[64] = {0};
+#define PROC_APM_PATH                    "/proc/apm"
+#define PROC_ACPI_BATTERY_PATH           "/proc/acpi/battery"
+#define PROC_ACPI_SYSFS_AC_ADAPTER_PATH  "/sys/class/power_supply/ACAD"
+#define PROC_ACPI_SYSFS_BATTERY_PATH     "/sys/class/power_supply"
+#define PROC_ACPI_AC_ADAPTER_PATH        "/proc/acpi/ac_adapter"
+static char unix_cpu_model_name[64]      = {0};
 #endif
 
 /* /proc/meminfo parameters */
-#define PROC_MEMINFO_PATH              "/proc/meminfo"
-#define PROC_MEMINFO_MEM_TOTAL_TAG     "MemTotal:"
-#define PROC_MEMINFO_MEM_AVAILABLE_TAG "MemAvailable:"
-#define PROC_MEMINFO_MEM_FREE_TAG      "MemFree:"
-#define PROC_MEMINFO_BUFFERS_TAG       "Buffers:"
-#define PROC_MEMINFO_CACHED_TAG        "Cached:"
-#define PROC_MEMINFO_SHMEM_TAG         "Shmem:"
+#define PROC_MEMINFO_PATH                "/proc/meminfo"
+#define PROC_MEMINFO_MEM_TOTAL_TAG       "MemTotal:"
+#define PROC_MEMINFO_MEM_AVAILABLE_TAG   "MemAvailable:"
+#define PROC_MEMINFO_MEM_FREE_TAG        "MemFree:"
+#define PROC_MEMINFO_BUFFERS_TAG         "Buffers:"
+#define PROC_MEMINFO_CACHED_TAG          "Cached:"
+#define PROC_MEMINFO_SHMEM_TAG           "Shmem:"
 
 #if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
-static int speak_pid                            = 0;
+static int speak_pid                     = 0;
 #endif
 
 static volatile sig_atomic_t unix_sighandler_quit;
@@ -184,7 +184,7 @@ int system_property_get(const char *command,
    {
       if (fgets(buffer, sizeof(buffer), pipe))
       {
-         int curlen = strlen(buffer);
+         size_t curlen = strlen(buffer);
 
          memcpy(curpos, buffer, curlen);
 
@@ -595,6 +595,7 @@ static bool device_is_xperia_play(const char *name)
    return false;
 }
 
+/* TODO/FIXME - unfinished */
 static bool device_is_game_console(const char *name)
 {
    if (
@@ -610,11 +611,6 @@ static bool device_is_game_console(const char *name)
       return true;
 
    return false;
-}
-
-static bool device_is_android_tv()
-{
-   return is_android_tv_device;
 }
 
 bool test_permissions(const char *path)
@@ -691,7 +687,6 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
 {
    char basenode[512];
    char path[PATH_MAX_LENGTH];
-   const char *base  = proc_acpi_battery_path;
    int64_t length    = 0;
    char         *ptr = NULL;
    char  *buf        = NULL;
@@ -705,7 +700,8 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
    int          secs = -1;
    int           pct = -1;
 
-   fill_pathname_join_special(basenode, base, node, sizeof(basenode));
+   fill_pathname_join_special(basenode, PROC_ACPI_BATTERY_PATH,
+         node, sizeof(basenode));
    fill_pathname_join_special(path, basenode, "state", sizeof(path));
 
    if (!filestream_exists(path))
@@ -800,7 +796,6 @@ static void check_proc_acpi_sysfs_battery(const char *node,
 {
    char basenode[512];
    char path[PATH_MAX_LENGTH];
-   const char *base  = proc_acpi_sysfs_battery_path;
    char        *buf  = NULL;
    char         *ptr = NULL;
    char         *key = NULL;
@@ -815,7 +810,8 @@ static void check_proc_acpi_sysfs_battery(const char *node,
    int           pct = -1;
 
    /* Stat type. Avoid unknown or device supplies. Missing is considered System. */
-   fill_pathname_join_special(basenode, base, node, sizeof(basenode));
+   fill_pathname_join_special(basenode, PROC_ACPI_SYSFS_BATTERY_PATH,
+         node, sizeof(basenode));
    fill_pathname_join_special(path, basenode, "scope", sizeof(path));
 
    if (filestream_exists(path) != 0)
@@ -876,14 +872,14 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 {
    char basenode[512];
    char path[PATH_MAX_LENGTH];
-   const char *base = proc_acpi_ac_adapter_path;
    char       *buf  = NULL;
    char        *ptr = NULL;
    char        *key = NULL;
    char        *val = NULL;
    int64_t length   = 0;
 
-   fill_pathname_join_special(basenode, base, node, sizeof(basenode));
+   fill_pathname_join_special(basenode, PROC_ACPI_AC_ADAPTER_PATH,
+         node, sizeof(basenode));
    fill_pathname_join_special(path, basenode, "state", sizeof(path));
    if (!filestream_exists(path))
       return;
@@ -909,8 +905,8 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    char  path[1024];
    int64_t length   = 0;
    char     *buf    = NULL;
-   const char *base = proc_acpi_sysfs_ac_adapter_path;
-   fill_pathname_join_special(path, base, "online", sizeof(path));
+   fill_pathname_join_special(path, PROC_ACPI_SYSFS_AC_ADAPTER_PATH,
+         "online", sizeof(path));
    if (!filestream_exists(path))
       return;
 
@@ -968,10 +964,10 @@ static bool frontend_unix_powerstate_check_apm(
    char  *buf          = NULL;
    char *str           = NULL;
 
-   if (!filestream_exists(proc_apm_path))
+   if (!filestream_exists(PROC_APM_PATH))
       goto error;
 
-   if (filestream_read_file(proc_apm_path, (void**)&buf, &length) != 1)
+   if (filestream_read_file(PROC_APM_PATH, (void**)&buf, &length) != 1)
       goto error;
 
    ptr                 = &buf[0];
@@ -1052,7 +1048,7 @@ static bool frontend_unix_powerstate_check_acpi(
    bool have_battery   = false;
    bool have_ac        = false;
    bool charging       = false;
-   struct RDIR *entry  = retro_opendir(proc_acpi_battery_path);
+   struct RDIR *entry  = retro_opendir(PROC_ACPI_BATTERY_PATH);
    if (!entry)
       return false;
 
@@ -1068,7 +1064,7 @@ static bool frontend_unix_powerstate_check_acpi(
 
    retro_closedir(entry);
 
-   entry = retro_opendir(proc_acpi_ac_adapter_path);
+   entry = retro_opendir(PROC_ACPI_AC_ADAPTER_PATH);
    if (!entry)
       return false;
 
@@ -1098,7 +1094,7 @@ static bool frontend_unix_powerstate_check_acpi_sysfs(
    bool have_ac        = false;
    bool charging       = false;
    int  valid_pct_idx  = 0;
-   struct RDIR *entry  = retro_opendir(proc_acpi_sysfs_battery_path);
+   struct RDIR *entry  = retro_opendir(PROC_ACPI_SYSFS_BATTERY_PATH);
    if (!entry)
       goto error;
 
@@ -1120,9 +1116,7 @@ static bool frontend_unix_powerstate_check_acpi_sysfs(
 
    retro_closedir(entry);
 
-   entry = retro_opendir(proc_acpi_sysfs_ac_adapter_path);
-
-   if (entry)
+   if ((entry = retro_opendir(PROC_ACPI_SYSFS_AC_ADAPTER_PATH)))
    {
       check_proc_acpi_sysfs_ac_adapter(retro_dirent_get_name(entry), &have_ac);
       retro_closedir(entry);
@@ -1131,9 +1125,7 @@ static bool frontend_unix_powerstate_check_acpi_sysfs(
       have_ac = false;
 
    if (!have_battery)
-   {
       *state = FRONTEND_POWERSTATE_NO_SOURCE;
-   }
    else if (charging)
       *state = FRONTEND_POWERSTATE_CHARGING;
    else if (have_ac)
@@ -1155,8 +1147,8 @@ static int frontend_unix_get_rating(void)
 {
 #ifdef ANDROID
    char device_model[PROP_VALUE_MAX] = {0};
-   frontend_android_get_name(device_model, sizeof(device_model));
-   if (device_is_xperia_play(device_model))
+   system_property_get("getprop", "ro.product.model", device_model);
+   if (g_platform_android_flags & PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE)
       return 6;
    else if (strstr(device_model, "GT-I9505"))
       return 12;
@@ -1349,26 +1341,20 @@ static void frontend_unix_get_env(int *argc,
 #ifdef ANDROID
    int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX]  = {0};
-   char device_id[PROP_VALUE_MAX]     = {0};
    struct rarch_main_wrap      *args  = NULL;
    JNIEnv                       *env  = NULL;
    jobject                       obj  = NULL;
    jstring                      jstr  = NULL;
-   jboolean                     jbool = JNI_FALSE;
    struct android_app   *android_app  = (struct android_app*)data;
    char parent_path[PATH_MAX_LENGTH];
 
    if (!android_app)
       return;
 
-   env = jni_thread_getenv();
-
-   if (!env)
+   if (!(env = jni_thread_getenv()))
       return;
 
-   args = (struct rarch_main_wrap*)params_data;
-
-   if (args)
+   if ((args = (struct rarch_main_wrap*)params_data))
    {
       args->flags     &= ~(RARCH_MAIN_WRAP_FLAG_VERBOSE
                          | RARCH_MAIN_WRAP_FLAG_NO_CONTENT);
@@ -1510,6 +1496,7 @@ static void frontend_unix_get_env(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
+      static char apk_dir[PATH_MAX_LENGTH];
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *apk_dir = '\0';
@@ -1590,8 +1577,8 @@ static void frontend_unix_get_env(int *argc,
          {
 
             /* this section populates the paths for the assets that are bundled
-               with the apk.
-               TO-DO: change the extraction method so it honors the user defined paths instead
+               with the APK.
+               TODO/FIXME: change the extraction method so it honors the user defined paths instead
             */
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], app_dir,
                   "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
@@ -1708,21 +1695,10 @@ static void frontend_unix_get_env(int *argc,
       }
    }
 
-   /* Check if we are an Android TV device */
-   if (env && android_app->isAndroidTV)
-   {
-      CALL_BOOLEAN_METHOD(env, jbool,
-            android_app->activity->clazz, android_app->isAndroidTV);
-
-      if (jbool != JNI_FALSE)
-         is_android_tv_device = true;
-   }
-
-   frontend_android_get_name(device_model, sizeof(device_model));
-   system_property_get("getprop", "ro.product.id", device_id);
+   system_property_get("getprop", "ro.product.model", device_model);
 
    /* Set automatic default values per device */
-   if (device_is_xperia_play(device_model))
+   if (g_platform_android_flags & PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE)
       g_defaults.settings_out_latency = 128;
    else if (strstr(device_model, "GAMEMID_BT"))
       g_defaults.settings_out_latency = 160;
@@ -1754,7 +1730,8 @@ static void frontend_unix_get_env(int *argc,
     *
     * */
 
-   if (device_is_game_console(device_model) || device_is_android_tv())
+   if (     (g_platform_android_flags & PLAT_ANDROID_FLAG_GAME_CONSOLE_DEVICE)
+         || (g_platform_android_flags & PLAT_ANDROID_FLAG_ANDROID_TV_DEVICE))
    {
       g_defaults.overlay_set    = true;
       g_defaults.overlay_enable = false;
@@ -2027,11 +2004,13 @@ static void frontend_unix_deinit(void *data)
 static void frontend_unix_init(void *data)
 {
 #ifdef ANDROID
-   JNIEnv                     *env = NULL;
-   ALooper                 *looper = NULL;
-   jclass                    class = NULL;
-   jobject                     obj = NULL;
-   struct android_app* android_app = (struct android_app*)data;
+   char device_model[PROP_VALUE_MAX] = {0};
+   JNIEnv                     *env   = NULL;
+   ALooper                 *looper   = NULL;
+   jboolean                  jbool   = JNI_FALSE;
+   jclass                    class   = NULL;
+   jobject                     obj   = NULL;
+   struct android_app* android_app   = (struct android_app*)data;
 
    if (!android_app)
       return;
@@ -2107,8 +2086,27 @@ static void frontend_unix_init(void *data)
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
          "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
-#endif
 
+   /* Check if we are an Android TV device */
+   if (env && android_app->isAndroidTV)
+   {
+      CALL_BOOLEAN_METHOD(env, jbool,
+            android_app->activity->clazz, android_app->isAndroidTV);
+
+      if (jbool != JNI_FALSE)
+         g_platform_android_flags |= PLAT_ANDROID_FLAG_ANDROID_TV_DEVICE;
+   }
+
+   system_property_get("getprop", "ro.product.model", device_model);
+
+   /* Check if we are a game console device */
+   if (device_is_game_console(device_model))
+      g_platform_android_flags       |= PLAT_ANDROID_FLAG_GAME_CONSOLE_DEVICE;
+
+   /* Set automatic default values per device */
+   if (device_is_xperia_play(device_model))
+      g_platform_android_flags       |= PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE;
+#endif
 }
 
 static int frontend_unix_parse_drive_list(void *data, bool load_content)

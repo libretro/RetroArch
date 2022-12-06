@@ -41,6 +41,8 @@
 #define VID_SNES_CLONE    SWAP_IF_BIG(0x081f)
 #define VID_RETRODE       SWAP_IF_BIG(0x0403)
 #define VID_HORI_1        SWAP_IF_BIG(0x0f0d)
+#define VID_KADE          SWAP_IF_BIG(0x10c4)
+#define VID_DRAGONRISE    SWAP_IF_BIG(0x0079)
 
 #define PID_NONE          0x0000
 #define PID_NINTENDO_PRO  SWAP_IF_BIG(0x0330)
@@ -55,6 +57,8 @@
 #define PID_PCS_PSX2PS3   SWAP_IF_BIG(0x0003)
 #define PID_RETRODE       SWAP_IF_BIG(0x97c1)
 #define PID_HORI_MINI_WIRED_PS4 SWAP_IF_BIG(0x00ee)
+#define PID_KADE          SWAP_IF_BIG(0x82c0)
+#define PID_DRAGONRISE    SWAP_IF_BIG(0x0006)
 
 struct joypad_connection
 {
@@ -111,6 +115,8 @@ extern pad_connection_interface_t pad_connection_ps2adapter;
 extern pad_connection_interface_t pad_connection_psxadapter;
 extern pad_connection_interface_t pad_connection_retrode;
 extern pad_connection_interface_t pad_connection_ps4_hori_mini;
+extern pad_connection_interface_t pad_connection_kade;
+extern pad_connection_interface_t pad_connection_dragonrise;
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,

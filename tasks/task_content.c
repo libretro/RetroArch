@@ -84,22 +84,17 @@
 #include "../command.h"
 #include "../core_info.h"
 #include "../content.h"
+#include "../core.h"
 #include "../configuration.h"
 #include "../defaults.h"
+#include "../dynamic.h"
+#include "../file_path_special.h"
 #include "../frontend/frontend.h"
+#include "../msg_hash.h"
 #include "../playlist.h"
 #include "../paths.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-#include "../verbosity.h"
-
-#include "../msg_hash.h"
-#include "../content.h"
-#include "../dynamic.h"
-#include "../retroarch.h"
-#include "../file_path_special.h"
-#include "../core.h"
-#include "../paths.h"
 #include "../verbosity.h"
 
 #ifdef HAVE_PRESENCE
@@ -3098,13 +3093,10 @@ bool content_init(void)
    if (error_string)
    {
       if (ret)
-      {
          RARCH_LOG("[Content]: %s\n", error_string);
-      }
       else
-      {
          RARCH_ERR("[Content]: %s\n", error_string);
-      }
+
       /* Do not flush the message queue here
        * > This allows any core-generated error messages
        *   to propagate through to the frontend */

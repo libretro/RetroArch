@@ -1,6 +1,5 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2017-2017 - Gregor Richards
- *  Copyright (C) 2021-2022 - Roberto V. Rampim
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -51,11 +50,9 @@ static bool find_local_address(struct natt_device *device,
       struct addrinfo hints  = {0};
       uint8_t *dev_addr8     = (uint8_t*)&device->addr.sin_addr;
 
-      addrs  = (struct addrinfo**)calloc(interfaces.size, sizeof(*addrs));
-      if (!addrs)
+      if (!(addrs  = (struct addrinfo**)calloc(interfaces.size, sizeof(*addrs))))
          goto done;
-      scores = (uint32_t*)calloc(interfaces.size, sizeof(*scores));
-      if (!scores)
+      if (!(scores = (uint32_t*)calloc(interfaces.size, sizeof(*scores))))
          goto done;
 
       hints.ai_family = AF_INET;

@@ -418,9 +418,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "Značajke procesora"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Jezgre procesora:"
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   "Arhitektura procesora"
    )
 
 /* Main Menu > Information > Database Manager */
@@ -443,6 +443,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
    "Postignuća"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   "Kategorija"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   "Jezik"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
+   "Regija"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
@@ -627,13 +639,19 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
-
 /* Settings > Input > Hotkeys */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "Zatvori RetroArch"
-   )
+
+
+
+
+
+
+
+
+
+
+
 
 /* Settings > Input > Port # Controls */
 
@@ -762,6 +780,10 @@ MSG_HASH(
 
 /* Settings > User */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
+   "Jezik"
+   )
 
 /* Settings > User > Privacy */
 
@@ -791,12 +813,28 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "Popisi za reprodukciju"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
+   "Spremi datoteke"
+   )
 
 #ifdef HAVE_MIST
 /* Settings > Steam */
 
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "Sadržaj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE,
+   "Naziv jezgre"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM,
+   "Naziv sustava"
+   )
 #endif
 
 /* Music */
@@ -824,6 +862,10 @@ MSG_HASH(
    )
 
 /* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
+   "Regija"
+   )
 
 /* Playlist > Playlist Item */
 
@@ -932,6 +974,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO,
    "Ne"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Sadržaj"
+   )
 
 /* RGUI: Settings > User Interface > Appearance */
 
@@ -1024,6 +1070,10 @@ MSG_HASH(
 MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
    "Preuzimanja"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
+   "Sadržaj"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,

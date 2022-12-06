@@ -78,12 +78,11 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
 #endif
 
 #ifdef SCE_LIBC_SIZE
-unsigned int sceLibcHeapSize = SCE_LIBC_SIZE;
+unsigned int sceLibcHeapSize            = SCE_LIBC_SIZE;
 #endif
 
-char eboot_path[512];
-char user_path[512];
-
+static char eboot_path[512]             = {0};
+static char user_path[512]              = {0};
 static enum frontend_fork psp_fork_mode = FRONTEND_FORK_NONE;
 
 static void frontend_psp_get_env_settings(int *argc, char *argv[],
@@ -119,8 +118,8 @@ static void frontend_psp_get_env_settings(int *argc, char *argv[],
       "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], user_path,
       "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], user_path, "remaps",
-      sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+      "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], user_path,
       "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], user_path,
@@ -293,7 +292,7 @@ static void frontend_psp_init(void *data)
 
 #endif
 
-#if defined(PSP) && defined(HAVE_KERNEL_PRX) 
+#if defined(PSP) && defined(HAVE_KERNEL_PRX)
    pspSdkLoadStartModule("kernel_functions.prx", PSP_MEMORY_PARTITION_KERNEL);
 #endif
 }

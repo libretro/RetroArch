@@ -111,6 +111,11 @@ static const rc_disallowed_setting_t _rc_disallowed_ppsspp_settings[] = {
   { NULL, NULL }
 };
 
+static const rc_disallowed_setting_t _rc_disallowed_quasi88_settings[] = {
+  { "q88_cpu_clock", ",1,2" },
+  { NULL, NULL }
+};
+
 static const rc_disallowed_setting_t _rc_disallowed_smsplus_settings[] = {
   { "smsplus_region", "pal" },
   { NULL, NULL }
@@ -144,6 +149,7 @@ static const rc_disallowed_core_settings_t rc_disallowed_core_settings[] = {
   { "PPSSPP", _rc_disallowed_ppsspp_settings },
   { "PCSX-ReARMed", _rc_disallowed_pcsx_rearmed_settings },
   { "PicoDrive", _rc_disallowed_picodrive_settings },
+  { "QUASI88", _rc_disallowed_quasi88_settings },
   { "SMS Plus GX", _rc_disallowed_smsplus_settings },
   { "Snes9x", _rc_disallowed_snes9x_settings },
   { "Virtual Jaguar", _rc_disallowed_virtual_jaguar_settings },

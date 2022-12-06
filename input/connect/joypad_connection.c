@@ -96,6 +96,16 @@ static joypad_connection_entry_t pad_map[] = {
       PID_HORI_MINI_WIRED_PS4,
       &pad_connection_ps4_hori_mini
    },
+   { "Kade Kick Ass Dynamic Encoder",
+      VID_KADE,
+      PID_KADE,
+      &pad_connection_kade
+   },
+   { "DragonRise ZeroDelay Encoder",
+      VID_DRAGONRISE,
+      PID_DRAGONRISE,
+      &pad_connection_dragonrise
+   },
    { 0, 0}
 };
 

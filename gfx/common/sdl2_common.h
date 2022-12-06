@@ -38,27 +38,28 @@ typedef struct sdl2_tex
 
 typedef struct _sdl2_video
 {
-   bool gl;
-   bool quitting;
-   bool should_resize;
-
-   uint8_t font_r;
-   uint8_t font_g;
-   uint8_t font_b;
-
    double rotation;
 
    struct video_viewport vp;
    video_info_t video;
-   sdl2_tex_t frame;
-   sdl2_tex_t menu;
-   sdl2_tex_t font;
+
+   sdl2_tex_t frame; /* ptr alignment */
+   sdl2_tex_t menu;  /* ptr alignment */
+   sdl2_tex_t font;  /* ptr alignment */
 
    SDL_Window *window;
    SDL_Renderer *renderer;
 
    void *font_data;
    const font_renderer_driver_t *font_driver;
+
+   uint8_t font_r;
+   uint8_t font_g;
+   uint8_t font_b;
+
+   bool gl;
+   bool quitting;
+   bool should_resize;
 } sdl2_video_t;
 
 void sdl2_set_handles(void *data, enum rarch_display_type 

@@ -237,12 +237,6 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_OEM_102,       "OEM-102"}
 };
 
-enum menu_scroll_mode
-{
-   MENU_SCROLL_PAGE = 0,
-   MENU_SCROLL_START_LETTER
-};
-
 static void *null_menu_init(void **userdata, bool video_is_threaded)
 {
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
@@ -341,7 +335,6 @@ static bool menu_should_pop_stack(const char *label)
             || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SCANNING_CONTENT))
             || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD))
             || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING))
-            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO))
             || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION)))
          return true;
    if (
@@ -1209,17 +1202,17 @@ float menu_input_get_dpi(
     * Note: DPI is a fixed hardware property. To minimise performance
     * overheads we therefore only call video_context_driver_get_metrics()
     * on first run, or when the current video resolution changes */
-   if (!dpi_cached ||
-       (video_width  != last_video_width) ||
-       (video_height != last_video_height))
+   if (   (!dpi_cached)
+       || (video_width  != last_video_width)
+       || (video_height != last_video_height))
    {
       gfx_ctx_metrics_t mets;
       /* Note: If video_context_driver_get_metrics() fails,
        * we don't know what happened to dpi - so ensure it
        * is reset to a sane value */
 
-      mets.type  = DISPLAY_METRIC_DPI;
-      mets.value = &dpi;
+      mets.type         = DISPLAY_METRIC_DPI;
+      mets.value        = &dpi;
       if (!video_context_driver_get_metrics(&mets))
          dpi            = 0.0f;
 
@@ -1872,6 +1865,11 @@ void input_event_osk_iterate(
                katakana_page2_grid,
                sizeof(katakana_page2_grid));
          break;
+      case OSK_KOREAN_PAGE1:
+         memcpy(osk_grid,
+               korean_page1_grid,
+               sizeof(korean_page1_grid));
+         break;
 #endif
       case OSK_SYMBOLS_PAGE1:
          memcpy(osk_grid,
@@ -1990,14 +1988,14 @@ void menu_input_get_mouse_hw_state(
       hw_state->x                  = (int16_t)(((float)(hw_state->x - vp.x) / (float)vp.width) * (float)fb_width);
       if (hw_state->x < 0)
          hw_state->x               = 0;
-      else if (hw_state->x >= fb_width)
+      else if (hw_state->x >= (int)fb_width)
          hw_state->x               = (fb_width -1);
 
       /* Adjust Y position */
       hw_state->y                  = (int16_t)(((float)(hw_state->y - vp.y) / (float)vp.height) * (float)fb_height);
       if (hw_state->y <  0)
          hw_state->y               = 0;
-      else if (hw_state->y >= fb_height)
+      else if (hw_state->y >= (int)fb_height)
          hw_state->y               = (fb_height-1);
    }
 
@@ -2629,12 +2627,6 @@ void menu_cbs_init(
             idx);
 }
 
-/* Pretty much a stub function. TODO/FIXME - Might as well remove this. */
-int menu_cbs_exit(void)
-{
-   return -1;
-}
-
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 void menu_driver_set_last_shader_preset_path(const char *path)
 {
@@ -2772,7 +2764,7 @@ int menu_shader_manager_clear_num_passes(struct video_shader *shader)
 
    video_shader_resolve_parameters(shader);
 
-   shader->modified = true;
+   shader->flags |= SHDR_FLAG_MODIFIED;
 
    return 0;
 }
@@ -2790,7 +2782,7 @@ int menu_shader_manager_clear_parameter(struct video_shader *shader,
    param->current = MIN(MAX(param->minimum,
             param->current), param->maximum);
 
-   shader->modified = true;
+   shader->flags |= SHDR_FLAG_MODIFIED;
 
    return 0;
 }
@@ -2805,8 +2797,7 @@ int menu_shader_manager_clear_pass_filter(struct video_shader *shader,
       return -1;
 
    shader_pass->filter = RARCH_FILTER_UNSPEC;
-
-   shader->modified = true;
+   shader->flags      |= SHDR_FLAG_MODIFIED;
 
    return 0;
 }
@@ -2822,9 +2813,9 @@ void menu_shader_manager_clear_pass_scale(struct video_shader *shader,
 
    shader_pass->fbo.scale_x = 0;
    shader_pass->fbo.scale_y = 0;
-   shader_pass->fbo.valid   = false;
+   shader_pass->fbo.flags  &= ~FBO_SCALE_FLAG_VALID;
 
-   shader->modified         = true;
+   shader->flags           |=  SHDR_FLAG_MODIFIED;
 }
 
 void menu_shader_manager_clear_pass_path(struct video_shader *shader,
@@ -2839,7 +2830,7 @@ void menu_shader_manager_clear_pass_path(struct video_shader *shader,
       *shader_pass->source.path = '\0';
 
    if (shader)
-      shader->modified          = true;
+      shader->flags            |= SHDR_FLAG_MODIFIED;
 }
 
 /**
@@ -2909,7 +2900,9 @@ void menu_shader_manager_apply_changes(
 
    type = menu_shader_manager_get_type(shader);
 
-   if (shader->passes && type != RARCH_SHADER_NONE)
+   if (shader->passes
+         && type != RARCH_SHADER_NONE
+         && !(shader->flags & SHDR_FLAG_DISABLED))
    {
       menu_shader_manager_save_preset(shader, NULL,
             dir_video_shader, dir_menu_config, true);
@@ -3047,8 +3040,7 @@ enum action_iterate_type action_iterate_type(const char *label)
             string_is_equal(label, "help_loading_content") ||
             string_is_equal(label, "help_scanning_content") ||
             string_is_equal(label, "help_change_virtual_gamepad") ||
-            string_is_equal(label, "help_audio_video_troubleshooting") ||
-            string_is_equal(label, "help_send_debug_info")
+            string_is_equal(label, "help_audio_video_troubleshooting")
          )
          return ITERATE_TYPE_HELP;
    if (string_is_equal(label, "cheevos_description"))
@@ -3358,11 +3350,6 @@ int menu_dialog_iterate(
                MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC,
                s, len);
          break;
-      case MENU_DIALOG_HELP_SEND_DEBUG_INFO:
-         msg_hash_get_help_enum(
-               MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO_DESC,
-               s, len);
-         break;
       case MENU_DIALOG_HELP_SCANNING_CONTENT:
          msg_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC,
                s, len);
@@ -3555,8 +3542,12 @@ bool rarch_menu_init(
    }
 #endif
 
+#if 0
+   /* TODO: No reason to do this here since shaders need
+    * content, and this is called in content_load() */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    menu_shader_manager_init();
+#endif
 #endif
 
    return true;
@@ -5673,6 +5664,7 @@ unsigned menu_event(
    bool menu_mouse_enable                          = settings->bools.menu_mouse_enable;
    bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
    bool swap_ok_cancel_btns                        = settings->bools.input_menu_swap_ok_cancel_buttons;
+   bool swap_scroll_btns                           = settings->bools.input_menu_swap_scroll_buttons;
    bool menu_scroll_fast                           = settings->bools.menu_scroll_fast;
    bool pointer_enabled                            = settings->bools.menu_pointer_enable;
    unsigned input_touch_scale                      = settings->uints.input_touch_scale;
@@ -5682,7 +5674,7 @@ unsigned menu_event(
    bool input_overlay_enable                       = settings->bools.input_overlay_enable;
    bool overlay_active                             = input_overlay_enable 
       && (input_st->overlay_ptr)
-      && (input_st->overlay_ptr->alive);
+      && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE);
 #else
    bool input_overlay_enable                       = false;
    bool overlay_active                             = false;
@@ -5696,14 +5688,16 @@ unsigned menu_event(
    unsigned i                                      = 0;
    static unsigned navigation_initial              = 0;
    unsigned navigation_current                     = 0;
-   unsigned navigation_buttons[6] =
+   unsigned navigation_buttons[8]                  =
    {
       RETRO_DEVICE_ID_JOYPAD_UP,
       RETRO_DEVICE_ID_JOYPAD_DOWN,
       RETRO_DEVICE_ID_JOYPAD_LEFT,
       RETRO_DEVICE_ID_JOYPAD_RIGHT,
       RETRO_DEVICE_ID_JOYPAD_L,
-      RETRO_DEVICE_ID_JOYPAD_R
+      RETRO_DEVICE_ID_JOYPAD_R,
+      RETRO_DEVICE_ID_JOYPAD_L2,
+      RETRO_DEVICE_ID_JOYPAD_R2
    };
 
    ok_old                                          = ok_current;
@@ -5721,6 +5715,12 @@ unsigned menu_event(
       menu_input_pointer_hw_state_t touchscreen_hw_state = {0};
 
       /* Read mouse */
+#ifdef HAVE_IOS_TOUCHMOUSE
+       if (menu_mouse_enable) {
+         settings->bools.menu_pointer_enable=true;
+         menu_pointer_enable=true;
+       }
+#else
       if (menu_mouse_enable)
          menu_input_get_mouse_hw_state(
                p_disp,
@@ -5734,7 +5734,7 @@ unsigned menu_event(
                input_overlay_enable,
                overlay_active,
                &mouse_hw_state);
-
+#endif
       /* Read touchscreen
        * Note: Could forgo this if mouse is currently active,
        * but this is 'cleaner' code... (if performance is a
@@ -5997,22 +5997,22 @@ unsigned menu_event(
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
       {
-         menu_st->scroll.mode = MENU_SCROLL_PAGE;
+         menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_START_LETTER : MENU_SCROLL_PAGE;
          ret = MENU_ACTION_SCROLL_UP;
       }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
-         menu_st->scroll.mode = MENU_SCROLL_PAGE;
+         menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_START_LETTER : MENU_SCROLL_PAGE;
          ret = MENU_ACTION_SCROLL_DOWN;
       }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L2))
       {
-         menu_st->scroll.mode = MENU_SCROLL_START_LETTER;
+         menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_PAGE : MENU_SCROLL_START_LETTER;
          ret = MENU_ACTION_SCROLL_UP;
       }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R2))
       {
-         menu_st->scroll.mode = MENU_SCROLL_START_LETTER;
+         menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_PAGE : MENU_SCROLL_START_LETTER;
          ret = MENU_ACTION_SCROLL_DOWN;
       }
       else if (ok_trigger)
@@ -6843,7 +6843,7 @@ void retroarch_menu_running(void)
             menu_st->flags & MENU_ST_FLAG_ALIVE,
 #ifdef HAVE_OVERLAY
             input_st->overlay_ptr &&
-            input_st->overlay_ptr->alive,
+            (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
 #else
             false,
 #endif
@@ -6912,7 +6912,7 @@ void retroarch_menu_running_finished(bool quit)
             menu_st->flags & MENU_ST_FLAG_ALIVE,
 #ifdef HAVE_OVERLAY
             input_st->overlay_ptr &&
-            input_st->overlay_ptr->alive,
+            (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
 #else
             false,
 #endif
@@ -7315,7 +7315,7 @@ bool menu_shader_manager_init(void)
          ret = false;
          goto end;
       }
-      menu_shader->modified = false;
+      menu_shader->flags   &= ~SHDR_FLAG_MODIFIED;
    }
    else
    {
@@ -7669,7 +7669,9 @@ static int generic_menu_iterate(
          }
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_CANCEL)
+         if (     action == MENU_ACTION_OK
+               || action == MENU_ACTION_CANCEL
+               || action == MENU_ACTION_INFO)
          {
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          }

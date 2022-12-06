@@ -223,6 +223,7 @@ static uint32_t rc_cd_find_file_sector(void* track_handle, const char* path, uns
 {
   uint8_t buffer[2048], *tmp;
   int sector;
+  unsigned num_sectors = 0;
   size_t filename_length;
   const char* slash;
 
@@ -247,6 +248,8 @@ static uint32_t rc_cd_find_file_sector(void* track_handle, const char* path, uns
   }
   else
   {
+    unsigned logical_block_size;
+
     /* find the cd information */
     if (!rc_cd_read_sector(track_handle, rc_cd_first_track_sector(track_handle) + 16, buffer, 256))
       return 0;
@@ -255,6 +258,15 @@ static uint32_t rc_cd_find_file_sector(void* track_handle, const char* path, uns
      * https://www.cdroller.com/htm/readdata.html
      */
     sector = buffer[156 + 2] | (buffer[156 + 3] << 8) | (buffer[156 + 4] << 16);
+
+    /* if the table of contents spans more than one sector, it's length of section will exceed it's logical block size */
+    logical_block_size = (buffer[128] | (buffer[128 + 1] << 8)); /* logical block size */
+    if (logical_block_size == 0) {
+      num_sectors = 1;
+    } else {
+      num_sectors = (buffer[156 + 10] | (buffer[156 + 11] << 8)); /* length of section */
+      num_sectors /= logical_block_size;
+    }
   }
 
   /* fetch and process the directory record */
@@ -265,18 +277,31 @@ static uint32_t rc_cd_find_file_sector(void* track_handle, const char* path, uns
   while (tmp < buffer + sizeof(buffer))
   {
     if (!*tmp)
-      return 0;
+    {
+      /* end of this path table block. if the path table spans multiple sectors, keep scanning */
+      if (num_sectors > 1)
+      {
+        --num_sectors;
+        if (rc_cd_read_sector(track_handle, ++sector, buffer, sizeof(buffer)))
+        {
+          tmp = buffer;
+          continue;
+        }
+      }
+      break;
+    }
 
     /* filename is 33 bytes into the record and the format is "FILENAME;version" or "DIRECTORY" */
-    if ((tmp[33 + filename_length] == ';' || tmp[33 + filename_length] == '\0') &&
+    if ((tmp[32] == filename_length || tmp[33 + filename_length] == ';') &&
         strncasecmp((const char*)(tmp + 33), path, filename_length) == 0)
     {
       sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
 
       if (verbose_message_callback)
       {
-        snprintf((char*)buffer, sizeof(buffer), "Found %s at sector %d", path, sector);
-        verbose_message_callback((const char*)buffer);
+        char message[128];
+        snprintf(message, sizeof(message), "Found %s at sector %d", path, sector);
+        verbose_message_callback(message);
       }
 
       if (size)
@@ -347,6 +372,34 @@ int rc_path_compare_extension(const char* path, const char* ext)
 
 /* ===================================================== */
 
+static void rc_hash_byteswap16(uint8_t* buffer, const uint8_t* stop)
+{
+  uint32_t* ptr = (uint32_t*)buffer;
+  const uint32_t* stop32 = (const uint32_t*)stop;
+  while (ptr < stop32)
+  {
+    uint32_t temp = *ptr;
+    temp = (temp & 0xFF00FF00) >> 8 |
+           (temp & 0x00FF00FF) << 8;
+    *ptr++ = temp;
+  }
+}
+
+static void rc_hash_byteswap32(uint8_t* buffer, const uint8_t* stop)
+{
+  uint32_t* ptr = (uint32_t*)buffer;
+  const uint32_t* stop32 = (const uint32_t*)stop;
+  while (ptr < stop32)
+  {
+    uint32_t temp = *ptr;
+    temp = (temp & 0xFF000000) >> 24 |
+           (temp & 0x00FF0000) >> 8 |
+           (temp & 0x0000FF00) << 8 |
+           (temp & 0x000000FF) << 24;
+    *ptr++ = temp;
+  }
+}
+
 static int rc_hash_finalize(md5_state_t* md5, char hash[33])
 {
   md5_byte_t digest[16];
@@ -414,6 +467,9 @@ static int rc_hash_cd_file(md5_state_t* md5, void* track_handle, uint32_t sector
 
     verbose_message_callback(message);
   }
+
+  if (size < (unsigned)num_read)
+    size = (unsigned)num_read;
 
   do
   {
@@ -684,6 +740,93 @@ static int rc_hash_text(char hash[33], const uint8_t* buffer, size_t buffer_size
   return rc_hash_finalize(&md5, hash);
 }
 
+static int rc_hash_jaguar_cd(char hash[33], const char* path)
+{
+  uint8_t buffer[2352];
+  char message[128];
+  void* track_handle;
+  md5_state_t md5;
+  int byteswapped;
+  unsigned size = 0;
+  unsigned offset = 0;
+  unsigned sector = 0;
+  unsigned remaining;
+  unsigned i;
+
+  /* Jaguar CD header is in the first sector of the first data track OF THE SECOND SESSION.
+   * The first track must be an audio track, but may be a warning message or actual game audio */
+  track_handle = rc_cd_open_track(path, RC_HASH_CDTRACK_FIRST_OF_SECOND_SESSION);
+  if (!track_handle)
+    return rc_hash_error("Could not open track");
+
+  /* The header is an unspecified distance into the first sector, but usually two bytes in.
+   * It consists of 64 bytes of "TAIR" or "ATRI" repeating, depending on whether or not the data 
+   * is byteswapped. Then another 32 byte that reads "ATARI APPROVED DATA HEADER ATRI "
+   * (possibly byteswapped). Then a big-endian 32-bit value for the address where the boot code
+   * should be loaded, and a second big-endian 32-bit value for the size of the boot code. */ 
+  sector = rc_cd_first_track_sector(track_handle);
+  rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer));
+
+  for (i = 64; i < sizeof(buffer) - 32 - 4 * 3; i++)
+  {
+    if (memcmp(&buffer[i], "TARA IPARPVODED TA AEHDAREA RT I", 32) == 0)
+    {
+      byteswapped = 1;
+      offset = i + 32 + 4;
+      size = (buffer[offset] << 16) | (buffer[offset + 1] << 24) | (buffer[offset + 2]) | (buffer[offset + 3] << 8);
+      break;
+    }
+    else if (memcmp(&buffer[i], "ATARI APPROVED DATA HEADER ATRI ", 32) == 0)
+    {
+      byteswapped = 0;
+      offset = i + 32 + 4;
+      size = (buffer[offset] << 24) | (buffer[offset + 1] << 16) | (buffer[offset + 2] << 8) | (buffer[offset + 3]);
+      break;
+    }
+  }
+
+  if (size == 0) /* did not see ATARI APPROVED DATA HEADER */
+  {
+    rc_cd_close_track(track_handle);
+    return rc_hash_error("Not a Jaguar CD");
+  }
+
+  md5_init(&md5);
+
+  offset += 4;
+
+  if (verbose_message_callback)
+  {
+    snprintf(message, sizeof(message), "Hashing boot executable (%u bytes starting at %u bytes into sector %u)", size, offset, sector);
+    rc_hash_verbose(message);
+  }
+
+  do
+  {
+    if (byteswapped)
+      rc_hash_byteswap16(buffer, &buffer[sizeof(buffer)]);
+
+    remaining = sizeof(buffer) - offset;
+    if (remaining >= size)
+    {
+      md5_append(&md5, &buffer[offset], size);
+      size = 0;
+      break;
+    }
+
+    md5_append(&md5, &buffer[offset], remaining);
+    size -= remaining;
+    offset = 0;
+  } while (rc_cd_read_sector(track_handle, ++sector, buffer, sizeof(buffer)) == sizeof(buffer));
+
+  rc_cd_close_track(track_handle);
+
+  if (size > 0)
+    return rc_hash_error("Not enough data");
+
+  return rc_hash_finalize(&md5, hash);
+}
+
 static int rc_hash_lynx(char hash[33], const uint8_t* buffer, size_t buffer_size)
 {
   /* if the file contains a header, ignore it */
@@ -696,6 +839,70 @@ static int rc_hash_lynx(char hash[33], const uint8_t* buffer, size_t buffer_size
   }
 
   return rc_hash_buffer(hash, buffer, buffer_size);
+}
+
+static int rc_hash_neogeo_cd(char hash[33], const char* path)
+{
+  char buffer[1024], *ptr;
+  void* track_handle;
+  uint32_t sector;
+  unsigned size;
+  md5_state_t md5;
+
+  track_handle = rc_cd_open_track(path, 1);
+  if (!track_handle)
+    return rc_hash_error("Could not open track");
+
+  /* https://wiki.neogeodev.org/index.php?title=IPL_file, https://wiki.neogeodev.org/index.php?title=PRG_file
+   * IPL file specifies data to be loaded before the game starts. PRG files are the executable code
+   */
+  sector = rc_cd_find_file_sector(track_handle, "IPL.TXT", &size);
+  if (!sector)
+  {
+    rc_cd_close_track(track_handle);
+    return rc_hash_error("Not a NeoGeo CD game disc");
+  }
+
+  if (rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer)) == 0)
+  {
+    rc_cd_close_track(track_handle);
+    return 0;
+  }
+
+  md5_init(&md5);
+
+  buffer[sizeof(buffer) - 1] = '\0';
+  ptr = &buffer[0];
+  do
+  {
+    char* start = ptr;
+    while (*ptr && *ptr != '.')
+      ++ptr;
+
+    if (memcmp(ptr, ".PRG", 4) == 0)
+    {
+      ptr += 4;
+      *ptr++ = '\0';
+
+      sector = rc_cd_find_file_sector(track_handle, start, &size);
+      if (!sector || !rc_hash_cd_file(&md5, track_handle, sector, NULL, size, start))
+      {
+        char error[128];
+        rc_cd_close_track(track_handle);
+        snprintf(error, sizeof(error), "Could not read %.16s", start);
+        return rc_hash_error(error);
+      }
+    }
+
+    while (*ptr && *ptr != '\n')
+      ++ptr;
+    if (*ptr != '\n')
+      break;
+    ++ptr;
+  } while (*ptr != '\0' && *ptr != '\x1a');
+
+  rc_cd_close_track(track_handle);
+  return rc_hash_finalize(&md5, hash);
 }
 
 static int rc_hash_nes(char hash[33], const uint8_t* buffer, size_t buffer_size)
@@ -717,34 +924,6 @@ static int rc_hash_nes(char hash[33], const uint8_t* buffer, size_t buffer_size)
   }
 
   return rc_hash_buffer(hash, buffer, buffer_size);
-}
-
-static void rc_hash_v64_to_z64(uint8_t* buffer, const uint8_t* stop)
-{
-  uint32_t* ptr = (uint32_t*)buffer;
-  const uint32_t* stop32 = (const uint32_t*)stop;
-  while (ptr < stop32)
-  {
-    uint32_t temp = *ptr;
-    temp = (temp & 0xFF00FF00) >> 8 |
-           (temp & 0x00FF00FF) << 8;
-    *ptr++ = temp;
-  }
-}
-
-static void rc_hash_n64_to_z64(uint8_t* buffer, const uint8_t* stop)
-{
-  uint32_t* ptr = (uint32_t*)buffer;
-  const uint32_t* stop32 = (const uint32_t*)stop;
-  while (ptr < stop32)
-  {
-    uint32_t temp = *ptr;
-    temp = (temp & 0xFF000000) >> 24 |
-           (temp & 0x00FF0000) >> 8 |
-           (temp & 0x0000FF00) << 8 |
-           (temp & 0x000000FF) << 24;
-    *ptr++ = temp;
-  }
 }
 
 static int rc_hash_n64(char hash[33], const char* path)
@@ -818,9 +997,9 @@ static int rc_hash_n64(char hash[33], const char* path)
     rc_file_read(file_handle, buffer, (int)buffer_size);
 
     if (is_v64)
-      rc_hash_v64_to_z64(buffer, stop);
+      rc_hash_byteswap16(buffer, stop);
     else if (is_n64)
-      rc_hash_n64_to_z64(buffer, stop);
+      rc_hash_byteswap32(buffer, stop);
 
     md5_append(&md5, buffer, (int)buffer_size);
     remaining -= buffer_size;
@@ -832,9 +1011,9 @@ static int rc_hash_n64(char hash[33], const char* path)
 
     stop = buffer + remaining;
     if (is_v64)
-      rc_hash_v64_to_z64(buffer, stop);
+      rc_hash_byteswap16(buffer, stop);
     else if (is_n64)
-      rc_hash_n64_to_z64(buffer, stop);
+      rc_hash_byteswap32(buffer, stop);
 
     md5_append(&md5, buffer, (int)remaining);
   }
@@ -1454,18 +1633,30 @@ static int rc_hash_psp(char hash[33], const char* path)
    */
   sector = rc_cd_find_file_sector(track_handle, "PSP_GAME\\PARAM.SFO", &size);
   if (!sector)
+  {
+    rc_cd_close_track(track_handle);
     return rc_hash_error("Not a PSP game disc");
+  }
 
   md5_init(&md5);
   if (!rc_hash_cd_file(&md5, track_handle, sector, NULL, size, "PSP_GAME\\PARAM.SFO"))
+  {
+    rc_cd_close_track(track_handle);
     return 0;
+  }
 
   sector = rc_cd_find_file_sector(track_handle, "PSP_GAME\\SYSDIR\\EBOOT.BIN", &size);
   if (!sector)
+  {
+    rc_cd_close_track(track_handle);
     return rc_hash_error("Could not find primary executable");
+  }
 
   if (!rc_hash_cd_file(&md5, track_handle, sector, NULL, size, "PSP_GAME\\SYSDIR\\EBOOT.BIN"))
+  {
+    rc_cd_close_track(track_handle);
     return 0;
+  }
 
   rc_cd_close_track(track_handle);
   return rc_hash_finalize(&md5, hash);
@@ -1606,16 +1797,19 @@ int rc_hash_generate_from_buffer(char hash[33], int console_id, const uint8_t* b
 
     case RC_CONSOLE_AMSTRAD_PC:
     case RC_CONSOLE_APPLE_II:
+    case RC_CONSOLE_ARCADIA_2001:
     case RC_CONSOLE_ATARI_2600:
     case RC_CONSOLE_ATARI_JAGUAR:
     case RC_CONSOLE_COLECOVISION:
     case RC_CONSOLE_COMMODORE_64:
+    case RC_CONSOLE_ELEKTOR_TV_GAMES_COMPUTER:
     case RC_CONSOLE_FAIRCHILD_CHANNEL_F:
     case RC_CONSOLE_GAMEBOY:
     case RC_CONSOLE_GAMEBOY_ADVANCE:
     case RC_CONSOLE_GAMEBOY_COLOR:
     case RC_CONSOLE_GAME_GEAR:
     case RC_CONSOLE_INTELLIVISION:
+    case RC_CONSOLE_INTERTON_VC_4000:
     case RC_CONSOLE_MAGNAVOX_ODYSSEY2:
     case RC_CONSOLE_MASTER_SYSTEM:
     case RC_CONSOLE_MEGA_DRIVE:
@@ -1898,18 +2092,20 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
       return rc_hash_error(buffer);
     }
 
+    case RC_CONSOLE_ARCADIA_2001:
     case RC_CONSOLE_ATARI_2600:
     case RC_CONSOLE_ATARI_JAGUAR:
     case RC_CONSOLE_COLECOVISION:
+    case RC_CONSOLE_ELEKTOR_TV_GAMES_COMPUTER:
     case RC_CONSOLE_FAIRCHILD_CHANNEL_F:
     case RC_CONSOLE_GAMEBOY:
     case RC_CONSOLE_GAMEBOY_ADVANCE:
     case RC_CONSOLE_GAMEBOY_COLOR:
     case RC_CONSOLE_GAME_GEAR:
     case RC_CONSOLE_INTELLIVISION:
+    case RC_CONSOLE_INTERTON_VC_4000:
     case RC_CONSOLE_MAGNAVOX_ODYSSEY2:
     case RC_CONSOLE_MASTER_SYSTEM:
-    case RC_CONSOLE_MEGA_DRIVE:
     case RC_CONSOLE_MEGADUCK:
     case RC_CONSOLE_NEOGEO_POCKET:
     case RC_CONSOLE_ORIC:
@@ -1928,6 +2124,7 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
     case RC_CONSOLE_AMSTRAD_PC:
     case RC_CONSOLE_APPLE_II:
     case RC_CONSOLE_COMMODORE_64:
+    case RC_CONSOLE_MEGA_DRIVE:
     case RC_CONSOLE_MSX:
     case RC_CONSOLE_PC8800:
       /* generic whole-file hash with m3u support - don't buffer */
@@ -1940,6 +2137,7 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
     case RC_CONSOLE_ATARI_7800:
     case RC_CONSOLE_ATARI_LYNX:
     case RC_CONSOLE_NINTENDO:
+    case RC_CONSOLE_PC_ENGINE:
     case RC_CONSOLE_SUPER_NINTENDO:
       /* additional logic whole-file hash - buffer then call rc_hash_generate_from_buffer */
       return rc_hash_buffered_file(hash, console_id, path);
@@ -1953,13 +2151,25 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
     case RC_CONSOLE_ARCADE:
       return rc_hash_arcade(hash, path);
 
+    case RC_CONSOLE_ATARI_JAGUAR_CD:
+      return rc_hash_jaguar_cd(hash, path);
+
+    case RC_CONSOLE_DREAMCAST:
+      if (rc_path_compare_extension(path, "m3u"))
+        return rc_hash_generate_from_playlist(hash, console_id, path);
+
+      return rc_hash_dreamcast(hash, path);
+
+    case RC_CONSOLE_NEO_GEO_CD:
+      return rc_hash_neogeo_cd(hash, path);
+
     case RC_CONSOLE_NINTENDO_64:
       return rc_hash_n64(hash, path);
 
     case RC_CONSOLE_NINTENDO_DS:
       return rc_hash_nintendo_ds(hash, path);
 
-    case RC_CONSOLE_PC_ENGINE:
+    case RC_CONSOLE_PC_ENGINE_CD:
       if (rc_path_compare_extension(path, "cue") || rc_path_compare_extension(path, "chd"))
         return rc_hash_pce_cd(hash, path);
 
@@ -1988,12 +2198,6 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
 
     case RC_CONSOLE_PSP:
       return rc_hash_psp(hash, path);
-
-    case RC_CONSOLE_DREAMCAST:
-      if (rc_path_compare_extension(path, "m3u"))
-        return rc_hash_generate_from_playlist(hash, console_id, path);
-
-      return rc_hash_dreamcast(hash, path);
 
     case RC_CONSOLE_SEGA_CD:
     case RC_CONSOLE_SATURN:
@@ -2131,14 +2335,15 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
                     iterator->consoles[2] = RC_CONSOLE_PLAYSTATION_2; /* PCSX2 supports directly opening the bin file*/
                     iterator->consoles[3] = RC_CONSOLE_SEGA_CD; /* Genesis Plus GX supports directly opening the bin file*/
 
-                    /* fallback to megadrive which just does a full hash */
+                    /* fallback to megadrive which just does a full hash. */
                     iterator->consoles[4] = RC_CONSOLE_MEGA_DRIVE;
                     break;
                  }
               }
            }
 
-          /* bin is associated with MegaDrive, Sega32X, Atari 2600, Watara Supervision, MegaDuck, and Fairchild Channel F.
+          /* bin is associated with MegaDrive, Sega32X, Atari 2600, Watara Supervision, MegaDuck,
+           * Fairchild Channel F, Arcadia 2001, and Interton VC 4000.
            * Since they all use the same hashing algorithm, only specify one of them */
           iterator->consoles[0] = RC_CONSOLE_MEGA_DRIVE;
         }
@@ -2155,9 +2360,11 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
           iterator->consoles[1] = RC_CONSOLE_PLAYSTATION_2;
           iterator->consoles[2] = RC_CONSOLE_DREAMCAST;
           iterator->consoles[3] = RC_CONSOLE_SEGA_CD; /* ASSERT: handles both Sega CD and Saturn */
-          iterator->consoles[4] = RC_CONSOLE_PC_ENGINE;
+          iterator->consoles[4] = RC_CONSOLE_PC_ENGINE_CD;
           iterator->consoles[5] = RC_CONSOLE_3DO;
           iterator->consoles[6] = RC_CONSOLE_PCFX;
+          iterator->consoles[7] = RC_CONSOLE_NEO_GEO_CD;
+          iterator->consoles[8] = RC_CONSOLE_ATARI_JAGUAR_CD;
           need_path = 1;
         }
         else if (rc_path_compare_extension(ext, "chd"))
@@ -2166,7 +2373,7 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
           iterator->consoles[1] = RC_CONSOLE_PLAYSTATION_2;
           iterator->consoles[2] = RC_CONSOLE_DREAMCAST;
           iterator->consoles[3] = RC_CONSOLE_SEGA_CD; /* ASSERT: handles both Sega CD and Saturn */
-          iterator->consoles[4] = RC_CONSOLE_PC_ENGINE;
+          iterator->consoles[4] = RC_CONSOLE_PC_ENGINE_CD;
           iterator->consoles[5] = RC_CONSOLE_3DO;
           iterator->consoles[6] = RC_CONSOLE_PCFX;
           need_path = 1;
@@ -2346,6 +2553,10 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         {
           iterator->consoles[0] = RC_CONSOLE_PC_ENGINE;
         }
+        else if (rc_path_compare_extension(ext, "pgm"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_ELEKTOR_TV_GAMES_COMPUTER;
+        }
         break;
 
       case 'r':
@@ -2394,6 +2605,10 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         else if (rc_path_compare_extension(ext, "tic"))
         {
           iterator->consoles[0] = RC_CONSOLE_TIC80;
+        }
+        else if (rc_path_compare_extension(ext, "tvc"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_ELEKTOR_TV_GAMES_COMPUTER;
         }
         break;
 

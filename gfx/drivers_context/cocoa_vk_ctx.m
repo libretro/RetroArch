@@ -144,7 +144,8 @@ static void cocoa_vk_gfx_ctx_check_window(void *data, bool *quit,
 
    *quit                       = false;
 
-   *resize                     = cocoa_ctx->vk.need_new_swapchain;
+   *resize                     = cocoa_ctx->vk.flags &
+      VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
 #if MAC_OS_X_VERSION_10_7 && defined(OSX)
    cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up(data, &new_width, &new_height);
@@ -169,7 +170,7 @@ static void cocoa_vk_gfx_ctx_swap_interval(void *data, int i)
    {
       cocoa_ctx->swap_interval = interval;
       if (cocoa_ctx->vk.swapchain)
-         cocoa_ctx->vk.need_new_swapchain = true;
+         cocoa_ctx->vk.flags  |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    }
 }
 
@@ -177,9 +178,9 @@ static void cocoa_vk_gfx_ctx_swap_buffers(void *data)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
-   if (cocoa_ctx->vk.context.has_acquired_swapchain)
+   if (cocoa_ctx->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
-      cocoa_ctx->vk.context.has_acquired_swapchain = false;
+      cocoa_ctx->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
       if (cocoa_ctx->vk.swapchain == VK_NULL_HANDLE)
       {
          retro_sleep(10);
@@ -319,11 +320,11 @@ static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
       return false;
    }
 
-   cocoa_ctx->vk.context.invalid_swapchain = true;
-   if (cocoa_ctx->vk.created_new_swapchain)
+   cocoa_ctx->vk.context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   if (cocoa_ctx->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       vulkan_acquire_next_image(&cocoa_ctx->vk);
 
-   cocoa_ctx->vk.need_new_swapchain        = false;
+   cocoa_ctx->vk.flags &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
    return true;
 }

@@ -61,11 +61,11 @@
 #endif
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
-static char cwd[FILENAME_MAX];
-static char mountString[10];
-static char mountPoint[50];
-static int hdd_mounted     = 0;
-static int pfsModuleLoaded = 0;
+static char cwd[FILENAME_MAX]           = {0};
+static char mountString[10]             = {0};
+static char mountPoint[50]              = {0};
+static int hdd_mounted                  = 0;
+static int pfsModuleLoaded              = 0;
 
 static void create_path_names(void)
 {
@@ -95,7 +95,7 @@ static void create_path_names(void)
          "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], user_path,
          "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], user_path,
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
          "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], user_path,
          "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));

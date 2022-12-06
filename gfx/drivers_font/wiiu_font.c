@@ -27,7 +27,6 @@
 #include "../../wiiu/wiiu_dbg.h"
 
 #include "../../configuration.h"
-#include "../../verbosity.h"
 
 typedef struct
 {
@@ -51,7 +50,6 @@ static void* wiiu_font_init(void* data, const char* font_path,
             &font->font_driver,
             &font->font_data, font_path, font_size))
    {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
       free(font);
       return NULL;
    }

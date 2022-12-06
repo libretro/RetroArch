@@ -1078,9 +1078,9 @@ static void gl_cg_shader_scale(void *data, unsigned idx, struct gfx_fbo_scale *s
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
    if (cg && idx)
-      *scale = cg->shader->pass[idx - 1].fbo;
+      *scale        = cg->shader->pass[idx - 1].fbo;
    else
-      scale->valid = false;
+      scale->flags &= ~FBO_SCALE_FLAG_VALID;
 }
 
 static unsigned gl_cg_get_prev_textures(void *data)

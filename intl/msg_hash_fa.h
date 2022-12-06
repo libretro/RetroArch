@@ -606,14 +606,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "معماری پردازنده"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "هسته‌های پردازنده:"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "تعداد هسته‌های پردازنده."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "شناسهٔ پیشانه"
@@ -1736,6 +1728,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
    "کنترل‌های این درگاه را تغییر دهید."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+   "تأیید خروج"
+   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -1775,29 +1771,43 @@ MSG_HASH(
    "اگر فعال باشد، فشرده شدن دکمهٔ جستجو نادیده گرفته می‌شود."
    )
 
-
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "تأیید خروج"
+   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   "خروج"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   "بستن محتوا"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
+   "برگرداندن"
+   )
+
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
    "بارگیری وضعیت"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "یک وضعیت ذخیره‌شده را از شکاف انتخاب‌شدهٔ فعلی بارگزاری کنید."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
    "ذخیرهٔ وضعیت"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
-   "وضعیت را در شکاف انتخاب‌شدهٔ فعلی ذخیره کنید."
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
+   "شمارهٔ شکاف ذخیرهٔ وضعیت انتخاب شدهٔ فعلی را افزایش دهید."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
+   "شمارهٔ شکاف ذخیرهٔ وضعیت انتخاب شدهٔ فعلی را کاهش دهید."
+   )
+
+
+
+
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "تمام‌صفحه (تغییر حالت)"
@@ -1806,46 +1816,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "بین حالت‌های تمام صفحه و پنجره‌ای تغییر حالت دهید."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
-   "بستن محتوا"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
-   "محتوای فعلی را ببندید. هر تغییر ذخیره‌نشده‌ای از دست خواهد رفت."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "خروج از رتروآرچ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-   "شکاف ذخیرهٔ وضعیت +"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "شمارهٔ شکاف ذخیرهٔ وضعیت انتخاب شدهٔ فعلی را افزایش دهید."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   "شکاف ذخیرهٔ وضعیت -"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "شمارهٔ شکاف ذخیرهٔ وضعیت انتخاب شدهٔ فعلی را کاهش دهید."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
-   "برگرداندن"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
-   "ایست (تغییر حالت)"
-   )
+
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "خدمت هوش مصنوعی"
    )
+
+
 
 /* Settings > Input > Port # Controls */
 
@@ -2009,6 +1987,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "گزین فهرست"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   "سفارشی"
    )
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
@@ -2463,6 +2445,10 @@ MSG_HASH(
    "مقیاس صحیح"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
+   "سفارشی"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
    "خاموش"
    )
@@ -2472,6 +2458,10 @@ MSG_HASH(
 
 /* XMB: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
+   "سفارشی"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -2513,6 +2503,10 @@ MSG_HASH(
    "اطلاعات"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
+   "&نما"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
    "ساماندهی"
    )
@@ -2547,6 +2541,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_STOP,
    "توقف"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_VIEW,
+   "نما"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,

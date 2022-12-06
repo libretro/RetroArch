@@ -49,10 +49,9 @@
 #include "../defaults.h"
 #include "../command.h"
 #include "../configuration.h"
-#include "../retroarch.h"
 #include "../paths.h"
 #include "../msg_hash.h"
-#include "../verbosity.h"
+#include "../runloop.h"
 
 #include "tasks_internal.h"
 
@@ -227,8 +226,7 @@ static bool screenshot_dump(
       bool bgr24,
       void *userbuf,
       bool savestate,
-      bool is_idle,
-      bool is_paused,
+      uint32_t runloop_flags,
       bool fullpath,
       bool use_thread,
       unsigned pixel_format_type)
@@ -245,9 +243,9 @@ static bool screenshot_dump(
    if (fullpath)
       strlcpy(state->filename, name_base, sizeof(state->filename));
 
-   if (is_idle)
+   if (runloop_flags & RUNLOOP_FLAG_IDLE)
       state->flags              |= SS_TASK_FLAG_IS_IDLE;
-   if (is_paused)
+   if (runloop_flags & RUNLOOP_FLAG_PAUSED)
       state->flags              |= SS_TASK_FLAG_IS_PAUSED;
    if (bgr24)
       state->flags              |= SS_TASK_FLAG_BGR24;
@@ -412,8 +410,7 @@ static bool take_screenshot_viewport(
       const char *screenshot_dir,
       const char *name_base,
       bool savestate,
-      bool is_idle,
-      bool is_paused,
+      uint32_t runloop_flags,
       bool fullpath,
       bool use_thread,
       unsigned pixel_format_type)
@@ -435,7 +432,7 @@ static bool take_screenshot_viewport(
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   if (!video_driver_read_viewport(buffer, is_idle))
+   if (!video_driver_read_viewport(buffer, runloop_flags & RUNLOOP_FLAG_IDLE))
       goto error;
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
@@ -443,7 +440,7 @@ static bool take_screenshot_viewport(
             name_base,
             buffer, vp.width, vp.height,
             vp.width * 3, true, buffer,
-            savestate, is_idle, is_paused, fullpath, use_thread,
+            savestate, runloop_flags, fullpath, use_thread,
             pixel_format_type))
       goto error;
 
@@ -456,7 +453,7 @@ error:
 
 static bool take_screenshot_raw(const char *screenshot_dir,
       const char *name_base, void *userbuf,
-      bool savestate, bool is_idle, bool is_paused, bool fullpath, bool use_thread,
+      bool savestate, uint32_t runloop_flags, bool fullpath, bool use_thread,
       unsigned pixel_format_type)
 {
    size_t pitch;
@@ -475,8 +472,7 @@ static bool take_screenshot_raw(const char *screenshot_dir,
             false,
             userbuf,
             savestate,
-            is_idle,
-            is_paused,
+            runloop_flags,
             fullpath,
             use_thread,
             pixel_format_type);
@@ -486,8 +482,7 @@ static bool take_screenshot_choice(
       const char *screenshot_dir,
       const char *name_base,
       bool savestate,
-      bool is_paused,
-      bool is_idle,
+      uint32_t runloop_flags,
       bool has_valid_framebuffer,
       bool fullpath,
       bool use_thread,
@@ -500,16 +495,16 @@ static bool take_screenshot_choice(
    {
       /* Avoid taking screenshot of GUI overlays. */
       video_driver_set_texture_enable(false, false);
-      if (!is_idle)
+      if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
          video_driver_cached_frame();
       return take_screenshot_viewport(screenshot_dir,
-            name_base, savestate, is_idle, is_paused, fullpath, use_thread,
+            name_base, savestate, runloop_flags, fullpath, use_thread,
             pixel_format_type);
    }
 
    if (!has_valid_framebuffer)
       return take_screenshot_raw(screenshot_dir,
-            name_base, NULL, savestate, is_idle, is_paused, fullpath, use_thread,
+            name_base, NULL, savestate, runloop_flags, fullpath, use_thread,
             pixel_format_type);
 
    if (supports_read_frame_raw)
@@ -531,7 +526,7 @@ static bool take_screenshot_choice(
       {
          video_driver_set_cached_frame_ptr(frame_data);
          return take_screenshot_raw(screenshot_dir,
-               name_base, frame_data, savestate, is_idle, is_paused, fullpath, use_thread,
+               name_base, frame_data, savestate, runloop_flags, fullpath, use_thread,
                pixel_format_type);
       }
    }
@@ -545,12 +540,10 @@ bool take_screenshot(
       bool savestate, bool has_valid_framebuffer,
       bool fullpath, bool use_thread)
 {
+   bool ret                    = false;
    uint32_t runloop_flags      = runloop_get_flags();
    settings_t *settings        = config_get_ptr();
    bool video_gpu_screenshot   = settings->bools.video_gpu_screenshot;
-   bool is_paused              = false;
-   bool is_idle                = false;
-   bool ret                    = false;
    bool supports_viewport_read = video_driver_supports_viewport_read();
    bool prefer_viewport_read   = supports_viewport_read &&
          video_driver_prefer_viewport_read();
@@ -559,9 +552,6 @@ bool take_screenshot(
    if (supports_viewport_read && video_gpu_screenshot && !savestate)
       prefer_viewport_read     = true;
 
-   is_paused                   = runloop_flags & RUNLOOP_FLAG_PAUSED;
-   is_idle                     = runloop_flags & RUNLOOP_FLAG_IDLE;
-
    /* No way to infer screenshot directory. */
    if (     string_is_empty(screenshot_dir)
          && string_is_empty(name_base))
@@ -569,14 +559,15 @@ bool take_screenshot(
 
    ret       = take_screenshot_choice(
          screenshot_dir,
-         name_base, savestate, is_paused, is_idle,
+         name_base, savestate, runloop_flags,
          has_valid_framebuffer, fullpath, use_thread,
          prefer_viewport_read,
          video_driver_supports_read_frame_raw(),
          video_driver_get_pixel_format()
          );
 
-   if (is_paused && !is_idle)
+   if (       (runloop_flags & RUNLOOP_FLAG_PAUSED)
+         && (!(runloop_flags & RUNLOOP_FLAG_IDLE)))
          video_driver_cached_frame();
 
    return ret;

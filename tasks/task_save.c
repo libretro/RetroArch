@@ -54,8 +54,9 @@
 #include "../core_info.h"
 #include "../file_path_special.h"
 #include "../configuration.h"
+#include "../gfx/video_driver.h"
 #include "../msg_hash.h"
-#include "../retroarch.h"
+#include "../runloop.h"
 #include "../verbosity.h"
 #include "tasks_internal.h"
 #ifdef HAVE_CHEATS
@@ -135,6 +136,12 @@ struct autosave_st
    unsigned num;
 };
 
+enum autosave_flags
+{
+   AUTOSAVE_FLAG_QUIT           = (1 << 0),
+   AUTOSAVE_FLAG_COMPRESS_FILES = (1 << 1)
+};
+
 struct autosave
 {
    void *buffer;
@@ -146,8 +153,7 @@ struct autosave
    sthread_t *thread;
    size_t bufsize;
    unsigned interval;
-   bool quit;
-   bool compress_files;
+   uint8_t flags;
 };
 #endif
 
@@ -208,7 +214,7 @@ static void autosave_thread(void *data)
          intfstream_t *file = NULL;
 
          /* Should probably deal with this more elegantly. */
-         if (save->compress_files)
+         if (save->flags & AUTOSAVE_FLAG_COMPRESS_FILES)
             file = intfstream_open_rzip_file(save->path,
                   RETRO_VFS_FILE_ACCESS_WRITE);
          else
@@ -226,7 +232,7 @@ static void autosave_thread(void *data)
 
       slock_lock(save->cond_lock);
 
-      if (save->quit)
+      if (save->flags & AUTOSAVE_FLAG_QUIT)
       {
          slock_unlock(save->cond_lock);
          break;
@@ -266,10 +272,11 @@ static autosave_t *autosave_new(const char *path,
    if (!handle)
       return NULL;
 
-   handle->quit                  = false;
+   handle->flags                 = 0;
    handle->bufsize               = size;
    handle->interval              = interval;
-   handle->compress_files        = compress;
+   if (compress)
+      handle->flags             |= AUTOSAVE_FLAG_COMPRESS_FILES;
    handle->retro_buffer          = data;
    handle->path                  = path;
 
@@ -300,7 +307,7 @@ static autosave_t *autosave_new(const char *path,
 static void autosave_free(autosave_t *handle)
 {
    slock_lock(handle->cond_lock);
-   handle->quit = true;
+   handle->flags |= AUTOSAVE_FLAG_QUIT;
    slock_unlock(handle->cond_lock);
    scond_signal(handle->cond);
    sthread_join(handle->thread);

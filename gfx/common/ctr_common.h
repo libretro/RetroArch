@@ -199,10 +199,10 @@ static INLINE void ctr_set_scale_vector(ctr_scale_vector_t* vec,
       int viewport_width, int viewport_height,
       int texture_width, int texture_height)
 {
-   vec->x = -2.0 / viewport_width;
-   vec->y = -2.0 / viewport_height;
-   vec->u =  1.0 / texture_width;
-   vec->v = -1.0 / texture_height;
+   vec->x = -2.0f / viewport_width;
+   vec->y = -2.0f / viewport_height;
+   vec->u =  1.0f / texture_width;
+   vec->v = -1.0f / texture_height;
 }
 
 #endif /* CTR_COMMON_H__ */

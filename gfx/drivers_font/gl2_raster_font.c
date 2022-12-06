@@ -24,7 +24,6 @@
 #include "../common/gl2_common.h"
 #include "../font_driver.h"
 #include "../../configuration.h"
-#include "../../verbosity.h"
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
@@ -94,7 +93,7 @@ static bool gl2_raster_font_upload_atlas(gl2_raster_t *font)
    switch (ncomponents)
    {
       case 1:
-         for (i = 0; i < font->atlas->height; ++i)
+         for (i = 0; i < (int)font->atlas->height; ++i)
          {
             const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
             uint8_t       *dst = &tmp[i * font->tex_width * ncomponents];
@@ -103,12 +102,12 @@ static bool gl2_raster_font_upload_atlas(gl2_raster_t *font)
          }
          break;
       case 2:
-         for (i = 0; i < font->atlas->height; ++i)
+         for (i = 0; i < (int)font->atlas->height; ++i)
          {
             const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
             uint8_t       *dst = &tmp[i * font->tex_width * ncomponents];
 
-            for (j = 0; j < font->atlas->width; ++j)
+            for (j = 0; j < (int)font->atlas->width; ++j)
             {
                *dst++ = 0xff;
                *dst++ = *src++;

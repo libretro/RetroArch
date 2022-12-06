@@ -10,7 +10,9 @@
 #include <string.h>
 
 #define RETROACHIEVEMENTS_HOST "https://retroachievements.org"
-#define RETROACHIEVEMENTS_IMAGE_HOST "http://i.retroachievements.org"
+#define RETROACHIEVEMENTS_IMAGE_HOST "https://media.retroachievements.org"
+#define RETROACHIEVEMENTS_HOST_NONSSL "http://retroachievements.org"
+#define RETROACHIEVEMENTS_IMAGE_HOST_NONSSL "http://media.retroachievements.org"
 static char* g_host = NULL;
 static char* g_imagehost = NULL;
 
@@ -1054,6 +1056,16 @@ static void rc_api_update_host(char** host, const char* hostname) {
 
 void rc_api_set_host(const char* hostname) {
   rc_api_update_host(&g_host, hostname);
+
+  if (!hostname) {
+    /* also clear out the image hostname */
+    rc_api_set_image_host(NULL);
+  }
+  else if (strcmp(hostname, RETROACHIEVEMENTS_HOST_NONSSL) == 0) {
+    /* if just pointing at the non-HTTPS host, explicitly use the default image host
+     * so it doesn't try to use the web host directly */
+    rc_api_set_image_host(RETROACHIEVEMENTS_IMAGE_HOST_NONSSL);
+  }
 }
 
 void rc_api_set_image_host(const char* hostname) {

@@ -475,7 +475,8 @@ ifeq ($(HAVE_LANGEXTRA), 1)
           intl/msg_hash_cs.o \
           intl/msg_hash_val.o \
           intl/msg_hash_ca.o \
-          intl/msg_hash_en.o
+          intl/msg_hash_en.o \
+          intl/msg_hash_hu.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -1382,6 +1383,8 @@ ifeq ($(HAVE_HID), 1)
           input/connect/connect_nesusb.o \
           input/connect/connect_snesusb.o \
           input/connect/connect_wiiupro.o \
+		  input/connect/connect_kade.o \
+		  input/connect/connect_zerodelay_dragonrise.o \
           input/connect/connect_wiiugca.o
 endif
 

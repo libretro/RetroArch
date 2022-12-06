@@ -85,11 +85,11 @@ static int generic_shader_action_parameter_right_internal(unsigned type, const c
    param_menu = shader ? &shader->parameters [type - offset] : NULL;
 
    if (!param_prev || !param_menu)
-      return menu_cbs_exit();
+      return -1;
    ret = generic_shader_action_parameter_right(param_prev, type, label, wraparound);
 
    param_menu->current = param_prev->current;
-   shader->modified    = true;
+   shader->flags      |= SHDR_FLAG_MODIFIED;
 
    return ret;
 }
@@ -179,58 +179,53 @@ static int action_right_input_desc_kbd(unsigned type, const char *label,
 static int action_right_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
-   unsigned btn_idx;
-   unsigned user_idx;
-   unsigned remap_idx;
-   unsigned bind_idx;
-   unsigned mapped_port;
    settings_t *settings                  = config_get_ptr();
    rarch_system_info_t *system           = &runloop_state_get_ptr()->system;
-   if (!settings || !system)
-      return 0;
-
-   user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-   btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
-   mapped_port = settings->uints.input_remap_ports[user_idx];
-   remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
-
-   for (bind_idx = 0; bind_idx < RARCH_ANALOG_BIND_LIST_END; bind_idx++)
+   if (settings && system)
    {
-      if (input_config_bind_order[bind_idx] == remap_idx)
-         break;
-   }
-
-   if (bind_idx < RARCH_CUSTOM_BIND_LIST_END - 1)
-   {
-      if (bind_idx > RARCH_ANALOG_BIND_LIST_END)
-         settings->uints.input_remap_ids[user_idx][btn_idx]++;
-      else
+      unsigned bind_idx;
+      unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+      unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+      unsigned mapped_port = settings->uints.input_remap_ports[user_idx];
+      unsigned remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
+      for (bind_idx = 0; bind_idx < RARCH_ANALOG_BIND_LIST_END; bind_idx++)
       {
-         if (bind_idx < RARCH_ANALOG_BIND_LIST_END - 1)
-         {
-            bind_idx++;
-            bind_idx = input_config_bind_order[bind_idx];
-         }
-         else if (bind_idx == RARCH_ANALOG_BIND_LIST_END - 1)
-            bind_idx = RARCH_UNMAPPED;
-         else
-            bind_idx = input_config_bind_order[0];
-         settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
+         if (input_config_bind_order[bind_idx] == remap_idx)
+            break;
       }
-   }
-   else if (bind_idx == RARCH_CUSTOM_BIND_LIST_END - 1)
-      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
-   else
-      settings->uints.input_remap_ids[user_idx][btn_idx] = input_config_bind_order[0];
 
-   remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
+      if (bind_idx < RARCH_CUSTOM_BIND_LIST_END - 1)
+      {
+         if (bind_idx > RARCH_ANALOG_BIND_LIST_END)
+            settings->uints.input_remap_ids[user_idx][btn_idx]++;
+         else
+         {
+            if (bind_idx < RARCH_ANALOG_BIND_LIST_END - 1)
+            {
+               bind_idx++;
+               bind_idx = input_config_bind_order[bind_idx];
+            }
+            else if (bind_idx == RARCH_ANALOG_BIND_LIST_END - 1)
+               bind_idx = RARCH_UNMAPPED;
+            else
+               bind_idx = input_config_bind_order[0];
+            settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
+         }
+      }
+      else if (bind_idx == RARCH_CUSTOM_BIND_LIST_END - 1)
+         settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
+      else
+         settings->uints.input_remap_ids[user_idx][btn_idx] = input_config_bind_order[0];
 
-   /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
-      also skip all the axes until analog remapping is implemented */
-   if (remap_idx != RARCH_UNMAPPED)
-   {
-      if ((string_is_empty(system->input_desc_btn[mapped_port][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END))
-         action_right_input_desc(type, label, wraparound);
+      remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
+
+      /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
+         also skip all the axes until analog remapping is implemented */
+      if (remap_idx != RARCH_UNMAPPED)
+      {
+         if ((string_is_empty(system->input_desc_btn[mapped_port][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END))
+            action_right_input_desc(type, label, wraparound);
+      }
    }
 
    return 0;
@@ -240,26 +235,25 @@ static int action_right_scroll(unsigned type, const char *label,
       bool wraparound)
 {
    size_t scroll_accel   = 0;
-   unsigned scroll_speed = 0, fast_scroll_speed = 0;
-   size_t selection      = menu_navigation_get_selection();
 
-   if (!menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
-      return false;
-
-   scroll_speed          = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
-   fast_scroll_speed     = 10 * scroll_speed;
-
-   if (selection  + fast_scroll_speed < (menu_entries_get_size()))
+   if (menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
    {
-      size_t idx  = selection + fast_scroll_speed;
+      size_t selection           = menu_navigation_get_selection();
+      unsigned scroll_speed      = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
+      unsigned fast_scroll_speed = 10 * scroll_speed;
 
-      menu_navigation_set_selection(idx);
-      menu_driver_navigation_set(true);
-   }
-   else
-   {
-      if ((menu_entries_get_size() > 0))
-         menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST, NULL);
+      if (selection  + fast_scroll_speed < (menu_entries_get_size()))
+      {
+         size_t idx  = selection + fast_scroll_speed;
+
+         menu_navigation_set_selection(idx);
+         menu_driver_navigation_set(true);
+      }
+      else
+      {
+         if ((menu_entries_get_size() > 0))
+            menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST, NULL);
+      }
    }
 
    return 0;
@@ -269,17 +263,13 @@ static int action_right_scroll(unsigned type, const char *label,
 static int audio_mixer_stream_volume_right(unsigned type, const char *label,
       bool wraparound)
 {
-   unsigned         offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
-   float orig_volume            = 0.0f;
-
-   if (offset >= AUDIO_MIXER_MAX_STREAMS)
-      return 0;
-
-   orig_volume                  = audio_driver_mixer_get_stream_volume(offset);
-   orig_volume                  = orig_volume + 1.00f;
-
-   audio_driver_mixer_set_stream_volume(offset, orig_volume);
-
+   unsigned offset = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
+   if (offset < AUDIO_MIXER_MAX_STREAMS)
+   {
+      float orig_volume = audio_driver_mixer_get_stream_volume(offset);
+      orig_volume       = orig_volume + 1.00f;
+      audio_driver_mixer_set_stream_volume(offset, orig_volume);
+   }
    return 0;
 }
 #endif
@@ -346,17 +336,20 @@ static int action_right_shader_scale_pass(unsigned type, const char *label,
    struct video_shader_pass *shader_pass = shader ? &shader->pass[pass] : NULL;
 
    if (!shader_pass)
-      return menu_cbs_exit();
+      return -1;
 
    /* A 20x scale is used to support scaling handheld border shaders up to 8K resolutions */
-   current_scale            = shader_pass->fbo.scale_x;
-   delta                    = 1;
-   current_scale            = (current_scale + delta) % 21;
+   current_scale              = shader_pass->fbo.scale_x;
+   delta                      = 1;
+   current_scale              = (current_scale + delta) % 21;
 
-   shader_pass->fbo.valid   = current_scale;
-   shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
+   shader_pass->fbo.scale_x   = shader_pass->fbo.scale_y = current_scale;
+   if (current_scale)
+      shader_pass->fbo.flags |=  FBO_SCALE_FLAG_VALID;
+   else
+      shader_pass->fbo.flags &= ~FBO_SCALE_FLAG_VALID;
 
-   shader->modified         = true;
+   shader->flags             |= SHDR_FLAG_MODIFIED;
 
    return 0;
 }
@@ -370,11 +363,11 @@ static int action_right_shader_filter_pass(unsigned type, const char *label,
    struct video_shader_pass *shader_pass = shader ? &shader->pass[pass] : NULL;
 
    if (!shader_pass)
-      return menu_cbs_exit();
+      return -1;
 
    shader_pass->filter      = ((shader_pass->filter + delta) % 3);
 
-   shader->modified         = true;
+   shader->flags           |= SHDR_FLAG_MODIFIED;
 
    return 0;
 }
@@ -384,7 +377,7 @@ static int action_right_shader_filter_default(unsigned type, const char *label,
 {
    rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SMOOTH);
    if (!setting)
-      return menu_cbs_exit();
+      return -1;
    return menu_action_handle_setting(setting,
          setting->type, MENU_ACTION_RIGHT,
          wraparound);
@@ -398,7 +391,7 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
    unsigned pass_count         = shader ? shader->passes : 0;
 
    if (!shader)
-      return menu_cbs_exit();
+      return -1;
 
    if (pass_count < GFX_MAX_SHADERS)
       shader->passes++;
@@ -407,7 +400,7 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    video_shader_resolve_parameters(shader);
 
-   shader->modified         = true;
+   shader->flags           |= SHDR_FLAG_MODIFIED;
 
    return 0;
 }
@@ -520,7 +513,7 @@ static int playlist_association_right(unsigned type, const char *label,
 
    core_info_get_list(&core_info_list);
    if (!core_info_list)
-      return menu_cbs_exit();
+      return -1;
 
    /* Get current core path association */
    if (!string_is_empty(default_core_path) &&
@@ -819,18 +812,19 @@ static int cpu_policy_freq_managed_tweak(unsigned type, const char *label,
    cpu_scaling_opts_t opts;
    enum cpu_scaling_mode mode = get_cpu_scaling_mode(&opts);
 
-   switch (type) {
-   case MENU_SETTINGS_CPU_MANAGED_SET_MINFREQ:
-      opts.min_freq = get_cpu_scaling_next_frequency_limit(
-         opts.min_freq, 1);
-      set_cpu_scaling_mode(mode, &opts);
-      break;
-   case MENU_SETTINGS_CPU_MANAGED_SET_MAXFREQ:
-      opts.max_freq = get_cpu_scaling_next_frequency_limit(
-         opts.max_freq, 1);
-      set_cpu_scaling_mode(mode, &opts);
-      break;
-   };
+   switch (type)
+   {
+      case MENU_SETTINGS_CPU_MANAGED_SET_MINFREQ:
+         opts.min_freq = get_cpu_scaling_next_frequency_limit(
+               opts.min_freq, 1);
+         set_cpu_scaling_mode(mode, &opts);
+         break;
+      case MENU_SETTINGS_CPU_MANAGED_SET_MAXFREQ:
+         opts.max_freq = get_cpu_scaling_next_frequency_limit(
+               opts.max_freq, 1);
+         set_cpu_scaling_mode(mode, &opts);
+         break;
+   }
 
    return 0;
 }
@@ -841,37 +835,38 @@ static int cpu_policy_freq_managed_gov(unsigned type, const char *label,
    int pidx;
    bool refresh = false;
    cpu_scaling_opts_t opts;
-   enum cpu_scaling_mode mode = get_cpu_scaling_mode(&opts);
+   enum cpu_scaling_mode mode     = get_cpu_scaling_mode(&opts);
    cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
 
    /* Using drivers[0] governors, should be improved */
    if (!drivers || !drivers[0])
       return -1;
 
-   switch (atoi(label)) {
-   case 0:
-      pidx = string_list_find_elem(drivers[0]->available_governors,
-         opts.main_policy);
-      if (pidx && pidx + 1 < drivers[0]->available_governors->size)
-      {
-         strlcpy(opts.main_policy,
-            drivers[0]->available_governors->elems[pidx].data,
-            sizeof(opts.main_policy));
-         set_cpu_scaling_mode(mode, &opts);
-      }
-      break;
-   case 1:
-      pidx = string_list_find_elem(drivers[0]->available_governors,
-         opts.menu_policy);
-      if (pidx && pidx + 1 < drivers[0]->available_governors->size)
-      {
-         strlcpy(opts.menu_policy,
-            drivers[0]->available_governors->elems[pidx].data,
-            sizeof(opts.menu_policy));
-         set_cpu_scaling_mode(mode, &opts);
-      }
-      break;
-   };
+   switch (atoi(label))
+   {
+      case 0:
+         pidx = string_list_find_elem(drivers[0]->available_governors,
+               opts.main_policy);
+         if (pidx && pidx + 1 < drivers[0]->available_governors->size)
+         {
+            strlcpy(opts.main_policy,
+                  drivers[0]->available_governors->elems[pidx].data,
+                  sizeof(opts.main_policy));
+            set_cpu_scaling_mode(mode, &opts);
+         }
+         break;
+      case 1:
+         pidx = string_list_find_elem(drivers[0]->available_governors,
+               opts.menu_policy);
+         if (pidx && pidx + 1 < drivers[0]->available_governors->size)
+         {
+            strlcpy(opts.menu_policy,
+                  drivers[0]->available_governors->elems[pidx].data,
+                  sizeof(opts.menu_policy));
+            set_cpu_scaling_mode(mode, &opts);
+         }
+         break;
+   }
 
    return 0;
 }
@@ -879,36 +874,37 @@ static int cpu_policy_freq_managed_gov(unsigned type, const char *label,
 static int cpu_policy_freq_tweak(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh = false;
    cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
-   unsigned policyid = atoi(label);
-   uint32_t next_freq;
-   if (!drivers)
-     return 0;
 
-   switch (type) {
-   case MENU_SETTINGS_CPU_POLICY_SET_MINFREQ:
-      next_freq = get_cpu_scaling_next_frequency(drivers[policyid],
-         drivers[policyid]->min_policy_freq, 1);
-      set_cpu_scaling_min_frequency(drivers[policyid], next_freq);
-      break;
-   case MENU_SETTINGS_CPU_POLICY_SET_MAXFREQ:
-      next_freq = get_cpu_scaling_next_frequency(drivers[policyid],
-         drivers[policyid]->max_policy_freq, 1);
-      set_cpu_scaling_max_frequency(drivers[policyid], next_freq);
-      break;
-   case MENU_SETTINGS_CPU_POLICY_SET_GOVERNOR:
+   if (drivers)
    {
-      int pidx = string_list_find_elem(drivers[policyid]->available_governors,
-         drivers[policyid]->scaling_governor);
-      if (pidx && pidx + 1 < drivers[policyid]->available_governors->size)
+      uint32_t next_freq;
+      unsigned policyid           = atoi(label);
+      switch (type)
       {
-         set_cpu_scaling_governor(drivers[policyid],
-            drivers[policyid]->available_governors->elems[pidx].data);
+         case MENU_SETTINGS_CPU_POLICY_SET_MINFREQ:
+            next_freq = get_cpu_scaling_next_frequency(drivers[policyid],
+                  drivers[policyid]->min_policy_freq, 1);
+            set_cpu_scaling_min_frequency(drivers[policyid], next_freq);
+            break;
+         case MENU_SETTINGS_CPU_POLICY_SET_MAXFREQ:
+            next_freq = get_cpu_scaling_next_frequency(drivers[policyid],
+                  drivers[policyid]->max_policy_freq, 1);
+            set_cpu_scaling_max_frequency(drivers[policyid], next_freq);
+            break;
+         case MENU_SETTINGS_CPU_POLICY_SET_GOVERNOR:
+            {
+               int pidx = string_list_find_elem(drivers[policyid]->available_governors,
+                     drivers[policyid]->scaling_governor);
+               if (pidx && pidx + 1 < drivers[policyid]->available_governors->size)
+               {
+                  set_cpu_scaling_governor(drivers[policyid],
+                        drivers[policyid]->available_governors->elems[pidx].data);
+               }
+               break;
+            }
       }
-      break;
    }
-   };
 
    return 0;
 }
@@ -1059,8 +1055,6 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_VIDEO_FONT:
          case MENU_SETTING_GROUP:
          case MENU_SETTINGS_CORE_INFO_NONE:
-         case MENU_SETTING_ACTION_FAVORITES_DIR:
-         case MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS:
             if (
                      string_ends_with_size(menu_label, "_tab",
                         strlen(menu_label), STRLEN_CONST("_tab"))
@@ -1070,6 +1064,17 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
                BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
                break;
             }
+         case MENU_SETTING_ACTION_RUN:
+         case MENU_SETTING_ACTION_CLOSE:
+         case MENU_SETTING_ACTION_CLOSE_HORIZONTAL:
+         case MENU_SETTING_ACTION_DELETE_ENTRY:
+         case MENU_SETTING_ACTION_CORE_OPTIONS:
+         case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
+         case MENU_SETTING_ACTION_SCREENSHOT:
+         case MENU_SETTING_ACTION_FAVORITES_DIR:
+         case MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS:
+         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION:
+         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD:
             BIND_ACTION_RIGHT(cbs, action_right_scroll);
             break;
          case MENU_SETTING_ACTION:
@@ -1085,10 +1090,6 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION_SAVESTATE:
          case MENU_SETTING_ACTION_LOADSTATE:
             BIND_ACTION_RIGHT(cbs, action_right_state_slot);
-            break;
-         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION:
-         case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD:
-            BIND_ACTION_RIGHT(cbs, action_right_scroll);
             break;
          default:
             return -1;
@@ -1211,18 +1212,6 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                   BIND_ACTION_RIGHT(cbs, action_right_scroll);
                }
                break;
-            case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
-            case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
-               if (
-                        string_ends_with_size(menu_label, "_tab",
-                           strlen(menu_label),
-                           STRLEN_CONST("_tab"))
-                     || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
-                  )
-               {
-                  BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
-                  break;
-               }
             case MENU_ENUM_LABEL_VIDEO_GPU_INDEX:
                BIND_ACTION_RIGHT(cbs, action_right_video_gpu_index);
                break;
@@ -1272,9 +1261,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
          }
       }
       else
-      {
          return -1;
-      }
    }
 
    return 0;
@@ -1285,7 +1272,7 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
       const char *menu_label)
 {
    if (!cbs)
-      return menu_cbs_exit();
+      return -1;
 
    BIND_ACTION_RIGHT(cbs, bind_right_generic);
 
@@ -1311,5 +1298,5 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
    if (menu_cbs_init_bind_right_compare_type(cbs, type, menu_label ) == 0)
       return 0;
 
-   return menu_cbs_exit();
+   return -1;
 }

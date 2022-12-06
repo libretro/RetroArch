@@ -30,8 +30,6 @@
 
 #include "tasks_internal.h"
 
-#include "../configuration.h"
-#include "../retroarch.h"
 #include "../msg_hash.h"
 #include "../playlist.h"
 #include "../manual_content_scan.h"

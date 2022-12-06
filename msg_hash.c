@@ -124,6 +124,9 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_BRITISH_ENGLISH:
          ret = msg_hash_get_help_en_enum(msg, s, len);
          break;
+      case RETRO_LANGUAGE_HUNGARIAN:
+         ret = msg_hash_get_help_hu_enum(msg, s, len);
+         break;
       default:
          break;
    }
@@ -211,6 +214,8 @@ const char *get_user_language_iso639_1(bool limit)
          if (limit)
             return "en";
          return "en_gb";
+      case RETRO_LANGUAGE_HUNGARIAN:
+         return "hu";
    }
    return "en";
 }
@@ -311,6 +316,9 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          break;
       case RETRO_LANGUAGE_BRITISH_ENGLISH:
          ret = msg_hash_to_str_en(msg);
+         break;
+      case RETRO_LANGUAGE_HUNGARIAN:
+         ret = msg_hash_to_str_hu(msg);
          break;
       default:
          break;

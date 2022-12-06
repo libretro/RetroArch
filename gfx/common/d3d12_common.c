@@ -27,7 +27,7 @@
 #include "../verbosity.h"
 #include "../../configuration.h"
 
-#ifdef HAVE_DYNAMIC
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
 #endif
 
@@ -76,7 +76,7 @@ DEFINE_GUIDW(IID_ID3D12DebugCommandList, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47,
 #endif
 #endif
 
-#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
 static dylib_t     d3d12_dll;
 
 HRESULT WINAPI D3D12CreateDevice(
