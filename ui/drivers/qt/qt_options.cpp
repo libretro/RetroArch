@@ -144,6 +144,7 @@ QWidget *AudioPage::widget()
 
    volumeGroup->addRow(volumeLayout);
    volumeGroup->add(MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE);
+   volumeGroup->add(MENU_ENUM_LABEL_AUDIO_REWIND_MUTE);
 
    layout->addWidget(outputGroup);
    layout->addWidget(resamplerGroup);
