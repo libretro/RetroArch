@@ -1966,6 +1966,14 @@ MSG_HASH(
    "Otomatis senyapkan audio saat menggunakan percepat."
    )
 MSG_HASH(
+  MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+  "Bisu Saat Memutar Ulang"
+  )
+MSG_HASH(
+  MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+  "Secara otomatis membisukan audio saat menggunakan pemutaran ulang."
+  )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Pertambahan Volume (dB)"
    )

@@ -2122,6 +2122,15 @@ MSG_HASH(
    "Silencia automàticament el so quan s’usa l’avançament ràpid."
    )
 MSG_HASH(
+  MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+  "Silenciar en rebobinar"
+  )
+MSG_HASH(
+  MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+  "Silencia automàticament l'àudio quan s'utilitza el rebobinat."
+  )
+
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Guany de volum (dB)"
    )

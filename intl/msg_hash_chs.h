@@ -2114,6 +2114,14 @@ MSG_HASH(
    "快进时自动静音。"
    )
 MSG_HASH(
+  MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+  "倒带时静音"
+  )
+MSG_HASH(
+  MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+  "使用倒带时自动静音。"
+  )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "音量增益 (分贝)"
    )

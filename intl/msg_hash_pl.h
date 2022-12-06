@@ -2070,6 +2070,14 @@ MSG_HASH(
    "Automatycznie wycisz dźwięk podczas używania przyspieszenia."
    )
 MSG_HASH(
+  MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+  "Wycisz podczas przewijania"
+  )
+MSG_HASH(
+  MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+  "Automatyczne wyciszanie dźwięku podczas przewijania do tyłu."
+  )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Poziom głośności (dB)"
    )
