@@ -1994,6 +1994,14 @@ MSG_HASH(
    "Aktivera ljudlöst läge automatiskt vid snabbspolning."
    )
 MSG_HASH(
+  MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+  "Tyst vid tillbakaspolning"
+  )
+MSG_HASH(
+  MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+  "Stäng av ljudet automatiskt när du använder tillbakaspolning."
+  )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Volymförstärkning (dB)"
    )

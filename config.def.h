@@ -1105,7 +1105,7 @@
 /* Automatically mute audio when fast forward
  * is enabled */
 #define DEFAULT_AUDIO_FASTFORWARD_MUTE false
-
+#define DEFAULT_AUDIO_REWIND_MUTE false
 /* MISC */
 
 /* Enables displaying the current frames per second. */
