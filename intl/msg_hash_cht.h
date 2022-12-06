@@ -2668,7 +2668,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "交換確定和取消的按鍵。開啟為美國版操作方式，關閉為日本版操作方式。"
+   "交換 [確定/取消] 的按鍵。開啟為美國版操作 [B/A鍵]，關閉為日本版操作 [A/B鍵]。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
