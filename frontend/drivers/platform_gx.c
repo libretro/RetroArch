@@ -318,7 +318,7 @@ static void frontend_gx_get_env(int *argc, char *argv[],
       g_defaults.dirs[DEFAULT_DIR_PORT], "logs",
       sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
-      g_defaults.dirs[DEFAULT_DIR_PORT], "remaps",
+      g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
       sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
       g_defaults.dirs[DEFAULT_DIR_PORT], "config",

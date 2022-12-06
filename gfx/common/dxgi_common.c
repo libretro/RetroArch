@@ -48,7 +48,7 @@ typedef enum hdr_root_constants
 } hdr_root_constants_t;
 #endif
 
-#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
 
 HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void** ppFactory)

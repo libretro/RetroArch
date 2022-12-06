@@ -19,7 +19,6 @@
 #include "../gfx_animation.h"
 #include "../gfx_display.h"
 #include "../../configuration.h"
-#include "../../retroarch.h"
 
 #define SCREENSHOT_DURATION_IN            66
 #define SCREENSHOT_DURATION_OUT           SCREENSHOT_DURATION_IN*10

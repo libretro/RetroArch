@@ -67,8 +67,8 @@ enum gfx_ctx_mali_fbdev_flags
    GFX_CTX_MALI_FBDEV_FLAG_GLES3            = (1 << 3)
 };
 
-mali_ctx_data_t *gfx_ctx_mali_fbdev_global=NULL;
-static uint8_t mali_flags=0;
+static mali_ctx_data_t *gfx_ctx_mali_fbdev_global = NULL;
+static uint8_t mali_flags = 0;
 
 static int gfx_ctx_mali_fbdev_get_vinfo(void *data)
 {

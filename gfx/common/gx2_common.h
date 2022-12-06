@@ -63,13 +63,13 @@ typedef struct
    GX2Sampler sampler_nearest[RARCH_WRAP_MAX];
    GX2Sampler sampler_linear[RARCH_WRAP_MAX];
    GX2Texture texture;
-   frame_vertex_t* v;
-   GX2_vec2* ubo_vp;
-   GX2_vec2* ubo_tex;
-   GX2_mat4x4* ubo_mvp;
-   void* input_ring_buffer;
+   frame_vertex_t *v;
+   GX2_vec2 *ubo_vp;
+   GX2_vec2 *ubo_tex;
+   GX2_mat4x4 *ubo_mvp;
+   void *input_ring_buffer;
+   void *output_ring_buffer;
    u32 input_ring_buffer_size;
-   void* output_ring_buffer;
    u32 output_ring_buffer_size;
 
    int width;
@@ -84,6 +84,7 @@ typedef struct
       int size;
       int current;
    } vertex_cache;
+
    struct
    {
       tex_shader_vertex_t* v;
@@ -91,31 +92,31 @@ typedef struct
       int current;
    } vertex_cache_tex;
 
-   void* drc_scan_buffer;
-   void* tv_scan_buffer;
+   void *drc_scan_buffer;
+   void *tv_scan_buffer;
+   void *cmd_buffer;
    GX2ColorBuffer color_buffer;
-   GX2ContextState* ctx_state;
-   void* cmd_buffer;
-   struct video_shader* shader_preset;
+   GX2ContextState *ctx_state;
+   struct video_shader *shader_preset;
    struct
    {
-      GFDFile* gfd;
-      float* vs_ubos[2];
-      float* ps_ubos[2];
+      GFDFile *gfd;
+      float *vs_ubos[2];
+      float *ps_ubos[2];
       GX2Texture texture;
       GX2ColorBuffer color_buffer;
       bool mem1;
-   }pass[GFX_MAX_SHADERS];
+   } pass[GFX_MAX_SHADERS];
    GX2Texture luts[GFX_MAX_TEXTURES];
 
    wiiu_render_mode_t render_mode;
    video_viewport_t vp;
    int frames;
    OSTime last_vsync;
+   unsigned rotation;
    bool vsync;
    bool rgb32;
    bool smooth;
-   unsigned rotation;
    bool keep_aspect;
    bool should_resize;
    bool render_msg_enabled;

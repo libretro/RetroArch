@@ -31,7 +31,7 @@
 
 #include <encodings/crc32.h>
 
-#include "../retroarch.h"
+#include "../runloop.h"
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "../configuration.h"

@@ -1095,7 +1095,7 @@ void gfx_display_draw_keyboard(
    };
 
 #ifdef HAVE_MIST
-   if(steam_has_osk_open())
+   if (steam_has_osk_open())
       return;
 #endif
 

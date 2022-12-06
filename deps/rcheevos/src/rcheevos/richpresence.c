@@ -534,10 +534,11 @@ void rc_parse_richpresence_internal(rc_richpresence_t* self, const char* script,
       display = nextline;
       display_line = parse->lines_read;
 
+      /* scan as long as we find conditional lines or full line comments */
       do {
         line = nextline;
         nextline = rc_parse_line(line, &endline, parse);
-      } while (*line == '?');
+      } while (*line == '?' || (line[0] == '/' && line[1] == '/'));
     }
 
     line = nextline;
@@ -557,38 +558,48 @@ void rc_parse_richpresence_internal(rc_richpresence_t* self, const char* script,
 
     nextline = rc_parse_line(line, &endline, parse);
 
-    while (*line == '?') {
-      /* conditional display: ?trigger?string */
-      ptr = ++line;
-      while (ptr < endline && *ptr != '?')
-        ++ptr;
+    do {
+      if (line[0] == '?') {
+        /* conditional display: ?trigger?string */
+        ptr = ++line;
+        while (ptr < endline && *ptr != '?')
+          ++ptr;
 
-      if (ptr < endline) {
-        *nextdisplay = rc_parse_richpresence_display_internal(ptr + 1, endline, parse, firstlookup);
-        if (parse->offset < 0)
-          return;
-        trigger = &((*nextdisplay)->trigger);
-        rc_parse_trigger_internal(trigger, &line, parse);
-        trigger->memrefs = 0;
-        if (parse->offset < 0)
-          return;
-        if (parse->buffer)
-          nextdisplay = &((*nextdisplay)->next);
+        if (ptr < endline) {
+          *nextdisplay = rc_parse_richpresence_display_internal(ptr + 1, endline, parse, firstlookup);
+          if (parse->offset < 0)
+            return;
+          trigger = &((*nextdisplay)->trigger);
+          rc_parse_trigger_internal(trigger, &line, parse);
+          trigger->memrefs = 0;
+          if (parse->offset < 0)
+            return;
+          if (parse->buffer)
+            nextdisplay = &((*nextdisplay)->next);
+        }
+      }
+      else if (line[0] != '/' || line[1] != '/') {
+        break;
       }
 
       line = nextline;
       nextline = rc_parse_line(line, &endline, parse);
-    }
+    } while (1);
 
     /* non-conditional display: string */
     *nextdisplay = rc_parse_richpresence_display_internal(line, endline, parse, firstlookup);
     if (*nextdisplay) {
       hasdisplay = 1;
       nextdisplay = &((*nextdisplay)->next);
-    }
 
-    /* restore the parser state */
-    parse->lines_read = lines_read;
+      /* restore the parser state */
+      parse->lines_read = lines_read;
+    }
+    else {
+      /* this should only happen if the line is blank.
+       * expect parse->offset to be RC_MISSING_DISPLAY_STRING and leave parse->lines_read
+       * on the current line for error tracking. */
+    }
   }
 
   /* finalize */

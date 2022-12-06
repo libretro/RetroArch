@@ -62,7 +62,6 @@
 
 #include "../configuration.h"
 #include "../msg_hash.h"
-#include "../retroarch.h"
 #include "../verbosity.h"
 
 #ifdef HAVE_CDROM
@@ -97,9 +96,6 @@ typedef struct
 static void task_cdrom_dump_handler(retro_task_t *task)
 {
    task_cdrom_dump_state_t *state    = (task_cdrom_dump_state_t*)task->state;
-   settings_t              *settings = config_get_ptr();
-   const char *directory_core_assets = settings 
-      ? settings->paths.directory_core_assets : NULL;
 
    if (task_get_progress(task) == 100)
    {
@@ -146,6 +142,9 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             size_t _len;
             char output_file[PATH_MAX_LENGTH];
             char cue_filename[PATH_MAX_LENGTH];
+            settings_t              *settings = config_get_ptr();
+            const char *directory_core_assets = settings 
+               ? settings->paths.directory_core_assets : NULL;
             /* write cuesheet to a file */
             int64_t cue_size     = filestream_get_size(state->file);
             char *cue_data       = (char*)calloc(1, cue_size);
@@ -259,6 +258,9 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             {
                char output_path[PATH_MAX_LENGTH];
                char track_filename[PATH_MAX_LENGTH];
+               settings_t              *settings = config_get_ptr();
+               const char *directory_core_assets = settings 
+                  ? settings->paths.directory_core_assets : NULL;
 
                track_filename[0] = '\0';
 

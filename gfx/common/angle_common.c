@@ -89,7 +89,7 @@ static bool angle_try_initialize(egl_ctx_data_t* egl,
    EGLint* major, EGLint* minor)
 {
    EGLDisplay dpy    = EGL_NO_DISPLAY;
-#if defined(HAVE_DYNAMIC) && defined(HAVE_DYNAMIC_EGL)
+#if defined(HAVE_DYLIB) && defined(HAVE_DYNAMIC_EGL)
    if (!egl_init_dll())
       return false;
 #endif

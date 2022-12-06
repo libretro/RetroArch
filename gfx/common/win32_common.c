@@ -288,20 +288,16 @@ typedef struct win32_common_state
    unsigned taskbar_message;
 #endif
    unsigned monitor_count;
-   bool quit;
-   bool resized;
 } win32_common_state_t;
 
 /* TODO/FIXME - globals */
-bool g_win32_restore_desktop        = false;
-bool g_win32_inited                 = false;
 unsigned g_win32_resize_width       = 0;
 unsigned g_win32_resize_height      = 0;
 float g_win32_refresh_rate          = 0;
 ui_window_win32_t main_window;
 
 /* TODO/FIXME - static globals */
-static bool taskbar_is_created      = false;
+uint8_t g_win32_flags               = 0;
 static HMONITOR win32_monitor_last;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
 
@@ -314,14 +310,12 @@ static win32_common_state_t win32_st =
 #ifdef HAVE_TASKBAR
    0,                   /* taskbar_message */
 #endif
-   false,               /* quit */
    0,                   /* monitor_count */
-   false                /* resized */
 };
 
-bool win32_taskbar_is_created(void)
+uint8_t win32_get_flags(void)
 {
-   return taskbar_is_created;
+   return g_win32_flags;
 }
 
 static INT_PTR_COMPAT CALLBACK pick_core_proc(
@@ -854,12 +848,12 @@ static void win32_save_position(void)
 
    if (window_save_positions)
    {
-      video_driver_state_t *video_st = video_state_get_ptr();
+      uint32_t video_st_flags        = video_driver_get_st_flags();
       bool video_fullscreen          = settings->bools.video_fullscreen;
 
       if (     !video_fullscreen
-            && !(video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN)
-            && !(video_st->flags & VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE))
+            && !(video_st_flags & VIDEO_FLAG_FORCE_FULLSCREEN)
+            && !(video_st_flags & VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE))
       {
          bool ui_menubar_enable = settings->bools.ui_menubar_enable;
          bool window_show_decor = settings->bools.video_window_show_decorations;
@@ -889,9 +883,6 @@ static LRESULT CALLBACK wnd_proc_common(
       bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t 
-      *g_win32           = (win32_common_state_t*)&win32_st;
-
    switch (message)
    {
       case WM_SYSCOMMAND:
@@ -936,7 +927,7 @@ static LRESULT CALLBACK wnd_proc_common(
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
-         g_win32->quit  = true;
+         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
          *quit          = true;
          /* fall-through */
       case WM_MOVE:
@@ -952,7 +943,7 @@ static LRESULT CALLBACK wnd_proc_common(
             {
                g_win32_resize_width  = LOWORD(lparam);
                g_win32_resize_height = HIWORD(lparam);
-               g_win32->resized      = true;
+               g_win32_flags        |= WIN32_CMN_FLAG_RESIZED;
             }
          }
          *quit = true;
@@ -1034,7 +1025,7 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
       case WM_NCLBUTTONDBLCLK:
 #ifdef HAVE_TASKBAR
          if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
+            g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
          break;
       case WM_DROPFILES:
@@ -1051,7 +1042,7 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
             return ret;
 #ifdef HAVE_TASKBAR
          if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
+            g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
          break;
 #ifdef HAVE_CLIP_WINDOW
@@ -1111,7 +1102,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
       case WM_NCLBUTTONDBLCLK:
 #ifdef HAVE_TASKBAR
          if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
+            g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
          break;
       case WM_DROPFILES:
@@ -1128,7 +1119,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
             return ret;
 #ifdef HAVE_TASKBAR
          if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
+            g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
          break;
       case WM_SETFOCUS:
@@ -1170,6 +1161,10 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
 }
 #endif
 
+#if defined(_MSC_VER) && !defined(_XBOX)
+#pragma comment(lib, "Imm32")
+#endif
+
 #ifdef HAVE_DINPUT
 static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       UINT message, WPARAM wparam, LPARAM lparam)
@@ -1181,6 +1176,42 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
 
    switch (message)
    {
+      case WM_IME_ENDCOMPOSITION:
+         input_keyboard_event(true, 1,  0x80000000, 0, RETRO_DEVICE_KEYBOARD); 
+         break;
+      case WM_IME_COMPOSITION:
+         {  
+            HIMC    hIMC = ImmGetContext(hwnd);
+            unsigned gcs = lparam & (GCS_COMPSTR|GCS_RESULTSTR);	
+            if (gcs)
+            {
+               int i;
+               wchar_t wstr[4]={0,};
+               int len1 = ImmGetCompositionStringW(hIMC, gcs, wstr, 4);		
+               wstr[2]  = wstr[1];
+               wstr[1]  = 0;
+               if ((len1 <= 0) || (len1 > 4))
+                  break;
+               for (i = 0; i < len1; i = i + 2)
+               {
+                  size_t len2;
+                  char *utf8   = utf16_to_utf8_string_alloc(wstr+i);
+                  if (!utf8)
+                     continue;
+                  len2         = strlen(utf8) + 1;
+                  if (len2 >= 1 && len2 <= 3)
+                  {
+                     if (len2 >= 2)
+                        utf8[3] = (gcs) | (gcs >> 4);	                
+                     input_keyboard_event(true, 1, *((int*)utf8), 0, RETRO_DEVICE_KEYBOARD); 
+                  }
+                  free(utf8);
+               }
+            }
+            ImmReleaseContext(hwnd, hIMC);
+            return 0;   
+         }
+         break;
       case WM_KEYUP:                /* Key released */
       case WM_SYSKEYUP:             /* Key released */
          keydown                  = false;
@@ -1243,7 +1274,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       case WM_NCLBUTTONDBLCLK:
 #ifdef HAVE_TASKBAR
          if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
+            g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
 #if !defined(_XBOX)
          {
@@ -1268,7 +1299,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             return ret;
 #ifdef HAVE_TASKBAR
          if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
+            g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
          break;
 #ifdef HAVE_CLIP_WINDOW
@@ -1298,14 +1329,12 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
 LRESULT CALLBACK wnd_proc_d3d_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
    {
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
 
-      g_win32_inited        = true;
+      g_win32_flags |= WIN32_CMN_FLAG_INITED;
       return 0;
    }
 
@@ -1316,14 +1345,12 @@ LRESULT CALLBACK wnd_proc_d3d_common(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_d3d_winraw(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
    {
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
 
-      g_win32_inited        = true;
+      g_win32_flags |= WIN32_CMN_FLAG_INITED;
       return 0;
    }
 
@@ -1335,14 +1362,12 @@ LRESULT CALLBACK wnd_proc_d3d_winraw(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
    {
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
 
-      g_win32_inited        = true;
+      g_win32_flags |= WIN32_CMN_FLAG_INITED;
       return 0;
    }
 
@@ -1361,10 +1386,13 @@ LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
 
    if (message == WM_CREATE)
    {
-      create_wgl_context(hwnd, &g_win32->quit);
+      bool is_quit = false;
+      create_wgl_context(hwnd, &is_quit);
+      if (is_quit)
+         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
-      g_win32_inited        = true;
+      g_win32_flags |= WIN32_CMN_FLAG_INITED;
       return 0;
    }
 
@@ -1380,10 +1408,13 @@ LRESULT CALLBACK wnd_proc_wgl_winraw(HWND hwnd, UINT message,
 
    if (message == WM_CREATE)
    {
-      create_wgl_context(hwnd, &g_win32->quit);
+      bool is_quit = false;
+      create_wgl_context(hwnd, &is_quit);
+      if (is_quit)
+         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
-      g_win32_inited        = true;
+      g_win32_flags |= WIN32_CMN_FLAG_INITED;
       return 0;
    }
 
@@ -1398,7 +1429,10 @@ LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
 
    if (message == WM_CREATE)
    {
-      create_wgl_context(hwnd, &g_win32->quit);
+      bool is_quit = false;
+      create_wgl_context(hwnd, &is_quit);
+      if (is_quit)
+         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
       return 0;
@@ -1418,7 +1452,10 @@ LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
 
    if (message == WM_CREATE)
    {
-      create_vk_context(hwnd, &g_win32->quit);
+      bool is_quit = false;
+      create_vk_context(hwnd, &is_quit);
+      if (is_quit)
+         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
       return 0;
@@ -1436,7 +1473,10 @@ LRESULT CALLBACK wnd_proc_vk_winraw(HWND hwnd, UINT message,
 
    if (message == WM_CREATE)
    {
-      create_vk_context(hwnd, &g_win32->quit);
+      bool is_quit = false;
+      create_vk_context(hwnd, &is_quit);
+      if (is_quit)
+         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
       return 0;
@@ -1453,7 +1493,10 @@ LRESULT CALLBACK wnd_proc_vk_common(HWND hwnd, UINT message,
 
    if (message == WM_CREATE)
    {
-      create_vk_context(hwnd, &g_win32->quit);
+      bool is_quit = false;
+      create_vk_context(hwnd, &is_quit);
+      if (is_quit)
+         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
       return 0;
@@ -1473,7 +1516,10 @@ LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
    
    if (message == WM_CREATE)
    {
-      create_gdi_context(hwnd, &g_win32->quit);
+      bool is_quit = false;
+      create_gdi_context(hwnd, &is_quit);
+      if (is_quit)
+         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
       return 0;
@@ -1506,7 +1552,7 @@ LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
 #ifdef HAVE_TASKBAR
       if (     g_win32->taskbar_message 
             && message == g_win32->taskbar_message)
-         taskbar_is_created = true;
+         g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
    }
 
@@ -1522,7 +1568,10 @@ LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
    
    if (message == WM_CREATE)
    {
-      create_gdi_context(hwnd, &g_win32->quit);
+      bool is_quit = false;
+      create_gdi_context(hwnd, &is_quit);
+      if (is_quit)
+         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
       return 0;
@@ -1555,7 +1604,7 @@ LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
 #ifdef HAVE_TASKBAR
       if (     g_win32->taskbar_message 
             && message == g_win32->taskbar_message)
-         taskbar_is_created = true;
+         g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
    }
 
@@ -1570,7 +1619,10 @@ LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
    
    if (message == WM_CREATE)
    {
-      create_gdi_context(hwnd, &g_win32->quit);
+      bool is_quit = false;
+      create_gdi_context(hwnd, &is_quit);
+      if (is_quit)
+         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
       return 0;
@@ -1603,7 +1655,7 @@ LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
 #ifdef HAVE_TASKBAR
       if (     g_win32->taskbar_message 
             && message == g_win32->taskbar_message)
-         taskbar_is_created = true;
+         g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
    }
 
@@ -1755,7 +1807,7 @@ void win32_monitor_init(void)
    EnumDisplayMonitors(NULL, NULL,
          win32_monitor_enum_proc, 0);
 #endif
-   g_win32->quit          = false;
+   g_win32_flags         &= ~WIN32_CMN_FLAG_QUIT;
 }
 
 #if !defined(_XBOX)
@@ -1776,14 +1828,14 @@ void win32_check_window(void *data,
    bool video_is_threaded = video_driver_is_threaded();
    if (video_is_threaded)
       ui_companion_win32.application->process_events();
-   *quit                  = g_win32->quit;
+   *quit                  = g_win32_flags & WIN32_CMN_FLAG_QUIT;
 
-   if (g_win32->resized)
+   if (g_win32_flags & WIN32_CMN_FLAG_RESIZED)
    {
       *resize             = true;
       *width              = g_win32_resize_width;
       *height             = g_win32_resize_height;
-      g_win32->resized    = false;
+      g_win32_flags      &= ~WIN32_CMN_FLAG_RESIZED;
    }
 }
 #endif
@@ -1991,10 +2043,10 @@ static void win32_localize_menu(HMENU menu)
          /* Append localized name, tab character, and Shortcut Key */
          if (meta_key_name && string_is_not_equal(meta_key_name, "nul"))
          {
-            int len1       = strlen(new_label);
-            int len2       = strlen(meta_key_name);
-            int buf_size   = len1 + len2 + 2;
-            new_label_text = (char*)malloc(buf_size);
+            size_t len1     = strlen(new_label);
+            size_t len2     = strlen(meta_key_name);
+            size_t buf_size = len1 + len2 + 2;
+            new_label_text  = (char*)malloc(buf_size);
 
             if (new_label_text)
             {
@@ -2042,7 +2094,7 @@ HWND win32_get_window(void) { return NULL; }
 #else
 bool win32_has_focus(void *data)
 {
-   if (g_win32_inited)
+   if (g_win32_flags & WIN32_CMN_FLAG_INITED)
       if (GetForegroundWindow() == main_window.hwnd)
          return true;
 
@@ -2289,8 +2341,6 @@ bool win32_set_video_mode(void *data,
    int res               = 0;
    unsigned mon_id       = 0;
    HMONITOR hm_to_use    = NULL;
-   win32_common_state_t 
-      *g_win32           = (win32_common_state_t*)&win32_st;
    settings_t *settings  = config_get_ptr();
    bool windowed_full    = settings->bools.video_windowed_fullscreen;
 
@@ -2318,7 +2368,8 @@ bool win32_set_video_mode(void *data,
 
    /* Wait until context is created (or failed to do so ...).
     * Please don't remove the (res = ) as GetMessage can return -1. */
-   while (!g_win32_inited && !g_win32->quit
+   while (  !(g_win32_flags & WIN32_CMN_FLAG_INITED) 
+         && !(g_win32_flags & WIN32_CMN_FLAG_QUIT)
          && (res = GetMessage(&msg, main_window.hwnd, 0, 0)) != 0)
    {
       if (res == -1)
@@ -2331,7 +2382,7 @@ bool win32_set_video_mode(void *data,
       DispatchMessage(&msg);
    }
 
-   if (g_win32->quit)
+   if (g_win32_flags & WIN32_CMN_FLAG_QUIT)
       return false;
    return true;
 }
@@ -2361,11 +2412,8 @@ bool win32_get_client_rect(RECT* rect)
 
 void win32_window_reset(void)
 {
-   win32_common_state_t 
-      *g_win32             = (win32_common_state_t*)&win32_st;
-
-   g_win32->quit           = false;
-   g_win32_restore_desktop = false;
+   g_win32_flags &= ~(WIN32_CMN_FLAG_QUIT
+                    | WIN32_CMN_FLAG_RESTORE_DESKTOP);
 }
 
 void win32_destroy_window(void)
@@ -2431,7 +2479,7 @@ float win32_get_refresh_rate(void *data)
    unsigned int NumModeInfoArrayElements   = 0;
    DISPLAYCONFIG_PATH_INFO_CUSTOM *PathInfoArray  = NULL;
    DISPLAYCONFIG_MODE_INFO_CUSTOM *ModeInfoArray  = NULL;
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
     static QUERYDISPLAYCONFIG pQueryDisplayConfig;
     static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes;
     if (!pQueryDisplayConfig)

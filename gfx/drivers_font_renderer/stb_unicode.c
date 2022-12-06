@@ -26,7 +26,6 @@
 #endif
 
 #include "../font_driver.h"
-#include "../../verbosity.h"
 
 #ifndef STB_TRUETYPE_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION

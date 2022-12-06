@@ -82,7 +82,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
 
    /* Swapchains are recreated in set_resize as a
     * central place, so use that to trigger swapchain reinit. */
-   *resize = wl->vk.need_new_swapchain;
+   *resize = wl->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
    gfx_ctx_wl_check_window_common(wl, gfx_ctx_wl_get_video_size, quit, resize, 
       width, height);
@@ -95,11 +95,11 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 
    if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
    {
-      wl->vk.context.invalid_swapchain = true;
-      if (wl->vk.created_new_swapchain)
+      wl->vk.context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
+      if (wl->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
          vulkan_acquire_next_image(&wl->vk);
 
-      wl->vk.need_new_swapchain = false;
+      wl->vk.flags         &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
       wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
@@ -196,7 +196,7 @@ static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)
    {
       wl->swap_interval = swap_interval;
       if (wl->vk.swapchain)
-         wl->vk.need_new_swapchain = true;
+         wl->vk.flags  |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    }
 }
 
@@ -273,9 +273,9 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   if (wl->vk.context.has_acquired_swapchain)
+   if (wl->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
-      wl->vk.context.has_acquired_swapchain = false;
+      wl->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
       if (wl->vk.swapchain == VK_NULL_HANDLE)
       {
          retro_sleep(10);

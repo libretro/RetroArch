@@ -259,7 +259,6 @@ public:
    AppHandler(QObject *parent = 0);
    ~AppHandler();
    void exit();
-   bool isExiting() const;
 
 private slots:
    void onLastWindowClosed();

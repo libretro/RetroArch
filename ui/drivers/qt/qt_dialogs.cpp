@@ -1509,7 +1509,7 @@ void ShaderParamsDialog::onFilterComboBoxIndexChanged(int)
             if (video_shader)
                video_shader->pass[pass].filter = filter;
 
-            video_shader->modified = true;
+            video_shader->flags |= SHDR_FLAG_MODIFIED;
 
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
@@ -1553,19 +1553,25 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
          {
             if (menu_shader)
             {
-               menu_shader->pass[pass].fbo.scale_x = scale;
-               menu_shader->pass[pass].fbo.scale_y = scale;
-               menu_shader->pass[pass].fbo.valid = scale;
+               menu_shader->pass[pass].fbo.scale_x   = scale;
+               menu_shader->pass[pass].fbo.scale_y   = scale;
+               if (scale)
+                  menu_shader->pass[pass].fbo.flags |=  FBO_SCALE_FLAG_VALID;
+               else
+                  menu_shader->pass[pass].fbo.flags &= ~FBO_SCALE_FLAG_VALID;
             }
 
             if (video_shader)
             {
-               video_shader->pass[pass].fbo.scale_x = scale;
-               video_shader->pass[pass].fbo.scale_y = scale;
-               video_shader->pass[pass].fbo.valid = scale;
+               video_shader->pass[pass].fbo.scale_x   = scale;
+               video_shader->pass[pass].fbo.scale_y   = scale;
+               if (scale)
+                  video_shader->pass[pass].fbo.flags |=  FBO_SCALE_FLAG_VALID;
+               else
+                  video_shader->pass[pass].fbo.flags &= ~FBO_SCALE_FLAG_VALID;
             }
 
-            video_shader->modified = true;
+            video_shader->flags |= SHDR_FLAG_MODIFIED;
 
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
@@ -1643,7 +1649,7 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
       memcpy(&menu_shader->pass[pass + 1], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   menu_shader->modified = true;
+   menu_shader->flags |= SHDR_FLAG_MODIFIED;
 
    reload();
 }
@@ -1718,7 +1724,7 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
       memcpy(&menu_shader->pass[pass], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   menu_shader->modified = true;
+   menu_shader->flags |= SHDR_FLAG_MODIFIED;
 
    reload();
 }
@@ -1825,7 +1831,7 @@ void ShaderParamsDialog::onShaderResetPass(int pass)
          param->current = param->initial;
       }
 
-      video_shader->modified = true;
+      video_shader->flags |= SHDR_FLAG_MODIFIED;
    }
 
    reload();
@@ -1871,7 +1877,7 @@ void ShaderParamsDialog::onShaderResetParameter(QString parameter)
       if (param)
          param->current = param->initial;
 
-      video_shader->modified = true;
+      video_shader->flags |= SHDR_FLAG_MODIFIED;
    }
 
    reload();
@@ -1941,7 +1947,7 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    else
       return;
 
-   menu_shader->modified = true;
+   menu_shader->flags   |= SHDR_FLAG_MODIFIED;
    shader_pass           = &menu_shader->pass[menu_shader->passes - 1];
 
    if (!shader_pass)
@@ -2122,7 +2128,7 @@ void ShaderParamsDialog::onShaderRemoveAllPassesClicked()
       return;
 
    menu_shader->passes   = 0;
-   menu_shader->modified = true;
+   menu_shader->flags   |= SHDR_FLAG_MODIFIED;
 
    onShaderApplyClicked();
 }
@@ -2169,7 +2175,7 @@ void ShaderParamsDialog::onShaderRemovePass(int pass)
 
    menu_shader->passes--;
 
-   menu_shader->modified = true;
+   menu_shader->flags   |= SHDR_FLAG_MODIFIED;
 
    onShaderApplyClicked();
 }
@@ -2721,7 +2727,7 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
             param->current = (checkBox->isChecked() ? param->maximum : param->minimum);
       }
 
-      video_shader->modified = true;
+      video_shader->flags   |= SHDR_FLAG_MODIFIED;
    }
 }
 
@@ -2787,7 +2793,7 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
             param->current = newValue;
          }
 
-         video_shader->modified = true;
+         video_shader->flags   |= SHDR_FLAG_MODIFIED;
       }
 
    }
@@ -2895,7 +2901,7 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
             slider->blockSignals(false);
          }
 
-         video_shader->modified = true;
+         video_shader->flags   |= SHDR_FLAG_MODIFIED;
       }
    }
 }
@@ -2978,7 +2984,7 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
             slider->blockSignals(false);
          }
 
-         video_shader->modified = true;
+         video_shader->flags   |= SHDR_FLAG_MODIFIED;
       }
    }
 }

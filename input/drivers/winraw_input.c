@@ -413,9 +413,20 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
          getcursorpos = true;
 #endif
+      /* Input overlay with mouse cursor must also use GetCursorPos() */
+      if (!getcursorpos)
+      {
+         settings_t *settings = config_get_ptr();
+         if (     settings->bools.input_overlay_enable
+               && settings->bools.input_overlay_show_mouse_cursor)
+            getcursorpos = true;
+      }
 
       if (getcursorpos)
       {
+         InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX);
+         InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
+
          if (!GetCursorPos(&crs_pos))
             RARCH_DBG("[WinRaw]: GetCursorPos failed with error %lu.\n", GetLastError());
          else if (!ScreenToClient((HWND)video_driver_window_get(), &crs_pos))

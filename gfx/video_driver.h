@@ -1028,10 +1028,6 @@ struct retro_hw_render_callback *video_driver_get_hw_context(void);
 const struct retro_hw_render_context_negotiation_interface
 *video_driver_get_context_negotiation_interface(void);
 
-bool video_driver_is_video_cache_context(void);
-
-void video_driver_set_video_cache_context_ack(void);
-
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
 
 /**
@@ -1398,6 +1394,8 @@ void video_driver_set_viewport_config(
       bool video_aspect_ratio_auto);
 
 void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom);
+
+uint32_t video_driver_get_st_flags(void);
 
 bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled);
 

@@ -127,8 +127,18 @@
 /* Settings > Input > Menu Controls */
 
 
-
 /* Settings > Input > Hotkeys */
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* Settings > Input > Port # Controls */

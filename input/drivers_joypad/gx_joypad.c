@@ -15,6 +15,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <math.h>
+
 #include <gccore.h>
 #include <ogc/pad.h>
 #ifdef HW_RVL
@@ -23,6 +26,8 @@
 
 #include "../../config.def.h"
 
+#include "../input_driver.h"
+#include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
 #ifdef GEKKO

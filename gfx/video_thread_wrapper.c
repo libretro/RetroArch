@@ -117,8 +117,8 @@ static void thread_update_driver_state(thread_video_t *thr)
    {
       if (thr->driver_data && thr->overlay && thr->overlay->set_alpha)
       {
-         unsigned i;
-         for (i = 0; i < thr->alpha_mods; i++)
+         int i;
+         for (i = 0; i < (int)thr->alpha_mods; i++)
             thr->overlay->set_alpha(thr->driver_data, i, thr->alpha_mod[i]);
       }
       thr->alpha_update = false;
@@ -152,9 +152,7 @@ static bool video_thread_handle_packet(
                thr->driver->viewport_info(thr->driver_data, &thr->vp);
          }
          else
-         {
             thr->driver_data = NULL;
-         }
          pkt.data.b = (thr->driver_data != NULL);
          video_thread_reply(thr, &pkt);
          break;
@@ -176,7 +174,14 @@ static bool video_thread_handle_packet(
          if (thr->driver_data && thr->driver &&
                thr->driver->viewport_info && thr->driver->read_viewport)
          {
-            struct video_viewport vp = {0};
+            struct video_viewport vp;
+
+            vp.x           = 0;
+            vp.y           = 0;
+            vp.width       = 0;
+            vp.height      = 0;
+            vp.full_width  = 0;
+            vp.full_height = 0;
 
             thr->driver->viewport_info(thr->driver_data, &vp);
             if (!memcmp(&vp, &thr->read_vp, sizeof(vp)))
@@ -206,9 +211,7 @@ static bool video_thread_handle_packet(
             }
          }
          else
-         {
             pkt.data.b = false;
-         }
          video_thread_reply(thr, &pkt);
          break;
 
@@ -253,8 +256,8 @@ static bool video_thread_handle_packet(
                if (tmp_alpha_mod)
                {
                   /* Avoid temporary garbage data. */
-                  unsigned i;
-                  for (i = 0; i < tmp_alpha_mods; i++)
+                  int i;
+                  for (i = 0; i < (int)tmp_alpha_mods; i++)
                      tmp_alpha_mod[i] = 1.0f;
                   thr->alpha_mods = tmp_alpha_mods;
                   thr->alpha_mod  = tmp_alpha_mod;
@@ -422,7 +425,7 @@ static void video_thread_loop(void *data)
 
       /* To avoid race condition where send_cmd is updated
        * right after the switch is checked. */
-      pkt = thr->cmd_data;
+      pkt     = thr->cmd_data;
 
       slock_unlock(thr->lock);
 
@@ -431,10 +434,17 @@ static void video_thread_loop(void *data)
 
       if (updated)
       {
+         struct video_viewport vp;
          bool               alive = false;
          bool               focus = false;
          bool        has_windowed = false;
-         struct video_viewport vp = {0};
+
+         vp.x                     = 0;
+         vp.y                     = 0;
+         vp.width                 = 0;
+         vp.height                = 0;
+         vp.full_width            = 0;
+         vp.full_height           = 0;
 
          slock_lock(thr->frame.lock);
 
@@ -591,7 +601,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    {
       retro_time_t target_frame_time =
          (retro_time_t)roundf(1000000 / video_info->refresh_rate);
-      retro_time_t target = thr->last_time + target_frame_time;
+      retro_time_t target            = thr->last_time + target_frame_time;
 
       /* Ideally, use absolute time, but that is only a good idea on POSIX. */
       while (thr->frame.updated)
@@ -618,8 +628,8 @@ static bool video_thread_frame(void *data, const void *frame_,
 
       if (src)
       {
-         unsigned h;
-         for (h = 0; h < height; h++, src += pitch, dst += copy_stride)
+         int i; /* TODO/FIXME - increment counter never meaningfully used */
+         for (i = 0; i < (int)height; i++, src += pitch, dst += copy_stride)
             memcpy(dst, src, copy_stride);
       }
 
@@ -673,20 +683,15 @@ static bool video_thread_init(thread_video_t *thr,
 {
    thread_packet_t pkt;
 
-   thr->lock                 = slock_new();
-   if (!thr->lock)
+   if (!(thr->lock        = slock_new()))
       return false;
-   thr->alpha_lock           = slock_new();
-   if (!thr->alpha_lock)
+   if (!(thr->alpha_lock  = slock_new()))
       return false;
-   thr->frame.lock           = slock_new();
-   if (!thr->frame.lock)
+   if (!(thr->frame.lock  = slock_new()))
       return false;
-   thr->cond_cmd             = scond_new();
-   if (!thr->cond_cmd)
+   if (!(thr->cond_cmd    = scond_new()))
       return false;
-   thr->cond_thread          = scond_new();
-   if (!thr->cond_thread)
+   if (!(thr->cond_thread = scond_new()))
       return false;
 
    {
@@ -715,8 +720,7 @@ static bool video_thread_init(thread_video_t *thr,
    thr->suppress_screensaver = true;
    thr->last_time            = cpu_features_get_time_usec();
 
-   thr->thread               = sthread_create(video_thread_loop, thr);
-   if (!thr->thread)
+   if (!(thr->thread = sthread_create(video_thread_loop, thr)))
       return false;
 
    pkt.type                  = CMD_INIT;

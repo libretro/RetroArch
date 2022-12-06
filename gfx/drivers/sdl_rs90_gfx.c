@@ -724,7 +724,7 @@ static void sdl_rs90_gfx_free(void *data)
 }
 
 static void sdl_rs90_input_driver_init(
-      const char *input_driver_name, const char *joypad_driver_name,
+      const char *input_drv_name, const char *joypad_drv_name,
       input_driver_t **input, void **input_data)
 {
    /* Sanity check */
@@ -736,13 +736,13 @@ static void sdl_rs90_input_driver_init(
 
    /* If input driver name is empty, cannot
     * initialise anything... */
-   if (string_is_empty(input_driver_name))
+   if (string_is_empty(input_drv_name))
       return;
 
-   if (string_is_equal(input_driver_name, "sdl_dingux"))
+   if (string_is_equal(input_drv_name, "sdl_dingux"))
    {
       *input_data = input_driver_init_wrap(&input_sdl_dingux,
-            joypad_driver_name);
+            joypad_drv_name);
 
       if (*input_data)
          *input = &input_sdl_dingux;
@@ -751,10 +751,10 @@ static void sdl_rs90_input_driver_init(
    }
 
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
-   if (string_is_equal(input_driver_name, "sdl"))
+   if (string_is_equal(input_drv_name, "sdl"))
    {
       *input_data = input_driver_init_wrap(&input_sdl,
-            joypad_driver_name);
+            joypad_drv_name);
 
       if (*input_data)
          *input = &input_sdl;
@@ -764,10 +764,10 @@ static void sdl_rs90_input_driver_init(
 #endif
 
 #if defined(HAVE_UDEV)
-   if (string_is_equal(input_driver_name, "udev"))
+   if (string_is_equal(input_drv_name, "udev"))
    {
       *input_data = input_driver_init_wrap(&input_udev,
-            joypad_driver_name);
+            joypad_drv_name);
 
       if (*input_data)
          *input = &input_udev;
@@ -777,10 +777,10 @@ static void sdl_rs90_input_driver_init(
 #endif
 
 #if defined(__linux__)
-   if (string_is_equal(input_driver_name, "linuxraw"))
+   if (string_is_equal(input_drv_name, "linuxraw"))
    {
       *input_data = input_driver_init_wrap(&input_linuxraw,
-            joypad_driver_name);
+            joypad_drv_name);
 
       if (*input_data)
          *input = &input_linuxraw;
@@ -803,8 +803,8 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
    bool refresh_rate_valid                       = false;
    float hw_refresh_rate                         = 0.0f;
 #endif
-   const char *input_driver_name                 = settings->arrays.input_driver;
-   const char *joypad_driver_name                = settings->arrays.input_joypad_driver;
+   const char *input_drv_name                    = settings->arrays.input_driver;
+   const char *joypad_drv_name                   = settings->arrays.input_joypad_driver;
    uint32_t surface_flags                        = (video->vsync) ?
          SDL_RS90_SURFACE_FLAGS_VSYNC_ON :
          SDL_RS90_SURFACE_FLAGS_VSYNC_OFF;
@@ -899,8 +899,8 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
 
    SDL_ShowCursor(SDL_DISABLE);
 
-   sdl_rs90_input_driver_init(input_driver_name,
-         joypad_driver_name, input, input_data);
+   sdl_rs90_input_driver_init(input_drv_name,
+         joypad_drv_name, input, input_data);
 
    /* Initialise OSD font */
    sdl_rs90_init_font_color(vid);
@@ -1078,7 +1078,7 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
     * - Menu is inactive and input 'content' frame
     *   data is NULL (may happen when e.g. a running
     *   core skips a frame) */
-   if (unlikely(!vid || (!frame && !vid->menu_active)))
+   if (unlikely(!vid))
       return true;
 
    /* If fast forward is currently active, we may
@@ -1122,13 +1122,16 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
 
       if (likely(vid->mode_valid))
       {
-         /* Blit frame to SDL surface */
-         if (vid->rgb32)
-            sdl_rs90_blit_frame32(vid, (uint32_t*)frame,
-                  width, height, pitch);
-         else
-            sdl_rs90_blit_frame16(vid, (uint16_t*)frame,
-                  width, height, pitch);
+         if (likely(frame))
+         {
+            /* Blit frame to SDL surface */
+            if (vid->rgb32)
+               sdl_rs90_blit_frame32(vid, (uint32_t*)frame,
+                     width, height, pitch);
+            else
+               sdl_rs90_blit_frame16(vid, (uint16_t*)frame,
+                     width, height, pitch);
+         }
       }
       /* If current display mode is invalid,
        * just display an error message */

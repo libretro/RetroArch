@@ -29,7 +29,7 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <rthreads/rthreads.h>
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
 #include <dynamic/dylib.h>
 #endif
 #include <string/stdstring.h>
@@ -751,13 +751,12 @@ static CFRunLoopSourceRef btstack_quit_source;
 
 static void *btstack_get_handle(void)
 {
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    void *handle = dylib_load("/usr/lib/libBTstack.dylib");
 
    if (handle)
       return handle;
 #endif
-
    return NULL;
 }
 
@@ -1246,7 +1245,7 @@ static void btpad_packet_handler(uint8_t packet_type,
 
 static bool btstack_try_load(void)
 {
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    unsigned i;
 #endif
    void *handle   = NULL;
@@ -1262,7 +1261,7 @@ static bool btstack_try_load(void)
    if (!handle)
       return false;
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    for (i = 0; grabbers[i].name; i ++)
    {
       *grabbers[i].target = dylib_proc(handle, grabbers[i].name);

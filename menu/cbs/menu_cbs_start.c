@@ -127,7 +127,7 @@ static int action_start_video_filter_file_load(
    settings_t *settings = config_get_ptr();
 
    if (!settings)
-      return menu_cbs_exit();
+      return -1;
 
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
    {
@@ -152,7 +152,7 @@ static int action_start_audio_dsp_plugin_file_load(
    settings_t *settings = config_get_ptr();
 
    if (!settings)
-      return menu_cbs_exit();
+      return -1;
 
    if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
    {
@@ -302,7 +302,7 @@ static int action_start_shader_pass(
    menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
 
    if (!menu)
-      return menu_cbs_exit();
+      return -1;
 
    menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
 
@@ -465,6 +465,23 @@ static int action_start_state_slot(
 
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+
+   return 0;
+}
+
+static int action_start_menu_wallpaper(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings       = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   settings->paths.path_menu_wallpaper[0] = '\0';
+
+   /* Reset wallpaper by menu context reset */
+   if (menu_st->driver_ctx && menu_st->driver_ctx->context_reset)
+      menu_st->driver_ctx->context_reset(menu_st->userdata,
+            video_driver_is_threaded());
 
    return 0;
 }
@@ -811,6 +828,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
 #endif
          case MENU_ENUM_LABEL_STATE_SLOT:
             BIND_ACTION_START(cbs, action_start_state_slot);
+            break;
+         case MENU_ENUM_LABEL_MENU_WALLPAPER:
+            BIND_ACTION_START(cbs, action_start_menu_wallpaper);
             break;
          default:
             return -1;

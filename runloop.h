@@ -360,11 +360,7 @@ void runloop_set_current_core_type(
  **/
 int runloop_iterate(void);
 
-void runloop_perf_log(void);
-
 void runloop_system_info_free(void);
-
-bool runloop_path_init_subsystem(void);
 
 /**
  * libretro_get_system_info:
@@ -429,15 +425,7 @@ void runloop_task_msg_queue_push(
       unsigned prio, unsigned duration,
       bool flush);
 
-void runloop_frame_time_free(void);
-
-void runloop_fastmotion_override_free(void);
-
-void runloop_audio_buffer_status_free(void);
-
 bool secondary_core_ensure_exists(settings_t *settings);
-
-void runloop_core_options_cb_free(void);
 
 void runloop_log_counters(
       struct retro_perf_counter **counters, unsigned num);
@@ -448,15 +436,13 @@ void runloop_msg_queue_deinit(void);
 
 void runloop_msg_queue_init(void);
 
-void runloop_path_init_savefile(void);
-
 void runloop_path_set_basename(const char *path);
-
-void runloop_path_init_savefile(void);
 
 void runloop_path_set_names(void);
 
 uint32_t runloop_get_flags(void);
+
+void runloop_state_free(runloop_state_t *runloop_st);
 
 runloop_state_t *runloop_state_get_ptr(void);
 

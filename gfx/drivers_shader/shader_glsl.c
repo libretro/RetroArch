@@ -1041,14 +1041,14 @@ static void *gl_glsl_init(void *data, const char *path)
          if (is_preset)
          {
             ret = video_shader_load_preset_into_shader(path, glsl->shader);
-            glsl->shader->modern = true;
+            glsl->shader->flags |= SHDR_FLAG_MODERN;
          }
          else
          {
             strlcpy(glsl->shader->pass[0].source.path, path,
                   sizeof(glsl->shader->pass[0].source.path));
             glsl->shader->passes = 1;
-            glsl->shader->modern = true;
+            glsl->shader->flags |= SHDR_FLAG_MODERN;
             ret = true;
          }
 
@@ -1071,7 +1071,7 @@ static void *gl_glsl_init(void *data, const char *path)
          glsl->shader->pass[0].source.string.fragment =
             strdup(glsl_core ? stock_fragment_core : stock_fragment_modern);
 #endif
-         glsl->shader->modern = true;
+         glsl->shader->flags |= SHDR_FLAG_MODERN;
       }
    }
 
@@ -1079,9 +1079,9 @@ static void *gl_glsl_init(void *data, const char *path)
     stock_vertex = stock_vertex_modern;
     stock_fragment = stock_fragment_modern;
 #else
-   stock_vertex = (glsl->shader->modern) ?
+   stock_vertex = (glsl->shader->flags & SHDR_FLAG_MODERN) ?
       stock_vertex_modern : stock_vertex_legacy;
-   stock_fragment = (glsl->shader->modern) ?
+   stock_fragment = (glsl->shader->flags & SHDR_FLAG_MODERN) ?
       stock_fragment_modern : stock_fragment_legacy;
 
    if (glsl_core)
@@ -1092,13 +1092,14 @@ static void *gl_glsl_init(void *data, const char *path)
 #endif
 
 #ifdef HAVE_OPENGLES
-   if (!glsl->shader->modern)
+   if (!(glsl->shader->flags & SHDR_FLAG_MODERN))
    {
       RARCH_ERR("[GL]: GLES context is used, but shader is not modern. Cannot use it.\n");
       goto error;
    }
 #else
-   if (glsl_core && !glsl->shader->modern)
+   if (      glsl_core 
+         && (!(glsl->shader->flags & SHDR_FLAG_MODERN)))
    {
       RARCH_ERR("[GL]: GL core context is used, but shader is not core compatible. Cannot use it.\n");
       goto error;
@@ -1156,7 +1157,7 @@ static void *gl_glsl_init(void *data, const char *path)
    glsl->prg[glsl->shader->passes  + 1]     = glsl->prg[0];
    glsl->uniforms[glsl->shader->passes + 1] = glsl->uniforms[0];
 
-   if (glsl->shader->modern)
+   if (glsl->shader->flags & SHDR_FLAG_MODERN)
    {
 #if defined(VITA)
       shader_prog_info.vertex   = stock_vertex_modern_blend;
@@ -1519,7 +1520,8 @@ static bool gl_glsl_set_mvp(void *shader_data, const void *mat_data)
    int loc;
    glsl_shader_data_t *glsl   = (glsl_shader_data_t*)shader_data;
 
-   if (!glsl || !glsl->shader->modern)
+   if (      !glsl 
+         || (!(glsl->shader->flags & SHDR_FLAG_MODERN)))
       return false;
 
    loc = glsl->uniforms[glsl->active_idx].mvp;
@@ -1562,7 +1564,9 @@ static bool gl_glsl_set_coords(void *shader_data,
    const struct shader_uniforms *uni = glsl
       ? &glsl->uniforms[glsl->active_idx] : NULL;
 
-   if (!glsl || !glsl->shader->modern || !coords)
+   if (     !glsl 
+         || (!(glsl->shader->flags & SHDR_FLAG_MODERN))
+         || !coords)
    {
       if (coords)
          return false;
@@ -1689,9 +1693,9 @@ static void gl_glsl_shader_scale(void *data, unsigned idx, struct gfx_fbo_scale 
 {
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)data;
    if (glsl && idx)
-      *scale = glsl->shader->pass[idx - 1].fbo;
+      *scale        = glsl->shader->pass[idx - 1].fbo;
    else
-      scale->valid = false;
+      scale->flags &= ~FBO_SCALE_FLAG_VALID;
 }
 
 static unsigned gl_glsl_get_prev_textures(void *data)

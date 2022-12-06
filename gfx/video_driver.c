@@ -269,17 +269,17 @@ const video_driver_t *video_drivers[] = {
 #ifdef HAVE_VITA2D
    &video_vita2d,
 #endif
-#ifdef HAVE_OPENGL
-   &video_gl2,
+#ifdef HAVE_VULKAN
+   &video_vulkan,
 #endif
 #if defined(HAVE_OPENGL_CORE)
    &video_gl3,
 #endif
+#ifdef HAVE_OPENGL
+   &video_gl2,
+#endif
 #ifdef HAVE_OPENGL1
    &video_gl1,
-#endif
-#ifdef HAVE_VULKAN
-   &video_vulkan,
 #endif
 #ifdef HAVE_METAL
    &video_metal,
@@ -1510,7 +1510,7 @@ VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
 
    command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 
-   if (!video_driver_is_video_cache_context())
+   if (!(video_st->flags & VIDEO_FLAG_CACHE_CONTEXT))
       video_driver_free_hw_context();
 
    if (!(input_st->current_data == video_st->data))
@@ -1783,7 +1783,7 @@ float *video_driver_get_hdr_paper_white_float(void)
 {
    static float paper_white[4] = { 0.5f, 0.5f, 0.5f, 1.0f};
    static float sdr_white  [4] = { 1.0f, 1.0f, 1.0f, 1.0f};
-   if(      video_driver_supports_hdr() 
+   if (     video_driver_supports_hdr() 
          && config_get_ptr()->bools.video_hdr_enable)
       return paper_white;
    return sdr_white;
@@ -1797,7 +1797,7 @@ float *video_driver_get_hdr_paper_white_float(void)
 float video_driver_get_hdr_luminance(float nits)
 {
    settings_t *settings                = config_get_ptr();
-   if(video_driver_supports_hdr() && settings->bools.video_hdr_enable)
+   if (video_driver_supports_hdr() && settings->bools.video_hdr_enable)
    {
       float luminance = nits / 
          settings->floats.video_hdr_paper_white_nits;
@@ -1812,7 +1812,7 @@ float video_driver_get_hdr_luminance(float nits)
  * after inverse tonemapping has been applied */
 unsigned video_driver_get_hdr_color(unsigned color)
 {
-   if(   video_driver_supports_hdr() 
+   if (  video_driver_supports_hdr() 
       && config_get_ptr()->bools.video_hdr_enable)
    {
       float luminance;
@@ -2457,18 +2457,6 @@ const struct retro_hw_render_context_negotiation_interface *
    return video_st->hw_render_context_negotiation;
 }
 
-bool video_driver_is_video_cache_context(void)
-{
-   video_driver_state_t *video_st = &video_driver_st;
-   return ((video_st->flags & VIDEO_FLAG_CACHE_CONTEXT) > 0);
-}
-
-void video_driver_set_video_cache_context_ack(void)
-{
-   video_driver_state_t *video_st = &video_driver_st;
-   video_st->flags               |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
-}
-
 bool video_driver_get_viewport_info(struct video_viewport *viewport)
 {
    video_driver_state_t *video_st  = &video_driver_st;
@@ -2665,7 +2653,7 @@ void video_driver_cached_frame(void)
    /* Cannot allow recording when pushing duped frames. */
    recording_st->data             = NULL;
 
-   if (runloop_st->current_core.inited)
+   if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
       cbs->frame_cb(
             (video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
             ? video_st->frame_cache_data 
@@ -2813,7 +2801,8 @@ VIDEO_FLAG_WIDGETS_FAST_FORWARD;
       settings->floats.menu_framebuffer_opacity;
    video_info->overlay_behind_menu         = settings->bools.input_overlay_behind_menu;
 
-   video_info->libretro_running            = runloop_st->current_core.game_loaded;
+   video_info->libretro_running            = runloop_st->current_core.flags &
+RETRO_CORE_FLAG_GAME_LOADED;
 #else
    video_info->menu_is_alive               = false;
    video_info->menu_screensaver_active     = false;
@@ -3041,14 +3030,7 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
    if (!video_st->context_data)
       return false;
 
-   if (!(video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE))
-   {
-      if (refresh_rate)
-         *refresh_rate =
-             video_st->current_video_context.get_refresh_rate(
-                   video_st->context_data);
-   }
-   else
+   if (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
    {
       float refresh_holder      = 0;
       if (refresh_rate)
@@ -3060,6 +3042,13 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
        * HARD SET VSYNC TO REQUIRED REFRESH FOR CRT*/
       if (refresh_holder != video_st->core_hz)
          *refresh_rate          = video_st->core_hz;
+   }
+   else
+   {
+      if (refresh_rate)
+         *refresh_rate =
+             video_st->current_video_context.get_refresh_rate(
+                   video_st->context_data);
    }
 
    return true;
@@ -3082,8 +3071,7 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
 
    if (video_st->flags & VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS)
    {
-      flags->flags                                     =
-         video_st->deferred_flag_data.flags;
+      flags->flags     = video_st->deferred_flag_data.flags;
       video_st->flags &= ~VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS;
       return true;
    }
@@ -3141,16 +3129,17 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
    if (!flags)
       return false;
 
-   if (video_st->current_video_context.set_flags)
+   if (!video_st->current_video_context.set_flags)
    {
-      video_st->current_video_context.set_flags(
-            video_st->context_data, flags->flags);
-      return true;
+      video_st->deferred_flag_data.flags  = flags->flags;
+      video_st->flags |= VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS;
+      return false;
    }
 
-   video_st->deferred_flag_data.flags                = flags->flags;
-   video_st->flags |= VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS;
-   return false;
+   video_st->current_video_context.set_flags(
+		   video_st->context_data, flags->flags);
+   return true;
+
 }
 
 enum gfx_ctx_api video_context_driver_get_api(void)
@@ -3290,7 +3279,9 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #ifdef HAVE_VIDEO_FILTER
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
 
-   if (!string_is_empty(path_softfilter_plugin))
+   /* Init video filter only when game is running */
+   if ((runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED) &&
+         !string_is_empty(path_softfilter_plugin))
       video_driver_init_filter(video_driver_pix_fmt, settings);
 #endif
 
@@ -3572,7 +3563,7 @@ VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
    }
 #endif
 
-   if (!runloop_st->current_core.game_loaded)
+   if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
       video_driver_cached_frame_set(&dummy_pixels, 4, 4, 8);
 
 #if defined(PSP)
@@ -4185,12 +4176,12 @@ void video_driver_reinit(int flags)
    struct retro_hw_render_callback *hwr    =
       VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
    if (hwr->cache_context != false)
-	   video_st->flags    |=  VIDEO_FLAG_CACHE_CONTEXT;
+	   video_st->flags                     |=  VIDEO_FLAG_CACHE_CONTEXT;
    else
-	   video_st->flags    &= ~VIDEO_FLAG_CACHE_CONTEXT;
-   video_st->flags            &= ~VIDEO_FLAG_CACHE_CONTEXT_ACK;
+	   video_st->flags                     &= ~VIDEO_FLAG_CACHE_CONTEXT;
+   video_st->flags                        &= ~VIDEO_FLAG_CACHE_CONTEXT_ACK;
    video_driver_reinit_context(settings, flags);
-   video_st->flags            &= ~VIDEO_FLAG_CACHE_CONTEXT;
+   video_st->flags                        &= ~VIDEO_FLAG_CACHE_CONTEXT;
 }
 
 #define FRAME_DELAY_AUTO_DEBUG 0
@@ -4289,17 +4280,17 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
          mode = 3;
       /* Boost med/max spikes */
       else if (
-               frame_time_count_pos >= frame_time_frames_half
+               (  frame_time_count_pos >= frame_time_frames_half)
             && (  frame_time_count_max > 0
                || frame_time_count_med > 1)
-            && frame_time_count_max == frame_time_count_med
-            && frame_time_delta < frame_time_target
+            && (  frame_time_count_max == frame_time_count_med)
+            && (  frame_time_delta < frame_time_target)
          )
          mode = 4;
       /* Ignore */
       else if (
-               frame_time_delta > frame_time_target
-            && frame_time_count_med == 0
+               (frame_time_delta > frame_time_target)
+            && (frame_time_count_med == 0)
          )
          mode = -1;
 
@@ -4357,4 +4348,10 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
             video_st->frame_time_samples[frame_time_index - 8]
       );
 #endif
+}
+
+uint32_t video_driver_get_st_flags(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   return video_st->flags;
 }

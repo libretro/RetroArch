@@ -233,7 +233,7 @@ void word_wrap(
 
    /* Early return if src string length is less
     * than line width */
-   if (src_len < line_width)
+   if (src_len < (size_t)line_width)
    {
       strlcpy(dst, src, dst_size);
       return;

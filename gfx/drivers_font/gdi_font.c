@@ -33,7 +33,6 @@
 
 #include "../font_driver.h"
 #include "../../configuration.h"
-#include "../../verbosity.h"
 
 typedef struct
 {
@@ -56,10 +55,7 @@ static void *gdi_font_init(void *data,
    if (!font_renderer_create_default(
             &font->font_driver,
             &font->font_data, font_path, font_size))
-   {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
       return NULL;
-   }
 
    return font;
 }
@@ -83,7 +79,7 @@ static void gdi_font_render_msg(
       const char *msg,
       const struct font_params *params)
 {
-   int i;
+   size_t i;
    char* msg_local;
    size_t msg_len;
    float x, y, scale, drop_mod, drop_alpha;

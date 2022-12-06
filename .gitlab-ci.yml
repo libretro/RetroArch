@@ -47,6 +47,7 @@ build-retroarch-windows-x64:
         --enforcedir /usr/lib/mxe/usr/x86_64-w64-mingw32.shared/qt5/plugins/styles/
         --copy
         --objdump x86_64-w64-mingw32.shared-objdump"
+    - "cp -f nvdaControllerClient64.dll ${MEDIA_PATH}/${CI_PROJECT_NAME}/redist/nvdaControllerClient64.dll"
     - "rm -f ${MEDIA_PATH}/${CI_PROJECT_NAME}/redist/opengl32.dll"
 
 build-retroarch-windows-i686:
@@ -661,6 +662,50 @@ build-static-retroarch-dummy-libnx-aarch64:
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "cp -f pkg/libnx/retroarch.jpg ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
 
+build-static-retroarch-psp:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psp:latest
+  stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch-precompiled/
+    expire_in: 10 min
+  dependencies: []
+  needs:
+    # Dummy build requires no core
+    - build-static-retroarch-dummy-psp
+  script:
+    # We need to boostrap before compile
+    - "(cd bootstrap/psp1/kernel_functions_prx/ && make && cd -)"
+    # Allow failure since we don't have a core
+    - "make -f Makefile.psp1 -j$NUMPROC ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
+build-static-retroarch-dummy-psp:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psp:latest
+  stage: build
+  variables:
+    MEDIA_PATH: .media
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    - EBOOT.PBP
+    - kernel_functions.prx
+    - ${MEDIA_PATH}
+    expire_in: 10 min
+  dependencies: []
+  script:
+    - "(cd bootstrap/psp1/kernel_functions_prx/ && make && cd -)"
+    - "make -f Makefile.psp1.salamander -j$NUMPROC"
+    - "make -C bootstrap/psp1/kernel_functions_prx/"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f pkg/psp1/ICON0.PNG ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f pkg/psp1/PIC1.PNG ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+
 build-static-retroarch-vita:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-vita:latest
   stage: prepare-for-static-cores
@@ -774,8 +819,8 @@ build-static-retroarch-dummy-psl1ght:
   script:
     - "make -f Makefile.psl1ght.salamander -j$NUMPROC create-salamander"
 
-build-static-retroarch-psp:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psp:latest
+build-static-retroarch-orbis:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-orbis:latest
   stage: prepare-for-static-cores
   before_script:
     - export NUMPROC=$(($(nproc)/3))
@@ -786,37 +831,26 @@ build-static-retroarch-psp:
   dependencies: []
   needs:
     # Dummy build requires no core
-    - build-static-retroarch-dummy-psp
+    - build-static-retroarch-dummy-orbis
   script:
-    # We need to boostrap before compile
-    - "(cd bootstrap/psp1/kernel_functions_prx/ && make && cd -)"
     # Allow failure since we don't have a core
-    - "make -f Makefile.psp1 -j$NUMPROC ||:"
+    - "make -f Makefile.orbis -j$NUMPROC ||:"
     - "mkdir .retroarch-precompiled"
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
 
-build-static-retroarch-dummy-psp:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psp:latest
+build-static-retroarch-dummy-orbis:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-orbis:latest
   stage: build
-  variables:
-    MEDIA_PATH: .media
   before_script:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
-    - EBOOT.PBP
-    - kernel_functions.prx
-    - ${MEDIA_PATH}
+    -  retroarch_orbis.self
     expire_in: 10 min
   dependencies: []
   script:
-    - "(cd bootstrap/psp1/kernel_functions_prx/ && make && cd -)"
-    - "make -f Makefile.psp1.salamander -j$NUMPROC"
-    - "make -C bootstrap/psp1/kernel_functions_prx/"
-    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
-    - "cp -f pkg/psp1/ICON0.PNG ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
-    - "cp -f pkg/psp1/PIC1.PNG ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "make -f Makefile.orbis -j$NUMPROC HAVE_STATIC_DUMMY=1"
 
 build-static-retroarch-djgpp:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-djgpp-build-container:latest
@@ -1077,10 +1111,11 @@ trigger_static-cores:
   stage: trigger-static-cores
   needs:
   - build-static-retroarch-libnx-aarch64
+  - build-static-retroarch-psp
   - build-static-retroarch-vita
   - build-static-retroarch-ps2
   - build-static-retroarch-psl1ght
-  - build-static-retroarch-psp
+  - build-static-retroarch-orbis
   - build-static-retroarch-ctr
   - build-static-retroarch-ctr-legacy
   - build-static-retroarch-wiiu
