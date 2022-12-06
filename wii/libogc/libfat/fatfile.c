@@ -64,7 +64,7 @@ bool _FAT_findEntry(const char *path, DIR_ENTRY *dirEntry) {
 
 }
 
-int	FAT_getAttr(const char *file) {
+int   FAT_getAttr(const char *file) {
 	DIR_ENTRY dirEntry;
 	if (!_FAT_findEntry(file,&dirEntry)) return -1;
 

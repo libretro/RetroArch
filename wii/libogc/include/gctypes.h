@@ -53,15 +53,15 @@ typedef unsigned int BOOL;
 #define FIXED s32					///< Alias type for sfp32
 /*+----------------------------------------------------------------------------------------------+*/
 #ifndef TRUE
-#define TRUE	1					///< True
+#define TRUE   1					///< True
 #endif
 /*+----------------------------------------------------------------------------------------------+*/
 #ifndef FALSE
-#define FALSE	0					///< False
+#define FALSE   0					///< False
 #endif
 /*+----------------------------------------------------------------------------------------------+*/
 #ifndef NULL
-#define NULL	0					///< Pointer to 0
+#define NULL   0					///< Pointer to 0
 #endif
 /*+----------------------------------------------------------------------------------------------+*/
 #ifndef LITTLE_ENDIAN

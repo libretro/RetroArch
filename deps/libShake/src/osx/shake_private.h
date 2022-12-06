@@ -13,7 +13,7 @@
 #define BITS_TO_LONGS(x) \
 	(((x) + 8 * sizeof (unsigned long) - 1) / (8 * sizeof (unsigned long)))
 
-#define OSX_PERIODIC_PHASE_MAX	0x8C9F
+#define OSX_PERIODIC_PHASE_MAX   0x8C9F
 
 typedef union TypeSpecificParams
 {

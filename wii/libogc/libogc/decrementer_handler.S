@@ -59,21 +59,21 @@ distribution.
 
 #define EXCEPTION_EPILOG			\
 	lwz		r4,GQR0_OFFSET(sp);		\
-	mtspr	912,r4;					\
+	mtspr   912,r4;					\
 	lwz		r4,GQR1_OFFSET(sp);		\
-	mtspr	913,r4;					\
+	mtspr   913,r4;					\
 	lwz		r4,GQR2_OFFSET(sp);		\
-	mtspr	914,r4;					\
+	mtspr   914,r4;					\
 	lwz		r4,GQR3_OFFSET(sp);		\
-	mtspr	915,r4;					\
+	mtspr   915,r4;					\
 	lwz		r4,GQR4_OFFSET(sp);		\
-	mtspr	916,r4;					\
+	mtspr   916,r4;					\
 	lwz		r4,GQR5_OFFSET(sp);		\
-	mtspr	917,r4;					\
+	mtspr   917,r4;					\
 	lwz		r4,GQR6_OFFSET(sp);		\
-	mtspr	918,r4;					\
+	mtspr   918,r4;					\
 	lwz		r4,GQR7_OFFSET(sp);		\
-	mtspr	919,r4;					\
+	mtspr   919,r4;					\
 	lwz		r15,GPR15_OFFSET(sp);	\
 	lwz		r14,GPR14_OFFSET(sp);	\
 	lwz		r13,GPR13_OFFSET(sp);	\
@@ -87,47 +87,47 @@ distribution.
 	lwz		r5,GPR5_OFFSET(sp)
 
 	.extern c_decrementer_handler
-	.globl	dec_exceptionhandler
+	.globl   dec_exceptionhandler
 dec_exceptionhandler:
-	stwu	sp,-EXCEPTION_FRAME_END(sp)		//now we're able to adjust the stackpointer with it's cached address
+	stwu   sp,-EXCEPTION_FRAME_END(sp)		//now we're able to adjust the stackpointer with it's cached address
 
 	EXCEPTION_PROLOG
 
-	mfmsr	r3
+	mfmsr   r3
 	ori		r3,r3,MSR_RI
-	mtmsr	r3
+	mtmsr   r3
 	isync
 
-	addi	r14,sp,0
+	addi   r14,sp,0
 	lis		r15,_thread_dispatch_disable_level@ha
 
-	mfspr	r3,SPRG0
-	cmpwi	r3,0
+	mfspr   r3,SPRG0
+	cmpwi   r3,0
 	bne		nested
-	mfspr	sp,SPRG1
+	mfspr   sp,SPRG1
 
 nested:
-	addi	r3,r3,1
+	addi   r3,r3,1
 	lwz		r6,_thread_dispatch_disable_level@l(r15)
-	mtspr	SPRG0,r3
-	addi	r6,r6,1
+	mtspr   SPRG0,r3
+	addi   r6,r6,1
 	stw		r6,_thread_dispatch_disable_level@l(r15)
 
-	addi	r3,r14,0x08
+	addi   r3,r14,0x08
 	bl		c_decrementer_handler
 
-	mfspr	r4,SPRG0
+	mfspr   r4,SPRG0
 	lwz		r3,_thread_dispatch_disable_level@l(r15)
-	addi	r4,r4,-1
+	addi   r4,r4,-1
 	addic.	r3,r3,-1
-	mtspr	SPRG0,r4
+	mtspr   SPRG0,r4
 	stw		r3,_thread_dispatch_disable_level@l(r15)
-	addi	sp,r14,0
+	addi   sp,r14,0
 	bne		easy_exit
 
 	lis		r4,_context_switch_want@ha
 	lwz		r5,_context_switch_want@l(r4)
-	cmpwi	r5,0
+	cmpwi   r5,0
 	beq		easy_exit
 
 switch:
@@ -135,31 +135,31 @@ switch:
 
 easy_exit:
 	lwz		r4,CR_OFFSET(sp)
-	mtcr	r4
+	mtcr   r4
 	lwz		r4,LR_OFFSET(sp)
-	mtlr	r4
+	mtlr   r4
 	lwz		r4,CTR_OFFSET(sp)
-	mtctr	r4
+	mtctr   r4
 	lwz		r4,XER_OFFSET(sp)
-	mtxer	r4
+	mtxer   r4
 
 	EXCEPTION_EPILOG
 
-	mfmsr	r4
-	rlwinm	r4,r4,0,31,29
-	mtmsr	r4
+	mfmsr   r4
+	rlwinm   r4,r4,0,31,29
+	mtmsr   r4
 	isync
 
 	lwz		r0,GPR0_OFFSET(sp)
 	lwz		toc,GPR2_OFFSET(sp)
 
 	lwz		r4,SRR0_OFFSET(sp)
-	mtsrr0	r4
+	mtsrr0   r4
 	lwz		r4,SRR1_OFFSET(sp)
-	rlwinm	r4, r4, 0, 19, 17
-	mtsrr1	r4
+	rlwinm   r4, r4, 0, 19, 17
+	mtsrr1   r4
 
 	lwz		r4,GPR4_OFFSET(sp)
 	lwz		r3,GPR3_OFFSET(sp)
-	addi	sp,sp,EXCEPTION_FRAME_END
+	addi   sp,sp,EXCEPTION_FRAME_END
 	rfi

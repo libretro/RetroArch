@@ -38,11 +38,11 @@
 
 /* These typedefs need to be handled better. */
 
-typedef uint32_t	Elf32_Addr;       /* Unsigned program address */
-typedef uint32_t	Elf32_Off;        /* Unsigned file offset */
-typedef int32_t	Elf32_Sword;      /* Signed large integer */
-typedef uint32_t	Elf32_Word;       /* Unsigned large integer */
-typedef uint16_t	Elf32_Half;       /* Unsigned medium integer */
+typedef uint32_t   Elf32_Addr;       /* Unsigned program address */
+typedef uint32_t   Elf32_Off;        /* Unsigned file offset */
+typedef int32_t   Elf32_Sword;      /* Signed large integer */
+typedef uint32_t   Elf32_Word;       /* Unsigned large integer */
+typedef uint16_t   Elf32_Half;       /* Unsigned medium integer */
 
 /* e_ident[] identification indexes */
 
@@ -60,19 +60,19 @@ typedef uint16_t	Elf32_Half;       /* Unsigned medium integer */
 
 /* e_ident[] magic number */
 
-#define	ELFMAG0        0x7f        /* e_ident[EI_MAG0] */
-#define	ELFMAG1        'E'         /* e_ident[EI_MAG1] */
-#define	ELFMAG2        'L'         /* e_ident[EI_MAG2] */
-#define	ELFMAG3        'F'         /* e_ident[EI_MAG3] */
-#define	ELFMAG         "\177ELF"   /* magic */
-#define	SELFMAG        4           /* size of magic */
+#define   ELFMAG0        0x7f        /* e_ident[EI_MAG0] */
+#define   ELFMAG1        'E'         /* e_ident[EI_MAG1] */
+#define   ELFMAG2        'L'         /* e_ident[EI_MAG2] */
+#define   ELFMAG3        'F'         /* e_ident[EI_MAG3] */
+#define   ELFMAG         "\177ELF"   /* magic */
+#define   SELFMAG        4           /* size of magic */
 
 /* e_ident[] file class */
 
-#define	ELFCLASSNONE   0		      /* invalid */
-#define	ELFCLASS32     1		      /* 32-bit objs */
-#define	ELFCLASS64     2		      /* 64-bit objs */
-#define	ELFCLASSNUM    3           /* number of classes */
+#define   ELFCLASSNONE   0		      /* invalid */
+#define   ELFCLASS32     1		      /* 32-bit objs */
+#define   ELFCLASS64     2		      /* 64-bit objs */
+#define   ELFCLASSNUM    3           /* number of classes */
 
 /* e_ident[] data encoding */
 #define ELFDATANONE     0           /* invalid */
@@ -86,13 +86,13 @@ typedef uint16_t	Elf32_Half;       /* Unsigned medium integer */
 #define ELFOSABI_HPUX		1        /* Hewlett-Packard HP-UX */
 #define ELFOSABI_NETBSD		2        /* NetBSD */
 #define ELFOSABI_LINUX		3        /* Linux */
-#define ELFOSABI_SOLARIS	6        /* Sun Solaris */
+#define ELFOSABI_SOLARIS   6        /* Sun Solaris */
 #define ELFOSABI_AIX       7        /* AIX */
 #define ELFOSABI_IRIX		8        /* IRIX */
-#define ELFOSABI_FREEBSD	9        /* FreeBSD */
+#define ELFOSABI_FREEBSD   9        /* FreeBSD */
 #define ELFOSABI_TRU64		10       /* Compaq TRU64 UNIX */
-#define ELFOSABI_MODESTO	11       /* Novell Modesto */
-#define ELFOSABI_OPENBSD	12       /* OpenBSD */
+#define ELFOSABI_MODESTO   11       /* Novell Modesto */
+#define ELFOSABI_OPENBSD   12       /* OpenBSD */
 
 /* 64-255 Architecture-specific value range */
 
@@ -110,20 +110,20 @@ typedef uint16_t	Elf32_Half;       /* Unsigned medium integer */
 /* ELF Header */
 typedef struct elfhdr
 {
-   unsigned char	e_ident[EI_NIDENT];     /* ELF Identification */
-   Elf32_Half	e_type;                    /* object file type */
-   Elf32_Half	e_machine;                 /* machine */
-   Elf32_Word	e_version;                 /* object file version */
-   Elf32_Addr	e_entry;                   /* virtual entry point */
-   Elf32_Off	e_phoff;                   /* program header table offset */
-   Elf32_Off	e_shoff;                   /* section header table offset */
-   Elf32_Word	e_flags;                   /* processor-specific flags */
-   Elf32_Half	e_ehsize;                  /* ELF header size */
-   Elf32_Half	e_phentsize;               /* program header entry size */
-   Elf32_Half	e_phnum;                   /* number of program header entries */
-   Elf32_Half	e_shentsize;               /* section header entry size */
-   Elf32_Half	e_shnum;                   /* number of section header entries */
-   Elf32_Half	e_shstrndx;                /* section header table's "section
+   unsigned char   e_ident[EI_NIDENT];     /* ELF Identification */
+   Elf32_Half   e_type;                    /* object file type */
+   Elf32_Half   e_machine;                 /* machine */
+   Elf32_Word   e_version;                 /* object file version */
+   Elf32_Addr   e_entry;                   /* virtual entry point */
+   Elf32_Off   e_phoff;                   /* program header table offset */
+   Elf32_Off   e_shoff;                   /* section header table offset */
+   Elf32_Word   e_flags;                   /* processor-specific flags */
+   Elf32_Half   e_ehsize;                  /* ELF header size */
+   Elf32_Half   e_phentsize;               /* program header entry size */
+   Elf32_Half   e_phnum;                   /* number of program header entries */
+   Elf32_Half   e_shentsize;               /* section header entry size */
+   Elf32_Half   e_shnum;                   /* number of section header entries */
+   Elf32_Half   e_shstrndx;                /* section header table's "section
                                              header string table" entry offset */
 } Elf32_Ehdr;
 
@@ -154,9 +154,9 @@ typedef struct elfhdr
 #define EM_860		      7		/* Intel 80860 */
 #define EM_MIPS		   8		/* MIPS R3000 Big-Endian only */
 #define EM_S370		   9		/* IBM System/370 Processor */
-#define EM_MIPS_RS4_BE	10		/* MIPS R4000 Big-Endian */
+#define EM_MIPS_RS4_BE   10		/* MIPS R4000 Big-Endian */
 #if 0
-#define EM_SPARC64	11		   /* RESERVED - was SPARC v9
+#define EM_SPARC64   11		   /* RESERVED - was SPARC v9
 					                   64-bit unoffical */
 #endif
 
@@ -165,7 +165,7 @@ typedef struct elfhdr
 #define EM_PARISC	      15		/* HPPA */
                               /* RESERVED 16 for future use */
 #define EM_VPP500	      17		/* Fujitsu VPP500 */
-#define EM_SPARC32PLUS	18		/* Enhanced instruction set SPARC */
+#define EM_SPARC32PLUS   18		/* Enhanced instruction set SPARC */
 #define EM_960		   19		   /* Intel 80960 */
 #define EM_PPC		   20		   /* PowerPC */
 #define EM_PPC64	   21		   /* 64-bit PowerPC */
@@ -178,22 +178,22 @@ typedef struct elfhdr
 #define EM_ARM		   40		   /* Advanced Risc Machines ARM */
 #define EM_ALPHA	   41		   /* Digital Alpha */
 #define EM_SH		   42		   /* Hitachi SH */
-#define EM_SPARCV9	43		   /* SPARC Version 9 */
-#define EM_TRICORE	44		   /* Siemens TriCore embedded processor */
+#define EM_SPARCV9   43		   /* SPARC Version 9 */
+#define EM_TRICORE   44		   /* Siemens TriCore embedded processor */
 #define EM_ARC		   45		   /* Argonaut RISC Core */
 #define EM_H8_300	   46		   /* Hitachi H8/300 */
-#define EM_H8_300H	47		   /* Hitachi H8/300H */
+#define EM_H8_300H   47		   /* Hitachi H8/300H */
 #define EM_H8S		   48		   /* Hitachi H8S */
 #define EM_H8_500	   49		   /* Hitachi H8/500 */
 #define EM_IA_64	   50		   /* Intel Merced */
 #define EM_MIPS_X	   51		   /* Stanford MIPS-X */
-#define EM_COLDFIRE	52		   /* Motorola Coldfire */
+#define EM_COLDFIRE   52		   /* Motorola Coldfire */
 #define EM_68HC12	   53		   /* Motorola M68HC12 */
 #define EM_MMA		   54		   /* Fujitsu MMA Multimedia Accelerator*/
 #define EM_PCP		   55		   /* Siemens PCP */
 #define EM_NCPU		56		   /* Sony nCPU embedded RISC */
 #define EM_NDR1		57		   /* Denso NDR1 microprocessor */
-#define EM_STARCORE	58		   /* Motorola Start*Core processor */
+#define EM_STARCORE   58		   /* Motorola Start*Core processor */
 #define EM_ME16		59		   /* Toyota ME16 processor */
 #define EM_ST100	   60		   /* STMicroelectronic ST100 processor */
 #define EM_TINYJ	   61		   /* Advanced Logic Corp. Tinyj emb.fam*/
@@ -201,7 +201,7 @@ typedef struct elfhdr
 #define EM_PDSP		63       /* Sony DSP Processor */
                               /* RESERVED 64,65 for future use */
 #define EM_FX66		66		   /* Siemens FX66 microcontroller */
-#define EM_ST9PLUS	67		   /* STMicroelectronics ST9+ 8/16 mc */
+#define EM_ST9PLUS   67		   /* STMicroelectronics ST9+ 8/16 mc */
 #define EM_ST7       68		   /* STmicroelectronics ST7 8 bit mc */
 #define EM_68HC16    69		   /* Motorola MC68HC16 microcontroller */
 #define EM_68HC11    70		   /* Motorola MC68HC11 microcontroller */
@@ -211,8 +211,8 @@ typedef struct elfhdr
 #define EM_ST19		74		   /* STMicroelectronics ST19 8 bit mc */
 #define EM_VAX	      75		   /* Digital VAX */
 #define EM_CHRIS     76	      /* Axis Communications embedded proc. */
-#define EM_JAVELIN	77		   /* Infineon Technologies emb. proc. */
-#define EM_FIREPATH	78	      /* Element 14 64-bit DSP Processor */
+#define EM_JAVELIN   77		   /* Infineon Technologies emb. proc. */
+#define EM_FIREPATH   78	      /* Element 14 64-bit DSP Processor */
 #define EM_ZSP	      79	      /* LSI Logic 16-bit DSP Processor */
 #define EM_MMIX		80		   /* Donald Knuth's edu 64-bit proc. */
 #define EM_HUANY     81	      /* Harvard University mach-indep objs */
@@ -223,38 +223,38 @@ typedef struct elfhdr
 #define EM_D30V		86       /* Mitsubishi DV30V */
 #define EM_V850		87       /* NEC v850 */
 #define EM_M32R		88       /* Mitsubishi M32R */
-#define EM_MN10300	89       /* Matsushita MN10200 */
-#define EM_MN10200	90       /* Matsushita MN10200 */
+#define EM_MN10300   89       /* Matsushita MN10200 */
+#define EM_MN10200   90       /* Matsushita MN10200 */
 #define EM_PJ        91       /* picoJava */
 #define EM_NUM       92       /* number of machine types */
 
 /* Version */
 
 #define EV_NONE		0		   /* Invalid */
-#define EV_CURRENT	1		   /* Current */
+#define EV_CURRENT   1		   /* Current */
 #define EV_NUM       2        /* number of versions */
 
 /* Section Header */
 
 typedef struct
 {
-	Elf32_Word	sh_name;       /* name - index into section header
+	Elf32_Word   sh_name;       /* name - index into section header
 					                  string table section */
-	Elf32_Word	sh_type;       /* type */
-	Elf32_Word	sh_flags;      /* flags */
-	Elf32_Addr	sh_addr;       /* address */
-	Elf32_Off	sh_offset;     /* file offset */
-	Elf32_Word	sh_size;       /* section size */
-	Elf32_Word	sh_link;       /* section header table index link */
-	Elf32_Word	sh_info;       /* extra information */
-	Elf32_Word	sh_addralign;  /* address alignment */
-	Elf32_Word	sh_entsize;    /* section entry size */
+	Elf32_Word   sh_type;       /* type */
+	Elf32_Word   sh_flags;      /* flags */
+	Elf32_Addr   sh_addr;       /* address */
+	Elf32_Off   sh_offset;     /* file offset */
+	Elf32_Word   sh_size;       /* section size */
+	Elf32_Word   sh_link;       /* section header table index link */
+	Elf32_Word   sh_info;       /* extra information */
+	Elf32_Word   sh_addralign;  /* address alignment */
+	Elf32_Word   sh_entsize;    /* section entry size */
 } Elf32_Shdr;
 
 /* Special Section Indexes */
 
 #define SHN_UNDEF       0           /* undefined */
-#define SHN_LORESERVE	0xff00      /* lower bounds of reserved indexes */
+#define SHN_LORESERVE   0xff00      /* lower bounds of reserved indexes */
 #define SHN_LOPROC      0xff00      /* reserved range for processor */
 #define SHN_HIPROC      0xff1f      /* specific section indexes */
 #define SHN_LOOS        0xff20      /* reserved range for operating */
@@ -346,20 +346,20 @@ typedef struct
 
 /* Section Group Flags */
 
-#define GRP_COMDAT	0x1         /* COMDAT group */
-#define GRP_MASKOS	0x0ff00000	/* Mask OS specific flags */
-#define GRP_MASKPROC	0xf0000000	/* Mask processor specific flags */
+#define GRP_COMDAT   0x1         /* COMDAT group */
+#define GRP_MASKOS   0x0ff00000	/* Mask OS specific flags */
+#define GRP_MASKPROC   0xf0000000	/* Mask processor specific flags */
 
 /* Symbol Table Entry */
 
 typedef struct elf32_sym
 {
-	Elf32_Word	st_name;       /* name - index into string table */
-	Elf32_Addr	st_value;      /* symbol value */
-	Elf32_Word	st_size;       /* symbol size */
-	unsigned char	st_info;    /* type and binding */
-	unsigned char	st_other;   /* 0 - no defined meaning */
-	Elf32_Half	st_shndx;      /* section header index */
+	Elf32_Word   st_name;       /* name - index into string table */
+	Elf32_Addr   st_value;      /* symbol value */
+	Elf32_Word   st_size;       /* symbol size */
+	unsigned char   st_info;    /* type and binding */
+	unsigned char   st_other;   /* 0 - no defined meaning */
+	Elf32_Half   st_shndx;      /* section header index */
 } Elf32_Sym;
 
 /* Symbol table index */
@@ -376,13 +376,13 @@ typedef struct elf32_sym
 /* Symbol Binding - ELF32_ST_BIND - st_info */
 
 #define STB_LOCAL    0        /* Local symbol */
-#define STB_GLOBAL	1		   /* Global symbol */
+#define STB_GLOBAL   1		   /* Global symbol */
 #define STB_WEAK     2        /* like global - lower precedence */
 #define STB_NUM		3		   /* number of symbol bindings */
 #define STB_LOOS     10       /* reserved range for operating */
 #define STB_HIOS     12       /*   system specific symbol bindings */
-#define STB_LOPROC	13		   /* reserved range for processor */
-#define STB_HIPROC	15		   /*  specific symbol bindings */
+#define STB_LOPROC   13		   /* reserved range for processor */
+#define STB_HIPROC   15		   /*  specific symbol bindings */
 
 /* Symbol type - ELF32_ST_TYPE - st_info */
 #define STT_NOTYPE      0		/* not specified */
@@ -402,23 +402,23 @@ typedef struct elf32_sym
 #define STV_DEFAULT     0		/* Normal visibility rules */
 #define STV_INTERNAL    1		/* Processor specific hidden class */
 #define STV_HIDDEN      2		/* Symbol unavailable in other mods */
-#define STV_PROTECTED	3		/* Not preemptible, not exported */
+#define STV_PROTECTED   3		/* Not preemptible, not exported */
 
 /* Relocation entry with implicit addend */
 
 typedef struct
 {
-	Elf32_Addr	r_offset;	/* offset of relocation */
-	Elf32_Word	r_info;		/* symbol table index and type */
+	Elf32_Addr   r_offset;	/* offset of relocation */
+	Elf32_Word   r_info;		/* symbol table index and type */
 } Elf32_Rel;
 
 /* Relocation entry with explicit addend */
 
 typedef struct
 {
-	Elf32_Addr	r_offset;	/* offset of relocation */
-	Elf32_Word	r_info;		/* symbol table index and type */
-	Elf32_Sword	r_addend;
+	Elf32_Addr   r_offset;	/* offset of relocation */
+	Elf32_Word   r_info;		/* symbol table index and type */
+	Elf32_Sword   r_addend;
 } Elf32_Rela;
 
 /* Extract relocation info - r_info */
@@ -430,21 +430,21 @@ typedef struct
 /* Program Header */
 typedef struct
 {
-	Elf32_Word	p_type;           /* segment type */
-	Elf32_Off	p_offset;         /* segment offset */
-	Elf32_Addr	p_vaddr;          /* virtual address of segment */
-	Elf32_Addr	p_paddr;          /* physical address - ignored? */
-	Elf32_Word	p_filesz;         /* number of bytes in file for seg. */
-	Elf32_Word	p_memsz;          /* number of bytes in mem. for seg. */
-	Elf32_Word	p_flags;          /* flags */
-	Elf32_Word	p_align;          /* memory alignment */
+	Elf32_Word   p_type;           /* segment type */
+	Elf32_Off   p_offset;         /* segment offset */
+	Elf32_Addr   p_vaddr;          /* virtual address of segment */
+	Elf32_Addr   p_paddr;          /* physical address - ignored? */
+	Elf32_Word   p_filesz;         /* number of bytes in file for seg. */
+	Elf32_Word   p_memsz;          /* number of bytes in mem. for seg. */
+	Elf32_Word   p_flags;          /* flags */
+	Elf32_Word   p_align;          /* memory alignment */
 } Elf32_Phdr;
 
 /* Segment types - p_type */
 
 #define PT_NULL		0		      /* unused */
 #define PT_LOAD		1		      /* loadable segment */
-#define PT_DYNAMIC	2           /* dynamic linking section */
+#define PT_DYNAMIC   2           /* dynamic linking section */
 #define PT_INTERP    3           /* the RTLD */
 #define PT_NOTE		4           /* auxiliary information */
 #define PT_SHLIB     5           /* reserved - purpose undefined */
@@ -460,22 +460,22 @@ typedef struct
 #define PF_X		0x1		      /* Executable */
 #define PF_W		0x2		      /* Writable */
 #define PF_R		0x4		      /* Readable */
-#define PF_MASKOS	0x0ff00000	   /* OS specific segment flags */
-#define PF_MASKPROC	0xf0000000	/* reserved bits for processor */
+#define PF_MASKOS   0x0ff00000	   /* OS specific segment flags */
+#define PF_MASKPROC   0xf0000000	/* reserved bits for processor */
 					                  /*  specific segment flags */
 
 /* Dynamic structure */
 typedef struct
 {
-	Elf32_Sword	d_tag;		      /* controls meaning of d_val */
+	Elf32_Sword   d_tag;		      /* controls meaning of d_val */
 	union
 	{
-		Elf32_Word	d_val;         /* Multiple meanings - see d_tag */
-		Elf32_Addr	d_ptr;         /* program virtual address */
+		Elf32_Word   d_val;         /* Multiple meanings - see d_tag */
+		Elf32_Addr   d_ptr;         /* program virtual address */
 	} d_un;
 } Elf32_Dyn;
 
-extern Elf32_Dyn	_DYNAMIC[];
+extern Elf32_Dyn   _DYNAMIC[];
 
 /* Dynamic Array Tags - d_tag */
 
@@ -531,7 +531,7 @@ extern Elf32_Dyn	_DYNAMIC[];
 
 unsigned long elf_hash(const unsigned char *name);
 
-#define ELF_TARG_VER	1	/* The ver for which this code is intended */
+#define ELF_TARG_VER   1	/* The ver for which this code is intended */
 
 /* XXX - PowerPC defines really don't belong in here,
  * but we'll put them in for simplicity. */

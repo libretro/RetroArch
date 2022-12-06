@@ -123,7 +123,7 @@ static u32 get_thread_page(void)
       "sub r0, sp, #8 \n\t"
       "mov r1, #1 \n\t"
       "mov r2, #0 \n\t"
-      "svc	0x2A \n\t"
+      "svc   0x2A \n\t"
       "mov r0, r1, LSR#12 \n\t"
       "mov r0, r0, LSL#12 \n\t"
       "bx lr \n\t");

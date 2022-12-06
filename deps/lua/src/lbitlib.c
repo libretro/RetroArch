@@ -25,7 +25,7 @@
 
 /* number of bits to consider in a number */
 #if !defined(LUA_NBITS)
-#define LUA_NBITS	32
+#define LUA_NBITS   32
 #endif
 
 

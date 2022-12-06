@@ -73,7 +73,7 @@
 
 /* Headezes. */
 #define IP_HLEN			20    /* Size of IP header */
-#define TRANSPORT_HLEN	20
+#define TRANSPORT_HLEN   20
 
 #define UDP_HLEN		8    /* Size of UDP header */
 #define TCP_HLEN		20    /* Size of TCP header */

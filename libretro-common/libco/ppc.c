@@ -22,10 +22,10 @@ floating-point and AltiVec save/restore */
 
 /* State format (offsets in 32-bit words)
 
-+0	Pointer to swap code
++0   Pointer to swap code
 	Rest of function descriptor for entry function
-+8	PC
-+10	SP
++8   PC
++10   SP
 	Special regs
 	GPRs
 	FPRs

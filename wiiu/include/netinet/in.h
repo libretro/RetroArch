@@ -1,5 +1,5 @@
-#ifndef	_NETINET_IN_H
-#define	_NETINET_IN_H
+#ifndef   _NETINET_IN_H
+#define   _NETINET_IN_H
 
 #ifdef __cplusplus
 extern "C" {

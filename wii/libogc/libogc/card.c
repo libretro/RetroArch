@@ -61,7 +61,7 @@ distribution.
 struct card_header {
 	u32 serial[0x08];
 	u16 device_id;
-	u16	size;
+	u16   size;
 	u16 encoding;
 	u8 padding[0x1d6];
 	u16 chksum1;

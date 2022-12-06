@@ -19,7 +19,7 @@ static int ir_correct_for_bounds(float* x, float* y, enum aspect_t aspect, int o
 static void ir_convert_to_vres(float* x, float* y, enum aspect_t aspect, unsigned int vx, unsigned int vy);
 
 /**
- *	@brief	Get the IR sensitivity settings.
+ *	@brief   Get the IR sensitivity settings.
  *
  *	@param wm		Pointer to a wiimote_t structure.
  *	@param block1	[out] Pointer to where block1 will be set.
@@ -86,9 +86,9 @@ static void rotate_dots(struct fdot_t* in, struct fdot_t *out, int count, float 
  *
  *	@param x		[out] The current X, it will be updated if valid.
  *	@param y		[out] The current Y, it will be updated if valid.
- *	@param aspect	Aspect ratio of the screen.
- *	@param offset_x	The X offset of the bounding box.
- *	@param offset_y	The Y offset of the bounding box.
+ *	@param aspect   Aspect ratio of the screen.
+ *	@param offset_x   The X offset of the bounding box.
+ *	@param offset_y   The Y offset of the bounding box.
  *
  *	@return Returns 1 if the point is valid and was updated.
  *
@@ -230,10 +230,10 @@ void wiiuse_set_ir(struct wiimote_t *wm,int status)
 }
 
 /**
- *	@brief	Set the virtual screen resolution for IR tracking.
+ *	@brief   Set the virtual screen resolution for IR tracking.
  *
  *	@param wm		Pointer to a wiimote_t structure.
- *	@param status	1 to enable, 0 to disable.
+ *	@param status   1 to enable, 0 to disable.
  */
 void wiiuse_set_ir_vres(struct wiimote_t* wm, unsigned int x, unsigned int y) {
 	if (!wm)	return;
@@ -243,7 +243,7 @@ void wiiuse_set_ir_vres(struct wiimote_t* wm, unsigned int x, unsigned int y) {
 }
 
 /**
- *	@brief	Set the XY position for the IR cursor.
+ *	@brief   Set the XY position for the IR cursor.
  *
  *	@param wm		Pointer to a wiimote_t structure.
  */
@@ -280,10 +280,10 @@ void wiiuse_set_ir_position(struct wiimote_t* wm, enum ir_position_t pos) {
 }
 
 /**
- *	@brief	Set the aspect ratio of the TV/monitor.
+ *	@brief   Set the aspect ratio of the TV/monitor.
  *
  *	@param wm		Pointer to a wiimote_t structure.
- *	@param aspect	Either WIIUSE_ASPECT_16_9 or WIIUSE_ASPECT_4_3
+ *	@param aspect   Either WIIUSE_ASPECT_16_9 or WIIUSE_ASPECT_4_3
  */
 void wiiuse_set_aspect_ratio(struct wiimote_t* wm, enum aspect_t aspect) {
 	if (!wm)	return;
@@ -303,10 +303,10 @@ void wiiuse_set_aspect_ratio(struct wiimote_t* wm, enum aspect_t aspect) {
 }
 
 /**
- *	@brief	Set the IR sensitivity.
+ *	@brief   Set the IR sensitivity.
  *
  *	@param wm		Pointer to a wiimote_t structure.
- *	@param level	1-5, same as Wii system sensitivity setting.
+ *	@param level   1-5, same as Wii system sensitivity setting.
  *
  *	If the level is < 1, then level will be set to 1.
  *	If the level is > 5, then level will be set to 5.
@@ -446,7 +446,7 @@ enum {
 
 // physical dimensions
 // cm center to center of emitters
-#define SB_WIDTH	19.5f
+#define SB_WIDTH   19.5f
 // half-width in cm of emitters
 #define SB_DOT_WIDTH 2.25f
 // half-height in cm of emitters (with some tolerance)
@@ -761,7 +761,7 @@ void apply_ir_smoothing(struct ir_t *ir) {
  *	@brief Interpret IR data into more user friendly variables.
  *
  *	@param ir		Pointer to an ir_t structure.
- *	@param orient	Pointer to an orient_t structure.
+ *	@param orient   Pointer to an orient_t structure.
  */
 void interpret_ir_data(struct ir_t* ir, struct orient_t *orient) {
 
@@ -821,7 +821,7 @@ void interpret_ir_data(struct ir_t* ir, struct orient_t *orient) {
 /**
  *	@brief Calculate yaw given the IR data.
  *
- *	@param ir	IR data structure.
+ *	@param ir   IR data structure.
  */
 float calc_yaw(struct ir_t* ir) {
 	float x;

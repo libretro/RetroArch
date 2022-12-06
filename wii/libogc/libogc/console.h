@@ -3,8 +3,8 @@
 
 #define FONT_XSIZE		8
 #define FONT_YSIZE		16
-#define FONT_XFACTOR	1
-#define FONT_YFACTOR	1
+#define FONT_XFACTOR   1
+#define FONT_YFACTOR   1
 #define FONT_XGAP			0
 #define FONT_YGAP			0
 #define TAB_SIZE			4

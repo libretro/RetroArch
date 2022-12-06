@@ -20,10 +20,10 @@
 
 #if 'A' == 65 && '0' == 48
 /* ASCII case: can use its own tables; faster and fixed */
-#define LUA_USE_CTYPE	0
+#define LUA_USE_CTYPE   0
 #else
 /* must use standard C ctype */
-#define LUA_USE_CTYPE	1
+#define LUA_USE_CTYPE   1
 #endif
 
 #endif
@@ -36,11 +36,11 @@
 #include "llimits.h"
 
 
-#define ALPHABIT	0
-#define DIGITBIT	1
-#define PRINTBIT	2
-#define SPACEBIT	3
-#define XDIGITBIT	4
+#define ALPHABIT   0
+#define DIGITBIT   1
+#define PRINTBIT   2
+#define SPACEBIT   3
+#define XDIGITBIT   4
 
 
 #define MASK(B)		(1 << (B))

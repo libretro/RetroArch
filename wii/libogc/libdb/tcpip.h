@@ -11,7 +11,7 @@
 #define PF_UNSPEC			AF_UNSPEC
 
 #define INADDR_ANY			0
-#define INADDR_BROADCAST	0xffffffff
+#define INADDR_BROADCAST   0xffffffff
 
 #ifndef socklen_t
 #define socklen_t u32_t

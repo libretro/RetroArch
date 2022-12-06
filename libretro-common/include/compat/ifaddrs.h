@@ -23,8 +23,8 @@
  *	BSDI ifaddrs.h,v 2.5 2000/02/23 14:51:59 dab Exp
  */
 
-#ifndef	_IFADDRS_H_
-#define	_IFADDRS_H_
+#ifndef   _IFADDRS_H_
+#define   _IFADDRS_H_
 
 struct ifaddrs
 {
@@ -41,8 +41,8 @@ struct ifaddrs
  * This may have been defined in <net/if.h>.  Note that if <net/if.h> is
  * to be included it must be included before this header file.
  */
-#ifndef	ifa_broadaddr
-#define	ifa_broadaddr	ifa_dstaddr	/* broadcast address interface */
+#ifndef   ifa_broadaddr
+#define   ifa_broadaddr   ifa_dstaddr	/* broadcast address interface */
 #endif
 
 #include <sys/cdefs.h>

@@ -118,7 +118,7 @@ struct image_common
     void *                      destroy_data;
 
     uint32_t			flags;
-    pixman_format_code_t	extended_format_code;
+    pixman_format_code_t   extended_format_code;
 };
 
 struct solid_fill
@@ -255,8 +255,8 @@ struct pixman_iter_t
     uint32_t			image_flags;
 
     /* These function pointers are initialized by the implementation */
-    pixman_iter_get_scanline_t	get_scanline;
-    pixman_iter_write_back_t	write_back;
+    pixman_iter_get_scanline_t   get_scanline;
+    pixman_iter_write_back_t   write_back;
     pixman_iter_fini_t          fini;
 
     /* These fields are scratch data that implementations can use */
@@ -270,12 +270,12 @@ typedef void (* pixman_iter_initializer_t) (pixman_iter_t *iter,
                                             const pixman_iter_info_t *info);
 struct pixman_iter_info_t
 {
-    pixman_format_code_t	format;
+    pixman_format_code_t   format;
     uint32_t			image_flags;
     iter_flags_t		iter_flags;
-    pixman_iter_initializer_t	initializer;
-    pixman_iter_get_scanline_t	get_scanline;
-    pixman_iter_write_back_t	write_back;
+    pixman_iter_initializer_t   initializer;
+    pixman_iter_get_scanline_t   get_scanline;
+    pixman_iter_write_back_t   write_back;
 };
 
 void
@@ -503,10 +503,10 @@ struct pixman_implementation_t
     pixman_blt_func_t		blt;
     pixman_fill_func_t		fill;
 
-    pixman_combine_32_func_t	combine_32[PIXMAN_N_OPERATORS];
-    pixman_combine_32_func_t	combine_32_ca[PIXMAN_N_OPERATORS];
-    pixman_combine_float_func_t	combine_float[PIXMAN_N_OPERATORS];
-    pixman_combine_float_func_t	combine_float_ca[PIXMAN_N_OPERATORS];
+    pixman_combine_32_func_t   combine_32[PIXMAN_N_OPERATORS];
+    pixman_combine_32_func_t   combine_32_ca[PIXMAN_N_OPERATORS];
+    pixman_combine_float_func_t   combine_float[PIXMAN_N_OPERATORS];
+    pixman_combine_float_func_t   combine_float_ca[PIXMAN_N_OPERATORS];
 };
 
 uint32_t

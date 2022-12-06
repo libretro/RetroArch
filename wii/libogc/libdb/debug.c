@@ -21,7 +21,7 @@
 #include "debug_if.h"
 #include "debug_supp.h"
 
-#define GEKKO_MAX_BP	256
+#define GEKKO_MAX_BP   256
 
 #define SP_REGNUM		1			//register no. for stackpointer
 #define PC_REGNUM		64			//register no. for programcounter (srr0)

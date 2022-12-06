@@ -35,7 +35,7 @@ distribution.
 
 #include <wiikeyboard/usbkeyboard.h>
 
-#define	HEAP_SIZE					4096
+#define   HEAP_SIZE					4096
 #define DEVLIST_MAXSIZE				8
 #define KEY_ERROR					0x01
 #define MAXKEYCODE					6
@@ -50,8 +50,8 @@ distribution.
 #define USB_MOD_META_R				0x80
 
 struct ukbd_data {
-	u16	modifiers;
-	u8	keycode[MAXKEYCODE];
+	u16   modifiers;
+	u8   keycode[MAXKEYCODE];
 } ATTRIBUTE_PACKED;
 
 struct ukbd {

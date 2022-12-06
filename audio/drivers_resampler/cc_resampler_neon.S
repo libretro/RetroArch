@@ -167,8 +167,8 @@ vadd.f32 q15, q15, q11
 # distance++
 vadd.f32 s5, s5, s20
 
-vcmpe.f32	s5, s7
-vmrs	APSR_nzcv, fpscr
+vcmpe.f32   s5, s7
+vmrs   APSR_nzcv, fpscr
 ble 2f
 
 vst1.f32 d28, [r4, :64]!
@@ -291,8 +291,8 @@ vmov.f32 d29, d30
 vmov.f32 d30, d31
 vmov.f32 d31, d16
 
-vcmpe.f32	s5, s20
-vmrs	APSR_nzcv, fpscr
+vcmpe.f32   s5, s20
+vmrs   APSR_nzcv, fpscr
 bge 3f
 2:
 vdup.f32 q8, d2[1]
@@ -345,8 +345,8 @@ vst1.f32 d20, [r4, :64]!
 
 vadd.f32 s5, s5, s6
 
-vcmpe.f32	s5, s20
-vmrs	APSR_nzcv, fpscr
+vcmpe.f32   s5, s20
+vmrs   APSR_nzcv, fpscr
 blt 2b
 
 3:

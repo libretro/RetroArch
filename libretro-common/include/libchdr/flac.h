@@ -55,7 +55,7 @@ typedef struct _cdfl_codec_data cdfl_codec_data;
 struct _cdfl_codec_data {
 	/* internal state */
 	int		swap_endian;
-	flac_decoder	decoder;
+	flac_decoder   decoder;
 #ifdef WANT_SUBCODE
 	zlib_codec_data		subcode_decompressor;
 #endif

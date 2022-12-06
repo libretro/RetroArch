@@ -78,7 +78,7 @@ static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 /**
  * Process various events triggered by mpv, such as printing log messages.
  *
- * \param event_block	Wait until the mpv triggers specified event. Should be
+ * \param event_block   Wait until the mpv triggers specified event. Should be
  *						NULL if no wait is required.
  */
 static void process_mpv_events(mpv_event_id event_block)

@@ -56,7 +56,7 @@ static void classic_ctrl_pressed_buttons(struct classic_ctrl_t* cc, short now);
  *	@param data		The data read in from the device.
  *	@param len		The length of the data block, in bytes.
  *
- *	@return	Returns 1 if handshake was successful, 0 if not.
+ *	@return   Returns 1 if handshake was successful, 0 if not.
  */
 int classic_ctrl_handshake(struct wiimote_t* wm, struct classic_ctrl_t* cc, ubyte* data, uword len) {
 	//int i;

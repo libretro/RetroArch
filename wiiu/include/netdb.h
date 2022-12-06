@@ -1,4 +1,4 @@
-#ifndef	_NETDB_H
+#ifndef   _NETDB_H
 #define _NETDB_H
 
 #ifdef __cplusplus

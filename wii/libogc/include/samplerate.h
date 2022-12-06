@@ -35,17 +35,17 @@ typedef struct SRC_STATE_tag SRC_STATE ;
 typedef struct
 {	float	*data_in, *data_out ;
 
-	long	input_frames, output_frames ;
-	long	input_frames_used, output_frames_gen ;
+	long   input_frames, output_frames ;
+	long   input_frames_used, output_frames_gen ;
 
 	int		end_of_input ;
 
-	double	src_ratio ;
+	double   src_ratio ;
 } SRC_DATA ;
 
 /* SRC_CB_DATA is used with callback based API. */
 typedef struct
-{	long	frames ;
+{	long   frames ;
 	float	*data_in ;
 } SRC_CB_DATA ;
 

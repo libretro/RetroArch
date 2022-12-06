@@ -102,18 +102,18 @@ Get Volume Label
 extern void fatGetVolumeLabel (const char* name, char *label);
 
 /* File attributes */
-#define ATTR_ARCHIVE	0x20			   /* Archive */
-#define ATTR_DIRECTORY	0x10			/* Directory */
+#define ATTR_ARCHIVE   0x20			   /* Archive */
+#define ATTR_DIRECTORY   0x10			/* Directory */
 #define ATTR_VOLUME		0x08			/* Volume */
 #define ATTR_SYSTEM		0x04			/* System */
 #define ATTR_HIDDEN		0x02			/* Hidden */
-#define ATTR_READONLY	0x01			/* Read only */
+#define ATTR_READONLY   0x01			/* Read only */
 
 /*
 Methods to modify DOS File Attributes
 */
-int	FAT_getAttr(const char *file);
-int	FAT_setAttr(const char *file, uint8_t attr );
+int   FAT_getAttr(const char *file);
+int   FAT_setAttr(const char *file, uint8_t attr );
 
 #define LIBFAT_FEOS_MULTICWD
 

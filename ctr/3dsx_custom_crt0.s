@@ -65,7 +65,7 @@ ClearMem:
 	bics r1, r1, r2	@ Clear 2 LSB (and set Z)
 	bxeq lr         @ Quit if copy size is 0
 
-	mov	r2, #0
+	mov   r2, #0
 ClrLoop:
 	stmia r0!, {r2}
 	subs  r1, r1, #4

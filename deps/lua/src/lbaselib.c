@@ -305,7 +305,7 @@ static int luaB_loadfile (lua_State *L) {
 ** string to avoid it being collected while parsed. 'load' has four
 ** optional arguments (chunk, source name, mode, and environment).
 */
-#define RESERVEDSLOT	5
+#define RESERVEDSLOT   5
 
 
 /*

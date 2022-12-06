@@ -61,7 +61,7 @@
 
 #elif defined(_MSC_VER)
 #ifdef FLAC_API_EXPORTS
-#define	FLAC_API __declspec(dllexport)
+#define   FLAC_API __declspec(dllexport)
 #else
 #define FLAC_API __declspec(dllimport)
 #endif

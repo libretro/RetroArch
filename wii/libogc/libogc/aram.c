@@ -49,7 +49,7 @@ distribution.
 #define DSPCR_PIINT         0x0002        // assert DSP PI interrupt
 #define DSPCR_RES           0x0001        // reset DSP
 
-#define AR_ARAMEXPANSION	2
+#define AR_ARAMEXPANSION   2
 
 #define _SHIFTL(v, s, w)	\
     ((u32) (((u32)(v) & ((0x01 << (w)) - 1)) << (s)))

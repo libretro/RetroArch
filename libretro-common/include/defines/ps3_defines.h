@@ -622,7 +622,7 @@ extern int audioAddData(uint32_t portNum, float *data,
 #define CELL_GAME_GAMETYPE_SYS		0
 #define CELL_GAME_GAMETYPE_DISC		1
 #define CELL_GAME_GAMETYPE_HDD		2
-#define CELL_GAME_GAMETYPE_GAMEDATA	3
+#define CELL_GAME_GAMETYPE_GAMEDATA   3
 #define CELL_GAME_GAMETYPE_HOME		4
 
 #endif

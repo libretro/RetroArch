@@ -63,7 +63,7 @@ struct linger {
 #define IPPROTO_UDP			17
 
 #define INADDR_ANY			0
-#define INADDR_BROADCAST	0xffffffff
+#define INADDR_BROADCAST   0xffffffff
 
 /* Flags we can use with send and recv. */
 #define MSG_DONTWAIT		0x40            /* Nonblocking i/o for this operation only */
@@ -156,7 +156,7 @@ struct linger {
 #endif
 
 #ifndef TCP_NODELAY
-#define	TCP_NODELAY	   0x01	   /* don't delay send to coalesce packets */
+#define   TCP_NODELAY	   0x01	   /* don't delay send to coalesce packets */
 #endif
 #ifndef TCP_KEEPALIVE
 #define TCP_KEEPALIVE  0x02    /* send KEEPALIVE probes when idle for pcb->keepalive miliseconds */

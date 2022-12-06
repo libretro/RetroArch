@@ -180,7 +180,7 @@ typedef s8 err_t;
  * \hideinitializer
  */
 #define LOGGING     0
-#define ERRORING	0
+#define ERRORING   0
 
 /**
  * Print out a uIP log message.
@@ -201,7 +201,7 @@ void bt_log(const char *filename,int line_nb,char *msg);
  */
 #define LL_HLEN     16
 
-#define TCPIP_HLEN	40
+#define TCPIP_HLEN   40
 /** @} */
 /*------------------------------------------------------------------------------*/
 /**

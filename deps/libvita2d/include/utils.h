@@ -7,8 +7,8 @@
 
 /* Misc utils */
 #define ALIGN(x, a)	(((x) + ((a) - 1)) & ~((a) - 1))
-#define	UNUSED(a)	(void)(a)
-#define SCREEN_DPI	220
+#define   UNUSED(a)	(void)(a)
+#define SCREEN_DPI   220
 
 /* GPU utils */
 void *gpu_alloc(SceKernelMemBlockType type, unsigned int size, unsigned int alignment, unsigned int attribs, SceUID *uid);

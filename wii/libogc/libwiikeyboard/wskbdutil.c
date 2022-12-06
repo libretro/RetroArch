@@ -173,7 +173,7 @@ static struct compose_tab_s {
 	{ { KS_acute,			KS_y },			KS_yacute }
 };
 
-#define COMPOSE_SIZE	sizeof(compose_tab)/sizeof(compose_tab[0])
+#define COMPOSE_SIZE   sizeof(compose_tab)/sizeof(compose_tab[0])
 
 static int compose_tab_inorder = 0;
 

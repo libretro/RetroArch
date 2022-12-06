@@ -82,7 +82,7 @@
 
 #define CRCMAP_HASH_SIZE			4095		/* number of CRC hashtable entries */
 
-#define MAP_ENTRY_FLAG_TYPE_MASK	0x0f		/* what type of hunk */
+#define MAP_ENTRY_FLAG_TYPE_MASK   0x0f		/* what type of hunk */
 #define MAP_ENTRY_FLAG_NO_CRC		0x10		/* no CRC is present */
 
 #define CHD_V1_SECTOR_SIZE			512			/* size of a "sector" in the V1 header */
@@ -1902,8 +1902,8 @@ static chd_error metadata_find_entry(chd_file *chd, UINT32 metatag, UINT32 metai
 	/* loop until we run out of options */
 	while (metaentry->offset != 0)
 	{
-		UINT8	raw_meta_header[METADATA_HEADER_SIZE];
-		int64_t	count;
+		UINT8   raw_meta_header[METADATA_HEADER_SIZE];
+		int64_t   count;
 
 		/* read the raw header */
 		filestream_seek(chd->file, metaentry->offset, SEEK_SET);

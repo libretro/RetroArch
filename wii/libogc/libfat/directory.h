@@ -37,7 +37,7 @@
 #include "partition.h"
 
 #define DIR_ENTRY_DATA_SIZE 0x20
-#define MAX_LFN_LENGTH	256
+#define MAX_LFN_LENGTH   256
 #define MAX_ALIAS_LENGTH 13
 #define LFN_ENTRY_LENGTH 13
 #define ALIAS_ENTRY_LENGTH 11
@@ -49,13 +49,13 @@
 #define DIR_SEPARATOR '/'
 
 // File attributes
-#define ATTRIB_ARCH	0x20			// Archive
-#define ATTRIB_DIR	0x10			// Directory
-#define ATTRIB_LFN	0x0F			// Long file name
-#define ATTRIB_VOL	0x08			// Volume
-#define ATTRIB_SYS	0x04			// System
-#define ATTRIB_HID	0x02			// Hidden
-#define ATTRIB_RO	0x01			// Read only
+#define ATTRIB_ARCH   0x20			// Archive
+#define ATTRIB_DIR   0x10			// Directory
+#define ATTRIB_LFN   0x0F			// Long file name
+#define ATTRIB_VOL   0x08			// Volume
+#define ATTRIB_SYS   0x04			// System
+#define ATTRIB_HID   0x02			// Hidden
+#define ATTRIB_RO   0x01			// Read only
 
 #define CASE_LOWER_EXT  0x10		// WinNT lowercase extension
 #define CASE_LOWER_BASE 0x08		// WinNT lowercase basename

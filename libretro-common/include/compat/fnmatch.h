@@ -23,7 +23,7 @@
 #ifndef __LIBRETRO_SDK_COMPAT_FNMATCH_H__
 #define __LIBRETRO_SDK_COMPAT_FNMATCH_H__
 
-#define	FNM_NOMATCH	1
+#define   FNM_NOMATCH   1
 
 int rl_fnmatch(const char *pattern, const char *string, int flags);
 

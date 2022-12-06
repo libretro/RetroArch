@@ -146,7 +146,7 @@ help:
 	@echo 'Targets:'
 	@echo ' clean install install-snip uninstall help'
 	@echo 'Flags:'
-	@echo ' platform	String containing platform details.'
+	@echo ' platform   String containing platform details.'
 	@echo ' locale		Support toolchain with locale support.'
 	@echo '       		false: disable support, otherwise enabled (default).'
 

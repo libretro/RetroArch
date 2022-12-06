@@ -42,7 +42,7 @@
 #define GCSWEEPMAX	(cast_int((GCSTEPSIZE / GCSWEEPCOST) / 4))
 
 /* cost of calling one finalizer */
-#define GCFINALIZECOST	GCSWEEPCOST
+#define GCFINALIZECOST   GCSWEEPCOST
 
 
 /*

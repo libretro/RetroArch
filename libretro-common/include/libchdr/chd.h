@@ -198,7 +198,7 @@ extern "C" {
 /* compression types */
 #define CHDCOMPRESSION_NONE			0
 #define CHDCOMPRESSION_ZLIB			1
-#define CHDCOMPRESSION_ZLIB_PLUS	2
+#define CHDCOMPRESSION_ZLIB_PLUS   2
 #define CHDCOMPRESSION_AV			3
 
 #define CHD_CODEC_ZLIB				CHD_MAKE_TAG('z','l','i','b')
@@ -209,8 +209,8 @@ extern "C" {
 #define CHD_CODEC_CD_FLAC CHD_MAKE_TAG('c','d','f','l')
 
 /* A/V codec configuration parameters */
-#define AV_CODEC_COMPRESS_CONFIG	1
-#define AV_CODEC_DECOMPRESS_CONFIG	2
+#define AV_CODEC_COMPRESS_CONFIG   1
+#define AV_CODEC_DECOMPRESS_CONFIG   2
 
 /* metadata parameters */
 #define CHDMETATAG_WILDCARD			0
@@ -227,7 +227,7 @@ extern "C" {
 #define HARD_DISK_IDENT_METADATA_TAG CHD_MAKE_TAG('I','D','N','T')
 
 /* hard disk key information */
-#define HARD_DISK_KEY_METADATA_TAG	CHD_MAKE_TAG('K','E','Y',' ')
+#define HARD_DISK_KEY_METADATA_TAG   CHD_MAKE_TAG('K','E','Y',' ')
 
 /* pcmcia CIS information */
 #define PCMCIA_CIS_METADATA_TAG		CHD_MAKE_TAG('C','I','S',' ')
@@ -236,10 +236,10 @@ extern "C" {
 #define CDROM_OLD_METADATA_TAG		CHD_MAKE_TAG('C','H','C','D')
 #define CDROM_TRACK_METADATA_TAG	   CHD_MAKE_TAG('C','H','T','R')
 #define CDROM_TRACK_METADATA_FORMAT	"TRACK:%u TYPE:%s SUBTYPE:%s FRAMES:%u"
-#define CDROM_TRACK_METADATA2_TAG	CHD_MAKE_TAG('C','H','T','2')
+#define CDROM_TRACK_METADATA2_TAG   CHD_MAKE_TAG('C','H','T','2')
 #define CDROM_TRACK_METADATA2_FORMAT	"TRACK:%u TYPE:%s SUBTYPE:%s FRAMES:%u PREGAP:%u PGTYPE:%s PGSUB:%s POSTGAP:%u"
 #define GDROM_OLD_METADATA_TAG		CHD_MAKE_TAG('C','H','G','T')
-#define GDROM_TRACK_METADATA_TAG	CHD_MAKE_TAG('C', 'H', 'G', 'D')
+#define GDROM_TRACK_METADATA_TAG   CHD_MAKE_TAG('C', 'H', 'G', 'D')
 #define GDROM_TRACK_METADATA_FORMAT	"TRACK:%u TYPE:%s SUBTYPE:%s FRAMES:%u PAD:%u PREGAP:%u PGTYPE:%s PGSUB:%s POSTGAP:%u"
 
 /* standard A/V metadata */

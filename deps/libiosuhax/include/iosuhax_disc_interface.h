@@ -53,10 +53,10 @@ struct DISC_INTERFACE_STRUCT {
 	unsigned long			ioType ;
 	unsigned long			features ;
 	FN_MEDIUM_STARTUP		startup ;
-	FN_MEDIUM_ISINSERTED	isInserted ;
-	FN_MEDIUM_READSECTORS	readSectors ;
-	FN_MEDIUM_WRITESECTORS	writeSectors ;
-	FN_MEDIUM_CLEARSTATUS	clearStatus ;
+	FN_MEDIUM_ISINSERTED   isInserted ;
+	FN_MEDIUM_READSECTORS   readSectors ;
+	FN_MEDIUM_WRITESECTORS   writeSectors ;
+	FN_MEDIUM_CLEARSTATUS   clearStatus ;
 	FN_MEDIUM_SHUTDOWN		shutdown ;
 } ;
 

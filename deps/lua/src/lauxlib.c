@@ -34,8 +34,8 @@
 */
 
 
-#define LEVELS1	10	/* size of the first part of the stack */
-#define LEVELS2	11	/* size of the second part of the stack */
+#define LEVELS1   10	/* size of the first part of the stack */
+#define LEVELS2   11	/* size of the second part of the stack */
 
 
 
@@ -589,7 +589,7 @@ LUALIB_API char *luaL_buffinitsize (lua_State *L, luaL_Buffer *B, size_t sz) {
 */
 
 /* index of free-list header */
-#define freelist	0
+#define freelist   0
 
 
 LUALIB_API int luaL_ref (lua_State *L, int t) {

@@ -42,9 +42,9 @@ struct wscons_keymap {
 };
 
 struct wscons_keydesc {
-	kbd_t	name;				/* name of this map */
-	kbd_t	base;				/* map this one is based on */
-	int	map_size;			/* size of map */
+	kbd_t   name;				/* name of this map */
+	kbd_t   base;				/* map this one is based on */
+	int   map_size;			/* size of map */
 	const keysym_t *map;			/* the map itself */
 };
 
@@ -59,10 +59,10 @@ struct wskbd_mapdata {
 /*
  * Utility functions.
  */
-void	wskbd_get_mapentry(const struct wskbd_mapdata *, int,
+void   wskbd_get_mapentry(const struct wskbd_mapdata *, int,
                                 struct wscons_keymap *);
-void	wskbd_init_keymap(int, struct wscons_keymap **, int *);
-int	wskbd_load_keymap(const struct wskbd_mapdata *,
+void   wskbd_init_keymap(int, struct wscons_keymap **, int *);
+int   wskbd_load_keymap(const struct wskbd_mapdata *,
                                struct wscons_keymap **, int *);
 keysym_t wskbd_compose_value(keysym_t *);
 

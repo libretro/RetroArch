@@ -37,7 +37,7 @@ typedef struct _lzma_codec_data lzma_codec_data;
 struct _lzma_codec_data
 {
 	CLzmaDec		decoder;
-	lzma_allocator	allocator;
+	lzma_allocator   allocator;
 };
 
 /* codec-private data for the CDLZ codec */

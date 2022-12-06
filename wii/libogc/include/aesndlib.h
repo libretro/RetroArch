@@ -5,12 +5,12 @@
 
 #define MAX_VOICES				32
 #define SND_BUFFERSIZE			384				// output 2ms sound data at 48KHz
-#define	DSP_STREAMBUFFER_SIZE	1152			// input 2ms sound data at max. 144KHz
+#define   DSP_STREAMBUFFER_SIZE   1152			// input 2ms sound data at max. 144KHz
 
 #if defined(HW_DOL)
-	#define DSP_DEFAULT_FREQ	48044
+	#define DSP_DEFAULT_FREQ   48044
 #elif defined(HW_RVL)
-	#define DSP_DEFAULT_FREQ	48000
+	#define DSP_DEFAULT_FREQ   48000
 #endif
 
 #define VOICE_STATE_STOPPED		0

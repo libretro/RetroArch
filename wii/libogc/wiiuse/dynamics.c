@@ -157,8 +157,8 @@ static float applyCalibration(float inval,float minval, float maxval,float cente
  *	@brief Calculate the angle and magnitude of a joystick.
  *
  *	@param js	[out] Pointer to a joystick_t structure.
- *	@param x	The raw x-axis value.
- *	@param y	The raw y-axis value.
+ *	@param x   The raw x-axis value.
+ *	@param y   The raw y-axis value.
  */
 void calc_joystick_state(struct joystick_t* js, float x, float y) {
 	float rx, ry;

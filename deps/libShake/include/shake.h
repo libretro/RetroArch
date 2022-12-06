@@ -30,7 +30,7 @@ extern "C" {
     \brief Maximum allowed value of Shake_Envelope attackLength
     \sa Shake_Envelope
 */
-#define SHAKE_ENVELOPE_ATTACK_LENGTH_MAX	0x7FFF
+#define SHAKE_ENVELOPE_ATTACK_LENGTH_MAX   0x7FFF
 
 /** \def SHAKE_ENVELOPE_FADE_LENGTH_MAX
     \brief Maximum allowed value of Shake_Envelope fadeLength
@@ -54,7 +54,7 @@ extern "C" {
     \brief Maximum allowed value of Shake_EffectRumble strongMagnitude
     \sa Shake_EffectRumble
 */
-#define SHAKE_RUMBLE_STRONG_MAGNITUDE_MAX	0x7FFF
+#define SHAKE_RUMBLE_STRONG_MAGNITUDE_MAX   0x7FFF
 
 /** \def SHAKE_RUMBLE_WEAK_MAGNITUDE_MAX
     \brief Maximum allowed value of Shake_EffectRumble weakMagnitude
