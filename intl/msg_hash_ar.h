@@ -1810,6 +1810,14 @@ MSG_HASH(
    "كتم الصوت تلقائياً عند استخدام السرعة إلى الأمام."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "كتم الصوت عند الترجيع"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "كتم الصوت تلقائيًا عند استخدام اللف."
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "زيادة حجم الصوت (dB)"
    )

@@ -2074,6 +2074,14 @@ MSG_HASH(
    "Automatické ztlumení zvuku při použití rychlého převíjení vpřed."
    )
 MSG_HASH(
+  MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+  "Ztlumit při přetáčení"
+  )
+MSG_HASH(
+  MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+  "Automaticky ztlumit zvuk při použití převíjení zpět."
+  )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Zesílení Hlasitosti (dB)"
    )

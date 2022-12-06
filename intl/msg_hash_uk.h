@@ -2154,6 +2154,14 @@ MSG_HASH(
    "Автоматично вимикати звук, коли використовується швидка перемотка."
    )
 MSG_HASH(
+  MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+  "Вимкнення звуку при перемотуванні назад"
+  )
+MSG_HASH(
+  MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+  "Автоматично вимикати звук під час перемотування назад."
+  )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Збільшення гучності (дБ)"
    )

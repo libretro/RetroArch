@@ -2166,6 +2166,14 @@ MSG_HASH(
    "使用快轉模式時，音量自動設定為靜音。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "倒帶時靜音"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "使用倒帶時自動靜音。"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "音量增益 (分貝)"
    )

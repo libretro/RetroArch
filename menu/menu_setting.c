@@ -13142,6 +13142,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+
          CONFIG_BOOL(
             list, list_info,
             &settings->bools.audio_rewind_mute,
@@ -13157,6 +13158,7 @@ static bool setting_append_list(
             general_read_handler,
             SD_FLAG_NONE
          );
+
          CONFIG_FLOAT(
                list, list_info,
                &settings->floats.audio_volume,

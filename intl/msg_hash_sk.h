@@ -1690,6 +1690,14 @@ MSG_HASH(
    "Automatické stlmenie zvuku pri použití rýchleho posunu vpred."
    )
 MSG_HASH(
+  MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+  "Stlmiť pri pretáčaní dozadu"
+  )
+MSG_HASH(
+  MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+  "Automaticky stlmiť zvuk pri pretáčaní dozadu."
+  )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Zosilnenie hlasitosti (dB)"
    )

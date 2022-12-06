@@ -1982,6 +1982,14 @@ MSG_HASH(
    "Audio automatisch dempen bij gebruik van Vooruitspoelen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "Dempen bij terugspoelen"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "Audio automatisch dempen bij gebruik van terugspoelen."
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Audio Uitgangsniveau (dB)"
    )

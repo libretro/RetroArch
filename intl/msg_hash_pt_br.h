@@ -2118,6 +2118,14 @@ MSG_HASH(
    "Silenciar automaticamente o áudio ao usar o avanço rápido."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "Mudo ao rebobinar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "Silencie automaticamente o áudio ao usar o rebobinamento."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Nível de volume de áudio (dB)"
    )

@@ -2154,6 +2154,14 @@ MSG_HASH(
    "Автоматически заглушать звук при ускоренной перемотке."
    )
 MSG_HASH(
+  MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+  "Отключить звук при перемотке"
+  )
+MSG_HASH(
+  MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+  "Автоматически отключать звук при использовании перемотки."
+  )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Уровень громкости (дБ)"
    )
