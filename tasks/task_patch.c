@@ -667,12 +667,12 @@ static enum patch_error xdelta_apply_patch(
       { /* xd3 works like a zlib-styled state machine (stream is the machine) */
          case XD3_INPUT: /* When starting the first pass, provide the input */
             xd3_avail_input(&stream, patchdata, patchlen);
-            RARCH_DBG("[xdelta] Provided %u bytes of input to xd3_stream: %s\n", patchlen, stream.msg);
+            RARCH_DBG("[xdelta] Provided %ul bytes of input to xd3_stream: %s\n", patchlen, stream.msg);
             break;
          case XD3_GOTHEADER:
          case XD3_WINSTART:
             *targetlength += stream.winsize;
-            RARCH_DBG("[xdelta] Discovered a window of %u bytes (target filesize is %u bytes)\n", stream.winsize, *targetlength);
+            RARCH_DBG("[xdelta] Discovered a window of %ul bytes (target filesize is %ul bytes)\n", stream.winsize, *targetlength);
             /* xdelta updates the active stream window in the GOTHEADER and WINSTART states */
             break;
          case XD3_OUTPUT:
@@ -688,7 +688,7 @@ static enum patch_error xdelta_apply_patch(
             RARCH_DBG("[xdelta] Internal error in xd3_stream: %s\n", stream.msg);
             goto cleanup_stream;
          default:
-            RARCH_DBG("[xdelta] xd3_decode_input returned %d (%s; %s)\n", ret, xd3_strerror(ret), stream.msg);
+            RARCH_DBG("[xdelta] xd3_decode_input returned %dl (%s; %s)\n", ret, xd3_strerror(ret), stream.msg);
       }
    } while (stream.avail_in > 0 || stream.avail_out > 0);
 
