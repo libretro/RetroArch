@@ -239,3 +239,9 @@ param.sfo
 
 # Visual Studio Code
 .vscode/
+
+cheats
+.run
+docs/html
+system
+thumbnails
