@@ -249,8 +249,9 @@ OBJ += frontend/frontend_driver.o \
        tasks/task_content.o
 
 ifeq ($(HAVE_PATCH), 1)
-   DEFINES += -DHAVE_PATCH
+   DEFINES += -DHAVE_PATCH -DSECONDARY_DJW -DSECONDARY_LZMA -DSECONDARY_FGK
    INCLUDE_DIRS += -I$(DEPS_DIR)/xdelta3
+   LIBS += -llzma
    OBJS_XDELTA = $(DEPS_DIR)/xdelta3/xdelta3.o
    OBJ += tasks/task_patch.o $(OBJS_XDELTA)
 endif
