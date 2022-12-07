@@ -613,37 +613,101 @@ static enum patch_error ips_apply_patch(
    return PATCH_PATCH_INVALID;
 }
 
+/*
+ * For simplicity, this function makes two passes over the patch.
+ * The first pass is to compute the size of the patched file,
+ * and the second is to actually patch the file.
+ *
+ * This way, we only need to allocate memory once, instead of calling realloc()
+ * over and over.
+ */
 static enum patch_error xdelta_apply_patch(
         const uint8_t *patchdata, uint64_t patchlen,
         const uint8_t *sourcedata, uint64_t sourcelength,
         uint8_t **targetdata, uint64_t *targetlength)
 {
-    uint32_t offset = 5;
-    enum patch_error error_patch = PATCH_UNKNOWN;
-    // Validate the magic number, as given by RFC 3284 section 4.1
-    if (  patchlen      < 8   ||
-          patchdata[0] != 0xD6 ||
-          patchdata[1] != 0xC3 ||
-          patchdata[2] != 0xC4 ||
-          patchdata[3] != 0x00)
-        return PATCH_PATCH_INVALID;
+   enum patch_error error_patch = PATCH_SUCCESS;
+   xd3_stream stream;
+   xd3_config config;
+   xd3_source source;
 
+   /* Validate the magic number, as given by RFC 3284 section 4.1 */
+   if (patchlen      < 8    ||
+       patchdata[0] != 0xD6 ||
+       patchdata[1] != 0xC3 ||
+       patchdata[2] != 0xC4 ||
+       patchdata[3] != 0x00)
+      return PATCH_PATCH_INVALID_HEADER;
 
-    int err = xd3_decode_memory(patchdata, patchlen, sourcedata, sourcelength, *targetdata, targetlength, *targetlength, 0);
+   xd3_init_config(&config, XD3_SKIP_EMIT);
+   /* The first pass is just to compute the buffer size,
+    * no need to emit patched data yet */
 
-    if (err == XD3_INTERNAL)
-    {
-        return PATCH_UNKNOWN;
-    }
+   if (xd3_config_stream(&stream, &config) != 0)
+      /* Initialize the stream and config. If that fails... */
+      return PATCH_UNKNOWN; /* Exceedingly unlikely */
 
-    if (err == ENOSPC)
-    {
-        // TODO: Free targetdata, then allocate a new targetdata
-        return PATCH_TARGET_ALLOC_FAILED;
-    }
+   memset(&source, 0, sizeof(source));
+   source.name     = "In-Memory";
+   source.blksize  = sourcelength;
+   source.onblk    = sourcelength;
+   source.curblk   = sourcedata;
+   source.curblkno = 0;
 
+   if (xd3_set_source_and_size(&stream, &source, sourcelength) != 0)
+   { /* Set the data source. If that fails... */
+      error_patch = PATCH_SOURCE_INVALID;
+      goto cleanup_stream;
+   }
 
-    return PATCH_SUCCESS;
+   do
+   { /* Make a first pass over the patch, to compute the target size. */
+      switch (xd3_decode_input(&stream))
+      { /* xd3 works like a zlib-styled state machine (stream is the machine) */
+         case XD3_INPUT: /* When starting the first pass, provide the input */
+            xd3_avail_input(&stream, patchdata, patchlen);
+            break;
+         case XD3_GOTHEADER:
+         case XD3_WINSTART:
+            *targetlength += stream.winsize;
+            /* xdelta updates the active stream window in the GOTHEADER and WINSTART states */
+            break;
+         case XD3_OUTPUT:
+            xd3_consume_output(&stream); /* Need to call this after every output */
+            break;
+         case XD3_INVALID_INPUT:
+            error_patch = PATCH_PATCH_INVALID;
+            goto cleanup_stream;
+      }
+   } while (stream.avail_in > 0 || stream.avail_out > 0);
+
+   *targetdata = malloc(*targetlength);
+   if (*targetdata == NULL)
+   { /* If we couldn't allocate memory for the patched file... */
+      error_patch = PATCH_TARGET_ALLOC_FAILED;
+      goto cleanup_stream;
+   }
+
+   switch (xd3_decode_memory(
+           patchdata, patchlen,
+           sourcedata, sourcelength,
+           *targetdata, targetlength, *targetlength, 0))
+   {
+      case 0: /* Success */
+         break;
+      case ENOSPC:
+         error_patch = PATCH_TARGET_ALLOC_FAILED;
+         free(*targetdata);
+         goto cleanup_stream;
+      default:
+         error_patch = PATCH_UNKNOWN;
+         free(*targetdata);
+         goto cleanup_stream;
+   }
+
+cleanup_stream:
+   xd3_close_stream(&stream);
+   return error_patch;
 }
 
 static bool apply_patch_content(uint8_t **buf,
