@@ -257,6 +257,17 @@ ifeq ($(HAVE_PATCH), 1)
    LIBS += -llzma
    OBJS_XDELTA = $(DEPS_DIR)/xdelta3/xdelta3.o
    OBJ += tasks/task_patch.o $(OBJS_XDELTA)
+   HEADERS += xdelta3.h \
+              xdelta3-cfgs.h \
+              xdelta3-fgk.h \
+              xdelta3-hash.h \
+              xdelta3-internal.h \
+              xdelta3-list.h \
+              xdelta3-lzma.h \
+              xdelta3-second.h
+   # These headers are added to the makefile because xdelta3 does weird things
+   # with its #includes, which affects dependency tracking and project analysis
+   # (e.g. for IDEs).
 endif
 
 OBJ += \
