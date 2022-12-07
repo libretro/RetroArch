@@ -36,7 +36,7 @@
 #include "../verbosity.h"
 #include "../configuration.h"
 
-#include <xdelta3.h>
+#include "../deps/xdelta3/xdelta3.h"
 
 enum bps_mode
 {
