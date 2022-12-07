@@ -3599,7 +3599,7 @@ void retroarch_override_setting_unset(
 #ifdef HAVE_PATCH
            p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_XDELTA_PREF;
 #endif
-           break;
+         break;
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
          p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_LOG_TO_FILE;
          break;
