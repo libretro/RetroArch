@@ -220,6 +220,7 @@
 
      xdelta3-main.h     The command-line interface, external compression
                         support, POSIX-specific, info & VCDIFF-debug tools.
+                        (Excluded from RetroArch fork.)
      xdelta3-second.h   The common secondary compression routines.
      xdelta3-decoder.h  All decoding routines.
      xdelta3-djw.h      The semi-adaptive huffman secondary encoder.
@@ -230,6 +231,7 @@
                         boundary tests.  There are command-line tests.
                         There are compression tests.  There are external
                         compression tests.  There are string-matching tests.
+                        (Excluded from RetroArch fork.)
 			There should be more tests...
 
    Additional headers include:
@@ -709,14 +711,6 @@ const xd3_sec_type lzma_sec_type =
   IF_ENCODER((int (*)(xd3_stream*, xd3_sec_stream*, xd3_output*,
 		      xd3_output*, xd3_sec_cfg*))   xd3_encode_lzma)
 };
-#endif
-
-#if XD3_MAIN || PYTHON_MODULE || SWIG_MODULE || NOT_MAIN
-#include "xdelta3-main.h"
-#endif
-
-#if REGRESSION_TEST
-#include "xdelta3-test.h"
 #endif
 
 #endif /* __XDELTA3_C_HEADER_PASS__ */
