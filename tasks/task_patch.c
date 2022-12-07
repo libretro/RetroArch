@@ -383,7 +383,7 @@ static enum patch_error ups_apply_patch(
    }
 
    data.target_length = (unsigned)*targetlength;
-   
+
    while (data.patch_offset < data.patch_length - 12)
    {
       unsigned length = (unsigned)ups_decode(&data);
@@ -542,7 +542,7 @@ static enum patch_error ips_apply_patch(
          patchdata[3] != 'C' ||
          patchdata[4] != 'H')
       return PATCH_PATCH_INVALID;
-   
+
    if ((error_patch = ips_alloc_targetdata(
                patchdata, patchlen, sourcelength,
                targetdata, targetlength)) != PATCH_SUCCESS)
@@ -641,6 +641,37 @@ static enum patch_error xdelta_apply_patch(
         // TODO: Free targetdata, then allocate a new targetdata
         return PATCH_TARGET_ALLOC_FAILED;
     }
+   do
+   { /* Make a first pass over the patch, to compute the target size. */
+      int ret = 0;
+      switch (ret = xd3_decode_input(&stream))
+      { /* xd3 works like a zlib-styled state machine (stream is the machine) */
+         case XD3_INPUT: /* When starting the first pass, provide the input */
+            xd3_avail_input(&stream, patchdata, patchlen);
+            RARCH_DBG("[xdelta] Provided %u bytes of input to xd3_stream: %s\n", patchlen, stream.msg);
+            break;
+         case XD3_GOTHEADER:
+         case XD3_WINSTART:
+            *targetlength += stream.winsize;
+            RARCH_DBG("[xdelta] Discovered a window of %u bytes (target filesize is %u bytes)\n", stream.winsize, *targetlength);
+            /* xdelta updates the active stream window in the GOTHEADER and WINSTART states */
+            break;
+         case XD3_OUTPUT:
+            xd3_consume_output(&stream); /* Need to call this after every output */
+            RARCH_DBG("[xdelta] Consumed output from xd3_stream: %s\n", stream.msg);
+            break;
+         case XD3_INVALID_INPUT:
+            error_patch = PATCH_PATCH_INVALID;
+            RARCH_DBG("[xdelta] Invalid input in xd3_stream: %s\n", stream.msg);
+            goto cleanup_stream;
+         case XD3_INTERNAL:
+            error_patch = PATCH_UNKNOWN;
+            RARCH_DBG("[xdelta] Internal error in xd3_stream: %s\n", stream.msg);
+            goto cleanup_stream;
+         default:
+            RARCH_DBG("[xdelta] xd3_decode_input returned %d (%s; %s)\n", ret, xd3_strerror(ret), stream.msg);
+      }
+   } while (stream.avail_in > 0 || stream.avail_out > 0);
 
 
     return PATCH_SUCCESS;
@@ -697,7 +728,7 @@ static bool apply_patch_content(uint8_t **buf,
 static bool try_bps_patch(bool allow_bps, const char *name_bps,
       uint8_t **buf, ssize_t *size)
 {
-   if (     allow_bps 
+   if (     allow_bps
          && !string_is_empty(name_bps)
          && path_is_valid(name_bps)
       )
@@ -750,7 +781,7 @@ static bool try_ups_patch(bool allow_ups, const char *name_ups,
 static bool try_ips_patch(bool allow_ips,
       const char *name_ips, uint8_t **buf, ssize_t *size)
 {
-   if (     allow_ips 
+   if (     allow_ips
          && !string_is_empty(name_ips)
          && path_is_valid(name_ips)
       )
