@@ -1936,11 +1936,13 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+#ifdef HAVE_XDELTA
    if (rarch_flags & RARCH_FLAGS_XDELTA_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_XDELTA_PREF;
+#endif /* HAVE_XDELTA */
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
-#endif
+#endif /* HAVE_PATCH */
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
@@ -2031,11 +2033,13 @@ bool task_push_load_content_from_playlist_from_menu(
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+#ifdef HAVE_XDELTA
    if (rarch_flags & RARCH_FLAGS_XDELTA_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_XDELTA_PREF;
+#endif /* HAVE_XDELTA */
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
-#endif
+#endif /* HAVE_PATCH */
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
@@ -2178,11 +2182,13 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+#ifdef HAVE_XDELTA
    if (rarch_flags & RARCH_FLAGS_XDELTA_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_XDELTA_PREF;
+#endif /* HAVE_XDELTA */
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
-#endif
+#endif /* HAVE_PATCH */
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
@@ -2420,11 +2426,13 @@ bool task_push_load_content_with_new_core_from_menu(
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+#ifdef HAVE_XDELTA
    if (rarch_flags & RARCH_FLAGS_XDELTA_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_XDELTA_PREF;
+#endif /* HAVE_XDELTA */
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
-#endif
+#endif /* HAVE_PATCH */
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
@@ -2533,11 +2541,13 @@ static bool task_load_content_internal(
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+#ifdef HAVE_XDELTA
    if (rarch_flags & RARCH_FLAGS_XDELTA_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_XDELTA_PREF;
+#endif /* HAVE_XDELTA */
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
-#endif
+#endif /* HAVE_PATCH */
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
@@ -3043,11 +3053,13 @@ bool content_init(void)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+#ifdef HAVE_XDELTA
    if (rarch_flags & RARCH_FLAGS_XDELTA_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_XDELTA_PREF;
+#endif /* HAVE_XDELTA */
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
-#endif
+#endif /* HAVE_PATCH */
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;

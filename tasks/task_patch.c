@@ -36,7 +36,9 @@
 #include "../verbosity.h"
 #include "../configuration.h"
 
+#if HAVE_XDELTA
 #include "../deps/xdelta3/xdelta3.h"
+#endif
 
 enum bps_mode
 {
@@ -59,7 +61,8 @@ enum patch_error
    PATCH_TARGET_INVALID,
    PATCH_SOURCE_CHECKSUM_INVALID,
    PATCH_TARGET_CHECKSUM_INVALID,
-   PATCH_PATCH_CHECKSUM_INVALID
+   PATCH_PATCH_CHECKSUM_INVALID,
+   PATCH_PATCH_UNSUPPORTED
 };
 
 struct bps_data
@@ -626,6 +629,7 @@ static enum patch_error xdelta_apply_patch(
         const uint8_t *sourcedata, uint64_t sourcelength,
         uint8_t **targetdata, uint64_t *targetlength)
 {
+#if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
    enum patch_error error_patch = PATCH_SUCCESS;
    xd3_stream stream;
    xd3_config config;
@@ -719,6 +723,9 @@ static enum patch_error xdelta_apply_patch(
 cleanup_stream:
    xd3_close_stream(&stream);
    return error_patch;
+#else /* HAVE_PATCH is defined and HAVE_XDELTA is defined */
+   return PATCH_PATCH_UNSUPPORTED;
+#endif
 }
 
 static bool apply_patch_content(uint8_t **buf,
@@ -851,26 +858,28 @@ static bool try_ips_patch(bool allow_ips,
 static bool try_xdelta_patch(bool allow_xdelta,
                           const char *name_xdelta, uint8_t **buf, ssize_t *size)
 {
-    if (     allow_xdelta
-             && !string_is_empty(name_xdelta)
-             && path_is_valid(name_xdelta)
-            )
-    {
-        int64_t patch_size;
-        bool ret                 = false;
-        void *patch_data         = NULL;
+#if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
+   if (     allow_xdelta
+            && !string_is_empty(name_xdelta)
+            && path_is_valid(name_xdelta)
+           )
+   {
+      int64_t patch_size;
+      bool ret                 = false;
+      void *patch_data         = NULL;
 
-        if (!filestream_read_file(name_xdelta, &patch_data, &patch_size))
-            return false;
+      if (!filestream_read_file(name_xdelta, &patch_data, &patch_size))
+         return false;
 
-        if (patch_size >= 0)
-            ret = apply_patch_content(buf, size, "Xdelta", name_xdelta,
-                                      xdelta_apply_patch, patch_data, patch_size);
+      if (patch_size >= 0)
+         ret = apply_patch_content(buf, size, "Xdelta", name_xdelta,
+                                   xdelta_apply_patch, patch_data, patch_size);
 
-        if (patch_data)
-            free(patch_data);
-        return ret;
+      if (patch_data)
+         free(patch_data);
+      return ret;
     }
+#endif
     return false;
 }
 
