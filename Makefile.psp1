@@ -6,7 +6,7 @@ HAVE_THREADS           ?= 1
 BIG_STACK              ?= 0
 LOAD_WITHOUT_CORE_INFO ?= 0
 HAVE_STATIC_DUMMY      ?= 0
-
+HAVE_XDELTA            ?= 1
 TARGET = retroarchpsp
 
 ifeq ($(DEBUG), 1)
