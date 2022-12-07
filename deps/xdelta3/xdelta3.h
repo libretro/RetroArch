@@ -155,6 +155,32 @@ typedef ULONGLONG      uint64_t;
 
 #endif /* _WIN32 defined */
 
+#if SIZE_MAX == UINT64_MAX
+#define SIZEOF_SIZE_T 8
+#elif SIZE_MAX == UINT32_MAX
+#define SIZEOF_SIZE_T 4
+#endif
+
+#if ULONG_MAX == UINT64_MAX
+#define SIZEOF_UNSIGNED_LONG 8
+#elif ULONG_MAX == UINT32_MAX
+#define SIZEOF_UNSIGNED_LONG 4
+#endif
+
+#if UINT_MAX == UINT64_MAX
+#define SIZEOF_UNSIGNED_INT 8
+#elif UINT_MAX == UINT32_MAX
+#define SIZEOF_UNSIGNED_INT 4
+#endif
+
+#if defined(ULLONG_MAX) || defined(ULONG_LONG_MAX)
+#if ULLONG_MAX == UINT64_MAX || ULONG_LONG_MAX == UINT64_MAX
+#define SIZEOF_UNSIGNED_LONG_LONG 8
+#elif ULLONG_MAX == UINT32_MAX || ULONG_LONG_MAX == UINT32_MAX
+#define SIZEOF_UNSIGNED_LONG_LONG 4
+#endif
+#endif /* ULLONG_MAX defined or ULONG_LONG_MAX defined */
+
 /* Settings based on the size of xoff_t (32 vs 64 file offsets) */
 #if XD3_USE_LARGEFILE64
 /* xoff_t is a 64-bit type */
@@ -168,20 +194,11 @@ typedef ULONGLONG      uint64_t;
 #define _FILE_OFFSET_BITS 64
 #endif
 
-#if SIZE_MAX == UINT64_MAX
-#define SIZEOF_SIZE_T 8
-#else
-#define SIZEOF_SIZE_T 4
-#endif
-
-#if ULLONG_MAX == UINT64_MAX
-#define SIZEOF_UNSIGNED_LONG_LONG 8
-#else
-#define SIZEOF_UNSIGNED_LONG_LONG 4
-#endif
-
 _Static_assert(SIZEOF_SIZE_T == sizeof(size_t), "SIZEOF_SIZE_T not correctly set");
+
+#ifdef SIZEOF_UNSIGNED_LONG_LONG
 _Static_assert(SIZEOF_UNSIGNED_LONG_LONG == sizeof(unsigned long long), "SIZEOF_UNSIGNED_LONG_LONG not correctly set");
+#endif
 
 /* Set a xoff_t typedef and the "Q" printf insert. */
 #if defined(_WIN32)
