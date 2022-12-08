@@ -704,6 +704,7 @@ static enum patch_error xdelta_apply_patch(
 
 cleanup_stream:
    xd3_close_stream(&stream);
+   xd3_free_stream(&stream);
    return error_patch;
 #else /* HAVE_PATCH is defined and HAVE_XDELTA is defined */
    return PATCH_PATCH_UNSUPPORTED;
