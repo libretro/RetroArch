@@ -20,6 +20,7 @@
 extern "C" {
 #endif
 
+#include <libavcodec/version.h>
 #include <libavutil/frame.h>
 #include <libswscale/swscale.h>
 
