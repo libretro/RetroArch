@@ -5447,10 +5447,14 @@ static void retroarch_print_help(const char *arg0)
          "Specifies path for BPS patch that will be applied to content.\n"
          "      --ips=FILE                 "
          "Specifies path for IPS patch that will be applied to content.\n"
+         , sizeof(buf));
 #ifdef HAVE_XDELTA
+   strlcat(buf,
          "      --xdelta=FILE              "
          "Specifies path for Xdelta patch that will be applied to content.\n"
+         , sizeof(buf));
 #endif /* HAVE_XDELTA */
+   strlcat(buf,
          "      --no-patch                 "
          "Disables all forms of content patching.\n"
          , sizeof(buf));
