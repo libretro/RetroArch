@@ -253,7 +253,7 @@ ifeq ($(HAVE_PATCH), 1)
    OBJ     += tasks/task_patch.o
    ifeq ($(HAVE_XDELTA), 1)
       DEFINES      += -DHAVE_XDELTA -DSECONDARY_DJW -DSECONDARY_LZMA -DSECONDARY_FGK
-      INCLUDE_DIRS += -I$(DEPS_DIR)/xdelta3
+      INCLUDE_DIRS += -I$(DEPS_DIR)/xdelta3 -I$(LIBRETRO_COMM_DIR)
       LIBS         += -llzma
       OBJ          += $(DEPS_DIR)/xdelta3/xdelta3.o
       HEADERS      += xdelta3.h \

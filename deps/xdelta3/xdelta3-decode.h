@@ -17,13 +17,16 @@
 #ifndef _XDELTA3_DECODE_H_
 #define _XDELTA3_DECODE_H_
 
+/* To include RetroArch's INLINE macro */
+#include "retro_inline.h"
+
 #include "xdelta3-internal.h"
 
 #define SRCORTGT(x) ((((x) & VCD_SRCORTGT) == VCD_SOURCE) ? \
                      VCD_SOURCE : ((((x) & VCD_SRCORTGT) == \
                                     VCD_TARGET) ? VCD_TARGET : 0))
 
-static inline int
+static INLINE int
 xd3_decode_byte (xd3_stream *stream, usize_t *val)
 {
   if (stream->avail_in == 0)
@@ -38,7 +41,7 @@ xd3_decode_byte (xd3_stream *stream, usize_t *val)
   return 0;
 }
 
-static inline int
+static INLINE int
 xd3_decode_bytes (xd3_stream *stream, uint8_t *buf, usize_t *pos, usize_t size)
 {
   usize_t want;
@@ -1216,4 +1219,4 @@ xd3_decode_input (xd3_stream *stream)
     }
 }
 
-#endif // _XDELTA3_DECODE_H_
+#endif /* _XDELTA3_DECODE_H_*/

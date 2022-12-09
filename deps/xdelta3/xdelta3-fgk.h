@@ -19,6 +19,9 @@
 #ifndef _XDELTA3_FGK_h_
 #define _XDELTA3_FGK_h_
 
+/* To include RetroArch's INLINE macro */
+#include "retro_inline.h"
+
 /* An implementation of the FGK algorithm described by D.E. Knuth in
  * "Dynamic Huffman Coding" in Journal of Algorithms 6. */
 
@@ -108,7 +111,7 @@ static int             fgk_init            (xd3_stream *stream,
 					    int is_encode);
 static usize_t         fgk_encode_data     (fgk_stream *h,
 					    usize_t    n);
-static inline fgk_bit  fgk_get_encoded_bit (fgk_stream *h);
+static INLINE fgk_bit  fgk_get_encoded_bit (fgk_stream *h);
 
 static int             xd3_encode_fgk      (xd3_stream  *stream,
 					    fgk_stream  *sec_stream,
@@ -120,7 +123,7 @@ static int             xd3_encode_fgk      (xd3_stream  *stream,
 /* 			       Decoder                               */
 /*********************************************************************/
 
-static inline int      fgk_decode_bit      (fgk_stream *h,
+static INLINE int      fgk_decode_bit      (fgk_stream *h,
 					    fgk_bit     b);
 static usize_t         fgk_decode_data     (fgk_stream *h);
 static void            fgk_destroy         (xd3_stream *stream,
@@ -148,7 +151,7 @@ static void         fgk_init_node            (fgk_node *node, usize_t i, usize_t
 static fgk_block*   fgk_make_block           (fgk_stream *h, fgk_node *l);
 static void         fgk_free_block           (fgk_stream *h, fgk_block *b);
 static void         fgk_factor_remaining     (fgk_stream *h);
-static inline void  fgk_swap_ptrs            (fgk_node **one, fgk_node **two);
+static INLINE void  fgk_swap_ptrs            (fgk_node **one, fgk_node **two);
 
 /*********************************************************************/
 /* 			    Basic Routines                           */
@@ -291,7 +294,7 @@ static usize_t fgk_encode_data (fgk_stream* h, usize_t n)
 
 /* Should be called as many times as fgk_encode_data returns.
  */
-static inline fgk_bit fgk_get_encoded_bit (fgk_stream *h)
+static INLINE fgk_bit fgk_get_encoded_bit (fgk_stream *h)
 {
   XD3_ASSERT (h->coded_depth > 0);
 
@@ -660,7 +663,7 @@ static void fgk_factor_remaining (fgk_stream *h)
 /* receives a bit at a time and returns true when a complete code has
  * been received.
  */
-static inline int fgk_decode_bit (fgk_stream* h, fgk_bit b)
+static INLINE int fgk_decode_bit (fgk_stream* h, fgk_bit b)
 {
   XD3_ASSERT (b == 1 || b == 0);
 

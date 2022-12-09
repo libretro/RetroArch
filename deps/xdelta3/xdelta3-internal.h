@@ -16,6 +16,8 @@
 #ifndef XDELTA3_INTERNAL_H__
 #define XDELTA3_INTERNAL_H__
 
+/* To include RetroArch's INLINE macro */
+#include "retro_inline.h"
 #include "xdelta3.h"
 
 typedef struct _main_file        main_file;
@@ -234,7 +236,7 @@ struct _main_file
 #define IF_SIZEOF64(x) if (num < (1ULL << (7 * (x)))) return (x);
 
 #if USE_UINT32
-static inline uint32_t
+static INLINE uint32_t
 xd3_sizeof_uint32_t (uint32_t num)
 {
   IF_SIZEOF32(1);
@@ -244,24 +246,24 @@ xd3_sizeof_uint32_t (uint32_t num)
   return 5;
 }
 
-static inline int
+static INLINE int
 xd3_decode_uint32_t (xd3_stream *stream, uint32_t *val)
 { DECODE_INTEGER_TYPE (stream->dec_32part, UINT32_OFLOW_MASK); }
 
-static inline int
+static INLINE int
 xd3_read_uint32_t (xd3_stream *stream, const uint8_t **inpp,
 		   const uint8_t *maxp, uint32_t *valp)
 { READ_INTEGER_TYPE (uint32_t, UINT32_OFLOW_MASK); }
 
 #if XD3_ENCODER
-static inline int
+static INLINE int
 xd3_emit_uint32_t (xd3_stream *stream, xd3_output **output, uint32_t num)
 { EMIT_INTEGER_TYPE (); }
 #endif  /* XD3_ENCODER */
 #endif  /* USE_UINT32 */
 
 #if USE_UINT64
-static inline uint32_t
+static INLINE uint32_t
 xd3_sizeof_uint64_t (uint64_t num)
 {
   IF_SIZEOF64(1);
@@ -277,17 +279,17 @@ xd3_sizeof_uint64_t (uint64_t num)
   return 10;
 }
 
-static inline int
+static INLINE int
 xd3_decode_uint64_t (xd3_stream *stream, uint64_t *val)
 { DECODE_INTEGER_TYPE (stream->dec_64part, UINT64_OFLOW_MASK); }
 
-static inline int
+static INLINE int
 xd3_read_uint64_t (xd3_stream *stream, const uint8_t **inpp,
 		   const uint8_t *maxp, uint64_t *valp)
 { READ_INTEGER_TYPE (uint64_t, UINT64_OFLOW_MASK); }
 
 #if XD3_ENCODER
-static inline int
+static INLINE int
 xd3_emit_uint64_t (xd3_stream *stream, xd3_output **output, uint64_t num)
 { EMIT_INTEGER_TYPE (); }
 #endif  /* XD3_ENCODER */
@@ -301,15 +303,15 @@ xd3_emit_uint64_t (xd3_stream *stream, xd3_output **output, uint64_t num)
 #define xd3_large_cksum_update  xd3_large32_cksum_update
 #define xd3_hash_multiplier     xd3_hash_multiplier32
 
-static inline uint32_t xd3_sizeof_size (usize_t num)
+static INLINE uint32_t xd3_sizeof_size (usize_t num)
 { return xd3_sizeof_uint32_t (num); }
-static inline int xd3_decode_size (xd3_stream *stream, usize_t *valp)
+static INLINE int xd3_decode_size (xd3_stream *stream, usize_t *valp)
 { return xd3_decode_uint32_t (stream, (uint32_t*) valp); }
-static inline int xd3_read_size (xd3_stream *stream, const uint8_t **inpp,
+static INLINE int xd3_read_size (xd3_stream *stream, const uint8_t **inpp,
 		   const uint8_t *maxp, usize_t *valp)
 { return xd3_read_uint32_t (stream, inpp, maxp, (uint32_t*) valp); }
 #if XD3_ENCODER
-static inline int xd3_emit_size (xd3_stream *stream, xd3_output **output, usize_t num)
+static INLINE int xd3_emit_size (xd3_stream *stream, xd3_output **output, usize_t num)
 { return xd3_emit_uint32_t (stream, output, num); }
 #endif
 
@@ -321,15 +323,15 @@ static inline int xd3_emit_size (xd3_stream *stream, xd3_output **output, usize_
 #define xd3_large_cksum_update  xd3_large64_cksum_update
 #define xd3_hash_multiplier     xd3_hash_multiplier64
 
-static inline uint32_t xd3_sizeof_size (usize_t num)
+static INLINE uint32_t xd3_sizeof_size (usize_t num)
 { return xd3_sizeof_uint64_t (num); }
-static inline int xd3_decode_size (xd3_stream *stream, usize_t *valp)
+static INLINE int xd3_decode_size (xd3_stream *stream, usize_t *valp)
 { return xd3_decode_uint64_t (stream, (uint64_t*) valp); }
-static inline int xd3_read_size (xd3_stream *stream, const uint8_t **inpp,
+static INLINE int xd3_read_size (xd3_stream *stream, const uint8_t **inpp,
 		   const uint8_t *maxp, usize_t *valp)
 { return xd3_read_uint64_t (stream, inpp, maxp, (uint64_t*) valp); }
 #if XD3_ENCODER
-static inline int xd3_emit_size (xd3_stream *stream, xd3_output **output, usize_t num)
+static INLINE int xd3_emit_size (xd3_stream *stream, xd3_output **output, usize_t num)
 { return xd3_emit_uint64_t (stream, output, num); }
 #endif
 
@@ -338,20 +340,20 @@ static inline int xd3_emit_size (xd3_stream *stream, xd3_output **output, usize_
 #if SIZEOF_XOFF_T == 4
 #define XOFF_T_MAX        UINT32_MAX
 
-static inline int xd3_decode_offset (xd3_stream *stream, xoff_t *valp)
+static INLINE int xd3_decode_offset (xd3_stream *stream, xoff_t *valp)
 { return xd3_decode_uint32_t (stream, (uint32_t*) valp); }
 #if XD3_ENCODER
-static inline int xd3_emit_offset (xd3_stream *stream, xd3_output **output, xoff_t num)
+static INLINE int xd3_emit_offset (xd3_stream *stream, xd3_output **output, xoff_t num)
 { return xd3_emit_uint32_t (stream, output, num); }
 #endif
 
 #elif SIZEOF_XOFF_T == 8
 #define XOFF_T_MAX        UINT64_MAX
 
-static inline int xd3_decode_offset (xd3_stream *stream, xoff_t *valp)
+static INLINE int xd3_decode_offset (xd3_stream *stream, xoff_t *valp)
 { return xd3_decode_uint64_t (stream, (uint64_t*) valp); }
 #if XD3_ENCODER
-static inline int xd3_emit_offset (xd3_stream *stream, xd3_output **output, xoff_t num)
+static INLINE int xd3_emit_offset (xd3_stream *stream, xd3_output **output, xoff_t num)
 { return xd3_emit_uint64_t (stream, output, num); }
 #endif
 
@@ -382,4 +384,4 @@ uint64_t xd3_large64_cksum_update (xd3_hash_cfg *cfg, const uint64_t cksum,
 #define MAX_LRU_SIZE 32U
 #define XD3_MINSRCWINSZ (XD3_ALLOCSIZE * MAX_LRU_SIZE)
 
-#endif // XDELTA3_INTERNAL_H__
+#endif /* XDELTA3_INTERNAL_H__ */

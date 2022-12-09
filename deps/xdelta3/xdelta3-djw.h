@@ -17,6 +17,9 @@
 #ifndef _XDELTA3_DJW_H_
 #define _XDELTA3_DJW_H_
 
+/* To include RetroArch's INLINE macro */
+#include "retro_inline.h"
+
 /* The following people deserve much credit for the algorithms and
  * techniques contained in this file:
 
@@ -244,7 +247,7 @@ djw_destroy (xd3_stream *stream,
 /*                               HEAP                                */
 /*********************************************************************/
 
-static inline int
+static INLINE int
 heap_less (const djw_heapen *a, const djw_heapen *b)
 {
   return a->freq   < b->freq ||
@@ -252,7 +255,7 @@ heap_less (const djw_heapen *a, const djw_heapen *b)
      a->depth  < b->depth);
 }
 
-static inline void
+static INLINE void
 heap_insert (usize_t *heap, const djw_heapen *ents, usize_t p, const usize_t e)
 {
   /* Insert ents[e] into next slot heap[p] */
@@ -268,7 +271,7 @@ heap_insert (usize_t *heap, const djw_heapen *ents, usize_t p, const usize_t e)
   heap[p] = e;
 }
 
-static inline djw_heapen*
+static INLINE djw_heapen*
 heap_extract (usize_t *heap, const djw_heapen *ents, usize_t heap_last)
 {
   usize_t smallest = heap[1];
@@ -321,7 +324,7 @@ heap_check (usize_t *heap, djw_heapen *ents, usize_t heap_last)
 /*                             MTF, 1/2                              */
 /*********************************************************************/
 
-static inline usize_t
+static INLINE usize_t
 djw_update_mtf (uint8_t *mtf, usize_t mtf_i)
 {
   int k;
@@ -333,7 +336,7 @@ djw_update_mtf (uint8_t *mtf, usize_t mtf_i)
   return sym;
 }
 
-static inline void
+static INLINE void
 djw_update_1_2 (int *mtf_run, usize_t *mtf_i,
 		uint8_t *mtfsym, djw_weight *freq)
 {
@@ -1407,7 +1410,7 @@ djw_build_decoder (xd3_stream    *stream,
   *max_clenp = max_clen;
 }
 
-static inline int
+static INLINE int
 djw_decode_symbol (xd3_stream     *stream,
 		   bit_state      *bstate,
 		   const uint8_t **input,
@@ -1531,7 +1534,7 @@ djw_decode_clclen (xd3_stream     *stream,
   return 0;
 }
 
-static inline int
+static INLINE int
 djw_decode_1_2 (xd3_stream     *stream,
 		bit_state      *bstate,
 		const uint8_t **input,
@@ -1606,7 +1609,7 @@ djw_decode_1_2 (xd3_stream     *stream,
   return 0;
 }
 
-static inline int
+static INLINE int
 djw_decode_prefix (xd3_stream     *stream,
 		   bit_state      *bstate,
 		   const uint8_t **input,
