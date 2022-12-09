@@ -158,7 +158,7 @@ bool getMountInfo(char *path, char *mountString, char *mountPoint, char *newCWD)
    return true;
 }
 
-static void init_drivers()
+static void init_drivers(bool extra_drivers)
 {
    init_fileXio_driver();
    init_memcard_driver(true);
@@ -173,8 +173,11 @@ static void init_drivers()
    hddStatus = init_hdd_driver(false, only_if_booted_from_hdd);
 
 #ifndef IS_SALAMANDER
-   init_audio_driver();
-   init_joystick_driver(true);
+   if (extra_drivers)
+   {
+      init_audio_driver();
+      init_joystick_driver(true);
+   }
 #endif
 }
 
@@ -184,6 +187,9 @@ static void mount_partition(void)
    char new_cwd[FILENAME_MAX];
    int should_mount  = 0;
    int bootDeviceID  = getBootDeviceID(cwd);
+
+   if (hddStatus != HDD_INIT_STATUS_IRX_OK)
+      return;
 
    /* Try to mount HDD partition, either from cwd or default one */
    if (bootDeviceID == BOOT_DEVICE_HDD || bootDeviceID == BOOT_DEVICE_HDD0)
@@ -230,32 +236,32 @@ static void mount_partition(void)
    }
 }
 
-static void deinit_drivers(bool deinit_powerOff) 
+static void deinit_drivers(bool deinit_filesystem, bool deinit_powerOff)
 {
 #ifndef IS_SALAMANDER
    deinit_audio_driver();
    deinit_joystick_driver(false);
 #endif
 
-   deinit_hdd_driver(false);
-   deinit_usb_driver();
-   deinit_memcard_driver(true);
-   deinit_fileXio_driver();
+   if (deinit_filesystem) {
+      umount_hdd_partition(mountString);
+
+      deinit_hdd_driver(false);
+      deinit_usb_driver();
+      deinit_memcard_driver(true);
+      deinit_fileXio_driver();
+
+      hddMountStatus  = HDD_MOUNT_INIT_STATUS_NOT_READY;
+      hddStatus        = HDD_INIT_STATUS_UNKNOWN;
+   }
 
    if (deinit_powerOff)
       deinit_poweroff_driver();
 }
 
-static void prepare_for_exit(bool deinit_powerOff) 
-{
-   umount_hdd_partition(mountString);
-
-   deinit_drivers(deinit_powerOff);
-}
-
 static void poweroffHandler(void *arg)
 {
-   prepare_for_exit(false);
+   deinit_drivers(true, false);
    poweroffShutdown();
 }
 
@@ -297,14 +303,9 @@ static void frontend_ps2_get_env(int *argc, char *argv[],
 #endif
 }
 
-static void frontend_ps2_init(void *data)
+static void common_init_drivers(bool extra_drivers) 
 {
-   reset_IOP();
-#if defined(SCREEN_DEBUG)
-   init_scr();
-   scr_printf("\n\nStarting RetroArch...\n");
-#endif
-   init_drivers();
+   init_drivers(true);
 
    poweroffSetCallback(&poweroffHandler, NULL);
 
@@ -314,18 +315,30 @@ static void frontend_ps2_init(void *data)
     * up for setting the CWD. */
    path_parent_dir(cwd, strlen(cwd));
 #endif
-   if (hddStatus == HDD_INIT_STATUS_IRX_OK)
-      mount_partition();
+   
+   mount_partition();
 
    waitUntilDeviceIsReady(cwd);
 }
 
+static void frontend_ps2_init(void *data)
+{
+   reset_IOP();
+#if defined(SCREEN_DEBUG)
+   init_scr();
+   scr_printf("\n\nStarting RetroArch...\n");
+#endif
+   common_init_drivers(true);
+}
+
 static void frontend_ps2_deinit(void *data)
 {
+   bool deinit_filesystem = false;
 #ifndef IS_SALAMANDER
    if (ps2_fork_mode == FRONTEND_FORK_NONE)
-      prepare_for_exit(true);
+      deinit_filesystem = true;
 #endif
+   deinit_drivers(deinit_filesystem, true);
 }
 
 static void frontend_ps2_exec(const char *path, bool should_load_game)
@@ -333,6 +346,12 @@ static void frontend_ps2_exec(const char *path, bool should_load_game)
    int args = 0;
    char *argv[1];
    RARCH_LOG("Attempt to load executable: [%s], partition [%s].\n", path, mountPoint);
+
+   /* Reload IOP drivers for saving IOP ram */
+   reset_IOP();
+   common_init_drivers(false);
+   waitUntilDeviceIsReady(path);
+
 #ifndef IS_SALAMANDER
    char game_path[FILENAME_MAX];
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
@@ -399,7 +418,7 @@ static int frontend_ps2_get_rating(void) { return 10; }
 
 enum frontend_architecture frontend_ps2_get_arch(void)
 {
-    return FRONTEND_ARCH_MIPS;
+   return FRONTEND_ARCH_MIPS;
 }
 
 static int frontend_ps2_parse_drive_list(void *data, bool load_content)
