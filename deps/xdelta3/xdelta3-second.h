@@ -16,13 +16,13 @@
 #ifndef _XDELTA3_SECOND_H_
 #define _XDELTA3_SECOND_H_
 
-static inline void xd3_bit_state_encode_init (bit_state *bits)
+static INLINE void xd3_bit_state_encode_init (bit_state *bits)
 {
   bits->cur_byte = 0;
   bits->cur_mask = 1;
 }
 
-static inline int xd3_decode_bits (xd3_stream     *stream,
+static INLINE int xd3_decode_bits (xd3_stream     *stream,
 				   bit_state      *bits,
 				   const uint8_t **input,
 				   const uint8_t  *input_max,
@@ -172,7 +172,7 @@ xd3_decode_secondary (xd3_stream      *stream,
 }
 
 #if XD3_ENCODER
-static inline int xd3_encode_bit (xd3_stream      *stream,
+static INLINE int xd3_encode_bit (xd3_stream      *stream,
 				  xd3_output     **output,
 				  bit_state       *bits,
 				  usize_t          bit)
@@ -203,7 +203,7 @@ static inline int xd3_encode_bit (xd3_stream      *stream,
   return 0;
 }
 
-static inline int xd3_flush_bits (xd3_stream      *stream,
+static INLINE int xd3_flush_bits (xd3_stream      *stream,
 				  xd3_output     **output,
 				  bit_state       *bits)
 {
@@ -211,7 +211,7 @@ static inline int xd3_flush_bits (xd3_stream      *stream,
     xd3_emit_byte (stream, output, bits->cur_byte);
 }
 
-static inline int xd3_encode_bits (xd3_stream      *stream,
+static INLINE int xd3_encode_bits (xd3_stream      *stream,
 				   xd3_output     **output,
 				   bit_state       *bits,
 				   usize_t           nbits,

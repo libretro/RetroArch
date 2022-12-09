@@ -982,7 +982,7 @@ xd3_choose_instruction (xd3_rinst *prev, xd3_rinst *inst)
 
 /***********************************************************************/
 
-static inline void
+static INLINE void
 xd3_swap_uint8p (uint8_t** p1, uint8_t** p2)
 {
   uint8_t *t = (*p1);
@@ -990,7 +990,7 @@ xd3_swap_uint8p (uint8_t** p1, uint8_t** p2)
   (*p2) = t;
 }
 
-static inline void
+static INLINE void
 xd3_swap_usize_t (usize_t* p1, usize_t* p2)
 {
   usize_t t = (*p1);
@@ -1138,7 +1138,7 @@ xd3_comprun (const uint8_t *seg, usize_t slook, uint8_t *run_cp)
  ***********************************************************************/
 
 #if XD3_ENCODER
-inline int
+INLINE int
 xd3_emit_byte (xd3_stream  *stream,
 	       xd3_output **outputp,
 	       uint8_t      code)
@@ -1162,7 +1162,7 @@ xd3_emit_byte (xd3_stream  *stream,
   return 0;
 }
 
-inline int
+INLINE int
 xd3_emit_bytes (xd3_stream     *stream,
 		xd3_output    **outputp,
 		const uint8_t  *base,
@@ -1836,14 +1836,14 @@ xd3_config_stream(xd3_stream *stream,
  Getblk interface
  ***********************************************************/
 
-inline
+INLINE
 xoff_t xd3_source_eof(const xd3_source *src)
 {
   xoff_t r = (src->max_blkno << src->shiftby) + (xoff_t)src->onlastblk;
   return r;
 }
 
-inline
+INLINE
 usize_t xd3_bytes_on_srcblk (xd3_source *src, xoff_t blkno)
 {
   usize_t r = (blkno == src->max_blkno ?
@@ -3835,7 +3835,7 @@ xd3_source_match_setup (xd3_stream *stream, xoff_t srcpos)
   return 1;
 }
 
-static inline usize_t
+static INLINE usize_t
 xd3_forward_match(const uint8_t *s1c, const uint8_t *s2c, usize_t n)
 {
   usize_t i = 0;

@@ -16,22 +16,25 @@
 #ifndef __XDELTA3_LIST__
 #define __XDELTA3_LIST__
 
+/* To include RetroArch's INLINE macro */
+#include "retro_inline.h"
+
 #define XD3_MAKELIST(LTYPE,ETYPE,LNAME)                                 \
                                                                         \
-static inline ETYPE*                                                    \
+static INLINE ETYPE*                                                    \
 LTYPE ## _entry (LTYPE* l)                                              \
 {                                                                       \
   return (ETYPE*) ((char*) l - (ptrdiff_t) &((ETYPE*) 0)->LNAME);       \
 }                                                                       \
                                                                         \
-static inline void                                                      \
+static INLINE void                                                      \
 LTYPE ## _init (LTYPE *l)                                               \
 {                                                                       \
   l->next = l;                                                          \
   l->prev = l;                                                          \
 }                                                                       \
                                                                         \
-static inline void                                                      \
+static INLINE void                                                      \
 LTYPE ## _add (LTYPE *prev, LTYPE *next, LTYPE *ins)                    \
 {                                                                       \
   next->prev = ins;                                                     \
@@ -40,13 +43,13 @@ LTYPE ## _add (LTYPE *prev, LTYPE *next, LTYPE *ins)                    \
   ins->prev  = prev;                                                    \
 }                                                                       \
                                                                         \
-static inline void                                                      \
+static INLINE void                                                      \
 LTYPE ## _push_back (LTYPE *l, ETYPE *i)                                \
 {                                                                       \
   LTYPE ## _add (l->prev, l, & i->LNAME);                               \
 }                                                                       \
                                                                         \
-static inline void                                                      \
+static INLINE void                                                      \
 LTYPE ## _del (LTYPE *next,                                             \
 	       LTYPE *prev)                                             \
 {                                                                       \
@@ -54,7 +57,7 @@ LTYPE ## _del (LTYPE *next,                                             \
   prev->next = next;                                                    \
 }                                                                       \
                                                                         \
-static inline ETYPE*                                                    \
+static INLINE ETYPE*                                                    \
 LTYPE ## _remove (ETYPE *f)                                             \
 {                                                                       \
   LTYPE *i = f->LNAME.next;                                             \
@@ -62,7 +65,7 @@ LTYPE ## _remove (ETYPE *f)                                             \
   return LTYPE ## _entry (i);                                           \
 }                                                                       \
                                                                         \
-static inline ETYPE*                                                    \
+static INLINE ETYPE*                                                    \
 LTYPE ## _pop_back (LTYPE *l)                                           \
 {                                                                       \
   LTYPE *i = l->prev;                                                   \
@@ -70,7 +73,7 @@ LTYPE ## _pop_back (LTYPE *l)                                           \
   return LTYPE ## _entry (i);                                           \
 }                                                                       \
                                                                         \
-static inline ETYPE*                                                    \
+static INLINE ETYPE*                                                    \
 LTYPE ## _pop_front (LTYPE *l)                                          \
 {                                                                       \
   LTYPE *i = l->next;                                                   \
@@ -78,37 +81,37 @@ LTYPE ## _pop_front (LTYPE *l)                                          \
   return LTYPE ## _entry (i);                                           \
 }                                                                       \
                                                                         \
-static inline int                                                       \
+static INLINE int                                                       \
 LTYPE ## _empty (LTYPE *l)                                              \
 {                                                                       \
   return l == l->next;                                                  \
 }                                                                       \
                                                                         \
-static inline ETYPE*                                                    \
+static INLINE ETYPE*                                                    \
 LTYPE ## _front (LTYPE *f)                                              \
 {                                                                       \
   return LTYPE ## _entry (f->next);                                     \
 }                                                                       \
                                                                         \
-static inline ETYPE*                                                    \
+static INLINE ETYPE*                                                    \
 LTYPE ## _back (LTYPE *f)                                               \
 {                                                                       \
   return LTYPE ## _entry (f->prev);                                     \
 }                                                                       \
                                                                         \
-static inline int                                                       \
+static INLINE int                                                       \
 LTYPE ## _end (LTYPE *f, ETYPE *i)                                      \
 {                                                                       \
   return f == & i->LNAME;                                               \
 }                                                                       \
                                                                         \
-static inline ETYPE*                                                    \
+static INLINE ETYPE*                                                    \
 LTYPE ## _next (ETYPE *f)                                               \
 {                                                                       \
   return LTYPE ## _entry (f->LNAME.next);                               \
 }                                                                       \
                                                                         \
-static inline usize_t                                                   \
+static INLINE usize_t                                                   \
 LTYPE ## _length (LTYPE *l)                                             \
 {                                                                       \
   LTYPE *p;                                                             \

@@ -25,6 +25,8 @@
 #define _POSIX_SOURCE 200112L
 #define _ISOC99_SOURCE
 #define _C99_SOURCE
+/* To include RetroArch's INLINE macro */
+#include "retro_inline.h"
 
 #if HAVE_CONFIG_H
 #include "config.h"
@@ -406,8 +408,6 @@ typedef const xd3_dinst* (xd3_code_table_func) (void);
 #define vsnprintf_func vsnprintf
 #define snprintf_func snprintf
 #endif
-#define short_sprintf(sb,fmt,...) \
-  snprintf_func((sb).buf,sizeof((sb).buf),fmt,__VA_ARGS__)
 
 /* Type used for short snprintf calls. */
 typedef struct {
@@ -766,13 +766,13 @@ struct _xd3_smatcher
 /* hash table size & power-of-two hash function. */
 struct _xd3_hash_cfg
 {
-  usize_t  size;       // Number of buckets
+  usize_t  size;       /* Number of buckets */
   usize_t  shift;
   usize_t  mask;
-  usize_t  look;       // How wide is this checksum
-  usize_t  multiplier; // K * powers[0]
-  usize_t *powers;     // Array of [0,look) where powers[look-1] == 1
-                       // and powers[N] = powers[N+1]*K (Rabin-Karp)
+  usize_t  look;       /* How wide is this checksum */
+  usize_t  multiplier; /* K * powers[0] */
+  usize_t *powers;     /* Array of [0,look) where powers[look-1] == 1
+                          and powers[N] = powers[N+1]*K (Rabin-Karp) */
 };
 
 /* the sprev list */
@@ -1142,7 +1142,7 @@ struct _xd3_stream
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
+#endif /* __cplusplus*/
 
 
 /* This function configures an xd3_stream using the provided in-memory
@@ -1359,7 +1359,7 @@ const char* xd3_strerror (int ret);
 
 /* For convenience, zero & initialize the xd3_config structure with
    specified flags. */
-static inline
+static INLINE
 void    xd3_init_config (xd3_config *config,
 			 uint32_t    flags)
 {
@@ -1383,7 +1383,7 @@ void    xd3_init_config (xd3_config *config,
  * For decoding, the input will be consumed entirely before XD3_INPUT
  * is returned again.
  */
-static inline
+static INLINE
 void    xd3_avail_input  (xd3_stream    *stream,
 			  const uint8_t *idata,
 			  usize_t         isize)
@@ -1402,28 +1402,28 @@ void    xd3_avail_input  (xd3_stream    *stream,
 
 /* This acknowledges receipt of output data, must be called after any
  * XD3_OUTPUT return. */
-static inline
+static INLINE
 void xd3_consume_output (xd3_stream  *stream)
 {
   stream->avail_out  = 0;
 }
 
 /* These are set for each XD3_WINFINISH return. */
-static inline
+static INLINE
 int xd3_encoder_used_source (xd3_stream *stream) {
   return stream->src != NULL && stream->src->srclen > 0;
 }
-static inline
+static INLINE
 xoff_t xd3_encoder_srcbase (xd3_stream *stream) {
   return stream->src->srcbase;
 }
-static inline
+static INLINE
 usize_t xd3_encoder_srclen (xd3_stream *stream) {
   return stream->src->srclen;
 }
 
 /* Checks for legal flag changes. */
-static inline
+static INLINE
 void xd3_set_flags (xd3_stream *stream, uint32_t flags)
 {
   /* The bitwise difference should contain only XD3_FLUSH or
@@ -1434,7 +1434,7 @@ void xd3_set_flags (xd3_stream *stream, uint32_t flags)
 
 /* Gives some extra information about the latest library error, if any
  * is known. */
-static inline
+static INLINE
 const char* xd3_errstring (xd3_stream  *stream)
 {
   return stream->msg ? stream->msg : "";
@@ -1444,7 +1444,7 @@ const char* xd3_errstring (xd3_stream  *stream)
 /* 64-bit divisions are expensive, which is why we require a
  * power-of-two source->blksize.  To relax this restriction is
  * relatively easy, see the history for xd3_blksize_div(). */
-static inline
+static INLINE
 void xd3_blksize_div (const xoff_t offset,
 		      const xd3_source *source,
 		      xoff_t *blkno,
@@ -1454,7 +1454,7 @@ void xd3_blksize_div (const xoff_t offset,
   XD3_ASSERT (*blkoff < source->blksize);
 }
 
-static inline
+static INLINE
 void xd3_blksize_add (xoff_t *blkno,
 		      usize_t *blkoff,
 		      const xd3_source *source,
@@ -1476,7 +1476,7 @@ void xd3_blksize_add (xoff_t *blkno,
 }
 
 #ifdef __cplusplus
-} // extern "C"
+} /* extern "C" */
 #endif
 
 #define XD3_NOOP 0U
