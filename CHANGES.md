@@ -1,27 +1,39 @@
 # Future
+
+# 1.14.0
+- AUDIO/COREAUDIO/APPLE: Allow coreaudio3 driver to work with audio devices that have 2 or more output channels
+- CHEEVOS: Fix construction of Cheevos badge path
 - CLI: Fixed not getting any output when running --version or --features without --verbose
 - CLI: Fixed crash when running empty - parameter (it proceeded to content loading)
 - CLI: Reformatted --features to require less rows and to be more consistent
 - CLI: Added -V shorthand for --version
 - CLI: Tab removal + whitespace nits
+- CONFIG/MIDI: Prevent MIDI startup error with old configurations 
 - D3D11: Fix when using shaders with TATE mode arcades etc
 - D3D12: Fix when using shaders with TATE mode arcades etc
 - D3D12: Added support for break on errors  (development aid - define DEVICE_DEBUG to use)
 - D3D12: Added support for DRED (device remove extended data) (development aid - define DEVICE_DEBUG to use)
 - D3D12: Made D3D12 viewport and scissors to behave more like Vulkan drivers (or be more correct)
 - D3D12: Fixed validation error on start up due to buffers not being setup correctly for one frame
+- DATABASE/EXPLORE/VIEW: Bugfix - RGUI did not clear thumbnail on non-playlist items such as Save and Delete
+menu_explore_get_entry_playlist_index() returns -1 on invalid entries, but the variable where it was stored was unsigned
+- DATABASE/EXPLORE/VIEW: Bugfix - XMB+Ozone cleared thumbnail in Quick Menu when navigating away from Run
 - DRM/ODROID GO2: Implement get_video_size for DRM GL context driver
 - FASTFORWARD: Restore framelimit on fastforward toggle. Fast-forward was broken after toggling vrr_runloop off, since it will force frame limit to 1.0 (even on every frame) and never restores it. So let's make sure the wanted ratio is applied when toggling FF (Fastforward).
+- FFMPEG CORE: Fix runtime error in FFmpeg core when build with FFmpeg n5.1.2 and OpenGL ES
 - GFX/VIDEO FILTERS: (picoscale_256x_320x240) Added snn function to upscale Fuse (ZX Spectrum) core borderless output to 320x240. ZX Spectrum resolution of 256x192 was previously unsupported.
 - HOTKEYS: Further reorder internal hotkey items for consistency and removed SEND_DEBUG_INFO, OVERLAY_NEXT and OSK from visible hotkey bind list. "Send Debug Info" stuff is removed as much as possible without breakage due to translation files.
 - INPUT/AUTOCONFIG: Disable 'pause on controller disconnect' by default - was enabled by default on 1.13.0
+- INPUT/MENU: Device Index menu refactor
 - INPUT/OVERLAY: Fix analog drift blocking touch input (could occur on overlay_next if physical inputs shown on overlay)
 - INPUT/OVERLAY: Fix overlay_next buttons lighting up in unison
 - INPUT/OVERLAY: Skip meta keys in input_overlay_add_inputs (not supported by input_state_internal)
 - INPUT/WINDOWS/WINRAW: Fix mouse position when using input overlay with mouse cursor
 - INPUT/WINDOWS/WINRAW: Fixed mouse position to use the same method required for menu items and pointer when simulating input overlays with mouse, since it won't work with multi mouse method
 - INPUT/WINDOWS/WINRAW: Fixed passing mouse position to core also when using aforementioned method
+- LEAPFROG: Add Leapfrog (LFx000) Target
 - LOCALIZATION: Updates
+- LOCALIZATION/INPUT/IME/MENU/ONSCREEN KEYBOARD: Extended IME and Korean OSK
 - MENU: Allow toggling info off with the same button
 - MENU: Allow menu wallpaper/background reset. Let's also remove the current wallpaper from the screen when pressing Start.
 - MENU: Null driver shows with different color (Added for all menus the ability to show "disabled" items with a muted color)
@@ -29,11 +41,26 @@
 - MENU/INPUT: Moved "Confirm Quit" to Input menu
 - MENU/INPUT/HOTKEYS: Input hotkey menu completely overhauled to keep related entries together, and also adjusted some labels and sublabels
 - MENU/OVERLAY: Fix overlays behind menu without core running. "Show Overlay Behind Menu" is currently broken with Ozone and XMB (with any other color theme than Plain) when running without a core.
+- MENU/MATERIALUI: Fix home screen on first startup - no more stray entries
 - MENU/OZONE: Allowed drawing sidebar and thumbnail bar background color also when core is running
 - MENU/OZONE: Stopped using different padding and position for savestate thumbnails vs imageviewer
 - MENU/OZONE: Removed gradient background effect when core is running, because some themes already have gradient background, which creates ugly rough steps
 - MENU/OZONE: Fixed "Gray Light" theme from using the same background as "Gray Dark", which makes selection cursor near impossible to see
 - MENU/OZONE: Some whitespace corrections
+- MENU/UX: Extend OFF menu value colors
+- MENU/UX: Menu icon improvements - Menu Visibility icons (Quick Menu + Settings)
+- MENU/UX: Menu icon improvements - Playlist Manager icons
+- MENU/UX: Menu icon improvements - Explore icon as database icon
+- MENU/UX: Menu icon improvements - View and filter icons as cursor icon (folder icon in GLUI)
+- MENU/UX: Menu icon improvements - View save + delete icons
+- MENU/UX: Menu icon improvements - Moved Explore + Views below Standalone Cores
+- MENU/UX/OZONE: Removed icons from menus where others items don't have icons, and added icons to menus where the rest have icons
+- MENU/UX/OZONE: Changed the way "no icon" is handled from kludgy way of not drawing SUBSETTING icon
+- MENU/UX/XMB: Changed playlist entry index positioning to bottom right when thumbnails are in vertical mode, because big lists will overlap with arrow and current "breadcrumb" icons when the position is next to current selection
+- MENU/UX/XMB: Added a rather nasty hack to prevent showing wrong icons under Explore as "breadcrumb" icon
+- MENU/UX/XMB: Optimized certain icon drawing loops (Main horizontal icons were looped even when not visible, and all previous "breadcrumb" icons were looped when only one certain was needed)
+- MENU/UX/MATERIALUI: Fixed showing icons where there should not be any (Waitable Swapchains, Show Recording + Streaming)
+- OSX/MACOS: Fixed Cocoa keyboard not allowing to map Analog stick
 - SDL GFX: Fix no menu on start/blank screen issue. 
 - SRAM: Don't init SRAM saving without content (gets rid of the redundant logging)
 
