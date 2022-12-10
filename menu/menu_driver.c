@@ -7554,6 +7554,18 @@ static int generic_menu_iterate(
                   default:
                      ret = msg_hash_get_help_enum(cbs->enum_idx,
                            menu->menu_state_msg, sizeof(menu->menu_state_msg));
+
+                     if (string_is_equal(menu->menu_state_msg,
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
+                     {
+                        get_current_menu_sublabel(
+                              menu_st,
+                              menu->menu_state_msg, sizeof(menu->menu_state_msg));
+                        if (string_is_equal(menu->menu_state_msg, ""))
+                           strlcpy(menu->menu_state_msg,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
+                                 sizeof(menu->menu_state_msg));
+                     }
                      break;
                }
 
