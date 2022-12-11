@@ -12492,7 +12492,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT,
-   "已設定連接埠"
+   "已載入: 連接埠"
    )
 MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
@@ -12576,15 +12576,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_REMAP_FILE_LOADED,
-   "已套用遊戲控制器。"
+   "已載入遊戲控制器。"
    )
 MSG_HASH(
    MSG_DIRECTORY_REMAP_FILE_LOADED,
-   "已套用路徑控制器。"
+   "已載入路徑控制器。"
    )
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
-   "已套用核心控制器。"
+   "已載入核心控制器。"
    )
 MSG_HASH(
    MSG_REMAP_FILE_FLUSHED,
