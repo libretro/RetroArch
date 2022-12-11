@@ -117,8 +117,8 @@ audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_JACK
    &audio_jack,
 #endif
-#ifdef HAVE_WASAPI
-   &audio_wasapi,
+#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+   &audio_sdl,
 #endif
 #ifdef HAVE_XAUDIO
    &audio_xa,
@@ -126,8 +126,8 @@ audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_DSOUND
    &audio_dsound,
 #endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
-   &audio_sdl,
+#ifdef HAVE_WASAPI
+   &audio_wasapi,
 #endif
 #ifdef HAVE_PULSE
    &audio_pulse,
@@ -399,11 +399,13 @@ static void audio_driver_flush(
       bool audio_fastforward_mute,
       bool audio_rewind_mute,
       const int16_t *data, size_t samples,
-      bool is_slowmotion, bool is_fastmotion, bool is_rewind)
+      bool is_slowmotion, bool is_fastmotion,
+      bool is_rewind)
 {
    struct resampler_data src_data;
    float audio_volume_gain           = (audio_st->mute_enable ||
-         (audio_fastforward_mute && is_fastmotion)|| (audio_rewind_mute && is_rewind))
+         (audio_fastforward_mute && is_fastmotion)||
+         (audio_rewind_mute && is_rewind))
                ? 0.0f 
                : audio_st->volume_gain;
 
@@ -889,8 +891,8 @@ void audio_driver_sample_rewind(int16_t left, int16_t right)
    if (audio_st->rewind_ptr == 0)
       return;
 
-   audio_st->rewind_buf[--audio_st->rewind_ptr] = left;
    audio_st->rewind_buf[--audio_st->rewind_ptr] = right;
+   audio_st->rewind_buf[--audio_st->rewind_ptr] = left;
 }
 
 size_t audio_driver_sample_batch_rewind(
