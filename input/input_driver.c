@@ -4035,6 +4035,7 @@ static void input_keys_pressed(
       rarch_joypad_info_t *joypad_info)
 {
    unsigned i;
+   bool libretro_input_pressed    = false;
    input_driver_state_t *input_st = &input_driver_st;
 
    if (!binds)
@@ -4042,16 +4043,16 @@ static void input_keys_pressed(
 
    if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
-      if (  input_state_wrap(
-               input_st->current_driver,
-               input_st->current_data,
-               input_st->primary_joypad,
-               sec_joypad,
-               joypad_info,
-               &binds[port],
-               input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
-               port, RETRO_DEVICE_JOYPAD, 0,
-               RARCH_ENABLE_HOTKEY))
+      if (input_state_wrap(
+            input_st->current_driver,
+            input_st->current_data,
+            input_st->primary_joypad,
+            sec_joypad,
+            joypad_info,
+            &binds[port],
+            input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+            port, RETRO_DEVICE_JOYPAD, 0,
+            RARCH_ENABLE_HOTKEY))
       {
          if (input_st->input_hotkey_block_counter < input_hotkey_block_delay)
             input_st->input_hotkey_block_counter++;
@@ -4064,6 +4065,7 @@ static void input_keys_pressed(
          input_st->flags |= INP_FLAG_BLOCK_HOTKEY;
       }
    }
+
    if (!is_menu && binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
    {
       const struct retro_keybind *focus_binds_auto =
@@ -4077,15 +4079,15 @@ static void input_keys_pressed(
                focus_normal, focus_binds_auto))
       {
          if (input_state_wrap(
-                  input_st->current_driver,
-                  input_st->current_data,
-                  input_st->primary_joypad,
-                  sec_joypad,
-                  joypad_info,
-                  &binds[port],
-                  input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
-                  port,
-                  RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
+               input_st->current_driver,
+               input_st->current_data,
+               input_st->primary_joypad,
+               sec_joypad,
+               joypad_info,
+               &binds[port],
+               input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+               port,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
             input_st->flags &= ~INP_FLAG_BLOCK_HOTKEY;
       }
    }
@@ -4093,8 +4095,10 @@ static void input_keys_pressed(
    {
       int16_t ret = 0;
 
-      /* Check the libretro input first */
-      if (!(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT))
+      /* Check libretro input if emulated device type is active,
+       * except device type is always active in menu. */
+      if (     !(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
+            && !(!is_menu && !input_config_get_device(port)))
          ret = input_state_wrap(
                input_st->current_driver,
                input_st->current_data,
@@ -4113,12 +4117,43 @@ static void input_keys_pressed(
                   i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
+            libretro_input_pressed = true;
+         }
+      }
+
+      /* Check joypad menu toggle button, because
+       * Guide button is not part of the usual buttons. */
+      i = RARCH_MENU_TOGGLE;
+      if (     !libretro_input_pressed
+            && !input_st->keyboard_menu_toggle_pressed)
+      {
+         bool bit_pressed = binds[port][i].valid
+            && input_state_wrap(
+                  input_st->current_driver,
+                  input_st->current_data,
+                  input_st->primary_joypad,
+                  sec_joypad,
+                  joypad_info,
+                  &binds[port],
+                  input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                  port, RETRO_DEVICE_JOYPAD, 0, i);
+
+         if (
+                  bit_pressed
+               || BIT64_GET(lifecycle_state, i)
+               || input_keys_pressed_other_sources(input_st,
+                  i, p_new_state))
+         {
+            BIT256_SET_PTR(p_new_state, i);
+            libretro_input_pressed = true;
          }
       }
    }
 
-   /* Check the hotkeys */
-   if (input_st->flags & INP_FLAG_BLOCK_HOTKEY)
+   /* Check hotkeys, and block keyboard and joypad hotkeys separately. */
+   if (     input_st->flags & INP_FLAG_BLOCK_HOTKEY
+         && !(    binds[0][RARCH_ENABLE_HOTKEY].key == RETROK_UNKNOWN
+               && !libretro_input_pressed))
    {
       for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
       {
@@ -4145,6 +4180,7 @@ static void input_keys_pressed(
                   &binds[port],
                   input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                   port, RETRO_DEVICE_JOYPAD, 0, i);
+
          if (     bit_pressed
                || BIT64_GET(lifecycle_state, i)
                || input_keys_pressed_other_sources(input_st,
@@ -4211,7 +4247,7 @@ static int16_t input_state_device(
                {
 #ifdef HAVE_MENU
                   bool menu_driver_alive        = menu_state_get_ptr()->flags &
-MENU_ST_FLAG_ALIVE;
+                        MENU_ST_FLAG_ALIVE;
 #else
                   bool menu_driver_alive        = false;
 #endif
@@ -5371,11 +5407,9 @@ int16_t input_state_internal(unsigned port, unsigned device,
 #ifdef HAVE_MENU
    struct menu_state *menu_st              = menu_state_get_ptr();
    bool input_blocked                      = (menu_st->input_driver_flushing_input > 0) ||
-                                             (input_st->flags &
-INP_FLAG_BLOCK_LIBRETRO_INPUT);
+                                             (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT);
 #else
-   bool input_blocked                      = (input_st->flags &
-INP_FLAG_BLOCK_LIBRETRO_INPUT);
+   bool input_blocked                      = (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT);
 #endif
    bool bitmask_enabled                    = false;
    unsigned max_users                      = settings->uints.input_max_users;
@@ -5840,7 +5874,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #ifdef HAVE_MENU
    bool display_kb                     = menu_input_dialog_get_display_kb();
    bool menu_is_alive                  = menu_state_get_ptr()->flags &
-      MENU_ST_FLAG_ALIVE;
+         MENU_ST_FLAG_ALIVE;
    bool menu_input_active              = menu_is_alive &&
          !(settings->bools.menu_unified_controls && !display_kb);
 #endif
@@ -5931,7 +5965,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 
       input_keys_pressed(port,
 #ifdef HAVE_MENU
-            menu_input_active,
+            menu_is_alive,
 #else
             false,
 #endif
@@ -6135,14 +6169,15 @@ void input_keyboard_event(bool down, unsigned code,
 {
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    retro_keyboard_event_t
-	   *key_event            = &runloop_st->key_event;
+      *key_event                 = &runloop_st->key_event;
    input_driver_state_t
       *input_st                  = &input_driver_st;
 #ifdef HAVE_ACCESSIBILITY
    access_state_t *access_st     = access_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    bool accessibility_enable     = settings->bools.accessibility_enable;
-   unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+   unsigned accessibility_narrator_speech_speed
+                                 = settings->uints.accessibility_narrator_speech_speed;
 #endif
 #ifdef HAVE_MENU
    struct menu_state *menu_st    = menu_state_get_ptr();
@@ -6292,24 +6327,69 @@ void input_keyboard_event(bool down, unsigned code,
       if (code == RETROK_UNKNOWN)
          return;
 
-      /* Block hotkey + RetroPad mapped keyboard key events,
-       * but not with game focus, and from keyboard device type,
-       * and with 'enable_hotkey' modifier set and unpressed */
-      if (!input_st->game_focus_state.enabled &&
-            BIT512_GET(input_st->keyboard_mapping_bits, code))
-      {
-         input_mapper_t *handle      = &input_st->mapper;
-         struct retro_keybind hotkey = input_config_binds[0][RARCH_ENABLE_HOTKEY];
-         bool hotkey_pressed         =
-                  (input_st->input_hotkey_block_counter > 0)
-               || (hotkey.key == code);
+      /* Store keyboard menu toggle key for separating it from
+       * joypad menu toggle button when using 'enable_hotkey'. */
+      if (code == input_config_binds[0][RARCH_MENU_TOGGLE].key)
+         input_st->keyboard_menu_toggle_pressed = !!down;
 
-         if (!(MAPPER_GET_KEY(handle, code)) &&
-               !(!hotkey_pressed && (
-                     (hotkey.key     != RETROK_UNKNOWN)
-                  || (hotkey.joykey  != NO_BTN)
-                  || (hotkey.joyaxis != AXIS_NONE)
-               )))
+      /* Check if keyboard events should be blocked when
+       * pressing hotkeys and RetroPad binds, but
+       * - not with Game Focus
+       * - not from keyboard device type mappings
+       * - with 'enable_hotkey' modifier set and unpressed. */
+      if (     !input_st->game_focus_state.enabled
+            && BIT512_GET(input_st->keyboard_mapping_bits, code))
+      {
+         settings_t *settings        = config_get_ptr();
+         unsigned max_users          = settings->uints.input_max_users;
+         unsigned j;
+         bool hotkey_pressed         = (input_st->input_hotkey_block_counter > 0);
+         bool block_key_event        = false;
+
+         /* Loop enabled ports for keycode dupes. */
+         for (j = 0; j < max_users; j++)
+         {
+            unsigned k;
+            unsigned hotkey_code = input_config_binds[0][RARCH_ENABLE_HOTKEY].key;
+
+            /* Block hotkey key events based on 'enable_hotkey' modifier,
+             * and only when modifier is a keyboard key. */
+            if (     j == 0
+                  && !block_key_event
+                  && !(    !hotkey_pressed
+                        && hotkey_code != RETROK_UNKNOWN
+                        && hotkey_code != code))
+            {
+               for (k = RARCH_FIRST_META_KEY; k < RARCH_BIND_LIST_END; k++)
+               {
+                  if (input_config_binds[j][k].key == code)
+                  {
+                     block_key_event = true;
+                     break;
+                  }
+               }
+            }
+
+            /* RetroPad blocking needed only when emulated device type is active. */
+            if (     input_config_get_device(j)
+                  && !block_key_event)
+            {
+               for (k = 0; k < RARCH_FIRST_META_KEY; k++)
+               {
+                  if (input_config_binds[j][k].key == code)
+                  {
+                     block_key_event = true;
+                     break;
+                  }
+               }
+            }
+         }
+
+         /* No blocking when event comes from emulated keyboard device type */
+         if (MAPPER_GET_KEY(&input_st->mapper, code))
+            block_key_event = false;
+
+         if (block_key_event)
             return;
       }
 

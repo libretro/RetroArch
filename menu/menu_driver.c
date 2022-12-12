@@ -5390,10 +5390,10 @@ bool menu_input_key_bind_iterate(
    /* Tick main timers */
    _binds->timer_timeout.current    = current_time;
    _binds->timer_timeout.timeout_us = _binds->timer_timeout.timeout_end -
-current_time;
+         current_time;
    _binds->timer_hold   .current    = current_time;
    _binds->timer_hold   .timeout_us = _binds->timer_hold   .timeout_end -
-current_time;
+         current_time;
 
    if (_binds->timer_timeout.timeout_us <= 0)
    {
@@ -5429,7 +5429,7 @@ current_time;
       {
          input_st->keyboard_press_cb        = NULL;
          input_st->keyboard_press_data      = NULL;
-	 input_st->flags                   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+         input_st->flags                   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
       }
 
       return true;
@@ -5470,7 +5470,7 @@ current_time;
             new_binds.timer_hold.timeout_end - current_time;
 
          snprintf(bind->s, bind->len,
-               "[%s]\npress keyboard, mouse or joypad\nand hold ...",
+               "[%s]\nPress keyboard, mouse or joypad\nand hold ...",
                input_config_bind_map_get_desc(
                   _binds->begin - MENU_SETTINGS_BIND_BEGIN));
 
@@ -5501,7 +5501,7 @@ current_time;
          uint64_t current_usec             = cpu_features_get_time_usec();
          *(new_binds.output)               = new_binds.buffer;
 
-	 input_st->flags                  &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+         input_st->flags                  &= ~INP_FLAG_KB_MAPPING_BLOCKED;
 
          /* Avoid new binds triggering things right away. */
          /* Inhibits input for 2 frames
@@ -5515,7 +5515,7 @@ current_time;
          {
             input_st->keyboard_press_cb        = NULL;
             input_st->keyboard_press_data      = NULL;
-	    input_st->flags                   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+            input_st->flags                   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
             return true;
          }
 
