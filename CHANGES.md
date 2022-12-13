@@ -15,6 +15,7 @@
 - D3D12: Added support for DRED (device remove extended data) (development aid - define DEVICE_DEBUG to use)
 - D3D12: Made D3D12 viewport and scissors to behave more like Vulkan drivers (or be more correct)
 - D3D12: Fixed validation error on start up due to buffers not being setup correctly for one frame
+- D3D12: Fixed some shaders not appearing with the d3d12 driver - this reintroduces a validation error though but it seems to work as in not crash and is the old RA behaviour. Guess we need a different way of fixing the validation issue.
 - DATABASE/EXPLORE/VIEW: Bugfix - RGUI did not clear thumbnail on non-playlist items such as Save and Delete
 menu_explore_get_entry_playlist_index() returns -1 on invalid entries, but the variable where it was stored was unsigned
 - DATABASE/EXPLORE/VIEW: Bugfix - XMB+Ozone cleared thumbnail in Quick Menu when navigating away from Run
