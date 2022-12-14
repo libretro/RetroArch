@@ -40,6 +40,7 @@ typedef struct sdl_audio
    fifo_buffer_t *buffer;
    bool nonblock;
    bool is_paused;
+   SDL_AudioDeviceID speaker_device;
 } sdl_audio_t;
 
 static void sdl_audio_cb(void *data, Uint8 *stream, int len)
@@ -110,7 +111,8 @@ static void *sdl_audio_init(const char *device,
    spec.callback = sdl_audio_cb;
    spec.userdata = sdl;
 
-   if (SDL_OpenAudio(&spec, &out) < 0)
+   sdl->speaker_device = SDL_OpenAudioDevice(NULL, false, &spec, &out, 0);
+   if (speaker_device == 0)
    {
       RARCH_ERR("[SDL audio]: Failed to open SDL audio: %s\n", SDL_GetError());
       goto error;
@@ -137,7 +139,7 @@ static void *sdl_audio_init(const char *device,
       free(tmp);
    }
 
-   SDL_PauseAudio(0);
+   SDL_PauseAudioDevice(sdl->speaker_device, false);
    return sdl;
 
 error:
@@ -154,11 +156,11 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
    {
       size_t avail, write_amt;
 
-      SDL_LockAudio();
+      SDL_LockAudioDevice(sdl->speaker_device);
       avail = FIFO_WRITE_AVAIL(sdl->buffer);
       write_amt = avail > size ? size : avail;
       fifo_write(sdl->buffer, buf, write_amt);
-      SDL_UnlockAudio();
+      SDL_UnlockAudioDevice(sdl->speaker_device);
       ret = write_amt;
    }
    else
@@ -169,12 +171,12 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
       {
          size_t avail;
 
-         SDL_LockAudio();
+         SDL_LockAudioDevice(sdl->speaker_device);
          avail = FIFO_WRITE_AVAIL(sdl->buffer);
 
          if (avail == 0)
          {
-            SDL_UnlockAudio();
+            SDL_UnlockAudioDevice(sdl->speaker_device);
 #ifdef HAVE_THREADS
             slock_lock(sdl->lock);
             scond_wait(sdl->cond, sdl->lock);
@@ -185,7 +187,7 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
          {
             size_t write_amt = size - written > avail ? avail : size - written;
             fifo_write(sdl->buffer, (const char*)buf + written, write_amt);
-            SDL_UnlockAudio();
+            SDL_UnlockAudioDevice(sdl->speaker_device);
             written += write_amt;
          }
       }
@@ -199,7 +201,7 @@ static bool sdl_audio_stop(void *data)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
    sdl->is_paused = true;
-   SDL_PauseAudio(1);
+   SDL_PauseAudioDevice(sdl->speaker_device, true);
    return true;
 }
 
@@ -216,7 +218,7 @@ static bool sdl_audio_start(void *data, bool is_shutdown)
    sdl_audio_t *sdl = (sdl_audio_t*)data;
    sdl->is_paused = false;
 
-   SDL_PauseAudio(0);
+   SDL_PauseAudioDevice(sdl->speaker_device, false);
    return true;
 }
 
@@ -231,10 +233,10 @@ static void sdl_audio_free(void *data)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
 
-   SDL_CloseAudio();
-
    if (sdl)
    {
+      SDL_CloseAudioDevice(sdl->speaker_device);
+
       fifo_free(sdl->buffer);
 #ifdef HAVE_THREADS
       slock_free(sdl->lock);
