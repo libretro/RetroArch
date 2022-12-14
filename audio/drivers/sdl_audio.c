@@ -327,6 +327,13 @@ static size_t sdl_audio_write_avail(void *data)
    return 0;
 }
 
+static size_t sdl_audio_read_avail(void *data)
+{
+   /* stub */
+   (void)data;
+   return 0;
+}
+
 audio_driver_t audio_sdl = {
    sdl_audio_init,
    sdl_audio_write,
@@ -345,6 +352,6 @@ audio_driver_t audio_sdl = {
    NULL,
    NULL,
    sdl_audio_write_avail,
-   NULL,
+   sdl_audio_read_avail,
    NULL
 };
