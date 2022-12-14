@@ -241,6 +241,12 @@ static bool sdl_audio_stop(void *data)
    sdl_audio_t *sdl = (sdl_audio_t*)data;
    sdl->is_paused = true;
    SDL_PauseAudioDevice(sdl->speaker_device, true);
+
+   if (sdl->microphone_device)
+   {
+      SDL_PauseAudioDevice(sdl->microphone_device, true);
+   }
+
    return true;
 }
 
@@ -258,6 +264,12 @@ static bool sdl_audio_start(void *data, bool is_shutdown)
    sdl->is_paused = false;
 
    SDL_PauseAudioDevice(sdl->speaker_device, false);
+
+   if (sdl->microphone_device)
+   {
+      SDL_PauseAudioDevice(sdl->microphone_device, false);
+   }
+
    return true;
 }
 
