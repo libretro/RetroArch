@@ -275,5 +275,6 @@ audio_driver_t audio_sdl = {
    NULL,
    NULL,
    sdl_audio_write_avail,
+   NULL,
    NULL
 };

@@ -379,5 +379,6 @@ audio_driver_t audio_alsa = {
    NULL,
    NULL,
    alsa_qsa_write_avail,
+   NULL,
    alsa_qsa_buffer_size,
 };

@@ -443,6 +443,7 @@ audio_driver_t audio_switch_thread = {
       NULL, /* device_list_new */
       NULL, /* device_list_free */
       switch_thread_audio_write_avail,
+      NULL,
       switch_thread_audio_buffer_size
 };
 

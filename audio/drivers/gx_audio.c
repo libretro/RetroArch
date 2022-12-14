@@ -236,5 +236,6 @@ audio_driver_t audio_gx = {
    NULL,
    NULL,
    gx_audio_write_avail,
+   NULL,
    gx_audio_buffer_size,
 };

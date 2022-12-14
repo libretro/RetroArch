@@ -366,5 +366,6 @@ audio_driver_t audio_switch = {
    NULL, /* device_list_new */
    NULL, /* device_list_free */
    switch_audio_write_avail,
+   NULL,
    switch_audio_buffer_size, /* buffer_size */
 };

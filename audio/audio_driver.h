@@ -164,6 +164,8 @@ typedef struct audio_driver
    /* Optional. */
    size_t (*write_avail)(void *data);
 
+   size_t (*read_avail)(void *data);
+
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 

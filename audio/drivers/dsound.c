@@ -613,5 +613,6 @@ audio_driver_t audio_dsound = {
    dsound_list_new,
    dsound_device_list_free,
    dsound_write_avail,
+   NULL,
    dsound_buffer_size,
 };

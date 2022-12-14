@@ -466,5 +466,6 @@ audio_driver_t audio_coreaudio = {
    coreaudio_device_list_new,
    coreaudio_device_list_free,
    coreaudio_write_avail,
+   NULL,
    coreaudio_buffer_size,
 };

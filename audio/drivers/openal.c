@@ -274,5 +274,6 @@ audio_driver_t audio_openal = {
    NULL,
    NULL,
    al_write_avail,
+   NULL,
    al_buffer_size,
 };

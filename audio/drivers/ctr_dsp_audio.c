@@ -217,5 +217,6 @@ audio_driver_t audio_ctr_dsp = {
    NULL,
    NULL,
    ctr_dsp_audio_write_avail,
+   NULL,
    ctr_dsp_audio_buffer_size
 };

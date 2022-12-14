@@ -922,5 +922,6 @@ audio_driver_t audio_wasapi = {
    mmdevice_list_new,
    wasapi_device_list_free,
    wasapi_write_avail,
+   NULL,
    wasapi_buffer_size
 };

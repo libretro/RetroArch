@@ -428,5 +428,6 @@ audio_driver_t audio_alsa = {
    alsa_device_list_new,
    alsa_device_list_free,
    alsa_write_avail,
+   NULL,
    alsa_buffer_size,
 };

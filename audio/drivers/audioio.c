@@ -209,5 +209,6 @@ audio_driver_t audio_audioio = {
    NULL,
    NULL,
    audioio_write_avail,
+   NULL,
    audioio_buffer_size,
 };

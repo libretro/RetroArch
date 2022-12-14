@@ -366,5 +366,6 @@ audio_driver_t audio_pulse = {
    NULL,
    NULL,
    pulse_write_avail,
+   NULL,
    pulse_buffer_size,
 };

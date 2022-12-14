@@ -531,5 +531,6 @@ audio_driver_t audio_xa = {
    xa_list_new,
    xa_device_list_free,
    xa_write_avail,
+   NULL,
    xa_buffer_size,
 };

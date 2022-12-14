@@ -339,5 +339,6 @@ audio_driver_t audio_psp = {
    NULL,
    NULL,
    psp_write_avail,
+   NULL,
    psp_buffer_size
 };

@@ -416,5 +416,6 @@ audio_driver_t audio_alsathread = {
    alsa_thread_device_list_new,
    alsa_thread_device_list_free,
    alsa_thread_write_avail,
+   NULL,
    alsa_thread_buffer_size,
 };

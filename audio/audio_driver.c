@@ -78,6 +78,7 @@ audio_driver_t audio_null = {
    NULL,
    NULL,
    NULL, /* write_avail */
+   NULL, /* read_avail */
    NULL
 };
 

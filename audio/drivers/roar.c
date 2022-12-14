@@ -153,5 +153,6 @@ audio_driver_t audio_roar = {
    NULL,
    NULL,
    ra_write_avail,
+   NULL,
    NULL
 };

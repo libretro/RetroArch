@@ -317,5 +317,6 @@ audio_driver_t audio_opensl = {
    NULL,
    NULL,
    sl_write_avail,
+   NULL,
    sl_buffer_size,
 };
