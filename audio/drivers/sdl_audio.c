@@ -112,7 +112,7 @@ static void *sdl_audio_init(const char *device,
    spec.userdata = sdl;
 
    sdl->speaker_device = SDL_OpenAudioDevice(NULL, false, &spec, &out, 0);
-   if (speaker_device == 0)
+   if (sdl->speaker_device == 0)
    {
       RARCH_ERR("[SDL audio]: Failed to open SDL audio: %s\n", SDL_GetError());
       goto error;
