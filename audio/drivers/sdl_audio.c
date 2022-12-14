@@ -37,7 +37,7 @@ typedef struct sdl_audio
    slock_t *lock;
    scond_t *cond;
 #endif
-   fifo_buffer_t *buffer;
+   fifo_buffer_t *speaker_buffer;
    bool nonblock;
    bool is_paused;
    SDL_AudioDeviceID speaker_device;
@@ -46,10 +46,10 @@ typedef struct sdl_audio
 static void sdl_audio_cb(void *data, Uint8 *stream, int len)
 {
    sdl_audio_t  *sdl = (sdl_audio_t*)data;
-   size_t      avail = FIFO_READ_AVAIL(sdl->buffer);
+   size_t      avail = FIFO_READ_AVAIL(sdl->speaker_buffer);
    size_t write_size = len > (int)avail ? avail : len;
 
-   fifo_read(sdl->buffer, stream, write_size);
+   fifo_read(sdl->speaker_buffer, stream, write_size);
 #ifdef HAVE_THREADS
    scond_signal(sdl->cond);
 #endif
@@ -131,11 +131,11 @@ static void *sdl_audio_init(const char *device,
    /* Create a buffer twice as big as needed and prefill the buffer. */
    bufsize     = out.samples * 4 * sizeof(int16_t);
    tmp         = calloc(1, bufsize);
-   sdl->buffer = fifo_new(bufsize);
+   sdl->speaker_buffer = fifo_new(bufsize);
 
    if (tmp)
    {
-      fifo_write(sdl->buffer, tmp, bufsize);
+      fifo_write(sdl->speaker_buffer, tmp, bufsize);
       free(tmp);
    }
 
@@ -157,9 +157,9 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
       size_t avail, write_amt;
 
       SDL_LockAudioDevice(sdl->speaker_device);
-      avail = FIFO_WRITE_AVAIL(sdl->buffer);
+      avail = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
       write_amt = avail > size ? size : avail;
-      fifo_write(sdl->buffer, buf, write_amt);
+      fifo_write(sdl->speaker_buffer, buf, write_amt);
       SDL_UnlockAudioDevice(sdl->speaker_device);
       ret = write_amt;
    }
@@ -172,7 +172,7 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
          size_t avail;
 
          SDL_LockAudioDevice(sdl->speaker_device);
-         avail = FIFO_WRITE_AVAIL(sdl->buffer);
+         avail = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
 
          if (avail == 0)
          {
@@ -186,7 +186,7 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
          else
          {
             size_t write_amt = size - written > avail ? avail : size - written;
-            fifo_write(sdl->buffer, (const char*)buf + written, write_amt);
+            fifo_write(sdl->speaker_buffer, (const char*)buf + written, write_amt);
             SDL_UnlockAudioDevice(sdl->speaker_device);
             written += write_amt;
          }
@@ -237,7 +237,7 @@ static void sdl_audio_free(void *data)
    {
       SDL_CloseAudioDevice(sdl->speaker_device);
 
-      fifo_free(sdl->buffer);
+      fifo_free(sdl->speaker_buffer);
 #ifdef HAVE_THREADS
       slock_free(sdl->lock);
       scond_free(sdl->cond);
