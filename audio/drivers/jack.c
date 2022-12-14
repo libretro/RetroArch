@@ -371,6 +371,7 @@ static size_t ja_buffer_size(void *data)
 audio_driver_t audio_jack = {
    ja_init,
    ja_write,
+   NULL,
    ja_stop,
    ja_start,
    ja_alive,

@@ -112,6 +112,15 @@ typedef struct audio_driver
     */
    ssize_t (*write)(void *data, const void *buf, size_t size);
 
+   /*
+    * @data         : Pointer to audio data handle.
+    * @buf          : Buffer for received audio data.
+    * @size         : Size of audio buffer.
+    *
+    * Read samples from the input driver, e.g. for microphones.
+    */
+   ssize_t (*read)(void *data, const void *buf, size_t size);
+
    /* Temporarily pauses the audio driver. */
    bool (*stop)(void *data);
 

@@ -520,6 +520,7 @@ static void *xa_list_new(void *u)
 audio_driver_t audio_xa = {
    xa_init,
    xa_write,
+   NULL,
    xa_stop,
    xa_start,
    xa_alive,

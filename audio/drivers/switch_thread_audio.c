@@ -432,6 +432,7 @@ size_t switch_thread_audio_buffer_size(void *data)
 audio_driver_t audio_switch_thread = {
       switch_thread_audio_init,
       switch_thread_audio_write,
+      NULL,
       switch_thread_audio_stop,
       switch_thread_audio_start,
       switch_thread_audio_alive,

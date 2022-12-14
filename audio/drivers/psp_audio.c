@@ -322,6 +322,7 @@ static size_t psp_buffer_size(void *data)
 audio_driver_t audio_psp = {
    psp_audio_init,
    psp_audio_write,
+   NULL,
    psp_audio_stop,
    psp_audio_start,
    psp_audio_alive,

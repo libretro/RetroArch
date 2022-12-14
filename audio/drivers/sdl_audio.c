@@ -260,6 +260,7 @@ static size_t sdl_audio_write_avail(void *data)
 audio_driver_t audio_sdl = {
    sdl_audio_init,
    sdl_audio_write,
+   NULL,
    sdl_audio_stop,
    sdl_audio_start,
    sdl_audio_alive,

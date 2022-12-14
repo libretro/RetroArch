@@ -911,6 +911,7 @@ static size_t wasapi_buffer_size(void *wh)
 audio_driver_t audio_wasapi = {
    wasapi_init,
    wasapi_write,
+   NULL,
    wasapi_stop,
    wasapi_start,
    wasapi_alive,

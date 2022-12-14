@@ -455,6 +455,7 @@ static void coreaudio_device_list_free(void *data, void *array_list_data)
 audio_driver_t audio_coreaudio = {
    coreaudio_init,
    coreaudio_write,
+   NULL,
    coreaudio_stop,
    coreaudio_start,
    coreaudio_alive,

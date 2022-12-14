@@ -368,6 +368,7 @@ static size_t alsa_qsa_buffer_size(void *data)
 audio_driver_t audio_alsa = {
    alsa_qsa_init,
    alsa_qsa_write,
+   NULL,
    alsa_qsa_stop,
    alsa_qsa_start,
    alsa_qsa_alive,

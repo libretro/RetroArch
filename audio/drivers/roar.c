@@ -142,6 +142,7 @@ static size_t ra_write_avail(void *data)
 audio_driver_t audio_roar = {
    ra_init,
    ra_write,
+   NULL,
    ra_stop,
    ra_start,
    ra_alive,

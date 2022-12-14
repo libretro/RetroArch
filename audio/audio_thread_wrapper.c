@@ -253,6 +253,7 @@ static ssize_t audio_thread_write(void *data, const void *buf, size_t size)
 static const audio_driver_t audio_thread = {
    NULL,
    audio_thread_write,
+   NULL,
    audio_thread_stop,
    audio_thread_start,
    audio_thread_alive,

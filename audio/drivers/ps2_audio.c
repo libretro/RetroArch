@@ -148,6 +148,7 @@ static size_t ps2_audio_buffer_size(void *data)
 audio_driver_t audio_ps2 = {
    ps2_audio_init,
    ps2_audio_write,
+   NULL,
    ps2_audio_stop,
    ps2_audio_start,
    ps2_audio_alive,

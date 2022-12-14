@@ -234,6 +234,7 @@ static size_t ps3_audio_write_avail(void *data)
 audio_driver_t audio_ps3 = {
    ps3_audio_init,
    ps3_audio_write,
+   NULL,
    ps3_audio_stop,
    ps3_audio_start,
    ps3_audio_alive,

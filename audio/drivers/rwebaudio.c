@@ -97,6 +97,7 @@ static bool rwebaudio_use_float(void *data) { return true; }
 audio_driver_t audio_rwebaudio = {
    rwebaudio_init,
    rwebaudio_write,
+   NULL,
    rwebaudio_stop,
    rwebaudio_start,
    rwebaudio_alive,

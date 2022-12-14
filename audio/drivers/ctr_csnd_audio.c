@@ -292,6 +292,7 @@ static size_t ctr_csnd_audio_buffer_size(void *data)
 audio_driver_t audio_ctr_csnd = {
    ctr_csnd_audio_init,
    ctr_csnd_audio_write,
+   NULL,
    ctr_csnd_audio_stop,
    ctr_csnd_audio_start,
    ctr_csnd_audio_alive,

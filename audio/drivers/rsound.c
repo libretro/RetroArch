@@ -228,6 +228,7 @@ static bool rs_use_float(void *data)
 audio_driver_t audio_rsound = {
    rs_init,
    rs_write,
+   NULL,
    rs_stop,
    rs_start,
    rs_alive,

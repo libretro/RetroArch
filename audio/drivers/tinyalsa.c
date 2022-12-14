@@ -2416,6 +2416,7 @@ static size_t tinyalsa_buffer_size(void *data)
 audio_driver_t audio_tinyalsa = {
 	tinyalsa_init,               /* AUDIO_init              */
 	tinyalsa_write,              /* AUDIO_write             */
+	NULL,                        /* AUDIO_read              */ /*TODO*/
 	tinyalsa_stop,               /* AUDIO_stop              */
 	tinyalsa_start,              /* AUDIO_start             */
 	tinyalsa_alive,              /* AUDIO_alive             */

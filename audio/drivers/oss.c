@@ -216,6 +216,7 @@ static bool oss_use_float(void *data)
 audio_driver_t audio_oss = {
    oss_init,
    oss_write,
+   NULL,
    oss_stop,
    oss_start,
    oss_alive,
