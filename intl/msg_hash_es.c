@@ -2386,48 +2386,48 @@ int msg_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
             );
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE:
             snprintf(s, len,
                      "Elige un color para el fondo\n"
                      "de los mensajes en pantalla.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED:
             snprintf(s, len,
                      "Ajusta el componente rojo del color\n"
                      "de fondo de los mensajes en pantalla.\n"
                      "Los valores válidos son de 0 a 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN:
             snprintf(s, len,
                      "Ajusta el componente verde del color\n"
                      "de fondo de los mensajes en pantalla.\n"
                      "Los valores válidos son de 0 a 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE:
             snprintf(s, len,
                      "Ajusta el componente azul del color\n"
                      "de fondo de los mensajes en pantalla.\n"
                      "Los valores válidos son de 0 a 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY:
             snprintf(s, len,
                      "Ajusta la opacidad del color de fondo\n"
                      "de los mensajes en pantalla.\n"
                      "Los valores válidos son de 0.0 a 1.0.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED:
             snprintf(s, len,
                      "Ajusta el componente rojo del color\n"
                      "de los textos de los mensajes en pantalla.\n"
                      "Los valores válidos son de 0 a 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN:
             snprintf(s, len,
                      "Ajusta el componente verde del color\n"
                      "de los textos de los mensajes en pantalla.\n"
                      "Los valores válidos son de 0 a 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE:
             snprintf(s, len,
                      "Ajusta el componente azul del color\n"
                      "de los textos de los mensajes en pantalla.\n"
