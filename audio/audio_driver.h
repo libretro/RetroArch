@@ -119,7 +119,7 @@ typedef struct audio_driver
     *
     * Read samples from the input driver, e.g. for microphones.
     */
-   ssize_t (*read)(void *data, const void *buf, size_t size);
+   ssize_t (*read)(void *data, void *buf, size_t size);
 
    /* Temporarily pauses the audio driver. */
    bool (*stop)(void *data);

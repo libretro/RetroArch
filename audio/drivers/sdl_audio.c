@@ -62,7 +62,14 @@ static void sdl_audio_playback_cb(void *data, Uint8 *stream, int len)
 
 static void sdl_audio_record_cb(void *data, Uint8 *stream, int len)
 {
-   /* TODO: Implement */
+   sdl_audio_t  *sdl = (sdl_audio_t*)data;
+   size_t      avail = FIFO_WRITE_AVAIL(sdl->microphone_buffer);
+   size_t read_size = len > (int)avail ? avail : len;
+
+   fifo_write(sdl->microphone_buffer, stream, read_size);
+#ifdef HAVE_THREADS
+   scond_signal(sdl->cond);
+#endif
 }
 
 static INLINE int find_num_frames(int rate, int latency)
@@ -236,12 +243,54 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
    return ret;
 }
 
-static ssize_t sdl_audio_read(void *data, const void *buf, size_t size)
+static ssize_t sdl_audio_read(void *data, void *buf, size_t size)
 {
    ssize_t ret      = 0;
    sdl_audio_t *sdl = (sdl_audio_t*)data;
 
-   return -1;
+   if (sdl->nonblock)
+   {
+      size_t avail, read_amt;
+
+      SDL_LockAudioDevice(sdl->microphone_device);
+      avail = FIFO_READ_AVAIL(sdl->microphone_buffer);
+      read_amt = avail > size ? size : avail;
+      fifo_read(sdl->microphone_buffer, buf, read_amt);
+      SDL_UnlockAudioDevice(sdl->microphone_device);
+      ret = read_amt;
+   }
+   else
+   {
+      size_t read = 0;
+
+      while (read < size)
+      {
+         size_t avail;
+
+         SDL_LockAudioDevice(sdl->microphone_device);
+         avail = FIFO_READ_AVAIL(sdl->microphone_buffer);
+
+         if (avail == 0)
+         {
+            SDL_UnlockAudioDevice(sdl->microphone_device);
+#ifdef HAVE_THREADS
+            slock_lock(sdl->lock);
+            scond_wait(sdl->cond, sdl->lock);
+            slock_unlock(sdl->lock);
+#endif
+         }
+         else
+         {
+            size_t read_amt = size - read > avail ? avail : size - read;
+            fifo_read(sdl->microphone_buffer, buf + read, read_amt);
+            SDL_UnlockAudioDevice(sdl->microphone_device);
+            read += read_amt;
+         }
+      }
+      ret = read;
+   }
+
+   return ret;
 }
 
 static bool sdl_audio_stop(void *data)
