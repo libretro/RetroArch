@@ -2148,35 +2148,35 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
             );
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE:
             snprintf(s, len,
                      "OSD için arka plan rengini etkinleştirir.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED:
             snprintf(s, len,
                      "OSD arka plan renginin kırmızı değerini ayarlar. Geçerli değerler 0 ile 255 arasındadır.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN:
             snprintf(s, len,
                      "OSD arka plan renginin yeşil değerini ayarlar. Geçerli değerler 0 ile 255 arasındadır.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE:
             snprintf(s, len,
                      "OSD arka plan renginin mavi değerini ayarlar. Geçerli değerler 0 ile 255 arasındadır.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY:
             snprintf(s, len,
                      "OSD arka plan renginin opaklığını ayarlar. Geçerli değerler 0,0 ile 1,0 arasındadır.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED:
             snprintf(s, len,
                      "OSD metin renginin kırmızı değerini ayarlar. Geçerli değerler 0 ile 255 arasındadır.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN:
             snprintf(s, len,
                      "OSD metin renginin yeşil değerini ayarlar. Geçerli değerler 0 ile 255 arasındadır.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE:
             snprintf(s, len,
                      "OSD metin renginin mavi değerini ayarlar. Geçerli değerler 0 ile 255 arasındadır.");
             break;

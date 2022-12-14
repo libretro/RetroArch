@@ -1989,35 +1989,35 @@ int msg_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
                );
          break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE:
             snprintf(s, len,
                      "Verwendet eine Hintergrundfarbe für das OSD.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED:
             snprintf(s, len,
                      "Legt den Rot-Anteil der OSD-Hintergrundfarbe fest. Gültige Werte liegen zwischen 0 und 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN:
             snprintf(s, len,
                      "Legt den Grün-Anteil der OSD-Hintergrundfarbe fest. Gültige Werte liegen zwischen 0 und 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE:
             snprintf(s, len,
                      "Legt den Blau-Anteil der OSD-Hintergrundfarbe fest. Gültige Werte liegen zwischen 0 und 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY:
             snprintf(s, len,
                      "Legt die Transparenz der OSD-Hintergrundfarbe fest. Gültige Werte liegen zwischen 0.0 und 1.0.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED:
             snprintf(s, len,
                      "Legt den Rot-Anteil der OSD-Textfarbe fest. Gültige Werte liegen zwischen 0 und 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN:
             snprintf(s, len,
                      "Legt den Grün-Anteil der OSD-Textfarbe fest. Gültige Werte liegen zwischen 0 und 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE:
             snprintf(s, len,
                      "Legt den Blau-Anteil der OSD-Textfarbe fest. Gültige Werte liegen zwischen 0 und 255.");
             break;

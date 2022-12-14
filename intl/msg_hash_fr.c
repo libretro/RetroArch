@@ -2215,35 +2215,35 @@ int msg_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
             );
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE:
             snprintf(s, len,
                      "Active l'utilisation d'une couleur de fond pour le texte d'affichage à l'écran (OSD).");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED:
             snprintf(s, len,
                      "Définit la valeur de rouge de la couleur d'arrière-plan du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0 et 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN:
             snprintf(s, len,
                      "Définit la valeur de vert de la couleur d'arrière-plan du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0 et 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE:
             snprintf(s, len,
                      "Définit la valeur de bleu de la couleur d'arrière-plan du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0 et 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY:
             snprintf(s, len,
                      "Définit l'opacité de la couleur d'arrière-plan du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0.0 et 1.0.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED:
             snprintf(s, len,
                      "Définit la valeur de rouge de la couleur du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0 et 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN:
             snprintf(s, len,
                      "Définit la valeur de vert de la couleur du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0 et 255.");
             break;
-        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE:
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE:
             snprintf(s, len,
                      "Définit la valeur de bleu de la couleur du texte d'affichage à l'écran (OSD). Les valeurs valides sont comprises entre 0 et 255.");
             break;
