@@ -236,6 +236,14 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
    return ret;
 }
 
+static ssize_t sdl_audio_read(void *data, const void *buf, size_t size)
+{
+   ssize_t ret      = 0;
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
+
+   return -1;
+}
+
 static bool sdl_audio_stop(void *data)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
@@ -337,7 +345,7 @@ static size_t sdl_audio_read_avail(void *data)
 audio_driver_t audio_sdl = {
    sdl_audio_init,
    sdl_audio_write,
-   NULL,
+   sdl_audio_read,
    sdl_audio_stop,
    sdl_audio_start,
    sdl_audio_alive,
