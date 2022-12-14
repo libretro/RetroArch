@@ -38,12 +38,14 @@ typedef struct sdl_audio
    scond_t *cond;
 #endif
    fifo_buffer_t *speaker_buffer;
+   fifo_buffer_t *microphone_buffer;
    bool nonblock;
    bool is_paused;
    SDL_AudioDeviceID speaker_device;
+   SDL_AudioDeviceID microphone_device;
 } sdl_audio_t;
 
-static void sdl_audio_cb(void *data, Uint8 *stream, int len)
+static void sdl_audio_playback_cb(void *data, Uint8 *stream, int len)
 {
    sdl_audio_t  *sdl = (sdl_audio_t*)data;
    size_t      avail = FIFO_READ_AVAIL(sdl->speaker_buffer);
@@ -56,6 +58,11 @@ static void sdl_audio_cb(void *data, Uint8 *stream, int len)
 
    /* If underrun, fill rest with silence. */
    memset(stream + write_size, 0, len - write_size);
+}
+
+static void sdl_audio_record_cb(void *data, Uint8 *stream, int len)
+{
+   /* TODO: Implement */
 }
 
 static INLINE int find_num_frames(int rate, int latency)
@@ -104,17 +111,18 @@ static void *sdl_audio_init(const char *device,
     * SDL double buffers audio and we do as well. */
    frames        = find_num_frames(rate, latency / 4);
 
+   /* First, let's initialize the output device. */
    spec.freq     = rate;
    spec.format   = AUDIO_S16SYS;
    spec.channels = 2;
    spec.samples  = frames; /* This is in audio frames, not samples ... :( */
-   spec.callback = sdl_audio_cb;
+   spec.callback = sdl_audio_playback_cb;
    spec.userdata = sdl;
 
    sdl->speaker_device = SDL_OpenAudioDevice(NULL, false, &spec, &out, 0);
    if (sdl->speaker_device == 0)
    {
-      RARCH_ERR("[SDL audio]: Failed to open SDL audio: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL audio]: Failed to open SDL audio output device: %s\n", SDL_GetError());
       goto error;
    }
 
@@ -125,7 +133,7 @@ static void *sdl_audio_init(const char *device,
    sdl->cond                = scond_new();
 #endif
 
-   RARCH_LOG("[SDL audio]: Requested %u ms latency, got %d ms\n",
+   RARCH_LOG("[SDL audio]: Requested %u ms latency for output device, got %d ms\n",
          latency, (int)(out.samples * 4 * 1000 / (*new_rate)));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
@@ -140,6 +148,37 @@ static void *sdl_audio_init(const char *device,
    }
 
    SDL_PauseAudioDevice(sdl->speaker_device, false);
+
+   /* Now let's init the microphone */
+   spec.callback = sdl_audio_record_cb; /* Microphone should have the same params as speaker */
+
+   sdl->microphone_device = SDL_OpenAudioDevice(NULL, true, &spec, &out, 0);
+   if (sdl->microphone_device == 0)
+   {
+      RARCH_WARN("[SDL audio]: Failed to open SDL audio input device: %s\n", SDL_GetError());
+      RARCH_WARN("[SDL audio]: Either there's no microphone, or it couldn't be found.\n");
+      /* Speakers are more common than microphones, so the absence of a microphone
+       * will not be an error. */
+   }
+   else
+   {
+      RARCH_LOG("[SDL audio]: Requested %u ms latency for input device, got %d ms\n",
+                latency, (int)(out.samples * 4 * 1000 / (out.freq)));
+
+      /* Create a buffer twice as big as needed and prefill the buffer. */
+      bufsize     = out.samples * 4 * sizeof(int16_t);
+      tmp         = calloc(1, bufsize);
+      sdl->microphone_buffer = fifo_new(bufsize);
+
+      if (tmp)
+      {
+         fifo_write(sdl->microphone_buffer, tmp, bufsize);
+         free(tmp);
+      }
+
+      SDL_PauseAudioDevice(sdl->microphone_device, false);
+   }
+
    return sdl;
 
 error:
@@ -235,9 +274,26 @@ static void sdl_audio_free(void *data)
 
    if (sdl)
    {
-      SDL_CloseAudioDevice(sdl->speaker_device);
+      if (sdl->speaker_device > 0)
+      {
+         SDL_CloseAudioDevice(sdl->speaker_device);
+      }
 
-      fifo_free(sdl->speaker_buffer);
+      if (sdl->speaker_buffer)
+      {
+         fifo_free(sdl->speaker_buffer);
+      }
+
+      if (sdl->microphone_device > 0)
+      { /* If the microphone was originally initialized successfully... */
+         SDL_CloseAudioDevice(sdl->microphone_device);
+      }
+
+      if (sdl->microphone_buffer)
+      {
+         fifo_free(sdl->microphone_buffer);
+      }
+
 #ifdef HAVE_THREADS
       slock_free(sdl->lock);
       scond_free(sdl->cond);
