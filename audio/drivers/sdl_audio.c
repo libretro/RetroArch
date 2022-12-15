@@ -94,6 +94,7 @@ static void sdl_audio_playback_cb(void *data, Uint8 *stream, int len)
    memset(stream + write_size, 0, len - write_size);
 }
 
+#ifdef SDL_DRIVER_MIC_SUPPORT
 static void sdl_audio_record_cb(void *data, Uint8 *stream, int len)
 {
    sdl_audio_t  *sdl = (sdl_audio_t*)data;
@@ -105,6 +106,7 @@ static void sdl_audio_record_cb(void *data, Uint8 *stream, int len)
    scond_signal(sdl->cond);
 #endif
 }
+#endif
 
 static INLINE int find_num_frames(int rate, int latency)
 {
