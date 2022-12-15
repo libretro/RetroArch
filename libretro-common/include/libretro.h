@@ -1767,6 +1767,16 @@ enum retro_mod
                                             * (see enum retro_savestate_context)
                                             */
 
+#define RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE (73 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* struct retro_microphone_interface * --
+                                            * Returns an interface that can be used to receive audio from
+                                            * one or more microphones, depending on what's supported by the
+                                            * audio driver.
+                                            *
+                                            * Will return NULL if the current audio driver or libretro implementation
+                                            * doesn't support microphones.
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
@@ -3780,6 +3790,86 @@ struct retro_throttle_state
     * This won't be accurate if the total processing time of the core and
     * the frontend is longer than what is available for one frame. */
    float rate;
+};
+
+/**
+ * Enables or disables the microphone at the given index.
+ * Microphones are disabled by default,
+ * and must be explicitly enabled.
+ * Disabled microphones will not process incoming audio samples,
+ * and will therefore have minimal impact on overall performance.
+ * You may enable microphones throughout the lifetime of a core,
+ * or only in instances where they're needed.
+ *
+ * A frontend might not support microphones,
+ * or it might only support one.
+ * Your core should be able to operate without microphone input;
+ * we suggest substituting silence in such a case.
+ *
+ * @param index The index of the microphone to set the state of.
+ * Most likely will be 0.
+ * @param state @c true if the microphone should receive audio input,
+ * @c false if it should be idle.
+ * @returns @c true if the microphone's state was successfully set,
+ * @c false if @c index does not indicate a valid microphone
+ * or if there was an error.
+ */
+typedef bool (RETRO_CALLCONV *retro_set_microphone_state_t)(unsigned index, bool state);
+
+/**
+ * Queries the state of a microphone at the given index.
+ *
+ * @param index The number of the microphone to query.
+ * Most likely will be 0,
+ * unless a platform uses multiple microphones for input
+ * (e.g. per controller).
+ * @return true if the microphone given by index is active,
+ * false if not or if index does not indicate a valid microphone.
+ */
+typedef bool (RETRO_CALLCONV *retro_get_microphone_state_t)(unsigned index);
+
+/**
+ * @return The number of microphones that are currently available.
+ * 0 indicates that no microphones are available,
+ * or that the frontend doesn't support them.
+ */
+typedef unsigned (RETRO_CALLCONV *retro_num_available_microphones_t)(void);
+
+/**
+ * Retrieves the input processed by the microphone since the previous frame.
+ *
+ * @param index The number of the microphone to query
+ * @param data The buffer that will be used to store the microphone's data.
+ * Microphone input is in mono (i.e. one number per sample).
+ * @param data_length The size of the data buffer, in samples.
+ * @return The number of samples that were collected this frame.
+ * Will return 0 if the microphone is invalid or disabled.
+ */
+typedef size_t (RETRO_CALLCONV *retro_get_microphone_input_t)(unsigned index, int16_t* data, size_t data_length);
+
+/**
+ * An interface for querying the microphone and accessing data read from it.
+ * All fields in this interface are populated by the frontend
+ * by way of the the RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE callback.
+ * All fields will be non-NULL,
+ * even if the frontend (or its audio driver) doesn't support microphones.
+ */
+struct retro_microphone_interface
+{
+   /**
+    * The number of microphones that the frontend supports
+    * with its current audio driver.
+    * 0 indicates that the frontend does not support microphones.
+    * A return value of INT_MAX indicates that the frontend
+    * supports as many microphones as the system permits.
+    * I don't know why you'd want arbitrarily many microphones,
+    * but I guess this is how you'd represent that.
+    */
+   unsigned max_supported_microphones;
+   retro_num_available_microphones_t num_available_microphones;
+   retro_set_microphone_state_t set_microphone_state;
+   retro_get_microphone_state_t get_microphone_state;
+   retro_get_microphone_input_t get_microphone_input;
 };
 
 /* Callbacks */
