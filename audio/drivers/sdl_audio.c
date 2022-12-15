@@ -203,7 +203,8 @@ static void *sdl_audio_init(const char *device,
 
 #if SDL_DRIVER_MIC_SUPPORT
    /* Now let's init the microphone */
-   spec.callback = sdl_audio_record_cb; /* Microphone should have the same params as speaker */
+   spec.callback = sdl_audio_record_cb;
+   spec.channels = 1; /* Microphones only usually provide input in mono */
 
    sdl->microphone_device = SDL_OpenAudioDevice(NULL, true, &spec, &out, 0);
    if (sdl->microphone_device == 0)
