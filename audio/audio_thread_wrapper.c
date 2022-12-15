@@ -250,10 +250,31 @@ static ssize_t audio_thread_write(void *data, const void *buf, size_t size)
    return ret;
 }
 
+static ssize_t audio_thread_read(void *data, void *buf, size_t size)
+{
+   ssize_t ret;
+   audio_thread_t *thr = (audio_thread_t*)data;
+
+   if (!thr)
+      return 0;
+
+   ret = thr->driver->read(thr->driver_data, buf, size);
+
+   if (ret < 0)
+   {
+      slock_lock(thr->lock);
+      thr->alive = false;
+      scond_signal(thr->cond);
+      slock_unlock(thr->lock);
+   }
+
+   return ret;
+}
+
 static const audio_driver_t audio_thread = {
    NULL,
    audio_thread_write,
-   NULL,
+   audio_thread_read,
    audio_thread_stop,
    audio_thread_start,
    audio_thread_alive,
