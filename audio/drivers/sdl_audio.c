@@ -31,6 +31,37 @@
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
+/**
+ * We need the SDL_{operation}AudioDevice functions for microphone support,
+ * but those were introduced in SDL 2.0.0
+ * (according to their docs).
+ * Some legacy build platforms are stuck on 1.x.x,
+ * so we have to accommodate them.
+ * That comes in the form of stub implementations of the missing functions
+ * that delegate to the non-Device versions.
+ *
+ * Only three platforms (as of this writing) are stuck on SDL 1.x.x,
+ * so it's not a big deal to exclude mic support from them.
+ **/
+#if HAVE_SDL2
+#define SDL_DRIVER_MIC_SUPPORT 1
+#define SDL_DRIVER_DEVICE_FUNCTIONS 1
+#else
+typedef Uint32 SDL_AudioDeviceID;
+
+/** Compatibility stub that defers to SDL_PauseAudio. */
+#define SDL_PauseAudioDevice(dev, pause_on) SDL_PauseAudio(pause_on)
+
+/** Compatibility stub that defers to SDL_LockAudio. */
+#define SDL_LockAudioDevice(dev) SDL_LockAudio()
+
+/** Compatibility stub that defers to SDL_UnlockAudio. */
+#define SDL_UnlockAudioDevice(dev) SDL_UnlockAudio()
+
+/** Compatibility stub that defers to SDL_CloseAudio. */
+#define SDL_CloseAudioDevice(dev) SDL_CloseAudio()
+#endif
+
 typedef struct sdl_audio
 {
 #ifdef HAVE_THREADS
@@ -38,11 +69,14 @@ typedef struct sdl_audio
    scond_t *cond;
 #endif
    fifo_buffer_t *speaker_buffer;
-   fifo_buffer_t *microphone_buffer;
    bool nonblock;
    bool is_paused;
    SDL_AudioDeviceID speaker_device;
+
+#ifdef SDL_DRIVER_MIC_SUPPORT
+   fifo_buffer_t *microphone_buffer;
    SDL_AudioDeviceID microphone_device;
+#endif
 } sdl_audio_t;
 
 static void sdl_audio_playback_cb(void *data, Uint8 *stream, int len)
@@ -126,8 +160,17 @@ static void *sdl_audio_init(const char *device,
    spec.callback = sdl_audio_playback_cb;
    spec.userdata = sdl;
 
+   /* No compatibility stub for SDL_OpenAudioDevice because its return value
+    * is different from that of SDL_OpenAudio. */
+#if SDL_DRIVER_DEVICE_FUNCTIONS
    sdl->speaker_device = SDL_OpenAudioDevice(NULL, false, &spec, &out, 0);
+
    if (sdl->speaker_device == 0)
+#else
+   sdl->speaker_device = SDL_OpenAudio(&spec, &out);
+
+   if (sdl->speaker_device < 0)
+#endif
    {
       RARCH_ERR("[SDL audio]: Failed to open SDL audio output device: %s\n", SDL_GetError());
       goto error;
@@ -156,6 +199,7 @@ static void *sdl_audio_init(const char *device,
 
    SDL_PauseAudioDevice(sdl->speaker_device, false);
 
+#if SDL_DRIVER_MIC_SUPPORT
    /* Now let's init the microphone */
    spec.callback = sdl_audio_record_cb; /* Microphone should have the same params as speaker */
 
@@ -185,6 +229,7 @@ static void *sdl_audio_init(const char *device,
 
       SDL_PauseAudioDevice(sdl->microphone_device, false);
    }
+#endif
 
    return sdl;
 
@@ -243,6 +288,7 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
    return ret;
 }
 
+#if SDL_DRIVER_MIC_SUPPORT
 static ssize_t sdl_audio_read(void *data, void *buf, size_t size)
 {
    ssize_t ret      = 0;
@@ -292,6 +338,7 @@ static ssize_t sdl_audio_read(void *data, void *buf, size_t size)
 
    return ret;
 }
+#endif
 
 static bool sdl_audio_stop(void *data)
 {
@@ -299,10 +346,12 @@ static bool sdl_audio_stop(void *data)
    sdl->is_paused = true;
    SDL_PauseAudioDevice(sdl->speaker_device, true);
 
+#if SDL_DRIVER_MIC_SUPPORT
    if (sdl->microphone_device)
    {
       SDL_PauseAudioDevice(sdl->microphone_device, true);
    }
+#endif
 
    return true;
 }
@@ -322,10 +371,12 @@ static bool sdl_audio_start(void *data, bool is_shutdown)
 
    SDL_PauseAudioDevice(sdl->speaker_device, false);
 
+#if SDL_DRIVER_MIC_SUPPORT
    if (sdl->microphone_device)
    {
       SDL_PauseAudioDevice(sdl->microphone_device, false);
    }
+#endif
 
    return true;
 }
@@ -353,6 +404,7 @@ static void sdl_audio_free(void *data)
          fifo_free(sdl->speaker_buffer);
       }
 
+#if SDL_DRIVER_MIC_SUPPORT
       if (sdl->microphone_device > 0)
       { /* If the microphone was originally initialized successfully... */
          SDL_CloseAudioDevice(sdl->microphone_device);
@@ -362,6 +414,7 @@ static void sdl_audio_free(void *data)
       {
          fifo_free(sdl->microphone_buffer);
       }
+#endif
 
 #ifdef HAVE_THREADS
       slock_free(sdl->lock);
@@ -394,7 +447,11 @@ static size_t sdl_audio_read_avail(void *data)
 audio_driver_t audio_sdl = {
    sdl_audio_init,
    sdl_audio_write,
+#if SDL_DRIVER_MIC_SUPPORT
    sdl_audio_read,
+#else
+   NULL, /* Microphone support for this driver request SDL 2 */
+#endif
    sdl_audio_stop,
    sdl_audio_start,
    sdl_audio_alive,
