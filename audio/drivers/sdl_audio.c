@@ -453,7 +453,7 @@ audio_driver_t audio_sdl = {
 #if SDL_DRIVER_MIC_SUPPORT
    sdl_audio_read,
 #else
-   NULL, /* Microphone support for this driver request SDL 2 */
+   NULL, /* Microphone support for this driver requires SDL 2 */
 #endif
    sdl_audio_stop,
    sdl_audio_start,
