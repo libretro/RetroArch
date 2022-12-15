@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/utsname.h>
@@ -80,11 +79,10 @@
 #include "../frontend.h"
 #include "../frontend_driver.h"
 #include "../../defaults.h"
+#include "../../msg_hash.h"
+#include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-#include "../../paths.h"
-#include "../../msg_hash.h"
-#include "platform_unix.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -92,6 +90,8 @@
 #else
 #include "../../command.h"
 #endif
+
+#include "platform_unix.h"
 
 #ifdef ANDROID
 static void frontend_unix_set_sustained_performance_mode(bool on);
@@ -233,11 +233,8 @@ void android_dpi_get_density(char *s, size_t len)
 
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
 {
-   if (!android_app)
-      return;
-
-   if (write(android_app->msgwrite, &cmd, sizeof(cmd)) != sizeof(cmd))
-      RARCH_ERR("Failure writing android_app cmd: %s\n", strerror(errno));
+   if (android_app)
+      write(android_app->msgwrite, &cmd, sizeof(cmd));
 }
 
 static void android_app_set_input(struct android_app *android_app,
@@ -482,7 +479,6 @@ static struct android_app* android_app_create(ANativeActivity* activity,
 
    if (pipe(msgpipe))
    {
-      RARCH_ERR("could not create pipe: %s.\n", strerror(errno));
       if (android_app->savedState)
         free(android_app->savedState);
       free(android_app);
@@ -1294,14 +1290,14 @@ static void frontend_unix_get_lakka_version(char *s,
       size_t len)
 {
    char version[128];
-   size_t vlen;
+   size_t version_len;
    FILE *command_file = popen("cat /etc/release", "r");
 
    fgets(version, sizeof(version), command_file);
-   vlen = strlen(version);
+   version_len = strlen(version);
 
-   if (vlen > 0 && version[vlen-1] == '\n')
-      version[--vlen] = '\0';
+   if (version_len > 0 && version[version_len-1] == '\n')
+      version[--version_len] = '\0';
 
    strlcpy(s, version, len);
 
@@ -2677,8 +2673,7 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
 
          if (event->mask & inotify_data->flags)
          {
-            unsigned j;
-
+            int j;
             /* A successful close does not guarantee that the
              * data has been successfully saved to disk,
              * as the kernel defers writes. It is
@@ -2758,11 +2753,10 @@ enum retro_language frontend_unix_get_user_language(void)
 
       if (jstr)
       {
-         const char *langStr = (*env)->GetStringUTFChars(env, jstr, 0);
+         const char *lang_str = (*env)->GetStringUTFChars(env, jstr, 0);
+         lang                 = rarch_get_language_from_iso(lang_str);
 
-         lang = rarch_get_language_from_iso(langStr);
-
-         (*env)->ReleaseStringUTFChars(env, jstr, langStr);
+         (*env)->ReleaseStringUTFChars(env, jstr, lang_str);
       }
    }
 #else

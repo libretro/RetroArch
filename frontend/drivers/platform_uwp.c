@@ -37,18 +37,19 @@
 #endif
 
 #include "../frontend_driver.h"
+
 #include "../../configuration.h"
 #include "../../defaults.h"
+#include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../ui/drivers/ui_win32.h"
-#include "../../paths.h"
 
 #include "../../uwp/uwp_func.h"
 
 static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
 {
-   char buildStr[11]      = {0};
+   char build_str[11]     = {0};
    bool server            = false;
    const char *arch       = "";
 
@@ -97,9 +98,9 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
       *minor = vi.dwMinorVersion;
 
    if (vi.dwMajorVersion == 4 && vi.dwMinorVersion == 0)
-      snprintf(buildStr, sizeof(buildStr), "%lu", (DWORD)(LOWORD(vi.dwBuildNumber))); /* Windows 95 build number is in the low-order word only */
+      snprintf(build_str, sizeof(build_str), "%lu", (DWORD)(LOWORD(vi.dwBuildNumber))); /* Windows 95 build number is in the low-order word only */
    else
-      snprintf(buildStr, sizeof(buildStr), "%lu", vi.dwBuildNumber);
+      snprintf(build_str, sizeof(build_str), "%lu", vi.dwBuildNumber);
 
    switch (vi.dwMajorVersion)
    {
@@ -152,7 +153,7 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
    }
 
    strlcat(s, " Build ", len);
-   strlcat(s, buildStr, len);
+   strlcat(s, build_str, len);
 
    if (!string_is_empty(vi.szCSDVersion))
    {
@@ -167,9 +168,7 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
    }
 }
 
-static void frontend_uwp_init(void *data)
-{
-}
+static void frontend_uwp_init(void *data) { }
 
 enum frontend_powerstate frontend_uwp_get_powerstate(
       int *seconds, int *percent)
@@ -231,18 +230,19 @@ enum frontend_architecture frontend_uwp_get_arch(void)
 static int frontend_uwp_parse_drive_list(void *data, bool load_content)
 {
 #ifdef HAVE_MENU
+   int i;
    char home_dir[PATH_MAX_LENGTH];
    file_list_t            *list = (file_list_t*)data;
    enum msg_hash_enums enum_idx = load_content ?
          MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
          MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
    bool have_any_drives         = false;
+   DWORD drives                 = GetLogicalDrives();
    home_dir[0]                  = '\0';
 
    fill_pathname_home_dir(home_dir, sizeof(home_dir));
 
-   DWORD drives = GetLogicalDrives();
-   for (int i = 0; i < 26; i++)
+   for (i = 0; i < 26; i++)
    {
       if (drives & (1 << i))
       {
@@ -394,16 +394,6 @@ static uint64_t frontend_uwp_get_free_mem(void)
 #endif
 }
 
-enum retro_language frontend_uwp_get_user_language(void)
-{
-   return uwp_get_language();
-}
-
-static const char* frontend_uwp_get_cpu_model_name(void)
-{
-   return uwp_get_cpu_model_name();
-}
-
 frontend_ctx_driver_t frontend_ctx_uwp = {
    frontend_uwp_env_get,           /* env_get */
    frontend_uwp_init,              /* init    */
@@ -433,8 +423,8 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    NULL,                            /* watch_path_for_changes */
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
-   frontend_uwp_get_cpu_model_name, /* get_cpu_model_name  */
-   frontend_uwp_get_user_language,  /* get_user_language   */
+   uwp_get_cpu_model_name,          /* get_cpu_model_name  */
+   uwp_get_language,                /* get_user_language   */
    NULL,                            /* is_narrator_running */
    NULL,                            /* accessibility_speak */
    NULL,                            /* set_gamemode        */

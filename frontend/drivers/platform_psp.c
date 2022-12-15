@@ -47,6 +47,7 @@
 #ifndef IS_SALAMANDER
 #include <lists/file_list.h>
 #endif
+#include <defines/psp_defines.h>
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -55,9 +56,8 @@
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 #include "../../file_path_special.h"
-#include <defines/psp_defines.h>
-#include "../../retroarch.h"
 #include "../../paths.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #if !defined(IS_SALAMANDER) && defined(HAVE_NETWORKING)

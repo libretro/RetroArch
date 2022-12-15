@@ -49,11 +49,11 @@
 #include <string/stdstring.h>
 
 #include "../frontend_driver.h"
-#include "../../verbosity.h"
 #include "../../defaults.h"
+#include "../../file_path_special.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
-#include "../../file_path_special.h"
+#include "../../verbosity.h"
 
 #ifndef IS_SALAMANDER
 #ifdef HAVE_MENU

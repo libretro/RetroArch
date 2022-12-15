@@ -39,19 +39,15 @@
 #include <wiiu/procui.h>
 #include <wiiu/sysapp.h>
 
-#include "file_path_special.h"
 
 #include "../frontend.h"
 #include "../frontend_driver.h"
+#include "../../file_path_special.h"
 #include "../../defaults.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-
-#include "hbl.h"
-#include "wiiu_dbg.h"
-#include "system/exception_handler.h"
-#include "tasks/tasks_internal.h"
+#include "../../tasks/tasks_internal.h"
 
 #ifndef IS_SALAMANDER
 #ifdef HAVE_MENU
@@ -62,6 +58,10 @@
 #include "../../network/netplay/netplay.h"
 #endif
 #endif
+
+#include "hbl.h"
+#include "wiiu_dbg.h"
+#include "system/exception_handler.h"
 
 #define WIIU_SD_PATH "sd:/"
 #define WIIU_USB_PATH "usb:/"

@@ -30,17 +30,9 @@
 #include "../../config.h"
 #endif
 
-#include <retroarch_types.h>
-#include <msg_hash.h>
-#include <command.h>
-#include <verbosity.h>
-
-#if defined(HW_RVL) && !defined(IS_SALAMANDER)
+#include <sdcard/gcsd.h>
+#include <fat.h>
 #include <rthreads/rthreads.h>
-#include "../../memory/wii/mem2_manager.h"
-#endif
-
-#include <defines/gx_defines.h>
 
 #include <boolean.h>
 #include <compat/strl.h>
@@ -51,12 +43,23 @@
 #endif
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
+#include <defines/gx_defines.h>
 
 #include "../frontend_driver.h"
-#include "../../defaults.h"
 
-#ifndef IS_SALAMANDER
+#include "../../command.h"
+#include "../../defaults.h"
+#include "../../msg_hash.h"
+#include "../../retroarch_types.h"
+#include "../../verbosity.h"
+
+#if !defined(IS_SALAMANDER)
+#include "../../paths.h"
 #include "../../menu/menu_entries.h"
+
+#if defined(HW_RVL)
+#include "../../memory/wii/mem2_manager.h"
+#endif
 #endif
 
 #ifdef HW_RVL
@@ -65,9 +68,6 @@
 #include <sdcard/wiisd_io.h>
 extern void system_exec_wii(const char *path, bool should_load_game);
 #endif
-#include <sdcard/gcsd.h>
-#include <fat.h>
-#include <rthreads/rthreads.h>
 
 #ifdef USBGECKO
 #include <debug.h>
@@ -104,8 +104,6 @@ static devoptab_t dotab_stdout = {
 };
 
 #ifndef IS_SALAMANDER
-#include "../../paths.h"
-
 enum
 {
    GX_DEVICE_SD = 0,
@@ -129,7 +127,7 @@ static volatile bool gx_stop_dev_thread  = false;
 
 static void gx_devthread(void *a)
 {
-   unsigned i;
+   int i;
 
    slock_lock(gx_device_cond_mutex);
 
@@ -143,7 +141,7 @@ static void gx_devthread(void *a)
          {
             if (!gx_devices[i].interface->isInserted())
             {
-               char n[8] = {0};
+               char n[8];
                gx_devices[i].mounted = false;
                strlcpy(n, gx_devices[i].name, sizeof(n));
                strlcat(n, ":", sizeof(n));
@@ -333,7 +331,6 @@ extern void __exception_setreload(int t);
 
 static void frontend_gx_init(void *data)
 {
-   (void)data;
 #ifdef HW_RVL
    IOS_ReloadIOS(IOS_GetVersion());
    L2Enhance();
@@ -391,8 +388,6 @@ static void frontend_gx_init(void *data)
 
 static void frontend_gx_deinit(void *data)
 {
-   (void)data;
-
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
    slock_lock(gx_device_cond_mutex);
    gx_stop_dev_thread = true;
@@ -447,7 +442,7 @@ static void frontend_gx_exitspawn(char *s, size_t len, char *args)
          break;
    }
 
-   frontend_gx_exec(s, should_load_game);
+   system_exec_wii(s, should_load_game);
    frontend_driver_get_salamander_basename(salamander_basename,
          sizeof(salamander_basename));
 
@@ -558,11 +553,11 @@ static void frontend_gx_shutdown(bool unused)
 
 static uint64_t frontend_gx_get_total_mem(void)
 {
-   uint64_t total = SYSMEM1_SIZE;
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
-   total += gx_mem2_total();
+   return SYSMEM1_SIZE + gx_mem2_total();
+#else
+   return SYSMEM1_SIZE;
 #endif
-   return total;
 }
 
 static uint64_t frontend_gx_get_free_mem(void)

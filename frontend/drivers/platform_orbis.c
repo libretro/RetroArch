@@ -64,8 +64,8 @@
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 #include "../../file_path_special.h"
-#include "../../retroarch.h"
 #include "../../paths.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #define CONTENT_PATH_ARG_INDEX 1

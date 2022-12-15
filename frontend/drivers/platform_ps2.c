@@ -43,8 +43,8 @@
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 #include "../../file_path_special.h"
-#include "../../verbosity.h"
 #include "../../paths.h"
+#include "../../verbosity.h"
 
 #if defined(DEBUG)
 #define DEFAULT_PARTITION "hdd0:__common:pfs"
@@ -146,10 +146,8 @@ static void reset_IOP()
 bool getMountInfo(char *path, char *mountString, char *mountPoint, char *newCWD)
 {
    struct string_list *str_list = string_split(path, ":");
-   if (str_list->size < 3 )
-   {
+   if (str_list->size < 3)
       return false;
-   }
 
    sprintf(mountPoint, "%s:%s", str_list->elems[0].data, str_list->elems[1].data);
    sprintf(mountString, "%s:", str_list->elems[2].data);
@@ -243,7 +241,8 @@ static void deinit_drivers(bool deinit_filesystem, bool deinit_powerOff)
    deinit_joystick_driver(false);
 #endif
 
-   if (deinit_filesystem) {
+   if (deinit_filesystem)
+   {
       umount_hdd_partition(mountString);
 
       deinit_hdd_driver(false);
@@ -414,7 +413,7 @@ static void frontend_ps2_exitspawn(char *s, size_t len, char *args)
    frontend_ps2_exec(s, should_load_content);
 }
 
-static int frontend_ps2_get_rating(void) { return 10; }
+static int frontend_ps2_get_rating(void) { return 4; }
 
 enum frontend_architecture frontend_ps2_get_arch(void)
 {
@@ -426,9 +425,9 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
 #ifndef IS_SALAMANDER
    char hdd[10];
    file_list_t *list = (file_list_t*)data;
-   enum msg_hash_enums enum_idx = load_content ?
-      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
-      MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
+   enum msg_hash_enums enum_idx = load_content
+      ? MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR
+      : MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 
    menu_entries_append(list,
          rootDevicePath(BOOT_DEVICE_MC0),
@@ -450,6 +449,7 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0, NULL);
+
    if (hddMountStatus == HDD_MOUNT_STATUS_OK)
    {
       size_t _len = strlcpy(hdd, mountString, sizeof(hdd));
