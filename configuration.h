@@ -156,6 +156,7 @@ typedef struct settings
       unsigned led_map[MAX_LEDS];
 
       unsigned audio_output_sample_rate;
+      unsigned audio_input_sample_rate;
       unsigned audio_block_frames;
       unsigned audio_latency;
 
@@ -586,6 +587,7 @@ typedef struct settings
 
       /* Audio */
       bool audio_enable;
+      bool audio_enable_microphone;
       bool audio_enable_menu;
       bool audio_enable_menu_ok;
       bool audio_enable_menu_cancel;

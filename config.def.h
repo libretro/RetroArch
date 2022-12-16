@@ -967,6 +967,7 @@
 
 /* Will enable audio or not. */
 #define DEFAULT_AUDIO_ENABLE true
+#define DEFAULT_AUDIO_ENABLE_MICROPHONE true
 
 /* Enable menu audio sounds. */
 #define DEFAULT_AUDIO_ENABLE_MENU false
@@ -1052,10 +1053,13 @@
 /* Output samplerate. */
 #if defined(GEKKO) || defined(MIYOO)
 #define DEFAULT_OUTPUT_RATE 32000
+#define DEFAULT_INPUT_RATE  32000
 #elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
+#define DEFAULT_INPUT_RATE  32730
 #else
 #define DEFAULT_OUTPUT_RATE 48000
+#define DEFAULT_INPUT_RATE  48000
 #endif
 
 /* Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults. */

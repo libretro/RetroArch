@@ -597,6 +597,10 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Enable audio output.");
             break;
+        case MENU_ENUM_LABEL_AUDIO_ENABLE_MICROPHONE:
+            snprintf(s, len,
+                     "Enable audio input.");
+            break;
         case MENU_ENUM_LABEL_AUDIO_SYNC:
             snprintf(s, len,
                      "Synchronize audio (recommended).");
@@ -714,6 +718,10 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
             snprintf(s, len,
                      "Audio output samplerate.");
+            break;
+        case MENU_ENUM_LABEL_AUDIO_INPUT_RATE:
+            snprintf(s, len,
+                     "Audio input samplerate.");
             break;
         case MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT:
             snprintf(s, len,

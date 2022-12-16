@@ -2261,6 +2261,14 @@ MSG_HASH(
    "Enable audio output."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MICROPHONE,
+   "Microphone"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MICROPHONE,
+   "Enable audio input."
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    "Device"
    )

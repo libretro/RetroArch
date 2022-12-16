@@ -8184,6 +8184,7 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
+      case MENU_ENUM_LABEL_AUDIO_INPUT_RATE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH:
@@ -13096,6 +13097,22 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
+               &settings->bools.audio_enable_microphone,
+               MENU_ENUM_LABEL_AUDIO_ENABLE_MICROPHONE,
+               MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MICROPHONE,
+               DEFAULT_AUDIO_ENABLE_MICROPHONE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+         );
+
+         CONFIG_BOOL(
+               list, list_info,
                audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE),
                MENU_ENUM_LABEL_AUDIO_MUTE,
                MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -13336,6 +13353,21 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
                MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
                DEFAULT_OUTPUT_RATE,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
+         menu_settings_list_current_add_range(list, list_info, 1000, 192000, 100.0, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.audio_input_sample_rate,
+               MENU_ENUM_LABEL_AUDIO_INPUT_RATE,
+               MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_RATE,
+               DEFAULT_INPUT_RATE,
                &group_info,
                &subgroup_info,
                parent_group,

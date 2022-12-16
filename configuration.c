@@ -1726,6 +1726,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("keyboard_gamepad_enable",       &settings->bools.input_keyboard_gamepad_enable, true, true, false);
    SETTING_BOOL("core_set_supports_no_game_enable", &settings->bools.set_supports_no_game_enable, true, true, false);
    SETTING_BOOL("audio_enable",                  &settings->bools.audio_enable, true, DEFAULT_AUDIO_ENABLE, false);
+   SETTING_BOOL("audio_enable_microphone",       &settings->bools.audio_enable_microphone, true, DEFAULT_AUDIO_ENABLE_MICROPHONE, false);
    SETTING_BOOL("menu_enable_widgets",           &settings->bools.menu_enable_widgets, true, DEFAULT_MENU_ENABLE_WIDGETS, false);
    SETTING_BOOL("menu_show_load_content_animation", &settings->bools.menu_show_load_content_animation, true, DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION, false);
    SETTING_BOOL("notification_show_autoconfig", &settings->bools.notification_show_autoconfig, true, DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG, false);
@@ -2281,6 +2282,7 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 #endif
    SETTING_UINT("audio_out_rate",               &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
+   SETTING_UINT("audio_in_rate",                &settings->uints.audio_input_sample_rate, true, DEFAULT_INPUT_RATE, false);
    SETTING_UINT("custom_viewport_width",        &settings->video_viewport_custom.width, false, 0 /* TODO */, false);
    SETTING_UINT("crt_switch_resolution_super",  &settings->uints.crt_switch_resolution_super,      true, DEFAULT_CRT_SWITCH_RESOLUTION_SUPER, false);
    SETTING_UINT("custom_viewport_height",       &settings->video_viewport_custom.height, false, 0 /* TODO */, false);

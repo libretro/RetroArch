@@ -515,6 +515,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_always_reload_core_on_run_content, M
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_refresh_rate,            MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_refresh_rate_polled,     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_enable,                  MENU_ENUM_SUBLABEL_AUDIO_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_enable_microphone,       MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MICROPHONE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_enable_menu,             MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_sounds,                   MENU_ENUM_SUBLABEL_MENU_SOUNDS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_max_timing_skew,         MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW)
@@ -738,6 +739,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_wallpaper,                     MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dynamic_wallpaper,             MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_device,                  MENU_ENUM_SUBLABEL_AUDIO_DEVICE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_output_rate,             MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_input_rate,              MENU_ENUM_SUBLABEL_AUDIO_INPUT_RATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_dsp_plugin,              MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_dsp_plugin_remove,       MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_exclusive_mode,   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE)
@@ -3457,6 +3459,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_output_rate);
             break;
+         case MENU_ENUM_LABEL_AUDIO_INPUT_RATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_input_rate);
+            break;
          case MENU_ENUM_LABEL_AUDIO_DEVICE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_device);
             break;
@@ -4040,6 +4045,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUDIO_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_enable);
+            break;
+         case MENU_ENUM_LABEL_AUDIO_ENABLE_MICROPHONE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_enable_microphone);
             break;
          case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_enable_menu);

@@ -127,6 +127,10 @@ MSG_HASH(
    "audio_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_ENABLE_MICROPHONE,
+   "audio_enable_microphone"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_FILTER_DIR,
    "audio_filter_dir"
    )
@@ -154,6 +158,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
    "audio_output_rate"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_INPUT_RATE,
+   "audio_input_rate"
+)
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
    "audio_rate_control_delta"
