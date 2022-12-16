@@ -10891,9 +10891,24 @@ static void materialui_list_insert(
                /* Set defaults */
                node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
-               if (mui->textures.playlist.size >= 1)
-                  if (!string_is_empty(path))
+               if (     mui->textures.playlist.size >= 1
+                     && !string_is_empty(path))
+               {
+                  if (string_ends_with_size(path, "_history.lpl",
+                        strlen(path), STRLEN_CONST("_history.lpl")))
+                  {
+                     node->icon_texture_index = MUI_TEXTURE_HISTORY;
+                     node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+                  }
+                  else if (string_ends_with_size(path, "_favorites.lpl",
+                        strlen(path), STRLEN_CONST("_favorites.lpl")))
+                  {
+                     node->icon_texture_index = MUI_TEXTURE_ADD_TO_FAVORITES;
+                     node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+                  }
+                  else
                      materialui_set_node_playlist_icon(mui, node, path);
+               }
             }
             break;
       }

@@ -7924,11 +7924,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
-   "Add New Cheat after This One"
+   "Add New Cheat After This"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
-   "Add New Cheat before This One"
+   "Add New Cheat Before This"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,

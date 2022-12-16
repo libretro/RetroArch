@@ -2535,6 +2535,7 @@ static void xmb_context_reset_horizontal_list(
       else if (string_ends_with_size(xmb->horizontal_list.list[i].label, ".lvw",
               strlen(xmb->horizontal_list.list[i].label), STRLEN_CONST(".lvw")))
       {
+         node->console_name = strdup(path + strlen(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW)) + 2);
          node->icon = xmb->textures.list[XMB_TEXTURE_CURSOR];
       }
    }
@@ -2916,6 +2917,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESTART_CONTENT:
       case MENU_ENUM_LABEL_REBOOT:
       case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
+      case MENU_ENUM_LABEL_CHEAT_COPY_AFTER:
+      case MENU_ENUM_LABEL_CHEAT_COPY_BEFORE:
       case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
       case MENU_ENUM_LABEL_RESTART_RETROARCH:
       case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS:
@@ -3124,6 +3127,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_STREAM];
       case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
       case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
+      case MENU_ENUM_LABEL_CHEAT_DELETE:
       case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
       case MENU_ENUM_LABEL_CORE_DELETE:
       case MENU_ENUM_LABEL_DELETE_PLAYLIST:
@@ -4032,9 +4036,20 @@ static int xmb_draw_item(
             texture = xmb->textures.list[XMB_TEXTURE_FAVORITES];
          else if (i < xmb->horizontal_list.size)
          {
-            xmb_node_t *sidebar_node = (xmb_node_t*)
-                  file_list_get_userdata_at_offset(&xmb->horizontal_list, i + 1);
+            xmb_node_t *sidebar_node = NULL;
+            unsigned offset          = 0;
 
+            /* Ignore Explore Views */
+            for (offset = 0; offset < xmb->horizontal_list.size; offset++)
+            {
+               char playlist_file_noext[255];
+               strlcpy(playlist_file_noext, xmb->horizontal_list.list[offset].path, sizeof(playlist_file_noext));
+               path_remove_extension(playlist_file_noext);
+               if (string_is_equal(playlist_file_noext, entry.rich_label))
+                  break;
+            }
+
+            sidebar_node = (xmb_node_t*)file_list_get_userdata_at_offset(&xmb->horizontal_list, offset);
             if (sidebar_node && sidebar_node->icon)
                texture = sidebar_node->icon;
          }
