@@ -4729,7 +4729,7 @@ static unsigned menu_displaylist_parse_content_information(
     * > Can only assume a valid playlist if the origin
     *   was an actual playlist - i.e. cached playlist is
     *   dubious if information was selected from
-    *   'Main Menu > Quick Menu' or 'Standalone Cores >
+    *   'Main Menu > Quick Menu' or 'Contentless Cores >
     *   Quick Menu' */
    if (menu_st->entries.list)
       list  = MENU_LIST_GET(menu_st->entries.list, 0);
