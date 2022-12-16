@@ -533,6 +533,14 @@ MSG_HASH(
 
 /* Settings > Input > Hotkeys */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "When assigned, the 'Hotkey Enable' key must be held before any other hotkeys are recognised. Allows controller buttons to be mapped to hot-key functions without affecting normal input."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   "Add a delay in frames before normal input is blocked after pressing the assigned 'Hot-key Enable' key. Allows normal input from the 'Hot-key Enable' key to be captured when it is mapped to another action (e.g. RetroPad 'Select')."
+   )
 
 
 
@@ -544,6 +552,10 @@ MSG_HASH(
 
 
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
+   "Switches 'Game Focus' mode on/off. When content has focus, hot-keys are disabled (full keyboard input is passed to the running core) and mouse is grabbed."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "Full-screen (Toggle)"
@@ -563,6 +575,10 @@ MSG_HASH(
    )
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Net-play Ping (Toggle)"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
    "Switches the ping counter for the current net-play room on/off."
