@@ -8133,8 +8133,8 @@ int generic_menu_entry_action(
             flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
             break;
          }
-         /* If core was launched via standalone cores menu,
-          * flush to standalone cores menu */
+         /* If core was launched via 'Contentless Cores' menu,
+          * flush to 'Contentless Cores' menu */
          else if (string_is_equal(parent_label,
                         msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
                   string_is_equal(parent_label,
