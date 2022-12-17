@@ -42,7 +42,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Bağımsız Çekirdekler"
+   "İçeriksiz Çekirdekler"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -284,7 +284,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Bağımsız Çekirdekler"
+   "İçeriksiz Çekirdekler"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -529,11 +529,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "'Bağımsız Çekirdekler' Menüsü Üstünden Hariç Tut"
+   "'İçeriksiz Çekirdekler' Menüsünden Hariç Tut"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Bu çekirdeğin 'Bağımsız Çekirdekler' sekmesinde/menüsünde görüntülenmesini önleyin. Yalnızca görüntüleme kipi 'Özel' olarak ayarlandığında geçerlidir."
+   "Bu çekirdeğin 'İçeriksiz Çekirdekler' sekmesinde/menüsünde görüntülenmesini önleyin. Yalnızca görüntüleme kipi 'Özel' olarak ayarlandığında geçerlidir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -4902,11 +4902,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "'Bağımsız Çekirdekleri' Göster"
+   "'İçeriksiz Çekirdekleri' Göster"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "'Bağımsız Çekirdekler' menüsünde gösterilecek çekirdek türünü (varsa) belirtin. 'Özel' ayarlandığında, bireysel çekirdek görünürlüğü 'Çekirdekleri Yönet' menüsü ile değiştirilebilir. (Ozone/XMB Yeniden Başlatılmalı)"
+   "'İçeriksiz Çekirdekler' menüsünde gösterilecek çekirdek türünü (varsa) belirtin. 'Özel' olarak ayarlandığında, bireysel çekirdek görünürlüğü 'Çekirdekleri Yönet' menüsü aracılığıyla değiştirilebilir. (Ozone/XMB Yeniden Başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -12756,11 +12756,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "Çekirdek \"Bağımsız Çekirdekler\" listesinden kaldırılamadı: "
+   "Çekirdek \"İçeriksiz Çekirdekler\" listesinden kaldırılamadı: "
    )
 MSG_HASH(
    MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "'Bağımsız Çekirdekler' listesine çekirdek eklenemedi: "
+   "Çekirdek 'İçeriksiz Çekirdekler' listesine eklenemedi: "
    )
 MSG_HASH(
    MSG_CORE_DELETE_DISABLED,

@@ -45,10 +45,6 @@ MSG_HASH(
    "Explorar"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Núcleos autônomos"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importar conteúdo"
    )
@@ -146,12 +142,8 @@ MSG_HASH(
    "Baixa complementos, componentes e conteúdo para o RetroArch."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY,
-   "Jogo em rede"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
-   "Entrar ou hospedar uma sessão de jogo em rede."
+   "Entrar ou criar uma sessão da Netplay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -285,10 +277,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Navegue por todo o conteúdo correspondente ao banco de dados por meio de uma interface de pesquisa categorizada."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Núcleos autônomos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -501,7 +489,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   "Determinístico (salva/carrega, rebobina, execução antecipada, jogo em rede)"
+   "Determinístico (salva/carrega, rebobina, execução antecipada, Netplay)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -526,14 +514,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "Impede a alteração atual do núcleo instalado. Pode ser usado para evitar atualizações indesejadas quando o conteúdo necessitar de uma versão específica do núcleo (ex: conjuntos de ROMs de Arcade)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Excluir do menu \"Núcleos autônomos\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Impede que este núcleo seja exibido no menu/aba \"Núcleos autônomos\". Somente é aplicado quando o modo de exibição está configurado como \"Personalizado\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -3009,7 +2989,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
-   "Mostrar latência de jogo em rede (ativar/desativar)"
+   "Ping da Netplay (ativar/desativar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
@@ -3021,31 +3001,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
-   "Alterna a hospedagem de jogo em rede entre ligada e desligada."
+   "Alterna a hospedagem da Netplay entre ligada e desligada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-   "Modo jogador/espectador do jogo em rede (alternar)"
+   "Modo espectador/jogador da Netplay (ativar/desativar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
-   "Alterna a sessão atual de jogo entre os modos \"jogador\" e \"espectador\"."
+   "Alterna a sessão atual de jogo entre os modos \"espectador\" e \"jogador\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Bate-papo do jogo em rede"
+   "Bate-papo da Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Envia uma mensagem de bate-papo para a sessão atual do jogo em rede."
+   "Envia uma mensagem de bate-papo para a sessão atual da Netplay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Desvanecer bate-papo do jogo em rede"
+   "(Des)ativar desvanecimento do bate-papo da Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Alterna as mensagens de bate-papo de jogos em rede em com ou sem animação desvanecimento."
+   "Ativa ou desativa o desvanecimento das mensagens do bate-papo da Netplay."
    )
 
 MSG_HASH(
@@ -4244,11 +4224,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
-   "Mostrar latência da rede na tela"
+   "Mostrar ping da Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
-   "Mostra a latência da sala atual do jogo em rede."
+   "Mostra o ping da sala atual da Netplay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -4822,11 +4802,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
-   "Mostrar \"Jogo em rede\""
+   "Mostrar \"Netplay\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Mostre o menu \"Jogo em rede\". (requer reinício no Ozone/XMB)"
+   "Mostra o menu \"Netplay\". (requer reinício no Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -4875,14 +4855,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
    "Mostre a opção do explorador de conteúdos. (requer reinício no Ozone/XMB)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Mostrar \"Núcleos autônomos\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Define quais núcleos serão mostrados no menu \"Núcleos autônomos\". \"Personalizado\" permite alterar a visibilidade de cada núcleo no menu \"Gerenciar núcleos\". (requer reinício no Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -5610,11 +5582,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
-   "Anunciar jogo em rede publicamente"
+   "Anunciar publicamente"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-   "Anuncia os jogos em rede publicamente. Se não definido, os clientes deverão conectar manualmente em vez de usar o lobby público."
+   "Anuncia as partidas da Netplay publicamente. Caso desativada, os clientes deverão conectar-se manualmente em vez de usar a lista pública de salas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
@@ -5622,7 +5594,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Encaminha conexões de jogo em rede através de um servidor \"homem no meio\" (MITM). Útil se o anfitrião estiver atrás de um firewall ou tiver problemas de NAT/UPnP."
+   "Encaminha conexões da Netplay através de um servidor \"homem no meio\" (MITM). Útil se o anfitrião estiver atrás de um firewall ou tiver problemas de NAT/UPnP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
@@ -5670,7 +5642,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
-   "Porta TCP do jogo em rede"
+   "Porta TCP da Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
@@ -5710,11 +5682,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
-   "Modo espectador do jogo em rede"
+   "Modo espectador da Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   "Iniciar jogo em rede no modo espectador."
+   "Inicia a Netplay no modo espectador."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
@@ -5746,7 +5718,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Permite que os jogadores pausem o jogo durante o jogo em rede."
+   "Permite que os jogadores pausem na Netplay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -5766,11 +5738,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Verificar quadros do jogo em rede"
+   "Quadros de verificação"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "A frequência (em quadros) com que o jogo em rede verificará se o anfitrião e o cliente estão sincronizados."
+   "A frequência (em quadros) com que a Netplay verificará se o anfitrião e o cliente estão sincronizados."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -5778,7 +5750,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "O número de quadros de latência de entrada para o jogo em rede utilizar para mascarar a latência da rede. Reduz a oscilação e torna o jogo em rede menos intensivo para a CPU, ao custo de atraso perceptível na entrada."
+   "O número de quadros de latência de entrada para a Netplay utilizar para mascarar a latência da rede. Reduz a oscilação e torna a Netplay menos intensiva para a CPU, ao custo de atraso perceptível na entrada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -5786,11 +5758,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "O intervalo de quadros de latência de entrada que pode ser utilizado para mascarar a latência da rede. Reduz a oscilação e torna o jogo em rede menos intensivo para a CPU, ao custo de atraso imprevisível na entrada."
+   "O intervalo de quadros de latência de entrada que pode ser utilizado para mascarar a latência da rede. Reduz a oscilação e torna a Netplay menos intensiva para a CPU, ao custo de atraso imprevisível na entrada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
-   "Travessia de NAT do jogo em rede"
+   "Travessia de NAT da Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
@@ -6202,7 +6174,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-   "Insira seu nome de usuário aqui. Isto será utilizado para sessões do jogo em rede, entre outras coisas."
+   "Insira seu nome de usuário aqui. Isto será utilizado para sessões da Netplay, entre outras coisas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
@@ -6618,19 +6590,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "Conectar ao anfitrião de jogo em rede"
+   "Conectar ao anfitrião da Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Habilita o jogo em rede no modo cliente."
+   "Permite digitar um endereço de servidor e conectar no modo cliente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   "Desconectar do anfitrião de jogo em rede"
+   "Desconectar do anfitrião da Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-   "Desconecta de uma conexão de jogo em rede ativa."
+   "Desconecta de uma conexão ativa da Netplay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
@@ -6650,34 +6622,34 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "Atualizar lista de anfitriões de jogo em rede"
+   "Atualizar lista de anfitriões"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "Faz uma busca por anfitriões de jogo em rede."
+   "Procura por anfitriões na Netplay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
-   "Atualizar lista de anfitriões de jogo em rede"
+   "Atualizar lista de rede local (LAN)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
-   "Procura por anfitriões de jogo em rede na rede local."
+   "Procura por anfitriões na rede local."
    )
 
 /* Netplay > Host */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   "Iniciar anfitrião de jogo em rede"
+   "Iniciar hospedagem"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-   "Inicia o jogo em rede no modo anfitrião (servidor)."
+   "Inicia a Netplay no modo anfitrião (servidor)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
-   "Parar anfitrião de jogo em rede"
+   "Parar hospedagem"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
@@ -10347,11 +10319,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
-   "Nenhum anfitrião de jogo em rede encontrado."
+   "Nenhum anfitrião da Netplay encontrado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
-   "Nenhum usuário do jogo em rede encontrado."
+   "Nenhum usuário da Netplay encontrado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
@@ -10570,7 +10542,7 @@ MSG_HASH( /* FIXME Still exists in a comment about being removed */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
-   "Habilitar jogo em rede"
+   "Habilitar Netplay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
@@ -10626,7 +10598,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
-   "Atrasar quadros do jogo em rede"
+   "Atrasar quadros da Netplay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
@@ -10634,15 +10606,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
-   "Procura e conecta aos anfitriões de jogo em rede na rede local."
+   "Procura e conecta aos anfitriões da Netplay na rede local."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
-   "Habilitar cliente de jogo em rede"
+   "Cliente da Netplay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
-   "Habilitar espectador do jogo em rede"
+   "Habilitar espectador da Netplay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
@@ -10789,7 +10761,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
-   "Configurações do jogo em rede"
+   "Configurações da Netplay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT,
@@ -10871,7 +10843,7 @@ MSG_HASH(
 
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
-   "O jogo em rede irá iniciar quando o conteúdo for carregado."
+   "Netplay iniciará quando o conteúdo for carregado."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
@@ -10923,11 +10895,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCAN_COMPLETE,
-   "Análise de jogo em rede completa."
+   "Análise da Netplay completa."
    )
 MSG_HASH(
    MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-   "Desculpe, não implementado: núcleos que não exigem conteúdo não podem participar do jogo em rede."
+   "Desculpe, não implementado: núcleos que não exigem conteúdo não podem participar da Netplay."
    )
 MSG_HASH(
    MSG_NATIVE,
@@ -10935,7 +10907,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-   "Recebido um comando de jogo em rede desconhecido"
+   "Recebido um comando da Netplay desconhecido"
    )
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
@@ -10951,11 +10923,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "Atribuição de portas para jogo em rede concluída"
+   "Atribuição de portas para Netplay concluída"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Mapeamento das portas UPnP do jogo em rede falhou"
+   "Mapeamento das portas UPnP da Netplay falhou"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -10999,35 +10971,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
-   "Uma tentativa de conexão de jogo em rede falhou porque o par não está executando o RetroArch ou está executando uma versão antiga do RetroArch."
+   "Uma tentativa de conexão da Netplay falhou porque o par não está executando o RetroArch ou está executando uma versão antiga do RetroArch."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
-   "ATENÇÃO: Um par de jogo em rede está executando uma versão diferente do RetroArch. Se ocorrerem problemas, use a mesma versão."
+   "ATENÇÃO: Um par da Netplay está executando uma versão diferente do RetroArch. Se ocorrerem problemas, use a mesma versão."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORES,
-   "Um par de jogo em rede está executando um núcleo diferente. Não é possível conectar."
+   "Um par da Netplay está executando um núcleo diferente. Não é possível conectar."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
-   "ATENÇÃO: Um par de jogo em rede está executando uma versão diferente do núcleo. Se ocorrerem problemas, use a mesma versão."
+   "ATENÇÃO: Um par da Netplay está executando uma versão diferente do núcleo. Se ocorrerem problemas, use a mesma versão."
    )
 MSG_HASH(
    MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "Este núcleo não suporta netplay entre essas plataformas"
+   "Este núcleo não tem suporte entre estas plataformas na Netplay"
    )
 MSG_HASH(
    MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "Este núcleo não suporta netplay entre plataformas diferentes"
+   "Este núcleo não tem suporte entre plataformas diferentes na Netplay"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
-   "Digite a senha do servidor de jogo em rede:"
+   "Digite a senha do servidor da Netplay:"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_CHAT,
-   "Digite uma mensagem no bate-papo do jogo em rede:"
+   "Digite uma mensagem no bate-papo da Netplay:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
@@ -11043,11 +11015,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_SERVER_HANGUP,
-   "Um cliente de jogo em rede desconectou"
+   "Um cliente da Netplay desconectou"
    )
 MSG_HASH(
    MSG_NETPLAY_CLIENT_HANGUP,
-   "Desconectado do jogo em rede"
+   "Desconectado da Netplay"
    )
 MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
@@ -11067,7 +11039,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_PEER_PAUSED,
-   "Par do jogo em rede \"%s\" pausou"
+   "Par da Netplay \"%s\" pausou"
    )
 MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
@@ -11128,7 +11100,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONNECTING_TO_NETPLAY_HOST,
-   "Conectando ao anfitrião de jogo em rede"
+   "Conectando ao anfitrião da Netplay"
    )
 MSG_HASH(
    MSG_CONNECTING_TO_PORT,
@@ -11812,11 +11784,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_FAILED,
-   "Falha em inicializar o jogo em rede."
+   "Falha em inicializar a Netplay."
    )
 MSG_HASH(
    MSG_NETPLAY_UNSUPPORTED,
-   "O núcleo não tem suporte para jogo em rede."
+   "O núcleo não tem suporte para Netplay."
    )
 MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
@@ -12168,7 +12140,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,
-   "Analisando por anfitriões de jogo em rede..."
+   "Analisando por anfitriões da Netplay..."
    )
 MSG_HASH(
    MSG_PREPARING_FOR_CONTENT_SCAN,
@@ -12553,14 +12525,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_UNLOCK_FAILED,
    "Houve uma falha ao fazer o desbloqueio do núcleo: "
-   )
-MSG_HASH(
-   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "Falha ao remover o núcleo da lista \"Núcleos autônomos\": "
-   )
-MSG_HASH(
-   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "Falha ao adicionar o núcleo na lista \"Núcleos autônomos\": "
    )
 MSG_HASH(
    MSG_CORE_DELETE_DISABLED,

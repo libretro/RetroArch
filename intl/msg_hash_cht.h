@@ -45,10 +45,6 @@ MSG_HASH(
    "搜尋"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "獨立核心"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "匯入遊戲"
    )
@@ -291,10 +287,6 @@ MSG_HASH(
    "透過搜尋資料庫類別，瀏覽符合遊戲資料庫的全部項目。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "獨立核心"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
    "在此顯示不需要載入檔案的已安裝核心。"
    )
@@ -534,14 +526,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "防止修改目前使用的核心。如遊戲需要此核心版本才可執行時，可用於避免不必要的更新。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "在「獨立核心」列表中不顯示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "在「獨立核心」列表中不顯示此核心。僅限於「獨立核心」設定為 <自訂> 時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -4945,14 +4929,6 @@ MSG_HASH(
    "顯示「搜尋」選項。(Ozone/XMB主題需要重新啟動)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "顯示「獨立核心」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "設定「獨立核心」列表顯示類型。設定 <自訂> 時可透過「管理核心」選項，設定核心是否顯示於列表中。(Ozone/XMB主題需要重新啟動)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    "全部"
    )
@@ -7847,14 +7823,6 @@ MSG_HASH(
    "代碼"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
-   "新增空白到下個編號"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
-   "新增空白到上個編號"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
    "複製新增到下個編號"
    )
@@ -10663,11 +10631,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
-   "子系統"
+   "核心系統"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
-   "使用目前項目的子系統設定。"
+   "使用目前核心系統載入檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
@@ -12929,14 +12897,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_UNLOCK_FAILED,
    "無法解鎖核心: "
-   )
-MSG_HASH(
-   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "無法從獨立核心列表中刪除核心: "
-   )
-MSG_HASH(
-   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "無法加入核心到獨立核心列表中: "
    )
 MSG_HASH(
    MSG_CORE_DELETE_DISABLED,

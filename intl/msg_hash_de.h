@@ -42,7 +42,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Eigenständige Cores"
+   "Inhaltslose Cores"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -280,7 +280,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Eigenständige Cores"
+   "Inhaltslose Cores"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -521,11 +521,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Aus \"Eigenständige Cores\" ausschließen"
+   "Aus \"Inhaltslose Cores\" ausschließen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Verhindern, dass dieser Core auf der Registerkarte/im Menü \"Eigenständige Cores\" angezeigt wird. Gilt nur, wenn der Anzeigemodus auf \"Benutzerdefiniert\" eingestellt ist."
+   "Verhindern, dass dieser Core auf der Registerkarte/im Menü \"Inhaltslose Cores\" angezeigt wird. Gilt nur, wenn der Anzeigemodus auf \"Benutzerdefiniert\" eingestellt ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -4794,11 +4794,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "\"Eigenständige Cores\" anzeigen"
+   "Zeige 'Inhaltslose Cores'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Den Typ der Cores angeben, der im Menü \"Eigenständige Cores\" angezeigt werden soll. Bei der Einstellung \"Benutzerdefiniert\" kann die Sichtbarkeit einzelner Cores über das Menü \"Cores verwalten\" umgeschaltet werden. (Neustart erforderlich bei Ozone/XMB)"
+   "Den Typ der Cores angeben, der im Menü \"Inhaltslose Cores\" angezeigt werden soll. Bei der Einstellung \"Benutzerdefiniert\" kann die Sichtbarkeit einzelner Cores über das Menü \"Cores verwalten\" umgeschaltet werden. (Neustart erforderlich bei Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -12328,11 +12328,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "Fehler beim Entfernen des Cores aus der \"Eigenständige Cores\"-Liste: "
+   "Fehler beim Entfernen des Cores aus der \"Inhaltslose Cores\"-Liste: "
    )
 MSG_HASH(
    MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "Fehler beim Hinzufügen des Cores zur \"Eigenständige Cores\"-Liste: "
+   "Fehler beim Hinzufügen des Cores zur \"Inhaltslose Cores\"-Liste: "
    )
 MSG_HASH(
    MSG_CORE_DELETE_DISABLED,

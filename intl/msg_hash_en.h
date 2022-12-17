@@ -16,10 +16,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
    "Net-play"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Stand-alone Cores"
-   )
 
 /* Main Menu */
 
@@ -54,10 +50,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Browse all content matching the database with a categorised search interface."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Stand-alone Cores"
-   )
 
 /* Main Menu > Online Updater */
 
@@ -90,14 +82,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
    "Deterministic (Save/Load, Rewind, Run-Ahead, Net-play)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Exclude From 'Stand-alone Cores' Menu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Prevent this core from being displayed in the 'Stand-alone Cores' tab/menu. Only applies when display mode is set to 'Custom'."
    )
 
 /* Main Menu > Information > System Information */
@@ -895,14 +879,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
    "Show the 'Net-play' menu. (Restart Required on Ozone/XMB)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Show 'Stand-alone Cores'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Specify the type of core (if any) to show in the 'Stand-alone Cores' menu. When set to 'Custom', individual core visibility may be toggled with the 'Manage Cores' menu. (Restart Required on Ozone/XMB)"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
@@ -2025,14 +2001,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
    "Net-play host full"
-   )
-MSG_HASH(
-   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "Failed to remove core from 'Stand-alone Cores' list: "
-   )
-MSG_HASH(
-   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "Failed to add core to 'Stand-alone Cores' list: "
    )
 MSG_HASH(
    MSG_VRR_RUNLOOP_ENABLED,

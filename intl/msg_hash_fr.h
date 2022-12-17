@@ -41,10 +41,6 @@ MSG_HASH(
    "Parcourir"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Cœurs autonomes"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importer du contenu"
    )
@@ -281,10 +277,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Parcourir tout le contenu correspondant à la base de données via une interface de recherche catégorisée."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Cœurs autonomes"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -526,14 +518,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "Empêche la modification du cœur actuellement installé. Peut être utilisé pour éviter les mises à jour indésirables lorsque le contenu nécessite une version spécifique (les sets de ROMs d'arcade par exemple)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Exclure du menu 'Cœurs autonomes'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Empêcher ce cœur d'être affiché dans l'onglet/le menu 'Cœurs autonomes'. Ne s'applique que lorsque le mode d'affichage est réglé sur 'Personnalisé'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -4873,14 +4857,6 @@ MSG_HASH(
    "Afficher l'option pour parcourir le contenu. (Redémarrage requis sur Ozone/XMB)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Afficher 'Cœurs autonomes'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Spécifier le type de cœur (le cas échéant) à afficher dans le menu 'Cœurs autonomes'. Lorsque réglé sur 'Personnalisé', la visibilité des cœurs individuels peut être activée/désactivée via le menu 'Gérer les cœurs'. (Redémarrage requis pour Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    "Tous"
    )
@@ -7721,14 +7697,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
    "Durée secondaire de la vibration (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
-   "Ajouter un nouveau cheat après celui-ci"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
-   "Ajouter un nouveau cheat avant celui-ci"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
@@ -12617,14 +12585,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_UNLOCK_FAILED,
    "Impossible de déverrouiller les cœurs : "
-   )
-MSG_HASH(
-   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "Impossible de supprimer le cœur de la liste 'Cœurs autonomes' : "
-   )
-MSG_HASH(
-   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "Impossible d'ajouter le cœur à la liste 'Cœurs autonomes' : "
    )
 MSG_HASH(
    MSG_CORE_DELETE_DISABLED,

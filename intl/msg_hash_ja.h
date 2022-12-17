@@ -6583,14 +6583,6 @@ MSG_HASH(
    "コード"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
-   "新規チートをこの後に追加"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
-   "新規チートをこの前に追加"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
    "このチートの後にコピー"
    )

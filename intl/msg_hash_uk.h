@@ -45,10 +45,6 @@ MSG_HASH(
    "Огляд"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Автономні ядра"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Імпорт вмісту"
    )
@@ -291,10 +287,6 @@ MSG_HASH(
    "Переглянути весь вміст, відомості про який є у базі даних, через пошук за категоріями."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Автономні ядра"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
    "Тут будуть відображатися встановлені ядра, які можуть працювати без завантаження вмісту."
    )
@@ -534,14 +526,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "Заборонити внесення змін до встановленого ядра. Корисне для блокування оновлень, якщо вміст вимагає специфічної версії ядра для роботи (наприклад набори аркадних ROM)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Виключити з меню 'Автономні ядра'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Заборонити цьому ядру показуватися в меню 'Автономні ядра'. Застосовується лише при установці 'Користувацькі'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,

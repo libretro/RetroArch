@@ -45,10 +45,6 @@ MSG_HASH(
    "Prehľadávať"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Samostatné jadrá"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importovať obsah"
    )
@@ -287,10 +283,6 @@ MSG_HASH(
    "Prehľadať obsah ktorý sa zhoduje s databázou prostredníctvom kategorizovaného vyhľadavácieho rozhrania."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Samostatné jadrá"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
    "Tu sa zobrazia nainštalované jadrá, ktoré môžu pracovať bez samotného načítania obsahu."
    )
@@ -336,6 +328,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Stiahnutie Obsahu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Stiahnuť slobodný obsah pre vybrané jadro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -442,6 +438,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
    "Štítok Jadra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   "Verzia jadra"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
@@ -581,6 +581,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Architektúra CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "CPU jadrá"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -845,8 +849,44 @@ MSG_HASH(
    "Úspechy"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   "Kategória"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   "Jazyk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
+   "Región"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   "Skóre"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
+   "Médiá"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
    "Ovládanie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
+   "Hrateľnosť"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   "Naratív"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
+   "Perspektíva"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   "Nastavenie"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
@@ -1158,6 +1198,42 @@ MSG_HASH(
    )
 
 /* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
+   "Hacky"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   "Mapovanie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "Médiá"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Výkon"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "Zvuk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   "Špecifikácie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   "Úložisko"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "Systém"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   "Časovanie"
+   )
 
 #ifdef HAVE_MIST
 #endif
@@ -1670,6 +1746,10 @@ MSG_HASH(
    "Zmena nastavení audio výstupu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
+   "Prevzorkovač"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Synchronizácia"
    )
@@ -2076,6 +2156,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Haptická spätná väzba/vibrácia"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
+   "Klávesové skratky"
+   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -2108,6 +2192,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "Previnúť"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
+   "Pauza"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
@@ -2163,20 +2251,76 @@ MSG_HASH(
 
 /* Settings > Input > Port # Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
+   "Typ zariadenia"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+   "Tlačidlo B (dolu)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
+   "Tlačidlo Y (vľavo)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
+   "Tlačidlo Select"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
+   "Tlačidlo Start"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
+   "Tlačidlo A (vpravo)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
+   "Tlačidlo X (hore)"
+   )
 
 /* Settings > Latency */
 
 
 /* Settings > Core */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+   "Spustiť jadro automaticky"
+   )
 #ifndef HAVE_DYNAMIC
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
+   "Povoliť otáčanie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+   "Spravovať jadrá"
+   )
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+   "Spravovať jadrá"
+   )
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
+   "Nainštalovať jadro"
+)
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
+   "Odinštalovať jadro"
+)
 
 
-
+MSG_HASH(
+   MSG_CORE_STEAM_INSTALLING,
+   "Inštalujem jadro: "
+)
 
 
 #endif
@@ -2240,6 +2384,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
    "Zvoliť port vstupného zariadenia na sledovanie, keď je 'Zobraziť vstupy na prekrytí' nastavené na 'Fyzické (herný ovládať)'."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY,
+   "Prekrytie"
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -2298,9 +2446,17 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "Vždy"
+   )
 
 /* Settings > AI Service */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
+   "Zdrojový jazyk"
+   )
 
 /* Settings > Accessibility */
 
@@ -2316,6 +2472,18 @@ MSG_HASH(
 
 /* Settings > Network */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
+   "Západná Európa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   "Vlastné"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
+   "Adresa servera"
+   )
 
 /* Settings > Network > Updater */
 
@@ -2327,15 +2495,71 @@ MSG_HASH(
    "História"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
+   "Veľkosť histórie"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Jadro:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_SINGLE,
+   "hodina"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_PLURAL,
+   "hodiny"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_SINGLE,
+   "deň"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL,
+   "dní"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_SINGLE,
+   "týždeň"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_PLURAL,
+   "týždne"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_SINGLE,
+   "mesiac"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
+   "rok"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
+   "roky"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
+   "vzad"
    )
 
 /* Settings > Playlists > Playlist Management */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
+   "Metóda triedenia"
+   )
 
 /* Settings > User */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
+   "Meno používateľa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
+   "Jazyk"
+   )
 
 /* Settings > User > Privacy */
 
@@ -2349,6 +2573,14 @@ MSG_HASH(
 
 /* Settings > User > Accounts > RetroAchievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
+   "Meno používateľa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
+   "Heslo"
+   )
 
 /* Settings > User > Accounts > YouTube */
 
@@ -2369,9 +2601,21 @@ MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Správca súborov"
    )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   "Konfigurácie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
+   "Jadrá"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
    "Informácie o jadre"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
+   "Databázy"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -2391,6 +2635,14 @@ MSG_HASH(
 
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   "Obsah"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE,
+   "Názov Jadra"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM,
    "Názov systému"
@@ -2426,6 +2678,18 @@ MSG_HASH(
    )
 
 /* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
+   "Región"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,
+   "Štítok"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
+   "Ukázať všetko"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
    "Všetko"
@@ -2683,6 +2947,10 @@ MSG_HASH(
    "Lineárny"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAIN,
+   "Hlavné"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "Ľavý analóg"
    )
@@ -2717,6 +2985,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
    "Neskoro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
+   "Vzad"
    )
 
 /* RGUI: Settings > User Interface > Appearance */
@@ -2859,6 +3131,10 @@ MSG_HASH(
    "Správca súborov"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
+   "Hore"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
    "Hore"
    )
@@ -2877,6 +3153,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ERROR,
    "Chyba"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOG,
+   "Záznam"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_HIDE,

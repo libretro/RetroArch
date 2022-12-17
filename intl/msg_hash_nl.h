@@ -41,10 +41,6 @@ MSG_HASH(
    "Ontdekken"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Losstaande Cores"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importeer content"
    )
@@ -279,10 +275,6 @@ MSG_HASH(
    "Bekijk alle inhoud die overeenkomt met de database via een gecategoriseerde zoekinterface."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Losstaande Cores"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
    "Geïnstalleerde cores die kunnen werken zonder inhoud te laden verschijnen hier."
    )
@@ -510,14 +502,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "Voorkom wijziging van de huidige geïnstalleerde core. Kan worden gebruikt om ongewenste updates te voorkomen wanneer inhoud een specifieke core-versie vereist (bijv. Arcade ROM-sets)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Uitsluiten van 'Losstaande Cores' menu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Voorkomen dat deze core wordt weergegeven in het 'Losstaande Cores' tabblad/menu. Alleen toepasbaar als de weergavemodus is op 'Aangepast' ingesteld."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -4369,14 +4353,6 @@ MSG_HASH(
    "Hoofdmenu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Toon 'Losstaande Cores'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Specificeer het type core (indien aanwezig) dat moet worden weergegeven in het menu 'Losstaande Cores'. Indien ingesteld op 'Aangepast', kan de zichtbaarheid van individuele cores worden omgeschakeld via het menu 'Cores beheren'. (Herstart Vereist voor Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
    "Aangepast"
    )
@@ -6125,14 +6101,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_INSTALLING_CORE,
    "Core installeren: "
-   )
-MSG_HASH(
-   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "Kan de core niet verwijderen uit de 'Losstaande Cores' lijst: "
-   )
-MSG_HASH(
-   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "Kan een core niet toevoegen aan de 'Losstaande Cores' lijst: "
    )
 
 /* Lakka */

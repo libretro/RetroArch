@@ -45,10 +45,6 @@ MSG_HASH(
    "Etsi"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Itsenäiset ytimet"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Tuo sisältöä"
    )
@@ -289,10 +285,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Selaa kaikkea tietokantaa vastaavaa sisältöä luokitellun hakuliittymän kautta."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Itsenäiset ytimet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -4613,10 +4605,6 @@ MSG_HASH(
    "Näytä sisällön etsintä -valinta. (Uudelleenkäynnistys vaaditaan Ozonea/XMB:tä käyttäessä)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Näytä \"Itsenäiset ytimet\""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    "Kaikki"
    )
@@ -7413,14 +7401,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
    "Koodi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
-   "Lisää uusi huijaus tämän jälkeen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
-   "Lisää uusi huijaus ennen tätä"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,

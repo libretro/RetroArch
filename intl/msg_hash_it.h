@@ -41,10 +41,6 @@ MSG_HASH(
    "Esplora"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Nuclei standalone"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importa Contenuto"
    )
@@ -283,10 +279,6 @@ MSG_HASH(
    "Sfoglia tutti i contenuti corrispondenti al database tramite un'interfaccia di ricerca categorizzata."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Nuclei standalone"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
    "I nuclei installati che possono funzionare senza caricare il contenuto appariranno qui."
    )
@@ -522,14 +514,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "Impedisci la modifica del core attualmente installato. Può essere usato per evitare aggiornamenti indesiderati quando il contenuto richiede una specifica versione del core (ad es. i ROM set degli Arcade)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Escludi Dal Menu 'Core Autonomi'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Impedisci che questo core venga visualizzato nella scheda/menu Core Autonomo. Si applica solo quando la modalità di visualizzazione è impostata su 'Personalizza'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -4857,14 +4841,6 @@ MSG_HASH(
    "Mostra l'opzione Esplora contenuti. (Riavvio richiesto su Ozone/XMB)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Mostra 'Nuclei standalone'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Specifica il tipo di nucleo (se presente) da mostrare nel menu Core autonomo. Quando impostato su 'Personalizzato', la visibilità individuale del core può essere attivata tramite il menu 'Gestisci Core' (Riavvio richiesto su Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    "Tutti"
    )
@@ -7697,14 +7673,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
    "Codice"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
-   "Aggiungi un nuovo trucco dopo questo"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
-   "Aggiungi un nuovo trucco prima di questo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
@@ -12517,14 +12485,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_UNLOCK_FAILED,
    "Sblocco del core non riuscito: "
-   )
-MSG_HASH(
-   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "Impossibile rimuovere il core dalla lista 'Core autonomi': "
-   )
-MSG_HASH(
-   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "Aggiunta del core alla lista 'Core autonomi ' non riuscita: "
    )
 MSG_HASH(
    MSG_CORE_DELETE_DISABLED,
