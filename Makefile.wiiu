@@ -100,7 +100,7 @@ endif
 
       INCDIRS += -Ilibretro-common/include/compat/zlib
       # for stb, libfat, iosuhax
-      INCDIRS += -Ideps -Ideps/libfat/include -Ideps/libiosuhax/include
+      INCDIRS += -Ideps
       # pad_functions uses wiiu/input.h
       INCDIRS += -Iinput/include
       INCDIRS += -Ideps/SPIRV-Cross
@@ -116,7 +116,6 @@ endif
       #DEFINES += -DHAVE_FREETYPE
       DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
       DEFINES += -DHAVE_HID
-      DEFINES += -DWANT_LIBFAT -DHAVE_LIBFAT -DWANT_IOSUHAX -DHAVE_IOSUHAX
       DEFINES += -DHAVE_CORE_INFO_CACHE
       DEFINES += -DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
 
@@ -161,7 +160,7 @@ endif
       HAVE_STATIC_VIDEO_FILTERS = 1
       HAVE_STATIC_AUDIO_FILTERS = 1
       WANT_LIBFAT = 1
-      WANT_IOSUHAX = 1
+      WANT_LIBMOCHA = 1
       HAVE_CORE_INFO_CACHE = 1
 
       include Makefile.common

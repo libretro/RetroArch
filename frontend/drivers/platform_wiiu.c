@@ -64,17 +64,29 @@
 #endif
 #endif
 
+#ifdef HAVE_LIBMOCHA
+#include <mocha/mocha.h>
+#ifdef HAVE_LIBFAT
+#include <fat.h>
+#endif
+#endif
+
 #include "wiiu_dbg.h"
 #include "system/exception_handler.h"
 #include "system/memory.h"
 
 #define WIIU_SD_PATH "fs:/vol/external01/"
+#define WIIU_SD_FAT_PATH "sd:/"
+#define WIIU_USB_FAT_PATH "usb:/"
 
 /**
  * The Wii U frontend driver, along with the main() method.
  */
 
-static const char *elf_path_cst = WIIU_SD_PATH "retroarch/retroarch.elf";
+#ifndef IS_SALAMANDER
+static bool have_libfat_usb = false;
+static bool have_libfat_sdcard = false;
+#endif
 
 static bool exists(char *path)
 {
@@ -103,7 +115,12 @@ static void fix_asset_directory(void)
 static void frontend_wiiu_get_env_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], elf_path_cst, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+#ifndef IS_SALAMANDER
+   if (have_libfat_sdcard)
+      strncpy(g_defaults.dirs[DEFAULT_DIR_PORT], WIIU_SD_FAT_PATH "retroarch/", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+   else
+#endif
+      strncpy(g_defaults.dirs[DEFAULT_DIR_PORT], WIIU_SD_PATH "retroarch/", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
          "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
@@ -187,10 +204,24 @@ static int frontend_wiiu_parse_drive_list(void *data, bool load_content)
    if (!list)
       return -1;
 
-   menu_entries_append(list, WIIU_SD_PATH,
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+
+   if (have_libfat_sdcard)
+      menu_entries_append(list, WIIU_SD_FAT_PATH,
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   else
+      menu_entries_append(list, WIIU_SD_PATH,
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+
+   if (have_libfat_usb)
+      menu_entries_append(list, WIIU_USB_FAT_PATH,
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+
 #endif
    return 0;
 }
@@ -245,7 +276,8 @@ static void main_setup(void);
 static void main_loop(void);
 #endif
 static void main_teardown(void);
-
+static void init_filesystems(void);
+static void deinit_filesystems(void);
 static void init_logging(void);
 static void deinit_logging(void);
 static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_t len);
@@ -281,6 +313,7 @@ static void main_setup(void)
    memoryInitialize();
    init_os_exceptions();
    init_logging();
+   init_filesystems();
    init_pad_libraries();
    verbosity_enable();
    fflush(stdout);
@@ -289,13 +322,23 @@ static void main_setup(void)
 static void main_teardown(void)
 {
    deinit_pad_libraries();
+   deinit_filesystems();
    deinit_logging();
    deinit_os_exceptions();
    memoryRelease();
 }
 
+static bool in_aroma = false;
 static void proc_setup(void)
 {
+   /* Detect Aroma explicitly (it's possible to run under H&S while using Tiramisu) */
+   OSDynLoad_Module rpxModule;
+   if (OSDynLoad_Acquire("homebrew_rpx_loader", &rpxModule) == OS_DYNLOAD_OK)
+   {
+      in_aroma = true;
+      OSDynLoad_Release(rpxModule);
+   }
+
    ProcUIInit(&proc_save_callback);
 }
 
@@ -341,6 +384,31 @@ static void main_loop(void)
    }
 }
 #endif
+
+static void init_filesystems(void)
+{
+#if defined(HAVE_LIBMOCHA) && defined(HAVE_LIBFAT)
+   if (Mocha_InitLibrary() == MOCHA_RESULT_SUCCESS)
+   {
+      have_libfat_usb = fatMount("usb", &Mocha_usb_disc_interface, 0, 512, 128);
+      /* Mounting SD card with libfat is unsafe under Aroma */
+      if (!in_aroma)
+         have_libfat_sdcard = fatMount("sd", &Mocha_sdio_disc_interface, 0, 512, 128);
+   }
+#endif
+}
+
+static void deinit_filesystems(void)
+{
+#if defined(HAVE_LIBMOCHA) && defined(HAVE_LIBFAT)
+   if (have_libfat_usb)
+      fatUnmount("usb");
+   if (have_libfat_sdcard)
+      fatUnmount("sd");
+
+   Mocha_DeInitLibrary();
+#endif
+}
 
 static devoptab_t dotab_stdout =
 {
