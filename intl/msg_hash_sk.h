@@ -2432,6 +2432,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    "Všetko"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   "Vlastné"
+   )
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
@@ -2503,6 +2507,18 @@ MSG_HASH(
    "Jadro:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
+   "sekunda"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   "sekúnd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_SINGLE,
+   "minúta"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_SINGLE,
    "hodina"
    )
@@ -2531,6 +2547,10 @@ MSG_HASH(
    "mesiac"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_PLURAL,
+   "mesiacov"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
    "rok"
    )
@@ -2552,6 +2572,10 @@ MSG_HASH(
 
 /* Settings > User */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
+   "Účty"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
    "Meno používateľa"
@@ -2706,6 +2730,10 @@ MSG_HASH(
    "Spustiť"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
+   "Premenovať"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
    "Odstrániť"
    )
@@ -2731,6 +2759,10 @@ MSG_HASH(
 /* Quick Menu */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
+   "Reštart"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Zavrieť obsah"
    )
@@ -2741,6 +2773,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
    "Cheaty"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
+   "Shadery"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
@@ -2787,8 +2823,16 @@ MSG_HASH(
 /* Quick Menu > Cheats > Cheat Details */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
+   "Povolené"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
    "Popis"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
+   "Spracovateľ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
@@ -2833,6 +2877,10 @@ MSG_HASH(
    "Použiť zmeny"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FILTER,
+   "Filtrovať"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCALE,
    "Škálovať"
    )
@@ -2860,6 +2908,10 @@ MSG_HASH(
 /* Miscellaneous UI Items */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SEARCH,
+   "Hľadať"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Späť"
    )
@@ -2883,6 +2935,10 @@ MSG_HASH(
    "Hlasovať"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
+   "Priemer"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
    "Žiadne"
    )
@@ -2891,16 +2947,52 @@ MSG_HASH(
    "VYP"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
+   "Vždy"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER,
    "Nikdy"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
+   "Nabité"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NONE,
    "Žiadne"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN,
+   "Neznáme"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
+   "Zmeny"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_PORT_16,
    "Všetko"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
+   "2-Bit, maximálna hodnota = 0x03"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_4,
+   "4-Bit, maximálna hodnota = 0x0F"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_8,
+   "8-Bit, maximálna hodnota = 0xFF"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
+   "16-Bit, maximálna hodnota = 0xFFFF"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
+   "32-Bit, maximálna hodnota = 0xFFFFFFFF"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
@@ -2939,16 +3031,32 @@ MSG_HASH(
    "Nepravda"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ENABLED,
+   "Povolené"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
    "Zamknuté"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DONT_CARE,
+   "Predvolené"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LINEAR,
    "Lineárny"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NEAREST,
+   "Najbližšie"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAIN,
    "Hlavné"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT,
+   "Obsah"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
@@ -3005,12 +3113,44 @@ MSG_HASH(
    "Žiadny"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
+   "16:9 (vycentrovať)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
+   "16:10 (vycentrovať)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
+   "3:2 (vycentrovať)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
+   "5:3 (vycentrovať)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    "VYP"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    "Celočíselné škálovanie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
+   "Vlastné"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN,
+   "Zlatý"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA,
+   "Drakula"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC,
+   "Dynamické"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
@@ -3031,6 +3171,10 @@ MSG_HASH(
    "Sneh"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
+   "Vlastné"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
    "Tmavý"
    )
@@ -3039,12 +3183,20 @@ MSG_HASH(
    "Svetlý"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN,
+   "Zlatý"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
    "Obyčajný"
    )
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
+   "Drakula"
+   )
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
@@ -3064,6 +3216,10 @@ MSG_HASH(
    "Červená"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW,
+   "Žltá"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE,
    "Zoslabiť"
    )
@@ -3080,6 +3236,10 @@ MSG_HASH(
    "VYP"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP,
+   "Pracovná plocha"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
    "VYP"
    )
@@ -3091,16 +3251,32 @@ MSG_HASH(
 /* Qt (Desktop Menu) */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
+   "&Súbor"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
    "&Načítať jadro..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT,
+   "&Ukončiť"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT,
    "&Upraviť"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH,
+   "&Hľadať"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
    "&Zobrazenie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
+   "Téma:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
@@ -3111,8 +3287,16 @@ MSG_HASH(
    "Nastavenia"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
+   "&Nástroje"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    "&Nápoveda"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
+   "O programe RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
@@ -3121,6 +3305,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_NAME,
    "Názov"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
+   "Verzia"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
@@ -3149,6 +3337,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    "Informácie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_WARNING,
+   "Upozornenie"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ERROR,
@@ -3195,8 +3387,16 @@ MSG_HASH(
    "Jadro:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DELETE,
+   "Vymazať"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_EDIT,
    "Upraviť"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
+   "Posunúť hore"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD,
@@ -3226,6 +3426,10 @@ MSG_HASH(
    "Spustiť"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SECONDS,
+   "sekúnd"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Používateľ"
    )
@@ -3241,8 +3445,16 @@ MSG_HASH(
 /* Unused (Only Exist in Translation Files) */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STATUS,
+   "Stav"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
    "Vlastný pomer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESUME,
+   "Pokračovať"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
@@ -3271,9 +3483,17 @@ MSG_HASH(
 
 /* Unused (Needs Confirmation) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG,
+   "Konfigurácia"
+   )
 MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
    "Prevzaté"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
+   "Obsah"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
@@ -3306,6 +3526,10 @@ MSG_HASH(
 
 /* Discord Status */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
+   "Pozastavené"
+   )
 
 /* Notifications */
 
@@ -3353,6 +3577,10 @@ MSG_HASH(
    MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
    "%.*s sa pripojil so vstupnými zariadeniami %.*s"
    )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "Zariadenia"
+   )
 
 MSG_HASH(
    MSG_AUDIO_VOLUME,
@@ -3371,8 +3599,32 @@ MSG_HASH(
    "Chyba"
    )
 MSG_HASH(
+   MSG_FRAMES,
+   "Snímky"
+   )
+MSG_HASH(
+   MSG_LOADING,
+   "Načítavanie"
+   )
+MSG_HASH(
+   MSG_MEMORY,
+   "Pamäť"
+   )
+MSG_HASH(
+   MSG_PAUSED,
+   "Pozastavené."
+   )
+MSG_HASH(
    MSG_TO,
    "do"
+   )
+MSG_HASH(
+   MSG_UNKNOWN,
+   "Neznáme"
+   )
+MSG_HASH(
+   MSG_RESAMPLER_QUALITY_LOWEST,
+   "Najnižsie"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWER,
@@ -3383,15 +3635,39 @@ MSG_HASH(
    "Normálne"
    )
 MSG_HASH(
+   MSG_RESAMPLER_QUALITY_HIGHER,
+   "Vyššie"
+   )
+MSG_HASH(
+   MSG_RESAMPLER_QUALITY_HIGHEST,
+   "Najvyššie"
+   )
+MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
    "Inštalácia jadra zlyhala: "
    )
 
 /* Lakka */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REBOOT,
+   "Reštart"
+   )
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
+   "Otvoriť..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY,
+   "Politika"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "Ručne"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "Reštartovať RetroArch"
@@ -3399,6 +3675,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    "Dotyk"
+   )
+MSG_HASH(
+   MSG_LOCAL,
+   "Miestne"
    )
 
 #ifdef HAVE_LAKKA_SWITCH

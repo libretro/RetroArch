@@ -45,6 +45,10 @@ MSG_HASH(
    "탐색"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   "단독 실행 코어"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "컨텐츠 가져오기"
    )
@@ -287,6 +291,10 @@ MSG_HASH(
    "분류된 검색 인터페이스를 통해 데이터베이스와 일치하는 모든 컨텐츠를 탐색합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   "단독 실행 코어"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
    "컨텐츠 없이 단독 실행될 수 있는 코어가 이곳에 표시됩니다."
    )
@@ -526,6 +534,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "현재 설치된 코어의 수정을 방지합니다. 컨텐츠에 특정 버전의 코어가 필요한 경우 원치 않는 업데이트를 방지하는 데 사용할 수 있습니다(예: 아케이드 롬셋)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "'단독 실행 코어' 메뉴에서 제외"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "이 코어가 '단독 실행 코어' 메뉴에 표시되지 않게 합니다. 표시 모드가 '사용자 정의'일 경우에만 적용됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -4925,6 +4941,14 @@ MSG_HASH(
    "컨텐츠 탐색 메뉴를 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
+   "'단독 실행 코어' 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
+   "'단독 실행 코어' 메뉴에 표시할 코어의 종류를 선택합니다. '사용자 정의'로 설정할 경우, '코어 관리' 메뉴에서 개별 코어의 표시 여부를 설정할 수 있습니다. (Ozone/XMB에서 재시작 필요)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    "전체"
    )
@@ -7797,6 +7821,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
    "코드"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
+   "다음에 새 치트 추가"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
+   "이전에 새 치트 추가"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
@@ -12729,6 +12761,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_UNLOCK_FAILED,
    "코어 잠금해제 실패: "
+   )
+MSG_HASH(
+   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
+   "'단독 실행 코어' 목록에서 코어를 삭제할 수 없음: "
+   )
+MSG_HASH(
+   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
+   "'단독 실행 코어' 목록에 코어를 추가할 수 없음: "
    )
 MSG_HASH(
    MSG_CORE_DELETE_DISABLED,
