@@ -41,11 +41,11 @@
 #endif
 
 #include "../frontend_driver.h"
-#include "../../verbosity.h"
+#include "../../file_path_special.h"
 #include "../../defaults.h"
 #include "../../paths.h"
-#include "retroarch.h"
-#include "file_path_special.h"
+#include "../../retroarch.h"
+#include "../../verbosity.h"
 
 #include "ctr/ctr_debug.h"
 #include "ctr/exec-3dsx/exec_3dsx.h"

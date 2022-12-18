@@ -43,13 +43,13 @@
 #ifndef IS_SALAMANDER
 #include <lists/file_list.h>
 #endif
+#include <defines/ps3_defines.h>
 
 #include "../frontend_driver.h"
-#include "../../file_path_special.h"
-#include <defines/ps3_defines.h>
 #include "../../defaults.h"
-#include "../../verbosity.h"
+#include "../../file_path_special.h"
 #include "../../paths.h"
+#include "../../verbosity.h"
 
 #if !defined(IS_SALAMANDER) && defined(HAVE_NETWORKING)
 #include "../../network/netplay/netplay.h"

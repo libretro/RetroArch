@@ -541,12 +541,6 @@ int msg_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
                );
          break;
-      case MENU_ENUM_LABEL_DISK_EJECT_TOGGLE:
-         snprintf(s, len,
-               "Toggles eject for disks.\n"
-               " \n"
-               "Used for multiple-disk content.");
-         break;
       case MENU_ENUM_LABEL_ENABLE_HOTKEY:
          snprintf(s, len,
                "Enable other hotkeys.\n"
@@ -560,20 +554,6 @@ int msg_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                "implementations which query a large area of \n"
                "the keyboard, where it is not desirable that \n"
                "hotkeys get in the way.");
-         break;
-      case MENU_ENUM_LABEL_REWIND_ENABLE:
-         snprintf(s, len,
-               "Enable rewinding.\n"
-               " \n"
-               "This will take a performance hit, \n"
-               "so it is disabled by default.");
-         break;
-      case MENU_ENUM_LABEL_LIBRETRO_DIR_PATH:
-         snprintf(s, len,
-               "Core Directory. \n"
-               " \n"
-               "A directory for where to search for \n"
-               "libretro core implementations.");
          break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          snprintf(s, len,
@@ -594,22 +574,6 @@ int msg_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                "large pitch changes. If your monitor does \n"
                "not run at 60Hz, or something close to it, \n"
                "disable VSync, and leave this at its default.");
-         break;
-      case MENU_ENUM_LABEL_VIDEO_ROTATION:
-         snprintf(s, len,
-               "Forces a certain rotation \n"
-               "of the screen.\n"
-               " \n"
-               "The rotation is added to rotations which\n"
-               "the libretro core sets (see Video Allow\n"
-               "Rotate).");
-         break;
-      case MENU_ENUM_LABEL_VIDEO_SCALE:
-         snprintf(s, len,
-               "Fullscreen resolution.\n"
-               " \n"
-               "Resolution of 0 uses the \n"
-               "resolution of the environment.\n");
          break;
       case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
          snprintf(s, len,
@@ -634,25 +598,6 @@ int msg_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                "is preferred, 1 and up (1 being first \n"
                "monitor), suggests RetroArch to use that \n"
                "particular monitor.");
-         break;
-      case MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN:
-         snprintf(s, len,
-               "Forces cropping of overscanned \n"
-               "frames.\n"
-               " \n"
-               "Exact behavior of this option is \n"
-               "core-implementation specific.");
-         break;
-      case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
-         snprintf(s, len,
-               "Only scales video in integer \n"
-               "steps.\n"
-               " \n"
-               "The base size depends on system-reported \n"
-               "geometry and aspect ratio.\n"
-               " \n"
-               "If Force Aspect is not set, X/Y will be \n"
-               "integer scaled independently.");
          break;
       case MENU_ENUM_LABEL_AUDIO_VOLUME:
          snprintf(s, len,
@@ -689,52 +634,10 @@ int msg_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                " Input rate is defined as: \n"
                " input rate * (1.0 +/- (max timing skew))");
          break;
-      case MENU_ENUM_LABEL_OVERLAY_NEXT:
-         snprintf(s, len,
-               "Toggles to next overlay.\n"
-               " \n"
-               "Wraps around.");
-         break;
-      case MENU_ENUM_LABEL_LOG_VERBOSITY:
-         snprintf(s, len,
-               "Enable or disable verbosity level \n"
-               "of frontend.");
-         break;
-      case MENU_ENUM_LABEL_VOLUME_UP:
-         snprintf(s, len,
-               "Increases audio volume.");
-         break;
-      case MENU_ENUM_LABEL_VOLUME_DOWN:
-         snprintf(s, len,
-               "Decreases audio volume.");
-         break;
       case MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION:
          snprintf(s, len,
                "Forcibly disable composition.\n"
                "Only valid on Windows Vista/7 for now.");
-         break;
-      case MENU_ENUM_LABEL_PERFCNT_ENABLE:
-         snprintf(s, len,
-               "Enable or disable frontend \n"
-               "performance counters.");
-         break;
-      case MENU_ENUM_LABEL_SYSTEM_DIRECTORY:
-         snprintf(s, len,
-               "System Directory. \n"
-               " \n"
-               "Sets the 'system' directory.\n"
-               "Cores can query for this\n"
-               "directory to load BIOSes, \n"
-               "system-specific configs, etc.");
-         break;
-      case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
-         snprintf(s, len,
-               "Automatically saves a savestate at the \n"
-               "end of RetroArch's lifetime.\n"
-               " \n"
-               "RetroArch will automatically load any savestate\n"
-               "with this path on startup if 'Auto Load State\n"
-               "is enabled.");
          break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:
          snprintf(s, len,
@@ -743,31 +646,6 @@ int msg_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Using this might improve performance at \n"
                "possible cost of latency and more video \n"
                "stuttering.");
-         break;
-      case MENU_ENUM_LABEL_VIDEO_VSYNC:
-         snprintf(s, len,
-               "Video V-Sync.\n");
-         break;
-      case MENU_ENUM_LABEL_VIDEO_HARD_SYNC:
-         snprintf(s, len,
-               "Attempts to hard-synchronize \n"
-               "CPU and GPU.\n"
-               " \n"
-               "Can reduce latency at cost of \n"
-               "performance.");
-         break;
-      case MENU_ENUM_LABEL_REWIND_GRANULARITY:
-         snprintf(s, len,
-               "Rewind granularity.\n"
-               " \n"
-               " When rewinding defined number of \n"
-               "frames, you can rewind several frames \n"
-               "at a time, increasing the rewinding \n"
-               "speed.");
-         break;
-      case MENU_ENUM_LABEL_SCREENSHOT:
-         snprintf(s, len,
-               "Take screenshot.");
          break;
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
          snprintf(s, len,
@@ -804,70 +682,6 @@ int msg_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                "configured as if it is a 60 Hz monitor \n"
                "(divide refresh rate by 2).");
          break;
-      case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
-         snprintf(s, len,
-               "Show startup screen in menu.\n"
-               "Is automatically set to false when seen\n"
-               "for the first time.\n"
-               " \n"
-               "This is only updated in config if\n"
-               "'Save Configuration on Exit' is enabled.\n");
-         break;
-      case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
-         snprintf(s, len, "Toggles fullscreen.");
-         break;
-      case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
-         snprintf(s, len,
-               "Block SRAM from being overwritten \n"
-               "when loading save states.\n"
-               " \n"
-               "Might potentially lead to buggy games.");
-         break;
-      case MENU_ENUM_LABEL_PAUSE_NONACTIVE:
-         snprintf(s, len,
-               "Pause gameplay when window focus \n"
-               "is lost.");
-         break;
-      case MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT:
-         snprintf(s, len,
-               "Screenshots output of GPU shaded \n"
-               "material if available.");
-         break;
-      case MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY:
-         snprintf(s, len,
-               "Screenshot Directory. \n"
-               " \n"
-               "Directory to dump screenshots to."
-               );
-         break;
-      case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
-         snprintf(s, len,
-               "VSync Swap Interval.\n"
-               " \n"
-               "Uses a custom swap interval for VSync. Set this \n"
-               "to effectively halve monitor refresh rate.");
-         break;
-      case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
-         snprintf(s, len,
-               "Savefile Directory. \n"
-               " \n"
-               "Save all save files (*.srm) to this \n"
-               "directory. This includes related files like \n"
-               ".bsv, .rt, .psrm, etc...\n"
-               " \n"
-               "This will be overridden by explicit command line\n"
-               "options.");
-         break;
-      case MENU_ENUM_LABEL_SAVESTATE_DIRECTORY:
-         snprintf(s, len,
-               "Savestate Directory. \n"
-               " \n"
-               "Save all save states (*.state) to this \n"
-               "directory.\n"
-               " \n"
-               "This will be overridden by explicit command line\n"
-               "options.");
-         break;
       case MENU_ENUM_LABEL_ASSETS_DIRECTORY:
          snprintf(s, len,
                "Assets Directory. \n"
@@ -884,64 +698,6 @@ int msg_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                "be loaded dynamically by the menu depending \n"
                "on context.");
          break;
-      case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
-         snprintf(s, len,
-               "Slowmotion ratio."
-               " \n"
-               "When slowmotion, content will slow\n"
-               "down by factor.");
-         break;
-      case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
-         snprintf(s, len,
-               "Turbo period.\n"
-               " \n"
-               "Describes speed of which turbo-enabled\n"
-               "buttons toggle."
-               );
-         break;
-      case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
-         snprintf(s, len,
-               "Enable input auto-detection.\n"
-               " \n"
-               "Will attempt to auto-configure \n"
-               "joypads, Plug-and-Play style.");
-         break;
-      case MENU_ENUM_LABEL_CAMERA_ALLOW:
-         snprintf(s, len,
-               "Allow or disallow camera access by \n"
-               "cores.");
-         break;
-      case MENU_ENUM_LABEL_LOCATION_ALLOW:
-         snprintf(s, len,
-               "Allow or disallow location services \n"
-               "access by cores.");
-         break;
-      case MENU_ENUM_LABEL_TURBO:
-         snprintf(s, len,
-               "Turbo enable.\n"
-               " \n"
-               "Holding the turbo while pressing another \n"
-               "button will let the button enter a turbo \n"
-               "mode where the button state is modulated \n"
-               "with a periodic signal. \n"
-               " \n"
-               "The modulation stops when the button \n"
-               "itself (not turbo button) is released.");
-         break;
-      case MENU_ENUM_LABEL_OSK_ENABLE:
-         snprintf(s, len,
-               "Enable/disable on-screen keyboard.");
-         break;
-      case MENU_ENUM_LABEL_AUDIO_MUTE:
-         snprintf(s, len,
-               "Mute/unmute audio.");
-         break;
-      case MENU_ENUM_LABEL_REWIND:
-         snprintf(s, len,
-               "Hold button down to rewind.\n"
-               " \n"
-               "Rewind must be enabled.");
-         break;
       case MENU_ENUM_LABEL_EXIT_EMULATOR:
          snprintf(s, len,
                "Key to exit RetroArch cleanly."
@@ -953,72 +709,6 @@ int msg_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                "a clean deinitialization."
 #endif
                );
-         break;
-      case MENU_ENUM_LABEL_LOAD_STATE:
-         snprintf(s, len,
-               "Loads state.");
-         break;
-      case MENU_ENUM_LABEL_SAVE_STATE:
-         snprintf(s, len,
-               "Saves state.");
-         break;
-      case MENU_ENUM_LABEL_CHEAT_INDEX_MINUS:
-         snprintf(s, len,
-               "Decrement cheat index.\n");
-         break;
-      case MENU_ENUM_LABEL_SHADER_PREV:
-         snprintf(s, len,
-               "Applies previous shader in directory.");
-         break;
-      case MENU_ENUM_LABEL_SHADER_NEXT:
-         snprintf(s, len,
-               "Applies next shader in directory.");
-         break;
-      case MENU_ENUM_LABEL_RESET:
-         snprintf(s, len,
-               "Reset the content.\n");
-         break;
-      case MENU_ENUM_LABEL_PAUSE_TOGGLE:
-         snprintf(s, len,
-               "Toggle between paused and non-paused state.");
-         break;
-      case MENU_ENUM_LABEL_CHEAT_TOGGLE:
-         snprintf(s, len,
-               "Toggle cheat index.\n");
-         break;
-      case MENU_ENUM_LABEL_HOLD_FAST_FORWARD:
-         snprintf(s, len,
-               "Hold for fast-forward. Releasing button \n"
-               "disables fast-forward.");
-         break;
-      case MENU_ENUM_LABEL_SLOWMOTION_HOLD:
-         snprintf(s, len,
-               "Hold for slowmotion.");
-         break;
-      case MENU_ENUM_LABEL_FRAME_ADVANCE:
-         snprintf(s, len,
-               "Frame advance when content is paused.");
-         break;
-      case MENU_ENUM_LABEL_BSV_RECORD_TOGGLE:
-         snprintf(s, len,
-               "Toggle between recording and not.");
-         break;
-      case MENU_ENUM_LABEL_L_X_PLUS:
-      case MENU_ENUM_LABEL_L_X_MINUS:
-      case MENU_ENUM_LABEL_L_Y_PLUS:
-      case MENU_ENUM_LABEL_L_Y_MINUS:
-      case MENU_ENUM_LABEL_R_X_PLUS:
-      case MENU_ENUM_LABEL_R_X_MINUS:
-      case MENU_ENUM_LABEL_R_Y_PLUS:
-      case MENU_ENUM_LABEL_R_Y_MINUS:
-         snprintf(s, len,
-               "Axis for analog stick (DualShock-esque).\n"
-               " \n"
-               "Bound as usual, however, if a real analog \n"
-               "axis is bound, it can be read as a true analog.\n"
-               " \n"
-               "Positive X axis is right. \n"
-               "Positive Y axis is down.");
          break;
       case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
          snprintf(s, len,

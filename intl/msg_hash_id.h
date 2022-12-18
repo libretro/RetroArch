@@ -41,10 +41,6 @@ MSG_HASH(
    "Jelajahi"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Inti Bentuk Mandiri"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Impor Konten"
    )
@@ -281,10 +277,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Rambah semua konten yang sesuai dengan database lewat antarmuka pencarian konten tersortir"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Inti Bentuk Mandiri"
    )
 
 /* Main Menu > Online Updater */

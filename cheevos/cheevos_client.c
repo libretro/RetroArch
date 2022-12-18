@@ -1509,7 +1509,7 @@ static bool rcheevos_client_fetch_badge(
    strlcpy(badge_fullpath,
          state->badge_directory, sizeof(badge_fullpath));
    fill_pathname_slash(badge_fullpath, sizeof(badge_fullpath));
-   badge_fullname      = badge_fullpath + strlen(state->badge_directory);
+   badge_fullname      = badge_fullpath + strlen(badge_fullpath);
    badge_fullname_size = sizeof(badge_fullpath) - 
       (badge_fullname - badge_fullpath);
 

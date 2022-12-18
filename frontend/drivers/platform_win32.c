@@ -45,19 +45,12 @@
 #include "../frontend_driver.h"
 #include "../../configuration.h"
 #include "../../defaults.h"
-#include "../../verbosity.h"
-#include "../../ui/drivers/ui_win32.h"
 #include "../../paths.h"
 #include "../../msg_hash.h"
-#include "platform_win32.h"
-
 #include "../../verbosity.h"
+#include "../../ui/drivers/ui_win32.h"
 
-/*
-#ifdef HAVE_NVDA
-#include "../../nvda_controller.h"
-#endif
-*/
+#include "platform_win32.h"
 
 #ifdef HAVE_SAPI
 #define COBJMACROS
@@ -80,7 +73,7 @@ enum platform_win32_flags
 };
 
 #ifdef HAVE_SAPI
-static ISpVoice* pVoice           = NULL;
+static ISpVoice *voice_ptr        = NULL;
 #endif
 #ifdef HAVE_NVDA
 static uint8_t g_plat_win32_flags = PLAT_WIN32_FLAG_USE_NVDA;
@@ -123,32 +116,32 @@ const struct win32_lang_pair win32_lang_pairs[] =
    /* array order MUST be kept, always largest ID first */
    {0x7c04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* neutral */
    {0x1404, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* MO */
-   {0x1004, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* SG */
-   {0xC04, RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* HK/PRC */
-   {0x816, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
-   {0x416, RETRO_LANGUAGE_PORTUGUESE_BRAZIL},
-   {0x2a, RETRO_LANGUAGE_VIETNAMESE},
-   {0x19, RETRO_LANGUAGE_RUSSIAN},
-   {0x16, RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
-   {0x15, RETRO_LANGUAGE_POLISH},
-   {0x13, RETRO_LANGUAGE_DUTCH},
-   {0x12, RETRO_LANGUAGE_KOREAN},
-   {0x11, RETRO_LANGUAGE_JAPANESE},
-   {0x10, RETRO_LANGUAGE_ITALIAN},
-   {0xc, RETRO_LANGUAGE_FRENCH},
-   {0xa, RETRO_LANGUAGE_SPANISH},
-   {0x9, RETRO_LANGUAGE_ENGLISH},
-   {0x8, RETRO_LANGUAGE_GREEK},
-   {0x7, RETRO_LANGUAGE_GERMAN},
-   {0x4, RETRO_LANGUAGE_CHINESE_SIMPLIFIED}, /* neutral */
-   {0x1, RETRO_LANGUAGE_ARABIC},
+   {0x1004, RETRO_LANGUAGE_CHINESE_SIMPLIFIED},  /* SG */
+   {0xC04,  RETRO_LANGUAGE_CHINESE_TRADITIONAL}, /* HK/PRC */
+   {0x816,  RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+   {0x416,  RETRO_LANGUAGE_PORTUGUESE_BRAZIL},
+   {0x2a,   RETRO_LANGUAGE_VIETNAMESE},
+   {0x19,   RETRO_LANGUAGE_RUSSIAN},
+   {0x16,   RETRO_LANGUAGE_PORTUGUESE_PORTUGAL},
+   {0x15,   RETRO_LANGUAGE_POLISH},
+   {0x13,   RETRO_LANGUAGE_DUTCH},
+   {0x12,   RETRO_LANGUAGE_KOREAN},
+   {0x11,   RETRO_LANGUAGE_JAPANESE},
+   {0x10,   RETRO_LANGUAGE_ITALIAN},
+   {0xc,    RETRO_LANGUAGE_FRENCH},
+   {0xa,    RETRO_LANGUAGE_SPANISH},
+   {0x9,    RETRO_LANGUAGE_ENGLISH},
+   {0x8,    RETRO_LANGUAGE_GREEK},
+   {0x7,    RETRO_LANGUAGE_GERMAN},
+   {0x4,    RETRO_LANGUAGE_CHINESE_SIMPLIFIED},  /* neutral */
+   {0x1,    RETRO_LANGUAGE_ARABIC},
    /* MS does not support Esperanto */
    /*{0x0, RETRO_LANGUAGE_ESPERANTO},*/
 };
 
 unsigned short win32_get_langid_from_retro_lang(enum retro_language lang)
 {
-   unsigned i;
+   int i;
 
    for (i = 0; i < sizeof(win32_lang_pairs) / sizeof(win32_lang_pairs[0]); i++)
    {
@@ -161,7 +154,7 @@ unsigned short win32_get_langid_from_retro_lang(enum retro_language lang)
 
 enum retro_language win32_get_retro_lang_from_langid(unsigned short langid)
 {
-   unsigned i;
+   int i;
 
    for (i = 0; i < sizeof(win32_lang_pairs) / sizeof(win32_lang_pairs[0]); i++)
    {
@@ -233,9 +226,6 @@ static bool gfx_init_dwm(void)
       (HRESULT(WINAPI*)(BOOL))dylib_proc(dwm_lib, "DwmEnableMMCSS");
 #else
    DragAcceptFiles_func = DragAcceptFiles;
-#if 0
-   mmcss                = DwmEnableMMCSS;
-#endif
 #endif
 
    if (mmcss)
@@ -1009,11 +999,11 @@ static bool is_narrator_running_windows(void)
 #ifdef HAVE_SAPI
    else
    {
-      SPVOICESTATUS pStatus;
-      if (pVoice)
+      if (voice_ptr)
       {
-         ISpVoice_GetStatus(pVoice, &pStatus, NULL);
-         if (pStatus.dwRunningState == SPRS_IS_SPEAKING)
+         SPVOICESTATUS status_ptr;
+         ISpVoice_GetStatus(voice_ptr, &status_ptr, NULL);
+         if (status_ptr.dwRunningState == SPRS_IS_SPEAKING)
             return true;
       }
    }
@@ -1040,7 +1030,6 @@ static bool accessibility_speak_windows(int speed,
    {
       if (is_narrator_running_windows())
          return true;
-   
    }
 #ifdef HAVE_NVDA
    init_nvda();
@@ -1089,26 +1078,26 @@ static bool accessibility_speak_windows(int speed,
    {
       HRESULT hr;
       /* stop the old voice if running */
-      if (pVoice)
+      if (voice_ptr)
       {
          CoUninitialize();
-         ISpVoice_Release(pVoice);
+         ISpVoice_Release(voice_ptr);
       }
-      pVoice = NULL;
+      voice_ptr = NULL;
 
       /* Play the new voice */
       if (FAILED(CoInitialize(NULL)))
          return NULL;
 
       hr = CoCreateInstance(&CLSID_SpVoice, NULL,
-            CLSCTX_ALL, &IID_ISpVoice, (void **)&pVoice);
+            CLSCTX_ALL, &IID_ISpVoice, (void **)&voice_ptr);
 
       if (SUCCEEDED(hr))
       {
-         wchar_t        *wc = utf8_to_utf16_string_alloc(speak_text);
+         wchar_t *wc = utf8_to_utf16_string_alloc(speak_text);
          if (!wc)
             return false;
-         hr = ISpVoice_Speak(pVoice, wc, SPF_ASYNC /*SVSFlagsAsync*/, NULL);
+         hr = ISpVoice_Speak(voice_ptr, wc, SPF_ASYNC /*SVSFlagsAsync*/, NULL);
          free(wc);
       }
    }

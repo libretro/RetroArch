@@ -46,7 +46,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Samostatná Jádra"
+   "Jádra bez obsahu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -292,7 +292,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Samostatná Jádra"
+   "Jádra bez obsahu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -533,11 +533,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Vyloučit z Menu 'Samostatná Jádra'"
+   "Vyloučit z menu 'Jádra bez obsahu'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Zabránit zobrazení tohoto jádra v kartě/menu 'Samostatná Jádra'. Platí pouze v případě, že je režim zobrazení nastaven na 'Vlastní'."
+   "Zabránit zobrazení tohoto jádra v kartě/menu 'Jádra bez obsahu'. Platí pouze v případě, že je režim zobrazení nastaven na 'Vlastní'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -4834,11 +4834,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Zobrazit 'Samostatná Jádra'"
+   "Zobrazit 'Jádra bez obsahu'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Zadejte typ jádra (pokud existuje), které se má zobrazit v nabídce 'Samostatná Jádra'. Pokud je nastavena hodnota 'Vlastní', lze viditelnost jednotlivých jader přepínat prostřednictvím nabídky 'Spravovat Jádra'. (V systému Ozone/XMB je Vyžadován Restart)"
+   "Zadejte typ jádra (pokud existuje), které se má zobrazit v nabídce 'Jádra bez obsahu'. Pokud je nastavena hodnota 'Vlastní', lze viditelnost jednotlivých jader přepínat prostřednictvím nabídky 'Spravovat jádra'. (V systému Ozone/XMB je vyžadován restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -7688,11 +7688,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
-   "Přidat Nový Cheat po Tomto"
+   "Přidat nový cheat po tomto"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
-   "Přidat Nový Cheat Před Tento"
+   "Přidat nový cheat před tímto"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
@@ -12472,11 +12472,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "Nepodařilo se odstranit jádro ze seznamu 'Samostatná Jádra': "
+   "Nepodařilo se odebrat jádro ze seznamu 'Jádra bez obsahu': "
    )
 MSG_HASH(
    MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "Nepodařilo se přidat jádro do seznamu 'Samostatná Jádra': "
+   "Nepodařilo se přidat jádro do seznamu 'Jádra bez obsahu': "
    )
 MSG_HASH(
    MSG_CORE_DELETE_DISABLED,

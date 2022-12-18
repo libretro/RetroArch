@@ -2616,8 +2616,7 @@ static bool d3d12_gfx_frame(
    D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->frame.viewport);
    D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->frame.scissorRect);
 
-   if (!d3d12->shader_preset || d3d12->pass[0].rt.handle)
-      D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
+   D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
 
    D3D12SetPipelineState(d3d12->queue.cmd,
          d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);

@@ -18,13 +18,14 @@
 #include <stdio.h>
 #include <time.h>
 #include <process.h>
+
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
 #include "../frontend_driver.h"
+#include "../../command.h"
 #include "../../defaults.h"
 #include "../../paths.h"
-#include "../command.h"
 
 static enum frontend_fork dos_fork_mode = FRONTEND_FORK_NONE;
 

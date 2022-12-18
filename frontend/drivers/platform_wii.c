@@ -30,17 +30,17 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
-#include <paths.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include "../../verbosity.h"
-
 #if !defined(IS_SALAMANDER) && defined(HAVE_NETWORKING)
 #include "../../network/netplay/netplay.h"
 #endif
+
+#include "../../paths.h"
+#include "../../verbosity.h"
 
 #define EXECUTE_ADDR ((uint8_t *) 0x91800000)
 #define BOOTER_ADDR  ((uint8_t *) 0x93000000)

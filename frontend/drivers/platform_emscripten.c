@@ -38,14 +38,14 @@
 #include "../frontend.h"
 #include "../frontend_driver.h"
 #include "../../configuration.h"
-#include "../../defaults.h"
 #include "../../content.h"
-#include "../../retroarch.h"
-#include "../../verbosity.h"
 #include "../../command.h"
-#include "../../tasks/tasks_internal.h"
+#include "../../defaults.h"
 #include "../../file_path_special.h"
 #include "../../paths.h"
+#include "../../retroarch.h"
+#include "../../verbosity.h"
+#include "../../tasks/tasks_internal.h"
 
 void dummyErrnoCodes(void);
 void emscripten_mainloop(void);
