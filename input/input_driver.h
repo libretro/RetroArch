@@ -463,6 +463,7 @@ typedef struct
 
    /* primitives */
    bool analog_requested[MAX_USERS];
+   bool keyboard_menu_toggle_pressed;
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */
 } input_driver_state_t;
