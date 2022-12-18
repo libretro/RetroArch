@@ -283,6 +283,10 @@ static bool audio_driver_deinit_internal(bool audio_enable)
       memalign_free(audio_st->output_samples_conv_buf);
    audio_st->output_samples_conv_buf     = NULL;
 
+   if (audio_st->input_samples_conv_buf)
+      memalign_free(audio_st->input_samples_conv_buf);
+   audio_st->input_samples_conv_buf      = NULL;
+
    if (audio_st->input_data)
       memalign_free(audio_st->input_data);
 
@@ -307,6 +311,10 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    if (audio_st->output_samples_buf)
       memalign_free(audio_st->output_samples_buf);
    audio_st->output_samples_buf = NULL;
+
+   if (audio_st->input_samples_buf)
+      memalign_free(audio_st->input_samples_buf);
+   audio_st->input_samples_buf = NULL;
 
 #ifdef HAVE_DSP_FILTER
    audio_driver_dsp_filter_free();
@@ -563,10 +571,12 @@ bool audio_driver_init_internal(
       bool audio_cb_inited)
 {
    unsigned new_rate              = 0;
-   float  *samples_buf            = NULL;
+   float  *out_samples_buf        = NULL;
+   float  *in_samples_buf         = NULL;
    settings_t *settings           = (settings_t*)settings_data;
    size_t max_bufsamples          = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    bool audio_enable              = settings->bools.audio_enable;
+   bool audio_enable_microphone   = settings->bools.audio_enable_microphone;
    bool audio_sync                = settings->bools.audio_sync;
    bool audio_rate_control        = settings->bools.audio_rate_control;
    float slowmotion_ratio         = settings->floats.slowmotion_ratio;
@@ -579,7 +589,10 @@ bool audio_driver_init_internal(
 #endif
    /* Accomodate rewind since at some point we might have two full buffers. */
    size_t outsamples_max          = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO * slowmotion_ratio;
-   int16_t *conv_buf              = (int16_t*)memalign_alloc(64, outsamples_max * sizeof(int16_t));
+   size_t insamples_max           = AUDIO_CHUNK_SIZE_NONBLOCKING * 1 * AUDIO_MAX_RATIO * slowmotion_ratio;
+   int16_t *out_conv_buf          = (int16_t*)memalign_alloc(64, outsamples_max * sizeof(int16_t));
+   int16_t *in_conv_buf           = audio_enable_microphone ?
+         (int16_t*)memalign_alloc(64, insamples_max * sizeof(int16_t)) : NULL;
    float *audio_buf               = (float*)memalign_alloc(64, AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float));
    bool verbosity_enabled         = verbosity_is_enabled();
 
@@ -587,16 +600,20 @@ bool audio_driver_init_internal(
    convert_float_to_s16_init_simd();
 
    /* Used for recording even if audio isn't enabled. */
-   retro_assert(conv_buf != NULL);
+   retro_assert(out_conv_buf != NULL);
    retro_assert(audio_buf != NULL);
+   if (audio_enable_microphone)
+      retro_assert(in_conv_buf != NULL);
 
-   if (!conv_buf || !audio_buf)
+   if (!out_conv_buf || !audio_buf || (audio_enable_microphone && !in_conv_buf))
       goto error;
+   /* It's not an error for in_conv_buf to be null if we didn't ask for a mic */
 
    memset(audio_buf, 0, AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float));
 
    audio_driver_st.input_data              = audio_buf;
-   audio_driver_st.output_samples_conv_buf = conv_buf;
+   audio_driver_st.output_samples_conv_buf = out_conv_buf;
+   audio_driver_st.input_samples_conv_buf  = in_conv_buf;
    audio_driver_st.chunk_block_size        = AUDIO_CHUNK_SIZE_BLOCKING;
    audio_driver_st.chunk_nonblock_size     = AUDIO_CHUNK_SIZE_NONBLOCKING;
    audio_driver_st.chunk_size              = audio_driver_st.chunk_block_size;
@@ -620,6 +637,10 @@ bool audio_driver_init_internal(
       return false;
    }
 
+   if (!audio_enable_microphone)
+      audio_driver_st.flags     &= ~AUDIO_FLAG_MIC_ACTIVE;
+   /* Not an error if the mic is disabled */
+
    if (!(audio_driver_find_driver(settings,
          "audio driver", verbosity_enabled)))
    {
@@ -632,6 +653,14 @@ bool audio_driver_init_internal(
       RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
       audio_driver_st.flags &= ~AUDIO_FLAG_ACTIVE;
       return false;
+   }
+
+   if ((audio_driver_st.flags & AUDIO_FLAG_MIC_ACTIVE)
+         && !audio_driver_supports_microphone(audio_driver_st.current_audio))
+   {
+      RARCH_WARN("[Audio]: Microphone support is enabled, but the %s driver doesn't support it. Will continue without it.\n",
+                 audio_driver_st.current_audio->ident);
+      audio_driver_st.flags &= ~AUDIO_FLAG_MIC_ACTIVE;
    }
 
 #ifdef HAVE_THREADS
@@ -732,14 +761,21 @@ bool audio_driver_init_internal(
    retro_assert(settings->uints.audio_output_sample_rate <
          audio_driver_st.input * AUDIO_MAX_RATIO);
 
-   samples_buf = (float*)memalign_alloc(64, outsamples_max * sizeof(float));
+   out_samples_buf = (float*)memalign_alloc(64, outsamples_max * sizeof(float));
+   in_samples_buf  = (audio_driver_st.flags & AUDIO_FLAG_MIC_ACTIVE) ?
+         (float*)memalign_alloc(64, insamples_max * sizeof(float)) : NULL;
 
-   retro_assert(samples_buf != NULL);
+   retro_assert(out_samples_buf != NULL);
 
-   if (!samples_buf)
+   if (audio_driver_st.flags & AUDIO_FLAG_MIC_ACTIVE)
+      retro_assert(in_samples_buf != NULL);
+   /* It's not an error for in_samples_buf to be NULL if we don't want the mic */
+
+   if (!out_samples_buf || ((audio_driver_st.flags & AUDIO_FLAG_MIC_ACTIVE) && !in_samples_buf))
       goto error;
 
-   audio_driver_st.output_samples_buf = (float*)samples_buf;
+   audio_driver_st.output_samples_buf = (float*)out_samples_buf;
+   audio_driver_st.input_samples_buf  = (float*)in_samples_buf;
    audio_driver_st.flags             &= ~AUDIO_FLAG_CONTROL;
 
    if (

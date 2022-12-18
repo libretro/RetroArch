@@ -327,10 +327,12 @@ typedef struct
 
    struct string_list *devices_list;
    float  *output_samples_buf;
+   float  *input_samples_buf;
 #ifdef HAVE_REWIND
    int16_t *rewind_buf;
 #endif
    int16_t *output_samples_conv_buf;
+   int16_t *input_samples_conv_buf;
 #ifdef HAVE_DSP_FILTER
    retro_dsp_filter_t *dsp;
 #endif
@@ -342,6 +344,14 @@ typedef struct
     * The current audio driver.
     */
    const audio_driver_t *current_audio;
+
+   /**
+    * The handle to the created microphone, if any.
+    * The libretro API is designed to enable multiple microphones,
+    * but RetroArch and its drivers only supports one at a time for now.
+    * PRs welcome!
+    */
+   void *context_microphone_data;
    void *context_audio_data;
    float *input_data;
 #ifdef HAVE_AUDIOMIXER
