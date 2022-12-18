@@ -167,6 +167,140 @@ typedef struct audio_driver
    size_t (*read_avail)(void *data);
 
    size_t (*buffer_size)(void *data);
+
+   /* The following microphone functions are all optional.
+    * For a driver to support microphone functionality,
+    * it must provide all of these functions.
+    *
+    * If your driver doesn't support microphones,
+    * leave these function pointers as NULL. */
+
+   /**
+    * Initializes a microphone using the audio driver.
+    *
+    * @param data Handle to the driver context
+    * that was originally returned by ::init.
+    * @param device A specific device name (or other options)
+    * to create the microphone with.
+    * Each audio driver interprets this differently,
+    * and some may not honor it.
+    * @param rate The requested sampling rate of the new microphone.
+    * @param latency TODO
+    * @param block_frames TODO
+    * @param new_rate TODO
+    * @return An opaque handle to the newly-initialized microphone
+    * if it was successfully created,
+    * or \c NULL if there was an error.
+    * May be \c NULL if no microphone is available,
+    * or if the maximum number of microphones has been created.
+    * The returned handle should be provided to the \c microphone_context
+    * parameter of all other microphone functions.
+    *
+    * @note Do not return \c NULL to indicate a lack of driver support;
+    * instead, don't implement this function.
+    * @note Additionally, don't check the settings for microphone support;
+    * the frontend's audio layer will do that for you.
+    */
+   void *(*init_microphone)(void *data, const char *device, unsigned rate,
+                 unsigned latency, unsigned block_frames, unsigned *new_rate);
+
+   /**
+    * Releases the resources used by a particular microphone
+    * and stops its activity.
+    * Will do nothing if either \p data or \p microphone_context is \c NULL.
+    *
+    * @param data Opaque handle to the audio driver context
+    * that was used to create the provided microphone.
+    * Implementations may use this to help in cleaning up the microphone,
+    * but the driver context itself must \em not be released.
+    * @param microphone_context Opaque handle to the microphone that will be freed.
+    * Implementations should stop any recording activity before freeing resources.
+    *
+    * @post \p data will still be valid,
+    * while \p microphone_context will not.
+    */
+   void (*free_microphone)(void *data, void *microphone_context);
+
+   /**
+    * TODO gets an active microphone
+    *
+    * @param data Opaque handle to the audio driver context
+    * that was used to create the requested microphone.
+    * @param id TODO
+    * @return Opaque handle to the microphone context associated with id,
+    * or NULL if none exists.
+    */
+   void *(*get_microphone)(const void *data, unsigned id);
+
+   /**
+    * Queries the active state of a microphone.
+    * Use this to determine if a microphone is currently recording audio
+    * (i.e. if the mic is "hot").
+    * @param data Opaque handle to the audio driver context
+    * that was used to create the provided microphone.
+    * @param microphone_context A handle to the microphone that will be freed.
+    * @return \c true if the provided microphone is actively recording audio.
+    * \c false if the provided microphone is idle,
+    * or if either parameter is \c NULL.
+    *
+    * @note Implementations should not modify
+    * the state of the driver or the microphone
+    * within this function.
+    */
+   bool (*get_microphone_state)(const void *data, const void *microphone_context);
+
+   /**
+    * @brief Enables or disables a microphone.
+    * Enabled microphones should record audio input with
+    * this driver's \c read_microphone implementation.
+    * Disabled microphones should not be processed,
+    * and should not impact overall application performance.
+    * @param data Opaque handle to the audio driver context
+    * that was used to create the provided microphone.
+    * @param microphone_context Opaque handle to the microphone
+    * whose state should be toggled.
+    * @param enabled The desired state of the provided microphone.
+    * Provide \c true to enable it and \c false to disable it.
+    * @return \c true if the microphone's state was successfully altered,
+    * or if it didn't need to be altered
+    * (i.e. when disabling an already-idle microphone).
+    * \c false if there was an error,
+    * or if the \c microphone_context was invalid.
+    */
+   bool (*set_microphone_state)(void *data, void *microphone_context, bool enabled);
+
+   /**
+    * @brief Read samples from the input driver, e.g. for microphones.
+    *
+    * Write data from the audio driver into the buffer.
+    * Microphone input is in mono, so a sample is equivalent to a frame
+    * for our purposes (I.e. 44.1kHz, 16-bit stereo has 44.1k samples/s).
+    *
+    * Each element of the provided array is a single sample.
+    * If the driver returns true in use_float(), a floating point
+    * format will be used, with range [-1.0, 1.0].
+    * If not, signed 16-bit samples in native byte ordering will be used.
+    *
+    *
+    * This function returns the number of samples successfully read.
+    * If an error occurs, -1 should be returned.
+    * Note that non-blocking behavior that cannot read at this time
+    * should return 0 as returning -1 will terminate the driver.
+    *
+    * Unless said otherwise with set_nonblock_state(), all reads
+    * are blocking, and it should block till it has read all frames.
+    *
+    * @param[in] driver_context Opaque handle to the audio driver context
+    * that was used to create the provided microphone.
+    * @param[in] microphone_context Opaque handle to the microphone
+    * whose input will be received.
+    * @param[out] buf Buffer for received audio data.
+    * Should be large enough to hold one frame's worth of audio samples.
+    * @param[in] size Size of audio buffer, in samples (\em not bytes).
+    * @return The number of bytes that were read into \c buf,
+    * or -1 if there was an error.
+    */
+   ssize_t (*read_microphone)(void *driver_context, void *microphone_context, void *buf, size_t size);
 } audio_driver_t;
 
 enum audio_driver_state_flags
@@ -303,6 +437,19 @@ void audio_driver_load_system_sounds(void);
 bool audio_driver_start(bool is_shutdown);
 
 bool audio_driver_stop(void);
+
+/**
+ *
+ * @param driver The audio driver whose microphone support you're querying
+ * @return true if driver defines the necessary methods TODO
+ */
+bool audio_driver_supports_microphone(const audio_driver_t* driver);
+
+bool audio_driver_set_microphone_state(unsigned index, bool state);
+
+bool audio_driver_get_microphone_state(unsigned index);
+
+size_t audio_driver_get_microphone_input(unsigned index, int16_t* data, size_t data_length);
 
 #ifdef HAVE_TRANSLATE
 /* TODO/FIXME - Doesn't currently work.  Fix this. */
