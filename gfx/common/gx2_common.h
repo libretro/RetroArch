@@ -1,6 +1,21 @@
 #pragma once
 
-#include <wiiu/gx2.h>
+#include <coreinit/time.h>
+
+#include <gx2/enum.h>
+#include <gx2/ra_shaders.h>
+#include <gx2/texture.h>
+#include <gx2/context.h>
+#include <gx2/mem.h>
+#include <gx2/state.h>
+#include <gx2/display.h>
+#include <gx2/registers.h>
+#include <gx2/draw.h>
+#include <gx2/clear.h>
+#include <gx2/swap.h>
+#include <gx2/event.h>
+
+#define GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK (GX2_INVALIDATE_MODE_CPU | GX2_INVALIDATE_MODE_UNIFORM_BLOCK)
 
 #include "../video_defines.h"
 #include "../video_shader_parse.h"
@@ -25,8 +40,8 @@
 #define _1 0x05
 #define GX2_COMP_SEL(c0, c1, c2, c3) (((c0) << 24) | ((c1) << 16) | ((c2) << 8) | (c3))
 
-#define COLOR_ARGB(r, g, b, a) (((u32)(a) << 24) | ((u32)(r) << 16) | ((u32)(g) << 8) | ((u32)(b) << 0))
-#define COLOR_RGBA(r, g, b, a) (((u32)(r) << 24) | ((u32)(g) << 16) | ((u32)(b) << 8) | ((u32)(a) << 0))
+#define COLOR_ARGB(r, g, b, a) (((uint32_t)(a) << 24) | ((uint32_t)(r) << 16) | ((uint32_t)(g) << 8) | ((uint32_t)(b) << 0))
+#define COLOR_RGBA(r, g, b, a) (((uint32_t)(r) << 24) | ((uint32_t)(g) << 16) | ((uint32_t)(b) << 8) | ((uint32_t)(a) << 0))
 
 typedef struct
 {
@@ -69,8 +84,8 @@ typedef struct
    GX2_mat4x4 *ubo_mvp;
    void *input_ring_buffer;
    void *output_ring_buffer;
-   u32 input_ring_buffer_size;
-   u32 output_ring_buffer_size;
+   uint32_t input_ring_buffer_size;
+   uint32_t output_ring_buffer_size;
 
    int width;
    int height;

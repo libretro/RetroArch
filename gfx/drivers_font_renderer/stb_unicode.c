@@ -22,7 +22,7 @@
 #include <retro_miscellaneous.h>
 
 #ifdef WIIU
-#include <wiiu/os.h>
+#include <coreinit/memory.h>
 #endif
 
 #include "../font_driver.h"
@@ -247,7 +247,7 @@ static void *font_renderer_stb_unicode_init(const char *font_path, float font_si
    if (!*font_path)
    {
       uint32_t size = 0;
-      if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0, (void**)&self->font_data, &size))
+      if (!OSGetSharedData(OS_SHAREDDATATYPE_FONT_STANDARD, 0, (void**)&self->font_data, &size))
          goto error;
    }
    else

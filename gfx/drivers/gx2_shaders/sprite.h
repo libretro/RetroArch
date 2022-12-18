@@ -40,7 +40,7 @@ typedef struct
       float height;
    }coord;
 
-   u32 color;
+   uint32_t color;
 }sprite_vertex_t;
 
 extern GX2Shader sprite_shader;

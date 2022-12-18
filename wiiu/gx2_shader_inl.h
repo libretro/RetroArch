@@ -19,11 +19,11 @@
 #include <retro_endianness.h>
 
 #ifdef MSB_FIRST
-#define to_QWORD(w0, w1) (((u64)(w0) << 32ull) | (w1))
+#define to_QWORD(w0, w1) (((uint64_t)(w0) << 32ull) | (w1))
 #define to_LE(x) (__builtin_bswap32(x))
 #else
 printf("broke the build");
-#define to_QWORD(w0, w1) (((u64)(w1) << 32ull) | (w0))
+#define to_QWORD(w0, w1) (((uint64_t)(w1) << 32ull) | (w0))
 #define to_LE(x) (x)
 #endif
 

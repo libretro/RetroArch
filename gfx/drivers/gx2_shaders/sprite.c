@@ -16,15 +16,16 @@
 #include <stddef.h>
 #include <malloc.h>
 #include <string.h>
-#include <wiiu/gx2/common.h>
+#include <gx2/enum.h>
+#include <array_helper.h>
 #include "gx2_shader_inl.h"
 #include "sprite.h"
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
-   u64 cf[32];
-   u64 alu[26];
+   uint64_t cf[32];
+   uint64_t alu[26];
 } vs_program =
 {
    {
@@ -71,12 +72,12 @@ static struct
    }
 };
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
-   u64 cf[32];     /* @0 */
-   u64 alu[16];    /* @32 */
-   u64 tex[1 * 2]; /* @48 */
+   uint64_t cf[32];     /* @0 */
+   uint64_t alu[16];    /* @32 */
+   uint64_t tex[1 * 2]; /* @48 */
 } ps_program =
 {
    {
@@ -97,12 +98,12 @@ static struct
    }
 };
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
-   u64 cf[32];     /* @0 */
-   u64 alu[80-32]; /* @32 */
-   u64 tex[3 * 2]; /* @80 */
+   uint64_t cf[32];     /* @0 */
+   uint64_t alu[80-32]; /* @32 */
+   uint64_t tex[3 * 2]; /* @80 */
 } gs_program =
 {
    {
@@ -175,11 +176,11 @@ static struct
    }
 };
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
-   u64 cf[16];     /* @0 */
-   u64 vtx[3 * 2]; /* @16 */
+   uint64_t cf[16];     /* @0 */
+   uint64_t vtx[3 * 2]; /* @16 */
 } gs_copy_program=
 {
    {

@@ -19,7 +19,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-#include <wiiu/os.h>
+#include <coreinit/exception.h>
+#include <coreinit/memorymap.h>
+#include <coreinit/debug.h>
+#include <coreinit/dynload.h>
 #include "wiiu_dbg.h"
 #include "exception_handler.h"
 #include "version.h"
@@ -29,14 +32,6 @@
 /*	Settings */
 #define NUM_STACK_TRACE_LINES 5
 
-/*	Externals
-	From the linker scripts.
-*/
-extern unsigned int __code_start;
-#define TEXT_START (unsigned int)&__code_start
-extern unsigned int __code_end;
-#define TEXT_END (unsigned int)&__code_end
-
 void test_os_exceptions(void);
 void exception_print_symbol(uint32_t addr);
 
@@ -45,13 +40,6 @@ typedef struct _framerec
    struct _framerec* up;
    void* lr;
 } frame_rec, *frame_rec_t;
-
-/*	Fill in a few gaps in thread.h
-	Dimok calls these exception_specific0 and 1;
-	though we may as well name them by their function.
-*/
-#define dsisr __unknown[0]
-#define dar __unknown[1]
 
 /*	Some bitmasks for determining DSI causes.
 	Taken from the PowerPC Programming Environments Manual (32-bit).
@@ -89,7 +77,7 @@ char* exception_msgbuf;
 void __attribute__((__noreturn__)) exception_cb(OSContext* ctx, OSExceptionType type)
 {
    /*	No message buffer available, fall back onto MEM1 */
-   if (!exception_msgbuf || !OSEffectiveToPhysical(exception_msgbuf))
+   if (!exception_msgbuf || !OSEffectiveToPhysical((uint32_t)exception_msgbuf))
       exception_msgbuf = (char*)0xF4000000;
 
    /*	First up, the pretty header that tells you wtf just happened */
@@ -211,17 +199,8 @@ BOOL __attribute__((__noreturn__)) exception_prog_cb(OSContext* ctx)
 
 void exception_print_symbol(uint32_t addr)
 {
-   /*	Check if addr is within this RPX's .text */
-   if (addr >= TEXT_START && addr < TEXT_END)
-   {
-      char symbolName[64];
-      OSGetSymbolName(addr, symbolName, 63);
-
-      buf_add("%08" PRIX32 "(%08" PRIX32 "):%s\n",
-            addr, addr - TEXT_START, symbolName);
-   }
    /*	Check if addr is within the system library area... */
-   else if ((addr >= 0x01000000 && addr < 0x01800000) ||
+   if ((addr >= 0x01000000 && addr < 0x01800000) ||
          /*	Or the rest of the app executable area.
             I would have used whatever method JGeckoU uses to determine
             the real lowest address, but *someone* didn't make it open-source :/ */
@@ -279,13 +258,22 @@ void exception_print_symbol(uint32_t addr)
 /*	void setup_os_exceptions(void)
 	Install and initialize the exception handler.
 */
-void setup_os_exceptions(void)
+void init_os_exceptions(void)
 {
    exception_msgbuf = malloc(4096);
    OSSetExceptionCallback(OS_EXCEPTION_TYPE_DSI, exception_dsi_cb);
    OSSetExceptionCallback(OS_EXCEPTION_TYPE_ISI, exception_isi_cb);
    OSSetExceptionCallback(OS_EXCEPTION_TYPE_PROGRAM, exception_prog_cb);
    test_os_exceptions();
+}
+
+void deinit_os_exceptions(void)
+{
+    OSSetExceptionCallback(OS_EXCEPTION_TYPE_DSI, NULL);
+    OSSetExceptionCallback(OS_EXCEPTION_TYPE_ISI, NULL);
+    OSSetExceptionCallback(OS_EXCEPTION_TYPE_PROGRAM, NULL);
+    free(exception_msgbuf);
+    exception_msgbuf = NULL;
 }
 
 /*	void test_os_exceptions(void)

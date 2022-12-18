@@ -92,7 +92,7 @@
 #endif
 
 #ifdef WIIU
-#include <wiiu/os/time.h>
+#include <coreinit/time.h>
 #endif
 
 #if defined(HAVE_LIBNX)
@@ -245,7 +245,7 @@ retro_time_t cpu_features_get_time_usec(void)
 #elif defined(GEKKO)
    return ticks_to_microsecs(gettime());
 #elif defined(WIIU)
-   return ticks_to_us(OSGetSystemTime());
+   return OSTicksToMicroseconds(OSGetSystemTime());
 #elif defined(SWITCH) || defined(HAVE_LIBNX)
    return (svcGetSystemTick() * 10) / 192;
 #elif defined(_3DS)

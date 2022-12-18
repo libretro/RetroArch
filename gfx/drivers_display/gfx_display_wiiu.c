@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <wiiu/gx2.h>
 #include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
@@ -171,7 +170,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
 
       v                  = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
       v->pos.x           = draw->x;
-      v->pos.y           = wiiu->color_buffer.surface.height - 
+      v->pos.y           = wiiu->color_buffer.surface.height -
                            draw->y - draw->height;
       v->pos.width       = draw->width;
       v->pos.height      = draw->height;
@@ -206,7 +205,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
    GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset,
          sprite_shader.vs.uniformBlocks[1].size,
          wiiu->ubo_tex);
-   GX2SetAttribBuffer(0, wiiu->vertex_cache.size 
+   GX2SetAttribBuffer(0, wiiu->vertex_cache.size
          * sizeof(*wiiu->vertex_cache.v),
          sizeof(*wiiu->vertex_cache.v),
          wiiu->vertex_cache.v);
@@ -263,7 +262,7 @@ static void gfx_display_wiiu_draw_pipeline(
    {
       wiiu->menu_shader_ubo = MEM2_alloc(
             sizeof(*wiiu->menu_shader_ubo),
-            GX2_UNIFORM_BLOCK_ALIGNMENT);
+            GX2_SHADER_PROGRAM_ALIGNMENT);
       matrix_4x4_ortho(wiiu->menu_shader_ubo->mvp, 0, 1, 1, 0, -1, 1);
       wiiu->menu_shader_ubo->OutputSize.width = wiiu->color_buffer.surface.width;
       wiiu->menu_shader_ubo->OutputSize.height = wiiu->color_buffer.surface.height;

@@ -18,8 +18,12 @@
 #include <malloc.h>
 #include <stdint.h>
 
-#include <wiiu/os.h>
-#include <wiiu/ax.h>
+
+#include <sndcore2/core.h>
+#include <sndcore2/ra_multivoice.h>
+#include <coreinit/cache.h>
+#include <coreinit/spinlock.h>
+#include <coreinit/thread.h>
 
 #include "../../wiiu/wiiu_dbg.h"
 #include "../../wiiu/system/memory.h"
@@ -75,16 +79,15 @@ void wiiu_ax_callback(void)
    }
 }
 
-extern void AXRegisterFrameCallback(void *cb);
-
 static void* ax_audio_init(const char* device, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
 {
    AXVoiceOffsets offsets[2];
-   u16 setup_buf[0x30] = {0};
-   setup_buf[0x25]     = 2; /* we request 2 channels */
-   AXInitParams init   = {AX_INIT_RENDERER_48KHZ, 0, 0};
+   DspConfig setup_buf = {0};
+   setup_buf.multi_ch_count = 2;
+
+   AXInitParams init   = {AX_INIT_RENDERER_48KHZ, {0, 0}};
    AXVoiceVeData ve    = {0x8000, 0};
    ax_audio_t* ax      = (ax_audio_t*)calloc(1, sizeof(ax_audio_t));
 
@@ -93,7 +96,7 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency,
 
    AXInitWithParams(&init);
 
-   AXAcquireMultiVoice(31, NULL, 0, setup_buf, &ax->mvoice);
+   AXAcquireMultiVoice(31, NULL, 0, &setup_buf, &ax->mvoice);
 
    if (!ax->mvoice || ax->mvoice->channels != 2)
    {

@@ -4,9 +4,6 @@
 
 #include <unistd.h>
 #include <stdio.h>
-#include <wiiu/os.h>
-#include <wiiu/ac.h>
-#include <wiiu/types.h>
 #include <pwd.h>
 #include <sys/reent.h>
 #include <ifaddrs.h>
@@ -16,11 +13,16 @@
 #include <netinet/in.h>
 #include <string.h>
 
+#include <coreinit/cache.h>
+#include <coreinit/time.h>
+#include <coreinit/thread.h>
+#include <nn/ac/ra_ac_c.h>
+
 #include <verbosity.h>
 
 /* This is usually in libogc; we can't use that on wiiu */
 int usleep(useconds_t microseconds) {
-	OSSleepTicks(us_to_ticks(microseconds));
+	OSSleepTicks(OSMicrosecondsToTicks(microseconds));
 	return 0;
 }
 
@@ -82,10 +84,10 @@ int _gettimeofday_r(struct _reent *ptr,
 
    /* Get Cafe OS clock in seconds; epoch 2000-01-01 00:00 */
    cosTime = OSGetTime();
-   cosSecs = ticks_to_sec(cosTime);
+   cosSecs = OSTicksToSeconds(cosTime);
 
    /* Get extra milliseconds */
-   cosUSecs = ticks_to_us(cosTime) - (cosSecs * 1000000);
+   cosUSecs = OSTicksToMicroseconds(cosTime) - (cosSecs * 1000000);
 
    /* Convert to Unix time, epoch 1970-01-01 00:00.
       Constant value is seconds between 1970 and 2000.
@@ -198,28 +200,28 @@ error:
 static int getAssignedAddress(struct sockaddr_in *sa)
 {
    ACIpAddress addr;
-   int result;
+   NNResult result;
    if (!sa)
       return -1;
    result = ACGetAssignedAddress(&addr);
-   if (result == 0)
+   if (result.value == 0)
       sa->sin_addr.s_addr = addr;
 
-   return result;
+   return result.value;
 }
 
 static int getAssignedSubnet(struct sockaddr_in *sa)
 {
    ACIpAddress mask;
-   int result;
+   NNResult result;
    if (!sa)
       return -1;
 
    result = ACGetAssignedSubnet(&mask);
-   if (result == 0)
+   if (result.value == 0)
       sa->sin_addr.s_addr = mask;
 
-   return result;
+   return result.value;
 }
 
 static int getBroadcastAddress(struct sockaddr_in *sa, struct sockaddr_in *addr, struct sockaddr_in *mask)

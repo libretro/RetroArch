@@ -1,5 +1,5 @@
-#include <wiiu/os/dynload.h>
-#include <wiiu/os/debug.h>
+#include <coreinit/debug.h>
+#include <coreinit/dynload.h>
 
 #define IMPORT(name) void* addr_##name
 #define IMPORT_BEGIN(lib)
