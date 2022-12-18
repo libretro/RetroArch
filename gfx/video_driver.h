@@ -912,8 +912,6 @@ typedef struct
    unsigned state_scale;
    unsigned state_out_bpp;
 #endif
-   unsigned frame_delay_target;
-   unsigned frame_delay_effective;
    unsigned frame_cache_width;
    unsigned frame_cache_height;
    unsigned width;
@@ -946,15 +944,19 @@ typedef struct
    char title_buf[64];
    char cached_driver_id[32];
 
+   uint8_t frame_delay_target;
+   uint8_t frame_delay_effective;
+   bool frame_delay_pause;
+
    bool threaded;
 } video_driver_state_t;
 
 typedef struct video_frame_delay_auto {
    float refresh_rate;
-   unsigned frame_time_interval;
-   unsigned decrease;
-   unsigned target;
-   unsigned time;
+   uint16_t frame_time_target;
+   uint16_t frame_time_average;
+   uint8_t frame_time_interval;
+   uint8_t delay_decrease;
 } video_frame_delay_auto_t;
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];

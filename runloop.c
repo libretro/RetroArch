@@ -2665,9 +2665,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (video_fullscreen)
                video_driver_hide_mouse();
 
-            /* Recalibrate frame delay target */
+            /* Recalibrate frame delay target when video reinits
+             * and pause frame delay when video does not reinit */
             if (settings->bools.video_frame_delay_auto)
-               video_st->frame_delay_target = 0;
+            {
+               if (no_video_reinit)
+                  video_st->frame_delay_pause  = true;
+               else
+                  video_st->frame_delay_target = 0;
+            }
 
             return true;
          }
@@ -2873,6 +2879,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             /* Forces recomputation of aspect ratios if
              * using core-dependent aspect ratios. */
             video_driver_set_aspect_ratio();
+
+            /* Ignore frame delay target temporarily */
+            if (settings->bools.video_frame_delay_auto)
+               video_st->frame_delay_pause = true;
 
             /* TODO: Figure out what to do, if anything, with 
                recording. */
@@ -7891,50 +7901,66 @@ int runloop_iterate(void)
       }
    }
 
-   if (!(input_st->flags & INP_FLAG_NONBLOCKING))
+   /* Frame delay */
+   if (     !(input_st->flags & INP_FLAG_NONBLOCKING)
+         || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
    {
+      bool skip_delay = core_paused
+            || (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
+            || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION);
+
       if (settings->bools.video_frame_delay_auto)
       {
-         static bool slowmotion_prev  = false;
-         static unsigned skip_frames  = 0;
-         float refresh_rate           = settings->floats.video_refresh_rate;
-         unsigned video_swap_interval = runloop_get_video_swap_interval(
+         float refresh_rate          = settings->floats.video_refresh_rate;
+         uint8_t video_swap_interval = runloop_get_video_swap_interval(
                settings->uints.video_swap_interval);
-         unsigned video_bfi           = settings->uints.video_black_frame_insertion;
-         unsigned frame_time_interval = 8;
-         bool frame_time_update       =
-               /* Skip some starting frames for stabilization */
+         uint8_t video_bfi           = settings->uints.video_black_frame_insertion;
+         uint8_t frame_time_interval = 8;
+         static uint8_t skip_update  = 0;
+         static bool skip_delay_prev = false;
+         bool frame_time_update      =
+               /* Skip some initial frames for stabilization */
                video_st->frame_count > frame_time_interval &&
+               /* Only update when there are enough frames for averaging */
                video_st->frame_count % frame_time_interval == 0;
 
-         /* A few frames need to get ignored after slowmotion is disabled */
-         if (!(runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION) && slowmotion_prev)
-            skip_frames = frame_time_interval * 2;
+         /* A few frames must be ignored after slow+fastmotion/pause
+          * is disabled or geometry change is triggered */
+         if (     (!skip_delay && skip_delay_prev)
+               || video_st->frame_delay_pause)
+         {
+            skip_update = frame_time_interval * 4;
+            video_st->frame_delay_pause = false;
+         }
 
-         if (skip_frames)
-            skip_frames--;
+         if (skip_update)
+            skip_update--;
 
-         slowmotion_prev = runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION;
-         /* Always skip when slowmotion is active */
-         if (slowmotion_prev)
-            skip_frames = 1;
+         skip_delay_prev = skip_delay;
 
-         if (skip_frames)
+         /* Always skip when slow+fastmotion/pause is active */
+         if (skip_delay_prev)
+            skip_update = 1;
+
+         if (skip_update)
             frame_time_update = false;
 
          /* Black frame insertion + swap interval multiplier */
          refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval);
 
-         /* Set target moderately as half frame time with 0 delay */
+         /* Set target moderately as half frame time with 0 (Auto) delay */
          if (video_frame_delay == 0)
             video_frame_delay = 1 / refresh_rate * 1000 / 2;
 
+         /* Reset new desired delay target */
          if (video_st->frame_delay_target != video_frame_delay)
          {
+            frame_time_update = false;
             video_st->frame_delay_target = video_frame_delay_effective = video_frame_delay;
             RARCH_LOG("[Video]: Frame delay reset to %d ms.\n", video_frame_delay);
          }
 
+         /* Decide what should happen to effective delay */
          if (video_frame_delay_effective > 0 && frame_time_update)
          {
             video_frame_delay_auto_t vfda = {0};
@@ -7942,11 +7968,11 @@ int runloop_iterate(void)
             vfda.refresh_rate             = refresh_rate;
 
             video_frame_delay_auto(video_st, &vfda);
-            if (vfda.decrease > 0)
+            if (vfda.delay_decrease > 0)
             {
-               video_frame_delay_effective -= vfda.decrease;
-               RARCH_LOG("[Video]: Frame delay decrease by %d ms to %d ms due to frame time: %d > %d.\n",
-                     vfda.decrease, video_frame_delay_effective, vfda.time, vfda.target);
+               video_frame_delay_effective -= vfda.delay_decrease;
+               RARCH_LOG("[Video]: Frame delay decrease by %d ms to %d ms due to frame time average: %d > %d.\n",
+                     vfda.delay_decrease, video_frame_delay_effective, vfda.frame_time_average, vfda.frame_time_target);
             }
          }
       }
@@ -7955,7 +7981,8 @@ int runloop_iterate(void)
 
       video_st->frame_delay_effective = video_frame_delay_effective;
 
-      if (video_frame_delay_effective > 0)
+      /* Never apply frame delay when slow+fastmotion/pause is active */
+      if (video_frame_delay_effective > 0 && !skip_delay)
          retro_sleep(video_frame_delay_effective);
    }
 
