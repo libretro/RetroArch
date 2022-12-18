@@ -112,19 +112,23 @@ typedef struct audio_driver
     */
    ssize_t (*write)(void *data, const void *buf, size_t size);
 
-   /*
-    * @data         : Pointer to audio data handle.
-    * @buf          : Buffer for received audio data.
-    * @size         : Size of audio buffer.
+   /**
+    * Temporarily pauses the audio driver, including microphones.
+    * Microphone "paused" state will not be updated,
+    * but they will stop recording until start is called.
     *
-    * Read samples from the input driver, e.g. for microphones.
-    */
-   ssize_t (*read)(void *data, void *buf, size_t size);
-
-   /* Temporarily pauses the audio driver. */
+    * @param data Opaque handle to the audio driver context
+    * that was returned by \c init.
+    * @return \c true if the audio driver was successfully paused,
+    * \c false if there was an error.
+    **/
    bool (*stop)(void *data);
 
-   /* Resumes audio driver from the paused state. */
+   /**
+    * Resumes audio driver from the paused state.
+    * Microphones will resume recording \em if they were already active
+    * before the driver was stopped.
+    **/
    bool (*start)(void *data, bool is_shutdown);
 
    /* Is the audio driver currently running? */
@@ -139,7 +143,7 @@ typedef struct audio_driver
     * */
    void (*set_nonblock_state)(void *data, bool toggle);
 
-   /* Stops and frees driver data. */
+   /* Stops and frees driver data, including microphones. */
    void (*free)(void *data);
 
    /* Defines if driver will take standard floating point samples,
@@ -332,6 +336,10 @@ typedef struct
    const retro_resampler_t *resampler;
 
    void *resampler_data;
+
+   /**
+    * The current audio driver.
+    */
    const audio_driver_t *current_audio;
    void *context_audio_data;
    float *input_data;
