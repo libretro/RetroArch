@@ -17,10 +17,13 @@
 #include <malloc.h>
 #include <string.h>
 #include "memory.h"
-#include <wiiu/mem.h>
+#include <coreinit/memheap.h>
+#include <coreinit/memexpheap.h>
+#include <coreinit/memfrmheap.h>
+#include <proc_ui/procui.h>
 
-static MEMExpandedHeap* mem1_heap;
-static MEMExpandedHeap* bucket_heap;
+static MEMHeapHandle mem1_heap;
+static MEMHeapHandle bucket_heap;
 
 void memoryInitialize(void)
 {
@@ -46,13 +49,15 @@ void memoryInitialize(void)
 
 void memoryRelease(void)
 {
-    MEMDestroyExpHeap(mem1_heap);
-    MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1), MEM_FRAME_HEAP_FREE_ALL);
-    mem1_heap = NULL;
+    if (ProcUIInForeground()) {
+        MEMDestroyExpHeap(mem1_heap);
+        MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1), MEM_FRM_HEAP_FREE_ALL);
+        mem1_heap = NULL;
 
-    MEMDestroyExpHeap(bucket_heap);
-    MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_FG), MEM_FRAME_HEAP_FREE_ALL);
-    bucket_heap = NULL;
+        MEMDestroyExpHeap(bucket_heap);
+        MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_FG), MEM_FRM_HEAP_FREE_ALL);
+        bucket_heap = NULL;
+    }
 }
 
 /* some wrappers */
