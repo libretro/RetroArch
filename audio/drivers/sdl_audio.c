@@ -423,14 +423,16 @@ static void *sdl_audio_init_microphone(void *data,
       goto error;
    }
 
-   *new_rate        = out.freq;
+   if (new_rate)
+      *new_rate = out.freq;
+
 #ifdef HAVE_THREADS
    microphone->lock = slock_new();
    microphone->cond = scond_new();
 #endif
 
    RARCH_LOG("[SDL audio]: Requested %u ms latency for input device, got %d ms\n",
-             latency, (int)(out.samples * 4 * 1000 / (*new_rate)));
+             latency, (int)(out.samples * 4 * 1000 / out.freq));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
    bufsize                   = out.samples * 4 * sizeof(int16_t);
