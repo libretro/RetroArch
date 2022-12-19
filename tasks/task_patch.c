@@ -36,6 +36,10 @@
 #include "../verbosity.h"
 #include "../configuration.h"
 
+#if HAVE_XDELTA
+#include "../deps/xdelta3/xdelta3.h"
+#endif
+
 enum bps_mode
 {
    SOURCE_READ = 0,
@@ -57,7 +61,8 @@ enum patch_error
    PATCH_TARGET_INVALID,
    PATCH_SOURCE_CHECKSUM_INVALID,
    PATCH_TARGET_CHECKSUM_INVALID,
-   PATCH_PATCH_CHECKSUM_INVALID
+   PATCH_PATCH_CHECKSUM_INVALID,
+   PATCH_PATCH_UNSUPPORTED
 };
 
 struct bps_data
@@ -611,6 +616,119 @@ static enum patch_error ips_apply_patch(
    return PATCH_PATCH_INVALID;
 }
 
+/*
+ * For simplicity, this function makes two passes over the patch.
+ * The first pass is to compute the size of the patched file,
+ * and the second is to actually patch the file.
+ *
+ * This way, we only need to allocate memory once, instead of calling realloc()
+ * over and over.
+ */
+static enum patch_error xdelta_apply_patch(
+        const uint8_t *patchdata, uint64_t patchlen,
+        const uint8_t *sourcedata, uint64_t sourcelength,
+        uint8_t **targetdata, uint64_t *targetlength)
+{
+#if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
+   enum patch_error error_patch = PATCH_SUCCESS;
+   xd3_stream stream;
+   xd3_config config;
+   xd3_source source;
+
+   /* Validate the magic number, as given by RFC 3284 section 4.1 */
+   if (patchlen      < 8    ||
+       patchdata[0] != 0xD6 ||
+       patchdata[1] != 0xC3 ||
+       patchdata[2] != 0xC4 ||
+       patchdata[3] != 0x00)
+      return PATCH_PATCH_INVALID_HEADER;
+
+   xd3_init_config(&config, XD3_SKIP_EMIT);
+   /* The first pass is just to compute the buffer size,
+    * no need to emit patched data yet */
+
+   if (xd3_config_stream(&stream, &config) != 0)
+      /* Initialize the stream and config. If that fails... */
+      return PATCH_UNKNOWN; /* Exceedingly unlikely */
+
+   memset(&source, 0, sizeof(source));
+   source.name     = "In-Memory";
+   source.blksize  = sourcelength;
+   source.onblk    = sourcelength;
+   source.curblk   = sourcedata;
+   source.curblkno = 0;
+
+   if (xd3_set_source_and_size(&stream, &source, sourcelength) != 0)
+   { /* Set the data source. If that fails... */
+      error_patch = PATCH_SOURCE_INVALID;
+      goto cleanup_stream;
+   }
+
+   do
+   { /* Make a first pass over the patch, to compute the target size. */
+      int ret = 0;
+      switch (ret = xd3_decode_input(&stream))
+      { /* xd3 works like a zlib-styled state machine (stream is the machine) */
+         case XD3_INPUT: /* When starting the first pass, provide the input */
+            xd3_avail_input(&stream, patchdata, patchlen);
+            RARCH_DBG("[xdelta] Provided %lu bytes of input to xd3_stream: %s\n", patchlen, stream.msg);
+            break;
+         case XD3_GOTHEADER:
+         case XD3_WINSTART:
+            *targetlength += stream.winsize;
+            RARCH_DBG("[xdelta] Discovered a window of %lu bytes (target filesize is %lu bytes)\n", stream.winsize, *targetlength);
+            /* xdelta updates the active stream window in the GOTHEADER and WINSTART states */
+            break;
+         case XD3_OUTPUT:
+            xd3_consume_output(&stream); /* Need to call this after every output */
+            RARCH_DBG("[xdelta] Consumed output from xd3_stream: %s\n", stream.msg);
+            break;
+         case XD3_INVALID_INPUT:
+            error_patch = PATCH_PATCH_INVALID;
+            RARCH_DBG("[xdelta] Invalid input in xd3_stream: %s\n", stream.msg);
+            goto cleanup_stream;
+         case XD3_INTERNAL:
+            error_patch = PATCH_UNKNOWN;
+            RARCH_DBG("[xdelta] Internal error in xd3_stream: %s\n", stream.msg);
+            goto cleanup_stream;
+         default:
+            RARCH_DBG("[xdelta] xd3_decode_input returned %ld (%s; %s)\n", ret, xd3_strerror(ret), stream.msg);
+      }
+   } while (stream.avail_in > 0 || stream.avail_out > 0);
+
+   *targetdata = malloc(*targetlength);
+   if (*targetdata == NULL)
+   { /* If we couldn't allocate memory for the patched file... */
+      error_patch = PATCH_TARGET_ALLOC_FAILED;
+      goto cleanup_stream;
+   }
+
+   switch (xd3_decode_memory(
+           patchdata, patchlen,
+           sourcedata, sourcelength,
+           *targetdata, targetlength, *targetlength, 0))
+   {
+      case 0: /* Success */
+         break;
+      case ENOSPC:
+         error_patch = PATCH_TARGET_ALLOC_FAILED;
+         free(*targetdata);
+         goto cleanup_stream;
+      default:
+         error_patch = PATCH_UNKNOWN;
+         free(*targetdata);
+         goto cleanup_stream;
+   }
+
+cleanup_stream:
+   xd3_close_stream(&stream);
+   xd3_free_stream(&stream);
+   return error_patch;
+#else /* HAVE_PATCH is defined and HAVE_XDELTA is defined */
+   return PATCH_PATCH_UNSUPPORTED;
+#endif
+}
+
 static bool apply_patch_content(uint8_t **buf,
       ssize_t *size, const char *patch_desc, const char *patch_path,
       patch_func_t func, void *patch_data, int64_t patch_size)
@@ -738,6 +856,34 @@ static bool try_ips_patch(bool allow_ips,
    return false;
 }
 
+static bool try_xdelta_patch(bool allow_xdelta,
+                          const char *name_xdelta, uint8_t **buf, ssize_t *size)
+{
+#if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
+   if (     allow_xdelta
+            && !string_is_empty(name_xdelta)
+            && path_is_valid(name_xdelta)
+           )
+   {
+      int64_t patch_size;
+      bool ret                 = false;
+      void *patch_data         = NULL;
+
+      if (!filestream_read_file(name_xdelta, &patch_data, &patch_size))
+         return false;
+
+      if (patch_size >= 0)
+         ret = apply_patch_content(buf, size, "Xdelta", name_xdelta,
+                                   xdelta_apply_patch, patch_data, patch_size);
+
+      if (patch_data)
+         free(patch_data);
+      return ret;
+    }
+#endif
+    return false;
+}
+
 /**
  * patch_content:
  * @buf          : buffer of the content file.
@@ -750,20 +896,24 @@ bool patch_content(
       bool is_ips_pref,
       bool is_bps_pref,
       bool is_ups_pref,
+      bool is_xdelta_pref,
       const char *name_ips,
       const char *name_bps,
       const char *name_ups,
+      const char *name_xdelta,
       uint8_t **buf,
       void *data)
 {
-   ssize_t *size    = (ssize_t*)data;
-   bool allow_ups   = !is_bps_pref && !is_ips_pref;
-   bool allow_ips   = !is_ups_pref && !is_bps_pref;
-   bool allow_bps   = !is_ups_pref && !is_ips_pref;
+   ssize_t *size     = (ssize_t*)data;
+   bool allow_ups    = !is_bps_pref && !is_ips_pref && !is_xdelta_pref;
+   bool allow_ips    = !is_ups_pref && !is_bps_pref && !is_xdelta_pref;
+   bool allow_bps    = !is_ups_pref && !is_ips_pref && !is_xdelta_pref;
+   bool allow_xdelta = !is_bps_pref && !is_ups_pref && !is_ips_pref;
 
    if (    (unsigned)is_ips_pref
          + (unsigned)is_bps_pref
-         + (unsigned)is_ups_pref > 1)
+         + (unsigned)is_ups_pref
+         + (unsigned)is_xdelta_pref > 1)
    {
       RARCH_WARN("%s\n",
             msg_hash_to_str(MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED));
@@ -773,16 +923,19 @@ bool patch_content(
    /* Attempt to apply first (non-indexed) patch */
    if (     try_ips_patch(allow_ips, name_ips, buf, size)
          || try_bps_patch(allow_bps, name_bps, buf, size)
-         || try_ups_patch(allow_ups, name_ups, buf, size))
+         || try_ups_patch(allow_ups, name_ups, buf, size)
+         || try_xdelta_patch(allow_xdelta, name_xdelta, buf, size))
    {
       /* A patch has been found. Now attempt to apply
        * any additional 'indexed' patch files */
-      size_t name_ips_len    = strlen(name_ips);
-      size_t name_bps_len    = strlen(name_bps);
-      size_t name_ups_len    = strlen(name_ups);
-      char *name_ips_indexed = (char*)malloc((name_ips_len + 2) * sizeof(char));
-      char *name_bps_indexed = (char*)malloc((name_bps_len + 2) * sizeof(char));
-      char *name_ups_indexed = (char*)malloc((name_ups_len + 2) * sizeof(char));
+      size_t name_ips_len       = strlen(name_ips);
+      size_t name_bps_len       = strlen(name_bps);
+      size_t name_ups_len       = strlen(name_ups);
+      size_t name_xdelta_len    = strlen(name_xdelta);
+      char *name_ips_indexed    = (char*)malloc((name_ips_len + 2) * sizeof(char));
+      char *name_bps_indexed    = (char*)malloc((name_bps_len + 2) * sizeof(char));
+      char *name_ups_indexed    = (char*)malloc((name_ups_len + 2) * sizeof(char));
+      char *name_xdelta_indexed = (char*)malloc((name_xdelta_len + 2) * sizeof(char));
       /* First patch already applied -> index
        * for subsequent patches starts at 1 */
       size_t patch_index     = 1;
@@ -790,12 +943,14 @@ bool patch_content(
       strlcpy(name_ips_indexed, name_ips, (name_ips_len + 1) * sizeof(char));
       strlcpy(name_bps_indexed, name_bps, (name_bps_len + 1) * sizeof(char));
       strlcpy(name_ups_indexed, name_ups, (name_ups_len + 1) * sizeof(char));
+      strlcpy(name_xdelta_indexed, name_xdelta, (name_xdelta_len + 1) * sizeof(char));
 
       /* Ensure that we NUL terminate *after* the
        * index character */
       name_ips_indexed[name_ips_len + 1] = '\0';
       name_bps_indexed[name_bps_len + 1] = '\0';
       name_ups_indexed[name_ups_len + 1] = '\0';
+      name_xdelta_indexed[name_xdelta_len + 1] = '\0';
 
       /* try to patch "*.ipsX" */
       while (patch_index < 10)
@@ -815,10 +970,12 @@ bool patch_content(
          name_ips_indexed[name_ips_len] = index_char;
          name_bps_indexed[name_bps_len] = index_char;
          name_ups_indexed[name_ups_len] = index_char;
+         name_xdelta_indexed[name_xdelta_len] = index_char;
 
          if (     !try_ips_patch(allow_ips, name_ips_indexed, buf, size)
                && !try_bps_patch(allow_bps, name_bps_indexed, buf, size)
-               && !try_ups_patch(allow_ups, name_ups_indexed, buf, size))
+               && !try_ups_patch(allow_ups, name_ups_indexed, buf, size)
+               && !try_xdelta_patch(allow_xdelta, name_xdelta_indexed, buf, size))
             break;
 
          patch_index++;
@@ -827,6 +984,7 @@ bool patch_content(
       free(name_ips_indexed);
       free(name_bps_indexed);
       free(name_ups_indexed);
+      free(name_xdelta_indexed);
 
       return true;
    }
