@@ -1064,6 +1064,7 @@
 
 /* Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults. */
 #define DEFAULT_AUDIO_DEVICE NULL
+#define DEFAULT_MICROPHONE_DEVICE NULL
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */

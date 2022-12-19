@@ -431,6 +431,7 @@ typedef struct settings
       char input_keyboard_layout[64];
 
       char audio_device[255];
+      char microphone_device[255];
       char camera_device[255];
       char netplay_mitm_server[255];
 
