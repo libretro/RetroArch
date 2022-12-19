@@ -58,8 +58,10 @@
 
 #include "wiiu_dbg.h"
 
+#include <coreinit/title.h>
 #include <coreinit/dynload.h>
 #include <proc_ui/procui.h>
+#include <sysapp/launch.h>
 #include <gx2/event.h>
 #include <coreinit/foreground.h>
 #include <padscore/kpad.h>
@@ -77,11 +79,12 @@
  */
 
 #ifndef IS_SALAMANDER
+static enum frontend_fork wiiu_fork_mode = FRONTEND_FORK_NONE;
 static bool have_libfat_usb = false;
 static bool have_libfat_sdcard = false;
 static bool have_wfs_usb = false;
 #endif
-static bool in_aroma = false;
+static bool in_exec = false;
 
 static bool exists(char* path)
 {
@@ -212,18 +215,154 @@ static int frontend_wiiu_parse_drive_list(void* data, bool load_content)
    return 0;
 }
 
+static void frontend_wiiu_exec(const char *path, bool should_load_content)
+{
+   /* goal: make one big buffer with all the argv's, seperated by NUL. we can
+    * then pass this thru sysapp! */
+   char *argv_buf;
+   size_t n, argv_len = strlen(path) + 1; /* argv[0] plus null */
+
+#ifndef IS_SALAMANDER
+   const char *content = path_get(RARCH_PATH_CONTENT);
+   const char *content_args[2] = {content, NULL};
+#ifdef HAVE_NETWORKING
+   const char *netplay_args[NETPLAY_FORK_MAX_ARGS];
+#endif
+#endif
+   /* args will select between content_args, netplay_args, or no args (default) */
+   const char **args = NULL;
+
+   /* and some other stuff (C89) */
+   MochaRPXLoadInfo load_info = {0};
+   MochaUtilsStatus ret;
+   SYSStandardArgsIn std_args = {0};
+
+#ifndef IS_SALAMANDER
+   if (should_load_content)
+   {
+#ifdef HAVE_NETWORKING
+      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
+            (void *) netplay_args))
+      {
+         const char **cur_arg = netplay_args;
+
+         do
+            argv_len += strnlen(*cur_arg, PATH_MAX_LENGTH) + 1;
+         while (*(++cur_arg));
+
+         args = netplay_args;
+      } else
+#endif
+      if (!string_is_empty(content))
+      {
+         argv_len += strnlen(content, PATH_MAX_LENGTH) + 1;
+         args = content_args;
+      }
+   }
+#endif
+
+   argv_buf = malloc(argv_len);
+   argv_buf[0] = '\0';
+
+   n = strlcpy(argv_buf, path, argv_len);
+   n++; /* leave room for the NUL */
+   if (args)
+   {
+      const char **cur_arg = args;
+      do
+      {
+         n += strlcpy(argv_buf + n, *cur_arg, argv_len - n);
+         n++;
+      } while (*(++cur_arg));
+   }
+
+   if (string_starts_with(path, "fs:/vol/external01/"))
+      path_relative_to(load_info.path, path, "fs:/vol/external01/", sizeof(load_info.path));
+   else if (string_starts_with(path, "sd:/"))
+      path_relative_to(load_info.path, path, "sd:/", sizeof(load_info.path));
+   else goto cleanup; /* bail if not on the SD card */
+
+   /* Mocha might not be init'd (Salamander) */
+   if (Mocha_InitLibrary() != MOCHA_RESULT_SUCCESS)
+      goto cleanup;
+
+   load_info.target = LOAD_RPX_TARGET_SD_CARD;
+   ret = Mocha_PrepareRPXLaunch(&load_info);
+   if (ret != MOCHA_RESULT_SUCCESS)
+      goto cleanup;
+
+   std_args.argString = argv_buf;
+   std_args.size = argv_len;
+   ret = Mocha_LaunchHomebrewWrapperEx(&std_args);
+   if (ret != MOCHA_RESULT_SUCCESS)
+   {
+      MochaRPXLoadInfo load_info_revert;
+      load_info_revert.target = LOAD_RPX_TARGET_EXTRA_REVERT_PREPARE;
+      Mocha_PrepareRPXLaunch(&load_info_revert);
+      goto cleanup;
+   }
+
+   in_exec = true;
+
+   cleanup:
+   free(argv_buf);
+   argv_buf = NULL;
+}
+
+static void frontend_wiiu_exitspawn(char *s, size_t len, char *args)
+{
+   bool should_load_content = false;
+#ifndef IS_SALAMANDER
+   if (wiiu_fork_mode == FRONTEND_FORK_NONE)
+      return;
+
+   switch (wiiu_fork_mode)
+   {
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         should_load_content = true;
+         break;
+      default:
+         break;
+   }
+#endif
+   frontend_wiiu_exec(s, should_load_content);
+}
+
+#ifndef IS_SALAMANDER
+static bool frontend_wiiu_set_fork(enum frontend_fork fork_mode)
+{
+   switch (fork_mode)
+   {
+      case FRONTEND_FORK_CORE:
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         wiiu_fork_mode = fork_mode;
+         break;
+      case FRONTEND_FORK_RESTART:
+         /* NOTE: We don't implement Salamander, so just turn
+          * this into FRONTEND_FORK_CORE. */
+         wiiu_fork_mode = FRONTEND_FORK_CORE;
+         break;
+      case FRONTEND_FORK_NONE:
+      default:
+         return false;
+   }
+
+   return true;
+}
+#endif
+
 frontend_ctx_driver_t frontend_ctx_wiiu =
 {
    frontend_wiiu_get_env_settings,
    frontend_wiiu_init,
    frontend_wiiu_deinit,
-   NULL, /* exitspawn */
-   NULL, /* process_args */
-   NULL, /* exec */
+   frontend_wiiu_exitspawn,
+   NULL,                     /* process_args */
+   frontend_wiiu_exec,
 #ifdef IS_SALAMANDER
    NULL, /* set_fork */
 #else
-   NULL, /* set_fork */
+   frontend_wiiu_set_fork,
 #endif
    frontend_wiiu_shutdown,
    NULL, /* get_name */
@@ -258,6 +397,7 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
 /* main() and its supporting functions */
 
 static void main_setup(void);
+static void get_arguments(int *argc, char ***argv);
 #ifndef IS_SALAMANDER
 static void main_loop(void);
 #endif
@@ -278,6 +418,7 @@ int main(int argc, char** argv)
 {
    proc_setup();
    main_setup();
+   get_arguments(&argc, &argv);
 
 #ifdef IS_SALAMANDER
    int salamander_main(int argc, char** argv);
@@ -313,10 +454,33 @@ static void main_teardown(void)
    deinit_os_exceptions();
 }
 
+// https://github.com/devkitPro/wut/blob/7d9fa9e416bffbcd747f1a8e5701fd6342f9bc3d/libraries/libwhb/src/proc.c
+
+#define HBL_TITLE_ID (0x0005000013374842)
+#define MII_MAKER_JPN_TITLE_ID (0x000500101004A000)
+#define MII_MAKER_USA_TITLE_ID (0x000500101004A100)
+#define MII_MAKER_EUR_TITLE_ID (0x000500101004A200)
+
+static bool in_hbl = false;
+static bool in_aroma = false;
+
 static void proc_setup(void)
 {
+   uint64_t titleID = OSGetTitleID();
+
+   /* Homebrew Launcher does not like the standard ProcUI application loop, sad! */
+   if (titleID == HBL_TITLE_ID ||
+       titleID == MII_MAKER_JPN_TITLE_ID ||
+       titleID == MII_MAKER_USA_TITLE_ID ||
+       titleID == MII_MAKER_EUR_TITLE_ID)
+   {
+      /* Important: OSEnableHomeButtonMenu must come before ProcUIInitEx. */
+      OSEnableHomeButtonMenu(FALSE);
+      in_hbl = true;
+   }
+
+   /* Detect Aroma explicitly (it's possible to run under H&S while using Tiramisu) */
    OSDynLoad_Module rpx_module;
-   // Explicitly detect Aroma
    if (OSDynLoad_Acquire("homebrew_rpx_loader", &rpx_module) == OS_DYNLOAD_OK)
    {
       in_aroma = true;
@@ -328,12 +492,79 @@ static void proc_setup(void)
 
 static void proc_exit(void)
 {
+   /* If we're doing a normal exit while running under HBL, we must SYSRelaunchTitle.
+    * If we're in an exec (i.e. launching mocha homebrew wrapper) we must *not* do that. yay! */
+   if (in_hbl && !in_exec)
+      SYSRelaunchTitle(0, NULL);
+
+   /* Similar deal for Aroma, but exit to menu. */
+   if (!in_hbl && !in_exec)
+      SYSLaunchMenu();
+
+   /* Now just tell the OS that we really are ok to exit */
+   if (!ProcUIInShutdown())
+   {
+      for (;;)
+      {
+         ProcUIStatus status;
+         status = ProcUIProcessMessages(TRUE);
+         if (status == PROCUI_STATUS_EXITING)
+            break;
+         else if (status == PROCUI_STATUS_RELEASE_FOREGROUND)
+            ProcUIDrawDoneRelease();
+      }
+   }
+
    ProcUIShutdown();
 }
 
 static void proc_save_callback(void)
 {
    OSSavesDone_ReadyToRelease();
+}
+
+static void sysapp_arg_cb(SYSDeserializeArg *arg, void *usr)
+{
+   SYSStandardArgs *std_args = (SYSStandardArgs *) usr;
+
+   if (_SYSDeserializeStandardArg(arg, std_args))
+      return;
+
+   if (strcmp(arg->argName, "sys:pack") == 0)
+      SYSDeserializeSysArgsFromBlock(arg->data, arg->size, sysapp_arg_cb, usr);
+}
+
+static void get_arguments(int *argc, char ***argv)
+{
+#ifdef HAVE_NETWORKING
+   static char *_argv[1 + NETPLAY_FORK_MAX_ARGS];
+#else
+   static char* _argv[2];
+#endif
+   int _argc = 0;
+   SYSStandardArgs std_args = {0};
+
+   /* we could do something more rich with the content path and things here -
+    * but since there's not a great way to actually pass that info along to RA,
+    * just emulate argc/argv */
+   SYSDeserializeSysArgs(sysapp_arg_cb, &std_args);
+
+   char *argv_buf = std_args.anchorData;
+   size_t argv_len = std_args.anchorSize;
+   if (!argv_buf || argv_len == 0)
+      return;
+
+   size_t n = 0;
+   while (n < argv_len && _argc < ARRAY_SIZE(_argv))
+   {
+      char *s = argv_buf + n;
+      _argv[_argc++] = s;
+      n += strlen(s);
+      n++; /* skip the null */
+   }
+
+   *argc = _argc;
+   *argv = _argv;
 }
 
 #ifndef IS_SALAMANDER

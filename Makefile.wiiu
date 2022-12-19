@@ -41,11 +41,14 @@ OBJ += wiiu/system/missing_libc_functions.o
 OBJ += wiiu/system/stubs_rpl.o
 
 ifeq ($(SALAMANDER_BUILD),1)
-   DEFINES += -DRARCH_CONSOLE -DIS_SALAMANDER
+   DEFINES += -DRARCH_CONSOLE -DIS_SALAMANDER -DHAVE_LIBMOCHA
+
+   INCDIRS += -Ideps/libmocha/include
 
    OBJ += frontend/frontend_salamander.o
    OBJ += frontend/frontend_driver.o
    OBJ += frontend/drivers/platform_wiiu.o
+   OBJ += deps/libmocha/source/utils.o
    OBJ += libretro-common/encodings/encoding_utf.o
    OBJ += libretro-common/compat/compat_strcasestr.o
    OBJ += libretro-common/compat/fopen_utf8.o
