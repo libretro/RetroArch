@@ -22,11 +22,21 @@
 #ifndef _XDELTA3_H_
 #define _XDELTA3_H_
 
+#define _POSIX_SOURCE 200112L
+#define _ISOC99_SOURCE
+#define _C99_SOURCE
 /* To include RetroArch's INLINE macro */
-#include <retro_inline.h>
+#include "retro_inline.h"
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <assert.h>
+#include <errno.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -106,9 +116,46 @@
 #ifndef _WIN32
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
-#endif /* _WIN32 defined */
-
 #include <stdint.h>
+#else /* WIN32 case */
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#ifndef WINVER
+#if XD3_USE_LARGEFILE64
+/* 64 bit file offsets: uses GetFileSizeEx and SetFilePointerEx. */
+#define WINVER		0x0500
+#define _WIN32_WINNT	0x0500
+#else /* xoff_t is 32bit */
+/* 32 bit file offsets: uses GetFileSize and SetFilePointer. */
+#define WINVER		0x0400
+#define _WIN32_WINNT	0x0400
+#endif /* if XD3_USE_LARGEFILE64 */
+#endif /* ifndef WINVER */
+
+#include <windows.h>
+
+/* _MSV_VER is defined by Microsoft tools, not by Mingw32 */
+#ifdef _MSC_VER
+typedef signed int     ssize_t;
+typedef int pid_t;
+#if _MSC_VER < 1600
+typedef unsigned char  uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned long  uint32_t;
+typedef ULONGLONG      uint64_t;
+#else /* _MSC_VER >= 1600 */
+/* For MSVC10 and above */
+#include <stdint.h>
+#define inline __inline
+#endif /* _MSC_VER < 1600 */
+#else /* _MSC_VER not defined  */
+/* Mingw32 */
+#include <stdint.h>
+#endif /* _MSC_VER defined */
+
+#endif /* _WIN32 defined */
 
 #if SIZE_MAX == UINT64_MAX
 #define SIZEOF_SIZE_T 8
@@ -147,6 +194,12 @@
 
 #ifndef _FILE_OFFSET_BITS
 #define _FILE_OFFSET_BITS 64
+#endif
+
+_Static_assert(SIZEOF_SIZE_T == sizeof(size_t), "SIZEOF_SIZE_T not correctly set");
+
+#ifdef SIZEOF_UNSIGNED_LONG_LONG
+_Static_assert(SIZEOF_UNSIGNED_LONG_LONG == sizeof(unsigned long long), "SIZEOF_UNSIGNED_LONG_LONG not correctly set");
 #endif
 
 /* Set a xoff_t typedef and the "Q" printf insert. */
@@ -229,8 +282,10 @@ typedef uint32_t usize_t;
 #error Bad configure script
 #endif /* size_t printf flags */
 
-#define USE_UINT32 (SIZEOF_USIZE_T == 4 || SIZEOF_XOFF_T == 4 )
-#define USE_UINT64 (SIZEOF_USIZE_T == 8 || SIZEOF_XOFF_T == 8 )
+#define USE_UINT32 (SIZEOF_USIZE_T == 4 || \
+		    SIZEOF_XOFF_T == 4 || REGRESSION_TEST)
+#define USE_UINT64 (SIZEOF_USIZE_T == 8 || \
+		    SIZEOF_XOFF_T == 8 || REGRESSION_TEST)
 
 #ifndef UNALIGNED_OK
 #ifdef HAVE_ALIGNED_ACCESS_REQUIRED
@@ -246,6 +301,37 @@ typedef uint32_t usize_t;
 /* Whether to build the encoder, otherwise only build the decoder. */
 #ifndef XD3_ENCODER
 #define XD3_ENCODER 1
+#endif
+
+/* The code returned when main() fails, also defined in system
+   includes. */
+#ifndef EXIT_FAILURE
+#define EXIT_FAILURE 1
+#endif
+
+/* REGRESSION TEST enables the "xdelta3 test" command, which runs a
+   series of self-tests. */
+#ifndef REGRESSION_TEST
+#define REGRESSION_TEST 0
+#endif
+
+/* XD3_DEBUG=1 enables assertions and various statistics.  Levels > 1
+ * enable some additional output only useful during development and
+ * debugging. */
+#ifndef XD3_DEBUG
+#define XD3_DEBUG 0
+#endif
+
+#ifndef PYTHON_MODULE
+#define PYTHON_MODULE 0
+#endif
+
+#ifndef SWIG_MODULE
+#define SWIG_MODULE 0
+#endif
+
+#ifndef NOT_MAIN
+#define NOT_MAIN 0
 #endif
 
 /* There are three string matching functions supplied: one fast, one
@@ -268,6 +354,10 @@ typedef uint32_t usize_t;
 #endif
 #ifndef XD3_BUILD_DEFAULT
 #define XD3_BUILD_DEFAULT 1
+#endif
+
+#if XD3_DEBUG
+#include <stdio.h>
 #endif
 
 typedef struct _xd3_stream             xd3_stream;
@@ -309,6 +399,52 @@ typedef int    (xd3_getblk_func)   (xd3_stream *stream,
 				    xoff_t      blkno);
 
 typedef const xd3_dinst* (xd3_code_table_func) (void);
+
+
+#ifdef _WIN32
+#define vsnprintf_func _vsnprintf
+#define snprintf_func _snprintf
+#else
+#define vsnprintf_func vsnprintf
+#define snprintf_func snprintf
+#endif
+
+/* Type used for short snprintf calls. */
+typedef struct {
+  char buf[48];
+} shortbuf;
+
+#ifndef PRINTF_ATTRIBUTE
+#ifdef __GNUC__
+#define PRINTF_ATTRIBUTE(x,y) __attribute__ ((__format__ (__printf__, x, y)))
+#else
+#define PRINTF_ATTRIBUTE(x,y)
+#endif
+#endif
+
+/* Underlying xprintf() */
+int xsnprintf_func (char *str, size_t n, const char *fmt, ...)
+  PRINTF_ATTRIBUTE(3,4);
+
+/* XPR(NT "", ...) (used by main) prefixes an "xdelta3: " to the output. */
+void xprintf(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
+#define XPR xprintf
+#define NT "xdelta3: "
+#define NTR ""
+/* DP(RINT ...) */
+#define DP   xprintf
+#define RINT ""
+
+#if XD3_DEBUG
+#define XD3_ASSERT(x)				     \
+  do {						     \
+    if (! (x)) {				     \
+      DP(RINT "%s:%d: XD3 assertion failed: %s\n",   \
+	 __FILE__, __LINE__, #x);		     \
+      abort (); } } while (0)
+#else
+#define XD3_ASSERT(x) (void)0
+#endif  /* XD3_DEBUG */
 
 #define xd3_max(x,y) ((x) < (y) ? (y) : (x))
 #define xd3_min(x,y) ((x) < (y) ? (x) : (y))
@@ -990,6 +1126,14 @@ struct _xd3_stream
   xoff_t            l_run;
 
   usize_t           i_slots_used;
+
+#if XD3_DEBUG
+  usize_t            large_ckcnt;
+
+  /* memory usage */
+  usize_t            alloc_cnt;
+  usize_t            free_cnt;
+#endif
 };
 
 /**************************************************************************
@@ -1244,6 +1388,14 @@ void    xd3_avail_input  (xd3_stream    *stream,
 			  const uint8_t *idata,
 			  usize_t         isize)
 {
+  /* Even if isize is zero, the code expects a non-NULL idata.  Why?
+   * It uses this value to determine whether xd3_avail_input has ever
+   * been called.  If xd3_encode_input is called before
+   * xd3_avail_input it will return XD3_INPUT right away without
+   * allocating a stream->winsize buffer.  This is to avoid an
+   * unwanted allocation. */
+  XD3_ASSERT (idata != NULL || isize == 0);
+
   stream->next_in  = idata;
   stream->avail_in = isize;
 }
@@ -1274,6 +1426,9 @@ usize_t xd3_encoder_srclen (xd3_stream *stream) {
 static INLINE
 void xd3_set_flags (xd3_stream *stream, uint32_t flags)
 {
+  /* The bitwise difference should contain only XD3_FLUSH or
+     XD3_SKIP_WINDOW */
+  XD3_ASSERT(((flags ^ stream->flags) & ~(XD3_FLUSH | XD3_SKIP_WINDOW)) == 0);
   stream->flags = flags;
 }
 
@@ -1296,6 +1451,7 @@ void xd3_blksize_div (const xoff_t offset,
 		      usize_t *blkoff) {
   *blkno = offset >> source->shiftby;
   *blkoff = offset & source->maskby;
+  XD3_ASSERT (*blkoff < source->blksize);
 }
 
 static INLINE
@@ -1315,6 +1471,8 @@ void xd3_blksize_add (xoff_t *blkno,
       *blkno += blkdiff;
       *blkoff &= source->maskby;
     }
+
+  XD3_ASSERT (*blkoff < source->blksize);
 }
 
 #ifdef __cplusplus
@@ -1326,6 +1484,22 @@ void xd3_blksize_add (xoff_t *blkno,
 #define  XD3_RUN 2U
 #define  XD3_CPY 3U /* XD3_CPY rtypes are represented as (XD3_CPY +
                      * copy-mode value) */
+
+#if XD3_DEBUG
+#define IF_DEBUG(x) x
+#else
+#define IF_DEBUG(x)
+#endif
+#if XD3_DEBUG > 1
+#define IF_DEBUG1(x) x
+#else
+#define IF_DEBUG1(x)
+#endif
+#if XD3_DEBUG > 2
+#define IF_DEBUG2(x) x
+#else
+#define IF_DEBUG2(x)
+#endif
 
 #define SIZEOF_ARRAY(x) (sizeof(x) / sizeof(x[0]))
 

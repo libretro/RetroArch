@@ -20,6 +20,31 @@
 #include "retro_inline.h"
 #include "xdelta3.h"
 
+typedef struct _main_file        main_file;
+typedef struct _main_extcomp     main_extcomp;
+
+void main_buffree (void *ptr);
+void* main_bufalloc (size_t size);
+void main_file_init (main_file *xfile);
+int main_file_close (main_file *xfile);
+void main_file_cleanup (main_file *xfile);
+int main_file_isopen (main_file *xfile);
+int main_file_open (main_file *xfile, const char* name, int mode);
+int main_file_exists (main_file *xfile);
+int main_file_stat (main_file *xfile, xoff_t *size);
+int xd3_whole_append_window (xd3_stream *stream);
+int xd3_main_cmdline (int argc, char **argv);
+int main_file_read (main_file  *ifile,
+		    uint8_t    *buf,
+		    size_t     size,
+		    size_t    *nread,
+		    const char *msg);
+int main_file_write (main_file *ofile, uint8_t *buf, 
+		     usize_t size, const char *msg);
+void* main_malloc (size_t size);
+void main_free (void *ptr);
+
+int test_compare_files (const char* f0, const char* f1);
 usize_t xd3_bytes_on_srcblk (xd3_source *src, xoff_t blkno);
 xoff_t xd3_source_eof(const xd3_source *src);
 
@@ -39,6 +64,7 @@ xd3_output* xd3_alloc_output (xd3_stream *stream,
 
 int xd3_encode_init_full (xd3_stream *stream);
 usize_t xd3_pow2_roundup (usize_t x);
+long get_millisecs_now (void);
 int xd3_process_stream (int            is_encode,
 			xd3_stream    *stream,
 			int          (*func) (xd3_stream *),
@@ -48,6 +74,67 @@ int xd3_process_stream (int            is_encode,
 			uint8_t       *output,
 			usize_t       *output_size,
 			usize_t        output_size_max);
+
+#if PYTHON_MODULE || SWIG_MODULE || NOT_MAIN
+int xd3_main_cmdline (int argc, char **argv);
+#endif
+
+#if REGRESSION_TEST
+int xd3_selftest (void);
+#endif
+
+/* main_file->mode values */
+typedef enum
+{
+  XO_READ  = 0,
+  XO_WRITE = 1
+} main_file_modes;
+
+#ifndef XD3_POSIX
+#define XD3_POSIX 0
+#endif
+#ifndef XD3_STDIO
+#define XD3_STDIO 0
+#endif
+#ifndef XD3_WIN32
+#define XD3_WIN32 0
+#endif
+#ifndef NOT_MAIN
+#define NOT_MAIN 0
+#endif
+
+/* If none are set, default to posix. */
+#if (XD3_POSIX + XD3_STDIO + XD3_WIN32) == 0
+#undef XD3_POSIX
+#define XD3_POSIX 1
+#endif
+
+struct _main_file
+{
+#if XD3_WIN32
+  HANDLE              file;
+#elif XD3_STDIO
+  FILE               *file;
+#elif XD3_POSIX
+  int                 file;
+#endif
+
+  int                 mode;          /* XO_READ and XO_WRITE */
+  const char         *filename;      /* File name or /dev/stdin,
+				      * /dev/stdout, /dev/stderr. */
+  char               *filename_copy; /* File name or /dev/stdin,
+				      * /dev/stdout, /dev/stderr. */
+  const char         *realname;      /* File name or /dev/stdin,
+				      * /dev/stdout, /dev/stderr. */
+  const main_extcomp *compressor;    /* External compression struct. */
+  int                 flags;         /* RD_FIRST, RD_NONEXTERNAL, ... */
+  xoff_t              nread;         /* for input position */
+  xoff_t              nwrite;        /* for output position */
+  uint8_t            *snprintf_buf;  /* internal snprintf() use */
+  int                 size_known;    /* Set by main_set_souze */
+  xoff_t              source_position;  /* for avoiding seek in getblk_func */
+  int                 seek_failed;   /* after seek fails once, try FIFO */
+};
 
 #ifndef UINT32_MAX
 #define UINT32_MAX 4294967295U

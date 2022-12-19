@@ -65,9 +65,31 @@ static INLINE int xd3_decode_bits (xd3_stream     *stream,
 
  done:
 
+  IF_DEBUG2 (DP(RINT "(d) %"W"u ", value));
+
   (*valuep) = value;
   return 0;
 }
+
+#if REGRESSION_TEST
+/* There may be extra bits at the end of secondary decompression, this macro
+ * checks for non-zero bits.  This is overly strict, but helps pass the
+ * single-bit-error regression test. */
+static int
+xd3_test_clean_bits (xd3_stream *stream, bit_state *bits)
+{
+  for (; bits->cur_mask != 0x100; bits->cur_mask <<= 1)
+    {
+      if (bits->cur_byte & bits->cur_mask)
+	{
+	  stream->msg = "secondary decoder garbage";
+	  return XD3_INTERNAL;
+	}
+    }
+
+  return 0;
+}
+#endif
 
 static int
 xd3_get_secondary (xd3_stream *stream, xd3_sec_stream **sec_streamp, 
@@ -198,14 +220,22 @@ static INLINE int xd3_encode_bits (xd3_stream      *stream,
   int ret;
   usize_t mask = 1 << nbits;
 
+  XD3_ASSERT (nbits > 0);
+  XD3_ASSERT (nbits < sizeof (usize_t) * 8);
+  XD3_ASSERT (value < mask);
+
   do
     {
       mask >>= 1;
 
       if ((ret = xd3_encode_bit (stream, output, bits, value & mask)))
+	{
 	  return ret;
+	}
     }
   while (mask != 1);
+
+  IF_DEBUG2 (DP(RINT "(e) %"W"u ", value));
 
   return 0;
 }
@@ -260,8 +290,18 @@ xd3_encode_secondary (xd3_stream      *stream,
       comp_size += tmp_tail->next;
     }
 
+  XD3_ASSERT (comp_size == xd3_sizeof_output (tmp_head));
+  XD3_ASSERT (tmp_tail != NULL);
+
   if (comp_size < (orig_size - SECONDARY_MIN_SAVINGS) || cfg->inefficient)
     {
+      if (comp_size < orig_size)
+	{
+	  IF_DEBUG1(DP(RINT "[encode_secondary] saved %"W"u bytes: %"W"u -> %"W"u (%0.2f%%)\n",
+		       orig_size - comp_size, orig_size, comp_size,
+		       100.0 * (double) comp_size / (double) orig_size));
+	}
+
       xd3_free_output (stream, *head);
 
       *head = tmp_head;
