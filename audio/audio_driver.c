@@ -400,8 +400,10 @@ bool audio_driver_find_driver(
  * @data                 : pointer to audio buffer.
  * @right                : amount of samples to write.
  *
- * Writes audio samples to audio driver. Will first
- * perform DSP processing (if enabled) and resampling.
+ * Writes audio samples to audio driver's output,
+ * and reads samples from the driver's input
+ * (if mic support is enabled).
+ * Will first perform DSP processing (if enabled) and resampling.
  **/
 static void audio_driver_flush(
       audio_driver_state_t *audio_st,
@@ -544,6 +546,30 @@ static void audio_driver_flush(
 
       audio_st->current_audio->write(audio_st->context_audio_data,
             output_data, output_frames * 2);
+   }
+
+   if (  audio_st->current_audio->read_microphone &&
+         audio_st->flags & AUDIO_FLAG_MIC_ACTIVE &&
+         audio_st->context_microphone_data &&
+         audio_st->current_audio->get_microphone_state(audio_st->current_audio,
+            audio_st->context_microphone_data))
+   { /* If mic support is enabled and available, and the mic is enabled... */
+      void *input_data = audio_st->input_data;
+      unsigned input_frames  = (unsigned)src_data.input_frames;
+
+      if (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
+         input_frames       *= sizeof(float);
+      else
+      {
+         convert_float_to_s16(audio_st->input_samples_conv_buf,
+                              (const float*)input_data, input_frames);
+
+         input_data          = audio_st->input_samples_conv_buf;
+         input_frames       *= sizeof(int16_t);
+      }
+
+      audio_st->current_audio->read_microphone(audio_st->context_audio_data,
+         audio_st->context_microphone_data, input_data, input_frames);
    }
 }
 
