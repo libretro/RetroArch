@@ -225,7 +225,6 @@ static bool gx_audio_use_float(void *data)
 audio_driver_t audio_gx = {
    gx_audio_init,
    gx_audio_write,
-   NULL,
    gx_audio_stop,
    gx_audio_start,
    gx_audio_alive,
@@ -236,6 +235,5 @@ audio_driver_t audio_gx = {
    NULL,
    NULL,
    gx_audio_write_avail,
-   NULL,
    gx_audio_buffer_size,
 };

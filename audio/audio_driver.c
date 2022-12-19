@@ -1694,7 +1694,6 @@ bool audio_driver_supports_microphone(const audio_driver_t* driver)
    return driver &&
           driver->init_microphone &&
           driver->free_microphone &&
-          driver->get_microphone &&
           driver->set_microphone_state &&
           driver->get_microphone_state &&
           driver->read_microphone;

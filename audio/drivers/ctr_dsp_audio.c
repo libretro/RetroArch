@@ -206,7 +206,6 @@ static size_t ctr_dsp_audio_buffer_size(void *data)
 audio_driver_t audio_ctr_dsp = {
    ctr_dsp_audio_init,
    ctr_dsp_audio_write,
-   NULL,
    ctr_dsp_audio_stop,
    ctr_dsp_audio_start,
    ctr_dsp_audio_alive,
@@ -217,6 +216,5 @@ audio_driver_t audio_ctr_dsp = {
    NULL,
    NULL,
    ctr_dsp_audio_write_avail,
-   NULL,
    ctr_dsp_audio_buffer_size
 };

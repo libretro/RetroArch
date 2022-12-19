@@ -417,7 +417,6 @@ static void alsa_device_list_free(void *data, void *array_list_data)
 audio_driver_t audio_alsa = {
    alsa_init,
    alsa_write,
-   NULL,
    alsa_stop,
    alsa_start,
    alsa_alive,
@@ -428,6 +427,5 @@ audio_driver_t audio_alsa = {
    alsa_device_list_new,
    alsa_device_list_free,
    alsa_write_avail,
-   NULL,
    alsa_buffer_size,
 };

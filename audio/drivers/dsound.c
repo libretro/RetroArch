@@ -602,7 +602,6 @@ static void dsound_device_list_free(void *u, void *slp)
 audio_driver_t audio_dsound = {
    dsound_init,
    dsound_write,
-   NULL,
    dsound_stop,
    dsound_start,
    dsound_alive,
@@ -613,6 +612,5 @@ audio_driver_t audio_dsound = {
    dsound_list_new,
    dsound_device_list_free,
    dsound_write_avail,
-   NULL,
    dsound_buffer_size,
 };

@@ -140,7 +140,6 @@ static size_t xenon360_write_avail(void *data)
 audio_driver_t audio_xenon360 = {
    xenon360_audio_init,
    xenon360_audio_write,
-   NULL,
    xenon360_audio_stop,
    xenon360_audio_start,
    xenon360_audio_alive,
@@ -151,6 +150,5 @@ audio_driver_t audio_xenon360 = {
    NULL,
    NULL,
    xenon360_write_avail,
-   NULL,
    NULL
 };

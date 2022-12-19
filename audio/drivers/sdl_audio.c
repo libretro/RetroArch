@@ -371,13 +371,6 @@ static size_t sdl_audio_write_avail(void *data)
    return 0;
 }
 
-static size_t sdl_audio_read_avail(void *data)
-{
-   /* stub */
-   (void)data;
-   return 0;
-}
-
 #if SDL_DRIVER_MIC_SUPPORT
 static void *sdl_audio_init_microphone(void *data,
    const char *device,
@@ -490,17 +483,6 @@ static void sdl_audio_free_microphone(void *data, void *microphone_context)
    }
 }
 
-static void * sdl_audio_get_microphone(const void *data, unsigned id)
-{
-   const sdl_audio_t *sdl = (const sdl_audio_t*)data;
-
-   if (id == 0 && sdl->microphone)
-      return sdl->microphone;
-   /* This driver only supports one microphone right now */
-
-   return NULL;
-}
-
 static bool sdl_audio_microphone_get_state(const void *data, const void *microphone_context)
 {
    const sdl_audio_t *sdl                   = (const sdl_audio_t*)data;
@@ -600,18 +582,15 @@ audio_driver_t audio_sdl = {
    NULL,
    NULL,
    sdl_audio_write_avail,
-   sdl_audio_read_avail,
    NULL,
 #if SDL_DRIVER_MIC_SUPPORT
    sdl_audio_init_microphone,
    sdl_audio_free_microphone,
-   sdl_audio_get_microphone,
    sdl_audio_microphone_get_state,
    sdl_audio_microphone_set_state,
    sdl_audio_read
 #else
       NULL, /* Microphone support for this driver requires SDL 2 */
-      NULL,
       NULL,
       NULL,
       NULL,

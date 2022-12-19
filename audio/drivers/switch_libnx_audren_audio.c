@@ -354,7 +354,6 @@ static void libnx_audren_audio_set_nonblock_state(void *data, bool state)
 audio_driver_t audio_switch_libnx_audren = {
    libnx_audren_audio_init,
    libnx_audren_audio_write,
-   NULL,
    libnx_audren_audio_stop,
    libnx_audren_audio_start,
    libnx_audren_audio_alive,
@@ -365,6 +364,5 @@ audio_driver_t audio_switch_libnx_audren = {
    NULL, /* device_list_new */
    NULL, /* device_list_free */
    libnx_audren_audio_write_avail,
-   NULL,
    libnx_audren_audio_buffer_size,
 };

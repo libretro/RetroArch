@@ -198,7 +198,6 @@ static bool audioio_use_float(void *data)
 audio_driver_t audio_audioio = {
    audioio_init,
    audioio_write,
-   NULL,
    audioio_stop,
    audioio_start,
    audioio_alive,
@@ -209,6 +208,5 @@ audio_driver_t audio_audioio = {
    NULL,
    NULL,
    audioio_write_avail,
-   NULL,
    audioio_buffer_size,
 };

@@ -306,7 +306,6 @@ static bool sl_use_float(void *data)
 audio_driver_t audio_opensl = {
    sl_init,
    sl_write,
-   NULL,
    sl_stop,
    sl_start,
    sl_alive,
@@ -317,6 +316,5 @@ audio_driver_t audio_opensl = {
    NULL,
    NULL,
    sl_write_avail,
-   NULL,
    sl_buffer_size,
 };

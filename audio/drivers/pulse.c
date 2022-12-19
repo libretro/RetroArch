@@ -355,7 +355,6 @@ static size_t pulse_buffer_size(void *data)
 audio_driver_t audio_pulse = {
    pulse_init,
    pulse_write,
-   NULL,
    pulse_stop,
    pulse_start,
    pulse_alive,
@@ -366,6 +365,5 @@ audio_driver_t audio_pulse = {
    NULL,
    NULL,
    pulse_write_avail,
-   NULL,
    pulse_buffer_size,
 };

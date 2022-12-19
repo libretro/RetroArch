@@ -322,7 +322,6 @@ audio_driver_t audio_ax =
 {
    ax_audio_init,
    ax_audio_write,
-   NULL, /* read */
    ax_audio_stop,
    ax_audio_start,
    ax_audio_alive,
@@ -333,6 +332,5 @@ audio_driver_t audio_ax =
    NULL, /* device_list_new */
    NULL, /* device_list_free */
    ax_audio_write_avail,
-   NULL,
    ax_audio_buffer_size,
 };

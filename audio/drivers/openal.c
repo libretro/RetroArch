@@ -263,7 +263,6 @@ static bool al_use_float(void *data)
 audio_driver_t audio_openal = {
    al_init,
    al_write,
-   NULL,
    al_stop,
    al_start,
    al_alive,
@@ -274,6 +273,5 @@ audio_driver_t audio_openal = {
    NULL,
    NULL,
    al_write_avail,
-   NULL,
    al_buffer_size,
 };

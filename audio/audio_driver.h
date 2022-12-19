@@ -168,8 +168,6 @@ typedef struct audio_driver
    /* Optional. */
    size_t (*write_avail)(void *data);
 
-   size_t (*read_avail)(void *data);
-
    size_t (*buffer_size)(void *data);
 
    /* The following microphone functions are all optional.
@@ -224,17 +222,6 @@ typedef struct audio_driver
     * while \p microphone_context will not.
     */
    void (*free_microphone)(void *data, void *microphone_context);
-
-   /**
-    * TODO gets an active microphone
-    *
-    * @param data Opaque handle to the audio driver context
-    * that was used to create the requested microphone.
-    * @param id TODO
-    * @return Opaque handle to the microphone context associated with id,
-    * or NULL if none exists.
-    */
-   void *(*get_microphone)(const void *data, unsigned id);
 
    /**
     * Queries the active state of a microphone.

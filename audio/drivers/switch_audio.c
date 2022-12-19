@@ -355,7 +355,6 @@ fail:
 audio_driver_t audio_switch = {
    switch_audio_init,
    switch_audio_write,
-   NULL,
    switch_audio_stop,
    switch_audio_start,
    switch_audio_alive,
@@ -366,6 +365,5 @@ audio_driver_t audio_switch = {
    NULL, /* device_list_new */
    NULL, /* device_list_free */
    switch_audio_write_avail,
-   NULL,
    switch_audio_buffer_size, /* buffer_size */
 };
