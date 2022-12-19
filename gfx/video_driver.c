@@ -185,6 +185,7 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
    NULL
 };
 
+/* Beware when changing this - it must match with enum aspect_ratio order */
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { 4.0f / 3.0f  , "4:3"           },
    { 16.0f / 9.0f , "16:9"          },
@@ -206,11 +207,11 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { 19.0f / 14.0f, "19:14"         },
    { 30.0f / 17.0f, "30:17"         },
    { 32.0f / 9.0f , "32:9"          },
-   { 0.0f         , "Config"        },
-   { 1.0f         , "Square pixel"  },
-   { 1.0f         , "Core provided" },
-   { 0.0f         , "Custom"        },
-   { 4.0f / 3.0f  , "Full"          }
+   { 0.0f         , ""              }, /* config -        initialized in video_driver_init_internal */
+   { 1.0f         , ""              }, /* square pixel -  initialized in video_driver_set_viewport_square_pixel */
+   { 1.0f         , ""              }, /* core provided - initialized in video_driver_init_internal */
+   { 0.0f         , ""              }, /* custom -        initialized in video_driver_init_internal */
+   { 4.0f / 3.0f  , ""              }  /* full -          initialized in video_driver_init_internal */
 };
 
 static void *video_null_init(const video_info_t *video,
@@ -1621,7 +1622,8 @@ void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom)
 
    snprintf(aspectratio_lut[ASPECT_RATIO_SQUARE].name,
          sizeof(aspectratio_lut[ASPECT_RATIO_SQUARE].name),
-         "1:1 PAR (%u:%u DAR)", aspect_x, aspect_y);
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_SQUARE_PIXEL),
+         aspect_x, aspect_y);
 
    aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
 }
@@ -3293,6 +3295,19 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    if (video_st->state_filter)
       scale  = video_st->state_scale;
 #endif
+
+   strlcpy(aspectratio_lut[ASPECT_RATIO_CONFIG].name,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG),
+         sizeof(aspectratio_lut[ASPECT_RATIO_CONFIG].name));
+   strlcpy(aspectratio_lut[ASPECT_RATIO_CORE].name,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED),
+         sizeof(aspectratio_lut[ASPECT_RATIO_CORE].name));
+   strlcpy(aspectratio_lut[ASPECT_RATIO_CUSTOM].name,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM),
+         sizeof(aspectratio_lut[ASPECT_RATIO_CUSTOM].name));
+   strlcpy(aspectratio_lut[ASPECT_RATIO_FULL].name,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL),
+         sizeof(aspectratio_lut[ASPECT_RATIO_FULL].name));
 
    /* Update core-dependent aspect ratio values. */
    video_driver_set_viewport_square_pixel(geom);
