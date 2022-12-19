@@ -204,12 +204,8 @@ static int fgk_init (xd3_stream *stream, fgk_stream *h, int is_encode)
   fgk_factor_remaining(h); /* set ZFE and ZFR */
   fgk_factor_remaining(h); /* set ZFDB according to prev state */
 
-  IF_DEBUG (memset (h->alphabet, 0, sizeof (h->alphabet[0]) * h->total_nodes));
-
   for (ui = 0; ui < h->total_blocks-1; ui += 1)
-    {
       h->block_array[ui].block_freeptr = &h->block_array[ui + 1];
-    }
 
   h->block_array[h->total_blocks - 1].block_freeptr = NULL;
   h->free_block = h->block_array;
@@ -237,8 +233,6 @@ static void fgk_swap_ptrs(fgk_node **one, fgk_node **two)
 static usize_t fgk_encode_data (fgk_stream* h, usize_t n)
 {
   fgk_node *target_ptr = h->alphabet + n;
-
-  XD3_ASSERT (n < h->alphabet_size);
 
   h->coded_depth = 0;
 
@@ -296,8 +290,6 @@ static usize_t fgk_encode_data (fgk_stream* h, usize_t n)
  */
 static INLINE fgk_bit fgk_get_encoded_bit (fgk_stream *h)
 {
-  XD3_ASSERT (h->coded_depth > 0);
-
   return h->coded_bits[--h->coded_depth];
 }
 
@@ -420,9 +412,6 @@ static void fgk_promote (fgk_stream *h, fgk_node *node)
       node->left_child &&
       node->left_child->weight == 0)
     {
-      XD3_ASSERT (node->left_child == h->remaining_zeros);
-      XD3_ASSERT (node->right_child->weight == (node->weight+1)); /* child weight was already incremented */
-      
       if (node->weight == (my_right->weight - 1) && my_right != h->root_node)
 	{
 	  fgk_free_block (h, cur_block);
@@ -624,8 +613,6 @@ static fgk_block* fgk_make_block (fgk_stream *h, fgk_node* lead)
 {
   fgk_block *ret = h->free_block;
 
-  XD3_ASSERT (h->free_block != NULL);
-
   h->free_block = h->free_block->block_freeptr;
 
   ret->block_leader = lead;
@@ -665,8 +652,6 @@ static void fgk_factor_remaining (fgk_stream *h)
  */
 static INLINE int fgk_decode_bit (fgk_stream* h, fgk_bit b)
 {
-  XD3_ASSERT (b == 1 || b == 0);
-
   if (IS_ADAPTIVE && h->decode_ptr->weight == 0)
     {
       usize_t bitsreq;
@@ -842,13 +827,6 @@ xd3_decode_fgk (xd3_stream     *stream,
 
 	  if (output == output_max)
 	    {
-	      /* During regression testing: */
-	      IF_REGRESSION ({
-		int ret;
-		bstate.cur_mask <<= 1;
-		if ((ret = xd3_test_clean_bits (stream, & bstate))) { return ret; }
-	      });
-
 	      (*output_pos) = output;
 	      (*input_pos) = input;
 	      return 0;

@@ -20,19 +20,6 @@
 #include "retro_inline.h"
 #include "xdelta3-internal.h"
 
-#if XD3_DEBUG
-#define SMALL_HASH_DEBUG1(s,inp)                                  \
-  uint32_t debug_state;                                           \
-  uint32_t debug_hval = xd3_checksum_hash (& (s)->small_hash,     \
-              xd3_scksum (&debug_state, (inp), (s)->smatcher.small_look))
-#define SMALL_HASH_DEBUG2(s,inp)                                  \
-  XD3_ASSERT (debug_hval == xd3_checksum_hash (& (s)->small_hash, \
-              xd3_scksum (&debug_state, (inp), (s)->smatcher.small_look)))
-#else
-#define SMALL_HASH_DEBUG1(s,inp)
-#define SMALL_HASH_DEBUG2(s,inp)
-#endif /* XD3_DEBUG */
-
 #if UNALIGNED_OK
 #define UNALIGNED_READ32(dest,src) (*(dest)) = (*(uint32_t*)(src))
 #else

@@ -162,9 +162,6 @@ xd3_decode_allocate (xd3_stream  *stream,
 		     uint8_t    **buf_ptr,
 		     usize_t      *buf_alloc)
 {
-  IF_DEBUG2 (DP(RINT "[xd3_decode_allocate] size %"W"u alloc %"W"u\n",
-		size, *buf_alloc));
-  
   if (*buf_ptr != NULL && *buf_alloc < size)
     {
       xd3_free (stream, *buf_ptr);
@@ -190,9 +187,6 @@ xd3_decode_section (xd3_stream *stream,
 		    xd3_decode_state nstate,
 		    int copy)
 {
-  XD3_ASSERT (section->pos <= section->size);
-  XD3_ASSERT (stream->dec_state != nstate);
-
   if (section->pos < section->size)
     {
       usize_t sect_take;
@@ -207,8 +201,6 @@ xd3_decode_section (xd3_stream *stream,
 	  /* No allocation/copy needed */
 	  section->buf = stream->next_in;
 	  sect_take    = section->size;
-	  IF_DEBUG1 (DP(RINT "[xd3_decode_section] zerocopy %"W"u @ %"W"u avail %"W"u\n",
-			sect_take, section->pos, stream->avail_in));
 	}
       else
 	{
@@ -225,16 +217,10 @@ xd3_decode_section (xd3_stream *stream,
 					      section->size,
 					      & section->copied1,
 					      & section->alloc1)))
-		{
 		  return ret;
-		}
 
 	      section->buf = section->copied1;
 	    }
-
-	  IF_DEBUG2 (DP(RINT "[xd3_decode_section] take %"W"u @ %"W"u [need %"W"u] avail %"W"u\n",
-			sect_take, section->pos, sect_need, stream->avail_in));
-	  XD3_ASSERT (section->pos + sect_take <= section->alloc1);
 
 	  memcpy (section->copied1 + section->pos,
 		  stream->next_in,
@@ -250,13 +236,9 @@ xd3_decode_section (xd3_stream *stream,
 
   if (section->pos < section->size)
     {
-      IF_DEBUG1 (DP(RINT "[xd3_decode_section] further input required %"W"u\n",
-		    section->size - section->pos));
       stream->msg = "further input required";
       return XD3_INPUT;
     }
-
-  XD3_ASSERT (section->pos == section->size);
 
   stream->dec_state = nstate;
   section->buf_max  = section->buf + section->size;
@@ -287,27 +269,13 @@ xd3_decode_parse_halfinst (xd3_stream *stream, xd3_hinst *inst)
   /* For copy instructions, read address. */
   if (inst->type >= XD3_CPY)
     {
-      IF_DEBUG2 ({
-	static int cnt = 0;
-	XPR(NT "DECODE:%u: COPY at %"Q"u (winoffset %"W"u) "
-	    "size %"W"u winaddr %"W"u\n",
-	    cnt++,
-	    stream->total_out + (stream->dec_position -
-				 stream->dec_cpylen),
-	    (stream->dec_position - stream->dec_cpylen),
-	    inst->size,
-	    inst->addr);
-      });
-
       if ((ret = xd3_decode_address (stream,
 				     stream->dec_position,
 				     inst->type - XD3_CPY,
 				     & stream->addr_sect.buf,
 				     stream->addr_sect.buf_max,
 				     & inst->addr)))
-	{
 	  return ret;
-	}
 
       /* Cannot copy an address before it is filled-in. */
       if (inst->addr >= stream->dec_position)
@@ -324,30 +292,6 @@ xd3_decode_parse_halfinst (xd3_stream *stream, xd3_hinst *inst)
 	  stream->msg = "size too large";
 	  return XD3_INVALID_INPUT;
 	}
-    }
-  else
-    {
-      IF_DEBUG2 ({
-	if (inst->type == XD3_ADD)
-	  {
-	    static int cnt;
-	    XPR(NT "DECODE:%d: ADD at %"Q"u (winoffset %"W"u) size %"W"u\n",
-	       cnt++,
-	       (stream->total_out + stream->dec_position - stream->dec_cpylen),
-	       stream->dec_position - stream->dec_cpylen,
-	       inst->size);
-	  }
-	else
-	  {
-	    static int cnt;
-	    XD3_ASSERT (inst->type == XD3_RUN);
-	    XPR(NT "DECODE:%d: RUN at %"Q"u (winoffset %"W"u) size %"W"u\n",
-	       cnt++,
-	       stream->total_out + stream->dec_position - stream->dec_cpylen,
-	       stream->dec_position - stream->dec_cpylen,
-	       inst->size);
-	  }
-      });
     }
 
   /* Check: The instruction will not overflow the output buffer. */
@@ -415,8 +359,6 @@ xd3_decode_output_halfinst (xd3_stream *stream, xd3_hinst *inst)
       stream->msg = "overflow while decoding";
       return XD3_INVALID_INPUT;
     }
-
-  XD3_ASSERT (inst->type != XD3_NOOP);
 
   switch (inst->type)
     {
@@ -507,7 +449,6 @@ xd3_decode_output_halfinst (xd3_stream *stream, xd3_hinst *inst)
 		int ret;
 
 		xd3_blksize_add (&block, &blkoff, source, inst->addr);
-		XD3_ASSERT (blkoff < blksize);
 
 		if ((ret = xd3_getblk (stream, block)))
 		  {
@@ -527,18 +468,10 @@ xd3_decode_output_halfinst (xd3_stream *stream, xd3_hinst *inst)
 		if ((source->onblk != blksize) &&
 		    (blkoff + take > source->onblk))
 		  {
-		    IF_DEBUG1 (XPR(NT "[srcfile] short at blkno %"Q"u onblk "
-				   "%"W"u blksize %"W"u blkoff %"W"u take %"W"u\n",
-				   block,
-				   source->onblk,
-				   blksize,
-				   blkoff,
-				   take));
 		    stream->msg = "source file too short";
 		    return XD3_INVALID_INPUT;
 		  }
 
-		XD3_ASSERT (blkoff != blksize);
 
 		/* Check if we have enough data on this block to
 		 * finish the instruction. */
@@ -552,9 +485,6 @@ xd3_decode_output_halfinst (xd3_stream *stream, xd3_hinst *inst)
 		    take = blksize - blkoff;
 		    inst->size -= take;
 		    inst->addr += take;
-
-		    /* because (blkoff + take > blksize), above */
-		    XD3_ASSERT (inst->size != 0);
 		  }
 	      }
 	  }
@@ -662,9 +592,6 @@ xd3_decode_sections (xd3_stream *stream)
     }
   need += stream->data_sect.size;
 
-  /* The window may be entirely processed. */
-  XD3_ASSERT (stream->dec_winbytes <= need);
-
   /* Compute how much more input is needed. */
   more = (need - stream->dec_winbytes);
 
@@ -709,8 +636,6 @@ xd3_decode_sections (xd3_stream *stream)
 				     DEC_EMIT, copy))) { return ret; }
     }
 
-  XD3_ASSERT (stream->dec_winbytes == need);
-
   if ((ret = xd3_decode_secondary_sections (stream))) { return ret; }
 
   if (stream->flags & XD3_SKIP_EMIT)
@@ -730,19 +655,6 @@ static int
 xd3_decode_emit (xd3_stream *stream)
 {
   int ret;
-
-  /* Produce output: originally structured to allow reentrant code
-   * that fills as much of the output buffer as possible, but VCDIFF
-   * semantics allows to copy from anywhere from the target window, so
-   * instead allocate a sufficiently sized buffer after the target
-   * window length is decoded.
-   *
-   * This code still needs to be reentrant to allow XD3_GETSRCBLK to
-   * return control.  This is handled by setting the
-   * stream->dec_currentN instruction types to XD3_NOOP after they
-   * have been processed. */
-  XD3_ASSERT (! (stream->flags & XD3_SKIP_EMIT));
-  XD3_ASSERT (stream->dec_tgtlen <= stream->space_out);
 
   while (stream->inst_sect.buf != stream->inst_sect.buf_max ||
 	 stream->dec_current1.type != XD3_NOOP ||
@@ -773,8 +685,6 @@ xd3_decode_emit (xd3_stream *stream)
 
   if (stream->avail_out != stream->dec_tgtlen)
     {
-      IF_DEBUG2 (DP(RINT "AVAIL_OUT(%"W"u) != DEC_TGTLEN(%"W"u)\n",
-		    stream->avail_out, stream->dec_tgtlen));
       stream->msg = "wrong window length";
       return XD3_INVALID_INPUT;
     }
@@ -1009,9 +919,6 @@ xd3_decode_input (xd3_stream *stream)
 	if ((ret = xd3_decode_init_window (stream))) { return ret; }
 
 	stream->dec_state = DEC_CPYLEN;
-
-	IF_DEBUG2 (DP(RINT "--------- TARGET WINDOW %"Q"u -----------\n",
-		      stream->current_window));
       }
 
     case DEC_CPYLEN:
@@ -1165,16 +1072,6 @@ xd3_decode_input (xd3_stream *stream)
 	  xd3_blksize_div(stream->dec_cpyoff, src,
 			  &src->cpyoff_blocks,
 			  &src->cpyoff_blkoff);
-	  
-	  IF_DEBUG2(DP(RINT
-		       "[decode_cpyoff] %"Q"u "
-		       "cpyblkno %"Q"u "
-		       "cpyblkoff %"W"u "
-		       "blksize %"W"u\n",
-		       stream->dec_cpyoff,
-		       src->cpyoff_blocks,
-		       src->cpyoff_blkoff,
-		       src->blksize));
 	}
 
       /* xd3_decode_emit returns XD3_OUTPUT on every success. */
