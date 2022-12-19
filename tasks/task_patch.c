@@ -710,10 +710,6 @@ static enum patch_error xdelta_apply_patch(
    {
       case 0: /* Success */
          break;
-      case ENOSPC:
-         error_patch = PATCH_TARGET_ALLOC_FAILED;
-         free(*targetdata);
-         goto cleanup_stream;
       default:
          error_patch = PATCH_UNKNOWN;
          free(*targetdata);
