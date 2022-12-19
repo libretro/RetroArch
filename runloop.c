@@ -3319,7 +3319,45 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
+      case RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE:
+         {
+            struct retro_microphone_interface* microphone = (struct retro_microphone_interface *)data;
+            const audio_driver_t *audio_driver            = audio_state_get_ptr()->current_audio;
+            bool driver_supports_microphones              = audio_driver_supports_microphone(audio_driver);
 
+            if (!microphone)
+               return false;
+            /* User didn't provide a pointer for a response, what can we do? */
+
+            if (driver_supports_microphones)
+            {
+               microphone->supported            = driver_supports_microphones;
+               microphone->init_microphone      = audio_driver_init_microphone;
+               microphone->free_microphone      = audio_driver_free_microphone;
+               microphone->set_microphone_state = audio_driver_set_microphone_state;
+               microphone->get_microphone_state = audio_driver_get_microphone_state;
+               microphone->get_microphone_input = audio_driver_get_microphone_input;
+            }
+            else
+            {
+               memset(microphone, 0, sizeof(*microphone));
+               /* Clears all function pointers and sets supported to false */
+
+               return false;
+            }
+         }
+         break;
+      case RETRO_ENVIRONMENT_GET_MICROPHONE_ENABLED:
+         {
+            bool *microphone_enabled = (bool *)data;
+
+            if (microphone_enabled == NULL)
+               return false;
+            /* User didn't provide a pointer for a response, what can we do? */
+
+            *microphone_enabled = settings->bools.audio_enable_microphone;
+            return true;
+         }
       default:
          RARCH_LOG("[Environ]: UNSUPPORTED (#%u).\n", cmd);
          return false;
