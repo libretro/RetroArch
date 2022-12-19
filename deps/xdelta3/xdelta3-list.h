@@ -17,7 +17,7 @@
 #define __XDELTA3_LIST__
 
 /* To include RetroArch's INLINE macro */
-#include <retro_inline.h>
+#include "retro_inline.h"
 
 #define XD3_MAKELIST(LTYPE,ETYPE,LNAME)                                 \
                                                                         \

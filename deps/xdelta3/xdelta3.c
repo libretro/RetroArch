@@ -43,7 +43,222 @@
    There are 9 instruction modes in the default code table, 4 near, 3
    same, VCD_SELF (absolute encoding) and VCD_HERE (relative to the
    current position).
-*/
+
+   ----------------------------------------------------------------------
+
+  			      Algorithms
+
+   Aside from the details of encoding and decoding, there are a bunch
+   of algorithms needed.
+
+   1. STRING-MATCH.  A two-level fingerprinting approach is used.  A
+   single loop computes the two checksums -- small and large -- at
+   successive offsets in the TARGET file.  The large checksum is more
+   accurate and is used to discover SOURCE matches, which are
+   potentially very long.  The small checksum is used to discover
+   copies within the TARGET.  Small matching, which is more expensive,
+   usually dominates the large STRING-MATCH costs in this code - the
+   more exhaustive the search, the better the results.  Either of the
+   two string-matching mechanisms may be disabled.
+
+   2. INSTRUCTION SELECTION.  The IOPT buffer here represents a queue
+   used to store overlapping copy instructions.  There are two possible
+   optimizations that go beyond a greedy search.  Both of these fall
+   into the category of "non-greedy matching" optimizations.
+
+   The first optimization stems from backward SOURCE-COPY matching.
+   When a new SOURCE-COPY instruction covers a previous instruction in
+   the target completely, it is erased from the queue.  Randal Burns
+   originally analyzed these algorithms and did a lot of related work
+   (\cite the 1.5-pass algorithm).
+
+   The second optimization comes by the encoding of common very-small
+   COPY and ADD instructions, for which there are special DOUBLE-code
+   instructions, which code two instructions in a single byte.
+
+   The cost of bad instruction-selection overhead is relatively high
+   for data-compression, relative to delta-compression, so this second
+   optimization is fairly important.  With "lazy" matching (the name
+   used in Zlib for a similar optimization), the string-match
+   algorithm searches after a match for potential overlapping copy
+   instructions.  In Xdelta and by default, VCDIFF, the minimum match
+   size is 4 bytes, whereas Zlib searches with a 3-byte minimum.  This
+   feature, combined with double instructions, provides a nice
+   challenge.  Search in this file for "black magic", a heuristic.
+
+   3. STREAM ALIGNMENT.  Stream alignment is needed to compress large
+   inputs in constant space.  See xd3_srcwin_move_point().
+
+   4. WINDOW SELECTION.  When the IOPT buffer flushes, in the first call
+   to xd3_iopt_finish_encoding containing any kind of copy instruction,
+   the parameters of the source window must be decided: the offset into
+   the source and the length of the window.  Since the IOPT buffer is
+   finite, the program may be forced to fix these values before knowing
+   the best offset/length.
+
+   5. SECONDARY COMPRESSION.  VCDIFF supports a secondary encoding to
+   be applied to the individual sections of the data format, which are
+   ADDRess, INSTruction, and DATA.  Several secondary compressor
+   variations are implemented here, although none is standardized yet.
+
+   One is an adaptive huffman algorithm -- the FGK algorithm (Faller,
+   Gallager, and Knuth, 1985).  This compressor is extremely slow.
+
+   The other is a simple static Huffman routine, which is the base
+   case of a semi-adaptive scheme published by D.J. Wheeler and first
+   widely used in bzip2 (by Julian Seward).  This is a very
+   interesting algorithm, originally published in nearly cryptic form
+   by D.J. Wheeler. !!!NOTE!!! Because these are not standardized,
+   secondary compression remains off by default.
+   ftp://ftp.cl.cam.ac.uk/users/djw3/bred3.{c,ps}
+   --------------------------------------------------------------------
+
+			    Other Features
+
+   1. USER CONVENIENCE
+
+   For user convenience, it is essential to recognize Gzip-compressed
+   files and automatically Gzip-decompress them prior to
+   delta-compression (or else no delta-compression will be achieved
+   unless the user manually decompresses the inputs).  The compressed
+   represention competes with Xdelta, and this must be hidden from the
+   command-line user interface.  The Xdelta-1.x encoding was simple, not
+   compressed itself, so Xdelta-1.x uses Zlib internally to compress the
+   representation.
+
+   This implementation supports external compression, which implements
+   the necessary fork() and pipe() mechanics.  There is a tricky step
+   involved to support automatic detection of a compressed input in a
+   non-seekable input.  First you read a bit of the input to detect
+   magic headers.  When a compressed format is recognized, exec() the
+   external compression program and create a second child process to
+   copy the original input stream. [Footnote: There is a difficulty
+   related to using Gzip externally. It is not possible to decompress
+   and recompress a Gzip file transparently.  If FILE.GZ had a
+   cryptographic signature, then, after: (1) Gzip-decompression, (2)
+   Xdelta-encoding, (3) Gzip-compression the signature could be
+   broken.  The only way to solve this problem is to guess at Gzip's
+   compression level or control it by other means.  I recommend that
+   specific implementations of any compression scheme store
+   information needed to exactly re-compress the input, that way
+   external compression is transparent - however, this won't happen
+   here until it has stabilized.]
+
+   2. APPLICATION-HEADER
+
+   This feature was introduced in RFC3284.  It allows any application
+   to include a header within the VCDIFF file format.  This allows
+   general inter-application data exchange with support for
+   application-specific extensions to communicate metadata.
+
+   3. VCDIFF CHECKSUM
+
+   An optional checksum value is included with each window, which can
+   be used to validate the final result.  This verifies the correct source
+   file was used for decompression as well as the obvious advantage:
+   checking the implementation (and underlying) correctness.
+
+   4. LIGHT WEIGHT
+
+   The code makes efforts to avoid copying data more than necessary.
+   The code delays many initialization tasks until the first use, it
+   optimizes for identical (perfectly matching) inputs.  It does not
+   compute any checksums until the first lookup misses.  Memory usage
+   is reduced.  String-matching is templatized (by slightly gross use
+   of CPP) to hard-code alternative compile-time defaults.  The code
+   has few outside dependencies.
+   ----------------------------------------------------------------------
+
+		The default rfc3284 instruction table:
+		    (see RFC for the explanation)
+
+           TYPE      SIZE     MODE    TYPE     SIZE     MODE     INDEX
+   --------------------------------------------------------------------
+       1.  Run         0        0     Noop       0        0        0
+       2.  Add    0, [1,17]     0     Noop       0        0      [1,18]
+       3.  Copy   0, [4,18]     0     Noop       0        0     [19,34]
+       4.  Copy   0, [4,18]     1     Noop       0        0     [35,50]
+       5.  Copy   0, [4,18]     2     Noop       0        0     [51,66]
+       6.  Copy   0, [4,18]     3     Noop       0        0     [67,82]
+       7.  Copy   0, [4,18]     4     Noop       0        0     [83,98]
+       8.  Copy   0, [4,18]     5     Noop       0        0     [99,114]
+       9.  Copy   0, [4,18]     6     Noop       0        0    [115,130]
+      10.  Copy   0, [4,18]     7     Noop       0        0    [131,146]
+      11.  Copy   0, [4,18]     8     Noop       0        0    [147,162]
+      12.  Add       [1,4]      0     Copy     [4,6]      0    [163,174]
+      13.  Add       [1,4]      0     Copy     [4,6]      1    [175,186]
+      14.  Add       [1,4]      0     Copy     [4,6]      2    [187,198]
+      15.  Add       [1,4]      0     Copy     [4,6]      3    [199,210]
+      16.  Add       [1,4]      0     Copy     [4,6]      4    [211,222]
+      17.  Add       [1,4]      0     Copy     [4,6]      5    [223,234]
+      18.  Add       [1,4]      0     Copy       4        6    [235,238]
+      19.  Add       [1,4]      0     Copy       4        7    [239,242]
+      20.  Add       [1,4]      0     Copy       4        8    [243,246]
+      21.  Copy        4      [0,8]   Add        1        0    [247,255]
+   --------------------------------------------------------------------
+
+		     Reading the source: Overview
+
+   This file includes itself in several passes to macro-expand certain
+   sections with variable forms.  Just read ahead, there's only a
+   little confusion.  I know this sounds ugly, but hard-coding some of
+   the string-matching parameters results in a 10-15% increase in
+   string-match performance.  The only time this hurts is when you have
+   unbalanced #if/endifs.
+
+   A single compilation unit tames the Makefile.  In short, this is to
+   allow the above-described hack without an explodingMakefile.  The
+   single compilation unit includes the core library features,
+   configurable string-match templates, optional main() command-line
+   tool, misc optional features, and a regression test.  Features are
+   controled with CPP #defines, see Makefile.am.
+
+   The initial __XDELTA3_C_HEADER_PASS__ starts first, the _INLINE_ and
+   _TEMPLATE_ sections follow.  Easy stuff first, hard stuff last.
+
+   Optional features include:
+
+     xdelta3-main.h     The command-line interface, external compression
+                        support, POSIX-specific, info & VCDIFF-debug tools.
+                        (Excluded from RetroArch fork.)
+     xdelta3-second.h   The common secondary compression routines.
+     xdelta3-decoder.h  All decoding routines.
+     xdelta3-djw.h      The semi-adaptive huffman secondary encoder.
+     xdelta3-fgk.h      The adaptive huffman secondary encoder.
+     xdelta3-test.h     The unit test covers major algorithms,
+                        encoding and decoding.  There are single-bit
+                        error decoding tests.  There are 32/64-bit file size
+                        boundary tests.  There are command-line tests.
+                        There are compression tests.  There are external
+                        compression tests.  There are string-matching tests.
+                        (Excluded from RetroArch fork.)
+			There should be more tests...
+
+   Additional headers include:
+
+     xdelta3.h          The public header file.
+     xdelta3-cfgs.h     The default settings for default, built-in
+                        encoders.  These are hard-coded at
+                        compile-time.  There is also a single
+                        soft-coded string matcher for experimenting
+                        with arbitrary values.
+     xdelta3-list.h     A cyclic list template
+
+   Misc little debug utilities:
+
+     badcopy.c          Randomly modifies an input file based on two
+                        parameters: (1) the probability that a byte in
+                        the file is replaced with a pseudo-random value,
+                        and (2) the mean change size.  Changes are
+                        generated using an expoential distribution
+                        which approximates the expected error_prob
+			distribution.
+   --------------------------------------------------------------------
+
+   This file itself is unusually large.  I hope to defend this layout
+   with lots of comments.  Everything in this file is related to
+   encoding and decoding.  I like it all together - the template stuff
+   is just a hack. */
 
 #ifndef __XDELTA3_C_HEADER_PASS__
 #define __XDELTA3_C_HEADER_PASS__
@@ -775,7 +990,7 @@ xd3_check_pow2 (xoff_t value, usize_t *logof)
   return XD3_INTERNAL;
 }
 
-static usize_t
+usize_t
 xd3_pow2_roundup (usize_t x)
 {
   usize_t i = 1;
@@ -1692,6 +1907,26 @@ xd3_close_stream (xd3_stream *stream)
   return 0;
 }
 
+/**************************************************************
+ Application header
+ ****************************************************************/
+
+int
+xd3_get_appheader (xd3_stream  *stream,
+		   uint8_t    **data,
+		   usize_t      *size)
+{
+  if (stream->dec_state < DEC_WININD)
+    {
+      stream->msg = "application header not available";
+      return XD3_INTERNAL;
+    }
+
+  (*data) = stream->dec_appheader;
+  (*size) = stream->dec_appheadsz;
+  return 0;
+}
+
 /**********************************************************
  Decoder stuff
  *************************************************/
@@ -1703,6 +1938,15 @@ xd3_close_stream (xd3_stream *stream)
  *****************************************************************/
 
 #if XD3_ENCODER
+void
+xd3_set_appheader (xd3_stream    *stream,
+		   const uint8_t *data,
+		   usize_t         size)
+{
+  stream->enc_appheader = data;
+  stream->enc_appheadsz = size;
+}
+
 static xd3_rinst*
 xd3_iopt_free (xd3_stream *stream, xd3_rinst *i)
 {

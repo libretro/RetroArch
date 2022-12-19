@@ -18,7 +18,7 @@
 #define _XDELTA3_DJW_H_
 
 /* To include RetroArch's INLINE macro */
-#include <retro_inline.h>
+#include "retro_inline.h"
 
 /* The following people deserve much credit for the algorithms and
  * techniques contained in this file:
