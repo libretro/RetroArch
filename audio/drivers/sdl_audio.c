@@ -286,8 +286,8 @@ static bool sdl_audio_stop(void *data)
    if (sdl->microphone)
    {
       /* Stop the microphone independently of whether it's paused;
-       * note that upon sdl_audio_start, the microphone might not resume
-       * if it was paused */
+       * note that upon sdl_audio_start, the microphone won't resume
+       * if it was previously paused */
       SDL_PauseAudioDevice(sdl->microphone->device_id, true);
    }
 #endif
