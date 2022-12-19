@@ -17,7 +17,7 @@
 #define XDELTA3_INTERNAL_H__
 
 /* To include RetroArch's INLINE macro */
-#include "retro_inline.h"
+#include <retro_inline.h>
 #include "xdelta3.h"
 
 usize_t xd3_bytes_on_srcblk (xd3_source *src, xoff_t blkno);
@@ -38,7 +38,6 @@ xd3_output* xd3_alloc_output (xd3_stream *stream,
 			      xd3_output *old_output);
 
 int xd3_encode_init_full (xd3_stream *stream);
-usize_t xd3_pow2_roundup (usize_t x);
 int xd3_process_stream (int            is_encode,
 			xd3_stream    *stream,
 			int          (*func) (xd3_stream *),

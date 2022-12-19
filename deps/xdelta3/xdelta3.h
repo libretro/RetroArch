@@ -1180,20 +1180,6 @@ int     xd3_set_source_and_size (xd3_stream    *stream,
 				 xd3_source    *source,
 				 xoff_t         source_size);
 
-/* This should be called before the first call to xd3_encode_input()
- * to include application-specific data in the VCDIFF header. */
-void    xd3_set_appheader (xd3_stream    *stream,
-			   const uint8_t *data,
-			   usize_t        size);
-
-/* xd3_get_appheader may be called in the decoder after XD3_GOTHEADER.
- * For convenience, the decoder always adds a single byte padding to
- * the end of the application header, which is set to zero in case the
- * application header is a string. */
-int     xd3_get_appheader (xd3_stream     *stream,
-			   uint8_t       **data,
-			   usize_t        *size);
-
 /* To generate a VCDIFF encoded delta with xd3_encode_init() from
  * another format, use:
  *

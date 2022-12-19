@@ -18,7 +18,7 @@
 #define _XDELTA3_DECODE_H_
 
 /* To include RetroArch's INLINE macro */
-#include "retro_inline.h"
+#include <retro_inline.h>
 
 #include "xdelta3-internal.h"
 
@@ -173,9 +173,7 @@ xd3_decode_allocate (xd3_stream  *stream,
       *buf_alloc = xd3_round_blksize (size, XD3_ALLOCSIZE);
 
       if ((*buf_ptr = (uint8_t*) xd3_alloc (stream, *buf_alloc, 1)) == NULL)
-	{
 	  return ENOMEM;
-	}
     }
 
   return 0;
