@@ -3,6 +3,7 @@
 #include "otp.h"
 #include <coreinit/filesystem.h>
 #include <coreinit/filesystem_fsa.h>
+#include <sysapp/args.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -214,6 +215,7 @@ MochaUtilsStatus Mocha_PrepareRPXLaunch(MochaRPXLoadInfo *loadInfo);
  *         MOCHA_RESULT_NOT_FOUND:              Not application that can be used as homebrew wrapper found.
  */
 MochaUtilsStatus Mocha_LaunchHomebrewWrapper();
+MochaUtilsStatus Mocha_LaunchHomebrewWrapperEx(SYSStandardArgsIn *args);
 
 /**
  * Launches a given RPX by launching a wrapper application and replacing the RPX on the fly. <br>

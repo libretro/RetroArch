@@ -419,7 +419,7 @@ MochaUtilsStatus Mocha_LaunchRPX(MochaRPXLoadInfo *loadInfo) {
     return res;
 }
 
-MochaUtilsStatus Mocha_LaunchHomebrewWrapper() {
+MochaUtilsStatus Mocha_LaunchHomebrewWrapperEx(SYSStandardArgsIn *args) {
     if (!mochaInitDone) {
         return MOCHA_RESULT_LIB_UNINITIALIZED;
     }
@@ -434,9 +434,13 @@ MochaUtilsStatus Mocha_LaunchHomebrewWrapper() {
         return MOCHA_RESULT_NOT_FOUND;
     }
 
-    _SYSLaunchTitleWithStdArgsInNoSplash(titleID, nullptr);
+    _SYSLaunchTitleWithStdArgsInNoSplash(titleID, args);
 
     return MOCHA_RESULT_SUCCESS;
+}
+
+MochaUtilsStatus Mocha_LaunchHomebrewWrapper() {
+    return Mocha_LaunchHomebrewWrapperEx(nullptr);
 }
 
 MochaUtilsStatus Mocha_ODMGetDiscKey(WUDDiscKey *discKey) {
