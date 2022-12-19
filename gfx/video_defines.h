@@ -75,6 +75,14 @@ enum rotation
    ORIENTATION_END
 };
 
+enum video_rotation_type
+{
+   VIDEO_ROTATION_NORMAL = 0,
+   VIDEO_ROTATION_90_DEG,
+   VIDEO_ROTATION_180_DEG,
+   VIDEO_ROTATION_270_DEG
+};
+
 enum autoswitch_refresh_rate
 {
    AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN = 0,

@@ -6343,7 +6343,7 @@ unsigned menu_displaylist_build_list(
             {
                char msg[128];
                char msg_lbl[128];
-               snprintf(msg, sizeof(msg), "Mixer Stream #%d :\n", i+1);
+               snprintf(msg, sizeof(msg), msg_hash_to_str(MENU_ENUM_LABEL_MIXER_STREAM), i+1, "\n");
                snprintf(msg_lbl, sizeof(msg_lbl), "audio_mixer_stream_%d\n", i);
                if (menu_entries_append(list, msg, msg_lbl,
                         MSG_UNKNOWN,

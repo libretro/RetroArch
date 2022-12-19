@@ -6383,16 +6383,25 @@ static void setting_get_string_representation_uint_video_rotation(rarch_setting_
 {
    if (setting)
    {
-      char rotation_lut[4][32] =
+      switch (*setting->value.target.unsigned_integer)
       {
-         "Normal",
-         "90 deg",
-         "180 deg",
-         "270 deg"
-      };
-
-      strlcpy(s, rotation_lut[*setting->value.target.unsigned_integer],
-            len);
+         case VIDEO_ROTATION_NORMAL:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_NORMAL),
+                  len);
+            break;
+         case VIDEO_ROTATION_90_DEG:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_90_DEG),
+                  len);
+            break;
+         case VIDEO_ROTATION_180_DEG:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_180_DEG),
+                  len);
+            break;
+         case VIDEO_ROTATION_270_DEG:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_270_DEG),
+                  len);
+            break;
+      }
    }
 }
 
@@ -6401,16 +6410,25 @@ static void setting_get_string_representation_uint_screen_orientation(rarch_sett
 {
    if (setting)
    {
-      char rotation_lut[4][32] =
+      switch (*setting->value.target.unsigned_integer)
       {
-         "Normal",
-         "90 deg",
-         "180 deg",
-         "270 deg"
-      };
-
-      strlcpy(s, rotation_lut[*setting->value.target.unsigned_integer],
-            len);
+         case ORIENTATION_NORMAL:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL),
+                  len);
+            break;
+         case ORIENTATION_VERTICAL:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL),
+                  len);
+            break;
+         case ORIENTATION_FLIPPED:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED),
+                  len);
+            break;
+         case ORIENTATION_FLIPPED_ROTATED:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED),
+                  len);
+            break;
+      }
    }
 }
 
