@@ -179,6 +179,8 @@ typedef struct audio_driver
 
    /**
     * Initializes a microphone using the audio driver.
+    * Cores that use microphone functionality will call this via
+    * retro_microphone_interface::init_microphone.
     *
     * @param data Handle to the driver context
     * that was originally returned by ::init.
@@ -189,7 +191,10 @@ typedef struct audio_driver
     * @param rate The requested sampling rate of the new microphone.
     * @param latency TODO
     * @param block_frames TODO
-    * @param new_rate TODO
+    * @param new_rate Pointer to the actual sample frequency,
+    * if the microphone couldn't be initialized with the value given by rate.
+    * If NULL, then the value will not be reported to the client;
+    * this is not an error.
     * @return An opaque handle to the newly-initialized microphone
     * if it was successfully created,
     * or \c NULL if there was an error.
@@ -451,11 +456,15 @@ bool audio_driver_stop(void);
  */
 bool audio_driver_supports_microphone(const audio_driver_t* driver);
 
-bool audio_driver_set_microphone_state(unsigned index, bool state);
+retro_microphone_t *audio_driver_init_microphone(void);
 
-bool audio_driver_get_microphone_state(unsigned index);
+void audio_driver_free_microphone(retro_microphone_t *microphone);
 
-size_t audio_driver_get_microphone_input(unsigned index, int16_t* data, size_t data_length);
+bool audio_driver_set_microphone_state(retro_microphone_t *microphone, bool state);
+
+bool audio_driver_get_microphone_state(const retro_microphone_t *microphone);
+
+ssize_t audio_driver_get_microphone_input(retro_microphone_t *microphone, int16_t* data, size_t data_length);
 
 #ifdef HAVE_TRANSLATE
 /* TODO/FIXME - Doesn't currently work.  Fix this. */
