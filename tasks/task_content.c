@@ -124,8 +124,7 @@ enum content_information_flags
    CONTENT_INFO_FLAG_IS_UPS_PREF                 = (1 << 5),
    CONTENT_INFO_FLAG_PATCH_IS_BLOCKED            = (1 << 6),
    CONTENT_INFO_FLAG_BIOS_IS_MISSING             = (1 << 7),
-   CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING     = (1 << 8),
-   CONTENT_INFO_FLAG_IS_XDELTA_PREF              = (1 << 9)
+   CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING     = (1 << 8)
 };
 
 struct content_information_ctx
@@ -133,7 +132,6 @@ struct content_information_ctx
    char *name_ips;
    char *name_bps;
    char *name_ups;
-   char *name_xdelta;
 
    char *valid_extensions;
    char *directory_cache;
@@ -729,11 +727,9 @@ static bool content_file_load_into_memory(
                   content_ctx->flags & CONTENT_INFO_FLAG_IS_IPS_PREF,
                   content_ctx->flags & CONTENT_INFO_FLAG_IS_BPS_PREF,
                   content_ctx->flags & CONTENT_INFO_FLAG_IS_UPS_PREF,
-                  content_ctx->flags & CONTENT_INFO_FLAG_IS_XDELTA_PREF,
                   content_ctx->name_ips,
                   content_ctx->name_bps,
                   content_ctx->name_ups,
-                  content_ctx->name_xdelta,
                   (uint8_t**)&content_data,
                   (void*)&content_size);
 #endif
@@ -1936,13 +1932,9 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-#ifdef HAVE_XDELTA
-   if (rarch_flags & RARCH_FLAGS_XDELTA_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_XDELTA_PREF;
-#endif /* HAVE_XDELTA */
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
-#endif /* HAVE_PATCH */
+#endif
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
@@ -1950,7 +1942,6 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    content_ctx.name_ips                       = NULL;
    content_ctx.name_bps                       = NULL;
    content_ctx.name_ups                       = NULL;
-   content_ctx.name_xdelta                    = NULL;
    content_ctx.valid_extensions               = NULL;
 
    content_ctx.subsystem.data                 = NULL;
@@ -1962,8 +1953,6 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
       content_ctx.name_bps                 = strdup(runloop_st->name.bps);
    if (!string_is_empty(runloop_st->name.ups))
       content_ctx.name_ups                 = strdup(runloop_st->name.ups);
-   if (!string_is_empty(runloop_st->name.xdelta))
-      content_ctx.name_xdelta              = strdup(runloop_st->name.xdelta);
 
    if (!string_is_empty(path_dir_system))
       content_ctx.directory_system            = strdup(path_dir_system);
@@ -1991,8 +1980,6 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
       free(content_ctx.name_bps);
    if (content_ctx.name_ups)
       free(content_ctx.name_ups);
-   if (content_ctx.name_xdelta)
-      free(content_ctx.name_xdelta);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
 
@@ -2033,13 +2020,9 @@ bool task_push_load_content_from_playlist_from_menu(
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-#ifdef HAVE_XDELTA
-   if (rarch_flags & RARCH_FLAGS_XDELTA_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_XDELTA_PREF;
-#endif /* HAVE_XDELTA */
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
-#endif /* HAVE_PATCH */
+#endif
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
@@ -2047,7 +2030,6 @@ bool task_push_load_content_from_playlist_from_menu(
    content_ctx.name_ips                       = NULL;
    content_ctx.name_bps                       = NULL;
    content_ctx.name_ups                       = NULL;
-   content_ctx.name_xdelta                    = NULL;
    content_ctx.valid_extensions               = NULL;
 
    content_ctx.subsystem.data                 = NULL;
@@ -2059,8 +2041,6 @@ bool task_push_load_content_from_playlist_from_menu(
       content_ctx.name_bps                    = strdup(runloop_st->name.bps);
    if (!string_is_empty(runloop_st->name.ups))
       content_ctx.name_ups                    = strdup(runloop_st->name.ups);
-   if (!string_is_empty(runloop_st->name.xdelta))
-      content_ctx.name_xdelta                 = strdup(runloop_st->name.xdelta);
    if (label)
       strlcpy(runloop_st->name.label, label, sizeof(runloop_st->name.label));
    else
@@ -2147,8 +2127,6 @@ end:
       free(content_ctx.name_bps);
    if (content_ctx.name_ups)
       free(content_ctx.name_ups);
-   if (content_ctx.name_xdelta)
-      free(content_ctx.name_xdelta);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
 
@@ -2182,13 +2160,9 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-#ifdef HAVE_XDELTA
-   if (rarch_flags & RARCH_FLAGS_XDELTA_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_XDELTA_PREF;
-#endif /* HAVE_XDELTA */
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
-#endif /* HAVE_PATCH */
+#endif
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
@@ -2196,7 +2170,6 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    content_ctx.name_ips                       = NULL;
    content_ctx.name_bps                       = NULL;
    content_ctx.name_ups                       = NULL;
-   content_ctx.name_xdelta                    = NULL;
    content_ctx.valid_extensions               = NULL;
 
    content_ctx.subsystem.data                 = NULL;
@@ -2208,8 +2181,6 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       content_ctx.name_bps                 = strdup(runloop_st->name.bps);
    if (!string_is_empty(runloop_st->name.ups))
       content_ctx.name_ups                 = strdup(runloop_st->name.ups);
-   if (!string_is_empty(runloop_st->name.xdelta))
-      content_ctx.name_xdelta              = strdup(runloop_st->name.xdelta);
 
    if (!string_is_empty(path_dir_system))
       content_ctx.directory_system            = strdup(path_dir_system);
@@ -2257,8 +2228,6 @@ end:
       free(content_ctx.name_bps);
    if (content_ctx.name_ups)
       free(content_ctx.name_ups);
-   if (content_ctx.name_xdelta)
-      free(content_ctx.name_xdelta);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
 
@@ -2426,13 +2395,9 @@ bool task_push_load_content_with_new_core_from_menu(
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-#ifdef HAVE_XDELTA
-   if (rarch_flags & RARCH_FLAGS_XDELTA_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_XDELTA_PREF;
-#endif /* HAVE_XDELTA */
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
-#endif /* HAVE_PATCH */
+#endif
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
@@ -2440,7 +2405,6 @@ bool task_push_load_content_with_new_core_from_menu(
    content_ctx.name_ips                       = NULL;
    content_ctx.name_bps                       = NULL;
    content_ctx.name_ups                       = NULL;
-   content_ctx.name_xdelta                    = NULL;
    content_ctx.valid_extensions               = NULL;
 
    content_ctx.subsystem.data                 = NULL;
@@ -2452,8 +2416,6 @@ bool task_push_load_content_with_new_core_from_menu(
       content_ctx.name_bps                 = strdup(runloop_st->name.bps);
    if (!string_is_empty(runloop_st->name.ups))
       content_ctx.name_ups                 = strdup(runloop_st->name.ups);
-   if (!string_is_empty(runloop_st->name.xdelta))
-      content_ctx.name_xdelta              = strdup(runloop_st->name.xdelta);
 
    runloop_st->name.label[0]                   = '\0';
 
@@ -2502,8 +2464,6 @@ end:
       free(content_ctx.name_bps);
    if (content_ctx.name_ups)
       free(content_ctx.name_ups);
-   if (content_ctx.name_xdelta)
-      free(content_ctx.name_xdelta);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
 
@@ -2541,13 +2501,9 @@ static bool task_load_content_internal(
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-#ifdef HAVE_XDELTA
-   if (rarch_flags & RARCH_FLAGS_XDELTA_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_XDELTA_PREF;
-#endif /* HAVE_XDELTA */
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
-#endif /* HAVE_PATCH */
+#endif
    if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
@@ -2555,7 +2511,6 @@ static bool task_load_content_internal(
    content_ctx.name_ips                       = NULL;
    content_ctx.name_bps                       = NULL;
    content_ctx.name_ups                       = NULL;
-   content_ctx.name_xdelta                    = NULL;
    content_ctx.valid_extensions               = NULL;
 
    content_ctx.subsystem.data                 = NULL;
@@ -2588,8 +2543,6 @@ static bool task_load_content_internal(
       content_ctx.name_bps                 = strdup(runloop_st->name.bps);
    if (!string_is_empty(runloop_st->name.ups))
       content_ctx.name_ups                 = strdup(runloop_st->name.ups);
-   if (!string_is_empty(runloop_st->name.xdelta))
-      content_ctx.name_xdelta              = strdup(runloop_st->name.xdelta);
 
    if (!string_is_empty(path_dir_system))
       content_ctx.directory_system            = strdup(path_dir_system);
@@ -2622,8 +2575,6 @@ end:
       free(content_ctx.name_bps);
    if (content_ctx.name_ups)
       free(content_ctx.name_ups);
-   if (content_ctx.name_xdelta)
-      free(content_ctx.name_xdelta);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
    if (content_ctx.directory_cache)
@@ -3053,19 +3004,14 @@ bool content_init(void)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
    if (rarch_flags & RARCH_FLAGS_UPS_PREF)
       content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-#ifdef HAVE_XDELTA
-   if (rarch_flags & RARCH_FLAGS_XDELTA_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_XDELTA_PREF;
-#endif /* HAVE_XDELTA */
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
-#endif /* HAVE_PATCH */
+#endif
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
    content_ctx.name_bps                       = NULL;
    content_ctx.name_ups                       = NULL;
-   content_ctx.name_xdelta                    = NULL;
    content_ctx.valid_extensions               = NULL;
 
    content_ctx.subsystem.data                 = NULL;
@@ -3077,8 +3023,6 @@ bool content_init(void)
       content_ctx.name_bps                 = strdup(runloop_st->name.bps);
    if (!string_is_empty(runloop_st->name.ups))
       content_ctx.name_ups                 = strdup(runloop_st->name.ups);
-    if (!string_is_empty(runloop_st->name.xdelta))
-      content_ctx.name_xdelta              = strdup(runloop_st->name.xdelta);
 
    if (sys_info)
    {
@@ -3122,8 +3066,6 @@ bool content_init(void)
       free(content_ctx.name_bps);
    if (content_ctx.name_ups)
       free(content_ctx.name_ups);
-   if (content_ctx.name_xdelta)
-      free(content_ctx.name_xdelta);
    if (content_ctx.directory_system)
       free(content_ctx.directory_system);
    if (content_ctx.directory_cache)

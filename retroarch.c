@@ -273,7 +273,6 @@ enum
    RA_OPT_APPENDCONFIG,
    RA_OPT_BPS,
    RA_OPT_IPS,
-   RA_OPT_XDELTA,
    RA_OPT_NO_PATCH,
    RA_OPT_RECORDCONFIG,
    RA_OPT_SUBSYSTEM,
@@ -3516,11 +3515,6 @@ void retroarch_override_setting_set(
          p_rarch->flags |= RARCH_FLAGS_HAS_SET_IPS_PREF;
 #endif
          break;
-       case RARCH_OVERRIDE_SETTING_XDELTA_PREF:
-#if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
-           p_rarch->flags |= RARCH_FLAGS_HAS_SET_XDELTA_PREF;
-#endif
-           break;
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
          p_rarch->flags |= RARCH_FLAGS_HAS_SET_LOG_TO_FILE;
          break;
@@ -3595,11 +3589,6 @@ void retroarch_override_setting_unset(
          p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_IPS_PREF;
 #endif
          break;
-       case RARCH_OVERRIDE_SETTING_XDELTA_PREF:
-#if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
-           p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_XDELTA_PREF;
-#endif
-         break;
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
          p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_LOG_TO_FILE;
          break;
@@ -3647,8 +3636,7 @@ static void global_free(struct rarch_state *p_rarch)
    p_rarch->flags    &= ~(
                          RARCH_FLAGS_BPS_PREF 
                        | RARCH_FLAGS_IPS_PREF
-                       | RARCH_FLAGS_UPS_PREF
-                       | RARCH_FLAGS_XDELTA_PREF);
+                       | RARCH_FLAGS_UPS_PREF);
    runloop_st->flags &= ~RUNLOOP_FLAG_PATCH_BLOCKED;
       
 #endif
@@ -3673,7 +3661,6 @@ static void global_free(struct rarch_state *p_rarch)
    *runloop_st->name.ups                 = '\0';
    *runloop_st->name.bps                 = '\0';
    *runloop_st->name.ips                 = '\0';
-   *runloop_st->name.xdelta              = '\0';
    *runloop_st->name.savefile            = '\0';
    *runloop_st->name.savestate           = '\0';
    *runloop_st->name.cheatfile           = '\0';
@@ -4333,18 +4320,10 @@ static void retroarch_print_help(const char *arg0)
          "Specifies path for BPS patch that will be applied to content.\n"
          "      --ips=FILE                 "
          "Specifies path for IPS patch that will be applied to content.\n"
-         , sizeof(buf));
-#ifdef HAVE_XDELTA
-   strlcat(buf,
-         "      --xdelta=FILE              "
-         "Specifies path for Xdelta patch that will be applied to content.\n"
-         , sizeof(buf));
-#endif /* HAVE_XDELTA */
-   strlcat(buf,
          "      --no-patch                 "
          "Disables all forms of content patching.\n"
          , sizeof(buf));
-#endif /* HAVE_PATCH */
+#endif
 
 #ifdef HAVE_SCREENSHOTS
    strlcat(buf,
@@ -4583,11 +4562,8 @@ static bool retroarch_parse_input_and_config(
       { "ups",                1, NULL, 'U' },
       { "bps",                1, NULL, RA_OPT_BPS },
       { "ips",                1, NULL, RA_OPT_IPS },
-#ifdef HAVE_XDELTA
-      { "xdelta",             1, NULL, RA_OPT_XDELTA },
-#endif /* HAVE_XDELTA */
       { "no-patch",           0, NULL, RA_OPT_NO_PATCH },
-#endif /* HAVE_PATCH */
+#endif
       { "detach",             0, NULL, 'D' },
       { "features",           0, NULL, RA_OPT_FEATURES },
       { "subsystem",          1, NULL, RA_OPT_SUBSYSTEM },
@@ -4657,11 +4633,10 @@ static bool retroarch_parse_input_and_config(
    p_rarch->flags                 &= ~RARCH_FLAGS_HAS_SET_USERNAME;
 #ifdef HAVE_PATCH
    p_rarch->flags                 &= ~(  RARCH_FLAGS_UPS_PREF | RARCH_FLAGS_IPS_PREF
-                                       | RARCH_FLAGS_BPS_PREF | RARCH_FLAGS_XDELTA_PREF);
+                                       | RARCH_FLAGS_BPS_PREF);
    *runloop_st->name.ups           = '\0';
    *runloop_st->name.bps           = '\0';
    *runloop_st->name.ips           = '\0';
-   *runloop_st->name.xdelta        = '\0';
 #endif
 #ifdef HAVE_CONFIGFILE
    runloop_st->flags              &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
@@ -5045,14 +5020,7 @@ static bool retroarch_parse_input_and_config(
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL);
 #endif
                break;
-             case RA_OPT_XDELTA:
-#if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
-                 strlcpy(runloop_st->name.xdelta, optarg,
-                     sizeof(runloop_st->name.xdelta));
-               p_rarch->flags |= RARCH_FLAGS_XDELTA_PREF;
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_XDELTA_PREF, NULL);
-#endif
-                 break;
+
             case RA_OPT_NO_PATCH:
 #ifdef HAVE_PATCH
                runloop_st->flags |= RUNLOOP_FLAG_PATCH_BLOCKED;
@@ -5653,12 +5621,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_UNSET_IPS_PREF:
          p_rarch->flags &= ~RARCH_FLAGS_IPS_PREF;
          break;
-#ifdef HAVE_XDELTA
-      case RARCH_CTL_UNSET_XDELTA_PREF:
-         p_rarch->flags &= ~RARCH_FLAGS_XDELTA_PREF;
-         break;
-#endif /* HAVE_XDELTA */
-#endif /* HAVE_PATCH */
+#endif
       case RARCH_CTL_IS_DUMMY_CORE:
          return runloop_st->current_core_type == CORE_TYPE_DUMMY;
       case RARCH_CTL_IS_CORE_LOADED:
@@ -5960,11 +5923,7 @@ bool retroarch_override_setting_is_set(
          return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_BPS_PREF) > 0);
       case RARCH_OVERRIDE_SETTING_IPS_PREF:
          return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_IPS_PREF) > 0);
-#ifdef HAVE_XDELTA
-      case RARCH_OVERRIDE_SETTING_XDELTA_PREF:
-         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_XDELTA_PREF) > 0);
-#endif /* HAVE_XDELTA */
-#endif /* HAVE_PATCH */
+#endif
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
          return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_LOG_TO_FILE) > 0);
       case RARCH_OVERRIDE_SETTING_NONE:
