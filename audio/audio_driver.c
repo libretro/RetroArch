@@ -1742,12 +1742,21 @@ retro_microphone_t *audio_driver_init_microphone(void)
       unsigned setting_audio_latency = settings->uints.audio_latency;
       unsigned audio_latency         = (runloop_audio_latency > setting_audio_latency) ?
                                        runloop_audio_latency : setting_audio_latency;
-      audio_driver->init_microphone(context,
+
+      retro_microphone_t *microphone = audio_driver->init_microphone(context,
          *settings->arrays.microphone_device ? settings->arrays.microphone_device : NULL,
          settings->uints.audio_input_sample_rate,
          audio_latency,
          settings->uints.audio_block_frames,
          NULL);
+
+      if (microphone)
+         RARCH_DBG("[Audio] Initialized microphone (sample rate: %dHz)\n",
+            settings->uints.audio_input_sample_rate);
+      else
+         RARCH_DBG("[Audio] Driver did not return a microphone handle\n");
+
+      return microphone;
    }
    else
       return NULL;
