@@ -3323,15 +3323,20 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          {
             struct retro_microphone_interface* microphone = (struct retro_microphone_interface *)data;
             const audio_driver_t *audio_driver            = audio_state_get_ptr()->current_audio;
-            bool driver_supports_microphones              = audio_driver_supports_microphone(audio_driver);
+
+            if (!audio_driver)
+            {
+               RARCH_DBG("[Environ]: Couldn't initialize microphone interface, driver is not initialized\n");
+               return false;
+            }
 
             if (!microphone)
                return false;
             /* User didn't provide a pointer for a response, what can we do? */
 
-            if (driver_supports_microphones)
+            if (audio_driver_supports_microphone(audio_driver))
             {
-               microphone->supported            = driver_supports_microphones;
+               microphone->supported            = true;
                microphone->init_microphone      = audio_driver_init_microphone;
                microphone->free_microphone      = audio_driver_free_microphone;
                microphone->set_microphone_state = audio_driver_set_microphone_state;
