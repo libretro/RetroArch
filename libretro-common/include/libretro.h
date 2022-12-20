@@ -3803,7 +3803,7 @@ struct retro_throttle_state
  * You don't access microphone objects directly;
  * use the retro_microphone_interface.
  */
-typedef void retro_microphone_t;
+typedef struct retro_microphone retro_microphone_t;
 
 /**
  * Initializes a new microphone.
@@ -3870,6 +3870,13 @@ typedef bool (RETRO_CALLCONV *retro_set_microphone_state_t)(retro_microphone_t *
 typedef bool (RETRO_CALLCONV *retro_get_microphone_state_t)(const retro_microphone_t *microphone);
 
 /**
+ * Tests if the microphone is ready
+ *
+ * TODO docs
+ */
+typedef bool (RETRO_CALLCONV *retro_is_microphone_ready_t)(const retro_microphone_t *microphone);
+
+/**
  * Retrieves the input processed by the microphone since the previous frame.
  * If called while the microphone or the audio driver are disabled,
  * then nothing will be copied into data.
@@ -3907,6 +3914,7 @@ struct retro_microphone_interface
    retro_free_microphone_t free_microphone;
    retro_set_microphone_state_t set_microphone_state;
    retro_get_microphone_state_t get_microphone_state;
+   retro_is_microphone_ready_t is_microphone_ready;
    retro_get_microphone_input_t get_microphone_input;
 };
 

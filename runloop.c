@@ -3342,6 +3342,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                microphone->set_microphone_state = audio_driver_set_microphone_state;
                microphone->get_microphone_state = audio_driver_get_microphone_state;
                microphone->get_microphone_input = audio_driver_get_microphone_input;
+               microphone->is_microphone_ready  = audio_driver_is_microphone_ready;
             }
             else
             {
