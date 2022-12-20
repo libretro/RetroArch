@@ -77,47 +77,19 @@ typedef struct audio_mixer_stream_params
 #endif
 
 /**
- * The core might request a microphone before
- * the audio driver is ready to provide one,
- * so we have to keep track of when it's ready to be used.
-  */
-enum audio_driver_microphone_state
-{
-   /**
-    * This microphone is not ready to be used.
-    */
-   AUDIO_DRIVER_MICROPHONE_STATE_INVALID,
-
-   /**
-    * The microphone has been requested,
-    * but the audio driver isn't ready to provide it yet.
-    * This state is only used if the microphone is requested
-    * early in the core's lifetime (e.g. in retro_init);
-    * if the microphone is requested after the driver is initialized,
-    * then it should be ready immediately.
-    */
-   AUDIO_DRIVER_MICROPHONE_STATE_PENDING,
-
-   /**
-    * This microphone is initialized and ready to use.
-    */
-   AUDIO_DRIVER_MICROPHONE_STATE_READY
-};
-
-/**
  * Driver object that tracks a microphone's state.
  * Pointers to this object are provided to cores,
  * to be used as opaque handles.
  */
 struct retro_microphone
 {
-   enum audio_driver_microphone_state state;
-
    /**
     * Pointer to the context object created by the underlying driver.
-    * Will be non-NULL if and only if state == AUDIO_DRIVER_MICROPHONE_STATE_READY.
     */
    void *microphone_context;
+
+   /* May be enabled even before the driver is ready */
+   bool pending_enabled;
 };
 
 typedef struct audio_driver
@@ -383,11 +355,11 @@ typedef struct
 
    /**
     * The handle to the created microphone, if any.
-    * The libretro API is designed to enable multiple microphones,
+    * The libretro API is designed to expose multiple microphones,
     * but RetroArch only supports one at a time for now.
     * PRs welcome!
     */
-   retro_microphone_t current_microphone;
+   retro_microphone_t *current_microphone;
    void *context_audio_data;
    float *input_data;
 #ifdef HAVE_AUDIOMIXER

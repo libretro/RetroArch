@@ -3334,6 +3334,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                return false;
             /* User didn't provide a pointer for a response, what can we do? */
 
+            if (!settings->bools.audio_enable_microphone)
+               return false;
+
             if (audio_driver_supports_microphone(audio_driver))
             {
                microphone->supported            = true;
@@ -3342,7 +3345,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                microphone->set_microphone_state = audio_driver_set_microphone_state;
                microphone->get_microphone_state = audio_driver_get_microphone_state;
                microphone->get_microphone_input = audio_driver_get_microphone_input;
-               microphone->is_microphone_ready  = audio_driver_is_microphone_ready;
             }
             else
             {
