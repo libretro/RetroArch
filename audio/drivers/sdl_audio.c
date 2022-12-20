@@ -422,6 +422,7 @@ static void *sdl_audio_init_microphone(void *data,
       RARCH_ERR("[SDL audio]: Failed to open SDL audio input device: %s\n", SDL_GetError());
       goto error;
    }
+   RARCH_LOG("[SDL audio]: Opened SDL audio input device with ID %u\n", microphone->device_id);
 
    if (new_rate)
       *new_rate = out.freq;
@@ -439,6 +440,8 @@ static void *sdl_audio_init_microphone(void *data,
    tmp                       = calloc(1, bufsize);
    microphone->sample_buffer = fifo_new(bufsize);
 
+   RARCH_DBG("[SDL audio]: Initialized microphone sample buffer with %u bytes\n", bufsize);
+
    if (tmp)
    {
       fifo_write(microphone->sample_buffer, tmp, bufsize);
@@ -446,6 +449,8 @@ static void *sdl_audio_init_microphone(void *data,
    }
 
    sdl->microphone = microphone;
+
+   RARCH_LOG("[SDL audio]: Initialized microphone with device ID %u\n", microphone->device_id);
    return microphone;
 
 error:
@@ -480,6 +485,7 @@ static void sdl_audio_free_microphone(void *data, void *microphone_context)
       scond_free(microphone->cond);
 #endif
 
+      RARCH_LOG("[SDL audio]: Freed microphone with former device ID %u\n", microphone->device_id);
       sdl->microphone = NULL;
       free(microphone);
    }
@@ -508,6 +514,8 @@ static bool sdl_audio_microphone_set_state(void *data, void *microphone_context,
       return false;
 
    microphone->is_paused = !enabled;
+   RARCH_LOG("[SDL audio]: Set state of microphone %u to %s\n",
+      microphone->device_id, enabled ? "enabled" : "disabled");
    return true;
 }
 

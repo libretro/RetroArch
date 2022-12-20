@@ -717,6 +717,7 @@ bool audio_driver_init_internal(
                audio_latency,
                settings->uints.audio_block_frames,
                &new_rate);
+      RARCH_LOG("[Audio]: Started synchronous audio driver\n");
    }
 
    if (new_rate != 0)
