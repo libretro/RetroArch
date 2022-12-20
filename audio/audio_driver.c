@@ -1799,12 +1799,11 @@ bool audio_driver_get_microphone_state(const retro_microphone_t *microphone)
    /* Audio driver doesn't need to be alive to get the microphone state */
 }
 
-ssize_t audio_driver_get_microphone_input(retro_microphone_t *microphone, int16_t* data, size_t data_length)
+int audio_driver_get_microphone_input(retro_microphone_t *microphone, int16_t* data, size_t data_length)
 {
    audio_driver_state_t *audio_st     = &audio_driver_st;
    void *context                      = audio_st->context_audio_data;
    const audio_driver_t *audio_driver = audio_st->current_audio;
-   ssize_t ret                        = -1;
 
    if (  audio_driver_alive() &&
          microphone &&

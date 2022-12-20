@@ -3887,7 +3887,7 @@ typedef bool (RETRO_CALLCONV *retro_get_microphone_state_t)(const retro_micropho
  * Will return -1 if the audio driver is paused,
  * or if there was an error.
  */
-typedef ssize_t (RETRO_CALLCONV *retro_get_microphone_input_t)(retro_microphone_t *microphone, int16_t* data, size_t data_length);
+typedef int (RETRO_CALLCONV *retro_get_microphone_input_t)(retro_microphone_t *microphone, int16_t* data, size_t data_length);
 
 /**
  * An interface for querying the microphone and accessing data read from it.

@@ -296,7 +296,7 @@ typedef struct audio_driver
     * @return The number of bytes that were read into \c buf,
     * or -1 if there was an error.
     */
-   ssize_t (*read_microphone)(void *driver_context, void *microphone_context, void *buf, size_t size);
+   int (*read_microphone)(void *driver_context, void *microphone_context, void *buf, size_t size);
 } audio_driver_t;
 
 enum audio_driver_state_flags
