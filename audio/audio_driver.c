@@ -67,7 +67,6 @@
 audio_driver_t audio_null = {
    NULL, /* init */
    NULL, /* write */
-   NULL, /* read */
    NULL, /* stop */
    NULL, /* start */
    NULL, /* alive */
