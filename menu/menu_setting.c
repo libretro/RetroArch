@@ -2966,23 +2966,27 @@ static void setting_get_string_representation_streaming_mode(
    if (!setting)
       return;
 
-   /* TODO/FIXME - localize this */
    switch (*setting->value.target.unsigned_integer)
    {
       case STREAMING_MODE_TWITCH:
-         strlcpy(s, "Twitch", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_TWITCH), len);
          break;
       case STREAMING_MODE_YOUTUBE:
-         strlcpy(s, "YouTube", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_YOUTUBE), len);
          break;
       case STREAMING_MODE_FACEBOOK:
-         strlcpy(s, "Facebook Gaming", len);
-         break;         
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_FACEBOOK), len);
+         break;
       case STREAMING_MODE_LOCAL:
-         strlcpy(s, "Local", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL), len);
          break;
       case STREAMING_MODE_CUSTOM:
-         strlcpy(s, "Custom", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM), len);
          break;
    }
 }
@@ -2994,20 +2998,23 @@ static void setting_get_string_representation_video_stream_quality(
    if (!setting)
       return;
 
-   /* TODO/FIXME - localize this */
    switch (*setting->value.target.unsigned_integer)
    {
       case RECORD_CONFIG_TYPE_STREAMING_CUSTOM:
-         strlcpy(s, "Custom", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM), len);
          break;
       case RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY:
-         strlcpy(s, "Low", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY), len);
          break;
       case RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY:
-         strlcpy(s, "Medium", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY), len);
          break;
       case RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY:
-         strlcpy(s, "High", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY), len);
          break;
    }
 }
@@ -3018,35 +3025,43 @@ static void setting_get_string_representation_video_record_quality(rarch_setting
    if (!setting)
       return;
 
-   /* TODO/FIXME - localize this */
    switch (*setting->value.target.unsigned_integer)
    {
       case RECORD_CONFIG_TYPE_RECORDING_CUSTOM:
-         strlcpy(s, "Custom", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM), len);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY:
-         strlcpy(s, "Low", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY), len);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY:
-         strlcpy(s, "Medium", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY), len);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY:
-         strlcpy(s, "High", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY), len);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY:
-         strlcpy(s, "Lossless", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY), len);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST:
-         strlcpy(s, "WebM Fast", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST), len);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY:
-         strlcpy(s, "WebM High Quality", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY), len);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_GIF:
-         strlcpy(s, "GIF", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_GIF), len);
          break;
       case RECORD_CONFIG_TYPE_RECORDING_APNG:
-         strlcpy(s, "APNG", len);
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_APNG), len);
          break;
    }
 }
@@ -6718,13 +6733,13 @@ static void setting_get_string_representation_turbo_mode(
    switch (*setting->value.target.unsigned_integer)
    {
       case INPUT_TURBO_MODE_CLASSIC:
-         strlcpy(s, "Classic", len);
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC), len);
          break;
       case INPUT_TURBO_MODE_SINGLEBUTTON:
-         strlcpy(s, "Single Button (Toggle)", len);
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON), len);
          break;
       case INPUT_TURBO_MODE_SINGLEBUTTON_HOLD:
-         strlcpy(s, "Single Button (Hold)", len);
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD), len);
          break;
    }
 }
@@ -6853,16 +6868,23 @@ static void setting_get_string_representation_uint_libretro_log_level(
       rarch_setting_t *setting,
       char *s, size_t len)
 {
-   if (setting)
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
    {
-      static const char *modes[] = {
-         "0 (Debug)",
-         "1 (Info)",
-         "2 (Warning)",
-         "3 (Error)"
-      };
-      strlcpy(s, modes[*setting->value.target.unsigned_integer],
-            len);
+      case 0:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG), len);
+         break;
+      case 1:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_INFO), len);
+         break;
+      case 2:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING), len);
+         break;
+      case 3:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_ERROR), len);
+         break;
    }
 }
 
