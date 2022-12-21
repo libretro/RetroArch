@@ -90,6 +90,9 @@ struct retro_microphone
 
    /* May be enabled even before the driver is ready */
    bool pending_enabled;
+
+   /* true if this object represents a valid or pending microphone */
+   bool active;
 };
 
 typedef struct audio_driver
@@ -359,7 +362,7 @@ typedef struct
     * but RetroArch only supports one at a time for now.
     * PRs welcome!
     */
-   retro_microphone_t *current_microphone;
+   retro_microphone_t current_microphone;
    void *context_audio_data;
    float *input_data;
 #ifdef HAVE_AUDIOMIXER

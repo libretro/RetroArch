@@ -231,6 +231,24 @@ static bool audio_driver_free_devices_list(void)
    return true;
 }
 
+/* TODO: When adding support for multiple microphones,
+ * make sure you clean them all up in here. */
+static bool audio_driver_free_microphones(void)
+{
+   audio_driver_state_t *audio_st     = &audio_driver_st;
+   const audio_driver_t *audio_driver = audio_st->current_audio;
+
+   if (  !audio_driver ||
+         !audio_driver->free_microphone ||
+         !audio_st->context_audio_data ||
+         !audio_st->current_microphone.active)
+      return false;
+
+   audio_driver_free_microphone(&audio_st->current_microphone);
+
+   return true;
+}
+
 #ifdef DEBUG
 static void report_audio_buffer_statistics(void)
 {
@@ -302,6 +320,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    if (!audio_enable)
    {
       audio_st->flags   &= ~AUDIO_FLAG_ACTIVE;
+      audio_st->flags   &= ~AUDIO_FLAG_MIC_ACTIVE;
       return false;
    }
 
@@ -349,7 +368,7 @@ bool audio_driver_deinit(void)
    audio_driver_mixer_deinit();
 #endif
    audio_driver_free_devices_list();
-
+   audio_driver_free_microphones();
    return audio_driver_deinit_internal(
          settings->bools.audio_enable);
 }
@@ -550,12 +569,12 @@ static void audio_driver_flush(
    /* Only one mic is supported right now. If you add support for multiple mics,
     * read through all of them here. */
    if (  (audio_st->flags & AUDIO_FLAG_MIC_ACTIVE) &&
-         audio_st->current_microphone &&
-         audio_st->current_microphone->microphone_context &&
+         audio_st->current_microphone.active &&
+         audio_st->current_microphone.microphone_context &&
          audio_st->current_audio->read_microphone &&
          audio_st->current_audio->get_microphone_state &&
          audio_st->current_audio->get_microphone_state(audio_st->current_audio,
-            audio_st->current_microphone->microphone_context))
+            audio_st->current_microphone.microphone_context))
    { /* If mic support is enabled and available, and the mic is enabled... */
       void *input_data = audio_st->input_data;
       unsigned input_frames  = (unsigned)src_data.input_frames;
@@ -572,7 +591,7 @@ static void audio_driver_flush(
       }
 
       audio_st->current_audio->read_microphone(audio_st->context_audio_data,
-         audio_st->current_microphone->microphone_context, input_data, input_frames);
+         audio_st->current_microphone.microphone_context, input_data, input_frames);
    }
 }
 
@@ -839,19 +858,19 @@ bool audio_driver_init_internal(
    audio_mixer_init(settings->uints.audio_output_sample_rate);
 #endif
 
-   if (  audio_driver_st.current_microphone &&
-         !audio_driver_st.current_microphone->microphone_context)
+   if (  audio_driver_st.current_microphone.active &&
+         !audio_driver_st.current_microphone.microphone_context)
    { /* If the core requested a microphone before the driver was able to provide one...*/
       /* Now that the driver and driver context are ready, let's initialize the mid */
-      audio_driver_init_microphone_internal(audio_driver_st.current_microphone);
+      audio_driver_init_microphone_internal(&audio_driver_st.current_microphone);
 
-      if (audio_driver_st.current_microphone->microphone_context)
+      if (audio_driver_st.current_microphone.microphone_context)
          RARCH_DBG("[Audio]: Initialized a previously-pending microphone\n");
       else
       {
          RARCH_ERR("[Audio]: Failed to initialize a previously pending microphone; microphone will not be used\n");
 
-         audio_driver_free_microphone(audio_driver_st.current_microphone);
+         audio_driver_free_microphone(&audio_driver_st.current_microphone);
       }
 
    }
@@ -1750,20 +1769,17 @@ bool audio_driver_supports_microphone(const audio_driver_t* driver)
           driver->read_microphone;
 }
 
-static retro_microphone_t *audio_driver_microphone_handle_init(void *microphone_context)
+static void audio_driver_microphone_handle_init(retro_microphone_t *microphone, void *microphone_context)
 {
-   retro_microphone_t *microphone = malloc(sizeof(retro_microphone_t));
-
    if (microphone)
    {
       microphone->microphone_context = microphone_context;
       microphone->pending_enabled    = false;
+      microphone->active             = true;
    }
-
-   return microphone;
 }
 
-static void audio_driver_microphone_handle_free(retro_microphone_t* microphone)
+static void audio_driver_microphone_handle_free(retro_microphone_t *microphone)
 {
    audio_driver_state_t *audio_st     = &audio_driver_st;
    const audio_driver_t *audio_driver = audio_st->current_audio;
@@ -1776,9 +1792,14 @@ static void audio_driver_microphone_handle_free(retro_microphone_t* microphone)
       RARCH_WARN("[Audio]: Attempted to free a microphone without an active driver context\n");
 
    if (microphone->microphone_context)
+   {
       audio_driver->free_microphone(context, microphone->microphone_context);
+      microphone->microphone_context = NULL;
+   }
 
-   free(microphone);
+   microphone->active = false;
+   microphone->pending_enabled = false;
+   /* Do NOT free the microphone handle itself! It's allocated statically! */
 }
 
 /**
@@ -1801,17 +1822,15 @@ static void audio_driver_init_microphone_internal(retro_microphone_t* microphone
    if (!microphone || !audio_driver)
       return;
 
-   void *microphone_context = audio_driver->init_microphone(context,
+   microphone->microphone_context = audio_driver->init_microphone(context,
       *settings->arrays.microphone_device ? settings->arrays.microphone_device : NULL,
       settings->uints.audio_input_sample_rate,
       audio_latency,
       settings->uints.audio_block_frames,
       &actual_sample_rate);
 
-   if (microphone_context)
+   if (microphone->microphone_context)
    { /* If the microphone context was successfully created... */
-      microphone->microphone_context = microphone_context;
-
       RARCH_LOG("[Audio]: Initialized microphone (sample rate: %dHz)\n", actual_sample_rate);
 
       audio_driver_set_microphone_state(microphone, microphone->pending_enabled);
@@ -1821,9 +1840,9 @@ static void audio_driver_init_microphone_internal(retro_microphone_t* microphone
    }
    else
    {
+      audio_driver_microphone_handle_free(microphone);
       RARCH_ERR("[Audio]: Driver attempted to initialize the microphone but failed\n");
-      microphone->pending_enabled = false;
-      microphone->microphone_context = NULL;
+      microphone->pending_enabled = false; /* Disable the microphone */
    }
 }
 
@@ -1837,7 +1856,6 @@ retro_microphone_t *audio_driver_init_microphone(void)
    const settings_t *settings         = config_get_ptr();
    const audio_driver_t *audio_driver = audio_st->current_audio;
    void *context                      = audio_st->context_audio_data;
-   retro_microphone_t *microphone     = NULL;
 
    if (!settings)
    {
@@ -1864,10 +1882,10 @@ retro_microphone_t *audio_driver_init_microphone(void)
       return NULL;
    }
 
-   if (audio_st->current_microphone)
+   if (audio_st->current_microphone.active)
    { /* If the core has requested a second microphone... */
       RARCH_ERR("[Audio]: Failed to initialize a second microphone, frontend only supports one at a time right now\n");
-      if (audio_st->current_microphone->microphone_context)
+      if (audio_st->current_microphone.microphone_context)
          /* If that mic is initialized... */
          RARCH_ERR("[Audio]: An initialized microphone exists\n");
       else
@@ -1881,17 +1899,14 @@ retro_microphone_t *audio_driver_init_microphone(void)
     * if that happens, we have to initialize the microphones later.
     * But the user still wants a handle, so we'll give them one.
     */
-   microphone = audio_driver_microphone_handle_init(context);
-   /* If context is null, the handle won't have a valid microphone context (but we'll create one later) */
-
-   if (!microphone)
-      return NULL;
+    audio_driver_microphone_handle_init(&audio_st->current_microphone, context);
+   /* If context is NULL, the handle won't have a valid microphone context (but we'll create one later) */
 
    if (context)
    { /* If the audio driver is ready to initialize a microphone... */
-      audio_driver_init_microphone_internal(microphone);
+      audio_driver_init_microphone_internal(&audio_st->current_microphone);
 
-      if (microphone->microphone_context) /* If the microphone was successfully initialized... */
+      if (audio_st->current_microphone.microphone_context) /* If the microphone was successfully initialized... */
          RARCH_LOG("[Audio]: Initialized the requested microphone successfully\n");
       else
          goto mic_context_init_failed;
@@ -1901,12 +1916,9 @@ retro_microphone_t *audio_driver_init_microphone(void)
       RARCH_LOG("[Audio]: Microphone requested before audio context was ready; deferring initialization\n");
    }
 
-   audio_st->current_microphone = microphone;
-
-   return microphone;
+   return &audio_st->current_microphone;
 mic_context_init_failed:
-   audio_driver_microphone_handle_free(microphone);
-   audio_st->current_microphone = NULL;
+   audio_driver_microphone_handle_free(&audio_st->current_microphone);
 
    return NULL;
 }
@@ -1922,9 +1934,7 @@ void audio_driver_free_microphone(retro_microphone_t *microphone)
          audio_driver &&
          audio_driver->free_microphone)
    {
-      audio_driver->free_microphone(context, microphone->microphone_context);
-      free(microphone);
-      audio_st->current_microphone = NULL;
+      audio_driver_microphone_handle_free(microphone);
    }
 }
 
@@ -1934,7 +1944,7 @@ bool audio_driver_set_microphone_state(retro_microphone_t *microphone, bool stat
    void *context                      = audio_st->context_audio_data;
    const audio_driver_t *audio_driver = audio_st->current_audio;
 
-   if (!microphone || !audio_driver || !audio_driver->set_microphone_state)
+   if (!microphone || !microphone->active || !audio_driver || !audio_driver->set_microphone_state)
       return false;
 
    if (context && microphone->microphone_context)
@@ -1967,7 +1977,7 @@ bool audio_driver_get_microphone_state(const retro_microphone_t *microphone)
    void *context                      = audio_st->context_audio_data;
    const audio_driver_t *audio_driver = audio_st->current_audio;
 
-   if (!microphone || !audio_driver || !audio_driver->get_microphone_state)
+   if (!microphone || !microphone->active || !audio_driver || !audio_driver->get_microphone_state)
       return false;
 
    if (context && microphone->microphone_context)
@@ -1989,6 +1999,7 @@ int audio_driver_get_microphone_input(retro_microphone_t *microphone, int16_t* d
 
    /* TODO: Should mic use on a pending microphone driver be an error? */
    if (  !microphone ||
+         !microphone->active ||
          !audio_driver_alive() ||
          !audio_driver->get_microphone_state ||
          !audio_driver->read_microphone ||
