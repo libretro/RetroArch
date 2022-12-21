@@ -1776,6 +1776,8 @@ enum retro_mod
                                             * If the frontend and audio driver support microphones,
                                             * all function pointers will be non-NULL.
                                             * Otherwise, all function pointers will be NULL.
+                                            *
+                                            * Returns false if mic support is disabled
                                             */
 
 #define RETRO_ENVIRONMENT_GET_MICROPHONE_ENABLED (74 | RETRO_ENVIRONMENT_EXPERIMENTAL)
@@ -3812,6 +3814,9 @@ typedef struct retro_microphone retro_microphone_t;
  * You could call this to keep a microphone throughout your core's lifetime,
  * or you could call this when a microphone is plugged in to the emulated device.
  *
+ * The returned handle will be valid until it's freed,
+ * even if the audio driver is reinitialized.
+ *
  * @returns \c NULL if a microphone couldn't be initialized.
  * This likely means that no microphone is plugged in and recognized,
  * or the maximum number of supported microphones has been reached.
@@ -3858,7 +3863,7 @@ typedef void (RETRO_CALLCONV *retro_free_microphone_t)(retro_microphone_t *micro
 typedef bool (RETRO_CALLCONV *retro_set_microphone_state_t)(retro_microphone_t *microphone, bool state);
 
 /**
- * Queries the state of a microphone at the given index.
+ * Queries the active state of a microphone at the given index.
  * Will return whether the microphone is enabled,
  * even if the driver is paused.
  *
