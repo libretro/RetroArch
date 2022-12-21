@@ -2372,6 +2372,10 @@ MSG_HASH(
    "Μέσο Απευθείας Μετάδοσης"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
+   "Τοπικό"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
    "Θύρα UDP Απευθείας Μετάδοσης"
    )

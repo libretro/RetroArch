@@ -1155,6 +1155,10 @@ MSG_HASH(
 
 /* Settings > Recording */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
+   "Lleol"
+   )
 
 /* Settings > On-Screen Display */
 
