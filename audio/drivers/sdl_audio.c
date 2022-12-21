@@ -92,7 +92,9 @@ typedef struct sdl_audio
    SDL_AudioDeviceID speaker_device;
 
 #ifdef SDL_DRIVER_MIC_SUPPORT
-   /* Only one microphone is supported right now */
+   /* Only one microphone is supported right now;
+    * the driver state should track multiple microphone handles,
+    * but the driver *context* should track multiple microphone contexts */
    sdl_audio_microphone_t *microphone;
 #endif
 } sdl_audio_t;
