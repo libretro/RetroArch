@@ -1055,7 +1055,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
       d3d10_fake_context.get_metrics = win32_get_metrics;
       video_context_driver_set(&d3d10_fake_context); 
 #ifdef HAVE_SLANG
-      const char *shader_preset   = retroarch_get_shader_preset();
+      const char *shader_preset   = video_shader_get_current_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
       d3d10_gfx_set_shader(d3d10, type, shader_preset);
 #endif
@@ -1156,7 +1156,7 @@ static void d3d10_init_history(d3d10_video_t* d3d10,
     * and to reduce memory fragmentation */
 
    assert(d3d10->shader_preset);
-   for (i = 0; i < (unsigned)d3d10->shader_preset->history_size + 1; i++)
+   for (i = 0; i < (int)d3d10->shader_preset->history_size + 1; i++)
    {
       d3d10->frame.texture[i].desc.Width  = width;
       d3d10->frame.texture[i].desc.Height = height;
@@ -1349,7 +1349,7 @@ static bool d3d10_gfx_frame(
          {
             int i;
             /* Release all render targets first to avoid memory fragmentation */
-            for (i = 0; i < d3d10->shader_preset->passes; i++)
+            for (i = 0; i < (int) d3d10->shader_preset->passes; i++)
             {
                d3d10_release_texture(&d3d10->pass[i].rt);
                d3d10_release_texture(&d3d10->pass[i].feedback);

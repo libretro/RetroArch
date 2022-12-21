@@ -1524,10 +1524,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SHADER_NEXT:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #ifdef HAVE_MENU
-         dir_check_shader(menu_st->driver_data, settings,
+         video_shader_dir_check_shader(menu_st->driver_data, settings,
                &video_st->dir_shader_list, true, false);
 #else
-         dir_check_shader(NULL, settings,
+         video_shader_dir_check_shader(NULL, settings,
                &video_st->dir_shader_list, true, false);
 #endif
 #endif
@@ -1535,10 +1535,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SHADER_PREV:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #ifdef HAVE_MENU
-         dir_check_shader(menu_st->driver_data, settings,
+         video_shader_dir_check_shader(menu_st->driver_data, settings,
                &video_st->dir_shader_list, false, true);
 #else
-         dir_check_shader(NULL, settings,
+         video_shader_dir_check_shader(NULL, settings,
                &video_st->dir_shader_list, false, true);
 #endif
 #endif

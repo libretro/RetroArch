@@ -1452,11 +1452,11 @@ bool command_set_shader(command_t *cmd, const char *arg)
          char abs_arg[PATH_MAX_LENGTH];
          const char *ref_path = settings->paths.directory_video_shader;
          fill_pathname_join_special(abs_arg, ref_path, arg, sizeof(abs_arg));
-         return apply_shader(settings, type, abs_arg, true);
+         return video_shader_apply_shader(settings, type, abs_arg, true);
       }
    }
 
-   return apply_shader(settings, type, arg, true);
+   return video_shader_apply_shader(settings, type, arg, true);
 }
 #endif
 

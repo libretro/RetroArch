@@ -991,7 +991,7 @@ static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
 
 static bool gl3_init_filter_chain(gl3_t *gl)
 {
-   const char *shader_path     = retroarch_get_shader_preset();
+   const char *shader_path     = video_shader_get_current_shader_preset();
    enum rarch_shader_type type = video_shader_parse_type(shader_path);
 
    if (string_is_empty(shader_path))

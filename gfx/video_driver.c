@@ -1548,7 +1548,7 @@ VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
    video_driver_filter_free();
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   dir_free_shader(
+   video_shader_dir_free_shader(
          (struct rarch_dir_shader_list*)&video_st->dir_shader_list,
          config_get_ptr()->bools.video_shader_remember_last_dir);
 #endif
