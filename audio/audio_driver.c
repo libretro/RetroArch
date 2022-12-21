@@ -1206,8 +1206,10 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          break;
       case AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC:
       default:
-         return audio_driver_mixer_get_free_stream_slot(
-                  &free_slot, params->stream_type);
+         if (!audio_driver_mixer_get_free_stream_slot(
+                  &free_slot, params->stream_type))
+            return false;
+         break;
    }
 
    if (params->state == AUDIO_STREAM_STATE_NONE)
