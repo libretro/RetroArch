@@ -72,7 +72,6 @@ typedef struct sdl_audio_microphone
 #endif
 
    fifo_buffer_t *sample_buffer;
-   bool nonblock;
    bool is_paused;
    SDL_AudioDeviceID device_id;
 } sdl_audio_microphone_t;
