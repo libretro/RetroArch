@@ -1778,7 +1778,11 @@ static void frontend_unix_get_env(int *argc,
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
          "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
 
-   if (path_is_directory("/usr/local/share/retroarch/assets"))
+   if (path_is_directory(ASSETS_DIR "/assets"))
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+            ASSETS_DIR,
+            "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   else if (path_is_directory("/usr/local/share/retroarch/assets"))
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
             "/usr/local/share/retroarch",
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
