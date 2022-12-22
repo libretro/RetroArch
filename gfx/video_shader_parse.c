@@ -1903,15 +1903,8 @@ bool video_shader_write_preset(const char *path,
       const struct video_shader *shader, 
       bool reference)
 {
-   /* We need to clean up paths to be able to properly process them
-    * path and shader->loaded_preset_path can use '/' on 
-    * Windows due to Qt being Qt */
-   // char preset_dir[PATH_MAX_LENGTH];
-
    if (!shader || string_is_empty(path))
       return false;
-
-   // fill_pathname_join(preset_dir, shader_dir, "presets", sizeof(preset_dir));
 
    /* If we should still save a referenced preset do it now */
    if (reference)
