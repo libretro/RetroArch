@@ -1808,7 +1808,11 @@ static void frontend_unix_get_env(int *argc,
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], base_path,
          "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
 #else
-   if (path_is_directory("/usr/local/share/retroarch/filters/audio"))
+   if (path_is_directory(FILTERS_DIR "/filters/audio"))
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
+            FILTERS_DIR,
+            "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+   else if (path_is_directory("/usr/local/share/retroarch/filters/audio"))
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
             "/usr/local/share/retroarch",
             "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
@@ -1828,7 +1832,11 @@ static void frontend_unix_get_env(int *argc,
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], base_path,
             "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
 
-   if (path_is_directory("/usr/local/share/retroarch/filters/video"))
+   if (path_is_directory(FILTERS_DIR "/filters/video"))
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+            FILTERS_DIR,
+            "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   else if (path_is_directory("/usr/local/share/retroarch/filters/video"))
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
             "/usr/local/share/retroarch",
             "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
