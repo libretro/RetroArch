@@ -792,6 +792,8 @@ DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_manager_steam_list,       MENU
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_cheat_options_list,       MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS)
 
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_video_shader_preset,    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO)
+DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_video_shader_preset_prepend,    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO)
+DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_video_shader_preset_append,    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO)
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_cheat_file_load,        MENU_ENUM_LABEL_VALUE_CHEAT_FILE)
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_cheat_file_load_append, MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND)
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_overlay,                MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET)
@@ -1257,6 +1259,10 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_title_disk_image_append},
       {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET,
          action_get_title_video_shader_preset},
+      {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND,
+         action_get_title_video_shader_preset_prepend},
+      {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND,
+         action_get_title_video_shader_preset_append},
       {MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
          action_get_title_cheat_file_load},
       {MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND,
@@ -1657,6 +1663,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset_prepend);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset_append);
             break;
          case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_cheat_file_load);

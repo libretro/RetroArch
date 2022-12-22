@@ -3773,6 +3773,14 @@ MSG_HASH(
    "video_shader_preset"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND,
+   "video_shader_preset_prepend"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND,
+   "video_shader_preset_append"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,
    "video_shader_preset_parameters"
    )

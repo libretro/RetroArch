@@ -233,7 +233,6 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
  * Writes a preset to disk. Can be written as a simple preset (With the #reference directive in it) or a full preset.
  **/
 bool video_shader_write_preset(const char *path,
-                                 const char *shader_dir,
                                  const struct video_shader *shader, 
                                  bool reference);
 
@@ -259,17 +258,17 @@ bool video_shader_check_for_changes(void);
 
 const char *video_shader_type_to_str(enum rarch_shader_type type);
 
-void dir_free_shader(
+void video_shader_dir_free_shader(
       struct rarch_dir_shader_list *dir_list,
       bool shader_remember_last_dir);
 
-void dir_init_shader(
-      void *menu_driver_data_,
-      settings_t *settings,
-      struct rarch_dir_shader_list *dir_list);
+// void video_shader_dir_init_shader(
+//       void *menu_driver_data_,
+//       settings_t *settings,
+//       struct rarch_dir_shader_list *dir_list);
 
 /**
- * dir_check_shader:
+ * video_shader_dir_check_shader:
  * @pressed_next         : Was next shader key pressed?
  * @pressed_prev         : Was previous shader key pressed?
  *
@@ -279,7 +278,7 @@ void dir_init_shader(
  *
  * Will also immediately apply the shader.
  **/
-void dir_check_shader(
+void video_shader_dir_check_shader(
       void *menu_driver_data_,
       settings_t *settings,
       struct rarch_dir_shader_list *dir_list,
@@ -287,7 +286,7 @@ void dir_check_shader(
       bool pressed_prev);
 
 /**
- * load_shader_preset:
+ * video_shader_load_auto_shader_preset:
  *
  * Tries to load a supported core-, game-, folder-specific or global
  * shader preset from its respective location:
@@ -308,9 +307,18 @@ void dir_check_shader(
  *
  * Returns: false if there was an error or no action was performed.
  */
-bool load_shader_preset(settings_t *settings, const char *core_name, char *s, size_t len);
+static bool video_shader_load_auto_shader_preset(settings_t *settings, const char *core_name, char *s, size_t len);
 
-bool apply_shader(
+bool video_shader_combine_preset_and_apply(
+      settings_t *settings,
+      enum rarch_shader_type type,
+      struct video_shader *menu_shader,
+      const char *preset_path,
+      const char *temp_dir,
+      bool prepend,
+      bool message);
+
+bool video_shader_apply_shader(
       settings_t *settings,
       enum rarch_shader_type type,
       const char *preset_path, bool message);
