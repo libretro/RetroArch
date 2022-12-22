@@ -525,7 +525,7 @@ static bool sdl_audio_microphone_set_state(void *data, void *microphone_context,
    return true;
 }
 
-static int sdl_audio_read(void *data, void *microphone_context, void *buf, size_t size)
+static int sdl_audio_read_microphone(void *data, void *microphone_context, void *buf, size_t size)
 {
    int ret                            = 0;
    sdl_audio_t *sdl                   = (sdl_audio_t*)data;
@@ -604,7 +604,7 @@ audio_driver_t audio_sdl = {
    sdl_audio_free_microphone,
    sdl_audio_microphone_get_state,
    sdl_audio_microphone_set_state,
-   sdl_audio_read
+   sdl_audio_read_microphone
 #else
       NULL, /* Microphone support for this driver requires SDL 2 */
       NULL,
