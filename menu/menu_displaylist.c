@@ -13275,6 +13275,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                count++;
 
 #ifdef HAVE_COMPRESSION
+#ifdef HAVE_UPDATE_CORE_INFO
             if (settings->bools.menu_show_core_updater)
             {
                if (menu_entries_append(info->list,
@@ -13284,6 +13285,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
             }
+#endif
 
 #ifdef HAVE_UPDATE_ASSETS
             if (menu_entries_append(info->list,
