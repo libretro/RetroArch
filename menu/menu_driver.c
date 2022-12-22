@@ -7406,11 +7406,11 @@ bool menu_shader_manager_append_preset(struct video_shader *shader,
    bool ret = false;
    settings_t* settings = config_get_ptr();
    const char *dir_video_shader  = settings->paths.directory_video_shader;
-   //struct video_shader* shader = menu_shader_get();
+   /*struct video_shader* shader = menu_shader_get();*/
    enum rarch_shader_type type = menu_shader_manager_get_type(shader);
 
-   //if (!video_shader_apply_shader(settings, type, preset_path, true))
-   //   goto clear;
+   /*if (!video_shader_apply_shader(settings, type, preset_path, true))
+      goto clear;*/
 
    if (string_is_empty(preset_path))
    {

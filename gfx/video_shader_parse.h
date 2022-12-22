@@ -262,10 +262,12 @@ void video_shader_dir_free_shader(
       struct rarch_dir_shader_list *dir_list,
       bool shader_remember_last_dir);
 
-// void video_shader_dir_init_shader(
-//       void *menu_driver_data_,
-//       settings_t *settings,
-//       struct rarch_dir_shader_list *dir_list);
+/**
+ * void video_shader_dir_init_shader(
+ *        void *menu_driver_data_,
+ *        settings_t *settings,
+ *        struct rarch_dir_shader_list *dir_list);
+ **/
 
 /**
  * video_shader_dir_check_shader:
