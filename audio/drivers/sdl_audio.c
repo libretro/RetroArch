@@ -607,7 +607,9 @@ static int sdl_audio_read_microphone(void *data, void *microphone_context, void 
       ret = read;
    }
 
-   return ret;
+   return ret / sizeof(int16_t);
+   /* Because the function should return the number of *samples* processed, not bytes
+    * (which is what the FIFO queues operate on) */
 }
 
 #endif

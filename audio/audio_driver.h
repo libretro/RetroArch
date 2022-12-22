@@ -312,7 +312,7 @@ typedef struct audio_driver
     * @param[out] buf Buffer for received audio data.
     * Should be large enough to hold one frame's worth of audio samples.
     * @param[in] size Size of audio buffer, in samples (\em not bytes).
-    * @return The number of bytes that were read into \c buf,
+    * @return The number of samples that were read into \c buf,
     * or -1 if there was an error.
     */
    int (*read_microphone)(void *driver_context, void *microphone_context, void *buf, size_t size);
