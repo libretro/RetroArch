@@ -424,7 +424,26 @@ static void *sdl_audio_init_microphone(void *data,
       RARCH_ERR("[SDL audio]: Failed to open SDL audio input device: %s\n", SDL_GetError());
       goto error;
    }
-   RARCH_LOG("[SDL audio]: Opened SDL audio input device with ID %u\n", microphone->device_id);
+   RARCH_DBG("[SDL audio]: Opened SDL audio input device with ID %u\n",
+             microphone->device_id);
+   RARCH_DBG("[SDL audio]: Requested a microphone frequency of %u Hz, got %u Hz\n",
+             desired_spec.freq, out.freq);
+   RARCH_DBG("[SDL audio]: Requested %u channels for microphone, got %u\n",
+             desired_spec.channels, out.channels);
+   RARCH_DBG("[SDL audio]: Requested a %u-sample microphone buffer, got %u samples (%u bytes)\n",
+             frames, out.samples, out.size);
+   RARCH_DBG("[SDL audio]: Got a microphone silence value of %u\n", out.silence);
+   RARCH_DBG("[SDL audio]: Requested microphone audio format: %u-bit %s %s %s endian\n",
+             SDL_AUDIO_BITSIZE(desired_spec.format),
+             SDL_AUDIO_ISSIGNED(desired_spec.format) ? "signed" : "unsigned",
+             SDL_AUDIO_ISFLOAT(desired_spec.format) ? "floating-point" : "integer",
+             SDL_AUDIO_ISBIGENDIAN(desired_spec.format) ? "big" : "little");
+
+   RARCH_DBG("[SDL audio]: Received microphone audio format: %u-bit %s %s %s endian\n",
+             SDL_AUDIO_BITSIZE(desired_spec.format),
+             SDL_AUDIO_ISSIGNED(desired_spec.format) ? "signed" : "unsigned",
+             SDL_AUDIO_ISFLOAT(desired_spec.format) ? "floating-point" : "integer",
+             SDL_AUDIO_ISBIGENDIAN(desired_spec.format) ? "big" : "little");
 
    if (new_rate)
       *new_rate = out.freq;
