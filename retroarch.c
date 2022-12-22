@@ -2000,6 +2000,11 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_REINIT:
          command_event_reinit(
                data ? *(const int*)data : DRIVERS_CMD_ALL);
+
+         /* Recalibrate frame delay target */
+         if (settings->bools.video_frame_delay_auto)
+            video_st->frame_delay_target = 0;
+
          break;
       case CMD_EVENT_CHEATS_APPLY:
 #ifdef HAVE_CHEATS

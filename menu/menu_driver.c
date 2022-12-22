@@ -6969,6 +6969,10 @@ void retroarch_menu_running_finished(bool quit)
       if (settings && settings->bools.input_overlay_hide_in_menu)
          input_overlay_init();
 #endif
+
+   /* Ignore frame delay target temporarily */
+   if (settings->bools.video_frame_delay_auto)
+      video_st->frame_delay_pause = true;
 }
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)

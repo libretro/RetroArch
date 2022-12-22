@@ -6371,23 +6371,42 @@ static void setting_get_string_representation_video_frame_delay(rarch_setting_t 
       char *s, size_t len)
 {
    settings_t *settings           = config_get_ptr();
-   video_driver_state_t *video_st = video_state_get_ptr();
 
    if (!setting)
       return;
 
    if (settings && settings->bools.video_frame_delay_auto)
    {
+      video_driver_state_t *video_st = video_state_get_ptr();
+      struct menu_state *menu_st     = menu_state_get_ptr();
+      file_list_t *menu_stack        = MENU_LIST_GET(menu_st->entries.list, 0);
+      const char *label              = NULL;
+
+      if (menu_stack && menu_stack->size)
+         label = menu_stack->list[menu_stack->size - 1].label;
+
       if (*setting->value.target.unsigned_integer == 0)
-         snprintf(s, len, "%s (%u %s)",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC),
-               video_st->frame_delay_effective,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+      {
+         if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
+            snprintf(s, len, "%s",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC));
+         else
+            snprintf(s, len, "%s (%u %s)",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC),
+                  video_st->frame_delay_effective,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+      }
       else
-         snprintf(s, len, "%u (%u %s)",
-               *setting->value.target.unsigned_integer,
-               video_st->frame_delay_effective,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+      {
+         if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
+            snprintf(s, len, "%u",
+                  *setting->value.target.unsigned_integer);
+         else
+            snprintf(s, len, "%u (%u %s)",
+                  *setting->value.target.unsigned_integer,
+                  video_st->frame_delay_effective,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+      }
    }
    else
       snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
