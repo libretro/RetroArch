@@ -176,7 +176,7 @@ static void *metal_init(
    metal_fake_context.get_flags = metal_get_flags;
    video_context_driver_set(&metal_fake_context);
 
-   shader_path = retroarch_get_shader_preset();
+   shader_path = video_shader_get_current_shader_preset();
    type = video_shader_parse_type(shader_path);
    metal_set_shader((__bridge void *)md, type, shader_path);
 

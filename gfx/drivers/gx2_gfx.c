@@ -499,7 +499,7 @@ static void *wiiu_gfx_init(const video_info_t *video,
 
       video_context_driver_set(&wiiu_fake_context); 
 
-      shader_preset               = retroarch_get_shader_preset();
+      shader_preset               = video_shader_get_current_shader_preset();
       type                        = video_shader_parse_type(shader_preset);
       wiiu_gfx_set_shader(wiiu, type, shader_preset);
    }

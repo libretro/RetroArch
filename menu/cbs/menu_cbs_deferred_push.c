@@ -136,6 +136,8 @@ GENERIC_DEFERRED_PUSH(deferred_push_browse_url_start,               DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_core_list,                      DISPLAYLIST_CORES)
 GENERIC_DEFERRED_PUSH(deferred_push_configurations,                 DISPLAYLIST_CONFIG_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset,            DISPLAYLIST_SHADER_PRESET)
+GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_prepend,    DISPLAYLIST_SHADER_PRESET_PREPEND)
+GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_append,     DISPLAYLIST_SHADER_PRESET_APPEND)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_pass,              DISPLAYLIST_SHADER_PASS)
 GENERIC_DEFERRED_PUSH(deferred_push_video_filter,                   DISPLAYLIST_VIDEO_FILTERS)
 GENERIC_DEFERRED_PUSH(deferred_push_images,                         DISPLAYLIST_IMAGES)
@@ -850,6 +852,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS, deferred_push_core_input_remapping_options},
       {MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST, deferred_push_remap_file_manager},
       {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET, deferred_push_video_shader_preset},
+      {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND, deferred_push_video_shader_preset_prepend},
+      {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND, deferred_push_video_shader_preset_append},
       {MENU_ENUM_LABEL_VIDEO_SHADER_PASS, deferred_push_video_shader_pass},
       {MENU_ENUM_LABEL_VIDEO_FILTER, deferred_push_video_filter},
       {MENU_ENUM_LABEL_MENU_WALLPAPER, deferred_push_images},
@@ -1176,6 +1180,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_prepend);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_append);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_pass);

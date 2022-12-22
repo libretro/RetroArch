@@ -2081,7 +2081,7 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
 {
    video_shader_ctx_init_t init_data;
    bool ret                          = false;
-   const char *shader_path           = retroarch_get_shader_preset();
+   const char *shader_path           = video_shader_get_current_shader_preset();
    enum rarch_shader_type parse_type = video_shader_parse_type(shader_path);
    enum rarch_shader_type type;
 

@@ -11895,6 +11895,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   count++;
 
                if (menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND,
+                        FILE_TYPE_PATH, 0, 0, NULL))
+                  count++;
+
+               if (menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND,
+                        FILE_TYPE_PATH, 0, 0, NULL))
+                  count++;
+
+               if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE),
                         MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE,
@@ -13740,6 +13754,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (video_shader_is_supported(RARCH_SHADER_SLANG))
                      string_list_append(&str_list, "slangp", attr);
                   break;
+
                case DISPLAYLIST_SHADER_PASS:
                   info->type_default = FILE_TYPE_SHADER;
                   if (video_shader_is_supported(RARCH_SHADER_CG))
@@ -13762,6 +13777,72 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          }
 #endif
          break;
+      case DISPLAYLIST_SHADER_PRESET_PREPEND:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         {
+            struct string_list str_list = {0};
+            char new_exts[PATH_MAX_LENGTH];
+            union string_list_elem_attr attr;
+
+            attr.i = 0;
+
+            new_exts[0] = '\0';
+
+            string_list_initialize(&str_list);
+
+            filebrowser_clear_type();
+
+            info->type_default = FILE_TYPE_SHADER_PRESET;
+            if (video_shader_is_supported(RARCH_SHADER_CG))
+               string_list_append(&str_list, "cgp", attr);
+            if (video_shader_is_supported(RARCH_SHADER_GLSL))
+               string_list_append(&str_list, "glslp", attr);
+            if (video_shader_is_supported(RARCH_SHADER_SLANG))
+               string_list_append(&str_list, "slangp", attr);
+
+            string_list_join_concat(new_exts, sizeof(new_exts), &str_list, "|");
+            if (!string_is_empty(info->exts))
+               free(info->exts);
+            info->exts = strdup(new_exts);
+            string_list_deinitialize(&str_list);
+            use_filebrowser    = true;
+         }
+#endif
+      break;
+      case DISPLAYLIST_SHADER_PRESET_APPEND:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         {
+            struct string_list str_list = {0};
+            char new_exts[PATH_MAX_LENGTH];
+            union string_list_elem_attr attr;
+
+            attr.i = 0;
+
+            new_exts[0] = '\0';
+
+            string_list_initialize(&str_list);
+
+            filebrowser_clear_type();
+
+            info->type_default = FILE_TYPE_SHADER_PRESET;
+            if (video_shader_is_supported(RARCH_SHADER_CG))
+               string_list_append(&str_list, "cgp", attr);
+            if (video_shader_is_supported(RARCH_SHADER_GLSL))
+               string_list_append(&str_list, "glslp", attr);
+            if (video_shader_is_supported(RARCH_SHADER_SLANG))
+               string_list_append(&str_list, "slangp", attr);
+
+            string_list_join_concat(new_exts, sizeof(new_exts), &str_list, "|");
+            if (!string_is_empty(info->exts))
+               free(info->exts);
+            info->exts = strdup(new_exts);
+            string_list_deinitialize(&str_list);
+            use_filebrowser    = true;
+         }
+#endif
+      break;
       case DISPLAYLIST_IMAGES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          if (     (filebrowser_get_type() != FILEBROWSER_SELECT_FILE)

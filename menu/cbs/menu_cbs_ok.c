@@ -1044,6 +1044,38 @@ int generic_action_ok_displaylist_push(const char *path,
          }
 #endif
          break;
+      case ACTION_OK_DL_SHADER_PRESET_PREPEND:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         {
+            const char *shader_file_name = NULL;
+
+            filebrowser_clear_type();
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+
+            menu_driver_get_last_shader_preset_path(&info_path, &shader_file_name);
+            menu_driver_set_pending_selection(shader_file_name);
+         }
+#endif
+         break;
+      case ACTION_OK_DL_SHADER_PRESET_APPEND:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         {
+            const char *shader_file_name = NULL;
+
+            filebrowser_clear_type();
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+
+            menu_driver_get_last_shader_preset_path(&info_path, &shader_file_name);
+            menu_driver_set_pending_selection(shader_file_name);
+         }
+#endif
+         break;
       case ACTION_OK_DL_CONTENT_LIST:
          info.type          = FILE_TYPE_DIRECTORY;
          info.directory_ptr = idx;
@@ -2021,10 +2053,16 @@ static int generic_action_ok(const char *path,
             /* Cache selected shader parent directory/file name */
             menu_driver_set_last_shader_preset_path(action_path);
 
-            menu_shader_manager_set_preset(shader,
-                  menu_driver_get_last_shader_preset_type(),
-                  action_path,
-                  true);
+            /* Check whether this a load or append action */
+            if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND)) ||
+                string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND)))
+               menu_shader_manager_append_preset(shader, action_path, 
+                                                 string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND)));
+            else
+               menu_shader_manager_set_preset(shader,
+                     menu_driver_get_last_shader_preset_type(),
+                     action_path,
+                     true);
          }
 #endif
          break;
@@ -2254,7 +2292,7 @@ DEFAULT_ACTION_OK_SET(action_ok_record_configfile_load,      ACTION_OK_LOAD_RECO
 DEFAULT_ACTION_OK_SET(action_ok_stream_configfile_load,      ACTION_OK_LOAD_STREAM_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
 DEFAULT_ACTION_OK_SET(action_ok_remap_file_load,      ACTION_OK_LOAD_REMAPPING_FILE,   MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-DEFAULT_ACTION_OK_SET(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET   ,        MENU_ENUM_LABEL_SHADER_OPTIONS)
+DEFAULT_ACTION_OK_SET(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET,           MENU_ENUM_LABEL_SHADER_OPTIONS)
 DEFAULT_ACTION_OK_SET(action_ok_shader_pass_load,     ACTION_OK_LOAD_SHADER_PASS,      MENU_ENUM_LABEL_SHADER_OPTIONS)
 #endif
 DEFAULT_ACTION_OK_SET(action_ok_rgui_menu_theme_preset_load,  ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET,  MENU_ENUM_LABEL_MENU_SETTINGS)
@@ -5824,6 +5862,8 @@ DEFAULT_ACTION_OK_FUNC(action_ok_stream_configfile, ACTION_OK_DL_STREAM_CONFIGFI
 DEFAULT_ACTION_OK_FUNC(action_ok_remap_file, ACTION_OK_DL_REMAP_FILE)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset, ACTION_OK_DL_SHADER_PRESET)
+DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_prepend, ACTION_OK_DL_SHADER_PRESET_PREPEND)
+DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_append, ACTION_OK_DL_SHADER_PRESET_APPEND)
 #endif
 DEFAULT_ACTION_OK_FUNC(action_ok_push_generic_list, ACTION_OK_DL_GENERIC)
 DEFAULT_ACTION_OK_FUNC(action_ok_audio_dsp_plugin, ACTION_OK_DL_AUDIO_DSP_PLUGIN)
@@ -8026,6 +8066,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {MENU_ENUM_LABEL_VIDEO_SHADER_PASS,                   action_ok_shader_pass},
          {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET,                 action_ok_shader_preset},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND,          action_ok_shader_preset_prepend},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND,          action_ok_shader_preset_append},
          {MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,             action_ok_shader_parameters},
          {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,      action_ok_shader_parameters},
          {MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,                action_ok_shader_apply_changes},

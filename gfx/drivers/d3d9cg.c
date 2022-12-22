@@ -1621,7 +1621,7 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
    d3d9_cg_fake_context.get_metrics = win32_get_metrics;
    video_context_driver_set(&d3d9_cg_fake_context); 
    {
-      const char *shader_preset   = retroarch_get_shader_preset();
+      const char *shader_preset   = video_shader_get_current_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
 
       d3d9_cg_set_shader(d3d, type, shader_preset);

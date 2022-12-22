@@ -182,7 +182,7 @@ static INLINE void d3d9_renderchain_destroy_passes_and_luts(
    {
       int i;
 
-      for (i = 0; i < chain->passes->count; i++)
+      for (i = 0; i < (int) chain->passes->count; i++)
       {
          if (chain->passes->data[i].attrib_map)
             free(chain->passes->data[i].attrib_map);
@@ -241,7 +241,7 @@ static INLINE void d3d9_renderchain_unbind_all(d3d9_renderchain_t *chain)
    /* Have to be a bit anal about it.
     * Render targets hate it when they have filters apparently.
     */
-   for (i = 0; i < chain->bound_tex->count; i++)
+   for (i = 0; i < (int) chain->bound_tex->count; i++)
    {
       IDirect3DDevice9_SetSamplerState(chain->dev,
             chain->bound_tex->data[i], D3DSAMP_MINFILTER, D3DTEXF_POINT);
@@ -251,7 +251,7 @@ static INLINE void d3d9_renderchain_unbind_all(d3d9_renderchain_t *chain)
             chain->bound_tex->data[i], (IDirect3DBaseTexture9*)NULL);
    }
 
-   for (i = 0; i < chain->bound_vert->count; i++)
+   for (i = 0; i < (int) chain->bound_vert->count; i++)
       IDirect3DDevice9_SetStreamSource(chain->dev, chain->bound_vert->data[i], 0, 0, 0);
 
    if (chain->bound_tex)
@@ -369,7 +369,7 @@ static INLINE void d3d9_recompute_pass_sizes(
       return;
    }
 
-   for (i = 1; i < d3d->shader.passes; i++)
+   for (i = 1; i < (int) d3d->shader.passes; i++)
    {
       d3d9_convert_geometry(
             &link_info,

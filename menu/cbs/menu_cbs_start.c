@@ -120,6 +120,40 @@ static int action_start_shader_preset(
    return 0;
 }
 
+static int action_start_shader_preset_prepend(
+   const char* path, const char* label,
+   unsigned type, size_t idx, size_t entry_idx)
+{
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   bool refresh = false;
+   struct video_shader* shader = menu_shader_get();
+
+   shader->passes = 0;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+#endif
+   return 0;
+}
+
+static int action_start_shader_preset_append(
+   const char* path, const char* label,
+   unsigned type, size_t idx, size_t entry_idx)
+{
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   bool refresh = false;
+   struct video_shader* shader = menu_shader_get();
+
+   shader->passes = 0;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+#endif
+   return 0;
+}
+
 static int action_start_video_filter_file_load(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -751,6 +785,12 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
             BIND_ACTION_START(cbs, action_start_shader_preset);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
+            BIND_ACTION_START(cbs, action_start_shader_preset_append);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
+            BIND_ACTION_START(cbs, action_start_shader_preset_prepend);
             break;
          case MENU_ENUM_LABEL_REMAP_FILE_INFO:
             BIND_ACTION_START(cbs, action_start_remap_file_info);

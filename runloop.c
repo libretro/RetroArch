@@ -7620,9 +7620,9 @@ static enum runloop_state_enum runloop_check_state(
             runloop_st->shader_delay_timer.timeout_end = 0;
 
             {
-               const char *preset          = retroarch_get_shader_preset();
+               const char *preset          = video_shader_get_current_shader_preset();
                enum rarch_shader_type type = video_shader_parse_type(preset);
-               apply_shader(settings, type, preset, false);
+               video_shader_apply_shader(settings, type, preset, false);
             }
          }
       }
