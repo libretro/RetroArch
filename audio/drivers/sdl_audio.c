@@ -457,7 +457,7 @@ static void *sdl_audio_init_microphone(void *data,
              latency, (int)(out.samples * 4 * 1000 / out.freq));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
-   bufsize                   = out.samples * 4 * sizeof(int16_t);
+   bufsize                   = out.samples * 2 * sizeof(int16_t);
    tmp                       = calloc(1, bufsize);
    microphone->sample_buffer = fifo_new(bufsize);
 
