@@ -556,9 +556,9 @@ static bool sdl_audio_microphone_set_state(void *data, void *microphone_context,
    return true;
 }
 
-static int sdl_audio_read_microphone(void *data, void *microphone_context, void *buf, size_t size)
+static ssize_t sdl_audio_read_microphone(void *data, void *microphone_context, void *buf, size_t size)
 {
-   int ret                            = 0;
+   ssize_t ret                        = 0;
    sdl_audio_t *sdl                   = (sdl_audio_t*)data;
    sdl_audio_microphone_t *microphone = (sdl_audio_microphone_t*)microphone_context;
 
