@@ -1787,7 +1787,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       {
          snprintf(tmp, sizeof(tmp),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
-            controller,
+            controller+1,
             input_config_get_device_name(controller),
             input_config_get_device_name_index(controller));
 
