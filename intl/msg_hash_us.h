@@ -2424,6 +2424,26 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
    "Adjust the volume of the audio stream."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "State : N/A"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
+   "State : Stopped"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
+   "State : Playing"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   "State : Playing (Looped)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+   "State : Playing (Sequential)"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
@@ -11278,6 +11298,10 @@ MSG_HASH(
    "Access subsystem settings for current content."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   " Current Content: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
    "No netplay hosts found."
    )
@@ -11308,6 +11332,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    "Port %d device name: %s (#%d)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
+   "Device display name: %s\nDevice config name: %s\nDevice VID/PID: %d/%d"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
@@ -13115,16 +13143,32 @@ MSG_HASH(
    "configured in port"
    )
 MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT_NR,
+   "%s configured in port %u"
+   )
+MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
    "disconnected from port"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
+   "%s disconnected from port %u"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "not configured"
    )
 MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_NR,
+   "%s (%u/%u) not configured"
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
    "not configured, using fallback"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
+   "%s (%u/%u) not configured, using fallback"
    )
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,

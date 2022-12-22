@@ -1241,8 +1241,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
       }
    }
 
-   /* TODO/FIXME - Localize */
-   snprintf(tmp, sizeof(tmp), "Device display name: %s\nDevice config name: %s\nDevice VID/PID: %d/%d",
+   snprintf(tmp, sizeof(tmp), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO),
       input_config_get_device_display_name(controller) ? input_config_get_device_display_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
       input_config_get_device_display_name(controller) ? input_config_get_device_config_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
       input_config_get_device_vid(controller), input_config_get_device_pid(controller));
@@ -1329,9 +1328,8 @@ static int action_bind_sublabel_subsystem_add(
 
    if (subsystem && runloop_st->subsystem_current_count > 0)
    {
-      /* TODO/FIXME - Localize */
       if (content_get_subsystem_rom_id() < subsystem->num_roms)
-         snprintf(s, len, " Current Content: %s",
+         snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO),
             content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD
             ? subsystem->roms[content_get_subsystem_rom_id()].desc
             : subsystem->roms[0].desc);
@@ -1419,29 +1417,32 @@ static int action_bind_sublabel_audio_mixer_stream(
    {
       case AUDIO_STREAM_STATE_NONE:
          strlcpy(msg,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE),
                sizeof(msg));
          break;
       case AUDIO_STREAM_STATE_STOPPED:
-         /* TODO/FIXME - Localize */
-         strlcpy(msg, "Stopped", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED),
+               sizeof(msg));
          break;
       case AUDIO_STREAM_STATE_PLAYING:
-         /* TODO/FIXME - Localize */
-         strlcpy(msg, "Playing", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING),
+               sizeof(msg));
          break;
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-         /* TODO/FIXME - Localize */
-         strlcpy(msg, "Playing (Looped)", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED),
+               sizeof(msg));
          break;
       case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
-         /* TODO/FIXME - Localize */
-         strlcpy(msg, "Playing (Sequential)", sizeof(msg));
+         strlcpy(msg,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL),
+               sizeof(msg));
          break;
    }
 
-   /* TODO/FIXME - Localize */
-   snprintf(s, len, "State : %s | %s: %.2f dB", msg,
+   snprintf(s, len, "%s | %s: %.2f dB", msg,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME),
          stream->volume);
    return 0;
