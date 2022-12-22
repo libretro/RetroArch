@@ -1842,7 +1842,6 @@ static void audio_driver_init_microphone_internal(retro_microphone_t* microphone
    {
       audio_driver_microphone_handle_free(microphone);
       RARCH_ERR("[Audio]: Driver attempted to initialize the microphone but failed\n");
-      microphone->pending_enabled = false; /* Disable the microphone */
    }
 }
 
