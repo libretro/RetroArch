@@ -438,37 +438,46 @@ static void audio_driver_flush(
 
    src_data.data_out                 = NULL;
    src_data.output_frames            = 0;
+   /* We'll assign a proper output to the resampler later in this function */
 
    convert_s16_to_float(audio_st->input_data, data, samples,
          audio_volume_gain);
+   /* The resampler operates on floating-point frames,
+    * so we gotta convert the input first */
 
    src_data.data_in                  = audio_st->input_data;
    src_data.input_frames             = samples >> 1;
+   /* Remember, we allocated buffers that are twice as big as needed.
+    * (see audio_driver_init) */
 
 #ifdef HAVE_DSP_FILTER
    if (audio_st->dsp)
-   {
+   { /* If we want to process our audio for reasons besides resampling... */
       struct retro_dsp_data dsp_data;
-
-      dsp_data.input                 = NULL;
-      dsp_data.input_frames          = 0;
-      dsp_data.output                = NULL;
-      dsp_data.output_frames         = 0;
 
       dsp_data.input                 = audio_st->input_data;
       dsp_data.input_frames          = (unsigned)(samples >> 1);
+      dsp_data.output                = NULL;
+      dsp_data.output_frames         = 0;
+      /* Initialize the DSP input/output.
+       * Our DSP implementations generally operate directly on the input buffer,
+       * so the output/output_frames attributes here are zero;
+       * the DSP filter will set them to useful values,
+       * most likely to be the same as the inputs. */
 
       retro_dsp_filter_process(audio_st->dsp, &dsp_data);
 
       if (dsp_data.output)
-      {
+      { /* If the DSP filter succeeded... */
          src_data.data_in            = dsp_data.output;
          src_data.input_frames       = dsp_data.output_frames;
+         /* Then let's pass the DSP's output to the resampler's input */
       }
    }
 #endif
 
    src_data.data_out                 = audio_st->output_samples_buf;
+   /* Now the resampler will write to the driver state's scratch buffer */
 
    if (audio_st->flags & AUDIO_FLAG_CONTROL)
    {
@@ -547,26 +556,29 @@ static void audio_driver_flush(
    }
 #endif
 
+   /* Now we write our processed audio output to the driver.
+    * It may not be played immediately, depending on the driver implementation. */
    {
       const void *output_data = audio_st->output_samples_buf;
-      unsigned output_frames  = (unsigned)src_data.output_frames;
+      unsigned output_frames  = (unsigned)src_data.output_frames; /* Unit: frames */
 
       if (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
-         output_frames       *= sizeof(float);
+         output_frames       *= sizeof(float); /* Unit: bytes */
       else
       {
          convert_float_to_s16(audio_st->output_samples_conv_buf,
                (const float*)output_data, output_frames * 2);
 
          output_data          = audio_st->output_samples_conv_buf;
-         output_frames       *= sizeof(int16_t);
+         output_frames       *= sizeof(int16_t);  /* Unit: bytes */
       }
 
       audio_st->current_audio->write(audio_st->context_audio_data,
             output_data, output_frames * 2);
    }
 
-   /* Only one mic is supported right now. If you add support for multiple mics,
+   /* Now let's process the microphone input, if any.
+    * Only one mic is supported right now. If you add support for multiple mics,
     * read through all of them here. */
    if (  (audio_st->flags & AUDIO_FLAG_MIC_ACTIVE) &&
          audio_st->current_microphone.active &&

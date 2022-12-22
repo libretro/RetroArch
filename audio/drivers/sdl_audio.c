@@ -71,6 +71,12 @@ typedef struct sdl_audio_microphone
    scond_t *cond;
 #endif
 
+   /**
+    * The queue used to store incoming samples from the driver.
+    * Audio from the microphone is stored here,
+    * the first stop before the audio driver processes it
+    * and makes it ready for the core.
+    */
    fifo_buffer_t *sample_buffer;
    bool is_paused;
    SDL_AudioDeviceID device_id;
@@ -85,6 +91,11 @@ typedef struct sdl_audio
    slock_t *lock;
    scond_t *cond;
 #endif
+   /**
+    * The queue used to store outgoing samples to be played by the driver.
+    * Audio from the core ultimately makes its way here,
+    * the last stop before the driver plays it.
+    */
    fifo_buffer_t *speaker_buffer;
    bool nonblock;
    bool is_paused;
@@ -119,6 +130,8 @@ static void sdl_audio_record_cb(void *data, Uint8 *stream, int len)
    sdl_audio_t  *sdl = (sdl_audio_t*)data;
    size_t      avail = FIFO_WRITE_AVAIL(sdl->microphone->sample_buffer);
    size_t read_size  = len > (int)avail ? avail : len;
+   /* If the sample buffer is almost full,
+    * just write as much as we can into it*/
 
    fifo_write(sdl->microphone->sample_buffer, stream, read_size);
 #ifdef HAVE_THREADS

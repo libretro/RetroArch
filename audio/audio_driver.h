@@ -337,11 +337,22 @@ typedef struct
    uint64_t free_samples_count;
 
    struct string_list *devices_list;
+
+   /**
+    * A scratch buffer for audio output to be processed,
+    * up to (but excluding) the point where it's converted to 16-bit audio
+    * to give to the driver.
+    */
    float  *output_samples_buf;
    float  *input_samples_buf;
 #ifdef HAVE_REWIND
    int16_t *rewind_buf;
 #endif
+
+   /**
+    * A scratch buffer for processed audio output to be converted to 16-bit,
+    * so that it can be sent to the driver.
+    */
    int16_t *output_samples_conv_buf;
    int16_t *input_samples_conv_buf;
 #ifdef HAVE_DSP_FILTER
@@ -364,6 +375,10 @@ typedef struct
     */
    retro_microphone_t current_microphone;
    void *context_audio_data;
+
+   /**
+    * Scratch buffer for preparing data for the resampler
+    */
    float *input_data;
 #ifdef HAVE_AUDIOMIXER
    struct audio_mixer_stream
