@@ -325,6 +325,10 @@ typedef struct audio_driver
     * Unless said otherwise with set_nonblock_state(), all reads
     * are blocking, and it should block till it has read all frames.
     *
+    * This function is not exposed to the core.
+    * Instead, the function exposed to the core just copies
+    * the most recent data that was read by this
+    *
     * @param[in] driver_context Opaque handle to the audio driver context
     * that was used to create the provided microphone.
     * @param[in] microphone_context Opaque handle to the microphone
