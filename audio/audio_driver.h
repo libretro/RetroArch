@@ -88,11 +88,31 @@ struct retro_microphone
     */
    void *microphone_context;
 
+   /**
+    * Pointer to the data that will be copied to cores.
+    */
+   int16_t* sample_buffer;
+
+   /**
+    * Length of sample_buffer in samples, \em not bytes.
+    */
+   size_t sample_buffer_length;
+
+   /**
+    * Length of the most recent read into sample_buffer, in samples.
+    */
+   size_t most_recent_read_length;
+
    /* May be enabled even before the driver is ready */
    bool pending_enabled;
 
    /* true if this object represents a valid or pending microphone */
    bool active;
+
+   /**
+    * True if the most recent read attempt ended in an error.
+    * Mostly just used */
+   bool error;
 };
 
 typedef struct audio_driver
