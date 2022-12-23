@@ -1,6 +1,7 @@
 HAVE_LIBRETRO=             # Libretro library used
 HAVE_ASSETS_DIR=           # Assets install directory
 HAVE_FILTERS_DIR=          # Audio/video filters directory
+HAVE_CORE_INFO_DIR=        # Core info directory
 HAVE_CORE_INFO_CACHE=yes   # Core info cache support
 HAVE_BLUETOOTH=no          # Bluetooth support
 HAVE_NVDA=yes              # NVDA support
