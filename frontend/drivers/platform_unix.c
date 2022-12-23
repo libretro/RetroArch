@@ -1772,6 +1772,12 @@ static void frontend_unix_get_env(int *argc,
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
          "core_info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
 #else
+#ifdef CORE_INFO_DIR
+   if (path_is_directory(CORE_INFO_DIR "/cores"))
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], CORE_INFO_DIR,
+            "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   else
+#endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
          "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
 #endif
