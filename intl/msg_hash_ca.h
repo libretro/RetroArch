@@ -6670,6 +6670,14 @@ MSG_HASH(
    "Shader predefinit"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
+   "Shader predefinit"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
+   "Shader predefinit"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Iniciar"
    )
@@ -7030,6 +7038,114 @@ MSG_HASH(
    "Jugant"
    )
 
+MSG_HASH(
+   MSG_CONNECTING_TO_PORT,
+   "S’està connectant al port"
+   )
+MSG_HASH(
+   MSG_CONNECTION_SLOT,
+   "Ranura de connexió"
+   )
+MSG_HASH(
+   MSG_FETCHING_CORE_LIST,
+   "S’està recuperant la llista de nuclis..."
+   )
+MSG_HASH(
+   MSG_CORE_LIST_FAILED,
+   "No s’ha pogut recuperar la llista de nuclis!"
+   )
+MSG_HASH(
+   MSG_LATEST_CORE_INSTALLED,
+   "La darrera versió ja està instal·lada: "
+   )
+MSG_HASH(
+   MSG_UPDATING_CORE,
+   "S’està actualitzant el nucli: "
+   )
+MSG_HASH(
+   MSG_DOWNLOADING_CORE,
+   "S’està baixant el nucli: "
+   )
+MSG_HASH(
+   MSG_EXTRACTING_CORE,
+   "S’està extraient el nucli: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLED,
+   "S’ha instal·lat el nucli: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "No s’ha pogut instal·lar el nucli: "
+   )
+MSG_HASH(
+   MSG_SCANNING_CORES,
+   "S’estan cercant nuclis..."
+   )
+MSG_HASH(
+   MSG_CHECKING_CORE,
+   "S’està comprovant el nucli: "
+   )
+MSG_HASH(
+   MSG_ALL_CORES_UPDATED,
+   "Tots els nuclis instal·lats estan actualitzats"
+   )
+MSG_HASH(
+   MSG_ALL_CORES_SWITCHED_PFD,
+   "S’han canviat tots els nuclis admesos a les versions de la Play Store"
+   )
+MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "nuclis actualitzats: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "nuclis omesos: "
+   )
+MSG_HASH(
+   MSG_CORE_UPDATE_DISABLED,
+   "S’ha inhabilitat l’actualització del nucli. El nucli està bloquejat: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_RESETTING_CORES,
+   "S’estan reiniciant els nuclis: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_CORES_RESET,
+   "S’han reiniciat els nuclis: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
+   "S’està netejant la llista de reproducció: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+   "S’ha netejat la llista de reproducció: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   "Ha fallat l’actualització. La llista de reproducció no conté cap registre de cerca vàlid: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   "Ha fallat l’actualització. El directori de contingut no és vàlid o no hi és: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
+   "Ha fallat l’actualització. El nom de sistema no és vàlid o no hi és: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
+   "Ha fallat l’actualització. El nucli no és vàlid: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
+   "Ha fallat l’actualització. El fitxer DAT d’arcade no és vàlid o no hi és: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
+   "Ha fallat l’actualització. El fitxer DAT d’arcade és massa gran (no hi ha prou memòria): "
+   )
 MSG_HASH(
    MSG_APPLICATION_DIR,
    "Directori de l’aplicació"

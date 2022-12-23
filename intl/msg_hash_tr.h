@@ -10702,6 +10702,14 @@ MSG_HASH(
    "Gölgelendirici Ön Ayarı"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
+   "Gölgelendirici Ön Ayarı"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
+   "Gölgelendirici Ön Ayarı"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
    "URL'ye Gözat"
    )

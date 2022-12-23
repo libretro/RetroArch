@@ -10134,6 +10134,14 @@ MSG_HASH(
    "Ustawienie wstępne shadera"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
+   "Ustawienie wstępne shadera"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
+   "Ustawienie wstępne shadera"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
    "Przeglądaj adres URL"
    )

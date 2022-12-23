@@ -2352,6 +2352,26 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
    "A hangfolyam hangereje."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "Állapot: nincs adat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
+   "Leállítva"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
+   "Lejátszás alatt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   "Lejátszás alatt (ismétlés)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+   "Lejátszás alatt (lépés a következőre)"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
@@ -7965,6 +7985,22 @@ MSG_HASH(
    "Shader preset betöltése, a shader feldolgozó automatikus beállításával."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
+   "Hozzáadás az elejére"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
+   "A preset beszúrása a jelenleg betöltött elé"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
+   "Hozzáadás a végére"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
+   "A preset beszúrása a jelenleg betöltött mögé"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
    "Mentés"
    )
@@ -10310,6 +10346,10 @@ MSG_HASH(
    "A jelenlegi tartalom alrendszereinek beállításai."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   " Aktuális tartalom: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
    "Nincs felderíthető netplay kiszolgáló."
    )
@@ -10336,6 +10376,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    "%d. csatlakozó, eszköz neve: %s (#%d)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
+   "Eszköz neve: %s\nEszközkonfiguráció neve: %s\nEszköz gyártó/termék azonosítói: %d/%d"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
@@ -10411,6 +10455,14 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   "Shader preset"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
+   "Shader preset"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    "Shader preset"
    )
 MSG_HASH(
@@ -12119,16 +12171,32 @@ MSG_HASH(
    "beállítva ehhez a csatlakozóhoz:"
    )
 MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT_NR,
+   "%s beállítva a(z) %u. csatlakozóhoz"
+   )
+MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
    "leválasztva erről a csatlakozóról:"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
+   "%s leválasztva a(z) %u. csatlakozóról"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "nincs beállítva"
    )
 MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_NR,
+   "%s (%u/%u) beállítása sikertelen"
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
    "nincs beállítva, visszalépés"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
+   "%s (%u/%u) beállítása sikertelen, pótbeállítás alkalmazva"
    )
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
