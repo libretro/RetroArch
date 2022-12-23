@@ -77,6 +77,7 @@
 									<listOptionValue builtIn="false" value="HAVE_IFINFO"/>
 									<listOptionValue builtIn="false" value="HAVE_ONLINE_UPDATER"/>
 									<listOptionValue builtIn="false" value="HAVE_UPDATE_CORES"/>
+									<listOptionValue builtIn="false" value="HAVE_UPDATE_CORE_INFO"/>
 									<listOptionValue builtIn="false" value="HAVE_UPDATE_ASSETS"/>
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
 								</option>
