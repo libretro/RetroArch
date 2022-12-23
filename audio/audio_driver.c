@@ -422,6 +422,14 @@ bool audio_driver_find_driver(
  * and reads samples from the driver's input
  * (if mic support is enabled).
  * Will first perform DSP processing (if enabled) and resampling.
+ *
+ * @param audio_st The overall state of the audio driver.
+ * @param slowmotion_ratio TODO
+ * @param audio_fastforward_mute True if no audio should be output while the game is in fast-forward.
+ * @param data Audio output data that was most recently provided by the core.
+ * @param samples The size of data, in TODO
+ * @param is_slowmotion True if the player is currently running the game in slow motion.
+ * @param is_fastmotion True if the player is currently running the game in fast-forward.
  **/
 static void audio_driver_flush(
       audio_driver_state_t *audio_st,
@@ -617,18 +625,21 @@ static void audio_driver_flush(
          microphone->most_recent_read_length = samples_read;
 
          if (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
-            input_frames       *= sizeof(float);
-         else
          {
+            input_frames       *= sizeof(float);
+            input_data          = audio_st->input_samples_conv_buf;
             convert_float_to_s16(audio_st->input_samples_conv_buf,
                                  (const float*)input_data, input_frames);
-
-            input_data          = audio_st->input_samples_conv_buf;
+            // TODO: Write a mono version of this
+         }
+         else
+         {
             input_frames       *= sizeof(int16_t);
          }
 
          memcpy(microphone->sample_buffer, input_data,
             MIN(input_frames, sample_buffer_length));
+         /* Copy the data we read from the mic into the buffer that the core reads from */
       }
    }
 }
