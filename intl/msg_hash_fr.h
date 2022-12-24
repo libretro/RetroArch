@@ -2332,6 +2332,26 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
    "Ajuster le volume de la diffusion audio."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "État : Non disponible"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
+   "Etat : Arrêté"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
+   "État : Lecture"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   "État : Lecture (en boucle)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+   "État : Lecture (séquentielle)"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
@@ -7917,6 +7937,22 @@ MSG_HASH(
    "Charger un préréglage de shaders. Le pipeline des shaders sera automatiquement configuré."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
+   "Ajouter au début"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
+   "Ajouter le préréglage au début du contenu actuellement chargé"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
+   "Ajouter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
+   "Ajouter le préréglage au contenu actuellement chargé"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
    "Enregistrer"
    )
@@ -10490,6 +10526,10 @@ MSG_HASH(
    "Accéder aux réglages du sous-système pour le contenu actuel."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   " Contenu actuel : %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
    "Aucun hôte de jeu en réseau trouvé."
    )
@@ -10516,6 +10556,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    "Nom de l'appareil port %d : %s (#%d)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
+   "Nom d'affichage de l'appareil : %s\nNom de la configuration de l'appareil : %s\nVID/PID Périphérique : %d/%d"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
@@ -12299,16 +12343,32 @@ MSG_HASH(
    "configuré dans le port"
    )
 MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT_NR,
+   "%s configuré dans le port %u"
+   )
+MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
    "déconnecté du port"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
+   "%s déconnecté du port %u"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "non configuré"
    )
 MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_NR,
+   "%s (%u/%u) non configuré"
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
    "non configuré, utilisation de l'état de secours"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
+   "%s (%u/%u) non configuré, utilisation du recours par défaut"
    )
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,

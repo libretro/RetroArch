@@ -1831,6 +1831,10 @@ MSG_HASH(
    "Konfiguracja"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
+   "Dostarczane przez rdzeń"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
    "Niestandardowa"
    )
@@ -2441,6 +2445,18 @@ MSG_HASH(
    "Wybierz ogólne zachowanie trybu turbo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
+   "Klasyczny"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
+   "Pojedynczy przycisk (Przełącznik)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Pojedynczy przycisk (Przytrzymanie)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
    "Domyślny przycisk turbo"
    )
@@ -2564,6 +2580,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "Aktywacja klawisza skrótu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "Po przypisaniu klawisz 'Skrót włączony' musi być trzymany przed rozpoznaniem innych skrótów klawiszowych. Umożliwia mapowanie przycisków kontrolera do funkcji skrótu klawiszowego bez wpływu na normalne wprowadzanie danych. Przypisanie modyfikatora tylko do kontrolera nie będzie wymagało go dla klawiatury, ale oba modyfikatory działają dla obu urządzeń."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -3485,6 +3505,18 @@ MSG_HASH(
    "Ustaw poziom dziennika dla rdzeni. Jeśli poziom dziennika wydany przez rdzeń jest poniżej tej wartości, jest ignorowany."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_INFO,
+   "1 (Informacje)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
+   "2 (Ostrzeżenie)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_ERROR,
+   "3 (Błąd)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
    "Loguj do pliku"
    )
@@ -3670,6 +3702,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
    "Wysoki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
+   "Bezstratny"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY,
+   "Wysoka jakość WebM"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
@@ -7411,6 +7451,14 @@ MSG_HASH(
    "Kod"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
+   "Dodaj nowy Cheat za tym"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
+   "Dodaj nowy Cheat przed tym"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
    "Skopiuj ten cheat po"
    )
@@ -7491,6 +7539,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    "Załaduj ustawienie wstępne shadera. Potok shadera zostanie automatycznie skonfigurowany."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
+   "Dodaj"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
+   "Dodaj ustawienie wstępne do aktualnie załadowanych"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
+   "Dołącz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
+   "Dołącz ustawienie do aktualnie załadowanych"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
@@ -10040,6 +10104,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
    "Podsystemy"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   " Bieżąca zawartość: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
