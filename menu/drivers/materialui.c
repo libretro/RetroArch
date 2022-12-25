@@ -3847,31 +3847,40 @@ static void materialui_render(void *data,
 
 /* Utility functions */
 
-enum materialui_entry_value_type materialui_get_entry_value_type(
+static enum materialui_entry_value_type materialui_get_entry_value_type(
       materialui_handle_t *mui,
       const char *entry_value, bool entry_checked,
-      unsigned entry_type, enum msg_file_type entry_file_type)
+      unsigned entry_type, enum msg_file_type entry_file_type,
+      uint8_t entry_setting_type)
 {
    enum materialui_entry_value_type value_type = MUI_ENTRY_VALUE_NONE;
 
    /* Check entry value string */
    if (!string_is_empty(entry_value))
    {
+      settings_t *settings       = config_get_ptr();
+      bool menu_switch_icons     = settings->bools.menu_materialui_switch_icons;
+
       /* Toggle switch off */
-      if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-          string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      if (menu_switch_icons && entry_setting_type == ST_BOOL)
       {
-         if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
-            value_type = MUI_ENTRY_VALUE_SWITCH_OFF;
-         else
-            value_type = MUI_ENTRY_VALUE_TEXT;
-      }
-      /* Toggle switch on */
-      else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-               string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
-      {
-         if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
-            value_type = MUI_ENTRY_VALUE_SWITCH_ON;
+         if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
+             string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+         {
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+               value_type = MUI_ENTRY_VALUE_SWITCH_OFF;
+            else
+               value_type = MUI_ENTRY_VALUE_TEXT;
+         }
+         /* Toggle switch on */
+         else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
+                  string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
+         {
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
+               value_type = MUI_ENTRY_VALUE_SWITCH_ON;
+            else
+               value_type = MUI_ENTRY_VALUE_TEXT;
+         }
          else
             value_type = MUI_ENTRY_VALUE_TEXT;
       }
@@ -4036,7 +4045,7 @@ static void materialui_render_menu_entry_default(
          msg_hash_calculate(entry_value));
    entry_value_type        = materialui_get_entry_value_type(
          mui, entry_value, entry->flags & MENU_ENTRY_FLAG_CHECKED,
-         entry_type, entry_file_type);
+         entry_type, entry_file_type, entry->setting_type);
 
    /* Draw entry icon
     * > Has to be done first, since it affects the left
@@ -4273,7 +4282,9 @@ static void materialui_render_menu_entry_default(
             entry_value_color = (entry_selected || touch_feedback_active)
                   ? mui->colors.list_text_highlighted : mui->colors.list_text;
 
-            if (string_is_equal(value_buf, "null"))
+            /* Muted/disabled color for disabled values */
+            if (     string_is_equal(value_buf, "null")
+                  || string_is_equal(value_buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
                entry_value_color = mui->colors.disabled_text;
 
             /* Draw value string */
@@ -9852,7 +9863,7 @@ static int materialui_pointer_up_swipe_horz_default(
                msg_hash_calculate(entry_value));
          entry_value_type               = materialui_get_entry_value_type(
                mui, entry_value, last_entry.flags & MENU_ENTRY_FLAG_CHECKED,
-               entry_type, entry_file_type);
+               entry_type, entry_file_type, entry->setting_type);
 
          /* If entry has a 'settings' type, reset scroll position */
          if ((entry_value_type == MUI_ENTRY_VALUE_TEXT) ||

@@ -16833,6 +16833,21 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.menu_xmb_switch_icons,
+                  MENU_ENUM_LABEL_XMB_SWITCH_ICONS,
+                  MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
+                  DEFAULT_XMB_SWITCH_ICONS,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.menu_xmb_shadows_enable,
                   MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE,
                   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
@@ -17423,6 +17438,21 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
             (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
             (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_materialui_switch_icons,
+                  MENU_ENUM_LABEL_MATERIALUI_SWITCH_ICONS,
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_SWITCH_ICONS,
+                  DEFAULT_MATERIALUI_SWITCH_ICONS,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 
             CONFIG_BOOL(
                   list, list_info,

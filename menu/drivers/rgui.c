@@ -4888,12 +4888,13 @@ static void rgui_render_toggle_switch(
 
 static enum rgui_entry_value_type rgui_get_entry_value_type(
       const char *entry_value,
+      uint8_t entry_setting_type,
       bool entry_checked,
       bool switch_icons_enabled)
 {
    if (!string_is_empty(entry_value))
    {
-      if (switch_icons_enabled)
+      if (switch_icons_enabled && entry_setting_type == ST_BOOL)
       {
          /* Toggle switch off */
          if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
@@ -5500,6 +5501,7 @@ static void rgui_render(
          /* Get 'type' of entry value component */
          entry_value_type = rgui_get_entry_value_type(
                entry_value,
+               entry.setting_type,
                entry.flags & MENU_ENTRY_FLAG_CHECKED,
                rgui_switch_icons);
 

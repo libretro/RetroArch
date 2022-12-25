@@ -94,6 +94,8 @@
 #ifdef HAVE_MATERIALUI
 /* Show icons to the left of each menu entry */
 #define DEFAULT_MATERIALUI_ICONS_ENABLE true
+/* Show boolean option ON/OFF icons */
+#define DEFAULT_MATERIALUI_SWITCH_ICONS true
 /* Show system-specific icons in the playlists tab */
 #define DEFAULT_MATERIALUI_PLAYLIST_ICONS_ENABLE true
 #endif
@@ -732,10 +734,11 @@
 #define DEFAULT_XMB_ANIMATION                      0
 #define DEFAULT_XMB_VERTICAL_FADE_FACTOR           100
 #define DEFAULT_XMB_SHOW_TITLE_HEADER              true
+#define DEFAULT_XMB_SWITCH_ICONS                   true
 #define DEFAULT_XMB_TITLE_MARGIN                   5
 #define DEFAULT_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET 0
 #define MAXIMUM_XMB_TITLE_MARGIN                   12
-#define DEFAULT_XMB_ALPHA_FACTOR 75
+#define DEFAULT_XMB_ALPHA_FACTOR                   75
 
 #define DEFAULT_MENU_FONT_COLOR_RED 255
 #define DEFAULT_MENU_FONT_COLOR_GREEN 255

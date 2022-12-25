@@ -4351,6 +4351,10 @@ MSG_HASH(
    "materialui_icons_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MATERIALUI_SWITCH_ICONS,
+   "materialui_switch_icons"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
    "materialui_playlist_icons_enable"
    )

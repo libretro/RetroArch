@@ -379,6 +379,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    entry_label                = list->list[i].label;
    entry->type                = list->list[i].type;
    entry->entry_idx           = list->list[i].entry_idx;
+   entry->setting_type        = 0;
 
    cbs                        = (menu_file_list_cbs_t*)list->list[i].actiondata;
    entry->idx                 = (unsigned)i;
@@ -393,6 +394,10 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       file_list_t *menu_stack       = MENU_LIST_GET(menu_st->entries.list, 0);
 
       entry->enum_idx               = cbs->enum_idx;
+
+      if (cbs->setting && cbs->setting->type)
+         entry->setting_type        = cbs->setting->type;
+
       if (cbs->checked)
          entry->flags |= MENU_ENTRY_FLAG_CHECKED;
 
@@ -460,6 +465,20 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
                      sizeof(cbs->action_sublabel_cache));
          }
       }
+   }
+
+   /* Inspect core options and set entries with only 2 options as
+    * boolean for accurate graphical switch icons */
+   if (entry->type >= MENU_SETTINGS_CORE_OPTION_START)
+   {
+      struct core_option *option      = NULL;
+      core_option_manager_t *coreopts = NULL;
+      size_t option_index             = entry->type - MENU_SETTINGS_CORE_OPTION_START;
+      retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+      option = (struct core_option*)&coreopts->opts[option_index];
+
+      if (option->vals->size == 2)
+         entry->setting_type = ST_BOOL;
    }
 
    if (path_enabled)
