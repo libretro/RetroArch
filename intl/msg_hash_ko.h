@@ -2392,6 +2392,26 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
    "오디오 스트림의 볼륨을 설정합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "상태 : 사용불가"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
+   "상태 : 정지됨"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
+   "상태 : 재생 중"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   "상태 : 재생 중 (반복)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+   "상태 : 재생 중 (순차)"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
@@ -8021,6 +8041,22 @@ MSG_HASH(
    "셰이더 프리셋을 불러옵니다. 셰이더 파이프라인이 자동으로 설정됩니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
+   "앞에 불러오기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
+   "현재 로드된 프리셋의 앞에 붙여넣기"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
+   "뒤에 불러오기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
+   "현재 로드된 프리셋의 뒤에 붙여넣기"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
    "저장"
    )
@@ -10642,6 +10678,10 @@ MSG_HASH(
    "현재 컨텐츠의 서브시스템 설정에 접근합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   " 현재 컨텐츠: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
    "넷플레이 호스트 찾지 못함."
    )
@@ -10672,6 +10712,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    "%d번 포트 디바이스명: %s (#%d)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
+   "장치 표시명: %s\n장치 설정명: %s\n장치 VID/PID: %d/%d"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
@@ -12471,16 +12515,32 @@ MSG_HASH(
    "장치 설정됨, 포트"
    )
 MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT_NR,
+   "%s 설정됨, 포트 %u"
+   )
+MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
    "장치 연결 해제됨, 포트"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
+   "%s 연결 해제됨, 포트 %u"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "설정 안 됨"
    )
 MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_NR,
+   "%s (%u/%u) 설정 안 됨"
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
    "설정 안 됨, 기본값 사용"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
+   "%s (%u/%u) 설정 안 됨, 기본값 사용"
    )
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
