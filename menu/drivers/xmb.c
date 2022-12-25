@@ -3607,6 +3607,7 @@ static int xmb_draw_item(
       settings->uints.menu_xmb_thumbnail_scale_factor;
    bool menu_xmb_vertical_thumbnails   = settings->bools.menu_xmb_vertical_thumbnails;
    bool menu_show_sublabels            = settings->bools.menu_show_sublabels;
+   bool menu_switch_icons              = settings->bools.menu_xmb_switch_icons;
    unsigned show_history_icons         = settings->uints.playlist_show_history_icons;
    unsigned menu_xmb_vertical_fade_factor
                                        = settings->uints.menu_xmb_vertical_fade_factor;
@@ -3669,19 +3670,25 @@ static int xmb_draw_item(
          strlcpy(entry.path, entry_path, sizeof(entry.path));
    }
 
-   if (     string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED))
-         || string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+   /* Only show switch icons with bool type options */
+   if (menu_switch_icons && entry.setting_type == ST_BOOL)
    {
-      if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
-         texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
-      else
-         do_draw_text   = true;
-   }
-   else if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED))
-         || string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
-   {
-      if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
-         texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
+      if (     string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED))
+            || string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      {
+         if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
+            texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
+         else
+            do_draw_text   = true;
+      }
+      else if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED))
+            || string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
+      {
+         if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
+            texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
+         else
+            do_draw_text   = true;
+      }
       else
          do_draw_text   = true;
    }

@@ -439,7 +439,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_overlay_next,          ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_block_delay,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_adc_type,                   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE)
 #ifdef HAVE_MATERIALUI
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_icons_enable,       MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_icons_enable,        MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_switch_icons,        MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_playlist_icons_enable, MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_landscape_layout_optimization, MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_show_nav_bar,        MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR)
@@ -904,6 +905,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_throttle_framerate,            
 #ifdef HAVE_XMB
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_layout,                            MENU_ENUM_SUBLABEL_XMB_LAYOUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_icon_theme,                        MENU_ENUM_SUBLABEL_XMB_THEME)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_switch_icons,                      MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_shadows_enable,                    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_xmb_vertical_thumbnails,               MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_thumbnail_scale_factor,       MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR)
@@ -2322,6 +2324,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_icons_enable);
 #endif
             break;
+         case MENU_ENUM_LABEL_MATERIALUI_SWITCH_ICONS:
+#ifdef HAVE_MATERIALUI
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_switch_icons);
+#endif
+            break;
          case MENU_ENUM_LABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE:
 #ifdef HAVE_MATERIALUI
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_playlist_icons_enable);
@@ -2999,6 +3006,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_XMB_THEME:
 #ifdef HAVE_XMB
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_icon_theme);
+#endif
+            break;
+         case MENU_ENUM_LABEL_XMB_SWITCH_ICONS:
+#ifdef HAVE_XMB
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_switch_icons);
 #endif
             break;
          case MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE:

@@ -154,6 +154,7 @@ typedef struct menu_entry
    unsigned type;
    unsigned spacing;
    enum msg_hash_enums enum_idx;
+   uint8_t setting_type;
    uint8_t flags;
    char path[255];
    char label[255];

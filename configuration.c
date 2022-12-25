@@ -1609,13 +1609,13 @@ static struct config_bool_setting *populate_settings_bool(
    struct config_bool_setting  *tmp    = (struct config_bool_setting*)calloc(1, (*size + 1) * sizeof(struct config_bool_setting));
    unsigned count                      = 0;
 
-   SETTING_BOOL("accessibility_enable", &settings->bools.accessibility_enable, true, DEFAULT_ACCESSIBILITY_ENABLE, false);
-   SETTING_BOOL("driver_switch_enable", &settings->bools.driver_switch_enable, true, DEFAULT_DRIVER_SWITCH_ENABLE, false);
+   SETTING_BOOL("accessibility_enable",          &settings->bools.accessibility_enable, true, DEFAULT_ACCESSIBILITY_ENABLE, false);
+   SETTING_BOOL("driver_switch_enable",          &settings->bools.driver_switch_enable, true, DEFAULT_DRIVER_SWITCH_ENABLE, false);
    SETTING_BOOL("frame_time_counter_reset_after_fastforwarding", &settings->bools.frame_time_counter_reset_after_fastforwarding, true, false, false);
    SETTING_BOOL("frame_time_counter_reset_after_load_state", &settings->bools.frame_time_counter_reset_after_load_state, true, false, false);
    SETTING_BOOL("frame_time_counter_reset_after_save_state", &settings->bools.frame_time_counter_reset_after_save_state, true, false, false);
    SETTING_BOOL("crt_switch_resolution_use_custom_refresh_rate", &settings->bools.crt_switch_custom_refresh_enable, true, false, false);
-   SETTING_BOOL("crt_switch_hires_menu", &settings->bools.crt_switch_hires_menu, true, false, true);
+   SETTING_BOOL("crt_switch_hires_menu",         &settings->bools.crt_switch_hires_menu, true, false, true);
    SETTING_BOOL("ui_companion_start_on_boot",    &settings->bools.ui_companion_start_on_boot, true, DEFAULT_UI_COMPANION_START_ON_BOOT, false);
    SETTING_BOOL("ui_companion_enable",           &settings->bools.ui_companion_enable, true, DEFAULT_UI_COMPANION_ENABLE, false);
    SETTING_BOOL("ui_companion_toggle",           &settings->bools.ui_companion_toggle, false, DEFAULT_UI_COMPANION_TOGGLE, false);
@@ -1688,7 +1688,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_shader_enable",           &settings->bools.video_shader_enable, true, DEFAULT_SHADER_ENABLE, false);
    SETTING_BOOL("video_shader_watch_files",      &settings->bools.video_shader_watch_files, true, DEFAULT_VIDEO_SHADER_WATCH_FILES, false);
    SETTING_BOOL("video_shader_remember_last_dir", &settings->bools.video_shader_remember_last_dir, true, DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR, false);
-   SETTING_BOOL("video_shader_preset_save_reference_enable",   &settings->bools.video_shader_preset_save_reference_enable, true, DEFAULT_VIDEO_SHADER_PRESET_SAVE_REFERENCE_ENABLE, false);
+   SETTING_BOOL("video_shader_preset_save_reference_enable", &settings->bools.video_shader_preset_save_reference_enable, true, DEFAULT_VIDEO_SHADER_PRESET_SAVE_REFERENCE_ENABLE, false);
 
    /* Let implementation decide if automatic, or 1:1 PAR. */
    SETTING_BOOL("video_aspect_ratio_auto",       &settings->bools.video_aspect_ratio_auto, true, DEFAULT_ASPECT_RATIO_AUTO, false);
@@ -1728,15 +1728,15 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("audio_enable",                  &settings->bools.audio_enable, true, DEFAULT_AUDIO_ENABLE, false);
    SETTING_BOOL("menu_enable_widgets",           &settings->bools.menu_enable_widgets, true, DEFAULT_MENU_ENABLE_WIDGETS, false);
    SETTING_BOOL("menu_show_load_content_animation", &settings->bools.menu_show_load_content_animation, true, DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION, false);
-   SETTING_BOOL("notification_show_autoconfig", &settings->bools.notification_show_autoconfig, true, DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG, false);
+   SETTING_BOOL("notification_show_autoconfig",  &settings->bools.notification_show_autoconfig, true, DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG, false);
    SETTING_BOOL("notification_show_cheats_applied", &settings->bools.notification_show_cheats_applied, true, DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED, false);
    SETTING_BOOL("notification_show_patch_applied", &settings->bools.notification_show_patch_applied, true, DEFAULT_NOTIFICATION_SHOW_PATCH_APPLIED, false);
-   SETTING_BOOL("notification_show_remap_load", &settings->bools.notification_show_remap_load, true, DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD, false);
+   SETTING_BOOL("notification_show_remap_load",  &settings->bools.notification_show_remap_load, true, DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD, false);
    SETTING_BOOL("notification_show_config_override_load", &settings->bools.notification_show_config_override_load, true, DEFAULT_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD, false);
    SETTING_BOOL("notification_show_set_initial_disk", &settings->bools.notification_show_set_initial_disk, true, DEFAULT_NOTIFICATION_SHOW_SET_INITIAL_DISK, false);
    SETTING_BOOL("notification_show_fast_forward", &settings->bools.notification_show_fast_forward, true, DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD, false);
 #ifdef HAVE_SCREENSHOTS
-   SETTING_BOOL("notification_show_screenshot", &settings->bools.notification_show_screenshot, true, DEFAULT_NOTIFICATION_SHOW_SCREENSHOT, false);
+   SETTING_BOOL("notification_show_screenshot",  &settings->bools.notification_show_screenshot, true, DEFAULT_NOTIFICATION_SHOW_SCREENSHOT, false);
 #endif
    SETTING_BOOL("notification_show_refresh_rate", &settings->bools.notification_show_refresh_rate, true, DEFAULT_NOTIFICATION_SHOW_REFRESH_RATE, false);
 #ifdef HAVE_NETWORKING
@@ -1787,22 +1787,17 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_linear_filter",            &settings->bools.menu_linear_filter, true, DEFAULT_VIDEO_SMOOTH, false);
    SETTING_BOOL("menu_horizontal_animation",     &settings->bools.menu_horizontal_animation, true, DEFAULT_MENU_HORIZONTAL_ANIMATION, false);
    SETTING_BOOL("menu_pause_libretro",           &settings->bools.menu_pause_libretro, true, true, false);
-   SETTING_BOOL("menu_savestate_resume",
-&settings->bools.menu_savestate_resume, true, DEFAULT_MENU_SAVESTATE_RESUME, false);
+   SETTING_BOOL("menu_savestate_resume",         &settings->bools.menu_savestate_resume, true, DEFAULT_MENU_SAVESTATE_RESUME, false);
    SETTING_BOOL("menu_insert_disk_resume",       &settings->bools.menu_insert_disk_resume, true, DEFAULT_MENU_INSERT_DISK_RESUME, false);
    SETTING_BOOL("menu_mouse_enable",             &settings->bools.menu_mouse_enable, true, DEFAULT_MOUSE_ENABLE, false);
    SETTING_BOOL("menu_pointer_enable",           &settings->bools.menu_pointer_enable, true, DEFAULT_POINTER_ENABLE, false);
    SETTING_BOOL("menu_timedate_enable",          &settings->bools.menu_timedate_enable, true, DEFAULT_MENU_TIMEDATE_ENABLE, false);
    SETTING_BOOL("menu_battery_level_enable",     &settings->bools.menu_battery_level_enable, true, true, false);
    SETTING_BOOL("menu_core_enable",              &settings->bools.menu_core_enable, true, true, false);
-   SETTING_BOOL("menu_show_sublabels",
-&settings->bools.menu_show_sublabels, true, DEFAULT_MENU_SHOW_SUBLABELS, false);
-   SETTING_BOOL("menu_dynamic_wallpaper_enable",
-         &settings->bools.menu_dynamic_wallpaper_enable, true,
-         DEFAULT_MENU_DYNAMIC_WALLPAPER_ENABLE, false);
+   SETTING_BOOL("menu_show_sublabels",           &settings->bools.menu_show_sublabels, true, DEFAULT_MENU_SHOW_SUBLABELS, false);
+   SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->bools.menu_dynamic_wallpaper_enable, true, DEFAULT_MENU_DYNAMIC_WALLPAPER_ENABLE, false);
    SETTING_BOOL("menu_ticker_smooth",            &settings->bools.menu_ticker_smooth, true, DEFAULT_MENU_TICKER_SMOOTH, false);
-   SETTING_BOOL("menu_scroll_fast",
-&settings->bools.menu_scroll_fast, true, DEFAULT_MENU_SCROLL_FAST, false);
+   SETTING_BOOL("menu_scroll_fast",              &settings->bools.menu_scroll_fast, true, DEFAULT_MENU_SCROLL_FAST, false);
 
    SETTING_BOOL("settings_show_drivers",          &settings->bools.settings_show_drivers, true, DEFAULT_SETTINGS_SHOW_DRIVERS, false);
    SETTING_BOOL("settings_show_video",            &settings->bools.settings_show_video, true, DEFAULT_SETTINGS_SHOW_VIDEO, false);
@@ -1910,9 +1905,10 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_navigation_wraparound_enable", &settings->bools.menu_navigation_wraparound_enable, true, true, false);
    SETTING_BOOL("menu_navigation_browser_filter_supported_extensions_enable",
          &settings->bools.menu_navigation_browser_filter_supported_extensions_enable, true, true, false);
-   SETTING_BOOL("menu_show_advanced_settings",  &settings->bools.menu_show_advanced_settings, true, DEFAULT_SHOW_ADVANCED_SETTINGS, false);
+   SETTING_BOOL("menu_show_advanced_settings",   &settings->bools.menu_show_advanced_settings, true, DEFAULT_SHOW_ADVANCED_SETTINGS, false);
 #ifdef HAVE_MATERIALUI
-   SETTING_BOOL("materialui_icons_enable",       &settings->bools.menu_materialui_icons_enable, true, DEFAULT_MATERIALUI_ICONS_ENABLE, false);
+   SETTING_BOOL("materialui_icons_enable",        &settings->bools.menu_materialui_icons_enable, true, DEFAULT_MATERIALUI_ICONS_ENABLE, false);
+   SETTING_BOOL("materialui_switch_icons",        &settings->bools.menu_materialui_switch_icons, true, DEFAULT_MATERIALUI_SWITCH_ICONS, false);
    SETTING_BOOL("materialui_playlist_icons_enable", &settings->bools.menu_materialui_playlist_icons_enable, true, DEFAULT_MATERIALUI_PLAYLIST_ICONS_ENABLE, false);
    SETTING_BOOL("materialui_show_nav_bar",        &settings->bools.menu_materialui_show_nav_bar, true, DEFAULT_MATERIALUI_SHOW_NAV_BAR, false);
    SETTING_BOOL("materialui_auto_rotate_nav_bar", &settings->bools.menu_materialui_auto_rotate_nav_bar, true, DEFAULT_MATERIALUI_AUTO_ROTATE_NAV_BAR, false);
@@ -1926,19 +1922,17 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_rgui_transparency",                  &settings->bools.menu_rgui_transparency, true, DEFAULT_RGUI_TRANSPARENCY, false);
    SETTING_BOOL("menu_rgui_shadows",                       &settings->bools.menu_rgui_shadows, true, DEFAULT_RGUI_SHADOWS, false);
    SETTING_BOOL("menu_rgui_full_width_layout",             &settings->bools.menu_rgui_full_width_layout, true, DEFAULT_RGUI_FULL_WIDTH_LAYOUT, false);
-   SETTING_BOOL("rgui_inline_thumbnails",
-         &settings->bools.menu_rgui_inline_thumbnails, true,
-         DEFAULT_RGUI_INLINE_THUMBNAILS, false);
-   SETTING_BOOL("rgui_swap_thumbnails",
-         &settings->bools.menu_rgui_swap_thumbnails, true, DEFAULT_RGUI_SWAP_THUMBNAILS, false);
+   SETTING_BOOL("rgui_inline_thumbnails",                  &settings->bools.menu_rgui_inline_thumbnails, true, DEFAULT_RGUI_INLINE_THUMBNAILS, false);
+   SETTING_BOOL("rgui_swap_thumbnails",                    &settings->bools.menu_rgui_swap_thumbnails, true, DEFAULT_RGUI_SWAP_THUMBNAILS, false);
    SETTING_BOOL("rgui_extended_ascii",                     &settings->bools.menu_rgui_extended_ascii, true, DEFAULT_RGUI_EXTENDED_ASCII, false);
    SETTING_BOOL("rgui_switch_icons",                       &settings->bools.menu_rgui_switch_icons, true, DEFAULT_RGUI_SWITCH_ICONS, false);
    SETTING_BOOL("rgui_particle_effect_screensaver",        &settings->bools.menu_rgui_particle_effect_screensaver, true, DEFAULT_RGUI_PARTICLE_EFFECT_SCREENSAVER, false);
 #endif
 #ifdef HAVE_XMB
-   SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, DEFAULT_XMB_SHADOWS_ENABLE, false);
-   SETTING_BOOL("xmb_vertical_thumbnails",       &settings->bools.menu_xmb_vertical_thumbnails, true, DEFAULT_XMB_VERTICAL_THUMBNAILS, false);
-   SETTING_BOOL("menu_xmb_show_title_header",    &settings->bools.menu_xmb_show_title_header, true, DEFAULT_XMB_SHOW_TITLE_HEADER, false);
+   SETTING_BOOL("xmb_shadows_enable",           &settings->bools.menu_xmb_shadows_enable, true, DEFAULT_XMB_SHADOWS_ENABLE, false);
+   SETTING_BOOL("xmb_switch_icons",             &settings->bools.menu_xmb_switch_icons, true, DEFAULT_XMB_SWITCH_ICONS, false);
+   SETTING_BOOL("xmb_vertical_thumbnails",      &settings->bools.menu_xmb_vertical_thumbnails, true, DEFAULT_XMB_VERTICAL_THUMBNAILS, false);
+   SETTING_BOOL("menu_xmb_show_title_header",   &settings->bools.menu_xmb_show_title_header, true, DEFAULT_XMB_SHOW_TITLE_HEADER, false);
 #endif
 #endif
 #ifdef HAVE_CHEEVOS
@@ -1959,9 +1953,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_overlay_behind_menu",    &settings->bools.input_overlay_behind_menu, true, DEFAULT_OVERLAY_BEHIND_MENU, false);
    SETTING_BOOL("input_overlay_hide_in_menu",   &settings->bools.input_overlay_hide_in_menu, true, DEFAULT_OVERLAY_HIDE_IN_MENU, false);
    SETTING_BOOL("input_overlay_hide_when_gamepad_connected", &settings->bools.input_overlay_hide_when_gamepad_connected, true, DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED, false);
-   SETTING_BOOL("input_overlay_show_mouse_cursor",   &settings->bools.input_overlay_show_mouse_cursor, true, DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR, false);
-   SETTING_BOOL("input_overlay_auto_rotate",         &settings->bools.input_overlay_auto_rotate, true, DEFAULT_OVERLAY_AUTO_ROTATE, false);
-   SETTING_BOOL("input_overlay_auto_scale",          &settings->bools.input_overlay_auto_scale, true, DEFAULT_INPUT_OVERLAY_AUTO_SCALE, false);
+   SETTING_BOOL("input_overlay_show_mouse_cursor", &settings->bools.input_overlay_show_mouse_cursor, true, DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR, false);
+   SETTING_BOOL("input_overlay_auto_rotate",    &settings->bools.input_overlay_auto_rotate, true, DEFAULT_OVERLAY_AUTO_ROTATE, false);
+   SETTING_BOOL("input_overlay_auto_scale",     &settings->bools.input_overlay_auto_scale, true, DEFAULT_INPUT_OVERLAY_AUTO_SCALE, false);
 #endif
 #ifdef HAVE_VIDEO_LAYOUT
    SETTING_BOOL("video_layout_enable",          &settings->bools.video_layout_enable, true, true, false);
@@ -1990,7 +1984,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("auto_remaps_enable",           &settings->bools.auto_remaps_enable, true, DEFAULT_AUTO_REMAPS_ENABLE, false);
    SETTING_BOOL("global_core_options",          &settings->bools.global_core_options, true, DEFAULT_GLOBAL_CORE_OPTIONS, false);
    SETTING_BOOL("auto_shaders_enable",          &settings->bools.auto_shaders_enable, true, DEFAULT_AUTO_SHADERS_ENABLE, false);
-   SETTING_BOOL("scan_without_core_match",   &settings->bools.scan_without_core_match, true, DEFAULT_SCAN_WITHOUT_CORE_MATCH, false);
+   SETTING_BOOL("scan_without_core_match",      &settings->bools.scan_without_core_match, true, DEFAULT_SCAN_WITHOUT_CORE_MATCH, false);
    SETTING_BOOL("sort_savefiles_enable",        &settings->bools.sort_savefiles_enable, true, DEFAULT_SORT_SAVEFILES_ENABLE, false);
    SETTING_BOOL("sort_savestates_enable",       &settings->bools.sort_savestates_enable, true, DEFAULT_SORT_SAVESTATES_ENABLE, false);
    SETTING_BOOL("sort_savefiles_by_content_enable", &settings->bools.sort_savefiles_by_content_enable, true, DEFAULT_SORT_SAVEFILES_BY_CONTENT_ENABLE, false);
@@ -2013,14 +2007,13 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 
    SETTING_BOOL("savestates_in_content_dir",     &settings->bools.savestates_in_content_dir, true, DEFAULT_SAVESTATES_IN_CONTENT_DIR, false);
-   SETTING_BOOL("savefiles_in_content_dir",      &settings->bools.savefiles_in_content_dir, true,   DEFAULT_SAVEFILES_IN_CONTENT_DIR, false);
+   SETTING_BOOL("savefiles_in_content_dir",      &settings->bools.savefiles_in_content_dir, true, DEFAULT_SAVEFILES_IN_CONTENT_DIR, false);
    SETTING_BOOL("systemfiles_in_content_dir",    &settings->bools.systemfiles_in_content_dir, true, DEFAULT_SYSTEMFILES_IN_CONTENT_DIR, false);
    SETTING_BOOL("screenshots_in_content_dir",    &settings->bools.screenshots_in_content_dir, true, DEFAULT_SCREENSHOTS_IN_CONTENT_DIR, false);
 
-   SETTING_BOOL("video_msg_bgcolor_enable",
-&settings->bools.video_msg_bgcolor_enable, true, DEFAULT_MESSAGE_BGCOLOR_ENABLE, false);
+   SETTING_BOOL("video_msg_bgcolor_enable",      &settings->bools.video_msg_bgcolor_enable, true, DEFAULT_MESSAGE_BGCOLOR_ENABLE, false);
    SETTING_BOOL("video_window_show_decorations", &settings->bools.video_window_show_decorations, true, DEFAULT_WINDOW_DECORATIONS, false);
-   SETTING_BOOL("video_window_save_positions", &settings->bools.video_window_save_positions, true, DEFAULT_WINDOW_SAVE_POSITIONS, false);
+   SETTING_BOOL("video_window_save_positions",   &settings->bools.video_window_save_positions, true, DEFAULT_WINDOW_SAVE_POSITIONS, false);
    SETTING_BOOL("video_window_custom_size_enable", &settings->bools.video_window_custom_size_enable, true, DEFAULT_WINDOW_CUSTOM_SIZE_ENABLE, false);
 
    SETTING_BOOL("sustained_performance_mode",    &settings->bools.sustained_performance_mode, true, DEFAULT_SUSTAINED_PERFORMANCE_MODE, false);
@@ -2045,14 +2038,13 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("playlist_fuzzy_archive_match",  &settings->bools.playlist_fuzzy_archive_match, true, DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH, false);
    SETTING_BOOL("playlist_portable_paths",       &settings->bools.playlist_portable_paths, true, DEFAULT_PLAYLIST_PORTABLE_PATHS, false);
 
-   SETTING_BOOL("quit_press_twice", &settings->bools.quit_press_twice, true, DEFAULT_QUIT_PRESS_TWICE, false);
-   SETTING_BOOL("vibrate_on_keypress", &settings->bools.vibrate_on_keypress,
-true, DEFAULT_VIBRATE_ON_KEYPRESS, false);
-   SETTING_BOOL("enable_device_vibration", &settings->bools.enable_device_vibration, true, DEFAULT_ENABLE_DEVICE_VIBRATION, false);
+   SETTING_BOOL("quit_press_twice",              &settings->bools.quit_press_twice, true, DEFAULT_QUIT_PRESS_TWICE, false);
+   SETTING_BOOL("vibrate_on_keypress",           &settings->bools.vibrate_on_keypress, true, DEFAULT_VIBRATE_ON_KEYPRESS, false);
+   SETTING_BOOL("enable_device_vibration",       &settings->bools.enable_device_vibration, true, DEFAULT_ENABLE_DEVICE_VIBRATION, false);
 
 #ifdef HAVE_OZONE
-   SETTING_BOOL("ozone_collapse_sidebar",       &settings->bools.ozone_collapse_sidebar, true, DEFAULT_OZONE_COLLAPSE_SIDEBAR, false);
-   SETTING_BOOL("ozone_scroll_content_metadata",&settings->bools.ozone_scroll_content_metadata, true, DEFAULT_OZONE_SCROLL_CONTENT_METADATA, false);
+   SETTING_BOOL("ozone_collapse_sidebar",        &settings->bools.ozone_collapse_sidebar, true, DEFAULT_OZONE_COLLAPSE_SIDEBAR, false);
+   SETTING_BOOL("ozone_scroll_content_metadata", &settings->bools.ozone_scroll_content_metadata, true, DEFAULT_OZONE_SCROLL_CONTENT_METADATA, false);
 #endif
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
    SETTING_BOOL("ozone_truncate_playlist_name",            &settings->bools.ozone_truncate_playlist_name, true, DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME, false);

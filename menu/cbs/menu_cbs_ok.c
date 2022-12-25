@@ -4018,10 +4018,10 @@ int action_ok_core_option_dropdown_list(const char *path,
 
    if (   string_is_empty(value_label_0)
        || string_is_empty(value_label_1)
-       || !((string_is_equal(value_label_0,   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))
-       &&   string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-       ||  (string_is_equal(value_label_0,   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
-       &&   string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))))
+       || !( (  string_is_equal(value_label_0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))
+             && string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+          || (  string_is_equal(value_label_0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
+             && string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))))
       goto push_dropdown_list;
 
    /* > Update value and return */

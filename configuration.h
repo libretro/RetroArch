@@ -695,6 +695,7 @@ typedef struct settings
 #endif
       bool menu_materialui_icons_enable;
       bool menu_materialui_playlist_icons_enable;
+      bool menu_materialui_switch_icons;
       bool menu_materialui_show_nav_bar;
       bool menu_materialui_auto_rotate_nav_bar;
       bool menu_materialui_dual_thumbnail_list_view_enable;
@@ -711,8 +712,9 @@ typedef struct settings
       bool menu_rgui_switch_icons;
       bool menu_rgui_particle_effect_screensaver;
       bool menu_xmb_shadows_enable;
-      bool menu_xmb_vertical_thumbnails;
       bool menu_xmb_show_title_header;
+      bool menu_xmb_switch_icons;
+      bool menu_xmb_vertical_thumbnails;
       bool menu_content_show_settings;
       bool menu_content_show_favorites;
       bool menu_content_show_images;
