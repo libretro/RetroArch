@@ -8098,7 +8098,10 @@ static enum menu_action ozone_parse_menu_entry_action(
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
          }
-
+#ifdef HAVE_AUDIOMIXER
+         if (selection != 0)
+            audio_driver_mixer_play_scroll_sound(true);
+#endif
          if (     (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
                && (ozone->is_quick_menu))
             return MENU_ACTION_NOOP;
@@ -8119,7 +8122,10 @@ static enum menu_action ozone_parse_menu_entry_action(
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
          }
-
+#ifdef HAVE_AUDIOMIXER
+         if (selection < selection_total - 1)
+            audio_driver_mixer_play_scroll_sound(false);
+#endif
          if (     (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
                && (ozone->is_quick_menu))
             return MENU_ACTION_NOOP;
@@ -8186,11 +8192,11 @@ static int ozone_menu_entry_action(
    /* Check whether current selection has changed
     * (due to automatic on screen entry selection...) */
    size_t new_selection        = menu_navigation_get_selection();
+   
    if (new_selection != selection)
    {
       /* Selection has changed - must update
        * entry pointer */
-
       MENU_ENTRY_INITIALIZE(new_entry);
       menu_entry_get(&new_entry, 0, new_selection, NULL, true);
       entry_ptr                = &new_entry;

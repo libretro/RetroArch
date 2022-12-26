@@ -55,6 +55,7 @@
 
 #include "../../file_path_special.h"
 #include "../../configuration.h"
+#include "../../audio/audio_driver.h"
 
 #include "../../tasks/tasks_internal.h"
 
@@ -4480,6 +4481,11 @@ static enum menu_action xmb_parse_menu_entry_action(
             menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
                   &scroll_accel);
 
+#ifdef HAVE_AUDIOMIXER
+               if ((current_time - xmb->last_tab_switch_time) >= XMB_TAB_SWITCH_REPEAT_DELAY || 
+                     scroll_accel <= 0)
+                  audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_RIGHT);
+#endif
             if (scroll_accel > 0)
             {
                /* Ignore input action if tab switch period
@@ -4576,6 +4582,20 @@ static enum menu_action xmb_parse_menu_entry_action(
       case MENU_ACTION_DOWN:
       case MENU_ACTION_SCROLL_UP:
       case MENU_ACTION_SCROLL_DOWN:
+#ifdef HAVE_AUDIOMIXER
+         if (action == MENU_ACTION_UP || action == MENU_ACTION_DOWN)
+         {
+            if (menu_entries_get_size() != 1)
+               audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_UP);
+         }
+         else 
+         {
+            size_t selection = menu_navigation_get_selection();
+            if ((action == MENU_ACTION_SCROLL_UP && selection != 0) ||
+                  (action == MENU_ACTION_SCROLL_DOWN && selection != menu_entries_get_size() - 1))
+               audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_SCROLL_UP);
+         }
+#endif
          if (xmb->show_fullscreen_thumbnails && xmb->is_quick_menu)
             return MENU_ACTION_NOOP;
          break;
