@@ -7881,7 +7881,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          }
          else { 
 #ifdef HAVE_AUDIOMIXER
-            if (selection_total > 1) // if there's only one option, don't play the sound
+            if (selection_total > 1)
                audio_driver_mixer_play_scroll_sound(false);
 #endif
             if (!menu_navigation_wraparound_enable && selection == selection_total - 1)
@@ -8193,7 +8193,7 @@ static int ozone_menu_entry_action(
    /* Check whether current selection has changed
     * (due to automatic on screen entry selection...) */
    size_t new_selection        = menu_navigation_get_selection();
-   
+
    if (new_selection != selection)
    {
       /* Selection has changed - must update
