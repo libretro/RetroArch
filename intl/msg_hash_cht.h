@@ -9126,10 +9126,6 @@ MSG_HASH(
    "兼容非英語的西方語言。輕微影響效能。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
-   "顯示開關圖示"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    "顯示開關圖示不使用文字表達方式。"
    )
@@ -9484,6 +9480,10 @@ MSG_HASH(
    "變更選單使用的圖示主題。"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
+   "顯示開關圖示不使用文字表達方式。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
    "陰影效果"
    )
@@ -9827,6 +9827,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
    "顯示選單左側使用的圖示。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
+   "顯示開關圖示不使用文字表達方式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,

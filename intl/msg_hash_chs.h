@@ -8402,10 +8402,6 @@ MSG_HASH(
    "启用非 ASCII 字符显示。用于兼容除英语外的西方语言。有适度的性能影响。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
-   "显示开关图标"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    "使用开关图标而不是开/关文字来表示设置项的开启关闭状态。"
    )
@@ -8708,6 +8704,10 @@ MSG_HASH(
    "设置其他图标主题。"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
+   "使用开关图标而不是开/关文字来表示设置项的开启关闭状态。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
    "菜单着色器管线"
    )
@@ -9003,6 +9003,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
    "在菜单条目左侧显示图标。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
+   "使用开关图标而不是开/关文字来表示设置项的开启关闭状态。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,

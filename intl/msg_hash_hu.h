@@ -9340,6 +9340,14 @@ MSG_HASH(
    "Más ikonösszeállítás választása a Retroarch-hoz."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
+   "Kapcsolóikonok"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
+   "Ikonok használata a Be/Ki szöveg helyett a kétállású menübejegyzésekhez."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
    "Árnyékok megjelenítése"
    )
@@ -9543,6 +9551,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
    "Ikonok megjelenítése a menübejegyzések bal szélén."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_SWITCH_ICONS,
+   "Kapcsolóikonok"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
+   "Ikonok használata a Be/Ki szöveg helyett a kétállású menübejegyzésekhez."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
