@@ -5103,6 +5103,10 @@ MSG_HASH(
    "menu_sound_bgm"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SOUND_SCROLL,
+   "menu_sound_scroll"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,
    "content_runtime_log"
    )

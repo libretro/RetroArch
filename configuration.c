@@ -1751,6 +1751,8 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("audio_enable_menu_cancel",      &settings->bools.audio_enable_menu_cancel, true, DEFAULT_AUDIO_ENABLE_MENU_CANCEL, false);
    SETTING_BOOL("audio_enable_menu_notice",      &settings->bools.audio_enable_menu_notice, true, DEFAULT_AUDIO_ENABLE_MENU_NOTICE, false);
    SETTING_BOOL("audio_enable_menu_bgm",         &settings->bools.audio_enable_menu_bgm, true, DEFAULT_AUDIO_ENABLE_MENU_BGM, false);
+   SETTING_BOOL("audio_enable_menu_scroll",      &settings->bools.audio_enable_menu_scroll, true, DEFAULT_AUDIO_ENABLE_MENU_SCROLL, false);
+   
    SETTING_BOOL("audio_mute_enable",             audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE), true, false, false);
 #ifdef HAVE_AUDIOMIXER
    SETTING_BOOL("audio_mixer_mute_enable",       audio_get_bool_ptr(AUDIO_ACTION_MIXER_MUTE_ENABLE), true, false, false);

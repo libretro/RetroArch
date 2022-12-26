@@ -596,6 +596,7 @@ typedef struct settings
       bool audio_enable_menu_cancel;
       bool audio_enable_menu_notice;
       bool audio_enable_menu_bgm;
+      bool audio_enable_menu_scroll;
       bool audio_sync;
       bool audio_rate_control;
       bool audio_wasapi_exclusive_mode;
