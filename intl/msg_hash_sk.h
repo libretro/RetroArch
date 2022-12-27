@@ -1790,6 +1790,10 @@ MSG_HASH(
    "Synchronizácia"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
+   "Zmeniť MIDI nastavenia."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
    "Zmiešavač"
    )
@@ -2177,6 +2181,10 @@ MSG_HASH(
    "Zvoľte všeobecné správanie režimu Turbo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
+   "Klasické"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
    "Predvolené tlačidlo Turbo"
    )
@@ -2214,6 +2222,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Povoliť vibrovanie zariadenia (pre podporované jadrá)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   "Intenzita vibrácií"
    )
 
 /* Settings > Input > Menu Controls */
@@ -2268,6 +2280,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
+   "Načítať stav"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
+   "Uložiť stav"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
    "Zvýši index aktuálne zvoleného slotu na ukladanie stavu."
    )
@@ -2287,6 +2307,10 @@ MSG_HASH(
 
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+   "Urobiť screenshot"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
    "Zaznamenanie vstupov (prepínanie)"
@@ -2421,6 +2445,10 @@ MSG_HASH(
 /* Settings > Logging */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
+   "2 (upozornenie)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
    "Zaznamenať do súboru"
    )
@@ -2448,6 +2476,10 @@ MSG_HASH(
    "Vlastné"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
+   "Nízke"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
    "Stredné"
    )
@@ -2466,6 +2498,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
    "Vlastné"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
+   "Nízke"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
@@ -2533,6 +2569,10 @@ MSG_HASH(
 
 /* Settings > User Interface */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
+   "Vzhľad"
+   )
 #ifdef _3DS
 #endif
 MSG_HASH(
@@ -2579,6 +2619,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Zobraziť 'História'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
+   "Zobraziť 'Importovať obsah'"
    )
 MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -2693,6 +2737,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "Úspechy"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Hardcore režim"
+   )
 
 /* Settings > Network */
 
@@ -2711,6 +2759,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
    "Adresa servera"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   "Povoliť pozastavenie"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
@@ -2790,9 +2842,17 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
    "vzad"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+   "Spravovať hracie zoznamy"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
+   "Predvolené jadro"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
    "Metóda triedenia"
@@ -2818,6 +2878,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
    "Povoliť kameru"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
+   "Povoliť polohu"
    )
 
 /* Settings > User > Accounts */
@@ -2854,6 +2918,10 @@ MSG_HASH(
    "Prevzaté"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
+   "Dynamické pozadia"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    "Miniatúry"
    )
@@ -2878,12 +2946,28 @@ MSG_HASH(
    "Databázy"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
+   "Zvukové filtre"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
+   "Video shadery"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
+   "Snímky obrazovky"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
    "Profily herného ovládača"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "Hracie zoznamy"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
+   "Stavy uloženia"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -2936,6 +3020,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    "Názov systému"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
+   "Predvolené jadro"
+   )
 
 /* Explore tab */
 MSG_HASH(
@@ -2953,6 +3041,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
    "Všetko"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   "Podľa vývojára"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   "Podľa žánru"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
+   "Podľa úspechov"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
+   "Podľa kategórie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
+   "Podľa jazyka"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
+   "Podľa regiónu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
+   "Podľa ovládania"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
+   "Podľa pôvodu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_EXPLORE_VIEW,
@@ -2977,6 +3097,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
    "Informácie"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+   "Stiahnuť miniatúry"
+   )
 
 /* Playlist Item > Set Core Association */
 
@@ -2991,6 +3115,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
    "Jadro"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
+   "Databáza"
+   )
 
 /* Quick Menu */
 
@@ -3001,6 +3129,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Zavrieť obsah"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+   "Urobiť screenshot"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_STATE,
+   "Uložiť stav"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_STATE,
+   "Načítať stav"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
+   "Stavy uloženia"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
+   "Voľby jadra"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -3021,6 +3169,10 @@ MSG_HASH(
 
 /* Quick Menu > Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST,
+   "Spravovať voľby jadra"
+   )
 
 /* Quick Menu > Options > Manage Core Options */
 
@@ -3097,8 +3249,16 @@ MSG_HASH(
 /* Quick Menu > Shaders */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
+   "Video shadery"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
    "Načítať"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
+   "Pripojiť"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
@@ -3137,12 +3297,24 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Chyba siete"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Neznáma hra"
+)
 
 /* Quick Menu > Information */
 
 
 /* Miscellaneous UI Items */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE,
+   "Žiadne jadro"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SEARCH,
    "Hľadať"
@@ -3156,12 +3328,36 @@ MSG_HASH(
    "Priečinok nebol nájdený."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ITEMS,
+   "Žiadne položky"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SELECT_FILE,
+   "Vybrať súbor"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_NORMAL,
    "Normálne"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_90_DEG,
+   "90 st."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_180_DEG,
+   "180 st."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
    "Normálne"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,
+   "90 st."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
+   "180 st."
    )
 
 /* Settings Options */
@@ -3187,8 +3383,24 @@ MSG_HASH(
    "Žiadne"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP,
+   "Rolovať vľavo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
+   "História & Obľúbené"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
+   "Všetky hracie zoznamy"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
    "VYP"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
+   "História & Obľúbené"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
@@ -3199,8 +3411,28 @@ MSG_HASH(
    "Nikdy"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE,
+   "Podľa jadra"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    "Nabité"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
+   "Nabíjanie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
+   "Vybíjanie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
+   "<adresár obsahu>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
+   "RetroPad s analógom"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NONE,
@@ -3217,6 +3449,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_PORT_16,
    "Všetko"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_DISABLED,
+   "<zakázané>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
+   "Emulátor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
@@ -3241,6 +3481,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
    "Žiadne"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
+   "Predvolené systémom"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
+   "Snímka obrazovky"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
+   "Titulná obrazovka"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
@@ -3279,6 +3531,10 @@ MSG_HASH(
    "Povolené"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISABLED,
+   "Zakázané"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
    "Zamknuté"
    )
@@ -3305,6 +3561,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT,
    "Obsah"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
+   "<adresár obsahu>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
@@ -3349,6 +3609,14 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
+   "Horná miniatúra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
+   "Spodná miniatúra"
+   )
 
 /* RGUI: Settings Options */
 
@@ -3389,6 +3657,10 @@ MSG_HASH(
    "Vlastné"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DARK_PURPLE,
+   "Tmavofialová"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN,
    "Zlatý"
    )
@@ -3411,6 +3683,14 @@ MSG_HASH(
 
 /* XMB: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
+   "Dynamické pozadie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   "Mierka zväčšenia miniatúry"
+   )
 
 /* XMB: Settings Options */
 
@@ -3423,12 +3703,24 @@ MSG_HASH(
    "Vlastné"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
+   "Retro systém"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
+   "Automaticky"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
    "Tmavý"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT,
    "Svetlý"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE,
+   "Tmavofialová"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN,
@@ -3445,15 +3737,31 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
    "Drakula"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "Druhá miniatúra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "Mierka zväčšenia miniatúry"
+   )
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
+   "Sekundárna miniatúra"
+   )
 
 /* MaterialUI: Settings Options */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE,
    "Modrá"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE,
+   "Tmavomodrá"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN,
@@ -3531,6 +3839,10 @@ MSG_HASH(
    "Tmavý"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
+   "Vlastné..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
    "Nastavenia"
    )
@@ -3549,6 +3861,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
    "Načítať jadro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
+   "Načítavam jadro..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_NAME,
@@ -3575,6 +3891,18 @@ MSG_HASH(
    "Hore"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
+   "Snímka obrazovky"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   "Titulná obrazovka"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
+   "Všetky hracie zoznamy"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE,
    "Jadro"
    )
@@ -3595,12 +3923,20 @@ MSG_HASH(
    "Chyba"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
+   "Chyba siete"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOG,
    "Záznam"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_HIDE,
    "Skryť"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
+   "Vyberte farbu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ZOOM,
@@ -3623,6 +3959,18 @@ MSG_HASH(
    "Vyčistiť"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PROGRESS,
+   "Priebeh:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
+   "Nový hrací zoznam"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
+   "Vymazať hrací zoznam"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
    "Názov:"
    )
@@ -3635,12 +3983,28 @@ MSG_HASH(
    "Jadro:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
+   "Databáza:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS,
+   "Rozšírenia:"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE,
    "Vymazať"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_EDIT,
    "Upraviť"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES,
+   "Vyberte súbory"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER,
+   "Vybrať priečinok"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
@@ -3667,8 +4031,28 @@ MSG_HASH(
    "Použiť"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
+   "Stiahnuť miniatúru"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
    "Miniatúra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
+   "Stiahnuť všetky miniatúry"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
+   "Celý systém"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
+   "Voľby jadra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESET_ALL,
+   "Obnoviť všetko"
    )
 
 /* Unsorted */
@@ -3678,8 +4062,28 @@ MSG_HASH(
    "Aktualizátor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
+   "Vodorovná ponuka"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
    "História"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
+   "Multimédiá"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   " Aktuálny obsah: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
+   "Žiadne hracie zoznamy."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
+   "Pripojené"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
@@ -3715,6 +4119,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
    "Vlastný pomer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
+   "Vynútiť pomer strán"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME,
@@ -3795,6 +4203,10 @@ MSG_HASH(
 /* Discord Status */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
+   "Hranie"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    "Pozastavené"
    )
@@ -3846,6 +4258,10 @@ MSG_HASH(
    "%.*s sa pripojil so vstupnými zariadeniami %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_STATUS_PLAYING,
+   "Hranie"
+   )
+MSG_HASH(
    MSG_NETPLAY_CLIENT_DEVICES,
    "Zariadenia"
    )
@@ -3853,6 +4269,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUDIO_VOLUME,
    "Hlasitosť zvuku"
+   )
+MSG_HASH(
+   MSG_AUTODETECT,
+   "Automatická detekcia"
    )
 MSG_HASH(
    MSG_UPDATING_CORE,
@@ -3867,8 +4287,24 @@ MSG_HASH(
    "Profil herného ovládača úspešne uložený."
    )
 MSG_HASH(
+   MSG_CONNECTED_TO,
+   "Pripojené k"
+   )
+MSG_HASH(
+   MSG_DOWNLOADING,
+   "Sťahovanie"
+   )
+MSG_HASH(
+   MSG_DOWNLOAD_FAILED,
+   "Sťahovanie zlyhalo"
+   )
+MSG_HASH(
    MSG_ERROR,
    "Chyba"
+   )
+MSG_HASH(
+   MSG_EXTRACTING,
+   "Extrahujem"
    )
 MSG_HASH(
    MSG_FRAMES,
@@ -3879,6 +4315,10 @@ MSG_HASH(
    "Načítavanie"
    )
 MSG_HASH(
+   MSG_LOADING_STATE,
+   "Načítavam stav"
+   )
+MSG_HASH(
    MSG_MEMORY,
    "Pamäť"
    )
@@ -3887,12 +4327,24 @@ MSG_HASH(
    "Pozastavené."
    )
 MSG_HASH(
+   MSG_SAVING_STATE,
+   "Ukladám stav"
+   )
+MSG_HASH(
+   MSG_CHANGE_THUMBNAIL_TYPE,
+   "Zmeniť typ miniatúry"
+   )
+MSG_HASH(
    MSG_TO,
    "do"
    )
 MSG_HASH(
    MSG_UNKNOWN,
    "Neznáme"
+   )
+MSG_HASH(
+   MSG_INPUT_KIOSK_MODE_PASSWORD,
+   "Zadajte heslo"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -3929,6 +4381,10 @@ MSG_HASH(
 /* Environment Specific Settings */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+   "Rozlíšenie obrazovky"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    "Vypnúť"
    )
@@ -3937,12 +4393,24 @@ MSG_HASH(
    "Otvoriť..."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   "Odpojiť"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY,
    "Politika"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
    "Ručne"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Vyvážené"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
+   "Použiť režim PAL60"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
