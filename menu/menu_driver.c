@@ -469,7 +469,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
    /* Inspect core options and set entries with only 2 options as
     * boolean for accurate graphical switch icons */
-   if (entry->type >= MENU_SETTINGS_CORE_OPTION_START)
+   if (     entry->type >= MENU_SETTINGS_CORE_OPTION_START
+         && entry->type < MENU_SETTINGS_CHEEVOS_START)
    {
       struct core_option *option      = NULL;
       core_option_manager_t *coreopts = NULL;
