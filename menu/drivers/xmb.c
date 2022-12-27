@@ -411,6 +411,7 @@ typedef struct xmb_handle
    char prev_savestate_thumbnail_file_path[8204];
    char fullscreen_thumbnail_label[255];
 
+   bool allow_horizontal_animation;
    bool fullscreen_thumbnails_available;
    bool show_fullscreen_thumbnails;
    bool want_fullscreen_thumbnails;
@@ -7200,12 +7201,18 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
          xmb->assets_missing  = true;
       xmb_context_reset_background(xmb, iconpath);
 
+      /* Reset previous selection buffer */
       xmb_free_list_nodes(&xmb->selection_buf_old, false);
       file_list_deinitialize(&xmb->selection_buf_old);
       xmb->selection_buf_old.list        = NULL;
       xmb->selection_buf_old.capacity    = 0;
       xmb->selection_buf_old.size        = 0;
+
+      /* Prevent horizontal animation on next menu toggle */
+      xmb->allow_horizontal_animation    = false;
    }
+   else
+      xmb->allow_horizontal_animation    = true;
 
    xmb_context_reset_horizontal_list(xmb);
 
@@ -7390,7 +7397,8 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
       return;
 
    /* Check whether to enable the horizontal animation. */
-   if (menu_horizontal_animation)
+   if (     menu_horizontal_animation
+         && xmb->allow_horizontal_animation)
    {
       unsigned first  = 0, last = 0;
       unsigned height = 0;
