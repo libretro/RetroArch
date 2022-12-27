@@ -18,7 +18,8 @@ with open("crowdin.yaml", 'r') as config_file:
       lang_name = res2.json()['data']['name']
    
       output += '/* ' + lang_name + ' */\n'
-      escaped_name = lang_name.replace(', ', '_').replace(' ', '_').upper()
+      replacements = lang_name.maketrans(' ', '_', ',()')
+      escaped_name = lang_name.translate(replacements).upper()
       output += '#define LANGUAGE_PROGRESS_' + escaped_name + '_TRANSLATED ' + str(lang['data']['translationProgress']) + '\n'
       output += '#define LANGUAGE_PROGRESS_' + escaped_name + '_APPROVED   ' + str(lang['data']['approvalProgress']) + '\n\n'
    with open("progress.h", 'w') as output_file:
