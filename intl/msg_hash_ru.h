@@ -3725,6 +3725,22 @@ MSG_HASH(
    "Устанавливает уровень логирования ядер. Сообщения ядра ниже заданного уровня игнорируются."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
+   "0 (Отладка)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_INFO,
+   "1 (Информация)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
+   "2 (Предупреждения)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_ERROR,
+   "3 (Ошибки)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
    "Запись лога в файл"
    )
@@ -3912,8 +3928,24 @@ MSG_HASH(
    "Низкое"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
+   "Среднее"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
    "Высокое"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
+   "Без потерь"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST,
+   "WebM Быстрый"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY,
+   "WebM Высокое качество"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
@@ -3962,6 +3994,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
    "Низкое"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
+   "Среднее"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
@@ -9150,6 +9186,10 @@ MSG_HASH(
    "Включить отображение нестандартных ASCII-символов. Необходимо для совместимости с некоторыми западными языками. Умеренно влияет на производительность."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
+   "Значок переключателя"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    "Использовать значок вместо ВКЛ/ВЫКЛ для обозначения переключателя настроек в меню."
    )
@@ -9446,6 +9486,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Выбор другой темы иконок для RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
+   "Значок переключателя"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
@@ -9759,6 +9803,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
    "Отображать значки слева от элементов меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_SWITCH_ICONS,
+   "Значок переключателя"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
