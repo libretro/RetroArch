@@ -88,7 +88,6 @@ enum notification_show_screenshot_flash
    NOTIFICATION_SHOW_SCREENSHOT_FLASH_LAST
 };
 
-#ifdef HAVE_CHEEVOS
 enum cheevos_appearance_anchor
 {
    CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT = 0,
@@ -99,7 +98,6 @@ enum cheevos_appearance_anchor
    CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT,
    CHEEVOS_APPEARANCE_ANCHOR_LAST
 };
-#endif
 
 /* This structure holds all objects + metadata
  * corresponding to a particular font */
