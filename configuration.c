@@ -1946,6 +1946,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("cheevos_auto_screenshot",      &settings->bools.cheevos_auto_screenshot, true, false, false);
    SETTING_BOOL("cheevos_badges_enable",        &settings->bools.cheevos_badges_enable, true, false, false);
    SETTING_BOOL("cheevos_start_active",         &settings->bools.cheevos_start_active, true, false, false);
+   SETTING_BOOL("cheevos_appearance_padding_auto", &settings->bools.cheevos_appearance_padding_auto, true, DEFAULT_CHEEVOS_APPEARANCE_PADDING_AUTO, false);
 #endif
 #ifdef HAVE_OVERLAY
    SETTING_BOOL("input_overlay_enable",         &settings->bools.input_overlay_enable, true, config_overlay_enable_default(), false);
@@ -2119,6 +2120,10 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("ozone_thumbnail_scale_factor", &settings->floats.ozone_thumbnail_scale_factor, true, DEFAULT_OZONE_THUMBNAIL_SCALE_FACTOR, false);
 #endif
 #endif
+#ifdef HAVE_CHEEVOS
+   SETTING_FLOAT("cheevos_appearance_padding_h", &settings->floats.cheevos_appearance_padding_h, true, DEFAULT_CHEEVOS_APPEARANCE_PADDING_H, false);
+   SETTING_FLOAT("cheevos_appearance_padding_v", &settings->floats.cheevos_appearance_padding_v, true, DEFAULT_CHEEVOS_APPEARANCE_PADDING_V, false);
+#endif
    SETTING_FLOAT("video_message_pos_x",      &settings->floats.video_msg_pos_x, true, DEFAULT_MESSAGE_POS_OFFSET_X, false);
    SETTING_FLOAT("video_message_pos_y",      &settings->floats.video_msg_pos_y,           true, DEFAULT_MESSAGE_POS_OFFSET_Y, false);
    SETTING_FLOAT("video_font_size",          &settings->floats.video_font_size,           true, DEFAULT_FONT_SIZE, false);
@@ -2271,6 +2276,9 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_OZONE
    SETTING_UINT("ozone_menu_color_theme",       &settings->uints.menu_ozone_color_theme, true, DEFAULT_OZONE_COLOR_THEME, false);
 #endif
+#endif
+#ifdef HAVE_CHEEVOS
+   SETTING_UINT("cheevos_appearance_anchor", &settings->uints.cheevos_appearance_anchor, true, DEFAULT_CHEEVOS_APPEARANCE_ANCHOR, false);
 #endif
    SETTING_UINT("audio_out_rate",               &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
    SETTING_UINT("custom_viewport_width",        &settings->video_viewport_custom.width, false, 0 /* TODO */, false);

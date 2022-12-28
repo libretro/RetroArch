@@ -8211,9 +8211,10 @@ unsigned menu_displaylist_build_list(
          {
             bool cheevos_enable       = settings->bools.cheevos_enable;
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_CHEEVOS_ENABLE,                                        PARSE_ONLY_BOOL,   true  },
-               {MENU_ENUM_LABEL_CHEEVOS_USERNAME,                                      PARSE_ONLY_STRING, false },
-               {MENU_ENUM_LABEL_CHEEVOS_PASSWORD,                                      PARSE_ONLY_STRING, false },
+               {MENU_ENUM_LABEL_CHEEVOS_ENABLE,                                        PARSE_ONLY_BOOL,   true   },
+               {MENU_ENUM_LABEL_CHEEVOS_USERNAME,                                      PARSE_ONLY_STRING, false  },
+               {MENU_ENUM_LABEL_CHEEVOS_PASSWORD,                                      PARSE_ONLY_STRING, false  },
+               {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS,                           PARSE_ACTION,      false  },
                {MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE,                          PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,                           PARSE_ONLY_STRING_OPTIONS,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_CHALLENGE_INDICATORS,                          PARSE_ONLY_BOOL,   false  },
@@ -8237,6 +8238,48 @@ unsigned menu_displaylist_build_list(
                if (cheevos_enable)
                   build_list[i].checked = true;
             }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
+      case DISPLAYLIST_CHEEVOS_APPEARANCE_SETTINGS_LIST:
+         {
+            unsigned cheevos_anchor  = settings->uints.cheevos_appearance_anchor;
+            bool     cheevos_autopad = settings->bools.cheevos_appearance_padding_auto;
+            bool     gfx_widgets     = settings->bools.menu_enable_widgets;
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_ANCHOR,                             PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,                       PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,                          PARSE_ONLY_FLOAT,  false},
+               {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,                          PARSE_ONLY_FLOAT,  false},
+            };
+
+#if defined(HAVE_CHEEVOS) && defined(HAVE_GFX_WIDGETS)
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!gfx_widgets)
+                  build_list[i].checked = false;
+               else if (!cheevos_autopad)
+               {
+                  if (build_list[i].enum_idx == MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V)
+                     build_list[i].checked = true;
+
+                  if (build_list[i].enum_idx == MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H &&
+                      !(cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER ||
+                        cheevos_anchor == CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER))
+                     build_list[i].checked = true;
+               }
+            }
+#endif
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -12992,6 +13035,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
       case DISPLAYLIST_ACCOUNTS_TWITCH_LIST:
       case DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
+      case DISPLAYLIST_CHEEVOS_APPEARANCE_SETTINGS_LIST:
       case DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST:
       case DISPLAYLIST_ACCOUNTS_FACEBOOK_LIST:
       case DISPLAYLIST_RECORDING_SETTINGS_LIST:

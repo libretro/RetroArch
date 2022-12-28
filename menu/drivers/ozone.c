@@ -2090,6 +2090,7 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_OVERRIDE];
       case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
+      case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_NOTIFICATIONS];
 #ifdef HAVE_NETWORKING
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:

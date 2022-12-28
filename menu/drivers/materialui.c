@@ -10774,6 +10774,7 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_TWITCH)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK)) ||
