@@ -251,9 +251,8 @@ static int action_right_scroll(unsigned type, const char *label,
       }
       else
       {
-         if ((menu_entries_get_size() > 0)) {
+         if ((menu_entries_get_size() > 0))
             menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST, NULL);
-         }
       }
 #ifdef HAVE_AUDIOMIXER
       if (selection != menu_navigation_get_selection()) 
