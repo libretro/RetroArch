@@ -255,13 +255,10 @@ static int action_right_scroll(unsigned type, const char *label,
             menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST, NULL);
          }
       }
-
-      if (selection != menu_navigation_get_selection()) 
-      {
 #ifdef HAVE_AUDIOMIXER
+      if (selection != menu_navigation_get_selection()) 
          audio_driver_mixer_play_scroll_sound(false);
 #endif
-      }
    }
 
    return 0;
