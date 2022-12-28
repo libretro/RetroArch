@@ -9238,11 +9238,12 @@ static enum menu_action materialui_parse_menu_entry_action(
          }
          /* > ...otherwise, if current selection is off
           *   screen, auto select *first* item */
-         else {
+         else 
+         {
             materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_FIRST);
 #ifdef HAVE_AUDIOMIXER
-         if (menu_navigation_get_selection() != menu_entries_get_size() - 1)
-            audio_driver_mixer_play_scroll_sound(false);
+            if (menu_navigation_get_selection() != menu_entries_get_size() - 1)
+               audio_driver_mixer_play_scroll_sound(false);
 #endif
          }
          break;

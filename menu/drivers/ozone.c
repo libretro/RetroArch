@@ -7879,7 +7879,8 @@ static enum menu_action ozone_parse_menu_entry_action(
             break;
 
          }
-         else { 
+         else 
+         { 
 #ifdef HAVE_AUDIOMIXER
             if (selection_total > 1)
                audio_driver_mixer_play_scroll_sound(false);
@@ -7921,7 +7922,8 @@ static enum menu_action ozone_parse_menu_entry_action(
 #endif
             break;
          }
-         else {
+         else 
+         {
 #ifdef HAVE_AUDIOMIXER
             if (selection_total > 1)
                audio_driver_mixer_play_scroll_sound(true);
@@ -8002,7 +8004,8 @@ static enum menu_action ozone_parse_menu_entry_action(
             break;
          }
 
-         if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST)) {
+         if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST)) 
+         {
             ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag);
 #ifdef HAVE_AUDIOMIXER
             audio_driver_mixer_play_scroll_sound(false);
