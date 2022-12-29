@@ -632,12 +632,17 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " \n"
                              "A value of 0 disables autosave.");
             break;
-        case MENU_ENUM_LABEL_INPUT_BIND_DEVICE_TYPE:
+        case MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE:
             snprintf(s, len,
-                     "Input Device Type. \n"
+                     "Map specified analog stick for D-Pad input. \n"
                              " \n"
-                             "Picks which device type to use. This is \n"
-                             "relevant for the libretro core itself.");
+                             "If core has native analog support, "
+                             "D-Pad mapping will be disabled unless a "
+                             "'(Forced)' option is selected. \n"
+                             " \n"
+                             "If D-Pad mapping is forced, core will "
+                             "receive no analog input from "
+                             "specified stick.");
             break;
         case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
             snprintf(s, len,
