@@ -61,6 +61,7 @@
 #include "list_special.h"
 #include "paths.h"
 #include "retroarch.h"
+#include "runloop.h"
 #include "verbosity.h"
 #include "version.h"
 #include "version_git.h"
@@ -1226,7 +1227,7 @@ bool command_event_load_entry_state(void)
 
    entry_state_path[0] = '\0';
 
-   if (!retroarch_get_entry_state_path(
+   if (!runloop_get_entry_state_path(
             entry_state_path, sizeof(entry_state_path),
             runloop_st->entry_state_slot))
       return false;
@@ -1613,7 +1614,7 @@ bool command_event_main_state(unsigned cmd)
 
    if (savestates_enabled)
    {
-      retroarch_get_current_savestate_path(state_path,
+      runloop_get_current_savestate_path(state_path,
             sizeof(state_path));
 
       core_serialize_size(&info);

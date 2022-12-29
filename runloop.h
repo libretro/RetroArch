@@ -442,6 +442,10 @@ void runloop_path_set_names(void);
 
 uint32_t runloop_get_flags(void);
 
+bool runloop_get_entry_state_path(char *path, size_t len, unsigned slot);
+
+bool runloop_get_current_savestate_path(char *path, size_t len);
+
 void runloop_state_free(runloop_state_t *runloop_st);
 
 runloop_state_t *runloop_state_get_ptr(void);

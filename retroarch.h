@@ -209,10 +209,6 @@ enum rarch_state_flags
    RARCH_FLAGS_BLOCK_CONFIG_READ            = (1 << 13)
 };
 
-bool retroarch_get_current_savestate_path(char *path, size_t len);
-
-bool retroarch_get_entry_state_path(char *path, size_t len, unsigned slot);
-
 /**
  * retroarch_fail:
  * @error_code  : Error code.

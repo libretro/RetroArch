@@ -1221,7 +1221,7 @@ static void ram_state_to_file(void)
 
    state_path[0] = '\0';
 
-   if (retroarch_get_current_savestate_path(state_path, sizeof(state_path)))
+   if (runloop_get_current_savestate_path(state_path, sizeof(state_path)))
       command_event(CMD_EVENT_RAM_STATE_TO_FILE, state_path);
 }
 

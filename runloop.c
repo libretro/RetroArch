@@ -8227,7 +8227,7 @@ void runloop_task_msg_queue_push(
       runloop_msg_queue_push(msg, prio, duration, flush, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
-bool retroarch_get_current_savestate_path(char *path, size_t len)
+bool runloop_get_current_savestate_path(char *path, size_t len)
 {
    runloop_state_t *runloop_st = &runloop_state;
    settings_t *settings        = config_get_ptr();
@@ -8251,7 +8251,7 @@ bool retroarch_get_current_savestate_path(char *path, size_t len)
    return true;
 }
 
-bool retroarch_get_entry_state_path(char *path, size_t len, unsigned slot)
+bool runloop_get_entry_state_path(char *path, size_t len, unsigned slot)
 {
    size_t _len;
    runloop_state_t *runloop_st = &runloop_state;
