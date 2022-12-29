@@ -8,7 +8,9 @@ with open("crowdin.yaml", 'r') as config_file:
    config = yaml.safe_load(config_file)
    headers = { 'Authorization': 'Bearer ' + config['api_token']}
 
-   url1 = 'https://api.crowdin.com/api/v2/projects/' + config['project_id'] + '/languages/progress?limit=100'
+   url1 = ('https://api.crowdin.com/api/v2/projects/' + config['project_id'] +
+           '/files/' + config['main_file_id'] + '/languages/progress?limit=100')
+
    res1 = requests.get(url1, headers=headers)
    output = ''
    for lang in res1.json()['data']:

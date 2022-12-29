@@ -138,6 +138,10 @@
 #include "../play_feature_delivery/play_feature_delivery.h"
 #endif
 
+#ifdef HAVE_LANGEXTRA
+#include "../intl/progress.h"
+#endif
+
 #define _3_SECONDS  3000000
 #define _6_SECONDS  6000000
 #define _9_SECONDS  9000000
@@ -6846,40 +6850,71 @@ static void setting_get_string_representation_uint_user_language(
       char *s, size_t len)
 {
    const char *modes[RETRO_LANGUAGE_LAST];
+   uint32_t translated[RETRO_LANGUAGE_LAST];
+   const char *rating;
+
+#define LANG_DATA(STR) \
+   modes[RETRO_LANGUAGE_##STR]      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_##STR); \
+   translated[RETRO_LANGUAGE_##STR] = LANGUAGE_PROGRESS_##STR##_TRANSLATED; \
 
    modes[RETRO_LANGUAGE_ENGLISH]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ENGLISH);
-   modes[RETRO_LANGUAGE_JAPANESE]               = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_JAPANESE);
-   modes[RETRO_LANGUAGE_FRENCH]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_FRENCH);
-   modes[RETRO_LANGUAGE_SPANISH]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_SPANISH);
-   modes[RETRO_LANGUAGE_GERMAN]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_GERMAN);
-   modes[RETRO_LANGUAGE_ITALIAN]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ITALIAN);
-   modes[RETRO_LANGUAGE_DUTCH]                  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_DUTCH);
+
+   LANG_DATA(JAPANESE)
+   LANG_DATA(FRENCH)
+   LANG_DATA(SPANISH)
+   LANG_DATA(GERMAN)
+   LANG_DATA(ITALIAN)
+   LANG_DATA(DUTCH)
+
    modes[RETRO_LANGUAGE_PORTUGUESE_BRAZIL]      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL);
+   translated[RETRO_LANGUAGE_PORTUGUESE_BRAZIL] = LANGUAGE_PROGRESS_PORTUGUESE_BRAZILIAN_TRANSLATED;
    modes[RETRO_LANGUAGE_PORTUGUESE_PORTUGAL]    = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL);
-   modes[RETRO_LANGUAGE_RUSSIAN]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN);
-   modes[RETRO_LANGUAGE_KOREAN]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_KOREAN);
-   modes[RETRO_LANGUAGE_CHINESE_TRADITIONAL]    = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL);
-   modes[RETRO_LANGUAGE_CHINESE_SIMPLIFIED]     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED);
-   modes[RETRO_LANGUAGE_ESPERANTO]              = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO);
-   modes[RETRO_LANGUAGE_POLISH]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_POLISH);
-   modes[RETRO_LANGUAGE_VIETNAMESE]             = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE);
-   modes[RETRO_LANGUAGE_ARABIC]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ARABIC);
-   modes[RETRO_LANGUAGE_GREEK]                  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_GREEK);
-   modes[RETRO_LANGUAGE_TURKISH]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_TURKISH);
-   modes[RETRO_LANGUAGE_SLOVAK]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_SLOVAK);
-   modes[RETRO_LANGUAGE_PERSIAN]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_PERSIAN);
-   modes[RETRO_LANGUAGE_HEBREW]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_HEBREW);
-   modes[RETRO_LANGUAGE_ASTURIAN]               = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN);
-   modes[RETRO_LANGUAGE_FINNISH]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_FINNISH);
-   modes[RETRO_LANGUAGE_INDONESIAN]             = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN);
-   modes[RETRO_LANGUAGE_SWEDISH]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_SWEDISH);
-   modes[RETRO_LANGUAGE_UKRAINIAN]              = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN);
-   modes[RETRO_LANGUAGE_CZECH]                  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_CZECH);
-   modes[RETRO_LANGUAGE_CATALAN_VALENCIA]       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_CATALAN_VALENCIA);
-   modes[RETRO_LANGUAGE_CATALAN]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_CATALAN);
-   modes[RETRO_LANGUAGE_BRITISH_ENGLISH]        = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_BRITISH_ENGLISH);
-   modes[RETRO_LANGUAGE_HUNGARIAN]              = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN);
-   strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
+   translated[RETRO_LANGUAGE_PORTUGUESE_PORTUGAL] = LANGUAGE_PROGRESS_PORTUGUESE_TRANSLATED;
+
+   LANG_DATA(RUSSIAN)
+   LANG_DATA(KOREAN)
+   LANG_DATA(CHINESE_TRADITIONAL)
+   LANG_DATA(CHINESE_SIMPLIFIED)
+   LANG_DATA(ESPERANTO)
+   LANG_DATA(POLISH)
+   LANG_DATA(VIETNAMESE)
+   LANG_DATA(ARABIC)
+   LANG_DATA(GREEK)
+   LANG_DATA(TURKISH)
+   LANG_DATA(SLOVAK)
+   LANG_DATA(PERSIAN)
+   LANG_DATA(HEBREW)
+   LANG_DATA(ASTURIAN)
+   LANG_DATA(FINNISH)
+   LANG_DATA(INDONESIAN)
+   LANG_DATA(SWEDISH)
+   LANG_DATA(UKRAINIAN)
+   LANG_DATA(CZECH)
+
+   modes[RETRO_LANGUAGE_CATALAN_VALENCIA]      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_CATALAN_VALENCIA);
+   translated[RETRO_LANGUAGE_CATALAN_VALENCIA] = LANGUAGE_PROGRESS_VALENCIAN_TRANSLATED;
+
+   LANG_DATA(CATALAN)
+
+   modes[RETRO_LANGUAGE_BRITISH_ENGLISH]       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_BRITISH_ENGLISH);
+   translated[RETRO_LANGUAGE_BRITISH_ENGLISH]  = LANGUAGE_PROGRESS_ENGLISH_UNITED_KINGDOM_TRANSLATED;
+
+   LANG_DATA(HUNGARIAN)
+
+   if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_ENGLISH)
+   {
+      snprintf(s, len, "%s",
+         modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)]);
+   } else {
+      rating = msg_hash_to_str(
+         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 95 ? MENU_ENUM_LABEL_VALUE_LANG_COMPLETION_95_PLUS :
+         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 74 ? MENU_ENUM_LABEL_VALUE_LANG_COMPLETION_75_PLUS :
+         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 49 ? MENU_ENUM_LABEL_VALUE_LANG_COMPLETION_50_PLUS :
+         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 24 ? MENU_ENUM_LABEL_VALUE_LANG_COMPLETION_25_PLUS :
+         MENU_ENUM_LABEL_VALUE_LANG_COMPLETION_25_MINUS);
+      snprintf(s, len, "%s [%s]",
+         modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], rating);
+   }
 }
 #endif
 
