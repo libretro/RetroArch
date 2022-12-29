@@ -4703,12 +4703,12 @@ static unsigned menu_displaylist_parse_content_information(
 {
    char tmp[8192];
    char core_name[256];
+   char content_label[256];
    playlist_t *playlist                = playlist_get_cached();
    unsigned idx                        = menu->rpl_entry_selection_ptr;
    const struct playlist_entry *entry  = NULL;
    const char *loaded_content_path     = path_get(RARCH_PATH_CONTENT);
    const char *loaded_core_path        = path_get(RARCH_PATH_CORE);
-   const char *content_label           = NULL;
    const char *content_path            = NULL;
    const char *core_path               = NULL;
    const char *db_name                 = NULL;
@@ -4724,6 +4724,7 @@ static unsigned menu_displaylist_parse_content_information(
    bool core_supports_no_game          = false;
 
    core_name[0]                        = '\0';
+   content_label[0]                    = '\0';
 
    /* Check the origin menu from which the information
     * entry was selected
@@ -4766,10 +4767,11 @@ static unsigned menu_displaylist_parse_content_information(
 
       if (entry)
       {
-         content_label = entry->label;
          content_path  = entry->path;
          core_path     = entry->core_path;
          db_name       = entry->db_name;
+
+         strlcpy(content_label, entry->label, sizeof(content_label));
 
          /* Only display core name if both core name and
           * core path are valid */
@@ -4786,6 +4788,10 @@ static unsigned menu_displaylist_parse_content_information(
       /* No playlist - just extract what we can... */
       content_path   = loaded_content_path;
       core_path      = loaded_core_path;
+
+      /* Create content label from the path */
+      strlcpy(content_label, path_basename(content_path), sizeof(content_label));
+      path_remove_extension(content_label);
 
       if (core_info_find(core_path, &core_info))
       {
@@ -4852,14 +4858,6 @@ static unsigned menu_displaylist_parse_content_information(
    if (!(core_supports_no_game && string_is_empty(content_path)))
    {
       size_t _len;
-      /* If content label is empty, create it from the path */
-      if (string_is_empty(content_label))
-      {
-         char content_tmp[PATH_MAX_LENGTH];
-         strlcpy(content_tmp, content_path, sizeof(content_tmp));
-         path_remove_extension(content_tmp);
-         content_label  = path_basename(content_tmp);
-      }
 
       /* Content label */
       _len        = strlcpy(tmp,
@@ -4885,11 +4883,10 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[_len  ] = ':';
       tmp[_len+1] = ' ';
       tmp[_len+2] = '\0';
-      strlcat(tmp,!string_is_empty(content_path)
+      strlcat(tmp, !string_is_empty(content_path)
                   ? content_path
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-                  sizeof(tmp)
-            );
+                  sizeof(tmp));
       if (menu_entries_append(info->list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
             MENU_ENUM_LABEL_CONTENT_INFO_PATH,
@@ -4980,7 +4977,6 @@ static unsigned menu_displaylist_parse_content_information(
          count++;
    }
 #endif
-
 
    return count;
 }
