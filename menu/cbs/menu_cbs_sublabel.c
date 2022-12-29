@@ -228,11 +228,13 @@ DEFAULT_SUBLABEL_MACRO(menu_action_sublabel_setting_audio_mixer_stream_remove,
 DEFAULT_SUBLABEL_MACRO(menu_action_sublabel_setting_audio_mixer_stream_volume,
       MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME)
 #endif
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accessibility_enabled, MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED
-         )
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accessibility_narrator_speech_speed, MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED
-         )
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_reset_to_default_config,             MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accessibility_enabled, MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accessibility_narrator_speech_speed, MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED)
+
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_config,                      MENU_ENUM_SUBLABEL_CONFIGURATIONS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_current_config,              MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_new_config,                  MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_reset_to_default_config,          MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_override_options,             MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_start_streaming,             MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_start_recording,             MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING)
@@ -437,6 +439,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_overlay_next,          ME
 #endif
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_block_delay,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_type,                MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_adc_type,                   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE)
 #ifdef HAVE_MATERIALUI
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_icons_enable,        MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE)
@@ -2062,8 +2065,24 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   /* Mapped input ports require special handling */
-   if (type == MENU_SETTINGS_INPUT_INPUT_REMAP_PORT)
+   /* Quick Menu Port Controls require special handling */
+   if (     type >= MENU_SETTINGS_REMAPPING_PORT_BEGIN
+         && type <= MENU_SETTINGS_REMAPPING_PORT_END)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_bind_settings);
+      return 0;
+   }
+   else if (type == MENU_SETTINGS_INPUT_LIBRETRO_DEVICE)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_device_type);
+      return 0;
+   }
+   else if (type == MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_adc_type);
+      return 0;
+   }
+   else if (type == MENU_SETTINGS_INPUT_INPUT_REMAP_PORT)
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_remap_port);
       return 0;
@@ -3107,6 +3126,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SHADER_OPTIONS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_options);
+            break;
+         case MENU_ENUM_LABEL_CONFIGURATIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_load_config);
+            break;
+         case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_current_config);
+            break;
+         case MENU_ENUM_LABEL_SAVE_NEW_CONFIG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_new_config);
             break;
          case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_reset_to_default_config);

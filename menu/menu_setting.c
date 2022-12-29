@@ -9567,16 +9567,6 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
-               MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
-               MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-         CONFIG_ACTION(
-               list, list_info,
                MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
                MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
                &group_info,
@@ -9593,6 +9583,16 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_SAVE_CONFIG);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
+               MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(

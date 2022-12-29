@@ -9381,12 +9381,6 @@ unsigned menu_displaylist_build_list(
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
          if (menu_entries_append(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG),
-                  msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG),
-                  MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
-                  MENU_SETTING_ACTION, 0, 0, NULL))
-            count++;
-         if (menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG),
                   msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG),
                   MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
@@ -9396,6 +9390,12 @@ unsigned menu_displaylist_build_list(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG),
                   msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG),
                   MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
+                  MENU_SETTING_ACTION, 0, 0, NULL))
+            count++;
+         if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG),
+                  MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
          break;
