@@ -6907,11 +6907,11 @@ static void setting_get_string_representation_uint_user_language(
          modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)]);
    } else {
       rating = msg_hash_to_str(
-         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 95 ? MENU_ENUM_LABEL_VALUE_LANG_COMPLETION_95_PLUS :
-         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 74 ? MENU_ENUM_LABEL_VALUE_LANG_COMPLETION_75_PLUS :
-         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 49 ? MENU_ENUM_LABEL_VALUE_LANG_COMPLETION_50_PLUS :
-         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 24 ? MENU_ENUM_LABEL_VALUE_LANG_COMPLETION_25_PLUS :
-         MENU_ENUM_LABEL_VALUE_LANG_COMPLETION_25_MINUS);
+         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 95 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_95_PLUS :
+         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 74 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_75_PLUS :
+         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 49 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_50_PLUS :
+         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 24 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_25_PLUS :
+         MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_25_MINUS);
       snprintf(s, len, "%s [%s]",
          modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], rating);
    }
