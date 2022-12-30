@@ -391,7 +391,7 @@ void command_event_set_volume(
 void command_event_init_controllers(rarch_system_info_t *info,
       settings_t *settings, unsigned num_active_users);
 
-bool command_event_load_entry_state(void);
+bool command_event_load_entry_state(settings_t *settings);
 
 void command_event_load_auto_state(void);
 
