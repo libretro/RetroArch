@@ -1020,20 +1020,16 @@ MSG_HASH(
    "加载配置"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "重置为默认值"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "将当前配置重置为默认值。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "保存当前配置"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "另保为新配置"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "重置为默认值"
    )
 
 /* Main Menu > Help */
@@ -2892,20 +2888,12 @@ MSG_HASH(
    "模拟转数字类型"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "使用指定的模拟摇杆进行方向键输入。如果内核支持本地模拟，除非“强制”打开，否则将禁用方向键映射。 如果强制使用方向键映射，核心将不会收到来自指定摇杆的模拟输入。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "设备编号"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "已映射端口"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
-   "指定一个用于接收前端控制器输入端口%u的“核心”端口（通常是玩家编号）。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,

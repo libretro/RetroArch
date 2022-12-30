@@ -912,20 +912,16 @@ MSG_HASH(
 /* Main Menu > Configuration File */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "بازنشانی به حالت پیش‌فرض"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "پیکربندی فعلی را به حالت پیش‌فرض بازنشانی کنید."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "ذخیرهٔ پیکربندی فعلی"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "ذخیرهٔ پیکربندی جدید"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "بازنشانی به حالت پیش‌فرض"
    )
 
 /* Main Menu > Help */

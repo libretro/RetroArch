@@ -896,20 +896,16 @@ MSG_HASH(
    "Učitaj konfiguraciju"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Vrati na podrazumevano"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "Vrati trenutnu konfiguraciju na podrazumevane vrednosti."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "Sačuvaj trenutnu konfiguraciju"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "Sačuvaj novu konfiguraciju"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Vrati na podrazumevano"
    )
 
 /* Main Menu > Help */

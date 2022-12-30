@@ -984,20 +984,16 @@ MSG_HASH(
    "Načítať konfiguráciu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Resetovať do Predvolených Nastavení"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "Nastavenia sa resetujú do pôvodných hodnôt."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "Uložiť Aktuálne Nastavenia"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "Uložiť Nové Nastavenia"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Resetovať do Predvolených Nastavení"
    )
 
 /* Main Menu > Help */
