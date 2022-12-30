@@ -48,35 +48,64 @@ AchievementsPage::AchievementsPage(QObject *parent) :
 QWidget *AchievementsPage::widget()
 {
    unsigned i;
-   QWidget               *widget     = new QWidget;
-   QVBoxLayout           *layout     = new QVBoxLayout;
-   enum msg_hash_enums check_setting = MENU_ENUM_LABEL_CHEEVOS_ENABLE;
-   CheckableSettingsGroup *group     = new CheckableSettingsGroup(check_setting);
-   settings_t *settings              = config_get_ptr();
-   file_list_t *list = (file_list_t*)calloc(1, sizeof(*list));
-   menu_displaylist_build_list(list, settings,
-         DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST, true);
+   QWidget             *widget = new QWidget;
+   QVBoxLayout         *layout = new QVBoxLayout;
+   settings_t*        settings = config_get_ptr();
+   CheckBox   *enabledCheckBox = new CheckBox(MENU_ENUM_LABEL_CHEEVOS_ENABLE);
+   file_list_t    *generalList = (file_list_t*)calloc(1, sizeof(*generalList));
+   file_list_t *appearanceList = (file_list_t*)calloc(1, sizeof(*appearanceList));
 
-   for (i = 0; i < list->size; i++)
+   m_generalGroup              = new SettingsGroup("General");
+   m_appearanceGroup           = new SettingsGroup(msg_hash_to_str(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS));
+
+   menu_displaylist_build_list(generalList, settings,
+      DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST, true);
+
+   for (i = 0; i < generalList->size; i++)
    {
       menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-         file_list_get_actiondata_at_offset(list, i);
+         file_list_get_actiondata_at_offset(generalList, i);
 
-      if (cbs->enum_idx == check_setting)
+      if (cbs->enum_idx == MENU_ENUM_LABEL_CHEEVOS_ENABLE)
          continue;
 
-      group->add(cbs->enum_idx);
+      m_generalGroup->add(cbs->enum_idx);
    }
+   file_list_free(generalList);
 
-   file_list_free(list);
+   menu_displaylist_build_list(appearanceList, settings,
+      DISPLAYLIST_CHEEVOS_APPEARANCE_SETTINGS_LIST, true);
 
-   layout->addWidget(group);
+   for (i = 0; i < appearanceList->size; i++)
+   {
+      menu_file_list_cbs_t* cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(appearanceList, i);
+
+      m_appearanceGroup->add(cbs->enum_idx);
+   }
+   file_list_free(appearanceList);
+
+   connect(enabledCheckBox, SIGNAL(stateChanged(int)),
+           this,            SLOT(onAchievementEnabledChanged(int)));
+
+   onAchievementEnabledChanged(enabledCheckBox->checkState());
+
+   layout->addWidget(enabledCheckBox);
+   layout->addWidget(m_generalGroup);
+   layout->addWidget(m_appearanceGroup);
 
    layout->addStretch();
 
    widget->setLayout(layout);
 
    return widget;
+}
+
+void AchievementsPage::onAchievementEnabledChanged(int state)
+{
+   m_generalGroup->setDisabled(state == Qt::Unchecked);
+   m_appearanceGroup->setDisabled(state == Qt::Unchecked);
 }
 
 AudioCategory::AudioCategory(QWidget *parent) :

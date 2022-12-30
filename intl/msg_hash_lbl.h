@@ -441,6 +441,18 @@ MSG_HASH(
    "cheevos_challenge_indicators"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS,
+   "cheevos_appearance_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_ANCHOR,
+   "cheevos_appearance_anchor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   "cheevos_appearance_padding_auto"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CLOSE_CONTENT,
    "unload_core"
    )
@@ -1115,6 +1127,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST,
    "deferred_retro_achievements_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CHEEVOS_APPEARANCE_SETTINGS_LIST,
+   "deferred_cheevos_appearance_settings_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST,

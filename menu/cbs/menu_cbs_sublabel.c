@@ -306,6 +306,11 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_unlock_sound_enable,   MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_auto_screenshot,       MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_start_active,          MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_verbose_enable,        MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_appearance_settings,   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_appearance_anchor,     MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_ANCHOR)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_appearance_padding_auto, MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_appearance_padding_h,  MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_H)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_appearance_padding_v,  MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_V)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_views_settings_list,      MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_views_settings_list, MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS)
@@ -4282,6 +4287,21 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEEVOS_START_ACTIVE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_start_active);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_appearance_settings);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_ANCHOR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_appearance_anchor);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_AUTO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_appearance_padding_auto);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_appearance_padding_h);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_appearance_padding_v);
             break;
 #endif
          case MENU_ENUM_LABEL_SETTINGS:

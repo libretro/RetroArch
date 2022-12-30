@@ -88,6 +88,17 @@ enum notification_show_screenshot_flash
    NOTIFICATION_SHOW_SCREENSHOT_FLASH_LAST
 };
 
+enum cheevos_appearance_anchor
+{
+   CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT = 0,
+   CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER,
+   CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT,
+   CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT,
+   CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER,
+   CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT,
+   CHEEVOS_APPEARANCE_ANCHOR_LAST
+};
+
 /* This structure holds all objects + metadata
  * corresponding to a particular font */
 typedef struct
@@ -365,6 +376,7 @@ void gfx_widgets_ai_service_overlay_unload(void);
 #endif
 
 #ifdef HAVE_CHEEVOS
+void gfx_widgets_update_cheevos_appearance();
 void gfx_widgets_push_achievement(const char *title, const char* subtitle, const char *badge);
 void gfx_widgets_set_leaderboard_display(unsigned id, const char* value);
 void gfx_widgets_set_challenge_display(unsigned id, const char* badge);

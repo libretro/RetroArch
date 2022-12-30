@@ -305,6 +305,7 @@ enum settings_list_type
    SETTINGS_LIST_MENU_SOUNDS,
    SETTINGS_LIST_PLAYLIST,
    SETTINGS_LIST_CHEEVOS,
+   SETTINGS_LIST_CHEEVOS_APPEARANCE,
    SETTINGS_LIST_CORE_UPDATER,
    SETTINGS_LIST_NETPLAY,
    SETTINGS_LIST_LAKKA_SERVICES,
@@ -8772,6 +8773,60 @@ static void achievement_leaderboards_get_string_representation(rarch_setting_t* 
 #endif
 }
 
+#ifdef HAVE_GFX_WIDGETS
+static void setting_get_string_representation_uint_cheevos_appearance_anchor(
+   rarch_setting_t* setting,
+   char* s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+   case CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT),
+         len);
+      break;
+   case CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER),
+         len);
+      break;
+   case CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT),
+         len);
+      break;
+   case CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT),
+         len);
+      break;
+   case CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER),
+         len);
+      break;
+   case CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT:
+      strlcpy(s,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT),
+         len);
+      break;
+   }
+}
+
+static void cheevos_appearance_write_handler(rarch_setting_t* setting)
+{
+   gfx_widgets_update_cheevos_appearance();
+}
+#endif
 #endif
 
 static void update_streaming_url_write_handler(rarch_setting_t *setting)
@@ -10044,6 +10099,14 @@ static bool setting_append_list(
                list, list_info,
                MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,
                MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
                &group_info,
                &subgroup_info,
                parent_group);
@@ -19980,6 +20043,88 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
 #endif
          break;
+      case SETTINGS_LIST_CHEEVOS_APPEARANCE:
+#ifdef HAVE_CHEEVOS
+         START_GROUP(list, list_info, &group_info,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS),
+            parent_group);
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS);
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+#ifdef HAVE_GFX_WIDGETS
+         CONFIG_UINT(
+            list, list_info,
+            &settings->uints.cheevos_appearance_anchor,
+            MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_ANCHOR,
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR,
+            DEFAULT_CHEEVOS_APPEARANCE_ANCHOR,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            cheevos_appearance_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_left = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_cheevos_appearance_anchor;
+         menu_settings_list_current_add_range(list, list_info, 0, CHEEVOS_APPEARANCE_ANCHOR_LAST - 1, 1, true, true);
+         (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_UINT_COMBOBOX;
+
+         CONFIG_BOOL(
+            list, list_info,
+            &settings->bools.cheevos_appearance_padding_auto,
+            MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_AUTO,
+            true,
+            MENU_ENUM_LABEL_VALUE_OFF,
+            MENU_ENUM_LABEL_VALUE_ON,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            cheevos_appearance_write_handler,
+            general_read_handler,
+            SD_FLAG_NONE
+         );
+         (*list)[list_info->index - 1].action_ok = setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left = setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right = setting_bool_action_right_with_refresh;
+
+         CONFIG_FLOAT(
+            list, list_info,
+            &settings->floats.cheevos_appearance_padding_h,
+            MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
+            DEFAULT_CHEEVOS_APPEARANCE_PADDING_H,
+            "%.2f",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            cheevos_appearance_write_handler,
+            general_read_handler
+         );
+         menu_settings_list_current_add_range(list, list_info, 0.0, 0.5, 0.01, true, true);
+
+         CONFIG_FLOAT(
+            list, list_info,
+            &settings->floats.cheevos_appearance_padding_v,
+            MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_V,
+            DEFAULT_CHEEVOS_APPEARANCE_PADDING_V,
+            "%.2f",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            cheevos_appearance_write_handler,
+            general_read_handler
+         );
+         menu_settings_list_current_add_range(list, list_info, 0.0, 0.5, 0.01, true, true);
+#endif
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+#endif
+         break;
       case SETTINGS_LIST_CORE_UPDATER:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS),
@@ -22017,6 +22162,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_MENU_SOUNDS,
       SETTINGS_LIST_PLAYLIST,
       SETTINGS_LIST_CHEEVOS,
+      SETTINGS_LIST_CHEEVOS_APPEARANCE,
       SETTINGS_LIST_CORE_UPDATER,
       SETTINGS_LIST_NETPLAY,
       SETTINGS_LIST_LAKKA_SERVICES,

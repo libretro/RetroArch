@@ -340,6 +340,8 @@ typedef struct settings
 #ifdef HAVE_MIST
       unsigned steam_rich_presence_format;
 #endif
+
+      unsigned cheevos_appearance_anchor;
    } uints;
 
    struct
@@ -370,6 +372,9 @@ typedef struct settings
       float menu_rgui_particle_effect_speed;
       float menu_screensaver_animation_speed;
       float ozone_thumbnail_scale_factor;
+
+      float cheevos_appearance_padding_h;
+      float cheevos_appearance_padding_v;
 
       float audio_max_timing_skew;
       float audio_volume; /* dB scale. */
@@ -825,6 +830,7 @@ typedef struct settings
       bool cheevos_start_active;
       bool cheevos_unlock_sound_enable;
       bool cheevos_challenge_indicators;
+      bool cheevos_appearance_padding_auto;
 
       /* Camera */
       bool camera_allow;
