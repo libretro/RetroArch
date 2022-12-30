@@ -1788,7 +1788,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       {
          snprintf(tmp, sizeof(tmp),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
-            controller+1,
+            controller + 1,
             input_config_get_device_name(controller),
             input_config_get_device_name_index(controller));
 
@@ -1800,7 +1800,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_RGUI
          if (string_is_equal(menu_driver, "rgui"))
          {
-            strlcpy(tmp, "- Device display name: ", sizeof(tmp));
+            strlcpy(tmp, "- Device Display Name: ", sizeof(tmp));
             strlcat(tmp,
                input_config_get_device_display_name(controller) ?
                input_config_get_device_display_name(controller) :
@@ -1810,7 +1810,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
                count++;
-            strlcpy(tmp, "- Device config name: ", sizeof(tmp));
+            strlcpy(tmp, "- Device Config Name: ", sizeof(tmp));
             strlcat(tmp,
                input_config_get_device_config_name(controller) ?
                input_config_get_device_config_name(controller)  :

@@ -1239,7 +1239,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
       {
             snprintf(tmp, sizeof(tmp),
                val_port_dev_name,
-               controller,
+               controller + 1,
                input_config_get_device_name(controller),
                input_config_get_device_name_index(controller));
 
