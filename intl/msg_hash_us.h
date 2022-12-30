@@ -11399,11 +11399,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d device name: %s (#%d)"
+   "Port %d Device Name: %s (#%d)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
-   "Device display name: %s\nDevice config name: %s\nDevice VID/PID: %d/%d"
+   "Device Display Name: %s\nDevice Config Name: %s\nDevice VID/PID: %d/%d"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
