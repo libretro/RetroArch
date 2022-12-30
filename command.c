@@ -1206,7 +1206,7 @@ void command_event_init_cheats(
 }
 #endif
 
-bool command_event_load_entry_state(void)
+bool command_event_load_entry_state(settings_t *settings)
 {
    char entry_state_path[PATH_MAX_LENGTH];
    int entry_path_stats;
@@ -1247,6 +1247,9 @@ bool command_event_load_entry_state(void)
          msg_hash_to_str(MSG_LOADING_ENTRY_STATE_FROM),
          entry_state_path, ret ? "succeeded" : "failed"
          );
+
+   if (ret)
+   configuration_set_int(settings, settings->ints.state_slot, runloop_st->entry_state_slot);
 
    return ret;
 }

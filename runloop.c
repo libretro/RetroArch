@@ -5359,7 +5359,7 @@ static bool event_init_content(
    if (!cheevos_enable || !cheevos_hardcore_mode_enable)
 #endif
    {
-      if (runloop_st->entry_state_slot && !command_event_load_entry_state())
+      if (runloop_st->entry_state_slot && !command_event_load_entry_state(settings))
          runloop_st->entry_state_slot = 0;
       if (!runloop_st->entry_state_slot && settings->bools.savestate_auto_load)
          command_event_load_auto_state();
