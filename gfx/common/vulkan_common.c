@@ -481,7 +481,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
       if ((format_properties.linearTilingFeatures & required) != required)
       {
-         RARCH_LOG("[Vulkan]: GPU does not support using linear images as textures. Falling back to copy path.\n");
+#ifdef VULKAN_DEBUG
+         RARCH_DBG("[Vulkan]: GPU does not support using linear images as textures. Falling back to copy path.\n");
+#endif
          type = VULKAN_TEXTURE_STAGING;
       }
    }
@@ -583,7 +585,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
          {
             /* Recreate texture but for STAGING this time ... */
 #ifdef VULKAN_DEBUG
-            RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
+            RARCH_DBG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
 #endif
             type = VULKAN_TEXTURE_STAGING;
             vkDestroyImage(device, tex.image, NULL);
@@ -2298,7 +2300,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type,
       void *display, void *surface,
       unsigned width, unsigned height,
-      unsigned swap_interval)
+      int8_t swap_interval)
 {
    switch (type)
    {
@@ -2927,7 +2929,7 @@ retry:
 
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
-      unsigned swap_interval)
+      int8_t swap_interval)
 {
    unsigned i;
    uint32_t format_count;
@@ -2977,7 +2979,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    {
       /* Do not bother creating a swapchain redundantly. */
 #ifdef VULKAN_DEBUG
-      RARCH_LOG("[Vulkan]: Do not need to re-create swapchain.\n");
+      RARCH_DBG("[Vulkan]: Do not need to re-create swapchain.\n");
 #endif
       vulkan_create_wait_fences(vk);
 
@@ -3024,6 +3026,12 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    vulkan_emulated_mailbox_deinit(&vk->mailbox);
 
+   /* Unless we have other reasons to clamp, we should prefer 3 images.
+    * We hard sync against the swapchain, so if we have 2 images,
+    * we would be unable to overlap CPU and GPU, which can get very slow
+    * for GPU-rendered cores. */
+   desired_swapchain_images    = settings->uints.video_max_swapchain_images;
+
    present_mode_count = 0;
    vkGetPhysicalDeviceSurfacePresentModesKHR(
          vk->context.gpu, vk->vk_surface,
@@ -3037,40 +3045,76 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          vk->context.gpu, vk->vk_surface,
          &present_mode_count, present_modes);
 
-#ifdef VULKAN_DEBUG
-   for (i = 0; i < present_mode_count; i++)
+   if (vk->swapchain == VK_NULL_HANDLE)
    {
-      RARCH_LOG("[Vulkan]: Swapchain supports present mode: %u.\n",
-            present_modes[i]);
+      for (i = 0; i < present_mode_count; i++)
+      {
+         switch (present_modes[i])
+         {
+            case VK_PRESENT_MODE_IMMEDIATE_KHR:
+               RARCH_DBG("[Vulkan]: Swapchain supports present mode: IMMEDIATE_KHR.\n");
+               break;
+            case VK_PRESENT_MODE_MAILBOX_KHR:
+               RARCH_DBG("[Vulkan]: Swapchain supports present mode: MAILBOX_KHR.\n");
+               break;
+            case VK_PRESENT_MODE_FIFO_KHR:
+               RARCH_DBG("[Vulkan]: Swapchain supports present mode: FIFO_KHR.\n");
+               break;
+            case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
+               RARCH_DBG("[Vulkan]: Swapchain supports present mode: FIFO_RELAXED_KHR.\n");
+               break;
+            default:
+               break;
+         }
+
+         vk->context.present_modes[i]  = present_modes[i];
+      }
    }
-#endif
 
    vk->context.swap_interval = swap_interval;
    for (i = 0; i < present_mode_count; i++)
    {
-      if (!swap_interval && present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
-      {
-         swapchain_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
-         break;
-      }
-      else if (!swap_interval && present_modes[i]
-            == VK_PRESENT_MODE_IMMEDIATE_KHR)
+      if (swap_interval == 0 && present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
       {
          swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
          break;
       }
-      else if (swap_interval && present_modes[i] == VK_PRESENT_MODE_FIFO_KHR)
+      else if (swap_interval > 0 && present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR
+            && desired_swapchain_images > 2)
+      {
+         swapchain_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+         break;
+      }
+      else if (swap_interval > 0 && present_modes[i] == VK_PRESENT_MODE_FIFO_KHR)
       {
          /* Kind of tautological since FIFO must always be present. */
          swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
          break;
       }
+      else if (swap_interval < 0 && present_modes[i] == VK_PRESENT_MODE_FIFO_RELAXED_KHR)
+      {
+         swapchain_present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+         break;
+      }
    }
 
-#ifdef VULKAN_DEBUG
-   RARCH_LOG("[Vulkan]: Creating swapchain with present mode: %u\n",
-         (unsigned)swapchain_present_mode);
-#endif
+   switch (swapchain_present_mode)
+   {
+      case VK_PRESENT_MODE_IMMEDIATE_KHR:
+         RARCH_DBG("[Vulkan]: Creating swapchain with present mode: IMMEDIATE_KHR.\n");
+         break;
+      case VK_PRESENT_MODE_MAILBOX_KHR:
+         RARCH_DBG("[Vulkan]: Creating swapchain with present mode: MAILBOX_KHR.\n");
+         break;
+      case VK_PRESENT_MODE_FIFO_KHR:
+         RARCH_DBG("[Vulkan]: Creating swapchain with present mode: FIFO_KHR.\n");
+         break;
+      case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
+         RARCH_DBG("[Vulkan]: Creating swapchain with present mode: FIFO_RELAXED_KHR.\n");
+         break;
+      default:
+         break;
+   }
 
    vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
          vk->vk_surface, &format_count, NULL);
@@ -3171,20 +3215,13 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       vk->context.num_swapchain_images = 1;
 
       memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));
-      RARCH_LOG("[Vulkan]: Cannot create a swapchain yet. Will try again later ...\n");
+      RARCH_DBG("[Vulkan]: Cannot create a swapchain yet. Will try again later..\n");
       return true;
    }
 
-#ifdef VULKAN_DEBUG
-   RARCH_LOG("[Vulkan]: Using swapchain size %ux%u.\n",
-         swapchain_size.width, swapchain_size.height);
-#endif
-
-   /* Unless we have other reasons to clamp, we should prefer 3 images.
-    * We hard sync against the swapchain, so if we have 2 images,
-    * we would be unable to overlap CPU and GPU, which can get very slow
-    * for GPU-rendered cores. */
-   desired_swapchain_images    = settings->uints.video_max_swapchain_images;
+   if (vk->swapchain == VK_NULL_HANDLE)
+      RARCH_DBG("[Vulkan]: Using swapchain size %ux%u.\n",
+            swapchain_size.width, swapchain_size.height);
 
    /* Clamp images requested to what is supported by the implementation. */
    if (desired_swapchain_images < surface_properties.minImageCount)
