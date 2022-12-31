@@ -5786,6 +5786,13 @@ MSG_HASH(
    "도전 과제를 달성할 수 있을 때 화면에 알림 아이콘을 표시합니다."
    )
 
+/* Settings > Achievements > Appearance */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   "메뉴"
+   )
+
 /* Settings > Network */
 
 MSG_HASH(
@@ -10712,14 +10719,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
    "포트"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "%d번 포트 디바이스명: %s (#%d)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
-   "장치 표시명: %s\n장치 설정명: %s\n장치 VID/PID: %d/%d"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,

@@ -1174,6 +1174,9 @@ MSG_HASH(
    "Præstationer"
    )
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 

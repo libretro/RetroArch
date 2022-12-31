@@ -1958,6 +1958,9 @@ MSG_HASH(
    "Prestasjoner"
    )
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 

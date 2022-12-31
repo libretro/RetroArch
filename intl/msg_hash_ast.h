@@ -1670,6 +1670,13 @@ MSG_HASH(
    "Amuesa más información nos avisos."
    )
 
+/* Settings > Achievements > Appearance */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   "Aspeutu"
+   )
+
 /* Settings > Network */
 
 MSG_HASH(

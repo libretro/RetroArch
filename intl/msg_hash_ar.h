@@ -3710,6 +3710,13 @@ MSG_HASH(
    "لقطة شاشة تلقائية"
    )
 
+/* Settings > Achievements > Appearance */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   "المظهر"
+   )
+
 /* Settings > Network */
 
 MSG_HASH(

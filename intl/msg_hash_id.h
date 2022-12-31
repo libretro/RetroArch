@@ -2790,6 +2790,9 @@ MSG_HASH(
    "Secara berkala mengirim info permainan berkonteks ke situs web RetroAchievements. Tidak berpengaruh jika 'Mode Garis Keras' dinyalakan."
    )
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 MSG_HASH(

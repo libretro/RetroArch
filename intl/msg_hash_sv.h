@@ -2502,6 +2502,9 @@ MSG_HASH(
    "Prestationer"
    )
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 MSG_HASH(

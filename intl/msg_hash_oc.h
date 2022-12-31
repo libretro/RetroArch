@@ -410,6 +410,9 @@ MSG_HASH(
 /* Settings > Achievements */
 
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 

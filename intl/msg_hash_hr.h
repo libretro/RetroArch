@@ -758,6 +758,9 @@ MSG_HASH(
    "Postignuća"
    )
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 

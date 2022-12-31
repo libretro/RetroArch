@@ -942,6 +942,9 @@ MSG_HASH(
    "Display badges in the Achievements List."
    )
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 MSG_HASH(

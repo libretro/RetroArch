@@ -1226,6 +1226,9 @@ MSG_HASH(
    "Llwyddiannau"
    )
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 

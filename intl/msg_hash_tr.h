@@ -5746,6 +5746,13 @@ MSG_HASH(
    "Başarı kazanılırken başarıların ekranda bir gösterge göstermesine izin verir."
    )
 
+/* Settings > Achievements > Appearance */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   "Görünüm"
+   )
+
 /* Settings > Network */
 
 MSG_HASH(
@@ -10708,14 +10715,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE,
    "Çevrimiçi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d cihaz adı: %s (#%d)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
-   "Cihaz görünen adı: %s\nCihaz yapılandırma adı: %s\nCihaz VID/PID: %d/%d"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,

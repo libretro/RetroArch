@@ -4422,6 +4422,9 @@ MSG_HASH(
    "Taules de classificació específiques del joc. No té efecte si el «mode expert» està desactivat."
    )
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 MSG_HASH(

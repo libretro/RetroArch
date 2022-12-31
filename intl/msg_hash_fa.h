@@ -2042,6 +2042,9 @@ MSG_HASH(
    "دستاوردها"
    )
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 MSG_HASH(

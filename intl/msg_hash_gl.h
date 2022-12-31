@@ -1718,6 +1718,9 @@ MSG_HASH(
    "Logros"
    )
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 

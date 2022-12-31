@@ -622,6 +622,9 @@ MSG_HASH(
    "הישגים"
    )
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 

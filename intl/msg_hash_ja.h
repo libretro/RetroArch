@@ -4886,6 +4886,13 @@ MSG_HASH(
    "実績を獲得したときに自動的にスクリーンショットを撮ります."
    )
 
+/* Settings > Achievements > Appearance */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   "外観"
+   )
+
 /* Settings > Network */
 
 MSG_HASH(

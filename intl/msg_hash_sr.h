@@ -1930,6 +1930,9 @@ MSG_HASH(
    "Dostignuća"
    )
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 

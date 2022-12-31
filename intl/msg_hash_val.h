@@ -2682,6 +2682,9 @@ MSG_HASH(
    "Assoliments"
    )
 
+/* Settings > Achievements > Appearance */
+
+
 /* Settings > Network */
 
 

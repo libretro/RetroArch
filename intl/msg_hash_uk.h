@@ -3742,6 +3742,13 @@ MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
    "Повторне Проходження"
    )
 
+/* Settings > Achievements > Appearance */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   "Зовнішній вигляд"
+   )
+
 /* Settings > Network */
 
 MSG_HASH(

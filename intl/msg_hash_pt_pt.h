@@ -2562,6 +2562,13 @@ MSG_HASH(
    "Ativar/desativar conquistas não oficiais e/ou característas beta para fins de testes."
    )
 
+/* Settings > Achievements > Appearance */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   "Aparência"
+   )
+
 /* Settings > Network */
 
 MSG_HASH(
