@@ -3074,15 +3074,19 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    vk->context.swap_interval = swap_interval;
    for (i = 0; i < present_mode_count; i++)
    {
-      if (swap_interval == 0 && present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
-      {
-         swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
-         break;
-      }
-      else if (swap_interval > 0 && present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR
-            && desired_swapchain_images > 2)
+      /* Special fallthrough default for mailbox for rather getting it
+       * than fifo without vsync when immediate is not available */
+      if (present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR
+            && (  (swap_interval > 0 && desired_swapchain_images > 2)
+               || (swap_interval < 1 && swapchain_present_mode == VK_PRESENT_MODE_FIFO_KHR))
+            )
       {
          swapchain_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+         continue;
+      }
+      else if (swap_interval == 0 && present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
+      {
+         swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
          break;
       }
       else if (swap_interval > 0 && present_modes[i] == VK_PRESENT_MODE_FIFO_KHR)
