@@ -5706,7 +5706,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_H,
-   "Distanz zum linken/rechten Bildschirmrand, welches den Bildschirm-Overscan ausgleichen kann."
+   "Distanz zum linken/rechten Bildschirmrand, was den Bildschirm-Overscan ausgleichen kann."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_V,
