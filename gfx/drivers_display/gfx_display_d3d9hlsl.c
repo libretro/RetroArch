@@ -279,7 +279,7 @@ void gfx_display_d3d9_hlsl_scissor_begin(
    RECT rect;
    d3d9_video_t *d3d9 = (d3d9_video_t*)data;
 
-   if (!d3d9 || !width || !height)
+   if (!d3d9)
       return;
 
    rect.left          = x;
