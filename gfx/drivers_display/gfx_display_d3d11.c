@@ -279,7 +279,7 @@ void gfx_display_d3d11_scissor_begin(void *data,
    D3D11_RECT rect;
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
 
-   if (!d3d11 || !width || !height)
+   if (!d3d11)
       return;
 
    rect.left            = x;

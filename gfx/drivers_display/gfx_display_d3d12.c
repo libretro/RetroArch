@@ -254,7 +254,7 @@ void gfx_display_d3d12_scissor_begin(void *data,
    D3D12_RECT rect;
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
 
-   if (!d3d12 || !width || !height)
+   if (!d3d12)
       return;
 
    rect.left            = x;
