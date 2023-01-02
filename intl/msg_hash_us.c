@@ -62,6 +62,9 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                    "When slot is not 0, path will be <path><d>, \n"
                    "where <d> is slot number.");
              break;
+          case RARCH_ENABLE_HOTKEY:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY), len);
+             break;
           default:
              if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
@@ -74,206 +77,94 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
     switch (msg)
     {
         case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
-            snprintf(s, len, "Login details for your \n"
-                    "Retro Achievements account. \n"
-                    " \n"
-                    "Visit retroachievements.org and sign up \n"
-                    "for a free account. \n"
-                    " \n"
-                    "After you are done registering, you need \n"
-                    "to input the username and password into \n"
-                    "RetroArch.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS), len);
             break;
         case MENU_ENUM_LABEL_USER_LANGUAGE:
-            snprintf(s, len, "Localizes the menu and all onscreen messages \n"
-                    "according to the language you have selected \n"
-                    "here. \n"
-                    " \n"
-                    "Requires a restart for the changes \n"
-                    "to take effect. \n"
-                    " \n"
-                    "Note: not all languages might be currently \n"
-                    "implemented. \n"
-                    " \n"
-                    "In case a language is not implemented, \n"
-                    "we fallback to English.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_USER_LANGUAGE), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_CONFIG:
-            snprintf(s, len, "Configuration file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_COMPRESSED_ARCHIVE:
-            snprintf(s, len, "Compressed archive file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_RECORD_CONFIG:
-            snprintf(s, len, "Recording configuration file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_CURSOR:
-            snprintf(s, len, "Database cursor file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR), len);
             break;
         case MENU_ENUM_LABEL_FILE_CONFIG:
-            snprintf(s, len, "Configuration file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_CONFIG), len);
             break;
         case MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY:
-            snprintf(s, len,
-                     "Select this to scan the current directory \n"
-                             "for content.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SCAN_THIS_DIRECTORY), len);
             break;
         case MENU_ENUM_LABEL_USE_THIS_DIRECTORY:
-            snprintf(s, len,
-                     "Select this to set this as the directory.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_USE_THIS_DIRECTORY), len);
             break;
         case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
-            snprintf(s, len,
-                     "Some cores might have \n"
-                             "a shutdown feature. \n"
-                             " \n"
-                             "If this option is left disabled, \n"
-                             "selecting the shutdown procedure \n"
-                             "would trigger RetroArch being shut \n"
-                             "down. \n"
-                             " \n"
-                             "Enabling this option will load a \n"
-                             "dummy core instead so that we remain \n"
-                             "inside the menu and RetroArch won't \n"
-                             "shutdown.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN), len);
             break;
         case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
-            snprintf(s, len,
-                     "Some cores might need \n"
-                             "firmware or bios files. \n"
-                             " \n"
-                             "If this option is disabled, \n"
-                             "it will try to load even if such \n"
-                             "firmware is missing.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE), len);
             break;
         case MENU_ENUM_LABEL_PARENT_DIRECTORY:
-            snprintf(s, len,
-                     "Go back to the parent directory.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_PARENT_DIRECTORY), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS:
-            snprintf(s, len,
-                     "Open Windows permission settings to enable \n"
-                     "the broadFileSystemAccess capability.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_OPEN_UWP_PERMISSIONS), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET:
-            snprintf(s, len,
-                     "Shader preset file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_SHADER:
-            snprintf(s, len,
-                     "Shader file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_REMAP:
-            snprintf(s, len,
-                     "Remap controls file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_CHEAT:
-            snprintf(s, len,
-                     "Cheat file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_OVERLAY:
-            snprintf(s, len,
-                     "Overlay file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_RDB:
-            snprintf(s, len,
-                     "Database file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_FONT:
-            snprintf(s, len,
-                     "TrueType font file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE:
-            snprintf(s, len,
-                     "Plain file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_MOVIE_OPEN:
-            snprintf(s, len,
-                     "Video. \n"
-                             " \n"
-                             "Select it to open this file with the \n"
-                             "video player.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN:
-            snprintf(s, len,
-                     "Music. \n"
-                             " \n"
-                             "Select it to open this file with the \n"
-                             "music player.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE:
-            snprintf(s, len,
-                     "Image file.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER:
-            snprintf(s, len,
-                     "Image. \n"
-                             " \n"
-                             "Select it to open this file with the \n"
-                             "image viewer.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION:
-            snprintf(s, len,
-                     "Libretro core. \n"
-                             " \n"
-                             "Selecting this will associate this core \n"
-                             "to the game.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
-            snprintf(s, len,
-                     "Libretro core. \n"
-                             " \n"
-                             "Select this file to have RetroArch load this core.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE), len);
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
-            snprintf(s, len,
-                     "Directory. \n"
-                             " \n"
-                             "Select it to open this directory.");
-            break;
-        case MENU_ENUM_LABEL_CACHE_DIRECTORY:
-            snprintf(s, len,
-                     "Cache Directory. \n"
-                             " \n"
-                             "Content decompressed by RetroArch will be \n"
-                             "temporarily extracted to this directory.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY), len);
             break;
         case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
-            snprintf(s, len,
-                     "Influence how input polling is done inside \n"
-                             "RetroArch. \n"
-                             " \n"
-                             "Early  - Input polling is performed before \n"
-                             "the frame is processed. \n"
-                             "Normal - Input polling is performed when \n"
-                             "polling is requested. \n"
-                             "Late   - Input polling is performed on \n"
-                             "first input state request per frame.\n"
-                             " \n"
-                             "Setting it to 'Early' or 'Late' can result \n"
-                             "in less latency, \n"
-                             "depending on your configuration.\n\n"
-                             "Will be ignored when using netplay.");
-            break;
-        case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
-        case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
-            snprintf(s, len,
-                     "Offset for where messages will be placed \n"
-                             "onscreen. Values are in range [0.0, 1.0].");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR), len);
             break;
         case MENU_ENUM_LABEL_CORE_LIST:
-            snprintf(s, len,
-                     "Load Core. \n"
-                             " \n"
-                             "Browse for a libretro core \n"
-                             "implementation. Where the browser \n"
-                             "starts depends on your Core Directory \n"
-                             "path. If blank, it will start in root. \n"
-                             " \n"
-                             "If Core Directory is a directory, the menu \n"
-                             "will use that as top folder. If Core \n"
-                             "Directory is a full path, it will start \n"
-                             "in the folder where the file is.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CORE_LIST), len);
             break;
         case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
             snprintf(s, len,
@@ -386,35 +277,10 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             }
             break;
         case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
-            snprintf(s, len,
-                     "Load Content. \n"
-                             "Browse for content. \n"
-                             " \n"
-                             "To load content, you need a \n"
-                             "'Core' to use, and a content file. \n"
-                             " \n"
-                             "To control where the menu starts \n"
-                             "to browse for content, set  \n"
-                             "'File Browser Directory'. \n"
-                             "If not set, it will start in root. \n"
-                             " \n"
-                             "The browser will filter out \n"
-                             "extensions for the last core set \n"
-                             "in 'Load Core', and use that core \n"
-                             "when content is loaded.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST), len);
             break;
         case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
-            snprintf(s, len,
-                     "Loading content from history. \n"
-                             " \n"
-                             "As content is loaded, content and libretro \n"
-                             "core combinations are saved to history. \n"
-                             " \n"
-                             "The history is saved to a file in the same \n"
-                             "directory as the RetroArch config file. If \n"
-                             "no config file was loaded in startup, history \n"
-                             "will not be saved or loaded, and will not exist \n"
-                             "in the main menu.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY), len);
             break;
         case MENU_ENUM_LABEL_VIDEO_DRIVER:
             {
@@ -518,79 +384,16 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
 
         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
-            snprintf(s, len,
-                     "Load Shader Preset. \n"
-                             " \n"
-                             " Load a shader preset directly. \n"
-                             "The menu shader menu is updated accordingly. \n"
-                             " \n"
-                             "If the preset uses scaling methods which are nott \n"
-                             "simple, (i.e. source scaling, same scaling \n"
-                             "factor for X/Y), the scaling factor displayed \n"
-                             "in the menu might not be correct.");
-            break;
-        case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
-            snprintf(s, len,
-                           "Prepend Shader Preset. \n"
-                             " \n"
-                             " Prepend a shader preset before the currently \n"
-                             "loaded one. \n");
-            break;
-        case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
-            snprintf(s, len,
-                           "Append Shader Preset. \n"
-                             " \n"
-                             " Append a shader preset after the currently \n"
-                             "loaded one. \n");
+           strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET), len);
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
-            snprintf(s, len,
-                     "Scale for this pass. \n"
-                             " \n"
-                             "The scale factor accumulates, i.e. 2x \n"
-                             "for first pass and 2x for second pass \n"
-                             "will give you a 4x total scale. \n"
-                             " \n"
-                             "If there is a scale factor for last \n"
-                             "pass, the result is stretched to \n"
-                             "screen with the filter specified in \n"
-                             "'Default Filter'. \n"
-                             " \n"
-                             "If 'Don't Care' is set, either 1x \n"
-                             "scale or stretch to fullscreen will \n"
-                             "be used depending if it's not the last \n"
-                             "pass or not.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS), len);
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
-            snprintf(s, len,
-                     "Shader Passes. \n"
-                             " \n"
-                             "RetroArch allows you to mix and match various \n"
-                             "shaders with arbitrary shader passes, with \n"
-                             "custom hardware filters and scale factors. \n"
-                             " \n"
-                             "This option specifies the number of shader \n"
-                             "passes to use. If you set this to 0, and use \n"
-                             "Apply Shader Changes, you use a 'blank' shader. \n"
-                             " \n"
-                             "The Default Filter option will affect the \n"
-                             "stretching filter.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES), len);
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
-            snprintf(s, len,
-                     "Path to shader. \n"
-                             " \n"
-                             "All shaders must be of the same \n"
-                             "type (i.e. CG, GLSL or HLSL). \n"
-                             " \n"
-                             "Set Shader Directory to set where \n"
-                             "the browser starts to look for \n"
-                             "shaders.");
-            break;
-        case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
-            snprintf(s, len,
-                     "Determines how configuration files \n"
-                             "are loaded and prioritized.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS), len);
             break;
         case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             snprintf(s, len,
@@ -615,93 +418,22 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             );
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
-            snprintf(s, len,
-                     "Hardware filter for this pass. \n"
-                             " \n"
-                             "If 'Don't Care' is set, 'Default \n"
-                             "Filter' will be used.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS), len);
             break;
         case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
-            snprintf(s, len,
-                     "Autosaves the non-volatile SRAM \n"
-                             "at a regular interval.\n"
-                             " \n"
-                             "This is disabled by default unless set \n"
-                             "otherwise. The interval is measured in \n"
-                             "seconds. \n"
-                             " \n"
-                             "A value of 0 disables autosave.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL), len);
             break;
         case MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE:
-            snprintf(s, len,
-                     "Map specified analog stick for D-Pad input. \n"
-                             " \n"
-                             "If core has native analog support, "
-                             "D-Pad mapping will be disabled unless a "
-                             "'(Forced)' option is selected. \n"
-                             " \n"
-                             "If D-Pad mapping is forced, core will "
-                             "receive no analog input from "
-                             "specified stick.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE), len);
             break;
         case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
-            snprintf(s, len,
-                     "Sets log level for libretro cores \n"
-                             "(GET_LOG_INTERFACE). \n"
-                             " \n"
-                             " If a log level issued by a libretro \n"
-                             " core is below libretro_log level, it \n"
-                             " is ignored.\n"
-                             " \n"
-                             " DEBUG logs are always ignored unless \n"
-                             " verbose mode is activated (--verbose).\n"
-                             " \n"
-                             " DEBUG = 0\n"
-                             " INFO  = 1\n"
-                             " WARN  = 2\n"
-                             " ERROR = 3");
-            break;
-        case MENU_ENUM_LABEL_STATE_SLOT_INCREASE:
-        case MENU_ENUM_LABEL_STATE_SLOT_DECREASE:
-            snprintf(s, len,
-                     "State slots.\n"
-                             " \n"
-                             " With slot set to 0, save state name is *.state \n"
-                             " (or whatever defined on commandline).\n"
-                             "When slot is != 0, path will be (path)(d), \n"
-                             "where (d) is slot number.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL), len);
             break;
         case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
-            snprintf(s, len,
-                     "Apply Shader Changes. \n"
-                             " \n"
-                             "After changing shader settings, use this to \n"
-                             "apply changes. \n"
-                             " \n"
-                             "Changing shader settings is a somewhat \n"
-                             "expensive operation so it has to be \n"
-                             "done explicitly. \n"
-                             " \n"
-                             "When you apply shaders, the menu shader \n"
-                             "settings are saved to a temporary file (either \n"
-                             "menu.cgp or menu.glslp) and loaded. The file \n"
-                             "persists after RetroArch exits. The file is \n"
-                             "saved to Shader Directory.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES), len);
             break;
         case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
-            snprintf(s, len,
-                     "Watch shader files for new changes. \n"
-                     " \n"
-                     "After saving changes to a shader on disk, \n"
-                     "it will automatically be recompiled \n"
-                     "and applied to the running content.");
-            break;
-        case MENU_ENUM_LABEL_DISK_NEXT:
-            snprintf(s, len,
-                     "Cycles through disk images. Use after \n"
-                             "ejecting. \n"
-                             " \n"
-                             " Complete by toggling eject again.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES), len);
             break;
         case MENU_ENUM_LABEL_VIDEO_FILTER:
 #ifdef HAVE_FILTERS_BUILTIN
@@ -739,120 +471,32 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
             );
             break;
-        case MENU_ENUM_LABEL_ENABLE_HOTKEY:
-            snprintf(s, len,
-                     "Enable other hotkeys.\n"
-                             " \n"
-                             " If this hotkey is bound to either keyboard, \n"
-                             "joybutton or joyaxis, all other hotkeys will \n"
-                             "be disabled unless this hotkey is also held \n"
-                             "at the same time. \n"
-                             " \n"
-                             "This is useful for RETRO_KEYBOARD centric \n"
-                             "implementations which query a large area of \n"
-                             "the keyboard, where it is not desirable that \n"
-                             "hotkeys get in the way.");
-            break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
-            snprintf(s, len,
-                     "Refresh Rate Auto.\n"
-                             " \n"
-                             "The accurate refresh rate of our monitor (Hz).\n"
-                             "This is used to calculate audio input rate with \n"
-                             "the formula: \n"
-                             " \n"
-                             "audio_input_rate = game input rate * display \n"
-                             "refresh rate / game refresh rate\n"
-                             " \n"
-                             "If the implementation does not report any \n"
-                             "values, NTSC defaults will be assumed for \n"
-                             "compatibility.\n"
-                             " \n"
-                             "This value should stay close to 60Hz to avoid \n"
-                             "large pitch changes. If your monitor does \n"
-                             "not run at 60Hz, or something close to it, \n"
-                             "disable VSync, and leave this at its default.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO), len);
             break;
         case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
-            snprintf(s, len,
-                     "Fastforward ratio.\n"
-                             " \n"
-                             "The maximum rate at which content will\n"
-                             "be run when using fast forward.\n"
-                             " \n"
-                             " (E.g. 5.0 for 60 fps content => 300 fps \n"
-                             "cap).\n"
-                             " \n"
-                             "RetroArch will go to sleep to ensure that \n"
-                             "the maximum rate will not be exceeded.\n"
-                             "Do not rely on this cap to be perfectly \n"
-                             "accurate.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO), len);
             break;
         case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
-            snprintf(s, len,
-                     "Sync to Exact Content Framerate.\n"
-                             " \n"
-                             "This option is the equivalent of forcing x1 speed\n"
-                             "while still allowing fast forward.\n"
-                             "No deviation from the core requested refresh rate,\n"
-                             "no sound Dynamic Rate Control.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE), len);
             break;
         case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
-            snprintf(s, len,
-                     "Which monitor to prefer.\n"
-                             " \n"
-                             "0 (default) means no particular monitor \n"
-                             "is preferred, 1 and up (1 being first \n"
-                             "monitor), suggests RetroArch to use that \n"
-                             "particular monitor.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX), len);
             break;
         case MENU_ENUM_LABEL_AUDIO_VOLUME:
-            snprintf(s, len,
-                     "Audio volume, expressed in dB.\n"
-                             " \n"
-                             " 0 dB is normal volume. No gain will be applied.\n"
-                             "Gain can be controlled in runtime with Input\n"
-                             "Volume Up / Input Volume Down.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_VOLUME), len);
             break;
         case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
-            snprintf(s, len,
-                     "Audio rate control.\n"
-                             " \n"
-                             "Setting this to 0 disables rate control.\n"
-                             "Any other value controls audio rate control \n"
-                             "delta.\n"
-                             " \n"
-                             "Defines how much input rate can be adjusted \n"
-                             "dynamically.\n"
-                             " \n"
-                             " Input rate is defined as: \n"
-                             " input rate * (1.0 +/- (rate control delta))");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA), len);
             break;
         case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
-            snprintf(s, len,
-                     "Maximum audio timing skew.\n"
-                             " \n"
-                             "Defines the maximum change in input rate.\n"
-                             "You may want to increase this to enable\n"
-                             "very large changes in timing, for example\n"
-                             "running PAL cores on NTSC displays, at the\n"
-                             "cost of inaccurate audio pitch.\n"
-                             " \n"
-                             " Input rate is defined as: \n"
-                             " input rate * (1.0 +/- (max timing skew))");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW), len);
             break;
         case MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION:
-            snprintf(s, len,
-                     "Forcibly disable composition.\n"
-                             "Only valid on Windows Vista/7 for now.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION), len);
             break;
         case MENU_ENUM_LABEL_VIDEO_THREADED:
-            snprintf(s, len,
-                     "Use threaded video driver.\n"
-                             " \n"
-                             "Using this might improve performance at the \n"
-                             "possible cost of latency and more video \n"
-                             "stuttering.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_THREADED), len);
             break;
         case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
             snprintf(s, len,
@@ -865,154 +509,37 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Maximum is %d.", MAXIMUM_FRAME_DELAY);
             break;
         case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO:
-            snprintf(s, len,
-                     "Temporarily decreases effective 'Frame Delay'\n"
-                             "until target refresh rate is stable.\n"
-                             " \n"
-                             "Measuring starts from half frame time when\n"
-                             "'Frame Delay' is 0.\n"
-                             " \n"
-                             "E.g. 8 for NTSC and 10 for PAL.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO), len);
             break;
         case MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES:
-            snprintf(s, len,
-                     "Sets how many frames CPU can \n"
-                             "run ahead of GPU when using 'GPU \n"
-                             "Hard Sync'.\n"
-                             " \n"
-                             "Maximum is 3.\n"
-                             " \n"
-                             " 0: Syncs to GPU immediately.\n"
-                             " 1: Syncs to previous frame.\n"
-                             " 2: Etc ...");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES), len);
             break;
         case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
-            snprintf(s, len,
-                     "Inserts a black frame inbetween \n"
-                             "frames.\n"
-                             " \n"
-                             "Useful for 120 Hz monitors who want to \n"
-                             "play 60 Hz material with eliminated \n"
-                             "ghosting.\n"
-                             " \n"
-                             "Video refresh rate should still be \n"
-                             "configured as if it is a 60 Hz monitor \n"
-                             "(divide refresh rate by 2).");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION), len);
             break;
         case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
-            snprintf(s, len,
-                     "Savefile Directory. \n"
-                             " \n"
-                             "Save all save files (*.srm) to this \n"
-                             "directory. This includes related files like \n"
-                             ".bsv, .rt, .psrm, etc...\n"
-                             " \n"
-                             "This will be overridden by explicit command line\n"
-                             "options.");
-            break;
-        case MENU_ENUM_LABEL_ASSETS_DIRECTORY:
-            snprintf(s, len,
-                     "Assets Directory. \n"
-                             " \n"
-                             " This location is queried by default when \n"
-                             "menu interfaces try to look for loadable \n"
-                             "assets, etc.");
-            break;
-        case MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
-            snprintf(s, len,
-                     "Dynamic Wallpapers Directory. \n"
-                             " \n"
-                             " The place to store backgrounds that will \n"
-                             "be loaded dynamically by the menu depending \n"
-                             "on context.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY), len);
             break;
         case MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH:
-            snprintf(s, len, "Use front instead of back touch.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH), len);
             break;
         case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
-            snprintf(s, len,
-                     "Suspends the screensaver. Is a hint that \n"
-                             "does not necessarily have to be \n"
-                             "honored by the video driver.");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_MODE:
-            snprintf(s, len,
-                     "Netplay client mode for the current user. \n"
-                             "Will be 'Server' mode if disabled.");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
-            snprintf(s, len,
-                     "The amount of delay frames to use for netplay. \n"
-                             " \n"
-                             "Increasing this value will increase \n"
-                             "performance, but introduce more latency.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE), len);
             break;
         case MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR:
-            snprintf(s, len,
-                     "Whether to start netplay in spectator mode. \n"
-                             " \n"
-                             "If set to true, netplay will be in spectator mode \n"
-                             "on start. It's always possible to change mode \n"
-                             "later.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR), len);
             break;
         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
-            snprintf(s, len,
-                     "The frequency in frames with which netplay \n"
-                             "will verify that the host and client are in \n"
-                             "sync. \n"
-                             " \n"
-                             "With most cores, this value will have no \n"
-                             "visible effect and can be ignored. With \n"
-                             "nondeterminstic cores, this value determines \n"
-                             "how often the netplay peers will be brought \n"
-                             "into sync. With buggy cores, setting this \n"
-                             "to any non-zero value will cause severe \n"
-                             "performance issues. Set to zero to perform \n"
-                             "no checks. This value is only used on the \n"
-                             "netplay host. \n");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES), len);
             break;
         case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
-            snprintf(s, len,
-                     "The number of frames of input latency for \n"
-                     "netplay to use to hide network latency. \n"
-                     " \n"
-                     "When in netplay, this option delays local \n"
-                     "input, so that the frame being run is \n"
-                     "closer to the frames being received from \n"
-                     "the network. This reduces jitter and makes \n"
-                     "netplay less CPU-intensive, but at the \n"
-                     "price of noticeable input lag. \n");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN), len);
             break;
         case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE:
-            snprintf(s, len,
-                     "The range of frames of input latency that \n"
-                     "may be used by netplay to hide network \n"
-                     "latency. \n"
-                     "\n"
-                     "If set, netplay will adjust the number of \n"
-                     "frames of input latency dynamically to \n"
-                     "balance CPU time, input latency and \n"
-                     "network latency. This reduces jitter and \n"
-                     "makes netplay less CPU-intensive, but at \n"
-                     "the price of unpredictable input lag. \n");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE), len);
             break;
         case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
-            snprintf(s, len,
-                     "Maximum amount of swapchain images. This \n"
-                             "can tell the video driver to use a specific \n"
-                             "video buffering mode. \n"
-                             " \n"
-                             "Single buffering - 1\n"
-                             "Double buffering - 2\n"
-                             "Triple buffering - 3\n"
-                             " \n"
-                             "Setting the right buffering mode can have \n"
-                             "a big impact on latency.");
-            break;
-        case MENU_ENUM_LABEL_VIDEO_SMOOTH:
-            snprintf(s, len,
-                     "Smoothens picture with bilinear filtering. \n"
-                             "Should be disabled if using shaders.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_MAX_SWAPCHAIN_IMAGES), len);
             break;
       case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
          snprintf(s, len,
@@ -1023,19 +550,8 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
          );
          break;
-        case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
-            snprintf(s, len,
-                     "Setting related to Netplay.");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
-            snprintf(s, len,
-                     "Enable or disable spectator mode for \n"
-                             "the user during netplay.");
-            break;
         case MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT:
-            snprintf(s, len,
-                     "Start User Interface companion driver \n"
-                             "on boot (if available).");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_UI_COMPANION_START_ON_BOOT), len);
             break;
         case MENU_ENUM_LABEL_EXIT_EMULATOR:
             snprintf(s, len,
@@ -1050,8 +566,7 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             );
             break;
         case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
-            snprintf(s, len,
-                     "Scan memory to create new cheats.");
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT), len);
             break;
         case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
             snprintf(s, len,
