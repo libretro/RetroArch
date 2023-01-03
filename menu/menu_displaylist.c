@@ -5160,6 +5160,131 @@ end:
    return count;
 }
 
+#ifdef ANDROID
+static int menu_displaylist_parse_input_select_physical_keyboard_list(
+        menu_displaylist_info_t *info, settings_t *settings)
+{
+    char device_label[128];
+    const char *val_disabled     = NULL;
+    rarch_system_info_t *system  = &runloop_state_get_ptr()->system;
+    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
+    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+    size_t menu_index            = 0;
+    unsigned count               = 0;
+
+    int i                   = 0;
+    char keyboard[sizeof(settings->arrays.input_android_physical_keyboard)];
+    bool keyboard_added          = false;
+
+    input_driver_state_t *st = input_state_get_ptr();
+    input_driver_t *current_input = st->current_driver;
+    bool is_android_driver = string_is_equal(current_input->ident, "android");
+
+    device_label[0]              = '\0';
+
+    if (!system || !settings || !setting || !is_android_driver)
+        goto end;
+
+    val_disabled = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+    if (string_is_empty(settings->arrays.input_android_physical_keyboard))
+        strlcpy(keyboard, val_disabled, sizeof(keyboard));
+    else
+    {
+        unsigned int vendor_id;
+        unsigned int product_id;
+        if (sscanf(settings->arrays.input_android_physical_keyboard, "%04x:%04x ", &vendor_id, &product_id) != 2)
+            strlcpy(keyboard, settings->arrays.input_android_physical_keyboard, sizeof(keyboard));
+        else
+            /* If the vendor_id:product_id is encoded in the name, ignore them. */
+            strlcpy(keyboard, &settings->arrays.input_android_physical_keyboard[10], sizeof(keyboard));
+    }
+
+    for (i = MAX_INPUT_DEVICES; i >= -1; --i)
+    {
+        device_label[0] = '\0';
+
+        if (i < 0)
+            strlcpy(device_label, keyboard, sizeof(device_label));
+        else if (i == MAX_INPUT_DEVICES)
+            strlcpy(device_label, val_disabled, sizeof(device_label));
+        else if (i < MAX_INPUT_DEVICES)
+        {
+            /*
+             * Skip devices that do not look like keyboards
+             */
+            if (!android_input_can_be_keyboard(st->current_data, i))
+                continue;
+
+            const char *device_name = input_config_get_device_display_name(i) ?
+                                      input_config_get_device_display_name(i) : input_config_get_device_name(i);
+
+            if (!string_is_empty(device_name))
+            {
+                unsigned idx = input_config_get_device_name_index(i);
+                size_t _len  = strlcpy(device_label, device_name,
+                                       sizeof(device_label));
+
+                /*if idx is non-zero, it's part of a set*/
+                if (idx > 0)
+                    snprintf(device_label         + _len,
+                             sizeof(device_label) - _len, " (#%u)", idx);
+            }
+        }
+
+        if (!string_is_empty(device_label))
+        {
+            size_t previous_position;
+            if (file_list_search(info->list, device_label, &previous_position))
+                continue;
+
+            /* Add menu entry */
+            if (menu_entries_append(info->list,
+                                    device_label,
+                                    device_label,
+                                    MSG_UNKNOWN,
+                                    MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_PHYSICAL_KEYBOARD,
+                                    0, menu_index, NULL))
+            {
+                /* Add checkmark if input is currently
+                 * mapped to this entry */
+                if (string_is_equal(device_label, keyboard))
+                {
+                    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+                    if (cbs)
+                        cbs->checked = true;
+                    menu_navigation_set_selection(menu_index);
+                    keyboard_added = true;
+                }
+                count++;
+                menu_index++;
+            }
+        }
+    }
+
+    /* if nothing is configured, select None by default */
+    if (!keyboard_added)
+    {
+        menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[0].actiondata;
+        if (cbs)
+            cbs->checked = true;
+        menu_navigation_set_selection(0);
+    }
+
+    end:
+    /* Fallback */
+    if (count == 0)
+        if (menu_entries_append(info->list,
+                                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                                msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                                MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                                FILE_TYPE_NONE, 0, 0, NULL))
+            count++;
+
+    return count;
+}
+
+#endif
+
 static int menu_displaylist_parse_input_description_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
@@ -7007,6 +7132,11 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
+
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+                PARSE_ACTION, true) == 0)
+                count++;
 #endif
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
@@ -12966,6 +13096,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->flags       |= MD_FLAG_NEED_REFRESH
                             | MD_FLAG_NEED_PUSH;
          break;
+#ifdef ANDROID
+       case DISPLAYLIST_DROPDOWN_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD:
+           menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+           count              = menu_displaylist_parse_input_select_physical_keyboard_list(info, settings);
+           info->flags       |= MD_FLAG_NEED_REFRESH
+                                | MD_FLAG_NEED_PUSH;
+           break;
+#endif
       case DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count              = menu_displaylist_parse_input_description_list(info, settings);

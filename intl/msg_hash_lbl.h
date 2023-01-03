@@ -778,6 +778,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE,
    "deferred_dropdown_box_list_input_device_type"
    )
+#ifdef ANDROID
+MSG_HASH(
+        MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD,
+    "deferred_dropdown_box_list_input_select_physical_keyboard"
+)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION,
    "deferred_dropdown_box_list_input_description"
@@ -1560,6 +1566,12 @@ MSG_HASH(
    "input_nowinkey_enable"
    )
 #endif
+#ifdef ANDROID
+MSG_HASH(
+        MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+        "input_android_physical_keyboard"
+)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
    "input_sensors_enable"
@@ -1758,6 +1770,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SMALL_KEYBOARD_ENABLE,
    "input_small_keyboard_enable"
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE,
    "input_touch_enable"

@@ -434,6 +434,10 @@ typedef struct settings
 
       char input_keyboard_layout[64];
 
+#ifdef ANDROID
+      char input_android_physical_keyboard[255];
+#endif
+
       char audio_device[255];
       char camera_device[255];
       char netplay_mitm_server[255];

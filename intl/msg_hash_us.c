@@ -663,6 +663,18 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE), len);
             break;
 #endif
+
+#ifdef ANDROID
+        case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
+            snprintf(s, len,
+                     "If RetroArch identifies a hardware keyboard as some kind of\n"
+                     "gamepad, this setting can be used to force RetroArch to treat\n"
+                     "the misidentified device as a keyboard.\n"
+                     "This can be useful if you are trying to emulate a computer in some\n"
+                     "Android TV device and also own a physical keyboard that can be\n"
+                     "attached to the box.\n");
+            break;
+#endif
         default:
             if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
