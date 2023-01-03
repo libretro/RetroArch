@@ -1684,6 +1684,7 @@
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
+					"-DHAVE_UPDATE_CORE_INFO",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1829,6 +1830,7 @@
 					"-DHAVE_PATCH",
 					"-DHAVE_RWAV",
 					"-DHAVE_BTSTACK",
+					"-DHAVE_UPDATE_CORE_INFO",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
