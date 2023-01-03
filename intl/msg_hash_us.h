@@ -2532,6 +2532,16 @@ MSG_HASH(
    "Keep Win-key combinations inside the application."
    )
 #endif
+#ifdef ANDROID
+MSG_HASH(
+        MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+        "Select physical keyboard"
+)
+MSG_HASH(
+        MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+        "Use this device as a physical keyboard and not as a gamepad."
+)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Auxiliary Sensor Input"

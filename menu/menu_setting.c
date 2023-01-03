@@ -2888,6 +2888,24 @@ static int setting_action_ok_libretro_device_type(
    return 0;
 }
 
+#ifdef ANDROID
+static int setting_action_ok_select_physical_keyboard(
+        rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+    char enum_idx[16];
+    if (!setting)
+        return -1;
+
+    snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+
+    generic_action_ok_displaylist_push(
+            enum_idx, /* we will pass the enumeration index of the string as a path */
+            NULL, NULL, 0, idx, 0,
+            ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD);
+    return 0;
+}
+#endif
+
 static int setting_string_action_left_string_options(
    rarch_setting_t* setting, size_t idx, bool wraparound)
 {
@@ -6845,6 +6863,26 @@ static void setting_get_string_representation_input_touch_scale(rarch_setting_t 
       snprintf(s, len, "x%d", *setting->value.target.unsigned_integer);
 }
 
+#ifdef ANDROID
+static void setting_get_string_representation_android_physical_keyboard(
+        rarch_setting_t *setting,
+        char *s, size_t len)
+{
+    if (!setting)
+        return;
+
+    settings_t *settings = config_get_ptr();
+
+    int keyboard_vendor_id;
+    int keyboard_product_id;
+
+    if (sscanf(setting->value.target.string, "%04x:%04x ", &keyboard_vendor_id, &keyboard_product_id) != 2)
+        strlcpy(s, setting->value.target.string, len);
+    else
+        strlcpy(s, &setting->value.target.string[10], len);
+}
+#endif
+
 #ifdef HAVE_LANGEXTRA
 static void setting_get_string_representation_uint_user_language(
       rarch_setting_t *setting,
@@ -7850,6 +7888,11 @@ static void general_read_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
          *setting->value.target.integer = settings->uints.input_joypad_index[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX];
          break;
+#ifdef ANDROID
+       case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
+           setting->value.target.string = settings->arrays.input_android_physical_keyboard;
+           break;
+#endif
       default:
          break;
    }
@@ -8170,6 +8213,15 @@ static void general_write_handler(rarch_setting_t *setting)
             settings->uints.input_joypad_index[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX]             = *setting->value.target.integer;
          }
          break;
+#ifdef ANDROID
+       case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
+       {
+           settings_t *settings         = config_get_ptr();
+           settings->modified           = true;
+           strlcpy(settings->arrays.input_android_physical_keyboard, setting->value.target.string, sizeof(settings->arrays.input_android_physical_keyboard));
+       }
+           break;
+#endif
       case MENU_ENUM_LABEL_LOG_TO_FILE:
          if (verbosity_is_enabled())
          {
@@ -14064,6 +14116,24 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
+
+        input_driver_state_t *st = input_state_get_ptr();
+        input_driver_t *current_input = st->current_driver;
+        if (string_is_equal(current_input->ident, "android"))
+        {
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+            (*list)[list_info->index - 1].action_ok                   = &setting_action_ok_select_physical_keyboard;
+            (*list)[list_info->index - 1].read_handler                = &general_read_handler;
+            (*list)[list_info->index - 1].change_handler               = &general_write_handler;
+            (*list)[list_info->index - 1].get_string_representation   = &setting_get_string_representation_android_physical_keyboard;
+            (*list)[list_info->index - 1].default_value.string        = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+        }
 #endif
 
             CONFIG_UINT(

@@ -301,6 +301,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD;
+#ifdef ANDROID
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD;
+#endif
 #ifdef HAVE_NETWORKING
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER;
@@ -796,6 +800,17 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+#ifdef ANDROID
+       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD:
+           info.type          = type;
+           info.directory_ptr = idx;
+           info_path          = path;
+           info_label         = msg_hash_to_str(
+                   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD);
+           info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD;
+           dl_type            = DISPLAYLIST_GENERIC;
+           break;
+#endif
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION:
          info.type          = type;
          info.directory_ptr = idx;
@@ -6779,6 +6794,63 @@ static int action_ok_push_dropdown_item_input_device_type(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+#ifdef ANDROID
+static int action_ok_push_dropdown_item_input_select_physical_keyboard(const char *path,
+                                                           const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+    settings_t *settings         = config_get_ptr();
+
+    const char *menu_path        = NULL;
+    enum msg_hash_enums enum_idx;
+    rarch_setting_t     *setting;
+    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+    enum_idx = (enum msg_hash_enums)atoi(menu_path);
+    setting  = menu_setting_find_enum(enum_idx);
+
+    if (!setting)
+        return -1;
+
+    char* keyboard;
+    const char* keyboard_name = path;
+    const char* no_keyboard = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+    if (string_is_equal(keyboard_name, no_keyboard))
+        settings->arrays.input_android_physical_keyboard[0] = '\0';
+    else
+    {
+        for (int i = 0; i < MAX_INPUT_DEVICES; i++)
+        {
+            const char* device_name = input_config_get_device_name(i);
+            if (string_is_equal(device_name, keyboard_name))
+            {
+                uint16_t vendor_id = input_config_get_device_vid(i);
+                uint16_t product_id = input_config_get_device_pid(i);
+                snprintf(settings->arrays.input_android_physical_keyboard,
+                         sizeof(settings->arrays.input_android_physical_keyboard),
+                         "%04x:%04x %s",
+                         vendor_id, product_id, keyboard_name);
+                break;
+            }
+        }
+        /*
+         * if we did not find the selected device, do nothing, the user has chosen to keep
+         * the previous configuration, which is to use a device that is either not plugged right
+         * now or already working as the physical keyboard.
+         */
+    }
+    settings->modified = true;
+
+    command_event(CMD_EVENT_REINIT, NULL);
+
+    /* Refresh menu */
+    bool refresh = false;
+    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+    return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+#endif
+
 static int action_ok_push_dropdown_item_input_description(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -8614,6 +8686,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_device_type);
             break;
+#ifdef ANDROID
+          case MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_PHYSICAL_KEYBOARD:
+              BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_select_physical_keyboard);
+              break;
+#endif
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_description);
             break;
