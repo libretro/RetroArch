@@ -1904,7 +1904,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
-   "Toutes"
+   "Complète"
    )
 #if defined(DINGUX)
 MSG_HASH(

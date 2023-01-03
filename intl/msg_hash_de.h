@@ -5698,7 +5698,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
-   "Legt fest, ob Errungenschafts-Benachrichtigungen an andere Arten von Bildschirm-Benachrichtigungen ausgerichtet werden sollen. Deaktivieren, um manuelle Polsterungs/Positionswerte festzulegen."
+   "Legt fest, ob Errungenschaftsbenachrichtigungen an andere Arten von Bildschirmbenachrichtigungen ausgerichtet werden sollen. Deaktivieren, um manuelle Abstands/Positionswerte festzulegen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
