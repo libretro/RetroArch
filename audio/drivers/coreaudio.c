@@ -203,7 +203,9 @@ static void *coreaudio_init(const char *device,
 #endif
    AURenderCallbackStruct cb               = {0};
    AudioStreamBasicDescription stream_desc = {0};
+#if TARGET_OS_IOS
    static bool session_initialized         = false;
+#endif
 #if !HAS_MACOSX_10_12
    ComponentDescription desc               = {0};
 #else

@@ -784,7 +784,6 @@ static void cb_input_autoconfigure_disconnect(
 
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 {
-   size_t _len;
    autoconfig_handle_t *autoconfig_handle = NULL;
    const char *device_display_name        = NULL;
    char task_title[NAME_MAX_LENGTH + 16];

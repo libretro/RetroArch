@@ -2653,8 +2653,6 @@ bool video_shader_combine_preset_and_apply(
    bool ret = false;
    char combined_preset_path[PATH_MAX_LENGTH];
    char combined_preset_name[PATH_MAX_LENGTH];
-   runloop_state_t *runloop_st           = runloop_state_get_ptr();
-   const char *current_preset_path       = runloop_st->runtime_shader_preset_path;
    const char *preset_ext                = video_shader_get_preset_extension(type);
    struct video_shader *shader_to_append = (struct video_shader*) calloc(1, sizeof(*shader_to_append));
    struct video_shader *combined_shader  = (struct video_shader*) calloc(1, sizeof(*combined_shader));
@@ -2695,7 +2693,6 @@ bool video_shader_apply_shader(
    runloop_state_t *runloop_st  = runloop_state_get_ptr();
    const char      *core_name   = runloop_st->system.info.library_name;
    const char      *preset_file = NULL;
-   const char* current_preset_path = runloop_st->runtime_shader_preset_path;
 #ifdef HAVE_MENU
    struct video_shader *shader  = menu_shader_get();
 #endif

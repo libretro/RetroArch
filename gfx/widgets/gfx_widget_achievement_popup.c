@@ -479,7 +479,7 @@ static void gfx_widget_achievement_popup_unfold(void* userdata)
    gfx_animation_timer_start(&state->timer, &timer);
 }
 
-void gfx_widgets_update_cheevos_appearance()
+void gfx_widgets_update_cheevos_appearance(void)
 {
    gfx_widget_achievement_popup_state_t* state = &p_w_achievement_popup_st;
    const settings_t* settings = config_get_ptr();
