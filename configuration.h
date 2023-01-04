@@ -342,6 +342,7 @@ typedef struct settings
 #endif
 
       unsigned cheevos_appearance_anchor;
+      unsigned cheevos_visibility_summary;
    } uints;
 
    struct
@@ -832,6 +833,7 @@ typedef struct settings
       bool cheevos_unlock_sound_enable;
       bool cheevos_challenge_indicators;
       bool cheevos_appearance_padding_auto;
+      bool cheevos_visibility_unlock;
 
       /* Camera */
       bool camera_allow;

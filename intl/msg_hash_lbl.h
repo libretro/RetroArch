@@ -453,6 +453,18 @@ MSG_HASH(
    "cheevos_appearance_padding_auto"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SETTINGS,
+   "cheevos_visibility_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SUMMARY,
+   "cheevos_visibility_summary"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_UNLOCK,
+   "cheevos_visibility_unlock"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CLOSE_CONTENT,
    "unload_core"
    )
@@ -1131,6 +1143,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CHEEVOS_APPEARANCE_SETTINGS_LIST,
    "deferred_cheevos_appearance_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CHEEVOS_VISIBILITY_SETTINGS_LIST,
+   "deferred_cheevos_visibility_settings_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST,

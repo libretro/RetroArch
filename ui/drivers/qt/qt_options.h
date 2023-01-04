@@ -469,6 +469,7 @@ private slots:
 private:
    SettingsGroup* m_generalGroup;
    SettingsGroup* m_appearanceGroup;
+   SettingsGroup* m_visibilityGroup;
 };
 
 /************************************************************
