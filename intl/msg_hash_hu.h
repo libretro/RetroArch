@@ -2411,6 +2411,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
    "Háttérhang"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
+   "\"Görgetés\" hang"
+   )
 
 /* Settings > Input */
 

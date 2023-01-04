@@ -3188,8 +3188,16 @@ MSG_HASH(
    "장치 종류"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE,
+   "에뮬레이트할 컨트롤러의 종류를 지정합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    "아날로그로 디지털 입력"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "지정한 아날로그 스틱을 D-패드 입력에 사용합니다. '강제' 옵션을 사용하면 코어에 보낼 아날로그 입력을 D-패드 입력으로 덮어씁니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -3198,6 +3206,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "매핑할 포트"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "프론트엔드의 %u번 포트 컨트롤러의 입력을 받을 코어의 포트를 지정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -5809,6 +5821,10 @@ MSG_HASH(
    "메뉴"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
+   "OSD 도전과제 알림의 위치와 오프셋을 변경합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR,
    "위치"
    )
@@ -5839,6 +5855,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT,
    "우측 하단"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   "일관된 패딩 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   "도전과제 알림이 다른 종류의 OSD 알림과 같은 크기의 패딩을 사용할 지 설정합니다. 수동으로 패딩과 위치를 정하려면 비활성화해야 합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
+   "수동 가로 패딩"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   "화면의 왼쪽/오른쪽 테두리에서의 거리입니다. 화면 오버스캔이 있을 경우 보정할 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_V,
+   "수동 세로 패딩"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_V,
+   "화면의 위쪽/아래쪽 테두리에서의 거리입니다. 화면 오버스캔이 있을 경우 보정할 수 있습니다."
    )
 
 /* Settings > Network */
@@ -10767,6 +10807,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
    "포트"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "%d번 포트 디바이스명: %s (#%d)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
+   "장치 표시명: %s\n장치 설정명: %s\n장치 VID/PID: %d/%d"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,

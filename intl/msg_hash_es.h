@@ -2419,6 +2419,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
    "Música de fondo"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
+   "Sonido de desplazamiento"
+   )
 
 /* Settings > Input */
 

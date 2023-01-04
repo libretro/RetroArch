@@ -2327,6 +2327,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
    "'BGM' aktivieren"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
+   "'Scroll'-Töne aktivieren"
+   )
 
 /* Settings > Input */
 

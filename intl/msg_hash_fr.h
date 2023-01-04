@@ -2391,6 +2391,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
    "Musique de fond"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
+   "Activer les sons de 'défilement'"
+   )
 
 /* Settings > Input */
 
