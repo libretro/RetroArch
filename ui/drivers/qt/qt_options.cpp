@@ -54,10 +54,13 @@ QWidget *AchievementsPage::widget()
    CheckBox   *enabledCheckBox = new CheckBox(MENU_ENUM_LABEL_CHEEVOS_ENABLE);
    file_list_t    *generalList = (file_list_t*)calloc(1, sizeof(*generalList));
    file_list_t *appearanceList = (file_list_t*)calloc(1, sizeof(*appearanceList));
+   file_list_t *visibilityList = (file_list_t*)calloc(1, sizeof(*visibilityList));
 
    m_generalGroup              = new SettingsGroup("General");
    m_appearanceGroup           = new SettingsGroup(msg_hash_to_str(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS));
+   m_visibilityGroup           = new SettingsGroup(msg_hash_to_str(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS));
 
    menu_displaylist_build_list(generalList, settings,
       DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST, true);
@@ -86,6 +89,18 @@ QWidget *AchievementsPage::widget()
    }
    file_list_free(appearanceList);
 
+   menu_displaylist_build_list(visibilityList, settings,
+      DISPLAYLIST_CHEEVOS_VISIBILITY_SETTINGS_LIST, true);
+
+   for (i = 0; i < visibilityList->size; i++)
+   {
+      menu_file_list_cbs_t* cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(visibilityList, i);
+
+      m_visibilityGroup->add(cbs->enum_idx);
+   }
+   file_list_free(visibilityList);
+
    connect(enabledCheckBox, SIGNAL(stateChanged(int)),
            this,            SLOT(onAchievementEnabledChanged(int)));
 
@@ -94,6 +109,7 @@ QWidget *AchievementsPage::widget()
    layout->addWidget(enabledCheckBox);
    layout->addWidget(m_generalGroup);
    layout->addWidget(m_appearanceGroup);
+   layout->addWidget(m_visibilityGroup);
 
    layout->addStretch();
 
@@ -106,6 +122,7 @@ void AchievementsPage::onAchievementEnabledChanged(int state)
 {
    m_generalGroup->setDisabled(state == Qt::Unchecked);
    m_appearanceGroup->setDisabled(state == Qt::Unchecked);
+   m_visibilityGroup->setDisabled(state == Qt::Unchecked);
 }
 
 AudioCategory::AudioCategory(QWidget *parent) :
