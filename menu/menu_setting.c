@@ -62,6 +62,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "../cheevos/cheevos.h"
+#include "../cheevos/cheevos_locals.h"
 #endif
 
 #ifdef HAVE_TRANSLATE
