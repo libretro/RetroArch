@@ -4771,7 +4771,14 @@ static unsigned menu_displaylist_parse_content_information(
          core_path     = entry->core_path;
          db_name       = entry->db_name;
 
-         strlcpy(content_label, entry->label, sizeof(content_label));
+         if (!string_is_empty(entry->label))
+            strlcpy(content_label, entry->label, sizeof(content_label));
+         else if (!string_is_empty(content_path))
+         {
+            /* Create content label from the path */
+            strlcpy(content_label, path_basename(content_path), sizeof(content_label));
+            path_remove_extension(content_label);
+         }
 
          /* Only display core name if both core name and
           * core path are valid */
