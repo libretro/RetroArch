@@ -1748,16 +1748,18 @@ bool command_event(enum event_command cmd, void *data)
          if (   !(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
              || !(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE))
             return false;
-         if (runloop_st->secondary_lib_handle)
-            return true;
-         if (!secondary_core_ensure_exists(settings))
+
+         if (!runloop_st->secondary_lib_handle)
          {
-            runloop_secondary_core_destroy();
-            runloop_st->flags &=
-               ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
-            return false;
+            if (!secondary_core_ensure_exists(settings))
+            {
+               runloop_secondary_core_destroy();
+               runloop_st->flags &=
+                  ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
+               return false;
+            }
          }
-         return true;
+         break;
 #endif
       case CMD_EVENT_LOAD_STATE:
          {
@@ -3355,9 +3357,8 @@ bool command_event(enum event_command cmd, void *data)
                return false;
             if (!discord_enable)
                return false;
-            if (discord_st->ready)
-               return true;
-            discord_init(discord_app_id, p_rarch->launch_arguments);
+            if (!discord_st->ready)
+               discord_init(discord_app_id, p_rarch->launch_arguments);
          }
 #endif
          break;
