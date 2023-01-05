@@ -1860,7 +1860,9 @@ static bool gl3_frame(void *data, const void *frame,
       &video_info->osd_stat_params;
    const char *stat_text                       = video_info->stat_text;
    bool statistics_show                        = video_info->statistics_show;
+#if 0
    bool msg_bgcolor_enable                     = video_info->msg_bgcolor_enable;
+#endif
    unsigned black_frame_insertion              = video_info->black_frame_insertion;
 
    unsigned hard_sync_frames                   = video_info->hard_sync_frames;
