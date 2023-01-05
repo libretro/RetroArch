@@ -465,6 +465,14 @@ MSG_HASH(
    "cheevos_visibility_unlock"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_MASTERY,
+   "cheevos_visibility_mastery"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+   "cheevos_visibility_account"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CLOSE_CONTENT,
    "unload_core"
    )

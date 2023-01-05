@@ -20251,7 +20251,23 @@ static bool setting_append_list(
             &settings->bools.cheevos_visibility_unlock,
             MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_UNLOCK,
             MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
-            true,
+            DEFAULT_CHEEVOS_VISIBILITY_UNLOCK,
+            MENU_ENUM_LABEL_VALUE_OFF,
+            MENU_ENUM_LABEL_VALUE_ON,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler,
+            SD_FLAG_NONE
+         );
+
+         CONFIG_BOOL(
+            list, list_info,
+            &settings->bools.cheevos_visibility_mastery,
+            MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_MASTERY,
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
+            DEFAULT_CHEEVOS_VISIBILITY_MASTERY,
             MENU_ENUM_LABEL_VALUE_OFF,
             MENU_ENUM_LABEL_VALUE_ON,
             &group_info,
@@ -20293,6 +20309,23 @@ static bool setting_append_list(
             general_read_handler,
             SD_FLAG_ADVANCED
          );
+
+         CONFIG_BOOL(
+            list, list_info,
+            &settings->bools.cheevos_visibility_account,
+            MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
+            DEFAULT_CHEEVOS_VISIBILITY_ACCOUNT,
+            MENU_ENUM_LABEL_VALUE_OFF,
+            MENU_ENUM_LABEL_VALUE_ON,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler,
+            SD_FLAG_ADVANCED
+         );
+
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
