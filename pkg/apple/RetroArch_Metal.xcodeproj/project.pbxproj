@@ -1729,6 +1729,7 @@
 					"$(inherited)",
 					"-DHAVE_MAIN",
 					"-DHAVE_COCOA_METAL",
+					"-DHAVE_OPENGL_CORE",
 				);
 				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
@@ -1758,6 +1759,7 @@
 					"$(inherited)",
 					"-DHAVE_MAIN",
 					"-DHAVE_COCOA_METAL",
+					"-DHAVE_OPENGL_CORE",
 				);
 				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";

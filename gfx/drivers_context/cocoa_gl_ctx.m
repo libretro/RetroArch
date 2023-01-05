@@ -414,15 +414,21 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    [EAGLContext setCurrentContext:g_ctx];
 #endif
 
+#ifdef HAVE_COCOA_METAL
+   gfx_ctx_mode_t mode = {
+      .width = width,
+      .height = height,
+      .fullscreen = fullscreen,
+   };
+   [apple_platform setVideoMode:mode];
+   cocoa_show_mouse(data, !fullscreen);
+#else
    /* TODO/FIXME: Screen mode support. */
    if (fullscreen)
    {
       if (!has_went_fullscreen)
       {
          [g_view enterFullScreenMode:(BRIDGE NSScreen *)cocoa_screen_get_chosen() withOptions:nil];
-#ifdef HAVE_COCOA_METAL
-         [apple_platform setupMainWindow];
-#endif
          cocoa_show_mouse(data, false);
       }
    }
@@ -437,6 +443,7 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 
       [[g_view window] setContentSize:NSMakeSize(width, height)];
    }
+#endif
 
    has_went_fullscreen = fullscreen;
 
