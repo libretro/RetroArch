@@ -851,7 +851,7 @@ static void open_document_handler(
    if (browser)
    {
       ui_browser_window_state_t
-         browser_state                  = {{0}};
+         browser_state                  = {NULL};
       bool result                       = false;
       settings_t *settings              = config_get_ptr();
       const char *path_dir_menu_content = settings->paths.directory_menu_content;

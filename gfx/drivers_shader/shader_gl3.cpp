@@ -674,7 +674,7 @@ public:
 
 UBORing::~UBORing()
 {
-   glDeleteBuffers(buffers.size(), buffers.data());
+   glDeleteBuffers((GLsizei)buffers.size(), buffers.data());
 }
 
 class Pass
