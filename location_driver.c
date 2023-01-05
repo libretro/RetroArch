@@ -107,6 +107,7 @@ bool driver_location_start(void)
 
 void driver_location_stop(void)
 {
+#ifdef __ANDROID__
    // Check if the auto save state feature is enabled
    settings_t* settings = config_get_ptr();
    bool auto_save_state = settings->bools.auto_save_state;
@@ -122,14 +123,17 @@ void driver_location_stop(void)
 
    // Flush SRAM to disk
    command_event(CMD_EVENT_SAVE_FILES, NULL);
+#endif
 
-   location_driver_state_t *location_st = &location_driver_st;
+   location_driver_state_t 
+      *location_st              = &location_driver_st;
    if (     location_st
          && location_st->driver
          && location_st->driver->stop
          && location_st->data)
       location_st->driver->stop(location_st->data);
 }
+
 
 
 void driver_location_set_interval(unsigned interval_msecs,

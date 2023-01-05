@@ -132,6 +132,8 @@ static bool android_location_start(void *data)
    return true;
 }
 
+#ifdef __ANDROID__
+
 static void android_location_stop(void *data)
 {
  androidlocation_t *androidlocation = (androidlocation_t*)data;
@@ -161,7 +163,7 @@ static void android_location_stop(void *data)
    CALL_VOID_METHOD(env, android_app->activity->clazz,
                     androidlocation->onLocationStop);
 }
-
+#endif
 static bool android_location_get_position(void *data, double *latitude,
       double *longitude, double *horiz_accuracy,
       double *vert_accuracy)
