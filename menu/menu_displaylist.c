@@ -8293,7 +8293,9 @@ unsigned menu_displaylist_build_list(
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SUMMARY,                            PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_UNLOCK,                             PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_MASTERY,                            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_CHEEVOS_CHALLENGE_INDICATORS,                          PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_ACCOUNT,                            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE,                                PARSE_ONLY_BOOL,   true},
             };
 

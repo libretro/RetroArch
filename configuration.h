@@ -834,6 +834,8 @@ typedef struct settings
       bool cheevos_challenge_indicators;
       bool cheevos_appearance_padding_auto;
       bool cheevos_visibility_unlock;
+      bool cheevos_visibility_mastery;
+      bool cheevos_visibility_account;
 
       /* Camera */
       bool camera_allow;

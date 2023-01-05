@@ -116,7 +116,6 @@ enum rcheevos_summary_notif
    RCHEEVOS_SUMMARY_HASCHEEVOS,
    RCHEEVOS_SUMMARY_OFF,
    RCHEEVOS_SUMMARY_LAST
-
 };
 
 typedef struct rcheevos_load_info_t

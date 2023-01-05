@@ -1480,7 +1480,7 @@ void rcheevos_show_mastery_placard(void)
    title[sizeof(title) - 1] = '\0';
    CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", title);
 
-   if (settings->bools.cheevos_visibility_unlock)
+   if (settings->bools.cheevos_visibility_mastery)
    {
 #if defined (HAVE_GFX_WIDGETS)
       if (gfx_widgets_ready())
@@ -1736,7 +1736,7 @@ static void rcheevos_fetch_game_data(void)
       const settings_t* settings = config_get_ptr();
       if (settings->bools.cheevos_verbose_enable)
          runloop_msg_queue_push(
-            "This game has no achievements.",
+            "RetroAchivements: Game could not be identified.",
             0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       CHEEVOS_LOG(RCHEEVOS_TAG "Game could not be identified\n");
@@ -1946,7 +1946,7 @@ static void rcheevos_login_callback(void* userdata)
    if (rcheevos_locals.token[0])
    {
       const settings_t* settings = config_get_ptr();
-      if (settings->bools.cheevos_verbose_enable)
+      if (settings->bools.cheevos_visibility_account)
       {
          char msg[256];
          msg[0] = '\0';
@@ -2044,8 +2044,9 @@ bool rcheevos_load(const void *data)
    if (string_is_empty(settings->arrays.cheevos_username))
    {
       CHEEVOS_LOG(RCHEEVOS_TAG "Cannot login (no username)\n");
-      runloop_msg_queue_push("Missing RetroAchievements account information.", 0, 5 * 60, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      if (settings->bools.cheevos_visibility_account)
+         runloop_msg_queue_push("Missing RetroAchievements account information.", 0, 5 * 60, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       rcheevos_locals.game.id = 0;
       rcheevos_pause_hardcore();
       return false;
@@ -2133,7 +2134,8 @@ bool rcheevos_load(const void *data)
       {
          CHEEVOS_LOG(RCHEEVOS_TAG "Cannot login %s (no password or token)\n",
                settings->arrays.cheevos_username);
-         runloop_msg_queue_push("No password provided for RetroAchievements account", 0, 5 * 60, false, NULL,
+         if (settings->bools.cheevos_visibility_account)
+            runloop_msg_queue_push("No password provided for RetroAchievements account", 0, 5 * 60, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
          rcheevos_unload();
          return false;

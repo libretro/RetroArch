@@ -6117,11 +6117,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Shows information about the game being loaded and the user's current progress.\n'All Games in Database' will show summary for games with no published achievements."
+   "Shows information about the game being loaded and the user's current progress.\n'All Identified Games' will show summary for games with no published achievements."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
-   "All Games in Database"
+   "All Identified Games"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
@@ -6129,11 +6129,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
-   "New Unlocks/Mastery"
+   "Unlock Notifications"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
-   "Shows when a new achievement is unlocked or a game is mastered."
+   "Shows a notification when an achievement is unlocked."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
+   "Mastery Notifications"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
+   "Shows a notification when a game is mastered (all achievements unlocked)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
@@ -6141,15 +6149,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "Shows on-screen indicators while some conditional achievements can be earned."
+   "Shows on-screen indicators while certain achievements can be earned."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
+   "Account/Login Messages"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+   "Shows messages related to RetroAchievements account login."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-   "Verbose Mode"
+   "Verbose Messages"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-   "Shows additional messages for accounts and other internal errors/problems."
+   "Shows additional diagnostic and error messages."
    )
 
 /* Settings > Network */
