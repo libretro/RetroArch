@@ -154,15 +154,6 @@ bool core_options_remove_override(bool game_specific);
 void core_options_reset(void);
 void core_options_flush(void);
 
-typedef enum apple_view_type
-{
-   APPLE_VIEW_TYPE_NONE = 0,
-   APPLE_VIEW_TYPE_OPENGL_ES,
-   APPLE_VIEW_TYPE_OPENGL,
-   APPLE_VIEW_TYPE_VULKAN,
-   APPLE_VIEW_TYPE_METAL
-} apple_view_type_t;
-
 enum rarch_state_flags
 {
    RARCH_FLAGS_HAS_SET_USERNAME             = (1 << 0),
