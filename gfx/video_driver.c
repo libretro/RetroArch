@@ -4188,10 +4188,9 @@ uint32_t video_driver_get_st_flags(void)
 #define FRAME_DELAY_AUTO_DEBUG 0
 void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_auto_t *vfda)
 {
+   int i;
    uint32_t frame_time_average    = 0;
    uint32_t frame_time_delta      = 0;
-   uint32_t frame_time_min        = 0;
-   uint32_t frame_time_max        = 0;
    uint16_t frame_time_index      = (video_st->frame_time_count & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
    uint16_t frame_time_target     = 1000000.0f / vfda->refresh_rate;
    uint16_t frame_time_limit_mar  = frame_time_target * 1.15f;
@@ -4206,10 +4205,8 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
    uint8_t  frame_time_count_med  = 0;
    uint8_t  frame_time_count_max  = 0;
    uint8_t  frame_time_count_ign  = 0;
-   uint8_t  i                     = 0;
-
-   /* Initialize min & max to target */
-   frame_time_min = frame_time_max = frame_time_target;
+   uint32_t frame_time_min        = frame_time_target;
+   uint32_t frame_time_max        = frame_time_target;
 
    /* Calculate average frame time */
    for (i = 1; i < frame_time_frames + 1; i++)
