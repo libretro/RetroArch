@@ -108,20 +108,20 @@ bool driver_location_start(void)
 void driver_location_stop(void)
 {
 #ifdef __ANDROID__
-   // Check if the auto save state feature is enabled
+   
    settings_t* settings = config_get_ptr();
    bool auto_save_state = settings->bools.auto_save_state;
 
    if (auto_save_state)
    {
-      // Make a save state
+      /* Make a save state */
       command_event(CMD_EVENT_SAVE_STATE, NULL);
 
-      // Flush the auto save state to disk
+        /* Flush the auto save state to disk */
       command_event(CMD_EVENT_AUTOSAVE_DELETE, NULL);
    }
 
-   // Flush SRAM to disk
+  /* Flush SRAM to disk */
    command_event(CMD_EVENT_SAVE_FILES, NULL);
 #endif
 

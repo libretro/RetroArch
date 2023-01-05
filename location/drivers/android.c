@@ -142,28 +142,29 @@ static void android_location_stop(void *data)
    if (!androidlocation || !env)
       return;
 
-   // Check if the auto save state feature is enabled
+
    settings_t* settings = config_get_ptr();
    bool auto_save_state = settings->bools.auto_save_state;
 
    if (auto_save_state)
    {
-      // Make a save state
+      /* Make a save state */
       command_event(CMD_EVENT_SAVE_STATE, NULL);
 
-      // Flush the auto save state to disk
+       /* Flush the auto save state to disk */
       command_event(CMD_EVENT_AUTOSAVE_DELETE, NULL);
    }
 
-   // Flush SRAM to disk
+   /* Flush SRAM to disk */
    command_event(CMD_EVENT_SAVE_FILES, NULL);
 
-   // Stop the location service
+   /* Stop the location service */
    struct android_app *android_app = (struct android_app*)g_android;
    CALL_VOID_METHOD(env, android_app->activity->clazz,
                     androidlocation->onLocationStop);
 }
 #endif
+
 static bool android_location_get_position(void *data, double *latitude,
       double *longitude, double *horiz_accuracy,
       double *vert_accuracy)
