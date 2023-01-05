@@ -999,6 +999,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device);
 
+extern const unsigned input_config_bind_order[24];
+
 extern input_device_driver_t *joypad_drivers[];
 extern input_driver_t *input_drivers[];
 #ifdef HAVE_HID
