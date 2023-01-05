@@ -420,6 +420,9 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
       if (!has_went_fullscreen)
       {
          [g_view enterFullScreenMode:(BRIDGE NSScreen *)cocoa_screen_get_chosen() withOptions:nil];
+#ifdef HAVE_COCOA_METAL
+         [apple_platform setupMainWindow];
+#endif
          cocoa_show_mouse(data, false);
       }
    }

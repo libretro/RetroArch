@@ -28,6 +28,7 @@
  * the displays should not sleep.
  */
 - (bool)setDisableDisplaySleep:(bool)disable;
+- (void)setupMainWindow;
 @end
 
 #endif

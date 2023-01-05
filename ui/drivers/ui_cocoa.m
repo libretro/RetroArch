@@ -565,8 +565,7 @@ static ui_application_t ui_application_cocoa = {
    waiting_argc = 0;
 
 #ifdef HAVE_COCOA_METAL
-   [self.window makeMainWindow];
-   [self.window makeKeyWindow];
+   [self setupMainWindow];
 #endif
 
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
@@ -575,6 +574,12 @@ static ui_application_t ui_application_cocoa = {
 #pragma mark - ApplePlatform
 
 #ifdef HAVE_COCOA_METAL
+- (void)setupMainWindow
+{
+   [self.window makeMainWindow];
+   [self.window makeKeyWindow];
+}
+
 - (void)setViewType:(apple_view_type_t)vt
 {
    if (vt == _vt)
