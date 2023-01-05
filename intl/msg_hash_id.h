@@ -1387,10 +1387,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Pemfilteran Bilinear"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "Tambahkan sedikit kabur ke gambar untuk melembutkan tepi piksel keras. Opsi ini memiliki dampak yang sangat kecil pada kinerja."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,

@@ -1463,10 +1463,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Bilineaarinen suodatus"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "Lisää pieni sumennus kuvaan, pehmentääksesi kovien pikselien reunoja. Tällä valinnalla on hyvin vähän vaikutusta suorituskykyyn."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -4311,16 +4307,8 @@ MSG_HASH(
    "Ilmoituksen sijainti (vaaka)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
-   "Määritä oma X-akselin sijainti ruudulla olevalle tekstille."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    "Ilmoituksen sijainti (pysty)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
-   "Määritä oma Y-akselin sijainti ruudulla olevalle tekstille."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,

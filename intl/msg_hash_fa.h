@@ -1315,10 +1315,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "پالایهٔ دوخطی"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "به‌منظور نرم کردن لبه‌های تیز پیکسل‌ها، یک محوشدگی اندک به تصویر اضافه می‌کند. این گزینه تأثیر بسیار اندکی روی عملکرد دارد."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
