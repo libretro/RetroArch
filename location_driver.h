@@ -20,7 +20,7 @@
 #include <retro_common_api.h>
 
 #include "configuration.h"
-#include "retroarch.h"
+#include "command.h"
 
 RETRO_BEGIN_DECLS
 
