@@ -20,11 +20,7 @@
 #include <retro_common_api.h>
 
 #include "configuration.h"
-#include "driver.h"
-#include "list_special.h"
 #include "retroarch.h"
-#include "runloop.h"
-#include "verbosity.h"
 
 RETRO_BEGIN_DECLS
 
@@ -98,14 +94,9 @@ void driver_location_set_interval(unsigned interval_msecs,
  * Returns: true (1) if successful, otherwise false (0).
  **/
 
-#ifdef ANDROID
-static void android_location_stop(void *data)
+void driver_location_stop(void)
 {
-androidlocation_t androidlocation = (androidlocation_t)data;
-JNIEnv *env = jni_thread_getenv();
-
-if (!androidlocation || !env)
-return;
+#ifdef ANDROID
 
 settings_t* settings = config_get_ptr();
 bool auto_save_state = settings->bools.auto_save_state;
@@ -121,13 +112,8 @@ command_event(CMD_EVENT_SAVE_STATE, NULL);
 
 /* Flush SRAM to disk */
 command_event(CMD_EVENT_SAVE_FILES, NULL);
-
-/* Stop the location service */
-struct android_app android_app = (struct android_app)g_android;
-CALL_VOID_METHOD(env, android_app->activity->clazz,
-androidlocation->onLocationStop);
-}
 #endif
+}
 
 /**
  * driver_location_start:
