@@ -389,7 +389,10 @@ void runloop_runahead_clear_variables(runloop_state_t *runloop_st);
 bool runloop_event_init_core(
       settings_t *settings,
       void *input_data,
-      enum rarch_core_type type);
+      enum rarch_core_type type,
+      const char *old_savefile_dir,
+      const char *old_savestate_dir
+      );
 
 void runloop_pause_checks(void);
 
@@ -438,6 +441,12 @@ bool runloop_get_entry_state_path(char *path, size_t len, unsigned slot);
 bool runloop_get_current_savestate_path(char *path, size_t len);
 
 void runloop_state_free(runloop_state_t *runloop_st);
+
+void runloop_path_set_redirect(settings_t *settings, const char *a, const char *b);
+
+void runloop_path_set_special(char **argv, unsigned num_content);
+
+void runloop_path_deinit_subsystem(void);
 
 runloop_state_t *runloop_state_get_ptr(void);
 

@@ -2966,7 +2966,7 @@ void content_set_subsystem_info(void)
       return;
 
    path_set(RARCH_PATH_SUBSYSTEM, p_content->pending_subsystem_ident);
-   path_set_special(p_content->pending_subsystem_roms,
+   runloop_path_set_special(p_content->pending_subsystem_roms,
          p_content->pending_subsystem_rom_num);
 }
 

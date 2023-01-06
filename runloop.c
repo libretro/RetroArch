@@ -1090,7 +1090,6 @@ static bool validate_per_core_options(char *s,
    return true;
 }
 
-
 static bool validate_game_options(
       const char *core_name,
       char *s, size_t len, bool mkdir)
@@ -5617,7 +5616,9 @@ static bool runloop_event_load_core(runloop_state_t *runloop_st,
 bool runloop_event_init_core(
       settings_t *settings,
       void *input_data,
-      enum rarch_core_type type)
+      enum rarch_core_type type,
+      const char *old_savefile_dir,
+      const char *old_savestate_dir)
 {
    size_t len;
    runloop_state_t *runloop_st     = &runloop_state;
@@ -5754,7 +5755,7 @@ bool runloop_event_init_core(
 #endif
 
    /* Per-core saves: reset redirection paths */
-   retroarch_path_set_redirect(settings);
+   runloop_path_set_redirect(settings, old_savefile_dir, old_savestate_dir);
 
    video_driver_set_cached_frame_ptr(NULL);
 
@@ -8746,4 +8747,280 @@ void runloop_path_set_names(void)
       runloop_st->name.cheatfile[len+4] = '\0';
    }
 #endif
+}
+
+void runloop_path_set_redirect(settings_t *settings,
+      const char *old_savefile_dir,
+      const char *old_savestate_dir)
+{
+   char content_dir_name[PATH_MAX_LENGTH];
+   char new_savefile_dir[PATH_MAX_LENGTH];
+   char new_savestate_dir[PATH_MAX_LENGTH];
+   runloop_state_t *runloop_st                 = &runloop_state;
+   struct retro_system_info *system            = &runloop_st->system.info;
+   bool sort_savefiles_enable                  = settings->bools.sort_savefiles_enable;
+   bool sort_savefiles_by_content_enable       = settings->bools.sort_savefiles_by_content_enable;
+   bool sort_savestates_enable                 = settings->bools.sort_savestates_enable;
+   bool sort_savestates_by_content_enable      = settings->bools.sort_savestates_by_content_enable;
+   bool savefiles_in_content_dir               = settings->bools.savefiles_in_content_dir;
+   bool savestates_in_content_dir              = settings->bools.savestates_in_content_dir;
+
+   content_dir_name[0]  = '\0';
+
+   /* Initialize current save directories
+    * with the values from the config. */
+   strlcpy(new_savefile_dir,  old_savefile_dir,  sizeof(new_savefile_dir));
+   strlcpy(new_savestate_dir, old_savestate_dir, sizeof(new_savestate_dir));
+
+   /* Get content directory name, if per-content-directory
+    * saves/states are enabled */
+   if ((sort_savefiles_by_content_enable ||
+         sort_savestates_by_content_enable) &&
+       !string_is_empty(runloop_st->runtime_content_path_basename))
+      fill_pathname_parent_dir_name(content_dir_name,
+            runloop_st->runtime_content_path_basename,
+            sizeof(content_dir_name));
+
+   if (system && !string_is_empty(system->library_name))
+   {
+#ifdef HAVE_MENU
+      if (!string_is_equal(system->library_name,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
+#endif
+      {
+         /* Per-core and/or per-content-directory saves */
+         if ((sort_savefiles_enable || sort_savefiles_by_content_enable)
+               && !string_is_empty(old_savefile_dir))
+         {
+            /* Append content directory name to save location */
+            if (sort_savefiles_by_content_enable)
+               fill_pathname_join_special(
+                     new_savefile_dir,
+                     old_savefile_dir,
+                     content_dir_name,
+                     sizeof(new_savefile_dir));
+
+            /* Append library_name to the save location */
+            if (sort_savefiles_enable)
+               fill_pathname_join(
+                     new_savefile_dir,
+                     new_savefile_dir,
+                     system->library_name,
+                     sizeof(new_savefile_dir));
+
+            /* If path doesn't exist, try to create it,
+             * if everything fails revert to the original path. */
+            if (!path_is_directory(new_savefile_dir))
+               if (!path_mkdir(new_savefile_dir))
+               {
+                  RARCH_LOG("%s %s\n",
+                        msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
+                        old_savefile_dir);
+
+                  strlcpy(new_savefile_dir, old_savefile_dir, sizeof(new_savefile_dir));
+               }
+         }
+
+         /* Per-core and/or per-content-directory savestates */
+         if ((sort_savestates_enable || sort_savestates_by_content_enable)
+               && !string_is_empty(old_savestate_dir))
+         {
+            /* Append content directory name to savestate location */
+            if (sort_savestates_by_content_enable)
+               fill_pathname_join_special(
+                     new_savestate_dir,
+                     old_savestate_dir,
+                     content_dir_name,
+                     sizeof(new_savestate_dir));
+
+            /* Append library_name to the savestate location */
+            if (sort_savestates_enable)
+            {
+               fill_pathname_join(
+                     new_savestate_dir,
+                     new_savestate_dir,
+                     system->library_name,
+                     sizeof(new_savestate_dir));
+            }
+
+            /* If path doesn't exist, try to create it.
+             * If everything fails, revert to the original path. */
+            if (!path_is_directory(new_savestate_dir))
+               if (!path_mkdir(new_savestate_dir))
+               {
+                  RARCH_LOG("%s %s\n",
+                        msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
+                        old_savestate_dir);
+                  strlcpy(new_savestate_dir,
+                        old_savestate_dir,
+                        sizeof(new_savestate_dir));
+               }
+         }
+      }
+   }
+
+   /* Set savefile directory if empty to content directory */
+   if (string_is_empty(new_savefile_dir) || savefiles_in_content_dir)
+   {
+      strlcpy(new_savefile_dir,
+            runloop_st->runtime_content_path_basename,
+            sizeof(new_savefile_dir));
+      path_basedir(new_savefile_dir);
+
+      if (string_is_empty(new_savefile_dir))
+         RARCH_LOG("Cannot resolve save file path.\n");
+      else if (sort_savefiles_enable || sort_savefiles_by_content_enable)
+         RARCH_LOG("Saving files in content directory is set. This overrides other save file directory settings.\n");
+   }
+
+   /* Set savestate directory if empty based on content directory */
+   if (string_is_empty(new_savestate_dir) || savestates_in_content_dir)
+   {
+      strlcpy(new_savestate_dir,
+            runloop_st->runtime_content_path_basename,
+            sizeof(new_savestate_dir));
+      path_basedir(new_savestate_dir);
+
+      if (string_is_empty(new_savestate_dir))
+         RARCH_LOG("Cannot resolve save state file path.\n");
+      else if (sort_savestates_enable || sort_savestates_by_content_enable)
+         RARCH_LOG("Saving save states in content directory is set. This overrides other save state file directory settings.\n");
+   }
+
+#ifdef HAVE_NETWORKING
+   /* Special save directory for netplay clients. */
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
+         !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+   {
+      fill_pathname_join(new_savefile_dir, new_savefile_dir, ".netplay",
+         sizeof(new_savefile_dir));
+
+      if (!path_is_directory(new_savefile_dir) &&
+            !path_mkdir(new_savefile_dir))
+         path_basedir(new_savefile_dir);
+   }
+#endif
+
+   if (system && !string_is_empty(system->library_name))
+   {
+      bool savefile_is_dir  = path_is_directory(new_savefile_dir);
+      bool savestate_is_dir = path_is_directory(new_savestate_dir);
+      if (savefile_is_dir)
+         strlcpy(runloop_st->name.savefile, new_savefile_dir,
+               sizeof(runloop_st->name.savefile));
+      else
+         savefile_is_dir    = path_is_directory(runloop_st->name.savefile);
+
+      if (savestate_is_dir)
+         strlcpy(runloop_st->name.savestate, new_savestate_dir,
+               sizeof(runloop_st->name.savestate));
+      else
+         savestate_is_dir   = path_is_directory(runloop_st->name.savestate);
+
+      if (savefile_is_dir)
+      {
+         fill_pathname_dir(runloop_st->name.savefile,
+               !string_is_empty(runloop_st->runtime_content_path_basename)
+               ? runloop_st->runtime_content_path_basename
+               : system->library_name,
+               FILE_PATH_SRM_EXTENSION,
+               sizeof(runloop_st->name.savefile));
+         RARCH_LOG("[Overrides]: %s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
+               runloop_st->name.savefile);
+      }
+
+      if (savestate_is_dir)
+      {
+         fill_pathname_dir(runloop_st->name.savestate,
+               !string_is_empty(runloop_st->runtime_content_path_basename)
+               ? runloop_st->runtime_content_path_basename
+               : system->library_name,
+               FILE_PATH_STATE_EXTENSION,
+               sizeof(runloop_st->name.savestate));
+         RARCH_LOG("[Overrides]: %s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
+               runloop_st->name.savestate);
+      }
+
+#ifdef HAVE_CHEATS
+      if (path_is_directory(runloop_st->name.cheatfile))
+      {
+         fill_pathname_dir(runloop_st->name.cheatfile,
+               !string_is_empty(runloop_st->runtime_content_path_basename)
+               ? runloop_st->runtime_content_path_basename
+               : system->library_name,
+               FILE_PATH_CHT_EXTENSION,
+               sizeof(runloop_st->name.cheatfile));
+         RARCH_LOG("[Overrides]: %s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
+               runloop_st->name.cheatfile);
+      }
+#endif
+   }
+
+   dir_set(RARCH_DIR_CURRENT_SAVEFILE,  new_savefile_dir);
+   dir_set(RARCH_DIR_CURRENT_SAVESTATE, new_savestate_dir);
+}
+
+void runloop_path_deinit_subsystem(void)
+{
+   runloop_state_t *runloop_st  = &runloop_state;
+   if (runloop_st->subsystem_fullpaths)
+      string_list_free(runloop_st->subsystem_fullpaths);
+   runloop_st->subsystem_fullpaths = NULL;
+}
+
+void runloop_path_set_special(char **argv, unsigned num_content)
+{
+   unsigned i;
+   char str[PATH_MAX_LENGTH];
+   union string_list_elem_attr attr;
+   bool is_dir                         = false;
+   struct string_list subsystem_paths  = {0};
+   runloop_state_t         *runloop_st = &runloop_state;
+   const char *savestate_dir           = runloop_st->savestate_dir;
+
+   /* First content file is the significant one. */
+   runloop_path_set_basename(argv[0]);
+
+   string_list_initialize(&subsystem_paths);
+
+   runloop_st->subsystem_fullpaths     = string_list_new();
+   retro_assert(runloop_st->subsystem_fullpaths);
+
+   attr.i = 0;
+
+   for (i = 0; i < num_content; i++)
+   {
+      string_list_append(runloop_st->subsystem_fullpaths, argv[i], attr);
+      strlcpy(str, argv[i], sizeof(str));
+      path_remove_extension(str);
+      string_list_append(&subsystem_paths, path_basename(str), attr);
+   }
+
+   str[0] = '\0';
+   string_list_join_concat(str, sizeof(str), &subsystem_paths, " + ");
+   string_list_deinitialize(&subsystem_paths);
+
+   /* We defer SRAM path updates until we can resolve it.
+    * It is more complicated for special content types. */
+   is_dir = path_is_directory(savestate_dir);
+
+   if (is_dir)
+      strlcpy(runloop_st->name.savestate, savestate_dir,
+            sizeof(runloop_st->name.savestate)); /* TODO/FIXME - why are we setting this string here but then later overwriting it later with fil_pathname_dir? */
+   else
+      is_dir   = path_is_directory(runloop_st->name.savestate);
+
+   if (is_dir)
+   {
+      fill_pathname_dir(runloop_st->name.savestate,
+            str,
+            ".state",
+            sizeof(runloop_st->name.savestate));
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
+            runloop_st->name.savestate);
+   }
 }

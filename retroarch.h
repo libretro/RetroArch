@@ -121,8 +121,6 @@ int content_get_subsystem(void);
 
 void retroarch_menu_running(void);
 
-void retroarch_path_set_redirect(settings_t *settings);
-
 void retroarch_menu_running_finished(bool quit);
 
 enum retro_language rarch_get_language_from_iso(const char *lang);

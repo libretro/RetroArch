@@ -71,8 +71,6 @@ void path_deinit_savefile(void);
 
 bool path_set(enum rarch_path_type type, const char *path);
 
-void path_set_special(char **argv, unsigned num_content);
-
 size_t path_get_realsize(enum rarch_path_type type);
 
 struct string_list *path_get_subsystem_list(void);
