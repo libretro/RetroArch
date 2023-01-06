@@ -1193,7 +1193,17 @@ void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
    /* Determine whether this is a help or info
     * message box */
    if (list && list->size)
+   {
       label = list->list[list->size - 1].label;
+      /* Play sound for closing the info box */
+#ifdef HAVE_AUDIOMIXER
+      settings_t *settings          = config_get_ptr();
+      bool        audio_enable_menu = settings->bools.audio_enable_menu;
+      bool audio_enable_menu_notice = settings->bools.audio_enable_menu_notice;
+      if (audio_enable_menu && audio_enable_menu_notice)
+         audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_NOTICE_BACK);
+#endif
+   }
 
    /* Pop stack, if required */
    if (menu_should_pop_stack(label))
@@ -7862,6 +7872,14 @@ static int generic_menu_iterate(
       size_t new_selection_ptr = selection;
       menu_entries_pop_stack(&new_selection_ptr, 0, 0);
       menu_st->selection_ptr   = selection;
+      /* Play sound for closing the info box */
+#ifdef HAVE_AUDIOMIXER
+      bool        audio_enable_menu = settings->bools.audio_enable_menu;
+      bool audio_enable_menu_notice = settings->bools.audio_enable_menu_notice;
+      if (audio_enable_menu && audio_enable_menu_notice && 
+            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFO_SCREEN)))
+         audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_NOTICE_BACK);
+#endif
    }
 
    if (BIT64_GET(menu->state, MENU_STATE_POST_ITERATE))
@@ -7933,6 +7951,10 @@ int generic_menu_entry_action(
 
                if (menu_driver_ctx->navigation_decrement)
                   menu_driver_ctx->navigation_decrement(menu_userdata);
+#ifdef HAVE_AUDIOMIXER
+               if (menu_entries_get_size() != 1)
+                  audio_driver_mixer_play_scroll_sound(true);
+#endif
             }
          }
          break;
@@ -7963,6 +7985,10 @@ int generic_menu_entry_action(
 
                if (menu_driver_ctx->navigation_increment)
                   menu_driver_ctx->navigation_increment(menu_userdata);
+#ifdef HAVE_AUDIOMIXER
+               if (menu_entries_get_size() != 1)
+                  audio_driver_mixer_play_scroll_sound(false);
+#endif
             }
          }
          break;
@@ -7971,6 +7997,10 @@ int generic_menu_entry_action(
          {
             if (selection_buf_size > 0)
             {
+#ifdef HAVE_AUDIOMIXER
+               if (menu_st->selection_ptr != 0)
+                  audio_driver_mixer_play_scroll_sound(false);
+#endif
                unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 10);
                if (!(menu_st->selection_ptr == 0 && !wraparound_enable))
                {
@@ -8016,6 +8046,10 @@ int generic_menu_entry_action(
          {
             if (selection_buf_size > 0)
             {
+#ifdef HAVE_AUDIOMIXER
+               if (menu_st->selection_ptr != menu_entries_get_size() - 1)
+                  audio_driver_mixer_play_scroll_sound(false);
+#endif
                unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 10);
                if (!(menu_st->selection_ptr >= selection_buf_size - 1
                      && !wraparound_enable))
