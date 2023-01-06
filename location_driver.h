@@ -92,27 +92,28 @@ void driver_location_set_interval(unsigned interval_msecs,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-#ifdef __ANDROID__
-void driver_location_stop(void){
 
-   
-   settings_t* settings = config_get_ptr();
-   bool auto_save_state = settings->bools.auto_save_state;
+void driver_location_stop(void)
+{
+#ifdef ANDROID
 
-   if (auto_save_state)
-   {
-      /* Make a save state */
-      command_event(CMD_EVENT_SAVE_STATE, NULL);
+settings_t* settings = config_get_ptr();
+bool auto_save_state = settings->bools.auto_save_state;
 
-        /* Flush the auto save state to disk */
-      command_event(CMD_EVENT_AUTOSAVE_DELETE, NULL);
-   }
+if (auto_save_state)
+{
+/* Make a save state */
+command_event(CMD_EVENT_SAVE_STATE, NULL);
 
-  /* Flush SRAM to disk */
-   command_event(CMD_EVENT_SAVE_FILES, NULL);
-
+  /* Flush the auto save state to disk */
+  command_event(CMD_EVENT_AUTOSAVE_DELETE, NULL);
 }
+
+/* Flush SRAM to disk */
+command_event(CMD_EVENT_SAVE_FILES, NULL);
 #endif
+}
+
 /**
  * driver_location_start:
  *
