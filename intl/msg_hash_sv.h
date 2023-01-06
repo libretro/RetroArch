@@ -2144,6 +2144,8 @@ MSG_HASH(
    "Håll Win-key kombinationer inuti programmet."
    )
 #endif
+#ifdef ANDROID
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    "AV"
@@ -2499,6 +2501,9 @@ MSG_HASH(
    )
 
 /* Settings > Achievements > Appearance */
+
+
+/* Settings > Achievements > Visibility */
 
 
 /* Settings > Network */

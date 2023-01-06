@@ -2480,6 +2480,8 @@ MSG_HASH(
    "Если включено, запрещает в программе сочетания с клавишей Windows."
    )
 #endif
+#ifdef ANDROID
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Ввод с дополнительных сенсоров"
@@ -5742,14 +5744,6 @@ MSG_HASH(
    "Проигрывать звуковой сигнал при открытии достижения."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-   "Подробный режим"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-   "Показывать дополнительную информацию в уведомлениях."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
    "Автоматический скриншот"
    )
@@ -5765,14 +5759,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
    "Запустить игру со всеми действующими достижениями (включая открытые ранее)."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
-   "Индикаторы испытаний"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "Отображать на экране индикатор, когда есть возможность получить достижение."
-   )
 
 /* Settings > Achievements > Appearance */
 
@@ -5780,6 +5766,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
    "Оформление"
    )
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 

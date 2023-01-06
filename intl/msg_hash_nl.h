@@ -2252,6 +2252,8 @@ MSG_HASH(
    "Houd Win-toetscombinaties in de applicatie."
    )
 #endif
+#ifdef ANDROID
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Hulpsensor-ingang"
@@ -4432,6 +4434,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
    "Uiterlijk"
    )
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 

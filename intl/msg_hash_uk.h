@@ -2416,6 +2416,8 @@ MSG_HASH(
    "Опрацьовуювати комбанції з клавішею Win."
    )
 #endif
+#ifdef ANDROID
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Введення з допоміжних датчиків"
@@ -3726,10 +3728,6 @@ MSG_HASH(
    "Розблокувати звук"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-   "Докладний режим"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
    "Автоматичний знімок екрану"
    )
@@ -3744,6 +3742,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
    "Зовнішній вигляд"
    )
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 

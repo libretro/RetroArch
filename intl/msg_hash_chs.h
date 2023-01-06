@@ -2384,6 +2384,8 @@ MSG_HASH(
    "在应用中保留 Win 组合键。"
    )
 #endif
+#ifdef ANDROID
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "辅助传感器输入"
@@ -5254,14 +5256,6 @@ MSG_HASH(
    "解锁成就时播放声音。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-   "详细模式"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-   "在通知中显示更多信息。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
    "自动截屏"
    )
@@ -5277,14 +5271,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
    "在所有成就都激活 (包括之前已经解锁的成就) 的状态下开始游戏。"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
-   "成就指标"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "允许成就在获得时显示在屏幕上。"
-   )
 
 /* Settings > Achievements > Appearance */
 
@@ -5292,6 +5278,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
    "外观"
    )
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 

@@ -81,7 +81,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "Nach Inhalten suchen. Um Inhalte zu laden, wird ein passender \"Core\" und eine Inhaltsdatei benötigt.\nWo das Menü mit der Suche nach Inhalten beginnt, kann im \"Dateibrowser\" Verzeichnis eingestellt werden.\nDer Browser filtert die Erweiterungen für den zuletzt in \"Core laden\" eingestellten Core heraus und verwendet diesen Kern, wenn der Inhalt geladen wird."
+   "Nach Inhalten suchen. Um Inhalte zu laden, wird ein passender \"Core\" und eine Inhaltsdatei benötigt.\nWo das Menü mit der Suche nach Inhalten beginnt, kann im \"Dateibrowser\" Verzeichnis eingestellt werden. Falls keines festgelegt, wird im Wurzelverzeichnis gestartet.\nDer Browser filtert die Erweiterungen für den zuletzt in \"Core laden\" eingestellten Core heraus und verwendet diesen Kern, wenn der Inhalt geladen wird."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -2520,6 +2520,16 @@ MSG_HASH(
    "Windows-Tastenkombinationen innerhalb der Anwendung behalten."
    )
 #endif
+#ifdef ANDROID
+MSG_HASH(
+        MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+        "Physische Tastatur auswählen"
+)
+MSG_HASH(
+        MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+        "Dieses Gerät als physische Tastatur und nicht als Gamepad benutzen."
+)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Hilfssensoren-Input"
@@ -3221,7 +3231,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
-   "Angegebenen Analogstick für Steuerkreuz-Eingabe verwenden.\nWenn der Core nativ Analogeingaben unterstützt, wird das Steuerkreuz-Mapping deaktiviert, außer eine \"(Erzwungen)\"-Option wird gewählt. Wird das Steuerkreuz-Mapping erzwungen, erhält der Core keine Analogeingaben vom angegebenen Stick."
+   "Angegebenen Analogstick für Steuerkreuz-Eingabe verwenden.\nWenn der Core nativ Analogeingaben unterstützt, wird das Steuerkreuz-Mapping deaktiviert, außer eine \"(Erzwungen)\"-Option wird gewählt.\nWird das Steuerkreuz-Mapping erzwungen, erhält der Core keine Analogeingaben vom angegebenen Stick."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -3675,7 +3685,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
-   "Automatisches Speichern des nichtflüchtigen SRAM in regelmäßigen Abständen. Dies ist standardmäßig deaktiviert. Das Intervall wird in Sekunden angegeben. Ein Wert von 0 deaktiviert die automatische Speicherung."
+   "Automatisches Speichern des nichtflüchtigen SRAM in regelmäßigen Abständen. Dies ist standardmäßig deaktiviert, sofern nicht anders eingestellt. Das Intervall wird in Sekunden angegeben. Ein Wert von 0 deaktiviert die automatische Speicherung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -3904,7 +3914,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
-   "Die maximale Geschwindigkeit, mit der Inhalte beim Vorspulen abgespielt werden (z. B. 5,0 für Inhalte mit 60 FPS=> 300 Fps). RetroArch wird pausieren, um sicherzustellen, dass die maximale Geschwindigkeit nicht überschritten wird. Verlassen Sie sich nicht darauf, dass diese Obergrenze absolut genau ist."
+   "Die maximale Geschwindigkeit, mit der Inhalte beim Vorspulen abgespielt werden.\n(z. B. 5,0 für Inhalte mit 60 Fps=> 300 Fps Begrenzung).\nRetroArch wird pausieren, um sicherzustellen, dass die maximale Geschwindigkeit nicht überschritten wird. Verlassen Sie sich nicht darauf, dass diese Obergrenze absolut genau ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
@@ -5806,14 +5816,6 @@ MSG_HASH(
    "Einen Ton abspielen, wenn eine Errungenschaft freigeschaltet wird."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-   "Ausführlicher Modus für Errungenschaften"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-   "Aktiviere ausführliche Ausgabe von Bildschirmmeldungen für Errungenschaften."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
    "Automatische Bildschirmaufnahme"
    )
@@ -5828,14 +5830,6 @@ MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
    "Die Sitzung mit aktivierten Errungenschaften (auch den zuvor freigeschalteten) starten."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
-   "Herausforderungsindikatoren"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "Ermöglicht Errungenschaften einen Indikator auf dem Bildschirm anzuzeigen, während die Errungenschaft verdient werden kann."
    )
 
 /* Settings > Achievements > Appearance */
@@ -5899,6 +5893,73 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_V,
    "Abstand zum oberen/unteren Bildschirmrand, der den Bildschirm-Overscan ausgleichen kann."
+   )
+
+/* Settings > Achievements > Visibility */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
+   "Sichtbarkeit"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
+   "Ändert, welche Nachrichten und Elemente auf dem Bildschirm angezeigt werden. Deaktiviert nicht die Funktionalität."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
+   "Zusammenfassung beim Starten"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
+   "Zeigt Informationen über das zu ladende Spiel und den aktuellen Fortschritt des Nutzers.\n'Alle identifizierten Spiele' werden eine Zusammenfassung für Spiele ohne veröffentlichte Errungenschaften anzeigen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
+   "Alle identifizierten Spiele"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
+   "Spiele mit Errungenschaften"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
+   "Freischaltebenachrichtigungen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
+   "Zeigt eine Benachrichtigung, wenn eine Errungenschaft freigeschaltet wird."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
+   "Meisterschaftsbenachrichtigungen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
+   "Zeigt eine Benachrichtigung, wenn alle Errungenschaften eines Spiels freigeschaltet sind."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
+   "Aktive Herausforderungsindikatoren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
+   "Zeigt Indikatoren auf dem Bildschirm, während bestimmte Errungenschaften erzielt werden können."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
+   "Anmeldebenachrichtigungen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+   "Zeigt Benachrichtigungen im Zusammenhang mit der Anmeldung des RetroAchievements Kontos an."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
+   "Ausführliche Benachrichtigungen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+   "Zeigt zusätzliche Diagnose- und Fehlermeldungen an."
    )
 
 /* Settings > Network */
@@ -6013,7 +6074,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
-   "Ob Netzwerkspiel im Zuschauermodus gestartet werden soll. Wenn aktiviert, werden Netzwerkspiele im Zuschauermodus starten. Es ist jederzeit möglich, den Modus zu ändern."
+   "Ob Netzwerkspiel im Zuschauermodus gestartet werden soll. Wenn aktiviert, werden Netzwerkspiele im Zuschauermodus starten. Es ist jederzeit möglich, den Modus später zu ändern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
@@ -7711,7 +7772,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Scanne Speicher um neue Cheats zu erstellen."
+   "Durchsucht den Speicher, um neue Cheats zu erstellen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
@@ -8144,6 +8205,10 @@ MSG_HASH(
    "Änderungen an der Shader-Konfiguration werden sofort übernommen. Verwende diese Option, wenn Du die Anzahl der Shader-Durchläufe, die Filter, die FBO-Skalierung usw. geändert hast."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
+   "Shader Änderungen anwenden. Nach dem Ändern der Shader-Einstellungen, wie Anzahl der Shader-Durchgänge, Filter, FBO-Skala, dies benutzen, um Änderungen anzuwenden.\nDiese Shader-Einstellungen zu ändern ist eine etwas aufwendige Arbeit, daher muss genau vorgegangen werden.\nWerden Shader angewendet, werden die Menü-Shader-Einstellungen in einer temporären Datei gespeichert (entweder menu.cgp oder menu.glslp) und geladen. Die Datei bleibt nach dem Beenden von RetroArch erhalten. Die Datei w[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
    "Vorschau der Shader-Parameter"
    )
@@ -8161,7 +8226,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES,
-   "RetroArch erlaubt es, verschiedene Shader in beliebigen Shader-Durchläufen mit benutzerdefinierten Hardware-Filtern und Skalierungsfaktoren zu kombinieren.\nDiese Option gibt die Anzahl der zu verwendenden Shader-Durchläufe an. Wenn diese Option auf 0 gesetzt und angewandt wird, wird ein \"leerer\" Shader verwendet. Der Standardfilter wirkt sich auf den Streckungsfilter aus."
+   "RetroArch erlaubt es, verschiedene Shader in beliebigen Shader-Durchläufen mit benutzerdefinierten Hardware-Filtern und Skalierungsfaktoren zu kombinieren.\nDiese Option gibt die Anzahl der zu verwendenden Shader-Durchläufe an. Wenn diese Option auf 0 gesetzt und angewandt wird, wird ein \"leerer\" Shader verwendet.\nDer Standardfilter wirkt sich auf den Streckungsfilter aus."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
@@ -8177,7 +8242,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
-   "Skalierung für diesen Durchgang.\nDer Skalierungsfaktor wird akkumuliert, d.h. 2x für den ersten Durchgang und 2x für den zweiten Durchgang ergibt eine Gesamtskalierung von 4x. Wenn es einen Skalierungsfaktor für den letzten Durchgang gibt, wird das Ergebnis mit dem im Standardfilter angegebenen Filter auf den Bildschirm gestreckt. Wenn \"Egal\" eingestellt ist, wird entweder auf den Vollbildschirm gestreckt oder 1x skaliert, je nachdem, ob es der letzte Durchgang ist oder nicht."
+   "Skalierung für diesen Durchgang.\nDer Skalierungsfaktor wird akkumuliert, d.h. 2x für den ersten Durchgang und 2x für den zweiten Durchgang ergibt eine Gesamtskalierung von 4x.\nWenn es einen Skalierungsfaktor für den letzten Durchgang gibt, wird das Ergebnis mit dem im Standardfilter angegebenen Filter auf den Bildschirm gestreckt.\nWenn \"Egal\" eingestellt ist, wird entweder auf den Vollbildschirm gestreckt oder 1x skaliert, je nachdem, ob es der letzte Durchgang ist oder nicht."
    )
 
 /* Quick Menu > Shaders > Save */
@@ -13225,7 +13290,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
-   "Den vorderen statt dem hinteren Touchscreen nutzen."
+   "Den vorderen statt den hinteren Touchscreen nutzen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,

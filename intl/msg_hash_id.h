@@ -2208,6 +2208,8 @@ MSG_HASH(
    "Kombinasi tombil Win-key hanya tersedia di aplikasi."
    )
 #endif
+#ifdef ANDROID
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Aktifkan Input Sensor Auxiliary"
@@ -2787,6 +2789,9 @@ MSG_HASH(
    )
 
 /* Settings > Achievements > Appearance */
+
+
+/* Settings > Achievements > Visibility */
 
 
 /* Settings > Network */

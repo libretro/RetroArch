@@ -2452,6 +2452,8 @@ MSG_HASH(
    "A Windows gombos billentyűkombinációkat az alkalmazáson belül tartja."
    )
 #endif
+#ifdef ANDROID
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Kiegészítő érzékelők használata"
@@ -5718,14 +5720,6 @@ MSG_HASH(
    "Hang lejátszása egy trófea feloldásakor."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-   "Részletes mód"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-   "Több információt tartalmazó értesítések."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
    "Automatikus képernyőkép"
    )
@@ -5740,14 +5734,6 @@ MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
    "Legyen az összes trófea begyűjthető (még a korábban feloldottak is)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
-   "Kihívásjelző"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "A trófeák megjeleníthetnek egy jelzést a képernyőn, amikor a trófea éppen begyűjthető."
    )
 
 /* Settings > Achievements > Appearance */
@@ -5816,6 +5802,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_V,
    "A távolság a képernyő alsó/felső szélétől, ami az overscan kompenzálásához használható."
    )
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 
