@@ -51,7 +51,6 @@
 #include "../../input/input_osk.h"
 
 #include "../../configuration.h"
-#include "../../audio/audio_driver.h"
 #include "../../file_path_special.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
@@ -7990,20 +7989,6 @@ static enum menu_action rgui_parse_menu_entry_action(
          if (     (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
                && (rgui->is_quick_menu))
             new_action = MENU_ACTION_NOOP;
-#ifdef HAVE_AUDIOMIXER
-         if (action == MENU_ACTION_UP || action == MENU_ACTION_DOWN)
-         {
-            if (menu_entries_get_size() != 1)
-               audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_UP);
-         }
-         else 
-         {
-            size_t selection = menu_navigation_get_selection();
-            if ((action == MENU_ACTION_SCROLL_UP && selection != 0) ||
-                  (action == MENU_ACTION_SCROLL_DOWN && selection != menu_entries_get_size() - 1))
-               audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_SCROLL_UP);
-         }
-#endif
          break;
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:

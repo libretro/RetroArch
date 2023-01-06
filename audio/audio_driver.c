@@ -1348,6 +1348,7 @@ void audio_driver_load_system_sounds(void)
    const char *path_ok                   = NULL;
    const char *path_cancel               = NULL;
    const char *path_notice               = NULL;
+   const char *path_notice_back          = NULL;
    const char *path_bgm                  = NULL;
    const char *path_cheevo_unlock        = NULL;
    const char *path_up                   = NULL;
@@ -1413,6 +1414,8 @@ void audio_driver_load_system_sounds(void)
             path_cancel = path;
          else if (string_is_equal_noncase(basename_noext, "notice"))
             path_notice = path;
+         else if (string_is_equal_noncase(basename_noext, "notice_back"))
+            path_notice_back = path;
          else if (string_is_equal_noncase(basename_noext, "bgm"))
             path_bgm = path;
          else if (string_is_equal_noncase(basename_noext, "unlock"))
@@ -1428,8 +1431,12 @@ void audio_driver_load_system_sounds(void)
       task_push_audio_mixer_load(path_ok, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_OK);
    if (path_cancel && audio_enable_menu_cancel)
       task_push_audio_mixer_load(path_cancel, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
-   if (path_notice && audio_enable_menu_notice)
-      task_push_audio_mixer_load(path_notice, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
+   if (audio_enable_menu_notice) {
+      if (path_notice)
+         task_push_audio_mixer_load(path_notice, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
+      if (path_notice_back)
+          task_push_audio_mixer_load(path_notice_back, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE_BACK);
+   }
    if (path_bgm && audio_enable_menu_bgm)
       task_push_audio_mixer_load(path_bgm, audio_driver_load_menu_bgm_callback, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_BGM);
    if (path_cheevo_unlock && audio_enable_cheevo_unlock)
@@ -1463,6 +1470,7 @@ void audio_driver_mixer_play_menu_sound_looped(unsigned i)
 void audio_driver_mixer_play_menu_sound(unsigned i)
 {
    audio_driver_st.mixer_streams[i].stop_cb = audio_mixer_menu_stop_cb;
+   audio_driver_mixer_stop_stream(i);
    audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING);
 }
 
@@ -1472,10 +1480,7 @@ void audio_driver_mixer_play_scroll_sound(bool direction_up)
    bool        audio_enable_menu = settings->bools.audio_enable_menu;
    bool audio_enable_menu_scroll = settings->bools.audio_enable_menu_scroll;
    if (audio_enable_menu && audio_enable_menu_scroll)
-   {
-      audio_driver_mixer_stop_stream(direction_up ? AUDIO_MIXER_SYSTEM_SLOT_UP : AUDIO_MIXER_SYSTEM_SLOT_DOWN);
-      audio_driver_mixer_play_menu_sound(direction_up ? AUDIO_MIXER_SYSTEM_SLOT_UP : AUDIO_MIXER_SYSTEM_SLOT_DOWN);
-   }
+      audio_driver_mixer_play_menu_sound(direction_up ? AUDIO_MIXER_SYSTEM_SLOT_UP : AUDIO_MIXER_SYSTEM_SLOT_DOWN);  
 }
 
 void audio_driver_mixer_play_stream_looped(unsigned i)

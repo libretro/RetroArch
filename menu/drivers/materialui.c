@@ -9135,10 +9135,6 @@ static enum menu_action materialui_parse_menu_entry_action(
           * > If current selection is off screen,
           *   auto select 'middle' item */
          materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
-#ifdef HAVE_AUDIOMIXER
-         if (menu_entries_get_size() != 1)
-            audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_UP);
-#endif
          break;
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
@@ -9214,17 +9210,9 @@ static enum menu_action materialui_parse_menu_entry_action(
          }
          /* > ...otherwise, if current selection is off
           *   screen, auto select *last* item */
-         else 
-         {
+         else
             materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_LAST);
-#ifdef HAVE_AUDIOMIXER
-            /* > The playlist if above leads to code 
-            *    that already plays the scrolling sound correctly,
-            *    So this is for every case that isn't the playlist tab. */
-            if (menu_navigation_get_selection() != 0)
-               audio_driver_mixer_play_scroll_sound(true);
-#endif
-         }
+         
          break;
       case MENU_ACTION_SCROLL_DOWN:
          /* Ascend alphabet (A towards Z)
@@ -9238,14 +9226,9 @@ static enum menu_action materialui_parse_menu_entry_action(
          }
          /* > ...otherwise, if current selection is off
           *   screen, auto select *first* item */
-         else 
-         {
+         else
             materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_FIRST);
-#ifdef HAVE_AUDIOMIXER
-            if (menu_navigation_get_selection() != menu_entries_get_size() - 1)
-               audio_driver_mixer_play_scroll_sound(false);
-#endif
-         }
+   
          break;
       case MENU_ACTION_SCAN:
          /* - If this is a playlist, 'scan' command is used
