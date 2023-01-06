@@ -942,7 +942,7 @@ void path_set_special(char **argv, unsigned num_content)
 
    if (is_dir)
       strlcpy(runloop_st->name.savestate, savestate_dir,
-            sizeof(runloop_st->name.savestate));
+            sizeof(runloop_st->name.savestate)); /* TODO/FIXME - why are we setting this string here but then later overwriting it later with fil_pathname_dir? */
    else
       is_dir   = path_is_directory(runloop_st->name.savestate);
 
@@ -3340,11 +3340,10 @@ bool command_event(enum event_command cmd, void *data)
          {
             video_driver_state_t
                *video_st                        = video_state_get_ptr();
-            runloop_st->frame_limit_minimum_time=
-               runloop_set_frame_limit(&video_st->av_info,
-                     runloop_get_fastforward_ratio(
-                        settings,
-                        &runloop_st->fastmotion_override.current));
+            runloop_set_frame_limit(&video_st->av_info,
+                  runloop_get_fastforward_ratio(
+                     settings,
+                     &runloop_st->fastmotion_override.current));
          }
          break;
       case CMD_EVENT_DISCORD_INIT:

@@ -3610,8 +3610,7 @@ static void runloop_fastmotion_override_free(runloop_state_t *runloop_st)
    runloop_st->fastmotion_override.pending                = false;
 
    if (reset_frame_limit)
-      runloop_st->frame_limit_minimum_time                = 
-         runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
+      runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
 }
 
 void runloop_state_free(runloop_state_t *runloop_st)
@@ -5106,9 +5105,8 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
                      fastforward_ratio_default;
 
    if (fastforward_ratio_current != fastforward_ratio_last)
-         runloop_st->frame_limit_minimum_time = 
-            runloop_set_frame_limit(&video_st->av_info,
-                  fastforward_ratio_current);
+      runloop_set_frame_limit(&video_st->av_info,
+            fastforward_ratio_current);
 }
 
 
@@ -5414,14 +5412,17 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
             sizeof(runloop_st->runtime_core_path));
 }
 
-float runloop_set_frame_limit(
+void runloop_set_frame_limit(
       const struct retro_system_av_info *av_info,
       float fastforward_ratio)
 {
+   runloop_state_t *runloop_st  = &runloop_state;
    if (fastforward_ratio < 1.0f)
-      return 0.0f;
-   return (retro_time_t)roundf(1000000.0f / 
-         (av_info->timing.fps * fastforward_ratio));
+      runloop_st->frame_limit_minimum_time = 0.0f;
+   else
+      runloop_st->frame_limit_minimum_time = (retro_time_t)
+         roundf(1000000.0f / 
+               (av_info->timing.fps * fastforward_ratio));
 }
 
 float runloop_get_fastforward_ratio(
@@ -5779,9 +5780,7 @@ bool runloop_event_init_core(
    if (!runloop_event_load_core(runloop_st, poll_type_behavior))
       return false;
 
-   runloop_st->frame_limit_minimum_time = 
-     runloop_set_frame_limit(&video_st->av_info,
-           fastforward_ratio);
+   runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
    runloop_st->frame_limit_last_time    = cpu_features_get_time_usec();
 
    runloop_runtime_log_init(runloop_st);
@@ -8100,14 +8099,12 @@ end:
       }
 
       if (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-         runloop_st->frame_limit_minimum_time = 
-            runloop_set_frame_limit(&video_st->av_info,
-                  runloop_get_fastforward_ratio(settings,
-                     &runloop_st->fastmotion_override.current));
+         runloop_set_frame_limit(&video_st->av_info,
+               runloop_get_fastforward_ratio(settings,
+                  &runloop_st->fastmotion_override.current));
       else
-         runloop_st->frame_limit_minimum_time = 
-            runloop_set_frame_limit(&video_st->av_info,
-                  1.0f);
+         runloop_set_frame_limit(&video_st->av_info,
+               1.0f);
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */

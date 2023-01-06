@@ -393,7 +393,7 @@ bool runloop_event_init_core(
 
 void runloop_pause_checks(void);
 
-float runloop_set_frame_limit(
+void runloop_set_frame_limit(
       const struct retro_system_av_info *av_info,
       float fastforward_ratio);
 
