@@ -20,7 +20,6 @@
 #include <retro_common_api.h>
 
 #include "configuration.h"
-#include "command.h"
 
 RETRO_BEGIN_DECLS
 
@@ -93,27 +92,29 @@ void driver_location_set_interval(unsigned interval_msecs,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-
 void driver_location_stop(void)
 {
-#ifdef ANDROID
+   if (location_driver_state.active && location_driver_state.driver->stop)
+      location_driver_state.driver->stop(location_driver_state.data);
 
-settings_t* settings = config_get_ptr();
-bool auto_save_state = settings->bools.auto_save_state;
+   // Flush SRAM to disk
+   if (RetroArch.isSramAutoSaveEnabled()) {
+      RetroArch.saveSram();
+   }
 
-if (auto_save_state)
-{
-/* Make a save state */
-command_event(CMD_EVENT_SAVE_STATE, NULL);
+   // If auto save state is on, make a save state
+   if (RetroArch.isAutoSaveStateEnabled()) {
+      RetroArch.saveState();
+   }
 
-  /* Flush the auto save state to disk */
-  command_event(CMD_EVENT_AUTOSAVE_DELETE, NULL);
+   // Flush auto save state to disk
+   if (RetroArch.isAutoSaveStateEnabled()) {
+      RetroArch.flushAutoSaveState();
+   }
+
+   location_driver_state.active = false;
 }
 
-/* Flush SRAM to disk */
-command_event(CMD_EVENT_SAVE_FILES, NULL);
-#endif
-}
 
 /**
  * driver_location_start:
