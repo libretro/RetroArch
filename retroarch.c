@@ -1194,9 +1194,7 @@ bool is_accessibility_enabled(bool accessibility_enable, bool accessibility_enab
  **/
 bool command_event(enum event_command cmd, void *data)
 {
-#if defined(HAVE_DISCORD) || defined(HAVE_NETWORKING)
    struct rarch_state *p_rarch     = &rarch_st;
-#endif
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    uico_driver_state_t *uico_st    = uico_state_get_ptr();
 #if defined(HAVE_ACCESSIBILITY) || defined(HAVE_TRANSLATE)
