@@ -4491,18 +4491,20 @@ static enum menu_action xmb_parse_menu_entry_action(
                   &scroll_accel);
 
 #ifdef HAVE_AUDIOMIXER
-            settings_t *settings = config_get_ptr();
-            size_t category      = xmb->categories_selection_ptr;
-            /* We only want the scrolling sound to play if any of the following are true:
-               * 1. Wraparound is enabled (since the category is guaranteed to change) 
-               * 2. We're scrolling right, but we aren't on the last category
-               * 3. We're scrolling left, but we aren't on the first category */
-            bool fail_condition  = ((action == MENU_ACTION_RIGHT) ? (category == xmb->system_tab_end) 
-               : (category == 0)) && !(settings->bools.menu_navigation_wraparound_enable);
-         
-            if (((current_time - xmb->last_tab_switch_time) >= XMB_TAB_SWITCH_REPEAT_DELAY || 
-                  scroll_accel <= 0) && !fail_condition)
-               audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_RIGHT);
+            {
+               settings_t *settings = config_get_ptr();
+               size_t category      = xmb->categories_selection_ptr;
+               /* We only want the scrolling sound to play if any of the following are true:
+                  * 1. Wraparound is enabled (since the category is guaranteed to change) 
+                  * 2. We're scrolling right, but we aren't on the last category
+                  * 3. We're scrolling left, but we aren't on the first category */
+               bool fail_condition  = ((action == MENU_ACTION_RIGHT) ? (category == xmb->system_tab_end) 
+                  : (category == 0)) && !(settings->bools.menu_navigation_wraparound_enable);
+            
+               if (((current_time - xmb->last_tab_switch_time) >= XMB_TAB_SWITCH_REPEAT_DELAY || 
+                     scroll_accel <= 0) && !fail_condition)
+                  audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_RIGHT);
+            }
 #endif
             if (scroll_accel > 0)
             {
