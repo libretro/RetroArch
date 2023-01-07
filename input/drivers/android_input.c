@@ -435,14 +435,15 @@ static void android_input_poll_main_cmd(void)
 
       case APP_CMD_GAINED_FOCUS:
          {
-            bool boolean              = false;
-            bool enable_accelerometer = (android_app->sensor_state_mask &
+            runloop_state_t *runloop_st = runloop_state_get_ptr();
+            bool enable_accelerometer   = (android_app->sensor_state_mask &
                   (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_DISABLE));
-            bool enable_gyroscope     = (android_app->sensor_state_mask &
+            bool enable_gyroscope       = (android_app->sensor_state_mask &
                   (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_DISABLE));
 
-            retroarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
-            retroarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
+            
+            runloop_st->flags &= ~(RUNLOOP_FLAG_PAUSED
+                                 | RUNLOOP_FLAG_IDLE);
             video_driver_unset_stub_frame();
 
             if (enable_accelerometer)
@@ -462,7 +463,6 @@ static void android_input_poll_main_cmd(void)
          break;
       case APP_CMD_LOST_FOCUS:
          {
-            bool boolean               = true;
             bool disable_accelerometer = (android_app->sensor_state_mask &
                   (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE)) &&
                         android_app->accelerometerSensor;
@@ -470,8 +470,8 @@ static void android_input_poll_main_cmd(void)
                   (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)) &&
                         android_app->gyroscopeSensor;
 
-            retroarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
-            retroarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
+            runloop_st->flags |=  (RUNLOOP_FLAG_PAUSED
+                                 | RUNLOOP_FLAG_IDLE);
             video_driver_set_stub_frame();
 
             /* Avoid draining battery while app is not being used. */
