@@ -1916,7 +1916,9 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    rarch_system_info_t *sys_info              = &runloop_st->system;
    const char *path_dir_system                = settings->paths.directory_system;
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
+#ifdef HAVE_PATCH
    uint16_t rarch_flags                       = retroarch_get_flags();
+#endif
 
    if (!content_info)
       return false;
@@ -2007,7 +2009,9 @@ bool task_push_load_content_from_playlist_from_menu(
    bool force_core_reload                     = settings->bools.always_reload_core_on_run_content;
 #endif
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
+#ifdef HAVE_PATCH
    uint16_t rarch_flags                       = retroarch_get_flags();
+#endif
 
    content_ctx.flags     = 0;
 
@@ -2488,8 +2492,9 @@ static bool task_load_content_internal(
    bool set_supports_no_game_enable           = settings->bools.set_supports_no_game_enable;
    const char *path_dir_system                = settings->paths.directory_system;
    const char *path_dir_cache                 = settings->paths.directory_cache;
-
+#ifdef HAVE_PATCH
    uint16_t rarch_flags                       = retroarch_get_flags();
+#endif
    content_ctx.flags                          = 0;
 
    if (check_firmware_before_loading)
@@ -2988,7 +2993,9 @@ bool content_init(void)
    bool set_supports_no_game_enable   = settings->bools.set_supports_no_game_enable;
    const char *path_dir_system        = settings->paths.directory_system;
    const char *path_dir_cache         = settings->paths.directory_cache;
+#ifdef HAVE_PATCH
    uint16_t rarch_flags               = retroarch_get_flags();
+#endif
 
    content_file_list_free(p_content->content_list);
    p_content->content_list            = NULL;
