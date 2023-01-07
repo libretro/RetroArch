@@ -463,10 +463,11 @@ static void android_input_poll_main_cmd(void)
          break;
       case APP_CMD_LOST_FOCUS:
          {
-            bool disable_accelerometer = (android_app->sensor_state_mask &
+            runloop_state_t *runloop_st = runloop_state_get_ptr();
+            bool disable_accelerometer  = (android_app->sensor_state_mask &
                   (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE)) &&
                         android_app->accelerometerSensor;
-            bool disable_gyroscope     = (android_app->sensor_state_mask &
+            bool disable_gyroscope      = (android_app->sensor_state_mask &
                   (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)) &&
                         android_app->gyroscopeSensor;
 
