@@ -361,6 +361,7 @@ enum
    [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
    [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
    [[_renderView.trailingAnchor constraintEqualToAnchor:rootView.trailingAnchor] setActive:YES];
+   [_renderView layoutIfNeeded];
 }
 
 - (apple_view_type_t)viewType { return _vt; }

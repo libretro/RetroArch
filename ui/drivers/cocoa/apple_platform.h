@@ -37,7 +37,6 @@ typedef enum apple_view_type
  * the displays should not sleep.
  */
 - (bool)setDisableDisplaySleep:(bool)disable;
-- (void)setupMainWindow;
 @end
 
 #endif

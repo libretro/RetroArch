@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		073EEE0A296A1A9A00224668 /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 073EEE09296A1A9A00224668 /* libMoltenVK.dylib */; };
+		073EEE0B296A1B1A00224668 /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 073EEE09296A1A9A00224668 /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		9204BE101D319EF300BD49DB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
@@ -84,7 +86,24 @@
 		92E5DCD4231A5786006491BF /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 92E5DCD3231A5786006491BF /* modules */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		073EEE0C296A1B1A00224668 /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				073EEE0B296A1B1A00224668 /* libMoltenVK.dylib in Embed Libraries */,
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		073EEE04296A189800224668 /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = Frameworks/MoltenVK/dylib/iOS/libMoltenVK.dylib; sourceTree = "<group>"; };
+		073EEE07296A1A8400224668 /* iOS */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS; sourceTree = "<group>"; };
+		073EEE09296A1A9A00224668 /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = iOS/modules/libMoltenVK.dylib; sourceTree = "<group>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -352,6 +371,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				073EEE0A296A1A9A00224668 /* libMoltenVK.dylib in Frameworks */,
 				9210C2F224B3A19100E6FE7C /* MetalKit.framework in Frameworks */,
 				9210C2F324B3A19100E6FE7C /* Metal.framework in Frameworks */,
 				92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */,
@@ -1002,6 +1022,9 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				073EEE09296A1A9A00224668 /* libMoltenVK.dylib */,
+				073EEE07296A1A8400224668 /* iOS */,
+				073EEE04296A189800224668 /* libMoltenVK.dylib */,
 				9210C2F124B3A19100E6FE7C /* Metal.framework */,
 				9210C2F024B3A19100E6FE7C /* MetalKit.framework */,
 				92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */,
@@ -1067,6 +1090,7 @@
 				9204BE111D319EF300BD49DB /* Frameworks */,
 				9204BE271D319EF300BD49DB /* ShellScript */,
 				9204BE211D319EF300BD49DB /* Resources */,
+				073EEE0C296A1B1A00224668 /* Embed Libraries */,
 			);
 			buildRules = (
 			);
@@ -1297,11 +1321,16 @@
 					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
 					"$(DEPS_DIR)/glslang/glslang/SPIRV",
 					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
+					../../gfx/include,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_NO_PIE = YES;
-				LIBRARY_SEARCH_PATHS = "";
+				LD_RUNPATH_SEARCH_PATHS = "$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST)) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"$(PROJECT_DIR)/iOS/modules",
+				);
 				MARKETING_VERSION = 1.14.0;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
@@ -1375,6 +1404,7 @@
 					"-DHAVE_REWIND",
 					"-DHAVE_PATCH",
 					"-DHAVE_UPDATE_CORE_INFO",
+					"-DHAVE_VULKAN",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
 				PRODUCT_NAME = RetroArch;
@@ -1415,11 +1445,16 @@
 					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
 					"$(DEPS_DIR)/glslang/glslang/SPIRV",
 					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
+					../../gfx/include,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_NO_PIE = YES;
-				LIBRARY_SEARCH_PATHS = "";
+				LD_RUNPATH_SEARCH_PATHS = "$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST)) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"$(PROJECT_DIR)/iOS/modules",
+				);
 				MARKETING_VERSION = 1.14.0;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (
@@ -1477,6 +1512,7 @@
 					"-DHAVE_REWIND",
 					"-DHAVE_PATCH",
 					"-DHAVE_UPDATE_CORE_INFO",
+					"-DHAVE_VULKAN",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -1552,6 +1588,7 @@
 					"-DHAVE_RWAV",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_UPDATE_CORE_INFO",
+					"-DHAVE_VULKAN",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
 				PRODUCT_NAME = RetroArch;
