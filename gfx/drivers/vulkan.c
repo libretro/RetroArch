@@ -1857,8 +1857,6 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
    bool video_scale_integer  = settings->bools.video_scale_integer;
    unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
    vk_t *vk                  = (vk_t*)data;
-   unsigned width            = vk->video_width;
-   unsigned height           = vk->video_height;
 
    if (vk->ctx_driver->translate_aspect)
       device_aspect         = vk->ctx_driver->translate_aspect(
@@ -3346,7 +3344,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
                && (staging->memory != VK_NULL_HANDLE))
             VULKAN_SYNC_TEXTURE_TO_CPU(vk->context->device, staging->memory);
 
-         ctx->in_stride  = staging->stride;
+         ctx->in_stride  =  (int)staging->stride;
          ctx->out_stride = -(int)vk->vp.width * 3;
          scaler_ctx_scale_direct(ctx, buffer, src);
 

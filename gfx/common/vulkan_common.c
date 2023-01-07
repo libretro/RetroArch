@@ -1549,7 +1549,6 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 
 static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 {
-   bool use_device_ext;
    uint32_t queue_count;
    unsigned i;
    static const float one                  = 1.0f;
@@ -1733,7 +1732,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          return false;
       }
 
-      if (!(use_device_ext = vulkan_find_device_extensions(vk->context.gpu,
+      if (!(vulkan_find_device_extensions(vk->context.gpu,
               enabled_device_extensions, &enabled_device_extension_count,
               device_extensions, ARRAY_SIZE(device_extensions),
               optional_device_extensions,

@@ -59,14 +59,13 @@ CocoaView *cocoaview_get(void);
 
 static uint32_t cocoa_vk_gfx_ctx_get_flags(void *data)
 {
-   uint32_t flags                 = 0;
-   cocoa_vk_ctx_data_t    *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
-
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   uint32_t flags = 0;
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
-
    return flags;
+#else
+   return 0;
+#endif
 }
 
 static void cocoa_vk_gfx_ctx_set_flags(void *data, uint32_t flags) { }

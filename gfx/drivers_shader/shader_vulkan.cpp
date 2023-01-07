@@ -1434,12 +1434,14 @@ bool vulkan_filter_chain::init_feedback()
 
 bool vulkan_filter_chain::init_alias()
 {
-   unsigned i, j;
+   int i;
+   
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
 
    for (i = 0; i < passes.size(); i++)
    {
+      unsigned j;
       const std::string name = passes[i]->get_name();
       if (name.empty())
          continue;
@@ -1469,7 +1471,7 @@ bool vulkan_filter_chain::init_alias()
 
    for (i = 0; i < common.luts.size(); i++)
    {
-      j = &common.luts[i] - common.luts.data();
+      unsigned j = &common.luts[i] - common.luts.data();
       if (!slang_set_unique_map(
                common.texture_semantic_map,
                common.luts[i]->get_id(),
@@ -1922,7 +1924,7 @@ bool Pass::init_pipeline_layout()
       }
    }
 
-   set_layout_info.bindingCount           = bindings.size();
+   set_layout_info.bindingCount           = (uint32_t)bindings.size();
    set_layout_info.pBindings              = bindings.data();
 
    if (vkCreateDescriptorSetLayout(device,
@@ -1950,14 +1952,14 @@ bool Pass::init_pipeline_layout()
    }
 
    push.stages     = push_range.stageFlags;
-   push_range.size = reflection.push_constant_size;
+   push_range.size = (uint32_t)reflection.push_constant_size;
 
    if (vkCreatePipelineLayout(device,
             &layout_info, NULL, &pipeline_layout) != VK_SUCCESS)
       return false;
 
    pool_info.maxSets                    = num_sync_indices;
-   pool_info.poolSizeCount              = desc_counts.size();
+   pool_info.poolSizeCount              = (uint32_t)desc_counts.size();
    pool_info.pPoolSizes                 = desc_counts.data();
    if (vkCreateDescriptorPool(device, &pool_info, nullptr, &pool) != VK_SUCCESS)
       return false;
@@ -2600,7 +2602,7 @@ void Pass::build_commands(
    if (push.stages != 0)
    {
       vkCmdPushConstants(cmd, pipeline_layout,
-            push.stages, 0, reflection.push_constant_size,
+            push.stages, 0, (uint32_t)reflection.push_constant_size,
             push.buffer.data());
    }
 
@@ -2965,7 +2967,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
                      itr->id);
                goto error;
             }
-            chain->add_parameter(i, itr - shader->parameters, meta_param.id);
+            chain->add_parameter(i, (unsigned)(itr - shader->parameters), meta_param.id);
          }
          else
          {
