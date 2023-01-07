@@ -1990,7 +1990,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "裁剪過掃描 (需要重新啟動)"
+   "裁剪過度掃描 (需要重新啟動)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -4303,7 +4303,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
-   "使用畫面佈置完成的螢幕畫面佈景(MAME Artwork's)。"
+   "使用畫面佈置完成的螢幕畫面佈景(MAME Artworks)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
@@ -4474,7 +4474,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
-   "載入映像檔編號時顯示螢幕通知。僅限載入 M3U格式 時顯示。"
+   "載入映像檔編號時顯示螢幕通知。僅限載入M3U格式時顯示。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -5767,6 +5767,18 @@ MSG_HASH(
    "外觀"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
+   "變更成就通知的顯示方式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR,
+   "位置"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_ANCHOR,
+   "設定成就通知的顯示位置。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT,
    "上左"
    )
@@ -5789,6 +5801,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT,
    "下右"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   "對齊邊距"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   "開啟時自動對齊螢幕通知的邊距。關閉時自訂邊距位置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
+   "自訂水平邊距"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   "自訂成就通知左右的邊距，可用於修正顯示過度掃描。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_V,
+   "自訂垂直邊距"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_V,
+   "自訂成就通知上下的邊距，可用於修正顯示過度掃描。"
    )
 
 /* Settings > Achievements > Visibility */
@@ -8007,11 +8043,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "選擇光碟映像檔載入執行，並加入到映像檔可使用編號中，加入編號後支援使用快捷鍵切換映像檔。\n注意事項: 這是舊功能。建議使用 M3U格式 載入映像檔，可跳過此步驟，直接使用快捷鍵切換映像檔。"
+   "選擇光碟映像檔載入執行，並加入到映像檔可使用編號中，加入編號後支援使用快捷鍵切換映像檔。\n注意事項: 這是舊功能。建議使用M3U格式載入映像檔，可跳過此步驟，直接使用快捷鍵切換映像檔。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "選擇光碟映像檔，加入到編號中等待載入。\n注意事項: 這是舊功能。建議使用 M3U格式 載入映像檔，可跳過此步驟，直接使用快捷鍵切換映像檔。"
+   "選擇光碟映像檔，加入到編號中等待載入。\n注意事項: 這是舊功能。建議使用M3U格式載入映像檔，可跳過此步驟，直接使用快捷鍵切換映像檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -8058,7 +8094,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
-   "應用添加"
+   "應用最前"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
@@ -8066,11 +8102,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
-   "應用追加"
+   "應用最後"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "目前載入著色器的通道，最後編號追加配置檔，並自動應用變化。"
+   "目前載入著色器的通道編號，加入配置檔並自動應用變化。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
@@ -9278,6 +9314,10 @@ MSG_HASH(
    "兼容非英語的西方語言。輕微影響效能。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
+   "開關使用圖示"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    "顯示開關圖示不使用文字表達方式。"
    )
@@ -9632,6 +9672,10 @@ MSG_HASH(
    "變更選單使用的圖示主題。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
+   "開關使用圖示"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
    "顯示開關圖示不使用文字表達方式。"
    )
@@ -9820,7 +9864,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "主題背景圖"
+   "圖示主題背景圖"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -9979,6 +10023,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
    "顯示選單左側使用的圖示。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_SWITCH_ICONS,
+   "開關使用圖示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,

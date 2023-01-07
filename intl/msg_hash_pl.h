@@ -5469,54 +5469,6 @@ MSG_HASH(
 
 /* Settings > Achievements > Visibility */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
-   "Widoczność"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
-   "Zmień które wiadomości i elementy na ekranie są wyświetlane. Nie wyłącza funkcjonalności."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
-   "Wszystkie zidentyfikowane gry"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
-   "Gry z Osiągnięciami"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
-   "Odblokuj powiadomienia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
-   "Pokazuje powiadomienie, gdy osiągnięcie jest odblokowane."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
-   "Pokazuje powiadomienie, gdy wszystkie osiągnięcia dla gry są odblokowane."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
-   "Aktywne wskaźniki wyzwań"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "Pokazuje wskaźniki na ekranie, podczas gdy niektóre osiągnięcia mogą być zdobyte."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
-   "Wiadomości logowania"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
-   "Pokazuje wiadomości związane z logowaniem konta RetroAchievements."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-   "Pokazuje dodatkowe komunikaty diagnostyczne i komunikaty o błędach."
-   )
 
 /* Settings > Network */
 

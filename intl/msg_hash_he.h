@@ -194,6 +194,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "ארכיטקטורת מעבד"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "ליבות מעבד"
+   )
 
 /* Main Menu > Information > Database Manager */
 
