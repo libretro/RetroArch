@@ -8004,7 +8004,7 @@ int generic_menu_entry_action(
                unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 10);
 #ifdef HAVE_AUDIOMIXER
                if (menu_st->selection_ptr != 0)
-                  audio_driver_mixer_play_scroll_sound(false);
+                  audio_driver_mixer_play_scroll_sound(true);
 #endif
                if (!(menu_st->selection_ptr == 0 && !wraparound_enable))
                {
@@ -8024,6 +8024,7 @@ int generic_menu_entry_action(
          }
          else /* MENU_SCROLL_START_LETTER */
          {
+            size_t selection_old = menu_st->selection_ptr;
             if (
                      menu_st->scroll.index_size
                   && menu_st->selection_ptr != 0
@@ -8043,6 +8044,10 @@ int generic_menu_entry_action(
                   menu_driver_ctx->navigation_descend_alphabet(
                         menu_userdata, &menu_st->selection_ptr);
             }
+#ifdef HAVE_AUDIOMIXER
+            if (menu_st->selection_ptr != selection_old)
+               audio_driver_mixer_play_scroll_sound(true);
+#endif
          }
          break;
       case MENU_ACTION_SCROLL_DOWN:
@@ -8077,6 +8082,7 @@ int generic_menu_entry_action(
          {
             if (menu_st->scroll.index_size)
             {
+               size_t selection_old = menu_st->selection_ptr;
                if (menu_st->selection_ptr == menu_st->scroll.index_list[menu_st->scroll.index_size - 1])
                   menu_st->selection_ptr = selection_buf_size - 1;
                else
@@ -8094,6 +8100,10 @@ int generic_menu_entry_action(
                if (menu_driver_ctx->navigation_ascend_alphabet)
                   menu_driver_ctx->navigation_ascend_alphabet(
                         menu_userdata, &menu_st->selection_ptr);
+#ifdef HAVE_AUDIOMIXER
+               if (menu_st->selection_ptr != selection_old)
+                  audio_driver_mixer_play_scroll_sound(false);
+#endif
             }
          }
          break;

@@ -4494,11 +4494,12 @@ static enum menu_action xmb_parse_menu_entry_action(
             {
                settings_t *settings = config_get_ptr();
                size_t category      = xmb->categories_selection_ptr;
+               size_t list_size     = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + xmb->system_tab_end;
                /* We only want the scrolling sound to play if any of the following are true:
                   * 1. Wraparound is enabled (since the category is guaranteed to change) 
                   * 2. We're scrolling right, but we aren't on the last category
                   * 3. We're scrolling left, but we aren't on the first category */
-               bool fail_condition  = ((action == MENU_ACTION_RIGHT) ? (category == xmb->system_tab_end) 
+               bool fail_condition  = ((action == MENU_ACTION_RIGHT) ? (category == list_size) 
                   : (category == 0)) && !(settings->bools.menu_navigation_wraparound_enable);
             
                if (((current_time - xmb->last_tab_switch_time) >= XMB_TAB_SWITCH_REPEAT_DELAY || 

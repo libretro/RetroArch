@@ -8055,8 +8055,13 @@ static enum menu_action ozone_parse_menu_entry_action(
          if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
          {
             /* Go back to main menu tab */
-            if (ozone->categories_selection_ptr != 0)
+            if (ozone->categories_selection_ptr != 0) 
+            {
                ozone_sidebar_goto(ozone, 0);
+#ifdef HAVE_AUDIOMIXER
+               audio_driver_mixer_play_scroll_sound(true);
+#endif
+            }
 
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
