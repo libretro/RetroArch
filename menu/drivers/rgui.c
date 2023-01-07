@@ -5092,7 +5092,7 @@ static void rgui_render(
          unsigned new_ptr;
          menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
-         /* Note: It's okay for this to go out of range
+         /* NOTE: It's okay for this to go out of range
           * (limits are checked in rgui_pointer_up()) */
          new_ptr = (unsigned)((rgui->pointer.y - rgui->term_layout.start_y) / rgui->font_height_stride) + old_start;
 

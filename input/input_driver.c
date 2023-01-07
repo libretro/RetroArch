@@ -2635,13 +2635,13 @@ static unsigned get_kr_composition( char* pcur, char* padd)
    static char cc2[] = {"ㅗㅏㅘ ㅗㅐㅙ ㅗㅣㅚ ㅜㅓㅝ ㅜㅔㅞ ㅜㅣㅟ ㅡㅣㅢ"};    
    static char cc3[] = {"ㄱㄱㄲ ㄱㅅㄳ ㄴㅈㄵ ㄴㅎㄶ ㄹㄱㄺ ㄹㅁㄻ ㄹㅂㄼ ㄹㅅㄽ ㄹㅌㄾ ㄹㅍㄿ ㄹㅎㅀ ㅂㅅㅄ ㅅㅅㅆ"};
    static char s1[]  = {"ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣㆍㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ"}; 
-   char *tmp1;
-   char *tmp2;
+   char *tmp1        = NULL;
+   char *tmp2        = NULL;
    int c1            = -1;
    int c2            = -1;
    int c3            =  0;
    int nv            = -1;
-   char utf8[8]	   = {0,};
+   char utf8[8]	   = {0, 0, 0, 0, 0, 0, 0, 0};
    unsigned ret      =  *((unsigned*)pcur);
 
    /* check korean */
@@ -2650,9 +2650,9 @@ static unsigned get_kr_composition( char* pcur, char* padd)
    if (!padd[0] || !padd[1] || !padd[2] || padd[3])
       return ret;
    if ((tmp1 = strstr(s1, pcur)))
-      c1 = (tmp1 - s1) / 3;
+      c1 = (int)((tmp1 - s1) / 3);
    if ((tmp1 = strstr(s1, padd)))
-      nv = (tmp1 - s1) / 3;
+      nv = (int)((tmp1 - s1) / 3);
    if (nv == -1 || nv >= 19 + 21)
       return ret;
 
@@ -2692,13 +2692,13 @@ static unsigned get_kr_composition( char* pcur, char* padd)
 
    if (c1 == -1 && c2 == -1 && c3 == 0)
       return ret;
+   
    if (c2 == -1 && c3 == 0)
    {
       /* 2nd element attach */
       if (nv < 19)
          return ret;
-      c2  = nv-19;	
-      ret = 0;
+      c2  = nv - 19;
    }
    else
       if (c2 >= 0 && c3 == 0)							
@@ -2708,7 +2708,7 @@ static unsigned get_kr_composition( char* pcur, char* padd)
             /* 3rd element attach */
             if (!(tmp1 = strstr(s1 + (19 + 21) * 3, padd)))
                return ret;
-            c3 = (tmp1-s1)/3 - 19 - 21;
+            c3 = (int)((tmp1 - s1) / 3 - 19 - 21);
          }
          else
          {	
@@ -2722,7 +2722,7 @@ static unsigned get_kr_composition( char* pcur, char* padd)
             utf8[3] = 0;
             if (!(tmp1 = strstr(s1 + (19) * 3, utf8)))
                return ret;
-            c2 = (tmp1 - s1) / 3 - 19;
+            c2 = (int)((tmp1 - s1) / 3 - 19);
          }	
       }
       else
@@ -2733,7 +2733,7 @@ static unsigned get_kr_composition( char* pcur, char* padd)
             if (nv < 19)
             {
                /* 3rd element transform */
-               strcat(utf8,padd);
+               strlcat(utf8, padd, sizeof(utf8));
                if (    !(tmp2 = strstr(cc3, utf8)) 
                      || (tmp2 >= cc3 + sizeof(cc3) - 10))
                      return ret;
@@ -2741,40 +2741,39 @@ static unsigned get_kr_composition( char* pcur, char* padd)
                utf8[3] = 0;
                if (!(tmp1 = strstr(s1 + (19 + 21) * 3, utf8)))
                   return ret;
-               c3 = (tmp1-s1)/3 -19-21;
+               c3 = (int)((tmp1 - s1) / 3 - 19 - 21);
             }
             else		
             {   
                int tv = 0;
                if ((tmp2 = strstr(cc3, utf8)))
-                  tv = (tmp2-cc3)%10;   
+                  tv = (tmp2 - cc3) % 10;
                if (tv==6)	
                {
                   /*  complex 3rd element -> disassemble */
                   strlcpy(utf8, tmp2 - 3, 4);
                   if (!(tmp1 = strstr(s1, utf8)))
                      return ret;
-                  tv = (tmp1 - s1) / 3;
+                  tv = (int)((tmp1 - s1) / 3);
                   strlcpy(utf8, tmp2 - 6, 4);
                   if (!(tmp1 = strstr(s1 + (19 + 21) * 3, utf8)))
                      return ret;
-                  c3 = (tmp1 - s1) / 3 - 19 - 21;
+                  c3 = (int)((tmp1 - s1) / 3 - 19 - 21);
                }
                else
                {
                   if (!(tmp1 = strstr(s1, utf8)) || (tmp1 - s1) >= 19 * 3)
                      return ret;
-                  tv = (tmp1-s1)/3;
+                  tv = (int)((tmp1 - s1) / 3);
                   c3 = 0;
                }
-               *((unsigned*)padd) = get_kr_utf8(tv,nv-19,0);
-               ret = get_kr_utf8(c1,c2,c3);
-               return ret;
+               *((unsigned*)padd) = get_kr_utf8(tv, nv - 19, 0);
+               return get_kr_utf8(c1, c2, c3);
             }	
          }
          else
             return ret;
-   *((unsigned*)padd) = get_kr_utf8(c1,c2,c3);
+   *((unsigned*)padd) = get_kr_utf8(c1, c2, c3);
    return 0;
 }
 #endif
@@ -2835,7 +2834,7 @@ static bool input_keyboard_line_event(
          word = state->buffer;  
       if (character)
          input_keyboard_line_append( state, (char*)&character, strlen((char*)&character)); 
-      word =  state->buffer;
+      word = state->buffer;
    }
    else
 #endif
