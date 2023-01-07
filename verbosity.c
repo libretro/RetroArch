@@ -214,8 +214,6 @@ void retro_main_log_file_deinit(void)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
    verbosity_state_t *g_verbosity = &main_verbosity_st;
-   const char              *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
-
 #if TARGET_OS_IPHONE
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
@@ -241,8 +239,9 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    /* FIXME: Using arbitrary string as fmt argument is unsafe. */
    char msg_new[256];
    char buffer[256];
+   const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
 
-   msg_new[0] = buffer[0] = '\0';
+   msg_new[0]        = buffer[0] = '\0';
    snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
          FILE_PATH_PROGRAM_NAME, tag_v, fmt);
    wvsprintf(buffer, msg_new, ap);
@@ -265,10 +264,11 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    else
       __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
 #else
-   FILE *fp = (FILE*)g_verbosity->fp;
+   FILE          *fp = (FILE*)g_verbosity->fp;
+   const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
 #if defined(HAVE_QT) || defined(__WINRT__)
    char buffer[2048];
-   buffer[0] = '\0';
+   buffer[0]         = '\0';
 
    /* Ensure null termination and line break in error case */
    if (vsnprintf(buffer, sizeof(buffer), fmt, ap) < 0)
