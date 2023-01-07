@@ -971,9 +971,18 @@ static void ui_companion_cocoa_notify_content_loaded(void *data) { }
 static void ui_companion_cocoa_toggle(void *data, bool force) { }
 static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
 {
-   id performer = [[CommandPerformer alloc] initWithData:data command:cmd];
-   [performer performSelectorOnMainThread:@selector(perform) withObject:nil waitUntilDone:NO];
-   RELEASE(performer);
+   switch (cmd)
+   {
+      case CMD_EVENT_SHADERS_APPLY_CHANGES:
+      case CMD_EVENT_SHADER_PRESET_LOADED:
+         break;
+      default: {
+         id performer = [[CommandPerformer alloc] initWithData:data command:cmd];
+         [performer performSelectorOnMainThread:@selector(perform) withObject:nil waitUntilDone:NO];
+         RELEASE(performer);
+      }
+      break;
+   }
 }
 static void ui_companion_cocoa_notify_list_pushed(void *data, file_list_t *a, file_list_t *b) { }
 
