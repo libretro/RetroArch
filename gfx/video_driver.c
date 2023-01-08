@@ -4189,29 +4189,29 @@ uint32_t video_driver_get_st_flags(void)
 void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_auto_t *vfda)
 {
    int i;
-   uint32_t frame_time_average    = 0;
-   uint32_t frame_time_delta      = 0;
-   uint16_t frame_time_index      = (video_st->frame_time_count & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
-   uint16_t frame_time_target     = 1000000.0f / vfda->refresh_rate;
-   uint16_t frame_time_limit_mar  = frame_time_target * 1.15f;
-   uint16_t frame_time_limit_min  = frame_time_target * 1.30f;
-   uint16_t frame_time_limit_med  = frame_time_target * 1.50f;
-   uint16_t frame_time_limit_max  = frame_time_target * 1.85f;
-   uint16_t frame_time_limit_cap  = frame_time_target * 3.00f;
-   uint16_t frame_time_limit_ign  = frame_time_target * 3.25f;
-   uint8_t  frame_time_frames     = vfda->frame_time_interval;
-   uint8_t  frame_time_count_pos  = 0;
-   uint8_t  frame_time_count_min  = 0;
-   uint8_t  frame_time_count_med  = 0;
-   uint8_t  frame_time_count_max  = 0;
-   uint8_t  frame_time_count_ign  = 0;
-   uint32_t frame_time_min        = frame_time_target;
-   uint32_t frame_time_max        = frame_time_target;
+   retro_time_t frame_time_avg        = 0;
+   retro_time_t frame_time_delta      = 0;
+   uint16_t frame_time_index          = (video_st->frame_time_count & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
+   retro_time_t frame_time_target     = 1000000.0f / vfda->refresh_rate;
+   retro_time_t frame_time_limit_mar  = frame_time_target * 1.15f;
+   retro_time_t frame_time_limit_min  = frame_time_target * 1.30f;
+   retro_time_t frame_time_limit_med  = frame_time_target * 1.50f;
+   retro_time_t frame_time_limit_max  = frame_time_target * 1.85f;
+   retro_time_t frame_time_limit_cap  = frame_time_target * 3.00f;
+   retro_time_t frame_time_limit_ign  = frame_time_target * 3.25f;
+   uint8_t  frame_time_frames         = vfda->frame_time_interval;
+   uint8_t  frame_time_count_pos      = 0;
+   uint8_t  frame_time_count_min      = 0;
+   uint8_t  frame_time_count_med      = 0;
+   uint8_t  frame_time_count_max      = 0;
+   uint8_t  frame_time_count_ign      = 0;
+   retro_time_t frame_time_min        = frame_time_target;
+   retro_time_t frame_time_max        = frame_time_target;
 
    /* Calculate average frame time */
    for (i = 1; i < frame_time_frames + 1; i++)
    {
-      uint32_t frame_time_i = 0;
+      retro_time_t frame_time_i = 0;
 
       if (i > frame_time_index)
          continue;
@@ -4241,19 +4241,19 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
             frame_time_i = frame_time_limit_cap;
       }
 
-      frame_time_average += frame_time_i;
+      frame_time_avg  += frame_time_i;
    }
 
-   frame_time_average /= frame_time_frames;
+   frame_time_avg     /= frame_time_frames;
    frame_time_delta    = frame_time_max - frame_time_min;
 
    /* Ignore values when core is doing internal frame skipping */
    if (frame_time_count_ign > 0)
-      frame_time_average = frame_time_target;
+      frame_time_avg = frame_time_target;
 
    /* Special handlings for different video driver frame timings */
-   if (     (  frame_time_average > frame_time_target
-            && frame_time_average < frame_time_limit_med)
+   if (     (  frame_time_avg > frame_time_target
+            && frame_time_avg < frame_time_limit_med)
          || (frame_time_delta > frame_time_limit_max))
    {
       uint8_t  frame_time_frames_half = frame_time_frames / 2;
@@ -4279,7 +4279,7 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
                (frame_time_count_pos > frame_time_frames_half)
             && (  frame_time_count_med > 1
                || frame_time_count_max > 0)
-            && (frame_time_average > frame_time_limit_mar)
+            && (frame_time_avg   > frame_time_limit_mar)
             && (frame_time_delta < frame_time_limit_min)
          )
          mode = 4;
@@ -4289,7 +4289,7 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
             && (  frame_time_count_min > 1
                || frame_time_count_med > 0)
             && (frame_time_count_max == 0)
-            && (frame_time_average > frame_time_limit_mar)
+            && (frame_time_avg > frame_time_limit_mar)
          )
          mode = 5;
       /* Ignore */
@@ -4299,33 +4299,33 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
          )
          mode = -1;
 
-      if (mode > 0 && frame_time_average < frame_time_limit_med)
+      if (mode > 0 && frame_time_avg < frame_time_limit_med)
       {
 #if FRAME_DELAY_AUTO_DEBUG
-         RARCH_LOG("[Video]: Frame delay nudge %d by mode %d.\n", frame_time_average, mode);
+         RARCH_LOG("[Video]: Frame delay nudge %d by mode %d.\n", frame_time_avg, mode);
 #endif
-         frame_time_average = frame_time_limit_med;
+         frame_time_avg = frame_time_limit_med;
       }
       else if (mode < 0)
       {
 #if FRAME_DELAY_AUTO_DEBUG
-         RARCH_LOG("[Video]: Frame delay ignore %d.\n", frame_time_average);
+         RARCH_LOG("[Video]: Frame delay ignore %d.\n", frame_time_avg);
 #endif
-         frame_time_average = frame_time_target;
+         frame_time_avg = frame_time_target;
       }
    }
 
    /* Final output decision */
-   if (frame_time_average > frame_time_limit_min)
+   if (frame_time_avg > frame_time_limit_min)
    {
       uint8_t delay_decrease = 1;
 
       /* Increase decrease the more frame time is off target */
-      if (     frame_time_average > frame_time_limit_med
+      if (     frame_time_avg > frame_time_limit_med
             && video_st->frame_delay_effective > delay_decrease)
       {
          delay_decrease++;
-         if (     frame_time_average > frame_time_limit_max
+         if (     frame_time_avg > frame_time_limit_max
                && video_st->frame_delay_effective > delay_decrease)
             delay_decrease++;
       }
@@ -4333,13 +4333,13 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
       vfda->delay_decrease = delay_decrease;
    }
 
-   vfda->frame_time_average = frame_time_average;
+   vfda->frame_time_avg     = frame_time_avg;
    vfda->frame_time_target  = frame_time_target;
 
 #if FRAME_DELAY_AUTO_DEBUG
    if (frame_time_index > frame_time_frames)
       RARCH_LOG("[Video]: %5d / pos:%d min:%d med:%d max:%d ign:%d / delta:%5d = %5d %5d %5d %5d %5d %5d %5d %5d\n",
-            frame_time_average,
+            frame_time_avg,
             frame_time_count_pos,
             frame_time_count_min,
             frame_time_count_med,

@@ -884,7 +884,7 @@ typedef struct video_frame_delay_auto
 {
    float refresh_rate;
    uint16_t frame_time_target;
-   uint16_t frame_time_average;
+   uint16_t frame_time_avg;
    uint8_t frame_time_interval;
    uint8_t delay_decrease;
 } video_frame_delay_auto_t;

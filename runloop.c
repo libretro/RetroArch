@@ -7972,7 +7972,7 @@ int runloop_iterate(void)
             {
                video_frame_delay_effective -= vfda.delay_decrease;
                RARCH_LOG("[Video]: Frame delay decrease by %d ms to %d ms due to frame time average: %d > %d.\n",
-                     vfda.delay_decrease, video_frame_delay_effective, vfda.frame_time_average, vfda.frame_time_target);
+                     vfda.delay_decrease, video_frame_delay_effective, vfda.frame_time_avg, vfda.frame_time_target);
             }
          }
       }
