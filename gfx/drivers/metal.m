@@ -322,13 +322,11 @@
 #ifdef HAVE_OVERLAY
       if (_overlay.enabled)
       {
-         [rce pushDebugGroup:@"overlay"];
          [_context resetRenderViewport:_overlay.fullscreen ? kFullscreenViewport : kVideoViewport];
          [rce setRenderPipelineState:[_context getStockShader:VIDEO_SHADER_STOCK_BLEND blend:YES]];
          [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
          [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
          [_overlay drawWithEncoder:rce];
-         [rce popDebugGroup];
       }
 #endif
 
@@ -337,27 +335,16 @@
          struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
 
          if (osd_params)
-         {
-            [rce pushDebugGroup:@"video stats"];
             font_driver_render_msg(data, video_info->stat_text, osd_params, NULL);
-            [rce popDebugGroup];
-         }
       }
 
 #ifdef HAVE_GFX_WIDGETS
-      [rce pushDebugGroup:@"display widgets"];
       if (video_info->widgets_active)
          gfx_widgets_frame(video_info);
-      [rce popDebugGroup];
 #endif
 
       if (msg && *msg)
-      {
-         [rce pushDebugGroup:@"message"];
          [self _renderMessage:msg data:data];
-         [rce popDebugGroup];
-      }
-
       [self _endFrame];
    }
 
@@ -426,7 +413,6 @@
    id<MTLRenderCommandEncoder> rce = _context.rce;
 
    /* draw back buffer */
-   [rce pushDebugGroup:@"core frame"];
    [_frameView drawWithContext:_context];
 
    if ((_frameView.drawState & ViewDrawStateEncoder) != 0)
@@ -439,7 +425,6 @@
          [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
       [_frameView drawWithEncoder:rce];
    }
-   [rce popDebugGroup];
 }
 
 - (void)_drawMenu:(video_frame_info_t *)video_info
@@ -453,7 +438,6 @@
 
    if (_menu.hasFrame)
    {
-      [rce pushDebugGroup:@"menu frame"];
       [_menu.view drawWithContext:_context];
       [rce setVertexBytes:_context.uniforms length:sizeof(*_context.uniforms) atIndex:BufferIndexUniforms];
       [rce setRenderPipelineState:_t_pipelineState];
@@ -462,15 +446,12 @@
       else
          [rce setFragmentSamplerState:_samplerStateLinear atIndex:SamplerIndexDraw];
       [_menu.view drawWithEncoder:rce];
-      [rce popDebugGroup];
    }
 #if defined(HAVE_MENU)
    else
    {
-      [rce pushDebugGroup:@"menu"];
       [_context resetRenderViewport:kFullscreenViewport];
       menu_driver_frame(menu_is_alive, video_info);
-      [rce popDebugGroup];
    }
 #endif
 }
@@ -924,7 +905,6 @@ typedef struct MTLALIGN(16)
    }
 
    id<MTLCommandBuffer> cb = ctx.blitCommandBuffer;
-   [cb pushDebugGroup:@"shaders"];
 
    MTLRenderPassDescriptor *rpd        = [MTLRenderPassDescriptor new];
    rpd.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
@@ -1022,8 +1002,6 @@ typedef struct MTLALIGN(16)
       _drawState = ViewDrawStateContext;
    else
       _drawState = ViewDrawStateAll;
-
-   [cb popDebugGroup];
 }
 
 - (void)_updateRenderTargets
