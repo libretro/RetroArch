@@ -100,6 +100,19 @@ typedef struct video_shader_ctx_scale
    struct gfx_fbo_scale *scale;
 } video_shader_ctx_scale_t;
 
+typedef struct video_shader_ctx_init
+{
+   const char *path;
+   const shader_backend_t *shader;
+   void *data;
+   void *shader_data;
+   enum rarch_shader_type shader_type;
+   struct
+   {
+      bool core_context_enabled;
+   } gl;
+} video_shader_ctx_init_t;
+
 static const shader_backend_t *gl2_shader_ctx_drivers[] = {
 #ifdef HAVE_GLSL
    &gl_glsl_backend,

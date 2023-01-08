@@ -278,19 +278,6 @@ typedef struct shader_backend
    const char *ident;
 } shader_backend_t;
 
-typedef struct video_shader_ctx_init
-{
-   const char *path;
-   const shader_backend_t *shader;
-   void *data;
-   void *shader_data;
-   enum rarch_shader_type shader_type;
-   struct
-   {
-      bool core_context_enabled;
-   } gl;
-} video_shader_ctx_init_t;
-
 typedef struct video_shader_ctx_params
 {
    void *data;
@@ -622,14 +609,6 @@ typedef struct gfx_ctx_driver
    void (*make_current)(bool release);
 } gfx_ctx_driver_t;
 
-typedef struct gfx_ctx_size
-{
-   bool *quit;
-   bool *resize;
-   unsigned *width;
-   unsigned *height;
-} gfx_ctx_size_t;
-
 typedef struct gfx_ctx_mode
 {
    unsigned width;
@@ -643,13 +622,6 @@ typedef struct gfx_ctx_metrics
    enum display_metric_types type;
 } gfx_ctx_metrics_t;
 
-typedef struct gfx_ctx_aspect
-{
-   float *aspect;
-   unsigned width;
-   unsigned height;
-} gfx_ctx_aspect_t;
-
 typedef struct gfx_ctx_input
 {
    input_driver_t **input;
@@ -660,12 +632,6 @@ typedef struct gfx_ctx_ident
 {
    const char *ident;
 } gfx_ctx_ident_t;
-
-struct aspect_ratio_elem
-{
-   float value;
-   char name[64];
-};
 
 /* Optionally implemented interface to poke more
  * deeply into video driver. */
