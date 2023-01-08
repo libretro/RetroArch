@@ -25,7 +25,6 @@
 #endif
 #include <d3d11.h>
 
-#include <assert.h>
 #include <boolean.h>
 #include <retro_math.h>
 #include <gfx/math/matrix_4x4.h>

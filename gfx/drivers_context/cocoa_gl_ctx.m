@@ -32,7 +32,6 @@
 #include <GLKit/GLKit.h>
 #endif
 
-#include <retro_assert.h>
 #include <retro_timers.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>

@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <retro_assert.h>
 #include <compat/msvc.h>
 #include <compat/strl.h>
 
@@ -869,22 +868,18 @@ static void ffmpeg_thread(void *data);
 
 static bool init_thread(ffmpeg_t *handle)
 {
-   handle->lock = slock_new();
-   handle->cond_lock = slock_new();
-   handle->cond = scond_new();
+   handle->lock       = slock_new();
+   handle->cond_lock  = slock_new();
+   handle->cond       = scond_new();
    handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) *
          handle->params.channels * MAX_FRAMES / 60); /* Some arbitrary max size. */
-   handle->attr_fifo = fifo_new(sizeof(struct record_video_data) * MAX_FRAMES);
+   handle->attr_fifo  = fifo_new(sizeof(struct record_video_data) * MAX_FRAMES);
    handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
             handle->video.pix_size * MAX_FRAMES);
 
-   handle->alive = true;
+   handle->alive     = true;
    handle->can_sleep = true;
-   handle->thread = sthread_create(ffmpeg_thread, handle);
-
-   retro_assert(handle->lock && handle->cond_lock &&
-      handle->cond && handle->audio_fifo &&
-      handle->attr_fifo && handle->video_fifo && handle->thread);
+   handle->thread    = sthread_create(ffmpeg_thread, handle);
 
    return true;
 }
@@ -1643,19 +1638,14 @@ static bool ffmpeg_finalize(void *data)
 
 static void ffmpeg_thread(void *data)
 {
-   size_t audio_buf_size;
-   void *audio_buf = NULL;
-   ffmpeg_t *ff    = (ffmpeg_t*)data;
+   ffmpeg_t *ff          = (ffmpeg_t*)data;
    /* For some reason, FFmpeg has a tendency to crash
     * if we don't overallocate a bit. */
-   void *video_buf = av_malloc(2 * ff->params.fb_width *
+   void *video_buf       = av_malloc(2 * ff->params.fb_width *
          ff->params.fb_height * ff->video.pix_size);
-
-   retro_assert(video_buf);
-
-   audio_buf_size = ff->config.audio_enable ?
+   size_t audio_buf_size = ff->config.audio_enable ?
       (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
-   audio_buf      = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
+   void *audio_buf       = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
 
    while (ff->alive)
    {

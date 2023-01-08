@@ -49,7 +49,6 @@
 
 #include <boolean.h>
 #include <compat/apple_compat.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
@@ -368,17 +367,13 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 
 #if TARGET_OS_IPHONE
    if (realpath(home_dir_buf, resolved_home_dir_buf))
-   {
-      retro_assert(strlcpy(home_dir_buf,
+      strlcpy(home_dir_buf,
                resolved_home_dir_buf,
-               sizeof(home_dir_buf)) < sizeof(home_dir_buf));
-   }
+               sizeof(home_dir_buf));
    if (realpath(bundle_path_buf, resolved_bundle_dir_buf))
-   {
-      retro_assert(strlcpy(bundle_path_buf,
-               resolved_bundle_dir_buf,
-               sizeof(bundle_path_buf)) < sizeof(bundle_path_buf));
-   }
+      strlcpy(bundle_path_buf,
+            resolved_bundle_dir_buf,
+            sizeof(bundle_path_buf);
 #endif
 
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));

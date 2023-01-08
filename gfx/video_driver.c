@@ -17,7 +17,6 @@
 #include <math.h>
 #include <string/stdstring.h>
 #include <retro_math.h>
-#include <retro_assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -1986,11 +1985,9 @@ void video_driver_lock_new(void)
 #ifdef HAVE_THREADS
    if (!video_st->display_lock)
       video_st->display_lock = slock_new();
-   retro_assert(video_st->display_lock);
 
    if (!video_st->context_lock)
       video_st->context_lock = slock_new();
-   retro_assert(video_st->context_lock);
 #endif
 }
 

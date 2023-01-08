@@ -84,7 +84,6 @@
 #include <compat/posix_string.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>
 #include <lists/dir_list.h>
@@ -3486,7 +3485,6 @@ static bool init_libretro_symbols(
                /* for a secondary core, we already have a
                 * primary library loaded, so we can skip
                 * some checks and just load the library */
-               retro_assert(lib_path != NULL && lib_handle_p != NULL);
                lib_handle_local = dylib_load(lib_path);
 
                if (!lib_handle_local)
@@ -8987,7 +8985,6 @@ void runloop_path_set_special(char **argv, unsigned num_content)
    string_list_initialize(&subsystem_paths);
 
    runloop_st->subsystem_fullpaths     = string_list_new();
-   retro_assert(runloop_st->subsystem_fullpaths);
 
    attr.i = 0;
 

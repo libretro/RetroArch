@@ -18,7 +18,6 @@
 #include <compat/strl.h>
 #include <array/rbuf.h>
 #include <file/file_path.h>
-#include <retro_assert.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
@@ -5967,8 +5966,6 @@ static int action_ok_open_uwp_permission_settings(const char *path,
 {
 #ifdef __WINRT__
    uwp_open_broadfilesystemaccess_settings();
-#else
-   retro_assert(false);
 #endif
    return 0;
 }
@@ -5976,11 +5973,8 @@ static int action_ok_open_uwp_permission_settings(const char *path,
 static int action_ok_open_picker(const char *path,
    const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   int ret;
    char *new_path = NULL;
-   retro_assert(false);
-
-   ret = generic_action_ok_displaylist_push(path, new_path,
+   int ret        = generic_action_ok_displaylist_push(path, new_path,
       msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
       MENU_SETTING_ACTION_FAVORITES_DIR, idx,
       entry_idx, ACTION_OK_DL_CONTENT_LIST);

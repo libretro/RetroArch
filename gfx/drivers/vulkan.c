@@ -25,7 +25,6 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <retro_math.h>
-#include <retro_assert.h>
 #include <string/stdstring.h>
 #include <libretro.h>
 
@@ -65,8 +64,6 @@ static struct vk_descriptor_manager vulkan_create_descriptor_manager(
    int i;
    struct vk_descriptor_manager manager;
 
-   retro_assert(num_sizes <= VULKAN_MAX_DESCRIPTOR_POOL_SIZES);
-
    manager.current    = NULL;
    manager.count      = 0;
 
@@ -80,7 +77,6 @@ static struct vk_descriptor_manager vulkan_create_descriptor_manager(
    manager.num_sizes  = num_sizes;
 
    manager.head       = vulkan_alloc_descriptor_pool(device, &manager);
-   retro_assert(manager.head);
    return manager;
 }
 
@@ -580,7 +576,6 @@ static void vulkan_init_pipelines(vk_t *vk)
             break;
 
          default:
-            retro_assert(0 && "No shader for menu pipeline.");
             break;
       }
 
@@ -617,7 +612,6 @@ static void vulkan_init_pipelines(vk_t *vk)
             break;
 
          default:
-            retro_assert(0 && "No shader for menu pipeline.");
             break;
       }
 
@@ -1226,11 +1220,8 @@ static void vulkan_set_image(void *handle,
       VkSemaphore *new_semaphores = (VkSemaphore*)realloc(vk->hw.semaphores,
             sizeof(VkSemaphore) * (vk->hw.num_semaphores + 1));
 
-      /* If this fails, we're screwed anyways. */
-      retro_assert(stage_flags && new_semaphores);
-
       vk->hw.wait_dst_stages = stage_flags;
-      vk->hw.semaphores = new_semaphores;
+      vk->hw.semaphores      = new_semaphores;
 
       for (i = 0; i < (int) vk->hw.num_semaphores; i++)
       {
@@ -1245,7 +1236,6 @@ static void vulkan_set_image(void *handle,
 
 static void vulkan_wait_sync_index(void *handle)
 {
-   (void)handle;
    /* no-op. RetroArch already waits for this
     * in gfx_ctx_swap_buffers(). */
 }
@@ -1261,29 +1251,26 @@ static void vulkan_set_command_buffers(void *handle, uint32_t num_cmd,
          realloc(vk->hw.cmd,
             sizeof(VkCommandBuffer) * required_capacity);
 
-      /* If this fails, we're just screwed. */
-      retro_assert(hw_cmd);
-
-      vk->hw.cmd          = hw_cmd;
-      vk->hw.capacity_cmd = required_capacity;
+      vk->hw.cmd              = hw_cmd;
+      vk->hw.capacity_cmd     = required_capacity;
    }
 
-   vk->hw.num_cmd = num_cmd;
+   vk->hw.num_cmd             = num_cmd;
    memcpy(vk->hw.cmd, cmd, sizeof(VkCommandBuffer) * num_cmd);
 }
 
 static void vulkan_lock_queue(void *handle)
 {
-   vk_t *vk = (vk_t*)handle;
 #ifdef HAVE_THREADS
+   vk_t *vk = (vk_t*)handle;
    slock_lock(vk->context->queue_lock);
 #endif
 }
 
 static void vulkan_unlock_queue(void *handle)
 {
-   vk_t *vk = (vk_t*)handle;
 #ifdef HAVE_THREADS
+   vk_t *vk = (vk_t*)handle;
    slock_unlock(vk->context->queue_lock);
 #endif
 }
@@ -1304,26 +1291,26 @@ static void vulkan_init_hw_render(vk_t *vk)
    if (hwr->context_type != RETRO_HW_CONTEXT_VULKAN)
       return;
 
-   vk->flags                  |= VK_FLAG_HW_ENABLE;
+   vk->flags                    |= VK_FLAG_HW_ENABLE;
 
-   iface->interface_type       = RETRO_HW_RENDER_INTERFACE_VULKAN;
-   iface->interface_version    = RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION;
-   iface->instance             = vk->context->instance;
-   iface->gpu                  = vk->context->gpu;
-   iface->device               = vk->context->device;
+   iface->interface_type         = RETRO_HW_RENDER_INTERFACE_VULKAN;
+   iface->interface_version      = RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION;
+   iface->instance               = vk->context->instance;
+   iface->gpu                    = vk->context->gpu;
+   iface->device                 = vk->context->device;
 
-   iface->queue                = vk->context->queue;
-   iface->queue_index          = vk->context->graphics_queue_index;
+   iface->queue                  = vk->context->queue;
+   iface->queue_index            = vk->context->graphics_queue_index;
 
-   iface->handle               = vk;
-   iface->set_image            = vulkan_set_image;
-   iface->get_sync_index       = vulkan_get_sync_index;
-   iface->get_sync_index_mask  = vulkan_get_sync_index_mask;
-   iface->wait_sync_index      = vulkan_wait_sync_index;
-   iface->set_command_buffers  = vulkan_set_command_buffers;
-   iface->lock_queue           = vulkan_lock_queue;
-   iface->unlock_queue         = vulkan_unlock_queue;
-   iface->set_signal_semaphore = vulkan_set_signal_semaphore;
+   iface->handle                 = vk;
+   iface->set_image              = vulkan_set_image;
+   iface->get_sync_index         = vulkan_get_sync_index;
+   iface->get_sync_index_mask    = vulkan_get_sync_index_mask;
+   iface->wait_sync_index        = vulkan_wait_sync_index;
+   iface->set_command_buffers    = vulkan_set_command_buffers;
+   iface->lock_queue             = vulkan_lock_queue;
+   iface->unlock_queue           = vulkan_unlock_queue;
+   iface->set_signal_semaphore   = vulkan_set_signal_semaphore;
 
    iface->get_device_proc_addr   = vkGetDeviceProcAddr;
    iface->get_instance_proc_addr = vulkan_symbol_wrapper_instance_proc_addr();
@@ -2058,7 +2045,6 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
       static const VkPipelineStageFlags wait_stage        =
          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-      assert(!vk->context->swapchain_wait_semaphores[frame_index]);
       vk->context->swapchain_wait_semaphores[frame_index] =
          vk->context->swapchain_acquire_semaphore;
       vk->context->swapchain_acquire_semaphore            = VK_NULL_HANDLE;
@@ -2169,8 +2155,6 @@ static bool vulkan_frame(void *data, const void *frame,
        vk->hw.src_queue_family != VK_QUEUE_FAMILY_IGNORED &&
        vk->hw.src_queue_family != vk->context->graphics_queue_index)
    {
-      retro_assert(vk->hw.image);
-
       /* Acquire ownership of image from other queue family. */
       VULKAN_TRANSFER_IMAGE_OWNERSHIP(vk->cmd,
             vk->hw.image->create_info.image,
@@ -2659,8 +2643,6 @@ static bool vulkan_frame(void *data, const void *frame,
        vk->hw.src_queue_family != VK_QUEUE_FAMILY_IGNORED &&
        vk->hw.src_queue_family != vk->context->graphics_queue_index)
    {
-      retro_assert(vk->hw.image);
-
       /* Release ownership of image back to other queue family. */
       VULKAN_TRANSFER_IMAGE_OWNERSHIP(vk->cmd,
             vk->hw.image->create_info.image,
@@ -2705,12 +2687,11 @@ static bool vulkan_frame(void *data, const void *frame,
       if (    (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
            && (vk->context->swapchain_acquire_semaphore != VK_NULL_HANDLE))
       {
-         assert(!vk->context->swapchain_wait_semaphores[frame_index]);
-         vk->context->swapchain_wait_semaphores[frame_index] =
+         vk->context->swapchain_wait_semaphores[frame_index]    =
             vk->context->swapchain_acquire_semaphore;
-         vk->context->swapchain_acquire_semaphore = VK_NULL_HANDLE;
+         vk->context->swapchain_acquire_semaphore               = VK_NULL_HANDLE;
 
-         vk->hw.semaphores[submit_info.waitSemaphoreCount] = vk->context->swapchain_wait_semaphores[frame_index];
+         vk->hw.semaphores[submit_info.waitSemaphoreCount]      = vk->context->swapchain_wait_semaphores[frame_index];
          vk->hw.wait_dst_stages[submit_info.waitSemaphoreCount] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
          submit_info.waitSemaphoreCount++;
       }
@@ -2718,13 +2699,12 @@ static bool vulkan_frame(void *data, const void *frame,
    else if ((vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
          && (vk->context->swapchain_acquire_semaphore != VK_NULL_HANDLE))
    {
-      static const VkPipelineStageFlags wait_stage =
+      static const VkPipelineStageFlags wait_stage        =
          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-      assert(!vk->context->swapchain_wait_semaphores[frame_index]);
       vk->context->swapchain_wait_semaphores[frame_index] =
          vk->context->swapchain_acquire_semaphore;
-      vk->context->swapchain_acquire_semaphore = VK_NULL_HANDLE;
+      vk->context->swapchain_acquire_semaphore            = VK_NULL_HANDLE;
 
       submit_info.waitSemaphoreCount = 1;
       submit_info.pWaitSemaphores    = &vk->context->swapchain_wait_semaphores[frame_index];

@@ -26,7 +26,6 @@
 #include <compat/posix_string.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
-#include <retro_assert.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -234,12 +233,8 @@ static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
 
 static void gl_cg_reset_attrib(void *data)
 {
-   unsigned i;
+   int i;
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
-
-   /* Add sanity check that we did not overflow. */
-   retro_assert(cg->attribs_index <= ARRAY_SIZE(cg->attribs_elems));
-
    for (i = 0; i < cg->attribs_index; i++)
       cgGLDisableClientState(cg->attribs_elems[i]);
    cg->attribs_index = 0;

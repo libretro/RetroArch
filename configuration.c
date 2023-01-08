@@ -24,7 +24,6 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include <retro_assert.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <array/rhmap.h>
@@ -2716,22 +2715,6 @@ void config_set_defaults(void *data)
    input_config_reset();
    input_remapping_deinit(false);
    input_remapping_set_defaults(false);
-
-   /* Verify that binds are in proper order. */
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      for (j = 0; j < RARCH_BIND_LIST_END; j++)
-      {
-         const struct retro_keybind *keyval = &input_config_binds[i][j];
-
-         /* No need to verify hotkeys for all users */
-         if (i > 0 && j > RARCH_CUSTOM_BIND_LIST_END)
-            continue;
-
-         if (keyval->valid)
-            retro_assert(j == keyval->id);
-      }
-   }
 
    configuration_set_string(settings,
          settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);

@@ -29,7 +29,6 @@
 
 #include <boolean.h>
 #include <file/file_path.h>
-#include <retro_assert.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <retro_miscellaneous.h>

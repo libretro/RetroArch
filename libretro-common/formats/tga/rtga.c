@@ -29,7 +29,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_assert.h>
 #include <retro_inline.h>
 
 #include <formats/image.h>

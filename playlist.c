@@ -15,14 +15,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
 #include <libretro.h>
 #include <boolean.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
@@ -2127,8 +2125,6 @@ static bool JSONEndArrayHandler(void *context)
 {
    JSONContext *pCtx = (JSONContext *)context;
 
-   retro_assert(pCtx->array_depth > 0);
-
    pCtx->array_depth--;
 
    if (pCtx->in_items && pCtx->array_depth == 0 && pCtx->object_depth <= 1)
@@ -2192,8 +2188,6 @@ static bool JSONEndObjectHandler(void *context)
          RBUF_RESIZE(pCtx->playlist->entries,
                RBUF_LEN(pCtx->playlist->entries) + 1);
    }
-
-   retro_assert(pCtx->object_depth > 0);
 
    pCtx->object_depth--;
 

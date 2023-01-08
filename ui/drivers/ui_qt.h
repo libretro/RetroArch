@@ -53,7 +53,6 @@ extern "C" {
 #include "../../config.h"
 #endif
 
-#include <retro_assert.h>
 #include <retro_common_api.h>
 #include <queues/task_queue.h>
 
@@ -182,7 +181,7 @@ class ThumbnailWidget : public QStackedWidget
 public:
    ThumbnailWidget(QWidget *parent = 0);
    ThumbnailWidget(ThumbnailType type, QWidget *parent = 0);
-   ThumbnailWidget(const ThumbnailWidget& other) { retro_assert(false && "DONT EVER USE THIS"); }
+   ThumbnailWidget(const ThumbnailWidget& other) { /* DONT EVER USE THIS */ }
 
    void setPixmap(const QPixmap &pixmap, bool acceptDrops);
 signals:

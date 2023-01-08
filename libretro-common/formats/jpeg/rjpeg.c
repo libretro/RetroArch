@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_assert.h>
 #include <retro_inline.h>
 #include <boolean.h>
 #include <formats/image.h>
@@ -412,7 +411,6 @@ static INLINE int rjpeg_jpeg_huff_decode(rjpeg_jpeg *j, rjpeg_huffman *h)
 
    /* convert the huffman code to the symbol id */
    c = ((j->code_buffer >> (32 - k)) & rjpeg_bmask[k]) + h->delta[k];
-   retro_assert((((j->code_buffer) >> (32 - h->size[c])) & rjpeg_bmask[h->size[c]]) == h->code[c]);
 
    /* convert the id to a symbol */
    j->code_bits -= k;
@@ -432,9 +430,8 @@ static INLINE int rjpeg_extend_receive(rjpeg_jpeg *j, int n)
    if (j->code_bits < n)
       rjpeg_grow_buffer_unsafe(j);
 
-   sgn = (int32_t)j->code_buffer >> 31; /* sign bit is always in MSB */
-   k = RJPEG_LROT(j->code_buffer, n);
-   retro_assert(n >= 0 && n < (int) (sizeof(rjpeg_bmask)/sizeof(*rjpeg_bmask)));
+   sgn             = (int32_t)j->code_buffer >> 31; /* sign bit is always in MSB */
+   k               = RJPEG_LROT(j->code_buffer, n);
    j->code_buffer  = k & ~rjpeg_bmask[n];
    k              &= rjpeg_bmask[n];
    j->code_bits   -= n;

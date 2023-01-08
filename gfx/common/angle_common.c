@@ -15,8 +15,6 @@
 
 #include <stdlib.h>
 
-#include <retro_assert.h>
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif

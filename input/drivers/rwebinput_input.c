@@ -19,7 +19,6 @@
 #include <string.h>
 
 #include <boolean.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <encodings/crc32.h>
 #include <encodings/utf.h>
@@ -205,22 +204,14 @@ static void rwebinput_generate_lut(void)
    int i;
    struct rarch_key_map *key_map;
 
-   retro_assert(ARRAY_SIZE(rarch_key_map_rwebinput) ==
-      ARRAY_SIZE(rwebinput_key_to_code_map) + 1);
-
    for (i = 0; i < ARRAY_SIZE(rwebinput_key_to_code_map); i++)
    {
-      int j;
       uint32_t crc;
       const rwebinput_key_to_code_map_entry_t *key_to_code =
          &rwebinput_key_to_code_map[i];
       key_map = &rarch_key_map_rwebinput[i];
       crc = encoding_crc32(0, (const uint8_t *)key_to_code->key,
          strlen(key_to_code->key));
-
-      /* sanity check: make sure there's no collisions */
-      for (j = 0; j < i; j++)
-         retro_assert(rarch_key_map_rwebinput[j].sym != crc);
 
       key_map->rk  = key_to_code->rk;
       key_map->sym = crc;
@@ -246,7 +237,6 @@ static EM_BOOL rwebinput_keyboard_cb(int event_type,
       size_t new_max = MAX(1, rwebinput->keyboard.max_size << 1);
       rwebinput->keyboard.events = realloc(rwebinput->keyboard.events,
          new_max * sizeof(rwebinput->keyboard.events[0]));
-      retro_assert(rwebinput->keyboard.events != NULL);
       rwebinput->keyboard.max_size = new_max;
    }
 

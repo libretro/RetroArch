@@ -29,7 +29,6 @@
 #include <exynos/exynos_fimg2d.h>
 
 #include <retro_inline.h>
-#include <retro_assert.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -267,7 +266,6 @@ static const char *exynos_buffer_name(enum exynos_buffer_type type)
       case EXYNOS_BUFFER_AUX:
          return "aux";
       default:
-         retro_assert(false);
          break;
    }
 

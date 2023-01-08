@@ -48,7 +48,6 @@
 #include <encodings/utf.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
-#include <retro_assert.h>
 #include <string/stdstring.h>
 #include <retro_environment.h>
 #include <uwp/uwp_async.h>

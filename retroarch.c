@@ -81,7 +81,6 @@
 #include <compat/getopt.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <lists/dir_list.h>
 
@@ -5861,7 +5860,6 @@ void retroarch_fail(int error_code, const char *error)
    /* We cannot longjmp unless we're in retroarch_main_init().
     * If not, something went very wrong, and we should
     * just exit right away. */
-   retro_assert(global->error_on_init);
    strlcpy(global->error_string,
          error, sizeof(global->error_string));
    longjmp(global->error_sjlj_context, error_code);

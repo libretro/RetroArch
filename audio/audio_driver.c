@@ -24,7 +24,6 @@
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <clamping.h>
-#include <retro_assert.h>
 #include <memalign.h>
 #include <audio/conversion/float_to_s16.h>
 #include <audio/conversion/s16_to_float.h>
@@ -584,10 +583,6 @@ bool audio_driver_init_internal(
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
 
-   /* Used for recording even if audio isn't enabled. */
-   retro_assert(conv_buf != NULL);
-   retro_assert(audio_buf != NULL);
-
    if (!conv_buf || !audio_buf)
       goto error;
 
@@ -602,10 +597,7 @@ bool audio_driver_init_internal(
 #ifdef HAVE_REWIND
    /* Needs to be able to hold full content of a full max_bufsamples
     * in addition to its own. */
-   rewind_buf = (int16_t*)memalign_alloc(64, max_bufsamples * sizeof(int16_t));
-   retro_assert(rewind_buf != NULL);
-
-   if (!rewind_buf)
+   if (!(rewind_buf = (int16_t*)memalign_alloc(64, max_bufsamples * sizeof(int16_t))))
       goto error;
 
    audio_driver_st.rewind_buf    = rewind_buf;
@@ -727,14 +719,7 @@ bool audio_driver_init_internal(
 
    audio_driver_st.data_ptr   = 0;
 
-   retro_assert(settings->uints.audio_output_sample_rate <
-         audio_driver_st.input * AUDIO_MAX_RATIO);
-
-   samples_buf = (float*)memalign_alloc(64, outsamples_max * sizeof(float));
-
-   retro_assert(samples_buf != NULL);
-
-   if (!samples_buf)
+   if (!(samples_buf = (float*)memalign_alloc(64, outsamples_max * sizeof(float))))
       goto error;
 
    audio_driver_st.output_samples_buf = (float*)samples_buf;

@@ -60,7 +60,6 @@
 #include <array/rbuf.h>
 
 #include <retro_miscellaneous.h>
-#include <retro_assert.h>
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
@@ -1417,8 +1416,6 @@ static bool content_load(content_ctx_info_t *info,
    if (!(wrap_args = (struct rarch_main_wrap*)
       malloc(sizeof(*wrap_args))))
       return false;
-
-   retro_assert(wrap_args);
 
    wrap_args->argv           = NULL;
    wrap_args->content_path   = NULL;

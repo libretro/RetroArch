@@ -21,7 +21,6 @@
 #include <pspgum.h>
 #include <psprtc.h>
 
-#include <retro_assert.h>
 #include <retro_inline.h>
 #include <retro_math.h>
 
@@ -677,14 +676,6 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
                                unsigned width, unsigned height, float alpha)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
-
-   (void) rgb32;
-   (void) alpha;
-
-#ifdef DEBUG
-   /* psp->menu.frame buffer size is (480 * 272)*2 Bytes */
-   retro_assert((width*height) < (480 * 272));
-#endif
 
    psp_set_screen_coords(psp->menu.frame_coords, 0, 0,
          SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, 0);

@@ -35,8 +35,6 @@
 #include <compat/strcasestr.h>
 #include <compat/posix_string.h>
 
-#include <retro_assert.h>
-
 char *optarg;
 int optind, opterr, optopt;
 
@@ -184,8 +182,6 @@ static void shuffle_block(char **begin, char **last, char **end)
    ptrdiff_t    len = last - begin;
    const char **tmp = (const char**)calloc(len, sizeof(const char*));
 
-   retro_assert(tmp);
-
    memcpy((void*)tmp, begin, len * sizeof(const char*));
    memmove(begin, last, (end - last) * sizeof(const char*));
    memcpy(end - len, tmp, len * sizeof(const char*));
@@ -197,8 +193,6 @@ int getopt_long(int argc, char *argv[],
       const char *optstring, const struct option *longopts, int *longindex)
 {
    int short_index, long_index;
-
-   (void)longindex;
 
    if (optind == 0)
       optind = 1;
@@ -226,8 +220,6 @@ int getopt_long(int argc, char *argv[],
       shuffle_block(&argv[optind], &argv[optind + long_index], &argv[argc]);
       long_index = 0;
    }
-
-   retro_assert(short_index == 0 || long_index == 0);
 
    if (short_index == 0)
       return parse_short(optstring, &argv[optind]);

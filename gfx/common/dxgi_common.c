@@ -17,8 +17,6 @@
 #include <string/stdstring.h>
 #include <retro_environment.h>
 
-#include <assert.h>
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -287,7 +285,6 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
              break; \
          } \
          default: \
-            assert(0); \
             break; \
       } \
       break; \
@@ -323,7 +320,6 @@ void dxgi_copy(
       FORMAT_SRC(DXGI_FORMAT_EX_A4R4G4B4_UNORM);
 
       default:
-         assert(0);
          break;
    }
 }

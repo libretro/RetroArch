@@ -33,7 +33,6 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <retro_math.h>
-#include <retro_assert.h>
 #include <libretro.h>
 
 #ifdef HAVE_CONFIG_H
