@@ -24,8 +24,6 @@
 #define CINTERFACE
 #define COBJMACROS
 
-#include <assert.h>
-
 #include <string/stdstring.h>
 #include <gfx/scaler/pixconv.h>
 #include <retro_miscellaneous.h>
@@ -1733,11 +1731,9 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
 {
    int i;
 
-   /* TODO/FIXME: should we init history to max_width/max_height instead ?
+   /* TODO/FIXME: Should we init history to max_width/max_height instead ?
     * to prevent out of memory errors happening several frames later
     * and to reduce memory fragmentation */
-
-   assert(d3d11->shader_preset);
    for (i = 0; i < d3d11->shader_preset->history_size + 1; i++)
    {
       d3d11->frame.texture[i].desc.Width  = width;
@@ -1754,8 +1750,6 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
 static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsigned height)
 {
    int i;
-
-   assert(d3d11->shader_preset);
 
    for (i = 0; i < (int)d3d11->shader_preset->passes; i++)
    {

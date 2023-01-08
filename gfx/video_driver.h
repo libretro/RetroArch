@@ -308,47 +308,10 @@ typedef struct video_shader_ctx_params
    unsigned fbo_info_cnt;
 } video_shader_ctx_params_t;
 
-typedef struct video_shader_ctx_coords
-{
-   void *handle_data;
-   const void *data;
-} video_shader_ctx_coords_t;
-
-typedef struct video_shader_ctx_scale
-{
-   struct gfx_fbo_scale *scale;
-   unsigned idx;
-} video_shader_ctx_scale_t;
-
-typedef struct video_shader_ctx_info
-{
-   void *data;
-   unsigned num;
-   unsigned idx;
-   bool set_active;
-} video_shader_ctx_info_t;
-
-typedef struct video_shader_ctx_mvp
-{
-   void *data;
-   const void *matrix;
-} video_shader_ctx_mvp_t;
-
-typedef struct video_shader_ctx_filter
-{
-   bool *smooth;
-   unsigned index;
-} video_shader_ctx_filter_t;
-
 typedef struct video_shader_ctx
 {
    struct video_shader *data;
 } video_shader_ctx_t;
-
-typedef struct video_shader_ctx_texture
-{
-   unsigned id;
-} video_shader_ctx_texture_t;
 
 typedef struct video_pixel_scaler
 {

@@ -91,7 +91,7 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
       unsigned video_width,
       unsigned video_height)
 {
-   video_shader_ctx_mvp_t mvp;
+   const GLfloat *mvp_matrix;
    gl1_t             *gl1          = (gl1_t*)data;
 
    if (!gl1 || !draw)
@@ -112,13 +112,12 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
 
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-   mvp.data   = gl1;
-   mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
-      : (math_matrix_4x4*)&gl1->mvp_no_rot;
+   mvp_matrix = draw->matrix_data ? (const GLfloat*)draw->matrix_data
+      : (const GLfloat*)&gl1->mvp_no_rot;
 
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();
-   glLoadMatrixf((const GLfloat*)mvp.matrix);
+   glLoadMatrixf(mvp_matrix);
 
    glMatrixMode(GL_MODELVIEW);
    glPushMatrix();

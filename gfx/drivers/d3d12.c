@@ -23,7 +23,6 @@
 
 #define CINTERFACE
 
-#include <assert.h>
 #include <boolean.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
@@ -111,7 +110,7 @@ static void d3d12_gfx_sync(d3d12_video_t* d3d12)
 #ifdef HAVE_OVERLAY
 static void d3d12_free_overlays(d3d12_video_t* d3d12)
 {
-   unsigned i;
+   int i;
    for (i = 0; i < (unsigned)d3d12->overlays.count; i++)
       d3d12_release_texture(&d3d12->overlays.textures[i]);
 
@@ -190,8 +189,8 @@ static void d3d12_overlay_set_alpha(void* data, unsigned index, float mod)
 
 static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_images)
 {
+   int i;
    D3D12_RANGE range;
-   unsigned                    i;
    d3d12_sprite_t*             sprites = NULL;
    d3d12_video_t*              d3d12   = (d3d12_video_t*)data;
    const struct texture_image* images  = (const struct texture_image*)image_data;
@@ -290,7 +289,7 @@ static void d3d12_get_overlay_interface(void* data, const video_overlay_interfac
 
 static void d3d12_render_overlay(d3d12_video_t *d3d12)
 {
-   unsigned       i;
+   int i;
 
    if (d3d12->flags & D3D12_ST_FLAG_OVERLAYS_FULLSCREEN)
    {
@@ -433,7 +432,7 @@ static void d3d12_set_hdr10(d3d12_video_t* d3d12, bool hdr10)
 
 static void d3d12_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
 {
-   int            i;
+   int i;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
    for (i = 0; i < RARCH_WRAP_MAX; i++)
@@ -512,13 +511,13 @@ static void d3d12_update_viewport(d3d12_video_t *d3d12, bool force_full)
 
 static void d3d12_free_shader_preset(d3d12_video_t* d3d12)
 {
-   unsigned i;
+   int i;
    if (!d3d12->shader_preset)
       return;
 
    for (i = 0; i < d3d12->shader_preset->passes; i++)
    {
-      unsigned j;
+      int j;
 
       free(d3d12->shader_preset->pass[i].source.string.vertex);
       free(d3d12->shader_preset->pass[i].source.string.fragment);
@@ -613,7 +612,7 @@ static void d3d12_init_pipeline(
 static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-   unsigned         i;
+   int i;
    d3d12_texture_t* source = NULL;
    d3d12_video_t*   d3d12  = (d3d12_video_t*)data;
 
@@ -1964,13 +1963,10 @@ error:
 
 static void d3d12_init_history(d3d12_video_t* d3d12, unsigned width, unsigned height)
 {
-   unsigned i;
-
+   int i;
    /* TODO/FIXME: should we init history to max_width/max_height instead ?
     * to prevent out of memory errors happening several frames later
     * and to reduce memory fragmentation */
-
-   assert(d3d12->shader_preset);
    for (i = 0; i < (unsigned)d3d12->shader_preset->history_size + 1; i++)
    {
       d3d12->frame.texture[i].desc.Width     = width;
@@ -1987,10 +1983,7 @@ static void d3d12_init_history(d3d12_video_t* d3d12, unsigned width, unsigned he
 
 static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsigned height)
 {
-   unsigned i;
-
-   assert(d3d12->shader_preset);
-
+   int i;
    for (i = 0; i < d3d12->shader_preset->passes; i++)
    {
       struct video_shader_pass* pass = &d3d12->shader_preset->pass[i];

@@ -103,7 +103,7 @@ typedef struct cg_renderchain
 
 static INLINE bool d3d9_cg_validate_param_name(const char *name)
 {
-   unsigned i;
+   int i;
    static const char *illegal[] = {
       "PREV.",
       "PREV1.",
@@ -672,7 +672,7 @@ static void d3d9_cg_renderchain_bind_pass(
 
 static void d3d9_cg_deinit_progs(cg_renderchain_t *chain)
 {
-   unsigned i;
+   int i;
 
    if (chain->chain.passes->count >= 1)
    {
@@ -702,7 +702,7 @@ static void d3d9_cg_deinit_progs(cg_renderchain_t *chain)
 
 static void d3d9_cg_destroy_resources(cg_renderchain_t *chain)
 {
-   unsigned i;
+   int i;
 
    for (i = 0; i < TEXTURES; i++)
    {
@@ -1804,7 +1804,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    
    if (black_frame_insertion && !d3d->menu->enabled)
    {
-      unsigned n;
+      int n;
       for (n = 0; n < video_info->black_frame_insertion; ++n) 
       {   
         bool ret = (IDirect3DDevice9_Present(d3d->dev,
