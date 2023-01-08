@@ -19,10 +19,9 @@
 #include "../../config.h"
 #endif
 
-#include "../../retroarch.h"
-#include "../common/gl2_common.h"
-
 #include "../gfx_display.h"
+
+#include "../common/gl2_common.h"
 
 #if defined(__arm__) || defined(__aarch64__)
 static int scx0, scx1, scy0, scy1;
@@ -67,14 +66,14 @@ static bool scissor_is_outside_rectangle(
 #define MALI_BUG
 #endif
 
-static const GLfloat gl2_vertexes[] = {
+static const GLfloat gl2_vertexes[8] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const GLfloat gl2_tex_coords[] = {
+static const GLfloat gl2_tex_coords[8] = {
    0, 1,
    1, 1,
    0, 0,
@@ -186,8 +185,8 @@ gfx_display_gl2_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
 
    /* Have to update scissor_set_rectangle() if the
     * video dimensions change */
-   if ((width  != last_video_width) ||
-       (height != last_video_height))
+   if (   (width  != last_video_width)
+       || (height != last_video_height))
    {
       scissor_set_rectangle(0,
             width - 1,

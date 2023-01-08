@@ -21,17 +21,16 @@
 
 #include "../gfx_display.h"
 
-#include "../../retroarch.h"
 #include "../common/rsx_common.h"
 
-static const float rsx_vertexes[] = {
+static const float rsx_vertexes[8] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const float rsx_tex_coords[] = {
+static const float rsx_tex_coords[8] = {
    0, 1,
    1, 1,
    0, 0,
@@ -86,16 +85,16 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
    if (!draw->texture)
       return;
 
-   vp.x = fabs(draw->x);
-   vp.y = fabs(rsx->height - draw->y - draw->height);
-   vp.w = draw->width <= rsx->width ? draw->width : rsx->width;
-   vp.h = draw->height <= rsx->height ? draw->height : rsx->height;
-   vp.min = 0.0f;
-   vp.max = 1.0f;
-   vp.scale[0] = vp.w*0.5f;
-   vp.scale[1] = vp.h*-0.5f;
-   vp.scale[2] = (vp.max - vp.min)*0.5f;
-   vp.scale[3] = 0.0f;
+   vp.x         = fabs(draw->x);
+   vp.y         = fabs(rsx->height - draw->y - draw->height);
+   vp.w         = (draw->width  <= rsx->width)  ? draw->width  : rsx->width;
+   vp.h         = (draw->height <= rsx->height) ? draw->height : rsx->height;
+   vp.min       = 0.0f;
+   vp.max       = 1.0f;
+   vp.scale[0]  = vp.w*0.5f;
+   vp.scale[1]  = vp.h*-0.5f;
+   vp.scale[2]  = (vp.max - vp.min)*0.5f;
+   vp.scale[3]  = 0.0f;
    vp.offset[0] = vp.x + vp.w*0.5f;
    vp.offset[1] = vp.y + vp.h*0.5f;
    vp.offset[2] = (vp.max + vp.min)*0.5f;
@@ -125,7 +124,8 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
    rsxBindVertexArrayAttrib(rsx->context, rsx->uv_index->index, 0, rsx->uv_offset, sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
    rsxBindVertexArrayAttrib(rsx->context, rsx->col_index->index, 0, rsx->col_offset, sizeof(rsx_vertex_t), 4, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
 
-   rsxSetVertexProgramParameter(rsx->context, rsx->vpo, rsx->proj_matrix, (float *)&rsx->mvp_no_rot);
+   rsxSetVertexProgramParameter(rsx->context,
+         rsx->vpo, rsx->proj_matrix, (float *)&rsx->mvp_no_rot);
    rsxClearSurface(rsx->context, GCM_CLEAR_Z);
    rsxDrawVertexArray(rsx->context, GCM_TYPE_TRIANGLE_STRIP, 0, draw->coords->vertices);
 }

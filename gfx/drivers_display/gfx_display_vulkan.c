@@ -22,25 +22,24 @@
 
 #include "../gfx_display.h"
 
-#include "../../retroarch.h"
 #include "../common/vulkan_common.h"
 
 /* Will do Y-flip later, but try to make it similar to GL. */
-static const float vk_vertexes[] = {
+static const float vk_vertexes[8] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const float vk_tex_coords[] = {
+static const float vk_tex_coords[8] = {
    0, 1,
    1, 1,
    0, 0,
    1, 0
 };
 
-static const float vk_colors[] = {
+static const float vk_colors[16] = {
    1.0f, 1.0f, 1.0f, 1.0f,
    1.0f, 1.0f, 1.0f, 1.0f,
    1.0f, 1.0f, 1.0f, 1.0f,

@@ -23,25 +23,24 @@
 
 #include "../gfx_display.h"
 
-#include "../../retroarch.h"
 #include "../common/vita2d_common.h"
 #include <defines/psp_defines.h>
 
-static const float vita2d_vertexes[] = {
+static const float vita2d_vertexes[8] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const float vita2d_tex_coords[] = {
+static const float vita2d_tex_coords[8] = {
    0, 1,
    1, 1,
    0, 0,
    1, 0
 };
 
-static const float vita2d_colors[] = {
+static const float vita2d_colors[16] = {
    1.0f, 1.0f, 1.0f, 1.0f,
    1.0f, 1.0f, 1.0f, 1.0f,
    1.0f, 1.0f, 1.0f, 1.0f,

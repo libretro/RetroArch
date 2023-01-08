@@ -24,7 +24,6 @@
 
 #include "../gfx_display.h"
 
-#include "../../retroarch.h"
 #include "../common/d3d10_common.h"
 
 static void gfx_display_d3d10_blend_begin(void *data)

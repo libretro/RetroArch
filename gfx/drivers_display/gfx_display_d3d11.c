@@ -23,7 +23,6 @@
 
 #include "../gfx_display.h"
 
-#include "../../retroarch.h"
 #include "../common/d3d11_common.h"
 
 static void gfx_display_d3d11_blend_begin(void *data)
@@ -225,7 +224,8 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
                vertex_data.pSysMem          = ca->coords.vertex;
                vertex_data.SysMemPitch      = 0;
                vertex_data.SysMemSlicePitch = 0;
-               d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, &vertex_data,
+               d3d11->device->lpVtbl->CreateBuffer(
+                     d3d11->device, &desc, &vertex_data,
                      &d3d11->menu_pipeline_vbo);
             }
          }
@@ -237,7 +237,9 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
                   &d3d11->menu_pipeline_vbo, &stride, &offset);
          }
          draw->coords->vertices = ca->coords.vertices;
-	 d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_pipeline, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+         d3d11->context->lpVtbl->OMSetBlendState(
+               d3d11->context, d3d11->blend_pipeline,
+               NULL, D3D11_DEFAULT_SAMPLE_MASK);
          break;
       }
 
@@ -258,16 +260,19 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
          return;
    }
 
-   d3d11->context->lpVtbl->IASetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+   d3d11->context->lpVtbl->IASetPrimitiveTopology(
+         d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
    d3d11->ubo_values.time += 0.01f;
 
    {
       D3D11_MAPPED_SUBRESOURCE mapped_ubo;
       d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+         d3d11->context, (D3D11Resource)d3d11->ubo,
+         0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
       *(d3d11_uniform_t*)mapped_ubo.pData = d3d11->ubo_values;
-      d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->ubo, 0);
+      d3d11->context->lpVtbl->Unmap(d3d11->context,
+            (D3D11Resource)d3d11->ubo, 0);
    }
 }
 

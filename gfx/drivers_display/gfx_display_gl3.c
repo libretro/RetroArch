@@ -20,27 +20,25 @@
 #include "../../config.h"
 #endif
 
-#include "../common/gl3_common.h"
-
 #include "../gfx_display.h"
 
-#include "../../retroarch.h"
+#include "../common/gl3_common.h"
 
-static const float gl3_vertexes[] = {
+static const float gl3_vertexes[8] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const float gl3_tex_coords[] = {
+static const float gl3_tex_coords[8] = {
    0, 1,
    1, 1,
    0, 0,
    1, 0
 };
 
-static const float gl3_colors[] = {
+static const float gl3_colors[16] = {
    1.0f, 1.0f, 1.0f, 1.0f,
    1.0f, 1.0f, 1.0f, 1.0f,
    1.0f, 1.0f, 1.0f, 1.0f,
@@ -148,7 +146,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
    const float *tex_coord    = NULL;
    const float *color        = NULL;
    GLuint            texture = 0;
-   gl3_t *gl             = (gl3_t*)data;
+   gl3_t *gl                 = (gl3_t*)data;
    const struct 
       gl3_buffer_locations 
       *loc                   = NULL;
