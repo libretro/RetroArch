@@ -24,7 +24,6 @@
 #include "metal_shader_types.h"
 
 #include "../../gfx_display.h"
-#include "../../../retroarch.h"
 
 /* TODO/FIXME: implement triple buffering */
 /*! @brief maximum inflight frames */

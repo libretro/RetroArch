@@ -375,7 +375,6 @@
 		05A8C75E20DB72F100FF7857 /* d3d_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = d3d_common.c; sourceTree = "<group>"; };
 		05A8C76320DB72F100FF7857 /* d3d10_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = d3d10_common.h; sourceTree = "<group>"; };
 		05A8C76820DB72F100FF7857 /* vulkan_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vulkan_common.h; sourceTree = "<group>"; };
-		05A8C76920DB72F100FF7857 /* metal_common.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = metal_common.m; sourceTree = "<group>"; };
 		05A8C76F20DB72F100FF7857 /* gl_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gl_common.h; sourceTree = "<group>"; };
 		05A8C77020DB72F100FF7857 /* d3d_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = d3d_common.h; sourceTree = "<group>"; };
 		05A8C77720DB72F100FF7857 /* d3d10_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = d3d10_common.c; sourceTree = "<group>"; };
@@ -402,11 +401,6 @@
 		05A8C79E20DB72F100FF7857 /* video_shader_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_shader_parse.c; sourceTree = "<group>"; };
 		05A8C79F20DB72F100FF7857 /* video_driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_driver.h; sourceTree = "<group>"; };
 		05A8C7A020DB72F100FF7857 /* video_thread_wrapper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_thread_wrapper.h; sourceTree = "<group>"; };
-		05A8C7A220DB72F100FF7857 /* d3d9_renderchain.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = d3d9_renderchain.h; sourceTree = "<group>"; };
-		05A8C7A320DB72F100FF7857 /* gl2_renderchain.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl2_renderchain.c; sourceTree = "<group>"; };
-		05A8C7A420DB72F100FF7857 /* d3d9_cg_renderchain.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = d3d9_cg_renderchain.c; sourceTree = "<group>"; };
-		05A8C7A520DB72F100FF7857 /* d3d9_hlsl_renderchain.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = d3d9_hlsl_renderchain.c; sourceTree = "<group>"; };
-		05A8C7A620DB72F100FF7857 /* gl1_renderchain.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl1_renderchain.c; sourceTree = "<group>"; };
 		05A8C7A720DB72F100FF7857 /* font_driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = font_driver.h; sourceTree = "<group>"; };
 		05A8C7A820DB72F100FF7857 /* video_defines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_defines.h; sourceTree = "<group>"; };
 		05A8C7A920DB72F100FF7857 /* video_coord_array.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_coord_array.c; sourceTree = "<group>"; };
@@ -950,7 +944,6 @@
 				05A8C5D620DB72F000FF7857 /* drivers_context */,
 				05A8C77C20DB72F100FF7857 /* drivers_font */,
 				05A8C7AA20DB72F100FF7857 /* drivers_font_renderer */,
-				05A8C7A120DB72F100FF7857 /* drivers_renderchain */,
 				05A8C78E20DB72F100FF7857 /* drivers_shader */,
 				05A8C73920DB72F100FF7857 /* font_driver.c */,
 				05A8C7A720DB72F100FF7857 /* font_driver.h */,
@@ -1100,7 +1093,6 @@
 				05A8C75D20DB72F100FF7857 /* gl_common.c */,
 				05A8C76F20DB72F100FF7857 /* gl_common.h */,
 				05A8C74420DB72F100FF7857 /* metal_common.h */,
-				05A8C76920DB72F100FF7857 /* metal_common.m */,
 				05A8C73C20DB72F100FF7857 /* vulkan_common.c */,
 				05A8C76820DB72F100FF7857 /* vulkan_common.h */,
 			);
@@ -1147,18 +1139,6 @@
 				05A8C79320DB72F100FF7857 /* slang_reflection.h */,
 			);
 			path = drivers_shader;
-			sourceTree = "<group>";
-		};
-		05A8C7A120DB72F100FF7857 /* drivers_renderchain */ = {
-			isa = PBXGroup;
-			children = (
-				05A8C7A220DB72F100FF7857 /* d3d9_renderchain.h */,
-				05A8C7A320DB72F100FF7857 /* gl2_renderchain.c */,
-				05A8C7A420DB72F100FF7857 /* d3d9_cg_renderchain.c */,
-				05A8C7A520DB72F100FF7857 /* d3d9_hlsl_renderchain.c */,
-				05A8C7A620DB72F100FF7857 /* gl1_renderchain.c */,
-			);
-			path = drivers_renderchain;
 			sourceTree = "<group>";
 		};
 		05A8C7AA20DB72F100FF7857 /* drivers_font_renderer */ = {
