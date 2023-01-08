@@ -700,10 +700,14 @@ char *path_get_ptr(enum rarch_path_type type)
          return p_rarch->path_content;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return p_rarch->path_default_shader_preset;
+      case RARCH_PATH_BASENAME:
+         return runloop_st->runtime_content_path_basename;
       case RARCH_PATH_CORE_OPTIONS:
          if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
             return p_rarch->path_core_options_file;
          break;
+      case RARCH_PATH_SUBSYSTEM:
+         return runloop_st->subsystem_path;
       case RARCH_PATH_CONFIG:
          if (!path_is_empty(RARCH_PATH_CONFIG))
             return p_rarch->path_config_file;
@@ -717,11 +721,6 @@ char *path_get_ptr(enum rarch_path_type type)
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
-         /* Runloop-related paths */
-      case RARCH_PATH_BASENAME:
-         return runloop_st->runtime_content_path_basename;
-      case RARCH_PATH_SUBSYSTEM:
-         return runloop_st->subsystem_path;
    }
 
    return NULL;
@@ -738,10 +737,14 @@ const char *path_get(enum rarch_path_type type)
          return p_rarch->path_content;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return p_rarch->path_default_shader_preset;
+      case RARCH_PATH_BASENAME:
+         return runloop_st->runtime_content_path_basename;
       case RARCH_PATH_CORE_OPTIONS:
          if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
             return p_rarch->path_core_options_file;
          break;
+      case RARCH_PATH_SUBSYSTEM:
+         return runloop_st->subsystem_path;
       case RARCH_PATH_CONFIG:
          if (!path_is_empty(RARCH_PATH_CONFIG))
             return p_rarch->path_config_file;
@@ -755,11 +758,6 @@ const char *path_get(enum rarch_path_type type)
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
-         /* Runloop-related paths */
-      case RARCH_PATH_BASENAME:
-         return runloop_st->runtime_content_path_basename;
-      case RARCH_PATH_SUBSYSTEM:
-         return runloop_st->subsystem_path;
    }
 
    return NULL;
@@ -835,7 +833,6 @@ bool path_set(enum rarch_path_type type, const char *path)
          strlcpy(p_rarch->path_content, path,
                sizeof(p_rarch->path_content));
          break;
-         /* Runloop-related paths */
       case RARCH_PATH_BASENAME:
          runloop_st = runloop_state_get_ptr();
          strlcpy(runloop_st->runtime_content_path_basename, path,
@@ -927,7 +924,6 @@ void path_clear(enum rarch_path_type type)
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
-         /* Runloop-related paths */
       case RARCH_PATH_BASENAME:
          runloop_st = runloop_state_get_ptr();
          *runloop_st->runtime_content_path_basename = '\0';
@@ -1078,7 +1074,6 @@ void dir_clear(enum rarch_dir_type type)
          break;
       case RARCH_DIR_NONE:
          break;
-         /* Runloop-related paths */
       case RARCH_DIR_CURRENT_SAVEFILE:
          runloop_st = runloop_state_get_ptr();
          *runloop_st->savefile_dir = '\0';
@@ -1143,7 +1138,6 @@ void dir_set(enum rarch_dir_type type, const char *path)
          break;
       case RARCH_DIR_NONE:
          break;
-         /* Runloop-related paths */
       case RARCH_DIR_CURRENT_SAVEFILE:
          runloop_st = runloop_state_get_ptr();
          strlcpy(runloop_st->savefile_dir, path,
@@ -3363,6 +3357,10 @@ static void global_free(struct rarch_state *p_rarch)
 
    retro_main_log_file_deinit();
 
+   runloop_st->flags &= ~(
+                          RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED
+                        | RUNLOOP_FLAG_IS_SRAM_SAVE_DISABLED
+                        | RUNLOOP_FLAG_USE_SRAM);
 #ifdef HAVE_PATCH
    p_rarch->flags    &= ~(
                          RARCH_FLAGS_BPS_PREF 
@@ -3378,13 +3376,13 @@ static void global_free(struct rarch_state *p_rarch)
                         | RUNLOOP_FLAG_REMAPS_GAME_ACTIVE
                         | RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE);
 #endif
-   runloop_st->flags                    &= ~(
-                          RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED
-                        | RUNLOOP_FLAG_IS_SRAM_SAVE_DISABLED
-                        | RUNLOOP_FLAG_USE_SRAM);
-   runloop_st->current_core.flags       &= ~(
-         RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS
-       | RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS);
+
+   runloop_st->current_core.flags &= ~(RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS
+                                     | RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS);
+
+   global                                             = global_get_ptr();
+   path_clear_all();
+   dir_clear_all();
 
    if (!string_is_empty(runloop_st->name.remapfile))
       free(runloop_st->name.remapfile);
@@ -3396,10 +3394,6 @@ static void global_free(struct rarch_state *p_rarch)
    *runloop_st->name.savestate           = '\0';
    *runloop_st->name.cheatfile           = '\0';
    *runloop_st->name.label               = '\0';
-
-   global                                = global_get_ptr();
-   path_clear_all();
-   dir_clear_all();
 
    if (global)
       memset(global, 0, sizeof(struct global));

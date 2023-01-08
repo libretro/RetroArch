@@ -30,6 +30,7 @@
 #include "config.h"
 #endif
 
+#include "retroarch.h"
 #include "verbosity.h"
 
 #include "core_info.h"

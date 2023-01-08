@@ -21,6 +21,7 @@
 #include <libretro.h>
 
 #include "menu_defines.h"
+#include "../retroarch.h"
 #include "../gfx/gfx_display.h"
 #include "../gfx/gfx_animation.h"
 

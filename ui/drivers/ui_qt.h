@@ -58,6 +58,7 @@ extern "C" {
 #include <queues/task_queue.h>
 
 #include "../ui_companion_driver.h"
+#include "../../retroarch.h"
 
 #ifndef CXX_BUILD
 }

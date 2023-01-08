@@ -47,6 +47,7 @@
 
 #include "../../driver.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/gl1_common.h"

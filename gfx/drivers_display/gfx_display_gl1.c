@@ -20,6 +20,7 @@
 #include "../../config.h"
 #endif
 
+#include "../../retroarch.h"
 #include "../common/gl1_common.h"
 
 #include "../gfx_display.h"

@@ -27,6 +27,7 @@
 #include "video_thread_wrapper.h"
 #include "font_driver.h"
 
+#include "../retroarch.h"
 #include "../runloop.h"
 #include "../verbosity.h"
 

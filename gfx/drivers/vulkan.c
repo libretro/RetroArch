@@ -49,8 +49,8 @@
 #ifdef HAVE_REWIND
 #include "../../state_manager.h"
 #endif
-#include "../../retroarch.h"
 
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../record/record_driver.h"
 

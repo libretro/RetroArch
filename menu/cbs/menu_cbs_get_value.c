@@ -41,8 +41,6 @@
 #endif
 #include "../../performance_counters.h"
 #include "../../paths.h"
-#include "../../retroarch.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 #ifdef HAVE_BLUETOOTH
 #include "../../bluetooth/bluetooth_driver.h"

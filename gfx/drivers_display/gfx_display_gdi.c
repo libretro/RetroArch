@@ -21,6 +21,8 @@
 #include <retro_miscellaneous.h>
 
 #include "../../config.def.h"
+#include "../../retroarch.h"
+#include "../../verbosity.h"
 
 #include "../gfx_display.h"
 

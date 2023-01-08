@@ -24,6 +24,8 @@
 
 #include "../gfx_display.h"
 
+#include "../../retroarch.h"
+
 static const float gl3_vertexes[] = {
    0, 0,
    1, 0,

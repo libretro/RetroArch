@@ -22,6 +22,7 @@
 
 #include <d3d8.h>
 
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 RETRO_BEGIN_DECLS

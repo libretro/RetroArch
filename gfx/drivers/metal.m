@@ -54,10 +54,10 @@
 #include "../../driver.h"
 #include "../../configuration.h"
 
+#include "../../retroarch.h"
 #ifdef HAVE_REWIND
 #include "../../state_manager.h"
 #endif
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #include "../video_coord_array.h"

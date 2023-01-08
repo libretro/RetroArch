@@ -52,6 +52,7 @@
 #include "../../driver.h"
 #include "../../paths.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../frontend/drivers/platform_win32.h"
 

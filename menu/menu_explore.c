@@ -25,10 +25,10 @@
 
 #include "menu_driver.h"
 #include "menu_cbs.h"
+#include "../retroarch.h"
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../playlist.h"
-#include "../runloop.h"
 #include "../verbosity.h"
 #include "../libretro-db/libretrodb.h"
 #include "../tasks/tasks_internal.h"

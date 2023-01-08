@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2015 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2023 - Daniel De Matteis
+ *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -29,6 +29,7 @@
 #include "../common/input_x11_common.h"
 
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 typedef struct x11_input

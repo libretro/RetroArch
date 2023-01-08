@@ -29,6 +29,7 @@
 #include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
 
+#include "../retroarch.h"
 #include "../gfx/font_driver.h"
 
 RETRO_BEGIN_DECLS

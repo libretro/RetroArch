@@ -22,8 +22,9 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "../retroarch.h"
+
 #include "video_defines.h"
-#include "video_driver.h"
 
 RETRO_BEGIN_DECLS
 

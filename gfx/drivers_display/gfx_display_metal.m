@@ -21,6 +21,7 @@
 
 #include "../gfx_display.h"
 
+#include "../../retroarch.h"
 #import "../common/metal_common.h"
 
 static const float *gfx_display_metal_get_default_vertices(void)

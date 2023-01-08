@@ -1,10 +1,11 @@
-#include <stdint.h>
+#include <stdio.h>
 #include "../led_driver.h"
 #include "../led_defines.h"
 
 #include "../../input/input_overlay.h"
 
 #include "../../configuration.h"
+#include "../../retroarch.h"
 
 typedef struct
 {

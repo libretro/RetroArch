@@ -35,8 +35,6 @@
 
 #include "../../config.def.h"
 #include "../../file_path_special.h"
-#include "../../retroarch.h"
-#include "../../runloop.h"
 
 #ifdef HAVE_DISCORD_OWN_AVATAR
 #include "../../discord/discord.h"

@@ -22,6 +22,9 @@
 
 #include "../driver.h"
 #include "../list_special.h"
+#include "../retroarch.h"
+#include "../runloop.h"
+#include "../verbosity.h"
 
 #include "ui_companion_driver.h"
 

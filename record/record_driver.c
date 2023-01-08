@@ -25,6 +25,7 @@
 #include "../list_special.h"
 #include "../gfx/video_driver.h"
 #include "../paths.h"
+#include "../retroarch.h"
 #include "../runloop.h"
 #include "../verbosity.h"
 
@@ -65,6 +66,71 @@ const char* config_get_record_driver_options(void)
 {
    return char_list_new_special(STRING_LIST_RECORD_DRIVERS, NULL);
 }
+
+#if 0
+/* TODO/FIXME - not used apparently */
+static void find_record_driver(const char *prefix,
+      bool verbosity_enabled)
+{
+   settings_t *settings = config_get_ptr();
+   int i                = (int)driver_find_index(
+         "record_driver",
+         settings->arrays.record_driver);
+
+   if (i >= 0)
+      recording_state.driver = (const record_driver_t*)record_drivers[i];
+   else
+   {
+      if (verbosity_enabled)
+      {
+         unsigned d;
+
+         RARCH_ERR("[Recording]: Couldn't find any %s named \"%s\".\n", prefix,
+               settings->arrays.record_driver);
+         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+         for (d = 0; record_drivers[d]; d++)
+            RARCH_LOG_OUTPUT("\t%s\n", record_drivers[d].ident);
+         RARCH_WARN("[Recording]: Going to default to first %s...\n", prefix);
+      }
+
+      recording_state.driver = (const record_driver_t*)record_drivers[0];
+
+      if (!recording_state.driver)
+         retroarch_fail(1, "find_record_driver()");
+   }
+}
+
+/**
+ * ffemu_find_backend:
+ * @ident                   : Identifier of driver to find.
+ *
+ * Finds a recording driver with the name @ident.
+ *
+ * Returns: recording driver handle if successful, otherwise
+ * NULL.
+ **/
+static const record_driver_t *ffemu_find_backend(const char *ident)
+{
+   unsigned i;
+
+   for (i = 0; record_drivers[i]; i++)
+   {
+      if (string_is_equal(record_drivers[i]->ident, ident))
+         return record_drivers[i];
+   }
+
+   return NULL;
+}
+
+static void recording_driver_free_state(void)
+{
+   /* TODO/FIXME - this is not being called anywhere */
+   recording_state.gpu_width     = 0;
+   recording_state.gpu_height    = 0;
+   recording_state.width         = 0;
+   recording_stte.height         = 0;
+}
+#endif
 
 /**
  * gfx_ctx_init_first:

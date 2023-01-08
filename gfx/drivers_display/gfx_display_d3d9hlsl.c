@@ -25,6 +25,7 @@
 
 #include "../gfx_display.h"
 
+#include "../../retroarch.h"
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
 

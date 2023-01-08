@@ -27,7 +27,7 @@
 #include "../../config.h"
 #endif
 
-#include "../video_defines.h"
+#include "../../retroarch.h"
 #include "../common/gdi_common.h"
 #include "../common/win32_common.h"
 
