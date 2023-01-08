@@ -164,8 +164,10 @@
 
       if (mode.width == 0 || mode.height == 0)
       {
-         // 0 indicates full screen, so we'll use the view's dimensions, which should already be full screen
-         // If this turns out to be the wrong assumption, we can use NSScreen to query the dimensions
+         /* 0 indicates full screen, so we'll use the view's dimensions, 
+          * which should already be full screen
+          * If this turns out to be the wrong assumption, we can use NSScreen 
+          * to query the dimensions */
          CGSize size = view.frame.size;
          mode.width  = (unsigned int)size.width;
          mode.height = (unsigned int)size.height;
@@ -609,10 +611,10 @@ typedef struct MTLALIGN(16)
    self = [super init];
    if (self)
    {
-      _context    = c;
-      _format     = d.format;
-      _bpp        = RPixelFormatToBPP(_format);
-      _filter     = d.filter;
+      _context              = c;
+      _format               = d.format;
+      _bpp                  = RPixelFormatToBPP(_format);
+      _filter               = d.filter;
       if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
          _drawState         = ViewDrawStateEncoder;
       else
@@ -770,7 +772,7 @@ typedef struct MTLALIGN(16)
          else
          {
             int k;
-            /* todo: what about frame-duping ?
+            /* TODO/FIXME: what about frame-duping ?
              * maybe clone d3d10_texture_t with AddRef */
             texture_t tmp = _engine.frame.texture[_shader->history_size];
             for (k = _shader->history_size; k > 0; k--)
@@ -780,7 +782,7 @@ typedef struct MTLALIGN(16)
       }
    }
 
-   /* either no history, or we moved a texture of a different size in the front slot */
+   /* Either no history, or we moved a texture of a different size in the front slot */
    if (   _engine.frame.texture[0].size_data.x != _size.width
        || _engine.frame.texture[0].size_data.y != _size.height)
    {
@@ -812,8 +814,8 @@ typedef struct MTLALIGN(16)
 
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch
 {
-   if (_shader && (_engine.frame.output_size.x != _viewport->width ||
-                   _engine.frame.output_size.y != _viewport->height))
+   if (_shader && (_engine.frame.output_size.x != _viewport->width
+               ||  _engine.frame.output_size.y != _viewport->height))
       resize_render_targets       = YES;
 
    _engine.frame.viewport.originX = _viewport->x;
@@ -898,9 +900,9 @@ typedef struct MTLALIGN(16)
    {
       if (_shader->pass[i].feedback)
       {
-         texture_t tmp = _engine.pass[i].feedback;
+         texture_t tmp            = _engine.pass[i].feedback;
          _engine.pass[i].feedback = _engine.pass[i].rt;
-         _engine.pass[i].rt = tmp;
+         _engine.pass[i].rt       = tmp;
       }
    }
 
@@ -916,8 +918,7 @@ typedef struct MTLALIGN(16)
       __unsafe_unretained id<MTLTexture> textures[SLANG_NUM_BINDINGS] = {NULL};
       id<MTLSamplerState> samplers[SLANG_NUM_BINDINGS] = {NULL};
       id<MTLRenderCommandEncoder> rce                  = nil;
-
-      BOOL backBuffer = (_engine.pass[i].rt.view == nil);
+      BOOL backBuffer                                  = (_engine.pass[i].rt.view == nil);
 
       if (backBuffer)
          rce = _context.rce;
@@ -946,12 +947,12 @@ typedef struct MTLALIGN(16)
 
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
-         id<MTLBuffer> buffer = _engine.pass[i].buffers[j];
+         id<MTLBuffer> buffer      = _engine.pass[i].buffers[j];
          cbuffer_sem_t *buffer_sem = &_engine.pass[i].semantics.cbuffers[j];
 
          if (buffer_sem->stage_mask && buffer_sem->uniforms)
          {
-            void *data = buffer.contents;
+            void             *data = buffer.contents;
             uniform_sem_t *uniform = buffer_sem->uniforms;
 
             while (uniform->size)
@@ -975,10 +976,10 @@ typedef struct MTLALIGN(16)
       texture_sem_t *texture_sem = _engine.pass[i].semantics.textures;
       while (texture_sem->stage_mask)
       {
-         int binding = texture_sem->binding;
+         int binding        = texture_sem->binding;
          id<MTLTexture> tex = (__bridge id<MTLTexture>)*(void **)texture_sem->texture_data;
-         textures[binding] = tex;
-         samplers[binding] = _samplers[texture_sem->filter][texture_sem->wrap];
+         textures[binding]  = tex;
+         samplers[binding]  = _samplers[texture_sem->filter][texture_sem->wrap];
          texture_sem++;
       }
 
@@ -998,19 +999,20 @@ typedef struct MTLALIGN(16)
       _texture = _engine.pass[i].rt.view;
    }
 
-   if (_texture == nil)
-      _drawState = ViewDrawStateContext;
-   else
+   if (_texture)
       _drawState = ViewDrawStateAll;
+   else
+      _drawState = ViewDrawStateContext;
 }
 
 - (void)_updateRenderTargets
 {
    int i;
    NSUInteger width, height;
-   if (!_shader || !resize_render_targets) return;
+   if (!_shader || !resize_render_targets)
+      return;
 
-   // release existing targets
+   /* Release existing targets */
    for (i = 0; i < _shader->passes; i++)
    {
       STRUCT_ASSIGN(_engine.pass[i].rt.view, nil);
@@ -1072,21 +1074,22 @@ typedef struct MTLALIGN(16)
       }
       else if (i == (_shader->passes - 1))
       {
-         width = _viewport->width;
+         width  = _viewport->width;
          height = _viewport->height;
       }
 
       /* Updating framebuffer size */
 
       MTLPixelFormat fmt = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
-      if ((i != (_shader->passes - 1)) ||
-          (width != _viewport->width) || (height != _viewport->height) ||
-          fmt != MTLPixelFormatBGRA8Unorm)
+      if (   (i      != (_shader->passes - 1))
+          || (width  != _viewport->width) 
+          || (height != _viewport->height)
+          || fmt != MTLPixelFormatBGRA8Unorm)
       {
-         _engine.pass[i].viewport.width = width;
+         _engine.pass[i].viewport.width  = width;
          _engine.pass[i].viewport.height = height;
-         _engine.pass[i].viewport.znear = 0.0;
-         _engine.pass[i].viewport.zfar = 1.0;
+         _engine.pass[i].viewport.znear  = 0.0;
+         _engine.pass[i].viewport.zfar   = 1.0;
 
          MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:fmt
             width:width height:height mipmapped:false];
@@ -1158,38 +1161,39 @@ typedef struct MTLALIGN(16)
       if (!video_shader_load_preset_into_shader(path.UTF8String, shader))
          return NO;
 
-      source = &_engine.frame.texture[0];
+      source            = &_engine.frame.texture[0];
 
       for (i = 0; i < shader->passes; source = &_engine.pass[i++].rt)
       {
-         matrix_float4x4 *mvp = (i == shader->passes-1) ? &_context.uniforms->projectionMatrix : &_engine.mvp;
+         matrix_float4x4 *mvp = (i == shader->passes-1) 
+            ? &_context.uniforms->projectionMatrix 
+            : &_engine.mvp;
 
          /* clang-format off */
          semantics_map_t semantics_map = {
             {
                /* Original */
                {&_engine.frame.texture[0].view, 0,
-                  &_engine.frame.texture[0].size_data, 0},
+                &_engine.frame.texture[0].size_data, 0},
 
                /* Source */
-               {&source->view, 0,
-                  &source->size_data, 0},
+               {&source->view, 0, &source->size_data, 0},
 
                /* OriginalHistory */
-               {&_engine.frame.texture[0].view, sizeof(*_engine.frame.texture),
-                  &_engine.frame.texture[0].size_data, sizeof(*_engine.frame.texture)},
+               {&_engine.frame.texture[0].view,      sizeof(*_engine.frame.texture),
+                &_engine.frame.texture[0].size_data, sizeof(*_engine.frame.texture)},
 
                /* PassOutput */
-               {&_engine.pass[0].rt.view, sizeof(*_engine.pass),
-                  &_engine.pass[0].rt.size_data, sizeof(*_engine.pass)},
+               {&_engine.pass[0].rt.view,      sizeof(*_engine.pass),
+                &_engine.pass[0].rt.size_data, sizeof(*_engine.pass)},
 
                /* PassFeedback */
-               {&_engine.pass[0].feedback.view, sizeof(*_engine.pass),
-                  &_engine.pass[0].feedback.size_data, sizeof(*_engine.pass)},
+               {&_engine.pass[0].feedback.view,      sizeof(*_engine.pass),
+                &_engine.pass[0].feedback.size_data, sizeof(*_engine.pass)},
 
                /* User */
-               {&_engine.luts[0].view, sizeof(*_engine.luts),
-                  &_engine.luts[0].size_data, sizeof(*_engine.luts)},
+               {&_engine.luts[0].view,      sizeof(*_engine.luts),
+                &_engine.luts[0].size_data, sizeof(*_engine.luts)},
             },
             {
                mvp,                              /* MVP */
@@ -1212,7 +1216,7 @@ typedef struct MTLALIGN(16)
          NSString *vs_src = [NSString stringWithUTF8String:shader->pass[i].source.string.vertex];
          NSString *fs_src = [NSString stringWithUTF8String:shader->pass[i].source.string.fragment];
 
-         // vertex descriptor
+         /* Vertex descriptor */
          @try
          {
             NSError *err;
@@ -1235,7 +1239,7 @@ typedef struct MTLALIGN(16)
 
             ca.pixelFormat = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
 
-            /* TODO(sgc): confirm we never need blending for render passes */
+            /* TODO/FIXME (sgc): confirm we never need blending for render passes */
             ca.blendingEnabled             = NO;
             ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
             ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
@@ -1354,7 +1358,7 @@ typedef struct MTLALIGN(16)
                                  mipmapLevel:0 withBytes:image.pixels
                                  bytesPerRow:4 * image.width];
 
-         /* TODO(sgc): generate mip maps */
+         /* TODO/FIXME (sgc): generate mip maps */
          image_texture_free(&image);
       }
       _shader = shader;
@@ -1551,49 +1555,48 @@ static uint32_t metal_get_flags(void *data);
 
 #pragma mark Graphics Context for Metal
 
-// The graphics context for the Metal driver is just a stubbed out version
-// It supports getting metrics such as dpi which is needed for iOS/tvOS
+/* The graphics context for the Metal driver is just a stubbed out version
+ * It supports getting metrics such as DPI which is needed for iOS/tvOS */
 #if defined(HAVE_COCOATOUCH)
-static bool metal_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
-            float *value)
+static bool metal_gfx_ctx_get_metrics(
+      void *data, enum display_metric_types type,
+      float *value)
 {
-    CGRect screenRect = [[UIScreen mainScreen] bounds];
-    CGFloat scale = [[UIScreen mainScreen] scale];
-    float   displayHeight        = screenRect.size.height;
-    float   physicalWidth        = screenRect.size.width  * scale;
-    float   physicalHeight       = screenRect.size.height * scale;
+    CGRect  screen_rect          = [[UIScreen mainScreen] bounds];
+    CGFloat scale                = [[UIScreen mainScreen] scale];
+    float   physical_width       = screen_rect.size.width  * scale;
+    float   physical_height      = screen_rect.size.height * scale;
     float   dpi                  = 160                     * scale;
-    CGFloat maxSize              = fmaxf(physicalWidth, physicalHeight);
+    CGFloat max_size             = fmaxf(physical_width, physical_height);
     NSInteger idiom_type         = UI_USER_INTERFACE_IDIOM();
+
     switch (idiom_type)
     {
-       case -1:
-          break;
        case UIUserInterfaceIdiomPad:
           dpi = 132 * scale;
           break;
        case UIUserInterfaceIdiomPhone:
-            if (maxSize >= 2208.0) {
-                // Larger iPhones: iPhone Plus, X, XR, XS, XS Max, 11, 11 Pro Max
+            if (max_size >= 2208.0)
+                /* Larger iPhones: iPhone Plus, X, XR, XS, XS Max, 
+                 * 11, 12, 13, 14, etc */
                 dpi = 81 * scale;
-            } else {
+            else
                 dpi = 163 * scale;
-            }
           break;
        case UIUserInterfaceIdiomTV:
        case UIUserInterfaceIdiomCarPlay:
-          /* TODO */
+       case -1:
+          /* TODO/FIXME */
           break;
     }
-    (void)displayHeight;
 
     switch (type)
     {
         case DISPLAY_METRIC_MM_WIDTH:
-            *value = physicalWidth;
+            *value = physical_width;
             break;
         case DISPLAY_METRIC_MM_HEIGHT:
-            *value = physicalHeight;
+            *value = physical_height;
             break;
         case DISPLAY_METRIC_DPI:
             *value = dpi;
@@ -1655,7 +1658,6 @@ static void *metal_init(
       void **input_data)
 {
    const char *shader_path;
-   enum rarch_shader_type type;
    MetalDriver *md = nil;
 
    [apple_platform setViewType:APPLE_VIEW_TYPE_METAL];
@@ -1668,8 +1670,8 @@ static void *metal_init(
    video_context_driver_set(&metal_fake_context);
 
    shader_path = video_shader_get_current_shader_preset();
-   type = video_shader_parse_type(shader_path);
-   metal_set_shader((__bridge void *)md, type, shader_path);
+   metal_set_shader((__bridge void *)md,
+         video_shader_parse_type(shader_path), shader_path);
 
    return (__bridge_retained void *)md;
 }
@@ -1712,25 +1714,24 @@ static bool metal_set_shader(void *data,
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    MetalDriver *md = (__bridge MetalDriver *)data;
-
-   if (!md)
-      return false;
-
-   if (type != RARCH_SHADER_SLANG)
+   if (md)
    {
-      if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
-         RARCH_WARN("[Metal] Only Slang shaders are supported. Falling back to stock.\n");
-      path = NULL;
+      if (type != RARCH_SHADER_SLANG)
+      {
+         if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
+            RARCH_WARN("[Metal] Only Slang shaders are supported. Falling back to stock.\n");
+         path = NULL;
+      }
+
+      /* TODO/FIXME - actually return to stock shader */
+      if (string_is_empty(path))
+         return true;
+
+      if ([md.frameView setShaderFromPath:[NSString stringWithUTF8String:path]])
+         return true;
    }
-
-   /* TODO actually return to stock */
-   if (string_is_empty(path))
-      return true;
-
-   return [md.frameView setShaderFromPath:[NSString stringWithUTF8String:path]];
-#else
-   return false;
 #endif
+   return false;
 }
 
 static void metal_free(void *data)
@@ -1743,21 +1744,15 @@ static void metal_set_viewport(void *data, unsigned viewport_width,
                                unsigned viewport_height, bool force_full, bool allow_rotate)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
-   if (md == nil) {
-      return;
-   }
-
-   [md setViewportWidth:viewport_width height:viewport_height forceFull:force_full allowRotate:allow_rotate];
+   if (md)
+      [md setViewportWidth:viewport_width height:viewport_height forceFull:force_full allowRotate:allow_rotate];
 }
 
 static void metal_set_rotation(void *data, unsigned rotation)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
-   if (md == nil) {
-      return;
-   }
-
-   [md setRotation:rotation];
+   if (md)
+      [md setRotation:rotation];
 }
 
 static void metal_viewport_info(void *data, struct video_viewport *vp)
@@ -1773,10 +1768,10 @@ static bool metal_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 }
 
 static uintptr_t metal_load_texture(void *video_data, void *data,
-                                    bool threaded, enum texture_filter_type filter_type)
+      bool threaded, enum texture_filter_type filter_type)
 {
-   MetalDriver *md = (__bridge MetalDriver *)video_data;
-   struct texture_image *img = (struct texture_image *)data;
+   MetalDriver           *md  = (__bridge MetalDriver *)video_data;
+   struct texture_image *img  = (struct texture_image *)data;
    if (!img)
       return 0;
 
@@ -1794,6 +1789,7 @@ static void metal_unload_texture(void *data,
    t = nil;
 }
 
+/* TODO/FIXME - implement */
 static void metal_set_video_mode(void *data,
                                  unsigned width, unsigned height,
                                  bool fullscreen)
@@ -1803,13 +1799,8 @@ static void metal_set_video_mode(void *data,
              fullscreen ? "YES" : "NO");
 }
 
-static float metal_get_refresh_rate(void *data)
-{
-   MetalDriver *md = (__bridge MetalDriver *)data;
-   (void)md;
-
-   return 0.0f;
-}
+/* TODO/FIXME - implement */
+static float metal_get_refresh_rate(void *data) { return 0.0f; }
 
 static void metal_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
@@ -1849,11 +1840,11 @@ static void metal_set_texture_frame(void *data, const void *frame,
 
 static void metal_set_texture_enable(void *data, bool state, bool full_screen)
 {
-   MetalDriver *md = (__bridge MetalDriver *)data;
+   MetalDriver *md    = (__bridge MetalDriver *)data;
    if (!md)
       return;
 
-   md.menu.enabled = state;
+   md.menu.enabled    = state;
 #if 0
    md.menu.fullScreen = full_screen;
 #endif
@@ -1920,7 +1911,6 @@ static const video_poke_interface_t metal_poke_interface = {
 static void metal_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &metal_poke_interface;
 }
 
@@ -1929,9 +1919,8 @@ static void metal_get_poke_interface(void *data,
 static void metal_overlay_enable(void *data, bool state)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
-   if (!md)
-      return;
-   md.overlay.enabled = state;
+   if (md)
+      md.overlay.enabled = state;
 }
 
 static bool metal_overlay_load(void *data,
@@ -1948,64 +1937,51 @@ static void metal_overlay_tex_geom(void *data, unsigned index,
       float x, float y, float w, float h)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
-   if (!md)
-      return;
-
-   [md.overlay updateTextureCoordsX:x y:y w:w h:h index:index];
+   if (md)
+      [md.overlay updateTextureCoordsX:x y:y w:w h:h index:index];
 }
 
 static void metal_overlay_vertex_geom(void *data, unsigned index,
       float x, float y, float w, float h)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
-   if (!md)
-      return;
-
-   [md.overlay updateVertexX:x y:y w:w h:h index:index];
+   if (md)
+      [md.overlay updateVertexX:x y:y w:w h:h index:index];
 }
 
 static void metal_overlay_full_screen(void *data, bool enable)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
-   if (!md)
-      return;
-
-   md.overlay.fullscreen = enable;
+   if (md)
+      md.overlay.fullscreen = enable;
 }
 
 static void metal_overlay_set_alpha(void *data, unsigned index, float mod)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
-   if (!md)
-      return;
-
-   [md.overlay updateAlpha:mod index:index];
+   if (md)
+      [md.overlay updateAlpha:mod index:index];
 }
 
 static const video_overlay_interface_t metal_overlay_interface = {
-   .enable        = metal_overlay_enable,
-   .load          = metal_overlay_load,
-   .tex_geom      = metal_overlay_tex_geom,
-   .vertex_geom   = metal_overlay_vertex_geom,
-   .full_screen   = metal_overlay_full_screen,
-   .set_alpha     = metal_overlay_set_alpha,
+   metal_overlay_enable,
+   metal_overlay_load,
+   metal_overlay_tex_geom,
+   metal_overlay_vertex_geom,
+   metal_overlay_full_screen,
+   metal_overlay_set_alpha,
 };
 
 static void metal_get_overlay_interface(void *data,
       const video_overlay_interface_t **iface)
 {
-   (void)data;
    *iface = &metal_overlay_interface;
 }
 
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-static bool metal_gfx_widgets_enabled(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool metal_gfx_widgets_enabled(void *data) { return true; }
 #endif
 
 video_driver_t video_metal = {
