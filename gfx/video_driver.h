@@ -880,13 +880,20 @@ typedef struct
    bool threaded;
 } video_driver_state_t;
 
-typedef struct video_frame_delay_auto {
+typedef struct video_frame_delay_auto
+{
    float refresh_rate;
    uint16_t frame_time_target;
    uint16_t frame_time_average;
    uint8_t frame_time_interval;
    uint8_t delay_decrease;
 } video_frame_delay_auto_t;
+
+struct aspect_ratio_elem
+{
+   float value;
+   char name[64];
+};
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 

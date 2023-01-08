@@ -60,12 +60,6 @@
 
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
-struct aspect_ratio_elem
-{
-   float value;
-   char name[64];
-};
-
 typedef struct
 {
    struct string_list *list;
