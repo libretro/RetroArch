@@ -218,7 +218,7 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "This might take a while...\n");
             break;
         /* Help menu items end. */
-#endif // 0
+#endif
         case MENU_ENUM_LABEL_INPUT_DRIVER:
             {
                const char *lbl = settings ? settings->arrays.input_driver : NULL;
@@ -471,7 +471,7 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU));
             break;
         /* Help menu items end. */
-#endif // 0
+#endif
 #ifdef HAVE_LAKKA
         case MENU_ENUM_LABEL_TIMEZONE:
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_TIMEZONE), len);

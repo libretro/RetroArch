@@ -4832,14 +4832,17 @@ MSG_HASH(
    MENU_ENUM_LABEL_INPUT_DRIVER_PS3,
    "ps3"
    )
+#ifdef VITA
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_DRIVER_PSP,
-#ifdef VITA
    "vita"
-#else
-   "psp"
-#endif
    )
+#else
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DRIVER_PSP,
+   "psp"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_DRIVER_PS2,
    "ps2"
