@@ -2364,8 +2364,10 @@ static bool rgui_downscale_thumbnail(
    /* Determine output dimensions */
    float display_aspect_ratio    = (float)max_width / (float)max_height;
    float         aspect_ratio    = (float)image_src->width / (float)image_src->height;
-   float core_aspect             = (thumbnail_core_aspect && video_st)
-         ? video_st->av_info.geometry.aspect_ratio : aspect_ratio;
+   float core_aspect             = (thumbnail_core_aspect
+         && video_st && video_st->av_info.geometry.aspect_ratio > 0)
+               ? video_st->av_info.geometry.aspect_ratio
+               : aspect_ratio;
 
    if (aspect_ratio > display_aspect_ratio)
    {
