@@ -2294,7 +2294,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
                      itr->id);
                return nullptr;
             }
-            chain->add_parameter(i, itr - shader->parameters, meta_param.id);
+            chain->add_parameter(i, (unsigned)(itr - shader->parameters), meta_param.id);
          }
          else
          {
