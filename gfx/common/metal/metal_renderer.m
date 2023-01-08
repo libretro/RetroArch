@@ -63,7 +63,7 @@ static NSString *NSStringFromRPixelFormat(RPixelFormat format)
    return RPixelStrings[format];
 }
 
-matrix_float4x4 make_matrix_float4x4(const float *v)
+static matrix_float4x4 make_matrix_float4x4(const float *v)
 {
    simd_float4 P       = simd_make_float4(v[0], v[1], v[2], v[3]);
    v += 4;
@@ -76,36 +76,7 @@ matrix_float4x4 make_matrix_float4x4(const float *v)
    return mat;
 }
 
-matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bottom)
-{
-#if 0
-   float near          = 0;
-   float far           = 1;
-   float sx            = 2 / (right - left);
-   float sy            = 2 / (top - bottom);
-   float sz            = 1 / (far - near);
-   float tx            = (right + left)   / (left   - right);
-   float ty            = (top   + bottom) / (bottom - top);
-   float tz            = near / (far - near);
-   simd_float4 P       = simd_make_float4(sx,  0,  0, 0);
-   simd_float4 Q       = simd_make_float4(0,  sy,  0, 0);
-   simd_float4 R       = simd_make_float4(0,   0, sz, 0);
-   simd_float4 S       = simd_make_float4(tx, ty, tz, 1);
-#else
-   float sx            = 2 / (right - left);
-   float sy            = 2 / (top   - bottom);
-   float tx            = (right + left)   / (left   - right);
-   float ty            = (top   + bottom) / (bottom - top);
-   simd_float4 P       = simd_make_float4(sx,  0, 0, 0);
-   simd_float4 Q       = simd_make_float4(0,  sy, 0, 0);
-   simd_float4 R       = simd_make_float4(0,   0, 1, 0);
-   simd_float4 S       = simd_make_float4(tx, ty, 0, 1);
-#endif
-   matrix_float4x4 mat = {P, Q, R, S};
-   return mat;
-}
-
-matrix_float4x4 matrix_rotate_z(float rot)
+static matrix_float4x4 matrix_rotate_z(float rot)
 {
    float cz, sz;
    __sincosf(rot, &sz, &cz);
@@ -115,6 +86,20 @@ matrix_float4x4 matrix_rotate_z(float rot)
    simd_float4 R = simd_make_float4( 0,   0, 1, 0);
    simd_float4 S = simd_make_float4( 0,   0, 0, 1);
 
+   matrix_float4x4 mat = {P, Q, R, S};
+   return mat;
+}
+
+matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bottom)
+{
+   float sx            = 2 / (right - left);
+   float sy            = 2 / (top   - bottom);
+   float tx            = (right + left)   / (left   - right);
+   float ty            = (top   + bottom) / (bottom - top);
+   simd_float4 P       = simd_make_float4(sx,  0, 0, 0);
+   simd_float4 Q       = simd_make_float4(0,  sy, 0, 0);
+   simd_float4 R       = simd_make_float4(0,   0, 1, 0);
+   simd_float4 S       = simd_make_float4(tx, ty, 0, 1);
    matrix_float4x4 mat = {P, Q, R, S};
    return mat;
 }
@@ -257,17 +242,11 @@ matrix_float4x4 matrix_rotate_z(float rot)
 
 - (void)setRotation:(unsigned)rotation
 {
-   _rotation         = 270 * rotation;
+   matrix_float4x4 rot;
+   _rotation                          = 270 * rotation;
    /* Calculate projection. */
-   _mvp_no_rot       = matrix_proj_ortho(0, 1, 0, 1);
-   bool allow_rotate = true;
-   if (!allow_rotate)
-   {
-      _mvp = _mvp_no_rot;
-      return;
-   }
-
-   matrix_float4x4 rot = matrix_rotate_z((float)(M_PI * _rotation / 180.0f));
+   _mvp_no_rot                        = matrix_proj_ortho(0, 1, 0, 1);
+   rot                                = matrix_rotate_z((float)(M_PI * _rotation / 180.0f));
    _mvp                               = simd_mul(rot, _mvp_no_rot);
    _uniforms.projectionMatrix         = _mvp;
    _uniformsNoRotate.projectionMatrix = _mvp_no_rot;
@@ -331,7 +310,7 @@ matrix_float4x4 matrix_rotate_z(float rot)
    NSError *err;
    MTLVertexDescriptor          *vd = [self _spriteVertexDescriptor];
    MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
-   psd.label = @"clear_state";
+   psd.label                        = @"clear_state";
 
    MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
    ca.pixelFormat       = _layer.pixelFormat;

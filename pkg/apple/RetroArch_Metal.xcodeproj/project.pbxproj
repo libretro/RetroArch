@@ -357,7 +357,6 @@
 		05A8C64C20DB72F000FF7857 /* snowflake_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = snowflake_sm4.hlsl.h; sourceTree = "<group>"; };
 		05A8C64D20DB72F000FF7857 /* mipmapgen_sm5.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mipmapgen_sm5.h; sourceTree = "<group>"; };
 		05A8C64E20DB72F000FF7857 /* font.hlsl.d3d9.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = font.hlsl.d3d9.h; sourceTree = "<group>"; };
-		05A8C67420DB72F000FF7857 /* video_state_tracker.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_state_tracker.h; sourceTree = "<group>"; };
 		05A8C67520DB72F000FF7857 /* video_thread_wrapper.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_thread_wrapper.c; sourceTree = "<group>"; };
 		05A8C67620DB72F000FF7857 /* video_driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_driver.c; sourceTree = "<group>"; };
 		05A8C67720DB72F000FF7857 /* video_crt_switch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_crt_switch.c; sourceTree = "<group>"; };
@@ -379,7 +378,6 @@
 		05A8C77020DB72F100FF7857 /* d3d_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = d3d_common.h; sourceTree = "<group>"; };
 		05A8C77720DB72F100FF7857 /* d3d10_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = d3d10_common.c; sourceTree = "<group>"; };
 		05A8C77A20DB72F100FF7857 /* video_display_server.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_display_server.h; sourceTree = "<group>"; };
-		05A8C77B20DB72F100FF7857 /* video_state_tracker.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_state_tracker.c; sourceTree = "<group>"; };
 		05A8C77D20DB72F100FF7857 /* vga_font.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vga_font.c; sourceTree = "<group>"; };
 		05A8C78120DB72F100FF7857 /* d3d10_font.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = d3d10_font.c; sourceTree = "<group>"; };
 		05A8C78320DB72F100FF7857 /* metal_raster_font.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = metal_raster_font.m; sourceTree = "<group>"; };
@@ -430,7 +428,6 @@
 		05BF821C20ED69D100D95B19 /* config.def.keybinds.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = config.def.keybinds.h; path = ../../config.def.keybinds.h; sourceTree = "<group>"; };
 		05BF821D20ED69D100D95B19 /* configuration.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = configuration.h; path = ../../configuration.h; sourceTree = "<group>"; };
 		05C5D53320E3DD0900654EE4 /* input_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_types.h; sourceTree = "<group>"; };
-		05C5D53420E3DD0900654EE4 /* input_remote.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_remote.c; sourceTree = "<group>"; };
 		05C5D53820E3DD0900654EE4 /* cocoa_input.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cocoa_input.h; sourceTree = "<group>"; };
 		05C5D54120E3DD0900654EE4 /* sdl_input.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sdl_input.c; sourceTree = "<group>"; };
 		05C5D54220E3DD0900654EE4 /* cocoa_input.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cocoa_input.c; sourceTree = "<group>"; };
@@ -453,7 +450,6 @@
 		05C5D56320E3DD0900654EE4 /* keyboard_event_apple.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = keyboard_event_apple.c; sourceTree = "<group>"; };
 		05C5D56620E3DD0900654EE4 /* keyboard_event_apple.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = keyboard_event_apple.h; sourceTree = "<group>"; };
 		05C5D56A20E3DD0900654EE4 /* input_remapping.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_remapping.h; sourceTree = "<group>"; };
-		05C5D56B20E3DD0900654EE4 /* input_mapper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_mapper.h; sourceTree = "<group>"; };
 		05C5D56C20E3DD0900654EE4 /* input_overlay.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_overlay.h; sourceTree = "<group>"; };
 		05C5D56D20E3DD0900654EE4 /* input_defines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_defines.h; sourceTree = "<group>"; };
 		05C5D56F20E3DD0900654EE4 /* btstack_hid.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = btstack_hid.c; sourceTree = "<group>"; };
@@ -474,10 +470,6 @@
 		05C5D58720E3DD0900654EE4 /* sdl_joypad.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sdl_joypad.c; sourceTree = "<group>"; };
 		05C5D58D20E3DD0900654EE4 /* mfi_joypad.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = mfi_joypad.m; sourceTree = "<group>"; };
 		05C5D59820E3DD0A00654EE4 /* hid_joypad.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hid_joypad.c; sourceTree = "<group>"; };
-		05C5D59F20E3DD0A00654EE4 /* input_remote.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_remote.h; sourceTree = "<group>"; };
-		05C5D5A020E3DD0A00654EE4 /* input_overlay.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_overlay.c; sourceTree = "<group>"; };
-		05C5D5A120E3DD0A00654EE4 /* input_mapper.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_mapper.c; sourceTree = "<group>"; };
-		05C5D5A220E3DD0A00654EE4 /* input_remapping.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_remapping.c; sourceTree = "<group>"; };
 		05C5D5A320E3DD0A00654EE4 /* input_driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_driver.c; sourceTree = "<group>"; };
 		05D7753120A55D2700646447 /* BaseConfig.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = BaseConfig.xcconfig; sourceTree = "<group>"; };
 		05D7753320A5678300646447 /* griffin_cpp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_cpp.cpp; path = ../../griffin/griffin_cpp.cpp; sourceTree = "<group>"; };
@@ -960,8 +952,6 @@
 				05A8C71320DB72F000FF7857 /* video_filter.h */,
 				05A8C79E20DB72F100FF7857 /* video_shader_parse.c */,
 				05A8C70E20DB72F000FF7857 /* video_shader_parse.h */,
-				05A8C77B20DB72F100FF7857 /* video_state_tracker.c */,
-				05A8C67420DB72F000FF7857 /* video_state_tracker.h */,
 				05A8C67520DB72F000FF7857 /* video_thread_wrapper.c */,
 				05A8C7A020DB72F100FF7857 /* video_thread_wrapper.h */,
 			);
@@ -1201,14 +1191,8 @@
 				05C5D56120E3DD0900654EE4 /* input_driver.h */,
 				05C5D58320E3DD0900654EE4 /* input_keymaps.c */,
 				05C5D54C20E3DD0900654EE4 /* input_keymaps.h */,
-				05C5D5A120E3DD0A00654EE4 /* input_mapper.c */,
-				05C5D56B20E3DD0900654EE4 /* input_mapper.h */,
-				05C5D5A020E3DD0A00654EE4 /* input_overlay.c */,
 				05C5D56C20E3DD0900654EE4 /* input_overlay.h */,
-				05C5D5A220E3DD0A00654EE4 /* input_remapping.c */,
 				05C5D56A20E3DD0900654EE4 /* input_remapping.h */,
-				05C5D53420E3DD0900654EE4 /* input_remote.c */,
-				05C5D59F20E3DD0A00654EE4 /* input_remote.h */,
 				05C5D53320E3DD0900654EE4 /* input_types.h */,
 			);
 			name = input;
