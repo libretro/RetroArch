@@ -2523,10 +2523,6 @@ MSG_HASH(
    "Пауза при отключении контроллера"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Приостанавливать контент при отключении любого контроллера."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Отклонение оси для нажатия кнопки"
    )

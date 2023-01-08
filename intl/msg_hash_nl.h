@@ -2295,10 +2295,6 @@ MSG_HASH(
    "Inhoud pauzeren wanneer de controller de verbinding verbreekt"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Inhoud pauzeren wanneer een controller wordt losgekoppeld."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Invoerknop Axis Drempel"
    )

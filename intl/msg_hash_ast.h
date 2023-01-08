@@ -1231,10 +1231,6 @@ MSG_HASH(
    "Detectar"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Posa'l conteníu al desconectar cualesquier mandu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "Atayos"
    )

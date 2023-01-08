@@ -2411,10 +2411,6 @@ MSG_HASH(
    "Pausar Conteúdo quando os Controles São Desconectados"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Pausar conteúdo quando qualquer controle for desconectado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Limite do eixo do botão da entrada"
    )

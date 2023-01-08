@@ -2495,10 +2495,6 @@ MSG_HASH(
    "Tartalom megállítása kontroller leválasztásakor"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "A tartalom megáll, amikor bármelyik kontroller lecsatlakozik."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Gomb-tengely határérték"
    )

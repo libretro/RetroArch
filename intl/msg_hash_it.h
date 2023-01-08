@@ -2451,10 +2451,6 @@ MSG_HASH(
    "Contenuto in pausa quando il controller si scollega"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Metti in pausa il contenuto quando un controller è scollegato."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Soglia dell'asse dell'input del pulsante"
    )

@@ -2535,10 +2535,6 @@ MSG_HASH(
    "컨트롤러 연결 해제 시 컨텐츠 일시정지"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "아무 컨트롤러나 연결 해제될 경우 컨텐츠를 일시정지합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "버튼 입력 축 임계값"
    )

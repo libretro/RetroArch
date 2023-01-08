@@ -2435,10 +2435,6 @@ MSG_HASH(
    "Pozastavení obsahu při odpojení ovladače"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Pozastavení obsahu při odpojení libovolného ovladače."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Limit Osy Vstupního Tlačítka"
    )

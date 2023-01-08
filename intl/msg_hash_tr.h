@@ -2503,10 +2503,6 @@ MSG_HASH(
    "Kontrolcü Bağlantısı Kesildiğinde İçeriği Duraklat"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Herhangi bir kontrolcünün bağlantısı kesildiğinde içeriği duraklatın."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Giriş Düğmesi Eksen Eşiği"
    )

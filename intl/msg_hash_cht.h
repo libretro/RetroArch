@@ -2515,10 +2515,6 @@ MSG_HASH(
    "控制器斷開時暫停遊戲"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "當控制器連接斷開時暫停遊戲。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "類比搖桿輸入十字鍵"
    )
@@ -8106,7 +8102,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "目前載入著色器的通道編號，加入配置檔並自動應用變化。"
+   "目前載入的著色器加入配置檔並自動應用變化。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,

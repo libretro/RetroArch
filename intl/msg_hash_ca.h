@@ -2435,10 +2435,6 @@ MSG_HASH(
    "Posa en pausa el contingut quan es desconnecti el comandament"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Posa en pausa el contingut quan es desconnecta qualsevol comandament."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Llindar de l'eix del botó d'entrada"
    )

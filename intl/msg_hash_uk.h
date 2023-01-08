@@ -2459,10 +2459,6 @@ MSG_HASH(
    "Зупинити гру при відключенні контролера"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Поставити вміст на паузу, коли будь-який контролер буде від'єднано."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Зрушення по осі Кнопки Ввода"
    )

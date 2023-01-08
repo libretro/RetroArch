@@ -2475,10 +2475,6 @@ MSG_HASH(
    "Mettre en pause le contenu lorsque la manette se déconnecte"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Met en pause le contenu lorsqu'une manette est déconnectée."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Seuil de l'axe des touches "
    )
