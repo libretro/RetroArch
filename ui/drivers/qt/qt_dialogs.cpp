@@ -61,6 +61,7 @@ extern "C" {
 #include "../../../msg_hash.h"
 #include "../../../paths.h"
 #include "../../../retroarch.h"
+#include "../../../runloop.h"
 
 #ifndef CXX_BUILD
 }

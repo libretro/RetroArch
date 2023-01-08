@@ -35,9 +35,9 @@
 #include <dxgi.h>
 
 #include "../../driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
-#include "../../retroarch.h"
 #ifdef HAVE_REWIND
 #include "../../state_manager.h"
 #endif

@@ -24,7 +24,6 @@
 #include "menu_driver.h"
 #include "menu_displaylist.h"
 #include "../file_path_special.h"
-#include "../retroarch.h"
 #include "../core_info.h"
 #include "../configuration.h"
 

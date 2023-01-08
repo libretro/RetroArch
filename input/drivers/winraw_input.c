@@ -42,7 +42,6 @@ extern "C" {
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 typedef struct
@@ -130,17 +129,13 @@ static void winraw_destroy_window(HWND wnd)
 static BOOL winraw_set_keyboard_input(HWND window)
 {
    RAWINPUTDEVICE rid;
-   settings_t *settings;
-
-   settings        = config_get_ptr();
-
-   rid.dwFlags     = window ? 0 : RIDEV_REMOVE;
-   rid.hwndTarget  = window;
-   rid.usUsagePage = 0x01; /* Generic desktop */
-   rid.usUsage     = 0x06; /* Keyboard */
+   settings_t *settings = config_get_ptr();
+   rid.dwFlags          = window ? 0 : RIDEV_REMOVE;
+   rid.hwndTarget       = window;
+   rid.usUsagePage      = 0x01; /* Generic desktop */
+   rid.usUsage          = 0x06; /* Keyboard */
    if (settings->bools.input_nowinkey_enable)
-      rid.dwFlags |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
-
+      rid.dwFlags      |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
    return RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
 }
 

@@ -52,6 +52,8 @@
 #include "../../audio/audio_driver.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../runtime_file.h"
+#include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../file_path_special.h"
 #include "../../list_special.h"
 

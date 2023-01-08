@@ -50,6 +50,7 @@
 #include "../include/Cg/cgD3D9.h"
 #include "../video_coord_array.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../dynamic.h"
 #include "../../frontend/frontend_driver.h"
 
@@ -66,7 +67,6 @@
 
 #include "../../core.h"
 #include "../../verbosity.h"
-#include "../../retroarch.h"
 
 #ifdef __WINRT__
 #error "UWP does not support D3D9"

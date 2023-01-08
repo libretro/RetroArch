@@ -26,6 +26,7 @@
 
 #include "core_option_manager.h"
 #include "msg_hash.h"
+#include "retroarch.h"
 
 /*********************/
 /* Option Conversion */

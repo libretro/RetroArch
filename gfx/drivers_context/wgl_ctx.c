@@ -41,7 +41,6 @@
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 

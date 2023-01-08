@@ -52,6 +52,7 @@
 
 #include "../../configuration.h"
 #include "../../file_path_special.h"
+#include "../../runloop.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #ifdef HAVE_LANGEXTRA

@@ -33,6 +33,7 @@
 #include "../msg_hash.h"
 #include "../playlist.h"
 #include "../manual_content_scan.h"
+#include "../runloop.h"
 
 #ifdef RARCH_INTERNAL
 #ifdef HAVE_MENU

@@ -16,7 +16,6 @@
  */
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #include <retro_assert.h>
@@ -67,7 +66,6 @@ extern "C" {
 }
 #endif
 
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #define FFMPEG3 (LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 10, 100))

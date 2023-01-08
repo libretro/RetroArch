@@ -52,8 +52,6 @@
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
-#include "../../retroarch.h"
-#include "../../verbosity.h"
 
 /* Context has to be global as joypads also ride on this context. */
 LPDIRECTINPUT8 g_dinput_ctx;

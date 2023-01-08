@@ -42,12 +42,9 @@
 #include "../../config.h"
 #endif
 
-#include "../../config.def.h"
-
-#include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
-
-#include "../../retroarch.h"
+#include "../../gfx/video_driver.h"
+#include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
 #include "dinput_joypad.h"

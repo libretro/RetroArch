@@ -22,7 +22,6 @@
 
 #include "../gfx_display.h"
 
-#include "../../retroarch.h"
 #include "../common/vulkan_common.h"
 
 /* Will do Y-flip later, but try to make it similar to GL. */

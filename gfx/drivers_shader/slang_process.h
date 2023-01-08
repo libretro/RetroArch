@@ -21,7 +21,6 @@
 #include <retro_common_api.h>
 
 #include "../video_shader_parse.h"
-#include "../../retroarch.h"
 #include "slang_reflection.h"
 #include "glslang_util.h"
 

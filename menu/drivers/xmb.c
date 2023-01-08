@@ -50,6 +50,8 @@
 
 #include "../../core_info.h"
 #include "../../core.h"
+#include "../../retroarch.h"
+#include "../../runloop.h"
 
 #include "../../input/input_osk.h"
 

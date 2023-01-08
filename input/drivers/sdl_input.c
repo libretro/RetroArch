@@ -27,8 +27,6 @@
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
-#include "../../retroarch.h"
-#include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
 #ifdef HAVE_SDL2

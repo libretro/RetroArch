@@ -45,6 +45,7 @@
 #include "../file_path_special.h"
 #include "../paths.h"
 #include "../retroarch.h"
+#include "../runloop.h"
 
 #if defined(HAVE_GFX_WIDGETS)
 #include "gfx_widgets.h"

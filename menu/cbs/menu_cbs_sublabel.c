@@ -23,7 +23,6 @@
 #include "../menu_cbs.h"
 #include "../../input/input_remapping.h"
 
-#include "../../retroarch.h"
 #include "../../core_option_manager.h"
 
 #ifdef HAVE_CHEEVOS

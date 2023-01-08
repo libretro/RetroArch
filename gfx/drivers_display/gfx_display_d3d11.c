@@ -23,7 +23,6 @@
 
 #include "../gfx_display.h"
 
-#include "../../retroarch.h"
 #include "../common/d3d11_common.h"
 
 static void gfx_display_d3d11_blend_begin(void *data)

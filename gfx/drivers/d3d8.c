@@ -43,7 +43,6 @@
 #include "../common/d3d_common.h"
 #include "../video_coord_array.h"
 #include "../../configuration.h"
-#include "../../retroarch.h"
 #include "../../dynamic.h"
 #include "../../frontend/frontend_driver.h"
 

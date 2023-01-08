@@ -46,6 +46,7 @@
 #include "../gfx/gfx_widgets.h"
 #endif
 
+#include "../core.h"
 #include "../defaults.h"
 #include "../command.h"
 #include "../configuration.h"

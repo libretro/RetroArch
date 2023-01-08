@@ -16,9 +16,6 @@ extern "C" {
 #include "../../../input/input_driver.h"
 #include "../../../input/input_remapping.h"
 #include "../../../network/netplay/netplay.h"
-#include "../../../retroarch.h"
-
-#include "../../../verbosity.h"
 
 #ifndef CXX_BUILD
 }
