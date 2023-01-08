@@ -39,6 +39,29 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
        switch (idx)
        {
+          case RARCH_QUIT_KEY:
+             snprintf(s, len,
+                   "Key to exit RetroArch cleanly. \n"
+                   " \n"
+                   "Killing it in any hard way (SIGKILL, etc.) will \n"
+                   "terminate RetroArch without saving RAM, etc."
+#ifdef __unix__
+                   "\nOn Unix-likes, SIGINT/SIGTERM allows a clean \n"
+                   "deinitialization."
+#endif
+                   "");
+             break;
+          case RARCH_STATE_SLOT_PLUS:
+          case RARCH_STATE_SLOT_MINUS:
+             snprintf(s, len,
+                   "State slots. \n"
+                   " \n"
+                   "With slot set to 0, save state name is \n"
+                   "*.state (or whatever defined on commandline). \n"
+                   " \n"
+                   "When slot is not 0, path will be <path><d>, \n"
+                   "where <d> is slot number.");
+             break;
           case RARCH_ENABLE_HOTKEY:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY), len);
              break;
@@ -143,8 +166,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_CORE_LIST:
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CORE_LIST), len);
             break;
-#if 0
-        /* These items are only available from the help menu that was hidden by commit ee9b6ba78e8690bb5eff8c978dba3d1649363e6b */
         case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
             snprintf(s, len,
                      "You can use the following controls below \n"
@@ -217,35 +238,44 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Extracting assets, please wait.\n"
                              "This might take a while...\n");
             break;
-        /* Help menu items end. */
-#endif
         case MENU_ENUM_LABEL_INPUT_DRIVER:
             {
                const char *lbl = settings ? settings->arrays.input_driver : NULL;
 
                if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_UDEV)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV), len);
-               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_LINUXRAW)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW), len);
+                     snprintf(s, len,
+                           "udev Input driver. \n"
+                           " \n"
+                           "It uses the recent evdev joypad API \n"
+                           "for joystick support. It supports \n"
+                           "hotplugging and force feedback. \n"
+                           " \n"
+                           "The driver reads evdev events for keyboard \n"
+                           "support. It also supports keyboard callback, \n"
+                           "mice and touchpads. \n"
+                           " \n"
+                           "By default in most distros, /dev/input nodes \n"
+                           "are root-only (mode 600). You can set up a udev \n"
+                           "rule which makes these accessible to non-root.");
+               else if (string_is_equal(lbl,
+                        msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DRIVER_LINUXRAW)))
+                     snprintf(s, len,
+                           "linuxraw Input driver. \n"
+                           " \n"
+                           "This driver requires an active TTY. Keyboard \n"
+                           "events are read directly from the TTY which \n"
+                           "makes it simpler, but not as flexible as udev. \n" "Mice, etc, are not supported at all. \n"
+                           " \n"
+                           "This driver uses the older joystick API \n"
+                           "(/dev/input/js*).");
                else
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS), len);
+                     snprintf(s, len,
+                           "Input driver.\n"
+                           " \n"
+                           "Depending on video driver, it might \n"
+                           "force a different input driver.");
             }
             break;
-        case MENU_ENUM_LABEL_MENU_DRIVER:
-            {
-               const char *lbl = settings ? settings->arrays.menu_driver : NULL;
-
-               if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_MENU_DRIVER_XMB)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB), len);
-               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_MENU_DRIVER_OZONE)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE), len);
-               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_MENU_DRIVER_RGUI)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI), len);
-               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_MENU_DRIVER_MATERIALUI)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI), len);
-            }
-            break;
-
         case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST), len);
             break;
@@ -254,15 +284,49 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_DRIVER:
             {
-               const char *lbl = settings ? settings->arrays.video_driver : NULL;
+               const char *video_driver = settings->arrays.video_driver;
 
-               if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_GL)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL), len);
-               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_SDL2)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2), len);
-               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_SDL1)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1), len);
-/*               else if (string_is_equal(video_driver, "d3d"))
+               snprintf(s, len,
+                     "Current Video driver.");
+
+               if (string_is_equal(video_driver, "gl"))
+               {
+                  snprintf(s, len,
+                        "OpenGL Video driver. \n"
+                        " \n"
+                        "This driver allows libretro GL cores to  \n"
+                        "be used in addition to software-rendered \n"
+                        "core implementations.\n"
+                        " \n"
+                        "Performance for software-rendered and \n"
+                        "libretro GL core implementations is \n"
+                        "dependent on your graphics card's \n"
+                        "underlying GL driver).");
+               }
+               else if (string_is_equal(video_driver, "sdl2"))
+               {
+                  snprintf(s, len,
+                        "SDL 2 Video driver.\n"
+                        " \n"
+                        "This is an SDL 2 software-rendered video \n"
+                        "driver.\n"
+                        " \n"
+                        "Performance for software-rendered libretro \n"
+                        "core implementations is dependent \n"
+                        "on your platform SDL implementation.");
+               }
+               else if (string_is_equal(video_driver, "sdl1"))
+               {
+                  snprintf(s, len,
+                        "SDL Video driver.\n"
+                        " \n"
+                        "This is an SDL 1.2 software-rendered video \n"
+                        "driver.\n"
+                        " \n"
+                        "Performance is considered to be suboptimal. \n"
+                        "Consider using it only as a last resort.");
+               }
+               else if (string_is_equal(video_driver, "d3d"))
                {
                   snprintf(s, len,
                         "Direct3D Video driver. \n"
@@ -270,31 +334,55 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                         "Performance for software-rendered cores \n"
                         "is dependent on your graphic card's \n"
                         "underlying D3D driver).");
-               }*/
-               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_EXYNOS)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS), len);
-               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_DRM)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM), len);
-               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_SUNXI)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI), len);
-               else
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS), len);
+               }
+               else if (string_is_equal(video_driver, "exynos"))
+               {
+                  snprintf(s, len,
+                        "Exynos-G2D Video Driver. \n"
+                        " \n"
+                        "This is a low-level Exynos video driver. \n"
+                        "Uses the G2D block in Samsung Exynos SoC \n"
+                        "for blit operations. \n"
+                        " \n"
+                        "Performance for software rendered cores \n"
+                        "should be optimal.");
+               }
+               else if (string_is_equal(video_driver, "drm"))
+               {
+                  snprintf(s, len,
+                        "Plain DRM Video Driver. \n"
+                        " \n"
+                        "This is a low-level video driver using. \n"
+                        "libdrm for hardware scaling using \n"
+                        "GPU overlays.");
+               }
+               else if (string_is_equal(video_driver, "sunxi"))
+               {
+                  snprintf(s, len,
+                        "Sunxi-G2D Video Driver. \n"
+                        " \n"
+                        "This is a low-level Sunxi video driver. \n"
+                        "Uses the G2D block in Allwinner SoCs.");
+               }
             }
             break;
         case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
             {
                const char *lbl = settings ? settings->arrays.audio_resampler : NULL;
 
-               if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC), len);
-               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC), len);
-               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_NEAREST)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST), len);
-               else
+               if (string_is_equal(lbl, msg_hash_to_str(
+                           MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC)))
+                  strlcpy(s,
+                        "Windowed SINC implementation.", len);
+               else if (string_is_equal(lbl, msg_hash_to_str(
+                           MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
+                  strlcpy(s,
+                        "Convoluted Cosine implementation.", len);
+               else if (string_is_empty(s))
                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
             }
             break;
+
         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET), len);
             break;
@@ -308,7 +396,26 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS), len);
             break;
         case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT), len);
+            snprintf(s, len,
+                     "Saves config to disk on exit.\n"
+                             "Useful for menu as settings can be\n"
+                             "modified. Overwrites the config.\n"
+                             " \n"
+                             "#include's and comments are not \n"
+                             "preserved. \n"
+                             " \n"
+                             "By design, the config file is \n"
+                             "considered immutable as it is \n"
+                             "likely maintained by the user, \n"
+                             "and should not be overwritten \n"
+                             "behind the user's back."
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+            "\nThis is not not the case on \n"
+            "consoles however, where \n"
+            "looking at the config file \n"
+            "manually isn't really an option."
+#endif
+            );
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS), len);
@@ -330,27 +437,39 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_FILTER:
 #ifdef HAVE_FILTERS_BUILTIN
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN), len);
+            snprintf(s, len,
+                  "CPU-based video filter.");
 #else
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_FILTER), len);
+            snprintf(s, len,
+                     "CPU-based video filter.\n"
+                             " \n"
+                             "Path to a dynamic library.");
 #endif
             break;
         case MENU_ENUM_LABEL_AUDIO_DEVICE:
-            {
-                strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE), len);
+            snprintf(s, len,
+                     "Override the default audio device \n"
+                             "the audio driver uses.\n"
+                             "This is driver dependent. E.g.\n"
 #ifdef HAVE_ALSA
-                strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA), len);
+            " \n"
+            "ALSA wants a PCM device."
 #endif
 #ifdef HAVE_OSS
-                strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS), len);
+            " \n"
+            "OSS wants a path (e.g. /dev/dsp)."
 #endif
 #ifdef HAVE_JACK
-                strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK), len);
+            " \n"
+            "JACK wants portnames (e.g. system:playback1\n"
+            ",system:playback_2)."
 #endif
 #ifdef HAVE_RSOUND
-                strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND), len);
+            " \n"
+            "RSound wants an IP address to an RSound \n"
+            "server."
 #endif
-            }
+            );
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO), len);
@@ -380,8 +499,14 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_THREADED), len);
             break;
         case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
-            snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY),
-                     MAXIMUM_FRAME_DELAY);
+            snprintf(s, len,
+                     "Sets how many milliseconds to delay\n"
+                             "after VSync before running the core.\n"
+                             "\n"
+                             "Can reduce latency at the cost of\n"
+                             "higher risk of stuttering.\n"
+                             " \n"
+                             "Maximum is %d.", MAXIMUM_FRAME_DELAY);
             break;
         case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO:
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO), len);
@@ -416,14 +541,33 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_MAX_SWAPCHAIN_IMAGES), len);
             break;
+      case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
+         snprintf(s, len,
+#ifdef HAVE_ODROIDGO2
+               "RGA scaling and bicubic filtering. May break widgets."
+#else
+               "Hardware context scaling (if available)."
+#endif
+         );
+         break;
         case MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT:
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_UI_COMPANION_START_ON_BOOT), len);
+            break;
+        case MENU_ENUM_LABEL_EXIT_EMULATOR:
+            snprintf(s, len,
+                     "Key to exit RetroArch cleanly."
+#if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
+                            "\nKilling it in any hard way (SIGKILL, \n"
+                            "etc) will terminate without saving\n"
+                            "RAM, etc. On Unix-likes,\n"
+                            "SIGINT/SIGTERM allows\n"
+                            "a clean deinitialization."
+#endif
+            );
             break;
         case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT), len);
             break;
-#if 0
-        /* These items are only available from the help menu that was hidden by commit ee9b6ba78e8690bb5eff8c978dba3d1649363e6b */
         case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
             snprintf(s, len,
                      "RetroArch by itself does nothing. \n"
@@ -470,8 +614,39 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU));
             break;
-        /* Help menu items end. */
-#endif
+        /* TODO/FIXME: move these VIDEO_MESSAGE related help texts to sublabels. */
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE:
+            snprintf(s, len,
+                     "Enables a background color for the OSD.");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED:
+            snprintf(s, len,
+                     "Sets the red value of the OSD background color. Valid values are between 0 and 255.");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN:
+            snprintf(s, len,
+                     "Sets the green value of the OSD background color. Valid values are between 0 and 255.");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE:
+            snprintf(s, len,
+                     "Sets the blue value of the OSD background color. Valid values are between 0 and 255.");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY:
+            snprintf(s, len,
+                     "Sets the opacity of the OSD background color. Valid values are between 0.0 and 1.0.");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED:
+            snprintf(s, len,
+                     "Sets the red value of the OSD text color. Valid values are between 0 and 255.");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN:
+            snprintf(s, len,
+                     "Sets the green value of the OSD text color. Valid values are between 0 and 255.");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE:
+            snprintf(s, len,
+                     "Sets the blue value of the OSD text color. Valid values are between 0 and 255.");
+            break;
 #ifdef HAVE_LAKKA
         case MENU_ENUM_LABEL_TIMEZONE:
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_TIMEZONE), len);
@@ -491,7 +666,13 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
 #ifdef ANDROID
         case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD), len);
+            snprintf(s, len,
+                     "If RetroArch identifies a hardware keyboard as some kind of\n"
+                     "gamepad, this setting can be used to force RetroArch to treat\n"
+                     "the misidentified device as a keyboard.\n"
+                     "This can be useful if you are trying to emulate a computer in some\n"
+                     "Android TV device and also own a physical keyboard that can be\n"
+                     "attached to the box.\n");
             break;
 #endif
         default:

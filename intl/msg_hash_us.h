@@ -209,10 +209,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "Quit the program."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Quit RetroArch. Killing the program in any hard way (SIGKILL, etc.) will terminate RetroArch without saving configuration, etc. On Unix-likes, SIGINT/SIGTERM allows a clean deinitialization."
-   )
 
 /* Main Menu > Load Core */
 
@@ -1453,18 +1449,6 @@ MSG_HASH(
    "Input driver to use. Some video drivers force a different input driver."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "The udev input driver uses the recent evdev joypad API for joystick support. It supports hotplugging and force feedback.\nThe driver reads evdev events for keyboard support. It also supports keyboard callback, mice and touchpads.\nBy default in most distros, /dev/input nodes are root-only (mode 600). You can set up a udev rule which makes these accessible to non-root."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
-   "The linuxraw input driver requires an active TTY. Keyboard events are read directly from the TTY which makes it simpler, but not as flexible as udev. Mice, etc, are not supported at all.This driver uses the older joystick API (/dev/input/js*)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
-   "Input driver. The video driver might force a different input driver."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Controller"
    )
@@ -1481,34 +1465,6 @@ MSG_HASH(
    "Video driver to use."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
-   "OpenGL Video driver. This driver allows libretro GL cores to be used in addition to software-rendered core implementations. Performance for software-rendered and libretro GL core implementations is dependent on your graphics card's underlying GL driver."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
-   "SDL 2 software-rendered video driver. Performance for software-rendered libretro core implementations is dependent on your platform SDL implementation."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
-   "SDL 1.2 software-rendered video driver. Performance is considered to be suboptimal. Consider using it only as a last resort."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
-   "A low-level Exynos video driver that uses the G2D block in Samsung Exynos SoC for blit operations. Performance for software rendered cores should be optimal."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
-   "Plain DRM Video Driver. This is a low-level video driver using libdrm for hardware scaling using GPU overlays."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
-   "A low-level Sunxi video driver that uses the G2D block in Allwinner SoCs."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
-   "Current Video driver."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "Audio"
    )
@@ -1523,18 +1479,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    "Audio resampler driver to use."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
-   "Windowed SINC implementation."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
-   "Convoluted Cosine implementation."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
-   "Nearest resampling implementation. This resampler ignores the quality setting."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
@@ -1575,22 +1519,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
    "Menu driver to use."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
-   "XMB is a RetroArch GUI that looks like a 7th generation console menu. It can support same features as Ozone."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
-   "Ozone is the default GUI of RetroArch on most platforms. It is optimized for navigation with a game controller."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
-   "RGUI is a simple built-in GUI for RetroArch. It has the lowest performance requirements among the menu drivers, and can be used on low resolution screens."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
-   "On mobile devices, RetroArch uses the mobile UI, MaterialUI, by default. This interface is designed around touchscreen and pointer devices like a mouse/trackball."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1776,14 +1704,6 @@ MSG_HASH(
    "Apply a CPU-powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit color."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
-   "Apply a CPU-powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit color. Select a dynamically linked video filter library."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
-   "Apply a CPU-powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit color. Select a built-in video filter library."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    "Remove Video Filter"
    )
@@ -1929,7 +1849,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
-   "The accurate refresh rate of your monitor (Hz). This is used to calculate audio input rate with the formula:\naudio_input_rate = game input rate * display refresh rate / game refresh rate\nIf the core does not report any values, NTSC defaults will be assumed for compatibility.\nThis value should stay close to 60Hz to avoid large pitch changes. If your monitor does not run at or close to 60Hz, disable VSync, and leave this at its default."
+   "The accurate refresh rate of your monitor (Hz). This is used to calculate audio input rate with the formula:\naudio_input_rate = game input rate * display refresh rate / game refresh rate\nIf the implementation does not report any values, NTSC defaults will be assumed for compatibility.\nThis value should stay close to 60Hz to avoid large pitch changes. If your monitor does not run at 60Hz, or something close to it, disable VSync, and leave this at its default."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
@@ -2299,10 +2219,6 @@ MSG_HASH(
    "Reduces latency at the cost of a higher risk of video stuttering. Adds a delay after VSync (in ms)."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Sets how many milliseconds to delay after VSync before running the core. Can reduce latency at the cost of higher risk of stuttering. Maximum is %d."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatic Frame Delay"
    )
@@ -2509,26 +2425,6 @@ MSG_HASH(
    "Override the default audio device the audio driver uses. This is driver dependent."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
-   "Override the default audio device the audio driver uses. This is driver dependent."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
-   "\nALSA wants a PCM device."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
-   "\nOSS wants a path (e.g. /dev/dsp)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
-   "\nJACK wants portnames (e.g. system:playback1,system:playback_2)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
-   "\nRSound wants an IP address to an RSound server."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Audio Latency (ms)"
    )
@@ -2588,7 +2484,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
-   "Setting this to 0 disables rate control. Any other value controls audio rate control delta.\nDefines how much input rate can be adjusted dynamically. Input rate is defined as:\ninput rate * (1.0 +/- (rate control delta))"
+   "Audio rate control.\nSetting this to 0 disables rate control. Any other value controls audio rate control delta.\nDefines how much input rate can be adjusted dynamically. Input rate is defined as:\ninput rate * (1.0 +/- (rate control delta))"
    )
 
 /* Settings > Audio > MIDI */
@@ -2748,11 +2644,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-   "Influences how input polling is done in RetroArch. Setting it to 'Early' or 'Late' can result in less latency, depending on your configuration."
+   "Influence how input polling is done in RetroArch. Setting it to 'Early' or 'Late' can result in less latency, depending on your configuration."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
-   "Influences how input polling is done inside RetroArch.\nEarly - Input polling is performed before the frame is processed.\nNormal - Input polling is performed when polling is requested.\nLate - Input polling is performed on first input state request per frame.\nSetting it to 'Early' or 'Late' can result in less latency, depending on your configuration. Will be ignored when using netplay."
+   "Influence how input polling is done inside RetroArch.\nEarly - Input polling is performed before the frame is processed.\nNormal - Input polling is performed when polling is requested.\nLate - Input polling is performed on first input state request per frame.\nSetting it to 'Early' or 'Late' can result in less latency, depending on your configuration. Will be ignored when using netplay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -2782,17 +2678,12 @@ MSG_HASH(
 #endif
 #ifdef ANDROID
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "Select physical keyboard"
+        MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+        "Select physical keyboard"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "Use this device as a physical keyboard and not as a gamepad."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "If RetroArch identifies a hardware keyboard as some kind of gamepad, this setting can be used to force RetroArch to treat the misidentified device as a keyboard.\nThis can be useful if you are trying to emulate a computer in some Android TV device and also own a physical keyboard that can be attached to the box."
-   )
+        MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+        "Use this device as a physical keyboard and not as a gamepad."
 )
 #endif
 MSG_HASH(
@@ -3062,7 +2953,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
-   "If this hotkey is bound to either keyboard, joybutton or joyaxis, all other hotkeys will be disabled unless this hotkey is also held at the same time.\nThis is useful for RETRO_KEYBOARD centric implementations which query a large area of the keyboard, where it is not desirable that hotkeys get in the way."
+   "Enable other hotkeys.\nIf this hotkey is bound to either keyboard, joybutton or joyaxis, all other hotkeys will be disabled unless this hotkey is also held at the same time.\nThis is useful for RETRO_KEYBOARD centric implementations which query a large area of the keyboard, where it is not desirable that hotkeys get in the way."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -3766,7 +3657,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
-   "Some cores might need firmware or bios files.\nIf this option is enabled, RetroArch will not allow starting the core if any mandatory firmware items are missing."
+   "Some cores might need firmware or bios files.\nIf this option is disabled, it will try to load even if such firmware is missing. !!!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
@@ -3864,10 +3755,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
    "Save changes to the configuration file on quit."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
-   "Save config to disk on exit. Useful for changes made in the menu. Overwrites the config file, #include's and comments are not preserved."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
@@ -4974,64 +4861,32 @@ MSG_HASH(
    "Notification Color (Red)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
-   "Sets the red value of the OSD text color. Valid values are between 0 and 255."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
    "Notification Color (Green)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
-   "Sets the green value of the OSD text color. Valid values are between 0 and 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
    "Notification Color (Blue)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
-   "Sets the blue value of the OSD text color. Valid values are between 0 and 255."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
    "Notification Background"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
-   "Enables a background color for the OSD."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
    "Notification Background Color (Red)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED,
-   "Sets the red value of the OSD background color. Valid values are between 0 and 255."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
    "Notification Background Color (Green)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
-   "Sets the green value of the OSD background color. Valid values are between 0 and 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
    "Notification Background Color (Blue)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
-   "Sets the blue value of the OSD background color. Valid values are between 0 and 255."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
    "Notification Background Opacity"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-   "Sets the opacity of the OSD background color. Valid values are between 0.0 and 1.0."
    )
 
 /* Settings > User Interface */
@@ -6989,7 +6844,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "Login details for your RetroAchievements account. Visit retroachievements.org and sign up for a free account.\nAfter you are done registering, you need to input the username and password into RetroArch."
+   "Login details for your Retro Achievements account. Visit retroachievements.org and sign up for a free account.\nAfter you are done registering, you need to input the username and password into RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
@@ -8675,7 +8530,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
-   "Load a shader preset directly. The shader menu is updated accordingly.\nThe scaling factor displayed in the menu is reliable only if the preset uses simple scaling methods (i.e. source scaling, same scaling factor for X/Y)."
+   "Load Shader Preset. Load a shader preset directly. The shader menu is updated accordingly.\nIf the preset uses scaling methods which are not simple, (i.e. source scaling, same scaling factor for X/Y), the scaling factor displayed in the menu might not be correct."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
@@ -8719,7 +8574,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
-   "After changing shader settings such as amount of shader passes, filtering, FBO scale, use this to apply changes.\nChanging these shader settings is a somewhat expensive operation so it has to be done explicitly.\nWhen you apply shaders, the shader settings are saved to a temporary file (retroarch.slangp/.cgp/.glslp) and loaded. The file persists after RetroArch exits and is saved to Shader Directory."
+   "Apply Shader Changes. After changing shader settings such as amount of shader passes, filtering, FBO scale, use this to apply changes.\nChanging these shader settings is a somewhat expensive operation so it has to be done explicitly.\nWhen you apply shaders, the menu shader settings are saved to a temporary file (either menu.cgp or menu.glslp) and loaded. The file persists after RetroArch exits. The file is saved to Shader Directory."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -8739,7 +8594,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES,
-   "RetroArch allows to mix and match various shaders with arbitrary shader passes, with custom hardware filters and scale factors.\nThis option specifies the number of shader passes to use. If you set this to 0, and use Apply Shader Changes, you use a 'blank' shader."
+   "RetroArch allows you to mix and match various shaders with arbitrary shader passes, with custom hardware filters and scale factors.\nThis option specifies the number of shader passes to use. If you set this to 0, and use Apply Shader Changes, you use a 'blank' shader.\nThe Default Filter option will affect the stretching filter."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER,
@@ -8747,7 +8602,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
-   "Path to shader. All shaders must be of the same type (i.e. Cg, GLSL or Slang).\nSet Shader Directory to set where the browser starts to look for shaders."
+   "Path to shader. All shaders must be of the same type (i.e. CG, GLSL or HLSL).\nSet Shader Directory to set where the browser starts to look for shaders."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
@@ -8755,7 +8610,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
-   "Hardware filter for this pass. If 'Default' is set, filter will be either 'Linear' or 'Nearest' depending on 'Bilinear Filtering' setting under Video settings."
+   "Hardware filter for this pass. If 'Don't Care' is set, 'Default Filter' will be used."
   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCALE,
@@ -8763,7 +8618,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
-   "Scale for this pass.\nThe scale factor accumulates, i.e. 2x for first pass and 2x for second pass will give you a 4x total scale.\nIf there is a scale factor for last pass, the result is stretched to screen with the default filter, depending on Bilinear Filtering setting under Video settings.\nIf 'Default' is set, either 1x scale or stretch to fullscreen will be used depending if it's not the last pass or not."
+   "Scale for this pass.\nThe scale factor accumulates, i.e. 2x for first pass and 2x for second pass will give you a 4x total scale.\nIf there is a scale factor for last pass, the result is stretched to screen with the filter specified in 'Default Filter'.\nIf 'Don't Care' is set, either 1x scale or stretch to fullscreen will be used depending if it's not the last pass or not."
    )
 
 /* Quick Menu > Shaders > Save */
