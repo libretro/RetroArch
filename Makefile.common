@@ -1585,7 +1585,6 @@ ifeq ($(HAVE_METAL), 1)
    DEF_FLAGS += -fobjc-arc
    OBJ += \
 	  gfx/common/metal/metal_renderer.o \
-	  gfx/common/metal_common.o \
 	  gfx/drivers/metal.o \
 	  gfx/drivers_font/metal_raster_font.o \
 	  gfx/drivers_display/gfx_display_metal.o
