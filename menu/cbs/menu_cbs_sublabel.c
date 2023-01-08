@@ -619,6 +619,14 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_auto_width_max,   MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_auto_height_max,  MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_fullscreen_x,            MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_fullscreen_y,            MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_message_color_red,       MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_message_color_green,     MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_message_color_blue,      MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_message_bgcolor_enable,  MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_message_bgcolor_red,     MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_message_bgcolor_green,   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_message_bgcolor_blue,    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_message_bgcolor_opacity, MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_force_resolution,        MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_save_window_position,    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_custom_size_enable, MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE)
@@ -3916,6 +3924,30 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_message_pos_y);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_message_color_red);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_message_color_green);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_message_color_blue);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_message_bgcolor_enable);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_message_bgcolor_red);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_message_bgcolor_green);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_message_bgcolor_blue);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_message_bgcolor_opacity);
             break;
          case MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_width);
