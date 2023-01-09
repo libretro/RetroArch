@@ -133,8 +133,6 @@ void driver_uninit(int flags);
 
 void retro_input_poll_null(void);
 
-void retroarch_deinit_drivers(struct retro_callbacks *cbs);
-
 RETRO_END_DECLS
 
 #endif
