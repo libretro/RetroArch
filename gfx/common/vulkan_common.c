@@ -1926,6 +1926,12 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
                info.pApplicationInfo->pEngineName,
                info.pApplicationInfo->engineVersion);
       }
+
+      RARCH_LOG("[Vulkan]: API version %u.%u.%u (%x)\n",
+               VK_VERSION_MAJOR(info.pApplicationInfo->apiVersion),
+               VK_VERSION_MINOR(info.pApplicationInfo->apiVersion),
+               VK_VERSION_PATCH(info.pApplicationInfo->apiVersion),
+               info.pApplicationInfo->apiVersion);
 #endif
    }
 
