@@ -53,6 +53,8 @@ typedef void (*retro_vulkan_unlock_queue_t)(void *handle);
 typedef void (*retro_vulkan_set_signal_semaphore_t)(void *handle, VkSemaphore semaphore);
 
 typedef const VkApplicationInfo *(*retro_vulkan_get_application_info_t)(void);
+typedef const char * const*(*retro_vulkan_get_instance_extensions_t)(unsigned *num_instance_extensions);
+typedef const char * const*(*retro_vulkan_get_instance_layers_t)(unsigned *num_instance_layers);
 
 struct retro_vulkan_context
 {
@@ -138,6 +140,36 @@ struct retro_hw_render_context_negotiation_interface_vulkan
     * Only auxillary resources should be freed here, i.e. resources which are not part of retro_vulkan_context.
     */
    retro_vulkan_destroy_device_t destroy_device;
+
+   /* If non-NULL, returns a pointer to an array of instance extensions
+    * that the frontend should use to create the VkInstance.
+    * The frontend may still request its own set of instance extensions,
+    * and the result of this function will not overwrite them.
+    *
+    * Return the string array as this function's return value,
+    * and set its length in the num_instance_extensions parameter.
+    * The returned array must be valid until the VkInstance is created,
+    * at which point you may deallocate it.
+    *
+    * If this function returns NULL,
+    * the frontend will behave as though this function was never provided.
+    */
+   retro_vulkan_get_instance_extensions_t get_instance_extensions;
+
+   /* If non-NULL, returns a pointer to an array of instance layers
+    * that the frontend should use to create the VkInstance.
+    * The frontend may still request its own set of instance layers,
+    * and the result of this function will not overwrite them.
+    *
+    * Return the string array as this function's return value,
+    * and set its length in the num_instance_layers parameter.
+    * The returned array must be valid until the VkInstance is created,
+    * at which point you may deallocate it.
+    *
+    * If this function returns NULL,
+    * the frontend will behave as though this function was never provided.
+    */
+   retro_vulkan_get_instance_layers_t get_instance_layers;
 };
 
 struct retro_hw_render_interface_vulkan

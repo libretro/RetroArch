@@ -1794,17 +1794,24 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 {
    unsigned i;
    PFN_vkGetInstanceProcAddr GetInstanceProcAddr;
-   const char *instance_extensions[4];
+   const char *frontend_instance_extensions[4];
+   const char **all_instance_extensions;
+   const char **all_instance_layers;
    VkResult res                         = VK_SUCCESS;
    bool use_instance_ext                = false;
+   bool result                          = false;
    VkInstanceCreateInfo info            = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
    VkApplicationInfo app                = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
-   unsigned ext_count                   = 0;
+   unsigned frontend_ext_count          = 0;
    struct retro_hw_render_context_negotiation_interface_vulkan *iface =
       (struct retro_hw_render_context_negotiation_interface_vulkan*)video_driver_get_context_negotiation_interface();
 #ifdef VULKAN_DEBUG
    static const char *instance_layers[] = { "VK_LAYER_KHRONOS_validation" };
-   instance_extensions[ext_count++]     = "VK_EXT_debug_utils";
+   unsigned frontend_layer_count        = 1;
+   frontend_instance_extensions[frontend_ext_count++]     = "VK_EXT_debug_utils";
+#else
+   static const char **instance_layers  = NULL;
+   unsigned frontend_layer_count        = 0;
 #endif
 
    if (iface && iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
@@ -1819,36 +1826,36 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       iface = NULL;
    }
 
-   instance_extensions[ext_count++] = "VK_KHR_surface";
+   frontend_instance_extensions[frontend_ext_count++] = "VK_KHR_surface";
 
    switch (type)
    {
       case VULKAN_WSI_WAYLAND:
-         instance_extensions[ext_count++] = "VK_KHR_wayland_surface";
+         frontend_instance_extensions[frontend_ext_count++] = "VK_KHR_wayland_surface";
          break;
       case VULKAN_WSI_ANDROID:
-         instance_extensions[ext_count++] = "VK_KHR_android_surface";
+         frontend_instance_extensions[frontend_ext_count++] = "VK_KHR_android_surface";
          break;
       case VULKAN_WSI_WIN32:
-         instance_extensions[ext_count++] = "VK_KHR_win32_surface";
+         frontend_instance_extensions[frontend_ext_count++] = "VK_KHR_win32_surface";
          break;
       case VULKAN_WSI_XLIB:
-         instance_extensions[ext_count++] = "VK_KHR_xlib_surface";
+         frontend_instance_extensions[frontend_ext_count++] = "VK_KHR_xlib_surface";
          break;
       case VULKAN_WSI_XCB:
-         instance_extensions[ext_count++] = "VK_KHR_xcb_surface";
+         frontend_instance_extensions[frontend_ext_count++] = "VK_KHR_xcb_surface";
          break;
       case VULKAN_WSI_MIR:
-         instance_extensions[ext_count++] = "VK_KHR_mir_surface";
+         frontend_instance_extensions[frontend_ext_count++] = "VK_KHR_mir_surface";
          break;
       case VULKAN_WSI_DISPLAY:
-         instance_extensions[ext_count++] = "VK_KHR_display";
+         frontend_instance_extensions[frontend_ext_count++] = "VK_KHR_display";
          break;
       case VULKAN_WSI_MVK_MACOS:
-         instance_extensions[ext_count++] = "VK_MVK_macos_surface";
+         frontend_instance_extensions[frontend_ext_count++] = "VK_MVK_macos_surface";
          break;
       case VULKAN_WSI_MVK_IOS:
-         instance_extensions[ext_count++] = "VK_MVK_ios_surface";
+         frontend_instance_extensions[frontend_ext_count++] = "VK_MVK_ios_surface";
          break;
       case VULKAN_WSI_NONE:
       default:
@@ -1893,7 +1900,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       return false;
    }
 
-   use_instance_ext                  = vulkan_find_instance_extensions(instance_extensions, ext_count);
+   use_instance_ext                  = vulkan_find_instance_extensions(frontend_instance_extensions, frontend_ext_count);
 
    app.pApplicationName              = msg_hash_to_str(MSG_PROGRAM);
    app.applicationVersion            = 0;
@@ -1902,8 +1909,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    app.apiVersion                    = VK_MAKE_VERSION(1, 0, 18);
 
    info.pApplicationInfo             = &app;
-   info.enabledExtensionCount        = use_instance_ext ? ext_count : 0;
-   info.ppEnabledExtensionNames      = use_instance_ext ? instance_extensions : NULL;
+   info.enabledExtensionCount        = use_instance_ext ? frontend_ext_count : 0;
+   info.ppEnabledExtensionNames      = use_instance_ext ? frontend_instance_extensions : NULL;
 #ifdef VULKAN_DEBUG
    info.enabledLayerCount            = ARRAY_SIZE(instance_layers);
    info.ppEnabledLayerNames          = instance_layers;
@@ -1938,6 +1945,49 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
                    VK_VERSION_PATCH(info.pApplicationInfo->apiVersion),
                    info.pApplicationInfo->apiVersion);
 #endif
+      }
+   }
+
+   if (iface && iface->get_instance_extensions)
+   { /* If the core is requesting some extensions for the VkInstance... */
+      unsigned num_core_extensions = 0;
+      const char * const *core_extensions = iface->get_instance_extensions(&num_core_extensions);
+
+      if (core_extensions && num_core_extensions > 0)
+      { /* If the core actually *did* request some instance extensions... */
+         all_instance_extensions = malloc((num_core_extensions + frontend_ext_count) * sizeof(char*));
+
+         for (i = 0; i < frontend_ext_count; ++i) {
+            all_instance_extensions[i] = frontend_instance_extensions[i];
+         }
+
+         for (i = 0; i < num_core_extensions; ++i) {
+            all_instance_extensions[i + frontend_ext_count] = core_extensions[i];
+         }
+         info.ppEnabledExtensionNames = all_instance_extensions;
+         info.enabledExtensionCount = num_core_extensions + frontend_ext_count;
+      }
+      /* The frontend will always request at least one layer */
+   }
+
+   if (iface && iface->get_instance_layers)
+   { /* If the core is requesting some layers for the VkInstance... */
+      unsigned num_core_layers = 0;
+      const char * const *core_layers = iface->get_instance_layers(&num_core_layers);
+
+      if (core_layers && num_core_layers > 0)
+      { /* If the core actually *did* request some instance layers... */
+         all_instance_layers = malloc((num_core_layers + frontend_layer_count) * sizeof(char*));
+
+         for (i = 0; i < frontend_layer_count; ++i) {
+            all_instance_layers[i] = instance_layers[i];
+         }
+
+         for (i = 0; i < num_core_layers; ++i) {
+            all_instance_layers[i + frontend_layer_count] = core_layers[i];
+         }
+         info.ppEnabledLayerNames = all_instance_layers;
+         info.enabledLayerCount = num_core_layers + frontend_layer_count;
       }
    }
 
@@ -1992,16 +2042,23 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    {
       RARCH_ERR("Failed to create Vulkan instance (%d).\n", res);
       RARCH_ERR("If VULKAN_DEBUG=1 is enabled, make sure Vulkan validation layers are installed.\n");
-      return false;
+      result = false;
+      goto cleanup;
    }
 
    if (!vulkan_load_instance_symbols(vk))
    {
       RARCH_ERR("[Vulkan]: Failed to load instance symbols.\n");
-      return false;
+      result = false;
+      goto cleanup;
    }
-
-   return true;
+   result = true;
+cleanup:
+   if (all_instance_extensions)
+      free(all_instance_extensions);
+   if (all_instance_layers)
+      free(all_instance_layers);
+   return result;
 }
 
 static bool vulkan_update_display_mode(
