@@ -1804,10 +1804,6 @@ MSG_HASH(
    "Muestra la estimación exacta de la frecuencia de actualización de la pantalla en hercios."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
-   "La frecuencia de actualización exacta del monitor (en Hz). Sirve para calcular la frecuencia de entrada de audio así:\nfrec. de entrada de audio = vel. entrada juego * frec. act. pantalla / frec. act. juego.\nSi la implementación no indica un valor, se asumirá el formato NTSC por motivos de compatibilidad.\nEste valor debería ser similar a 60 Hz para evitar cambios en el tono. Si tu monitor no es compatible con 60 Hz, desactiva la sincronía vertical y deja esta opción en su valor predeter[...]"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
    "Frecuencia declarada por la pantalla"
    )
@@ -2361,6 +2357,10 @@ MSG_HASH(
    "Fuerza el dispositivo que utilizará el controlador de audio. Este ajuste depende del controlador."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
+   "Fuerza el dispositivo que utilizará el controlador de audio. Este ajuste depende del controlador."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Latencia de audio (ms)"
    )
@@ -2417,10 +2417,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    "Suaviza las imperfecciones de ritmo al sincronizar audio y vídeo. Cuidado: Si se desactiva esta opción, es casi imposible tener una sincronía correcta."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
-   "Control de la frecuencia de audio.\nSelecciona 0 para desactivar el control de la frecuencia. Cualquier otro valor cambiará el delta de control de la frecuencia de audio.\nDefine la cantidad de frecuencias de entrada que podrán ajustarse de forma dinámica. La frecuencia de entrada se define así:\nfrecuencia de entrada * (1.0 +/- (delta de control de frecuencia))."
    )
 
 /* Settings > Audio > MIDI */
@@ -2579,14 +2575,6 @@ MSG_HASH(
    "Sistema de sondeo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-   "Influencia cómo se realiza el sondeo de entrada dentro de RetroArch. «Temprano» o «Tardío» pueden reducir la latencia en función de tu configuración."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
-   "Influencia la forma de sondear la entrada en RetroArch.\nTemprano: el sondeo se realizará antes de procesar el fotograma.\nNormal: el sondeo se realizará cuando se solicite.\nTardío: el sondeo se realizará tras la primera petición de estado de entrada de cada fotograma.\n«Temprano» o «Tardío» pueden reducir la latencia según tu configuración. Esta opción será ignorada durante una sesión de juego en red."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "Reasignar controles para este núcleo"
    )
@@ -2614,13 +2602,13 @@ MSG_HASH(
 #endif
 #ifdef ANDROID
 MSG_HASH(
-        MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
-        "Seleccionar teclado físico"
-)
+   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Seleccionar teclado físico"
+   )
 MSG_HASH(
-        MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
-        "Utiliza este dispositivo como un teclado físico y no como un mando."
-)
+   MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Utiliza este dispositivo como un teclado físico y no como un mando."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
@@ -2886,10 +2874,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
    "Si la Tecla para activar teclas rápidas está asignada, será necesario mantenerla pulsada antes de reconocer cualquier otra tecla rápida. Esto permite asignar botones de mandos a funciones de teclas rápidas sin afectar a sus entradas normales. Si se asigna el modificador a solo un mando, este no será necesario para las teclas rápidas del teclado, sino que ambos modificadores funcionarán para los dos dispositivos."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
-   "Activa otras teclas rápidas.\nSi esta tecla rápida está asignada a un teclado, un botón o un eje de un mando, el resto de teclas rápidas se desactivarán a menos que esta tecla sea pulsada al mismo tiempo.\nEsto sirve para implementaciones centradas en RETRO_KEYBOARD, que ocupan una gran porción del teclado y en las que no conviene que las teclas rápidas interfieran con el funcionamiento normal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -3586,10 +3570,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Verifica que el firmware necesario esté disponible antes de cargar el contenido."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
-   "Algunos núcleos pueden necesitar archivos de firmware o de BIOS.\nSi desactivas esta opción, el núcleo intentará ejecutarse aunque falten dichos archivos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
@@ -6738,10 +6718,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "Desbloquea logros en los juegos clásicos. Para más información, visita https://retroachievements.org."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "Los datos para iniciar sesión con tu cuenta de RetroAchievements. Visita retroachievements.org para registrarte de forma gratuita.\nUna vez te hayas registrado, tendrás que introducir tu nombre de usuario y tu contraseña en RetroArch."
-   )
 
 /* Settings > User > Accounts > RetroAchievements */
 
@@ -8353,10 +8329,6 @@ MSG_HASH(
    "Carga un preajuste de shaders. La secuencia de shaders se configurará automáticamente."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
-   "Carga preajustes de shaders. Carga un preajuste de shaders directamente. El menú de shaders se actualizará.\nSi el preajuste utiliza métodos de escalado complejos (por ejemplo, escalado de origen, el mismo factor para X/Y), el menú podría mostrar un factor de escalado incorrecto."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
    "Anteponer"
    )
@@ -8397,10 +8369,6 @@ MSG_HASH(
    "Los cambios en la configuración de shaders tendrán efecto inmediatamente. Utiliza esta opción al cambiar la cantidad de pasadas, el filtrado, etc."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
-   "Cuando cambies los ajustes de un shader (tales como el número de pasadas, el filtrado, la escala de la FBO...) puedes usar esta opción para aplicar los cambios.\nCambiar estos ajustes es una operación que consume bastantes recursos, así que debe hacerse de forma explícita.\nAl aplicar shaders, se guardará su configuración en un archivo temporal (menu.cgp o menu.glslp) y se cargarán. El archivo persistirá al abandonar RetroArch y se guardará en el directorio de shaders."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
    "Parámetros del shader"
    )
@@ -8417,28 +8385,12 @@ MSG_HASH(
    "Cambia la cantidad de pasadas de shaders. Se pueden asignar shaders a cada pasada para configurar su escalado y filtrado."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES,
-   "RetroArch permite combinar diversos shaders con pasadas arbitrarias, filtros personales de hardware y factores de escala.\nEsta opción especifica la cantidad de pasadas de shaders a utilizar. Si seleccionas 0 y luego «Aplicar cambios en shaders», utilizarás un shader «en blanco».\nLa opción predeterminada del filtro cambiará el filtro de escalado."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
-   "Ruta al shader.\nTodos los shaders deben ser del mismo tipo (por ejemplo: CG, GLSL o HLSL).\nCambia el directorio de shaders para indicar la ruta en la que el navegador comenzará a buscar shaders."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
    "Filtro"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
-   "El filtro de hardware para esta pasada. Si se selecciona «Irrelevante», se utilizará el filtro predeterminado."
-  )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCALE,
    "Escala"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
-   "La escala de esta pasada.\nEl factor de escala es acumulativo, por ejemplo: 2x para el primer pase y 2x para el segundo resultará en una escala total de 4x.\nSi el último pase tiene un factor de escala, el resultado se estirará por toda la pantalla con el filtro predeterminado.\nSi has seleccionado «Irrelevante», se utilizará o bien la escala 1x o se estirará a pantalla completa, dependiendo de si es el último pase o no."
    )
 
 /* Quick Menu > Shaders > Save */
