@@ -1580,7 +1580,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    if (iface && iface->interface_version > RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION)
    {
-      RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's the wrong interface version.\n");
+      RARCH_WARN("[Vulkan]: Expected an interface version up to %u, got %u.\n",
+                 RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION, iface->interface_version);
       iface = NULL;
    }
 
