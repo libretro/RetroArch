@@ -1821,9 +1821,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       iface = NULL;
    }
 
-   if (iface && iface->interface_version != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION)
+   if (iface && iface->interface_version > RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION)
    {
-      RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's the wrong interface version.\n");
+      RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's an unsupported version (%u).\n",
+         iface->interface_version);
       iface = NULL;
    }
 
