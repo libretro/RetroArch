@@ -1578,7 +1578,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       iface = NULL;
    }
 
-   if (iface && iface->interface_version != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION)
+   if (iface && iface->interface_version > RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION)
    {
       RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's the wrong interface version.\n");
       iface = NULL;
@@ -1948,8 +1948,11 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       }
    }
 
-   if (iface && iface->get_instance_extensions)
-   { /* If the core is requesting some extensions for the VkInstance... */
+   if (
+         iface &&
+         iface->interface_version >= 2 &&
+         iface->get_instance_extensions)
+   { /* If the core is requesting some extensions for the VkInstance, and the provided interface version supports this... */
       unsigned num_core_extensions = 0;
       const char * const *core_extensions = iface->get_instance_extensions(&num_core_extensions);
 
@@ -1970,7 +1973,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       /* The frontend will always request at least one layer */
    }
 
-   if (iface && iface->get_instance_layers)
+   if (
+         iface &&
+         iface->interface_version >= 2 &&
+         iface->get_instance_layers)
    { /* If the core is requesting some layers for the VkInstance... */
       unsigned num_core_layers = 0;
       const char * const *core_layers = iface->get_instance_layers(&num_core_layers);
