@@ -1795,8 +1795,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    unsigned i;
    PFN_vkGetInstanceProcAddr GetInstanceProcAddr;
    const char *frontend_instance_extensions[4];
-   const char **all_instance_extensions;
-   const char **all_instance_layers;
+   const char **all_instance_extensions = NULL;
+   const char **all_instance_layers     = NULL;
    VkResult res                         = VK_SUCCESS;
    bool use_instance_ext                = false;
    bool result                          = false;
