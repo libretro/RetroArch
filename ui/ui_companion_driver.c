@@ -20,7 +20,6 @@
 #include "../config.h"
 #endif
 
-#include "../driver.h"
 #include "../list_special.h"
 #include "../retroarch.h"
 #include "../runloop.h"

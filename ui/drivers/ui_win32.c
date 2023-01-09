@@ -49,7 +49,6 @@
 
 #include "../ui_companion_driver.h"
 #include "../../msg_hash.h"
-#include "../../driver.h"
 #include "../../paths.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"

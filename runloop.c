@@ -182,7 +182,6 @@
 #include "core_info.h"
 #include "dynamic.h"
 #include "defaults.h"
-#include "driver.h"
 #include "msg_hash.h"
 #include "paths.h"
 #include "file_path_special.h"

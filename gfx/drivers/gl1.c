@@ -45,7 +45,6 @@
 
 #include "../font_driver.h"
 
-#include "../../driver.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"

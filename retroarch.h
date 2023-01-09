@@ -38,6 +38,7 @@
 
 #include "core.h"
 
+#include "driver.h"
 #include "runloop.h"
 #include "retroarch_types.h"
 

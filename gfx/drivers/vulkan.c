@@ -43,7 +43,6 @@
 
 #include "../common/vulkan_common.h"
 
-#include "../../driver.h"
 #include "../../configuration.h"
 #ifdef HAVE_REWIND
 #include "../../state_manager.h"

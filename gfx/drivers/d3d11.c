@@ -41,16 +41,15 @@
 #include "../gfx_widgets.h"
 #endif
 
-#include "../../driver.h"
+#include "../font_driver.h"
+#include "../common/win32_common.h"
+#include "../video_shader_parse.h"
+#include "../drivers_shader/slang_process.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../font_driver.h"
-#include "../common/win32_common.h"
 #include "../../performance_counters.h"
 #include "../../menu/menu_driver.h"
-#include "../video_shader_parse.h"
-#include "../drivers_shader/slang_process.h"
 #ifdef HAVE_REWIND
 #include "../../state_manager.h"
 #endif

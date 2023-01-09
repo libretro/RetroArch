@@ -32,7 +32,6 @@
 
 #include <dxgi.h>
 
-#include "../../driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"

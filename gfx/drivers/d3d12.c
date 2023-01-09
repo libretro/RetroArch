@@ -38,7 +38,6 @@
 #include "../gfx_widgets.h"
 #endif
 
-#include "../../driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
