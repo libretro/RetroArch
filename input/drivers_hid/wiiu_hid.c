@@ -16,7 +16,9 @@
 
 #include <retro_endianness.h>
 #include "../include/wiiu/hid.h"
-#include <wiiu/os/atomic.h>
+#include <coreinit/atomic.h>
+#include <coreinit/thread.h>
+#include <coreinit/time.h>
 #include <string/stdstring.h>
 
 /* TODO/FIXME - static globals */
@@ -288,7 +290,7 @@ static int32_t wiiu_hid_set_idle(void *data, uint8_t duration)
       return -1;
 
    return HIDSetIdle(adapter->handle,
-         adapter->interface_index,
+         adapter->interface_index, /* report id */ 0,
          duration,
          NULL, NULL);
 }
@@ -399,14 +401,14 @@ static void log_device(HIDDevice *device)
    }
 
    RARCH_LOG("                handle: %d\n", device->handle);
-   RARCH_LOG("  physical_device_inst: %d\n", device->physical_device_inst);
+   RARCH_LOG("  physical_device_inst: %d\n", device->physicalDeviceInst);
    RARCH_LOG("                   vid: 0x%04x\n", SWAP_IF_BIG(device->vid));
    RARCH_LOG("                   pid: 0x%04x\n", SWAP_IF_BIG(device->pid));
-   RARCH_LOG("       interface_index: %d\n", device->interface_index);
-   RARCH_LOG("             sub_class: %d\n", device->sub_class);
+   RARCH_LOG("       interface_index: %d\n", device->interfaceIndex);
+   RARCH_LOG("             sub_class: %d\n", device->subClass);
    RARCH_LOG("              protocol: %d\n", device->protocol);
-   RARCH_LOG("    max_packet_size_rx: %d\n", device->max_packet_size_rx);
-   RARCH_LOG("    max_packet_size_tx: %d\n", device->max_packet_size_tx);
+   RARCH_LOG("    max_packet_size_rx: %d\n", device->maxPacketSizeRx);
+   RARCH_LOG("    max_packet_size_tx: %d\n", device->maxPacketSizeTx);
 }
 
 static uint8_t try_init_driver_multi(wiiu_adapter_t *adapter, joypad_connection_entry_t *entry) {
@@ -509,17 +511,17 @@ static void synchronized_process_adapters(wiiu_hid_t *hid)
 
 static void synchronized_add_event(wiiu_attach_event *event)
 {
-   wiiu_attach_event *head = (wiiu_attach_event *)SwapAtomic32((uint32_t *)&events.list, 0);
+   wiiu_attach_event *head = (wiiu_attach_event *)OSSwapAtomic((uint32_t *)&events.list, 0);
 
    event->next = head;
    head = event;
 
-   SwapAtomic32((uint32_t *)&events.list, (uint32_t)head);
+   OSSwapAtomic((uint32_t *)&events.list, (uint32_t)head);
 }
 
 static wiiu_attach_event *synchronized_get_events_list(void)
 {
-   return (wiiu_attach_event *)SwapAtomic32((uint32_t *)&events.list, 0);
+   return (wiiu_attach_event *)OSSwapAtomic((uint32_t *)&events.list, 0);
 }
 
 static wiiu_adapter_t *synchronized_lookup_adapter(uint32_t handle)
@@ -791,6 +793,7 @@ static int wiiu_hid_polling_thread(int argc, const char **argv)
    {
       wiiu_handle_attach_events(hid, synchronized_get_events_list());
       wiiu_poll_adapters(hid);
+      OSSleepTicks(OSMicrosecondsToTicks(500));
    }
 
    RARCH_LOG("[hid]: polling thread is stopping\n");
@@ -929,13 +932,13 @@ static wiiu_attach_event *new_attach_event(HIDDevice *device)
    event->handle             = device->handle;
    event->vendor_id          = device->vid;
    event->product_id         = device->pid;
-   event->interface_index    = device->interface_index;
-   event->is_keyboard        = (device->sub_class == 1
+   event->interface_index    = device->interfaceIndex;
+   event->is_keyboard        = (device->subClass == 1
          && device->protocol == 1);
-   event->is_mouse           = (device->sub_class == 1
+   event->is_mouse           = (device->subClass == 1
          && device->protocol == 2);
-   event->max_packet_size_rx = device->max_packet_size_rx;
-   event->max_packet_size_tx = device->max_packet_size_tx;
+   event->max_packet_size_rx = device->maxPacketSizeRx;
+   event->max_packet_size_tx = device->maxPacketSizeTx;
    get_device_name(device, event);
 
    return event;
