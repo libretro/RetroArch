@@ -94,6 +94,10 @@ struct retro_hw_render_context_negotiation_interface_vulkan
 
    /* If non-NULL, returns a VkApplicationInfo struct that the frontend can use instead of
     * its "default" application info.
+    * The returned object must be valid until the VkInstance is created.
+    *
+    * If this function returns NULL,
+    * the frontend will behave as though it was never provided.
     */
    retro_vulkan_get_application_info_t get_application_info;
 

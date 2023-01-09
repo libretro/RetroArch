@@ -1911,28 +1911,34 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    if (iface && iface->get_application_info)
    {
-      info.pApplicationInfo = iface->get_application_info();
+      const VkApplicationInfo *applicationInfo = iface->get_application_info();
+
+      if (applicationInfo)
+      { /* If the core returned application info... */
+         info.pApplicationInfo = applicationInfo;
+
 #ifdef VULKAN_DEBUG
-      if (info.pApplicationInfo->pApplicationName)
-      {
-         RARCH_LOG("[Vulkan]: App: %s (version %u)\n",
-               info.pApplicationInfo->pApplicationName,
-               info.pApplicationInfo->applicationVersion);
-      }
+         if (info.pApplicationInfo->pApplicationName)
+         {
+            RARCH_LOG("[Vulkan]: App: %s (version %u)\n",
+                      info.pApplicationInfo->pApplicationName,
+                      info.pApplicationInfo->applicationVersion);
+         }
 
-      if (info.pApplicationInfo->pEngineName)
-      {
-         RARCH_LOG("[Vulkan]: Engine: %s (version %u)\n",
-               info.pApplicationInfo->pEngineName,
-               info.pApplicationInfo->engineVersion);
-      }
+         if (info.pApplicationInfo->pEngineName)
+         {
+            RARCH_LOG("[Vulkan]: Engine: %s (version %u)\n",
+                      info.pApplicationInfo->pEngineName,
+                      info.pApplicationInfo->engineVersion);
+         }
 
-      RARCH_LOG("[Vulkan]: API version %u.%u.%u (%x)\n",
-               VK_VERSION_MAJOR(info.pApplicationInfo->apiVersion),
-               VK_VERSION_MINOR(info.pApplicationInfo->apiVersion),
-               VK_VERSION_PATCH(info.pApplicationInfo->apiVersion),
-               info.pApplicationInfo->apiVersion);
+         RARCH_LOG("[Vulkan]: API version %u.%u.%u (%x)\n",
+                   VK_VERSION_MAJOR(info.pApplicationInfo->apiVersion),
+                   VK_VERSION_MINOR(info.pApplicationInfo->apiVersion),
+                   VK_VERSION_PATCH(info.pApplicationInfo->apiVersion),
+                   info.pApplicationInfo->apiVersion);
 #endif
+      }
    }
 
    if (cached_instance_vk)
