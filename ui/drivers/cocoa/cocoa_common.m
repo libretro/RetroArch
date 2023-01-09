@@ -231,13 +231,6 @@ void *glkitview_init(void);
 
 - (void)viewWillLayoutSubviews
 {
-   RAScreen *screen  = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
-   CGRect screenSize = [screen bounds];
-   SEL selector      = NSSelectorFromString(BOXSTRING("coordinateSpace"));
-
-   if ([screen respondsToSelector:selector])
-      screenSize  = [[screen coordinateSpace] bounds];
-
    [self adjustViewFrameForSafeArea];
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
    [self.view bringSubviewToFront:self.keyboardController.view];

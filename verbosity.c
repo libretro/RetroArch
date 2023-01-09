@@ -213,7 +213,6 @@ void retro_main_log_file_deinit(void)
 #if !defined(HAVE_LOGGER)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
-   verbosity_state_t *g_verbosity = &main_verbosity_st;
 #if TARGET_OS_IPHONE
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
@@ -247,6 +246,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
 #elif defined(ANDROID)
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
    int prio = ANDROID_LOG_INFO;
    if (tag)
    {
@@ -264,8 +264,9 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    else
       __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
 #else
-   FILE          *fp = (FILE*)g_verbosity->fp;
-   const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+   FILE                       *fp = (FILE*)g_verbosity->fp;
+   const char              *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
 #if defined(HAVE_QT) || defined(__WINRT__)
    char buffer[2048];
    buffer[0]         = '\0';
@@ -273,7 +274,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    /* Ensure null termination and line break in error case */
    if (vsnprintf(buffer, sizeof(buffer), fmt, ap) < 0)
    {
-      int end;
+      size_t end;
       buffer[sizeof(buffer) - 1]  = '\0';
       end = strlen(buffer) - 1;
       if (end >= 0)

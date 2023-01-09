@@ -2491,7 +2491,7 @@ static void video_driver_default_settings(global_t *global)
  **/
 void config_set_defaults(void *data)
 {
-   unsigned i, j;
+   int i;
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif

@@ -373,7 +373,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    if (realpath(bundle_path_buf, resolved_bundle_dir_buf))
       strlcpy(bundle_path_buf,
             resolved_bundle_dir_buf,
-            sizeof(bundle_path_buf);
+            sizeof(bundle_path_buf));
 #endif
 
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
