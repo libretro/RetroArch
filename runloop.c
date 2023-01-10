@@ -6513,9 +6513,14 @@ static enum runloop_state_enum runloop_check_state(
    if (menu_st->input_driver_flushing_input > 0)
    {
       bool input_active = bits_any_set(current_bits.data, ARRAY_SIZE(current_bits.data));
+      /* Don't count 'enable_hotkey' as active input */
+      if (      input_active
+            &&  BIT256_GET(current_bits, RARCH_ENABLE_HOTKEY)
+            && !BIT256_GET(current_bits, RARCH_MENU_TOGGLE))
+         input_active = false;
 
       if (!input_active)
-         menu_st->input_driver_flushing_input = (menu_st->input_driver_flushing_input - 1);
+         menu_st->input_driver_flushing_input--;
 
       if (input_active || (menu_st->input_driver_flushing_input > 0))
       {
@@ -7051,29 +7056,11 @@ static enum runloop_state_enum runloop_check_state(
    {
       static bool old_pressed = false;
       char *menu_driver       = settings->arrays.menu_driver;
-      bool pressed            = BIT256_GET(
-            current_bits, RARCH_MENU_TOGGLE) &&
-         !string_is_equal(menu_driver, "null");
+      bool pressed            = BIT256_GET(current_bits, RARCH_MENU_TOGGLE)
+            && !string_is_equal(menu_driver, "null");
       bool core_type_is_dummy = runloop_st->current_core_type == CORE_TYPE_DUMMY;
 
-      /* TODO/FIXME: Remove this hardcoded F1 regardless of actual mapped key? */
-      if (menu_st->kb_key_state[RETROK_F1] == 1)
-      {
-         if (menu_st->flags & MENU_ST_FLAG_ALIVE)
-         {
-            if (rarch_is_initialized && !core_type_is_dummy)
-            {
-               retroarch_menu_running_finished(false);
-               menu_st->kb_key_state[RETROK_F1] =
-                  ((menu_st->kb_key_state[RETROK_F1] & 1) << 1) | false;
-
-               if (runloop_paused)
-                  video_driver_cached_frame();
-            }
-         }
-      }
-      else if ((!menu_st->kb_key_state[RETROK_F1] &&
-               (pressed && !old_pressed)) ||
+      if (  (pressed && !old_pressed) ||
             core_type_is_dummy)
       {
          if (menu_st->flags & MENU_ST_FLAG_ALIVE)
@@ -7084,9 +7071,6 @@ static enum runloop_state_enum runloop_check_state(
          else
             retroarch_menu_running();
       }
-      else
-         menu_st->kb_key_state[RETROK_F1] =
-            ((menu_st->kb_key_state[RETROK_F1] & 1) << 1) | false;
 
       old_pressed             = pressed;
    }
