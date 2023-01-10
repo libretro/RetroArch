@@ -417,7 +417,8 @@ static void *sdl_audio_init_microphone(void *data,
    if (!microphone)
       return NULL;
 
-   {
+   if (verbosity_is_enabled())
+   { /* Only print SDL audio devices if verbose logging is enabled */
       int i;
       int num_available_microphones = SDL_GetNumAudioDevices(true);
       RARCH_DBG("[SDL audio]: %d audio capture devices found:\n", num_available_microphones);
