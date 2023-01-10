@@ -3267,6 +3267,22 @@ MSG_HASH(
    "run_ahead_frames"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_PREEMPT_ENABLE,
+   "preemptive_frames_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PREEMPT_UNSUPPORTED,
+   "preemptive_frames_unsupported"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PREEMPT_HIDE_WARNINGS,
+   "preemptive_frames_hide_warnings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PREEMPT_FRAMES,
+   "preemptive_frames"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE,
    "sort_savefiles_enable"
    )

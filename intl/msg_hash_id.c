@@ -235,6 +235,10 @@ int msg_hash_get_help_id_enum(enum msg_hash_enums msg, char *s, size_t len)
              snprintf(s, len,
                    "Toggles Run-Ahead mode on/off.");
              break;
+          case RARCH_PREEMPT_TOGGLE:
+             snprintf(s, len,
+                   "Toggles Preemptive Frames on/off.");
+             break;
           default:
              if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);

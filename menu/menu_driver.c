@@ -6982,6 +6982,13 @@ void retroarch_menu_running_finished(bool quit)
             command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
          }
       }
+
+#if HAVE_RUNAHEAD
+      /* Preemptive Frames isn't run behind the menu,
+       * so its savestate buffer is out of date. */
+      if (!settings->bools.menu_pause_libretro)
+         command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
+#endif
    }
 
    /* Ensure that menu screensaver is disabled when

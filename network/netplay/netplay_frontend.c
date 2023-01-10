@@ -8435,6 +8435,11 @@ void deinit_netplay(void)
       net_st->data              = NULL;
       net_st->flags            &= ~(NET_DRIVER_ST_FLAG_NETPLAY_ENABLED
                                 |   NET_DRIVER_ST_FLAG_NETPLAY_IS_CLIENT);
+
+#if HAVE_RUNAHEAD
+      /* Reinitialize preemptive frames if enabled */
+      runloop_preempt_init();
+#endif
    }
 
    free(net_st->client_info);
