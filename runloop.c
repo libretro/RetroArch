@@ -4974,6 +4974,380 @@ force_input_dirty:
    core_run();
    runloop_st->flags |=  RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
 }
+
+/* Preemptive Frames */
+
+static int16_t preempt_input_state(unsigned port,
+      unsigned device, unsigned index, unsigned id)
+{
+   settings_t *settings         = config_get_ptr();
+   runloop_state_t *runloop_st  = &runloop_state;
+   preempt_t *preempt           = runloop_st->preempt_data;
+   unsigned device_class        = device & RETRO_DEVICE_MASK;
+   unsigned *port_map           = settings->uints.input_remap_port_map[port];
+   uint8_t p;
+
+   switch (device_class)
+   {
+      case RETRO_DEVICE_ANALOG:
+         /* Add requested inputs to mask */
+         while ((p = *(port_map++)) < MAX_USERS)
+            preempt->analog_mask[p] |= (1 << (id + index * 2));
+         break;
+      case RETRO_DEVICE_LIGHTGUN:
+      case RETRO_DEVICE_MOUSE:
+      case RETRO_DEVICE_POINTER:
+         /* Set pointing device for this port */
+         while ((p = *(port_map++)) < MAX_USERS)
+            preempt->ptr_dev[p] = device_class;
+         break;
+      default:
+         break;
+   }
+
+   return input_driver_state_wrapper(port, device, index, id);
+}
+
+static const char* preempt_allocate(const uint8_t frames)
+{
+   runloop_state_t *runloop_st = &runloop_state;
+   preempt_t *preempt          = (preempt_t*)calloc(1, sizeof(preempt_t));
+   retro_ctx_size_info_t info;
+   uint8_t i;
+
+   if (!(runloop_st->preempt_data = preempt))
+      return msg_hash_to_str(MSG_PREEMPT_FAILED_TO_ALLOCATE);
+
+   core_serialize_size_special(&info);
+   if (!info.size)
+      return msg_hash_to_str(MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES);
+
+   preempt->state_size = info.size;
+   preempt->frames     = frames;
+
+   for (i = 0; i < frames; i++)
+   {
+      preempt->buffer[i] = malloc(preempt->state_size);
+      if (!preempt->buffer[i])
+         return msg_hash_to_str(MSG_PREEMPT_FAILED_TO_ALLOCATE);
+   }
+
+   return NULL;
+}
+
+/**
+ * runloop_preempt_init:
+ *
+ * @return true on success, false on failure
+ *
+ * Allocates savestate buffer and sets overrides for preemptive frames.
+ **/
+bool runloop_preempt_init(void)
+{
+   runloop_state_t *runloop_st = &runloop_state;
+   settings_t *settings        = config_get_ptr();
+   const char *failed_str      = NULL;
+
+   if (     runloop_st->preempt_data
+         || !settings->bools.preemptive_frames_enable
+         || !settings->uints.run_ahead_frames
+         || !(runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
+      return false;
+
+   /* Check if supported - same requirements as runahead */
+   if (!core_info_current_supports_runahead())
+   {
+      failed_str = msg_hash_to_str(MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT);
+      goto error;
+   }
+
+   /* Set flags to block runahead and request 'same instance' states */
+   runloop_st->flags &= ~(RUNLOOP_FLAG_RUNAHEAD_AVAILABLE
+         | RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE);
+
+   /* Allocate - same 'frames' setting as runahead */
+   if ((failed_str = preempt_allocate(settings->uints.run_ahead_frames)))
+      goto error;
+
+   /* Only poll in preempt_run() */
+   runloop_st->current_core.retro_set_input_poll(retro_input_poll_null);
+   /* Track requested analog states and pointing device types */
+   runloop_st->current_core.retro_set_input_state(preempt_input_state);
+
+   return true;
+
+error:
+   runloop_preempt_deinit();
+
+   if (!config_get_ptr()->bools.preemptive_frames_hide_warnings)
+      runloop_msg_queue_push(
+            failed_str, 0, 2 * 60, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_WARN("[Preemptive Frames]: %s\n", failed_str);
+
+   return false;
+}
+
+/**
+ * runloop_preempt_deinit:
+ *
+ * Frees preempt object and unsets overrides.
+ **/
+void runloop_preempt_deinit(void)
+{
+   runloop_state_t *runloop_st       = &runloop_state;
+   preempt_t *preempt                = runloop_st->preempt_data;
+   struct retro_core_t *current_core = &runloop_st->current_core;
+   size_t i;
+
+   if (preempt == NULL)
+      return;
+
+   /* Free memory */
+   for (i = 0; i < preempt->frames; i++)
+      free(preempt->buffer[i]);
+
+   free(preempt);
+   runloop_st->preempt_data = NULL;
+
+   /* Undo overrides */
+   runloop_st->flags |= (RUNLOOP_FLAG_RUNAHEAD_AVAILABLE
+         | RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE);
+
+   if (current_core->retro_set_input_poll)
+      current_core->retro_set_input_poll(runloop_st->input_poll_callback_original);
+   if (current_core->retro_set_input_state)
+      current_core->retro_set_input_state(runloop_st->retro_ctx.state_cb);
+}
+
+static INLINE bool preempt_analog_input_dirty(preempt_t *preempt,
+      retro_input_state_t state_cb, unsigned port, unsigned mapped_port)
+{
+   int16_t state[20] = {0};
+   uint8_t base, i;
+
+   /* axes */
+   for (i = 0; i < 2; i++)
+   {
+      base = i * 2;
+      if (preempt->analog_mask[port] & (1 << (base    )))
+         state[base    ] = state_cb(mapped_port, RETRO_DEVICE_ANALOG, i, 0);
+      if (preempt->analog_mask[port] & (1 << (base + 1)))
+         state[base + 1] = state_cb(mapped_port, RETRO_DEVICE_ANALOG, i, 1);
+   }
+
+   /* buttons */
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      if (preempt->analog_mask[port] & (1 << (i + 4)))
+         state[i + 4] = state_cb(mapped_port, RETRO_DEVICE_ANALOG,
+               RETRO_DEVICE_INDEX_ANALOG_BUTTON, i);
+   }
+
+   if (memcmp(preempt->analog_state[port], state, sizeof(state)) == 0)
+      return false;
+
+   memcpy(preempt->analog_state[port], state, sizeof(state));
+   return true;
+}
+
+static INLINE bool preempt_ptr_input_dirty(preempt_t *preempt,
+      retro_input_state_t state_cb, unsigned device,
+      unsigned port, unsigned mapped_port)
+{
+   int16_t state[4]  = {0};
+   unsigned count_id = 0;
+   unsigned x_id     = 0;
+   unsigned id, max_id;
+
+   switch (device)
+   {
+      case RETRO_DEVICE_MOUSE:
+         max_id = RETRO_DEVICE_ID_MOUSE_BUTTON_5;
+         break;
+      case RETRO_DEVICE_LIGHTGUN:
+         x_id   = RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X;
+         max_id = RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT;
+         break;
+      case RETRO_DEVICE_POINTER:
+         max_id   = RETRO_DEVICE_ID_POINTER_PRESSED;
+         count_id = RETRO_DEVICE_ID_POINTER_COUNT;
+         break;
+      default:
+         return false;
+   }
+
+   /* x, y */
+   state[0] = state_cb(mapped_port, device, 0, x_id    );
+   state[1] = state_cb(mapped_port, device, 0, x_id + 1);
+
+   /* buttons */
+   for (id = 2; id <= max_id; id++)
+      state[2] |= state_cb(mapped_port, device, 0, id) ? 1 << id : 0;
+
+   /* ptr count */
+   if (count_id)
+      state[3] = state_cb(mapped_port, device, 0, count_id);
+
+   if (memcmp(preempt->ptrdev_state[port], state, sizeof(state)) == 0)
+      return false;
+
+   memcpy(preempt->ptrdev_state[port], state, sizeof(state));
+   return true;
+}
+
+static INLINE void preempt_input_poll(preempt_t *preempt)
+{
+   settings_t *settings           = config_get_ptr();
+   runloop_state_t *runloop_st    = &runloop_state;
+   retro_input_state_t state_cb   = input_driver_state_wrapper;
+   unsigned max_users             = settings->uints.input_max_users;
+   int16_t joypad_state;
+   unsigned p;
+
+   input_driver_poll();
+
+   /* Check for input state changes */
+   for (p = 0; p < max_users; p++)
+   {
+      unsigned mapped_port = settings->uints.input_remap_ports[p];
+      unsigned device      = settings->uints.input_libretro_device[mapped_port]
+                             & RETRO_DEVICE_MASK;
+
+      switch (device)
+      {
+         case RETRO_DEVICE_JOYPAD:
+         case RETRO_DEVICE_ANALOG:
+            /* Check full digital joypad */
+            joypad_state = state_cb(mapped_port, RETRO_DEVICE_JOYPAD,
+                  0, RETRO_DEVICE_ID_JOYPAD_MASK);
+            if (joypad_state != preempt->joypad_state[p])
+            {
+               preempt->joypad_state[p] = joypad_state;
+               runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
+            }
+
+            /* Check requested analogs */
+            if (     preempt->analog_mask[p]
+                  && preempt_analog_input_dirty(preempt, state_cb, p, mapped_port))
+               runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
+            break;
+         case RETRO_DEVICE_MOUSE:
+         case RETRO_DEVICE_LIGHTGUN:
+         case RETRO_DEVICE_POINTER:
+            /* Check full device state */
+            if (preempt_ptr_input_dirty(
+                  preempt, state_cb, preempt->ptr_dev[p], p, mapped_port))
+               runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
+            break;
+         default:
+            break;
+      }
+   }
+
+   /* Clear requested inputs */
+   memset(preempt->analog_mask, 0, max_users * sizeof(uint32_t));
+   memset(preempt->ptr_dev, 0, max_users * sizeof(uint8_t));
+}
+
+static INLINE void preempt_suspend_av(bool suspend)
+{
+   audio_driver_state_t *audio_st = audio_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   if (suspend)
+   {
+      audio_st->flags |=  AUDIO_FLAG_SUSPENDED;
+      video_st->flags &= ~VIDEO_FLAG_ACTIVE;
+   }
+   else
+   {
+      audio_st->flags &= ~AUDIO_FLAG_SUSPENDED;
+      video_st->flags |= VIDEO_FLAG_ACTIVE;
+   }
+}
+
+/* macro for preempt_run */
+#define PREEMPT_NEXT_PTR(x) ((x + 1) % preempt->frames)
+
+/**
+ * preempt_run:
+ * @preempt : pointer to preemptive frames object
+ *
+ * Call in place of core_run() for preemptive frames.
+ **/
+static void preempt_run(preempt_t *preempt)
+{
+   runloop_state_t     *runloop_st   = &runloop_state;
+   struct retro_core_t *current_core = &runloop_st->current_core;
+   const char *failed_str            = NULL;
+
+   /* Poll and check for dirty input */
+   preempt_input_poll(preempt);
+
+   runloop_st->flags |= RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
+
+   if ((runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY)
+         && preempt->frame_count >= preempt->frames)
+   {
+      /* Suspend A/V and run preemptive frames */
+      preempt_suspend_av(true);
+
+      if (!current_core->retro_unserialize(
+            preempt->buffer[preempt->start_ptr], preempt->state_size))
+      {
+         failed_str = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_LOAD_STATE);
+         goto error;
+      }
+
+      current_core->retro_run();
+      preempt->replay_ptr = PREEMPT_NEXT_PTR(preempt->start_ptr);
+
+      while (preempt->replay_ptr != preempt->start_ptr)
+      {
+         if (!current_core->retro_serialize(
+               preempt->buffer[preempt->replay_ptr], preempt->state_size))
+         {
+            failed_str = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
+            goto error;
+         }
+
+         current_core->retro_run();
+         preempt->replay_ptr = PREEMPT_NEXT_PTR(preempt->replay_ptr);
+      }
+
+      preempt_suspend_av(false);
+   }
+
+   /* Save current state and set start_ptr to oldest state */
+   if (!current_core->retro_serialize(
+         preempt->buffer[preempt->start_ptr], preempt->state_size))
+   {
+      failed_str = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
+      goto error;
+   }
+   preempt->start_ptr = PREEMPT_NEXT_PTR(preempt->start_ptr);
+   runloop_st->flags &= ~(RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE
+         | RUNLOOP_FLAG_INPUT_IS_DIRTY);
+
+   /* Run normal frame */
+   current_core->retro_run();
+   preempt->frame_count++;
+   return;
+
+error:
+   runloop_st->flags &= ~(RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE
+         | RUNLOOP_FLAG_INPUT_IS_DIRTY);
+   preempt_suspend_av(false);
+   runloop_preempt_deinit();
+
+   if (!config_get_ptr()->bools.preemptive_frames_hide_warnings)
+      runloop_msg_queue_push(
+            failed_str, 0, 2 * 60, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_ERR("[Preemptive Frames]: %s\n", failed_str);
+}
+
 #endif
 
 static retro_time_t runloop_core_runtime_tick(
@@ -5582,6 +5956,8 @@ static void core_init_libretro_cbs(runloop_state_t *runloop_st,
    runloop_st->current_core.retro_set_audio_sample_batch(audio_driver_sample_batch);
    runloop_st->current_core.retro_set_input_state(state_cb);
    runloop_st->current_core.retro_set_input_poll(core_input_state_poll_maybe);
+
+   runloop_st->input_poll_callback_original    = core_input_state_poll_maybe;
 
    core_set_default_callbacks(cbs);
 
@@ -7169,6 +7545,9 @@ static enum runloop_state_enum runloop_check_state(
    /* Check if we have pressed the Run-Ahead toggle button */
    HOTKEY_CHECK(RARCH_RUNAHEAD_TOGGLE, CMD_EVENT_RUNAHEAD_TOGGLE, true, NULL);
 
+   /* Check if we have pressed the Preemptive Frames toggle button */
+   HOTKEY_CHECK(RARCH_PREEMPT_TOGGLE, CMD_EVENT_PREEMPT_TOGGLE, true, NULL);
+
    /* Check if we have pressed the AI Service toggle button */
    HOTKEY_CHECK(RARCH_AI_SERVICE, CMD_EVENT_AI_SERVICE_TOGGLE, true, NULL);
 
@@ -8004,6 +8383,8 @@ int runloop_iterate(void)
                run_ahead_num_frames,
                run_ahead_hide_warnings,
                run_ahead_secondary_instance);
+      else if (runloop_st->preempt_data)
+         preempt_run(runloop_st->preempt_data);
       else
 #endif
          core_run();
@@ -8521,6 +8902,9 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
 
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, info);
+#endif
+#if HAVE_RUNAHEAD
+   command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
 #endif
 
    return true;

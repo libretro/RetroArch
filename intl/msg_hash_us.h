@@ -3391,6 +3391,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
    "Switches Run-Ahead on/off."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
+   "Preemptive Frames (Toggle)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
+   "Switches Preemptive Frames on/off."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
@@ -3719,6 +3727,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
    "Hide the warning message that appears when using Run-Ahead and the core does not support save states."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
+   "[Preemptive Frames Unavailable]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
+   "Current core is incompatible with preemptive frames due to lack of deterministic save state support."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
+   "Run Preemptive Frames"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
+   "Rerun core logic with the latest input when the controller state changes. Faster than Run-Ahead, but does not prevent audio issues cores may have with loading states."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
+   "Number of Preemptive Frames"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
+   "The number of frames to rerun. Causes gameplay issues such as jitter if the number of lag frames internal to the game is exceeded."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
+   "Hide Preemptive Frames Warnings"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
+   "Hide the warning message that appears when a core is incompatible with preemptive frames."
    )
 
 /* Settings > Core */
@@ -13901,6 +13941,34 @@ MSG_HASH(
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
    "Failed to create second instance. Run-Ahead will now use only one instance."
+   )
+MSG_HASH(
+   MSG_PREEMPT_ENABLED,
+   "Preemptive Frames enabled. Latency frames removed: %u."
+   )
+MSG_HASH(
+   MSG_PREEMPT_DISABLED,
+   "Preemptive Frames disabled."
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Preemptive Frames has been disabled because this core does not support save states."
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
+   "Preemptive Frames unavailable because this core lacks deterministic save state support."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_ALLOCATE,
+   "Failed to allocate memory for Preemptive Frames."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_SAVE_STATE,
+   "Failed to save state. Preemptive Frames has been disabled."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_LOAD_STATE,
+   "Failed to load state. Preemptive Frames has been disabled."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,

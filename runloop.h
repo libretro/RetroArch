@@ -159,7 +159,9 @@ typedef struct core_options_callbacks
 } core_options_callbacks_t;
 
 #ifdef HAVE_RUNAHEAD
-typedef bool  (*runahead_load_state_function)(const void*, size_t);
+#define MAX_RUNAHEAD_FRAMES 12
+
+typedef bool(*runahead_load_state_function)(const void*, size_t);
 
 typedef void *(*constructor_t)(void);
 typedef void  (*destructor_t )(void*);
@@ -172,6 +174,33 @@ typedef struct my_list_t
    int capacity;
    int size;
 } my_list;
+
+typedef struct preemptive_frames_data
+{
+   /* Savestate buffer */
+   void* buffer[MAX_RUNAHEAD_FRAMES];
+   size_t state_size;
+
+   /* Number of latency frames to remove */
+   uint8_t frames;
+
+   /* Buffer indexes for replays */
+   uint8_t start_ptr;
+   uint8_t replay_ptr;
+
+   /* Frame count since buffer init/reset */
+   uint64_t frame_count;
+
+   /* Input states. Replays triggered on changes */
+   int16_t joypad_state[MAX_USERS];
+   int16_t analog_state[MAX_USERS][20];
+   int16_t ptrdev_state[MAX_USERS][4];
+
+   /* Pointing device requested */
+   uint8_t ptr_dev[MAX_USERS];
+   /* Mask of analog states requested */
+   uint32_t analog_mask[MAX_USERS];
+} preempt_t;
 #endif
 
 struct runloop
@@ -197,6 +226,7 @@ struct runloop
 #endif
    my_list *runahead_save_state_list;
    my_list *input_state_list;
+   preempt_t *preempt_data;
 #endif
 
 #ifdef HAVE_REWIND
@@ -208,6 +238,7 @@ struct runloop
    struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
    struct retro_callbacks retro_ctx;                     /* ptr alignment */
    msg_queue_t msg_queue;                                /* ptr alignment */
+   retro_input_poll_t input_poll_callback_original;      /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
 #ifdef HAVE_RUNAHEAD
    function_t retro_reset_callback_original;             /* ptr alignment */
@@ -384,6 +415,9 @@ void runloop_event_deinit_core(void);
 
 #ifdef HAVE_RUNAHEAD
 void runloop_runahead_clear_variables(runloop_state_t *runloop_st);
+
+bool runloop_preempt_init(void);
+void runloop_preempt_deinit(void);
 #endif
 
 bool runloop_event_init_core(

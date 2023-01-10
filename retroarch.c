@@ -2228,10 +2228,8 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_RUNAHEAD_TOGGLE:
+#if HAVE_RUNAHEAD
          {
-            char msg[256];
-            msg[0] = '\0';
-
             if (!core_info_current_supports_runahead())
             {
                runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD),
@@ -2249,25 +2247,86 @@ bool command_event(enum event_command cmd, void *data)
                      1, 100, false,
                      NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
-            else if (!settings->bools.run_ahead_secondary_instance)
-            {
-               snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED),
-                     settings->uints.run_ahead_frames);
-
-               runloop_msg_queue_push(
-                     msg, 1, 100, false,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            }
             else
             {
-               snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE),
-                     settings->uints.run_ahead_frames);
+               char msg[256];
 
+               if (!settings->bools.run_ahead_secondary_instance)
+               {
+                  snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED),
+                        settings->uints.run_ahead_frames);
+
+                  runloop_msg_queue_push(
+                        msg, 1, 100, false,
+                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               }
+               else
+               {
+                  snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE),
+                        settings->uints.run_ahead_frames);
+
+                  runloop_msg_queue_push(
+                        msg, 1, 100, false,
+                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               }
+
+               /* Disable preemptive frames */
+               settings->bools.preemptive_frames_enable = false;
+               runloop_preempt_deinit();
+            }
+         }
+#endif
+         break;
+      case CMD_EVENT_PREEMPT_TOGGLE:
+#if HAVE_RUNAHEAD
+         {
+            bool old_warn   = settings->bools.preemptive_frames_hide_warnings;
+            bool old_inited = runloop_st->preempt_data;
+
+            /* Toggle with warnings shown */
+            settings->bools.preemptive_frames_hide_warnings = false;
+
+            settings->bools.preemptive_frames_enable =
+                  !(settings->bools.preemptive_frames_enable);
+            command_event(CMD_EVENT_PREEMPT_UPDATE, NULL);
+
+            settings->bools.preemptive_frames_hide_warnings = old_warn;
+
+            if (old_inited && !runloop_st->preempt_data)
+            {
+               runloop_msg_queue_push(msg_hash_to_str(MSG_PREEMPT_DISABLED),
+                     1, 100, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
+            else if (runloop_st->preempt_data)
+            {
+               char msg[256];
+
+               snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_PREEMPT_ENABLED),
+                        settings->uints.run_ahead_frames);
                runloop_msg_queue_push(
                      msg, 1, 100, false,
                      NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+               /* Disable runahead */
+               settings->bools.run_ahead_enabled = false;
             }
+            else /* Failed to init */
+               settings->bools.preemptive_frames_enable = false;
          }
+#endif
+         break;
+      case CMD_EVENT_PREEMPT_UPDATE:
+#if HAVE_RUNAHEAD
+         runloop_preempt_deinit();
+         runloop_preempt_init();
+#endif
+         break;
+      case CMD_EVENT_PREEMPT_RESET_BUFFER:
+#if HAVE_RUNAHEAD
+         if (runloop_st->preempt_data)
+            runloop_st->preempt_data->frame_count = 0;
+#endif
          break;
       case CMD_EVENT_RECORDING_TOGGLE:
          if (recording_st->enable)
@@ -2381,6 +2440,10 @@ bool command_event(enum event_command cmd, void *data)
 #endif
             if (!command_event_main_state(cmd))
                return false;
+
+#if HAVE_RUNAHEAD
+            command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
+#endif
          }
          break;
       case CMD_EVENT_UNDO_LOAD_STATE:
@@ -2427,6 +2490,9 @@ bool command_event(enum event_command cmd, void *data)
          if (settings->bools.video_frame_delay_auto)
             video_st->frame_delay_target = 0;
 
+#if HAVE_RUNAHEAD
+         command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
+#endif
          return false;
       case CMD_EVENT_SAVE_STATE:
       case CMD_EVENT_SAVE_STATE_TO_RAM:
@@ -2977,6 +3043,9 @@ bool command_event(enum event_command cmd, void *data)
              * RetroArch */
             if (!(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE))
                runloop_runahead_clear_variables(runloop_st);
+
+            /* Deallocate preemptive frames */
+            runloop_preempt_deinit();
 #endif
 
             if (hwr)
@@ -3512,6 +3581,10 @@ bool command_event(enum event_command cmd, void *data)
 
                return false;
             }
+#if HAVE_RUNAHEAD
+            /* Deinit preemptive frames; not compatible with netplay */
+            runloop_preempt_deinit();
+#endif
          }
          break;
       case CMD_EVENT_NETPLAY_DISCONNECT:
@@ -6169,6 +6242,12 @@ bool retroarch_main_init(int argc, char *argv[])
 
 #if defined(HAVE_AUDIOMIXER)
    audio_driver_load_system_sounds();
+#endif
+
+#if defined(HAVE_RUNAHEAD) && defined(HAVE_NETWORKING)
+   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+#elif defined(HAVE_RUNAHEAD)
+      runloop_preempt_init();
 #endif
 
    return true;

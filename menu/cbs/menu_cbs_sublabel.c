@@ -433,6 +433,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_ui_companion_toggle,   ME
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_vrr_runloop_toggle,    MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_runahead_toggle,       MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_preempt_toggle,        MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_fps_toggle,            MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_statistics_toggle,     MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_ai_service,            MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE)
@@ -667,6 +668,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_run_ahead_enabled,             MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_run_ahead_secondary_instance,  MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_run_ahead_hide_warnings,       MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_run_ahead_frames,              MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_preempt_unsupported,           MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_preempt_enable,                MENU_ENUM_SUBLABEL_PREEMPT_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_preempt_hide_warnings,         MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_preempt_frames,                MENU_ENUM_SUBLABEL_PREEMPT_FRAMES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_block_timeout,           MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rewind,                        MENU_ENUM_SUBLABEL_REWIND_ENABLE)
 #ifdef HAVE_CHEATS
@@ -2254,6 +2259,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             case RARCH_RUNAHEAD_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_runahead_toggle);
                return 0;
+            case RARCH_PREEMPT_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_preempt_toggle);
+               return 0;
             case RARCH_FPS_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_fps_toggle);
                return 0;
@@ -3830,6 +3838,18 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_RUN_AHEAD_FRAMES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_run_ahead_frames);
+            break;
+         case MENU_ENUM_LABEL_PREEMPT_UNSUPPORTED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_preempt_unsupported);
+            break;
+         case MENU_ENUM_LABEL_PREEMPT_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_preempt_enable);
+            break;
+         case MENU_ENUM_LABEL_PREEMPT_FRAMES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_preempt_frames);
+            break;
+         case MENU_ENUM_LABEL_PREEMPT_HIDE_WARNINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_preempt_hide_warnings);
             break;
          case MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_block_timeout);
