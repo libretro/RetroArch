@@ -417,6 +417,15 @@ static void *sdl_audio_init_microphone(void *data,
    if (!microphone)
       return NULL;
 
+   {
+      int i;
+      int num_available_microphones = SDL_GetNumAudioDevices(true);
+      RARCH_DBG("[SDL audio]: %d audio capture devices found:\n", num_available_microphones);
+      for (i = 0; i < num_available_microphones; ++i) {
+         RARCH_DBG("[SDL audio]:    - %s\n", SDL_GetAudioDeviceName(i, true));
+      }
+   }
+
    /* We have to buffer up some data ourselves, so we let SDL
     * carry approximately half of the latency.
     *
@@ -591,9 +600,9 @@ static ssize_t sdl_audio_read_microphone(void *data, void *microphone_context, v
          {
             SDL_UnlockAudioDevice(microphone->device_id);
 #ifdef HAVE_THREADS
-            slock_lock(sdl->lock);
-            scond_wait(sdl->cond, sdl->lock);
-            slock_unlock(sdl->lock);
+            slock_lock(microphone->lock);
+            scond_wait(microphone->cond, microphone->lock);
+            slock_unlock(microphone->lock);
 #endif
          }
          else
