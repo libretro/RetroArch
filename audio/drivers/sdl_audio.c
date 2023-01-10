@@ -473,7 +473,7 @@ static void *sdl_audio_init_microphone(void *data,
    tmp                       = calloc(1, bufsize);
    microphone->sample_buffer = fifo_new(bufsize);
 
-   RARCH_DBG("[SDL audio]: Initialized microphone sample buffer with %u bytes\n", bufsize);
+   RARCH_DBG("[SDL audio]: Initialized microphone sample queue with %u bytes\n", bufsize);
 
    if (tmp)
    {
@@ -551,7 +551,7 @@ static bool sdl_audio_microphone_set_state(void *data, void *microphone_context,
    { /* If the entire audio driver isn't paused... */
       SDL_PauseAudioDevice(microphone->device_id, microphone->is_paused);
    }
-   RARCH_LOG("[SDL audio]: Set state of microphone %u to %s\n",
+   RARCH_DBG("[SDL audio]: Set state of microphone %u to %s\n",
       microphone->device_id, enabled ? "enabled" : "disabled");
    return true;
 }
