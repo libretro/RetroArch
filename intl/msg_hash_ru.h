@@ -1189,86 +1189,6 @@ MSG_HASH(
    "Настройки браузера файлов."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
-   "Файл конфигурации."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
-   "Сжатый файл архива."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
-   "Файл конфигурации записи."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
-   "Файл указателей базы данных."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   "Файл конфигурации."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
-   "Файл предустановок шейдера."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
-   "Файл шейдера."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
-   "Файл привязок ввода."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
-   "Файл чит-кодов."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
-   "Файл оверлея."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
-   "Файл базы данных."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
-   "Файл шрифта TrueType."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
-   "Простой файл."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
-   "Видео. Выберите, чтобы открыть данный файл в видеопроигрывателе."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
-   "Музыка. Выберите, чтобы открыть данный файл в аудиопроигрывателе."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
-   "Файл изображения."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
-   "Изображение. Выберите, чтобы открыть файл с помощью средства просмотра изображений."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
-   "Ядро libretro. Выберите, чтобы привязать данное ядро к игре."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
-   "Ядро libretro. Выберите данный файл, чтобы загрузить ядро в RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
-   "Каталог. Выберите, чтобы открыть данный каталог."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
    "Частота кадров"
    )
@@ -2561,18 +2481,6 @@ MSG_HASH(
    )
 #endif
 #ifdef ANDROID
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "Выбор физической клавиатуры"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "Использовать данное устройство как физическую клавиатуру, а не геймпад."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "Если RetroArch определяет физическую клавиатуру как геймпад, данная настройка позволяет RetroArch принудительно опознавать такое устройство как клавиатуру.\nМожет быть полезно в тех случаях, когда вы пытаетесь эмулировать компьютер на устройстве с Android TV и используете подключаем[...]"
-   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
@@ -2613,10 +2521,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
    "Пауза при отключении контроллера"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Приостанавливать контент при отключении любого контроллера. Для продолжения нажмите Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -5905,30 +5809,6 @@ MSG_HASH(
 
 /* Settings > Achievements > Visibility */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
-   "Отображение"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
-   "Настройка элементов и уведомлений, отображаемых на экране. Не влияет на работу функций."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
-   "Статистика при запуске"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Показывает информацию о загруженной игре и текущий прогресс пользователя.\n'Для всех опознанных игр' будет отображать сводку по играм без доступных достижений."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
-   "Для всех опознанных игр"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
-   "Для игр с достижениями"
-   )
 
 /* Settings > Network */
 
@@ -6535,10 +6415,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_LANGUAGE,
    "Установка языка интерфейса пользователя."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
-   "Локализация меню и наэкранных сообщений в соответствии с выбранным языком. Требуется перезапуск для применения изменений.\nНапротив каждой опции указан прогресс перевода. Для элементов меню без перевода используется английский язык."
    )
 
 /* Settings > User > Privacy */
@@ -7773,10 +7649,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
    "Начать или продолжить поиск чит-кода"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Сканировать память для создания новых чит-кодов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
@@ -13457,10 +13329,6 @@ MSG_HASH(
    "Предпочительно переднее касание"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
-   "Использовать переднюю сенсорную панель вместо задней."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    "Включить касание"
    )
@@ -13593,10 +13461,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Выберите часовой пояс для подстройки даты и времени под ваше местоположение."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TIMEZONE,
-   "Отображает список доступных часовых поясов. После выбора часового пояса, время и дата корректируются в соответствии с выбранным часовым поясом. Предполагается, что системные/аппаратные часы устанавливаются по UTC."
    )
 MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,
