@@ -68,12 +68,20 @@ MSG_HASH(
    "A használni kívánt mag."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Libretro magok tallózása. A böngésző a magok könyvtárából indul, ha az üres, akkor a gyökérkönyvtárból. Ha a magok könyvtára egy könyvtár, akkor a menüben ennél feljebb nem lehet lépni. Ha a magok könyvtára egy fájlra mutat, a menü az ezt tartalmazó könyvtárban indul."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Tartalom betöltése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "A betölteni kívánt tartalom."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "Tartalom böngészése. Tartalom betöltéséhez kell egy \"mag\", és egy tartalom fájl. A böngészés a \"Fájlböngésző könyvtára\" beállításnál megadott helyről indul, na ez nincs beállítva, akkor a gyökérből.\nA böngésző csak a \"Mag betöltése\" menüben kiválasztott mag által támogatott kiterjesztéseket mutatja, és azt használja a tartalom betöltéséhez."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -192,6 +200,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "A program bezárása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Kilépés a RetroArch-ból. A program kényszerített bezárása (SIGKILL, stb.) a konfiguráció mentése nélkül állítja le a RetroArch-ot. Unix-hoz hasonló környezetekben a SIGINT/SIGTERM is használható tiszta leállításra."
    )
 
 /* Main Menu > Load Core */
@@ -1165,6 +1177,86 @@ MSG_HASH(
    "A fájlkezelő beállításai."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   "Konfigurációs fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   "Tömörített archívum fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "Felvétel konfigurációs fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   "Adatbázis kurzor fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   "Konfigurációs fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   "Shader preset fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   "Shader fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
+   "Irányítás remap fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
+   "Csalás fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   "Rátét fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   "Adatbázis fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   "TrueType betűtípus fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   "Egyszerű fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   "Mozgókép. Kiválasztva megnyílik a videolejátszóban."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   "Zene. Kiválasztva megnyílik a zenelejátszóban."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "Kép fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
+   "Kép. Kiválasztva megnyílik a képnézegetőben."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "Libretro mag. Kiválasztva ez a mag lesz hozzárendelve a játékhoz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "Libretro mag. Kiválasztva a RetroArch betölti ezt a magot."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "Könyvtár. Kiválasztva ez a könyvtár nyílik meg."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
    "Képsebesség korlátozás"
    )
@@ -1317,6 +1409,10 @@ MSG_HASH(
    "A használni kívánt bemeneti illesztőprogram. Egyes video-illesztőprogramok másik bemeneti illesztőprogramot kényszerítenek ki."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   "A bemeneti illesztőprogram. Egyes video-illesztőprogramok másik bemeneti illesztőprogramot kényszerítenek ki."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Kontroller"
    )
@@ -1331,6 +1427,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "A használt videóillesztő."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   "A jelenlegi videoillesztő."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -1379,6 +1479,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
    "A használt menüillesztő."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   "Az XMB egy RetroArch grafikus felület, amely a 7. generációs konzolok menüjére hasonlít. Ugyanazokat a lehetőségeket biztosítja, mint az Ozone."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
+   "Az Ozone a RetroArch alapértelmezett grafikus felülete a legtöbb platformon. Kontrolleres navigációra van optimalizálva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
+   "Az RGUI egy egyszerű beépített grafikus felület a RetroArch-hoz. Ennek a legkisebb a teljesítményigénye a menüillesztők közül, és használható alacsony felbontású képernyőkön is."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   "Mobil eszközökön a RetroArch alapértelmezésben a MaterialUI mobilos felületet használja. Ez a felület az érintőképernyőkhöz és az egérhez/hanyattegérhez hasonló mutatóeszközökhöz van tervezve."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -2411,6 +2527,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
    "Háttérhang"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
+   "\"Görgetés\" hang"
+   )
 
 /* Settings > Input */
 
@@ -2425,6 +2545,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
    "Lekérdezés módja"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+   "A RetroArch által használt módszer a bemenetek lekérdezésére. \"Korai\" vagy \"Késői\" beállítás konfigurációtól függően csökkentheti a késleltetést."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -2453,6 +2577,18 @@ MSG_HASH(
    )
 #endif
 #ifdef ANDROID
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Valódi billentyűzet kiválasztása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Ezen eszköz használata valódi billentyűzetként, nem pedig gamepadként."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Ha a RetroArch egy hardveres billentyűzetet valamiféle gamepadként érzékel, ezzel a beállítással átállítható, hogy a tévesen azonosított eszközt billentyűzetként használja. Ez számítógép emulálásakor lehet hasznos Android TV eszközön, ha tényleges billentyűzet is csatlakozik a dobozhoz."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
@@ -2493,6 +2629,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
    "Tartalom megállítása kontroller leválasztásakor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
+   "A tartalom megáll, amikor bármelyik kontroller lecsatlakozik. Folytatás a Start gombbal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -3152,6 +3292,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
    "A kiválasztott analóg kar használata az iránygombok bemenetéhez, a \"Mindenképpen\" módok esetén a magok saját analóg bemenetének felülírásával."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
+   "A kiválasztott analóg kart használja az irányváltó (D-Pad) bemenetéhez. Ha a mag támogatja az analóg bemenetet, ez a leképezés csak akkor aktív, ha \"(mindenképpen)\" jelű beállítás van kiválasztva, ez esetben a kiválasztott kar analóg bemenete nem jut el a maghoz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -4553,40 +4697,80 @@ MSG_HASH(
    "Értesítések megjelenésének helye (vízszintesen)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
+   "A képernyőn megjelenő szöveg vízszintes pozíciójának egyedi beállítása. 0 a képernyő bal széle."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    "Értesítések megjelenésének helye (függőlegesen)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
+   "A képernyőn megjelenő szöveg függőleges pozíciójának egyedi beállítása. 0 a képernyő alsó széle."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
    "Értesítések színe (piros komponens)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
+   "A képernyőn megjelenő szöveg vörös színkomponense. Az érték 0 és 255 közt változhat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
    "Értesítések színe (zöld komponens)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
+   "A képernyőn megjelenő szöveg zöld színkomponense. Az érték 0 és 255 közt változhat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
    "Értesítések színe (kék komponens)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
+   "A képernyőn megjelenő szöveg kék színkomponense. Az érték 0 és 255 közt változhat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
    "Értesítések háttere"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+   "A képernyőn megjelenő menü háttérszínének engedélyezése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
    "Értesítések háttérszíne (piros komponens)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED,
+   "A képernyőn megjelenő szöveg hátterének vörös színkomponense. Az érték 0 és 255 közt változhat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
    "Értesítések háttérszíne (zöld komponens)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
+   "A képernyőn megjelenő szöveg hátterének zöld színkomponense. Az érték 0 és 255 közt változhat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
    "Értesítések háttérszíne (kék komponens)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
+   "A képernyőn megjelenő szöveg hátterének kék színkomponense. Az érték 0 és 255 közt változhat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
    "Értesítések hátterének átlátszatlansága"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+   "A képernyőn megjelenő szöveg hátterének átlátszatlansága. Az érték 0.0 és 1.0 közt változhat."
    )
 
 /* Settings > User Interface */
@@ -5801,6 +5985,70 @@ MSG_HASH(
 
 /* Settings > Achievements > Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
+   "Láthatóság"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
+   "Az üzenetek és képernyőn megjelenő elemek láthatósága. A funkciót nem kapcsolja ki."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
+   "Összegzés indításkor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
+   "Információ az éppen betöltődő játékról és a felhasználó jelenlegi haladásáról. \"Minden azonosított játék\" beállítás esetén a nyilvános trófeákkal nem rendelkező játékokhoz is mutat összegzést."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
+   "Minden azonosított játék"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
+   "Trófeákkal rendelkező játékok"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
+   "Feloldási értesítések"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
+   "Értesítés megjelenítése trófea feloldásakor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
+   "Értesítések mester szintről"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
+   "Értesítés megjelenítése egy játék összes trófeájának feloldásakor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
+   "Aktív kihívás jelzése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
+   "Képernyőn megjelenő jelzés, amikor bizonyos trófeák begyűjthetők."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
+   "Bejelentkezési üzenetek"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+   "A RetroAchievements fiók belépéséhez kapcsolódó üzenetek megjelenítése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
+   "Részletes üzenetek"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+   "További diagnosztikai és hibaüzenetek megjelenítése."
+   )
 
 /* Settings > Network */
 
