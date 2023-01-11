@@ -6244,9 +6244,10 @@ bool retroarch_main_init(int argc, char *argv[])
    audio_driver_load_system_sounds();
 #endif
 
-#if defined(HAVE_RUNAHEAD) && defined(HAVE_NETWORKING)
+#ifdef HAVE_RUNAHEAD
+#ifdef HAVE_NETWORKING
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-#elif defined(HAVE_RUNAHEAD)
+#endif
       runloop_preempt_init();
 #endif
 
