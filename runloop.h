@@ -41,6 +41,9 @@
 #include "core_option_manager.h"
 #include "performance_counters.h"
 #include "state_manager.h"
+#ifdef HAVE_RUNAHEAD
+#include "runahead.h"
+#endif
 #include "tasks/tasks_internal.h"
 
 /* Arbitrary twenty subsystems limit */
@@ -157,51 +160,6 @@ typedef struct core_options_callbacks
 {
    retro_core_options_update_display_callback_t update_display;
 } core_options_callbacks_t;
-
-#ifdef HAVE_RUNAHEAD
-#define MAX_RUNAHEAD_FRAMES 12
-
-typedef bool(*runahead_load_state_function)(const void*, size_t);
-
-typedef void *(*constructor_t)(void);
-typedef void  (*destructor_t )(void*);
-
-typedef struct my_list_t
-{
-   void **data;
-   constructor_t constructor;
-   destructor_t destructor;
-   int capacity;
-   int size;
-} my_list;
-
-typedef struct preemptive_frames_data
-{
-   /* Savestate buffer */
-   void* buffer[MAX_RUNAHEAD_FRAMES];
-   size_t state_size;
-
-   /* Number of latency frames to remove */
-   uint8_t frames;
-
-   /* Buffer indexes for replays */
-   uint8_t start_ptr;
-   uint8_t replay_ptr;
-
-   /* Frame count since buffer init/reset */
-   uint64_t frame_count;
-
-   /* Input states. Replays triggered on changes */
-   int16_t joypad_state[MAX_USERS];
-   int16_t analog_state[MAX_USERS][20];
-   int16_t ptrdev_state[MAX_USERS][4];
-
-   /* Pointing device requested */
-   uint8_t ptr_dev[MAX_USERS];
-   /* Mask of analog states requested */
-   uint32_t analog_mask[MAX_USERS];
-} preempt_t;
-#endif
 
 struct runloop
 {
@@ -413,13 +371,6 @@ void runloop_runtime_log_deinit(
 
 void runloop_event_deinit_core(void);
 
-#ifdef HAVE_RUNAHEAD
-void runloop_runahead_clear_variables(runloop_state_t *runloop_st);
-
-bool runloop_preempt_init(void);
-void runloop_preempt_deinit(void);
-#endif
-
 bool runloop_event_init_core(
       settings_t *settings,
       void *input_data,
@@ -453,12 +404,10 @@ void runloop_task_msg_queue_push(
       unsigned prio, unsigned duration,
       bool flush);
 
-bool secondary_core_ensure_exists(settings_t *settings);
+bool secondary_core_ensure_exists(void *data, settings_t *settings);
 
 void runloop_log_counters(
       struct retro_perf_counter **counters, unsigned num);
-
-void runloop_secondary_core_destroy(void);
 
 void runloop_msg_queue_deinit(void);
 
@@ -481,6 +430,23 @@ void runloop_path_set_redirect(settings_t *settings, const char *a, const char *
 void runloop_path_set_special(char **argv, unsigned num_content);
 
 void runloop_path_deinit_subsystem(void);
+
+/**
+ * init_libretro_symbols:
+ * @type                        : Type of core to be loaded.
+ *                                If CORE_TYPE_DUMMY, will
+ *                                load dummy symbols.
+ *
+ * Setup libretro callback symbols.
+ * 
+ * @return true on success, or false if symbols could not be loaded.
+ **/
+bool runloop_init_libretro_symbols(
+		void *data,
+      enum rarch_core_type type,
+      struct retro_core_t *current_core,
+      const char *lib_path,
+      void *_lib_handle_p);
 
 runloop_state_t *runloop_state_get_ptr(void);
 

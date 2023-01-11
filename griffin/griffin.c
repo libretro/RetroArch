@@ -1236,6 +1236,9 @@ RETROARCH
 ============================================================ */
 #include "../retroarch.c"
 #include "../runloop.c"
+#ifdef HAVE_RUNAHEAD
+#include "../runahead.c"
+#endif
 #include "../command.c"
 #include "../midi_driver.c"
 #include "../location_driver.c"

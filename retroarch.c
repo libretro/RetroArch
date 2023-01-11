@@ -2272,7 +2272,7 @@ bool command_event(enum event_command cmd, void *data)
 
                /* Disable preemptive frames */
                settings->bools.preemptive_frames_enable = false;
-               runloop_preempt_deinit();
+               preempt_deinit(runloop_st);
             }
          }
 #endif
@@ -2318,8 +2318,8 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_PREEMPT_UPDATE:
 #if HAVE_RUNAHEAD
-         runloop_preempt_deinit();
-         runloop_preempt_init();
+         preempt_deinit(runloop_st);
+         preempt_init(runloop_st);
 #endif
          break;
       case CMD_EVENT_PREEMPT_RESET_BUFFER:
@@ -2411,9 +2411,9 @@ bool command_event(enum event_command cmd, void *data)
 
          if (!runloop_st->secondary_lib_handle)
          {
-            if (!secondary_core_ensure_exists(settings))
+            if (!secondary_core_ensure_exists(runloop_st, settings))
             {
-               runloop_secondary_core_destroy();
+               runahead_secondary_core_destroy(runloop_st);
                runloop_st->flags &=
                   ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
                return false;
@@ -3042,10 +3042,10 @@ bool command_event(enum event_command cmd, void *data)
              * remain disabled until the user restarts
              * RetroArch */
             if (!(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE))
-               runloop_runahead_clear_variables(runloop_st);
+               runahead_clear_variables(runloop_st);
 
             /* Deallocate preemptive frames */
-            runloop_preempt_deinit();
+            preempt_deinit(runloop_st);
 #endif
 
             if (hwr)
@@ -3583,7 +3583,7 @@ bool command_event(enum event_command cmd, void *data)
             }
 #if HAVE_RUNAHEAD
             /* Deinit preemptive frames; not compatible with netplay */
-            runloop_preempt_deinit();
+            preempt_deinit(runloop_st);
 #endif
          }
          break;
@@ -6248,7 +6248,7 @@ bool retroarch_main_init(int argc, char *argv[])
 #ifdef HAVE_NETWORKING
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
-      runloop_preempt_init();
+      preempt_init(runloop_st);
 #endif
 
    return true;

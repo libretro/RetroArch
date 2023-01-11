@@ -430,6 +430,7 @@ endif
 
 ifeq ($(HAVE_RUNAHEAD), 1)
    DEFINES += -DHAVE_RUNAHEAD
+   OBJ     += runahead.o
 endif
 
 ifeq ($(HAVE_CC_RESAMPLER), 1)

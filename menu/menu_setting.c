@@ -8710,7 +8710,7 @@ static void runahead_change_handler(rarch_setting_t *setting)
          {
             /* Disable preemptive frames and inform user */
             settings->bools.preemptive_frames_enable = false;
-            runloop_preempt_deinit();
+            preempt_deinit(runloop_state_get_ptr());
             runloop_msg_queue_push(
                   msg_hash_to_str(MSG_PREEMPT_DISABLED), 1, 100, false,
                   NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

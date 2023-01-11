@@ -8438,7 +8438,7 @@ void deinit_netplay(void)
 
 #if HAVE_RUNAHEAD
       /* Reinitialize preemptive frames if enabled */
-      runloop_preempt_init();
+      preempt_init(runloop_state_get_ptr());
 #endif
    }
 
