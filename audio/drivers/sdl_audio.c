@@ -246,41 +246,49 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
    sdl_audio_t *sdl = (sdl_audio_t*)data;
 
    if (sdl->nonblock)
-   {
+   { /* If we shouldn't wait for space in a full outgoing sample queue... */
       size_t avail, write_amt;
 
-      SDL_LockAudioDevice(sdl->speaker_device);
+      SDL_LockAudioDevice(sdl->speaker_device); /* Stop the SDL speaker thread from running */
       avail = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
-      write_amt = avail > size ? size : avail;
+      write_amt = avail > size ? size : avail; /* Enqueue as much data as we can */
       fifo_write(sdl->speaker_buffer, buf, write_amt);
-      SDL_UnlockAudioDevice(sdl->speaker_device);
-      ret = write_amt;
+      SDL_UnlockAudioDevice(sdl->speaker_device); /* Let the speaker thread run again */
+      ret = write_amt; /* If the queue was full...well, too bad. */
    }
    else
    {
       size_t written = 0;
 
       while (written < size)
-      {
+      { /* Until we've written all the sample data we have available... */
          size_t avail;
 
-         SDL_LockAudioDevice(sdl->speaker_device);
+         SDL_LockAudioDevice(sdl->speaker_device); /* Stop the SDL speaker thread from running */
          avail = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
 
          if (avail == 0)
-         {
+         { /* If the outgoing sample queue is full... */
             SDL_UnlockAudioDevice(sdl->speaker_device);
+            /* Let the SDL speaker thread run so it can play the enqueued samples,
+             * which will free up space for us to write new ones. */
 #ifdef HAVE_THREADS
             slock_lock(sdl->lock);
+            /* Let *only* the SDL speaker thread touch the outgoing sample queue */
+
             scond_wait(sdl->cond, sdl->lock);
+            /* Block until SDL tells us that it's made room for new samples */
+
             slock_unlock(sdl->lock);
+            /* Now let this thread use the outgoing sample queue (which we'll do next iteration) */
 #endif
          }
          else
          {
             size_t write_amt = size - written > avail ? avail : size - written;
             fifo_write(sdl->speaker_buffer, (const char*)buf + written, write_amt);
-            SDL_UnlockAudioDevice(sdl->speaker_device);
+            /* Enqueue as many samples as we have available without overflowing the queue */
+            SDL_UnlockAudioDevice(sdl->speaker_device); /* Let the SDL speaker thread run again */
             written += write_amt;
          }
       }
