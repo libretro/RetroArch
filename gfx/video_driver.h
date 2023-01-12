@@ -402,6 +402,7 @@ typedef struct video_frame_info
    int crt_switch_porch_adjust;
 
    unsigned hard_sync_frames;
+   unsigned runahead_frames;
    unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;
    unsigned monitor_index;
@@ -454,7 +455,7 @@ typedef struct video_frame_info
       bool full_screen;
    } osd_stat_params;
 
-   char stat_text[512];
+   char stat_text[1024];
 
    bool widgets_active;
    bool notifications_hidden;
@@ -466,6 +467,9 @@ typedef struct video_frame_info
    bool input_driver_nonblock_state;
    bool input_driver_grab_mouse_state;
    bool hard_sync;
+   bool runahead;
+   bool runahead_second_instance;
+   bool preemptive_frames;
    bool fps_show;
    bool memory_show;
    bool statistics_show;
