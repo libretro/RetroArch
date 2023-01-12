@@ -515,6 +515,17 @@ bool audio_driver_start(bool is_shutdown);
 bool audio_driver_stop(void);
 
 /**
+ * If you need to query the size of audio samples,
+ * use this function instead of checking the flags directly.
+ *
+ * @return The size of a single audio sample in bytes,
+ * as determined by the presence of the \c AUDIO_FLAG_USE_FLOAT flag.
+ * Will currently return either 2 (for \c uint16_t) or 4 (for \c float),
+ * although this may change if we add support for more sample types.
+ */
+unsigned audio_driver_get_sample_size(void);
+
+/**
  *
  * @param driver The audio driver whose microphone support you're querying
  * @return true if driver defines the necessary methods TODO

@@ -194,6 +194,12 @@ const char *config_get_audio_driver_options(void)
    return char_list_new_special(STRING_LIST_AUDIO_DRIVERS, NULL);
 }
 
+unsigned audio_driver_get_sample_size(void)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   return (audio_st->flags & AUDIO_FLAG_USE_FLOAT) ? sizeof(float) : sizeof(int16_t);
+}
+
 #ifdef HAVE_TRANSLATE
 /* TODO/FIXME - Doesn't currently work.  Fix this. */
 bool audio_driver_is_ai_service_speech_running(void)
