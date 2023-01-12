@@ -649,7 +649,7 @@ static ssize_t sdl_audio_read_microphone(void *data, void *microphone_context, v
          }
          else
          {
-            size_t read_amt = size - read > avail ? avail : size - read;
+            size_t read_amt = MIN(size - read, avail);
             fifo_read(microphone->sample_buffer, buf + read, read_amt);
             /* Read as many samples as we have available without underflowing the queue */
 
@@ -661,9 +661,7 @@ static ssize_t sdl_audio_read_microphone(void *data, void *microphone_context, v
       ret = read;
    }
 
-   return ret / sizeof(int16_t);
-   /* Because the function should return the number of *samples* processed, not bytes
-    * (which is what the FIFO queues operate on) */
+   return ret;
 }
 
 #endif
