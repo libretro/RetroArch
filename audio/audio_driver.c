@@ -420,13 +420,7 @@ bool audio_driver_find_driver(
 }
 
 /**
- * audio_driver_flush:
- * @data                 : pointer to audio buffer.
- * @right                : amount of samples to write.
- *
- * Writes audio samples to audio driver's output,
- * and reads samples from the driver's input
- * (if mic support is enabled).
+ * Writes audio samples to audio driver's output.
  * Will first perform DSP processing (if enabled) and resampling.
  *
  * @param audio_st The overall state of the audio driver.
@@ -589,64 +583,6 @@ static void audio_driver_flush(
 
       audio_st->current_audio->write(audio_st->context_audio_data,
             output_data, output_frames * 2);
-   }
-
-   /* Now let's process the microphone input, if any.
-    * Only one mic is supported right now. If you add support for multiple mics,
-    * read through all of them here. */
-   if (  (audio_st->flags & AUDIO_FLAG_MIC_ACTIVE) &&
-         audio_st->current_microphone.active &&
-         audio_st->current_microphone.microphone_context &&
-         audio_st->current_microphone.sample_buffer &&
-         audio_st->current_microphone.sample_buffer_length &&
-         audio_st->current_audio->read_microphone &&
-         audio_st->current_audio->get_microphone_state &&
-         audio_st->current_audio->get_microphone_state(audio_st->current_audio,
-            audio_st->current_microphone.microphone_context))
-   { /* If mic support is enabled and available, and the mic is enabled... */
-      void *input_data               = audio_st->input_samples_buf;
-      unsigned input_frames          = (unsigned)src_data.input_frames;
-      retro_microphone_t *microphone = &audio_st->current_microphone;
-      size_t sample_buffer_length    = microphone->sample_buffer_length;
-      ssize_t samples_read           = audio_st->current_audio->read_microphone(
-         audio_st->context_audio_data,
-         microphone->microphone_context,
-         input_data,
-         input_frames);
-      /* First, get the most recent mic data */
-
-      if (samples_read < 0)
-      { /* If there was an error... */
-         microphone->error = true;
-         microphone->most_recent_read_length = 0;
-      }
-      else if (samples_read == 0)
-      {
-         microphone->error = false;
-         microphone->most_recent_read_length = 0;
-      }
-      else
-      {
-         microphone->error = false;
-         microphone->most_recent_read_length = samples_read;
-
-         if (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
-         {
-            input_frames       *= sizeof(float);
-            input_data          = audio_st->input_samples_conv_buf;
-            convert_float_to_s16(audio_st->input_samples_conv_buf,
-                                 (const float*)input_data, input_frames);
-            // TODO: Write a mono version of this
-         }
-         else
-         {
-            input_frames       *= sizeof(int16_t);
-         }
-
-         memcpy(microphone->sample_buffer, input_data,
-            MIN(input_frames, sample_buffer_length));
-         /* Copy the data we read from the mic into the buffer that the core reads from */
-      }
    }
 }
 
@@ -884,9 +820,11 @@ bool audio_driver_init_internal(
    if (!out_samples_buf || ((audio_driver_st.flags & AUDIO_FLAG_MIC_ACTIVE) && !in_samples_buf))
       goto error;
 
-   audio_driver_st.output_samples_buf = (float*)out_samples_buf;
-   audio_driver_st.input_samples_buf  = (float*)in_samples_buf;
-   audio_driver_st.flags             &= ~AUDIO_FLAG_CONTROL;
+   audio_driver_st.output_samples_buf        = (float*)out_samples_buf;
+   audio_driver_st.output_samples_buf_length = outsamples_max * sizeof(float);
+   audio_driver_st.input_samples_buf         = (float*)in_samples_buf;
+   audio_driver_st.input_samples_buf_length  = (in_samples_buf) ?  insamples_max * sizeof(float) : 0;
+   audio_driver_st.flags                    &= ~AUDIO_FLAG_CONTROL;
 
    if (
             !audio_cb_inited
@@ -1835,7 +1773,7 @@ static void audio_driver_microphone_handle_init(retro_microphone_t *microphone, 
       microphone->active                  = true;
       microphone->sample_buffer           = NULL;
       microphone->sample_buffer_length    = 0;
-      microphone->most_recent_read_length = 0;
+      microphone->most_recent_copy_length = 0;
       microphone->error                   = false;
    }
 }
@@ -1890,10 +1828,9 @@ static void audio_driver_init_microphone_internal(retro_microphone_t* microphone
    if (!microphone || !audio_driver)
       return;
 
-   microphone->sample_buffer_length    = insamples_max * sizeof(int16_t);
-   microphone->error                   = false;
-   microphone->most_recent_read_length = 0;
-   microphone->sample_buffer           =
+   microphone->sample_buffer_length = insamples_max * sizeof(int16_t);
+   microphone->error                = false;
+   microphone->sample_buffer        =
          (int16_t*)memalign_alloc(64, microphone->sample_buffer_length);
 
    if (!microphone->sample_buffer)
@@ -2067,29 +2004,157 @@ bool audio_driver_get_microphone_state(const retro_microphone_t *microphone)
    }
 }
 
-int audio_driver_get_microphone_input(retro_microphone_t *microphone, int16_t* data, size_t data_length)
+/**
+ * Pull queued microphone samples from the driver
+ * and copy them to the provided buffer(s).
+ *
+ * Only one mic is supported right now,
+ * but the API is designed to accommodate multiple.
+ * If multi-mic support is implemented,
+ * you'll want to update this function.
+ *
+ * Note that microphone samples are provided in mono,
+ * so a "sample" and a "frame" are equivalent here.
+ *
+ * @param audio_st The overall state of the audio driver.
+ * @param slowmotion_ratio TODO
+ * @param audio_fastforward_mute True if no audio should be input while the game is in fast-forward.
+ * @param[out] frames The buffer in which the core will receive microphone samples.
+ * @param num_frames The size of \c frames, in samples.
+ * @param is_slowmotion True if the player is running the core in slow-motion.
+ * @param is_fastmotion True if the player is running the core in fast-forward.
+ *
+ * @see audio_driver_flush()
+ */
+static void audio_driver_flush_microphone_input(
+      audio_driver_state_t *audio_st,
+      retro_microphone_t *microphone,
+      float slowmotion_ratio,
+      bool audio_fastforward_mute,
+      int16_t *frames, size_t num_frames,
+      bool is_slowmotion, bool is_fastmotion)
 {
-   /* TODO: Should mic use on a pending microphone driver be an error? */
-   if (  !microphone ||
-         microphone->error ||
-         !microphone->active ||
-         !microphone->microphone_context ||
-         !microphone->sample_buffer ||
-         !microphone->sample_buffer_length ||
-         !audio_driver_alive() ||
-         !audio_driver_get_microphone_state(microphone))
+   if (  audio_st &&                                      /* If the audio driver state is valid... */
+         (audio_st->flags & AUDIO_FLAG_MIC_ACTIVE) &&     /* ...and mic support is on... */
+         audio_st->current_audio &&
+         audio_st->context_audio_data &&                  /* ...and the audio driver is initialized... */
+         audio_st->input_samples_buf &&                   /* ...with scratch space... */
+         microphone &&
+         microphone->active &&                            /* ...and the mic itself is initialized... */
+         microphone->microphone_context &&                /* ...and ready... */
+         microphone->sample_buffer &&
+         microphone->sample_buffer_length &&              /* ...with a non-empty sample buffer... */
+
+         audio_st->current_audio->read_microphone &&      /* ...and valid function pointers... */
+         audio_st->current_audio->get_microphone_state &&
+         audio_st->current_audio->get_microphone_state(   /* ...and it's enabled... */
+               audio_st->current_audio,
+               microphone->microphone_context))
+   {
+      struct resampler_data src_data;
+      unsigned sample_size = audio_driver_get_sample_size();
+      size_t bytes_to_read = MIN(audio_st->input_samples_buf_length, num_frames * sample_size);
+      ssize_t bytes_read   = audio_st->current_audio->read_microphone(
+            audio_st->context_audio_data,
+            microphone->microphone_context,
+            audio_st->input_samples_buf,
+            bytes_to_read);
+      /* First, get the most recent mic data */
+
+      if (bytes_read < 0)
+      { /* If there was an error... */
+         microphone->error = true;
+         return;
+      }
+      else if (bytes_read == 0)
+      {
+         microphone->error = false;
+         return;
+      }
+
+      src_data.data_in       = NULL; /* Will be assigned later */
+      src_data.input_frames  = num_frames;
+      src_data.data_out      = audio_st->output_samples_buf;
+      src_data.output_frames = 0; /* Will be assigned by the resampler */
+      src_data.ratio         = audio_st->source_ratio_current;
+
+      if (is_slowmotion)
+         src_data.ratio     *= slowmotion_ratio;
+
+      float audio_volume_gain = (audio_st->mute_enable || (audio_fastforward_mute && is_fastmotion))
+                                ? 0.0f
+                                : audio_st->volume_gain;
+
+      if (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
+      { /* If the mic gave us floating-point input... */
+         src_data.data_in = audio_st->input_samples_buf;
+      }
+      else
+      {
+         convert_s16_to_float(audio_st->input_data, audio_st->input_samples_buf, bytes_read / sample_size / 2,
+                              audio_volume_gain);
+         src_data.data_in = audio_st->input_data;
+      }
+
+      audio_st->resampler->process(audio_st->resampler_data, &src_data);
+
+      convert_float_to_s16(microphone->sample_buffer, src_data.data_out, src_data.output_frames);
+
+      memcpy(frames, microphone->sample_buffer, num_frames * sample_size);
+   }
+}
+
+
+int audio_driver_get_microphone_input(retro_microphone_t *microphone, int16_t* frames, size_t num_frames)
+{
+   uint32_t runloop_flags;
+   size_t frames_remaining        = num_frames;
+   audio_driver_state_t *audio_st = &audio_driver_st;
+
+   if (audio_st->flags & AUDIO_FLAG_SUSPENDED
+         || num_frames == 0
+         || !frames
+         || !microphone
+         || !microphone->active
+         || !audio_driver_get_microphone_state(microphone)
+   )
+   { /* If the driver is suspended, or the core didn't actually ask for frames,
+      * or the microphone is disabled... */
       return -1;
-   /* If the provided mic is invalid,
-    * or the audio driver isn't active,
-    * or mic support isn't fully implemented... */
+   }
 
-   if (microphone->most_recent_read_length == 0)
-      return 0;
+   if (!(audio_st->context_audio_data && microphone->microphone_context))
+   { /* If the microphone isn't ready... */
+      return 0; /* Not an error */
+   }
 
-   int copy_length = MIN(data_length, microphone->most_recent_read_length);
-   memcpy(data, microphone->sample_buffer, copy_length * 2);
+   runloop_flags                   = runloop_get_flags();
 
-   return copy_length;
+   do
+   {
+      size_t frames_to_read =
+            (frames_remaining > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1)) ?
+            (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1) : frames_remaining;
+
+      if (!(    (runloop_flags & RUNLOOP_FLAG_PAUSED)
+                || !(audio_st->flags & (AUDIO_FLAG_ACTIVE | AUDIO_FLAG_MIC_ACTIVE))
+                || !(audio_st->input_samples_buf)))
+         /* If the game is running, the audio driver and mic are running,
+          * and the input sample buffer is valid... */
+         audio_driver_flush_microphone_input(audio_st,
+                                             microphone,
+                                             config_get_ptr()->floats.slowmotion_ratio,
+                                             config_get_ptr()->bools.audio_fastforward_mute,
+                                             frames,
+                                             frames_to_read,
+                                             runloop_flags & RUNLOOP_FLAG_SLOWMOTION,
+                                             runloop_flags & RUNLOOP_FLAG_FASTMOTION);
+      frames_remaining -= frames_to_read;
+      frames           += frames_to_read << 1;
+   }
+   while (frames_remaining > 0);
+
+   return num_frames;
 }
 
 #ifdef HAVE_REWIND

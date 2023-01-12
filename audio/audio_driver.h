@@ -540,7 +540,7 @@ bool audio_driver_set_microphone_state(retro_microphone_t *microphone, bool stat
 
 bool audio_driver_get_microphone_state(const retro_microphone_t *microphone);
 
-int audio_driver_get_microphone_input(retro_microphone_t *microphone, int16_t* data, size_t data_length);
+int audio_driver_get_microphone_input(retro_microphone_t *microphone, int16_t* frames, size_t num_frames);
 
 #ifdef HAVE_TRANSLATE
 /* TODO/FIXME - Doesn't currently work.  Fix this. */
