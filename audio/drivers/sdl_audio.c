@@ -612,8 +612,12 @@ static ssize_t sdl_audio_read_microphone(void *data, void *microphone_context, v
       SDL_LockAudioDevice(microphone->device_id); /* Stop the SDL mic thread */
       avail = FIFO_READ_AVAIL(microphone->sample_buffer);
       read_amt = avail > size ? size : avail;
-      fifo_read(microphone->sample_buffer, buf, read_amt);
-      SDL_UnlockAudioDevice(microphone->device_id);
+      if (read_amt > 0)
+      {  /* If the incoming queue isn't empty... */
+         fifo_read(microphone->sample_buffer, buf, read_amt);
+         /* ...then read as much data as will fit in buf */
+      }
+      SDL_UnlockAudioDevice(microphone->device_id); /* Let the mic thread run again */
       ret = read_amt;
    }
    else
