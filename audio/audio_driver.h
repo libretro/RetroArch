@@ -371,7 +371,9 @@ typedef struct
     * to give to the driver.
     */
    float  *output_samples_buf;
+   size_t output_samples_buf_length;
    float  *input_samples_buf;
+   size_t input_samples_buf_length;
 #ifdef HAVE_REWIND
    int16_t *rewind_buf;
 #endif
@@ -381,7 +383,9 @@ typedef struct
     * so that it can be sent to the driver.
     */
    int16_t *output_samples_conv_buf;
+   size_t output_samples_conv_buf_length;
    int16_t *input_samples_conv_buf;
+   size_t input_samples_conv_buf_length;
 #ifdef HAVE_DSP_FILTER
    retro_dsp_filter_t *dsp;
 #endif

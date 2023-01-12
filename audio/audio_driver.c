@@ -710,12 +710,14 @@ bool audio_driver_init_internal(
 
    memset(audio_buf, 0, AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float));
 
-   audio_driver_st.input_data              = audio_buf;
-   audio_driver_st.output_samples_conv_buf = out_conv_buf;
-   audio_driver_st.input_samples_conv_buf  = in_conv_buf;
-   audio_driver_st.chunk_block_size        = AUDIO_CHUNK_SIZE_BLOCKING;
-   audio_driver_st.chunk_nonblock_size     = AUDIO_CHUNK_SIZE_NONBLOCKING;
-   audio_driver_st.chunk_size              = audio_driver_st.chunk_block_size;
+   audio_driver_st.input_data                     = audio_buf;
+   audio_driver_st.output_samples_conv_buf        = out_conv_buf;
+   audio_driver_st.output_samples_conv_buf_length = outsamples_max * sizeof(int16_t);
+   audio_driver_st.input_samples_conv_buf         = in_conv_buf;
+   audio_driver_st.input_samples_conv_buf_length  = (in_conv_buf) ? insamples_max * sizeof(int16_t) : 0;
+   audio_driver_st.chunk_block_size               = AUDIO_CHUNK_SIZE_BLOCKING;
+   audio_driver_st.chunk_nonblock_size            = AUDIO_CHUNK_SIZE_NONBLOCKING;
+   audio_driver_st.chunk_size                     = audio_driver_st.chunk_block_size;
 
 #ifdef HAVE_REWIND
    /* Needs to be able to hold full content of a full max_bufsamples
