@@ -3324,6 +3324,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             struct retro_microphone_interface* microphone = (struct retro_microphone_interface *)data;
             const audio_driver_t *audio_driver            = audio_state_get_ptr()->current_audio;
 
+            RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE.\n");
+
             if (!audio_driver)
             {
                RARCH_DBG("[Environ]: Couldn't initialize microphone interface, driver is not initialized\n");
