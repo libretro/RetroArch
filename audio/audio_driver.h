@@ -94,24 +94,26 @@ struct retro_microphone
    int16_t* sample_buffer;
 
    /**
-    * Length of sample_buffer in samples, \em not bytes.
+    * Length of sample_buffer in bytes, \em not samples.
     */
    size_t sample_buffer_length;
 
    /**
-    * Length of the most recent read into sample_buffer, in samples.
-    */
-   size_t most_recent_read_length;
+    * Number of bytes that were copied into the buffer in the most recent flush.
+    * Accounts for resampling
+    **/
+   size_t most_recent_copy_length;
 
    /* May be enabled even before the driver is ready */
    bool pending_enabled;
 
-   /* true if this object represents a valid or pending microphone */
+   /**
+    * True if this object represents a valid or pending microphone.
+    * Mostly exists because retro_microphone is statically allocated,
+    * so there's no reason to check it against NULL.
+    */
    bool active;
 
-   /**
-    * True if the most recent read attempt ended in an error.
-    * Mostly just used */
    bool error;
 };
 
@@ -335,8 +337,9 @@ typedef struct audio_driver
     * whose input will be received.
     * @param[out] buf Buffer for received audio data.
     * Should be large enough to hold one frame's worth of audio samples.
-    * @param[in] size Size of audio buffer, in samples (\em not bytes).
-    * @return The number of samples that were read into \c buf,
+    * @param[in] size Size of audio buffer, in bytes (\em not samples).
+    * Don't ask for more than you need per frame.
+    * @return The number of bytes that were read into \c buf,
     * or -1 if there was an error.
     */
    ssize_t (*read_microphone)(void *driver_context, void *microphone_context, void *buf, size_t size);
