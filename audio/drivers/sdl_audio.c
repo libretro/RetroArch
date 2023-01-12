@@ -606,10 +606,10 @@ static ssize_t sdl_audio_read_microphone(void *data, void *microphone_context, v
       return -1;
 
    if (sdl->nonblock)
-   {
+   { /* If we shouldn't block on an empty queue... */
       size_t avail, read_amt;
 
-      SDL_LockAudioDevice(microphone->device_id);
+      SDL_LockAudioDevice(microphone->device_id); /* Stop the SDL mic thread */
       avail = FIFO_READ_AVAIL(microphone->sample_buffer);
       read_amt = avail > size ? size : avail;
       fifo_read(microphone->sample_buffer, buf, read_amt);
@@ -628,19 +628,28 @@ static ssize_t sdl_audio_read_microphone(void *data, void *microphone_context, v
          avail = FIFO_READ_AVAIL(microphone->sample_buffer);
 
          if (avail == 0)
-         {
+         { /* If the incoming sample queue is empty... */
             SDL_UnlockAudioDevice(microphone->device_id);
+            /* Let the SDL microphone thread run so it can push some incoming samples */
 #ifdef HAVE_THREADS
             slock_lock(microphone->lock);
+            /* Let *only* the SDL microphone thread access the incoming sample queue. */
+
             scond_wait(microphone->cond, microphone->lock);
+            /* Wait until the SDL microphone thread tells us it's added some samples. */
+
             slock_unlock(microphone->lock);
+            /* Allow this thread to access the incoming sample queue, which we'll do next iteration */
 #endif
          }
          else
          {
             size_t read_amt = size - read > avail ? avail : size - read;
             fifo_read(microphone->sample_buffer, buf + read, read_amt);
+            /* Read as many samples as we have available without underflowing the queue */
+
             SDL_UnlockAudioDevice(microphone->device_id);
+            /* Let the SDL microphone thread run again */
             read += read_amt;
          }
       }

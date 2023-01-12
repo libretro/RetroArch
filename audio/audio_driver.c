@@ -427,7 +427,7 @@ bool audio_driver_find_driver(
  * @param slowmotion_ratio TODO
  * @param audio_fastforward_mute True if no audio should be output while the game is in fast-forward.
  * @param data Audio output data that was most recently provided by the core.
- * @param samples The size of data, in TODO
+ * @param samples The size of data, in samples.
  * @param is_slowmotion True if the player is currently running the game in slow motion.
  * @param is_fastmotion True if the player is currently running the game in fast-forward.
  **/
