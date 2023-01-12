@@ -621,10 +621,11 @@ static ssize_t sdl_audio_read_microphone(void *data, void *microphone_context, v
       size_t read = 0;
 
       while (read < size)
-      {
+      { /* Until we've given the caller as much data as they've asked for... */
          size_t avail;
 
          SDL_LockAudioDevice(microphone->device_id);
+         /* Stop the SDL microphone thread from running */
          avail = FIFO_READ_AVAIL(microphone->sample_buffer);
 
          if (avail == 0)
