@@ -3875,24 +3875,29 @@ typedef bool (RETRO_CALLCONV *retro_set_microphone_state_t)(retro_microphone_t *
 typedef bool (RETRO_CALLCONV *retro_get_microphone_state_t)(const retro_microphone_t *microphone);
 
 /**
- * Retrieves the input processed by the microphone since the previous frame.
- * If called while the microphone or the audio driver are disabled,
- * then nothing will be copied into data.
+ * Retrieves the input processed by the microphone since the last call.
+ * \em Must be called every frame unless \c microphone is disabled,
+ * similar to how \c retro_audio_sample_batch_t works.
  *
  * @param microphone Opaque handle to the microphone
  * whose recent input will be retrieved.
- * @param data The buffer that will be used to store the microphone's data.
+ * @param samples The buffer that will be used to store the microphone's data.
  * Microphone input is in mono (i.e. one number per sample).
  * Should be large enough to accommodate the expected number of samples per frame;
  * for example, a 44.1kHz sample rate at 60 FPS would require space for 735 samples.
- * @param data_length The size of the data buffer, in samples (\em not bytes).
+ * @param num_samples The size of the data buffer, in samples (\em not bytes).
+ * Microphone input is in mono, so a "frame" and a "sample" are equivalent in length here.
  *
- * @return The number of samples that were collected this frame.
+ * @return The number of samples that were copied into \c samples.
+ * Will return 0 if \c microphone is still pending
+ * because the driver hasn't finished initializing.
+ * This is not an error.
+ *
  * Will return -1 if the microphone is disabled,
  * the audio driver is paused,
  * or there was an error.
  */
-typedef int (RETRO_CALLCONV *retro_get_microphone_input_t)(retro_microphone_t *microphone, int16_t* data, size_t data_length);
+typedef int (RETRO_CALLCONV *retro_get_microphone_input_t)(retro_microphone_t *microphone, int16_t* samples, size_t num_samples);
 
 /**
  * An interface for querying the microphone and accessing data read from it.
