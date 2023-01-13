@@ -2085,8 +2085,9 @@ static void audio_driver_flush_microphone_input(
                                 ? 0.0f
                                 : audio_st->volume_gain;
 
+      /*
       if (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
-      { /* If the mic gave us floating-point input... */
+      {
          src_data.data_in = audio_st->input_samples_buf;
       }
       else
@@ -2098,9 +2099,9 @@ static void audio_driver_flush_microphone_input(
 
       audio_st->resampler->process(audio_st->resampler_data, &src_data);
 
-      convert_float_to_s16(microphone->sample_buffer, src_data.data_out, src_data.output_frames);
+      convert_float_to_s16(microphone->sample_buffer, src_data.data_out, src_data.output_frames);*/
 
-      memcpy(frames, microphone->sample_buffer, num_frames * sample_size);
+      memcpy(frames, audio_st->input_samples_buf, num_frames * sample_size);
    }
 }
 
