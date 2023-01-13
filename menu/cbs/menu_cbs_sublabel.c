@@ -1381,9 +1381,10 @@ static int action_bind_sublabel_subsystem_load(
    unsigned j = 0;
    char buf[4096];
 
+   buf[0] = '\0';
+
    for (j = 0; j < content_get_subsystem_rom_id(); j++)
    {
-      strlcat(buf, "   ", sizeof(buf));
       strlcat(buf, path_basename(content_get_subsystem_rom(j)), sizeof(buf));
       if (j != content_get_subsystem_rom_id() - 1)
          strlcat(buf, "\n", sizeof(buf));
