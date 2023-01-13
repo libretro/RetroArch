@@ -2095,9 +2095,10 @@ static void audio_driver_flush_microphone_input(
       if (is_slowmotion)
          src_data.ratio     *= slowmotion_ratio;
 
+      /*
       float audio_volume_gain = (audio_st->mute_enable || (audio_fastforward_mute && is_fastmotion))
                                 ? 0.0f
-                                : audio_st->volume_gain;
+                                : audio_st->volume_gain;*/
 
       /*
       if (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
