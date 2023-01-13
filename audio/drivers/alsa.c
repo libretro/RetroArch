@@ -107,7 +107,7 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    if (snd_pcm_hw_params_set_rate_near(alsa->pcm, params, &rate, 0) < 0)
       goto error;
 
-   if (rate != orig_rate)
+   if (new_rate && (rate != orig_rate))
       *new_rate = rate;
 
    if (snd_pcm_hw_params_set_buffer_time_near(
