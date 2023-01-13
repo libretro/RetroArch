@@ -644,7 +644,7 @@ static bool alsa_get_microphone_state(const void *data, const void *microphone_c
 
 static bool alsa_set_microphone_state(void *data, void *microphone_context, bool enabled)
 {
-   alsa_t *alsa            = (alsa_t*)data;
+   alsa_t *alsa                   = (alsa_t*)data;
    alsa_microphone_t  *microphone = (alsa_microphone_t*)microphone_context;
 
    if (!alsa || !microphone)
