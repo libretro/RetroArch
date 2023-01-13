@@ -24,9 +24,23 @@
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
+typedef struct alsa_microphone
+{
+    snd_pcm_t *pcm;
+    size_t buffer_size;
+    unsigned int frame_bits;
+    bool has_float;
+    bool can_pause;
+    bool is_paused;
+} alsa_microphone_t;
+
 typedef struct alsa
 {
    snd_pcm_t *pcm;
+    /* Only one microphone is supported right now;
+     * the driver state should track multiple microphone handles,
+     * but the driver *context* should track multiple microphone contexts */
+   alsa_microphone_t *microphone;
    size_t buffer_size;
    unsigned int frame_bits;
    bool nonblock;
@@ -290,6 +304,21 @@ static bool alsa_stop(void *data)
       alsa->is_paused = true;
    }
 
+   if (alsa->microphone)
+   {
+      /* Stop the microphone independently of whether it's paused;
+       * note that upon alsa_start, the microphone won't resume
+       * if it was previously paused */
+      int errnum = snd_pcm_pause(alsa->microphone->pcm, true);
+      if (errnum < 0)
+      {
+         RARCH_ERR("[ALSA]: Failed to pause microphone %x: %s",
+            alsa->microphone->pcm,
+            snd_strerror(errnum));
+         return false;
+      }
+   }
+
    return true;
 }
 
@@ -318,6 +347,18 @@ static bool alsa_start(void *data, bool is_shutdown)
       }
 
       alsa->is_paused = false;
+
+      if (alsa->microphone && !alsa->microphone->is_paused)
+      { /* If the mic wasn't paused at the time the overall driver was paused... */
+         int errnum = snd_pcm_pause(alsa->microphone->pcm, false);
+         if (errnum < 0)
+         {
+            RARCH_ERR("[ALSA]: Failed to unpause microphone %x: %s",
+               alsa->microphone->pcm,
+               snd_strerror(errnum));
+            return false;
+         }
+      }
    }
    return true;
 }
@@ -414,6 +455,214 @@ static void alsa_device_list_free(void *data, void *array_list_data)
    string_list_free(s);
 }
 
+static void *alsa_init_microphone(void *data,
+   const char *device,
+   unsigned rate,
+   unsigned latency,
+   unsigned block_frames,
+   unsigned *new_rate)
+{
+   snd_pcm_format_t format;
+   snd_pcm_uframes_t buffer_size;
+   alsa_t *alsa                   = (alsa_t*)data;
+   snd_pcm_hw_params_t *params    = NULL;
+   snd_pcm_sw_params_t *sw_params = NULL;
+   unsigned latency_usec          = latency * 1000;
+   unsigned periods               = 4;
+   unsigned orig_rate             = rate;
+   const char *alsa_mic_dev       = "default";
+   alsa_microphone_t  *microphone = NULL;
+   int errnum                     = 0;
+
+   if (!alsa) /* If we weren't given a valid ALSA context... */
+      return NULL;
+
+   microphone = calloc(1, sizeof(alsa_microphone_t));
+
+   if (!microphone) /* If the microphone context couldn't be allocated... */
+      return NULL;
+
+   if (device)
+      alsa_mic_dev = device;
+
+   errnum = snd_pcm_open(&microphone->pcm, alsa_mic_dev, SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
+   if (errnum < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to open microphone device: %s\n", snd_strerror(errnum));
+      goto error;
+   }
+
+   if (snd_pcm_hw_params_malloc(&params) < 0)
+      goto error;
+
+   if (snd_pcm_hw_params_any(microphone->pcm, params) < 0)
+      goto error;
+
+   microphone->has_float = find_float_format(microphone->pcm, params);
+   format = microphone->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
+
+   if (microphone->has_float != alsa->has_float)
+   { /* If the mic and speaker don't both use floating point or integer samples... */
+      RARCH_WARN("[ALSA]: Microphone and speaker do not use the same PCM format\n");
+      RARCH_WARN("[ALSA]: (%s and %s, respectively)",
+                microphone->has_float ? "SND_PCM_FORMAT_FLOAT" : "SND_PCM_FORMAT_S16",
+                alsa->has_float ? "SND_PCM_FORMAT_FLOAT" : "SND_PCM_FORMAT_S16");
+    }
+
+   if (snd_pcm_hw_params_set_access(
+          microphone->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
+      goto error;
+
+   /* channels hardcoded to 1, because we only support mono mic input */
+   microphone->frame_bits = snd_pcm_format_physical_width(format);
+
+   if (snd_pcm_hw_params_set_format(microphone->pcm, params, format) < 0)
+      goto error;
+
+   if (snd_pcm_hw_params_set_channels(microphone->pcm, params, 1) < 0)
+      goto error;
+
+   /* Don't allow rate resampling when probing for the default rate (but ignore if this call fails) */
+   snd_pcm_hw_params_set_rate_resample(microphone->pcm, params, 0 );
+   if (snd_pcm_hw_params_set_rate_near(microphone->pcm, params, &rate, 0) < 0)
+      goto error;
+
+   if (new_rate && (rate != orig_rate))
+      *new_rate = rate;
+
+   if (snd_pcm_hw_params_set_buffer_time_near(
+          microphone->pcm, params, &latency_usec, NULL) < 0)
+      goto error;
+
+   if (snd_pcm_hw_params_set_periods_near(
+         microphone->pcm, params, &periods, NULL) < 0)
+      goto error;
+
+   if (snd_pcm_hw_params(microphone->pcm, params) < 0)
+      goto error;
+
+   /* Shouldn't have to bother with this,
+    * but some drivers are apparently broken. */
+   if (snd_pcm_hw_params_get_period_size(params, &buffer_size, NULL))
+      snd_pcm_hw_params_get_period_size_min(params, &buffer_size, NULL);
+
+   RARCH_LOG("[ALSA]: Microphone period size: %d frames\n", (int)buffer_size);
+
+   if (snd_pcm_hw_params_get_buffer_size(params, &buffer_size))
+      snd_pcm_hw_params_get_buffer_size_max(params, &buffer_size);
+
+   RARCH_LOG("[ALSA]: Microphone buffer size: %d frames\n", (int)buffer_size);
+
+   microphone->buffer_size = snd_pcm_frames_to_bytes(microphone->pcm, buffer_size);
+   microphone->can_pause = snd_pcm_hw_params_can_pause(params);
+
+   RARCH_LOG("[ALSA]: Can pause microphone: %s.\n", microphone->can_pause ? "yes" : "no");
+
+   if (snd_pcm_sw_params_malloc(&sw_params) < 0)
+      goto error;
+
+   if (snd_pcm_sw_params_current(microphone->pcm, sw_params) < 0)
+      goto error;
+
+   snd_pcm_hw_params_free(params);
+   snd_pcm_sw_params_free(sw_params);
+
+   alsa->microphone = microphone;
+   return microphone;
+
+error:
+   RARCH_ERR("[ALSA]: Failed to initialize microphone...\n");
+   if (params)
+      snd_pcm_hw_params_free(params);
+
+   if (sw_params)
+      snd_pcm_sw_params_free(sw_params);
+
+   if (microphone)
+   {
+      if (microphone->pcm)
+      {
+         snd_pcm_close(microphone->pcm);
+      }
+
+      free(microphone);
+   }
+   return NULL;
+}
+
+static void alsa_free_microphone(void *data, void *microphone_context)
+{
+   alsa_t *alsa                   = (alsa_t*)data;
+   alsa_microphone_t *microphone  = (alsa_microphone_t*)microphone_context;
+
+   if (alsa && microphone)
+   {
+      if (microphone->pcm)
+      {
+         snd_pcm_drop(microphone->pcm);
+         snd_pcm_close(microphone->pcm);
+      }
+
+      alsa->microphone = NULL;
+      free(microphone);
+   }
+}
+
+static bool alsa_get_microphone_state(const void *data, const void *microphone_context)
+{
+   alsa_t *alsa                   = (alsa_t*)data;
+   alsa_microphone_t  *microphone = (alsa_microphone_t*)microphone_context;
+
+   if (!alsa || !microphone)
+      return false;
+   /* Both params must be non-null */
+
+   return !microphone->is_paused;
+   /* The mic might be paused due to app requirements,
+    * or it might be stopped because the entire audio driver is stopped. */
+}
+
+static bool alsa_set_microphone_state(void *data, void *microphone_context, bool enabled)
+{
+   alsa_t *alsa            = (alsa_t*)data;
+   alsa_microphone_t  *microphone = (alsa_microphone_t*)microphone_context;
+
+   if (!alsa || !microphone)
+      return false;
+   /* Both params must be non-null */
+
+   if (!microphone->can_pause)
+   {
+      RARCH_WARN("[ALSA]: Microphone %x cannot be paused\n", microphone->pcm);
+      return true;
+   }
+
+   if (!alsa->is_paused)
+   { /* If the entire audio driver isn't paused... */
+      int errnum = snd_pcm_pause(microphone->pcm, !enabled);
+      if (errnum < 0)
+      {
+         RARCH_ERR("[ALSA]: Failed to %s microphone %x: %s",
+                   enabled ? "unpause" : "pause",
+                   microphone->pcm,
+                   snd_strerror(errnum));
+         return false;
+      }
+
+      microphone->is_paused = !enabled;
+      RARCH_DBG("[ALSA]: Set state of microphone %x to %s\n",
+              microphone->pcm, enabled ? "enabled" : "disabled");
+   }
+
+   return true;
+}
+
+static ssize_t alsa_read_microphone(void *driver_context, void *microphone_context, void *buf, size_t size)
+{
+
+    alsa_t *alsa            = (alsa_t*)driver_context;
+}
+
 audio_driver_t audio_alsa = {
    alsa_init,
    alsa_write,
@@ -428,4 +677,9 @@ audio_driver_t audio_alsa = {
    alsa_device_list_free,
    alsa_write_avail,
    alsa_buffer_size,
+   alsa_init_microphone,
+   alsa_free_microphone,
+   alsa_get_microphone_state,
+   alsa_set_microphone_state,
+   alsa_read_microphone,
 };
