@@ -3817,6 +3817,8 @@ typedef struct retro_microphone retro_microphone_t;
  * The returned handle will be valid until it's freed,
  * even if the audio driver is reinitialized.
  *
+ * This should only be called from the main thread.
+ *
  * @returns \c NULL if a microphone couldn't be initialized.
  * This likely means that no microphone is plugged in and recognized,
  * or the maximum number of supported microphones has been reached.
@@ -3879,6 +3881,9 @@ typedef bool (RETRO_CALLCONV *retro_get_microphone_state_t)(const retro_micropho
  * \em Must be called every frame unless \c microphone is disabled,
  * similar to how \c retro_audio_sample_batch_t works.
  *
+ * If using \c RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK,
+ * then this function should be called within the provided callback.
+ *
  * @param microphone Opaque handle to the microphone
  * whose recent input will be retrieved.
  * @param samples The buffer that will be used to store the microphone's data.
@@ -3896,6 +3901,8 @@ typedef bool (RETRO_CALLCONV *retro_get_microphone_state_t)(const retro_micropho
  * Will return -1 if the microphone is disabled,
  * the audio driver is paused,
  * or there was an error.
+ *
+ * @see RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK
  */
 typedef int (RETRO_CALLCONV *retro_get_microphone_input_t)(retro_microphone_t *microphone, int16_t* samples, size_t num_samples);
 
