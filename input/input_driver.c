@@ -4217,7 +4217,7 @@ static void input_keys_pressed(
          bool libretro_hotkey_pressed = false;
 
          /* Default */
-         block_hotkey[i] = true;
+         block_hotkey[i]              = true;
 
          /* No 'enable_hotkey' in joypad */
          if (!libretro_hotkey_set)
@@ -4300,7 +4300,6 @@ static void input_keys_pressed(
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i))
                {
-                  libretro_hotkey_pressed = true;
 
                   /* Only block if keyboard is not pressed */
                   if (!keyboard_hotkey_pressed)
