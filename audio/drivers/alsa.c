@@ -55,6 +55,14 @@ static bool alsa_use_float(void *data)
    return alsa->has_float;
 }
 
+static void alsa_log_error(const char *file, int line, const char *function, int err, const char *fmt,...)
+{
+   va_list va;
+   va_start(va, fmt);
+   RARCH_ERR(fmt, va);
+   va_end(va);
+}
+
 static bool find_float_format(snd_pcm_t *pcm, void *data)
 {
    snd_pcm_hw_params_t *params = (snd_pcm_hw_params_t*)data;
@@ -168,6 +176,9 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    snd_pcm_hw_params_free(params);
    snd_pcm_sw_params_free(sw_params);
 
+   snd_lib_error_set_handler(alsa_log_error);
+   /* Should we store the current error handler, or is it fine to assume it's the default? */
+
    return alsa;
 
 error:
@@ -188,6 +199,7 @@ error:
 
       free(alsa);
    }
+   snd_lib_error_set_handler(NULL);
    return NULL;
 }
 
@@ -378,6 +390,8 @@ static void alsa_free(void *data)
 
       free(alsa);
    }
+
+   snd_lib_error_set_handler(NULL);
 }
 
 static size_t alsa_write_avail(void *data)
