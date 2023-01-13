@@ -677,10 +677,101 @@ static bool alsa_set_microphone_state(void *data, void *microphone_context, bool
    return true;
 }
 
-static ssize_t alsa_read_microphone(void *driver_context, void *microphone_context, void *buf, size_t size)
+static ssize_t alsa_read_microphone(void *driver_context, void *microphone_context, void *buf_, size_t size_)
 {
+   alsa_t *alsa                  = (alsa_t*)driver_context;
+   alsa_microphone_t *microphone = (alsa_microphone_t*)microphone_context;
+   uint8_t *buf                  = (uint8_t*)buf_;
+   snd_pcm_sframes_t read        = 0;
+   int errnum                    = 0;
+   snd_pcm_sframes_t size;
+   size_t frames_size;
 
-    alsa_t *alsa            = (alsa_t*)driver_context;
+   if (!alsa || !microphone || !buf)
+      return -1;
+
+   size        = BYTES_TO_FRAMES(size_, microphone->frame_bits);
+   frames_size = microphone->has_float ? sizeof(float) : sizeof(int16_t);
+
+   /* Workaround buggy menu code.
+    * If a read happens while we're paused, we might never progress. */
+   if (microphone->is_paused)
+      if (!alsa_set_microphone_state(alsa, microphone, true))
+         return -1;
+
+   if (alsa->nonblock)
+   {
+      while (size)
+      {
+         snd_pcm_sframes_t frames = snd_pcm_readi(microphone->pcm, buf, size);
+
+         if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
+         {
+            errnum = snd_pcm_recover(microphone->pcm, frames, 0);
+            if (errnum < 0)
+            {
+               RARCH_ERR("[ALSA] Failed to read from microphone: %s\n", snd_strerror(frames));
+               RARCH_ERR("[ALSA] Additionally, recovery failed with: %s\n", snd_strerror(errnum));
+               return -1;
+            }
+
+            break;
+         }
+         else if (frames == -EAGAIN)
+            break;
+         else if (frames < 0)
+            return -1;
+
+         read += frames;
+         buf  += frames_size;
+         size -= frames;
+      }
+   }
+   else
+   {
+      bool eagain_retry         = true;
+
+      while (size)
+      {
+         snd_pcm_sframes_t frames;
+         int rc = snd_pcm_wait(microphone->pcm, -1);
+
+         if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
+         {
+            if (snd_pcm_recover(microphone->pcm, rc, 1) < 0)
+               return -1;
+            continue;
+         }
+
+         frames = snd_pcm_readi(microphone->pcm, buf, size);
+
+         if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
+         {
+            if (snd_pcm_recover(microphone->pcm, frames, 1) < 0)
+               return -1;
+
+            break;
+         }
+         else if (frames == -EAGAIN)
+         {
+            /* Definitely not supposed to happen. */
+            if (eagain_retry)
+            {
+               eagain_retry = false;
+               continue;
+            }
+            break;
+         }
+         else if (frames < 0)
+            return -1;
+
+         read += frames;
+         buf  += frames_size;
+         size -= frames;
+      }
+   }
+
+   return read * frames_size;
 }
 
 audio_driver_t audio_alsa = {
