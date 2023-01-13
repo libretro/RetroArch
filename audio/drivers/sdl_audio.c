@@ -411,6 +411,8 @@ static void sdl_audio_free(void *data)
       slock_free(sdl->lock);
       scond_free(sdl->cond);
 #endif
+
+      SDL_QuitSubSystem(SDL_INIT_AUDIO);
    }
    free(sdl);
 }
