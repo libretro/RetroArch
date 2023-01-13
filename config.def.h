@@ -94,6 +94,8 @@
 #ifdef HAVE_MATERIALUI
 /* Show icons to the left of each menu entry */
 #define DEFAULT_MATERIALUI_ICONS_ENABLE true
+/* Show boolean option ON/OFF icons */
+#define DEFAULT_MATERIALUI_SWITCH_ICONS true
 /* Show system-specific icons in the playlists tab */
 #define DEFAULT_MATERIALUI_PLAYLIST_ICONS_ENABLE true
 #endif
@@ -183,6 +185,14 @@
 
 #ifdef HAVE_CHEEVOS
 #define DEFAULT_CHEEVOS_ENABLE false
+#define DEFAULT_CHEEVOS_APPEARANCE_ANCHOR 0 /* CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT */
+#define DEFAULT_CHEEVOS_APPEARANCE_PADDING_AUTO true
+#define DEFAULT_CHEEVOS_APPEARANCE_PADDING_H 0.0f
+#define DEFAULT_CHEEVOS_APPEARANCE_PADDING_V 0.0f
+#define DEFAULT_CHEEVOS_VISIBILITY_SUMMARY 1 /* RCHEEVOS_SUMMARY_HASCHEEVOS */
+#define DEFAULT_CHEEVOS_VISIBILITY_UNLOCK true
+#define DEFAULT_CHEEVOS_VISIBILITY_MASTERY true
+#define DEFAULT_CHEEVOS_VISIBILITY_ACCOUNT true
 #endif
 
 /* VIDEO */
@@ -732,10 +742,11 @@
 #define DEFAULT_XMB_ANIMATION                      0
 #define DEFAULT_XMB_VERTICAL_FADE_FACTOR           100
 #define DEFAULT_XMB_SHOW_TITLE_HEADER              true
+#define DEFAULT_XMB_SWITCH_ICONS                   true
 #define DEFAULT_XMB_TITLE_MARGIN                   5
 #define DEFAULT_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET 0
 #define MAXIMUM_XMB_TITLE_MARGIN                   12
-#define DEFAULT_XMB_ALPHA_FACTOR 75
+#define DEFAULT_XMB_ALPHA_FACTOR                   75
 
 #define DEFAULT_MENU_FONT_COLOR_RED 255
 #define DEFAULT_MENU_FONT_COLOR_GREEN 255
@@ -975,6 +986,7 @@
 #define DEFAULT_AUDIO_ENABLE_MENU_CANCEL false
 #define DEFAULT_AUDIO_ENABLE_MENU_NOTICE false
 #define DEFAULT_AUDIO_ENABLE_MENU_BGM    false
+#define DEFAULT_AUDIO_ENABLE_MENU_SCROLL false
 
 #ifdef HAVE_GFX_WIDGETS
 #define DEFAULT_MENU_ENABLE_WIDGETS true
@@ -1292,6 +1304,8 @@
 
 /* Hide warning messages when using the Run Ahead feature. */
 #define DEFAULT_RUN_AHEAD_HIDE_WARNINGS false
+/* Hide warning messages when using Preemptive Frames. */
+#define DEFAULT_PREEMPT_HIDE_WARNINGS   false
 
 /* Enable stdin/network command interface. */
 #define DEFAULT_NETWORK_CMD_ENABLE false

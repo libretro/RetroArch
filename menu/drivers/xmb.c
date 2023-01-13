@@ -55,6 +55,7 @@
 
 #include "../../file_path_special.h"
 #include "../../configuration.h"
+#include "../../audio/audio_driver.h"
 
 #include "../../tasks/tasks_internal.h"
 
@@ -411,6 +412,7 @@ typedef struct xmb_handle
    char prev_savestate_thumbnail_file_path[8204];
    char fullscreen_thumbnail_label[255];
 
+   bool allow_horizontal_animation;
    bool fullscreen_thumbnails_available;
    bool show_fullscreen_thumbnails;
    bool want_fullscreen_thumbnails;
@@ -2903,6 +2905,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
       case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
       case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
       case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
       case MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST:
@@ -3192,6 +3196,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES:
          return xmb->textures.list[XMB_TEXTURE_OVERRIDE];
       case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
+      case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_NOTIFICATIONS];
 #ifdef HAVE_NETWORKING
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
@@ -3605,6 +3610,7 @@ static int xmb_draw_item(
       settings->uints.menu_xmb_thumbnail_scale_factor;
    bool menu_xmb_vertical_thumbnails   = settings->bools.menu_xmb_vertical_thumbnails;
    bool menu_show_sublabels            = settings->bools.menu_show_sublabels;
+   bool menu_switch_icons              = settings->bools.menu_xmb_switch_icons;
    unsigned show_history_icons         = settings->uints.playlist_show_history_icons;
    unsigned menu_xmb_vertical_fade_factor
                                        = settings->uints.menu_xmb_vertical_fade_factor;
@@ -3667,19 +3673,25 @@ static int xmb_draw_item(
          strlcpy(entry.path, entry_path, sizeof(entry.path));
    }
 
-   if (     string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED))
-         || string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+   /* Only show switch icons with bool type options */
+   if (menu_switch_icons && entry.setting_type == ST_BOOL)
    {
-      if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
-         texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
-      else
-         do_draw_text   = true;
-   }
-   else if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED))
-         || string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
-   {
-      if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
-         texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
+      if (     string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED))
+            || string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      {
+         if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
+            texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
+         else
+            do_draw_text   = true;
+      }
+      else if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED))
+            || string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
+      {
+         if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
+            texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
+         else
+            do_draw_text   = true;
+      }
       else
          do_draw_text   = true;
    }
@@ -4478,6 +4490,23 @@ static enum menu_action xmb_parse_menu_entry_action(
             menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
                   &scroll_accel);
 
+#ifdef HAVE_AUDIOMIXER
+            {
+               settings_t *settings = config_get_ptr();
+               size_t category      = xmb->categories_selection_ptr;
+               size_t list_size     = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + xmb->system_tab_end;
+               /* We only want the scrolling sound to play if any of the following are true:
+                  * 1. Wraparound is enabled (since the category is guaranteed to change) 
+                  * 2. We're scrolling right, but we aren't on the last category
+                  * 3. We're scrolling left, but we aren't on the first category */
+               bool fail_condition  = ((action == MENU_ACTION_RIGHT) ? (category == list_size) 
+                  : (category == 0)) && !(settings->bools.menu_navigation_wraparound_enable);
+            
+               if (((current_time - xmb->last_tab_switch_time) >= XMB_TAB_SWITCH_REPEAT_DELAY || 
+                     scroll_accel <= 0) && !fail_condition)
+                  audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_RIGHT);
+            }
+#endif
             if (scroll_accel > 0)
             {
                /* Ignore input action if tab switch period
@@ -7191,12 +7220,18 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
          xmb->assets_missing  = true;
       xmb_context_reset_background(xmb, iconpath);
 
+      /* Reset previous selection buffer */
       xmb_free_list_nodes(&xmb->selection_buf_old, false);
       file_list_deinitialize(&xmb->selection_buf_old);
       xmb->selection_buf_old.list        = NULL;
       xmb->selection_buf_old.capacity    = 0;
       xmb->selection_buf_old.size        = 0;
+
+      /* Prevent horizontal animation on next menu toggle */
+      xmb->allow_horizontal_animation    = false;
    }
+   else
+      xmb->allow_horizontal_animation    = true;
 
    xmb_context_reset_horizontal_list(xmb);
 
@@ -7381,7 +7416,8 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
       return;
 
    /* Check whether to enable the horizontal animation. */
-   if (menu_horizontal_animation)
+   if (     menu_horizontal_animation
+         && xmb->allow_horizontal_animation)
    {
       unsigned first  = 0, last = 0;
       unsigned height = 0;

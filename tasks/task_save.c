@@ -26,7 +26,6 @@
 #endif
 
 #include <compat/strl.h>
-#include <retro_assert.h>
 #include <lists/string_list.h>
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
@@ -2132,7 +2131,6 @@ void path_deinit_savefile(void)
 void path_init_savefile_new(void)
 {
    task_save_files = string_list_new();
-   retro_assert(task_save_files);
 }
 
 void *savefile_ptr_get(void)

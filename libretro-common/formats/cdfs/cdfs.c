@@ -119,7 +119,7 @@ uint32_t cdfs_get_num_sectors(cdfs_file_t* file)
       if (frame_size == 0)
          frame_size = 1; /* prevent divide by 0 error if sector size is unknown */
    }
-   return intfstream_get_size(file->track->stream) / frame_size;
+   return (uint32_t)(intfstream_get_size(file->track->stream) / frame_size);
 }
 
 uint32_t cdfs_get_first_sector(cdfs_file_t* file)
@@ -287,7 +287,7 @@ int64_t cdfs_read_file(cdfs_file_t* file, void* buffer, uint64_t len)
       cdfs_seek_track_sector(file->track, file->current_sector);
       intfstream_read(file->track->stream, file->sector_buffer, 2048);
       memcpy(buffer, file->sector_buffer, (size_t)len);
-      file->current_sector_offset = len;
+      file->current_sector_offset = (unsigned int)len;
       file->sector_buffer_valid   = 1;
 
       bytes_read += len;

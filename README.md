@@ -202,7 +202,7 @@ A sample configuration file is installed to `/etc/retroarch.cfg`. This is the sy
 RetroArch will on startup create a config file in `$XDG\_CONFIG\_HOME/retroarch/retroarch.cfg` if it does not exist.
 Users only need to configure a certain option if the desired value deviates from the value defined in config.def.h.
 
-To configure joypads, use the built-in menu or the `retroarch-joyconfig` command-line tool.
+To configure joypads, use the built-in menu or manually configure them in `retroarch.cfg`.
 
 ## Compiling and installing
 

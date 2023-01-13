@@ -41,6 +41,9 @@
 #include "core_option_manager.h"
 #include "performance_counters.h"
 #include "state_manager.h"
+#ifdef HAVE_RUNAHEAD
+#include "runahead.h"
+#endif
 #include "tasks/tasks_internal.h"
 
 /* Arbitrary twenty subsystems limit */
@@ -56,6 +59,22 @@
 #define RUNLOOP_MSG_QUEUE_LOCK(runloop_st) (void)(runloop_st)
 #define RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st) (void)(runloop_st)
 #endif
+
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MOVIE_IS_EOF() || (((input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END) && (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_EOF_EXIT)))
+#else
+#define BSV_MOVIE_IS_EOF()
+#endif
+
+/* Time to exit out of the main loop?
+ * Reasons for exiting:
+ * a) Shutdown environment callback was invoked.
+ * b) Quit key was pressed.
+ * c) Frame count exceeds or equals maximum amount of frames to run.
+ * d) Video driver no longer alive.
+ * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
+ */
+#define RUNLOOP_TIME_TO_EXIT(quit_key_pressed) ((runloop_state.flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED) || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF() || ((runloop_state.max_frames != 0) && (frame_count >= runloop_state.max_frames)) || runloop_exec)
 
 enum  runloop_state_enum
 {
@@ -73,63 +92,6 @@ enum poll_type_override_t
    POLL_TYPE_OVERRIDE_NORMAL,
    POLL_TYPE_OVERRIDE_LATE
 };
-
-
-typedef struct runloop_ctx_msg_info
-{
-   const char *msg;
-   unsigned prio;
-   unsigned duration;
-   bool flush;
-} runloop_ctx_msg_info_t;
-
-/* Contains the current retro_fastforwarding_override
- * parameters along with any pending updates triggered
- * by RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE */
-typedef struct fastmotion_overrides
-{
-   struct retro_fastforwarding_override current;
-   struct retro_fastforwarding_override next;
-   bool pending;
-} fastmotion_overrides_t;
-
-typedef struct
-{
-   unsigned priority;
-   float duration;
-   char str[128];
-   bool set;
-} runloop_core_status_msg_t;
-
-/* Contains all callbacks associated with
- * core options.
- * > At present there is only a single
- *   callback, 'update_display' - but we
- *   may wish to add more in the future
- *   (e.g. for directly informing a core of
- *   core option value changes, or getting/
- *   setting extended/non-standard option
- *   value data types) */
-typedef struct core_options_callbacks
-{
-   retro_core_options_update_display_callback_t update_display;
-} core_options_callbacks_t;
-
-#ifdef HAVE_RUNAHEAD
-typedef bool(*runahead_load_state_function)(const void*, size_t);
-
-typedef void *(*constructor_t)(void);
-typedef void  (*destructor_t )(void*);
-
-typedef struct my_list_t
-{
-   void **data;
-   constructor_t constructor;
-   destructor_t destructor;
-   int capacity;
-   int size;
-} my_list;
-#endif
 
 enum runloop_flags
 {
@@ -167,6 +129,38 @@ enum runloop_flags
    RUNLOOP_FLAG_IS_INITED                         = (1 << 31)
 };
 
+/* Contains the current retro_fastforwarding_override
+ * parameters along with any pending updates triggered
+ * by RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE */
+typedef struct fastmotion_overrides
+{
+   struct retro_fastforwarding_override current;
+   struct retro_fastforwarding_override next;
+   bool pending;
+} fastmotion_overrides_t;
+
+typedef struct
+{
+   unsigned priority;
+   float duration;
+   char str[128];
+   bool set;
+} runloop_core_status_msg_t;
+
+/* Contains all callbacks associated with
+ * core options.
+ * > At present there is only a single
+ *   callback, 'update_display' - but we
+ *   may wish to add more in the future
+ *   (e.g. for directly informing a core of
+ *   core option value changes, or getting/
+ *   setting extended/non-standard option
+ *   value data types) */
+typedef struct core_options_callbacks
+{
+   retro_core_options_update_display_callback_t update_display;
+} core_options_callbacks_t;
+
 struct runloop
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -190,6 +184,7 @@ struct runloop
 #endif
    my_list *runahead_save_state_list;
    my_list *input_state_list;
+   preempt_t *preempt_data;
 #endif
 
 #ifdef HAVE_REWIND
@@ -201,6 +196,7 @@ struct runloop
    struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
    struct retro_callbacks retro_ctx;                     /* ptr alignment */
    msg_queue_t msg_queue;                                /* ptr alignment */
+   retro_input_poll_t input_poll_callback_original;      /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
 #ifdef HAVE_RUNAHEAD
    function_t retro_reset_callback_original;             /* ptr alignment */
@@ -305,22 +301,6 @@ struct runloop
 
 typedef struct runloop runloop_state_t;
 
-#ifdef HAVE_BSV_MOVIE
-#define BSV_MOVIE_IS_EOF() || (((input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END) && (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_EOF_EXIT)))
-#else
-#define BSV_MOVIE_IS_EOF()
-#endif
-
-/* Time to exit out of the main loop?
- * Reasons for exiting:
- * a) Shutdown environment callback was invoked.
- * b) Quit key was pressed.
- * c) Frame count exceeds or equals maximum amount of frames to run.
- * d) Video driver no longer alive.
- * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
- */
-#define RUNLOOP_TIME_TO_EXIT(quit_key_pressed) ((runloop_state.flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED) || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF() || ((runloop_state.max_frames != 0) && (frame_count >= runloop_state.max_frames)) || runloop_exec)
-
 RETRO_BEGIN_DECLS
 
 void runloop_path_fill_names(void);
@@ -391,18 +371,17 @@ void runloop_runtime_log_deinit(
 
 void runloop_event_deinit_core(void);
 
-#ifdef HAVE_RUNAHEAD
-void runloop_runahead_clear_variables(runloop_state_t *runloop_st);
-#endif
-
 bool runloop_event_init_core(
       settings_t *settings,
       void *input_data,
-      enum rarch_core_type type);
+      enum rarch_core_type type,
+      const char *old_savefile_dir,
+      const char *old_savestate_dir
+      );
 
 void runloop_pause_checks(void);
 
-float runloop_set_frame_limit(
+void runloop_set_frame_limit(
       const struct retro_system_av_info *av_info,
       float fastforward_ratio);
 
@@ -425,12 +404,10 @@ void runloop_task_msg_queue_push(
       unsigned prio, unsigned duration,
       bool flush);
 
-bool secondary_core_ensure_exists(settings_t *settings);
+bool secondary_core_ensure_exists(void *data, settings_t *settings);
 
 void runloop_log_counters(
       struct retro_perf_counter **counters, unsigned num);
-
-void runloop_secondary_core_destroy(void);
 
 void runloop_msg_queue_deinit(void);
 
@@ -442,7 +419,34 @@ void runloop_path_set_names(void);
 
 uint32_t runloop_get_flags(void);
 
+bool runloop_get_entry_state_path(char *path, size_t len, unsigned slot);
+
+bool runloop_get_current_savestate_path(char *path, size_t len);
+
 void runloop_state_free(runloop_state_t *runloop_st);
+
+void runloop_path_set_redirect(settings_t *settings, const char *a, const char *b);
+
+void runloop_path_set_special(char **argv, unsigned num_content);
+
+void runloop_path_deinit_subsystem(void);
+
+/**
+ * init_libretro_symbols:
+ * @type                        : Type of core to be loaded.
+ *                                If CORE_TYPE_DUMMY, will
+ *                                load dummy symbols.
+ *
+ * Setup libretro callback symbols.
+ * 
+ * @return true on success, or false if symbols could not be loaded.
+ **/
+bool runloop_init_libretro_symbols(
+		void *data,
+      enum rarch_core_type type,
+      struct retro_core_t *current_core,
+      const char *lib_path,
+      void *_lib_handle_p);
 
 runloop_state_t *runloop_state_get_ptr(void);
 

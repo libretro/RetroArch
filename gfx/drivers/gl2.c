@@ -95,6 +95,24 @@
    coords[5] = yamt; \
    coords[7] = yamt
 
+typedef struct video_shader_ctx_scale
+{
+   struct gfx_fbo_scale *scale;
+} video_shader_ctx_scale_t;
+
+typedef struct video_shader_ctx_init
+{
+   const char *path;
+   const shader_backend_t *shader;
+   void *data;
+   void *shader_data;
+   enum rarch_shader_type shader_type;
+   struct
+   {
+      bool core_context_enabled;
+   } gl;
+} video_shader_ctx_init_t;
+
 static const shader_backend_t *gl2_shader_ctx_drivers[] = {
 #ifdef HAVE_GLSL
    &gl_glsl_backend,
@@ -108,7 +126,7 @@ static const shader_backend_t *gl2_shader_ctx_drivers[] = {
 static struct video_ortho default_ortho = {0, 1, 0, 1, -1, 1};
 
 /* Used for the last pass when rendering to the back buffer. */
-static const GLfloat vertexes_flipped[] = {
+static const GLfloat vertexes_flipped[8] = {
    0, 1,
    1, 1,
    0, 0,
@@ -118,30 +136,26 @@ static const GLfloat vertexes_flipped[] = {
 /* Used when rendering to an FBO.
  * Texture coords have to be aligned
  * with vertex coordinates. */
-static const GLfloat vertexes[] = {
+static const GLfloat vertexes[8] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const GLfloat tex_coords[] = {
+static const GLfloat tex_coords[8] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const GLfloat white_color[] = {
+static const GLfloat white_color[16] = {
    1, 1, 1, 1,
    1, 1, 1, 1,
    1, 1, 1, 1,
    1, 1, 1, 1,
 };
-
-#define gl2_context_bind_hw_render(gl, enable) \
-   if (gl->shared_context_use) \
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, enable)
 
 #define MAX_FENCES 4
 
@@ -260,28 +274,15 @@ static unsigned gl2_get_alignment(unsigned pitch)
    return 8;
 }
 
-static bool gl2_shader_info(gl2_t *gl,
-      video_shader_ctx_info_t *shader_info)
+static void gl2_shader_scale(gl2_t *gl,
+      video_shader_ctx_scale_t *scaler, unsigned idx)
 {
-   if (!shader_info)
-      return false;
-
-   shader_info->num = gl->shader->num_shaders(gl->shader_data);
-
-   return true;
-}
-
-static bool gl2_shader_scale(gl2_t *gl,
-      video_shader_ctx_scale_t *scaler)
-{
-   if (!scaler || !scaler->scale)
-      return false;
-
-   scaler->scale->flags &= ~FBO_SCALE_FLAG_VALID;
-
-   gl->shader->shader_scale(gl->shader_data,
-         scaler->idx, scaler->scale);
-   return true;
+   if (scaler->scale)
+   {
+      scaler->scale->flags &= ~FBO_SCALE_FLAG_VALID;
+      gl->shader->shader_scale(gl->shader_data,
+            idx, scaler->scale);
+   }
 }
 
 static void gl2_size_format(GLint* internalFormat)
@@ -694,7 +695,8 @@ static void gl2_renderchain_deinit_hw_render(
    if (!gl)
       return;
 
-   gl2_context_bind_hw_render(gl, true);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    if (gl->hw_render_fbo_init)
       gl2_delete_fb(gl->textures, gl->hw_render_fbo);
@@ -702,12 +704,13 @@ static void gl2_renderchain_deinit_hw_render(
       gl2_delete_rb(gl->textures, chain->hw_render_depth);
    gl->hw_render_fbo_init = false;
 
-   gl2_context_bind_hw_render(gl, false);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 }
 
 static bool gl2_create_fbo_targets(gl2_t *gl, gl2_renderchain_data_t *chain)
 {
-   unsigned i;
+   int i;
 
    glBindTexture(GL_TEXTURE_2D, 0);
    gl2_gen_fb(chain->fbo_pass, chain->fbo);
@@ -945,7 +948,7 @@ static void gl2_renderchain_recompute_pass_sizes(
       unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
 {
-   unsigned i;
+   int i;
    bool size_modified       = false;
    GLint max_size           = 0;
    unsigned last_width      = width;
@@ -1084,30 +1087,27 @@ static void gl2_renderchain_init(
    int i;
    unsigned width, height;
    video_shader_ctx_scale_t scaler;
-   video_shader_ctx_info_t shader_info;
+   unsigned shader_info_num;
    struct gfx_fbo_scale scale, scale_last;
 
-   if (!gl2_shader_info(gl, &shader_info))
-      return;
+   shader_info_num = gl->shader->num_shaders(gl->shader_data);
 
-   if (!gl || shader_info.num == 0)
+   if (!gl || shader_info_num == 0)
       return;
 
    width        = gl->video_width;
    height       = gl->video_height;
 
-   scaler.idx   = 1;
    scaler.scale = &scale;
 
-   gl2_shader_scale(gl, &scaler);
+   gl2_shader_scale(gl, &scaler, 1);
 
-   scaler.idx   = shader_info.num;
    scaler.scale = &scale_last;
 
-   gl2_shader_scale(gl, &scaler);
+   gl2_shader_scale(gl, &scaler, shader_info_num);
 
    /* we always want FBO to be at least initialized on startup for consoles */
-   if (      shader_info.num == 1 
+   if (      shader_info_num == 1 
          && (!(scale.flags & FBO_SCALE_FLAG_VALID)))
       return;
 
@@ -1117,7 +1117,7 @@ static void gl2_renderchain_init(
       return;
    }
 
-   chain->fbo_pass = shader_info.num - 1;
+   chain->fbo_pass = shader_info_num - 1;
    if (scale_last.flags & FBO_SCALE_FLAG_VALID)
       chain->fbo_pass++;
 
@@ -1134,10 +1134,9 @@ static void gl2_renderchain_init(
 
    for (i = 1; i < chain->fbo_pass; i++)
    {
-      scaler.idx   = i + 1;
       scaler.scale = &chain->fbo_scale[i];
 
-      gl2_shader_scale(gl, &scaler);
+      gl2_shader_scale(gl, &scaler, i + 1);
 
       if (!(chain->fbo_scale[i].flags & FBO_SCALE_FLAG_VALID))
       {
@@ -1203,7 +1202,8 @@ static bool gl2_renderchain_init_hw_render(
 
    /* We can only share texture objects through contexts.
     * FBOs are "abstract" objects and are not shared. */
-   gl2_context_bind_hw_render(gl, true);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    RARCH_LOG("[GL]: Initializing HW render (%ux%u).\n", width, height);
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
@@ -1284,7 +1284,8 @@ static bool gl2_renderchain_init_hw_render(
    gl2_renderchain_bind_backbuffer();
    gl->hw_render_fbo_init = true;
 
-   gl2_context_bind_hw_render(gl, false);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
    return true;
 }
 
@@ -1317,7 +1318,8 @@ static bool gl2_renderchain_read_viewport(
 {
    unsigned                     num_pixels = 0;
 
-   gl2_context_bind_hw_render(gl, false);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
    num_pixels = gl->vp.width * gl->vp.height;
 
@@ -1342,7 +1344,7 @@ static bool gl2_renderchain_read_viewport(
 
       if (ptr)
       {
-         unsigned y;
+         int y;
          for (y = 0; y < gl->vp.height; y++)
          {
             video_frame_convert_rgba_to_bgr(
@@ -1401,11 +1403,13 @@ static bool gl2_renderchain_read_viewport(
       gl->readback_buffer_screenshot = NULL;
    }
 
-   gl2_context_bind_hw_render(gl, true);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 
 error:
-   gl2_context_bind_hw_render(gl, true);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return false;
 }
@@ -1433,7 +1437,7 @@ static void gl2_renderchain_copy_frame(
 {
 #if defined(HAVE_PSGL)
    {
-      unsigned h;
+      int h;
       size_t buffer_addr        = gl->tex_w * gl->tex_h *
          gl->tex_index * gl->base_size;
       size_t buffer_stride      = gl->tex_w * gl->base_size;
@@ -1507,8 +1511,7 @@ static void gl2_renderchain_copy_frame(
          {
             /* Slow path - conv_buffer is preallocated
              * just in case we hit this path. */
-
-            unsigned h;
+            int h;
             const unsigned line_bytes = width * gl->base_size;
             uint8_t *dst              = (uint8_t*)gl->conv_buffer;
             const uint8_t *src        = (const uint8_t*)frame;
@@ -1614,8 +1617,7 @@ static void gl2_renderchain_fence_free(void *data,
 {
 #ifndef HAVE_OPENGLES
 #ifdef HAVE_GL_SYNC
-   unsigned i;
-
+   int i;
    for (i = 0; i < chain->fence_count; i++)
    {
       glClientWaitSync(chain->fences[i],
@@ -1820,7 +1822,7 @@ bool gl2_load_luts(
       const void *shader_data,
       GLuint *textures_lut)
 {
-   unsigned i;
+   int i;
    const struct video_shader *shader =
       (const struct video_shader*)shader_data;
    unsigned num_luts                 = MIN(shader->luts, GFX_MAX_TEXTURES);
@@ -1982,7 +1984,7 @@ static void gl2_set_viewport_wrapper(void *data, unsigned viewport_width,
 static enum rarch_shader_type gl2_get_fallback_shader_type(enum rarch_shader_type type)
 {
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
-   unsigned i;
+   int i;
 
    if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL)
    {
@@ -2081,7 +2083,7 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
 {
    video_shader_ctx_init_t init_data;
    bool ret                          = false;
-   const char *shader_path           = retroarch_get_shader_preset();
+   const char *shader_path           = video_shader_get_current_shader_preset();
    enum rarch_shader_type parse_type = video_shader_parse_type(shader_path);
    enum rarch_shader_type type;
 
@@ -2209,7 +2211,7 @@ static void gl2_update_input_size(gl2_t *gl, unsigned width,
 
 static void gl2_init_textures_data(gl2_t *gl)
 {
-   unsigned i;
+   int i;
 
    for (i = 0; i < gl->textures; i++)
    {
@@ -2285,7 +2287,7 @@ static void gl2_init_textures(gl2_t *gl)
 
 static INLINE void gl2_set_shader_viewports(gl2_t *gl)
 {
-   unsigned i;
+   int i;
    unsigned width                = gl->video_width;
    unsigned height               = gl->video_height;
 
@@ -2310,7 +2312,8 @@ static void gl2_set_texture_frame(void *data,
    if (!gl)
       return;
 
-   gl2_context_bind_hw_render(gl, false);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
    if (!gl->menu_texture)
       glGenTextures(1, &gl->menu_texture);
@@ -2324,7 +2327,8 @@ static void gl2_set_texture_frame(void *data,
    gl->menu_texture_alpha = alpha;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-   gl2_context_bind_hw_render(gl, true);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
 static void gl2_set_texture_enable(void *data, bool state, bool full_screen)
@@ -2548,14 +2552,15 @@ static void gl2_pbo_async_readback(gl2_t *gl)
 }
 
 #ifdef HAVE_VIDEO_LAYOUT
-static float video_layout_layer_tex_coord[] = {
+static float video_layout_layer_tex_coord[8] = {
    0.0f, 1.0f,
    1.0f, 1.0f,
    0.0f, 0.0f,
    1.0f, 0.0f,
 };
 
-static void gl2_video_layout_fbo_init(gl2_t *gl, unsigned width, unsigned height)
+static void gl2_video_layout_fbo_init(gl2_t *gl,
+      unsigned width, unsigned height)
 {
    glGenTextures(1, &gl->video_layout_fbo_texture);
    glBindTexture(GL_TEXTURE_2D, gl->video_layout_fbo_texture);
@@ -2597,9 +2602,6 @@ static void gl2_video_layout_fbo_free(gl2_t *gl)
 
 static void gl2_video_layout_viewport(gl2_t *gl)
 {
-   if (!video_layout_valid())
-      return;
-
    if (gl->video_layout_resize)
    {
       if (gl->video_layout_fbo)
@@ -2894,7 +2896,8 @@ static bool gl2_frame(void *data, const void *frame,
    if (!gl)
       return false;
 
-   gl2_context_bind_hw_render(gl, false);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
 #ifndef HAVE_OPENGLES
    if (gl->core_context_in_use)
@@ -2930,7 +2933,7 @@ static bool gl2_frame(void *data, const void *frame,
       {
          /* On resize, we might have to recreate our FBOs
           * due to "Viewport" scale, and set a new viewport. */
-         unsigned i;
+         int i;
 
          /* Check if we have to recreate our FBO textures. */
          for (i = 0; i < (unsigned)chain->fbo_pass; i++)
@@ -2989,7 +2992,8 @@ static bool gl2_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_VIDEO_LAYOUT
-   gl2_video_layout_viewport(gl);
+   if (video_layout_valid())
+      gl2_video_layout_viewport(gl);
 #endif
 
    if (frame)
@@ -3173,7 +3177,7 @@ static bool gl2_frame(void *data, const void *frame,
          && !runloop_is_paused 
          && !gl->menu_texture_enable)
     {
-        unsigned n;
+        int n;
         for (n = 0; n < black_frame_insertion; ++n)
         {
           glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -3202,7 +3206,8 @@ static bool gl2_frame(void *data, const void *frame,
    if (gl->core_context_in_use)
       glBindVertexArray(0);
 #endif
-   gl2_context_bind_hw_render(gl, true);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 }
 
@@ -3240,7 +3245,8 @@ static void gl2_free(void *data)
    gl2_video_layout_free(gl);
 #endif
 
-   gl2_context_bind_hw_render(gl, false);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
    if (gl->have_sync)
       gl2_renderchain_fence_free(gl,
@@ -3308,7 +3314,8 @@ static void gl2_set_nonblock_state(
    if (!gl)
       return;
 
-   gl2_context_bind_hw_render(gl, false);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
    if (!state)
       interval = swap_interval;
@@ -3319,7 +3326,8 @@ static void gl2_set_nonblock_state(
          interval = -1;
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
    }
-   gl2_context_bind_hw_render(gl, true);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
 static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const video_info_t *video)
@@ -3437,7 +3445,7 @@ static INLINE void gl2_set_texture_fmts(gl2_t *gl, bool rgb32)
 static bool gl2_init_pbo_readback(gl2_t *gl)
 {
 #if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
-   unsigned i;
+   int i;
 
    glGenBuffers(4, gl->pbo_readback);
 
@@ -3657,7 +3665,7 @@ static void *gl2_init(const video_info_t *video,
 {
    enum gfx_wrap_type wrap_type;
    unsigned full_x, full_y;
-   video_shader_ctx_info_t shader_info;
+   unsigned shader_info_num;
    settings_t *settings                 = config_get_ptr();
    bool video_gpu_record                = settings->bools.video_gpu_record;
    int interval                         = 0;
@@ -3727,7 +3735,7 @@ static void *gl2_init(const video_info_t *video,
          || !gl->ctx_driver->set_video_mode(gl->ctx_data,
             win_width, win_height, video->fullscreen))
       goto error;
-#if defined(__APPLE__) && !defined(IOS)
+#if defined(__APPLE__) && !defined(IOS) && !defined(HAVE_COCOA_METAL)
    /* This is a hack for now to work around a very annoying
     * issue that currently eludes us. */
    if (     !gl->ctx_driver->set_video_mode
@@ -3893,9 +3901,14 @@ static void *gl2_init(const video_info_t *video,
        * create textures. */
       gl->textures = 1;
 #ifdef GL_DEBUG
-      gl2_context_bind_hw_render(gl, true);
-      gl2_begin_debug(gl);
-      gl2_context_bind_hw_render(gl, false);
+      if (gl->shared_context_use)
+      {
+         gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+         gl2_begin_debug(gl);
+         gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+      }
+      else
+         gl2_begin_debug(gl);
 #endif
    }
 
@@ -3923,15 +3936,11 @@ static void *gl2_init(const video_info_t *video,
       gl->textures             = MAX(minimum + 1, gl->textures);
    }
 
-   if (!gl2_shader_info(gl, &shader_info))
-   {
-      RARCH_ERR("[GL]: Shader driver info check failed.\n");
-      goto error;
-   }
+   shader_info_num = gl->shader->num_shaders(gl->shader_data);
 
    RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
    RARCH_LOG("[GL]: Loaded %u program(s).\n",
-         shader_info.num);
+         shader_info_num);
 
    gl->tex_w = gl->tex_h = (RARCH_SCALE_BASE * video->input_scale);
    gl->keep_aspect     = video->force_aspect;
@@ -4039,7 +4048,8 @@ static void *gl2_init(const video_info_t *video,
    gl2_video_layout_init(gl);
 #endif
 
-   gl2_context_bind_hw_render(gl, true);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return gl;
 
@@ -4111,7 +4121,8 @@ static void gl2_update_tex_filter_frame(gl2_t *gl)
        video_smooth = false;
 #endif
 
-   gl2_context_bind_hw_render(gl, false);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
    if (!gl->shader->filter_type(gl->shader_data,
             1, &smooth))
@@ -4143,7 +4154,8 @@ static void gl2_update_tex_filter_frame(gl2_t *gl)
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   gl2_context_bind_hw_render(gl, true);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
 static bool gl2_set_shader(void *data,
@@ -4158,7 +4170,8 @@ static bool gl2_set_shader(void *data,
    if (!gl)
       return false;
 
-   gl2_context_bind_hw_render(gl, false);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
    fallback = gl2_get_fallback_shader_type(type);
 
@@ -4246,12 +4259,14 @@ static bool gl2_set_shader(void *data,
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl2_set_shader_viewports(gl);
-   gl2_context_bind_hw_render(gl, true);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return true;
 
 error:
-   gl2_context_bind_hw_render(gl, true);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 #endif
    return false;
 }
@@ -4324,8 +4339,7 @@ unsigned *height_p, size_t *pitch_p)
 
    if (gl->hw_render_use)
    {
-      unsigned i;
-
+      int i;
       for (i = 0; i < height ; i++)
          memcpy((uint8_t*)buffer + i * pitch,
             (uint8_t*)buffer_texture + (height - 1 - i) * pitch, pitch);
@@ -4350,7 +4364,8 @@ static bool gl2_overlay_load(void *data,
    if (!gl)
       return false;
 
-   gl2_context_bind_hw_render(gl, false);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
    gl2_free_overlay(gl);
    gl->overlay_tex = (GLuint*)
@@ -4358,7 +4373,8 @@ static bool gl2_overlay_load(void *data,
 
    if (!gl->overlay_tex)
    {
-      gl2_context_bind_hw_render(gl, true);
+      if (gl->shared_context_use)
+         gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
       return false;
    }
 
@@ -4396,7 +4412,8 @@ static bool gl2_overlay_load(void *data,
          gl->overlay_color_coord[16 * i + j] = 1.0f;
    }
 
-   gl2_context_bind_hw_render(gl, true);
+   if (gl->shared_context_use)
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 }
 

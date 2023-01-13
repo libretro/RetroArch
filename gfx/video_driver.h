@@ -278,19 +278,6 @@ typedef struct shader_backend
    const char *ident;
 } shader_backend_t;
 
-typedef struct video_shader_ctx_init
-{
-   const char *path;
-   const shader_backend_t *shader;
-   void *data;
-   void *shader_data;
-   enum rarch_shader_type shader_type;
-   struct
-   {
-      bool core_context_enabled;
-   } gl;
-} video_shader_ctx_init_t;
-
 typedef struct video_shader_ctx_params
 {
    void *data;
@@ -308,47 +295,10 @@ typedef struct video_shader_ctx_params
    unsigned fbo_info_cnt;
 } video_shader_ctx_params_t;
 
-typedef struct video_shader_ctx_coords
-{
-   void *handle_data;
-   const void *data;
-} video_shader_ctx_coords_t;
-
-typedef struct video_shader_ctx_scale
-{
-   struct gfx_fbo_scale *scale;
-   unsigned idx;
-} video_shader_ctx_scale_t;
-
-typedef struct video_shader_ctx_info
-{
-   void *data;
-   unsigned num;
-   unsigned idx;
-   bool set_active;
-} video_shader_ctx_info_t;
-
-typedef struct video_shader_ctx_mvp
-{
-   void *data;
-   const void *matrix;
-} video_shader_ctx_mvp_t;
-
-typedef struct video_shader_ctx_filter
-{
-   bool *smooth;
-   unsigned index;
-} video_shader_ctx_filter_t;
-
 typedef struct video_shader_ctx
 {
    struct video_shader *data;
 } video_shader_ctx_t;
-
-typedef struct video_shader_ctx_texture
-{
-   unsigned id;
-} video_shader_ctx_texture_t;
 
 typedef struct video_pixel_scaler
 {
@@ -659,14 +609,6 @@ typedef struct gfx_ctx_driver
    void (*make_current)(bool release);
 } gfx_ctx_driver_t;
 
-typedef struct gfx_ctx_size
-{
-   bool *quit;
-   bool *resize;
-   unsigned *width;
-   unsigned *height;
-} gfx_ctx_size_t;
-
 typedef struct gfx_ctx_mode
 {
    unsigned width;
@@ -680,13 +622,6 @@ typedef struct gfx_ctx_metrics
    enum display_metric_types type;
 } gfx_ctx_metrics_t;
 
-typedef struct gfx_ctx_aspect
-{
-   float *aspect;
-   unsigned width;
-   unsigned height;
-} gfx_ctx_aspect_t;
-
 typedef struct gfx_ctx_input
 {
    input_driver_t **input;
@@ -697,12 +632,6 @@ typedef struct gfx_ctx_ident
 {
    const char *ident;
 } gfx_ctx_ident_t;
-
-struct aspect_ratio_elem
-{
-   float value;
-   char name[64];
-};
 
 /* Optionally implemented interface to poke more
  * deeply into video driver. */
@@ -912,8 +841,6 @@ typedef struct
    unsigned state_scale;
    unsigned state_out_bpp;
 #endif
-   unsigned frame_delay_target;
-   unsigned frame_delay_effective;
    unsigned frame_cache_width;
    unsigned frame_cache_height;
    unsigned width;
@@ -946,16 +873,27 @@ typedef struct
    char title_buf[64];
    char cached_driver_id[32];
 
+   uint8_t frame_delay_target;
+   uint8_t frame_delay_effective;
+   bool frame_delay_pause;
+
    bool threaded;
 } video_driver_state_t;
 
-typedef struct video_frame_delay_auto {
+typedef struct video_frame_delay_auto
+{
    float refresh_rate;
-   unsigned frame_time_interval;
-   unsigned decrease;
-   unsigned target;
-   unsigned time;
+   uint16_t frame_time_target;
+   uint16_t frame_time_avg;
+   uint8_t frame_time_interval;
+   uint8_t delay_decrease;
 } video_frame_delay_auto_t;
+
+struct aspect_ratio_elem
+{
+   float value;
+   char name[64];
+};
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 

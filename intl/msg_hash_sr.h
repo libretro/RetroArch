@@ -896,20 +896,16 @@ MSG_HASH(
    "Učitaj konfiguraciju"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Vrati na podrazumevano"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "Vrati trenutnu konfiguraciju na podrazumevane vrednosti."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "Sačuvaj trenutnu konfiguraciju"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "Sačuvaj novu konfiguraciju"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Vrati na podrazumevano"
    )
 
 /* Main Menu > Help */
@@ -1302,10 +1298,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Bilinearni filter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "Dodaj blago zamagljenje slici da bi se omekšale oštre ivice piksela. Ova opcija ima veoma malo uticaja na performanse."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1761,6 +1753,10 @@ MSG_HASH(
    "Overrajduj podrazumevani audio uređaj koji će koristiti audio drajver. Ovo je nezavisno od drajvera."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
+   "Overrajduj podrazumevani audio uređaj koji će koristiti audio drajver. Ovo je nezavisno od drajvera."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Kašnjenje zvuka (ms)"
    )
@@ -1799,6 +1795,8 @@ MSG_HASH(
 /* Settings > Input */
 
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
+#ifdef ANDROID
 #endif
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -1933,6 +1931,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "Dostignuća"
    )
+
+/* Settings > Achievements > Appearance */
+
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 

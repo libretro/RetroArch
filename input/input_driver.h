@@ -463,6 +463,7 @@ typedef struct
 
    /* primitives */
    bool analog_requested[MAX_USERS];
+   bool keyboard_menu_toggle_pressed;
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */
 } input_driver_state_t;
@@ -997,6 +998,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
  **/
 void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device);
+
+extern const unsigned input_config_bind_order[24];
 
 extern input_device_driver_t *joypad_drivers[];
 extern input_driver_t *input_drivers[];

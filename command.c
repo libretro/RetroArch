@@ -61,6 +61,7 @@
 #include "list_special.h"
 #include "paths.h"
 #include "retroarch.h"
+#include "runloop.h"
 #include "verbosity.h"
 #include "version.h"
 #include "version_git.h"
@@ -1205,7 +1206,7 @@ void command_event_init_cheats(
 }
 #endif
 
-bool command_event_load_entry_state(void)
+bool command_event_load_entry_state(settings_t *settings)
 {
    char entry_state_path[PATH_MAX_LENGTH];
    int entry_path_stats;
@@ -1226,7 +1227,7 @@ bool command_event_load_entry_state(void)
 
    entry_state_path[0] = '\0';
 
-   if (!retroarch_get_entry_state_path(
+   if (!runloop_get_entry_state_path(
             entry_state_path, sizeof(entry_state_path),
             runloop_st->entry_state_slot))
       return false;
@@ -1246,6 +1247,9 @@ bool command_event_load_entry_state(void)
          msg_hash_to_str(MSG_LOADING_ENTRY_STATE_FROM),
          entry_state_path, ret ? "succeeded" : "failed"
          );
+
+   if (ret)
+   configuration_set_int(settings, settings->ints.state_slot, runloop_st->entry_state_slot);
 
    return ret;
 }
@@ -1452,11 +1456,11 @@ bool command_set_shader(command_t *cmd, const char *arg)
          char abs_arg[PATH_MAX_LENGTH];
          const char *ref_path = settings->paths.directory_video_shader;
          fill_pathname_join_special(abs_arg, ref_path, arg, sizeof(abs_arg));
-         return apply_shader(settings, type, abs_arg, true);
+         return video_shader_apply_shader(settings, type, abs_arg, true);
       }
    }
 
-   return apply_shader(settings, type, arg, true);
+   return video_shader_apply_shader(settings, type, arg, true);
 }
 #endif
 
@@ -1613,7 +1617,7 @@ bool command_event_main_state(unsigned cmd)
 
    if (savestates_enabled)
    {
-      retroarch_get_current_savestate_path(state_path,
+      runloop_get_current_savestate_path(state_path,
             sizeof(state_path));
 
       core_serialize_size(&info);

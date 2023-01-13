@@ -38,6 +38,7 @@
 
 #include "core.h"
 
+#include "driver.h"
 #include "runloop.h"
 #include "retroarch_types.h"
 
@@ -96,7 +97,7 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data);
 
-const char* retroarch_get_shader_preset(void);
+const char* video_shader_get_current_shader_preset(void);
 
 /**
  * retroarch_main_init:
@@ -120,8 +121,6 @@ unsigned content_get_subsystem_rom_id(void);
 int content_get_subsystem(void);
 
 void retroarch_menu_running(void);
-
-void retroarch_path_set_redirect(settings_t *settings);
 
 void retroarch_menu_running_finished(bool quit);
 
@@ -148,48 +147,11 @@ unsigned int retroarch_get_rotation(void);
 
 void retroarch_init_task_queue(void);
 
-/* Human readable order of input binds */
-static const unsigned input_config_bind_order[] = {
-   RETRO_DEVICE_ID_JOYPAD_UP,
-   RETRO_DEVICE_ID_JOYPAD_DOWN,
-   RETRO_DEVICE_ID_JOYPAD_LEFT,
-   RETRO_DEVICE_ID_JOYPAD_RIGHT,
-   RETRO_DEVICE_ID_JOYPAD_A,
-   RETRO_DEVICE_ID_JOYPAD_B,
-   RETRO_DEVICE_ID_JOYPAD_X,
-   RETRO_DEVICE_ID_JOYPAD_Y,
-   RETRO_DEVICE_ID_JOYPAD_SELECT,
-   RETRO_DEVICE_ID_JOYPAD_START,
-   RETRO_DEVICE_ID_JOYPAD_L,
-   RETRO_DEVICE_ID_JOYPAD_R,
-   RETRO_DEVICE_ID_JOYPAD_L2,
-   RETRO_DEVICE_ID_JOYPAD_R2,
-   RETRO_DEVICE_ID_JOYPAD_L3,
-   RETRO_DEVICE_ID_JOYPAD_R3,
-   19, /* Left Analog Up */
-   18, /* Left Analog Down */
-   17, /* Left Analog Left */
-   16, /* Left Analog Right */
-   23, /* Right Analog Up */
-   22, /* Right Analog Down */
-   21, /* Right Analog Left */
-   20, /* Right Analog Right */
-};
-
 /* Creates folder and core options stub file for subsequent runs */
 bool core_options_create_override(bool game_specific);
 bool core_options_remove_override(bool game_specific);
 void core_options_reset(void);
 void core_options_flush(void);
-
-typedef enum apple_view_type
-{
-   APPLE_VIEW_TYPE_NONE = 0,
-   APPLE_VIEW_TYPE_OPENGL_ES,
-   APPLE_VIEW_TYPE_OPENGL,
-   APPLE_VIEW_TYPE_VULKAN,
-   APPLE_VIEW_TYPE_METAL
-} apple_view_type_t;
 
 enum rarch_state_flags
 {
@@ -208,10 +170,6 @@ enum rarch_state_flags
    RARCH_FLAGS_IPS_PREF                     = (1 << 12),
    RARCH_FLAGS_BLOCK_CONFIG_READ            = (1 << 13)
 };
-
-bool retroarch_get_current_savestate_path(char *path, size_t len);
-
-bool retroarch_get_entry_state_path(char *path, size_t len, unsigned slot);
 
 /**
  * retroarch_fail:

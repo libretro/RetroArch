@@ -200,7 +200,6 @@ d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT des
          break;
       format++;
    }
-   assert(*format);
    return *format;
 }
 

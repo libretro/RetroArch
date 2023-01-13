@@ -27,7 +27,6 @@
 #include <AppKit/NSScreen.h>
 #endif
 
-#include <retro_assert.h>
 #include <retro_timers.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
@@ -43,13 +42,13 @@
 #include "../common/metal_common.h"
 #endif
 
-typedef struct cocoa_ctx_data
+typedef struct cocoa_vk_ctx_data
 {
    gfx_ctx_vulkan_data_t vk;
    int swap_interval;
    unsigned width;
    unsigned height;
-} cocoa_ctx_data_t;
+} cocoa_vk_ctx_data_t;
 
 /* TODO/FIXME - static globals */
 static unsigned g_vk_minor          = 0;
@@ -59,21 +58,20 @@ CocoaView *cocoaview_get(void);
 
 static uint32_t cocoa_vk_gfx_ctx_get_flags(void *data)
 {
-   uint32_t flags                 = 0;
-   cocoa_ctx_data_t    *cocoa_ctx = (cocoa_ctx_data_t*)data;
-
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   uint32_t flags = 0;
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
-
    return flags;
+#else
+   return 0;
+#endif
 }
 
 static void cocoa_vk_gfx_ctx_set_flags(void *data, uint32_t flags) { }
 
 static void cocoa_vk_gfx_ctx_destroy(void *data)
 {
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
 
    if (!cocoa_ctx)
       return;
@@ -140,7 +138,7 @@ static void cocoa_vk_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
    unsigned new_width, new_height;
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
 
    *quit                       = false;
 
@@ -164,7 +162,7 @@ static void cocoa_vk_gfx_ctx_check_window(void *data, bool *quit,
 static void cocoa_vk_gfx_ctx_swap_interval(void *data, int i)
 {
    unsigned interval           = (unsigned)i;
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
 
    if (cocoa_ctx->swap_interval != interval)
    {
@@ -176,7 +174,7 @@ static void cocoa_vk_gfx_ctx_swap_interval(void *data, int i)
 
 static void cocoa_vk_gfx_ctx_swap_buffers(void *data)
 {
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
 
    if (cocoa_ctx->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
@@ -204,7 +202,7 @@ static bool cocoa_vk_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api,
 
 static void *cocoa_vk_gfx_ctx_get_context_data(void *data)
 {
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
    return &cocoa_ctx->vk.context;
 }
 
@@ -217,7 +215,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
 #elif defined(HAVE_COCOA)
    CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
 #endif
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
    static bool 
       has_went_fullscreen      = false;
    cocoa_ctx->width            = width;
@@ -239,26 +237,13 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
       return false;
    }
 
-   /* TODO: Screen mode support. */
-   if (fullscreen)
-   {
-      if (!has_went_fullscreen)
-      {
-         [g_view enterFullScreenMode:(BRIDGE NSScreen *)cocoa_screen_get_chosen() withOptions:nil];
-         cocoa_show_mouse(data, false);
-      }
-   }
-   else
-   {
-      if (has_went_fullscreen)
-      {
-         [g_view exitFullScreenModeWithOptions:nil];
-         [[g_view window] makeFirstResponder:g_view];
-         cocoa_show_mouse(data, true);
-      }
-
-      [[g_view window] setContentSize:NSMakeSize(width, height)];
-   }
+   gfx_ctx_mode_t mode = {
+      .width = width,
+      .height = height,
+      .fullscreen = fullscreen,
+   };
+   [apple_platform setVideoMode:mode];
+   cocoa_show_mouse(data, !fullscreen);
 
    has_went_fullscreen = fullscreen;
 
@@ -267,8 +252,8 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
 
 static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 {
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)
-   calloc(1, sizeof(cocoa_ctx_data_t));
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)
+   calloc(1, sizeof(cocoa_vk_ctx_data_t));
 
    if (!cocoa_ctx)
       return NULL;
@@ -286,7 +271,7 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height, bool fullscreen)
 {
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
 
    /* TODO: Maybe iOS users should be able to 
     * show/hide the status bar here? */
@@ -295,8 +280,8 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
 
 static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 {
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)
-   calloc(1, sizeof(cocoa_ctx_data_t));
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)
+   calloc(1, sizeof(cocoa_vk_ctx_data_t));
 
    if (!cocoa_ctx)
       return NULL;
@@ -308,7 +293,7 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 #ifdef HAVE_COCOA_METAL
 static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
 
    cocoa_ctx->width  = width;
    cocoa_ctx->height = height;

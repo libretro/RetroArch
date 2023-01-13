@@ -271,7 +271,7 @@ static const char *ctr_texture_path(unsigned id)
             static char texture_path[PATH_MAX_LENGTH];
             char state_path[PATH_MAX_LENGTH];
 
-            if (!retroarch_get_current_savestate_path(state_path, 
+            if (!runloop_get_current_savestate_path(state_path, 
                      sizeof(state_path)))
                return NULL;
 
@@ -313,7 +313,7 @@ static bool ctr_update_state_date_from_file(void *data)
    struct tm *t     = NULL;
    ctr_video_t *ctr = (ctr_video_t*)data;
 
-   if (!retroarch_get_current_savestate_path(
+   if (!runloop_get_current_savestate_path(
             state_path, sizeof(state_path)))
       return false;
 
@@ -450,7 +450,7 @@ static void save_state_to_file(void *data)
 {
    char state_path[PATH_MAX_LENGTH];
    ctr_video_t *ctr = (ctr_video_t*)data;
-   retroarch_get_current_savestate_path(state_path, sizeof(state_path));
+   runloop_get_current_savestate_path(state_path, sizeof(state_path));
 
    command_event(CMD_EVENT_RAM_STATE_TO_FILE, state_path);
 }

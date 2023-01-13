@@ -14,10 +14,7 @@
  */
 #include <time.h>
 
-#include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
-
-#include "../../retroarch.h"
 
 #include "../gfx_display.h"
 

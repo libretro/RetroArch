@@ -95,15 +95,6 @@ uint8_t *android_keyboard_state_get(unsigned port)
    return android_key_state[port];
 }
 
-static void android_keyboard_free(void)
-{
-   unsigned i, j;
-
-   for (i = 0; i < DEFAULT_MAX_PADS; i++)
-      for (j = 0; j < MAX_KEYS; j++)
-         android_key_state[i][j] = 0;
-}
-
 /* TODO/FIXME -
  * fix game focus toggle */
 
@@ -191,6 +182,20 @@ static typeof(AMotionEvent_getButtonState) *p_AMotionEvent_getButtonState;
 #ifdef HAVE_DYLIB
 static void *libandroid_handle;
 #endif
+
+static void android_keyboard_free(void)
+{
+    unsigned i, j;
+
+    for (i = 0; i < DEFAULT_MAX_PADS; i++)
+        for (j = 0; j < MAX_KEYS; j++)
+            android_key_state[i][j] = 0;
+
+    for (i = 0; i < (unsigned) kbd_num; i++)
+        kbd_id[i] = -1;
+
+    kbd_num = 0;
+}
 
 static bool android_input_lookup_name_prekitkat(char *buf,
       int *vendorId, int *productId, size_t size, int id)
@@ -297,6 +302,59 @@ static bool android_input_lookup_name(char *buf,
    return true;
 }
 
+static bool android_input_can_be_keyboard_jni(int id)
+{
+    jmethodID getKeyboardType  = NULL;
+    jobject device             = NULL;
+    jint keyboard_type         = -1;
+    jmethodID method           = NULL;
+    jclass class               = NULL;
+    const char *str            = NULL;
+    JNIEnv     *env            = (JNIEnv*)jni_thread_getenv();
+
+    if (!env)
+        return false;
+
+    FIND_CLASS(env, class, "android/view/InputDevice");
+    if (!class)
+        return false;
+
+    GET_STATIC_METHOD_ID(env, method, class, "getDevice",
+                         "(I)Landroid/view/InputDevice;");
+    if (!method)
+        return false;
+
+    CALL_OBJ_STATIC_METHOD_PARAM(env, device, class, method, (jint)id);
+    if (!device)
+        return false;
+
+    GET_METHOD_ID(env, getKeyboardType, class, "getKeyboardType", "()I");
+    if (!getKeyboardType)
+        return false;
+
+    CALL_INT_METHOD(env, keyboard_type, device, getKeyboardType);
+    if (keyboard_type < 0)
+        return false;
+
+    return keyboard_type == AINPUT_KEYBOARD_TYPE_ALPHABETIC;
+}
+
+bool android_input_can_be_keyboard(void *data, int port)
+{
+    android_input_t *android = (android_input_t *) data;
+    if (!android)
+        return false;
+
+    if (port < 0 || port >= android->pads_connected)
+        return false;
+
+    state_device_t *device = &android->pad_states[port];
+    if (!device->id && string_is_empty(device->name))
+        return false;
+
+    return android_input_can_be_keyboard_jni(device->id);
+}
+
 static void android_input_poll_main_cmd(void)
 {
    int8_t cmd;
@@ -377,14 +435,15 @@ static void android_input_poll_main_cmd(void)
 
       case APP_CMD_GAINED_FOCUS:
          {
-            bool boolean              = false;
-            bool enable_accelerometer = (android_app->sensor_state_mask &
+            runloop_state_t *runloop_st = runloop_state_get_ptr();
+            bool enable_accelerometer   = (android_app->sensor_state_mask &
                   (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_DISABLE));
-            bool enable_gyroscope     = (android_app->sensor_state_mask &
+            bool enable_gyroscope       = (android_app->sensor_state_mask &
                   (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_DISABLE));
 
-            retroarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
-            retroarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
+            
+            runloop_st->flags &= ~(RUNLOOP_FLAG_PAUSED
+                                 | RUNLOOP_FLAG_IDLE);
             video_driver_unset_stub_frame();
 
             if (enable_accelerometer)
@@ -404,16 +463,16 @@ static void android_input_poll_main_cmd(void)
          break;
       case APP_CMD_LOST_FOCUS:
          {
-            bool boolean               = true;
-            bool disable_accelerometer = (android_app->sensor_state_mask &
+            runloop_state_t *runloop_st = runloop_state_get_ptr();
+            bool disable_accelerometer  = (android_app->sensor_state_mask &
                   (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE)) &&
                         android_app->accelerometerSensor;
-            bool disable_gyroscope     = (android_app->sensor_state_mask &
+            bool disable_gyroscope      = (android_app->sensor_state_mask &
                   (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)) &&
                         android_app->gyroscopeSensor;
 
-            retroarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
-            retroarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
+            runloop_st->flags |=  (RUNLOOP_FLAG_PAUSED
+                                 | RUNLOOP_FLAG_IDLE);
             video_driver_set_stub_frame();
 
             /* Avoid draining battery while app is not being used. */
@@ -867,6 +926,55 @@ static int android_input_recover_port(android_input_t *android, int id)
 }
 
 
+static bool is_configured_as_physical_keyboard(int vendor_id, int product_id, const char *device_name)
+{
+    settings_t *settings = config_get_ptr();
+
+    char keyboard_name[sizeof(settings->arrays.input_android_physical_keyboard)];
+    int keyboard_vendor_id;
+    int keyboard_product_id;
+
+    bool is_keyboard;
+    bool compare_by_id;
+    if (sscanf(settings->arrays.input_android_physical_keyboard, "%04x:%04x ", &keyboard_vendor_id, &keyboard_product_id) != 2)
+    {
+        strlcpy(keyboard_name, settings->arrays.input_android_physical_keyboard, sizeof(keyboard_name));
+        is_keyboard = string_is_equal(device_name, keyboard_name);
+        compare_by_id = false;
+    }
+    else
+    {
+        is_keyboard = vendor_id == keyboard_vendor_id && product_id == keyboard_product_id;
+        compare_by_id = true;
+    }
+
+    if (is_keyboard)
+    {
+        /*
+         * Check that there is not already a similar physical keyboard attached
+         * attached to the system
+         */
+        for (int i = 0; i < kbd_num; i++)
+        {
+            char kbd_device_name[256] = { 0 };
+            int kbd_vendor_id                 = 0;
+            int kbd_product_id                = 0;
+
+            if (!engine_lookup_name(kbd_device_name, &kbd_vendor_id,
+                                    &kbd_product_id, sizeof(kbd_device_name), kbd_id[i]))
+                return false;
+
+            if (compare_by_id && vendor_id == kbd_vendor_id && product_id == kbd_product_id)
+                return false;
+
+            if (!compare_by_id && string_is_equal(device_name, kbd_device_name))
+                return false;
+        }
+        return true;
+    }
+    return false;
+}
+
 static void handle_hotplug(android_input_t *android,
       struct android_app *android_app, int *port, int id,
       int source)
@@ -1144,6 +1252,18 @@ static void handle_hotplug(android_input_t *android,
       kbd_id[kbd_num] = id;
       kbd_num++;
       return;
+   }
+
+   /* If the device is a keyboard, didn't match any of the devices above
+    * and is designated as the physical keyboard, then assume it is a keyboard,
+    * register the id, and return unless the
+    * maximum number of keyboards are already registered. */
+   else if ((source & AINPUT_SOURCE_KEYBOARD) && kbd_num < MAX_NUM_KEYBOARDS &&
+            is_configured_as_physical_keyboard(vendorId, productId, device_name))
+   {
+       kbd_id[kbd_num] = id;
+       kbd_num++;
+       return;
    }
 
    /* if device was not keyboard only, yet did not match any of the devices

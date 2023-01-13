@@ -532,10 +532,24 @@ int msg_hash_get_help_uk_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " Load a shader preset directly. \n"
                              "The menu shader menu is updated accordingly. \n"
                              " \n"
-                             "If the CGP uses scaling methods which are not \n"
+                             "If the preset uses scaling methods which are nott \n"
                              "simple, (i.e. source scaling, same scaling \n"
                              "factor for X/Y), the scaling factor displayed \n"
                              "in the menu might not be correct.");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
+            snprintf(s, len,
+                           "Prepend Shader Preset. \n"
+                             " \n"
+                             " Prepend a shader preset before the currently \n"
+                             "loaded one. \n");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
+            snprintf(s, len,
+                           "Append Shader Preset. \n"
+                             " \n"
+                             " Append a shader preset after the currently \n"
+                             "loaded one. \n");
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
             snprintf(s, len,

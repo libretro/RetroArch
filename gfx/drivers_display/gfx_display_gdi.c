@@ -14,15 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <time.h>
-
+#if 0
 #include <clamping.h>
-#include <queues/message_queue.h>
+#endif
 #include <retro_miscellaneous.h>
-
-#include "../../config.def.h"
-#include "../../retroarch.h"
-#include "../../verbosity.h"
 
 #include "../gfx_display.h"
 

@@ -2364,8 +2364,10 @@ static bool rgui_downscale_thumbnail(
    /* Determine output dimensions */
    float display_aspect_ratio    = (float)max_width / (float)max_height;
    float         aspect_ratio    = (float)image_src->width / (float)image_src->height;
-   float core_aspect             = (thumbnail_core_aspect && video_st)
-         ? video_st->av_info.geometry.aspect_ratio : aspect_ratio;
+   float core_aspect             = (thumbnail_core_aspect
+         && video_st && video_st->av_info.geometry.aspect_ratio > 0)
+               ? video_st->av_info.geometry.aspect_ratio
+               : aspect_ratio;
 
    if (aspect_ratio > display_aspect_ratio)
    {
@@ -4888,12 +4890,13 @@ static void rgui_render_toggle_switch(
 
 static enum rgui_entry_value_type rgui_get_entry_value_type(
       const char *entry_value,
+      uint8_t entry_setting_type,
       bool entry_checked,
       bool switch_icons_enabled)
 {
    if (!string_is_empty(entry_value))
    {
-      if (switch_icons_enabled)
+      if (switch_icons_enabled && entry_setting_type == ST_BOOL)
       {
          /* Toggle switch off */
          if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
@@ -5090,7 +5093,7 @@ static void rgui_render(
          unsigned new_ptr;
          menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
-         /* Note: It's okay for this to go out of range
+         /* NOTE: It's okay for this to go out of range
           * (limits are checked in rgui_pointer_up()) */
          new_ptr = (unsigned)((rgui->pointer.y - rgui->term_layout.start_y) / rgui->font_height_stride) + old_start;
 
@@ -5500,6 +5503,7 @@ static void rgui_render(
          /* Get 'type' of entry value component */
          entry_value_type = rgui_get_entry_value_type(
                entry_value,
+               entry.setting_type,
                entry.flags & MENU_ENTRY_FLAG_CHECKED,
                rgui_switch_icons);
 

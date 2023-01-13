@@ -87,6 +87,7 @@ else
 	HAVE_COMPRESSION 			:= 1
 	HAVE_UPDATE_ASSETS 		:= 1
 	HAVE_UPDATE_CORES 		:= 1
+	HAVE_UPDATE_CORE_INFO 		:= 1
 	HAVE_CONFIGFILE 			:= 1
 	HAVE_CHD 							:= 1
 	HAVE_STATIC_VIDEO_FILTERS = 1
@@ -123,7 +124,7 @@ INCDIRS += -I. -Idefines -Ideps -Ideps/7zip -Ideps/libz -Ilibretro-common/includ
 ARCHFLAGS += --target=x86_64-scei-ps4 -DORBIS -D__ORBIS__ -D__PS4__ -D_BSD_SOURCE
 DEFINES += -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_FILTERS_BUILTIN \
 					 -DHAVE_XMB -DHAVE_RGUI -DHAVE_OZONE \
-					 -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_CORES -DHAVE_UPDATE_ASSETS \
+					 -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_CORES -DHAVE_UPDATE_CORE_INFO -DHAVE_UPDATE_ASSETS \
 
 # Compiling with -Werror and disabling some warnings
 DEFINES += -Werror -Wno-macro-redefined -Wno-typedef-redefinition -Wno-non-literal-null-conversion -Wno-void-pointer-to-int-cast \

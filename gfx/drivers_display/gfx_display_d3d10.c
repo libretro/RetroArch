@@ -24,7 +24,6 @@
 
 #include "../gfx_display.h"
 
-#include "../../retroarch.h"
 #include "../common/d3d10_common.h"
 
 static void gfx_display_d3d10_blend_begin(void *data)
@@ -249,7 +248,7 @@ void gfx_display_d3d10_scissor_begin(void *data,
    D3D10_RECT rect;
    d3d10_video_t *d3d10 = (d3d10_video_t*)data;
 
-   if (!d3d10 || !width || !height)
+   if (!d3d10)
       return;
 
    rect.left            = x;

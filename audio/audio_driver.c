@@ -24,7 +24,6 @@
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <clamping.h>
-#include <retro_assert.h>
 #include <memalign.h>
 #include <audio/conversion/float_to_s16.h>
 #include <audio/conversion/s16_to_float.h>
@@ -640,12 +639,6 @@ bool audio_driver_init_internal(
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
 
-   /* Used for recording even if audio isn't enabled. */
-   retro_assert(out_conv_buf != NULL);
-   retro_assert(audio_buf != NULL);
-   if (audio_enable_microphone)
-      retro_assert(in_conv_buf != NULL);
-
    if (!out_conv_buf || !audio_buf || (audio_enable_microphone && !in_conv_buf))
       goto error;
    /* It's not an error for in_conv_buf to be null if we didn't ask for a mic */
@@ -664,10 +657,7 @@ bool audio_driver_init_internal(
 #ifdef HAVE_REWIND
    /* Needs to be able to hold full content of a full max_bufsamples
     * in addition to its own. */
-   rewind_buf = (int16_t*)memalign_alloc(64, max_bufsamples * sizeof(int16_t));
-   retro_assert(rewind_buf != NULL);
-
-   if (!rewind_buf)
+   if (!(rewind_buf = (int16_t*)memalign_alloc(64, max_bufsamples * sizeof(int16_t))))
       goto error;
 
    audio_driver_st.rewind_buf    = rewind_buf;
@@ -804,19 +794,11 @@ bool audio_driver_init_internal(
 
    audio_driver_st.data_ptr   = 0;
 
-   retro_assert(settings->uints.audio_output_sample_rate <
-         audio_driver_st.input * AUDIO_MAX_RATIO);
-
    out_samples_buf = (float*)memalign_alloc(64, outsamples_max * sizeof(float));
    in_samples_buf  = (audio_driver_st.flags & AUDIO_FLAG_MIC_ACTIVE) ?
          (float*)memalign_alloc(64, insamples_max * sizeof(float)) : NULL;
 
-   retro_assert(out_samples_buf != NULL);
-
-   if (audio_driver_st.flags & AUDIO_FLAG_MIC_ACTIVE)
-      retro_assert(in_samples_buf != NULL);
    /* It's not an error for in_samples_buf to be NULL if we don't want the mic */
-
    if (!out_samples_buf || ((audio_driver_st.flags & AUDIO_FLAG_MIC_ACTIVE) && !in_samples_buf))
       goto error;
 
@@ -1309,8 +1291,10 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          break;
       case AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC:
       default:
-         return audio_driver_mixer_get_free_stream_slot(
-                  &free_slot, params->stream_type);
+         if (!audio_driver_mixer_get_free_stream_slot(
+                  &free_slot, params->stream_type))
+            return false;
+         break;
    }
 
    if (params->state == AUDIO_STREAM_STATE_NONE)
@@ -1444,12 +1428,16 @@ void audio_driver_load_system_sounds(void)
    const bool audio_enable_menu_cancel   = audio_enable_menu && settings->bools.audio_enable_menu_cancel;
    const bool audio_enable_menu_notice   = audio_enable_menu && settings->bools.audio_enable_menu_notice;
    const bool audio_enable_menu_bgm      = audio_enable_menu && settings->bools.audio_enable_menu_bgm;
+   const bool audio_enable_menu_scroll   = audio_enable_menu && settings->bools.audio_enable_menu_scroll;
    const bool audio_enable_cheevo_unlock = settings->bools.cheevos_unlock_sound_enable;
    const char *path_ok                   = NULL;
    const char *path_cancel               = NULL;
    const char *path_notice               = NULL;
+   const char *path_notice_back          = NULL;
    const char *path_bgm                  = NULL;
    const char *path_cheevo_unlock        = NULL;
+   const char *path_up                   = NULL;
+   const char *path_down                 = NULL;
    struct string_list *list              = NULL;
    struct string_list *list_fallback     = NULL;
    unsigned i                            = 0;
@@ -1511,10 +1499,16 @@ void audio_driver_load_system_sounds(void)
             path_cancel = path;
          else if (string_is_equal_noncase(basename_noext, "notice"))
             path_notice = path;
+         else if (string_is_equal_noncase(basename_noext, "notice_back"))
+            path_notice_back = path;
          else if (string_is_equal_noncase(basename_noext, "bgm"))
             path_bgm = path;
          else if (string_is_equal_noncase(basename_noext, "unlock"))
             path_cheevo_unlock = path;
+         else if (string_is_equal_noncase(basename_noext, "up"))
+            path_up = path;
+         else if (string_is_equal_noncase(basename_noext, "down"))
+            path_down = path;
       }
    }
 
@@ -1522,13 +1516,23 @@ void audio_driver_load_system_sounds(void)
       task_push_audio_mixer_load(path_ok, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_OK);
    if (path_cancel && audio_enable_menu_cancel)
       task_push_audio_mixer_load(path_cancel, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
-   if (path_notice && audio_enable_menu_notice)
-      task_push_audio_mixer_load(path_notice, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
+   if (audio_enable_menu_notice) {
+      if (path_notice)
+         task_push_audio_mixer_load(path_notice, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
+      if (path_notice_back)
+          task_push_audio_mixer_load(path_notice_back, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE_BACK);
+   }
    if (path_bgm && audio_enable_menu_bgm)
       task_push_audio_mixer_load(path_bgm, audio_driver_load_menu_bgm_callback, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_BGM);
    if (path_cheevo_unlock && audio_enable_cheevo_unlock)
       task_push_audio_mixer_load(path_cheevo_unlock, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_ACHIEVEMENT_UNLOCK);
-
+   if (audio_enable_menu_scroll)
+   {
+      if (path_up)
+         task_push_audio_mixer_load(path_up, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_UP);
+      if (path_down)
+         task_push_audio_mixer_load(path_down, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_DOWN);
+   }
 end:
    if (list)
       string_list_free(list);
@@ -1551,7 +1555,17 @@ void audio_driver_mixer_play_menu_sound_looped(unsigned i)
 void audio_driver_mixer_play_menu_sound(unsigned i)
 {
    audio_driver_st.mixer_streams[i].stop_cb = audio_mixer_menu_stop_cb;
+   audio_driver_mixer_stop_stream(i);
    audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING);
+}
+
+void audio_driver_mixer_play_scroll_sound(bool direction_up)
+{
+   settings_t *settings          = config_get_ptr();
+   bool        audio_enable_menu = settings->bools.audio_enable_menu;
+   bool audio_enable_menu_scroll = settings->bools.audio_enable_menu_scroll;
+   if (audio_enable_menu && audio_enable_menu_scroll)
+      audio_driver_mixer_play_menu_sound(direction_up ? AUDIO_MIXER_SYSTEM_SLOT_UP : AUDIO_MIXER_SYSTEM_SLOT_DOWN);
 }
 
 void audio_driver_mixer_play_stream_looped(unsigned i)

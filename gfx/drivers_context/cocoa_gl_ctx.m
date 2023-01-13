@@ -32,7 +32,6 @@
 #include <GLKit/GLKit.h>
 #endif
 
-#include <retro_assert.h>
 #include <retro_timers.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
@@ -414,6 +413,15 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    [EAGLContext setCurrentContext:g_ctx];
 #endif
 
+#ifdef HAVE_COCOA_METAL
+   gfx_ctx_mode_t mode = {
+      .width = width,
+      .height = height,
+      .fullscreen = fullscreen,
+   };
+   [apple_platform setVideoMode:mode];
+   cocoa_show_mouse(data, !fullscreen);
+#else
    /* TODO/FIXME: Screen mode support. */
    if (fullscreen)
    {
@@ -434,6 +442,7 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 
       [[g_view window] setContentSize:NSMakeSize(width, height)];
    }
+#endif
 
    has_went_fullscreen = fullscreen;
 

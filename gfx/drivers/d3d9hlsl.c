@@ -293,7 +293,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       const struct LinkInfo *info,
       unsigned _fmt)
 {
-   unsigned i;
+   int i;
    struct shader_pass pass       = { 0 };
    unsigned fmt                  =
         (_fmt == RETRO_PIXEL_FORMAT_RGB565) 
@@ -465,7 +465,7 @@ static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
 {
    if (chain->chain.passes->count >= 1)
    {
-      unsigned i;
+      int i;
 
       d3d9_vertex_buffer_free(NULL,
             chain->chain.passes->data[0].vertex_decl);
@@ -484,7 +484,7 @@ static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
 
 static void d3d9_hlsl_destroy_resources(hlsl_renderchain_t *chain)
 {
-   unsigned i;
+   int i;
 
    for (i = 0; i < TEXTURES; i++)
    {
@@ -1188,7 +1188,7 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
 #endif
    video_context_driver_set(&d3d9_hlsl_fake_context); 
    {
-      const char *shader_preset   = retroarch_get_shader_preset();
+      const char *shader_preset   = video_shader_get_current_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
 
       d3d9_hlsl_set_shader(d3d, type, shader_preset);

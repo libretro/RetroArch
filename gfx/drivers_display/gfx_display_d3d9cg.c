@@ -25,18 +25,17 @@
 
 #include "../gfx_display.h"
 
-#include "../../retroarch.h"
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
 
-static const float d3d9_cg_vertexes[] = {
+static const float d3d9_cg_vertexes[8] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const float d3d9_cg_tex_coords[] = {
+static const float d3d9_cg_tex_coords[8] = {
    0, 1,
    1, 1,
    0, 0,
@@ -55,7 +54,7 @@ static const float *gfx_display_d3d9_cg_get_default_tex_coords(void)
 
 static void *gfx_display_d3d9_cg_get_default_mvp(void *data)
 {
-   static float id[] =         { 1.0f, 0.0f, 0.0f, 0.0f,
+   static float id[16] =       { 1.0f, 0.0f, 0.0f, 0.0f,
                                  0.0f, 1.0f, 0.0f, 0.0f,
                                  0.0f, 0.0f, 1.0f, 0.0f, 
                                  0.0f, 0.0f, 0.0f, 1.0f
@@ -272,7 +271,7 @@ void gfx_display_d3d9_cg_scissor_begin(
    RECT rect;
    d3d9_video_t *d3d9 = (d3d9_video_t*)data;
 
-   if (!d3d9 || !width || !height)
+   if (!d3d9)
       return;
 
    rect.left          = x;

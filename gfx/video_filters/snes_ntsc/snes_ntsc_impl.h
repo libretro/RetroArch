@@ -4,7 +4,6 @@
 
 /* Common implementation of NTSC filters */
 
-#include <retro_assert.h>
 #include <math.h>
 
 /* Copyright (C) 2006 Shay Green. This module is free software; you
@@ -119,9 +118,8 @@ static void init_filters( init_t* impl, snes_ntsc_setup_t const* setup )
 		sum = 1.0f / sum;
 		for ( i = 0; i < kernel_half * 2 + 1; i++ )
 		{
-			int x = kernel_size * 3 / 2 - kernel_half + i;
+			int x        = kernel_size * 3 / 2 - kernel_half + i;
 			kernels [x] *= sum;
-			retro_assert( kernels [x] == kernels [x] ); /* catch numerical instability */
 		}
 	}
 
@@ -147,17 +145,14 @@ static void init_filters( init_t* impl, snes_ntsc_setup_t const* setup )
 		/* normalize even and odd phases separately */
 		for ( i = 0; i < 2; i++ )
 		{
-			float sum = 0;
 			int x;
+			float sum = 0;
 			for ( x = i; x < kernel_size; x += 2 )
 				sum += kernels [x];
 
 			sum = 1.0f / sum;
 			for ( x = i; x < kernel_size; x += 2 )
-			{
 				kernels [x] *= sum;
-				retro_assert( kernels [x] == kernels [x] ); /* catch numerical instability */
-			}
 		}
 	}
 

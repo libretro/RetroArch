@@ -803,8 +803,9 @@ void gfx_thumbnail_get_draw_dimensions(
    display_aspect   = (float)width            / (float)height;
    thumbnail_aspect = (float)thumbnail->width / (float)thumbnail->height;
    core_aspect      = ((thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT) 
-         && video_st)
-         ? video_st->av_info.geometry.aspect_ratio : thumbnail_aspect;
+         && video_st && video_st->av_info.geometry.aspect_ratio > 0)
+               ? video_st->av_info.geometry.aspect_ratio
+               : thumbnail_aspect;
 
    if (thumbnail_aspect > display_aspect)
    {

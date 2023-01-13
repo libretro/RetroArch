@@ -18,7 +18,6 @@
 #include <compat/strl.h>
 #include <array/rbuf.h>
 #include <file/file_path.h>
-#include <retro_assert.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
@@ -301,6 +300,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD;
+#ifdef ANDROID
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD;
+#endif
 #ifdef HAVE_NETWORKING
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER;
@@ -411,6 +414,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST;
       case ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST;
+      case ACTION_OK_DL_CHEEVOS_APPEARANCE_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CHEEVOS_APPEARANCE_SETTINGS_LIST;
+      case ACTION_OK_DL_CHEEVOS_VISIBILITY_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CHEEVOS_VISIBILITY_SETTINGS_LIST;
       case ACTION_OK_DL_UPDATER_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST;
       case ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST:
@@ -794,6 +801,17 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+#ifdef ANDROID
+       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD:
+           info.type          = type;
+           info.directory_ptr = idx;
+           info_path          = path;
+           info_label         = msg_hash_to_str(
+                   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD);
+           info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD;
+           dl_type            = DISPLAYLIST_GENERIC;
+           break;
+#endif
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION:
          info.type          = type;
          info.directory_ptr = idx;
@@ -1029,6 +1047,38 @@ int generic_action_ok_displaylist_push(const char *path,
 #endif
          break;
       case ACTION_OK_DL_SHADER_PRESET:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         {
+            const char *shader_file_name = NULL;
+
+            filebrowser_clear_type();
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+
+            menu_driver_get_last_shader_preset_path(&info_path, &shader_file_name);
+            menu_driver_set_pending_selection(shader_file_name);
+         }
+#endif
+         break;
+      case ACTION_OK_DL_SHADER_PRESET_PREPEND:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         {
+            const char *shader_file_name = NULL;
+
+            filebrowser_clear_type();
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+
+            menu_driver_get_last_shader_preset_path(&info_path, &shader_file_name);
+            menu_driver_set_pending_selection(shader_file_name);
+         }
+#endif
+         break;
+      case ACTION_OK_DL_SHADER_PRESET_APPEND:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             const char *shader_file_name = NULL;
@@ -1563,6 +1613,8 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_MENU_SOUNDS_LIST:
       case ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST:
       case ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
+      case ACTION_OK_DL_CHEEVOS_APPEARANCE_SETTINGS_LIST:
+      case ACTION_OK_DL_CHEEVOS_VISIBILITY_SETTINGS_LIST:
       case ACTION_OK_DL_UPDATER_SETTINGS_LIST:
       case ACTION_OK_DL_NETWORK_SETTINGS_LIST:
       case ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST:
@@ -2021,10 +2073,16 @@ static int generic_action_ok(const char *path,
             /* Cache selected shader parent directory/file name */
             menu_driver_set_last_shader_preset_path(action_path);
 
-            menu_shader_manager_set_preset(shader,
-                  menu_driver_get_last_shader_preset_type(),
-                  action_path,
-                  true);
+            /* Check whether this a load or append action */
+            if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND)) ||
+                string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND)))
+               menu_shader_manager_append_preset(shader, action_path, 
+                                                 string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND)));
+            else
+               menu_shader_manager_set_preset(shader,
+                     menu_driver_get_last_shader_preset_type(),
+                     action_path,
+                     true);
          }
 #endif
          break;
@@ -2254,7 +2312,7 @@ DEFAULT_ACTION_OK_SET(action_ok_record_configfile_load,      ACTION_OK_LOAD_RECO
 DEFAULT_ACTION_OK_SET(action_ok_stream_configfile_load,      ACTION_OK_LOAD_STREAM_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
 DEFAULT_ACTION_OK_SET(action_ok_remap_file_load,      ACTION_OK_LOAD_REMAPPING_FILE,   MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-DEFAULT_ACTION_OK_SET(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET   ,        MENU_ENUM_LABEL_SHADER_OPTIONS)
+DEFAULT_ACTION_OK_SET(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET,           MENU_ENUM_LABEL_SHADER_OPTIONS)
 DEFAULT_ACTION_OK_SET(action_ok_shader_pass_load,     ACTION_OK_LOAD_SHADER_PASS,      MENU_ENUM_LABEL_SHADER_OPTIONS)
 #endif
 DEFAULT_ACTION_OK_SET(action_ok_rgui_menu_theme_preset_load,  ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET,  MENU_ENUM_LABEL_MENU_SETTINGS)
@@ -3980,10 +4038,10 @@ int action_ok_core_option_dropdown_list(const char *path,
 
    if (   string_is_empty(value_label_0)
        || string_is_empty(value_label_1)
-       || !((string_is_equal(value_label_0,   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))
-       &&   string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-       ||  (string_is_equal(value_label_0,   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
-       &&   string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))))
+       || !( (  string_is_equal(value_label_0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))
+             && string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+          || (  string_is_equal(value_label_0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
+             && string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))))
       goto push_dropdown_list;
 
    /* > Update value and return */
@@ -5799,6 +5857,8 @@ DEFAULT_ACTION_OK_FUNC(action_ok_menu_sounds_list, ACTION_OK_DL_MENU_SOUNDS_LIST
 DEFAULT_ACTION_OK_FUNC(action_ok_user_interface_list, ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_menu_file_browser_list, ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_retro_achievements_list, ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_cheevos_appearance_list, ACTION_OK_DL_CHEEVOS_APPEARANCE_SETTINGS_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_cheevos_visibility_list, ACTION_OK_DL_CHEEVOS_VISIBILITY_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_updater_list, ACTION_OK_DL_UPDATER_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_lakka_services, ACTION_OK_DL_LAKKA_SERVICES_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_user_list, ACTION_OK_DL_USER_SETTINGS_LIST)
@@ -5824,6 +5884,8 @@ DEFAULT_ACTION_OK_FUNC(action_ok_stream_configfile, ACTION_OK_DL_STREAM_CONFIGFI
 DEFAULT_ACTION_OK_FUNC(action_ok_remap_file, ACTION_OK_DL_REMAP_FILE)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset, ACTION_OK_DL_SHADER_PRESET)
+DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_prepend, ACTION_OK_DL_SHADER_PRESET_PREPEND)
+DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_append, ACTION_OK_DL_SHADER_PRESET_APPEND)
 #endif
 DEFAULT_ACTION_OK_FUNC(action_ok_push_generic_list, ACTION_OK_DL_GENERIC)
 DEFAULT_ACTION_OK_FUNC(action_ok_audio_dsp_plugin, ACTION_OK_DL_AUDIO_DSP_PLUGIN)
@@ -5904,8 +5966,6 @@ static int action_ok_open_uwp_permission_settings(const char *path,
 {
 #ifdef __WINRT__
    uwp_open_broadfilesystemaccess_settings();
-#else
-   retro_assert(false);
 #endif
    return 0;
 }
@@ -5913,11 +5973,8 @@ static int action_ok_open_uwp_permission_settings(const char *path,
 static int action_ok_open_picker(const char *path,
    const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   int ret;
    char *new_path = NULL;
-   retro_assert(false);
-
-   ret = generic_action_ok_displaylist_push(path, new_path,
+   int ret        = generic_action_ok_displaylist_push(path, new_path,
       msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
       MENU_SETTING_ACTION_FAVORITES_DIR, idx,
       entry_idx, ACTION_OK_DL_CONTENT_LIST);
@@ -6734,6 +6791,63 @@ static int action_ok_push_dropdown_item_input_device_type(const char *path,
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
+
+#ifdef ANDROID
+static int action_ok_push_dropdown_item_input_select_physical_keyboard(const char *path,
+                                                           const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+    settings_t *settings         = config_get_ptr();
+
+    const char *menu_path        = NULL;
+    enum msg_hash_enums enum_idx;
+    rarch_setting_t     *setting;
+    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+    enum_idx = (enum msg_hash_enums)atoi(menu_path);
+    setting  = menu_setting_find_enum(enum_idx);
+
+    if (!setting)
+        return -1;
+
+    char* keyboard;
+    const char* keyboard_name = path;
+    const char* no_keyboard = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+    if (string_is_equal(keyboard_name, no_keyboard))
+        settings->arrays.input_android_physical_keyboard[0] = '\0';
+    else
+    {
+        for (int i = 0; i < MAX_INPUT_DEVICES; i++)
+        {
+            const char* device_name = input_config_get_device_name(i);
+            if (string_is_equal(device_name, keyboard_name))
+            {
+                uint16_t vendor_id = input_config_get_device_vid(i);
+                uint16_t product_id = input_config_get_device_pid(i);
+                snprintf(settings->arrays.input_android_physical_keyboard,
+                         sizeof(settings->arrays.input_android_physical_keyboard),
+                         "%04x:%04x %s",
+                         vendor_id, product_id, keyboard_name);
+                break;
+            }
+        }
+        /*
+         * if we did not find the selected device, do nothing, the user has chosen to keep
+         * the previous configuration, which is to use a device that is either not plugged right
+         * now or already working as the physical keyboard.
+         */
+    }
+    settings->modified = true;
+
+    command_event(CMD_EVENT_REINIT, NULL);
+
+    /* Refresh menu */
+    bool refresh = false;
+    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+    return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+#endif
 
 static int action_ok_push_dropdown_item_input_description(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -8026,6 +8140,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {MENU_ENUM_LABEL_VIDEO_SHADER_PASS,                   action_ok_shader_pass},
          {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET,                 action_ok_shader_preset},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND,          action_ok_shader_preset_prepend},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND,          action_ok_shader_preset_append},
          {MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,             action_ok_shader_parameters},
          {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,      action_ok_shader_parameters},
          {MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,                action_ok_shader_apply_changes},
@@ -8300,6 +8416,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,   action_ok_open_uwp_permission_settings},
          {MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,            action_ok_open_picker},
          {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,         action_ok_retro_achievements_list},
+         {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS,         action_ok_cheevos_appearance_list},
+         {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SETTINGS,         action_ok_cheevos_visibility_list},
          {MENU_ENUM_LABEL_UPDATER_SETTINGS,                    action_ok_updater_list},
 #ifdef HAVE_BLUETOOTH
          {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,                  action_ok_bluetooth_list},
@@ -8567,6 +8685,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_device_type);
             break;
+#ifdef ANDROID
+          case MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_PHYSICAL_KEYBOARD:
+              BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_select_physical_keyboard);
+              break;
+#endif
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_description);
             break;

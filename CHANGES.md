@@ -1,4 +1,47 @@
 # Future
+- ANDROID: In Android builds, add input_android_physical_keyboard configuration option and its corresponding menu entry to force a device to act as a physical keyboard. When running on Android, RetroArch considers most devices that emit dpad events as gamepads, even if they also emit other keyboard events; this is usually the right thing to do, but it has the side effect of not letting some actual keyboards (e.g.: Logitech K480) act as such inside RetroArch. This configuration option allows users to manually select a specific input device to act as a physical keyboard instead of a gamepad, which is handy when emulating computers as opposed to consoles.
+- AUTOMATIC FRAME DELAY: Helped delay to decrease easier when it should and helped delay to stay put when it should when triggering pause & menu with or without pause & fast-forward & slow-motion & geometry change
+- AUTOMATIC FRAME DELAY: Recalibrate delay on video reinit (fullscreen toggle and such)
+- AUTOMATIC FRAME DELAY: Show (x effective) only in menu item and not in dropdown list items when auto is enabled
+- CHEEVOS: Allow repositioning of RetroAchievement notifications
+- CHEEVOS/MENU: Add Achievements Visibility submenu option
+- CHEEVOS/MENU: Startup Summary split off from Verbose Mode, added option to hide for games with zero core cheevos
+- CHEEVOS/MENU: 'Unlocks/Mastery' split into two options
+- CHEEVOS/MENU: 'Account/Login Messages' split off from 'Verbose', gated all login success/error messages
+- CLI: Update selected save slot when start with cli --entryslot
+- CLI/MENU/XMB: Stop showing bogus previous icon on CLI launch
+- D3D9: Fixed display driver scissoring implementation  - can now accept 0 width/height
+- D3D10: Fixed display driver scissoring implementation - can now accept 0 width/height
+- D3D11: Fixed display driver scissoring implementation - can now accept 0 width/height
+- D3D12: Fixed display driver scissoring implementation - can now accept 0 width/height
+- LOCALIZATION: Updates
+- LOCALIZATION: Enable localization of video rotation, orientation, and aspect ratio option values.
+- LOCALIZATION: Mixer stream localization also added
+- LOCALIZATION/MENU/LANGUAGE: Language submenu now shows the progress of translated strings for each language.
+- LOCALIZATION: Help texts now localizable through Crowdin.
+- INPUT: Allowing keyboard hotkeys to work without hotkey modifier if modifier is only mapped to RetroPad
+- INPUT: Allowing keyboard hotkey keys for typing if hotkey modifier is set to keyboard but not pressed
+- INPUT: Allowing keyboard RetroPad keys for typing if emulated device type is "None"
+- MENU: Rename 'Standalone Cores' to 'Contentless Cores'
+- MENU/SUBLABELS: All under "Configuration File" + moved "Reset to Defaults" to bottom
+- MENU/SUBLABELS: Quick Menu > Controls > Port x Controls
+- MENU/SUBLABELS: Port x Controls > Device Type
+- MENU/XMB: Fixed playlist manager icons to take Explore Views into account properly
+- MENU/XMB: Changed XMB Explore View title to match Ozone
+- MENU/XMB: Added "Switch Icons" option
+- MENU/OZONE: Fixed playlist manager icons to take Explore Views into account properly
+- MENU/MATERIALUI: Added missing Favorites+History icons in playlist manager
+- MENU/MATERIALUI: Added "Switch Icons" option
+- MENU/CHEATS: Added missing icons in cheats (Delete + Copy After/Before)
+- MENU/CHEATS: Fixed label capitalization in cheats (Add New After/Before This)
+- MENU/SOUNDS: Add scrolling sounds for RGUI, XMB, MaterialUI and Ozone.
+- MIYOO: L3/R3 support for Dingux Gamepad controller device.
+- OSX/MACOS: Include OpenGL video driver on Metal macOS builds (10.13 and higher)
+- OSX/MACOS/METAL BUILD: Fix input events (keyboard/mouse) sometimes going lost when switching between fullscreen and windowed mode. Fixes lots of longstanding issues
+- OSX/MACOS/OPENGL: Fix for fullscreen OpenGL driver in Metal macOS build
+- QB/CONFIGURE: Add new flags - HAVE_UPDATE_CORE_INFO, ASSETS_DIR, FILTERS_DIR
+- SHADERS: Append Preset feature
+- SHADERS: Prepend Preset feature
 
 # 1.14.0
 - AUDIO/COREAUDIO/APPLE: Allow coreaudio3 driver to work with audio devices that have 2 or more output channels

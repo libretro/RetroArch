@@ -674,7 +674,7 @@ public:
 
 UBORing::~UBORing()
 {
-   glDeleteBuffers(buffers.size(), buffers.data());
+   glDeleteBuffers((GLsizei)buffers.size(), buffers.data());
 }
 
 class Pass
@@ -1929,12 +1929,14 @@ bool gl3_filter_chain::init_feedback()
 
 bool gl3_filter_chain::init_alias()
 {
-   unsigned i, j;
+   int i;
+    
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
 
    for (i = 0; i < passes.size(); i++)
    {
+      unsigned j;
       const std::string name = passes[i]->get_name();
       if (name.empty())
          continue;
@@ -1963,7 +1965,7 @@ bool gl3_filter_chain::init_alias()
 
    for (i = 0; i < common.luts.size(); i++)
    {
-      j = &common.luts[i] - common.luts.data();
+      unsigned j = &common.luts[i] - common.luts.data();
       if (!slang_set_unique_map(common.texture_semantic_map,
                common.luts[i]->get_id(),
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
@@ -2292,7 +2294,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
                      itr->id);
                return nullptr;
             }
-            chain->add_parameter(i, itr - shader->parameters, meta_param.id);
+            chain->add_parameter(i, (unsigned)(itr - shader->parameters), meta_param.id);
          }
          else
          {

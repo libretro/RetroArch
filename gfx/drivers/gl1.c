@@ -45,7 +45,6 @@
 
 #include "../font_driver.h"
 
-#include "../../driver.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -105,7 +104,7 @@ static void gl1_render_overlay(gl1_t *gl,
       unsigned width,
       unsigned height)
 {
-   unsigned i;
+   int i;
 
    glEnable(GL_BLEND);
 
@@ -825,10 +824,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    {
       if (bits == 32)
       {
-         unsigned y;
+         int y;
          /* copy lines into top-left portion of larger (power-of-two) buffer */
          for (y = 0; y < height; y++)
-            memcpy(gl1->video_buf + ((pot_width * (bits / 8)) * y), (const unsigned char*)frame + (pitch * y), width * (bits / 8));
+            memcpy(gl1->video_buf + ((pot_width * (bits / 8)) * y),
+                  (const unsigned char*)frame + (pitch * y),
+                  width * (bits / 8));
       }
       else if (bits == 16)
          conv_rgb565_argb8888(gl1->video_buf, frame, width, height, pot_width * sizeof(unsigned), pitch);
@@ -986,8 +987,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          && !video_info->runloop_is_paused 
          && !gl1->menu_texture_enable)
    {
-
-        unsigned n;
+        int n;
         for (n = 0; n < video_info->black_frame_insertion; ++n)
         {
           glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1556,7 +1556,7 @@ static unsigned gl1_get_alignment(unsigned pitch)
 static bool gl1_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
-   unsigned i, j;
+   int i, j;
    gl1_t *gl = (gl1_t*)data;
    const struct texture_image *images =
       (const struct texture_image*)image_data;

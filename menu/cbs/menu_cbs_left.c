@@ -248,7 +248,10 @@ static int action_left_scroll(unsigned type, const char *label,
       bool pending_push = false;
       menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
    }
-
+#ifdef HAVE_AUDIOMIXER
+   if (selection != menu_navigation_get_selection()) 
+      audio_driver_mixer_play_scroll_sound(true);
+#endif
    return 0;
 }
 

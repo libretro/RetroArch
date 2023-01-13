@@ -179,7 +179,6 @@ d3d10_get_closest_match(D3D10Device device,
          break;
       format++;
    }
-   assert(*format);
    return *format;
 }
 

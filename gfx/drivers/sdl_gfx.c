@@ -18,10 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_assert.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
-#include <retro_assert.h>
 #include "../../verbosity.h"
 
 #ifdef HAVE_CONFIG_H
@@ -270,14 +268,12 @@ static void *sdl_gfx_init(const video_info_t *video,
          return NULL;
    }
 
-   vid = (sdl_video_t*)calloc(1, sizeof(*vid));
-   if (!vid)
+   if (!(vid = (sdl_video_t*)calloc(1, sizeof(*vid))))
       return NULL;
 
    video_info = SDL_GetVideoInfo();
-   retro_assert(video_info);
-   full_x = video_info->current_w;
-   full_y = video_info->current_h;
+   full_x     = video_info->current_w;
+   full_y     = video_info->current_h;
    RARCH_LOG("[SDL]: Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
    if (!video->fullscreen)

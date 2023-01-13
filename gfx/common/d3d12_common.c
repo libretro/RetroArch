@@ -143,10 +143,7 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
 static void
 d3d12_descriptor_heap_slot_free(d3d12_descriptor_heap_t* heap, D3D12_CPU_DESCRIPTOR_HANDLE handle)
 {
-   unsigned i = (handle.ptr - heap->cpu.ptr) / heap->stride;
-   assert(i >= 0 && i < heap->desc.NumDescriptors);
-   assert(heap->map[i]);
-
+   unsigned i   = (handle.ptr - heap->cpu.ptr) / heap->stride;
    heap->map[i] = false;
    if (heap->start > (int)i)
       heap->start = i;
@@ -211,7 +208,6 @@ D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descriptor_he
       }
    }
    /* if you get here try increasing NumDescriptors for this heap */
-   assert(0);
    return handle;
 }
 
@@ -233,7 +229,6 @@ static DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DAT
          break;
       format++;
    }
-   assert(*format);
    return *format;
 }
 
@@ -285,8 +280,6 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, NULL, &texture->handle);
    }
 
-   assert(texture->srv_heap);
-
    {
       D3D12_SHADER_RESOURCE_VIEW_DESC desc = { texture->desc.Format };
 
@@ -316,7 +309,6 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
 
    if (texture->desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
    {
-      assert(texture->rt_view.ptr);
       D3D12CreateRenderTargetView(device, texture->handle, NULL, texture->rt_view);
    }
    else

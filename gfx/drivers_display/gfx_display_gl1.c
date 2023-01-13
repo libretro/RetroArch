@@ -20,19 +20,18 @@
 #include "../../config.h"
 #endif
 
-#include "../../retroarch.h"
-#include "../common/gl1_common.h"
-
 #include "../gfx_display.h"
 
-static const GLfloat gl1_menu_vertexes[] = {
+#include "../common/gl1_common.h"
+
+static const GLfloat gl1_menu_vertexes[8] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const GLfloat gl1_menu_tex_coords[] = {
+static const GLfloat gl1_menu_tex_coords[8] = {
    0, 1,
    1, 1,
    0, 0,
@@ -92,7 +91,7 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
       unsigned video_width,
       unsigned video_height)
 {
-   video_shader_ctx_mvp_t mvp;
+   const GLfloat *mvp_matrix;
    gl1_t             *gl1          = (gl1_t*)data;
 
    if (!gl1 || !draw)
@@ -113,13 +112,12 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
 
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-   mvp.data   = gl1;
-   mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
-      : (math_matrix_4x4*)&gl1->mvp_no_rot;
+   mvp_matrix = draw->matrix_data ? (const GLfloat*)draw->matrix_data
+      : (const GLfloat*)&gl1->mvp_no_rot;
 
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();
-   glLoadMatrixf((const GLfloat*)mvp.matrix);
+   glLoadMatrixf(mvp_matrix);
 
    glMatrixMode(GL_MODELVIEW);
    glPushMatrix();
@@ -139,8 +137,10 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
       vertices3 = (float*)malloc(sizeof(float) * 3 * draw->coords->vertices);
       for (i = 0; i < draw->coords->vertices; i++)
       {
-         memcpy(&vertices3[i*3], &draw->coords->vertex[i*2], sizeof(float) * 2);
-         vertices3[i*3+2]  = 0.0f;
+         memcpy(&vertices3[i * 3],
+               &draw->coords->vertex[i * 2],
+               sizeof(float) * 2);
+         vertices3[i * 3 + 2]  = 0.0f;
       }
       glVertexPointer(3, GL_FLOAT, 0, vertices3);   
    }

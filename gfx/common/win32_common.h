@@ -34,7 +34,6 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_environment.h>
-#include "../../driver.h"
 #include "../../retroarch.h"
 
 #ifndef _XBOX

@@ -406,7 +406,6 @@ void* task_push_http_transfer_with_user_agent(const char *url, bool mute,
    if (user_agent)
       net_http_connection_set_user_agent(conn, user_agent);
 
-   /* assert: task_push_http_transfer_generic will free conn on failure */
    return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
 }
 
@@ -425,7 +424,6 @@ void* task_push_http_transfer_with_headers(const char *url, bool mute,
    if (headers)
       net_http_connection_set_headers(conn, headers);
 
-   /* assert: task_push_http_transfer_generic will free conn on failure */
    return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
 }
 
@@ -456,7 +454,6 @@ void* task_push_http_post_transfer_with_user_agent(const char *url,
    if (user_agent)
       net_http_connection_set_user_agent(conn, user_agent);
 
-   /* assert: task_push_http_transfer_generic will free conn on failure */
    return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
 }
 
@@ -476,7 +473,6 @@ void* task_push_http_post_transfer_with_headers(const char *url,
    if (headers)
       net_http_connection_set_headers(conn, headers);
 
-   /* assert: task_push_http_transfer_generic will free conn on failure */
    return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
 }
 

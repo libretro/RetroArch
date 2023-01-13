@@ -379,6 +379,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    entry_label                = list->list[i].label;
    entry->type                = list->list[i].type;
    entry->entry_idx           = list->list[i].entry_idx;
+   entry->setting_type        = 0;
 
    cbs                        = (menu_file_list_cbs_t*)list->list[i].actiondata;
    entry->idx                 = (unsigned)i;
@@ -393,6 +394,10 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       file_list_t *menu_stack       = MENU_LIST_GET(menu_st->entries.list, 0);
 
       entry->enum_idx               = cbs->enum_idx;
+
+      if (cbs->setting && cbs->setting->type)
+         entry->setting_type        = cbs->setting->type;
+
       if (cbs->checked)
          entry->flags |= MENU_ENTRY_FLAG_CHECKED;
 
@@ -460,6 +465,21 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
                      sizeof(cbs->action_sublabel_cache));
          }
       }
+   }
+
+   /* Inspect core options and set entries with only 2 options as
+    * boolean for accurate graphical switch icons */
+   if (     entry->type >= MENU_SETTINGS_CORE_OPTION_START
+         && entry->type < MENU_SETTINGS_CHEEVOS_START)
+   {
+      struct core_option *option      = NULL;
+      core_option_manager_t *coreopts = NULL;
+      size_t option_index             = entry->type - MENU_SETTINGS_CORE_OPTION_START;
+      retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+      option = (struct core_option*)&coreopts->opts[option_index];
+
+      if (option->vals->size == 2)
+         entry->setting_type = ST_BOOL;
    }
 
    if (path_enabled)
@@ -1173,7 +1193,19 @@ void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
    /* Determine whether this is a help or info
     * message box */
    if (list && list->size)
+   {
       label = list->list[list->size - 1].label;
+      /* Play sound for closing the info box */
+#ifdef HAVE_AUDIOMIXER
+      {
+         settings_t *settings          = config_get_ptr();
+         bool        audio_enable_menu = settings->bools.audio_enable_menu;
+         bool audio_enable_menu_notice = settings->bools.audio_enable_menu_notice;
+         if (audio_enable_menu && audio_enable_menu_notice)
+            audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_NOTICE_BACK);
+      }
+#endif
+   }
 
    /* Pop stack, if required */
    if (menu_should_pop_stack(label))
@@ -3007,7 +3039,7 @@ bool menu_shader_manager_auto_preset_exists(
  *    SHADER_PRESET_CORE:   <target dir>/<core name>/<core name>
  *    SHADER_PRESET_PARENT: <target dir>/<core name>/<parent>
  *    SHADER_PRESET_GAME:   <target dir>/<core name>/<game name>
- * Needs to be consistent with load_shader_preset()
+ * Needs to be consistent with video_shader_load_auto_shader_preset()
  * Auto-shaders will be saved as a reference if possible
  **/
 bool menu_shader_manager_save_auto_preset(
@@ -3083,6 +3115,8 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
                        /* > Shader presets/passes */
                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND)) ||
                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS)) ||
                        /* > Cheat files */
                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD)) ||
@@ -3830,9 +3864,7 @@ bool menu_shader_manager_save_preset_internal(
    if (path_is_absolute(fullname))
    {
       preset_path = fullname;
-      if ((ret    = video_shader_write_preset(preset_path,
-            dir_video_shader,
-            shader, save_reference)))
+      if ((ret    = video_shader_write_preset(preset_path, shader, save_reference)))
          RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
       else
          RARCH_ERR("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
@@ -3864,7 +3896,6 @@ bool menu_shader_manager_save_preset_internal(
          preset_path = buffer;
 
          if ((ret = video_shader_write_preset(preset_path,
-               dir_video_shader,
                shader, save_reference)))
          {
             RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
@@ -5390,10 +5421,10 @@ bool menu_input_key_bind_iterate(
    /* Tick main timers */
    _binds->timer_timeout.current    = current_time;
    _binds->timer_timeout.timeout_us = _binds->timer_timeout.timeout_end -
-current_time;
+         current_time;
    _binds->timer_hold   .current    = current_time;
    _binds->timer_hold   .timeout_us = _binds->timer_hold   .timeout_end -
-current_time;
+         current_time;
 
    if (_binds->timer_timeout.timeout_us <= 0)
    {
@@ -5429,7 +5460,7 @@ current_time;
       {
          input_st->keyboard_press_cb        = NULL;
          input_st->keyboard_press_data      = NULL;
-	 input_st->flags                   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+         input_st->flags                   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
       }
 
       return true;
@@ -5470,7 +5501,7 @@ current_time;
             new_binds.timer_hold.timeout_end - current_time;
 
          snprintf(bind->s, bind->len,
-               "[%s]\npress keyboard, mouse or joypad\nand hold ...",
+               "[%s]\nPress keyboard, mouse or joypad\nand hold ...",
                input_config_bind_map_get_desc(
                   _binds->begin - MENU_SETTINGS_BIND_BEGIN));
 
@@ -5501,7 +5532,7 @@ current_time;
          uint64_t current_usec             = cpu_features_get_time_usec();
          *(new_binds.output)               = new_binds.buffer;
 
-	 input_st->flags                  &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+         input_st->flags                  &= ~INP_FLAG_KB_MAPPING_BLOCKED;
 
          /* Avoid new binds triggering things right away. */
          /* Inhibits input for 2 frames
@@ -5515,7 +5546,7 @@ current_time;
          {
             input_st->keyboard_press_cb        = NULL;
             input_st->keyboard_press_data      = NULL;
-	    input_st->flags                   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+            input_st->flags                   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
             return true;
          }
 
@@ -6951,6 +6982,13 @@ void retroarch_menu_running_finished(bool quit)
             command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
          }
       }
+
+#if HAVE_RUNAHEAD
+      /* Preemptive Frames isn't run behind the menu,
+       * so its savestate buffer is out of date. */
+      if (!settings->bools.menu_pause_libretro)
+         command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
+#endif
    }
 
    /* Ensure that menu screensaver is disabled when
@@ -6969,6 +7007,10 @@ void retroarch_menu_running_finished(bool quit)
       if (settings && settings->bools.input_overlay_hide_in_menu)
          input_overlay_init();
 #endif
+
+   /* Ignore frame delay target temporarily */
+   if (settings->bools.video_frame_delay_auto)
+      video_st->frame_delay_pause = true;
 }
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
@@ -7273,7 +7315,7 @@ bool menu_shader_manager_init(void)
    /* We get the shader preset directly from the video driver, so that
     * we are in sync with it (it could fail loading an auto-shader)
     * If we can't (e.g. get_current_shader is not implemented),
-    * we'll load retroarch_get_shader_preset() like always */
+    * we'll load video_shader_get_current_shader_preset() like always */
    video_shader_ctx_t shader_info = {0};
 
    video_shader_driver_get_current_shader(&shader_info);
@@ -7283,7 +7325,7 @@ bool menu_shader_manager_init(void)
        * have been a preset with a #reference in it to another preset */
       path_shader = shader_info.data->loaded_preset_path;
    else
-      path_shader = retroarch_get_shader_preset();
+      path_shader = video_shader_get_current_shader_preset();
 
    menu_shader_manager_free();
 
@@ -7332,21 +7374,23 @@ end:
 
 /**
  * menu_shader_manager_set_preset:
- * @shader                   : Shader handle.
+ * @menu_shader              : Shader handle to the menu shader.
  * @type                     : Type of shader.
  * @preset_path              : Preset path to load from.
  * @apply                    : Whether to apply the shader or just update shader information
  *
  * Sets shader preset.
  **/
-bool menu_shader_manager_set_preset(struct video_shader *shader,
-      enum rarch_shader_type type, const char *preset_path, bool apply)
+bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
+                                    enum rarch_shader_type type, 
+                                    const char *preset_path, 
+                                    bool apply)
 {
    bool refresh                  = false;
    bool ret                      = false;
    settings_t *settings          = config_get_ptr();
 
-   if (apply && !apply_shader(settings, type, preset_path, true))
+   if (apply && !video_shader_apply_shader(settings, type, preset_path, true))
       goto clear;
 
    if (string_is_empty(preset_path))
@@ -7359,8 +7403,8 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
     * Used when a preset is directly loaded.
     * No point in updating when the Preset was
     * created from the menu itself. */
-   if (  !shader ||
-         !(video_shader_load_preset_into_shader(preset_path, shader)))
+   if (  !menu_shader ||
+         !(video_shader_load_preset_into_shader(preset_path, menu_shader)))
       goto end;
 
    RARCH_LOG("[Shaders]: Menu shader set to: \"%s\".\n", preset_path);
@@ -7380,11 +7424,66 @@ clear:
     *   entries in the shader options menu which can in
     *   turn lead to the menu selection pointer going out
     *   of bounds. This causes undefined behaviour/segfaults */
+   menu_shader_manager_clear_num_passes(menu_shader);
+   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
+   return ret;
+}
+
+/**
+ * menu_shader_manager_append_preset:
+ * @shader                   : current shader
+ * @preset_path              : path to the preset to append
+ * @dir_video_shader         : temporary diretory
+ *
+ * combine current shader with a shader preset on disk
+ **/
+bool menu_shader_manager_append_preset(struct video_shader *shader, 
+                                       const char* preset_path,
+                                       const bool prepend)
+{
+   bool refresh = false;
+   bool ret = false;
+   settings_t* settings = config_get_ptr();
+   const char *dir_video_shader  = settings->paths.directory_video_shader;
+   enum rarch_shader_type type = menu_shader_manager_get_type(shader);
+
+   if (string_is_empty(preset_path))
+   {
+      ret = true;
+      goto clear;
+   }
+
+    if (!video_shader_combine_preset_and_apply(settings,
+                                 type,
+                                 shader,
+                                 preset_path,
+                                 dir_video_shader,
+                                 prepend,
+                                 true))
+      goto clear;
+
+   RARCH_LOG("[Shaders]: Menu shader set to: \"%s\".\n", preset_path);
+
+   ret = true;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
+   return ret;
+
+clear:
+   /* We don't want to disable shaders entirely here,
+    * just reset number of passes
+    * > Note: Disabling shaders at this point would in
+    *   fact be dangerous, since it changes the number of
+    *   entries in the shader options menu which can in
+    *   turn lead to the menu selection pointer going out
+    *   of bounds. This causes undefined behaviour/segfaults */
    menu_shader_manager_clear_num_passes(shader);
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 }
 #endif
+
 
 /**
  * menu_iterate:
@@ -7671,11 +7770,34 @@ static int generic_menu_iterate(
                         menu->menu_state_msg, sizeof(menu->menu_state_msg));
                else
                {
-                  strlcpy(menu->menu_state_msg,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
-                        sizeof(menu->menu_state_msg));
+                  /* Special handling for input and remap items */
+                  if (     (  type >= MENU_SETTINGS_REMAPPING_PORT_BEGIN
+                           && type <= MENU_SETTINGS_REMAPPING_PORT_END)
+                        || type == MENU_SETTINGS_INPUT_LIBRETRO_DEVICE
+                        || type == MENU_SETTINGS_INPUT_INPUT_REMAP_PORT)
+                  {
+                     get_current_menu_sublabel(
+                           menu_st,
+                           menu->menu_state_msg, sizeof(menu->menu_state_msg));
 
-                  ret = 0;
+                     ret = 0;
+                  }
+                  /* Use detailed help text for 'Analog to Digital', which
+                   * is the first item in global input settings */
+                  else if (type == MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE
+                        || type == MENU_SETTINGS_INPUT_BEGIN)
+                  {
+                     ret = msg_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
+                           menu->menu_state_msg, sizeof(menu->menu_state_msg));
+                  }
+                  else
+                  {
+                     strlcpy(menu->menu_state_msg,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE),
+                           sizeof(menu->menu_state_msg));
+
+                     ret = 0;
+                  }
                }
             }
          }
@@ -7759,6 +7881,16 @@ static int generic_menu_iterate(
       size_t new_selection_ptr = selection;
       menu_entries_pop_stack(&new_selection_ptr, 0, 0);
       menu_st->selection_ptr   = selection;
+      /* Play sound for closing the info box */
+#ifdef HAVE_AUDIOMIXER
+      {
+         bool        audio_enable_menu = settings->bools.audio_enable_menu;
+         bool audio_enable_menu_notice = settings->bools.audio_enable_menu_notice;
+         if (audio_enable_menu && audio_enable_menu_notice && 
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFO_SCREEN)))
+            audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_NOTICE_BACK);
+      }
+#endif
    }
 
    if (BIT64_GET(menu->state, MENU_STATE_POST_ITERATE))
@@ -7830,6 +7962,10 @@ int generic_menu_entry_action(
 
                if (menu_driver_ctx->navigation_decrement)
                   menu_driver_ctx->navigation_decrement(menu_userdata);
+#ifdef HAVE_AUDIOMIXER
+               if (menu_entries_get_size() != 1)
+                  audio_driver_mixer_play_scroll_sound(true);
+#endif
             }
          }
          break;
@@ -7860,6 +7996,10 @@ int generic_menu_entry_action(
 
                if (menu_driver_ctx->navigation_increment)
                   menu_driver_ctx->navigation_increment(menu_userdata);
+#ifdef HAVE_AUDIOMIXER
+               if (menu_entries_get_size() != 1)
+                  audio_driver_mixer_play_scroll_sound(false);
+#endif
             }
          }
          break;
@@ -7869,6 +8009,10 @@ int generic_menu_entry_action(
             if (selection_buf_size > 0)
             {
                unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 10);
+#ifdef HAVE_AUDIOMIXER
+               if (menu_st->selection_ptr != 0)
+                  audio_driver_mixer_play_scroll_sound(true);
+#endif
                if (!(menu_st->selection_ptr == 0 && !wraparound_enable))
                {
                   size_t idx             = 0;
@@ -7887,6 +8031,7 @@ int generic_menu_entry_action(
          }
          else /* MENU_SCROLL_START_LETTER */
          {
+            size_t selection_old = menu_st->selection_ptr;
             if (
                      menu_st->scroll.index_size
                   && menu_st->selection_ptr != 0
@@ -7906,6 +8051,10 @@ int generic_menu_entry_action(
                   menu_driver_ctx->navigation_descend_alphabet(
                         menu_userdata, &menu_st->selection_ptr);
             }
+#ifdef HAVE_AUDIOMIXER
+            if (menu_st->selection_ptr != selection_old)
+               audio_driver_mixer_play_scroll_sound(true);
+#endif
          }
          break;
       case MENU_ACTION_SCROLL_DOWN:
@@ -7914,6 +8063,10 @@ int generic_menu_entry_action(
             if (selection_buf_size > 0)
             {
                unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 10);
+#ifdef HAVE_AUDIOMIXER
+               if (menu_st->selection_ptr != menu_entries_get_size() - 1)
+                  audio_driver_mixer_play_scroll_sound(false);
+#endif
                if (!(menu_st->selection_ptr >= selection_buf_size - 1
                      && !wraparound_enable))
                {
@@ -7936,6 +8089,7 @@ int generic_menu_entry_action(
          {
             if (menu_st->scroll.index_size)
             {
+               size_t selection_old = menu_st->selection_ptr;
                if (menu_st->selection_ptr == menu_st->scroll.index_list[menu_st->scroll.index_size - 1])
                   menu_st->selection_ptr = selection_buf_size - 1;
                else
@@ -7953,6 +8107,10 @@ int generic_menu_entry_action(
                if (menu_driver_ctx->navigation_ascend_alphabet)
                   menu_driver_ctx->navigation_ascend_alphabet(
                         menu_userdata, &menu_st->selection_ptr);
+#ifdef HAVE_AUDIOMIXER
+               if (menu_st->selection_ptr != selection_old)
+                  audio_driver_mixer_play_scroll_sound(false);
+#endif
             }
          }
          break;

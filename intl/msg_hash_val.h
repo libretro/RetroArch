@@ -992,20 +992,16 @@ MSG_HASH(
    "Carregar configuració"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Reiniciar per defecte"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "Reiniciar la configuració actual als valors per defecte."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "Guardar configuració actual"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "Guardar nova configuració"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Reiniciar per defecte"
    )
 
 /* Main Menu > Help */
@@ -1426,10 +1422,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Filtrat bilineal"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "Afegir un poc de desenfocament a la imatge per suavitzar la pixelació. Esta opció té una mica d'impacte en l'execució del joc."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -2121,6 +2113,10 @@ MSG_HASH(
    "Força el dispositiu que usa el controlador d’àudio. Això depèn del controlador."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
+   "Força el dispositiu que usa el controlador d’àudio. Això depèn del controlador."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Latència de l'àudio (ms)"
    )
@@ -2204,6 +2200,8 @@ MSG_HASH(
 
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
+#ifdef ANDROID
+#endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    "Engega l'entrada des dels sensors d'acceleròmetre, giroscopi i luminància, si està suportat pel maquinari actual. Pot tenir un impacte sobre el rendiment i/o un increment de consum energètic en algunes plataformes."
@@ -2264,16 +2262,8 @@ MSG_HASH(
 /* Settings > Input > Port # Controls */
 
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "Usa la palanca analògica especificada com a senyal d'entrada per a la creueta. Si el nucli té suport natiu de control analògic, les assignacions de la creueta es desactivarán llevat que s'haja seleccionat una opció forçada. Forçant les assignacions de creueta, el nucli no rebrá cap entrada analògica de la palanca especificada."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Port assignat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
-   "Especifica quin dels ports del nucli (usualment, el número del jugador) rebrà les senyals d'entrada del port de comandament %u del front-end."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
@@ -2693,6 +2683,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "Assoliments"
    )
+
+/* Settings > Achievements > Appearance */
+
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 

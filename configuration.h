@@ -341,6 +341,9 @@ typedef struct settings
 #ifdef HAVE_MIST
       unsigned steam_rich_presence_format;
 #endif
+
+      unsigned cheevos_appearance_anchor;
+      unsigned cheevos_visibility_summary;
    } uints;
 
    struct
@@ -371,6 +374,9 @@ typedef struct settings
       float menu_rgui_particle_effect_speed;
       float menu_screensaver_animation_speed;
       float ozone_thumbnail_scale_factor;
+
+      float cheevos_appearance_padding_h;
+      float cheevos_appearance_padding_v;
 
       float audio_max_timing_skew;
       float audio_volume; /* dB scale. */
@@ -429,6 +435,10 @@ typedef struct settings
       char midi_output[32];
 
       char input_keyboard_layout[64];
+
+#ifdef ANDROID
+      char input_android_physical_keyboard[255];
+#endif
 
       char audio_device[255];
       char microphone_device[255];
@@ -594,6 +604,7 @@ typedef struct settings
       bool audio_enable_menu_cancel;
       bool audio_enable_menu_notice;
       bool audio_enable_menu_bgm;
+      bool audio_enable_menu_scroll;
       bool audio_sync;
       bool audio_rate_control;
       bool audio_wasapi_exclusive_mode;
@@ -698,6 +709,7 @@ typedef struct settings
 #endif
       bool menu_materialui_icons_enable;
       bool menu_materialui_playlist_icons_enable;
+      bool menu_materialui_switch_icons;
       bool menu_materialui_show_nav_bar;
       bool menu_materialui_auto_rotate_nav_bar;
       bool menu_materialui_dual_thumbnail_list_view_enable;
@@ -714,8 +726,9 @@ typedef struct settings
       bool menu_rgui_switch_icons;
       bool menu_rgui_particle_effect_screensaver;
       bool menu_xmb_shadows_enable;
-      bool menu_xmb_vertical_thumbnails;
       bool menu_xmb_show_title_header;
+      bool menu_xmb_switch_icons;
+      bool menu_xmb_vertical_thumbnails;
       bool menu_content_show_settings;
       bool menu_content_show_favorites;
       bool menu_content_show_images;
@@ -826,6 +839,10 @@ typedef struct settings
       bool cheevos_start_active;
       bool cheevos_unlock_sound_enable;
       bool cheevos_challenge_indicators;
+      bool cheevos_appearance_padding_auto;
+      bool cheevos_visibility_unlock;
+      bool cheevos_visibility_mastery;
+      bool cheevos_visibility_account;
 
       /* Camera */
       bool camera_allow;
@@ -871,6 +888,8 @@ typedef struct settings
       bool run_ahead_enabled;
       bool run_ahead_secondary_instance;
       bool run_ahead_hide_warnings;
+      bool preemptive_frames_enable;
+      bool preemptive_frames_hide_warnings;
       bool pause_nonactive;
       bool pause_on_disconnect;
       bool block_sram_overwrite;

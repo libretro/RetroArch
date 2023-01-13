@@ -110,6 +110,14 @@ enum rcheevos_load_state
    RCHEEVOS_LOAD_STATE_ABORTED
 };
 
+enum rcheevos_summary_notif
+{
+   RCHEEVOS_SUMMARY_ALLGAMES = 0,
+   RCHEEVOS_SUMMARY_HASCHEEVOS,
+   RCHEEVOS_SUMMARY_OFF,
+   RCHEEVOS_SUMMARY_LAST
+};
+
 typedef struct rcheevos_load_info_t
 {
    enum rcheevos_load_state state;

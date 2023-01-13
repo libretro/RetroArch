@@ -22,9 +22,7 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_video.h>
 
-#include <retro_assert.h>
 #include <gfx/video_frame.h>
-#include <retro_assert.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <features/features_cpu.h>

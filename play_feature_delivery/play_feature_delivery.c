@@ -20,7 +20,6 @@
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
-#include <retro_assert.h>
 #include <stdlib.h>
 #endif
 
@@ -207,13 +206,8 @@ void play_feature_delivery_init(void)
 #ifdef HAVE_THREADS
    if (!state->enabled_lock)
       state->enabled_lock = slock_new();
-
-   retro_assert(state->enabled_lock);
-
    if (!state->status_lock)
-      state->status_lock = slock_new();
-
-   retro_assert(state->status_lock);
+      state->status_lock  = slock_new();
 #endif
 
    /* Note: Would like to cache whether this

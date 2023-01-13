@@ -17,8 +17,6 @@
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
 
-#include <retro_assert.h>
-
 #include "cocoa_common.h"
 #include "apple_platform.h"
 #include "../ui_cocoa.h"
@@ -233,13 +231,6 @@ void *glkitview_init(void);
 
 - (void)viewWillLayoutSubviews
 {
-   RAScreen *screen  = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
-   CGRect screenSize = [screen bounds];
-   SEL selector      = NSSelectorFromString(BOXSTRING("coordinateSpace"));
-
-   if ([screen respondsToSelector:selector])
-      screenSize  = [[screen coordinateSpace] bounds];
-
    [self adjustViewFrameForSafeArea];
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
    [self.view bringSubviewToFront:self.keyboardController.view];

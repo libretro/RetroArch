@@ -24,8 +24,6 @@
 #define CINTERFACE
 #define COBJMACROS
 
-#include <assert.h>
-
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <encodings/utf.h>
@@ -34,7 +32,6 @@
 
 #include <dxgi.h>
 
-#include "../../driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -79,7 +76,7 @@ static void d3d10_clear_scissor(d3d10_video_t *d3d10, unsigned width, unsigned h
 #ifdef HAVE_OVERLAY
 static void d3d10_free_overlays(d3d10_video_t* d3d10)
 {
-   unsigned i;
+   int i;
    for (i = 0; i < (unsigned)d3d10->overlays.count; i++)
       d3d10_release_texture(&d3d10->overlays.textures[i]);
 
@@ -149,8 +146,8 @@ static void d3d10_overlay_set_alpha(void* data, unsigned index, float mod)
 
 static bool d3d10_overlay_load(void* data, const void* image_data, unsigned num_images)
 {
+   int i;
    D3D10_BUFFER_DESC desc;
-   unsigned                          i = 0;
    d3d10_sprite_t*             sprites = NULL;
    d3d10_video_t*              d3d10   = (d3d10_video_t*)data;
    const struct texture_image* images  = (const struct texture_image*)image_data;
@@ -252,7 +249,7 @@ static void d3d10_get_overlay_interface(void* data, const video_overlay_interfac
 
 static void d3d10_render_overlay(d3d10_video_t *d3d10)
 {
-   unsigned       i;
+   int i;
 
    if (d3d10->flags & D3D10_ST_FLAG_OVERLAYS_FULLSCREEN)
       d3d10->device->lpVtbl->RSSetViewports(d3d10->device, 1, &d3d10->viewport);
@@ -266,7 +263,7 @@ static void d3d10_render_overlay(d3d10_video_t *d3d10)
    d3d10->device->lpVtbl->PSSetSamplers(d3d10->device, 0, 1,
          &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
 
-   for (i = 0; i < (unsigned)d3d10->overlays.count; i++)
+   for (i = 0; i < d3d10->overlays.count; i++)
    {
       d3d10->device->lpVtbl->PSSetShaderResources(d3d10->device, 0, 1, &d3d10->overlays.textures[i].view);
       d3d10->device->lpVtbl->Draw(d3d10->device, 1, i);
@@ -276,7 +273,7 @@ static void d3d10_render_overlay(d3d10_video_t *d3d10)
 
 static void d3d10_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
 {
-   unsigned       i;
+   int i;
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
    if (smooth)
@@ -346,13 +343,13 @@ static void d3d10_update_viewport(d3d10_video_t *d3d10, bool force_full)
 
 static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
 {
-   unsigned i;
+   int i;
    if (!d3d10->shader_preset)
       return;
 
    for (i = 0; i < d3d10->shader_preset->passes; i++)
    {
-      unsigned j;
+      int j;
 
       free(d3d10->shader_preset->pass[i].source.string.vertex);
       free(d3d10->shader_preset->pass[i].source.string.fragment);
@@ -1055,7 +1052,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
       d3d10_fake_context.get_metrics = win32_get_metrics;
       video_context_driver_set(&d3d10_fake_context); 
 #ifdef HAVE_SLANG
-      const char *shader_preset   = retroarch_get_shader_preset();
+      const char *shader_preset   = video_shader_get_current_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
       d3d10_gfx_set_shader(d3d10, type, shader_preset);
 #endif
@@ -1154,9 +1151,7 @@ static void d3d10_init_history(d3d10_video_t* d3d10,
    /* TODO/FIXME: should we init history to max_width/max_height instead ?
     * to prevent out of memory errors happening several frames later
     * and to reduce memory fragmentation */
-
-   assert(d3d10->shader_preset);
-   for (i = 0; i < (unsigned)d3d10->shader_preset->history_size + 1; i++)
+   for (i = 0; i < (int)d3d10->shader_preset->history_size + 1; i++)
    {
       d3d10->frame.texture[i].desc.Width  = width;
       d3d10->frame.texture[i].desc.Height = height;
@@ -1172,10 +1167,7 @@ static void d3d10_init_history(d3d10_video_t* d3d10,
 static void d3d10_init_render_targets(d3d10_video_t* d3d10,
       unsigned width, unsigned height)
 {
-   unsigned i;
-
-   assert(d3d10->shader_preset);
-
+   int i;
    for (i = 0; i < d3d10->shader_preset->passes; i++)
    {
       struct video_shader_pass* pass = &d3d10->shader_preset->pass[i];
@@ -1349,7 +1341,7 @@ static bool d3d10_gfx_frame(
          {
             int i;
             /* Release all render targets first to avoid memory fragmentation */
-            for (i = 0; i < d3d10->shader_preset->passes; i++)
+            for (i = 0; i < (int) d3d10->shader_preset->passes; i++)
             {
                d3d10_release_texture(&d3d10->pass[i].rt);
                d3d10_release_texture(&d3d10->pass[i].feedback);
@@ -1415,7 +1407,7 @@ static bool d3d10_gfx_frame(
 
       for (i = 0; i < d3d10->shader_preset->passes; i++)
       {
-         unsigned j;
+         int j;
 
          d3d10_set_shader(context, &d3d10->pass[i].shader);
 

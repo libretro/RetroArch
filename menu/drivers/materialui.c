@@ -49,6 +49,7 @@
 
 #include "../../core_info.h"
 #include "../../configuration.h"
+#include "../../audio/audio_driver.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../runtime_file.h"
 #include "../../file_path_special.h"
@@ -3847,31 +3848,40 @@ static void materialui_render(void *data,
 
 /* Utility functions */
 
-enum materialui_entry_value_type materialui_get_entry_value_type(
+static enum materialui_entry_value_type materialui_get_entry_value_type(
       materialui_handle_t *mui,
       const char *entry_value, bool entry_checked,
-      unsigned entry_type, enum msg_file_type entry_file_type)
+      unsigned entry_type, enum msg_file_type entry_file_type,
+      uint8_t entry_setting_type)
 {
    enum materialui_entry_value_type value_type = MUI_ENTRY_VALUE_NONE;
 
    /* Check entry value string */
    if (!string_is_empty(entry_value))
    {
+      settings_t *settings       = config_get_ptr();
+      bool menu_switch_icons     = settings->bools.menu_materialui_switch_icons;
+
       /* Toggle switch off */
-      if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-          string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+      if (menu_switch_icons && entry_setting_type == ST_BOOL)
       {
-         if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
-            value_type = MUI_ENTRY_VALUE_SWITCH_OFF;
-         else
-            value_type = MUI_ENTRY_VALUE_TEXT;
-      }
-      /* Toggle switch on */
-      else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-               string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
-      {
-         if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
-            value_type = MUI_ENTRY_VALUE_SWITCH_ON;
+         if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
+             string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+         {
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+               value_type = MUI_ENTRY_VALUE_SWITCH_OFF;
+            else
+               value_type = MUI_ENTRY_VALUE_TEXT;
+         }
+         /* Toggle switch on */
+         else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
+                  string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
+         {
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
+               value_type = MUI_ENTRY_VALUE_SWITCH_ON;
+            else
+               value_type = MUI_ENTRY_VALUE_TEXT;
+         }
          else
             value_type = MUI_ENTRY_VALUE_TEXT;
       }
@@ -4036,7 +4046,7 @@ static void materialui_render_menu_entry_default(
          msg_hash_calculate(entry_value));
    entry_value_type        = materialui_get_entry_value_type(
          mui, entry_value, entry->flags & MENU_ENTRY_FLAG_CHECKED,
-         entry_type, entry_file_type);
+         entry_type, entry_file_type, entry->setting_type);
 
    /* Draw entry icon
     * > Has to be done first, since it affects the left
@@ -4273,7 +4283,9 @@ static void materialui_render_menu_entry_default(
             entry_value_color = (entry_selected || touch_feedback_active)
                   ? mui->colors.list_text_highlighted : mui->colors.list_text;
 
-            if (string_is_equal(value_buf, "null"))
+            /* Muted/disabled color for disabled values */
+            if (     string_is_equal(value_buf, "null")
+                  || string_is_equal(value_buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
                entry_value_color = mui->colors.disabled_text;
 
             /* Draw value string */
@@ -9134,14 +9146,18 @@ static enum menu_action materialui_parse_menu_entry_action(
          {
             retro_time_t current_time = menu_driver_get_current_time();
             size_t scroll_accel       = 0;
-
-            /* Determine whether input repeat is
+            /* Determine whether in put repeat is
              * currently active
              * > This is always true when scroll
              *   acceleration is greater than zero */
             menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
                   &scroll_accel);
 
+#ifdef HAVE_AUDIOMIXER
+            if ((current_time - mui->last_tab_switch_time) >= MUI_TAB_SWITCH_REPEAT_DELAY || 
+                  scroll_accel <= 0)
+               audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_RIGHT);
+#endif
             if (scroll_accel > 0)
             {
                /* Ignore input action if tab switch period
@@ -9196,6 +9212,7 @@ static enum menu_action materialui_parse_menu_entry_action(
           *   screen, auto select *last* item */
          else
             materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_LAST);
+         
          break;
       case MENU_ACTION_SCROLL_DOWN:
          /* Ascend alphabet (A towards Z)
@@ -9211,6 +9228,7 @@ static enum menu_action materialui_parse_menu_entry_action(
           *   screen, auto select *first* item */
          else
             materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_FIRST);
+   
          break;
       case MENU_ACTION_SCAN:
          /* - If this is a playlist, 'scan' command is used
@@ -9852,7 +9870,7 @@ static int materialui_pointer_up_swipe_horz_default(
                msg_hash_calculate(entry_value));
          entry_value_type               = materialui_get_entry_value_type(
                mui, entry_value, last_entry.flags & MENU_ENTRY_FLAG_CHECKED,
-               entry_type, entry_file_type);
+               entry_type, entry_file_type, entry->setting_type);
 
          /* If entry has a 'settings' type, reset scroll position */
          if ((entry_value_type == MUI_ENTRY_VALUE_TEXT) ||
@@ -10763,6 +10781,7 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_TWITCH)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK)) ||
@@ -10803,6 +10822,8 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SHADER_APPLY_CHANGES)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN)) ||

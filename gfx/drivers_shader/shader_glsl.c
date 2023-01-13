@@ -20,7 +20,6 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
-#include <retro_assert.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
@@ -615,10 +614,6 @@ static bool gl_glsl_compile_programs(
 static void gl_glsl_reset_attrib(glsl_shader_data_t *glsl)
 {
    unsigned i;
-
-   /* Add sanity check that we did not overflow. */
-   retro_assert(glsl->attribs_index <= ARRAY_SIZE(glsl->attribs_elems));
-
    for (i = 0; i < glsl->attribs_index; i++)
       glDisableVertexAttribArray(glsl->attribs_elems[i]);
    glsl->attribs_index = 0;
@@ -631,8 +626,7 @@ static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems,
    {
       GLfloat *new_buffer = (GLfloat*)
          realloc(*buffer, elems * sizeof(GLfloat));
-      retro_assert(new_buffer);
-      *buffer = new_buffer;
+      *buffer             = new_buffer;
    }
 
    memcpy(*buffer, data, elems * sizeof(GLfloat));

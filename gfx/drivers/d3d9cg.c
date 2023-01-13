@@ -103,7 +103,7 @@ typedef struct cg_renderchain
 
 static INLINE bool d3d9_cg_validate_param_name(const char *name)
 {
-   unsigned i;
+   int i;
    static const char *illegal[] = {
       "PREV.",
       "PREV1.",
@@ -672,7 +672,7 @@ static void d3d9_cg_renderchain_bind_pass(
 
 static void d3d9_cg_deinit_progs(cg_renderchain_t *chain)
 {
-   unsigned i;
+   int i;
 
    if (chain->chain.passes->count >= 1)
    {
@@ -702,7 +702,7 @@ static void d3d9_cg_deinit_progs(cg_renderchain_t *chain)
 
 static void d3d9_cg_destroy_resources(cg_renderchain_t *chain)
 {
-   unsigned i;
+   int i;
 
    for (i = 0; i < TEXTURES; i++)
    {
@@ -1621,7 +1621,7 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
    d3d9_cg_fake_context.get_metrics = win32_get_metrics;
    video_context_driver_set(&d3d9_cg_fake_context); 
    {
-      const char *shader_preset   = retroarch_get_shader_preset();
+      const char *shader_preset   = video_shader_get_current_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
 
       d3d9_cg_set_shader(d3d, type, shader_preset);
@@ -1804,7 +1804,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    
    if (black_frame_insertion && !d3d->menu->enabled)
    {
-      unsigned n;
+      int n;
       for (n = 0; n < video_info->black_frame_insertion; ++n) 
       {   
         bool ret = (IDirect3DDevice9_Present(d3d->dev,

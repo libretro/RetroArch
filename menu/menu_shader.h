@@ -52,7 +52,7 @@ bool menu_shader_manager_init(void);
 
 /**
  * menu_shader_manager_set_preset:
- * @shader                   : Shader handle.
+ * @menu_shader              : Shader handle to the menu shader.
  * @type                     : Type of shader.
  * @preset_path              : Preset path to load from.
  * @apply                    : Whether to apply the shader or just update shader information
@@ -60,8 +60,20 @@ bool menu_shader_manager_init(void);
  * Sets shader preset.
  **/
 bool menu_shader_manager_set_preset(
-      struct video_shader *shader,
-      enum rarch_shader_type type, const char *preset_path, bool apply);
+      struct video_shader *menu_shader,
+      enum rarch_shader_type type, 
+      const char *preset_path, 
+      bool apply);
+
+/**
+ * menu_shader_manager_append_preset:
+ * @shader                   : current shader
+ * @preset_path              : path to the preset to append
+ * @dir_video_shader         : temporary diretory
+ *
+ * combine current shader with a shader preset on disk
+ **/
+bool menu_shader_manager_append_preset(struct video_shader *shader, const char* preset_path, const bool prepend);
 
 /**
  * menu_shader_manager_save_auto_preset:

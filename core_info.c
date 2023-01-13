@@ -15,7 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <retro_assert.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <file/config_file.h>
@@ -386,7 +385,6 @@ static bool CCJSONEndObjectHandler(void *context)
          && (pCtx->array_depth == 1))
       pCtx->to_core_file_id = false;
 
-   retro_assert(pCtx->object_depth > 0);
    pCtx->object_depth--;
 
    return true;
@@ -406,7 +404,6 @@ static bool CCJSONEndArrayHandler(void *context)
    if ((pCtx->object_depth == 2) && (pCtx->array_depth == 2))
       pCtx->to_firmware = false;
 
-   retro_assert(pCtx->array_depth > 0);
    pCtx->array_depth--;
 
    return true;

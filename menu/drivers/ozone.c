@@ -56,6 +56,7 @@
 #include "../../input/input_osk.h"
 
 #include "../../configuration.h"
+#include "../../audio/audio_driver.h"
 #include "../../content.h"
 #include "../../core_info.h"
 
@@ -2090,6 +2091,7 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_OVERRIDE];
       case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
+      case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_NOTIFICATIONS];
 #ifdef HAVE_NETWORKING
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
@@ -2128,6 +2130,8 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
       case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
       case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
       case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LOADSTATE];
@@ -3986,6 +3990,9 @@ static void ozone_go_to_sidebar(
    gfx_animation_push(&entry);
 
    ozone_sidebar_update_collapse(ozone, ozone_collapse_sidebar, true);
+#ifdef HAVE_AUDIOMIXER
+   audio_driver_mixer_play_scroll_sound(false);
+#endif
 }
 
 static void linebreak_after_colon(char (*str)[255])
@@ -4277,6 +4284,11 @@ static void ozone_leave_sidebar(
    gfx_animation_push(&entry);
 
    ozone_sidebar_update_collapse(ozone, ozone_collapse_sidebar, true);
+
+#ifdef HAVE_AUDIOMIXER
+   audio_driver_mixer_play_scroll_sound(true);
+#endif
+
 }
 
 static void ozone_free_node(ozone_node_t *node)
@@ -7868,10 +7880,15 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             new_action         = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
+#ifdef HAVE_AUDIOMIXER
+            if (new_selection != selection)
+               audio_driver_mixer_play_scroll_sound(false);
+#endif
             break;
+
          }
          else if (!menu_navigation_wraparound_enable && selection == selection_total - 1)
-            ozone_start_cursor_wiggle(ozone, MENU_ACTION_DOWN);
+               ozone_start_cursor_wiggle(ozone, MENU_ACTION_DOWN);
 
          if (     (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
                && (ozone->is_quick_menu))
@@ -7897,14 +7914,18 @@ static enum menu_action ozone_parse_menu_entry_action(
                new_selection   = horizontal_list_size + ozone->system_tab_end;
 
             ozone_sidebar_goto(ozone, new_selection);
-
             new_action         = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
+
+#ifdef HAVE_AUDIOMIXER
+            if (new_selection != selection)
+               audio_driver_mixer_play_scroll_sound(true);
+#endif
             break;
          }
          else if (!menu_navigation_wraparound_enable && selection == 0)
-            ozone_start_cursor_wiggle(ozone, MENU_ACTION_UP);
-
+               ozone_start_cursor_wiggle(ozone, MENU_ACTION_UP);
+         
          if (     (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
                && (ozone->is_quick_menu))
             return MENU_ACTION_NOOP;
@@ -7947,7 +7968,6 @@ static enum menu_action ozone_parse_menu_entry_action(
          }
 
          ozone_go_to_sidebar(ozone, ozone_collapse_sidebar, tag);
-
          new_action    = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
          break;
       case MENU_ACTION_RIGHT:
@@ -7975,7 +7995,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             break;
          }
 
-         if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
+         if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST)) 
             ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag);
 
          new_action    = MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL;
@@ -8035,8 +8055,13 @@ static enum menu_action ozone_parse_menu_entry_action(
          if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
          {
             /* Go back to main menu tab */
-            if (ozone->categories_selection_ptr != 0)
+            if (ozone->categories_selection_ptr != 0) 
+            {
                ozone_sidebar_goto(ozone, 0);
+#ifdef HAVE_AUDIOMIXER
+               audio_driver_mixer_play_scroll_sound(true);
+#endif
+            }
 
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
@@ -8068,7 +8093,6 @@ static enum menu_action ozone_parse_menu_entry_action(
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
          }
-
          if (     (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
                && (ozone->is_quick_menu))
             return MENU_ACTION_NOOP;
@@ -8089,7 +8113,6 @@ static enum menu_action ozone_parse_menu_entry_action(
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
          }
-
          if (     (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
                && (ozone->is_quick_menu))
             return MENU_ACTION_NOOP;
