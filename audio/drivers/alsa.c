@@ -375,6 +375,7 @@ static bool alsa_start(void *data, bool is_shutdown)
    return true;
 }
 
+static void alsa_free_microphone(void *data, void *microphone_context);
 static void alsa_free(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
@@ -385,9 +386,14 @@ static void alsa_free(void *data)
       {
          snd_pcm_drop(alsa->pcm);
          snd_pcm_close(alsa->pcm);
-         snd_config_update_free_global();
       }
 
+      if (alsa->microphone)
+      {
+         alsa_free_microphone(alsa, alsa->microphone);
+      }
+
+      snd_config_update_free_global();
       free(alsa);
    }
 
