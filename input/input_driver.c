@@ -4056,13 +4056,19 @@ static void input_keys_pressed(
       rarch_joypad_info_t *joypad_info)
 {
    unsigned i;
-   bool libretro_input_pressed    = false;
    input_driver_state_t *input_st = &input_driver_st;
+   bool block_hotkey[RARCH_BIND_LIST_END];
+   bool libretro_hotkey_set       =
+            binds[port][RARCH_ENABLE_HOTKEY].joykey  != NO_BTN
+         || binds[port][RARCH_ENABLE_HOTKEY].joyaxis != AXIS_NONE;
+   bool keyboard_hotkey_set       =
+         binds[port][RARCH_ENABLE_HOTKEY].key != RETROK_UNKNOWN;
 
    if (!binds)
       return;
 
-   if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
+   if (     binds[port][RARCH_ENABLE_HOTKEY].valid
+         && CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
       if (input_state_wrap(
             input_st->current_driver,
@@ -4090,14 +4096,13 @@ static void input_keys_pressed(
    if (!is_menu && binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
    {
       const struct retro_keybind *focus_binds_auto =
-         &input_autoconf_binds[port][RARCH_GAME_FOCUS_TOGGLE];
+            &input_autoconf_binds[port][RARCH_GAME_FOCUS_TOGGLE];
       const struct retro_keybind *focus_normal     =
-         &binds[port][RARCH_GAME_FOCUS_TOGGLE];
+            &binds[port][RARCH_GAME_FOCUS_TOGGLE];
 
-      /* Allows rarch_focus_toggle hotkey to still work
+      /* Allows Game Focus toggle hotkey to still work
        * even though every hotkey is blocked */
-      if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(
-               focus_normal, focus_binds_auto))
+      if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(focus_normal, focus_binds_auto))
       {
          if (input_state_wrap(
                input_st->current_driver,
@@ -4107,17 +4112,18 @@ static void input_keys_pressed(
                joypad_info,
                &binds[port],
                input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
-               port,
-               RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
+               port, RETRO_DEVICE_JOYPAD, 0,
+               RARCH_GAME_FOCUS_TOGGLE))
             input_st->flags &= ~INP_FLAG_BLOCK_HOTKEY;
       }
    }
 
    {
-      int16_t ret = 0;
+      int16_t ret                 = 0;
+      bool libretro_input_pressed = false;
 
       /* Check libretro input if emulated device type is active,
-       * except device type is always active in menu. */
+       * except device type must be always active in menu. */
       if (     !(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
             && !(!is_menu && !input_config_get_device(port)))
          ret = input_state_wrap(
@@ -4125,88 +4131,217 @@ static void input_keys_pressed(
                input_st->current_data,
                input_st->primary_joypad,
                sec_joypad,
-               joypad_info, &binds[port],
+               joypad_info,
+               &binds[port],
                input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                port, RETRO_DEVICE_JOYPAD, 0,
                RETRO_DEVICE_ID_JOYPAD_MASK);
 
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
-         if (
-                  (ret & (UINT64_C(1) <<  i))
-               || input_keys_pressed_other_sources(input_st,
-                  i, p_new_state))
+         if (     (ret & (UINT64_C(1) << i))
+               || input_keys_pressed_other_sources(input_st, i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
             libretro_input_pressed = true;
          }
       }
 
-      /* Check joypad menu toggle button, because
-       * Guide button is not part of the usual buttons. */
-      i = RARCH_MENU_TOGGLE;
-      if (     !libretro_input_pressed
-            && !input_st->keyboard_menu_toggle_pressed)
+      if (!libretro_input_pressed)
       {
-         bool bit_pressed = binds[port][i].valid
-            && input_state_wrap(
-                  input_st->current_driver,
-                  input_st->current_data,
-                  input_st->primary_joypad,
-                  sec_joypad,
-                  joypad_info,
-                  &binds[port],
-                  input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
-                  port, RETRO_DEVICE_JOYPAD, 0, i);
+         bool keyboard_menu_pressed = false;
 
-         if (
-                  bit_pressed
-               || BIT64_GET(lifecycle_state, i)
-               || input_keys_pressed_other_sources(input_st,
-                  i, p_new_state))
+         /* Ignore keyboard menu toggle button and check
+          * joypad menu toggle button for pressing
+          * it without 'enable_hotkey', because Guide button
+          * is not part of the usual buttons. */
+         i = RARCH_MENU_TOGGLE;
+
+         keyboard_menu_pressed = binds[port][i].valid
+               && input_state_wrap(
+                     input_st->current_driver,
+                     input_st->current_data,
+                     input_st->primary_joypad,
+                     sec_joypad,
+                     joypad_info,
+                     &binds[port],
+                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                     port, RETRO_DEVICE_KEYBOARD, 0,
+                     input_config_binds[port][i].key);
+
+         if (!keyboard_menu_pressed)
          {
-            BIT256_SET_PTR(p_new_state, i);
-            libretro_input_pressed = true;
+            bool bit_pressed = binds[port][i].valid
+                  && input_state_wrap(
+                        input_st->current_driver,
+                        input_st->current_data,
+                        input_st->primary_joypad,
+                        sec_joypad,
+                        joypad_info,
+                        &binds[port],
+                        input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                        port, RETRO_DEVICE_JOYPAD, 0, i);
+
+            if (
+                     bit_pressed
+                  || BIT64_GET(lifecycle_state, i)
+                  || input_keys_pressed_other_sources(input_st, i, p_new_state))
+            {
+               BIT256_SET_PTR(p_new_state, i);
+            }
          }
       }
    }
 
-   /* Check hotkeys, and block keyboard and joypad hotkeys separately. */
+   /* Hotkeys are only relevant for first port */
+   if (port > 0)
+      return;
+
+   /* Check hotkeys to block keyboard and joypad hotkeys separately.
+    * This looks complicated because hotkeys must be unblocked based
+    * on the device type depending if 'enable_hotkey' is set or not.. */
    if (     input_st->flags & INP_FLAG_BLOCK_HOTKEY
-         && !(    binds[0][RARCH_ENABLE_HOTKEY].key == RETROK_UNKNOWN
-               && !libretro_input_pressed))
+         && (libretro_hotkey_set && keyboard_hotkey_set))
    {
+      /* Block everything when hotkey bind exists for both device types */
+      for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+         block_hotkey[i] = true;
+   }
+   else if (input_st->flags & INP_FLAG_BLOCK_HOTKEY
+         && (!libretro_hotkey_set || !keyboard_hotkey_set))
+   {
+      /* Block selectively when hotkey bind exists for either device type */
       for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
       {
-         if (
-                  BIT64_GET(lifecycle_state, i)
-               || input_keys_pressed_other_sources(input_st,
-                  i, p_new_state))
+         bool keyboard_hotkey_pressed = false;
+         bool libretro_hotkey_pressed = false;
+
+         /* Default */
+         block_hotkey[i] = true;
+
+         /* No 'enable_hotkey' in joypad */
+         if (!libretro_hotkey_set)
          {
-            BIT256_SET_PTR(p_new_state, i);
+            if (     binds[port][i].joykey  != NO_BTN
+                  || binds[port][i].joyaxis != AXIS_NONE)
+            {
+               /* Allow blocking if keyboard hotkey is pressed */
+               if (input_state_wrap(
+                     input_st->current_driver,
+                     input_st->current_data,
+                     input_st->primary_joypad,
+                     sec_joypad,
+                     joypad_info,
+                     &binds[port],
+                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                     port, RETRO_DEVICE_KEYBOARD, 0,
+                     input_config_binds[port][i].key))
+               {
+                  keyboard_hotkey_pressed = true;
+
+                  /* Always block */
+                  block_hotkey[i] = true;
+               }
+
+               /* Deny blocking if joypad hotkey is pressed */
+               if (input_state_wrap(
+                     input_st->current_driver,
+                     input_st->current_data,
+                     input_st->primary_joypad,
+                     sec_joypad,
+                     joypad_info,
+                     &binds[port],
+                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                     port, RETRO_DEVICE_JOYPAD, 0,
+                     i))
+               {
+                  libretro_hotkey_pressed = true;
+
+                  /* Only deny block if keyboard is not pressed */
+                  if (!keyboard_hotkey_pressed)
+                     block_hotkey[i] = false;
+               }
+            }
+         }
+
+         /* No 'enable_hotkey' in keyboard */
+         if (!keyboard_hotkey_set)
+         {
+            if (binds[port][i].key != RETROK_UNKNOWN)
+            {
+               /* Deny blocking if keyboard hotkey is pressed */
+               if (input_state_wrap(
+                     input_st->current_driver,
+                     input_st->current_data,
+                     input_st->primary_joypad,
+                     sec_joypad,
+                     joypad_info,
+                     &binds[port],
+                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                     port, RETRO_DEVICE_KEYBOARD, 0,
+                     input_config_binds[port][i].key))
+               {
+                  keyboard_hotkey_pressed = true;
+
+                  /* Only deny block if joypad is not pressed */
+                  if (!libretro_hotkey_pressed)
+                     block_hotkey[i] = false;
+               }
+
+               /* Allow blocking if joypad hotkey is pressed */
+               if (input_state_wrap(
+                     input_st->current_driver,
+                     input_st->current_data,
+                     input_st->primary_joypad,
+                     sec_joypad,
+                     joypad_info,
+                     &binds[port],
+                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                     port, RETRO_DEVICE_JOYPAD, 0,
+                     i))
+               {
+                  libretro_hotkey_pressed = true;
+
+                  /* Only block if keyboard is not pressed */
+                  if (!keyboard_hotkey_pressed)
+                     block_hotkey[i] = true;
+               }
+            }
          }
       }
    }
    else
    {
+      /* Clear everything */
+      for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+         block_hotkey[i] = false;
+   }
+
+   {
       for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
       {
          bool bit_pressed = binds[port][i].valid
-            && input_state_wrap(
-                  input_st->current_driver,
-                  input_st->current_data,
-                  input_st->primary_joypad,
-                  sec_joypad,
-                  joypad_info,
-                  &binds[port],
-                  input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
-                  port, RETRO_DEVICE_JOYPAD, 0, i);
+               && input_state_wrap(
+                     input_st->current_driver,
+                     input_st->current_data,
+                     input_st->primary_joypad,
+                     sec_joypad,
+                     joypad_info,
+                     &binds[port],
+                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                     port, RETRO_DEVICE_JOYPAD, 0,
+                     i);
 
          if (     bit_pressed
                || BIT64_GET(lifecycle_state, i)
-               || input_keys_pressed_other_sources(input_st,
-                  i, p_new_state))
+               || input_keys_pressed_other_sources(input_st, i, p_new_state))
          {
+            if (libretro_hotkey_set || keyboard_hotkey_set)
+            {
+               if (block_hotkey[i])
+                  continue;
+            }
+
             BIT256_SET_PTR(p_new_state, i);
          }
       }
@@ -6347,11 +6482,6 @@ void input_keyboard_event(bool down, unsigned code,
    {
       if (code == RETROK_UNKNOWN)
          return;
-
-      /* Store keyboard menu toggle key for separating it from
-       * joypad menu toggle button when using 'enable_hotkey'. */
-      if (code == input_config_binds[0][RARCH_MENU_TOGGLE].key)
-         input_st->keyboard_menu_toggle_pressed = !!down;
 
       /* Check if keyboard events should be blocked when
        * pressing hotkeys and RetroPad binds, but

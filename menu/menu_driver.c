@@ -6883,8 +6883,8 @@ void retroarch_menu_running(void)
             true);
    }
 
-   /* Prevent stray input (for a single frame) */
-   menu_st->input_driver_flushing_input = 1;
+   /* Prevent stray input */
+   menu_st->input_driver_flushing_input = 2;
 
 #ifdef HAVE_AUDIOMIXER
    if (audio_enable_menu && audio_enable_menu_bgm)
@@ -6952,9 +6952,8 @@ void retroarch_menu_running_finished(bool quit)
             false);
    }
 
-   /* Prevent stray input
-    * (for a single frame) */
-   menu_st->input_driver_flushing_input = 1;
+   /* Prevent stray input */
+   menu_st->input_driver_flushing_input = 2;
 
    if (!quit)
    {
