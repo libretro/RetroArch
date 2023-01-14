@@ -61,10 +61,21 @@ static bool alsa_use_float(void *data)
 
 static void alsa_log_error(const char *file, int line, const char *function, int err, const char *fmt,...)
 {
-   va_list va;
-   va_start(va, fmt);
-   RARCH_ERR(fmt, va);
-   va_end(va);
+   va_list args;
+   char temp[256];
+
+   memset(temp, 0, sizeof(temp));
+
+   if (err)
+   {
+      RARCH_ERR("[ALSA] [System] Error in %s:%s:%d: %s\n", file, function, line, snd_strerror(err));
+   }
+
+   va_start(args, fmt);
+   vsnprintf(temp, 255, fmt, args);
+   /* Write up to 255 characters. (The 256th will be \0.) */
+   va_end(args);
+   RARCH_ERR("[ALSA] [%s:%s:%d] %s\n", file, function, line, temp); /* To ensure that there's a newline at the end */
 }
 
 static bool find_float_format(snd_pcm_t *pcm, void *data)
@@ -104,6 +115,8 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
 
    if (device)
       alsa_dev = device;
+
+   RARCH_DBG("[ALSA] Requesting device \"%s\" for output\n", alsa_dev);
 
    if (snd_pcm_open(
             &alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK) < 0)
@@ -516,6 +529,8 @@ static void *alsa_init_microphone(void *data,
 
    if (device)
       alsa_mic_dev = device;
+
+   RARCH_DBG("[ALSA] Requesting device \"%s\" for input\n", alsa_mic_dev);
 
    errnum = snd_pcm_open(&microphone->pcm, alsa_mic_dev, SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
    if (errnum < 0)
