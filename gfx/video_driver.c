@@ -387,7 +387,7 @@ const video_driver_t *video_drivers[] = {
 };
 
 static video_driver_state_t video_driver_st = { 0 };
-static const video_display_server_t *current_display_server = 
+static const video_display_server_t *current_display_server =
 &dispserv_null;
 
 struct retro_hw_render_callback *video_driver_get_hw_context(void)
@@ -403,7 +403,7 @@ video_driver_state_t *video_state_get_ptr(void)
 
 void crt_switch_driver_refresh(void)
 {
-   video_driver_reinit(DRIVERS_CMD_ALL);
+   video_driver_reinit(DRIVER_VIDEO_MASK);
 }
 
 
@@ -743,7 +743,7 @@ void video_context_driver_destroy(gfx_ctx_driver_t *ctx_driver)
    ctx_driver->get_video_output_size      = NULL;
    ctx_driver->get_video_output_prev      = NULL;
    ctx_driver->get_video_output_next      = NULL;
-   ctx_driver->get_metrics                = 
+   ctx_driver->get_metrics                =
       video_context_driver_get_metrics_null;
    ctx_driver->translate_aspect           = NULL;
    ctx_driver->update_window_title        = NULL;
@@ -1646,6 +1646,7 @@ bool video_driver_set_video_mode(unsigned width,
    if (     video_st->poke
          && video_st->poke->set_video_mode)
    {
+      RARCH_LOG("[SUBS] video_driver_set_video_mode\n");
       video_st->poke->set_video_mode(video_st->data,
             width, height, fullscreen);
       return true;
@@ -1686,7 +1687,7 @@ void *video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   if (      video_st->current_video 
+   if (      video_st->current_video
          &&  video_st->current_video->read_frame_raw)
       return video_st->current_video->read_frame_raw(
             video_st->data, width,
@@ -1698,7 +1699,7 @@ void video_driver_set_filtering(unsigned index,
       bool smooth, bool ctx_scaling)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   if (     video_st->poke 
+   if (     video_st->poke
          && video_st->poke->set_filtering)
       video_st->poke->set_filtering(
             video_st->data,
@@ -1708,7 +1709,7 @@ void video_driver_set_filtering(unsigned index,
 void video_driver_set_hdr_max_nits(float max_nits)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   if (     video_st->poke 
+   if (     video_st->poke
          && video_st->poke->set_hdr_max_nits)
       video_st->poke->set_hdr_max_nits(video_st->data, max_nits);
 }
@@ -1716,7 +1717,7 @@ void video_driver_set_hdr_max_nits(float max_nits)
 void video_driver_set_hdr_paper_white_nits(float paper_white_nits)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   if (     video_st->poke 
+   if (     video_st->poke
          && video_st->poke->set_hdr_paper_white_nits)
       video_st->poke->set_hdr_paper_white_nits(video_st->data, paper_white_nits);
 }
@@ -1724,7 +1725,7 @@ void video_driver_set_hdr_paper_white_nits(float paper_white_nits)
 void video_driver_set_hdr_contrast(float contrast)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   if (     video_st->poke 
+   if (     video_st->poke
          && video_st->poke->set_hdr_contrast)
       video_st->poke->set_hdr_contrast(video_st->data,
             VIDEO_HDR_MAX_CONTRAST - contrast);
@@ -1733,27 +1734,27 @@ void video_driver_set_hdr_contrast(float contrast)
 void video_driver_set_hdr_expand_gamut(bool expand_gamut)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   if (     video_st->poke 
+   if (     video_st->poke
          && video_st->poke->set_hdr_expand_gamut)
       video_st->poke->set_hdr_expand_gamut(video_st->data, expand_gamut);
 }
 
-/* Use this value as a replacement for anywhere 
- * where a pure white colour value is used in the UI.  
+/* Use this value as a replacement for anywhere
+ * where a pure white colour value is used in the UI.
  *
- * When HDR is turned on 1,1,1,1 should never really 
- * be used as this is peak brightness and could cause 
- * damage to displays over long periods of time 
- * and be quite hard to look at on really bright displays.  
+ * When HDR is turned on 1,1,1,1 should never really
+ * be used as this is peak brightness and could cause
+ * damage to displays over long periods of time
+ * and be quite hard to look at on really bright displays.
  *
- * Use paper white instead which is always defined as 
- * 0.5, 0.5, 0.5, 1.0 or in other words is the top of 
+ * Use paper white instead which is always defined as
+ * 0.5, 0.5, 0.5, 1.0 or in other words is the top of
  * the old SDR (Standard Dynamic Range) range
  */
 unsigned video_driver_get_hdr_paper_white(void)
 {
    /* 0.5, 0.5, 0.5, 1 */
-   if (     video_driver_supports_hdr() 
+   if (     video_driver_supports_hdr()
          && config_get_ptr()->bools.video_hdr_enable)
       return 0x7f7f7fff;
    return 0xffffffff;
@@ -1764,36 +1765,36 @@ float *video_driver_get_hdr_paper_white_float(void)
 {
    static float paper_white[4] = { 0.5f, 0.5f, 0.5f, 1.0f};
    static float sdr_white  [4] = { 1.0f, 1.0f, 1.0f, 1.0f};
-   if (     video_driver_supports_hdr() 
+   if (     video_driver_supports_hdr()
          && config_get_ptr()->bools.video_hdr_enable)
       return paper_white;
    return sdr_white;
 }
 
-/* This is useful to create a HDR (High Dynamic Range) white 
- * based off of some passed in nit level - say you want a 
- * slightly brighter than paper white value for some parts 
- * of the UI 
+/* This is useful to create a HDR (High Dynamic Range) white
+ * based off of some passed in nit level - say you want a
+ * slightly brighter than paper white value for some parts
+ * of the UI
  */
 float video_driver_get_hdr_luminance(float nits)
 {
    settings_t *settings                = config_get_ptr();
    if (video_driver_supports_hdr() && settings->bools.video_hdr_enable)
    {
-      float luminance = nits / 
+      float luminance = nits /
          settings->floats.video_hdr_paper_white_nits;
       return luminance / (1.0f + luminance);
    }
    return nits;
 }
 
-/* Get reinhard tone mapped colour value for UI elements 
- * when using HDR and its inverse tonemapper - normally don't use 
- * but useful if you want a specific colour to look the same 
+/* Get reinhard tone mapped colour value for UI elements
+ * when using HDR and its inverse tonemapper - normally don't use
+ * but useful if you want a specific colour to look the same
  * after inverse tonemapping has been applied */
 unsigned video_driver_get_hdr_color(unsigned color)
 {
-   if (  video_driver_supports_hdr() 
+   if (  video_driver_supports_hdr()
       && config_get_ptr()->bools.video_hdr_enable)
    {
       float luminance;
@@ -1812,9 +1813,9 @@ unsigned video_driver_get_hdr_color(unsigned color)
 
       convert_yxy_to_rgb(rgb, yxy);
 
-      return (    (unsigned)(saturate_value(rgb[0]) * 255.0f) << 24) 
-              |  ((unsigned)(saturate_value(rgb[1]) * 255.0f) << 16) 
-              |  ((unsigned)(saturate_value(rgb[2]) * 255.0f) << 8) 
+      return (    (unsigned)(saturate_value(rgb[0]) * 255.0f) << 24)
+              |  ((unsigned)(saturate_value(rgb[1]) * 255.0f) << 16)
+              |  ((unsigned)(saturate_value(rgb[2]) * 255.0f) << 8)
               |   (color & 0xFF);
    }
    return color;
@@ -2249,7 +2250,7 @@ void video_driver_update_viewport(
 void video_driver_show_mouse(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   if (     video_st->poke 
+   if (     video_st->poke
          && video_st->poke->show_mouse)
       video_st->poke->show_mouse(video_st->data, true);
 }
@@ -2257,7 +2258,7 @@ void video_driver_show_mouse(void)
 void video_driver_hide_mouse(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   if (     video_st->poke 
+   if (     video_st->poke
          && video_st->poke->show_mouse)
       video_st->poke->show_mouse(video_st->data, false);
 }
@@ -2645,7 +2646,7 @@ void video_driver_cached_frame(void)
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
       cbs->frame_cb(
             (video_st->frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
-            ? video_st->frame_cache_data 
+            ? video_st->frame_cache_data
             : NULL,
             video_st->frame_cache_width,
             video_st->frame_cache_height,
@@ -3317,7 +3318,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
             aspectratio_lut[new_aspect_idx].value);
    }
 
-   if (     settings->bools.video_fullscreen 
+   if (     settings->bools.video_fullscreen
          || (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN))
    {
       width  = settings->uints.video_fullscreen_x;
@@ -4117,8 +4118,8 @@ void video_driver_frame(const void *data, unsigned width,
       /* TODO/FIXME - add OSD chat text here */
    }
 
-   if (render_frame 
-         && video_st->current_video 
+   if (render_frame
+         && video_st->current_video
          && video_st->current_video->frame)
    {
       if (video_st->current_video->frame(
@@ -4187,6 +4188,7 @@ void video_driver_frame(const void *data, unsigned width,
             native_width, width,
             height,
             video_st->core_hz,
+            video_st->av_info.geometry.aspect_ratio < 1.0 ? true : false,
             video_info.crt_switch_resolution,
             video_info.crt_switch_center_adjust,
             video_info.crt_switch_porch_adjust,
