@@ -2626,13 +2626,21 @@ bool win32_window_init(WNDCLASSEX *wndclass,
    wndclass->hCursor          = LoadCursor(NULL, IDC_ARROW);
    wndclass->lpszClassName    = class_name ? class_name : "RetroArch";
    wndclass->hIcon            = LoadIcon(GetModuleHandle(NULL),
-                             MAKEINTRESOURCE(IDI_ICON));
+         MAKEINTRESOURCE(IDI_ICON));
    wndclass->hIconSm          = (HICON)LoadImage(GetModuleHandle(NULL),
-                             MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
+         MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
+
+   if (GetSystemMetrics(SM_SWAPBUTTON))
+      g_win32_flags          |=  WIN32_CMN_FLAG_SWAP_MOUSE_BTNS;
+   else
+      g_win32_flags          &= ~WIN32_CMN_FLAG_SWAP_MOUSE_BTNS;
+
    if (!fullscreen)
       wndclass->hbrBackground = (HBRUSH)COLOR_WINDOW;
+
    if (class_name)
-      wndclass->style         |= CS_CLASSDC;
+      wndclass->style        |= CS_CLASSDC;
+
    return RegisterClassEx(wndclass);
 }
 #endif
