@@ -1896,9 +1896,11 @@ retro_microphone_t *audio_driver_init_microphone(void)
       return NULL;
    }
 
-   if (!(audio_st->flags & AUDIO_FLAG_MIC_ACTIVE))
-   {
-      RARCH_WARN("[Audio]: Refused to initialize microphone because it's disabled\n");
+   if (!settings->bools.audio_enable_microphone)
+   { /* Not checking audio_st->flags because they might not be set yet;
+      * don't forget, the user can ask for a mic
+      * before the audio driver is ready to create one. */
+      RARCH_WARN("[Audio]: Refused to initialize microphone because it's disabled in the settings\n");
       return NULL;
    }
 
