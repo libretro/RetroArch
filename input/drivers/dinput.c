@@ -307,6 +307,7 @@ static void dinput_poll(void *data)
       POINT point;
       DIMOUSESTATE2 mouse_state;
       BYTE *rgb_buttons_ptr     = &mouse_state.rgbButtons[0];
+      bool swap_mouse_buttons   = g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS;
       
       point.x = 0;
       point.y = 0;
@@ -340,32 +341,59 @@ static void dinput_poll(void *data)
       di->mouse_rel_x = mouse_state.lX;
       di->mouse_rel_y = mouse_state.lY;
 
-      if (!mouse_state.rgbButtons[0])
-         di->flags &= ~DINP_FLAG_DBCLK_ON_TITLEBAR;
+      if (swap_mouse_buttons)
+      {
+         if (!mouse_state.rgbButtons[1])
+            di->flags &= ~DINP_FLAG_DBCLK_ON_TITLEBAR;
 
-      if (di->flags & DINP_FLAG_DBCLK_ON_TITLEBAR)
-         di->flags &= ~DINP_FLAG_MOUSE_L_BTN;
+         if (di->flags & DINP_FLAG_DBCLK_ON_TITLEBAR)
+            di->flags &= ~DINP_FLAG_MOUSE_R_BTN;
+         else
+         {
+            if (mouse_state.rgbButtons[0])
+               di->flags |=  DINP_FLAG_MOUSE_R_BTN;
+            else
+               di->flags &= ~DINP_FLAG_MOUSE_R_BTN;
+         }
+
+         if (mouse_state.rgbButtons[1])
+            di->flags    |=  DINP_FLAG_MOUSE_L_BTN;
+         else
+            di->flags    &= ~DINP_FLAG_MOUSE_L_BTN;
+      }
       else
       {
-         if (mouse_state.rgbButtons[0])
-            di->flags |=  DINP_FLAG_MOUSE_L_BTN;
-         else
+         if (!mouse_state.rgbButtons[0])
+            di->flags &= ~DINP_FLAG_DBCLK_ON_TITLEBAR;
+
+         if (di->flags & DINP_FLAG_DBCLK_ON_TITLEBAR)
             di->flags &= ~DINP_FLAG_MOUSE_L_BTN;
+         else
+         {
+            if (mouse_state.rgbButtons[0])
+               di->flags |=  DINP_FLAG_MOUSE_L_BTN;
+            else
+               di->flags &= ~DINP_FLAG_MOUSE_L_BTN;
+         }
+
+         if (mouse_state.rgbButtons[1])
+            di->flags    |=  DINP_FLAG_MOUSE_R_BTN;
+         else
+            di->flags    &= ~DINP_FLAG_MOUSE_R_BTN;
       }
-      if (mouse_state.rgbButtons[1])
-         di->flags    |= DINP_FLAG_MOUSE_R_BTN;
-      else
-         di->flags    &= ~DINP_FLAG_MOUSE_R_BTN;
+
       if (mouse_state.rgbButtons[2])
-         di->flags    |= DINP_FLAG_MOUSE_M_BTN;
+         di->flags    |=  DINP_FLAG_MOUSE_M_BTN;
       else
          di->flags    &= ~DINP_FLAG_MOUSE_M_BTN;
+
       if (mouse_state.rgbButtons[3])
-         di->flags    |= DINP_FLAG_MOUSE_B4_BTN;
+         di->flags    |=  DINP_FLAG_MOUSE_B4_BTN;
       else
          di->flags    &= ~DINP_FLAG_MOUSE_B4_BTN;
+
       if (mouse_state.rgbButtons[4])
-         di->flags    |= DINP_FLAG_MOUSE_B5_BTN;
+         di->flags    |=  DINP_FLAG_MOUSE_B5_BTN;
       else
          di->flags    &= ~DINP_FLAG_MOUSE_B5_BTN;
 
