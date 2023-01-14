@@ -10374,10 +10374,6 @@ MSG_HASH(
    "Acessa as configurações do subsistema para o conteúdo atual."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
-   " Conteúdo atual: %s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
    "Nenhum anfitrião da Netplay encontrado."
    )

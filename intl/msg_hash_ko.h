@@ -72,12 +72,20 @@ MSG_HASH(
    "사용할 코어를 선택합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "libretro 코어 파일을 탐색합니다. 탐색기가 시작되는 위치는 코어 디렉토리 경로를 따릅니다. 만약 비어있다면 루트에서 시작됩니다.\n코어 디렉토리가 폴더로 설정되면 메뉴상에서 최상위 폴더로 사용됩니다. 코어 디렉토리가 전체 경로라면 파일이 있는 폴더에서 시작됩니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "컨텐츠 불러오기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "실행할 컨텐츠를 선택합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "콘텐츠를 탐색합니다. 콘텐츠를 불러오려면 사용할 '코어'와 콘텐츠 파일이 필요합니다.\n메뉴에서 콘텐츠 탐색을 시작할 위치를 지정하려면 '파일 탐색기 디렉토리'를 설정하십시오. 설정하지 않으면 루트에서 시작됩니다.\n탐색기는 '코어 불러오기'에서 설정한 코어에 맞춰 확장자를 필터해주고 콘텐츠를 불러올때 해당 코어를 사용합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -1191,6 +1199,54 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    "파일 탐색기 설정을 변경합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   "환경설정 파일."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   "압축 파일."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "녹화 환경설정 파일."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   "데이터베이스 커서 파일."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   "환경설정 파일."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   "셰이더 프리셋 파일."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   "셰이더 파일."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
+   "치트 파일."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   "오버레이 파일."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   "데이터베이스 파일."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   "트루타입 폰트 파일."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "이미지 파일."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -2750,10 +2806,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "핫키 사용"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   "할당된 경우, 다른 모든 핫키는 '핫키 사용' 키를 누른 채로 입력해야 합니다. 일반 입력에 영향을 끼치지 않으면서 컨트롤러 버튼을 핫키로 할당할 수 있게 합니다. '핫키 사용' 키를 컨트롤러에만 할당할 경우 키보드 핫키는 컨트롤러의 '핫키 사용' 키를 누르지 않아도 사용할 수 있으며, 컨트롤러와 키보드 모두 할당할 경우 두 장치의 '핫키 사용' 키는 두 장치 모두에 사용될 [...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -8081,6 +8133,10 @@ MSG_HASH(
    "디스크상의 셰이더 파일 변경을 자동으로 적용합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
+   "셰이더 파일에서 변경 사항을 확인합니다. 셰이더 변경 사항을 디스크에 저장하면 자동으로 다시 컴파일되어 실행 중인 콘텐츠에 적용됩니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
    "최근 사용한 셰이더 디렉토리 기억"
    )
@@ -10748,10 +10804,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
    "현재 컨텐츠의 서브시스템 설정에 접근합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
-   " 현재 컨텐츠: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,

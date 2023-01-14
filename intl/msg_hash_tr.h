@@ -2720,10 +2720,6 @@ MSG_HASH(
    "Kısayol Tuşu Etkinleştir"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   "Atandığında, diğer kısayol tuşları tanınmadan önce 'Kısayol Etkinleştir' tuşu basılı tutulmalıdır. Kontrolcü düğmelerinin normal girişi etkilemeden kısayol tuşu işlevleriyle eşlenmesine izin verir. Değiştiricinin yalnızca kontrolcüye atanması, klavye kısayol tuşları için bunu gerektirmez, ancak her iki değiştirici de her iki cihaz için çalışır."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
    "Kısayol Tuşu Etkinleştirme Gecikmesi (Kareler)"
    )
@@ -10748,10 +10744,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
    "Mevcut içerik için alt sistem ayarlarına erişin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
-   " Mevcut İçerik: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
