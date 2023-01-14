@@ -1440,7 +1440,7 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
             (fabs(x - desc->x_hitbox) <= desc->range_x_mod) &&
             (fabs(y - desc->y_hitbox) <= desc->range_y_mod);
       case OVERLAY_HITBOX_NONE:
-	 break;
+         break;
    }
    return false;
 }
@@ -2638,7 +2638,7 @@ static unsigned get_kr_composition( char* pcur, char* padd)
    int c2            = -1;
    int c3            =  0;
    int nv            = -1;
-   char utf8[8]	   = {0, 0, 0, 0, 0, 0, 0, 0};
+   char utf8[8]      = {0, 0, 0, 0, 0, 0, 0, 0};
    unsigned ret      =  *((unsigned*)pcur);
 
    /* check korean */
@@ -2659,21 +2659,21 @@ static unsigned get_kr_composition( char* pcur, char* padd)
 
    if ((tmp2 = strstr(cc1, utf8)))
    {   
-      *((unsigned*)padd) = *((unsigned*)(tmp2+6)) & 0xffffff;
+      *((unsigned*)padd) = *((unsigned*)(tmp2 + 6)) & 0xffffff;
       return 0;
    }
    else if ((tmp2 = strstr(cc2, utf8)))
    {   
-      *((unsigned*)padd) = *((unsigned*)(tmp2+6)) & 0xffffff;
+      *((unsigned*)padd) = *((unsigned*)(tmp2 + 6)) & 0xffffff;
       return 0;
    }
-   if (tmp2 && tmp2 < cc2+sizeof(cc2)-10)	
+   if (tmp2 && tmp2 < cc2 + sizeof(cc2) - 10)
    {  
-      *((unsigned*)padd) = *((unsigned*)(tmp2+6)) & 0xffffff;
+      *((unsigned*)padd) = *((unsigned*)(tmp2 + 6)) & 0xffffff;
       return 0;
    }
 
-   if (c1 >=19)
+   if (c1 >= 19)
       return ret;
 
    if (c1 == -1)
@@ -2698,7 +2698,7 @@ static unsigned get_kr_composition( char* pcur, char* padd)
       c2  = nv - 19;
    }
    else
-      if (c2 >= 0 && c3 == 0)							
+      if (c2 >= 0 && c3 == 0)
       {
          if (nv < 19)
          {
@@ -2708,19 +2708,19 @@ static unsigned get_kr_composition( char* pcur, char* padd)
             c3 = (int)((tmp1 - s1) / 3 - 19 - 21);
          }
          else
-         {	
+         {
             /* 2nd element transform */
             strlcpy(utf8, s1 + (19 + c2) * 3, 4);
             utf8[3] = 0;
             strlcat(utf8, padd, sizeof(utf8));
-            if (!(tmp2 = strstr(cc2,utf8)) || tmp2 >= cc2 + sizeof(cc2) - 10)
+            if (!(tmp2 = strstr(cc2, utf8)) || tmp2 >= cc2 + sizeof(cc2) - 10)
                return ret;
             strlcpy(utf8, tmp2 + 6, 4);
             utf8[3] = 0;
             if (!(tmp1 = strstr(s1 + (19) * 3, utf8)))
                return ret;
             c2 = (int)((tmp1 - s1) / 3 - 19);
-         }	
+         }
       }
       else
          if (c3 > 0)
@@ -2740,12 +2740,12 @@ static unsigned get_kr_composition( char* pcur, char* padd)
                   return ret;
                c3 = (int)((tmp1 - s1) / 3 - 19 - 21);
             }
-            else		
+            else
             {   
                int tv = 0;
                if ((tmp2 = strstr(cc3, utf8)))
                   tv = (tmp2 - cc3) % 10;
-               if (tv==6)	
+               if (tv == 6)
                {
                   /*  complex 3rd element -> disassemble */
                   strlcpy(utf8, tmp2 - 3, 4);
@@ -2766,7 +2766,7 @@ static unsigned get_kr_composition( char* pcur, char* padd)
                }
                *((unsigned*)padd) = get_kr_utf8(tv, nv - 19, 0);
                return get_kr_utf8(c1, c2, c3);
-            }	
+            }
          }
          else
             return ret;
@@ -2794,29 +2794,29 @@ static bool input_keyboard_line_event(
    char            c           = (character >= 128) ? '?' : character;
 
 #ifdef HAVE_LANGEXTRA
-   static uint32_t composition = 0;		
-   /* reset composition, when edit box is opened.  */
+   static uint32_t composition = 0;
+   /* reset composition, when edit box is opened. */
    if (state->size == 0)
       composition = 0;
    /* reset composition, when 1 byte(=english) input */ 
    if (character && character < 0xff)
       composition = 0;
-   if (IS_COMPOSITION(character) || IS_END_COMPOSITION(character) )
+   if (IS_COMPOSITION(character) || IS_END_COMPOSITION(character))
    {
       size_t len = strlen((char*)&composition);
-      if (composition && state->buffer &&  state->size>=len && state->ptr>= len)
+      if (composition && state->buffer && state->size >= len && state->ptr >= len)
       {              
-         memmove(state->buffer + state->ptr-len, state->buffer+state->ptr,  len + 1);
-         state->ptr -=len; 
-         state->size-=len;
+         memmove(state->buffer + state->ptr-len, state->buffer + state->ptr, len + 1);
+         state->ptr  -= len;
+         state->size -= len;
       }
-      if ( IS_COMPOSITION_KR(character) && composition)
+      if (IS_COMPOSITION_KR(character) && composition)
       {  
          unsigned new_comp;
          character   = character & 0xffffff;
          new_comp    = get_kr_composition((char*)&composition, (char*)&character); 
          if (new_comp)
-            input_keyboard_line_append( state, (char*)&new_comp, 3);
+            input_keyboard_line_append(state, (char*)&new_comp, 3);
          composition = character;
       }
       else
@@ -2824,13 +2824,13 @@ static bool input_keyboard_line_event(
          if (IS_END_COMPOSITION(character))
             composition = 0; 
          else
-            composition = character &0xffffff;
+            composition = character & 0xffffff;
          character     &= 0xffffff;
       }
       if (len && composition == 0)
          word = state->buffer;  
       if (character)
-         input_keyboard_line_append( state, (char*)&character, strlen((char*)&character)); 
+         input_keyboard_line_append(state, (char*)&character, strlen((char*)&character));
       word = state->buffer;
    }
    else
@@ -2932,7 +2932,7 @@ void input_event_osk_append(
             prv_osk = *osk_idx;
             *osk_idx =  OSK_KOREAN_PAGE1;
          }
-         else	 
+         else
             *osk_idx = (enum osk_type)prv_osk;
       }
       else
@@ -6459,7 +6459,7 @@ void input_keyboard_event(bool down, unsigned code,
             /* fall-through */
          default:
             if (!input_keyboard_line_event(input_st,
-                     &input_st->keyboard_line, character))
+                  &input_st->keyboard_line, character))
                return;
             break;
       }

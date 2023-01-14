@@ -1002,7 +1002,7 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
                mod |= RETROKMOD_META;
 
             input_keyboard_event(keydown, keycode,
-                  wparam, mod, RETRO_DEVICE_KEYBOARD);
+                  0, mod, RETRO_DEVICE_KEYBOARD);
 
             if (message != WM_SYSKEYDOWN)
                return 0;
@@ -1253,7 +1253,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                mod |= RETROKMOD_META;
 
             input_keyboard_event(keydown, keycode,
-                  wparam, mod, RETRO_DEVICE_KEYBOARD);
+                  0, mod, RETRO_DEVICE_KEYBOARD);
 
             if (message != WM_SYSKEYDOWN)
                return 0;

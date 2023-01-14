@@ -591,7 +591,7 @@ static LRESULT CALLBACK winraw_callback(
          wr->keyboard.keys[mcode] = down;
          input_keyboard_event(down,
                input_keymaps_translate_keysym_to_rk(mcode),
-               ri->data.keyboard.VKey, mod, RETRO_DEVICE_KEYBOARD);
+               0, mod, RETRO_DEVICE_KEYBOARD);
          break;
       case RIM_TYPEMOUSE:
          for (i = 0; i < wr->mouse_cnt; ++i)
