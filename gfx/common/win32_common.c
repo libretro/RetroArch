@@ -920,8 +920,8 @@ static LRESULT CALLBACK wnd_proc_common(
             /* Seems to be hard to synchronize
              * WM_CHAR and WM_KEYDOWN properly.
              */
-            input_keyboard_event(true, RETROK_UNKNOWN, wparam, mod,
-                  RETRO_DEVICE_KEYBOARD);
+            input_keyboard_event(true, RETROK_UNKNOWN,
+                  wparam, mod, RETRO_DEVICE_KEYBOARD);
          }
          return TRUE;
       case WM_CLOSE:
@@ -1002,15 +1002,15 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
                mod |= RETROKMOD_META;
 
             input_keyboard_event(keydown, keycode,
-                  0, mod, RETRO_DEVICE_KEYBOARD);
+                  wparam, mod, RETRO_DEVICE_KEYBOARD);
 
             if (message != WM_SYSKEYDOWN)
                return 0;
 
             if (
-                  wparam == VK_F10  ||
-                  wparam == VK_MENU ||
-                  wparam == VK_RSHIFT
+                     wparam == VK_F10
+                  || wparam == VK_MENU
+                  || wparam == VK_RSHIFT
                )
                return 0;
          }
@@ -1047,11 +1047,11 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
          break;
 #ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
-	 if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(true);
          break;
       case WM_KILLFOCUS:
-	 if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(false);
          break;
 #endif
@@ -1086,8 +1086,10 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
          if (message != WM_SYSKEYDOWN)
             return 0;
 
+         /* keyboard_event in winraw_callback */
+
          if (
-               wparam == VK_F10 
+                  wparam == VK_F10
                || wparam == VK_MENU
                || wparam == VK_RSHIFT
             )
@@ -1124,7 +1126,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
          break;
       case WM_SETFOCUS:
 #ifdef HAVE_CLIP_WINDOW
-	 if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(true);
 #endif
 #if !defined(_XBOX)
@@ -1134,7 +1136,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
          break;
       case WM_KILLFOCUS:
 #ifdef HAVE_CLIP_WINDOW
-	 if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(false);
 #endif
 #if !defined(_XBOX)
@@ -1177,17 +1179,17 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
    switch (message)
    {
       case WM_IME_ENDCOMPOSITION:
-         input_keyboard_event(true, 1,  0x80000000, 0, RETRO_DEVICE_KEYBOARD); 
+         input_keyboard_event(true, 1, 0x80000000, 0, RETRO_DEVICE_KEYBOARD);
          break;
       case WM_IME_COMPOSITION:
-         {  
+         {
             HIMC    hIMC = ImmGetContext(hwnd);
-            unsigned gcs = lparam & (GCS_COMPSTR|GCS_RESULTSTR);	
+            unsigned gcs = lparam & (GCS_COMPSTR|GCS_RESULTSTR);
             if (gcs)
             {
                int i;
                wchar_t wstr[4]={0,};
-               int len1 = ImmGetCompositionStringW(hIMC, gcs, wstr, 4);		
+               int len1 = ImmGetCompositionStringW(hIMC, gcs, wstr, 4);
                wstr[2]  = wstr[1];
                wstr[1]  = 0;
                if ((len1 <= 0) || (len1 > 4))
@@ -1202,8 +1204,8 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                   if (len2 >= 1 && len2 <= 3)
                   {
                      if (len2 >= 2)
-                        utf8[3] = (gcs) | (gcs >> 4);	                
-                     input_keyboard_event(true, 1, *((int*)utf8), 0, RETRO_DEVICE_KEYBOARD); 
+                        utf8[3] = (gcs) | (gcs >> 4);
+                     input_keyboard_event(true, 1, *((int*)utf8), 0, RETRO_DEVICE_KEYBOARD);
                   }
                   free(utf8);
                }
@@ -1251,7 +1253,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                mod |= RETROKMOD_META;
 
             input_keyboard_event(keydown, keycode,
-                  0, mod, RETRO_DEVICE_KEYBOARD);
+                  wparam, mod, RETRO_DEVICE_KEYBOARD);
 
             if (message != WM_SYSKEYDOWN)
                return 0;

@@ -503,7 +503,7 @@ static LRESULT CALLBACK winraw_callback(
       HWND wnd, UINT msg, WPARAM wpar, LPARAM lpar)
 {
    unsigned i;
-   unsigned mcode, flags, kdown;
+   unsigned mcode, flags, down, mod;
    static uint8_t data[1024];
    RAWINPUT       *ri = (RAWINPUT*)data;
    UINT size          = sizeof(data);
@@ -527,7 +527,8 @@ static LRESULT CALLBACK winraw_callback(
       case RIM_TYPEKEYBOARD:
          mcode = ri->data.keyboard.MakeCode;
          flags = ri->data.keyboard.Flags;
-         kdown = (flags & RI_KEY_BREAK) ? 0 : 1;
+         down  = (flags & RI_KEY_BREAK) ? 0 : 1;
+         mod   = 0;
 
          /* Extended scancodes */
          if (flags & RI_KEY_E0)
@@ -558,10 +559,23 @@ static LRESULT CALLBACK winraw_callback(
                return 0;
          }
 
-         wr->keyboard.keys[mcode] = kdown;
-         input_keyboard_event(kdown,
+         if (GetKeyState(VK_SHIFT)   & 0x80)
+            mod |= RETROKMOD_SHIFT;
+         if (GetKeyState(VK_CONTROL) & 0x80)
+            mod |= RETROKMOD_CTRL;
+         if (GetKeyState(VK_MENU)    & 0x80)
+            mod |= RETROKMOD_ALT;
+         if (GetKeyState(VK_CAPITAL) & 0x81)
+            mod |= RETROKMOD_CAPSLOCK;
+         if (GetKeyState(VK_SCROLL)  & 0x81)
+            mod |= RETROKMOD_SCROLLOCK;
+         if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
+            mod |= RETROKMOD_META;
+
+         wr->keyboard.keys[mcode] = down;
+         input_keyboard_event(down,
                input_keymaps_translate_keysym_to_rk(mcode),
-               0, 0, RETRO_DEVICE_KEYBOARD);
+               ri->data.keyboard.VKey, mod, RETRO_DEVICE_KEYBOARD);
          break;
       case RIM_TYPEMOUSE:
          for (i = 0; i < wr->mouse_cnt; ++i)
