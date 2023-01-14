@@ -41,6 +41,10 @@ typedef struct alsa
      * the driver state should track multiple microphone handles,
      * but the driver *context* should track multiple microphone contexts */
    alsa_microphone_t *microphone;
+
+   /* The error handler that was set before this driver was initialized.
+    * Likely to be equal to the default, but kept and restored just in case. */
+   snd_lib_error_handler_t prev_error_handler;
    size_t buffer_size;
    unsigned int frame_bits;
    bool nonblock;
@@ -94,6 +98,9 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
 
    if (!alsa)
       return NULL;
+
+   alsa->prev_error_handler = snd_lib_error;
+   snd_lib_error_set_handler(alsa_log_error);
 
    if (device)
       alsa_dev = device;
@@ -176,9 +183,6 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    snd_pcm_hw_params_free(params);
    snd_pcm_sw_params_free(sw_params);
 
-   snd_lib_error_set_handler(alsa_log_error);
-   /* Should we store the current error handler, or is it fine to assume it's the default? */
-
    return alsa;
 
 error:
@@ -197,9 +201,13 @@ error:
          snd_config_update_free_global();
       }
 
+      if (alsa->prev_error_handler)
+      { /* If we ever changed the error handler, put it back. */
+         snd_lib_error_set_handler(alsa->prev_error_handler);
+      }
+
       free(alsa);
    }
-   snd_lib_error_set_handler(NULL);
    return NULL;
 }
 
@@ -393,11 +401,15 @@ static void alsa_free(void *data)
          alsa_free_microphone(alsa, alsa->microphone);
       }
 
+
+      if (alsa->prev_error_handler)
+      { /* If we ever changed the error handler, put it back. */
+         snd_lib_error_set_handler(alsa->prev_error_handler);
+      }
+
       snd_config_update_free_global();
       free(alsa);
    }
-
-   snd_lib_error_set_handler(NULL);
 }
 
 static size_t alsa_write_avail(void *data)
