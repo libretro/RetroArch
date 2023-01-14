@@ -332,7 +332,7 @@ static bool alsa_stop(void *data)
       int errnum = snd_pcm_pause(alsa->microphone->pcm, true);
       if (errnum < 0)
       {
-         RARCH_ERR("[ALSA]: Failed to pause microphone %x: %s",
+         RARCH_ERR("[ALSA]: Failed to pause microphone %x: %s\n",
             alsa->microphone->pcm,
             snd_strerror(errnum));
          return false;
@@ -373,7 +373,7 @@ static bool alsa_start(void *data, bool is_shutdown)
          int errnum = snd_pcm_pause(alsa->microphone->pcm, false);
          if (errnum < 0)
          {
-            RARCH_ERR("[ALSA]: Failed to unpause microphone %x: %s",
+            RARCH_ERR("[ALSA]: Failed to unpause microphone %x: %s\n",
                alsa->microphone->pcm,
                snd_strerror(errnum));
             return false;
@@ -536,7 +536,7 @@ static void *alsa_init_microphone(void *data,
    if (microphone->has_float != alsa->has_float)
    { /* If the mic and speaker don't both use floating point or integer samples... */
       RARCH_WARN("[ALSA]: Microphone and speaker do not use the same PCM format\n");
-      RARCH_WARN("[ALSA]: (%s and %s, respectively)",
+      RARCH_WARN("[ALSA]: (%s and %s, respectively)\n",
                 microphone->has_float ? "SND_PCM_FORMAT_FLOAT" : "SND_PCM_FORMAT_S16",
                 alsa->has_float ? "SND_PCM_FORMAT_FLOAT" : "SND_PCM_FORMAT_S16");
     }
@@ -674,7 +674,7 @@ static bool alsa_set_microphone_state(void *data, void *microphone_context, bool
       int errnum = snd_pcm_pause(microphone->pcm, !enabled);
       if (errnum < 0)
       {
-         RARCH_ERR("[ALSA]: Failed to %s microphone %x: %s",
+         RARCH_ERR("[ALSA]: Failed to %s microphone %x: %s\n",
                    enabled ? "unpause" : "pause",
                    microphone->pcm,
                    snd_strerror(errnum));
