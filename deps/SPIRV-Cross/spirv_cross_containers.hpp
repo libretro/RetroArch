@@ -1,5 +1,6 @@
 /*
- * Copyright 2019 Hans-Kristian Arntzen
+ * Copyright 2019-2021 Hans-Kristian Arntzen
+ * SPDX-License-Identifier: Apache-2.0 OR MIT
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +15,12 @@
  * limitations under the License.
  */
 
+/*
+ * At your option, you may choose to accept this material under either:
+ *  1. The Apache License, Version 2.0, found at <http://www.apache.org/licenses/LICENSE-2.0>, or
+ *  2. The MIT License, found at <http://opensource.org/licenses/MIT>.
+ */
+
 #ifndef SPIRV_CROSS_CONTAINERS_HPP
 #define SPIRV_CROSS_CONTAINERS_HPP
 
@@ -21,8 +28,10 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <stack>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,7 +70,8 @@ public:
 private:
 #if defined(_MSC_VER) && _MSC_VER < 1900
 	// MSVC 2013 workarounds, sigh ...
-	union {
+	union
+	{
 		char aligned_char[sizeof(T) * N];
 		double dummy_aligner;
 	} u;
@@ -85,72 +95,72 @@ template <typename T>
 class VectorView
 {
 public:
-	T &operator[](size_t i)
+	T &operator[](size_t i) SPIRV_CROSS_NOEXCEPT
 	{
 		return ptr[i];
 	}
 
-	const T &operator[](size_t i) const
+	const T &operator[](size_t i) const SPIRV_CROSS_NOEXCEPT
 	{
 		return ptr[i];
 	}
 
-	bool empty() const
+	bool empty() const SPIRV_CROSS_NOEXCEPT
 	{
 		return buffer_size == 0;
 	}
 
-	size_t size() const
+	size_t size() const SPIRV_CROSS_NOEXCEPT
 	{
 		return buffer_size;
 	}
 
-	T *data()
+	T *data() SPIRV_CROSS_NOEXCEPT
 	{
 		return ptr;
 	}
 
-	const T *data() const
+	const T *data() const SPIRV_CROSS_NOEXCEPT
 	{
 		return ptr;
 	}
 
-	T *begin()
+	T *begin() SPIRV_CROSS_NOEXCEPT
 	{
 		return ptr;
 	}
 
-	T *end()
+	T *end() SPIRV_CROSS_NOEXCEPT
 	{
 		return ptr + buffer_size;
 	}
 
-	const T *begin() const
+	const T *begin() const SPIRV_CROSS_NOEXCEPT
 	{
 		return ptr;
 	}
 
-	const T *end() const
+	const T *end() const SPIRV_CROSS_NOEXCEPT
 	{
 		return ptr + buffer_size;
 	}
 
-	T &front()
+	T &front() SPIRV_CROSS_NOEXCEPT
 	{
 		return ptr[0];
 	}
 
-	const T &front() const
+	const T &front() const SPIRV_CROSS_NOEXCEPT
 	{
 		return ptr[0];
 	}
 
-	T &back()
+	T &back() SPIRV_CROSS_NOEXCEPT
 	{
 		return ptr[buffer_size - 1];
 	}
 
-	const T &back() const
+	const T &back() const SPIRV_CROSS_NOEXCEPT
 	{
 		return ptr[buffer_size - 1];
 	}
@@ -194,20 +204,30 @@ template <typename T, size_t N = 8>
 class SmallVector : public VectorView<T>
 {
 public:
-	SmallVector()
+	SmallVector() SPIRV_CROSS_NOEXCEPT
 	{
 		this->ptr = stack_storage.data();
 		buffer_capacity = N;
 	}
 
-	SmallVector(const T *arg_list_begin, const T *arg_list_end)
-	    : SmallVector()
+	template <typename U>
+	SmallVector(const U *arg_list_begin, const U *arg_list_end) SPIRV_CROSS_NOEXCEPT : SmallVector()
 	{
 		auto count = size_t(arg_list_end - arg_list_begin);
 		reserve(count);
 		for (size_t i = 0; i < count; i++, arg_list_begin++)
 			new (&this->ptr[i]) T(*arg_list_begin);
 		this->buffer_size = count;
+	}
+
+	template <typename U>
+	SmallVector(std::initializer_list<U> init) SPIRV_CROSS_NOEXCEPT : SmallVector(init.begin(), init.end())
+	{
+	}
+
+	template <typename U, size_t M>
+	explicit SmallVector(const U (&init)[M]) SPIRV_CROSS_NOEXCEPT : SmallVector(init, init + M)
+	{
 	}
 
 	SmallVector(SmallVector &&other) SPIRV_CROSS_NOEXCEPT : SmallVector()
@@ -245,14 +265,16 @@ public:
 		return *this;
 	}
 
-	SmallVector(const SmallVector &other)
-	    : SmallVector()
+	SmallVector(const SmallVector &other) SPIRV_CROSS_NOEXCEPT : SmallVector()
 	{
 		*this = other;
 	}
 
-	SmallVector &operator=(const SmallVector &other)
+	SmallVector &operator=(const SmallVector &other) SPIRV_CROSS_NOEXCEPT
 	{
+		if (this == &other)
+			return *this;
+
 		clear();
 		reserve(other.buffer_size);
 		for (size_t i = 0; i < other.buffer_size; i++)
@@ -261,8 +283,7 @@ public:
 		return *this;
 	}
 
-	explicit SmallVector(size_t count)
-	    : SmallVector()
+	explicit SmallVector(size_t count) SPIRV_CROSS_NOEXCEPT : SmallVector()
 	{
 		resize(count);
 	}
@@ -274,28 +295,28 @@ public:
 			free(this->ptr);
 	}
 
-	void clear()
+	void clear() SPIRV_CROSS_NOEXCEPT
 	{
 		for (size_t i = 0; i < this->buffer_size; i++)
 			this->ptr[i].~T();
 		this->buffer_size = 0;
 	}
 
-	void push_back(const T &t)
+	void push_back(const T &t) SPIRV_CROSS_NOEXCEPT
 	{
 		reserve(this->buffer_size + 1);
 		new (&this->ptr[this->buffer_size]) T(t);
 		this->buffer_size++;
 	}
 
-	void push_back(T &&t)
+	void push_back(T &&t) SPIRV_CROSS_NOEXCEPT
 	{
 		reserve(this->buffer_size + 1);
 		new (&this->ptr[this->buffer_size]) T(std::move(t));
 		this->buffer_size++;
 	}
 
-	void pop_back()
+	void pop_back() SPIRV_CROSS_NOEXCEPT
 	{
 		// Work around false positive warning on GCC 8.3.
 		// Calling pop_back on empty vector is undefined.
@@ -304,31 +325,42 @@ public:
 	}
 
 	template <typename... Ts>
-	void emplace_back(Ts &&... ts)
+	void emplace_back(Ts &&... ts) SPIRV_CROSS_NOEXCEPT
 	{
 		reserve(this->buffer_size + 1);
 		new (&this->ptr[this->buffer_size]) T(std::forward<Ts>(ts)...);
 		this->buffer_size++;
 	}
 
-	void reserve(size_t count)
+	void reserve(size_t count) SPIRV_CROSS_NOEXCEPT
 	{
+		if ((count > (std::numeric_limits<size_t>::max)() / sizeof(T)) ||
+		    (count > (std::numeric_limits<size_t>::max)() / 2))
+		{
+			// Only way this should ever happen is with garbage input, terminate.
+			std::terminate();
+		}
+
 		if (count > buffer_capacity)
 		{
 			size_t target_capacity = buffer_capacity;
 			if (target_capacity == 0)
 				target_capacity = 1;
-			if (target_capacity < N)
-				target_capacity = N;
 
+			// Weird parens works around macro issues on Windows if NOMINMAX is not used.
+			target_capacity = (std::max)(target_capacity, N);
+
+			// Need to ensure there is a POT value of target capacity which is larger than count,
+			// otherwise this will overflow.
 			while (target_capacity < count)
 				target_capacity <<= 1u;
 
 			T *new_buffer =
 			    target_capacity > N ? static_cast<T *>(malloc(target_capacity * sizeof(T))) : stack_storage.data();
 
+			// If we actually fail this malloc, we are hosed anyways, there is no reason to attempt recovery.
 			if (!new_buffer)
-				SPIRV_CROSS_THROW("Out of memory.");
+				std::terminate();
 
 			// In case for some reason two allocations both come from same stack.
 			if (new_buffer != this->ptr)
@@ -348,7 +380,7 @@ public:
 		}
 	}
 
-	void insert(T *itr, const T *insert_begin, const T *insert_end)
+	void insert(T *itr, const T *insert_begin, const T *insert_end) SPIRV_CROSS_NOEXCEPT
 	{
 		auto count = size_t(insert_end - insert_begin);
 		if (itr == this->end())
@@ -374,8 +406,10 @@ public:
 				// Need to allocate new buffer. Move everything to a new buffer.
 				T *new_buffer =
 				    target_capacity > N ? static_cast<T *>(malloc(target_capacity * sizeof(T))) : stack_storage.data();
+
+				// If we actually fail this malloc, we are hosed anyways, there is no reason to attempt recovery.
 				if (!new_buffer)
-					SPIRV_CROSS_THROW("Out of memory.");
+					std::terminate();
 
 				// First, move elements from source buffer to new buffer.
 				// We don't deal with types which can throw in move constructor.
@@ -447,19 +481,19 @@ public:
 		}
 	}
 
-	void insert(T *itr, const T &value)
+	void insert(T *itr, const T &value) SPIRV_CROSS_NOEXCEPT
 	{
 		insert(itr, &value, &value + 1);
 	}
 
-	T *erase(T *itr)
+	T *erase(T *itr) SPIRV_CROSS_NOEXCEPT
 	{
 		std::move(itr + 1, this->end(), itr);
 		this->ptr[--this->buffer_size].~T();
 		return itr;
 	}
 
-	void erase(T *start_erase, T *end_erase)
+	void erase(T *start_erase, T *end_erase) SPIRV_CROSS_NOEXCEPT
 	{
 		if (end_erase == this->end())
 		{
@@ -473,7 +507,7 @@ public:
 		}
 	}
 
-	void resize(size_t new_size)
+	void resize(size_t new_size) SPIRV_CROSS_NOEXCEPT
 	{
 		if (new_size < this->buffer_size)
 		{
@@ -519,7 +553,7 @@ class ObjectPoolBase
 {
 public:
 	virtual ~ObjectPoolBase() = default;
-	virtual void free_opaque(void *ptr) = 0;
+	virtual void deallocate_opaque(void *ptr) = 0;
 };
 
 template <typename T>
@@ -553,15 +587,15 @@ public:
 		return ptr;
 	}
 
-	void free(T *ptr)
+	void deallocate(T *ptr)
 	{
 		ptr->~T();
 		vacants.push_back(ptr);
 	}
 
-	void free_opaque(void *ptr) override
+	void deallocate_opaque(void *ptr) override
 	{
-		free(static_cast<T *>(ptr));
+		deallocate(static_cast<T *>(ptr));
 	}
 
 	void clear()
