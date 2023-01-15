@@ -346,8 +346,8 @@ static bool alsa_stop(void *data)
       int errnum = snd_pcm_pause(alsa->microphone->pcm, true);
       if (errnum < 0)
       {
-         RARCH_ERR("[ALSA]: Failed to pause microphone %x: %s\n",
-            alsa->microphone->pcm,
+         RARCH_ERR("[ALSA]: Failed to pause microphone \"%s\": %s\n",
+            snd_pcm_name(alsa->microphone->pcm),
             snd_strerror(errnum));
          return false;
       }
@@ -681,7 +681,7 @@ static bool alsa_set_microphone_state(void *data, void *microphone_context, bool
 
    if (!microphone->can_pause)
    {
-      RARCH_WARN("[ALSA]: Microphone %x cannot be paused\n", microphone->pcm);
+      RARCH_WARN("[ALSA]: Microphone \"%s\" cannot be paused\n", snd_pcm_name(microphone->pcm));
       return true;
    }
 
@@ -690,16 +690,16 @@ static bool alsa_set_microphone_state(void *data, void *microphone_context, bool
       int errnum = snd_pcm_pause(microphone->pcm, !enabled);
       if (errnum < 0)
       {
-         RARCH_ERR("[ALSA]: Failed to %s microphone %x: %s\n",
+         RARCH_ERR("[ALSA]: Failed to %s microphone \"%s\": %s\n",
                    enabled ? "unpause" : "pause",
-                   microphone->pcm,
+                   snd_pcm_name(microphone->pcm),
                    snd_strerror(errnum));
          return false;
       }
 
       microphone->is_paused = !enabled;
-      RARCH_DBG("[ALSA]: Set state of microphone %x to %s\n",
-              microphone->pcm, enabled ? "enabled" : "disabled");
+      RARCH_DBG("[ALSA]: Set state of microphone \"%s\" to %s\n",
+              snd_pcm_name(microphone->pcm), enabled ? "enabled" : "disabled");
    }
 
    return true;
