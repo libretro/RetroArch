@@ -1083,8 +1083,10 @@
 #if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW) || defined(MIYOO)
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
+#define DEFAULT_IN_LATENCY 128
 #else
 #define DEFAULT_OUT_LATENCY 64
+#define DEFAULT_IN_LATENCY 64
 #endif
 
 /* Will sync audio. (recommended) */

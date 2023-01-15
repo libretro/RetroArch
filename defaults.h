@@ -83,6 +83,7 @@ struct defaults
 #endif
 #endif
    int settings_out_latency;
+   int settings_in_latency;
 #ifdef HAVE_MENU
    unsigned menu_materialui_menu_color_theme;
 #endif

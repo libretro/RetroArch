@@ -1832,7 +1832,7 @@ static void audio_driver_init_microphone_internal(retro_microphone_t* microphone
    const audio_driver_t *audio_driver = audio_st->current_audio;
    void *context                      = audio_st->context_audio_data;
    unsigned runloop_audio_latency     = runloop_state_get_ptr()->audio_latency;
-   unsigned setting_audio_latency     = settings->uints.audio_latency;
+   unsigned setting_audio_latency     = settings->uints.audio_input_latency;
    unsigned actual_sample_rate        = 0;
    unsigned audio_latency             = (runloop_audio_latency > setting_audio_latency) ?
                                         runloop_audio_latency : setting_audio_latency;
@@ -1854,7 +1854,7 @@ static void audio_driver_init_microphone_internal(retro_microphone_t* microphone
       *settings->arrays.audio_input_device ? settings->arrays.audio_input_device : NULL,
       settings->uints.audio_input_sample_rate,
       audio_latency,
-      settings->uints.audio_block_frames,
+      settings->uints.audio_input_block_frames,
       &actual_sample_rate);
 
    if (!microphone->microphone_context)

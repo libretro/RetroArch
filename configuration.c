@@ -2191,8 +2191,10 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_rumble_gain",            &settings->uints.input_rumble_gain, true, DEFAULT_RUMBLE_GAIN, false);
    SETTING_UINT("input_auto_game_focus",        &settings->uints.input_auto_game_focus, true, DEFAULT_INPUT_AUTO_GAME_FOCUS, false);
    SETTING_UINT("audio_latency",                &settings->uints.audio_latency, false, 0 /* TODO */, false);
+   SETTING_UINT("audio_input_latency",          &settings->uints.audio_input_latency, false, 0 /* TODO */, false);
    SETTING_UINT("audio_resampler_quality",      &settings->uints.audio_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
    SETTING_UINT("audio_block_frames",           &settings->uints.audio_block_frames, true, 0, false);
+   SETTING_UINT("audio_input_block_frames",     &settings->uints.audio_input_block_frames, true, 0, false);
 #ifdef ANDROID
    SETTING_UINT("input_block_timeout",           &settings->uints.input_block_timeout, true, 0, false);
 #endif
@@ -2693,6 +2695,11 @@ void config_set_defaults(void *data)
       g_defaults.settings_out_latency          = DEFAULT_OUT_LATENCY;
 
    settings->uints.audio_latency               = g_defaults.settings_out_latency;
+
+   if (!g_defaults.settings_in_latency)
+      g_defaults.settings_in_latency          = DEFAULT_IN_LATENCY;
+
+   settings->uints.audio_input_latency         = g_defaults.settings_in_latency;
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
 #ifdef HAVE_AUDIOMIXER
