@@ -28,12 +28,14 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    float4 _20 = vClip4;
-    _20.y = vClip4.w;
-    FragColor = uShadow1D.SampleCmp(_uShadow1D_sampler, _20.x / _20.y, vClip4.z / _20.y);
-    float4 _30 = vClip4;
-    _30.z = vClip4.w;
-    FragColor = uShadow2D.SampleCmp(_uShadow2D_sampler, _30.xy / _30.z, vClip4.z / _30.z);
+    float4 _17 = vClip4;
+    float4 _20 = _17;
+    _20.y = _17.w;
+    FragColor = uShadow1D.SampleCmp(_uShadow1D_sampler, _20.x / _20.y, _17.z / _20.y);
+    float4 _27 = vClip4;
+    float4 _30 = _27;
+    _30.z = _27.w;
+    FragColor = uShadow2D.SampleCmp(_uShadow2D_sampler, _30.xy / _30.z, _27.z / _30.z);
     FragColor = uSampler1D.Sample(_uSampler1D_sampler, vClip2.x / vClip2.y).x;
     FragColor = uSampler2D.Sample(_uSampler2D_sampler, vClip3.xy / vClip3.z).x;
     FragColor = uSampler3D.Sample(_uSampler3D_sampler, vClip4.xyz / vClip4.w).x;
