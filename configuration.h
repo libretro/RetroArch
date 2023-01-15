@@ -598,7 +598,7 @@ typedef struct settings
 
       /* Audio */
       bool audio_enable;
-      bool audio_enable_microphone;
+      bool audio_enable_input;
       bool audio_enable_menu;
       bool audio_enable_menu_ok;
       bool audio_enable_menu_cancel;

@@ -3346,7 +3346,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                return false;
             /* User didn't provide a pointer for a response, what can we do? */
 
-            if (!settings->bools.audio_enable_microphone)
+            if (!settings->bools.audio_enable_input)
                return false;
 
             if (audio_driver_supports_microphone(audio_driver))
@@ -3375,7 +3375,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                return false;
             /* User didn't provide a pointer for a response, what can we do? */
 
-            *microphone_enabled = settings->bools.audio_enable_microphone;
+            *microphone_enabled = settings->bools.audio_enable_input;
             return true;
          }
       default:

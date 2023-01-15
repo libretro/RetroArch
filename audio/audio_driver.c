@@ -616,7 +616,7 @@ bool audio_driver_init_internal(
    settings_t *settings           = (settings_t*)settings_data;
    size_t max_bufsamples          = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    bool audio_enable              = settings->bools.audio_enable;
-   bool audio_enable_microphone   = settings->bools.audio_enable_microphone;
+   bool audio_enable_microphone   = settings->bools.audio_enable_input;
    bool audio_sync                = settings->bools.audio_sync;
    bool audio_rate_control        = settings->bools.audio_rate_control;
    float slowmotion_ratio         = settings->floats.slowmotion_ratio;
@@ -1901,7 +1901,7 @@ retro_microphone_t *audio_driver_init_microphone(void)
       return NULL;
    }
 
-   if (!settings->bools.audio_enable_microphone)
+   if (!settings->bools.audio_enable_input)
    { /* Not checking audio_st->flags because they might not be set yet;
       * don't forget, the user can ask for a mic
       * before the audio driver is ready to create one. */

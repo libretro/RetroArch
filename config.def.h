@@ -978,7 +978,7 @@
 
 /* Will enable audio or not. */
 #define DEFAULT_AUDIO_ENABLE true
-#define DEFAULT_AUDIO_ENABLE_MICROPHONE true
+#define DEFAULT_AUDIO_ENABLE_INPUT true
 
 /* Enable menu audio sounds. */
 #define DEFAULT_AUDIO_ENABLE_MENU false
