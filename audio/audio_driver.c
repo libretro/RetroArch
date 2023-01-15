@@ -1863,10 +1863,15 @@ static void audio_driver_init_microphone_internal(retro_microphone_t* microphone
    audio_driver_set_microphone_state(microphone, microphone->pending_enabled);
 
    if (actual_sample_rate != 0)
+   {
+      RARCH_LOG("[Audio]: Requested microphone sample rate of %uHz, got %Hz. Updating settings with this value.\n",
+         settings->uints.audio_input_sample_rate,
+         actual_sample_rate
+      );
       configuration_set_uint(settings, settings->uints.audio_input_sample_rate, actual_sample_rate);
+   }
 
-   RARCH_LOG("[Audio]: Initialized microphone (sample rate: %dHz)\n", actual_sample_rate);
-
+   RARCH_LOG("[Audio]: Initialized microphone\n", actual_sample_rate);
    return;
 error:
    audio_driver_microphone_handle_free(microphone);
