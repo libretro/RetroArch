@@ -72,10 +72,10 @@ static void alsa_log_error(const char *file, int line, const char *function, int
    }
 
    va_start(args, fmt);
-   vsnprintf(temp, 255, fmt, args);
+   vsnprintf(temp, sizeof(temp), fmt, args);
    /* Write up to 255 characters. (The 256th will be \0.) */
    va_end(args);
-   RARCH_ERR("[ALSA] [%s:%s:%d] %s\n", file, function, line, temp); /* To ensure that there's a newline at the end */
+   RARCH_ERR("[ALSA] [%s:%s:%d]: %s\n", file, function, line, temp); /* To ensure that there's a newline at the end */
 }
 
 static bool find_float_format(snd_pcm_t *pcm, void *data)
