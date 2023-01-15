@@ -28,29 +28,33 @@ struct main0_patchIn
     float4 vPatchLods [[attribute(1)]];
 };
 
+static inline __attribute__((always_inline))
 float2 lerp_vertex(thread const float2& tess_coord, thread float2& vOutPatchPosBase, constant UBO& v_31)
 {
     return vOutPatchPosBase + (tess_coord * v_31.uPatchSize);
 }
 
+static inline __attribute__((always_inline))
 float2 lod_factor(thread const float2& tess_coord, thread float4& vPatchLods)
 {
     float2 x = mix(vPatchLods.yx, vPatchLods.zw, float2(tess_coord.x));
-    float level = mix(x.x, x.y, tess_coord.y);
-    float floor_level = floor(level);
-    float fract_level = level - floor_level;
+    float level0 = mix(x.x, x.y, tess_coord.y);
+    float floor_level = floor(level0);
+    float fract_level = level0 - floor_level;
     return float2(floor_level, fract_level);
 }
 
-float3 sample_height_displacement(thread const float2& uv, thread const float2& off, thread const float2& lod, thread texture2d<float> uHeightmapDisplacement, thread const sampler uHeightmapDisplacementSmplr)
+static inline __attribute__((always_inline))
+float3 sample_height_displacement(thread const float2& uv, thread const float2& off, thread const float2& lod, texture2d<float> uHeightmapDisplacement, sampler uHeightmapDisplacementSmplr)
 {
     return mix(uHeightmapDisplacement.sample(uHeightmapDisplacementSmplr, (uv + (off * 0.5)), level(lod.x)).xyz, uHeightmapDisplacement.sample(uHeightmapDisplacementSmplr, (uv + (off * 1.0)), level(lod.x + 1.0)).xyz, float3(lod.y));
 }
 
-[[ patch(quad, 0) ]] vertex main0_out main0(main0_patchIn patchIn [[stage_in]], constant UBO& v_31 [[buffer(0)]], texture2d<float> uHeightmapDisplacement [[texture(0)]], sampler uHeightmapDisplacementSmplr [[sampler(0)]], float2 gl_TessCoord [[position_in_patch]])
+[[ patch(quad, 0) ]] vertex main0_out main0(main0_patchIn patchIn [[stage_in]], constant UBO& v_31 [[buffer(0)]], texture2d<float> uHeightmapDisplacement [[texture(0)]], sampler uHeightmapDisplacementSmplr [[sampler(0)]], float2 gl_TessCoordIn [[position_in_patch]])
 {
     main0_out out = {};
-    float2 tess_coord = float3(gl_TessCoord, 0).xy;
+    float3 gl_TessCoord = float3(gl_TessCoordIn.x, gl_TessCoordIn.y, 0.0);
+    float2 tess_coord = gl_TessCoord.xy;
     float2 param = tess_coord;
     float2 pos = lerp_vertex(param, patchIn.vOutPatchPosBase, v_31);
     float2 param_1 = tess_coord;

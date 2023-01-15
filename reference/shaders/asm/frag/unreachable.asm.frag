@@ -1,9 +1,9 @@
 #version 450
 
+vec4 _21;
+
 layout(location = 0) flat in int counter;
 layout(location = 0) out vec4 FragColor;
-
-vec4 _21;
 
 void main()
 {

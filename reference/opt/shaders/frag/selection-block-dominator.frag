@@ -5,7 +5,7 @@ layout(location = 0) out vec4 FragColor;
 
 void main()
 {
-    for (;;)
+    do
     {
         if (vIndex != 1)
         {
@@ -14,6 +14,6 @@ void main()
         }
         FragColor = vec4(10.0);
         break;
-    }
+    } while(false);
 }
 
