@@ -63,19 +63,19 @@ static void alsa_log_error(const char *file, int line, const char *function, int
 {
    va_list args;
    char temp[256];
+   char errno_temp[256];
 
    memset(temp, 0, sizeof(temp));
-
-   if (err)
-   {
-      RARCH_ERR("[ALSA] [System] Error in %s:%s:%d: %s\n", file, function, line, snd_strerror(err));
-   }
+   memset(errno_temp, 0, sizeof(temp));
 
    va_start(args, fmt);
    vsnprintf(temp, sizeof(temp), fmt, args);
+   if (err)
+      snprintf(errno_temp, sizeof(errno_temp), " (%s)", snd_strerror(err));
+
    /* Write up to 255 characters. (The 256th will be \0.) */
    va_end(args);
-   RARCH_ERR("[ALSA] [%s:%s:%d]: %s\n", file, function, line, temp); /* To ensure that there's a newline at the end */
+   RARCH_ERR("[ALSA] [%s:%s:%d]: %s%s\n", file, function, line, temp, errno_temp); /* To ensure that there's a newline at the end */
 }
 
 static bool find_float_format(snd_pcm_t *pcm, void *data)
@@ -116,6 +116,7 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    if (device)
       alsa_dev = device;
 
+   RARCH_LOG("[ALSA] Using ALSA version %s\n", snd_asoundlib_version());
    RARCH_DBG("[ALSA] Requesting device \"%s\" for output\n", alsa_dev);
 
    if (snd_pcm_open(
