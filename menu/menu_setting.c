@@ -8332,6 +8332,7 @@ static void general_write_handler(rarch_setting_t *setting)
 #endif
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
+      case MENU_ENUM_LABEL_AUDIO_INPUT_LATENCY:
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
       case MENU_ENUM_LABEL_AUDIO_INPUT_RATE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
@@ -10380,6 +10381,14 @@ static bool setting_append_list(
                list, list_info,
                MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,
                MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_AUDIO_INPUT_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_SETTINGS,
                &group_info,
                &subgroup_info,
                parent_group);
@@ -13435,22 +13444,6 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->bools.audio_enable_microphone,
-               MENU_ENUM_LABEL_AUDIO_ENABLE_MICROPHONE,
-               MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MICROPHONE,
-               DEFAULT_AUDIO_ENABLE_MICROPHONE,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-         );
-
-         CONFIG_BOOL(
-               list, list_info,
                audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE),
                MENU_ENUM_LABEL_AUDIO_MUTE,
                MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -13578,6 +13571,22 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
+               &settings->uints.audio_input_latency,
+               MENU_ENUM_LABEL_AUDIO_INPUT_LATENCY,
+               MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_LATENCY,
+               g_defaults.settings_in_latency ?
+               g_defaults.settings_in_latency : DEFAULT_IN_LATENCY,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, 512, 1.0, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_UINT(
+               list, list_info,
                &settings->uints.audio_resampler_quality,
                MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
                MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
@@ -13651,7 +13660,41 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.audio_input_block_frames,
+               MENU_ENUM_LABEL_AUDIO_INPUT_BLOCK_FRAMES,
+               MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_BLOCK_FRAMES,
+               0,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 #endif
+
+         END_SUB_GROUP(list, list_info, parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_enable_input,
+               MENU_ENUM_LABEL_AUDIO_ENABLE_MICROPHONE,
+               MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MICROPHONE,
+               DEFAULT_AUDIO_ENABLE_INPUT,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -13672,6 +13715,24 @@ static bool setting_append_list(
                sizeof(settings->arrays.audio_device),
                MENU_ENUM_LABEL_AUDIO_DEVICE,
                MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+         (*list)[list_info->index - 1].action_left   = &setting_string_action_left_audio_device;
+         (*list)[list_info->index - 1].action_right  = &setting_string_action_right_audio_device;
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.audio_input_device,
+               sizeof(settings->arrays.audio_input_device),
+               MENU_ENUM_LABEL_AUDIO_INPUT_DEVICE,
+               MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_DEVICE,
                "",
                &group_info,
                &subgroup_info,

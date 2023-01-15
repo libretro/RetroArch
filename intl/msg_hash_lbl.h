@@ -107,8 +107,16 @@ MSG_HASH(
    "audio_block_frames"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_INPUT_BLOCK_FRAMES,
+   "audio_input_block_frames"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DEVICE,
    "audio_device"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_INPUT_DEVICE,
+   "audio_input_device"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DRIVER,
@@ -141,6 +149,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_LATENCY,
    "audio_latency"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_INPUT_LATENCY,
+   "audio_input_latency"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,
@@ -185,6 +197,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,
    "audio_output_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_INPUT_SETTINGS,
+   "audio_input_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_SYNC,
@@ -5844,6 +5860,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST,
    "deferred_audio_output_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_AUDIO_INPUT_SETTINGS_LIST,
+   "deferred_audio_input_settings_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST,

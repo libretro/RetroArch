@@ -341,6 +341,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_show_menubar,     MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_resampler_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_output_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_input_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_INPUT_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_synchronization_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS)
 #ifdef HAVE_AUDIOMIXER
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_mixer_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS)
@@ -488,6 +489,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_configurations_list_list,      MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_shared_context,          MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_driver_switch_enable,          MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_latency,                 MENU_ENUM_SUBLABEL_AUDIO_LATENCY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_input_latency,           MENU_ENUM_SUBLABEL_AUDIO_INPUT_LATENCY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_rate_control_delta,      MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_mute,                    MENU_ENUM_SUBLABEL_AUDIO_MUTE)
 #ifdef HAVE_AUDIOMIXER
@@ -769,6 +771,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_filter_supported_extensions,   MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_wallpaper,                     MENU_ENUM_SUBLABEL_MENU_WALLPAPER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dynamic_wallpaper,             MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_device,                  MENU_ENUM_SUBLABEL_AUDIO_DEVICE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_input_device,            MENU_ENUM_SUBLABEL_AUDIO_INPUT_DEVICE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_output_rate,             MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_input_rate,              MENU_ENUM_SUBLABEL_AUDIO_INPUT_RATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_dsp_plugin,              MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN)
@@ -3544,6 +3547,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AUDIO_DEVICE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_device);
             break;
+         case MENU_ENUM_LABEL_AUDIO_INPUT_DEVICE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_input_device);
+            break;
          case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_wasapi_exclusive_mode);
             break;
@@ -4285,6 +4291,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AUDIO_LATENCY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_latency);
             break;
+         case MENU_ENUM_LABEL_AUDIO_INPUT_LATENCY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_input_latency);
+            break;
          case MENU_ENUM_LABEL_DRIVER_SWITCH_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_driver_switch_enable);
             break;
@@ -4606,6 +4615,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_output_settings_list);
+            break;
+         case MENU_ENUM_LABEL_AUDIO_INPUT_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_input_settings_list);
             break;
          case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
 #ifdef HAVE_AUDIOMIXER
