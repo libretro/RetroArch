@@ -1416,7 +1416,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("menu_driver",              settings->arrays.menu_driver,    false, NULL, true);
 #endif
    SETTING_ARRAY("audio_device",             settings->arrays.audio_device,   false, NULL, true);
-   SETTING_ARRAY("microphone_device",        settings->arrays.microphone_device, false, NULL, true);
+   SETTING_ARRAY("audio_input_device",       settings->arrays.audio_input_device, false, NULL, true);
    SETTING_ARRAY("camera_device",            settings->arrays.camera_device,  false, NULL, true);
 #ifdef HAVE_CHEEVOS
    SETTING_ARRAY("cheevos_custom_host",      settings->arrays.cheevos_custom_host, false, NULL, true);
@@ -2684,10 +2684,10 @@ void config_set_defaults(void *data)
             settings->arrays.audio_device,
             DEFAULT_AUDIO_DEVICE);
 
-   if (DEFAULT_MICROPHONE_DEVICE)
+   if (DEFAULT_AUDIO_INPUT_DEVICE)
       configuration_set_string(settings,
-            settings->arrays.microphone_device,
-            DEFAULT_MICROPHONE_DEVICE);
+            settings->arrays.audio_input_device,
+            DEFAULT_AUDIO_INPUT_DEVICE);
 
    if (!g_defaults.settings_out_latency)
       g_defaults.settings_out_latency          = DEFAULT_OUT_LATENCY;

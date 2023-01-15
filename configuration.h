@@ -441,7 +441,7 @@ typedef struct settings
 #endif
 
       char audio_device[255];
-      char microphone_device[255];
+      char audio_input_device[255];
       char camera_device[255];
       char netplay_mitm_server[255];
 

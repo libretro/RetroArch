@@ -1851,7 +1851,7 @@ static void audio_driver_init_microphone_internal(retro_microphone_t* microphone
       goto error;
 
    microphone->microphone_context = audio_driver->init_microphone(context,
-      *settings->arrays.microphone_device ? settings->arrays.microphone_device : NULL,
+      *settings->arrays.audio_input_device ? settings->arrays.audio_input_device : NULL,
       settings->uints.audio_input_sample_rate,
       audio_latency,
       settings->uints.audio_block_frames,
