@@ -398,6 +398,19 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       if (cbs->setting && cbs->setting->type)
          entry->setting_type        = cbs->setting->type;
 
+      /* Exceptions without cbs->setting->type */
+      if (!entry->setting_type)
+      {
+         switch (entry->type)
+         {
+            case MENU_SETTING_ACTION_CORE_LOCK:
+               entry->setting_type  = ST_BOOL;
+               break;
+            default:
+               break;
+         }
+      }
+
       if (cbs->checked)
          entry->flags |= MENU_ENTRY_FLAG_CHECKED;
 
@@ -476,9 +489,11 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       core_option_manager_t *coreopts = NULL;
       size_t option_index             = entry->type - MENU_SETTINGS_CORE_OPTION_START;
       retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
-      option = (struct core_option*)&coreopts->opts[option_index];
 
-      if (option->vals->size == 2)
+      if (coreopts)
+         option                       = (struct core_option*)&coreopts->opts[option_index];
+
+      if (option && option->vals && option->vals->size == 2)
          entry->setting_type = ST_BOOL;
    }
 
