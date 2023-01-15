@@ -15,14 +15,14 @@ struct main0_out
 
 struct main0_in
 {
-    float3 gl_BaryCoordNV [[barycentric_coord, center_perspective]];
+    float3 gl_BaryCoordEXT [[barycentric_coord, center_perspective]];
 };
 
 fragment main0_out main0(main0_in in [[stage_in]], const device Vertices& _19 [[buffer(0)]], uint gl_PrimitiveID [[primitive_id]])
 {
     main0_out out = {};
     int _23 = 3 * int(gl_PrimitiveID);
-    out.value = ((_19.uvs[_23] * in.gl_BaryCoordNV.x) + (_19.uvs[_23 + 1] * in.gl_BaryCoordNV.y)) + (_19.uvs[_23 + 2] * in.gl_BaryCoordNV.z);
+    out.value = ((_19.uvs[_23] * in.gl_BaryCoordEXT.x) + (_19.uvs[_23 + 1] * in.gl_BaryCoordEXT.y)) + (_19.uvs[_23 + 2] * in.gl_BaryCoordEXT.z);
     return out;
 }
 

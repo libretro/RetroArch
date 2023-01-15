@@ -1,3 +1,5 @@
+static bool _47;
+
 static float2 value;
 static float4 FragColor;
 
@@ -10,8 +12,6 @@ struct SPIRV_Cross_Output
 {
     float4 FragColor : SV_Target0;
 };
-
-bool _47;
 
 void frag_main()
 {
