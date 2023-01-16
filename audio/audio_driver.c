@@ -2074,13 +2074,10 @@ static void audio_driver_flush_microphone_input(
                audio_st->current_audio,
                microphone->microphone_context))
    {
-      struct resampler_data src_data;
-      void *buffer_source     = NULL;
-      unsigned sample_size    = audio_driver_get_sample_size();
-      float audio_volume_gain = (audio_st->mute_enable || (audio_fastforward_mute && is_fastmotion))
-                                ? 0.0f : audio_st->volume_gain;
-      size_t bytes_to_read    = MIN(audio_st->input_samples_buf_length, num_frames * sample_size);
-      ssize_t bytes_read      = audio_st->current_audio->read_microphone(
+      void *buffer_source  = NULL;
+      unsigned sample_size = audio_driver_get_sample_size();
+      size_t bytes_to_read = MIN(audio_st->input_samples_buf_length, num_frames * sample_size);
+      ssize_t bytes_read   = audio_st->current_audio->read_microphone(
             audio_st->context_audio_data,
             microphone->microphone_context,
             audio_st->input_samples_buf,
@@ -2098,15 +2095,6 @@ static void audio_driver_flush_microphone_input(
          return;
       }
 
-      src_data.data_in       = NULL; /* Will be assigned later */
-      src_data.input_frames  = num_frames;
-      src_data.data_out      = audio_st->output_samples_buf;
-      src_data.output_frames = 0; /* Will be assigned by the resampler */
-      src_data.ratio         = audio_st->source_ratio_current;
-
-      if (is_slowmotion)
-         src_data.ratio     *= slowmotion_ratio;
-
       if (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
       {
          convert_float_to_s16(audio_st->input_samples_conv_buf, audio_st->input_samples_buf, bytes_read / sample_size);
@@ -2116,9 +2104,6 @@ static void audio_driver_flush_microphone_input(
       {
          buffer_source = audio_st->input_samples_buf;
       }
-
-      // TODO: Run converted (if necessary) samples through the resampler)
-      // TODO: Convert resampled data to int16_t's
 
       memcpy(frames, buffer_source, num_frames * sample_size);
    }
