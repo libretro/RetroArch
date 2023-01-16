@@ -368,7 +368,7 @@ typedef struct
     */
    float  *output_samples_buf;
    size_t output_samples_buf_length;
-   float  *input_samples_buf;
+   void  *input_samples_buf;
    size_t input_samples_buf_length;
 #ifdef HAVE_REWIND
    int16_t *rewind_buf;

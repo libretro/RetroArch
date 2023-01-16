@@ -798,7 +798,7 @@ bool audio_driver_init_internal(
 
    out_samples_buf = (float*)memalign_alloc(64, outsamples_max * sizeof(float));
    in_samples_buf  = (audio_driver_st.flags & AUDIO_FLAG_MIC_ACTIVE) ?
-         (float*)memalign_alloc(64, insamples_max * sizeof(float)) : NULL;
+         memalign_alloc(64, insamples_max * sizeof(float)) : NULL;
 
    /* It's not an error for in_samples_buf to be NULL if we don't want the mic */
    if (!out_samples_buf || ((audio_driver_st.flags & AUDIO_FLAG_MIC_ACTIVE) && !in_samples_buf))
