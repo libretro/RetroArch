@@ -110,8 +110,8 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    if (!alsa)
       return NULL;
 
-   alsa->prev_error_handler = snd_lib_error;
-   snd_lib_error_set_handler(alsa_log_error);
+   //alsa->prev_error_handler = snd_lib_error;
+   //snd_lib_error_set_handler(alsa_log_error);
 
    if (device)
       alsa_dev = device;
@@ -384,13 +384,47 @@ static bool alsa_start(void *data, bool is_shutdown)
 
       if (alsa->microphone && !alsa->microphone->is_paused)
       { /* If the mic wasn't paused at the time the overall driver was paused... */
-         int errnum = snd_pcm_pause(alsa->microphone->pcm, false);
-         if (errnum < 0)
+         snd_pcm_state_t mic_state = snd_pcm_state(alsa->microphone->pcm);
+
+         /* If we're calling this function with a pending microphone,
+          * (as happens when a core requests a microphone at the start),
+          * the mic will be in the PREPARED state rather than the PAUSED state.
+          **/
+         switch (mic_state)
          {
-            RARCH_ERR("[ALSA]: Failed to unpause microphone %x: %s\n",
-               alsa->microphone->pcm,
-               snd_strerror(errnum));
-            return false;
+            case SND_PCM_STATE_PREPARED:
+            {
+               int errnum = snd_pcm_start(alsa->microphone->pcm);
+               if (errnum < 0)
+               {
+                  RARCH_ERR("[ALSA]: Failed to start microphone \"%s\": %s\n",
+                     snd_pcm_name(alsa->microphone->pcm),
+                     snd_strerror(errnum));
+
+                  return false;
+               }
+               break;
+            }
+            case SND_PCM_STATE_PAUSED:
+            {
+               int errnum = snd_pcm_pause(alsa->microphone->pcm, false);
+               if (errnum < 0)
+               {
+                  RARCH_ERR("[ALSA]: Failed to unpause microphone \"%s\": %s\n",
+                     snd_pcm_name(alsa->microphone->pcm),
+                     snd_strerror(errnum));
+
+                  return false;
+               }
+               break;
+            }
+            default:
+            {
+               RARCH_ERR("[ALSA]: Expected microphone \"%s\" to be in state PREPARED or PAUSED, it was in %s\n",
+                  snd_pcm_name(alsa->microphone->pcm),
+                  snd_pcm_state_name(mic_state));
+               return false;
+            }
          }
       }
    }
@@ -718,6 +752,7 @@ static ssize_t alsa_read_microphone(void *driver_context, void *microphone_conte
    int errnum                    = 0;
    snd_pcm_sframes_t size;
    size_t frames_size;
+   snd_pcm_state_t state;
 
    if (!alsa || !microphone || !buf)
       return -1;
@@ -730,6 +765,24 @@ static ssize_t alsa_read_microphone(void *driver_context, void *microphone_conte
    if (microphone->is_paused)
       if (!alsa_set_microphone_state(alsa, microphone, true))
          return -1;
+
+   state = snd_pcm_state(microphone->pcm);
+   if (state != SND_PCM_STATE_RUNNING)
+   {
+      RARCH_WARN("[ALSA] Expected microphone \"%s\" to be in state RUNNING, was in state %s\n",
+         snd_pcm_name(microphone->pcm),
+         snd_pcm_state_name(state));
+
+      errnum = snd_pcm_start(microphone->pcm);
+      if (errnum < 0)
+      {
+         RARCH_ERR("[ALSA] Failed to start microphone \"%s\": %s\n",
+            snd_pcm_name(microphone->pcm),
+            snd_strerror(errnum));
+
+         return -1;
+      }
+   }
 
    if (alsa->nonblock)
    {
