@@ -2105,7 +2105,7 @@ static void audio_driver_flush_microphone_input(
          buffer_source = audio_st->input_samples_buf;
       }
 
-      memcpy(frames, buffer_source, num_frames * sample_size);
+      memcpy(frames, buffer_source, num_frames * sizeof(int16_t));
    }
 }
 

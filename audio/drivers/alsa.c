@@ -799,7 +799,7 @@ static ssize_t alsa_read_microphone(void *driver_context, void *microphone_conte
       }
    }
 
-   return read * frames_size;
+   return FRAMES_TO_BYTES(read, microphone->frame_bits);
 }
 
 audio_driver_t audio_alsa = {
