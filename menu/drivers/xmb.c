@@ -2089,6 +2089,9 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
          iz = xmb->categories_active_zoom;
       }
 
+      if (!xmb->allow_horizontal_animation)
+         continue;
+
       /* Horizontal icon animation */
 
       entry.target_value = ia;
@@ -4463,6 +4466,10 @@ static bool INLINE xmb_fullscreen_thumbnails_available(xmb_handle_t *xmb)
 extern int action_switch_thumbnail(const char *path,
       const char *label, unsigned type, size_t idx);
 
+static int xmb_menu_entry_action(
+      void *userdata, menu_entry_t *entry,
+      size_t i, enum menu_action action);
+
 static enum menu_action xmb_parse_menu_entry_action(
       xmb_handle_t *xmb, enum menu_action action)
 {
@@ -4596,6 +4603,41 @@ static enum menu_action xmb_parse_menu_entry_action(
          {
             xmb_hide_fullscreen_thumbnails(xmb, true);
             xmb->want_fullscreen_thumbnails = false;
+            return MENU_ACTION_NOOP;
+         }
+
+         /* Back up to Main Menu and first item */
+         if (menu_entries_get_stack_size(0) == 1)
+         {
+            if (xmb_get_system_tab(xmb,
+                  (unsigned)xmb->categories_selection_ptr) == XMB_SYSTEM_TAB_MAIN)
+            {
+               /* Jump to first item on Main Menu */
+               menu_navigation_set_selection(0);
+               xmb_selection_pointer_changed(xmb, true);
+            }
+            else
+            {
+               /* Jump to Main Menu */
+               size_t i           = 0;
+               size_t current_tab = xmb->categories_selection_ptr;
+
+               menu_entry_t entry;
+               MENU_ENTRY_INITIALIZE(entry);
+               menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+
+               /* Icon animations get stuck if they happen too fast,
+                  therefore allow it only on the last action */
+               xmb->allow_horizontal_animation    = false;
+               for (i = 0; i < current_tab; i++)
+               {
+                  if (i == current_tab - 1)
+                     xmb->allow_horizontal_animation    = true;
+
+                  xmb_menu_entry_action(xmb,
+                        &entry, menu_navigation_get_selection(), MENU_ACTION_LEFT);
+               }
+            }
             return MENU_ACTION_NOOP;
          }
          break;

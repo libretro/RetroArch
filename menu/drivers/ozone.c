@@ -8062,6 +8062,12 @@ static enum menu_action ozone_parse_menu_entry_action(
                audio_driver_mixer_play_scroll_sound(true);
 #endif
             }
+            else
+            {
+               /* Jump to first item on Main Menu */
+               ozone->tab_selection[ozone->categories_selection_ptr] = 0;
+               menu_navigation_set_selection(0);
+            }
 
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
