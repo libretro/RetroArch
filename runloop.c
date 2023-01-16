@@ -1436,7 +1436,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_VARIABLE:
          {
-            unsigned log_level         = settings->uints.libretro_log_level;
             struct retro_variable *var = (struct retro_variable*)data;
             size_t opt_idx;
 
@@ -1477,7 +1476,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_VARIABLE:
          {
-            unsigned log_level               = settings->uints.libretro_log_level;
             const struct retro_variable *var = (const struct retro_variable*)data;
             size_t opt_idx;
             size_t val_idx;
@@ -1773,9 +1771,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          /* Log message, if required */
          if (msg->target != RETRO_MESSAGE_TARGET_OSD)
          {
-            settings_t *settings = config_get_ptr();
-            unsigned log_level   = settings->uints.frontend_log_level;
-
             switch (msg->level)
             {
                case RETRO_LOG_DEBUG:
