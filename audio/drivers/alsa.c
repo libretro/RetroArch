@@ -594,12 +594,12 @@ static void *alsa_init_microphone(void *data,
    if (snd_pcm_hw_params_get_period_size(params, &buffer_size, NULL))
       snd_pcm_hw_params_get_period_size_min(params, &buffer_size, NULL);
 
-   RARCH_LOG("[ALSA]: Microphone period size: %d frames\n", (int)buffer_size);
+   RARCH_LOG("[ALSA]: Microphone period size: %u frames\n", buffer_size);
 
    if (snd_pcm_hw_params_get_buffer_size(params, &buffer_size))
       snd_pcm_hw_params_get_buffer_size_max(params, &buffer_size);
 
-   RARCH_LOG("[ALSA]: Microphone buffer size: %d frames\n", (int)buffer_size);
+   RARCH_LOG("[ALSA]: Microphone buffer size: %u frames\n", buffer_size);
 
    microphone->buffer_size = snd_pcm_frames_to_bytes(microphone->pcm, buffer_size);
    microphone->can_pause = snd_pcm_hw_params_can_pause(params);
