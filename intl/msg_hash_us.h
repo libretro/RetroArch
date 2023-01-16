@@ -211,7 +211,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Quit RetroArch. Killing the program in any hard way (SIGKILL, etc.) will terminate RetroArch without saving configuration, etc. On Unix-likes, SIGINT/SIGTERM allows a clean deinitialization."
+   "Quit RetroArch. Killing the program in any hard way (SIGKILL, etc.) will terminate RetroArch without saving the configuration, etc. On Unix-likes, SIGINT/SIGTERM allows a clean deinitialization."
    )
 
 /* Main Menu > Load Core */
@@ -1458,7 +1458,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
-   "The linuxraw input driver requires an active TTY. Keyboard events are read directly from the TTY which makes it simpler, but not as flexible as udev. Mice, etc, are not supported at all.This driver uses the older joystick API (/dev/input/js*)."
+   "The linuxraw input driver requires an active TTY. Keyboard events are read directly from the TTY which makes it simpler, but not as flexible as udev. Mice, etc, are not supported at all. This driver uses the older joystick API (/dev/input/js*)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -1481,16 +1481,64 @@ MSG_HASH(
    "Video driver to use."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
-   "OpenGL Video driver. This driver allows libretro GL cores to be used in addition to software-rendered core implementations. Performance for software-rendered and libretro GL core implementations is dependent on your graphics card's underlying GL driver."
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   "OpenGL 1.x driver. Minimum version required: OpenGL 1.1. Does not support shaders. Use later OpenGL drivers instead, if possible."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
-   "SDL 2 software-rendered video driver. Performance for software-rendered libretro core implementations is dependent on your platform SDL implementation."
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
+   "OpenGL 2.x driver. This driver allows libretro GL cores to be used in addition to software-rendered cores. Minimum version required: OpenGL 2.0 or OpenGLES 2.0. Supports the GLSL shader format. Use glcore driver instead, if possible."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   "OpenGL 3.x driver. This driver allows libretro GL cores to be used in addition to software-rendered cores. Minimum version required: OpenGL 3.2 or OpenGLES 3.0+. Supports the Slang shader format."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   "Vulkan driver. This driver allows libretro Vulkan cores to be used in addition to software-rendered cores. Minimum version required: Vulkan 1.0. Supports HDR and Slang shaders."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
-   "SDL 1.2 software-rendered video driver. Performance is considered to be suboptimal. Consider using it only as a last resort."
+   "SDL 1.2 software-rendered driver. Performance is considered to be suboptimal. Consider using it only as a last resort."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
+   "SDL 2 software-rendered driver. Performance for software-rendered libretro core implementations is dependent on your platform SDL implementation."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
+   "Metal driver for Apple platforms. Supports the Slang shader format."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   "Direct3D 8 driver with no shader support."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   "Direct3D 9 driver with support for the old Cg shader format."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   "Direct3D 9 driver with support for the HLSL shader format."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "Direct3D 10 driver with support for the Slang shader format."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "Direct3D 11 driver with support for HDR and the Slang shader format."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "Direct3D 12 driver with support for HDR and the Slang shader format."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "DispmanX driver. Uses the DispmanX API for the Videocore IV GPU in Raspberry Pi 0..3. No overlay or shader support."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
+   "LibCACA driver. Produces character output instead of graphics. Not recommended for practical use."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
@@ -1498,15 +1546,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
-   "Plain DRM Video Driver. This is a low-level video driver using libdrm for hardware scaling using GPU overlays."
+   "Plain DRM video driver. This is a low-level video driver using libdrm for hardware scaling using GPU overlays."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
    "A low-level Sunxi video driver that uses the G2D block in Allwinner SoCs."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   "Wii U driver. Supports Slang shaders."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   "Switch driver. Supports the GLSL shader format."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   "OpenVG driver. Uses the OpenVG hardware accelerated 2D vector graphics API."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "GDI driver. Uses a legacy Windows interface. Not recommended."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
-   "Current Video driver."
+   "Current video driver."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -1515,6 +1579,54 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "Audio driver to use."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
+   "RSound driver for networked audio systems."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   "Legacy Open Sound System driver."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   "Default ALSA driver."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
+   "ALSA driver with threading support."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
+   "ALSA driver implemented without dependencies."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
+   "RoarAudio sound system driver."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   "OpenAL driver."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   "OpenSL driver."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
+   "DirectSound driver. DirectSound is used mainly from Windows 95 to Windows XP."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
+   "Windows Audio Session API driver. WASAPI is used mainly from Windows 7 and above."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
+   "PulseAudio driver. If the system uses PulseAudio, make sure to use this driver instead of e.g. ALSA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
+   "Jack Audio Connection Kit driver."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -1526,7 +1638,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
-   "Windowed SINC implementation."
+   "Windowed Sinc implementation."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
@@ -1578,7 +1690,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
-   "XMB is a RetroArch GUI that looks like a 7th generation console menu. It can support same features as Ozone."
+   "XMB is a RetroArch GUI that looks like a 7th generation console menu. It can support the same features as Ozone."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
@@ -1590,7 +1702,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
-   "On mobile devices, RetroArch uses the mobile UI, MaterialUI, by default. This interface is designed around touchscreen and pointer devices like a mouse/trackball."
+   "On mobile devices, RetroArch uses the mobile UI, MaterialUI, by default. This interface is designed around touchscreen and pointer devices, like a mouse/trackball."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1689,7 +1801,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
-   "Use threaded video driver.\nUsing this might improve performance at the possible cost of latency and more video stuttering."
+   "Use threaded video driver. Using this might improve performance at the possible cost of latency and more video stuttering."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
@@ -1701,7 +1813,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Inserts a black frame inbetween frames. Useful for 120 Hz monitors to play 60 Hz material with eliminated ghosting.\nVideo refresh rate should still be configured as if it is a 60 Hz monitor (divide refresh rate by 2)."
+   "Inserts a black frame inbetween frames. Useful for 120 Hz monitors to play 60 Hz material with eliminated ghosting. Video refresh rate should still be configured as if it is a 60 Hz monitor (divide refresh rate by 2)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -1777,11 +1889,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
-   "Apply a CPU-powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit color. Select a dynamically linked video filter library."
+   "Apply a CPU-powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit color. Dynamically linked video filter libraries can be selected."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
-   "Apply a CPU-powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit color. Select a built-in video filter library."
+   "Apply a CPU-powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit color. Built-in video filter libraries can be selected."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
@@ -1859,7 +1971,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
-   "Which monitor to prefer.\n0 (default) means no particular monitor is preferred, 1 and up (1 being first monitor), suggests RetroArch to use that particular monitor."
+   "Which monitor to prefer. 0 (default) means no particular monitor is preferred, 1 and up (1 being first monitor), suggests RetroArch to use that particular monitor."
    )
 #if defined (WIIU)
 MSG_HASH(
@@ -2352,7 +2464,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
-   "Sync to Exact Content Framerate.\nThis option is the equivalent of forcing x1 speed while still allowing fast forward. No deviation from the core requested refresh rate, no sound Dynamic Rate Control."
+   "Sync to Exact Content Framerate. This option is the equivalent of forcing x1 speed while still allowing fast forward. No deviation from the core requested refresh rate, no sound Dynamic Rate Control."
    )
 
 /* Settings > Audio */
@@ -2439,7 +2551,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
-   "Audio volume, expressed in dB.\n0 dB is normal volume. No gain will be applied. Gain can be controlled in runtime with Input Volume Up / Input Volume Down."
+   "Audio volume, expressed in dB. 0 dB is normal volume, where no gain is applied. Gain can be controlled in runtime with Input Volume Up / Input Volume Down."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
@@ -2514,19 +2626,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
-   "\nALSA wants a PCM device."
+   "Custom PCM device value for the ALSA driver."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
-   "\nOSS wants a path (e.g. /dev/dsp)."
+   "Custom path value for the OSS driver (e.g. /dev/dsp)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
-   "\nJACK wants portnames (e.g. system:playback1,system:playback_2)."
+   "Custom portname value for the JACK driver (e.g. system:playback1,system:playback_2)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
-   "\nRSound wants an IP address to an RSound server."
+   "Custom IP address of an RSound server for the RSound driver."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -3805,7 +3917,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
-   "Some cores might need firmware or bios files.\nIf this option is enabled, RetroArch will not allow starting the core if any mandatory firmware items are missing."
+   "Some cores might need firmware or bios files. If this option is enabled, RetroArch will not allow to start the core if any mandatory firmware items are missing."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
@@ -3906,7 +4018,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
-   "Save config to disk on exit. Useful for changes made in the menu. Overwrites the config file, #include's and comments are not preserved."
+   "Save changes to the configuration file on exit. Useful for changes made in the menu. Overwrites the configuration file, #include's and comments are not preserved."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
@@ -4132,7 +4244,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
-   "Sets log level for libretro cores (GET_LOG_INTERFACE).\nIf a log level issued by a libretro core is below libretro_log level, it is ignored.\nDEBUG logs are always ignored unless verbose mode is activated (--verbose).\nDEBUG = 0\nINFO  = 1\nWARN  = 2\nERROR = 3"
+   "Sets log level for libretro cores (GET_LOG_INTERFACE). If a log level issued by a libretro core is below libretro_log level, it is ignored. DEBUG logs are always ignored unless verbose mode is activated (--verbose).\nDEBUG = 0\nINFO  = 1\nWARN  = 2\nERROR = 3"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
@@ -4238,7 +4350,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
-   "The maximum rate at which content will be run when using fast forward.\n(E.g. 5.0 for 60 fps content => 300 fps cap).\nRetroArch will go to sleep to ensure that the maximum rate will not be exceeded. Do not rely on this cap to be perfectly accurate."
+   "The maximum rate at which content will be run when using fast forward. (E.g. 5.0 for 60 fps content => 300 fps cap).\nRetroArch will go to sleep to ensure that the maximum rate will not be exceeded. Do not rely on this cap to be perfectly accurate."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
@@ -8758,7 +8870,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
-   "After changing shader settings such as amount of shader passes, filtering, FBO scale, use this to apply changes.\nChanging these shader settings is a somewhat expensive operation so it has to be done explicitly.\nWhen you apply shaders, the shader settings are saved to a temporary file (retroarch.slangp/.cgp/.glslp) and loaded. The file persists after RetroArch exits and is saved to Shader Directory."
+   "After changing shader settings such as amount of shader passes, filtering, FBO scale, use this to apply changes.\nChanging these shader settings is a somewhat expensive operation so it has to be done explicitly.\nWhen you apply shaders, the shader settings are saved to a temporary file (retroarch.slangp/.cgp/.glslp) and loaded. The file persists after RetroArch exits and is saved to the Shader Directory."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -8786,7 +8898,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
-   "Path to shader. All shaders must be of the same type (i.e. Cg, GLSL or Slang).\nSet Shader Directory to set where the browser starts to look for shaders."
+   "Path to shader. All shaders must be of the same type (i.e. Cg, GLSL or Slang). Set Shader Directory to set where the browser starts to look for shaders."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
@@ -8802,7 +8914,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
-   "Scale for this pass.\nThe scale factor accumulates, i.e. 2x for first pass and 2x for second pass will give you a 4x total scale.\nIf there is a scale factor for last pass, the result is stretched to screen with the default filter, depending on Bilinear Filtering setting under Video settings.\nIf 'Default' is set, either 1x scale or stretch to fullscreen will be used depending if it's not the last pass or not."
+   "Scale for this pass. The scale factor accumulates, i.e. 2x for first pass and 2x for second pass will give you a 4x total scale.\nIf there is a scale factor for last pass, the result is stretched to screen with the default filter, depending on Bilinear Filtering setting under Video settings.\nIf 'Default' is set, either 1x scale or stretch to fullscreen will be used depending if it's not the last pass or not."
    )
 
 /* Quick Menu > Shaders > Save */

@@ -256,27 +256,50 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             {
                const char *lbl = settings ? settings->arrays.video_driver : NULL;
 
-               if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_GL)))
+               if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_GL1)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_GL)))
                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL), len);
-               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_SDL2)))
-                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_GL_CORE)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_VULKAN)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN), len);
                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_SDL1)))
                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1), len);
-/*               else if (string_is_equal(video_driver, "d3d"))
-               {
-                  snprintf(s, len,
-                        "Direct3D Video driver. \n"
-                        " \n"
-                        "Performance for software-rendered cores \n"
-                        "is dependent on your graphic card's \n"
-                        "underlying D3D driver).");
-               }*/
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_SDL2)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_METAL)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_D3D8)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_D3D9_CG)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_D3D9_HLSL)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_D3D10)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_D3D11)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_D3D12)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_DISPMANX)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_CACA)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA), len);
                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_EXYNOS)))
                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS), len);
                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_DRM)))
                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM), len);
                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_SUNXI)))
                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_WIIU)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_SWITCH)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_VG)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_DRIVER_GDI)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI), len);
                else
                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS), len);
             }
@@ -335,21 +358,57 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_FILTER), len);
 #endif
             break;
+        case MENU_ENUM_LABEL_AUDIO_DRIVER:
+            {
+               const char *lbl = settings ? settings->arrays.audio_driver : NULL;
+
+               if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_ALSA)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_ALSATHREAD)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_TINYALSA)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_RSOUND)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_OSS)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_ROAR)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_AL)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_SL)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_DSOUND)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_WASAPI)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_PULSE)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_JACK)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK), len);
+               else
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
+            }
+            break;
         case MENU_ENUM_LABEL_AUDIO_DEVICE:
             {
-                strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE), len);
-#ifdef HAVE_ALSA
-                strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA), len);
-#endif
-#ifdef HAVE_OSS
-                strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS), len);
-#endif
-#ifdef HAVE_JACK
-                strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK), len);
-#endif
-#ifdef HAVE_RSOUND
-                strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND), len);
-#endif
+               /* Device help is audio driver dependent. */
+               const char *lbl = settings ? settings->arrays.audio_driver : NULL;
+
+               if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_ALSA)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_ALSATHREAD)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_TINYALSA)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_OSS)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_JACK)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK), len);
+               else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_RSOUND)))
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND), len);
+               else
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE), len);
             }
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
