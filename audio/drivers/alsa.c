@@ -536,8 +536,12 @@ static void *alsa_init_microphone(void *data,
    errnum = snd_pcm_open(&microphone->pcm, alsa_mic_dev, SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
    if (errnum < 0)
    {
-      RARCH_ERR("[ALSA]: Failed to open microphone device: %s\n", snd_strerror(errnum));
+      RARCH_ERR("[ALSA]: Failed to open input device: %s\n", snd_strerror(errnum));
       goto error;
+   }
+   else
+   {
+      RARCH_DBG("[ALSA]: Opened input device with name \"%s\"\n", snd_pcm_name(microphone->pcm));
    }
 
    if (snd_pcm_hw_params_malloc(&params) < 0)
