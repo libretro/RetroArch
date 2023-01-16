@@ -633,7 +633,8 @@ bool audio_driver_init_internal(
    int16_t *out_conv_buf          = (int16_t*)memalign_alloc(64, outsamples_max * sizeof(int16_t));
    int16_t *in_conv_buf           = audio_enable_microphone ?
          (int16_t*)memalign_alloc(64, insamples_max * sizeof(int16_t)) : NULL;
-   float *audio_buf               = (float*)memalign_alloc(64, AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float));
+   size_t audio_buf_length        = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float);
+   float *audio_buf               = (float*)memalign_alloc(64, audio_buf_length);
    bool verbosity_enabled         = verbosity_is_enabled();
 
    convert_s16_to_float_init_simd();
@@ -646,6 +647,7 @@ bool audio_driver_init_internal(
    memset(audio_buf, 0, AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float));
 
    audio_driver_st.input_data                     = audio_buf;
+   audio_driver_st.input_data_length              = audio_buf_length;
    audio_driver_st.output_samples_conv_buf        = out_conv_buf;
    audio_driver_st.output_samples_conv_buf_length = outsamples_max * sizeof(int16_t);
    audio_driver_st.input_samples_conv_buf         = in_conv_buf;

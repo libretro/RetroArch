@@ -411,6 +411,7 @@ typedef struct
     * Scratch buffer for preparing data for the resampler
     */
    float *input_data;
+   size_t input_data_length;
 #ifdef HAVE_AUDIOMIXER
    struct audio_mixer_stream
       mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
