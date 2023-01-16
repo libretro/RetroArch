@@ -257,7 +257,7 @@ bool content_file_override_set(
          RBUF_RESIZE(p_content->content_override_list,
                num_entries + 1);
 
-         RARCH_LOG("[Content Override]: File Extension: '%s' - need_fullpath: %s, persistent_data: %s\n",
+         RARCH_LOG("[Content Override]: File Extension: '%3s' - need_fullpath: %s, persistent_data: %s\n",
                ext, overrides[i].need_fullpath ? "TRUE" : "FALSE",
                overrides[i].persistent_data ? "TRUE" : "FALSE");
 
