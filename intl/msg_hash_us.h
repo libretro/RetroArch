@@ -2296,11 +2296,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Reduces latency at the cost of a higher risk of video stuttering. Adds a delay after VSync (in ms)."
+   "Reduces latency at the cost of a higher risk of video stuttering. Adds a delay in milliseconds after video presentation and before core frame."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Sets how many milliseconds to delay after VSync before running the core. Can reduce latency at the cost of higher risk of stuttering. Maximum is %d."
+   "Sets how many milliseconds to delay after video presentation before running the core. Can reduce latency at the cost of higher risk of stuttering. Maximum is %d."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2744,7 +2744,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "Polling Behavior"
+   "Polling Behavior (Restart Required)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
