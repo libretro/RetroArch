@@ -9353,6 +9353,18 @@ static enum menu_action materialui_parse_menu_entry_action(
                materialui_switch_tabs(mui, main_menu_tab, MENU_ACTION_NOOP);
                new_action = MENU_ACTION_NOOP;
             }
+            else if (main_menu_tab_index == mui->nav_bar.active_menu_tab_index)
+            {
+               /* Jump to first item on Main Menu */
+               menu_navigation_set_selection(0);
+               materialui_navigation_set(mui, true);
+            }
+         }
+         else if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
+         {
+            /* Jump to first item on current menu */
+            menu_navigation_set_selection(0);
+            materialui_navigation_set(mui, true);
          }
          break;
       default:
