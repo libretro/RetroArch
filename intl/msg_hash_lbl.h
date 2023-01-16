@@ -202,16 +202,22 @@ MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DRIVER_WIIU,
    "AX"
    )
+#if defined(VITA)
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DRIVER_PSP,
-#if defined(VITA)
    "vita"
-#elif defined(ORBIS)
-   "orbis"
-#else
-   "psp"
-#endif
    )
+#elif defined(ORBIS)
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PSP,
+   "orbis"
+   )
+#else
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PSP,
+   "psp"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DRIVER_PS2,
    "ps2"
@@ -220,14 +226,17 @@ MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DRIVER_CTR,
    "dsp"
    )
+#if defined(HAVE_LIBNX)
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DRIVER_SWITCH,
-#if defined(HAVE_LIBNX)
    "switch_audren_thread"
-#else
-   "switch"
-#endif
    )
+#else
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SWITCH,
+   "switch"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DRIVER_RWEBAUDIO,
    "rwebaudio"
