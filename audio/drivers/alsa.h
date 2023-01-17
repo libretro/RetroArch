@@ -39,7 +39,6 @@ int alsa_init_pcm(snd_pcm_t **pcm,
    alsa_stream_info_t *stream_info,
    unsigned *new_rate);
 
-bool alsa_find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params);
 void *alsa_device_list_new(void *data);
 void alsa_device_list_free(void *data, void *array_list_data);
 

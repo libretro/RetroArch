@@ -73,18 +73,6 @@ static void alsa_log_error(const char *file, int line, const char *function, int
    RARCH_ERR("[ALSA]: [%s:%s:%d]: %s%s\n", file, function, line, temp, errno_temp); /* To ensure that there's a newline at the end */
 }
 
-bool alsa_find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
-{
-   if (snd_pcm_hw_params_test_format(pcm, params, SND_PCM_FORMAT_FLOAT) == 0)
-   {
-      RARCH_LOG("[ALSA]: Using floating point format.\n");
-      return true;
-   }
-
-   RARCH_LOG("[ALSA]: Using signed 16-bit format.\n");
-   return false;
-}
-
 int alsa_init_pcm(snd_pcm_t **pcm,
    const char* device,
    snd_pcm_stream_t stream,
