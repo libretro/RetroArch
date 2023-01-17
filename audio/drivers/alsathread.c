@@ -449,11 +449,28 @@ static void alsa_thread_free_microphone(void *data, void *microphone_context)
 
 static bool alsa_thread_get_microphone_state(const void *data, const void *microphone_context)
 {
+   alsa_thread_t *alsa = (alsa_thread_t*)data;
+   alsa_thread_microphone_t *microphone = (alsa_thread_microphone_t *)microphone_context;
 
+   if (!alsa || !microphone)
+      return false;
+
+   return !microphone->is_paused;
 }
+
 static bool alsa_thread_set_microphone_state(void *data, void *microphone_context, bool enabled)
 {
+   alsa_thread_t *alsa                   = (alsa_thread_t*)data;
+   alsa_thread_microphone_t  *microphone = (alsa_thread_microphone_t*)microphone_context;
 
+   if (!alsa || !microphone)
+      return false;
+   /* Both params must be non-null */
+
+   microphone->is_paused = !enabled;
+
+   // TODO: Do I need to synchronize this?
+   return true;
 }
 
 static ssize_t alsa_thread_read_microphone(void *driver_context, void *microphone_context, void *buf_, size_t size_)
