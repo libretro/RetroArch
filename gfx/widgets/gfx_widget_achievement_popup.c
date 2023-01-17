@@ -31,6 +31,19 @@ typedef struct cheevo_popup
    uintptr_t badge;
 } cheevo_popup;
 
+enum
+{
+   ANCHOR_LEFT = 0,
+   ANCHOR_CENTER,
+   ANCHOR_RIGHT
+};
+
+enum
+{
+   ANCHOR_TOP = 0,
+   ANCHOR_BOTTOM
+};
+
 struct gfx_widget_achievement_popup_state
 {
 #ifdef HAVE_THREADS
@@ -50,9 +63,9 @@ struct gfx_widget_achievement_popup_state
    /* Values copied from user config in _start to prevent accessing every _frame */
    float target_h;         /* Horizontal sliding target, 0.0 to 0.5, convert to screen-space before use */
    float target_v;         /* Vertical sliding target, 0.0 to 0.5, convert to screen-space before use */
+   uint8_t anchor_h;       /* Horizontal anchor */
+   uint8_t anchor_v;       /* Vertical anchor */
    bool padding_auto;      /* Should we use target h/v or grab pixel values from p_dispwidget? */
-   enum { ANCHOR_LEFT = 0, ANCHOR_CENTER, ANCHOR_RIGHT } anchor_h;   /* Horizontal anchor */
-   enum { ANCHOR_TOP = 0, ANCHOR_BOTTOM } anchor_v;                  /* Vertical anchor */
 };
 
 typedef struct gfx_widget_achievement_popup_state gfx_widget_achievement_popup_state_t;
@@ -169,30 +182,30 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       /* Initial horizontal position, then apply animated offset */
       switch (state->anchor_h)
       {
-      case ANCHOR_LEFT:
-         screen_pos_x = screen_padding_x;
-         break;
-      case ANCHOR_CENTER:
-         screen_pos_x = (video_width - state->height) * 0.5;
-         screen_pos_x -= (state->width / 2.0f) * state->slide_h;
-         break;
-      case ANCHOR_RIGHT:
-         screen_pos_x = video_width - state->height - screen_padding_x;
-         screen_pos_x -= state->width * state->slide_h;
-         break;
+         case ANCHOR_LEFT:
+            screen_pos_x = screen_padding_x;
+            break;
+         case ANCHOR_CENTER:
+            screen_pos_x = (video_width - state->height) * 0.5;
+            screen_pos_x -= (state->width / 2.0f) * state->slide_h;
+            break;
+         case ANCHOR_RIGHT:
+            screen_pos_x = video_width - state->height - screen_padding_x;
+            screen_pos_x -= state->width * state->slide_h;
+            break;
       }
 
       /* Initial vertical position (off-screen), then apply animated offset */
       switch (state->anchor_v)
       {
-      case ANCHOR_TOP:
-         screen_pos_y = -(state->height);
-         screen_pos_y += (screen_padding_y + state->height) * state->slide_v;
-         break;
-      case ANCHOR_BOTTOM:
-         screen_pos_y = video_height;
-         screen_pos_y -= (screen_padding_y + state->height) * state->slide_v;
-         break;
+         case ANCHOR_TOP:
+            screen_pos_y = -(state->height);
+            screen_pos_y += (screen_padding_y + state->height) * state->slide_v;
+            break;
+         case ANCHOR_BOTTOM:
+            screen_pos_y = video_height;
+            screen_pos_y -= (screen_padding_y + state->height) * state->slide_v;
+            break;
       }
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
