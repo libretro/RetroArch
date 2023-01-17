@@ -118,7 +118,8 @@ enum vulkan_context_flags
    /* Used by screenshot to get blits with correct colorspace. */
    VK_CTX_FLAG_SWAPCHAIN_IS_SRGB            = (1 << 2),
    VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK = (1 << 3),
-   VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN       = (1 << 4)
+   VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN       = (1 << 4),
+   VK_CTX_FLAG_HAS_PACK16_FMTS              = (1 << 5)
 };
 
 typedef struct vulkan_context

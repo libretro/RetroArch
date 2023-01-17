@@ -3030,6 +3030,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
             format = formats[i];
             video_driver_set_hdr_support();
          }
+         if (formats[i].format == VK_FORMAT_R5G6B5_UNORM_PACK16)
+         {
+             vk->context.flags |= VK_CTX_FLAG_HAS_PACK16_FMTS;
+         }
       }
 
       if (     (!(vk->context.flags & VK_CTX_FLAG_HDR_ENABLE))
