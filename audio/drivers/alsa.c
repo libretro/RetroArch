@@ -226,7 +226,7 @@ int alsa_init_pcm(snd_pcm_t **pcm,
 
    /* Shouldn't have to bother with this,
     * but some drivers are apparently broken. */
-   if ((errnum = snd_pcm_hw_params_get_period_size(params, &buffer_size, NULL)) < 0)
+   if ((errnum = snd_pcm_hw_params_get_period_size(params, &stream_info->period_frames, NULL)) < 0)
    {
       RARCH_WARN("[ALSA]: Failed to get an exact period size from %s device \"%s\": %s\n",
             snd_pcm_stream_name(stream),
@@ -234,7 +234,7 @@ int alsa_init_pcm(snd_pcm_t **pcm,
             snd_strerror(errnum));
       RARCH_WARN("[ALSA]: Trying the minimum period size instead\n");
 
-      if ((errnum = snd_pcm_hw_params_get_period_size_min(params, &buffer_size, NULL)) < 0)
+      if ((errnum = snd_pcm_hw_params_get_period_size_min(params, &stream_info->period_frames, NULL)) < 0)
       {
          RARCH_ERR("[ALSA]: Failed to get min period size from %s device \"%s\": %s\n",
                snd_pcm_stream_name(stream),
@@ -244,7 +244,16 @@ int alsa_init_pcm(snd_pcm_t **pcm,
       }
    }
 
-   RARCH_LOG("[ALSA]: Period size: %lu frames\n", buffer_size);
+   stream_info->period_size = snd_pcm_frames_to_bytes(*pcm, stream_info->period_frames);
+   if (stream_info->period_size < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to convert a period size of %lu frames to bytes: %s\n",
+            stream_info->period_frames,
+            snd_strerror(stream_info->period_frames));
+      goto error;
+   }
+
+   RARCH_LOG("[ALSA]: Period size: %lu frames\n", stream_info->period_frames);
 
    if ((errnum = snd_pcm_hw_params_get_buffer_size(params, &buffer_size)) < 0)
    {
@@ -267,6 +276,14 @@ int alsa_init_pcm(snd_pcm_t **pcm,
    RARCH_LOG("[ALSA]: Buffer size: %lu frames\n", buffer_size);
 
    stream_info->buffer_size = snd_pcm_frames_to_bytes(*pcm, buffer_size);
+   if (stream_info->buffer_size < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to convert a buffer size of %lu frames to bytes: %s\n",
+            buffer_size,
+            snd_strerror(buffer_size));
+      goto error;
+   }
+
    stream_info->can_pause = snd_pcm_hw_params_can_pause(params);
 
    RARCH_LOG("[ALSA]: Can pause: %s.\n", stream_info->can_pause ? "yes" : "no");
