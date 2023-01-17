@@ -3018,6 +3018,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          return false;
       }  
 
+      VkFormatProperties formatProperties;
+      vkGetPhysicalDeviceFormatProperties(vk->context.gpu, VK_FORMAT_R5G6B5_UNORM_PACK16, &formatProperties);
+      if (formatProperties.optimalTilingFeatures != 0)
+          vk->context.flags |= VK_CTX_FLAG_HAS_PACK16_FMTS;
+
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (settings->bools.video_hdr_enable)
          vk->context.flags |=  VK_CTX_FLAG_HDR_ENABLE;
