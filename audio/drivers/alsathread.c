@@ -25,6 +25,7 @@
 #include <string/stdstring.h>
 
 #include "../audio_driver.h"
+#include "alsa.h"
 #include "../../verbosity.h"
 
 #define TRY_ALSA(x) if (x < 0) \
@@ -109,18 +110,6 @@ static bool alsa_thread_use_float(void *data)
    return alsa->has_float;
 }
 
-static bool alsathread_find_float_format(snd_pcm_t *pcm,
-      snd_pcm_hw_params_t *params)
-{
-   if (snd_pcm_hw_params_test_format(pcm, params, SND_PCM_FORMAT_FLOAT) == 0)
-   {
-      RARCH_LOG("ALSA: Using floating point format.\n");
-      return true;
-   }
-   RARCH_LOG("ALSA: Using signed 16-bit format.\n");
-   return false;
-}
-
 static void alsa_thread_free(void *data)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)data;
@@ -175,7 +164,7 @@ static void *alsa_thread_init(const char *device,
    TRY_ALSA(snd_pcm_hw_params_malloc(&params));
    TRY_ALSA(snd_pcm_hw_params_any(alsa->pcm, params));
 
-   alsa->has_float = alsathread_find_float_format(alsa->pcm, params);
+   alsa->has_float = alsa_find_float_format(alsa->pcm, params);
    format = alsa->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
 
    TRY_ALSA(snd_pcm_hw_params_set_access(
@@ -412,8 +401,8 @@ audio_driver_t audio_alsathread = {
    alsa_thread_free,
    alsa_thread_use_float,
    "alsathread",
-   alsa_thread_device_list_new,
-   alsa_thread_device_list_free,
+   alsa_device_list_new,
+   alsa_device_list_free,
    alsa_thread_write_avail,
    alsa_thread_buffer_size,
 };

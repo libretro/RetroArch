@@ -22,6 +22,7 @@
 #include <alsa/asoundlib.h>
 
 #include "../audio_driver.h"
+#include "alsa.h"
 #include "../../verbosity.h"
 
 typedef struct alsa_microphone
@@ -78,10 +79,8 @@ static void alsa_log_error(const char *file, int line, const char *function, int
    RARCH_ERR("[ALSA] [%s:%s:%d]: %s%s\n", file, function, line, temp, errno_temp); /* To ensure that there's a newline at the end */
 }
 
-static bool find_float_format(snd_pcm_t *pcm, void *data)
+bool alsa_find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
 {
-   snd_pcm_hw_params_t *params = (snd_pcm_hw_params_t*)data;
-
    if (snd_pcm_hw_params_test_format(pcm, params, SND_PCM_FORMAT_FLOAT) == 0)
    {
       RARCH_LOG("[ALSA]: Using floating point format.\n");
@@ -129,7 +128,7 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    if (snd_pcm_hw_params_any(alsa->pcm, params) < 0)
       goto error;
 
-   alsa->has_float = find_float_format(alsa->pcm, params);
+   alsa->has_float = alsa_find_float_format(alsa->pcm, params);
    format = alsa->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
 
    if (snd_pcm_hw_params_set_access(
@@ -477,7 +476,7 @@ static size_t alsa_buffer_size(void *data)
    return alsa->buffer_size;
 }
 
-static void *alsa_device_list_new(void *data)
+void *alsa_device_list_new(void *data)
 {
    void **hints, **n;
    union string_list_elem_attr attr;
@@ -525,7 +524,7 @@ error:
    return NULL;
 }
 
-static void alsa_device_list_free(void *data, void *array_list_data)
+void alsa_device_list_free(void *data, void *array_list_data)
 {
    struct string_list *s = (struct string_list*)array_list_data;
 
@@ -584,7 +583,7 @@ static void *alsa_init_microphone(void *data,
    if (snd_pcm_hw_params_any(microphone->pcm, params) < 0)
       goto error;
 
-   microphone->has_float = find_float_format(microphone->pcm, params);
+   microphone->has_float = alsa_find_float_format(microphone->pcm, params);
    format = microphone->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
 
    if (microphone->has_float != alsa->has_float)
