@@ -739,15 +739,8 @@ static void *alsa_init_microphone(void *data,
 error:
    RARCH_ERR("[ALSA]: Failed to initialize microphone...\n");
 
-   if (microphone)
-   {
-      if (microphone->pcm)
-      {
-         snd_pcm_close(microphone->pcm);
-      }
+   alsa_free_microphone(alsa, microphone);
 
-      free(microphone);
-   }
    return NULL;
 }
 
