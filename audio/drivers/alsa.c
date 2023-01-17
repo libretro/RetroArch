@@ -27,37 +27,31 @@
 
 typedef struct alsa_microphone
 {
-    snd_pcm_t *pcm;
-    size_t buffer_size;
-    unsigned int frame_bits;
-    bool has_float;
-    bool can_pause;
-    bool is_paused;
+   snd_pcm_t *pcm;
+   alsa_stream_info_t stream_info;
+   bool is_paused;
 } alsa_microphone_t;
 
 typedef struct alsa
 {
    snd_pcm_t *pcm;
-    /* Only one microphone is supported right now;
-     * the driver state should track multiple microphone handles,
-     * but the driver *context* should track multiple microphone contexts */
+   /* Only one microphone is supported right now;
+    * the driver state should track multiple microphone handles,
+    * but the driver *context* should track multiple microphone contexts */
    alsa_microphone_t *microphone;
 
    /* The error handler that was set before this driver was initialized.
     * Likely to be equal to the default, but kept and restored just in case. */
    snd_lib_error_handler_t prev_error_handler;
-   size_t buffer_size;
-   unsigned int frame_bits;
+   alsa_stream_info_t stream_info;
    bool nonblock;
-   bool has_float;
-   bool can_pause;
    bool is_paused;
 } alsa_t;
 
 static bool alsa_use_float(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
-   return alsa->has_float;
+   return alsa->stream_info.has_float;
 }
 
 static void alsa_log_error(const char *file, int line, const char *function, int err, const char *fmt,...)
@@ -91,20 +85,272 @@ bool alsa_find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
    return false;
 }
 
-static void *alsa_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
-      unsigned *new_rate)
+int alsa_init_pcm(snd_pcm_t **pcm,
+   const char* device,
+   snd_pcm_stream_t stream,
+   unsigned rate,
+   unsigned latency,
+   unsigned channels,
+   alsa_stream_info_t *stream_info,
+   unsigned *new_rate)
 {
    snd_pcm_format_t format;
    snd_pcm_uframes_t buffer_size;
    snd_pcm_hw_params_t *params    = NULL;
    snd_pcm_sw_params_t *sw_params = NULL;
    unsigned latency_usec          = latency * 1000;
-   unsigned channels              = 2;
    unsigned periods               = 4;
    unsigned orig_rate             = rate;
-   const char *alsa_dev           = "default";
-   alsa_t *alsa                   = (alsa_t*)calloc(1, sizeof(alsa_t));
+   const char *alsa_dev           = device ? device : "default";
+   int errnum                     = 0;
+
+   RARCH_DBG("[ALSA] Requesting device \"%s\" for %s stream\n", alsa_dev, snd_pcm_stream_name(stream));
+
+   if ((errnum = snd_pcm_open(pcm, alsa_dev, stream, SND_PCM_NONBLOCK)) < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to open %s stream on device \"%s\": %s\n",
+            snd_pcm_stream_name(stream),
+            alsa_dev,
+            snd_strerror(errnum));
+
+      goto error;
+   }
+
+   if ((errnum = snd_pcm_hw_params_malloc(&params)) < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to allocate hardware parameters: %s\n",
+            snd_strerror(errnum));
+
+      goto error;
+   }
+
+   if ((errnum = snd_pcm_hw_params_any(*pcm, params)) < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to query hardware parameters from %s device \"%s\": %s\n",
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+
+      goto error;
+   }
+
+   format = (snd_pcm_hw_params_test_format(*pcm, params, SND_PCM_FORMAT_FLOAT) == 0)
+         ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
+   stream_info->has_float = (format == SND_PCM_FORMAT_FLOAT);
+
+   RARCH_LOG("[ALSA]: Using %s sample format for %s device \"%s\"\n",
+         snd_pcm_format_name(format),
+         snd_pcm_stream_name(stream),
+         snd_pcm_name(*pcm)
+   );
+
+   if ((errnum = snd_pcm_hw_params_set_access(*pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to set %s access for %s device \"%s\": %s\n",
+            snd_pcm_access_name(SND_PCM_ACCESS_RW_INTERLEAVED),
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+
+      goto error;
+   }
+   stream_info->frame_bits = snd_pcm_format_physical_width(format) * channels;
+
+   if ((errnum = snd_pcm_hw_params_set_format(*pcm, params, format)) < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to set %s format for %s device \"%s\": %s\n",
+            snd_pcm_format_name(format),
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+
+      goto error;
+   }
+
+   if ((errnum = snd_pcm_hw_params_set_channels(*pcm, params, channels)) < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to set %u-channel audio for %s device \"%s\": %s\n",
+            channels,
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+
+      goto error;
+   }
+
+   /* Don't allow rate resampling when probing for the default rate (but ignore if this call fails) */
+   if ((errnum = snd_pcm_hw_params_set_rate_resample(*pcm, params, false)) < 0)
+   {
+      RARCH_WARN("[ALSA]: Failed to request a default unsampled rate for %s device \"%s\": %s\n",
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+   }
+
+   if ((errnum = snd_pcm_hw_params_set_rate_near(*pcm, params, &rate, 0)) < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to request a rate near %uHz for %s device \"%s\": %s\n",
+            rate,
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+
+      goto error;
+   }
+
+   if (new_rate && (rate != orig_rate))
+      *new_rate = rate;
+
+   if ((snd_pcm_hw_params_set_buffer_time_near(*pcm, params, &latency_usec, NULL)) < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to request a buffer time near %uus for %s device \"%s\": %s\n",
+            latency_usec,
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+
+      goto error;
+
+   }
+
+   if ((errnum = snd_pcm_hw_params_set_periods_near(*pcm, params, &periods, NULL)) < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to request %u periods per buffer for %s device \"%s\": %s\n",
+            periods,
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+
+      goto error;
+   }
+
+   if ((errnum = snd_pcm_hw_params(*pcm, params)) < 0)
+   { /* This calls snd_pcm_prepare() under the hood */
+      RARCH_ERR("[ALSA]: Failed to install hardware parameters for %s device \"%s\": %s\n",
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+
+      goto error;
+   }
+
+   /* Shouldn't have to bother with this,
+    * but some drivers are apparently broken. */
+   if ((errnum = snd_pcm_hw_params_get_period_size(params, &buffer_size, NULL)) < 0)
+   {
+      RARCH_WARN("[ALSA]: Failed to get an exact period size from %s device \"%s\": %s\n",
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+      RARCH_WARN("[ALSA]: Trying the minimum period size instead\n");
+
+      if ((errnum = snd_pcm_hw_params_get_period_size_min(params, &buffer_size, NULL)) < 0)
+      {
+         RARCH_ERR("[ALSA]: Failed to get min period size from %s device \"%s\": %s\n",
+               snd_pcm_stream_name(stream),
+               snd_pcm_name(*pcm),
+               snd_strerror(errnum));
+         goto error;
+      }
+   }
+
+   RARCH_LOG("[ALSA]: Period size: %lu frames\n", buffer_size);
+
+   if ((errnum = snd_pcm_hw_params_get_buffer_size(params, &buffer_size)) < 0)
+   {
+      RARCH_WARN("[ALSA]: Failed to get exact buffer size from %s device \"%s\": %s\n",
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+      RARCH_WARN("[ALSA]: Trying the maximum buffer size instead\n");
+
+      if ((errnum = snd_pcm_hw_params_get_buffer_size_max(params, &buffer_size)) < 0)
+      {
+         RARCH_ERR("[ALSA]: Failed to get max buffer size from %s device \"%s\": %s\n",
+               snd_pcm_stream_name(stream),
+               snd_pcm_name(*pcm),
+               snd_strerror(errnum));
+         goto error;
+      }
+   }
+
+   RARCH_LOG("[ALSA]: Buffer size: %lu frames\n", buffer_size);
+
+   stream_info->buffer_size = snd_pcm_frames_to_bytes(*pcm, buffer_size);
+   stream_info->can_pause = snd_pcm_hw_params_can_pause(params);
+
+   RARCH_LOG("[ALSA]: Can pause: %s.\n", stream_info->can_pause ? "yes" : "no");
+
+   if ((errnum = snd_pcm_sw_params_malloc(&sw_params)) < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to allocate software parameters: %s\n",
+            snd_strerror(errnum));
+
+      goto error;
+   }
+
+   if ((errnum = snd_pcm_sw_params_current(*pcm, sw_params)) < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to query current software parameters for %s device \"%s\": %s\n",
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+
+      goto error;
+   }
+
+   if ((errnum = snd_pcm_sw_params_set_start_threshold(*pcm, sw_params, buffer_size / 2)) < 0)
+   {
+      // TODO: Should "2" be a separate parameter, or equal to channels?
+
+      RARCH_ERR("[ALSA]: Failed to set start %lu-frame threshold for %s device \"%s\": %s\n",
+            buffer_size / 2,
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+
+      goto error;
+   }
+
+   if ((errnum = snd_pcm_sw_params(*pcm, sw_params)) < 0)
+   {
+      RARCH_ERR("[ALSA]: Failed to install software parameters for %s device \"%s\": %s\n",
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            snd_strerror(errnum));
+
+      goto error;
+   }
+
+   snd_pcm_hw_params_free(params);
+   snd_pcm_sw_params_free(sw_params);
+
+   RARCH_LOG("[ALSA] Initialized %s device \"%s\"\n",
+         snd_pcm_stream_name(stream),
+         snd_pcm_name(*pcm));
+
+   return 0;
+error:
+   if (params)
+      snd_pcm_hw_params_free(params);
+
+   if (sw_params)
+      snd_pcm_sw_params_free(sw_params);
+
+   if (*pcm)
+   {
+      snd_pcm_close(*pcm);
+      *pcm = NULL;
+   }
+
+   return errnum;
+}
+
+static void *alsa_init(const char *device, unsigned rate, unsigned latency,
+      unsigned block_frames,
+      unsigned *new_rate)
+{
+   alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
 
    if (!alsa)
       return NULL;
@@ -112,99 +358,17 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    //alsa->prev_error_handler = snd_lib_error;
    //snd_lib_error_set_handler(alsa_log_error);
 
-   if (device)
-      alsa_dev = device;
-
    RARCH_LOG("[ALSA] Using ALSA version %s\n", snd_asoundlib_version());
-   RARCH_DBG("[ALSA] Requesting device \"%s\" for output\n", alsa_dev);
 
-   if (snd_pcm_open(
-            &alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK) < 0)
+   if (alsa_init_pcm(&alsa->pcm, device, SND_PCM_STREAM_PLAYBACK, rate, latency, 2, &alsa->stream_info, new_rate) < 0)
+   {
       goto error;
-
-   if (snd_pcm_hw_params_malloc(&params) < 0)
-      goto error;
-
-   if (snd_pcm_hw_params_any(alsa->pcm, params) < 0)
-      goto error;
-
-   alsa->has_float = alsa_find_float_format(alsa->pcm, params);
-   format = alsa->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
-
-   if (snd_pcm_hw_params_set_access(
-            alsa->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
-      goto error;
-
-   /* channels hardcoded to 2 for now */
-   alsa->frame_bits = snd_pcm_format_physical_width(format) * 2;
-
-   if (snd_pcm_hw_params_set_format(alsa->pcm, params, format) < 0)
-      goto error;
-
-   if (snd_pcm_hw_params_set_channels(alsa->pcm, params, channels) < 0)
-      goto error;
-
-   /* Don't allow rate resampling when probing for the default rate (but ignore if this call fails) */
-   snd_pcm_hw_params_set_rate_resample(alsa->pcm, params, 0 );
-   if (snd_pcm_hw_params_set_rate_near(alsa->pcm, params, &rate, 0) < 0)
-      goto error;
-
-   if (new_rate && (rate != orig_rate))
-      *new_rate = rate;
-
-   if (snd_pcm_hw_params_set_buffer_time_near(
-            alsa->pcm, params, &latency_usec, NULL) < 0)
-      goto error;
-
-   if (snd_pcm_hw_params_set_periods_near(
-            alsa->pcm, params, &periods, NULL) < 0)
-      goto error;
-
-   if (snd_pcm_hw_params(alsa->pcm, params) < 0)
-      goto error;
-
-   /* Shouldn't have to bother with this,
-    * but some drivers are apparently broken. */
-   if (snd_pcm_hw_params_get_period_size(params, &buffer_size, NULL))
-      snd_pcm_hw_params_get_period_size_min(params, &buffer_size, NULL);
-
-   RARCH_LOG("[ALSA]: Period size: %d frames\n", (int)buffer_size);
-
-   if (snd_pcm_hw_params_get_buffer_size(params, &buffer_size))
-      snd_pcm_hw_params_get_buffer_size_max(params, &buffer_size);
-
-   RARCH_LOG("[ALSA]: Buffer size: %d frames\n", (int)buffer_size);
-
-   alsa->buffer_size = snd_pcm_frames_to_bytes(alsa->pcm, buffer_size);
-   alsa->can_pause = snd_pcm_hw_params_can_pause(params);
-
-   RARCH_LOG("[ALSA]: Can pause: %s.\n", alsa->can_pause ? "yes" : "no");
-
-   if (snd_pcm_sw_params_malloc(&sw_params) < 0)
-      goto error;
-
-   if (snd_pcm_sw_params_current(alsa->pcm, sw_params) < 0)
-      goto error;
-
-   if (snd_pcm_sw_params_set_start_threshold(
-            alsa->pcm, sw_params, buffer_size / 2) < 0)
-      goto error;
-
-   if (snd_pcm_sw_params(alsa->pcm, sw_params) < 0)
-      goto error;
-
-   snd_pcm_hw_params_free(params);
-   snd_pcm_sw_params_free(sw_params);
+   }
 
    return alsa;
 
 error:
    RARCH_ERR("[ALSA]: Failed to initialize...\n");
-   if (params)
-      snd_pcm_hw_params_free(params);
-
-   if (sw_params)
-      snd_pcm_sw_params_free(sw_params);
 
    if (alsa)
    {
@@ -233,8 +397,8 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
    alsa_t *alsa              = (alsa_t*)data;
    const uint8_t *buf        = (const uint8_t*)buf_;
    snd_pcm_sframes_t written = 0;
-   snd_pcm_sframes_t size    = BYTES_TO_FRAMES(size_, alsa->frame_bits);
-   size_t frames_size        = alsa->has_float ? sizeof(float) : sizeof(int16_t);
+   snd_pcm_sframes_t size    = BYTES_TO_FRAMES(size_, alsa->stream_info.frame_bits);
+   size_t frames_size        = alsa->stream_info.has_float ? sizeof(float) : sizeof(int16_t);
 
    /* Workaround buggy menu code.
     * If a write happens while we're paused, we might never progress. */
@@ -326,7 +490,7 @@ static bool alsa_stop(void *data)
    if (alsa->is_paused)
 	  return true;
 
-   if (alsa->can_pause
+   if (alsa->stream_info.can_pause
          && !alsa->is_paused)
    {
       int ret = snd_pcm_pause(alsa->pcm, 1);
@@ -367,7 +531,7 @@ static bool alsa_start(void *data, bool is_shutdown)
    if (!alsa->is_paused)
 	  return true;
 
-   if (alsa->can_pause
+   if (alsa->stream_info.can_pause
          && alsa->is_paused)
    {
       int ret = snd_pcm_pause(alsa->pcm, 0);
@@ -465,15 +629,15 @@ static size_t alsa_write_avail(void *data)
    snd_pcm_sframes_t avail = snd_pcm_avail(alsa->pcm);
 
    if (avail < 0)
-      return alsa->buffer_size;
+      return alsa->stream_info.buffer_size;
 
-   return FRAMES_TO_BYTES(avail, alsa->frame_bits);
+   return FRAMES_TO_BYTES(avail, alsa->stream_info.frame_bits);
 }
 
 static size_t alsa_buffer_size(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
-   return alsa->buffer_size;
+   return alsa->stream_info.buffer_size;
 }
 
 void *alsa_device_list_new(void *data)
@@ -541,17 +705,8 @@ static void *alsa_init_microphone(void *data,
    unsigned block_frames,
    unsigned *new_rate)
 {
-   snd_pcm_format_t format;
-   snd_pcm_uframes_t buffer_size;
    alsa_t *alsa                   = (alsa_t*)data;
-   snd_pcm_hw_params_t *params    = NULL;
-   snd_pcm_sw_params_t *sw_params = NULL;
-   unsigned latency_usec          = latency * 1000;
-   unsigned periods               = 4;
-   unsigned orig_rate             = rate;
-   const char *alsa_mic_dev       = "default";
    alsa_microphone_t  *microphone = NULL;
-   int errnum                     = 0;
 
    if (!alsa) /* If we weren't given a valid ALSA context... */
       return NULL;
@@ -561,107 +716,25 @@ static void *alsa_init_microphone(void *data,
    if (!microphone) /* If the microphone context couldn't be allocated... */
       return NULL;
 
-   if (device)
-      alsa_mic_dev = device;
-
-   RARCH_DBG("[ALSA] Requesting device \"%s\" for input\n", alsa_mic_dev);
-
-   errnum = snd_pcm_open(&microphone->pcm, alsa_mic_dev, SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK);
-   if (errnum < 0)
-   {
-      RARCH_ERR("[ALSA]: Failed to open input device: %s\n", snd_strerror(errnum));
-      goto error;
-   }
-   else
-   {
-      RARCH_DBG("[ALSA]: Opened input device with name \"%s\"\n", snd_pcm_name(microphone->pcm));
-   }
-
-   if (snd_pcm_hw_params_malloc(&params) < 0)
-      goto error;
-
-   if (snd_pcm_hw_params_any(microphone->pcm, params) < 0)
-      goto error;
-
-   microphone->has_float = alsa_find_float_format(microphone->pcm, params);
-   format = microphone->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
-
-   if (microphone->has_float != alsa->has_float)
-   { /* If the mic and speaker don't both use floating point or integer samples... */
-      RARCH_WARN("[ALSA]: Microphone and speaker do not use the same PCM format\n");
-      RARCH_WARN("[ALSA]: (%s and %s, respectively)\n",
-                microphone->has_float ? "SND_PCM_FORMAT_FLOAT" : "SND_PCM_FORMAT_S16",
-                alsa->has_float ? "SND_PCM_FORMAT_FLOAT" : "SND_PCM_FORMAT_S16");
-    }
-
-   if (snd_pcm_hw_params_set_access(
-          microphone->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
-      goto error;
-
    /* channels hardcoded to 1, because we only support mono mic input */
-   microphone->frame_bits = snd_pcm_format_physical_width(format);
-
-   if (snd_pcm_hw_params_set_format(microphone->pcm, params, format) < 0)
+   if (alsa_init_pcm(&microphone->pcm, device, SND_PCM_STREAM_CAPTURE, rate, latency, 1, &microphone->stream_info, new_rate) < 0)
+   {
       goto error;
+   }
 
-   if (snd_pcm_hw_params_set_channels(microphone->pcm, params, 1) < 0)
-      goto error;
-
-   /* Don't allow rate resampling when probing for the default rate (but ignore if this call fails) */
-   snd_pcm_hw_params_set_rate_resample(microphone->pcm, params, 0 );
-   if (snd_pcm_hw_params_set_rate_near(microphone->pcm, params, &rate, 0) < 0)
-      goto error;
-
-   if (new_rate && (rate != orig_rate))
-      *new_rate = rate;
-
-   if (snd_pcm_hw_params_set_buffer_time_near(
-          microphone->pcm, params, &latency_usec, NULL) < 0)
-      goto error;
-
-   if (snd_pcm_hw_params_set_periods_near(
-         microphone->pcm, params, &periods, NULL) < 0)
-      goto error;
-
-   if (snd_pcm_hw_params(microphone->pcm, params) < 0)
-      goto error;
-
-   /* Shouldn't have to bother with this,
-    * but some drivers are apparently broken. */
-   if (snd_pcm_hw_params_get_period_size(params, &buffer_size, NULL))
-      snd_pcm_hw_params_get_period_size_min(params, &buffer_size, NULL);
-
-   RARCH_LOG("[ALSA]: Microphone period size: %u frames\n", buffer_size);
-
-   if (snd_pcm_hw_params_get_buffer_size(params, &buffer_size))
-      snd_pcm_hw_params_get_buffer_size_max(params, &buffer_size);
-
-   RARCH_LOG("[ALSA]: Microphone buffer size: %u frames\n", buffer_size);
-
-   microphone->buffer_size = snd_pcm_frames_to_bytes(microphone->pcm, buffer_size);
-   microphone->can_pause = snd_pcm_hw_params_can_pause(params);
-
-   RARCH_LOG("[ALSA]: Can pause microphone: %s.\n", microphone->can_pause ? "yes" : "no");
-
-   if (snd_pcm_sw_params_malloc(&sw_params) < 0)
-      goto error;
-
-   if (snd_pcm_sw_params_current(microphone->pcm, sw_params) < 0)
-      goto error;
-
-   snd_pcm_hw_params_free(params);
-   snd_pcm_sw_params_free(sw_params);
+   if (microphone->stream_info.has_float != alsa->stream_info.has_float)
+   { /* If the mic and speaker don't both use floating point or integer samples... */
+      RARCH_WARN("[ALSA]: Microphone and speaker use different sample formats\n");
+      RARCH_WARN("[ALSA]: (%s and %s, respectively)\n",
+            microphone->stream_info.has_float ? "SND_PCM_FORMAT_FLOAT" : "SND_PCM_FORMAT_S16",
+            alsa->stream_info.has_float ? "SND_PCM_FORMAT_FLOAT" : "SND_PCM_FORMAT_S16");
+   }
 
    alsa->microphone = microphone;
    return microphone;
 
 error:
    RARCH_ERR("[ALSA]: Failed to initialize microphone...\n");
-   if (params)
-      snd_pcm_hw_params_free(params);
-
-   if (sw_params)
-      snd_pcm_sw_params_free(sw_params);
 
    if (microphone)
    {
@@ -716,7 +789,7 @@ static bool alsa_set_microphone_state(void *data, void *microphone_context, bool
       return false;
    /* Both params must be non-null */
 
-   if (!microphone->can_pause)
+   if (!microphone->stream_info.can_pause)
    {
       RARCH_WARN("[ALSA]: Microphone \"%s\" cannot be paused\n", snd_pcm_name(microphone->pcm));
       return true;
@@ -756,8 +829,8 @@ static ssize_t alsa_read_microphone(void *driver_context, void *microphone_conte
    if (!alsa || !microphone || !buf)
       return -1;
 
-   size        = BYTES_TO_FRAMES(size_, microphone->frame_bits);
-   frames_size = microphone->has_float ? sizeof(float) : sizeof(int16_t);
+   size        = BYTES_TO_FRAMES(size_, microphone->stream_info.frame_bits);
+   frames_size = microphone->stream_info.has_float ? sizeof(float) : sizeof(int16_t);
 
    /* Workaround buggy menu code.
     * If a read happens while we're paused, we might never progress. */
@@ -855,7 +928,7 @@ static ssize_t alsa_read_microphone(void *driver_context, void *microphone_conte
       }
    }
 
-   return FRAMES_TO_BYTES(read, microphone->frame_bits);
+   return FRAMES_TO_BYTES(read, microphone->stream_info.frame_bits);
 }
 
 audio_driver_t audio_alsa = {

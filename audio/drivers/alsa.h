@@ -19,6 +19,26 @@
 
 /* Header file for common functions that are used by alsa and alsathread. */
 
+/**
+ * Used for info that's common to all pcm devices
+ * that's relevant for our purposes.
+ */
+typedef struct alsa_stream_info {
+   size_t buffer_size;
+   unsigned int frame_bits;
+   bool has_float;
+   bool can_pause;
+} alsa_stream_info_t;
+
+int alsa_init_pcm(snd_pcm_t **pcm,
+   const char* device,
+   snd_pcm_stream_t stream,
+   unsigned rate,
+   unsigned latency,
+   unsigned channels,
+   alsa_stream_info_t *stream_info,
+   unsigned *new_rate);
+
 bool alsa_find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params);
 void *alsa_device_list_new(void *data);
 void alsa_device_list_free(void *data, void *array_list_data);
