@@ -20,6 +20,7 @@
 #include <string/stdstring.h>
 
 #include <alsa/asoundlib.h>
+#include <asm-generic/errno.h>
 
 #include "../audio_driver.h"
 #include "alsa.h"
@@ -327,13 +328,38 @@ error:
 
    if (*pcm)
    {
-      snd_pcm_close(*pcm);
+      alsa_free_pcm(*pcm);
       *pcm = NULL;
    }
 
    return errnum;
 }
 
+void alsa_free_pcm(snd_pcm_t *pcm)
+{
+   if (pcm)
+   {
+      int errnum = 0;
+
+      if ((errnum = snd_pcm_drop(pcm)) < 0)
+      {
+         RARCH_WARN("[ALSA]: Failed to drop remaining samples in %s device \"%s\": %s\n",
+               snd_pcm_stream_name(snd_pcm_stream(pcm)),
+               snd_pcm_name(pcm),
+               snd_strerror(errnum));
+      }
+
+      if ((errnum = snd_pcm_close(pcm)) < 0)
+      {
+         RARCH_WARN("[ALSA]: Failed to close %s device \"%s\": %s\n",
+               snd_pcm_stream_name(snd_pcm_stream(pcm)),
+               snd_pcm_name(pcm),
+               snd_strerror(errnum));
+      }
+   }
+}
+
+static void alsa_free(void *data);
 static void *alsa_init(const char *device, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
@@ -361,21 +387,8 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
 error:
    RARCH_ERR("[ALSA]: Failed to initialize...\n");
 
-   if (alsa)
-   {
-      if (alsa->pcm)
-      {
-         snd_pcm_close(alsa->pcm);
-         snd_config_update_free_global();
-      }
+   alsa_free(alsa);
 
-      if (alsa->prev_error_handler)
-      { /* If we ever changed the error handler, put it back. */
-         snd_lib_error_set_handler(alsa->prev_error_handler);
-      }
-
-      free(alsa);
-   }
    return NULL;
 }
 
@@ -592,17 +605,8 @@ static void alsa_free(void *data)
 
    if (alsa)
    {
-      if (alsa->pcm)
-      {
-         snd_pcm_drop(alsa->pcm);
-         snd_pcm_close(alsa->pcm);
-      }
-
-      if (alsa->microphone)
-      {
-         alsa_free_microphone(alsa, alsa->microphone);
-      }
-
+      alsa_free_pcm(alsa->pcm);
+      alsa_free_microphone(alsa, alsa->microphone);
 
       if (alsa->prev_error_handler)
       { /* If we ever changed the error handler, put it back. */
@@ -739,23 +743,7 @@ static void alsa_free_microphone(void *data, void *microphone_context)
 
    if (alsa && microphone)
    {
-      if (microphone->pcm)
-      {
-         int errnum = 0;
-         if ((errnum = snd_pcm_drop(microphone->pcm)) < 0)
-         {
-            RARCH_WARN("[ALSA] Failed to drop remaining samples in capture device \"%s\": %s\n",
-                  snd_pcm_name(microphone->pcm),
-                  snd_strerror(errnum));
-         }
-
-         if ((errnum = snd_pcm_close(microphone->pcm)) < 0)
-         {
-            RARCH_WARN("[ALSA] Failed to close capture device \"%s\": %s\n",
-                  snd_pcm_name(microphone->pcm),
-                  snd_strerror(errnum));
-         }
-      }
+      alsa_free_pcm(microphone->pcm);
 
       alsa->microphone = NULL;
       free(microphone);
