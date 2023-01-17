@@ -31,9 +31,29 @@
 #define TRY_ALSA(x) if (x < 0) \
                   goto error;
 
+typedef struct alsa_thread_microphone
+{
+   snd_pcm_t *pcm;
+   fifo_buffer_t *buffer;
+   size_t buffer_size;
+   sthread_t *worker_thread;
+   slock_t *fifo_lock;
+   scond_t *cond;
+   slock_t *cond_lock;
+   unsigned int frame_bits;
+   bool has_float;
+   bool can_pause;
+   bool is_paused;
+} alsa_thread_microphone_t;
+
 typedef struct alsa_thread
 {
    snd_pcm_t *pcm;
+   /* Only one microphone is supported right now;
+    * the driver state should track multiple microphone handles,
+    * but the driver *context* should track multiple microphone contexts */
+   alsa_thread_microphone_t *microphone;
+
    fifo_buffer_t *buffer;
    sthread_t *worker_thread;
    slock_t *fifo_lock;
