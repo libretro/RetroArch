@@ -163,6 +163,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Change video synchronisation settings."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   "Suspends the screensaver. Is a hint that does not necessarily have to be honoured by the video driver."
+   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -347,10 +351,6 @@ MSG_HASH(
    "V-Sync is enabled until performance falls below the target refresh rate. Can minimize stuttering when performance falls below real time, and be more energy efficient."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Reduces latency at the cost of a higher risk of video stuttering. Adds a delay after V-Sync (in ms)."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
    "Hard-synchronise the CPU and GPU. Reduces latency at the cost of performance."
    )
@@ -450,10 +450,6 @@ MSG_HASH(
 
 /* Settings > Input */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "Polling Behaviour"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "Remap the Controls for This Core"
@@ -555,6 +551,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
    "Toggles sync to exact content frame-rate on/off."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
+   "Pre-emptive Frames (Toggle)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
+   "Switches Pre-emptive Frames on/off."
+   )
 
 
 MSG_HASH(
@@ -610,6 +614,10 @@ MSG_HASH(
    "Use specified analogue stick for D-Pad input. 'Forced' modes override core native analogue input."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
+   "Map specified analogue stick for D-Pad input.\nIf core has native analogue support, D-Pad mapping will be disabled unless a '(Forced)' option is selected.\nIf D-Pad mapping is forced, core will receive no analogue input from specified stick."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    "Specifies which core port will receive input from front-end controller port %u."
    )
@@ -652,9 +660,37 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
    "[Run-Ahead is Unavailable]"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
+   "[Pre-emptive Frames Unavailable]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
+   "Current core is incompatible with pre-emptive frames due to lack of deterministic save state support."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
+   "Run Pre-emptive Frames"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
+   "Number of Pre-emptive Frames"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
+   "Hide Pre-emptive Frames Warnings"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
+   "Hide the warning message that appears when a core is incompatible with pre-emptive frames."
+   )
 
 /* Settings > Core */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
+   "Some cores might have a shut down feature. If this option is left disabled, selecting the shut down procedure would trigger RetroArch being shut down.\nEnabling this option will load a dummy core instead so that we remain inside the menu and RetroArch won't shut down."
+   )
 #ifndef HAVE_DYNAMIC
 #endif
 #ifdef HAVE_MIST
@@ -687,6 +723,10 @@ MSG_HASH(
 
 /* Settings > Saving */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
+   "Autosaves the non-volatile SRAM at a regular interval. This is disabled by default unless set otherwise. The interval is measured in seconds. A value of 0 disables autosaves."
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Automatically load the auto save state on start-up."
@@ -825,24 +865,56 @@ MSG_HASH(
    "Notification Colour (Red)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
+   "Sets the red value of the OSD text colour. Valid values are between 0 and 255."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
    "Notification Colour (Green)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
+   "Sets the green value of the OSD text colour. Valid values are between 0 and 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
    "Notification Colour (Blue)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
+   "Sets the blue value of the OSD text colour. Valid values are between 0 and 255."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+   "Enables a background colour for the OSD."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
    "Notification Background Colour (Red)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED,
+   "Sets the red value of the OSD background colour. Valid values are between 0 and 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
    "Notification Background Colour (Green)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
+   "Sets the green value of the OSD background colour. Valid values are between 0 and 255."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
    "Notification Background Colour (Blue)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
+   "Sets the blue value of the OSD background colour. Valid values are between 0 and 255."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+   "Sets the opacity of the OSD background colour. Valid values are between 0.0 and 1.0."
    )
 
 /* Settings > User Interface */
@@ -957,6 +1029,18 @@ MSG_HASH(
 
 /* Settings > Achievements > Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
+   "Log-in Messages"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+   "Show messages related to RetroAchievements account log-in."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+   "Show additional diagnostic and error messages."
+   )
 
 /* Settings > Network */
 
@@ -997,6 +1081,10 @@ MSG_HASH(
    "Start net-play in spectator mode."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
+   "Whether to start net-play in spectator mode. If set to true, net-play will be in spectator mode on start. It's always possible to change mode later."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
    "Chat Colour (Nickname)"
    )
@@ -1017,12 +1105,24 @@ MSG_HASH(
    "The frequency (in frames) that net-play will verify that the host and client are in sync."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
+   "The frequency in frames with which net-play will verify that the host and client are in sync. With most cores, this value will have no visible effect and can be ignored. With nondeterminstic cores, this value determines how often the net-play peers will be brought into sync. With buggy cores, setting this to any non-zero value will cause severe performance issues. Set to zero to perform no checks. This value is only used on the net-play host."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
    "The number of frames of input latency for net-play to use to hide network latency. Reduces jitter and makes net-play less CPU-intensive, at the expense of noticeable input lag."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "The number of frames of input latency for net-play to use to hide network latency.\nWhen in net-play, this option delays local input, so that the frame being run is closer to the frames being received from the network. This reduces jitter and makes net-play less CPU-intensive, but at the price of noticeable input lag."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    "The range of frames of input latency that may be used to hide network latency. Reduces jitter and makes net-play less CPU-intensive, at the expense of unpredictable input lag."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "The range of frames of input latency that may be used by net-play to hide network latency.\nIf set, net-play will adjust the number of frames of input latency dynamically to balance CPU time, input latency and network latency. This reduces jitter and makes net-play less CPU-intensive, but at the price of unpredictable input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -1104,12 +1204,20 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
    "Input your username here. This will be used for net-play sessions, among other things."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
+   "Localises the menu and all on-screen messages according to the language you have selected here. Requires a restart for the changes to take effect.\nTranslation completeness is shown next to each option. In case a language is not implemented for a menu item, we fall back to English."
+   )
 
 /* Settings > User > Privacy */
 
 
 /* Settings > User > Accounts */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "Log-in details for your RetroAchievements account. Visit retroachievements.org and sign up for a free account.\nAfter you are done registering, you need to input the username and password into RetroArch."
+   )
 
 /* Settings > User > Accounts > RetroAchievements */
 

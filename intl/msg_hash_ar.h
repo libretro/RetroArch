@@ -2039,10 +2039,6 @@ MSG_HASH(
    "الحد الأقصى لعدد المستخدمين المدعومين من RetroArch."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "سلوك نوع الاستطلاع"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "تذكير الروابط لهذا النواة"
    )

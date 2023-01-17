@@ -2023,10 +2023,6 @@ MSG_HASH(
    "Затримка кадрів (мс)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Зменшує затримку ціною вищого ризику заїкання відео. Додає затримку після VSync (у мс)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Автозатримка кадру"
    )
@@ -2385,10 +2381,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    "Максимальна кількість користувачів, яких підтримує RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "Поведінка опитування"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
