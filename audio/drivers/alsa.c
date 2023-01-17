@@ -81,7 +81,8 @@ int alsa_init_pcm(snd_pcm_t **pcm,
    unsigned latency,
    unsigned channels,
    alsa_stream_info_t *stream_info,
-   unsigned *new_rate)
+   unsigned *new_rate,
+   int mode)
 {
    snd_pcm_format_t format;
    snd_pcm_uframes_t buffer_size;
@@ -95,7 +96,7 @@ int alsa_init_pcm(snd_pcm_t **pcm,
 
    RARCH_DBG("[ALSA]: Requesting device \"%s\" for %s stream\n", alsa_dev, snd_pcm_stream_name(stream));
 
-   if ((errnum = snd_pcm_open(pcm, alsa_dev, stream, SND_PCM_NONBLOCK)) < 0)
+   if ((errnum = snd_pcm_open(pcm, alsa_dev, stream, mode)) < 0)
    {
       RARCH_ERR("[ALSA]: Failed to open %s stream on device \"%s\": %s\n",
             snd_pcm_stream_name(stream),
@@ -377,7 +378,7 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
 
    RARCH_LOG("[ALSA]: Using ALSA version %s\n", snd_asoundlib_version());
 
-   if (alsa_init_pcm(&alsa->pcm, device, SND_PCM_STREAM_PLAYBACK, rate, latency, 2, &alsa->stream_info, new_rate) < 0)
+   if (alsa_init_pcm(&alsa->pcm, device, SND_PCM_STREAM_PLAYBACK, rate, latency, 2, &alsa->stream_info, new_rate, SND_PCM_NONBLOCK) < 0)
    {
       goto error;
    }
@@ -712,7 +713,7 @@ static void *alsa_init_microphone(void *data,
       return NULL;
 
    /* channels hardcoded to 1, because we only support mono mic input */
-   if (alsa_init_pcm(&microphone->pcm, device, SND_PCM_STREAM_CAPTURE, rate, latency, 1, &microphone->stream_info, new_rate) < 0)
+   if (alsa_init_pcm(&microphone->pcm, device, SND_PCM_STREAM_CAPTURE, rate, latency, 1, &microphone->stream_info, new_rate, SND_PCM_NONBLOCK) < 0)
    {
       goto error;
    }

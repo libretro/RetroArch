@@ -37,7 +37,8 @@ int alsa_init_pcm(snd_pcm_t **pcm,
    unsigned latency,
    unsigned channels,
    alsa_stream_info_t *stream_info,
-   unsigned *new_rate);
+   unsigned *new_rate,
+   int mode);
 void alsa_free_pcm(snd_pcm_t *pcm);
 void *alsa_device_list_new(void *data);
 void alsa_device_list_free(void *data, void *array_list_data);

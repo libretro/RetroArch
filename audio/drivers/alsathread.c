@@ -124,11 +124,11 @@ static void alsa_microphone_worker_thread(void *data)
    // TODO: Implement
    alsa_thread_t *microphone = (alsa_thread_t*)data;
    uint8_t              *buf = (uint8_t *)calloc(1, microphone->period_size);
-   uintptr_t              id = sthread_get_current_thread_id();
+   uintptr_t       thread_id = sthread_get_current_thread_id();
 
    if (!buf)
    {
-      RARCH_ERR("[ALSA] [capture thread %u]: Failed to allocate audio buffer\n", id);
+      RARCH_ERR("[ALSA] [capture thread %p]: Failed to allocate audio buffer\n", thread_id);
       goto end;
    }
 
@@ -150,12 +150,12 @@ static void alsa_microphone_worker_thread(void *data)
 
       frames = snd_pcm_writei(microphone->info.pcm, buf, microphone->period_frames);
 
-      if (frames == -EPIPE || frames == -EINTR ||
-          frames == -ESTRPIPE)
+      if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
       {
          if (snd_pcm_recover(microphone->info.pcm, frames, 1) < 0)
          {
-            RARCH_ERR("[ALSA]: (#2) Failed to recover from error (%s)\n",
+            RARCH_ERR("[ALSA] [capture thread %p]: (#2) Failed to recover from read error: %s\n",
+                      thread_id,
                       snd_strerror(frames));
             break;
          }
@@ -164,7 +164,9 @@ static void alsa_microphone_worker_thread(void *data)
       }
       else if (frames < 0)
       {
-         RARCH_ERR("[ALSA]: Unknown error occurred (%s).\n", snd_strerror(frames));
+         RARCH_ERR("[ALSA] [capture thread %p]: Read error: %s.\n",
+               thread_id,
+               snd_strerror(frames));
          break;
       }
    }
@@ -177,7 +179,7 @@ end:
    free(buf);
 }
 
-static void alsa_thread_free_info(alsa_thread_info_t *info)
+static void alsa_thread_free_info_members(alsa_thread_info_t *info)
 {
    if (info)
    {
@@ -201,8 +203,8 @@ static void alsa_thread_free_info(alsa_thread_info_t *info)
          alsa_free_pcm(info->pcm);
       }
    }
-   /* Do NOT call free() here; the info object is embedded within
-    * something else */
+   /* Do NOT free() info itself; it's embedded within another struct
+    * that will be freed. */
 }
 
 static bool alsa_thread_use_float(void *data)
@@ -221,7 +223,7 @@ static void alsa_thread_free(void *data)
       if (alsa->microphone)
          alsa_thread_free_microphone(alsa, alsa->microphone);
 
-      alsa_thread_free_info(&alsa->info);
+      alsa_thread_free_info_members(&alsa->info);
       free(alsa);
    }
 }
@@ -241,7 +243,7 @@ static void *alsa_thread_init(const char *device,
 
    RARCH_LOG("[ALSA] Using ALSA version %s\n", snd_asoundlib_version());
 
-   if (alsa_init_pcm(&alsa->info.pcm, device, SND_PCM_STREAM_PLAYBACK, rate, latency, 2, &alsa->info.stream_info, new_rate) < 0)
+   if (alsa_init_pcm(&alsa->info.pcm, device, SND_PCM_STREAM_PLAYBACK, rate, latency, 2, &alsa->info.stream_info, new_rate, 0) < 0)
    {
       goto error;
    }
@@ -393,7 +395,7 @@ static void *alsa_thread_init_microphone(void *data,
       return NULL;
    }
 
-   if (alsa_init_pcm(&alsa->info.pcm, device, SND_PCM_STREAM_CAPTURE, rate, latency, 1, &alsa->info.stream_info, new_rate) < 0)
+   if (alsa_init_pcm(&alsa->info.pcm, device, SND_PCM_STREAM_CAPTURE, rate, latency, 1, &alsa->info.stream_info, new_rate, 0) < 0)
    {
       goto error;
    }
@@ -438,7 +440,7 @@ static void alsa_thread_free_microphone(void *data, void *microphone_context)
 
    if (alsa && microphone)
    {
-      alsa_thread_free_info(&microphone->info);
+      alsa_thread_free_info_members(&microphone->info);
 
       alsa->microphone = NULL;
       free(microphone);
@@ -469,8 +471,8 @@ audio_driver_t audio_alsathread = {
    alsa_thread_free,
    alsa_thread_use_float,
    "alsathread",
-   alsa_device_list_new,
-   alsa_device_list_free,
+   alsa_device_list_new, /* Reusing these functions from alsa.c */
+   alsa_device_list_free, /* because they don't use the driver context */
    alsa_thread_write_avail,
    alsa_thread_buffer_size,
    alsa_thread_init_microphone,
