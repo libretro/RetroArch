@@ -70,7 +70,7 @@ static void alsa_log_error(const char *file, int line, const char *function, int
 
    /* Write up to 255 characters. (The 256th will be \0.) */
    va_end(args);
-   RARCH_ERR("[ALSA] [%s:%s:%d]: %s%s\n", file, function, line, temp, errno_temp); /* To ensure that there's a newline at the end */
+   RARCH_ERR("[ALSA]: [%s:%s:%d]: %s%s\n", file, function, line, temp, errno_temp); /* To ensure that there's a newline at the end */
 }
 
 bool alsa_find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
@@ -104,7 +104,7 @@ int alsa_init_pcm(snd_pcm_t **pcm,
    const char *alsa_dev           = device ? device : "default";
    int errnum                     = 0;
 
-   RARCH_DBG("[ALSA] Requesting device \"%s\" for %s stream\n", alsa_dev, snd_pcm_stream_name(stream));
+   RARCH_DBG("[ALSA]: Requesting device \"%s\" for %s stream\n", alsa_dev, snd_pcm_stream_name(stream));
 
    if ((errnum = snd_pcm_open(pcm, alsa_dev, stream, SND_PCM_NONBLOCK)) < 0)
    {
@@ -325,7 +325,7 @@ int alsa_init_pcm(snd_pcm_t **pcm,
    snd_pcm_hw_params_free(params);
    snd_pcm_sw_params_free(sw_params);
 
-   RARCH_LOG("[ALSA] Initialized %s device \"%s\"\n",
+   RARCH_LOG("[ALSA]: Initialized %s device \"%s\"\n",
          snd_pcm_stream_name(stream),
          snd_pcm_name(*pcm));
 
@@ -353,12 +353,15 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
 
    if (!alsa)
+   {
+      RARCH_ERR("[ALSA]: Failed to allocate driver context\n");
       return NULL;
+   }
 
    //alsa->prev_error_handler = snd_lib_error;
    //snd_lib_error_set_handler(alsa_log_error);
 
-   RARCH_LOG("[ALSA] Using ALSA version %s\n", snd_asoundlib_version());
+   RARCH_LOG("[ALSA]: Using ALSA version %s\n", snd_asoundlib_version());
 
    if (alsa_init_pcm(&alsa->pcm, device, SND_PCM_STREAM_PLAYBACK, rate, latency, 2, &alsa->stream_info, new_rate) < 0)
    {
@@ -757,8 +760,20 @@ static void alsa_free_microphone(void *data, void *microphone_context)
    {
       if (microphone->pcm)
       {
-         snd_pcm_drop(microphone->pcm);
-         snd_pcm_close(microphone->pcm);
+         int errnum = 0;
+         if ((errnum = snd_pcm_drop(microphone->pcm)) < 0)
+         {
+            RARCH_WARN("[ALSA] Failed to drop remaining samples in capture device \"%s\": %s\n",
+                  snd_pcm_name(microphone->pcm),
+                  snd_strerror(errnum));
+         }
+
+         if ((errnum = snd_pcm_close(microphone->pcm)) < 0)
+         {
+            RARCH_WARN("[ALSA] Failed to close capture device \"%s\": %s\n",
+                  snd_pcm_name(microphone->pcm),
+                  snd_strerror(errnum));
+         }
       }
 
       alsa->microphone = NULL;
@@ -841,14 +856,14 @@ static ssize_t alsa_read_microphone(void *driver_context, void *microphone_conte
    state = snd_pcm_state(microphone->pcm);
    if (state != SND_PCM_STATE_RUNNING)
    {
-      RARCH_WARN("[ALSA] Expected microphone \"%s\" to be in state RUNNING, was in state %s\n",
+      RARCH_WARN("[ALSA]: Expected microphone \"%s\" to be in state RUNNING, was in state %s\n",
          snd_pcm_name(microphone->pcm),
          snd_pcm_state_name(state));
 
       errnum = snd_pcm_start(microphone->pcm);
       if (errnum < 0)
       {
-         RARCH_ERR("[ALSA] Failed to start microphone \"%s\": %s\n",
+         RARCH_ERR("[ALSA]: Failed to start microphone \"%s\": %s\n",
             snd_pcm_name(microphone->pcm),
             snd_strerror(errnum));
 
@@ -867,8 +882,8 @@ static ssize_t alsa_read_microphone(void *driver_context, void *microphone_conte
             errnum = snd_pcm_recover(microphone->pcm, frames, 0);
             if (errnum < 0)
             {
-               RARCH_ERR("[ALSA] Failed to read from microphone: %s\n", snd_strerror(frames));
-               RARCH_ERR("[ALSA] Additionally, recovery failed with: %s\n", snd_strerror(errnum));
+               RARCH_ERR("[ALSA]: Failed to read from microphone: %s\n", snd_strerror(frames));
+               RARCH_ERR("[ALSA]: Additionally, recovery failed with: %s\n", snd_strerror(errnum));
                return -1;
             }
 
