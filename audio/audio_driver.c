@@ -1749,6 +1749,10 @@ bool audio_driver_start(bool is_shutdown)
             audio_st->context_audio_data, is_shutdown))
       goto error;
 
+   RARCH_DBG("[Audio]: Started audio driver \"%s\" (is_shutdown=%s)\n",
+         audio_st->current_audio->ident,
+         is_shutdown ? "true" : "false");
+
    return true;
 
 error:
@@ -1766,8 +1770,13 @@ bool audio_driver_stop(void)
          || !audio_driver_alive()
       )
       return false;
-   return audio_driver_st.current_audio->stop(
+   bool stopped = audio_driver_st.current_audio->stop(
          audio_driver_st.context_audio_data);
+
+   if (stopped)
+      RARCH_DBG("[Audio]: Stopped audio driver \"%s\"\n", audio_driver_st.current_audio->ident);
+
+   return stopped;
 }
 
 bool audio_driver_supports_microphone(const audio_driver_t* driver)
