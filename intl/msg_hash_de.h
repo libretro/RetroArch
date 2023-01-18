@@ -69,7 +69,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "Nach einer Libretro-Core-Implementierung suchen. In welchem Verzeichnis der Browser beginnt, hängt von dem Core-Verzeichnispfad ab.\nIst als Core-Verzeichnis ein Ordner ausgewählt, wird dieser als Startverzeichnis genutzt. Ist das Core-Verzeichnis ein vollständiger Pfad, wird in dem Ordner begonnen, in welchem sich die Datei befindet."
+   "Nach einer Libretro-Core-Implementierung suchen. In welchem Verzeichnis der Browser beginnt, hängt von dem Core-Verzeichnispfad ab.\nIst als Core-Verzeichnis ein Ordner ausgewählt, wird dieser als Startverzeichnis genutzt. Ist das Core-Verzeichnis ein vollständiger Pfad, wird in dem Ordner begonnen, in dem sich die Datei befindet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -204,6 +204,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "Das Programm schließen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "RetroArch beenden. Durch das harte Beenden (SIGKILL usw.) des Programms wird RetroArch beendet, ohne die Konfiguration usw. zu speichern. Auf Unix-ähnlichen Systemen ermöglicht SIGINT/SIGTERM eine saubere Deinitialisierung."
    )
 
 /* Main Menu > Load Core */
@@ -1349,6 +1353,10 @@ MSG_HASH(
    "Der udev Eingabetreiber verwendet die aktuelle evdev-Joypad-API zur Joystickunterstützung. Sie unterstützt Hotplugging und Force Feedback.\nDer Treiber liest evdev-Ereignisse für Tastaturunterstützung. Er unterstützt auch Tastaturrückruffunktion, Mäuse und Touchpads.\nStandardmäßig in den meisten Distributionen sind die Knoten /dev/input ausschließlich Root (Mode 600). Es kann eine udev-Regel eingerichtet werden, die diese für Nicht-Root zugänglich machen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
+   "Der Eingabetreiber linuxraw benötigt einen aktiven TTY. Tastaturereignisse werden direkt vom TTY gelesen, was es einfacher macht, aber nicht so flexibel wie udev. Mäuse usw. werden überhaupt nicht unterstützt. Dieser Treiber verwendet die ältere Joystick-API (/dev/input/js*)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
    "Eingabetreiber. Der Videotreiber kann einen anderen Eingabetreiber erzwingen."
    )
@@ -1369,12 +1377,96 @@ MSG_HASH(
    "Zu verwendender Videotreiber."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   "OpenGL 1.x Treiber. Mindestversion erforderlich: OpenGL 1.1. Unterstützt keine Shader. Stattdessen neuere OpenGL- Treiber verwenden, sofern möglich."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
+   "OpenGL 2.x Treiber. Dieser Treiber ermöglicht die Verwendung von libretro GL Cores zusätzlich zu softwaregerenderten Cores. Mindestversion erforderlich: OpenGL 2.0 oder OpenGLES 2.0. Unterstützt das GLSL-Shaderformat. Stattdesssen glcore-Treiber verwenden, sofern möglich."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   "OpenGL 3.x Treiber. Dieser Treiber ermöglicht die Verwendung von libretro-GL-Cores zusätzlich zu softwaregerenderten Cores. Erforderliche Mindestversion: OpenGL 3.2 oder OpenGLES 3.0+. Unterstützt das Slang-Shaderformat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   "Vulkan-Treiber. Dieser Treiber ermöglicht die Verwendung von libretro Vulkan-Kernen zusätzlich zu softwaregerenderten Cores. Erforderliche Mindestversion: Vulkan 1.0. Unterstützt HDR- und Slang-Shader."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
+   "SDL 1.2 software-gerenderter Videotreiber. Die Leistung wird als suboptimal angesehen. Der Einsatz sollte nur als letzter Ausweg ansehen werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
+   "SDL 2 softwaregerenderter Videotreiber. Leistung für software-gerenderte libretro-Core-Implementierungen ist abhängig von der Implementierung der SDL-Plattform."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
+   "Metall-Treiber für Apple-Plattformen. Unterstützt das Slang-Shaderformat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   "Direct3D-8-Treiber ohne Shader-Unterstützung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   "Direct3D-9-Treiber mit Unterstützung für das alte Cg-Shaderformat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   "Direct3D-9-Treiber mit Unterstützung für das HLSL-Shaderformat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "Direct3D-10-Treiber mit Unterstützung für das Slang-Shaderformat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "Direct3D-11-Treiber mit Unterstützung für HDR und das Slang-Shaderformat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "Direct3D-12-Treiber mit Unterstützung für HDR und das Slang-Shaderformat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "DispmanX-Treiber. Verwendet die DispmanX-API für Videocore-IV-GPU in Raspberry Pi 0..3. Keine Overlay- oder Shader-unterstützung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
+   "LibCACA-Treiber. Erzeugt Zeichenausgabe statt Grafik. Für den praktischen Gebrauch nicht empfohlen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
    "Ein Low-Level-Exynos-Videotreiber, der den G2D-Block in Samsung Exynos SoC für Blittingoperationen verwendet. Leistung für sofwaregerenderte Kerne sollte optimal sein."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   "Einfacher DRM-Video-Treiber. Dies ist ein Low-Level-Videotreiber, der libdrm für Hardwareskalierung mit GPU-Overlays verwendet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
    "Ein Low-Level-Sunxi-Videotreiber, der den G2D-Block in Allwinner SoCs verwendet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   "Wii-U-Treiber. Unterstützt Slang-Shader."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   "Switch-Treiber. Unterstützt das GLSL-Shaderformat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   "OpenVG-Treiber. Verwendet die OpenVG-hardwarebeschleunigte 2D-Vektorgrafik-API."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "GDI-Treiber. Verwendet eine veraltete Windows-Schnittstelle. Nicht empfohlen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   "Aktueller Videotreiber."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -1385,12 +1477,64 @@ MSG_HASH(
    "Zu verwendender Audiotreiber."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
+   "RSound-Treiber für vernetzte Audiosysteme."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   "Legacy-Open-Sound-System-Treiber."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   "Standard ALSA-Treiber."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
+   "ALSA-Treiber mit Threading-Unterstützung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
+   "ALSA-Treiber ohne Abhängigkeiten implementiert."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
+   "RoarAudio Sound-Systemtreiber."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   "OpenAL-Treiber."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   "OpenSL-Treiber."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
+   "DirectSound wird hauptsächlich von Windows 95 bis Windows XP verwendet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
+   "Windows-Audio-Session-API-Treiber. WASAPI wird hauptsächlich ab Windows 7 verwendet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
+   "PulseAudio-Treiber. Wenn das System PulseAudio verwendet, ist dieser Treiber anstelle von z. B. ALSA zu verwenden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
+   "Jack-Audio-Connection-Kit-Treiber."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Audio-Resampling-Treiber"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    "Zu verwendender Audio-Resampling-Treiber."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
+   "Fenster-Sinc-Implementierung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
@@ -1441,12 +1585,20 @@ MSG_HASH(
    "Zu verwendender Menütreiber."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   "XMB ist eine RetroArch-GUI, die wie ein Konsolenmenü der 7. Generation aussieht. Sie kann dieselben Funktionen wie Ozone unterstützen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
    "Ozone ist die Standard-GUI von RetroArch auf den meisten Plattformen. Sie ist für die Navigation mit einem Spielcontroller optimiert."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
    "RGUI ist eine einfache integrierte GUI für RetroArch. Sie hat die niedrigsten Leistungsanforderungen unter den Menütreibern und kann auf Bildschirmen mit niedriger Auflösung verwendet werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   "Auf mobilen Geräten verwendet RetroArch standardmäßig das mobile UI, MaterialUI. Diese Schnittstelle ist für Touchscreen und Zeigegeräte wie eine Maus/Trackball konzipiert."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1536,12 +1688,20 @@ MSG_HASH(
    "Verbessert die Leistung auf Kosten der Latenz und erhöhtem Stottern vom Video. Nur verwenden, wenn sonst keine volle Geschwindigkeit erreicht werden kann."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   "Video in separatem Thread ausführen. Dies kann die Leistung auf Kosten der Latenz und eines stärkeren Videostotterns verbessern."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Schwarzes Bild einfügen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
    "Ein schwarzes Bild zwischen den Einzelbildern einfügen. Nützlich auf einigen Bildschirmen mit hoher Bildwiederholfrequenz, um Geisterbilder zu vermeiden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "Ein schwarzes Bild zwischen den Einzelbildern einfügen. Nützlich für 120-Hz-Monitore, um 60-Hz-Material ohne Geisterbilder wiederzugeben. Die Bildwiederholfrequenz sollte weiterhin wie für einen 60-Hz-Monitor eingestellt werden (Frequenz geteilt durch 2)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -1612,6 +1772,14 @@ MSG_HASH(
    "Einen CPU-gestützten Videofilter anwenden. Kann mit hohen Leistungskosten verbunden sein. Einige Videofilter funktionieren möglicherweise nur mit Cores, die 32-Bit- oder 16-Bit-Farben verwenden."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
+   "Einen CPU-gestützten Videofilter anwenden. Das kann mit einem hohen Leistungsaufwand verbunden sein. Einige Videofilter funktionieren möglicherweise nur für Cores, die 32-Bit- oder 16-Bit-Farben verwenden. Es können dynamisch verknüpfte Videofilterbibliotheken ausgewählt werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
+   "Einen CPU-gestützten Videofilter anwenden. Das kann mit einem hohen Leistungsaufwand verbunden sein. Einige Videofilter funktionieren möglicherweise nur für Cores, die 32-Bit- oder 16-Bit-Farben verwenden. Es können interne Videofilterbibliotheken ausgewählt werden."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    "Videofilter entfernen"
    )
@@ -1680,6 +1848,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    "Den Wiedergabebildschirm auswählen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
+   "Welcher Monitor bevorzugt werden soll. 0 (Standard) bedeutet, dass kein bestimmter Monitor bevorzugt wird, 1 und höher (1 erster Monitor), schlägt RetroArch vor, diesen Monitor zu verwenden."
    )
 #if defined (WIIU)
 MSG_HASH(
@@ -2099,6 +2271,14 @@ MSG_HASH(
    "Bildverzögerung (ms)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "Reduziert die Latenzzeit auf Kosten eines höheren Risikos von Videostottern. Fügt eine Verzögerung in Millisekunden nach der Videopräsentation und vor dem Bild des Cores hinzu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
+   "Legt fest, wie viele Millisekunden nach der Videopräsentation gewartet werden soll, bevor der Core ausgeführt wird. Kann die Latenz auf Kosten eines höheren Risikos von Stottern verringern. Das Maximum ist %d."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatische Bildverzögerung"
    )
@@ -2145,6 +2325,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    "Keine Abweichung vom Core angefragten Timing. Nützlich für Bildschirme mit variabler Synchronisierung (G-Sync, FreeSync, HDMI 2.1 VRR)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
+   "Mit der exakten Inhaltswiederholfrequenz synchronisieren. Diese Option entspricht dem Erzwingen von x1-Geschwindigkeit, erlaubt aber trotzdem Vorspulen. Keine Abweichung der angeforderten Core-Bildfrequenz, keine dynamische Ratensteuerung des Tons."
    )
 
 /* Settings > Audio */
@@ -2218,6 +2402,10 @@ MSG_HASH(
    "Lautstärkeanpassung in dB. 0 dB ist die normale Lautstärke."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
+   "Audiolautstärke, in dB. 0 dB ist normale Lautstärke ohne Verstärkung. Die Verstärkung kann während der Laufzeit mit den Hotkeys Lautstärke erhöhen/reduzieren gesteuert werden."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    "Lautstärkeanpassung des Mixers (dB)"
    )
@@ -2283,6 +2471,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
    "Das Standard-Audiogerät, welches vom Audiotreiber verwendet wird, überschreiben. Dies ist treiberabhängig."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
+   "Benutzerdefinierter PCM-Gerätewert für den ALSA-Treiber."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
+   "Benutzerdefinierter Pfadangabe für den OSS-Treiber (z. B. /dev/dsp)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   "Benutzerdefinierte Portnameangabe für den JACK-Treiber (z. B. system:playback1,system:playback_2)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   "Benutzerdefinierte IP-Adresse eines RSound-Servers für den RSound-Treiber."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -2493,6 +2697,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    "Maximale Anzahl von Benutzern, die von RetroArch unterstützt werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "Abfrageverhalten (Neustart erforderlich)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3540,6 +3748,10 @@ MSG_HASH(
    "Überprüfen, ob benötigte Firmware vorhanden ist, bevor versucht wird, Inhalte zu laden."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
+   "Einige Cores benötigen möglicherweise Firmware- oder BIOS-dateien. Wenn diese Option aktiviert ist, verhindert RetroArch den Start des Cores, wenn die erforderlichen Firmware-Elemente fehlen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
    "Core-Optionskategorien"
    )
@@ -3635,6 +3847,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
    "Änderungen an der Konfigurationsdatei beim Beenden speichern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
+   "Änderungen an den Konfigurationsdateien beim Beenden speichern. Nützlich für Änderungen, die im Menü vorgenommen wurden. Die Konfigurationsdatei wird überschrieben, „#include“s und Kommentare werden nicht beibehalten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
@@ -3859,6 +4075,10 @@ MSG_HASH(
    "Die Protokollierungsstufe für Cores festlegen. Wenn die Nachrichtenstufe, die vom Core gemeldet wird, unter diesem Wert liegt, wird sie ignoriert."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
+   "Legt die Protokollierungsstufe für Libretro-Cores (GET_LOG_INTERFACE) fest. Liegt die vom Core gemeldete Nachrichtenstufe unter diesem Wert, wird sie ignoriert. DEBUG-Protokolle werden immer ignoriert, außer der Verbose-Modus ist aktiviert (--verbose).\nDEBUG = 0\nINFO = 1\nWARN = 2\nERROR = 3"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
    "0 (Debuggen)"
    )
@@ -3955,6 +4175,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
    "Die maximale Geschwindigkeit, mit der Inhalt beim Vorspulen dargestellt wird (z. B. 5x für 60 FPS Inhalt => Begrenzung auf 300 FPS). Wenn 0x gewählt wird, ist die Geschwindigkeit unbegrenzt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
+   "Die maximale Geschwindigkeit, mit der Inhalte beim Vorspulen abgespielt werden.(z. B. 5,0 für Inhalte mit 60 fps => 300 fps Obergrenze).\nRetroArch pausiert, um sicherzustellen, dass die maximale Geschwindigkeit nicht überschritten wird. Bitte sich nicht darauf verlasssen, dass diese Obergrenze absolut genau ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
@@ -8277,6 +8501,10 @@ MSG_HASH(
    "Änderungen an der Shader-Konfiguration werden sofort übernommen. Verwende diese Option, wenn Du die Anzahl der Shader-Durchläufe, die Filter, die FBO-Skalierung usw. geändert hast."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
+   "Nach dem Ändern der Shader-Einstellungen, wie z. B. Anzahl der Shaderdurchgänge, Filter, FBO-Skala, diese Option verwenden, um Änderungen durchzuführen.\nDiese Shader-Einstellungen zu ändern, ist ein komplexer Vorgang, daher muss genau vorgegangen werden.\nWerden Shader angewendet, werden die Shadereinstellungen in einer temporären Datei gespeichert (retroarch.slangp/.cgp/.glslp) und geladen. Die Datei bleibt nach dem Beenden von RetroArch erhalten und wird im Shaderverzeichnis gespeicher[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
    "Vorschau der Shader-Parameter"
    )
@@ -8297,12 +8525,20 @@ MSG_HASH(
    "RetroArch erlaubt es, verschiedene Shader in beliebigen Shader-Durchläufen mit benutzerdefinierten Hardwarefiltern und Skalierungsfaktoren zu kombinieren.\nDiese Option gibt die Anzahl der zu verwendenden Shader-Durchläufe an. Wenn diese Option auf 0 gesetzt und angewandt wird, wird ein „leerer“ Shader verwendet."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
+   "Pfad zum Shader. Alle Shader müssen den gleichen Typ haben (z. B. Cg, GLSL oder Slang). Shaderverzeichnis setzen, um festzulegen, wo der Browser nach Shadern sucht."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
    "Hardwarefilter für diesen Durchgang. Ist „Standard“ eingestellt, wird entsprechend der Einstellung „Bilineare Filterung“ in den Videoeinstellungen entweder „Linear“ oder „Nächster“ gefiltert."
   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCALE,
    "Skalierung"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
+   "Skalierung für diesen Durchgang. Der Skalierungsfaktor wird akkumuliert, d. h. 2x für den ersten Durchgang und 2x für den zweiten Durchgang ergibt eine Gesamtskalierung von 4×.\nWenn es einen Skalierungsfaktor für den letzten Durchgang gibt, wird das Ergebnis mit dem im Standardfilter angegebenen Filter auf den Bildschirm gestreckt, abhängig von der Einstellung der bilinearen Filterung in den Videoeinstellungen.\nWenn „Standard“ eingestellt ist, wird entweder auf den Vollbildschirm ge[...]"
    )
 
 /* Quick Menu > Shaders > Save */

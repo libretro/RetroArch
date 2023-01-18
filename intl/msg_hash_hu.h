@@ -201,6 +201,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "A program bezárása."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Kilépés a RetroArch-ból. A program kényszerített bezárása (SIGKILL, stb.) a konfiguráció mentése nélkül állítja le a RetroArch-ot. Unix-hoz hasonló környezetekben a SIGINT/SIGTERM is használható tiszta leállításra."
+   )
 
 /* Main Menu > Load Core */
 
@@ -1425,6 +1429,98 @@ MSG_HASH(
    "A használt videóillesztő."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   "OpenGL 1.x illesztő. Minimum szükséges változat: OpenGL 1.1. Nem támogat shadereket. Ha lehetséges, inkább újabb OpenGL illesztő ajánlott."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
+   "OpenGL 2.x illesztő. Ez az illesztő lehetővé teszi a GL libretro magok használatát a szoftveres képalkotású magok mellett. Minimum szükséges változat: OpenGL 2.0 vagy OpenGLES 2.0. A GLSL shader formátumot támogatja. Ha lehetséges, inkább a glcore illesztő ajánlott."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   "OpenGL 3.x illesztő. Ez az illesztő lehetővé teszi a GL libretro magok használatát a szoftveres képalkotású magok mellett. Minimum szükséges változat: OpenGL 3.2 vagy OpenGLES 3.0+. A Slang shader formátumot támogatja."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   "Vulkan illesztő. Ez az illesztő lehetővé teszi a Vulkan libretro magok használatát a szoftveres képalkotású magok mellett. Minimum szükséges változat: Vulkan 1.0. Támogatja a HDR-t és a Slang shadereket."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
+   "SDL 1.2 szoftveres képalkotású illesztő. A teljesítmény nem optimális. Csak végső esetben érdemes használni."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
+   "SDL 2 szoftveres képalkotású illesztő. A szoftveres képalkotású libretro magok teljesítménye az alapul szolgáló SDL implementációtól függ."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
+   "Metal illesztő Apple platformokhoz. Támogatja a Slang shader formátumot."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   "Direct3D 8 illesztő, shader támogatás nélkül."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   "Direct3D 9 illesztő, a régi Cg shader formátum támogatásával."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   "Direct3D 9 illesztő, a HLSL shader formátum támogatásával."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "Direct3D 10 illesztő, a Slang shader formátum támogatásával."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "Direct3D 11 illesztő, támogatja a HDR-t és a Slang shader formátumot."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "Direct3D 12 illesztő, támogatja a HDR-t és a Slang shader formátumot."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "DispmanX illesztő. A Raspberry Pi 0..3 VideoCore IV GPU-jának DispmanX API-ját használja. Nincs rátét vagy shader támogatás."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
+   "LibCACA illesztő. Karakteres kimenetet állít elő grafika helyett. Tényleges használatra nem ajánlott."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   "Alacsonyszintű Exynos videoillesztő, amely a Samsung Exynos SoC G2D blokkját használja a blit műveletekhez. Teljesítménye optimális a szoftveres képalkotású magokhoz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   "Egyszerű DRM videoillesztő. Ez egy alacsonyszintű videoillesztő, amely a libdrm-et használja hardveres méretezéshez GPU rátétekkel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
+   "Alacsonyszintű Sunxi videoillesztő, amely az Allwinner SoC-k G2D blokkját használja."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   "Wii U illesztő. Támogatja a Slang shadereket."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   "Switch illesztő. Támogatja a GLSL shader formátumot."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   "OpenVG illesztő. Az OpenVG hardveres gyorsítású, 2D vektorgrafikus API-t használja."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "GDI illesztő. Egy régebbi Windows interface-t használ. Nem ajánlott."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   "A jelenlegi videoillesztő."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "Hang"
    )
@@ -1473,12 +1569,20 @@ MSG_HASH(
    "A használt menüillesztő."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   "Az XMB egy RetroArch grafikus felület, amely a 7. generációs konzolok menüjére hasonlít. Ugyanazokat a lehetőségeket biztosítja, mint az Ozone."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
    "Az Ozone a RetroArch alapértelmezett grafikus felülete a legtöbb platformon. Kontrolleres navigációra van optimalizálva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
    "Az RGUI egy egyszerű beépített grafikus felület a RetroArch-hoz. Ennek a legkisebb a teljesítményigénye a menüillesztők közül, és használható alacsony felbontású képernyőkön is."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   "Mobil eszközökön a RetroArch alapértelmezésben a MaterialUI mobilos felületet használja. Ez a felület az érintőképernyőkhöz és az egérhez/hanyattegérhez hasonló mutatóeszközökhöz van tervezve."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1583,6 +1687,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Bilinear szűrő"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "Egy enyhe elmosást ad a képhez, hogy a pixelek élét elsimítsa. Nagyon kis hatással van a teljesítményre. Shaderek használatakor ajánlott kikapcsolni."
+   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -1638,6 +1746,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    "CPU alapú videoszűrő alkalmazása. Nagy teljesítményigénnyel járhat. Néhány videoszűrő csak 16 vagy 32 bit színmélységű magokkal működik."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
+   "CPU alapú videoszűrő alkalmazása. Nagy teljesítményigénnyel járhat. Néhány videoszűrő csak 16 vagy 32 bit színmélységű magokkal működik. Dinamikus linkelésű videoszűrő könyvtárak választhatóak."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
+   "CPU alapú videoszűrő alkalmazása. Nagy teljesítményigénnyel járhat. Néhány videoszűrő csak 16 vagy 32 bit színmélységű magokkal működik. Beépített videoszűrő könyvtárak választhatóak."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
@@ -2523,8 +2639,16 @@ MSG_HASH(
    "A RetroArch által támogatott felhasználók maximális száma."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "Lekérdezés módja (újraindítás szükséges)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    "A RetroArch által használt módszer a bemenetek lekérdezésére. \"Korai\" vagy \"Késői\" beállítás konfigurációtól függően csökkentheti a késleltetést."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
+   "A RetroArch bemenetek lekérdezésére használt módszer.\nKorai - a bemenetek lekérdezése a képkocka feldolgozása előtt történik.\nNormál - a bemenetek lekérdezése akkor történik, amikor azt kérik.\nKésői - a bemenetek lekérdezése a képkocka első bemeneti állapot igénylésénél történik.\nA \"Korai\" vagy \"Késői\" beállítás csökkentheti a késleltetést, a konfigurációtól függően. Netplay esetén nincs hatása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -2826,6 +2950,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "A gyorsbillentyűk engedélyezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "Ha be van állítva, akkor ezt a \"Gyorsbillentyű engedélyező\" gombot nyomva kell tartani a többi gyorsbillentyű használatához. Ezzel lehet a kontroller gombjait gyorsfunkciókhoz rendelni a normál bemenet zavarása nélkül. Ha csak kontrolleres módosító van megadva, az nem szükséges a billentyűzet gyorsgombjaihoz, de mindkét módosító működik mindkét eszközzel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
+   "Ha ez a gyorsbillentyű hozzá van rendelve egy billentyűhöz, kontroller gombhoz vagy karmozgatáshoz, minden más gyorsbillentyű hatástalan, hacsak ez nincs szintén megnyomva.\nHasznos a RETRO_KEYBOARD alapú magoknál, amelyek a billentyűzet nagy részét kérdezik le, és nem praktikus, ha a gyorsbillentyűk ezt megakadályozzák."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -3512,6 +3644,10 @@ MSG_HASH(
    "Néhány mag le tudja magát állítani, ilyen esetben a dummy mag meggátolja, hogy a RetroArch is lekapcsoljon."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
+   "Néhány mag le tudja magát állítani. Ha ez a beállítás ki van kapcsolva, a leállítási folyamat a RetroArch-ot is leállítja.\n Bekapcsolva egy dummy mag töltődik be, így a RetroArch nem áll le és a menü nyitva marad."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
    "Mag elindítása automatikusan"
    )
@@ -3522,6 +3658,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Tartalom betöltése előtt az összes szükséges firmware meglétének ellenőrzése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
+   "Néhány magnak firmware vagy BIOS fájlokra lehet szüksége. Ha ez a beállítás be van kapcsolva, a RetroArch nem engedi a mag elindítását, ha bármelyik kötelező firmware tétel hiányzik."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
