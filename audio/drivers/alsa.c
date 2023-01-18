@@ -253,7 +253,7 @@ int alsa_init_pcm(snd_pcm_t **pcm,
       goto error;
    }
 
-   RARCH_LOG("[ALSA]: Period size: %lu frames\n", stream_info->period_frames);
+   RARCH_LOG("[ALSA]: Period size: %lu frames (%lu bytes)\n", stream_info->period_frames, stream_info->period_size);
 
    if ((errnum = snd_pcm_hw_params_get_buffer_size(params, &buffer_size)) < 0)
    {
@@ -273,7 +273,6 @@ int alsa_init_pcm(snd_pcm_t **pcm,
       }
    }
 
-   RARCH_LOG("[ALSA]: Buffer size: %lu frames\n", buffer_size);
 
    stream_info->buffer_size = snd_pcm_frames_to_bytes(*pcm, buffer_size);
    if (stream_info->buffer_size < 0)
@@ -283,6 +282,7 @@ int alsa_init_pcm(snd_pcm_t **pcm,
             snd_strerror(buffer_size));
       goto error;
    }
+   RARCH_LOG("[ALSA]: Buffer size: %lu frames (%lu bytes)\n", buffer_size, stream_info->buffer_size);
 
    stream_info->can_pause = snd_pcm_hw_params_can_pause(params);
 

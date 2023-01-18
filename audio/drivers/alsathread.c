@@ -63,14 +63,15 @@ static void alsa_worker_thread(void *data)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)data;
    uint8_t        *buf = (uint8_t *)calloc(1, alsa->info.stream_info.period_size);
-   uintptr_t        id = sthread_get_current_thread_id();
+   uintptr_t thread_id = sthread_get_current_thread_id();
 
    if (!buf)
    {
-      RARCH_ERR("[ALSA] [playback thread %u]: Failed to allocate audio buffer\n", id);
+      RARCH_ERR("[ALSA] [playback thread %u]: Failed to allocate audio buffer\n", thread_id);
       goto end;
    }
 
+   RARCH_DBG("[ALSA] [playback thread %p]: Beginning playback worker thread\n", thread_id);
    while (!alsa->info.thread_dead)
    {
       size_t avail;
@@ -91,10 +92,10 @@ static void alsa_worker_thread(void *data)
       if (frames == -EPIPE || frames == -EINTR ||
             frames == -ESTRPIPE)
       {
-         if (snd_pcm_recover(alsa->info.pcm, frames, 1) < 0)
+         if (snd_pcm_recover(alsa->info.pcm, frames, false) < 0)
          {
             RARCH_ERR("[ALSA] [playback thread %u]: Failed to recover from error: %s\n",
-               id,
+               thread_id,
                snd_strerror(frames));
             break;
          }
@@ -104,7 +105,7 @@ static void alsa_worker_thread(void *data)
       else if (frames < 0)
       {
          RARCH_ERR("[ALSA] [playback thread %u]: Error writing audio to device: %s\n",
-            id,
+            thread_id,
             snd_strerror(frames));
          break;
       }
@@ -116,6 +117,7 @@ end:
    scond_signal(alsa->info.cond);
    slock_unlock(alsa->info.cond_lock);
    free(buf);
+   RARCH_DBG("[ALSA] [playback thread %p]: Ending playback worker thread\n", thread_id);
 }
 
 /** @see alsa_thread_read_microphone() */
@@ -133,6 +135,7 @@ static void alsa_microphone_worker_thread(void *data)
       goto end;
    }
 
+   RARCH_DBG("[ALSA] [capture thread %p]: Beginning microphone worker thread\n", thread_id);
    while (!microphone->info.thread_dead)
    { /* Until we're told to stop... */
       size_t avail;
@@ -160,7 +163,7 @@ static void alsa_microphone_worker_thread(void *data)
 
       if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
       {
-         if (snd_pcm_recover(microphone->info.pcm, frames, 1) < 0)
+         if (snd_pcm_recover(microphone->info.pcm, frames, false) < 0)
          {
             RARCH_ERR("[ALSA] [capture thread %p]: Failed to recover from read error: %s\n",
                       thread_id,
@@ -185,6 +188,7 @@ end:
    scond_signal(microphone->info.cond);
    slock_unlock(microphone->info.cond_lock);
    free(buf);
+   RARCH_DBG("[ALSA] [capture thread %p]: Ending microphone worker thread\n", thread_id);
 }
 
 static void alsa_thread_free_info_members(alsa_thread_info_t *info)
