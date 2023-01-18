@@ -45,4 +45,9 @@ void alsa_free_pcm(snd_pcm_t *pcm);
 void *alsa_device_list_new(void *data);
 void alsa_device_list_free(void *data, void *array_list_data);
 
+/**
+ * Sets the state of the PCM stream without updating the mic state
+ */
+bool alsa_set_mic_enabled_internal(snd_pcm_t *microphone, bool enabled);
+
 #endif /* _RETROARCH_ALSA */

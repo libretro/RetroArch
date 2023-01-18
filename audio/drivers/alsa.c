@@ -782,6 +782,74 @@ static bool alsa_get_microphone_state(const void *data, const void *microphone_c
     * or it might be stopped because the entire audio driver is stopped. */
 }
 
+bool alsa_set_mic_enabled_internal(snd_pcm_t *microphone, bool enabled)
+{
+   snd_pcm_state_t microphone_state = snd_pcm_state(microphone);
+   int errnum                       = 0;
+
+   if (enabled)
+   { /* If we're trying to unpause a mic (or maybe activate it for the first time)... */
+      switch (microphone_state)
+      {
+         case SND_PCM_STATE_PAUSED: /* If we're unpausing a valid (but paused) mic... */
+            if ((errnum = snd_pcm_pause(microphone, false)) < 0)
+            { /* ...but we failed... */
+               goto error;
+            }
+            break;
+         case SND_PCM_STATE_PREPARED:
+            /* If we're activating this mic for the first time... */
+            if ((errnum = snd_pcm_start(microphone)) < 0)
+            { /* ..but we failed... */
+               goto error;
+            }
+            break;
+         default:
+            goto unexpected_state;
+      }
+   }
+   else
+   { /* We're pausing this mic */
+      switch (microphone_state)
+      {
+         case SND_PCM_STATE_PREPARED:
+         case SND_PCM_STATE_RUNNING:
+            /* If we're pausing an active mic... */
+            if ((errnum = snd_pcm_pause(microphone, true)) < 0)
+            { /* ...but we failed... */
+               goto error;
+            }
+            break;
+         default:
+            goto unexpected_state;
+      }
+   }
+
+   RARCH_DBG("[ALSA]: %s microphone \"%s\", transitioning from %s to %s\n",
+         enabled ? "Unpaused" : "Paused",
+         snd_pcm_name(microphone),
+         snd_pcm_state_name(microphone_state),
+         snd_pcm_state_name(snd_pcm_state(microphone)));
+
+   return true;
+error:
+   RARCH_ERR("[ALSA]: Failed to %s microphone \"%s\" in state %s: %s\n",
+         enabled ? "unpause" : "pause",
+         snd_pcm_name(microphone),
+         snd_pcm_state_name(microphone_state),
+         snd_strerror(errnum));
+
+   return false;
+
+unexpected_state:
+   RARCH_ERR("[ALSA]: Failed to %s microphone \"%s\" in unexpected state %s\n",
+         enabled ? "unpause" : "pause",
+         snd_pcm_name(microphone),
+         snd_pcm_state_name(microphone_state));
+
+   return false;
+}
+
 static bool alsa_set_microphone_state(void *data, void *microphone_context, bool enabled)
 {
    alsa_t *alsa                   = (alsa_t*)data;
