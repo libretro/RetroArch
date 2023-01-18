@@ -867,19 +867,12 @@ static bool alsa_set_microphone_state(void *data, void *microphone_context, bool
 
    if (!alsa->is_paused)
    { /* If the entire audio driver isn't paused... */
-      int errnum = snd_pcm_pause(microphone->pcm, !enabled);
-      if (errnum < 0)
+      if (alsa_set_mic_enabled_internal(microphone->pcm, enabled))
       {
-         RARCH_ERR("[ALSA]: Failed to %s microphone \"%s\": %s\n",
-                   enabled ? "unpause" : "pause",
-                   snd_pcm_name(microphone->pcm),
-                   snd_strerror(errnum));
-         return false;
+         microphone->is_paused = !enabled;
+         return true;
       }
-
-      microphone->is_paused = !enabled;
-      RARCH_DBG("[ALSA]: Set state of microphone \"%s\" to %s\n",
-              snd_pcm_name(microphone->pcm), enabled ? "enabled" : "disabled");
+      return false;
    }
 
    return true;

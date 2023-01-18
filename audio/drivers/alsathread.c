@@ -480,9 +480,23 @@ static bool alsa_thread_set_microphone_state(void *data, void *microphone_contex
       return false;
    /* Both params must be non-null */
 
-   microphone->is_paused = !enabled;
+   if (!microphone->info.stream_info.can_pause)
+   {
+      RARCH_WARN("[ALSA]: Microphone \"%s\" cannot be paused\n", snd_pcm_name(microphone->info.pcm));
+      return true;
+   }
 
-   // TODO: Do I need to synchronize this?
+   if (!alsa->is_paused)
+   { /* If the entire audio driver isn't paused... */
+      if (alsa_set_mic_enabled_internal(microphone->info.pcm, enabled))
+      {
+         // TODO: Do I need to synchronize microphone->is_paused?
+         microphone->is_paused = !enabled;
+         return true;
+      }
+      return false;
+   }
+
    return true;
 }
 
@@ -491,12 +505,36 @@ static ssize_t alsa_thread_read_microphone(void *driver_context, void *microphon
 {
    alsa_thread_t *alsa = (alsa_thread_t*)driver_context;
    alsa_thread_microphone_t *microphone = (alsa_thread_microphone_t*)microphone_context;
+   snd_pcm_state_t state;
 
    if (!alsa || !microphone || !buf) /* If any of the parameters were invalid... */
       return -1;
 
    if (microphone->info.thread_dead) /* If the mic thread is shutting down... */
       return -1;
+
+   if (microphone->is_paused)
+      if (!alsa_thread_set_microphone_state(alsa, microphone, true))
+         return -1;
+
+   state = snd_pcm_state(microphone->info.pcm);
+   if (state != SND_PCM_STATE_RUNNING)
+   {
+      int errnum;
+      RARCH_WARN("[ALSA]: Expected microphone \"%s\" to be in state RUNNING, was in state %s\n",
+            snd_pcm_name(microphone->info.pcm),
+            snd_pcm_state_name(state));
+
+      errnum = snd_pcm_start(microphone->info.pcm);
+      if (errnum < 0)
+      {
+         RARCH_ERR("[ALSA]: Failed to start microphone \"%s\": %s\n",
+               snd_pcm_name(microphone->info.pcm),
+               snd_strerror(errnum));
+
+         return -1;
+      }
+   }
 
    if (alsa->nonblock)
    { /* If driver interactions shouldn't block... */
