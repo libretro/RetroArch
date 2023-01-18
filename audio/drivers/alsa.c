@@ -595,8 +595,9 @@ static bool alsa_start(void *data, bool is_shutdown)
                int errnum = snd_pcm_pause(alsa->microphone->pcm, false);
                if (errnum < 0)
                {
-                  RARCH_ERR("[ALSA]: Failed to unpause microphone \"%s\": %s\n",
+                  RARCH_ERR("[ALSA]: Failed to unpause microphone \"%s\" in state %s: %s\n",
                      snd_pcm_name(alsa->microphone->pcm),
+                     snd_pcm_state_name(snd_pcm_state(alsa->microphone->pcm)),
                      snd_strerror(errnum));
 
                   return false;
