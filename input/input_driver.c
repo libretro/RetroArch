@@ -5735,16 +5735,6 @@ int16_t input_state_internal(unsigned port, unsigned device,
          result |= port_result;
    }
 
-#ifdef HAVE_BSV_MOVIE
-   /* Save input to BSV record, if enabled */
-   if (BSV_MOVIE_IS_PLAYBACK_OFF())
-   {
-      result = swap_if_big16(result);
-      intfstream_write(
-            input_st->bsv_movie_state_handle->file, &result, 2);
-   }
-#endif
-
    return result;
 }
 
