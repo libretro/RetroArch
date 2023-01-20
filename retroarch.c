@@ -2153,10 +2153,6 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_BSV_MOVIE
             input_driver_state_t *input_st = input_state_get_ptr();
-            if (!recording_st->enable)
-               command_event(CMD_EVENT_RECORD_INIT, NULL);
-            else
-               command_event(CMD_EVENT_RECORD_DEINIT, NULL);
             bsv_movie_check(input_st, settings);
 #endif
          }
