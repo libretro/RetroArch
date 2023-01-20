@@ -25,8 +25,6 @@
 #include "../verbosity.h"
 
 #ifdef RARCH_INTERNAL
-#include "../configuration.h"
-
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
 #if (_MSC_VER >= 1700)
 /* https://support.microsoft.com/en-us/kb/980263 */
@@ -37,8 +35,6 @@
 
 int msg_hash_get_help_el_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-    settings_t *settings = config_get_ptr();
-
     if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
     {
