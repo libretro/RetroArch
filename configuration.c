@@ -3331,7 +3331,6 @@ static bool config_load_file(global_t *global,
 {
    unsigned i;
    char tmp_str[PATH_MAX_LENGTH];
-   bool tmp_bool                                   = false;
    static bool first_load                          = true;
    unsigned msg_color                              = 0;
    char *save                                      = NULL;
@@ -3439,7 +3438,8 @@ static bool config_load_file(global_t *global,
    for (i = 0; i < MAX_USERS; i++)
    {
       char tmp[64];
-      size_t _len = strlcpy(tmp, "network_remote_enable_user_p", sizeof(tmp));
+      bool tmp_bool = false;
+      size_t _len   = strlcpy(tmp, "network_remote_enable_user_p", sizeof(tmp));
       snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
 
       if (config_get_bool(conf, tmp, &tmp_bool))

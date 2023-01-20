@@ -22,7 +22,6 @@
 #include <string/stdstring.h>
 
 #include "../msg_hash.h"
-#include "../configuration.h"
 #include "../verbosity.h"
 
 #if defined(_MSC_VER) && !defined(_XBOX)
@@ -35,8 +34,6 @@
 
 int msg_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-    settings_t *settings = config_get_ptr();
-
     if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
     {

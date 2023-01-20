@@ -1137,10 +1137,10 @@ void runahead_run(void *data,
    bool suspended_frame    = false;
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    const bool have_dynamic = true;
+   settings_t *settings    = config_get_ptr();
 #else
    const bool have_dynamic = false;
 #endif
-   settings_t *settings    = config_get_ptr();
    video_driver_state_t 
       *video_st            = video_state_get_ptr();
    uint64_t frame_count    = video_st->frame_count;

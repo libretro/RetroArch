@@ -3446,8 +3446,8 @@ bool runloop_init_libretro_symbols(
 #ifdef HAVE_DYNAMIC
    /* the library handle for use with the SYMBOL macro */
    dylib_t lib_handle_local;
-#endif
    runloop_state_t *runloop_st = (runloop_state_t*)data;
+#endif
 
    switch (type)
    {
