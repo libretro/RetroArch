@@ -6829,6 +6829,15 @@ bool retroarch_main_quit(void)
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
+   bool config_save_on_exit      = settings->bools.config_save_on_exit;
+
+#if !defined(HAVE_DYNAMIC)
+      /* Salamander sets RUNLOOP_FLAG_SHUTDOWN_INITIATED prior, so we need to handle it seperately */
+      /* config_save_file_salamander() must be called independent of config_save_on_exit */
+      config_save_file_salamander();
+      if (config_save_on_exit)
+         command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+#endif
 
 #ifdef HAVE_PRESENCE
    {
@@ -6864,9 +6873,10 @@ bool retroarch_main_quit(void)
        * as for UWP depending on `OnSuspending` is not important as we can call it directly here
        * specifically we need to get width,height which requires UI thread and it will not be available on exit
        */
-      bool config_save_on_exit = settings->bools.config_save_on_exit;
+#if defined(HAVE_DYNAMIC)
       if (config_save_on_exit)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+#endif
 
       command_event_save_auto_state(
             settings->bools.savestate_auto_save,
