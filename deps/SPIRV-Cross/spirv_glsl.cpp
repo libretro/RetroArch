@@ -1537,7 +1537,7 @@ uint32_t CompilerGLSL::type_to_packed_alignment(const SPIRType &type, const Bits
 
 		// In std140, struct alignment is rounded up to 16.
 		if (packing_is_vec4_padded(packing))
-			alignment = max(alignment, 16u);
+			alignment = max<uint32_t>(alignment, 16u);
 
 		return alignment;
 	}
@@ -1765,7 +1765,7 @@ bool CompilerGLSL::buffer_is_packing_standard(const SPIRType &type, BufferPackin
 			uint32_t begin_word = offset / 16;
 			uint32_t end_word = (offset + packed_size - 1) / 16;
 			if (begin_word != end_word)
-				packed_alignment = max(packed_alignment, 16u);
+				packed_alignment = max<uint32_t>(packed_alignment, 16u);
 		}
 
 		uint32_t actual_offset = type_struct_member_offset(type, i);
