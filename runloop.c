@@ -4053,6 +4053,16 @@ static bool event_init_content(
       RARCH_LOG("[SRAM]: %s\n",
             msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
+#ifdef HAVE_BSV_MOVIE
+   bsv_movie_deinit(input_st);
+   if (bsv_movie_init(input_st))
+   {
+      /* Set granularity upon success */
+      configuration_set_uint(settings,
+            settings->uints.rewind_granularity, 1);
+   }
+#endif
+
 /*
    Since the operations are asynchronous we can't
    guarantee users will not use auto_load_state to cheat on
@@ -4063,6 +4073,9 @@ static bool event_init_content(
 #ifdef HAVE_CHEEVOS
    if (!cheevos_enable || !cheevos_hardcore_mode_enable)
 #endif
+#ifdef HAVE_BSV_MOVIE
+     if (!input_st->bsv_movie_state_handle)
+#endif
    {
       if (runloop_st->entry_state_slot && !command_event_load_entry_state(settings))
          runloop_st->entry_state_slot = 0;
@@ -4070,15 +4083,6 @@ static bool event_init_content(
          command_event_load_auto_state();
    }
 
-#ifdef HAVE_BSV_MOVIE
-   bsv_movie_deinit(input_st);
-   if (bsv_movie_init(input_st))
-   {
-      /* Set granularity upon success */
-      configuration_set_uint(settings,
-            settings->uints.rewind_granularity, 1);
-   }
-#endif
    command_event(CMD_EVENT_NETPLAY_INIT, NULL);
 
    return true;
