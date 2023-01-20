@@ -2177,7 +2177,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             *frontend_key_event         = *key_event;
 
          /* If a core calls RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK,
-          * then it is assumed that game focus mode is desired */
+          * then it is assumed that Game Focus mode is desired */
          input_st->game_focus_state.core_requested = true;
 
          break;
@@ -3179,7 +3179,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 #else
             core_paused = settings->bools.menu_pause_libretro;
 #endif
-
 #endif
 
          if (core_paused)
@@ -4555,6 +4554,9 @@ void runloop_pause_checks(void)
    if (p_dispwidget->ai_service_overlay_state == 1)
       gfx_widgets_ai_service_overlay_unload();
 #endif
+
+   /* Signal/reset paused rewind to take the initial step */
+   runloop_st->run_frames_and_pause = -1;
 }
 
 struct string_list *path_get_subsystem_list(void)
@@ -5125,6 +5127,29 @@ static bool display_menu_libretro(
       old_pressed3                              = pressed3; \
    }
 
+static void runloop_pause_toggle(
+      bool *runloop_paused_hotkey,
+      bool pause_pressed, bool old_pause_pressed,
+      bool focused, bool old_focus)
+{
+   runloop_state_t *runloop_st         = &runloop_state;
+
+   if (focused)
+   {
+      if (pause_pressed && !old_pause_pressed)
+      {
+         /* Keep track of hotkey triggered pause to
+          * distinguish it from menu triggered pause */
+         *runloop_paused_hotkey = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
+         command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
+      }
+      else if (!old_focus)
+         command_event(CMD_EVENT_UNPAUSE, NULL);
+   }
+   else if (old_focus)
+      command_event(CMD_EVENT_PAUSE, NULL);
+}
+
 static enum runloop_state_enum runloop_check_state(
       bool error_on_init,
       settings_t *settings,
@@ -5257,23 +5282,11 @@ static enum runloop_state_enum runloop_check_state(
       BIT256_CLEAR_ALL(current_bits);
 #endif
 
-   /* Check fullscreen toggle */
-   {
-      bool fullscreen_toggled = !runloop_paused
-#ifdef HAVE_MENU
-         || menu_is_alive;
-#else
-      ;
-#endif
-      HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY,
-                   CMD_EVENT_FULLSCREEN_TOGGLE,
-                   fullscreen_toggled, NULL);
-   }
+   /* Check fullscreen hotkey */
+   HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE, true, NULL);
 
-   /* Check mouse grab toggle */
-   HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE,
-                CMD_EVENT_GRAB_MOUSE_TOGGLE,
-                true, NULL);
+   /* Check mouse grab hotkey */
+   HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE, true, NULL);
 
    /* Automatic mouse grab on focus */
    if (     settings->bools.input_auto_mouse_grab 
@@ -5316,10 +5329,10 @@ static enum runloop_state_enum runloop_check_state(
          }
       }
 
-      /* Check next overlay */
+      /* Check next overlay hotkey */
       HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
 
-      /* Ensure overlay is restored after displaying osk */
+      /* Ensure overlay is restored after displaying OSK */
       if (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
          prev_overlay_restore = true;
       else if (prev_overlay_restore)
@@ -5347,7 +5360,7 @@ static enum runloop_state_enum runloop_check_state(
          last_height = video_driver_height;
       }
 
-      /* Check if we have pressed the OSK toggle button */
+      /* Check OSK hotkey */
       HOTKEY_CHECK(RARCH_OSK, CMD_EVENT_OSK_TOGGLE, true, NULL);
    }
 #endif
@@ -5380,7 +5393,7 @@ static enum runloop_state_enum runloop_check_state(
       }
    }
 
-   /* Check quit key */
+   /* Check quit hotkey */
    {
       bool trig_quit_key, quit_press_twice;
       static bool quit_key     = false;
@@ -5737,18 +5750,20 @@ static enum runloop_state_enum runloop_check_state(
       }
    }
 
-   /* Check game focus toggle */
+   /* Check Game Focus hotkey */
    {
       enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_TOGGLE;
       HOTKEY_CHECK(RARCH_GAME_FOCUS_TOGGLE, CMD_EVENT_GAME_FOCUS_TOGGLE, true, &game_focus_cmd);
    }
-   /* Check if we have pressed the UI companion toggle button */
+
+   /* Check UI companion hotkey */
    HOTKEY_CHECK(RARCH_UI_COMPANION_TOGGLE, CMD_EVENT_UI_COMPANION_TOGGLE, true, NULL);
-   /* Check close content key */
+
+   /* Check close content hotkey */
    HOTKEY_CHECK(RARCH_CLOSE_CONTENT_KEY, CMD_EVENT_CLOSE_CONTENT, true, NULL);
 
 #ifdef HAVE_MENU
-   /* Check if we have pressed the menu toggle button */
+   /* Check menu hotkey */
    {
       static bool old_pressed = false;
       char *menu_driver       = settings->arrays.menu_driver;
@@ -5772,12 +5787,13 @@ static enum runloop_state_enum runloop_check_state(
    }
 #endif
 
-   /* Check if we have pressed the FPS toggle button */
+   /* Check FPS hotkey */
    HOTKEY_CHECK(RARCH_FPS_TOGGLE, CMD_EVENT_FPS_TOGGLE, true, NULL);
 
+   /* Check statistics hotkey */
    HOTKEY_CHECK(RARCH_STATISTICS_TOGGLE, CMD_EVENT_STATISTICS_TOGGLE, true, NULL);
 
-   /* Check if we have pressed the netplay host toggle button */
+   /* Check netplay host hotkey */
    HOTKEY_CHECK(RARCH_NETPLAY_HOST_TOGGLE, CMD_EVENT_NETPLAY_HOST_TOGGLE, true, NULL);
 
    /* Volume stepping + acceleration */
@@ -5814,10 +5830,112 @@ static enum runloop_state_enum runloop_check_state(
       }
    }
 
-   /* Check if we have pressed the audio mute toggle button */
+   /* Check audio mute hotkey */
    HOTKEY_CHECK(RARCH_MUTE, CMD_EVENT_AUDIO_MUTE_TOGGLE, true, NULL);
 
+#ifdef HAVE_SCREENSHOTS
+   /* Check screenshot hotkey */
+   HOTKEY_CHECK(RARCH_SCREENSHOT, CMD_EVENT_TAKE_SCREENSHOT, true, NULL);
+#endif
+
+#ifdef HAVE_CHEEVOS
+   if (!cheevos_hardcore_active)
+#endif
+   {
+      /* Check rewind hotkey */
+      /* > Must do this before MENU_ITERATE to not lose rewind steps
+       *   while menu is active when menu pause is disabled */
+      {
+#ifdef HAVE_REWIND
+         char s[128];
+         bool rewinding      = false;
+         static bool old_rewind_pressed = false;
+         bool rewind_pressed = BIT256_GET(current_bits, RARCH_REWIND);
+         unsigned t          = 0;
+
+         s[0]                = '\0';
+
 #ifdef HAVE_MENU
+         /* Don't allow rewinding while menu is active */
+         if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+            rewind_pressed   = false;
+#endif
+
+         /* Prevent rewind hold while paused to rewind only one frame */
+         if (     runloop_paused
+               && rewind_pressed
+               && old_rewind_pressed
+               && !runloop_st->run_frames_and_pause)
+         {
+            cbs->poll_cb();
+            return RUNLOOP_STATE_PAUSE;
+         }
+
+         rewinding           = state_manager_check_rewind(
+               &runloop_st->rewind_st,
+               &runloop_st->current_core,
+               rewind_pressed,
+               settings->uints.rewind_granularity,
+               runloop_paused,
+               s, sizeof(s), &t);
+
+         old_rewind_pressed = rewind_pressed;
+
+#if defined(HAVE_GFX_WIDGETS)
+         if (widgets_active)
+         {
+            if (rewinding)
+               video_st->flags |=  VIDEO_FLAG_WIDGETS_REWINDING;
+            else
+               video_st->flags &= ~VIDEO_FLAG_WIDGETS_REWINDING;
+         }
+         else
+#endif
+         {
+            if (rewinding)
+               runloop_msg_queue_push(s, 0, t, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+
+         if (rewinding && runloop_paused
+#ifdef HAVE_MENU
+               && !(menu_st->flags & MENU_ST_FLAG_ALIVE)
+#endif
+            )
+         {
+            cbs->poll_cb();
+            /* Run a few frames on first press after pausing to
+             * prevent going forwards for the first frame */
+            if (runloop_st->run_frames_and_pause == -1)
+            {
+               runloop_st->flags               &= ~RUNLOOP_FLAG_PAUSED;
+               runloop_st->run_frames_and_pause = 3;
+            }
+            return RUNLOOP_STATE_ITERATE;
+         }
+#endif
+      }
+   }
+
+   /* Check pause hotkey in menu */
+#ifdef HAVE_MENU
+   if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+   {
+      static bool old_pause_pressed = false;
+      bool pause_pressed            = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
+
+      /* Decide pause hotkey */
+      runloop_pause_toggle(&runloop_paused_hotkey,
+            pause_pressed, old_pause_pressed,
+            focused, old_focus);
+
+      old_focus           = focused;
+      old_pause_pressed   = pause_pressed;
+   }
+#endif
+
+#ifdef HAVE_MENU
+   /* Stop checking the rest of the hotkeys if menu is alive */
    if (menu_st->flags & MENU_ST_FLAG_ALIVE)
    {
       float fastforward_ratio = runloop_get_fastforward_ratio(settings,
@@ -5836,36 +5954,7 @@ static enum runloop_state_enum runloop_check_state(
    if (pause_nonactive)
       focused                = is_focused;
 
-#ifdef HAVE_SCREENSHOTS
-   /* Check if we have pressed the screenshot toggle button */
-   HOTKEY_CHECK(RARCH_SCREENSHOT, CMD_EVENT_TAKE_SCREENSHOT, true, NULL);
-#endif
-
-   /* Check if we have pressed the recording toggle button */
-   HOTKEY_CHECK(RARCH_RECORDING_TOGGLE, CMD_EVENT_RECORDING_TOGGLE, true, NULL);
-
-   /* Check if we have pressed the streaming toggle button */
-   HOTKEY_CHECK(RARCH_STREAMING_TOGGLE, CMD_EVENT_STREAMING_TOGGLE, true, NULL);
-
-   /* Check if we have pressed the Run-Ahead toggle button */
-   HOTKEY_CHECK(RARCH_RUNAHEAD_TOGGLE, CMD_EVENT_RUNAHEAD_TOGGLE, true, NULL);
-
-   /* Check if we have pressed the Preemptive Frames toggle button */
-   HOTKEY_CHECK(RARCH_PREEMPT_TOGGLE, CMD_EVENT_PREEMPT_TOGGLE, true, NULL);
-
-   /* Check if we have pressed the AI Service toggle button */
-   HOTKEY_CHECK(RARCH_AI_SERVICE, CMD_EVENT_AI_SERVICE_TOGGLE, true, NULL);
-
-
-#ifdef HAVE_NETWORKING
-   /* Check Netplay */
-   HOTKEY_CHECK(RARCH_NETPLAY_PING_TOGGLE, CMD_EVENT_NETPLAY_PING_TOGGLE, true, NULL);
-   HOTKEY_CHECK(RARCH_NETPLAY_GAME_WATCH, CMD_EVENT_NETPLAY_GAME_WATCH, true, NULL);
-   HOTKEY_CHECK(RARCH_NETPLAY_PLAYER_CHAT, CMD_EVENT_NETPLAY_PLAYER_CHAT, true, NULL);
-   HOTKEY_CHECK(RARCH_NETPLAY_FADE_CHAT_TOGGLE, CMD_EVENT_NETPLAY_FADE_CHAT_TOGGLE, true, NULL);
-#endif
-
-   /* Check if we have pressed the pause button */
+   /* Check pause hotkey */
    {
       static bool old_frameadvance  = false;
       static bool old_pause_pressed = false;
@@ -5878,7 +5967,7 @@ static enum runloop_state_enum runloop_check_state(
          pause_pressed             |= BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
 
 #ifdef HAVE_CHEEVOS
-      /* make sure not to evaluate this before calling menu_driver_iterate
+      /* Make sure not to evaluate this before calling menu_driver_iterate
        * as that may change its value */
       cheevos_hardcore_active = rcheevos_hardcore_active();
 
@@ -5910,22 +5999,10 @@ static enum runloop_state_enum runloop_check_state(
             && trig_frameadvance;
       }
 
-      /* Check if libretro pause key was pressed. If so, pause or
-       * unpause the libretro core. */
-      if (focused)
-      {
-         if (pause_pressed && !old_pause_pressed)
-         {
-            /* Keep track of hotkey triggered pause to
-             * distinguish it from menu triggered pause */
-            runloop_paused_hotkey = !runloop_paused;
-            command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
-         }
-         else if (!old_focus)
-            command_event(CMD_EVENT_UNPAUSE, NULL);
-      }
-      else if (old_focus)
-         command_event(CMD_EVENT_PAUSE, NULL);
+      /* Decide pause hotkey */
+      runloop_pause_toggle(&runloop_paused_hotkey,
+            pause_pressed, old_pause_pressed,
+            focused, old_focus);
 
       old_focus           = focused;
       old_pause_pressed   = pause_pressed;
@@ -5933,10 +6010,17 @@ static enum runloop_state_enum runloop_check_state(
 
       if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
       {
-         bool toggle = (!(runloop_st->flags & RUNLOOP_FLAG_IDLE)) ? true : false;
-
-         HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY,
-               CMD_EVENT_FULLSCREEN_TOGGLE, true, &toggle);
+#ifdef HAVE_REWIND
+         /* Frame advance must also trigger rewind save */
+         if (trig_frameadvance && runloop_paused)
+            state_manager_check_rewind(
+               &runloop_st->rewind_st,
+               &runloop_st->current_core,
+               false,
+               settings->uints.rewind_granularity,
+               false,
+               NULL, 0, NULL);
+#endif
 
          /* Check if it's not oneshot */
 #ifdef HAVE_REWIND
@@ -5945,8 +6029,33 @@ static enum runloop_state_enum runloop_check_state(
          if (!trig_frameadvance)
 #endif
             focused = false;
+         else
+            runloop_paused = false;
       }
    }
+
+   /* Check recording hotkey */
+   HOTKEY_CHECK(RARCH_RECORDING_TOGGLE, CMD_EVENT_RECORDING_TOGGLE, true, NULL);
+
+   /* Check streaming hotkey */
+   HOTKEY_CHECK(RARCH_STREAMING_TOGGLE, CMD_EVENT_STREAMING_TOGGLE, true, NULL);
+
+   /* Check Run-Ahead hotkey */
+   HOTKEY_CHECK(RARCH_RUNAHEAD_TOGGLE, CMD_EVENT_RUNAHEAD_TOGGLE, true, NULL);
+
+   /* Check Preemptive Frames hotkey */
+   HOTKEY_CHECK(RARCH_PREEMPT_TOGGLE, CMD_EVENT_PREEMPT_TOGGLE, true, NULL);
+
+   /* Check AI Service hotkey */
+   HOTKEY_CHECK(RARCH_AI_SERVICE, CMD_EVENT_AI_SERVICE_TOGGLE, true, NULL);
+
+#ifdef HAVE_NETWORKING
+   /* Check netplay hotkeys */
+   HOTKEY_CHECK(RARCH_NETPLAY_PING_TOGGLE, CMD_EVENT_NETPLAY_PING_TOGGLE, true, NULL);
+   HOTKEY_CHECK(RARCH_NETPLAY_GAME_WATCH, CMD_EVENT_NETPLAY_GAME_WATCH, true, NULL);
+   HOTKEY_CHECK(RARCH_NETPLAY_PLAYER_CHAT, CMD_EVENT_NETPLAY_PLAYER_CHAT, true, NULL);
+   HOTKEY_CHECK(RARCH_NETPLAY_FADE_CHAT_TOGGLE, CMD_EVENT_NETPLAY_FADE_CHAT_TOGGLE, true, NULL);
+#endif
 
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
@@ -5977,21 +6086,20 @@ static enum runloop_state_enum runloop_check_state(
 #endif
 #endif
 
-   if (!focused)
+   if (!focused && !runloop_paused)
    {
       cbs->poll_cb();
       return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
 
-   /* Apply any pending fastmotion override
-    * parameters */
+   /* Apply any pending fastmotion override parameters */
    if (runloop_st->fastmotion_override.pending)
    {
       runloop_apply_fastmotion_override(runloop_st, settings);
       runloop_st->fastmotion_override.pending = false;
    }
 
-   /* Check if we have pressed the fast forward button */
+   /* Check fastmotion hotkeys */
    /* To avoid continuous switching if we hold the button down, we require
     * that the button must go from pressed to unpressed back to pressed
     * to be able to toggle between them.
@@ -6009,6 +6117,15 @@ static enum runloop_state_enum runloop_check_state(
 
       if (!check2)
          check2 = old_hold_button_state != new_hold_button_state;
+
+      /* Don't allow fastmotion while paused */
+      if (runloop_paused)
+      {
+         check2                = true;
+         new_button_state      = false;
+         new_hold_button_state = false;
+         input_st->flags      |= INP_FLAG_NONBLOCKING;
+      }
 
       if (check2)
       {
@@ -6073,101 +6190,25 @@ static enum runloop_state_enum runloop_check_state(
       video_st->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
 #endif
 
-   /* Check if we have pressed any of the state slot buttons */
-   {
-      static bool old_should_slot_increase = false;
-      static bool old_should_slot_decrease = false;
-      bool should_slot_increase            = BIT256_GET(
-            current_bits, RARCH_STATE_SLOT_PLUS);
-      bool should_slot_decrease            = BIT256_GET(
-            current_bits, RARCH_STATE_SLOT_MINUS);
-      bool check1                          = true;
-      bool check2                          = should_slot_increase && !old_should_slot_increase;
-      int addition                         = 1;
-      int state_slot                       = settings->ints.state_slot;
-
-      if (!check2)
-      {
-         check2                            = should_slot_decrease && !old_should_slot_decrease;
-         check1                            = state_slot > 0;
-         addition                          = -1;
-      }
-
-      /* Checks if the state increase/decrease keys have been pressed
-       * for this frame. */
-      if (check2)
-      {
-         size_t _len;
-         char msg[128];
-         int cur_state_slot                = state_slot;
-         if (check1)
-            configuration_set_int(settings, settings->ints.state_slot,
-                  cur_state_slot + addition);
-         _len = strlcpy(msg, msg_hash_to_str(MSG_STATE_SLOT), sizeof(msg));
-         snprintf(msg         + _len,
-                  sizeof(msg) - _len,
-                  ": %d",
-                  settings->ints.state_slot);
-         runloop_msg_queue_push(msg, 2, 180, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_LOG("[State]: %s\n", msg);
-      }
-
-      old_should_slot_increase = should_slot_increase;
-      old_should_slot_decrease = should_slot_decrease;
-   }
-
-   /* Check if we have pressed any of the savestate buttons */
-   HOTKEY_CHECK(RARCH_SAVE_STATE_KEY, CMD_EVENT_SAVE_STATE, true, NULL);
-   HOTKEY_CHECK(RARCH_LOAD_STATE_KEY, CMD_EVENT_LOAD_STATE, true, NULL);
-
 #ifdef HAVE_CHEEVOS
    if (!cheevos_hardcore_active)
 #endif
    {
-      /* Check if rewind toggle was being held. */
       {
-#ifdef HAVE_REWIND
-         char s[128];
-         bool rewinding = false;
-         unsigned t     = 0;
-
-         s[0]           = '\0';
-
-         rewinding      = state_manager_check_rewind(
-               &runloop_st->rewind_st,
-               &runloop_st->current_core,
-               BIT256_GET(current_bits, RARCH_REWIND),
-               settings->uints.rewind_granularity,
-               runloop_st->flags & RUNLOOP_FLAG_PAUSED,
-               s, sizeof(s), &t);
-
-#if defined(HAVE_GFX_WIDGETS)
-         if (widgets_active)
-         {
-            if (rewinding)
-               video_st->flags |=  VIDEO_FLAG_WIDGETS_REWINDING;
-            else
-               video_st->flags &= ~VIDEO_FLAG_WIDGETS_REWINDING;
-         }
-         else
-#endif
-         {
-            if (rewinding)
-               runloop_msg_queue_push(s, 0, t, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         }
-#endif
-      }
-
-      {
-         /* Checks if slowmotion toggle/hold was being pressed and/or held. */
+         /* Check slowmotion hotkeys */
          static bool old_slowmotion_button_state      = false;
          static bool old_slowmotion_hold_button_state = false;
          bool new_slowmotion_button_state             = BIT256_GET(
                current_bits, RARCH_SLOWMOTION_KEY);
          bool new_slowmotion_hold_button_state        = BIT256_GET(
                current_bits, RARCH_SLOWMOTION_HOLD_KEY);
+
+         /* Don't allow slowmotion while paused */
+         if (runloop_paused)
+         {
+            new_slowmotion_button_state      = false;
+            new_slowmotion_hold_button_state = false;
+         }
 
          if (new_slowmotion_button_state && !old_slowmotion_button_state)
          {
@@ -6215,28 +6256,75 @@ static enum runloop_state_enum runloop_check_state(
       }
    }
 
+   /* Check save state slot hotkeys */
+   {
+      static bool old_should_slot_increase = false;
+      static bool old_should_slot_decrease = false;
+      bool should_slot_increase            = BIT256_GET(
+            current_bits, RARCH_STATE_SLOT_PLUS);
+      bool should_slot_decrease            = BIT256_GET(
+            current_bits, RARCH_STATE_SLOT_MINUS);
+      bool check1                          = true;
+      bool check2                          = should_slot_increase && !old_should_slot_increase;
+      int addition                         = 1;
+      int state_slot                       = settings->ints.state_slot;
+
+      if (!check2)
+      {
+         check2                            = should_slot_decrease && !old_should_slot_decrease;
+         check1                            = state_slot > 0;
+         addition                          = -1;
+      }
+
+      if (check2)
+      {
+         size_t _len;
+         char msg[128];
+         int cur_state_slot                = state_slot;
+         if (check1)
+            configuration_set_int(settings, settings->ints.state_slot,
+                  cur_state_slot + addition);
+         _len = strlcpy(msg, msg_hash_to_str(MSG_STATE_SLOT), sizeof(msg));
+         snprintf(msg         + _len,
+                  sizeof(msg) - _len,
+                  ": %d",
+                  settings->ints.state_slot);
+         runloop_msg_queue_push(msg, 2, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_LOG("[State]: %s\n", msg);
+      }
+
+      old_should_slot_increase = should_slot_increase;
+      old_should_slot_decrease = should_slot_decrease;
+   }
+
+   /* Check save state hotkeys */
+   HOTKEY_CHECK(RARCH_SAVE_STATE_KEY, CMD_EVENT_SAVE_STATE, true, NULL);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_KEY, CMD_EVENT_LOAD_STATE, true, NULL);
+
+   /* Check reset hotkey */
+   HOTKEY_CHECK(RARCH_RESET, CMD_EVENT_RESET, true, NULL);
+
+   /* Check VRR runloop hotkey */
    HOTKEY_CHECK(RARCH_VRR_RUNLOOP_TOGGLE, CMD_EVENT_VRR_RUNLOOP_TOGGLE, true, NULL);
 
-   /* Check movie record toggle */
+   /* Check movie record hotkey */
    HOTKEY_CHECK(RARCH_BSV_RECORD_TOGGLE, CMD_EVENT_BSV_RECORDING_TOGGLE, true, NULL);
 
-   /* Check if we have pressed any of the disk buttons */
+   /* Check Disc Control hotkeys */
    HOTKEY_CHECK3(
          RARCH_DISK_EJECT_TOGGLE, CMD_EVENT_DISK_EJECT_TOGGLE,
          RARCH_DISK_NEXT,         CMD_EVENT_DISK_NEXT,
          RARCH_DISK_PREV,         CMD_EVENT_DISK_PREV);
 
-   /* Check if we have pressed the reset button */
-   HOTKEY_CHECK(RARCH_RESET, CMD_EVENT_RESET, true, NULL);
-
-   /* Check cheats */
+   /* Check cheat hotkeys */
    HOTKEY_CHECK3(
          RARCH_CHEAT_INDEX_PLUS,  CMD_EVENT_CHEAT_INDEX_PLUS,
          RARCH_CHEAT_INDEX_MINUS, CMD_EVENT_CHEAT_INDEX_MINUS,
          RARCH_CHEAT_TOGGLE,      CMD_EVENT_CHEAT_TOGGLE);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   /* Check shader prev/next/toggle */
+   /* Check shader hotkeys */
    HOTKEY_CHECK3(
          RARCH_SHADER_NEXT,   CMD_EVENT_SHADER_NEXT,
          RARCH_SHADER_PREV,   CMD_EVENT_SHADER_PREV,
@@ -6319,6 +6407,12 @@ static enum runloop_state_enum runloop_check_state(
       }
    }
 #endif
+
+   if (runloop_paused)
+   {
+      cbs->poll_cb();
+      return RUNLOOP_STATE_PAUSE;
+   }
 
    return RUNLOOP_STATE_ITERATE;
 }
@@ -6469,6 +6563,13 @@ int runloop_iterate(void)
          if (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
 #endif
             retro_sleep(10);
+         return 1;
+      case RUNLOOP_STATE_PAUSE:
+#ifdef HAVE_NETWORKING
+         /* FIXME: This is an ugly way to tell Netplay this... */
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
+         video_driver_cached_frame();
          return 1;
       case RUNLOOP_STATE_END:
 #ifdef HAVE_NETWORKING
@@ -6820,6 +6921,14 @@ end:
       }
 
       runloop_st->frame_limit_last_time = end_frame_time;
+   }
+
+   /* Set paused state after x frames */
+   if (runloop_st->run_frames_and_pause > 0)
+   {
+      runloop_st->run_frames_and_pause--;
+      if (!runloop_st->run_frames_and_pause)
+         runloop_st->flags |= RUNLOOP_FLAG_PAUSED;
    }
 
    return 0;
