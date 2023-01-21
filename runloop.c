@@ -6276,25 +6276,47 @@ static enum runloop_state_enum runloop_check_state(
       if (!check2)
       {
          check2                            = should_slot_decrease && !old_should_slot_decrease;
-         check1                            = state_slot > 0;
+         check1                            = state_slot > -1;
          addition                          = -1;
+
+         /* Wrap-around to 999 */
+         if (check2 && !check1 && state_slot + addition < -1)
+         {
+            state_slot = 1000;
+            check1     = true;
+         }
       }
+      /* Wrap-around to -1 (Auto) */
+      else if (state_slot + addition > 999)
+         state_slot = -2;
 
       if (check2)
       {
          size_t _len;
          char msg[128];
-         int cur_state_slot                = state_slot;
+         int cur_state_slot                = state_slot + addition;
+
          if (check1)
             configuration_set_int(settings, settings->ints.state_slot,
-                  cur_state_slot + addition);
+                  cur_state_slot);
          _len = strlcpy(msg, msg_hash_to_str(MSG_STATE_SLOT), sizeof(msg));
+
          snprintf(msg         + _len,
                   sizeof(msg) - _len,
                   ": %d",
                   settings->ints.state_slot);
-         runloop_msg_queue_push(msg, 2, 180, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+         if (cur_state_slot < 0)
+            strlcat(msg, " (Auto)", sizeof(msg));
+
+#ifdef HAVE_GFX_WIDGETS
+         if (dispwidget_get_ptr()->active)
+            gfx_widget_set_generic_message(msg, 1000);
+         else
+#endif
+            runloop_msg_queue_push(msg, 2, 60, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
          RARCH_LOG("[State]: %s\n", msg);
       }
 
