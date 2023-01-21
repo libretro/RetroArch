@@ -15,16 +15,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include <time.h>
+
+#include <boolean.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
-
-#include <stdio.h>
-#include <stddef.h>
-#include <time.h>
-#include <boolean.h>
-#include <stdint.h>
-#include <string.h>
 
 #include <file/file_path.h>
 #include <compat/strl.h>

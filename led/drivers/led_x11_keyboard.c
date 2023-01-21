@@ -1,12 +1,12 @@
 #include <stdio.h>
+
+#include <X11/Xlib.h>
+#include <X11/XKBlib.h>
+
 #include "../led_driver.h"
 #include "../led_defines.h"
 
 #include "../../configuration.h"
-#include "../../retroarch.h"
-
-#include <X11/Xlib.h>
-#include <X11/XKBlib.h>
 
 /* Keys when setting in XKeyboardControl.led */
 #define XK_NUMLOCK    2
@@ -49,33 +49,38 @@ static keyboard_led_t *x11kb_cur = &x11kb_curins;
 
 static int get_led(int led)
 {
-   Display *dpy = XOpenDisplay(0);
    XKeyboardState state;
+   Display *dpy = XOpenDisplay(0);
+
    XGetKeyboardControl(dpy, &state);
    XCloseDisplay(dpy);
 
    switch (led)
    {
       case XK_NUMLOCK:
-         return (state.led_mask & XM_NUMLOCK) ? 1 : 0;
+         if (state.led_mask & XM_NUMLOCK)
+            return 1;
          break;
       case XK_CAPSLOCK:
-         return (state.led_mask & XM_CAPSLOCK) ? 1 : 0;
+         if (state.led_mask & XM_CAPSLOCK)
+            return 1;
          break;
       case XK_SCROLLLOCK:
-         return (state.led_mask & XM_SCROLLLOCK) ? 1 : 0;
+         if (state.led_mask & XM_SCROLLLOCK)
+            return 1;
          break;
       default:
          break;
    }
+
    return 0;
 }
 
 static void set_led(int led, int state)
 {
-   Display *dpy = XOpenDisplay(0);
    XKeyboardControl values;
-   values.led = led;
+   Display *dpy    = XOpenDisplay(0);
+   values.led      = led;
    values.led_mode = state ? LedModeOn : LedModeOff;
    XChangeKeyboardControl(dpy, KBLed | KBLedMode, &values);
    XCloseDisplay(dpy);
@@ -116,9 +121,9 @@ static void keyboard_init(void)
 
    for (i = 0; i < MAX_LEDS; i++)
    {
-      x11kb_cur->setup[i] = keyboard_led(i, -1);
-      x11kb_cur->state[i] = -1;
-      x11kb_cur->map[i]   = settings->uints.led_map[i];
+      x11kb_cur->setup[i]  = keyboard_led(i, -1);
+      x11kb_cur->state[i]  = -1;
+      x11kb_cur->map[i]    = settings->uints.led_map[i];
       if (x11kb_cur->map[i] < 0)
          x11kb_cur->map[i] = i;
    }

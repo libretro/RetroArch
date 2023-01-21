@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <stdint.h>
 #include "../led_driver.h"
 #include "../led_defines.h"
 

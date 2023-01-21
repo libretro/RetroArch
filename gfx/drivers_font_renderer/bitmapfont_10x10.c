@@ -16,11 +16,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libretro.h>
-
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <ctype.h>
 #include <boolean.h>
 
@@ -140,8 +138,7 @@ bitmapfont_lut_t *bitmapfont_10x10_load(unsigned language)
    num_glyphs  = (glyph_max - glyph_min) + 1;
 
    /* Initialise font struct */
-   font = (bitmapfont_lut_t*)calloc(1, sizeof(bitmapfont_lut_t));
-   if (!font)
+   if (!(font = (bitmapfont_lut_t*)calloc(1, sizeof(bitmapfont_lut_t))))
       goto error;
 
    font->glyph_min = glyph_min;
@@ -150,8 +147,7 @@ bitmapfont_lut_t *bitmapfont_10x10_load(unsigned language)
    /* Note: Need to use a calloc() here, otherwise
     * we'll get undefined behaviour when calling
     * bitmapfont_free_lut() if the following loop fails */
-   font->lut = (bool**)calloc(1, num_glyphs * sizeof(bool*));
-   if (!font->lut)
+   if (!(font->lut = (bool**)calloc(1, num_glyphs * sizeof(bool*))))
       goto error;
 
    /* Loop over all possible characters */
