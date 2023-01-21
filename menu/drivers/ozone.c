@@ -11240,6 +11240,9 @@ static void ozone_populate_entries(
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
       ozone_selection_changed(ozone, false);
 
+      /* Refresh title for search terms */
+      ozone_set_header(ozone);
+
       /* Handle playlist searches
        * (Ozone is a fickle beast...) */
       if (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
@@ -11285,12 +11288,6 @@ static void ozone_populate_entries(
             ozone->num_search_terms_old = num_search_terms;
          }
       }
-      else if (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
-      {
-         /* when refreshing the explore view, also refresh the title */
-         ozone_set_header(ozone);
-      }
-
       return;
    }
 
