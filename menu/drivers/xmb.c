@@ -4607,7 +4607,8 @@ static enum menu_action xmb_parse_menu_entry_action(
          }
 
          /* Back up to Main Menu and first item */
-         if (menu_entries_get_stack_size(0) == 1)
+         if (     !menu_entries_search_get_terms()
+               &&  menu_entries_get_stack_size(0) == 1)
          {
             if (xmb_get_system_tab(xmb,
                   (unsigned)xmb->categories_selection_ptr) == XMB_SYSTEM_TAB_MAIN)
