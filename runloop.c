@@ -1960,7 +1960,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   char tmp_path[PATH_MAX_LENGTH];
 
                   if (string_is_empty(dir_system))
-                     RARCH_WARN("[Environ]: SYSTEM DIR is empty, assume CONTENT DIR %s\n",
+                     RARCH_WARN("[Environ]: SYSTEM DIR is empty, assume CONTENT DIR \"%s\".\n",
                            fullpath);
 
                   strlcpy(tmp_path, fullpath, sizeof(tmp_path));
@@ -1974,9 +1974,69 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
             else
             {
-               *(const char**)data = dir_system;
-               RARCH_LOG("[Environ]: SYSTEM_DIRECTORY: \"%s\".\n",
-                     dir_system);
+#ifdef HAVE_MENU
+               menu_handle_t *menu                   = menu_state_get_ptr()->driver_data;
+#endif
+               struct retro_system_info *system_info = &runloop_st->system.info;
+               char dir_system_subdir[PATH_MAX_LENGTH];
+
+               /* First try library name */
+               if (     system_info
+                     && !string_is_empty(system_info->library_name))
+               {
+                  fill_pathname_join(dir_system_subdir,
+                        dir_system,
+                        system_info->library_name,
+                        sizeof(dir_system_subdir));
+
+                  RARCH_DBG("[Environ]: SYSTEM_DIRECTORY candidate: \"%s\".\n",
+                        dir_system_subdir);
+               }
+
+#ifdef HAVE_MENU
+               /* Then playlist name */
+               if (     menu
+                     && !path_is_valid(dir_system_subdir))
+               {
+                  playlist_t *playlist_cached = playlist_get_cached();
+                  const char *db_name         = NULL;
+                  char db_name_noext[PATH_MAX_LENGTH];
+
+                  db_name_noext[0]            = '\0';
+
+                  playlist_get_db_name(playlist_cached,
+                        menu->rpl_entry_selection_ptr,
+                        &db_name);
+
+                  if (!string_is_empty(db_name))
+                  {
+                     strlcpy(db_name_noext, db_name, sizeof(db_name_noext));
+                     path_remove_extension(db_name_noext);
+                     fill_pathname_join(dir_system_subdir,
+                           dir_system,
+                           db_name_noext,
+                           sizeof(dir_system_subdir));
+
+                     RARCH_DBG("[Environ]: SYSTEM_DIRECTORY candidate: \"%s\".\n",
+                           dir_system_subdir);
+                  }
+               }
+#endif
+
+               /* Use subdir if valid */
+               if (path_is_valid(dir_system_subdir))
+               {
+                  *(const char**)data = dir_system_subdir;
+                  RARCH_LOG("[Environ]: SYSTEM_DIRECTORY: \"%s\".\n",
+                        dir_system_subdir);
+               }
+               /* Fallback to global system */
+               else
+               {
+                  *(const char**)data = dir_system;
+                  RARCH_LOG("[Environ]: SYSTEM_DIRECTORY: \"%s\".\n",
+                        dir_system);
+               }
             }
          }
          break;
