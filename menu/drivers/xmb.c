@@ -2007,19 +2007,22 @@ static void xmb_set_title(xmb_handle_t *xmb)
       if (!path)
          return;
 
-      /* Set alternative title when available */
-      if (node && node->console_name)
-         strlcpy(xmb->title_name_alt,
-               node->console_name,
-               sizeof(xmb->title_name_alt));
-
+      /* Use real title for dynamic backgrounds */
       fill_pathname_base(
             xmb->title_name, path, sizeof(xmb->title_name));
       path_remove_extension(xmb->title_name);
 
-      /* Add current search terms */
-      menu_entries_search_append_terms_string(
-            xmb->title_name, sizeof(xmb->title_name));
+      /* Set alternative title for visible header */
+      if (node && node->console_name)
+      {
+         strlcpy(xmb->title_name_alt,
+               node->console_name,
+               sizeof(xmb->title_name_alt));
+
+         /* Add current search terms to alternative title */
+         menu_entries_search_append_terms_string(
+               xmb->title_name_alt, sizeof(xmb->title_name_alt));
+      }
    }
 }
 
@@ -2756,6 +2759,9 @@ static void xmb_populate_entries(void *data,
    {
       xmb_selection_pointer_changed(xmb, false);
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+
+      /* Refresh title for search terms */
+      xmb_set_title(xmb);
       return;
    }
 
