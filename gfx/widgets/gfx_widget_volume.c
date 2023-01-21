@@ -175,7 +175,9 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
             video_width,
             video_height,
             0, 0,
-            state->widget_width,
+            (state->mute)
+                  ? state->widget_height
+                  : state->widget_width,
             state->widget_height,
             video_width,
             video_height,
