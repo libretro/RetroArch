@@ -2436,6 +2436,12 @@ bool command_event(enum event_command cmd, void *data)
 #endif
             if (!command_event_main_state(cmd))
                return false;
+            /* Run next frame to see the core output while paused */
+            else if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+            {
+               runloop_st->flags               &= ~RUNLOOP_FLAG_PAUSED;
+               runloop_st->run_frames_and_pause = 1;
+            }
 
 #if HAVE_RUNAHEAD
             command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
@@ -2485,6 +2491,13 @@ bool command_event(enum event_command cmd, void *data)
          /* Recalibrate frame delay target */
          if (settings->bools.video_frame_delay_auto)
             video_st->frame_delay_target = 0;
+
+         /* Run a few frames to blank core output while paused */
+         if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+         {
+            runloop_st->flags               &= ~RUNLOOP_FLAG_PAUSED;
+            runloop_st->run_frames_and_pause = 8;
+         }
 
 #if HAVE_RUNAHEAD
          command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
