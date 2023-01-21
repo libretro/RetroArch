@@ -20,7 +20,6 @@
 #include <string/stdstring.h>
 
 #include "../msg_hash.h"
-#include "../verbosity.h"
 
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
 #if (_MSC_VER >= 1700)
@@ -30,25 +29,10 @@
 #pragma warning(disable:4566)
 #endif
 
-int msg_hash_get_help_ru_enum(enum msg_hash_enums msg, char *s, size_t len)
-{
-   int ret = 0;
-
-   switch (msg)
-   {
-      case MSG_UNKNOWN:
-      default:
-         ret = -1;
-         break;
-   }
-
-   return ret;
-}
-
 #ifdef HAVE_MENU
 static const char *menu_hash_to_str_ru_label_enum(enum msg_hash_enums msg)
 {
-   if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
+   if (  msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
          msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
    {
       static char hotkey_lbl[128] = {0};

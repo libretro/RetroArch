@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -22,24 +21,6 @@
 #include <string/stdstring.h>
 
 #include "../msg_hash.h"
-#include "../configuration.h"
-#include "../verbosity.h"
-
-
-int msg_hash_get_help_fi_enum(enum msg_hash_enums msg, char *s, size_t len)
-{
-   int ret = 0;
-
-   switch (msg)
-   {
-      case MSG_UNKNOWN:
-      default:
-         ret = -1;
-         break;
-   }
-
-   return ret;
-}
 
 const char *msg_hash_to_str_fi(enum msg_hash_enums msg)
 {

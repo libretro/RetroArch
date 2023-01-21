@@ -22,7 +22,6 @@
 #include <string/stdstring.h>
 
 #include "../msg_hash.h"
-#include "../verbosity.h"
 
 #ifdef RARCH_INTERNAL
 #include "../configuration.h"

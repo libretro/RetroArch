@@ -22,7 +22,6 @@
 #include <string/stdstring.h>
 
 #include "../msg_hash.h"
-#include "../verbosity.h"
 
 #ifdef RARCH_INTERNAL
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)

@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -21,7 +20,6 @@
 #include <string/stdstring.h>
 
 #include "../msg_hash.h"
-#include "../verbosity.h"
 
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
 #if (_MSC_VER >= 1700)
@@ -29,24 +27,6 @@
 #pragma execution_character_set("utf-8")
 #endif
 #pragma warning(disable:4566)
-#endif
-
-#ifdef RARCH_INTERNAL
-#include "../configuration.h"
-int msg_hash_get_help_sk_enum(enum msg_hash_enums msg, char *s, size_t len)
-{
-   int ret = 0;
-
-   switch (msg)
-   {
-      case MSG_UNKNOWN:
-      default:
-         ret = -1;
-         break;
-   }
-
-   return ret;
-}
 #endif
 
 const char *msg_hash_to_str_sk(enum msg_hash_enums msg)

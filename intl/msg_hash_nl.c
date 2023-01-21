@@ -12,7 +12,6 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -28,26 +27,6 @@
 #endif
 #pragma warning(disable:4566)
 #endif
-
-int msg_hash_get_help_nl_enum(enum msg_hash_enums msg, char *s, size_t len)
-{
-   int ret = 0;
-
-   switch (msg)
-   {
-      case MENU_ENUM_LABEL_WELCOME_TO_RETROARCH:
-         snprintf(s, len,
-               "Welkom bij RetroArch\n"
-               );
-         break;
-      default:
-         strlcpy(s, "Geen informatie beschikbaar.", len);
-         ret = -1;
-         break;
-   }
-
-   return ret;
-}
 
 const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
 {

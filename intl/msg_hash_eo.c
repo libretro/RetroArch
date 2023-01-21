@@ -19,7 +19,6 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
-#include "../configuration.h"
 #include "../msg_hash.h"
 
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
@@ -29,22 +28,6 @@
 #endif
 #pragma warning(disable:4566)
 #endif
-
-int msg_hash_get_help_eo_enum(enum msg_hash_enums msg, char *s, size_t len)
-{
-   switch (msg)
-   {
-      case MSG_UNKNOWN:
-      default:
-         if (string_is_empty(s))
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
-         /* TODO/FIXME - should change this to -1 once we add more entries */
-         break;
-   }
-
-   /* TODO/FIXME - should change this to 0 once we add more entries */
-   return -1;
-}
 
 const char *msg_hash_to_str_eo(enum msg_hash_enums msg)
 {

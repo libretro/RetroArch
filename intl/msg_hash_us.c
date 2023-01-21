@@ -143,82 +143,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_CORE_LIST:
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CORE_LIST), len);
             break;
-#if 0
-        /* These items are only available from the help menu that was hidden by commit ee9b6ba78e8690bb5eff8c978dba3d1649363e6b */
-        case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
-            snprintf(s, len,
-                     "You can use the following controls below \n"
-                             "on either your gamepad or keyboard in order\n"
-                             "to control the menu: \n"
-                             " \n");
-            break;
-        case MENU_ENUM_LABEL_WELCOME_TO_RETROARCH:
-            snprintf(s, len,
-                     "Welcome to RetroArch\n");
-            break;
-        case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
-            {
-                /* Work around C89 limitations */
-                char u[501];
-                const char *t =
-                        "RetroArch relies on an unique form of\n"
-                                "audio/video synchronization where it needs to be\n"
-                                "calibrated against the refresh rate of your\n"
-                                "display for best performance results.\n"
-                                " \n"
-                                "If you experience any audio crackling or video\n"
-                                "tearing, usually it means that you need to\n"
-                                "calibrate the settings. Some choices below:\n"
-                                " \n";
-                snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
-                         "a) Go to '%s' -> '%s', and enable\n"
-                                 "'Threaded Video'. Refresh rate will not matter\n"
-                                 "in this mode, framerate will be higher,\n"
-                                 "but video might be less smooth.\n"
-                                 "b) Go to '%s' -> '%s', and look at\n"
-                                 "'%s'. Let it run for\n"
-                                 "2048 frames, then press 'OK'.",
-                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
-                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
-                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
-                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
-                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
-                strlcpy(s, t, len);
-                strlcat(s, u, len);
-            }
-            break;
-        case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
-            snprintf(s, len,
-                     "To scan for content, go to '%s' and\n"
-                             "select either '%s' or %s'.\n"
-                             "\n"
-                             "Files will be compared to database entries.\n"
-                             "If there is a match, it will add an entry\n"
-                             "to a playlist.\n"
-                             "\n"
-                             "You can then easily access this content by\n"
-                             "going to '%s' ->\n"
-                             "'%s'\n"
-                             "instead of having to go through the\n"
-                             "file browser every time.\n"
-                             "\n"
-                             "NOTE: Content for some cores might still not be\n"
-                             "scannable.",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB));
-            break;
-        case MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
-            snprintf(s, len,
-                     "Welcome to RetroArch\n"
-                             "\n"
-                             "Extracting assets, please wait.\n"
-                             "This might take a while...\n");
-            break;
-        /* Help menu items end. */
-#endif
         case MENU_ENUM_LABEL_INPUT_DRIVER:
             {
                const char *lbl = settings ? settings->arrays.input_driver : NULL;
@@ -481,56 +405,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT), len);
             break;
-#if 0
-        /* These items are only available from the help menu that was hidden by commit ee9b6ba78e8690bb5eff8c978dba3d1649363e6b */
-        case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
-            snprintf(s, len,
-                     "RetroArch by itself does nothing. \n"
-                            " \n"
-                            "To make it do things, you need to \n"
-                            "load a program into it. \n"
-                            "\n"
-                            "We call such a program 'Libretro core', \n"
-                            "or 'core' in short. \n"
-                            " \n"
-                            "To load a core, select one from\n"
-                            "'Load Core'.\n"
-                            " \n"
-#ifdef HAVE_NETWORKING
-                    "You can obtain cores in several ways: \n"
-                    "* Download them by going to\n"
-                    "'%s' -> '%s'.\n"
-                    "* Manually move them over to\n"
-                    "'%s'.",
-                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
-                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
-                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
-#else
-                            "You can obtain cores by\n"
-                            "manually moving them over to\n"
-                            "'%s'.",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
-#endif
-            );
-            break;
-        case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
-            snprintf(s, len,
-                     "You can change the virtual gamepad overlay\n"
-                             "by going to '%s' -> '%s'."
-                             " \n"
-                             "From there you can change the overlay,\n"
-                             "change the size and opacity of the buttons, etc.\n"
-                             " \n"
-                             "NOTE: By default, virtual gamepad overlays are\n"
-                             "hidden when in the menu.\n"
-                             "If you'd like to change this behavior,\n"
-                             "you can set '%s' to false.",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU));
-            break;
-        /* Help menu items end. */
-#endif
 #ifdef HAVE_LAKKA
         case MENU_ENUM_LABEL_TIMEZONE:
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_TIMEZONE), len);

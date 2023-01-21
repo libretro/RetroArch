@@ -22,7 +22,6 @@
 
 #include "../msg_hash.h"
 #include "../configuration.h"
-#include "../verbosity.h"
 
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
 #if (_MSC_VER >= 1700)
