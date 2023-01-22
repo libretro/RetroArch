@@ -1605,6 +1605,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
       else
       {
+         if (vk->context.gpu != VK_NULL_HANDLE && context.gpu != vk->context.gpu)
+            RARCH_ERR("[Vulkan]: Got unexpected VkPhysicalDevice, despite RetroArch using explicit physical device.\n");
+
          vk->context.destroy_device       = iface->destroy_device;
 
          vk->context.device               = context.device;
