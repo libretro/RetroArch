@@ -1376,11 +1376,10 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
    /* Get list of file extensions to include
     * > core + lock */
    strlcpy(exts, core_exts, sizeof(exts));
+   strlcat(exts, "|lck",      sizeof(exts));
 #if defined(HAVE_DYNAMIC)
    /* > 'standalone exempt' */
-   strlcat(exts, "|lck|lsae", sizeof(exts));
-#else
-   strlcat(exts, "|lck",      sizeof(exts));
+   strlcat(exts, "|lsae", sizeof(exts));
 #endif
 
    /* Fetch core directory listing */

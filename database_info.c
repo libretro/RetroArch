@@ -395,8 +395,8 @@ int database_info_build_query_enum(char *s, size_t len,
          s[pos+1]   = '\0';
          break;
       case DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR:
-	      s[0]       = '{';
-	      s[1]       = '\'';
+	 s[0]       = '{';
+	 s[1]       = '\'';
          s[2]       = 'r';
          s[3]       = 'e';
          s[4]       = 'l';
