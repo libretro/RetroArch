@@ -470,6 +470,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
    core_info_t *core_info        = NULL;
    const char *core_path         = NULL;
    const char *savestate_support = NULL;
+   runloop_state_t *runloop_st   = runloop_state_get_ptr();
    bool kiosk_mode_enable        = settings->bools.kiosk_mode_enable;
 #if defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
    bool menu_show_core_updater   = settings->bools.menu_show_core_updater;
@@ -693,12 +694,12 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->paths.directory_system;
 
-      retroarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
-
-      update_missing_firmware        = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
+      update_missing_firmware         = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
 
       if (set_missing_firmware)
-         retroarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+         runloop_st->missing_bios     = true;
+      else
+         runloop_st->missing_bios     = false;
 
       if (update_missing_firmware)
       {
@@ -1237,9 +1238,10 @@ static unsigned menu_displaylist_parse_core_option_override_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
    unsigned count               = 0;
+   runloop_state_t *runloop_st  = runloop_state_get_ptr();
    uint32_t flags               = runloop_get_flags();
    bool core_has_options        = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) &&
-         retroarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL);
+         (runloop_st->core_options);
    bool game_options_active     = flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE;
    bool folder_options_active   = flags & RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE;
    bool show_core_options_flush = settings ?
@@ -12911,11 +12913,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
              * we therefore have to check that the current selection
              * index is less than the current number of menu entries
              * - if not, we reset the navigation pointer */
-            size_t selection = menu_navigation_get_selection();
+            size_t selection             = menu_navigation_get_selection();
+	    runloop_state_t *runloop_st  = runloop_state_get_ptr();
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            if (retroarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
+            if (runloop_st->core_options)
             {
                bool game_specific_options      = settings->bools.game_specific_options;
                const char *category            = info->path;

@@ -6405,19 +6405,6 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          p_rarch->flags &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
          break;
 #endif
-      case RARCH_CTL_GET_CORE_OPTION_SIZE:
-         {
-            unsigned *idx = (unsigned*)data;
-            if (!idx)
-               return false;
-            if (runloop_st->core_options)
-               *idx = (unsigned)runloop_st->core_options->size;
-            else
-               *idx = 0;
-         }
-         break;
-      case RARCH_CTL_HAS_CORE_OPTIONS:
-         return (runloop_st->core_options != NULL);
       case RARCH_CTL_CORE_OPTIONS_LIST_GET:
          {
             core_option_manager_t **coreopts = (core_option_manager_t**)data;
@@ -6427,8 +6414,8 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY:
-         if (runloop_st->core_options &&
-             runloop_st->core_options_callback.update_display)
+         if (   runloop_st->core_options
+             && runloop_st->core_options_callback.update_display)
          {
             /* Note: The update_display() callback may read
              * core option values via RETRO_ENVIRONMENT_GET_VARIABLE.
@@ -6462,14 +6449,6 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_st->flags |=   RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE;
          break;
 #endif
-      case RARCH_CTL_SET_MISSING_BIOS:
-         runloop_st->missing_bios = true;
-         break;
-      case RARCH_CTL_UNSET_MISSING_BIOS:
-         runloop_st->missing_bios = false;
-         break;
-      case RARCH_CTL_IS_MISSING_BIOS:
-         return runloop_st->missing_bios;
       case RARCH_CTL_GET_PERFCNT:
          {
             bool **perfcnt = (bool**)data;
