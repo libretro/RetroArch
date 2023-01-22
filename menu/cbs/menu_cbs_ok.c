@@ -2270,6 +2270,11 @@ static int default_action_ok_load_content_with_core_from_menu(const char *_path,
    content_info.argv                   = NULL;
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
+
+   /* Clear playlist cache to avoid stale data when
+    * getting SYSTEM dir on launch via 'Load Content' */
+   playlist_free_cached();
+
    if (!task_push_load_content_with_core(
             _path, &content_info,
             (enum rarch_core_type)_type, NULL, NULL))
