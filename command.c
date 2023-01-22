@@ -1062,6 +1062,9 @@ bool command_event_save_config(
       return true;
    }
 
+   if (runloop_get_flags() & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
+      return false;
+
    if (!string_is_empty(str))
    {
       snprintf(s, len, "%s \"%s\".",
