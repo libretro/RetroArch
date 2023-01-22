@@ -2485,8 +2485,8 @@ void input_config_get_bind_string_joykey(
 {
    if (GET_HAT_DIR(bind->joykey))
    {
-      if (bind->joykey_label &&
-            !string_is_empty(bind->joykey_label)
+      if (      bind->joykey_label
+            && !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
       {
          size_t len = fill_pathname_join_delim(buf, prefix,
@@ -2503,28 +2503,25 @@ void input_config_get_bind_string_joykey(
       {
          const char *na_str =
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+         size_t len         = snprintf(buf, size, "%sHat #%u ", prefix,
+               (unsigned)GET_HAT(bind->joykey));
 
          switch (GET_HAT_DIR(bind->joykey))
          {
             case HAT_UP_MASK:
-               snprintf(buf, size, "%sHat #%u up (%s)", prefix,
-                     (unsigned)GET_HAT(bind->joykey), na_str);
+               snprintf(buf + len, size - len, " up (%s)",   na_str);
                break;
             case HAT_DOWN_MASK:
-               snprintf(buf, size, "%sHat #%u down (%s)", prefix,
-                     (unsigned)GET_HAT(bind->joykey), na_str);
+               snprintf(buf + len, size - len, " down (%s)", na_str);
                break;
             case HAT_LEFT_MASK:
-               snprintf(buf, size, "%sHat #%u left (%s)", prefix,
-                     (unsigned)GET_HAT(bind->joykey), na_str);
+               snprintf(buf + len, size - len, " left (%s)", na_str);
                break;
             case HAT_RIGHT_MASK:
-               snprintf(buf, size, "%sHat #%u right (%s)", prefix,
-                     (unsigned)GET_HAT(bind->joykey), na_str);
+               snprintf(buf + len, size - len, " right (%s)",na_str);
                break;
             default:
-               snprintf(buf, size, "%sHat #%u ? (%s)", prefix,
-                     (unsigned)GET_HAT(bind->joykey), na_str);
+               snprintf(buf + len, size - len, " ? (%s)",    na_str);
                break;
          }
       }
