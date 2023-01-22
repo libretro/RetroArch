@@ -2509,19 +2509,19 @@ void input_config_get_bind_string_joykey(
          switch (GET_HAT_DIR(bind->joykey))
          {
             case HAT_UP_MASK:
-               snprintf(buf + len, size - len, " up (%s)",   na_str);
+               snprintf(buf + len, size - len, "up (%s)",   na_str);
                break;
             case HAT_DOWN_MASK:
-               snprintf(buf + len, size - len, " down (%s)", na_str);
+               snprintf(buf + len, size - len, "down (%s)", na_str);
                break;
             case HAT_LEFT_MASK:
-               snprintf(buf + len, size - len, " left (%s)", na_str);
+               snprintf(buf + len, size - len, "left (%s)", na_str);
                break;
             case HAT_RIGHT_MASK:
-               snprintf(buf + len, size - len, " right (%s)",na_str);
+               snprintf(buf + len, size - len, "right (%s)",na_str);
                break;
             default:
-               snprintf(buf + len, size - len, " ? (%s)",    na_str);
+               snprintf(buf + len, size - len, "? (%s)",    na_str);
                break;
          }
       }
