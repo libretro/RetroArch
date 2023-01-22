@@ -86,6 +86,7 @@
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>
 #include <lists/dir_list.h>
+#include <retro_dirent.h>
 
 #ifdef EMSCRIPTEN
 #include <emscripten/emscripten.h>
@@ -1984,13 +1985,43 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                if (     system_info
                      && !string_is_empty(system_info->library_name))
                {
+                  bool entry_is_dir = false;
+
                   fill_pathname_join(dir_system_subdir,
                         dir_system,
                         system_info->library_name,
                         sizeof(dir_system_subdir));
 
-                  RARCH_DBG("[Environ]: SYSTEM_DIRECTORY candidate: \"%s\".\n",
-                        dir_system_subdir);
+                  /* Inspect if the subdir has dirs under it, and ignore
+                   * it if so. Because for example PPSSPP already uses a
+                   * subdir named after 'library_name', so it would have
+                   * to be 'system/PPSSPP/PPSSPP' otherwise. */
+                  if (path_is_valid(dir_system_subdir))
+                  {
+                     struct RDIR *entry = retro_opendir(dir_system_subdir);
+                     if (entry)
+                     {
+                        while (retro_readdir(entry))
+                        {
+                           const char *entry_name = retro_dirent_get_name(entry);
+                           if (strstr(entry_name, "."))
+                              continue;
+
+                           if (retro_dirent_is_dir(entry, NULL))
+                           {
+                              entry_is_dir = true;
+                              break;
+                           }
+                        }
+                        retro_closedir(entry);
+                     }
+                  }
+
+                  if (entry_is_dir)
+                     dir_system_subdir[0] = '\0';
+                  else
+                     RARCH_DBG("[Environ]: SYSTEM_DIRECTORY candidate: \"%s\".\n",
+                           dir_system_subdir);
                }
 
 #ifdef HAVE_MENU
