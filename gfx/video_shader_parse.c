@@ -371,8 +371,8 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->abs_x    = iattr;
       else
       {
-	      strlcpy(attr_name_buf, "scale_x",      sizeof(attr_name_buf));
-	      strlcat(attr_name_buf, formatted_num,  sizeof(attr_name_buf));
+         strlcpy(attr_name_buf, "scale_x",      sizeof(attr_name_buf));
+         strlcat(attr_name_buf, formatted_num,  sizeof(attr_name_buf));
          if (config_get_int(conf, attr_name_buf, &iattr))
             scale->abs_x = iattr;
       }
