@@ -4436,7 +4436,7 @@ void main_exit(void *args)
    task_queue_deinit();
 
    ui_companion_driver_deinit();
-   rarch_config_deinit();
+   retroarch_config_deinit();
 
    frontend_driver_shutdown(false);
 
@@ -4510,9 +4510,9 @@ int rarch_main(int argc, char *argv[], void *data)
 
    libretro_free_system_info(&runloop_st->system.info);
    command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
-   rarch_favorites_deinit();
+   retroarch_favorites_deinit();
 
-   rarch_config_init();
+   retroarch_config_init();
 
    retroarch_deinit_drivers(&runloop_st->retro_ctx);
    retroarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
@@ -6933,7 +6933,7 @@ bool retroarch_main_quit(void)
    return true;
 }
 
-enum retro_language rarch_get_language_from_iso(const char *iso639)
+enum retro_language retroarch_get_language_from_iso(const char *iso639)
 {
    unsigned i;
    enum retro_language lang = RETRO_LANGUAGE_ENGLISH;
@@ -6999,7 +6999,7 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
    return lang;
 }
 
-void rarch_favorites_init(void)
+void retroarch_favorites_init(void)
 {
    settings_t *settings                = config_get_ptr();
    int content_favorites_size          = settings ? settings->ints.content_favorites_size : 0;
@@ -7020,7 +7020,7 @@ void rarch_favorites_init(void)
    if (content_favorites_size >= 0)
       playlist_config.capacity = (size_t)content_favorites_size;
 
-   rarch_favorites_deinit();
+   retroarch_favorites_deinit();
 
    RARCH_LOG("[Playlist]: %s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
@@ -7038,7 +7038,7 @@ void rarch_favorites_init(void)
       playlist_qsort(g_defaults.content_favorites);
 }
 
-void rarch_favorites_deinit(void)
+void retroarch_favorites_deinit(void)
 {
    if (!g_defaults.content_favorites)
       return;

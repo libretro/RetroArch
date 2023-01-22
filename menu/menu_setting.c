@@ -8502,8 +8502,8 @@ static void general_write_handler(rarch_setting_t *setting)
 
                /* In all cases, need to close and reopen
                 * playlist file (to update maximum capacity) */
-               rarch_favorites_deinit();
-               rarch_favorites_init();
+               retroarch_favorites_deinit();
+               retroarch_favorites_init();
             }
          }
          break;

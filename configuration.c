@@ -5948,16 +5948,15 @@ void input_config_parse_joy_button(
    }
 }
 
-void rarch_config_deinit(void)
+void retroarch_config_deinit(void)
 {
    if (config_st)
       free(config_st);
    config_st = NULL;
 }
 
-void rarch_config_init(void)
+void retroarch_config_init(void)
 {
-   if (config_st)
-      return;
-   config_st = (settings_t*)calloc(1, sizeof(settings_t));
+   if (!config_st)
+      config_st = (settings_t*)calloc(1, sizeof(settings_t));
 }

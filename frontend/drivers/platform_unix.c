@@ -2781,16 +2781,15 @@ enum retro_language frontend_unix_get_user_language(void)
       if (jstr)
       {
          const char *lang_str = (*env)->GetStringUTFChars(env, jstr, 0);
-         lang                 = rarch_get_language_from_iso(lang_str);
+         lang                 = retroarch_get_language_from_iso(lang_str);
 
          (*env)->ReleaseStringUTFChars(env, jstr, lang_str);
       }
    }
 #else
    char *envvar = getenv("LANG");
-
    if (envvar)
-      lang = rarch_get_language_from_iso(envvar);
+      return retroarch_get_language_from_iso(envvar);
 #endif
 #endif
    return lang;

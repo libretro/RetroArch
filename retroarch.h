@@ -124,11 +124,11 @@ void retroarch_menu_running(void);
 
 void retroarch_menu_running_finished(bool quit);
 
-enum retro_language rarch_get_language_from_iso(const char *lang);
+enum retro_language retroarch_get_language_from_iso(const char *lang);
 
-void rarch_favorites_init(void);
+void retroarch_favorites_init(void);
 
-void rarch_favorites_deinit(void);
+void retroarch_favorites_deinit(void);
 
 /* Audio */
 

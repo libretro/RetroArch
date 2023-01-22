@@ -7126,7 +7126,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_st->entries.begin               = 0;
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
-            rarch_favorites_deinit();
+            retroarch_favorites_deinit();
 
             menu_st->dialog_st.pending_push  = false;
             menu_st->dialog_st.current_id    = 0;

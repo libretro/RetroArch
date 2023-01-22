@@ -1095,7 +1095,7 @@ extern "C" {
                sizeof(lang_iso));
 		}
       string_list_deinitialize(&split);
-		return rarch_get_language_from_iso(lang_iso);
+		return retroarch_get_language_from_iso(lang_iso);
 	}
 
 	const char* uwp_get_cpu_model_name(void)
