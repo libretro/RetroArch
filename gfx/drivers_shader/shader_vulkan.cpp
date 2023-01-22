@@ -1446,7 +1446,7 @@ bool vulkan_filter_chain::init_alias()
       if (name.empty())
          continue;
 
-      j = &passes[i] - passes.data();
+      j = (unsigned)(&passes[i] - passes.data());
 
       if (!slang_set_unique_map(
                common.texture_semantic_map, name,
@@ -1471,7 +1471,7 @@ bool vulkan_filter_chain::init_alias()
 
    for (i = 0; i < common.luts.size(); i++)
    {
-      unsigned j = &common.luts[i] - common.luts.data();
+      unsigned j = (unsigned)(&common.luts[i] - common.luts.data());
       if (!slang_set_unique_map(
                common.texture_semantic_map,
                common.luts[i]->get_id(),
