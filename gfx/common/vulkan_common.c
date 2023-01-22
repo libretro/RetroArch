@@ -1584,6 +1584,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       iface = NULL;
    }
 
+   if (!vulkan_context_init_gpu(vk))
+      return false;
+
    if (!cached_device_vk && iface && iface->create_device)
    {
       struct retro_vulkan_context context     = { 0 };
@@ -1628,9 +1631,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       vk->context.destroy_device = cached_destroy_device_vk;
       cached_destroy_device_vk   = NULL;
    }
-
-   if (!vulkan_context_init_gpu(vk))
-      return false;
 
    vkGetPhysicalDeviceProperties(vk->context.gpu,
          &vk->context.gpu_properties);
