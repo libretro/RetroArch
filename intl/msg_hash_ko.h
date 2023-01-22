@@ -12263,10 +12263,6 @@ MSG_HASH(
    "#%d 슬롯에서 상태 불러옴."
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "#-1 슬롯(자동)에서 상태 불러옴."
-   )
-MSG_HASH(
    MSG_LOADING,
    "불러오는 중"
    )
@@ -12441,10 +12437,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "슬롯 #%d에 상태저장."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "슬롯 #-1에 상태저장(자동)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

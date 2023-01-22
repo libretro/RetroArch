@@ -12207,10 +12207,6 @@ MSG_HASH(
    "Yuva #%d üstünden durum yüklendi."
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Yuva #-1 üstünden durum yüklendi (otomatik)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Yükleniyor"
    )
@@ -12385,10 +12381,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Yuvaya kaydedilmiş durum #%d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Yuvaya kaydedilmiş durum #-1 (ses)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

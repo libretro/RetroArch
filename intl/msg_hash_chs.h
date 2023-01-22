@@ -11295,10 +11295,6 @@ MSG_HASH(
    "加载卡槽 #%d 的状态。"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "加载卡槽 #%d (自动) 的状态。"
-   )
-MSG_HASH(
    MSG_LOADING,
    "正在加载"
    )
@@ -11469,10 +11465,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "已保存状态到卡槽 #%d。"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "已保存状态到卡槽 #%d (自动)。"
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

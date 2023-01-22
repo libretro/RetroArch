@@ -10215,10 +10215,6 @@ MSG_HASH(
    "スロット%dからステートロードしました"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "スロット-1 (自動)からステートロードしました"
-   )
-MSG_HASH(
    MSG_LOADING,
    "ロード中"
    )
@@ -10377,10 +10373,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "スロット%dにステートセーブしました"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "スロット-1 (自動)にステートセーブしました"
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

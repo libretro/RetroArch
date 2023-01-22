@@ -12588,7 +12588,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Caricamento del salvataggio dallo slot #-1 (automatico)."
+   "Stato caricato dallo slot #-1 (Auto)."
    )
 MSG_HASH(
    MSG_LOADING,
@@ -12768,7 +12768,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Stato salvato nello slot #-1 (auto)."
+   "Stato salvato nello slot #-1 (Auto)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

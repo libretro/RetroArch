@@ -11616,7 +11616,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Załadowany stan z gniazda #-1 (automatyczny)."
+   "Stan załadowany z gniazda #-1 (Auto)."
    )
 MSG_HASH(
    MSG_LOADING,
@@ -11784,7 +11784,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Zapisany stan do gniazda #-1 (auto)."
+   "Zapisano stan do gniazda #-1 (Auto)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

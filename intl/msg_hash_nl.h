@@ -5963,10 +5963,6 @@ MSG_HASH(
    "State geladen van slot #%d."
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "State geladen van slot #-1 (auto)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Laden"
    )

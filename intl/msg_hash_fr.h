@@ -12715,10 +12715,6 @@ MSG_HASH(
    "Sauvegarde instantanée chargée depuis l'emplacement #%d."
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Sauvegarde instantanée chargée depuis l'emplacement #-1 (auto)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Chargement"
    )
@@ -12893,10 +12889,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Sauvegarde instantanée enregistrée vers l'emplacement #%d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Sauvegarde instantanée enregistrée vers l'emplacement #-1 (auto)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

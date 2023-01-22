@@ -1318,7 +1318,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   "Энергопотребление"
+   "Управление питанием"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
@@ -1421,6 +1421,10 @@ MSG_HASH(
    "Используемый драйвер устройств ввода. Может быть принудительно изменён отдельными видеодрайверами."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   "Драйвер ввода. Может быть принудительно переключен видеодрайвером."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Контроллер"
    )
@@ -1435,6 +1439,70 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Используемый видеодрайвер."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   "Драйвер OpenGL 1.x. Минимальная требуемая версия: OpenGL 1.1. Поддержка шейдеров отсутствует. По возможности рекомендуется использовать более поздние драйверы OpenGL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
+   "Драйвер OpenGL 2.x. Позволяет использовать GL-ядра libretro в дополнение к ядрам с программным рендерингом. Минимальная требуемая версия: OpenGL 2.0 или OpenGLES 2.0. Поддерживает шейдеры в формате GLSL. По возможности рекомендуется использовать драйвер glcore."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   "Драйвер OpenGL 3.x. Позволяет использовать GL-ядра libretro в дополнение к ядрам с программным рендерингом. Минимальная требуемая версия: OpenGL 3.2 или OpenGLES 3.0+. Поддерживает шейдеры в формате Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   "Драйвер Vulkan. Позволяет использовать Vulkan-ядра libretro в дополнение к ядрам с программным рендерингом. Минимальная требуемая версия: Vulkan 1.0. Поддерживает HDR и шейдеры в формате Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
+   "Драйвер SDL 1.2 с программным рендерингом. Обеспечивает неоптимальную производительность. Рекомендуется использовать в последнюю очередь."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
+   "Драйвер SDL 2 с программным рендерингом. Производительность ядер libretro с программным рендерингом зависит от реализации SDL на используемой платформе."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
+   "Драйвер Metal для платформ Apple. Поддерживает шейдеры в формате Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   "Драйвер Direct3D 8 без поддержки шейдеров."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   "Драйвер Direct3D 9 с поддержкой шейдеров в старом формате Cg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   "Драйвер Direct3D 9 с поддержкой шейдеров в формате HLSL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "Драйвер Direct3D 10 с поддержкой шейдеров в формате Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "Драйвер Direct3D 11 с поддержкой HDR и шейдеров в формате Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "Драйвер Direct3D 12 с поддержкой HDR и шейдеров в формате Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "Драйвер DispmanX. Использует DispmanX API для Videocore IV GPU в Raspberry Pi 0..3. Оверлеи и шейдеры не поддерживаются."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
+   "Драйвер LibCACA. Осуществляет вывод символов вместо графики. Не рекомендуется для практического использования."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   "Низкоуровневый видеодрайвер Exynos, использующий для операций блитирования блок G2D в чипсетах Samsung Exynos. Обеспечивает оптимальную производительность для ядер с программным рендерингом."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
@@ -2619,6 +2687,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
    "Фоновая музыка"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
+   "Звук скроллинга"
+   )
 
 /* Settings > Input */
 
@@ -2629,6 +2701,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    "Максимальное число пользователей, поддерживаемое RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "Режим опроса (требуется перезапуск)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+   "Влияет на то, как в RetroArch производится опрос ввода. В зависимости от текущей конфигурации, установка 'Ранний' или 'Поздний' может уменьшить задержку ввода."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -5654,7 +5734,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
-   "Показывать 'Энергопотребление'"
+   "Показывать 'Управление питанием'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
@@ -12408,7 +12488,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Загружено сохранение из слота #-1 (авто)."
+   "Загружено сохранение из слота #-1 (Авто)."
    )
 MSG_HASH(
    MSG_LOADING,
@@ -12588,7 +12668,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Сохранено в слот #-1 (авто)."
+   "Состояние сохранено в слот #-1 (Авто)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

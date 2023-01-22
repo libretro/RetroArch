@@ -1454,11 +1454,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
-   "Controlador para OpenGL 1.x. Versión mínima necesaria: OpenGL 1.1. No es compatible con los shaders. Se recomienda usar los controladores para versiones posteriores de OpenGL a ser posible."
+   "Controlador para OpenGL 1.x. Versión mínima necesaria: OpenGL 1.1. No es compatible con los shaders. Se recomienda, a ser posible, usar los controladores para versiones posteriores de OpenGL."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
-   "Controlador para OpenGL 2.x. Este controlador permite utilizar núcleos GL de libretro además de los renderizados por software. Versión mínima necesaria: OpenGL 2.0 u OpenGLES 2.0. Compatible con el formato de shaders GLSL. Se recomienda utilizar el controlador glcore en vez de este si es posible."
+   "Controlador para OpenGL 2.x. Este controlador permite utilizar núcleos GL de libretro además de los renderizados por software. Versión mínima necesaria: OpenGL 2.0 u OpenGLES 2.0. Compatible con el formato de shaders GLSL. Se recomienda, si es posible, utilizar el controlador glcore en lugar de este."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
@@ -1562,7 +1562,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
-   "Controlador ALSA con soporte para CPUs multihilo."
+   "Controlador ALSA con soporte para CPU multihilo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
@@ -1582,7 +1582,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
-   "Controlador para DirectSound. DirectSound se utiliza principalmente para Windows 95 a Windows XP."
+   "Controlador para DirectSound. DirectSound se utiliza principalmente en Windows 95 a Windows XP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
@@ -6090,11 +6090,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
-   "Solo listas de reproducción"
+   "Solo en listas de reproducción"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
-   "Solo menú principal y ajustes"
+   "Solo en el menú principal y los ajustes"
    )
 
 /* Settings > AI Service */

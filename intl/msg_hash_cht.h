@@ -12371,10 +12371,6 @@ MSG_HASH(
    "載入即時存檔 (%d)。"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "載入即時存檔 (自動)。"
-   )
-MSG_HASH(
    MSG_LOADING,
    "載入中"
    )
@@ -12553,10 +12549,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "儲存即時存檔 (%d)。"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "儲存即時存檔 (自動)。"
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

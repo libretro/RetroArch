@@ -2626,6 +2626,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    "Elsimítja az időzítés kisebb pontatlanságait a kép és a hang egymáshoz szinkronizálásánál. Figyelem, ha ki van kapcsolva, szinte lehetetlen a megfelelő szinkronizálás."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
+   "0 állásban nincs ütemvezérlés. Bármilyen más érték a hang ütemvezérlésének delta értékét állítja be.\nA bemeneti ütem dinamikus állításának mértéke. A bemeneti ütem definíciója:\nbemeneti ütem * (1.0 +/- (delta érték))"
+   )
 
 /* Settings > Audio > MIDI */
 
@@ -6559,6 +6563,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    "A bemeneti késleltetés tartománya képkockában, amit a netplay arra használhat, hogy a hálózati késleltetést elrejtse. Csökkenti a rángatást és a CPU használatot, érezhető bemeneti késés árán."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "A bemeneti késleltetés tartománya képkockában, amit a netplay arra használhat, hogy a hálózati késleltetést elrejtse.\nHa be van állítva, akkor a netplay dinamikusan állítja a bemeneti késleltetés képkockáinak számát, a CPU idő, bemeneti késleltetés és hálózati késleltetés egyensúlyba hozásához. Csökkenti a rángatást és a CPU használatot, előre nem jósolható bemeneti késés árán."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,

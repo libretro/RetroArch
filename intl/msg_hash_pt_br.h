@@ -11787,10 +11787,6 @@ MSG_HASH(
    "Jogo salvo carregado do compartimento #%d."
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Jogo salvo carregado do compartimento #-1 (automático)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Carregando"
    )
@@ -11965,10 +11961,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Jogo salvo no compartimento #%d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Jogo salvo no compartimento #-1 (automático)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

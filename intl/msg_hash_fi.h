@@ -1413,6 +1413,18 @@ MSG_HASH(
    "Käytettävä ääniajuri."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   "Oletusarvoinen ALSA-ajuri."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
+   "ALSA-ajuri säikeistystuella."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
+   "ALSA-ajuri toteutettuna ilman riippuvuuksia."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
    "OpenAL-ajuri."
    )
@@ -12148,7 +12160,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Pelitila tallennettu lohkoon #-1 (automaattisesti)."
+   "Tallennettiin pelitila lohkoon #-1 (automaattisesti)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

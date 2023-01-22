@@ -8527,10 +8527,6 @@ MSG_HASH(
    "فتحت لقطة من الخانة [%d]."
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "فتحت لقطة من الخانة [-1] (تلقائي)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "جار التحميل"
    )
@@ -8689,10 +8685,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "حفظ الحالة إلى فتحة #%d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "حفظ الحالة إلى الفتحة #-1 (تلقائي)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
