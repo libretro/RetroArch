@@ -1731,7 +1731,7 @@ static void frontend_unix_get_env(int *argc,
    {
       g_defaults.overlay_set    = true;
       g_defaults.overlay_enable = false;
-      strcpy_literal(g_defaults.settings_menu, "ozone");
+      strlcpy(g_defaults.settings_menu, "ozone", sizeof(g_defaults.settings_menu));
    }
 #else
    char base_path[PATH_MAX] = {0};

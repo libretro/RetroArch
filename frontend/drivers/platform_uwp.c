@@ -346,7 +346,7 @@ static void frontend_uwp_env_get(int *argc, char *argv[],
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
    if (string_is_equal(uwp_device_family, "Windows.Mobile"))
-      strcpy_literal(g_defaults.settings_menu, "glui");
+      strlcpy(g_defaults.settings_menu, "glui", sizeof(g_defaults.settings_menu));
 #endif
 #endif
 

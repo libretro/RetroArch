@@ -14262,7 +14262,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      strlcat(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names));
                   }
                   else
-                     strcpy_literal(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT);
+                     strlcpy(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names));
 
                   info->exts      = strdup(ext_names);
                }
