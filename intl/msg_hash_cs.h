@@ -12571,6 +12571,10 @@ MSG_HASH(
    "Nahraný stav ze slotu #%d."
    )
 MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Pozice načtená ze slotu č. 1 (Auto)."
+   )
+MSG_HASH(
    MSG_LOADING,
    "Nahrávání"
    )
@@ -12745,6 +12749,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Uložen stav do slotu #%d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Pozice uložena do slotu č. 1 (Auto)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
