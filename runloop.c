@@ -159,6 +159,7 @@
 
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
+#include "microphone/microphone_driver.h"
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
@@ -3332,11 +3333,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE:
          {
             struct retro_microphone_interface* microphone = (struct retro_microphone_interface *)data;
-            const audio_driver_t *audio_driver            = audio_state_get_ptr()->current_audio;
+            const microphone_driver_t *mic_driver         = microphone_state_get_ptr()->driver;
 
             RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE.\n");
 
-            if (!audio_driver)
+            if (!mic_driver)
             {
                RARCH_DBG("[Environ]: Couldn't initialize microphone interface, driver is not initialized\n");
                return false;
@@ -3349,14 +3350,14 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (!settings->bools.audio_enable_input)
                return false;
 
-            if (audio_driver_supports_microphone(audio_driver))
+            if (mic_driver->init)
             {
                microphone->supported            = true;
-               microphone->init_microphone      = audio_driver_init_microphone;
-               microphone->free_microphone      = audio_driver_free_microphone;
-               microphone->set_microphone_state = audio_driver_set_microphone_state;
-               microphone->get_microphone_state = audio_driver_get_microphone_state;
-               microphone->get_microphone_input = audio_driver_get_microphone_input;
+               microphone->init_microphone      = microphone_driver_open_mic;
+               microphone->free_microphone      = microphone_driver_close_mic;
+               microphone->set_microphone_state = microphone_driver_set_mic_state;
+               microphone->get_microphone_state = microphone_driver_get_mic_state;
+               microphone->get_microphone_input = microphone_driver_read;
             }
             else
             {
