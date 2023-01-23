@@ -1476,8 +1476,11 @@ static void *vulkan_init(const video_info_t *video,
       vk->flags         &= ~VK_FLAG_FULLSCREEN;
    vk->tex_w             = RARCH_SCALE_BASE * video->input_scale;
    vk->tex_h             = RARCH_SCALE_BASE * video->input_scale;
-   vk->tex_fmt           = video->rgb32
-      ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
+   if (vk->context->flags & VK_CTX_FLAG_HAS_PACK16_FMTS)
+       vk->tex_fmt       = video->rgb32
+          ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
+   else
+       vk->tex_fmt       = VK_FORMAT_B8G8R8A8_UNORM;
    if (video->force_aspect)
       vk->flags         |=  VK_FLAG_KEEP_ASPECT;
    else
@@ -2195,7 +2198,32 @@ static bool vulkan_frame(void *data, const void *frame,
                   NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
       }
 
-      if (frame != chain->texture.mapped)
+      if (!vk->video.rgb32 && !(vk->context->flags & VK_CTX_FLAG_HAS_PACK16_FMTS))
+      {
+          uint16_t *rgb565_src = ((uint16_t*)frame) + (frame_height * pitch / 2/*bpp*/);
+          uint32_t *bgra8888_dst = ((uint32_t*)chain->texture.mapped) + (frame_height * chain->texture.stride / 4/*bpp*/);
+          uint16_t rgbpix;
+          uint32_t bgrapix;
+          unsigned x;
+          for (y = frame_height; y > 0; y--)
+          {
+              rgb565_src -= pitch / 2/*bpp*/;
+              bgra8888_dst -= chain->texture.stride / 4/*bpp*/;
+              for (x = frame_width; x > 0; )
+              {
+                  x--;
+                  rgbpix = rgb565_src[x];
+                  bgrapix = 0xff00;
+                  bgrapix |= (rgbpix & 0xf800) >> 8;
+                  bgrapix <<= 8;
+                  bgrapix |= (rgbpix & 0x07e0) >> 3;
+                  bgrapix <<= 8;
+                  bgrapix |= (rgbpix & 0x1f) << 3;
+                  bgra8888_dst[x] = bgrapix;
+              }
+          }
+      }
+      else if (frame != chain->texture.mapped)
       {
          dst = (uint8_t*)chain->texture.mapped;
          if (     (chain->texture.stride == pitch )
