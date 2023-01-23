@@ -3270,6 +3270,14 @@ MSG_HASH(
    "save_current_config"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,
+   "override_file_load"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERRIDE_UNLOAD,
+   "override_unload"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "save_current_config_override_core"
    )
@@ -3280,6 +3288,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
    "save_current_config_override_game"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "remove_current_config_override_core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "remove_current_config_override_content_dir"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "remove_current_config_override_game"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SAVE_NEW_CONFIG,

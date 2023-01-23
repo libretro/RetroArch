@@ -3940,6 +3940,8 @@ bool config_load_override(void *data)
    content_dir_name[0] = '\0';
    config_directory[0] = '\0';
 
+   path_clear(RARCH_PATH_CONFIG_OVERRIDE);
+
    /* Cannot load an override if we have no core */
    if (string_is_empty(core_name))
       return false;
@@ -4006,6 +4008,7 @@ bool config_load_override(void *data)
          strlcpy(tmp_path, core_path, sizeof(tmp_path));
 
       path_set(RARCH_PATH_CONFIG_APPEND, tmp_path);
+      path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
 
       should_append     = true;
       show_notification = true;
@@ -4036,6 +4039,7 @@ bool config_load_override(void *data)
             strlcpy(tmp_path, content_path, sizeof(tmp_path));
 
          path_set(RARCH_PATH_CONFIG_APPEND, tmp_path);
+         path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
 
          should_append     = true;
          show_notification = true;
@@ -4064,10 +4068,63 @@ bool config_load_override(void *data)
             strlcpy(tmp_path, game_path, sizeof(tmp_path));
 
          path_set(RARCH_PATH_CONFIG_APPEND, tmp_path);
+         path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
 
          should_append     = true;
          show_notification = true;
       }
+   }
+
+   if (!should_append)
+      return false;
+
+   /* Re-load the configuration with any overrides
+    * that might have been found */
+
+   /* Toggle has_save_path to false so it resets */
+   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
+   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
+
+   if (!config_load_file(global_get_ptr(),
+            path_get(RARCH_PATH_CONFIG), settings))
+      return false;
+
+   if (settings->bools.notification_show_config_override_load
+         && show_notification)
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED),
+            1, 100, false,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   /* Reset save paths. */
+   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
+   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
+
+   path_clear(RARCH_PATH_CONFIG_APPEND);
+
+   return true;
+}
+
+bool config_load_override_file(const char *config_path)
+{
+   char config_directory[PATH_MAX_LENGTH];
+   bool should_append                     = false;
+   bool show_notification                 = true;
+   settings_t *settings                   = config_st;
+
+   config_directory[0] = '\0';
+
+   path_clear(RARCH_PATH_CONFIG_OVERRIDE);
+
+   /* Get base config directory */
+   fill_pathname_application_special(config_directory,
+         sizeof(config_directory),
+         APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+
+   if (path_is_valid(config_path))
+   {
+      path_set(RARCH_PATH_CONFIG_APPEND, config_path);
+      path_set(RARCH_PATH_CONFIG_OVERRIDE, config_path);
+      should_append = true;
    }
 
    if (!should_append)
@@ -4110,6 +4167,7 @@ bool config_load_override(void *data)
 bool config_unload_override(void)
 {
    path_clear(RARCH_PATH_CONFIG_APPEND);
+   path_clear(RARCH_PATH_CONFIG_OVERRIDE);
 
    /* Toggle has_save_path to false so it resets */
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
@@ -4957,13 +5015,13 @@ bool config_save_file(const char *path)
  *
  * Writes a config file override to disk.
  *
- * Returns: true (1) on success, otherwise returns false (0).
+ * Returns: true (1) on success, (-1) if nothing to write, otherwise returns false (0).
  **/
-bool config_save_overrides(enum override_type type, void *data)
+int8_t config_save_overrides(enum override_type type, void *data, bool remove)
 {
    int tmp_i                                   = 0;
    unsigned i                                  = 0;
-   bool ret                                    = false;
+   int8_t ret                                  = 0;
    retro_keybind_set input_override_binds[MAX_USERS]
                                                = {0};
    config_file_t *conf                         = NULL;
@@ -4984,10 +5042,8 @@ bool config_save_overrides(enum override_type type, void *data)
    struct config_path_setting *path_overrides  = NULL;
    char config_directory[PATH_MAX_LENGTH];
    char override_directory[PATH_MAX_LENGTH];
-   char core_path[PATH_MAX_LENGTH];
-   char game_path[PATH_MAX_LENGTH];
-   char content_path[PATH_MAX_LENGTH];
    char content_dir_name[PATH_MAX_LENGTH];
+   char override_path[PATH_MAX_LENGTH];
    settings_t *overrides                       = config_st;
    int bool_settings_size                      = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                     = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
@@ -5002,10 +5058,8 @@ bool config_save_overrides(enum override_type type, void *data)
    const char *game_name                       = NULL;
    bool has_content                            = !string_is_empty(rarch_path_basename);
 
-   core_path[0]          = '\0';
-   game_path[0]          = '\0';
-   content_path[0]       = '\0';
    content_dir_name[0]   = '\0';
+   override_path[0]      = '\0';
 
    /* > Cannot save an override if we have no core
     * > Cannot save a per-game or per-content-directory
@@ -5065,7 +5119,8 @@ bool config_save_overrides(enum override_type type, void *data)
    tmp_i               = sizeof(settings->paths) / sizeof(settings->paths.placeholder);
    path_overrides      = populate_settings_path(overrides,  &tmp_i);
 
-   RARCH_LOG("[Overrides]: Looking for changed settings..\n");
+   if (conf->modified)
+      RARCH_LOG("[Overrides]: Looking for changed settings..\n");
 
    if (conf)
    {
@@ -5221,60 +5276,68 @@ bool config_save_overrides(enum override_type type, void *data)
          }
       }
 
-      ret = false;
-
-      /* Notify that the current config is the default, and force modified
-       * in order to reset to defaults by allowing to save an empty file */
-      if (!conf->modified)
-         runloop_msg_queue_push(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG),
-               1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-      conf->modified = true;
+      ret = 0;
 
       switch (type)
       {
          case OVERRIDE_CORE:
-            fill_pathname_join_special_ext(core_path,
+            fill_pathname_join_special_ext(override_path,
                   config_directory, core_name,
                   core_name,
                   FILE_PATH_CONFIG_EXTENSION,
-                  sizeof(core_path));
-
-            ret = config_file_write(conf, core_path, true);
-            RARCH_LOG("[Overrides]: %s: \"%s\".\n",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS),
-                  core_path);
+                  sizeof(override_path));
             break;
          case OVERRIDE_GAME:
             game_name = path_basename_nocompression(rarch_path_basename);
-            fill_pathname_join_special_ext(game_path,
+            fill_pathname_join_special_ext(override_path,
                   config_directory, core_name,
                   game_name,
                   FILE_PATH_CONFIG_EXTENSION,
-                  sizeof(game_path));
-
-            ret = config_file_write(conf, game_path, true);
-            RARCH_LOG("[Overrides]: %s: \"%s\".\n",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS),
-                  game_path);
+                  sizeof(override_path));
             break;
          case OVERRIDE_CONTENT_DIR:
             fill_pathname_parent_dir_name(content_dir_name,
                   rarch_path_basename, sizeof(content_dir_name));
-            fill_pathname_join_special_ext(content_path,
+            fill_pathname_join_special_ext(override_path,
                   config_directory, core_name,
                   content_dir_name,
                   FILE_PATH_CONFIG_EXTENSION,
-                  sizeof(content_path));
-
-            ret = config_file_write(conf, content_path, true);
-            RARCH_LOG("[Overrides]: %s: \"%s\".\n",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS),
-                  content_path);
+                  sizeof(override_path));
             break;
          case OVERRIDE_NONE:
          default:
             break;
+      }
+
+      if (!conf->modified && !remove)
+         ret = -1;
+
+      if (!string_is_empty(override_path))
+      {
+         if (!conf->modified && !remove)
+            if (path_is_valid(override_path))
+               remove = true;
+
+         if (     remove
+               && path_is_valid(override_path))
+         {
+            if (filestream_delete(override_path) == 0)
+            {
+               config_load_override(&runloop_state_get_ptr()->system);
+               ret = -1;
+               RARCH_LOG("[Overrides]: %s: \"%s\".\n",
+                     "Deleting",
+                     override_path);
+            }
+         }
+         else if (conf->modified)
+         {
+            ret = config_file_write(conf, override_path, true);
+            path_set(RARCH_PATH_CONFIG_OVERRIDE, override_path);
+            RARCH_LOG("[Overrides]: %s: \"%s\".\n",
+                  "Saving",
+                  override_path);
+         }
       }
 
       config_file_free(conf);

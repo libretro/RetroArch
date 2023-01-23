@@ -96,7 +96,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_remappings_port,                DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_parameters, DISPLAYLIST_SHADER_PARAMETERS_PRESET)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_parameters,        DISPLAYLIST_SHADER_PARAMETERS)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_save,       DISPLAYLIST_SHADER_PRESET_SAVE)
-GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_remove,       DISPLAYLIST_SHADER_PRESET_REMOVE)
+GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_remove,     DISPLAYLIST_SHADER_PRESET_REMOVE)
 GENERIC_DEFERRED_PUSH(deferred_push_settings,                       DISPLAYLIST_SETTINGS_ALL)
 GENERIC_DEFERRED_PUSH(deferred_push_shader_options,                 DISPLAYLIST_OPTIONS_SHADERS)
 GENERIC_DEFERRED_PUSH(deferred_push_quick_menu_override_options,    DISPLAYLIST_OPTIONS_OVERRIDES)
@@ -145,6 +145,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_audio_dsp_plugin,               DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_cheat_file_load,                DISPLAYLIST_CHEAT_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_cheat_file_load_append,         DISPLAYLIST_CHEAT_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_remap_file_load,                DISPLAYLIST_REMAP_FILES)
+GENERIC_DEFERRED_PUSH(deferred_push_override_file_load,             DISPLAYLIST_CONFIG_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_record_configfile,              DISPLAYLIST_RECORD_CONFIG_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_stream_configfile,              DISPLAYLIST_STREAM_CONFIG_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_input_overlay,                  DISPLAYLIST_OVERLAYS)
@@ -875,6 +876,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_CHEAT_FILE_LOAD, deferred_push_cheat_file_load},
       {MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND, deferred_push_cheat_file_load_append},
       {MENU_ENUM_LABEL_REMAP_FILE_LOAD, deferred_push_remap_file_load},
+      {MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD, deferred_push_override_file_load},
       {MENU_ENUM_LABEL_RECORD_CONFIG, deferred_push_record_configfile},
       {MENU_ENUM_LABEL_STREAM_CONFIG, deferred_push_stream_configfile},
       {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET, deferred_push_rgui_theme_preset},
@@ -1030,6 +1032,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);
+            break;
+         case MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_override_file_load);
             break;
          case MENU_ENUM_LABEL_RECORD_CONFIG:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_record_configfile);

@@ -186,11 +186,14 @@ enum event_command
    CMD_EVENT_MENU_TOGGLE,
    /* Configuration saving. */
    CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG,
+   CMD_EVENT_MENU_SAVE_CONFIG,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   CMD_EVENT_MENU_SAVE_CONFIG,
+   CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
    /* Applies shader changes. */
    CMD_EVENT_SHADERS_APPLY_CHANGES,
    /* A new shader preset has been loaded */
@@ -559,6 +562,13 @@ bool command_event_save_core_config(
  * autosave state.
  **/
 void command_event_save_current_config(enum override_type type);
+
+/**
+ * command_event_remove_current_config:
+ *
+ * Removes current configuration file from disk.
+ **/
+void command_event_remove_current_config(enum override_type type);
 #endif
 
 /**

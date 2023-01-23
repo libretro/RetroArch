@@ -9874,6 +9874,36 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+               MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+               MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+               MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_HELP_LIST,
                MENU_ENUM_LABEL_VALUE_HELP_LIST,
                &group_info,
