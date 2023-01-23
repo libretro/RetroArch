@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2023 - Daniel De Matteis
  *  Copyright (C) 2018-2023 - Dan Weiss
- *  Copyright (C) 2022-2023 - Neil4
+ *  Copyright (C) 2022-2023 - Neil Fore
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1451,6 +1451,11 @@ bool preempt_init(void *data)
    runloop_st->flags &= ~(RUNLOOP_FLAG_RUNAHEAD_AVAILABLE
          | RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE);
 
+   /* Run at least one frame before attempting
+    * retro_serialize_size or retro_serialize */
+   if (video_state_get_ptr()->frame_count == 0)
+      runloop_st->current_core.retro_run();
+
    /* Allocate - same 'frames' setting as runahead */
    if ((failed_str = preempt_allocate(runloop_st,
                settings->uints.run_ahead_frames)))
@@ -1466,7 +1471,7 @@ bool preempt_init(void *data)
 error:
    preempt_deinit(runloop_st);
 
-   if (!config_get_ptr()->bools.preemptive_frames_hide_warnings)
+   if (!settings->bools.preemptive_frames_hide_warnings)
       runloop_msg_queue_push(
             failed_str, 0, 2 * 60, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -1684,7 +1689,7 @@ error:
    video_st->flags   |=  VIDEO_FLAG_ACTIVE;
    preempt_deinit(runloop_st);
 
-   if (!config_get_ptr()->bools.preemptive_frames_hide_warnings)
+   if (!settings->bools.preemptive_frames_hide_warnings)
       runloop_msg_queue_push(
             failed_str, 0, 2 * 60, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
