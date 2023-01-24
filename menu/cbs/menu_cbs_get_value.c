@@ -172,7 +172,6 @@ static void menu_action_setting_disp_set_label_override_file_info(
       const char *path,
       char *s2, size_t len2)
 {
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *override_path   = path_get(RARCH_PATH_CONFIG_OVERRIDE);
    const char *override_file   = NULL;
 
