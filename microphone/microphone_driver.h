@@ -175,7 +175,7 @@ typedef struct microphone_driver
     * @return \c true if the driver is active.
     * \c false if not or if there was an error.
     */
-   bool (*alive)(const void *driver_context);
+   bool (*alive)(void *driver_context);
 
    /**
     * Toggles the active state of the provided microphone.
