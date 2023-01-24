@@ -9269,6 +9269,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_RUNAHEAD
             bool runahead_supported       = true;
             bool runahead_enabled         = settings->bools.run_ahead_enabled;
+            bool preempt_supported        = true;
             bool preempt_enabled          = settings->bools.preemptive_frames_enable;
 #endif
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -9329,32 +9330,34 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_RUNAHEAD
             if (  (flags & RUNLOOP_FLAG_CORE_RUNNING)
                 && !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-               runahead_supported = core_info_current_supports_runahead();
-
-            if (runahead_supported)
             {
-               for (i = 0; i < ARRAY_SIZE(build_list); i++)
+               runahead_supported = core_info_current_supports_runahead();
+               preempt_supported  = core_info_current_supports_rewind();
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
                {
-                  switch (build_list[i].enum_idx)
-                  {
-                     case MENU_ENUM_LABEL_RUN_AHEAD_ENABLED:
-                     case MENU_ENUM_LABEL_PREEMPT_ENABLE:
-                        build_list[i].checked = true;
-                        break;
-                     case MENU_ENUM_LABEL_RUN_AHEAD_FRAMES:
-                     case MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE:
-                     case MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS:
-                        if (runahead_enabled)
-                           build_list[i].checked = true;
-                        break;
-                     case MENU_ENUM_LABEL_PREEMPT_FRAMES:
-                     case MENU_ENUM_LABEL_PREEMPT_HIDE_WARNINGS:
-                        if (preempt_enabled)
-                           build_list[i].checked = true;
-                        break;
-                     default:
-                        break;
-                  }
+                  case MENU_ENUM_LABEL_RUN_AHEAD_ENABLED:
+                     build_list[i].checked = runahead_supported;
+                     break;
+                  case MENU_ENUM_LABEL_RUN_AHEAD_FRAMES:
+                  case MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE:
+                  case MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS:
+                     if (runahead_supported)
+                        build_list[i].checked = runahead_enabled;
+                     break;
+                  case MENU_ENUM_LABEL_PREEMPT_ENABLE:
+                     build_list[i].checked = preempt_supported;
+                     break;
+                  case MENU_ENUM_LABEL_PREEMPT_FRAMES:
+                  case MENU_ENUM_LABEL_PREEMPT_HIDE_WARNINGS:
+                     if (preempt_supported)
+                        build_list[i].checked = preempt_enabled;
+                     break;
+                  default:
+                     break;
                }
             }
 #endif
@@ -9370,21 +9373,20 @@ unsigned menu_displaylist_build_list(
             }
 
 #ifdef HAVE_RUNAHEAD
-            if (!runahead_supported)
-            {
-               if (menu_entries_append(list,
+            if (!runahead_supported &&
+                menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED),
                      msg_hash_to_str(MENU_ENUM_LABEL_RUN_AHEAD_UNSUPPORTED),
                      MENU_ENUM_LABEL_RUN_AHEAD_UNSUPPORTED,
                      FILE_TYPE_NONE, 0, 0, NULL))
-                  count++;
-                if (menu_entries_append(list,
+               count++;
+            if (!preempt_supported &&
+                menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED),
                      msg_hash_to_str(MENU_ENUM_LABEL_PREEMPT_UNSUPPORTED),
                      MENU_ENUM_LABEL_PREEMPT_UNSUPPORTED,
                      FILE_TYPE_NONE, 0, 0, NULL))
-                  count++;
-            }
+               count++;
 #endif
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_GAMEMODE_ENABLE, PARSE_ONLY_BOOL, false) == 0)

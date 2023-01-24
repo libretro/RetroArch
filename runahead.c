@@ -1440,8 +1440,8 @@ bool preempt_init(void *data)
          || !(runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
       return false;
 
-   /* Check if supported - same requirements as runahead */
-   if (!core_info_current_supports_runahead())
+   /* Check if supported - same requirements as rewind */
+   if (!core_info_current_supports_rewind())
    {
       failed_str = msg_hash_to_str(MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT);
       goto error;

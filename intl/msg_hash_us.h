@@ -3846,7 +3846,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "Current core is incompatible with preemptive frames due to lack of deterministic save state support."
+   "Current core is incompatible with preemptive frames due to lack of serialized save state support."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
@@ -14140,7 +14140,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
-   "Preemptive Frames unavailable because this core lacks deterministic save state support."
+   "Preemptive Frames unavailable because this core lacks serialized save state support."
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_ALLOCATE,

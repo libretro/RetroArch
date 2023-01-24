@@ -8764,9 +8764,10 @@ static void preempt_change_handler(rarch_setting_t *setting)
          {
             /* Disable runahead and inform user */
             settings->bools.run_ahead_enabled = false;
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_RUNAHEAD_DISABLED), 1, 100, false,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            if (core_info_current_supports_runahead())
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_RUNAHEAD_DISABLED), 1, 100, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
 
          if ((preempt_enabled != !!preempt) && !netplay_enabled)
