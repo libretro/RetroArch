@@ -270,105 +270,6 @@ static ssize_t audio_thread_write(void *data, const void *buf, size_t size)
    return ret;
 }
 
-static void *audio_thread_init_microphone(void *data, const char *device, unsigned rate,
-                         unsigned latency, unsigned block_frames, unsigned *new_rate)
-{
-   // TODO: Implement properly
-   audio_thread_t *thr = (audio_thread_t*)data;
-   void *microphone    = NULL;
-
-   if (!thr)
-      return NULL;
-
-   if (  thr->driver &&
-         thr->driver_data &&
-         thr->driver->init_microphone)
-      microphone = thr->driver->init_microphone(thr->driver_data,
-         device,
-         rate,
-         latency,
-         block_frames,
-         new_rate
-      );
-
-   return microphone;
-}
-
-/**
- * Should only be called on the main thread.
- */
-static void audio_thread_free_microphone(void *data, void *microphone_context)
-{
-   // TODO: Implement properly
-   audio_thread_t *thr = (audio_thread_t*)data;
-
-   if (!thr)
-      return;
-
-   if (  thr->driver &&
-         thr->driver_data &&
-         thr->driver->free_microphone &&
-         microphone_context)
-      thr->driver->free_microphone(thr->driver_data, microphone_context);
-}
-
-/**
- * Can be called from the main thread or the audio callback.
- */
-static bool audio_thread_get_microphone_state(const void *data, const void *microphone_context)
-{
-   audio_thread_t *thr = (audio_thread_t*)data;
-
-   if (!thr)
-      return false;
-
-   if (  thr->driver &&
-         thr->driver_data &&
-         thr->driver->get_microphone_state)
-      return thr->driver->get_microphone_state(thr->driver_data, microphone_context);
-   /* Don't lock here, because this function could be called each frame */
-
-   return false;
-}
-
-static bool audio_thread_set_microphone_state(void *data, void *microphone_context, bool enabled)
-{
-   // TODO: Implement properly
-   audio_thread_t *thr = (audio_thread_t*)data;
-
-   if (!thr)
-      return false;
-
-   if (  thr->driver &&
-         thr->driver_data &&
-         thr->driver->set_microphone_state)
-      return thr->driver->set_microphone_state(thr->driver_data, microphone_context, enabled);
-
-   return false;
-}
-
-static ssize_t audio_thread_read_microphone(void *data, void *microphone_context, void *buf, size_t size)
-{
-    // TODO: Implement properly
-   int ret;
-   audio_thread_t *thr = (audio_thread_t*)data;
-
-   if (!thr)
-      return 0;
-
-   ret = thr->driver->read_microphone(thr->driver_data, microphone_context, buf, size);
-
-   if (ret < 0)
-   {
-      slock_lock(thr->lock);
-      thr->alive = false;
-      scond_signal(thr->cond);
-      slock_unlock(thr->lock);
-   }
-
-   return ret;
-}
-
 static const audio_driver_t audio_thread = {
    NULL, /* No need to wrap init, it's called at the start of the thread loop */
    audio_thread_write,
@@ -382,12 +283,7 @@ static const audio_driver_t audio_thread = {
    NULL, /* No point in using rate control with threaded audio. */
    NULL,
    NULL,
-   NULL,
-   audio_thread_init_microphone,
-   audio_thread_free_microphone,
-   audio_thread_get_microphone_state,
-   audio_thread_set_microphone_state,
-   audio_thread_read_microphone
+   NULL
 };
 
 /**
