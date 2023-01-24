@@ -728,35 +728,19 @@ void vulkan_destroy_texture(
    if (((tex).flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && (tex).memory != VK_NULL_HANDLE) \
       VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex).memory) \
 
-/* VBO will be written to here. */
-void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad);
+void vulkan_write_quad_descriptors(
+      VkDevice device,
+      VkDescriptorSet set,
+      VkBuffer buffer,
+      VkDeviceSize offset,
+      VkDeviceSize range,
+      const struct vk_texture *texture,
+      VkSampler sampler);
 
 /* The VBO needs to be written to before calling this.
  * Use vulkan_buffer_chain_alloc.
  */
 void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call);
-
-static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
-{
-   switch (format)
-   {
-      case VK_FORMAT_B8G8R8A8_UNORM:
-         return 4;
-
-      case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
-      case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
-      case VK_FORMAT_R5G6B5_UNORM_PACK16:
-         return 2;
-
-      case VK_FORMAT_R8_UNORM:
-         return 1;
-
-      default: /* Unknown format */
-	 break;
-   }
-
-   return 0;
-}
 
 struct vk_buffer vulkan_create_buffer(
       const struct vulkan_context *context,
@@ -798,7 +782,6 @@ void vulkan_set_uniform_buffer(
       VkDeviceSize offset,
       VkDeviceSize range);
 
-void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
 

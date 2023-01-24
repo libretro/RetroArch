@@ -2066,6 +2066,126 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
 #endif
 }
 
+/* VBO will be written to here. */
+static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
+{
+   if (quad->texture && quad->texture->image)
+      vulkan_transition_texture(vk, vk->cmd, quad->texture);
+
+   if (quad->pipeline != vk->tracker.pipeline)
+   {
+      VkRect2D sci;
+      vkCmdBindPipeline(vk->cmd,
+            VK_PIPELINE_BIND_POINT_GRAPHICS, quad->pipeline);
+
+      vk->tracker.pipeline = quad->pipeline;
+      /* Changing pipeline invalidates dynamic state. */
+      vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
+         sci               = vk->tracker.scissor;
+      else
+      {
+         /* No scissor -> viewport */
+         sci.offset.x      = vk->vp.x;
+         sci.offset.y      = vk->vp.y;
+         sci.extent.width  = vk->vp.width;
+         sci.extent.height = vk->vp.height;
+      }
+
+      vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+      vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+
+      vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
+   }
+   else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
+   {
+      VkRect2D sci;
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
+         sci               = vk->tracker.scissor;
+      else
+      {
+         /* No scissor -> viewport */
+         sci.offset.x      = vk->vp.x;
+         sci.offset.y      = vk->vp.y;
+         sci.extent.width  = vk->vp.width;
+         sci.extent.height = vk->vp.height;
+      }
+
+      vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+      vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+
+      vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
+   }
+
+   /* Upload descriptors */
+   {
+      VkDescriptorSet set;
+      struct vk_buffer_range range;
+
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+               sizeof(*quad->mvp), &range))
+         return;
+
+      if (
+               string_is_equal_fast(quad->mvp,
+                  &vk->tracker.mvp, sizeof(*quad->mvp))
+            || quad->texture->view != vk->tracker.view
+            || quad->sampler != vk->tracker.sampler)
+      {
+         /* Upload UBO */
+         struct vk_buffer_range range;
+
+         if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+                  sizeof(*quad->mvp), &range))
+            return;
+
+         memcpy(range.data, quad->mvp, sizeof(*quad->mvp));
+
+         set = vulkan_descriptor_manager_alloc(
+               vk->context->device,
+               &vk->chain->descriptor_manager);
+
+         vulkan_write_quad_descriptors(
+               vk->context->device,
+               set,
+               range.buffer,
+               range.offset,
+               sizeof(*quad->mvp),
+               quad->texture,
+               quad->sampler);
+
+         vkCmdBindDescriptorSets(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+               vk->pipelines.layout, 0,
+               1, &set, 0, NULL);
+
+         vk->tracker.view    = quad->texture->view;
+         vk->tracker.sampler = quad->sampler;
+         vk->tracker.mvp     = *quad->mvp;
+      }
+   }
+
+   /* Upload VBO */
+   {
+      struct vk_buffer_range range;
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+               6 * sizeof(struct vk_vertex), &range))
+         return;
+
+      {
+         struct vk_vertex         *pv = (struct vk_vertex*)range.data;
+         const struct vk_color *color = &quad->color;
+
+         VULKAN_WRITE_QUAD_VBO(pv, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, color);
+      }
+
+      vkCmdBindVertexBuffers(vk->cmd, 0, 1,
+            &range.buffer, &range.offset);
+   }
+
+   /* Draw the quad */
+   vkCmdDraw(vk->cmd, 6, 1, 0, 0);
+}
+
 static bool vulkan_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
