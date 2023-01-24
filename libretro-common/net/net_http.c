@@ -441,7 +441,7 @@ static int net_http_new_socket(struct http_connection_t *conn)
          goto done;
       }
 
-      /* TODO: Promperly figure out what's going wrong when the newer 
+      /* TODO: Properly figure out what's going wrong when the newer 
          timeout/poll code interacts with mbed and winsock
          https://github.com/libretro/RetroArch/issues/14742 */
 
