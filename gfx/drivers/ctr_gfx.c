@@ -59,6 +59,13 @@ enum
    CTR_TEXTURE_LAST
 };
 
+struct ctr_bottom_texture_data
+{
+   uintptr_t texture;
+   ctr_vertex_t* frame_coords;
+   ctr_scale_vector_t scale_vector;
+};
+
 /* TODO/FIXME - global referenced outside */
 extern uint64_t lifecycle_state;
 
