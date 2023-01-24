@@ -1298,29 +1298,31 @@ static void gl1_load_texture_data(
       unsigned width, unsigned height,
       const void *frame, unsigned base_size)
 {
-   GLint mag_filter, min_filter;
+   GLint filter;
    bool use_rgba    = video_driver_supports_rgba();
    bool rgb32       = (base_size == (sizeof(uint32_t)));
    GLenum wrap      = gl1_wrap_type_to_enum(wrap_type);
+
+   glBindTexture(GL_TEXTURE_2D, id);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
 
    /* GL1.x does not have mipmapping support. */
    switch (filter_type)
    {
       case TEXTURE_FILTER_MIPMAP_NEAREST:
       case TEXTURE_FILTER_NEAREST:
-         min_filter = GL_NEAREST;
-         mag_filter = GL_NEAREST;
+         filter = GL_NEAREST;
          break;
       case TEXTURE_FILTER_MIPMAP_LINEAR:
       case TEXTURE_FILTER_LINEAR:
       default:
-         min_filter = GL_LINEAR;
-         mag_filter = GL_LINEAR;
+         filter = GL_LINEAR;
          break;
    }
 
-   gl1_bind_texture(id, wrap, mag_filter, min_filter);
-
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
 #ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
@@ -1328,13 +1330,21 @@ static void gl1_load_texture_data(
 
    glTexImage2D(GL_TEXTURE_2D,
          0,
-         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL1_INTERNAL_FORMAT32,
-         width, height, 0,
-         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL1_TEXTURE_TYPE32,
+         (use_rgba || !rgb32) 
+	 ? GL_RGBA 
+	 : RARCH_GL1_INTERNAL_FORMAT32,
+         width,
+	 height,
+	 0,
+         (use_rgba || !rgb32) 
+	 ? GL_RGBA 
+	 : RARCH_GL1_TEXTURE_TYPE32,
 #ifdef MSB_FIRST
 	 GL_UNSIGNED_INT_8_8_8_8_REV,
 #else
-	 (rgb32) ? RARCH_GL1_FORMAT32 : GL_UNSIGNED_BYTE,
+	 (rgb32) 
+	 ? RARCH_GL1_FORMAT32 
+	 : GL_UNSIGNED_BYTE,
 #endif
 	 frame);
 }
@@ -1351,19 +1361,23 @@ static void video_texture_load_gl1(
 
    /* Generate the OpenGL texture object */
    glGenTextures(1, &id);
-   *idptr = id;
+   *idptr             = id;
 
    if (ti)
    {
-      width  = ti->width;
-      height = ti->height;
-      pixels = ti->pixels;
+      width           = ti->width;
+      height          = ti->height;
+      pixels          = ti->pixels;
    }
 
-   gl1_load_texture_data(id,
-         RARCH_WRAP_EDGE, filter_type,
+   gl1_load_texture_data(
+         id,
+         RARCH_WRAP_EDGE,
+         filter_type,
          4 /* TODO/FIXME - dehardcode */,
-         width, height, pixels,
+         width,
+         height,
+         pixels,
          sizeof(uint32_t) /* TODO/FIXME - dehardcode */
          );
 }
@@ -1372,7 +1386,6 @@ static void video_texture_load_gl1(
 static int video_texture_load_wrap_gl1(void *data)
 {
    uintptr_t id = 0;
-
    if (!data)
       return 0;
    video_texture_load_gl1((struct texture_image*)data,

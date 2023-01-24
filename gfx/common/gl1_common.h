@@ -110,14 +110,4 @@ typedef struct gl1
    bool overlay_full_screen;
 } gl1_t;
 
-static INLINE void gl1_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
-      GLint min_filter)
-{
-   glBindTexture(GL_TEXTURE_2D, id);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
-}
-
 #endif
