@@ -36,7 +36,6 @@ typedef struct RegOp
 typedef struct fpga
 {
    bool rgb32;
-   bool menu_rgb32;
    unsigned menu_width;
    unsigned menu_height;
    unsigned menu_pitch;

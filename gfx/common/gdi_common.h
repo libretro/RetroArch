@@ -65,7 +65,6 @@ typedef struct gdi
    int win_minor;
 
    bool rgb32;
-   bool menu_rgb32;
    bool lte_win98;
    bool menu_enable;
    bool menu_full_screen;

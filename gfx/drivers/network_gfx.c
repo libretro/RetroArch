@@ -61,7 +61,6 @@ static unsigned network_video_pitch      = 0;
 static unsigned network_video_bits       = 0;
 static unsigned network_menu_bits        = 0;
 static bool network_rgb32                = false;
-static bool network_menu_rgb32           = false;
 static unsigned *network_video_temp_buf  = NULL;
 
 static void gfx_ctx_network_input_driver(

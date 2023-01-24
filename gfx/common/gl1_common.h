@@ -97,7 +97,6 @@ typedef struct gl1
    GLuint texture[GFX_MAX_TEXTURES];
 
    bool fullscreen;
-   bool menu_rgb32;
    bool menu_size_changed;
    bool rgb32;
    bool supports_bgra;
@@ -105,12 +104,10 @@ typedef struct gl1
    bool should_resize;
    bool menu_texture_enable;
    bool menu_texture_full_screen;
-   bool have_sync;
    bool smooth;
    bool menu_smooth;
    bool overlay_enable;
    bool overlay_full_screen;
-   bool shared_context_use;
 } gl1_t;
 
 static INLINE void gl1_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,

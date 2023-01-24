@@ -95,10 +95,6 @@ static const GLfloat gl1_white_color[] = {
    1, 1, 1, 1,
 };
 
-#define gl1_context_bind_hw_render(gl1, enable) \
-   if (gl1->shared_context_use) \
-      gl1->ctx_driver->bind_hw_render(gl1->ctx_data, enable)
-
 #ifdef HAVE_OVERLAY
 static void gl1_render_overlay(gl1_t *gl,
       unsigned width,
@@ -762,8 +758,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    video_info->xmb_shadows_enable   = false;
    video_info->menu_shader_pipeline = 0;
 
-   gl1_context_bind_hw_render(gl1, false);
-
    if (gl1->should_resize)
    {
       gfx_ctx_mode_t mode;
@@ -1015,8 +1009,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   gl1_context_bind_hw_render(gl1, true);
-
    return true;
 }
 
@@ -1030,8 +1022,6 @@ static void gl1_gfx_set_nonblock_state(void *data, bool state,
    if (!gl1)
       return;
 
-   gl1_context_bind_hw_render(gl1, false);
-
    if (!state)
       interval = swap_interval;
 
@@ -1041,7 +1031,6 @@ static void gl1_gfx_set_nonblock_state(void *data, bool state,
          interval = -1;
       gl1->ctx_driver->swap_interval(gl1->ctx_data, interval);
    }
-   gl1_context_bind_hw_render(gl1, true);
 }
 
 static bool gl1_gfx_alive(void *data)
@@ -1091,8 +1080,6 @@ static void gl1_gfx_free(void *data)
 
    if (!gl1)
       return;
-
-   gl1_context_bind_hw_render(gl1, false);
 
    if (gl1->menu_frame)
       free(gl1->menu_frame);
@@ -1182,14 +1169,12 @@ static bool gl1_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    if (!gl1)
       return false;
 
-   gl1_context_bind_hw_render(gl1, false);
-
    num_pixels = gl1->vp.width * gl1->vp.height;
 
    gl1->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
 
    if (!gl1->readback_buffer_screenshot)
-      goto error;
+      return false;
 
    if (!is_idle)
       video_driver_cached_frame();
@@ -1202,13 +1187,7 @@ static bool gl1_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    free(gl1->readback_buffer_screenshot);
    gl1->readback_buffer_screenshot = NULL;
 
-   gl1_context_bind_hw_render(gl1, true);
    return true;
-
-error:
-   gl1_context_bind_hw_render(gl1, true);
-
-   return false;
 }
 
 static void gl1_set_texture_frame(void *data,
@@ -1224,8 +1203,6 @@ static void gl1_set_texture_frame(void *data,
       return;
 
    gl1->menu_smooth        = menu_linear_filter;
-
-   gl1_context_bind_hw_render(gl1, false);
 
    if (rgb32)
       pitch = width * 4;
@@ -1261,8 +1238,6 @@ static void gl1_set_texture_frame(void *data,
       gl1->menu_bits         = rgb32 ? 32 : 16;
       gl1->menu_size_changed = true;
    }
-
-   gl1_context_bind_hw_render(gl1, true);
 }
 
 static void gl1_get_video_output_size(void *data,
@@ -1564,17 +1539,12 @@ static bool gl1_overlay_load(void *data,
    if (!gl)
       return false;
 
-   gl1_context_bind_hw_render(gl, false);
-
    gl1_free_overlay(gl);
    gl->overlay_tex = (GLuint*)
       calloc(num_images, sizeof(*gl->overlay_tex));
 
    if (!gl->overlay_tex)
-   {
-      gl1_context_bind_hw_render(gl, true);
       return false;
-   }
 
    gl->overlay_vertex_coord = (GLfloat*)
       calloc(2 * 4 * num_images, sizeof(GLfloat));
@@ -1610,7 +1580,6 @@ static bool gl1_overlay_load(void *data,
          gl->overlay_color_coord[16 * i + j] = 1.0f;
    }
 
-   gl1_context_bind_hw_render(gl, true);
    return true;
 }
 

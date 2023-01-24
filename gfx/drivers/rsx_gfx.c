@@ -106,19 +106,15 @@ static const gfx_ctx_driver_t* rsx_get_context(rsx_t* rsx)
 }
 
 #ifndef HAVE_THREADS
-static bool rsx_tasks_finder(retro_task_t *task,void *userdata)
-{
-   return task;
-}
+static bool rsx_tasks_finder(retro_task_t *task,void *userdata) { return task; }
 task_finder_data_t rsx_tasks_finder_data = {rsx_tasks_finder, NULL};
 #endif
 
 static int rsx_make_buffer(rsxBuffer * buffer, u16 width, u16 height, int id)
 {
-   int depth = sizeof(u32);
-   int pitch = depth * width;
-   int size = depth * width * height;
-
+   int depth   = sizeof(u32);
+   int pitch   = depth * width;
+   int size    = depth * width * height;
    buffer->ptr = (uint32_t*)rsxMemalign (64, size);
    if (!buffer->ptr)
       goto error;
@@ -130,17 +126,16 @@ static int rsx_make_buffer(rsxBuffer * buffer, u16 width, u16 height, int id)
    if (gcmSetDisplayBuffer (id, buffer->offset, pitch, width, height) != 0)
       goto error;
 
-   buffer->width = width;
+   buffer->width  = width;
    buffer->height = height;
-   buffer->id = id;
+   buffer->id     = id;
 
-   return TRUE;
+   return 1;
 
 error:
    if (buffer->ptr)
       rsxFree (buffer->ptr);
-
-   return FALSE;
+   return 0;
 }
 
 static int rsx_flip(gcmContextData *context, s32 buffer)
@@ -150,10 +145,9 @@ static int rsx_flip(gcmContextData *context, s32 buffer)
       rsxFlushBuffer (context);
       /* Prevent the RSX from continuing until the flip has finished. */
       gcmSetWaitFlip (context);
-
-      return TRUE;
+      return 1;
    }
-   return FALSE;
+   return 0;
 }
 
 #define GCM_LABEL_INDEX		255
@@ -778,6 +772,8 @@ static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
       bool rgb32, bool menu, enum texture_filter_type filter_type)
 {
    u32 mag_filter, min_filter;
+   u8 *texbuffer  = (u8 *)texture->data;
+   const u8 *data = (u8 *)frame;
 
    if (!texture->data)
    {
@@ -785,48 +781,46 @@ static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
       rsxAddressToOffset(texture->data, &texture->offset);
    }
 
-   u8 *texbuffer = (u8 *)texture->data;
-   const u8 *data = (u8 *)frame;
    memcpy(texbuffer, data, height * pitch);
 
-	 texture->tex.format = (rgb32 ? GCM_TEXTURE_FORMAT_A8R8G8B8 :
-                           menu ? GCM_TEXTURE_FORMAT_A4R4G4B4 : GCM_TEXTURE_FORMAT_R5G6B5) | GCM_TEXTURE_FORMAT_LIN;
-	 texture->tex.mipmap = 1;
-	 texture->tex.dimension = GCM_TEXTURE_DIMS_2D;
-	 texture->tex.cubemap = GCM_FALSE;
-   texture->tex.remap = ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT) |
-                         (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT) |
-                         (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT) |
-                         (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT) |
-                         (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT) |
-                         (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT) |
-                         (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT) |
-                         (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
-   texture->tex.width = width;
-   texture->tex.height = height;
-   texture->tex.depth = 1;
-   texture->tex.location = GCM_LOCATION_RSX;
-   texture->tex.pitch = pitch;
-   texture->tex.offset = texture->offset;
+   texture->tex.format    = (rgb32 ? GCM_TEXTURE_FORMAT_A8R8G8B8 :
+         menu ? GCM_TEXTURE_FORMAT_A4R4G4B4 : GCM_TEXTURE_FORMAT_R5G6B5) | GCM_TEXTURE_FORMAT_LIN;
+   texture->tex.mipmap    = 1;
+   texture->tex.dimension = GCM_TEXTURE_DIMS_2D;
+   texture->tex.cubemap   = GCM_FALSE;
+   texture->tex.remap     =  ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT) |
+                              (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT) |
+                              (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT) |
+                              (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT) |
+                              (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT) |
+                              (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT) |
+                              (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT) |
+                              (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
+   texture->tex.width     = width;
+   texture->tex.height    = height;
+   texture->tex.depth     = 1;
+   texture->tex.location  = GCM_LOCATION_RSX;
+   texture->tex.pitch     = pitch;
+   texture->tex.offset    = texture->offset;
 
    switch (filter_type)
    {
       case TEXTURE_FILTER_MIPMAP_NEAREST:
       case TEXTURE_FILTER_NEAREST:
-         min_filter = GCM_TEXTURE_NEAREST;
-         mag_filter = GCM_TEXTURE_NEAREST;
+         min_filter       = GCM_TEXTURE_NEAREST;
+         mag_filter       = GCM_TEXTURE_NEAREST;
          break;
       case TEXTURE_FILTER_MIPMAP_LINEAR:
       case TEXTURE_FILTER_LINEAR:
          default:
-         min_filter = GCM_TEXTURE_LINEAR;
-         mag_filter = GCM_TEXTURE_LINEAR;
+         min_filter       = GCM_TEXTURE_LINEAR;
+         mag_filter       = GCM_TEXTURE_LINEAR;
          break;
    }
-   texture->min_filter = min_filter;
-   texture->mag_filter = mag_filter;
-   texture->wrap_s = GCM_TEXTURE_CLAMP_TO_EDGE;
-   texture->wrap_t = GCM_TEXTURE_CLAMP_TO_EDGE;
+   texture->min_filter    = min_filter;
+   texture->mag_filter    = mag_filter;
+   texture->wrap_s        = GCM_TEXTURE_CLAMP_TO_EDGE;
+   texture->wrap_t        = GCM_TEXTURE_CLAMP_TO_EDGE;
 }
 
 static void rsx_set_texture(rsx_t* rsx, rsx_texture_t *texture)
@@ -841,10 +835,10 @@ static void rsx_set_texture(rsx_t* rsx, rsx_texture_t *texture)
 static void rsx_clear_surface(rsx_t* rsx)
 {
    rsxSetColorMask(rsx->context,
-               GCM_COLOR_MASK_R |
-               GCM_COLOR_MASK_G |
-               GCM_COLOR_MASK_B |
-               GCM_COLOR_MASK_A);
+                 GCM_COLOR_MASK_R
+               | GCM_COLOR_MASK_G
+               | GCM_COLOR_MASK_B
+               | GCM_COLOR_MASK_A);
 
    rsxSetColorMaskMrt(rsx->context, 0);
 
@@ -859,12 +853,12 @@ static void rsx_clear_surface(rsx_t* rsx)
    rsxSetClearColor(rsx->context, 0);
    rsxSetClearDepthStencil(rsx->context, 0xffffff00);
    rsxClearSurface(rsx->context,
-                  GCM_CLEAR_R |
-                  GCM_CLEAR_G |
-                  GCM_CLEAR_B |
-                  GCM_CLEAR_A |
-                  GCM_CLEAR_S |
-                  GCM_CLEAR_Z);
+                    GCM_CLEAR_R
+                  | GCM_CLEAR_G
+                  | GCM_CLEAR_B
+                  | GCM_CLEAR_A
+                  | GCM_CLEAR_S
+                  | GCM_CLEAR_Z);
    rsxSetZControl(rsx->context, 0, 1, 1);
 }
 
@@ -946,24 +940,25 @@ static void rsx_draw_menu_vertices(rsx_t* rsx)
 
 static void rsx_update_screen(rsx_t* gcm)
 {
-   rsxBuffer *buffer;
-
+   rsxBuffer *buffer     = NULL;
 #if defined(HAVE_MENU_BUFFER)
-   if (gcm->menu_frame_enable) {
-      buffer = &gcm->menuBuffers[gcm->menuBuffer];
-      gcm->menuBuffer = (gcm->menuBuffer+1)%MAX_MENU_BUFFERS;
-      gcm->nextBuffer = MAX_BUFFERS + gcm->menuBuffer;
-   } else {
-      buffer = &gcm->buffers[gcm->currentBuffer];
+   if (gcm->menu_frame_enable)
+   {
+      buffer             = &gcm->menuBuffers[gcm->menuBuffer];
+      gcm->menuBuffer    = (gcm->menuBuffer+1)%MAX_MENU_BUFFERS;
+      gcm->nextBuffer    = MAX_BUFFERS + gcm->menuBuffer;
+   }
+   else
+   {
+      buffer             = &gcm->buffers[gcm->currentBuffer];
       gcm->currentBuffer = (gcm->currentBuffer+1)%MAX_BUFFERS;
-      gcm->nextBuffer = gcm->currentBuffer;
+      gcm->nextBuffer    = gcm->currentBuffer;
    }
 #else
-   buffer = &gcm->buffers[gcm->currentBuffer];
-   gcm->currentBuffer = (gcm->currentBuffer+1)%MAX_BUFFERS;
-   gcm->nextBuffer = gcm->currentBuffer;
+   buffer                = &gcm->buffers[gcm->currentBuffer];
+   gcm->currentBuffer    = (gcm->currentBuffer+1)%MAX_BUFFERS;
+   gcm->nextBuffer       = gcm->currentBuffer;
 #endif
-
 
    rsx_flip(gcm->context, buffer->id);
    if (gcm->vsync)
@@ -979,10 +974,10 @@ static bool rsx_frame(void* data, const void* frame,
       uint64_t frame_count,
       unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
-   rsx_t* gcm = (rsx_t*)data;
+   rsx_t *gcm                       = (rsx_t*)data;
 #ifdef HAVE_MENU
-   bool statistics_show           = video_info->statistics_show;
-   struct font_params *osd_params = (struct font_params*)
+   bool statistics_show             = video_info->statistics_show;
+   struct font_params *osd_params   = (struct font_params*)
       &video_info->osd_stat_params;
    bool menu_is_alive               = video_info->menu_is_alive;
 #endif
@@ -1042,24 +1037,9 @@ static void rsx_set_nonblock_state(void* data, bool toggle,
       gcm->vsync = !toggle;
 }
 
-static bool rsx_alive(void* data)
-{
-   (void)data;
-   return true;
-}
-
-static bool rsx_focus(void* data)
-{
-   (void)data;
-   return true;
-}
-
-static bool rsx_suppress_screensaver(void* data, bool enable)
-{
-   (void)data;
-   (void)enable;
-   return false;
-}
+static bool rsx_alive(void* data) { return true; }
+static bool rsx_focus(void* data) { return true; }
+static bool rsx_suppress_screensaver(void* data, bool enable) { return false; }
 
 static void rsx_free(void* data)
 {
@@ -1099,11 +1079,11 @@ static void rsx_free(void* data)
 static void rsx_set_texture_frame(void* data, const void* frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
-   rsx_t* gcm = (rsx_t*)data;
+   rsx_t* gcm              = (rsx_t*)data;
 
    gcm->menu_texture_alpha = alpha;
-   gcm->menu_width = width;
-   gcm->menu_height = height;
+   gcm->menu_width         = width;
+   gcm->menu_height        = height;
    rsx_load_texture_data(gcm, &gcm->menu_texture, frame, width, height, width * (rgb32 ? 4 : 2),
                          rgb32, true, gcm->smooth ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST);
 }
@@ -1111,23 +1091,20 @@ static void rsx_set_texture_frame(void* data, const void* frame, bool rgb32,
 static void rsx_set_texture_enable(void* data, bool state, bool full_screen)
 {
    rsx_t* gcm = (rsx_t*)data;
-
-   if (!gcm)
-     return;
-
-   gcm->menu_frame_enable = state;
+   if (gcm)
+      gcm->menu_frame_enable = state;
 }
 
 static void rsx_set_rotation(void* data, unsigned rotation)
 {
-   rsx_t* gcm = (rsx_t*)data;
+   rsx_t* gcm               = (rsx_t*)data;
    struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!gcm)
       return;
 
-   gcm->rotation = 90 * rotation;
-   gcm->should_resize = true;
+   gcm->rotation            = 90 * rotation;
+   gcm->should_resize       = true;
    rsx_set_projection(gcm, &ortho, true);
 }
 
@@ -1141,7 +1118,7 @@ static void rsx_set_filtering(void* data, unsigned index, bool smooth, bool ctx_
 
 static void rsx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
 {
-   rsx_t* gcm = (rsx_t*)data;
+   rsx_t* gcm         = (rsx_t*)data;
 
    if(!gcm)
       return;
@@ -1153,7 +1130,6 @@ static void rsx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
 static void rsx_apply_state_changes(void* data)
 {
    rsx_t* gcm = (rsx_t*)data;
-
    if (gcm)
       gcm->should_resize = true;
 
@@ -1162,7 +1138,6 @@ static void rsx_apply_state_changes(void* data)
 static void rsx_viewport_info(void* data, struct video_viewport* vp)
 {
    rsx_t* gcm = (rsx_t*)data;
-
    if (gcm)
       *vp = gcm->vp;
 }
@@ -1173,17 +1148,11 @@ static void rsx_set_osd_msg(void *data,
       const void *params, void *font)
 {
    rsx_t* gcm = (rsx_t*)data;
-
    if (gcm && gcm->msg_rendering_enabled)
       font_driver_render_msg(data, msg, params, font);
 }
 
-static uint32_t rsx_get_flags(void *data)
-{
-   uint32_t             flags   = 0;
-
-   return flags;
-}
+static uint32_t rsx_get_flags(void *data) { return 0; }
 
 static const video_poke_interface_t rsx_poke_interface = {
    rsx_get_flags,
@@ -1214,28 +1183,13 @@ static const video_poke_interface_t rsx_poke_interface = {
 };
 
 static void rsx_get_poke_interface(void* data,
-      const video_poke_interface_t** iface)
-{
-   (void)data;
-   *iface = &rsx_poke_interface;
-}
+      const video_poke_interface_t** iface) { *iface = &rsx_poke_interface; }
 
 static bool rsx_set_shader(void* data,
-      enum rarch_shader_type type, const char* path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
+      enum rarch_shader_type type, const char* path) { return false; }
 
 #ifdef HAVE_GFX_WIDGETS
-static bool rsx_widgets_enabled(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool rsx_widgets_enabled(void *data)          { return true;  }
 #endif
 
 video_driver_t video_gcm =
