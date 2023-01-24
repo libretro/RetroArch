@@ -37,19 +37,29 @@
 
 #include "../../driver.h"
 #include "../../configuration.h"
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
-#include "../common/network_common.h"
 
 #define xstr(s) str(s)
 #define str(s) #s
 
-enum {
+enum
+{
    NETWORK_VIDEO_PIXELFORMAT_RGBA8888 = 0,
    NETWORK_VIDEO_PIXELFORMAT_BGRA8888,
    NETWORK_VIDEO_PIXELFORMAT_RGB565
 } network_video_pixelformat;
+
+typedef struct network
+{
+   unsigned video_width;
+   unsigned video_height;
+   unsigned screen_width;
+   unsigned screen_height;
+   char address[256];
+   uint16_t port;
+   int fd;
+} network_video_t;
 
 static unsigned char *network_menu_frame = NULL;
 static unsigned network_menu_width       = 0;

@@ -16,8 +16,25 @@
 
 /* Vita context. */
 
+#include "../../deps/Pigs-In-A-Blanket/include/pib.h"
 #include "../../retroarch.h"
-#include "../common/vita_common.h"
+#ifdef HAVE_EGL
+#include "../common/egl_common.h"
+#endif
+
+#define ATTR_VITA_WIDTH 960
+#define ATTR_VITA_HEIGHT 544
+
+typedef struct
+{
+#ifdef HAVE_EGL
+   egl_ctx_data_t egl;
+#endif
+   int native_window;
+   bool resize;
+   unsigned width, height;
+   float refresh_rate;
+} vita_ctx_data_t;
 
 static void vita_swap_interval(void *data, int interval)
 {
