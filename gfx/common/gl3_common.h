@@ -133,28 +133,6 @@ typedef struct gl3
 
 void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size);
 
-GLuint gl3_compile_shader(GLenum stage, const char *source);
-
-void gl3_framebuffer_clear(GLuint id);
-
-void gl3_framebuffer_copy(
-      GLuint fb_id,
-      GLuint quad_program,
-      GLuint quad_vbo,
-      GLint flat_ubo_vertex,
-      struct Size2D size,
-      GLuint image);
-
-void gl3_framebuffer_copy_partial(
-      GLuint fb_id,
-      GLuint quad_program, 
-      GLint flat_ubo_vertex,
-      struct Size2D size,
-      GLuint image,
-      float rx, float ry);
-
-uint32_t gl3_get_cross_compiler_target_version(void);
-
 RETRO_END_DECLS
 
 #endif

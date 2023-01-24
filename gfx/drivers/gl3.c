@@ -56,119 +56,6 @@
 
 static const struct video_ortho gl3_default_ortho = {0, 1, 0, 1, -1, 1};
 
-void gl3_framebuffer_copy(
-      GLuint fb_id,
-      GLuint quad_program,
-      GLuint quad_vbo,
-      GLint flat_ubo_vertex,
-      struct Size2D size,
-      GLuint image)
-{
-   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-   glActiveTexture(GL_TEXTURE2);
-   glBindTexture(GL_TEXTURE_2D, image);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   glViewport(0, 0, size.width, size.height);
-   glClear(GL_COLOR_BUFFER_BIT);
-
-   glUseProgram(quad_program);
-   if (flat_ubo_vertex >= 0)
-   {
-      static float mvp[16] = { 
-                                2.0f, 0.0f, 0.0f, 0.0f,
-                                0.0f, 2.0f, 0.0f, 0.0f,
-                                0.0f, 0.0f, 2.0f, 0.0f,
-                               -1.0f,-1.0f, 0.0f, 1.0f
-                             };
-      glUniform4fv(flat_ubo_vertex, 4, mvp);
-   }
-
-   /* Draw quad */
-   glDisable(GL_CULL_FACE);
-   glDisable(GL_BLEND);
-   glDisable(GL_DEPTH_TEST);
-   glEnableVertexAttribArray(0);
-   glEnableVertexAttribArray(1);
-   glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         (void *)((uintptr_t)(0)));
-   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         (void *)((uintptr_t)(2 * sizeof(float))));
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glBindBuffer(GL_ARRAY_BUFFER, 0);
-   glDisableVertexAttribArray(0);
-   glDisableVertexAttribArray(1);
-
-   glUseProgram(0);
-   glBindTexture(GL_TEXTURE_2D, 0);
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void gl3_framebuffer_copy_partial(
-      GLuint fb_id,
-      GLuint quad_program, 
-      GLint flat_ubo_vertex,
-      struct Size2D size,
-      GLuint image,
-      float rx, float ry)
-{
-   GLuint vbo;
-   const float quad_data[16] = {
-      0.0f, 0.0f, 0.0f, 0.0f,
-      1.0f, 0.0f, rx,   0.0f,
-      0.0f, 1.0f, 0.0f, ry,
-      1.0f, 1.0f, rx,   ry,
-   };
-
-   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-   glActiveTexture(GL_TEXTURE2);
-   glBindTexture(GL_TEXTURE_2D, image);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   glViewport(0, 0, size.width, size.height);
-   glClear(GL_COLOR_BUFFER_BIT);
-
-   glUseProgram(quad_program);
-   if (flat_ubo_vertex >= 0)
-   {
-      static float mvp[16] = { 
-                                2.0f, 0.0f, 0.0f, 0.0f,
-                                0.0f, 2.0f, 0.0f, 0.0f,
-                                0.0f, 0.0f, 2.0f, 0.0f,
-                               -1.0f,-1.0f, 0.0f, 1.0f
-                             };
-      glUniform4fv(flat_ubo_vertex, 4, mvp);
-   }
-   glDisable(GL_CULL_FACE);
-   glDisable(GL_BLEND);
-   glDisable(GL_DEPTH_TEST);
-   glEnableVertexAttribArray(0);
-   glEnableVertexAttribArray(1);
-
-   /* A bit crude, but heeeey. */
-   glGenBuffers(1, &vbo);
-   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-   glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STREAM_DRAW);
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         (void *)((uintptr_t)(0)));
-   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         (void *)((uintptr_t)(2 * sizeof(float))));
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glBindBuffer(GL_ARRAY_BUFFER, 0);
-   glDeleteBuffers(1, &vbo);
-   glDisableVertexAttribArray(0);
-   glDisableVertexAttribArray(1);
-   glUseProgram(0);
-   glBindTexture(GL_TEXTURE_2D, 0);
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
 static void gl3_deinit_fences(gl3_t *gl)
 {
    int i;
@@ -231,20 +118,6 @@ static void gl3_deinit_pbo_readback(gl3_t *gl)
    scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
 }
 
-static void gl3_slow_readback(gl3_t *gl, void *buffer)
-{
-   glPixelStorei(GL_PACK_ALIGNMENT, 4);
-   glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-#ifndef HAVE_OPENGLES
-   glReadBuffer(GL_BACK);
-#endif
-
-   glReadPixels(gl->vp.x, gl->vp.y,
-                gl->vp.width, gl->vp.height,
-                GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-}
-
 static void gl3_pbo_async_readback(gl3_t *gl)
 {
    glBindBuffer(GL_PIXEL_PACK_BUFFER,
@@ -291,92 +164,6 @@ static void gl3_fence_iterate(gl3_t *gl, unsigned hard_sync_frames)
    }
 }
 
-uint32_t gl3_get_cross_compiler_target_version(void)
-{
-   const char *version = (const char*)glGetString(GL_VERSION);
-   unsigned major      = 0;
-   unsigned minor      = 0;
-
-#ifdef HAVE_OPENGLES3
-   if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
-      return 300;
-   
-   if (major == 2 && minor == 0)
-      return 100;
-#else
-   if (!version || sscanf(version, "%u.%u", &major, &minor) != 2)
-      return 150;
-
-   if (major == 3)
-   {
-      switch (minor)
-      {
-         case 2:
-            return 150;
-         case 1:
-            return 140;
-         case 0:
-            return 130;
-      }
-   }
-   else if (major == 2)
-   {
-      switch (minor)
-      {
-         case 1:
-            return 120;
-         case 0:
-            return 110;
-      }
-   }
-#endif
-
-   return 100 * major + 10 * minor;
-}
-
-GLuint gl3_compile_shader(GLenum stage, const char *source)
-{
-   GLint status;
-   GLuint shader   = glCreateShader(stage);
-   const char *ptr = source;
-
-   glShaderSource(shader, 1, &ptr, NULL);
-   glCompileShader(shader);
-
-   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-
-   if (!status)
-   {
-      GLint length;
-      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-      if (length > 0)
-      {
-         char *info_log = (char*)malloc(length);
-
-         if (info_log)
-         {
-            glGetShaderInfoLog(shader, length, &length, info_log);
-            RARCH_ERR("[GLCore]: Failed to compile shader: %s\n", info_log);
-            free(info_log);
-            glDeleteShader(shader);
-            return 0;
-         }
-      }
-   }
-
-   return shader;
-}
-
-
-void gl3_framebuffer_clear(GLuint id)
-{
-   glBindFramebuffer(GL_FRAMEBUFFER, id);
-   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-   glClear(GL_COLOR_BUFFER_BIT);
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
 void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size)
 {
    if (!gl->scratch_vbos[gl->scratch_vbo_index])
@@ -419,7 +206,7 @@ static void gl3_overlay_vertex_geom(void *data,
       float w, float h)
 {
    GLfloat *vertex = NULL;
-   gl3_t   *gl = (gl3_t*)data;
+   gl3_t       *gl = (gl3_t*)data;
 
    if (!gl)
       return;
@@ -538,7 +325,7 @@ static void gl3_deinit_hw_render(gl3_t *gl)
 
 static void gl3_destroy_resources(gl3_t *gl)
 {
-   unsigned i;
+   int i;
    if (!gl)
       return;
 
@@ -1454,7 +1241,7 @@ static void video_texture_load_gl3(
 static bool gl3_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
-   unsigned i, j;
+   int i, j;
    GLuint id;
    gl3_t *gl = (gl3_t*)data;
    const struct texture_image *images =
@@ -2033,7 +1820,16 @@ static bool gl3_frame(void *data, const void *frame,
    if (gl->readback_buffer_screenshot)
    {
       /* For screenshots, just do the regular slow readback. */
-      gl3_slow_readback(gl, gl->readback_buffer_screenshot);
+      glPixelStorei(GL_PACK_ALIGNMENT, 4);
+      glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+#ifndef HAVE_OPENGLES
+      glReadBuffer(GL_BACK);
+#endif
+      glReadPixels(gl->vp.x, gl->vp.y,
+            gl->vp.width, gl->vp.height,
+            GL_RGBA, GL_UNSIGNED_BYTE,
+            gl->readback_buffer_screenshot);
    }
    else if (gl->pbo_readback_enable)
    {
