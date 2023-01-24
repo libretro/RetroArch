@@ -356,6 +356,7 @@ static void ctr_state_thumbnail_geom(void *data)
    float scale;
    unsigned width, height;
    int x_offset, y_offset;
+   ctr_scale_vector_t *vec           = NULL;
    ctr_texture_t *texture            = NULL;
    ctr_video_t *ctr                  = (ctr_video_t *)data;
    struct ctr_bottom_texture_data *o = NULL;
@@ -390,8 +391,10 @@ static void ctr_state_thumbnail_geom(void *data)
                          + texture->active_width * scale;
    o->frame_coords->y1 =   o->frame_coords->y0 
                          + texture->active_height * scale;
+   vec                 = &o->scale_vector;
 
-   ctr_set_scale_vector(&o->scale_vector,
+   CTR_SET_SCALE_VECTOR(
+         vec,
          CTR_BOTTOM_FRAMEBUFFER_WIDTH,
          CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
          texture->width,
@@ -427,7 +430,8 @@ static bool ctr_load_bottom_texture(void *data)
          }
          else
          {
-            ctr_texture_t *texture = (ctr_texture_t *) o->texture;
+            ctr_scale_vector_t *vec = NULL;
+            ctr_texture_t *texture  = (ctr_texture_t *)o->texture;
 
             o->frame_coords->u0 = 0;
             o->frame_coords->v0 = 0;
@@ -439,7 +443,9 @@ static bool ctr_load_bottom_texture(void *data)
             o->frame_coords->x1 = o->frame_coords->x0 + texture->width;
             o->frame_coords->y1 = o->frame_coords->y0 + texture->height;
 
-            ctr_set_scale_vector(&o->scale_vector,
+            vec                 = &o->scale_vector;
+
+            CTR_SET_SCALE_VECTOR(vec,
                   CTR_BOTTOM_FRAMEBUFFER_WIDTH,
                   CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
                   texture->width,
@@ -1083,6 +1089,8 @@ static void* ctr_init(const video_info_t* video,
 {
    size_t i;
    float refresh_rate;
+   ctr_scale_vector_t *vec         = NULL;
+   ctr_scale_vector_t *menu_vec    = NULL;
    u8 device_model                 = 0xFF;
    void* ctrinput                  = NULL;
    settings_t *settings            = config_get_ptr();
@@ -1171,13 +1179,19 @@ static void* ctr_init(const video_info_t* video,
    ctr->menu.frame_coords->u1      = CTR_TOP_FRAMEBUFFER_WIDTH - 80;
    ctr->menu.frame_coords->v1      = CTR_TOP_FRAMEBUFFER_HEIGHT;
    GSPGPU_FlushDataCache(ctr->menu.frame_coords, sizeof(ctr_vertex_t));
+   vec                             = &ctr->scale_vector;
+   menu_vec                        = &ctr->menu.scale_vector;
 
-   ctr_set_scale_vector(&ctr->scale_vector,
-                        CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                        ctr->texture_width, ctr->texture_height);
-   ctr_set_scale_vector(&ctr->menu.scale_vector,
-                        CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                        ctr->menu.texture_width, ctr->menu.texture_height);
+   CTR_SET_SCALE_VECTOR(vec,
+                        CTR_TOP_FRAMEBUFFER_WIDTH,
+                        CTR_TOP_FRAMEBUFFER_HEIGHT,
+                        ctr->texture_width,
+                        ctr->texture_height);
+   CTR_SET_SCALE_VECTOR(menu_vec,
+                        CTR_TOP_FRAMEBUFFER_WIDTH,
+                        CTR_TOP_FRAMEBUFFER_HEIGHT,
+                        ctr->menu.texture_width,
+                        ctr->menu.texture_height);
 
    memset(ctr->texture_linear, 0x00, ctr->texture_width * ctr->texture_height * (ctr->rgb32? 4:2));
 #if 0
@@ -2203,8 +2217,9 @@ static bool ctr_overlay_load(void *data,
 
    for (i = 0; i < num_images; i++)
    {
-      uint32_t *src = NULL;
-      uint32_t *dst = NULL;
+      ctr_scale_vector_t    *vec = NULL;
+      uint32_t              *src = NULL;
+      uint32_t              *dst = NULL;
       struct ctr_overlay_data *o = (struct ctr_overlay_data *)&ctr->overlay[i];
 
       o->frame_coords = linearAlloc(sizeof(ctr_vertex_t));
@@ -2262,9 +2277,12 @@ static bool ctr_overlay_load(void *data,
       ctr_overlay_tex_geom(ctr, i, 0, 0, 1, 1);
       ctr_overlay_vertex_geom(ctr, i, 0, 0, 1, 1);
 
-      ctr_set_scale_vector(&o->scale_vector,
-                       CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                       o->texture.width, o->texture.height);
+      vec = &o->scale_vector;
+      CTR_SET_SCALE_VECTOR(vec,
+                       CTR_TOP_FRAMEBUFFER_WIDTH,
+                       CTR_TOP_FRAMEBUFFER_HEIGHT,
+                       o->texture.width,
+                       o->texture.height);
 
       ctr->overlay[i].alpha_mod = 1.0f;
    }

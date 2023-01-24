@@ -43,6 +43,8 @@ static void* ctr_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
    int i, j;
+   ctr_scale_vector_t *vec_top    = NULL;
+   ctr_scale_vector_t *vec_bottom = NULL;
    const uint8_t*     src         = NULL;
    uint8_t* tmp                   = NULL;
    const struct font_atlas* atlas = NULL;
@@ -88,15 +90,22 @@ static void* ctr_font_init(void* data, const char* font_path,
    linearFree(tmp);
 #endif
 
-   ctr_set_scale_vector(&font->scale_vector_top, 
-      CTR_TOP_FRAMEBUFFER_WIDTH, 
-      CTR_TOP_FRAMEBUFFER_HEIGHT,
-      font->texture.width, font->texture.height);
+   vec_top    = &font->scale_vector_top;
+   vec_bottom = &font->scale_vector_bottom;
 
-   ctr_set_scale_vector(&font->scale_vector_bottom, 
-      CTR_BOTTOM_FRAMEBUFFER_WIDTH, 
-      CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
-      font->texture.width, font->texture.height);
+   CTR_SET_SCALE_VECTOR(
+         vec_top,
+         CTR_TOP_FRAMEBUFFER_WIDTH, 
+         CTR_TOP_FRAMEBUFFER_HEIGHT,
+         font->texture.width,
+         font->texture.height);
+
+   CTR_SET_SCALE_VECTOR(
+         vec_bottom,
+         CTR_BOTTOM_FRAMEBUFFER_WIDTH, 
+         CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
+         font->texture.width,
+         font->texture.height);
 
    return font;
 }

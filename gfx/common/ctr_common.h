@@ -27,6 +27,12 @@
 #define CTR_BOTTOM_FRAMEBUFFER_HEIGHT  240
 #define CTR_STATE_DATE_SIZE            11
 
+#define CTR_SET_SCALE_VECTOR(vec, viewport_width, viewport_height, texture_width, texture_height) \
+   (vec)->x = -2.0f / (viewport_width); \
+   (vec)->y = -2.0f / (viewport_height); \
+   (vec)->u =  1.0f / (texture_width); \
+   (vec)->v = -1.0f / (texture_height)
+
 #ifdef USE_CTRULIB_2
 extern u8* gfxTopLeftFramebuffers[2];
 extern u8* gfxTopRightFramebuffers[2];
