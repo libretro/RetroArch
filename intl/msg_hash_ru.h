@@ -3351,6 +3351,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
    "Включает/выключает забегание."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
+   "Кадры упреждения (переключение)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
+   "Включает/выключает кадры упреждения."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
@@ -3675,6 +3683,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
    "Не показывать предупреждение, если включено забегание и ядро не поддерживает сохранение состояния."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
+   "[Кадры упреждения недоступны]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
+   "Текущее ядро несовместимо с кадрами упреждения из-за отсутствия детерминированной поддержки быстрых сохранений."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
+   "Обработка кадров упреждения"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
+   "Повторно обрабатывать логику ядра с последними событиями ввода при изменении состояния контроллера. Действует быстрее забегания, но не исключает появление у ядер проблем со звуком при загрузке сохранений."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
+   "Количество кадров упреждения"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
+   "Количество кадров для перезапуска. Вызывает нестабильность геймплея при превышении числа кадров внутриигровой задержки."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
+   "Скрывать предупреждения упреждения кадров"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
+   "Не отображать предупреждение, если ядро несовместимо с кадрами упреждения."
    )
 
 /* Settings > Core */

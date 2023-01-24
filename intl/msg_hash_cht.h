@@ -1537,7 +1537,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "開啟時圖像輕微模糊用於平滑邊緣。此選項對效能影響很小。使用著色器時建議關閉此選項。"
+   "開啟時圖像輕微模糊用於平滑邊緣。此選項對效能影響很小。開啟著色器時建議關閉此選項。"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -2459,6 +2459,18 @@ MSG_HASH(
    "設定應用程式支援控制器的數量。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "輪詢方式 (需要重新啟動)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+   "設定應用程式進行輸入輪詢的方式。設定為 <較早> 或 <稍晚> 可減少延遲，取決於裝置的效能。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
+   "設定應用程式進行輸入輪詢的方式。\n較早 - 處理幀之前執行。\n正常 - 接收輸入時執行。\n稍晚 - 處理幀之後執行。\n依據裝置的效能，設定為 <較早> 或 <稍晚> 可減少延遲。\n進行連線遊戲時此選項設定將被忽略。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "執行核心重新映射按鍵 (進階設定)"
    )
@@ -2744,12 +2756,16 @@ MSG_HASH(
    "組合鍵 (按住)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "設定後變更快捷鍵的操作方式，必須先按住組合鍵才能觸發快捷鍵。控制器組合鍵相關選項不影響。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
    "組合鍵延遲 (幀數)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
-   "設定觸發「組合鍵」作用的延遲，在延遲時間內可當一般按鍵使用，應用於控制器使用快捷鍵的組合鍵。"
+   "設定觸發「組合鍵」作用的延遲，在延遲時間內可當一般按鍵使用，應用於追加控制器的快捷鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -3413,7 +3429,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
-   "部分核心具有結束應用程式的功能，加載虛擬核心能阻止應用程式直接結束。"
+   "部分核心具有結束應用程式的功能，載入虛擬核心能阻止應用程式直接結束。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
@@ -3665,7 +3681,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "使用壓縮格式儲存成記憶存檔，減少檔案的大小，但儲存和載入的速度變慢。僅限支援SAV格式的核心使用。"
+   "使用壓縮格式儲存記憶存檔，減少檔案的大小，但儲存和載入的速度變慢。僅限支援SAV格式的核心使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
