@@ -30,6 +30,18 @@
 
 #define D3D12_MAX_GPU_COUNT 16
 
+#define D3D12_RESOURCE_TRANSITION(cmd, resource, state_before, state_after) \
+{ \
+   D3D12_RESOURCE_BARRIER _barrier; \
+   _barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION; \
+   _barrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE; \
+   _barrier.Transition.pResource   = resource; \
+   _barrier.Transition.StateBefore = state_before; \
+   _barrier.Transition.StateAfter  = state_after; \
+   _barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES; \
+   D3D12ResourceBarrier(cmd, 1, &_barrier); \
+}
+
 typedef const ID3D12PipelineState* D3D12PipelineStateRef;
 
 /* auto-generated */
@@ -773,42 +785,5 @@ void d3d12_update_texture(
 
 void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
       d3d12_texture_t* texture, void *userdata);
-
-#if !defined(__cplusplus) || defined(CINTERFACE)
-static INLINE void d3d12_resource_transition(
-      D3D12GraphicsCommandList cmd,
-      D3D12Resource            resource,
-      D3D12_RESOURCE_STATES    state_before,
-      D3D12_RESOURCE_STATES    state_after)
-{
-   D3D12_RESOURCE_BARRIER barrier;
-   barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-   barrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-   barrier.Transition.pResource   = resource;
-   barrier.Transition.StateBefore = state_before;
-   barrier.Transition.StateAfter  = state_after;
-   barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-   D3D12ResourceBarrier(cmd, 1, &barrier);
-}
-
-static INLINE void d3d12_set_texture(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
-{
-   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, texture->gpu_descriptor[0]);
-}
-
-static INLINE void
-d3d12_set_sampler(D3D12GraphicsCommandList cmd, D3D12_GPU_DESCRIPTOR_HANDLE sampler)
-{
-   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T, sampler);
-}
-
-static INLINE void
-d3d12_set_texture_and_sampler(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
-{
-   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, texture->gpu_descriptor[0]);
-   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T, texture->sampler);
-}
-
-#endif
 
 RETRO_END_DECLS

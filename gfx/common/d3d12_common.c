@@ -380,14 +380,18 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
    dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
    dst.SubresourceIndex = 0;
 
-   d3d12_resource_transition(
-         cmd, texture->handle, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+   D3D12_RESOURCE_TRANSITION(
+         cmd,
+         texture->handle,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
          D3D12_RESOURCE_STATE_COPY_DEST);
 
    D3D12CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
 
-   d3d12_resource_transition(
-         cmd, texture->handle, D3D12_RESOURCE_STATE_COPY_DEST,
+   D3D12_RESOURCE_TRANSITION(
+         cmd,
+         texture->handle,
+         D3D12_RESOURCE_STATE_COPY_DEST,
          D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
    if (texture->desc.MipLevels > 1)
