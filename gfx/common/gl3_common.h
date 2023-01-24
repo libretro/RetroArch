@@ -49,6 +49,23 @@ struct gl3_streamed_texture
    unsigned height;
 };
 
+enum gl3_flags
+{
+   GL3_FLAG_PBO_READBACK_ENABLE    = (1 <<  0),
+   GL3_FLAG_HW_RENDER_BOTTOM_LEFT  = (1 <<  1),
+   GL3_FLAG_HW_RENDER_ENABLE       = (1 <<  2),
+   GL3_FLAG_USE_SHARED_CONTEXT     = (1 <<  3),
+   GL3_FLAG_OVERLAY_ENABLE         = (1 <<  4),
+   GL3_FLAG_OVERLAY_FULLSCREEN     = (1 <<  5),
+   GL3_FLAG_MENU_TEXTURE_ENABLE    = (1 <<  6),
+   GL3_FLAG_MENU_TEXTURE_FULLSCREEN= (1 <<  7),
+   GL3_FLAG_VSYNC                  = (1 <<  8),
+   GL3_FLAG_FULLSCREEN             = (1 <<  9),
+   GL3_FLAG_QUITTING               = (1 << 10),
+   GL3_FLAG_SHOULD_RESIZE          = (1 << 11),
+   GL3_FLAG_KEEP_ASPECT            = (1 << 12)
+};
+
 typedef struct gl3
 {
    const gfx_ctx_driver_t *ctx_driver;
@@ -115,20 +132,9 @@ typedef struct gl3
    math_matrix_4x4 mvp_no_rot;
    math_matrix_4x4 mvp_no_rot_yflip;
 
+   uint16_t flags;
+
    bool pbo_readback_valid[GL_CORE_NUM_PBOS];
-   bool pbo_readback_enable;
-   bool hw_render_bottom_left;
-   bool hw_render_enable;
-   bool use_shared_context;
-   bool overlay_enable;
-   bool overlay_full_screen;
-   bool menu_texture_enable;
-   bool menu_texture_full_screen;
-   bool vsync;
-   bool fullscreen;
-   bool quitting;
-   bool should_resize;
-   bool keep_aspect;
 } gl3_t;
 
 void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size);
