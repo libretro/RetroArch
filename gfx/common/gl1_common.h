@@ -42,15 +42,31 @@
 #include "../video_driver.h"
 
 #ifdef VITA
-#define GL_RGBA8     GL_RGBA
-#define GL_RGB8      GL_RGB
-#define GL_BGRA_EXT  GL_RGBA /* Currently unsupported in vitaGL */
-#define GL_CLAMP     GL_CLAMP_TO_EDGE
+#define GL_RGBA8                    GL_RGBA
+#define GL_RGB8                     GL_RGB
+#define GL_BGRA_EXT                 GL_RGBA /* Currently unsupported in vitaGL */
+#define GL_CLAMP                    GL_CLAMP_TO_EDGE
 #endif
 
 #define RARCH_GL1_INTERNAL_FORMAT32 GL_RGBA8
-#define RARCH_GL1_TEXTURE_TYPE32 GL_BGRA_EXT
-#define RARCH_GL1_FORMAT32 GL_UNSIGNED_BYTE
+#define RARCH_GL1_TEXTURE_TYPE32    GL_BGRA_EXT
+#define RARCH_GL1_FORMAT32          GL_UNSIGNED_BYTE
+
+enum gl1_flags
+{
+   GL1_FLAG_FULLSCREEN              = (1 << 0),
+   GL1_FLAG_MENU_SIZE_CHANGED       = (1 << 1),
+   GL1_FLAG_RGB32                   = (1 << 2),
+   GL1_FLAG_SUPPORTS_BGRA           = (1 << 3),
+   GL1_FLAG_KEEP_ASPECT             = (1 << 4),
+   GL1_FLAG_SHOULD_RESIZE           = (1 << 5),
+   GL1_FLAG_MENU_TEXTURE_ENABLE     = (1 << 6),
+   GL1_FLAG_MENU_TEXTURE_FULLSCREEN = (1 << 7),
+   GL1_FLAG_SMOOTH                  = (1 << 8),
+   GL1_FLAG_MENU_SMOOTH             = (1 << 9),
+   GL1_FLAG_OVERLAY_ENABLE          = (1 << 10),
+   GL1_FLAG_OVERLAY_FULLSCREEN      = (1 << 11)
+};
 
 typedef struct gl1
 {
@@ -96,18 +112,7 @@ typedef struct gl1
    GLuint menu_tex;
    GLuint texture[GFX_MAX_TEXTURES];
 
-   bool fullscreen;
-   bool menu_size_changed;
-   bool rgb32;
-   bool supports_bgra;
-   bool keep_aspect;
-   bool should_resize;
-   bool menu_texture_enable;
-   bool menu_texture_full_screen;
-   bool smooth;
-   bool menu_smooth;
-   bool overlay_enable;
-   bool overlay_full_screen;
+   uint16_t flags;
 } gl1_t;
 
 #endif
