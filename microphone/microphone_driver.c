@@ -601,7 +601,6 @@ static bool microphone_driver_free_devices_list(void)
    return true;
 }
 
-static void report_microphone_buffer_statistics(void);
 static bool microphone_driver_deinit_internal(bool microphone_enable)
 {
    microphone_driver_state_t *mic_st = &mic_driver_st;
@@ -626,10 +625,6 @@ static bool microphone_driver_deinit_internal(bool microphone_enable)
    if (mic_st->input_samples_buf)
       memalign_free(mic_st->input_samples_buf);
    mic_st->input_samples_buf = NULL;
-
-#ifdef DEBUG
-   report_microphone_buffer_statistics();
-#endif
 
    return true;
 }
