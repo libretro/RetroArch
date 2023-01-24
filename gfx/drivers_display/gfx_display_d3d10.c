@@ -45,8 +45,9 @@ static void gfx_display_d3d10_blend_end(void *data)
 static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
-   int vertex_count     = 1;
-   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+   UINT offset = 0, stride = 0;
+   int vertex_count        = 1;
+   d3d10_video_t* d3d10    = (d3d10_video_t*)data;
 
    if (!d3d10 || !draw || !draw->texture)
       return;
@@ -61,12 +62,13 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_6:
          d3d10_set_shader(d3d10->device, &d3d10->shaders[draw->pipeline_id]);
          d3d10->device->lpVtbl->Draw(d3d10->device, draw->coords->vertices, 0);
-
          d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
                d3d10->blend_enable,
                NULL, D3D10_DEFAULT_SAMPLE_MASK);
          d3d10_set_shader(d3d10->device, &d3d10->sprites.shader);
-         D3D10SetVertexBuffer(d3d10->device, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
+         stride = sizeof(d3d10_sprite_t);
+         d3d10->device->lpVtbl->IASetVertexBuffers(
+               d3d10->device, 0, 1, (D3D10Buffer* const)&d3d10->sprites.vbo, &stride, &offset);
          d3d10->device->lpVtbl->IASetPrimitiveTopology(d3d10->device,
                D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
          return;
@@ -177,6 +179,7 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
       gfx_display_t *p_disp,
       void *data, unsigned video_width, unsigned video_height)
 {
+   UINT stride = 0, offset   = 0;
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
    if (!d3d10 || !draw)
@@ -206,8 +209,9 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
             d3d10->device->lpVtbl->CreateBuffer(d3d10->device, &desc,
                   &vertex_data, &d3d10->menu_pipeline_vbo);
          }
-         D3D10SetVertexBuffer(d3d10->device, 0,
-               d3d10->menu_pipeline_vbo, 2 * sizeof(float), 0);
+         stride = 2 * sizeof(float);
+         d3d10->device->lpVtbl->IASetVertexBuffers(
+               d3d10->device, 0, 1, (D3D10Buffer* const)&d3d10->menu_pipeline_vbo, &stride, &offset);
          draw->coords->vertices = ca->coords.vertices;
          d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
                d3d10->blend_pipeline,
@@ -219,8 +223,9 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         D3D10SetVertexBuffer(d3d10->device, 0,
-               d3d10->frame.vbo, sizeof(d3d10_vertex_t), 0);
+         stride = sizeof(d3d10_vertex_t);
+         d3d10->device->lpVtbl->IASetVertexBuffers(
+               d3d10->device, 0, 1, (D3D10Buffer* const)&d3d10->frame.vbo, &stride, &offset);
          draw->coords->vertices = 4;
          break;
       default:
