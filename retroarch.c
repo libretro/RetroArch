@@ -314,6 +314,7 @@ struct rarch_state
    char path_libretro[PATH_MAX_LENGTH];
    char path_config_file[PATH_MAX_LENGTH];
    char path_config_append_file[PATH_MAX_LENGTH];
+   char path_config_override_file[PATH_MAX_LENGTH];
    char path_core_options_file[PATH_MAX_LENGTH];
    char dir_system[PATH_MAX_LENGTH];
    char dir_savefile[PATH_MAX_LENGTH];
@@ -1594,6 +1595,10 @@ char *path_get_ptr(enum rarch_path_type type)
          if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
             return p_rarch->path_config_append_file;
          break;
+      case RARCH_PATH_CONFIG_OVERRIDE:
+         if (!path_is_empty(RARCH_PATH_CONFIG_OVERRIDE))
+            return p_rarch->path_config_override_file;
+         break;
       case RARCH_PATH_CORE:
          return p_rarch->path_libretro;
       case RARCH_PATH_NONE:
@@ -1631,6 +1636,10 @@ const char *path_get(enum rarch_path_type type)
          if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
             return p_rarch->path_config_append_file;
          break;
+      case RARCH_PATH_CONFIG_OVERRIDE:
+         if (!path_is_empty(RARCH_PATH_CONFIG_OVERRIDE))
+            return p_rarch->path_config_override_file;
+         break;
       case RARCH_PATH_CORE:
          return p_rarch->path_libretro;
       case RARCH_PATH_NONE:
@@ -1661,6 +1670,8 @@ size_t path_get_realsize(enum rarch_path_type type)
          return sizeof(p_rarch->path_config_file);
       case RARCH_PATH_CONFIG_APPEND:
          return sizeof(p_rarch->path_config_append_file);
+      case RARCH_PATH_CONFIG_OVERRIDE:
+         return sizeof(p_rarch->path_config_override_file);
       case RARCH_PATH_CORE:
          return sizeof(p_rarch->path_libretro);
       case RARCH_PATH_NONE:
@@ -1703,6 +1714,10 @@ bool path_set(enum rarch_path_type type, const char *path)
          strlcpy(p_rarch->path_config_file, path,
                sizeof(p_rarch->path_config_file));
          break;
+      case RARCH_PATH_CONFIG_OVERRIDE:
+         strlcpy(p_rarch->path_config_override_file, path,
+               sizeof(p_rarch->path_config_override_file));
+         break;
       case RARCH_PATH_CORE_OPTIONS:
          strlcpy(p_rarch->path_core_options_file, path,
                sizeof(p_rarch->path_core_options_file));
@@ -1742,12 +1757,16 @@ bool path_is_empty(enum rarch_path_type type)
          if (string_is_empty(p_rarch->path_config_file))
             return true;
          break;
-      case RARCH_PATH_CORE_OPTIONS:
-         if (string_is_empty(p_rarch->path_core_options_file))
-            return true;
-         break;
       case RARCH_PATH_CONFIG_APPEND:
          if (string_is_empty(p_rarch->path_config_append_file))
+            return true;
+         break;
+      case RARCH_PATH_CONFIG_OVERRIDE:
+         if (string_is_empty(p_rarch->path_config_override_file))
+            return true;
+         break;
+      case RARCH_PATH_CORE_OPTIONS:
+         if (string_is_empty(p_rarch->path_core_options_file))
             return true;
          break;
       case RARCH_PATH_CONTENT:
@@ -1799,6 +1818,9 @@ void path_clear(enum rarch_path_type type)
       case RARCH_PATH_CONFIG_APPEND:
          *p_rarch->path_config_append_file = '\0';
          break;
+      case RARCH_PATH_CONFIG_OVERRIDE:
+         *p_rarch->path_config_override_file = '\0';
+         break;
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -1818,6 +1840,7 @@ static void path_clear_all(void)
    path_clear(RARCH_PATH_CONTENT);
    path_clear(RARCH_PATH_CONFIG);
    path_clear(RARCH_PATH_CONFIG_APPEND);
+   path_clear(RARCH_PATH_CONFIG_OVERRIDE);
    path_clear(RARCH_PATH_CORE_OPTIONS);
    path_clear(RARCH_PATH_BASENAME);
 }
@@ -3317,6 +3340,21 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
 #ifdef HAVE_CONFIGFILE
          command_event_save_current_config(OVERRIDE_GAME);
+#endif
+         break;
+      case CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE:
+#ifdef HAVE_CONFIGFILE
+         command_event_remove_current_config(OVERRIDE_CORE);
+#endif
+         break;
+      case CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+#ifdef HAVE_CONFIGFILE
+         command_event_remove_current_config(OVERRIDE_CONTENT_DIR);
+#endif
+         break;
+      case CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME:
+#ifdef HAVE_CONFIGFILE
+         command_event_remove_current_config(OVERRIDE_GAME);
 #endif
          break;
       case CMD_EVENT_MENU_SAVE_CONFIG:

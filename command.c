@@ -1062,6 +1062,9 @@ bool command_event_save_config(
       return true;
    }
 
+   if (runloop_get_flags() & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
+      return false;
+
    if (!string_is_empty(str))
    {
       snprintf(s, len, "%s \"%s\".",
@@ -1564,18 +1567,20 @@ void command_event_save_current_config(enum override_type type)
 
    switch (type)
    {
+      default:
       case OVERRIDE_NONE:
          {
+            char msg[256];
+
+            msg[0] = '\0';
+
             if (path_is_empty(RARCH_PATH_CONFIG))
             {
-               char msg[128];
                strlcpy(msg, "[Config]: Config directory not set, cannot save configuration.", sizeof(msg));
                runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
             else
             {
-               char msg[256];
-               msg[0] = '\0';
                command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
                runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
@@ -1585,18 +1590,77 @@ void command_event_save_current_config(enum override_type type)
       case OVERRIDE_CORE:
       case OVERRIDE_CONTENT_DIR:
          {
-            char msg[128];
-            if (config_save_overrides(type, &runloop_st->system))
+            int8_t ret = config_save_overrides(type, &runloop_st->system, false);
+            char msg[256];
+
+            msg[0] = '\0';
+
+            switch (ret)
             {
-               strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
-               /* set overrides to active so the original config can be
-                  restored after closing content */
-               runloop_st->flags |= RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+               case 1:
+                  strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
+                  /* set overrides to active so the original config can be
+                     restored after closing content */
+                  runloop_st->flags |= RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+                  break;
+               case -1:
+                  strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_NOT_SAVED), sizeof(msg));
+                  break;
+               default:
+               case 0:
+                  strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
+                  break;
             }
-            else
-               strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
+
             RARCH_LOG("[Overrides]: %s\n", msg);
             runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+#ifdef HAVE_MENU
+            {
+               bool refresh = false;
+
+               menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+               menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+            }
+#endif
+         }
+         break;
+   }
+}
+
+void command_event_remove_current_config(enum override_type type)
+{
+   runloop_state_t *runloop_st     = runloop_state_get_ptr();
+
+   switch (type)
+   {
+      default:
+      case OVERRIDE_NONE:
+         break;
+      case OVERRIDE_GAME:
+      case OVERRIDE_CORE:
+      case OVERRIDE_CONTENT_DIR:
+         {
+            char msg[256];
+
+            msg[0] = '\0';
+
+            if (config_save_overrides(type, &runloop_st->system, true))
+               strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_REMOVED_SUCCESSFULLY), sizeof(msg));
+            else
+               strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_REMOVING), sizeof(msg));
+
+            RARCH_LOG("[Overrides]: %s\n", msg);
+            runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+#ifdef HAVE_MENU
+            {
+               bool refresh = false;
+
+               menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+               menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+            }
+#endif
          }
          break;
    }

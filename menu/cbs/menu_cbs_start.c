@@ -103,6 +103,22 @@ static int action_start_remap_file_info(
    return 0;
 }
 
+static int action_start_override_file_info(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   rarch_system_info_t *system           = &runloop_state_get_ptr()->system;
+   bool refresh                          = false;
+
+   config_load_override(system);
+
+   /* Refresh menu */
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+   return 0;
+}
+
 static int action_start_shader_preset(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -794,6 +810,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_REMAP_FILE_INFO:
             BIND_ACTION_START(cbs, action_start_remap_file_info);
+            break;
+         case MENU_ENUM_LABEL_OVERRIDE_FILE_INFO:
+            BIND_ACTION_START(cbs, action_start_override_file_info);
             break;
          case MENU_ENUM_LABEL_VIDEO_FILTER:
             BIND_ACTION_START(cbs, action_start_video_filter_file_load);
