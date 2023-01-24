@@ -225,21 +225,6 @@ typedef struct microphone_driver
     * */
    void (*set_nonblock_state)(void *driver_context, bool nonblock);
 
-
-   /**
-    * @param driver_context Pointer to the driver context.
-    * Will be the value that was returned by \c ::init().
-    * @param mic_context Pointer to a microphone context.
-    * Will be a value that was returned by \c ::open_mic().
-    * @return True if this mic provides data in \c float format,
-    * false if it uses \c int16_t samples.
-    *
-    * @note Drivers should use \c int16_t samples if possible.
-    * Since the microphone driver does not resample input,
-    * integer samples can be provided directly to the core.
-    */
-   bool (*use_float)(const void *driver_context, const void *mic_context);
-
    /**
     * A human-readable name for this driver.
     * Shown to the user in the driver selection menu.
@@ -272,31 +257,6 @@ typedef struct microphone_driver
     * that was returned by \c device_list_new.
     */
    void (*device_list_free)(const void *driver_context, struct string_list *devices);
-
-   /**
-    * The available space of the provided microphone's buffer,
-    * in bytes (\em not samples).
-    * Note that this function does *not* return the number of
-    * samples that can be read;
-    * Used to control the rate at which samples are read
-    * to avoid buffer overruns or underruns.
-    *
-    * Optional, but must be provided if \c buffer_size is implemented.
-    *
-    * @param[in] driver_context Pointer to the driver context.
-    * Will be the value that was returned by \c init().
-    * @param mic_context Pointer to a microphone context.
-    * Will be a value that was returned by \c ::open_mic().
-    * @returns The number of bytes that are available from the
-    **/
-   size_t (*read_avail)(const void *driver_context, const void *mic_context);
-
-   /**
-    *
-    * @param mic_context
-    * @return
-    */
-   size_t (*buffer_size)(const void *driver_context, const void *mic_context);
 
    /**
     * Initializes a microphone using the audio driver.

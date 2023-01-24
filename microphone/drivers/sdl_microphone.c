@@ -328,14 +328,6 @@ static void sdl_microphone_set_nonblock_state(void *data, bool state)
       sdl->nonblock = state;
 }
 
-static bool sdl_microphone_use_float(const void *data, const void *mic_context)
-{
-   (void)data;
-   (void)mic_context;
-
-   return false;
-}
-
 static ssize_t sdl_microphone_read(void *data, void *microphone_context, void *buf, size_t size)
 {
    ssize_t ret                        = 0;
@@ -453,10 +445,7 @@ microphone_driver_t microphone_sdl = {
       sdl_microphone_set_mic_active,
       sdl_microphone_get_mic_active,
       sdl_microphone_set_nonblock_state,
-      sdl_microphone_use_float,
       "sdl2",
-      NULL,
-      NULL,
       NULL,
       NULL,
       sdl_microphone_open_mic,
