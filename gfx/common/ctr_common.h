@@ -40,12 +40,6 @@ extern PrintConsole* ctrConsole;
 extern const u8 ctr_sprite_shbin[];
 extern const u32 ctr_sprite_shbin_size;
 
-static const bool bottom_font_enable;
-static const int bottom_font_color_red;
-static const int bottom_font_color_green;
-static const int bottom_font_color_blue;
-static const int bottom_font_color_opacity;
-
 typedef struct
 {
    float v;
@@ -73,7 +67,7 @@ typedef enum
 {
    CTR_BOTTOM_MENU_NOT_AVAILABLE = 0,
    CTR_BOTTOM_MENU_DEFAULT,
-   CTR_BOTTOM_MENU_SELECT,
+   CTR_BOTTOM_MENU_SELECT
 } ctr_bottom_menu;
 
 typedef struct ctr_video
@@ -116,23 +110,11 @@ typedef struct ctr_video
 
    video_viewport_t vp;
 
-   bool rgb32;
-   bool vsync;
-   bool smooth;
-   bool menu_texture_enable;
-   bool menu_texture_frame_enable;
    unsigned rotation;
-   bool keep_aspect;
-   bool should_resize;
-   bool msg_rendering_enabled;
-   bool supports_parallax_disable;
-   bool enable_3d;
 
 #ifdef HAVE_OVERLAY
    struct ctr_overlay_data *overlay;
    unsigned overlays;
-   bool overlay_enabled;
-   bool overlay_full_screen;
 #endif
 
    aptHookCookie lcd_aptHook;
@@ -140,9 +122,6 @@ typedef struct ctr_video
    int current_buffer_top;
    int current_buffer_bottom;
 
-   bool p3d_event_pending;
-   bool ppf_event_pending;
-   volatile bool vsync_event_pending;
 
    struct
    {
@@ -151,20 +130,38 @@ typedef struct ctr_video
       int size;
    }vertex_cache;
 
+   int state_slot;
+   u64  idle_timestamp;
+   ctr_bottom_menu bottom_menu;
+   ctr_bottom_menu prev_bottom_menu;
+   struct ctr_bottom_texture_data *bottom_textures;
+
+   volatile bool vsync_event_pending;
+#ifdef HAVE_OVERLAY
+   bool overlay_enabled;
+   bool overlay_full_screen;
+#endif
+   bool rgb32;
+   bool vsync;
+   bool smooth;
+   bool menu_texture_enable;
+   bool menu_texture_frame_enable;
+   bool keep_aspect;
+   bool should_resize;
+   bool msg_rendering_enabled;
+   bool supports_parallax_disable;
+   bool enable_3d;
+   bool p3d_event_pending;
+   bool ppf_event_pending;
    bool init_bottom_menu;
    bool refresh_bottom_menu;
    bool render_font_bottom;
    bool render_state_from_png_file;
    bool state_data_exist;
-   char state_date[CTR_STATE_DATE_SIZE];
-   int state_slot;
    bool bottom_check_idle;
    bool bottom_is_idle;
    bool bottom_is_fading;
-   u64  idle_timestamp;
-   ctr_bottom_menu bottom_menu;
-   ctr_bottom_menu prev_bottom_menu;
-   struct ctr_bottom_texture_data *bottom_textures;
+   char state_date[CTR_STATE_DATE_SIZE];
 } ctr_video_t;
 
 typedef struct ctr_texture
