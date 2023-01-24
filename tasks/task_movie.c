@@ -47,7 +47,7 @@
 
 #define BSV_MAGIC          0x42535631
 
-// Private functions
+/* Private functions */
 
 static bool bsv_movie_init_playback(
       bsv_movie_t *handle, const char *path)
@@ -228,8 +228,9 @@ bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
    const char *movie_rec_str = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
    char msg[8192];
 
-   // this should trigger a start recording task
-   // which on failure or success prints a message and on success sets the input_st->bsv_movie_state_handle.
+   /* this should trigger a start recording task which on failure or
+      success prints a message and on success sets the
+      input_st->bsv_movie_state_handle. */
    if (!(state = bsv_movie_init_internal(path, RARCH_MOVIE_RECORD)))
      {
        const char *movie_rec_fail_str =
@@ -256,8 +257,9 @@ bool bsv_movie_start_playback(input_driver_state_t *input_st, char *path) {
   bsv_movie_t *state = NULL;
   const char *starting_movie_str = NULL;
 
-  // this should trigger a start playback task
-  // which on failure or success prints a message and on success sets the input_st->bsv_movie_state_handle.
+  /* this should trigger a start playback task which on failure or
+     success prints a message and on success sets the
+     input_st->bsv_movie_state_handle. */
 
   if (!(state = bsv_movie_init_internal(path, RARCH_MOVIE_PLAYBACK)))
     {
@@ -281,29 +283,25 @@ bool bsv_movie_start_playback(input_driver_state_t *input_st, char *path) {
 }
 
 
-// Task infrastructure (also private)
+/* Task infrastructure (also private) */
 
-// replace deinit/init with a task here that does the same, or one
-// task for initializing recording and one for initializing playing
-// back (better) and one for stopping recording (and presumably one
-// for stopping playback?).
-
-// then later we can replace the start_record/start_playback flags and
-// remove the entirety of input_driver_st bsv_state, which is only needed due to
-// mixing sync and async during initialization.
+/* Future: replace stop functions with tasks that do the same. then
+   later we can replace the start_record/start_playback flags and
+   remove the entirety of input_driver_st bsv_state, which is only
+   needed due to mixing sync and async during initialization. */
 
 typedef struct bsv_state moviectl_task_state_t;
 
 static void task_moviectl_playback_handler(retro_task_t *task)
 {
-  // trivial handler
+  /* trivial handler */
   task_set_finished(task, true);
   if (!task_get_error(task) && task_get_cancelled(task))
     task_set_error(task, strdup("Task canceled"));
 
   task_set_data(task, task->state);
   task->state = NULL;
-  // no need to free state here since I'm recycling it as data
+  /* no need to free state here since I'm recycling it as data */
 }
 static void moviectl_start_playback_cb(retro_task_t *task,
                                        void *task_data,
@@ -320,17 +318,17 @@ static void task_moviectl_record_handler(retro_task_t *task)
 {
   if(content_load_state_in_progress(NULL))
   {
-    // hang on until the state is loaded
+    /* hang on until the state is loaded */
     return;
   }
-  // trivial handler
+  /* trivial handler */
   task_set_finished(task, true);
   if (!task_get_error(task) && task_get_cancelled(task))
     task_set_error(task, strdup("Task canceled"));
 
   task_set_data(task, task->state);
   task->state = NULL;
-  // no need to free state here since I'm recycling it as data
+  /* no need to free state here since I'm recycling it as data */
 }
 static void moviectl_start_record_cb(retro_task_t *task,
                                         void *task_data,
@@ -343,14 +341,12 @@ static void moviectl_start_record_cb(retro_task_t *task,
   free(state);
 }
 
-// Public functions
+/* Public functions */
 
 bool movie_toggle_record(input_driver_state_t *input_st, settings_t *settings)
 {
-  // movie_init with settings from settings
   if (!input_st->bsv_movie_state_handle)
     {
-      // this means we definitely want to record now, manually start recording
       size_t _len;
       char path[8192];
       int state_slot              = settings->ints.state_slot;
@@ -369,7 +365,7 @@ bool movie_toggle_record(input_driver_state_t *input_st, settings_t *settings)
   return movie_stop(input_st);
 }
 
-// in the future this should probably be a deferred task as well
+/* in the future this should probably be a deferred task as well */
 bool movie_stop_playback(input_driver_state_t *input_st){
   const char *movie_playback_end_str = NULL;
   /* Checks if movie is being played back. */
@@ -392,7 +388,7 @@ bool movie_stop_playback(input_driver_state_t *input_st){
                                        | BSV_FLAG_MOVIE_PLAYBACK);
   return true;
 }
-// in the future this should probably be a deferred task as well
+/* in the future this should probably be a deferred task as well */
 bool movie_stop_record(input_driver_state_t *input_st) {
   const char *movie_rec_stopped_str = NULL;
   movie_rec_stopped_str = msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED);

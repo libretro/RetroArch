@@ -4155,19 +4155,19 @@ static bool event_init_content(
 #endif
    {
 #ifdef HAVE_BSV_MOVIE
-     // ignore entry state if we're doing bsv playback (we do want it
-     // for bsv recording though)
+     /* ignore entry state if we're doing bsv playback (we do want it
+        for bsv recording though) */
      if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK))
 #endif
       {
          if (runloop_st->entry_state_slot && !command_event_load_entry_state(settings))
          {
-            // loading the state failed, reset entry slot
+           /* loading the state failed, reset entry slot */
             runloop_st->entry_state_slot = 0;
          }
       }
 #ifdef HAVE_BSV_MOVIE
-     // ignore autoload state if we're doing bsv playback or recording
+     /* ignore autoload state if we're doing bsv playback or recording */
      if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_START_RECORDING | BSV_FLAG_MOVIE_START_PLAYBACK)))
 #endif
       {
