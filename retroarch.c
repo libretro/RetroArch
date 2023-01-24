@@ -2176,7 +2176,7 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_BSV_MOVIE
             input_driver_state_t *input_st = input_state_get_ptr();
-            bsv_movie_check(input_st, settings);
+            movie_toggle_record(input_st, settings);
 #endif
          }
          break;
@@ -2447,7 +2447,10 @@ bool command_event(enum event_command cmd, void *data)
              * we absolutely cannot change game state. */
             input_driver_state_t *input_st   = input_state_get_ptr();
             if (input_st->bsv_movie_state_handle)
+              {
+                RARCH_LOG("[Load] [Movie] Can't load state during movie playback or record\n");
                return false;
+              }
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -5905,6 +5908,17 @@ static bool retroarch_parse_input_and_config(
       runloop_st->entry_state_slot = 0;
       RARCH_WARN("Trying to load entry state without content. Ignoring.\n");
    }
+   #ifdef HAVE_BSV_MOVIE
+   if (runloop_st->entry_state_slot)
+   {
+     input_driver_state_t *input_st = input_state_get_ptr();
+     if(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK) {
+        runloop_st->entry_state_slot = 0;
+        RARCH_WARN("Trying to load entry state while BSV playback is active. Ignoring entry state.\n");
+     }
+   }
+   #endif
+
 
    /* Check whether a core has been set via the
     * command line interface */
@@ -6418,9 +6432,8 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             cheat_manager_state_free();
 #endif
 #ifdef HAVE_BSV_MOVIE
-            bsv_movie_deinit(input_st);
+            movie_stop(input_st);
 #endif
-
             command_event(CMD_EVENT_CORE_DEINIT, NULL);
 
             content_deinit();

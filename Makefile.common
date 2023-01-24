@@ -257,6 +257,7 @@ endif
 
 OBJ += \
        tasks/task_save.o \
+       tasks/task_movie.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
        tasks/task_playlist_manager.o \
