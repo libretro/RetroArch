@@ -39,12 +39,12 @@
 #endif
 #endif
 
-#include "../../retroarch.h"
+#include "../video_driver.h"
 
 #ifdef VITA
 #define GL_RGBA8     GL_RGBA
 #define GL_RGB8      GL_RGB
-#define GL_BGRA_EXT  GL_RGBA // Currently unsupported in vitaGL
+#define GL_BGRA_EXT  GL_RGBA /* Currently unsupported in vitaGL */
 #define GL_CLAMP     GL_CLAMP_TO_EDGE
 #endif
 
