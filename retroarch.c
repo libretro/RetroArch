@@ -121,6 +121,7 @@
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
+#include "microphone/microphone_driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -717,10 +718,11 @@ void drivers_init(
       int flags,
       bool verbosity_enabled)
 {
-   runloop_state_t *runloop_st    = runloop_state_get_ptr();
-   audio_driver_state_t *audio_st = audio_state_get_ptr();
-   input_driver_state_t *input_st = input_state_get_ptr();
-   video_driver_state_t *video_st = video_state_get_ptr();
+   runloop_state_t *runloop_st       = runloop_state_get_ptr();
+   audio_driver_state_t *audio_st    = audio_state_get_ptr();
+   input_driver_state_t *input_st    = input_state_get_ptr();
+   video_driver_state_t *video_st    = video_state_get_ptr();
+   microphone_driver_state_t *mic_st = microphone_state_get_ptr();
 #ifdef HAVE_MENU
    struct menu_state *menu_st     = menu_state_get_ptr();
 #endif
@@ -788,6 +790,13 @@ void drivers_init(
          audio_st->devices_list = (struct string_list*)
             audio_st->current_audio->device_list_new(
                   audio_st->context_audio_data);
+   }
+
+   if (flags & DRIVER_MICROPHONE_MASK)
+   {
+      microphone_driver_init_internal(settings);
+      if (mic_st->driver && mic_st->driver->device_list_new && mic_st->driver_context)
+         mic_st->devices_list = mic_st->driver->device_list_new(mic_st->driver_context);
    }
 
    /* Regular display refresh rate startup autoswitch based on content av_info */
@@ -1053,6 +1062,9 @@ void driver_uninit(int flags)
 
    if ((flags & DRIVER_AUDIO_MASK))
       audio_state_get_ptr()->context_audio_data = NULL;
+
+   if (flags & DRIVER_MICROPHONE_MASK)
+      microphone_driver_deinit();
 
    if (flags & DRIVER_MIDI_MASK)
       midi_driver_free();

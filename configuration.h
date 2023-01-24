@@ -429,6 +429,7 @@ typedef struct settings
       char cheevos_custom_host[64];
       char video_context_driver[32];
       char audio_driver[32];
+      char microphone_driver[32];
       char audio_resampler[32];
       char input_driver[32];
       char input_joypad_driver[32];
