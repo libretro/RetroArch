@@ -1607,7 +1607,9 @@ endif
 ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o \
-			 gfx/common/sdl2_common.o
+			 gfx/common/sdl2_common.o \
+			 microphone/drivers/sdl_microphone.o
+   # Microphones are not supported by SDL 1.x
    DEF_FLAGS += $(SDL2_CFLAGS)
    LIBS += $(SDL2_LIBS)
 else ifeq ($(HAVE_SDL), 1)
