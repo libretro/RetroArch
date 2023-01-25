@@ -27,11 +27,16 @@
 
 enum microphone_driver_state_flags
 {
+   /**
+    * Indicates that the microphone driver is active.
+    * Microphones can be opened, closed, and read.
+    */
    MICROPHONE_DRIVER_FLAG_ACTIVE       = (1 << 0),
-   MICROPHONE_FLAG_USE_FLOAT    = (1 << 1),
-   MICROPHONE_DRIVER_FLAG_SUSPENDED    = (1 << 2),
-   MICROPHONE_FLAG_HARD_DISABLE = (1 << 3),
-   MICROPHONE_DRIVER_FLAG_CONTROL      = (1 << 4),
+};
+
+enum microphone_state_flags
+{
+   MICROPHONE_FLAG_USE_FLOAT    = (1 << 0)
 };
 
 /**
@@ -63,6 +68,8 @@ struct retro_microphone
     * Accounts for resampling
     **/
    size_t most_recent_copy_length;
+
+   enum microphone_state_flags flags;
 
    /* May be enabled even before the driver is ready */
    bool pending_enabled;
