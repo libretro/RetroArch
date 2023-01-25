@@ -30,31 +30,9 @@
 #include "alsa.h"
 #include "../../verbosity.h"
 
-typedef struct alsa_thread_info
-{
-   snd_pcm_t *pcm;
-   fifo_buffer_t *buffer;
-   sthread_t *worker_thread;
-   slock_t *fifo_lock;
-   scond_t *cond;
-   slock_t *cond_lock;
-   alsa_stream_info_t stream_info;
-   volatile bool thread_dead;
-} alsa_thread_info_t;
-
-typedef struct alsa_thread_microphone
-{
-   alsa_thread_info_t info;
-   bool is_paused;
-} alsa_thread_microphone_t;
-
 typedef struct alsa_thread
 {
    alsa_thread_info_t info;
-   /* Only one microphone is supported right now;
-    * the driver state should track multiple microphone handles,
-    * but the driver *context* should track multiple microphone contexts */
-   alsa_thread_microphone_t *microphone;
    bool nonblock;
    bool is_paused;
 } alsa_thread_t;
@@ -120,78 +98,7 @@ end:
    RARCH_DBG("[ALSA] [playback thread %p]: Ending playback worker thread\n", thread_id);
 }
 
-/** @see alsa_thread_read_microphone() */
-static void alsa_microphone_worker_thread(void *data)
-{
-   alsa_thread_microphone_t *microphone = (alsa_thread_microphone_t*)data;
-   uint8_t                         *buf = NULL;
-   uintptr_t                  thread_id = sthread_get_current_thread_id();
-
-   retro_assert(microphone != NULL);
-   buf = (uint8_t *)calloc(1, microphone->info.stream_info.period_size);
-   if (!buf)
-   {
-      RARCH_ERR("[ALSA] [capture thread %p]: Failed to allocate audio buffer\n", thread_id);
-      goto end;
-   }
-
-   RARCH_DBG("[ALSA] [capture thread %p]: Beginning microphone worker thread\n", thread_id);
-   while (!microphone->info.thread_dead)
-   { /* Until we're told to stop... */
-      size_t avail;
-      size_t fifo_size;
-      snd_pcm_sframes_t frames;
-
-      /* Lock the incoming sample queue (the main thread may block) */
-      slock_lock(microphone->info.fifo_lock);
-
-      /* Fill the incoming sample queue with whatever we recently read */
-      avail     = FIFO_WRITE_AVAIL(microphone->info.buffer);
-      fifo_size = MIN(microphone->info.stream_info.period_size, avail);
-      fifo_write(microphone->info.buffer, buf, fifo_size);
-
-      /* Tell the main thread that it's okay to query the mic again */
-      scond_signal(microphone->info.cond);
-
-      /* Unlock the incoming sample queue (the main thread may resume) */
-      slock_unlock(microphone->info.fifo_lock);
-
-      /* If underrun, fill rest with silence. */
-      memset(buf + fifo_size, 0, microphone->info.stream_info.period_size - fifo_size);
-
-      frames = snd_pcm_readi(microphone->info.pcm, buf, microphone->info.stream_info.period_frames);
-
-      if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
-      {
-         if (snd_pcm_recover(microphone->info.pcm, frames, false) < 0)
-         {
-            RARCH_ERR("[ALSA] [capture thread %p]: Failed to recover from read error: %s\n",
-                      thread_id,
-                      snd_strerror(frames));
-            break;
-         }
-
-         continue;
-      }
-      else if (frames < 0)
-      {
-         RARCH_ERR("[ALSA] [capture thread %p]: Read error: %s.\n",
-               thread_id,
-               snd_strerror(frames));
-         break;
-      }
-   }
-
-end:
-   slock_lock(microphone->info.cond_lock);
-   microphone->info.thread_dead = true;
-   scond_signal(microphone->info.cond);
-   slock_unlock(microphone->info.cond_lock);
-   free(buf);
-   RARCH_DBG("[ALSA] [capture thread %p]: Ending microphone worker thread\n", thread_id);
-}
-
-static void alsa_thread_free_info_members(alsa_thread_info_t *info)
+void alsa_thread_free_info_members(alsa_thread_info_t *info)
 {
    if (info)
    {
@@ -225,16 +132,12 @@ static bool alsa_thread_use_float(void *data)
    return alsa->info.stream_info.has_float;
 }
 
-static void alsa_thread_free_microphone(void *data, void *microphone_context);
 static void alsa_thread_free(void *data)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)data;
 
    if (alsa)
    {
-      if (alsa->microphone)
-         alsa_thread_free_microphone(alsa, alsa->microphone);
-
       alsa_thread_free_info_members(&alsa->info);
       free(alsa);
    }
@@ -386,223 +289,6 @@ static size_t alsa_thread_buffer_size(void *data)
    return alsa->info.stream_info.buffer_size;
 }
 
-static void *alsa_thread_init_microphone(void *data,
-   const char *device,
-   unsigned rate,
-   unsigned latency,
-   unsigned block_frames,
-   unsigned *new_rate)
-{
-   alsa_thread_t *alsa                   = (alsa_thread_t*)data;
-   alsa_thread_microphone_t  *microphone = NULL;
-
-   if (!alsa) /* If we weren't given a valid ALSA context... */
-      return NULL;
-
-   microphone = calloc(1, sizeof(alsa_thread_microphone_t));
-
-   if (!microphone)
-   { /* If the microphone context couldn't be allocated... */
-      RARCH_ERR("[ALSA] Failed to allocate microphone context\n");
-      return NULL;
-   }
-
-   if (alsa_init_pcm(&microphone->info.pcm, device, SND_PCM_STREAM_CAPTURE, rate, latency, 1, &microphone->info.stream_info, new_rate, 0) < 0)
-   {
-      goto error;
-   }
-
-   microphone->info.fifo_lock = slock_new();
-   microphone->info.cond_lock = slock_new();
-   microphone->info.cond = scond_new();
-   microphone->info.buffer = fifo_new(microphone->info.stream_info.buffer_size);
-   if (!microphone->info.fifo_lock || !microphone->info.cond_lock || !microphone->info.cond || !microphone->info.buffer || !microphone->info.pcm)
-      goto error;
-
-   microphone->info.worker_thread = sthread_create(alsa_microphone_worker_thread, microphone);
-   if (!microphone->info.worker_thread)
-   {
-      RARCH_ERR("[ALSA]: Failed to initialize microphone worker thread\n");
-      goto error;
-   }
-   RARCH_DBG("[ALSA]: Initialized microphone worker thread\n");
-
-   alsa->microphone = microphone;
-   return microphone;
-
-error:
-   RARCH_ERR("[ALSA]: Failed to initialize microphone...\n");
-
-   if (microphone)
-   {
-      if (microphone->info.pcm)
-      {
-         snd_pcm_close(microphone->info.pcm);
-      }
-
-      alsa_thread_free_microphone(alsa, microphone);
-   }
-   alsa->microphone = NULL;
-   return NULL;
-}
-
-static void alsa_thread_free_microphone(void *data, void *microphone_context)
-{
-   alsa_thread_t *alsa                   = (alsa_thread_t*)data;
-   alsa_thread_microphone_t *microphone  = (alsa_thread_microphone_t*)microphone_context;
-
-   if (alsa && microphone)
-   {
-      alsa_thread_free_info_members(&microphone->info);
-
-      alsa->microphone = NULL;
-      free(microphone);
-   }
-}
-
-static bool alsa_thread_get_microphone_state(const void *data, const void *microphone_context)
-{
-   alsa_thread_t *alsa = (alsa_thread_t*)data;
-   alsa_thread_microphone_t *microphone = (alsa_thread_microphone_t *)microphone_context;
-
-   if (!alsa || !microphone)
-      return false;
-
-   return !microphone->is_paused;
-}
-
-static bool alsa_thread_set_microphone_state(void *data, void *microphone_context, bool enabled)
-{
-   alsa_thread_t *alsa                   = (alsa_thread_t*)data;
-   alsa_thread_microphone_t  *microphone = (alsa_thread_microphone_t*)microphone_context;
-
-   if (!alsa || !microphone)
-      return false;
-   /* Both params must be non-null */
-
-   if (!microphone->info.stream_info.can_pause)
-   {
-      RARCH_WARN("[ALSA]: Microphone \"%s\" cannot be paused\n", snd_pcm_name(microphone->info.pcm));
-      return true;
-   }
-
-   if (!alsa->is_paused)
-   { /* If the entire audio driver isn't paused... */
-      if (alsa_set_mic_enabled_internal(microphone->info.pcm, enabled))
-      {
-         // TODO: Do I need to synchronize microphone->is_paused?
-         microphone->is_paused = !enabled;
-         return true;
-      }
-      return false;
-   }
-
-   return true;
-}
-
-/** @see alsa_microphone_worker_thread() */
-static ssize_t alsa_thread_read_microphone(void *driver_context, void *microphone_context, void *buf, size_t size)
-{
-   alsa_thread_t *alsa = (alsa_thread_t*)driver_context;
-   alsa_thread_microphone_t *microphone = (alsa_thread_microphone_t*)microphone_context;
-   snd_pcm_state_t state;
-
-   if (!alsa || !microphone || !buf) /* If any of the parameters were invalid... */
-      return -1;
-
-   if (microphone->info.thread_dead) /* If the mic thread is shutting down... */
-      return -1;
-
-   if (microphone->is_paused)
-      if (!alsa_thread_set_microphone_state(alsa, microphone, true))
-         return -1;
-
-   state = snd_pcm_state(microphone->info.pcm);
-   if (state != SND_PCM_STATE_RUNNING)
-   {
-      int errnum;
-      RARCH_WARN("[ALSA]: Expected microphone \"%s\" to be in state RUNNING, was in state %s\n",
-            snd_pcm_name(microphone->info.pcm),
-            snd_pcm_state_name(state));
-
-      errnum = snd_pcm_start(microphone->info.pcm);
-      if (errnum < 0)
-      {
-         RARCH_ERR("[ALSA]: Failed to start microphone \"%s\": %s\n",
-               snd_pcm_name(microphone->info.pcm),
-               snd_strerror(errnum));
-
-         return -1;
-      }
-   }
-
-   if (alsa->nonblock)
-   { /* If driver interactions shouldn't block... */
-      size_t avail;
-      size_t write_amt;
-
-      /* "Hey, I'm gonna borrow the queue." */
-      slock_lock(microphone->info.fifo_lock);
-
-      avail           = FIFO_READ_AVAIL(microphone->info.buffer);
-      write_amt       = MIN(avail, size);
-
-      /* "It's okay if you don't have any new samples, I'll just check in on you later." */
-      fifo_read(microphone->info.buffer, buf, write_amt);
-
-      /* "Here, take this queue back." */
-      slock_unlock(microphone->info.fifo_lock);
-
-      return write_amt;
-   }
-   else
-   {
-      size_t written = 0;
-      while (written < size && !microphone->info.thread_dead)
-      { /* Until we've written all requested samples (or we're told to stop)... */
-         size_t avail;
-
-         /* "Hey, I'm gonna borrow the queue." */
-         slock_lock(microphone->info.fifo_lock);
-
-         avail = FIFO_READ_AVAIL(microphone->info.buffer);
-
-         if (avail == 0)
-         { /* "Oh, wait, it's empty." */
-
-            /* "Here, take it back..." */
-            slock_unlock(microphone->info.fifo_lock);
-
-            /* "...I'll just wait right here." */
-            slock_lock(microphone->info.cond_lock);
-
-            /* "Unless we're closing up shop..." */
-            if (!microphone->info.thread_dead)
-               /* "...let me know when you've produced some samples." */
-               scond_wait(microphone->info.cond, microphone->info.cond_lock);
-
-            /* "Oh, you're ready? Okay, I'm gonna continue." */
-            slock_unlock(microphone->info.cond_lock);
-         }
-         else
-         {
-            size_t write_amt = MIN(size - written, avail);
-
-            /* "I'll just go ahead and consume all these samples..."
-             * (As many as will fit in buf, or as many as are available.) */
-            fifo_write(microphone->info.buffer,(const char*)buf + written, write_amt);
-
-            /* "I'm done, you can take the queue back now." */
-            slock_unlock(microphone->info.fifo_lock);
-            written += write_amt;
-         }
-
-         /* "I'll be right back..." */
-      }
-      return written;
-   }
-}
-
 audio_driver_t audio_alsathread = {
    alsa_thread_init,
    alsa_thread_write,
@@ -616,10 +302,5 @@ audio_driver_t audio_alsathread = {
    alsa_device_list_new, /* Reusing these functions from alsa.c */
    alsa_device_list_free, /* because they don't use the driver context */
    alsa_thread_write_avail,
-   alsa_thread_buffer_size,
-   alsa_thread_init_microphone,
-   alsa_thread_free_microphone,
-   alsa_thread_get_microphone_state,
-   alsa_thread_set_microphone_state,
-   alsa_thread_read_microphone,
+   alsa_thread_buffer_size
 };

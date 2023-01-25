@@ -863,7 +863,8 @@ endif
 endif
 
 ifeq ($(HAVE_ALSA), 1)
-   OBJ += audio/drivers/alsa.o
+   OBJ += audio/drivers/alsa.o \
+          microphone/drivers/alsa.o
 
    ifneq ($(HAVE_HAKCHI), 1)
       ifneq ($(HAVE_SEGAM), 1)
@@ -875,7 +876,8 @@ ifeq ($(HAVE_ALSA), 1)
 
    ifneq ($(MIYOO), 1)
       ifeq ($(HAVE_THREADS), 1)
-         OBJ += audio/drivers/alsathread.o
+         OBJ += audio/drivers/alsathread.o \
+                microphone/drivers/alsathread.o
       endif
    endif
 
