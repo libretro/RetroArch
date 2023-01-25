@@ -428,7 +428,7 @@ static void microphone_driver_flush(
          return;
       }
 
-      if (mic_st->flags & MICROPHONE_FLAG_USE_FLOAT)
+      if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
       {
          convert_float_to_s16(mic_st->input_samples_conv_buf, mic_st->input_samples_buf, bytes_read / sample_size);
          buffer_source = mic_st->input_samples_conv_buf;
