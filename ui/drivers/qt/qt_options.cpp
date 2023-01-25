@@ -160,7 +160,6 @@ QWidget *AudioPage::widget()
    QGridLayout *volumeLayout      = new QGridLayout();
 
    outputGroup->add(MENU_ENUM_LABEL_AUDIO_ENABLE);
-   outputGroup->add(MENU_ENUM_LABEL_AUDIO_ENABLE_MICROPHONE);
    outputGroup->add(MENU_ENUM_LABEL_AUDIO_DRIVER);
    outputGroup->add(MENU_ENUM_LABEL_AUDIO_DEVICE);
    outputGroup->add(MENU_ENUM_LABEL_AUDIO_LATENCY);
@@ -168,7 +167,6 @@ QWidget *AudioPage::widget()
    resamplerGroup->add(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER);
    resamplerGroup->add(MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY);
    resamplerGroup->add(MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE);
-   resamplerGroup->add(MENU_ENUM_LABEL_AUDIO_INPUT_RATE);
 
    syncGroup->add(MENU_ENUM_LABEL_AUDIO_SYNC);
    syncGroup->add(MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW);
