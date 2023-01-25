@@ -463,7 +463,8 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
 
    if (!(mic_st->driver_context && microphone->microphone_context))
    { /* If the microphone isn't ready... */
-      return 0; /* Not an error */
+      memset(frames, 0, num_frames * sizeof(*frames));
+      return num_frames; /* Not an error */
    }
 
    runloop_flags = runloop_get_flags();
