@@ -170,7 +170,7 @@ bool microphone_driver_init_internal(void *settings_data)
 {
    float  *in_samples_buf         = NULL;
    settings_t *settings           = (settings_t*)settings_data;
-   bool audio_enable_microphone   = settings->bools.audio_enable_input;
+   bool audio_enable_microphone   = settings->bools.microphone_enable;
    float slowmotion_ratio         = settings->floats.slowmotion_ratio;
    size_t insamples_max           = AUDIO_CHUNK_SIZE_NONBLOCKING * 1 * AUDIO_MAX_RATIO * slowmotion_ratio;
    int16_t *in_conv_buf           = (int16_t*)memalign_alloc(64, insamples_max * sizeof(int16_t));
@@ -527,7 +527,7 @@ retro_microphone_t *microphone_driver_open_mic(void)
       return NULL;
    }
 
-   if (!settings->bools.audio_enable_input)
+   if (!settings->bools.microphone_enable)
    { /* Not checking mic_st->flags because they might not be set yet;
       * don't forget, the core can ask for a mic
       * before the audio driver is ready to create one. */
@@ -643,5 +643,5 @@ bool microphone_driver_deinit(void)
    microphone_driver_free_devices_list();
    microphone_driver_close_microphones();
    return microphone_driver_deinit_internal(
-         settings->bools.audio_enable_input);
+         settings->bools.microphone_enable);
 }

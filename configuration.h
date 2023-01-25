@@ -601,7 +601,6 @@ typedef struct settings
 
       /* Audio */
       bool audio_enable;
-      bool audio_enable_input;
       bool audio_enable_menu;
       bool audio_enable_menu_ok;
       bool audio_enable_menu_cancel;
@@ -613,6 +612,9 @@ typedef struct settings
       bool audio_wasapi_exclusive_mode;
       bool audio_wasapi_float_format;
       bool audio_fastforward_mute;
+
+      /* Microphone */
+      bool microphone_enable;
 
       /* Input */
       bool input_remap_binds_enable;
