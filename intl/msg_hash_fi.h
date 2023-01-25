@@ -7393,10 +7393,6 @@ MSG_HASH(
    "Poista sisällön hakemiston asetukset"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
-   "Aktiivinen asetustiedosto:"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
    "Nollaa asetukset"
    )
@@ -7436,10 +7432,6 @@ MSG_HASH(
 
 /* Quick Menu > Controls > Manage Remap Files */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
-   "Aktiivinen uudelleenmääritystiedosto:"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
    "Lataa uudelleenmääritystiedosto"

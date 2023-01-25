@@ -1806,7 +1806,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   "設定全螢幕的顯示寬度，未設定時使用桌面解析度。"
+   "設定全螢幕的顯示寬度，未設定時套用「螢幕解析度」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
@@ -1814,7 +1814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   "設定全螢幕的顯示高度，未設定時使用桌面解析度。"
+   "設定全螢幕的顯示高度，未設定時套用「螢幕解析度」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
@@ -2091,6 +2091,10 @@ MSG_HASH(
    "幀數延遲 (毫秒)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "增加畫面停頓風險減少延遲。影像出現之後與核心處理影格之前加入毫秒的延遲。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "自動幀數延遲"
    )
@@ -2203,7 +2207,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
-   "使用快轉模式時，音量自動設定為靜音。"
+   "開啟快轉模式時，音量自動設定為靜音。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -2537,6 +2541,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
    "控制器斷開時暫停遊戲"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
+   "控制器與裝置斷開連接時暫停遊戲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -3087,6 +3095,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
    "超前執行的開關。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
+   "搶占幀數 (開關)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
+   "執行搶占幀數的開關。"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
@@ -3402,7 +3418,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "隱藏使用超前執行時，核心不支援儲存即時存檔的警告通知。"
+   "隱藏開啟超前執行時，核心不支援儲存即時存檔的警告通知。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
+   "[搶占幀數無法使用]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
+   "不支援儲存即時存檔，核心和搶占幀數不相容。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
+   "執行搶占幀數"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
+   "控制器輸入時重新執行核心邏輯。比超前執行更快，但核心載入時可能出現音訊的問題。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
+   "搶占幀數"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
+   "設定重新執行的幀數。如果超過遊戲內設定的延遲幀數，會導致遊戲畫面發生錯誤。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
+   "隱藏搶占幀數警告"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
+   "隱藏開啟搶占幀數時，核心不支援儲存即時存檔的警告通知。"
    )
 
 /* Settings > Core */
@@ -3558,11 +3606,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-   "執行時載入螢幕主題"
+   "執行時載入專用主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
-   "「執行」時自動載入自訂的螢幕主題。"
+   "「執行」時自動載入自訂的專用主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -3582,7 +3630,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
-   "開啟時將所有核心選項設定，儲存到共用檔案(retroarch-core-options.cfg)。關閉時各別儲存在設定檔資料夾中。"
+   "開啟時將全部核心選項設定，儲存到共用檔案(retroarch-core-options.cfg)。關閉時各別儲存在設定檔資料夾中。"
    )
 
 /* Settings > Saving */
@@ -4358,7 +4406,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
-   "螢幕通知使用裝飾動畫、指示器和圖標。"
+   "螢幕通知使用裝飾動畫、提示和圖標。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
@@ -4366,7 +4414,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
-   "依照選單的比例自動調整通知、指示器和圖標的大小。關閉時使用「通知圖標縮放 (全螢幕/視窗)」的設定。"
+   "依照選單的比例自動調整通知、提示和圖標的大小。關閉時使用「通知圖標縮放 (全螢幕/視窗)」的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
@@ -4482,11 +4530,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-   "載入螢幕主題通知"
+   "載入專用主題通知"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-   "載入自訂的螢幕主題時顯示螢幕通知。"
+   "載入自訂的專用主題時顯示螢幕通知。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
@@ -4502,7 +4550,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "使用快轉模式時顯示螢幕通知。"
+   "開啟快轉模式時顯示螢幕通知。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -4719,11 +4767,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
-   "關閉時結束"
+   "執行項目關閉時結束"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   "載入檔案關閉時結束應用程式。設定為 <CLI> 時，僅限使用命令行介面載入時套用此功能。"
+   "執行項目關閉時結束應用程式。設定為 <CLI> 時，僅限使用命令行介面載入時套用此功能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
@@ -5275,19 +5323,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-   "顯示「儲存為核心螢幕主題」"
+   "顯示「儲存為核心專用主題」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-   "在「儲存螢幕主題」選項中顯示「儲存為核心螢幕主題」選項。"
+   "在「儲存專用主題」選項中顯示「儲存為核心專用主題」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   "顯示「儲存為遊戲螢幕主題」"
+   "顯示「儲存為遊戲專用主題」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   "在「儲存螢幕主題」選項中顯示「儲存為遊戲螢幕主題」選項。"
+   "在「儲存專用主題」選項中顯示「儲存為遊戲專用主題」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
@@ -5692,11 +5740,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
-   "開啟文字轉語音"
+   "開啟選單語音"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
-   "使用文字轉語音工具，語音協助瀏覽選單。無法正確朗讀中文。"
+   "語音協助瀏覽選單。無法正確朗讀中文。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
@@ -5781,7 +5829,7 @@ MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
-   "開啟所有成就的通知(包含之前獲得的成就)。"
+   "開啟全部成就的通知(包含之前獲得的成就)。"
    )
 
 /* Settings > Achievements > Appearance */
@@ -5792,7 +5840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
-   "變更成就通知的顯示方式。"
+   "變更成就通知顯示的方式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR,
@@ -5853,6 +5901,70 @@ MSG_HASH(
 
 /* Settings > Achievements > Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
+   "內容"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
+   "變更成就通知相關的設定。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
+   "執行通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
+   "設定執行遊戲顯示完成度的通知。設定 <全部驗證的遊戲> 時顯示未建立成就項目的通知。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
+   "全部驗證的遊戲"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
+   "建立成就的遊戲"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
+   "解鎖通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
+   "成就解鎖時顯示通知。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
+   "精通通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
+   "全部成就解鎖時顯示通知。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
+   "挑戰提示"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
+   "顯示成就解鎖提示。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
+   "登錄訊息"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+   "顯示 RetroAchievements 帳戶登錄相關的訊息。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
+   "詳細訊息"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+   "顯示額外診斷和錯誤訊息。"
+   )
 
 /* Settings > Network */
 
@@ -7560,11 +7672,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
-   "儲存螢幕主題"
+   "專用主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
-   "儲存目前螢幕顯示相關的設定。"
+   "此項目執行之後，設定檔變更的參數，儲存成為專用主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
@@ -7606,7 +7718,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
-   "已載入核心選項:"
+   "已載入核心選項"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
+   "目前使用的核心選項設定檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
@@ -7614,7 +7730,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "重置所有核心選項為預設值。"
+   "重置全部核心選項為預設值。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
@@ -7650,7 +7766,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
-   "已載入控制器:"
+   "已載入控制器"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
+   "目前使用的自訂按鍵設定檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
@@ -7686,7 +7806,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
-   "重置控制器所有按鍵為預設值。"
+   "重置全部自訂按鍵為預設值。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
@@ -8287,28 +8407,76 @@ MSG_HASH(
 /* Quick Menu > Overrides */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO,
+   "已載入專用主題"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
+   "目前使用的專用主題設定檔。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
+   "載入專用主題設定檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
+   "載入專用主題並替換目前的設定。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "儲存為核心螢幕主題"
+   "儲存為核心專用主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "儲存目前顯示參數、螢幕覆蓋和螢幕佈景的設定，並預設為此核心使用的螢幕主題。"
+   "儲存目前應用程式設定檔已變更的參數，包含螢幕覆蓋和螢幕佈景的設定，並預設為此核心的專用主題。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "刪除此核心專用主題"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "刪除此核心儲存的專用主題設定檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "儲存為路徑螢幕主題"
+   "儲存為路徑專用主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "儲存目前顯示參數、螢幕覆蓋和螢幕佈景的設定，並預設為此路徑使用的螢幕主題。"
+   "儲存目前應用程式設定檔已變更的參數，包含螢幕覆蓋和螢幕佈景的設定，並預設為此路徑的專用主題。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "刪除此路徑專用主題"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "刪除此路徑儲存的專用主題設定檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "儲存為遊戲螢幕主題"
+   "儲存為遊戲專用主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "儲存目前顯示參數、螢幕覆蓋和螢幕佈景的設定，並預設為此遊戲使用的螢幕主題。"
+   "儲存目前應用程式設定檔已變更的參數，包含螢幕覆蓋和螢幕佈景的設定，並預設為此遊戲的專用主題。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "刪除此遊戲專用主題"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "刪除此遊戲儲存的專用主題設定檔。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
+   "重置專用主題"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD,
+   "重置全部專用主題為預設值。"
    )
 
 /* Quick Menu > Achievements */
@@ -11800,7 +11968,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ALL_CORES_SWITCHED_PFD,
-   "所有支持的核心已切換到 Google Play 商店版本。"
+   "全部支援的核心已切換到 Google Play 商店版本。"
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
@@ -11968,7 +12136,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
-   "已建立核心選項設定檔。"
+   "已儲存核心選項設定檔。"
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
@@ -11976,7 +12144,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_RESET,
-   "已重置所有核心選項為預設值。"
+   "已重置全部核心選項為預設值。"
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FLUSHED,
@@ -12096,7 +12264,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ERROR_REMOVING_REMAP_FILE,
-   "無法刪除控制器。"
+   "無法刪除自訂按鍵設定檔。"
    )
 MSG_HASH(
    MSG_ERROR_SAVING_SHADER_PRESET,
@@ -12452,11 +12620,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_OVERRIDES_ERROR_SAVING,
-   "儲存螢幕主題發生錯誤。"
+   "儲存專用主題發生錯誤。"
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ERROR_REMOVING,
+   "無法刪除專用主題設定檔。"
    )
 MSG_HASH(
    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
-   "儲存螢幕主題成功完成。"
+   "已儲存專用主題設定檔。"
+   )
+MSG_HASH(
+   MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
+   "已刪除專用主題設定檔。"
+   )
+MSG_HASH(
+   MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
+   "已重置全部專用主題為預設值。"
+   )
+MSG_HASH(
+   MSG_OVERRIDES_NOT_SAVED,
+   "未儲存專用主題，設定檔無變更的參數。"
    )
 MSG_HASH(
    MSG_PAUSED,
@@ -12492,15 +12676,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
-   "已儲存控制器。"
+   "已儲存自訂按鍵設定檔。"
    )
 MSG_HASH(
    MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
-   "已刪除控制器。"
+   "已刪除自訂按鍵設定檔。"
    )
 MSG_HASH(
    MSG_REMAP_FILE_RESET,
-   "已重置所有按鍵為預設值。"
+   "已重置全部自訂按鍵為預設值。"
    )
 MSG_HASH(
    MSG_REMOVED_DISK_FROM_TRAY,
@@ -12600,7 +12784,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
-   "已成功儲存著色器配置。"
+   "已儲存著色器配置。"
    )
 MSG_HASH(
    MSG_SLOW_MOTION,
@@ -12828,7 +13012,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONFIG_OVERRIDE_LOADED,
-   "已載入螢幕主題。"
+   "已載入專用主題。"
    )
 MSG_HASH(
    MSG_GAME_REMAP_FILE_LOADED,
@@ -12881,6 +13065,34 @@ MSG_HASH(
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
    "無法建立第二個實例。超前執行將使用一個實例執行。"
+   )
+MSG_HASH(
+   MSG_PREEMPT_ENABLED,
+   "已開啟搶占幀數。已刪除延遲幀數: %u。"
+   )
+MSG_HASH(
+   MSG_PREEMPT_DISABLED,
+   "搶占幀數已關閉。"
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "搶占幀數已關閉，此核心不支援儲存即時存檔。"
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
+   "搶占幀數已關閉，不確定此核心是否支援儲存即時存檔。"
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_ALLOCATE,
+   "無法分配記憶體給搶占幀數功能使用。"
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_SAVE_STATE,
+   "無法儲存即時存檔。已關閉搶占幀數。"
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_LOAD_STATE,
+   "無法載入即時存檔。已關閉搶占幀數。"
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,

@@ -7962,7 +7962,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
-   "Aktive Einstellungsdatei:"
+   "Aktive Einstellungsdatei"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
+   "Die aktuell verwendete Einstellungsdatei."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
@@ -8006,7 +8010,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
-   "Aktive Tastenzuordnungsdatei:"
+   "Aktive Tastenzuordnungsdatei"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
+   "Die aktuell verwendete Tastenzuordnungsdatei."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
@@ -8643,12 +8651,36 @@ MSG_HASH(
 /* Quick Menu > Overrides */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO,
+   "Aktive Überschreibungsdatei"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
+   "Die aktuell verwendete Überschreibungsdatei."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
+   "Überschreibungsdatei laden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
+   "Aktuelle Konfiguration laden und ersetzen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "Core-Überschreibungen speichern"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "Eine überschreibende Konfiguration speichern, die für jeden Inhalt gilt, der mit diesem Core geladen wird. Hat Vorrang vor der Hauptkonfiguration."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "Core-Überschreibungen entfernen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "Die Überschreibungs-Konfigurationsdatei für alle Inhalte löschen, die mit diesem Core geladen werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -8659,12 +8691,36 @@ MSG_HASH(
    "Eine überschreibende Konfigurationsdatei speichern, die für jeden Inhalt gilt, der aus demselben Verzeichnis wie die aktuelle Datei geladen wird. Hat Vorrang vor der Hauptkonfiguration."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "Inhaltsverzeichnis-Überschreibungen entfernen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "Die Überschreibungs-Konfigurationsdatei für alle Inhalte löschen, die aus demselben Verzeichnis wie die aktuelle Datei geladen werden."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
    "Spiel-Überschreibungen speichern"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
    "Eine überschreibende Konfiguration speichern, die nur für den aktuellen Inhalt gilt. Hat Vorrang vor der Hauptkonfiguration."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "Spiel-Überschreibungen entfernen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "Die Überschreibungs-Konfigurationsdatei löschen, die nur für den aktuellen Inhalt gilt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
+   "Überschreibung zurücksetzen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD,
+   "Alle Einstellungen auf Standardwerte zurücksetzen."
    )
 
 /* Quick Menu > Achievements */
@@ -12511,8 +12567,24 @@ MSG_HASH(
    "Fehler beim Speichern der Überschreibungen."
    )
 MSG_HASH(
+   MSG_OVERRIDES_ERROR_REMOVING,
+   "Fehler beim Entfernen der Überschreibungen."
+   )
+MSG_HASH(
    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
    "Überschreibungen erfolgreich gespeichert."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
+   "Überschreibungen erfolgreich entfernt."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
+   "Überschreibungen erfolgreich zurückgesetzt."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_NOT_SAVED,
+   "Nichts zu speichern. Überschreibungen nicht gespeichert."
    )
 MSG_HASH(
    MSG_PAUSED,

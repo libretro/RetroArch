@@ -5537,10 +5537,6 @@ MSG_HASH(
    "Esborra les opcions del directori de contingut"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
-   "Fitxer d’opcions actiu:"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
    "Reinicia les opcions"
    )

@@ -6997,10 +6997,6 @@ MSG_HASH(
    "删除内容目录选项"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
-   "激活选项文件："
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
    "重置设置"
    )
