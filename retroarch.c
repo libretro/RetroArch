@@ -3180,6 +3180,10 @@ bool command_event(enum event_command cmd, void *data)
          audio_driver_load_system_sounds();
 #endif
          break;
+      case CMD_EVENT_MICROPHONE_REINIT:
+         driver_uninit(DRIVER_MICROPHONE_MASK);
+         drivers_init(settings, DRIVER_MICROPHONE_MASK, verbosity_is_enabled());
+         break;
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
          if (settings->bools.config_save_on_exit)

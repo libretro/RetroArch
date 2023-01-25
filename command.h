@@ -231,6 +231,8 @@ enum event_command
    CMD_EVENT_NETPLAY_HOST_TOGGLE,
    /* Reinitializes audio driver. */
    CMD_EVENT_AUDIO_REINIT,
+   /* Reinitializes microphone driver. */
+   CMD_EVENT_MICROPHONE_REINIT,
    /* Resizes windowed scale. Will reinitialize video driver. */
    CMD_EVENT_RESIZE_WINDOWED_SCALE,
    /* Toggles disk eject. */
