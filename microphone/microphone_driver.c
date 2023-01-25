@@ -475,9 +475,9 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
             (frames_remaining > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1)) ?
             (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1) : frames_remaining;
 
-      if ((runloop_flags & RUNLOOP_FLAG_PAUSED)
-                && (mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE)
-                && mic_st->input_samples_buf)
+      if (!(runloop_flags & RUNLOOP_FLAG_PAUSED)
+            && (mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE)
+            && mic_st->input_samples_buf)
          /* If the game is running, the audio driver and mic are running,
           * and the input sample buffer is valid... */
          microphone_driver_flush(mic_st,
