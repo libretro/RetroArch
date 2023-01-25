@@ -1199,14 +1199,16 @@ void net_http_delete(struct http_t *state)
 
    if (state->sock_state.fd >= 0)
    {
-      socket_close(state->sock_state.fd);
 #ifdef HAVE_SSL
       if (state->sock_state.ssl && state->sock_state.ssl_ctx)
       {
+         ssl_socket_close(state->sock_state.ssl_ctx);
          ssl_socket_free(state->sock_state.ssl_ctx);
          state->sock_state.ssl_ctx = NULL;
       }
+      else
 #endif
+      socket_close(state->sock_state.fd);
    }
    free(state);
 }
