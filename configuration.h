@@ -156,11 +156,11 @@ typedef struct settings
       unsigned led_map[MAX_LEDS];
 
       unsigned audio_output_sample_rate;
-      unsigned audio_input_sample_rate;
+      unsigned microphone_sample_rate;
       unsigned audio_block_frames;
-      unsigned audio_input_block_frames;
+      unsigned microphone_block_frames;
       unsigned audio_latency;
-      unsigned audio_input_latency;
+      unsigned microphone_latency;
 
       unsigned fps_update_interval;
       unsigned memory_update_interval;
@@ -444,7 +444,7 @@ typedef struct settings
 #endif
 
       char audio_device[255];
-      char audio_input_device[255];
+      char microphone_device[255];
       char camera_device[255];
       char netplay_mitm_server[255];
 

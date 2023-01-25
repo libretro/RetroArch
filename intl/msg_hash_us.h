@@ -1517,6 +1517,14 @@ MSG_HASH(
    "Audio driver to use."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "Microphone"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Microphone driver to use."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Audio Resampler"
    )
@@ -2366,11 +2374,11 @@ MSG_HASH(
    "Change audio output settings."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_SETTINGS,
-   "Input"
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "Microphone"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_INPUT_SETTINGS,
+   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
    "Change audio input settings."
    )
 MSG_HASH(
@@ -2547,31 +2555,31 @@ MSG_HASH(
 
 /* Settings > Audio > Input */
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MICROPHONE,
-   "Microphone Input"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MICROPHONE,
-   "Enable audio input. Requires audio output to be enabled as well."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_DEVICE,
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "Device"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_INPUT_DEVICE,
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
    "Override the default input device the audio driver uses. This is driver dependent."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_INPUT_DEVICE,
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
    "Override the default input device the audio driver uses. This is driver dependent."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_LATENCY,
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   "Input Rate (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "Audio input sample rate."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
    "Audio Input Latency (ms)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_INPUT_LATENCY,
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
    "Desired audio input latency in milliseconds. Might not be honored if the audio driver can't provide given latency."
    )
 
@@ -2592,14 +2600,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    "Audio output sample rate."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_RATE,
-   "Input Rate (Hz)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_INPUT_RATE,
-   "Audio input sample rate."
    )
 
 /* Settings > Audio > Synchronization */

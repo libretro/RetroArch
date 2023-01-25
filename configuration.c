@@ -1469,7 +1469,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("menu_driver",              settings->arrays.menu_driver,    false, NULL, true);
 #endif
    SETTING_ARRAY("audio_device",             settings->arrays.audio_device,   false, NULL, true);
-   SETTING_ARRAY("audio_input_device",       settings->arrays.audio_input_device, false, NULL, true);
+   SETTING_ARRAY("microphone_device",        settings->arrays.microphone_device, false, NULL, true);
    SETTING_ARRAY("camera_device",            settings->arrays.camera_device,  false, NULL, true);
 #ifdef HAVE_CHEEVOS
    SETTING_ARRAY("cheevos_custom_host",      settings->arrays.cheevos_custom_host, false, NULL, true);
@@ -2245,10 +2245,10 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_rumble_gain",            &settings->uints.input_rumble_gain, true, DEFAULT_RUMBLE_GAIN, false);
    SETTING_UINT("input_auto_game_focus",        &settings->uints.input_auto_game_focus, true, DEFAULT_INPUT_AUTO_GAME_FOCUS, false);
    SETTING_UINT("audio_latency",                &settings->uints.audio_latency, false, 0 /* TODO */, false);
-   SETTING_UINT("audio_input_latency",          &settings->uints.audio_input_latency, false, 0 /* TODO */, false);
+   SETTING_UINT("microphone_latency",           &settings->uints.microphone_latency, false, 0 /* TODO */, false);
    SETTING_UINT("audio_resampler_quality",      &settings->uints.audio_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
    SETTING_UINT("audio_block_frames",           &settings->uints.audio_block_frames, true, 0, false);
-   SETTING_UINT("audio_input_block_frames",     &settings->uints.audio_input_block_frames, true, 0, false);
+   SETTING_UINT("microphone_block_frames",      &settings->uints.microphone_block_frames, true, 0, false);
 #ifdef ANDROID
    SETTING_UINT("input_block_timeout",           &settings->uints.input_block_timeout, true, 0, false);
 #endif
@@ -2350,7 +2350,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("cheevos_visibility_summary",   &settings->uints.cheevos_visibility_summary, true, DEFAULT_CHEEVOS_VISIBILITY_SUMMARY, false);
 #endif
    SETTING_UINT("audio_out_rate",               &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
-   SETTING_UINT("audio_in_rate",                &settings->uints.audio_input_sample_rate, true, DEFAULT_INPUT_RATE, false);
+   SETTING_UINT("microphone_rate",              &settings->uints.microphone_sample_rate, true, DEFAULT_INPUT_RATE, false);
    SETTING_UINT("custom_viewport_width",        &settings->video_viewport_custom.width, false, 0 /* TODO */, false);
    SETTING_UINT("crt_switch_resolution_super",  &settings->uints.crt_switch_resolution_super,      true, DEFAULT_CRT_SWITCH_RESOLUTION_SUPER, false);
    SETTING_UINT("custom_viewport_height",       &settings->video_viewport_custom.height, false, 0 /* TODO */, false);
@@ -2745,10 +2745,10 @@ void config_set_defaults(void *data)
             settings->arrays.audio_device,
             DEFAULT_AUDIO_DEVICE);
 
-   if (DEFAULT_AUDIO_INPUT_DEVICE)
+   if (DEFAULT_MICROPHONE_DEVICE)
       configuration_set_string(settings,
-            settings->arrays.audio_input_device,
-            DEFAULT_AUDIO_INPUT_DEVICE);
+                               settings->arrays.microphone_device,
+                               DEFAULT_MICROPHONE_DEVICE);
 
    if (!g_defaults.settings_out_latency)
       g_defaults.settings_out_latency          = DEFAULT_OUT_LATENCY;
@@ -2758,7 +2758,7 @@ void config_set_defaults(void *data)
    if (!g_defaults.settings_in_latency)
       g_defaults.settings_in_latency          = DEFAULT_IN_LATENCY;
 
-   settings->uints.audio_input_latency         = g_defaults.settings_in_latency;
+   settings->uints.microphone_latency         = g_defaults.settings_in_latency;
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
 #ifdef HAVE_AUDIOMIXER

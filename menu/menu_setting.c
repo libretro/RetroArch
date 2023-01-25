@@ -8332,13 +8332,15 @@ static void general_write_handler(rarch_setting_t *setting)
 #endif
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
-      case MENU_ENUM_LABEL_AUDIO_INPUT_LATENCY:
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
-      case MENU_ENUM_LABEL_AUDIO_INPUT_RATE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH:
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
+         break;
+      case MENU_ENUM_LABEL_MICROPHONE_LATENCY:
+      case MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE:
+         rarch_cmd = CMD_EVENT_MICROPHONE_REINIT;
          break;
       case MENU_ENUM_LABEL_PAL60_ENABLE:
          {
@@ -10387,8 +10389,8 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
-               MENU_ENUM_LABEL_AUDIO_INPUT_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_SETTINGS,
+               MENU_ENUM_LABEL_MICROPHONE_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
                &group_info,
                &subgroup_info,
                parent_group);
@@ -10435,7 +10437,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_DRIVERS:
          {
             unsigned i, j = 0;
-            struct string_options_entry string_options_entries[12] = {0};
+            struct string_options_entry string_options_entries[13] = {0};
 
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
             MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_DRIVER_SETTINGS);
@@ -13580,9 +13582,9 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
-               &settings->uints.audio_input_latency,
-               MENU_ENUM_LABEL_AUDIO_INPUT_LATENCY,
-               MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_LATENCY,
+               &settings->uints.microphone_latency,
+               MENU_ENUM_LABEL_MICROPHONE_LATENCY,
+               MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
                g_defaults.settings_in_latency ?
                g_defaults.settings_in_latency : DEFAULT_IN_LATENCY,
                &group_info,
@@ -13672,9 +13674,9 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
-               &settings->uints.audio_input_block_frames,
-               MENU_ENUM_LABEL_AUDIO_INPUT_BLOCK_FRAMES,
-               MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_BLOCK_FRAMES,
+               &settings->uints.microphone_block_frames,
+               MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES,
+               MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
                0,
                &group_info,
                &subgroup_info,
@@ -13683,27 +13685,6 @@ static bool setting_append_list(
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 #endif
-
-         END_SUB_GROUP(list, list_info, parent_group);
-
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
-
-         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.audio_enable_input,
-               MENU_ENUM_LABEL_AUDIO_ENABLE_MICROPHONE,
-               MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MICROPHONE,
-               DEFAULT_AUDIO_ENABLE_INPUT,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -13738,10 +13719,10 @@ static bool setting_append_list(
 
          CONFIG_STRING(
                list, list_info,
-               settings->arrays.audio_input_device,
-               sizeof(settings->arrays.audio_input_device),
-               MENU_ENUM_LABEL_AUDIO_INPUT_DEVICE,
-               MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_DEVICE,
+               settings->arrays.microphone_device,
+               sizeof(settings->arrays.microphone_device),
+               MENU_ENUM_LABEL_MICROPHONE_DEVICE,
+               MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
                "",
                &group_info,
                &subgroup_info,
@@ -13772,9 +13753,9 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
-               &settings->uints.audio_input_sample_rate,
-               MENU_ENUM_LABEL_AUDIO_INPUT_RATE,
-               MENU_ENUM_LABEL_VALUE_AUDIO_INPUT_RATE,
+               &settings->uints.microphone_sample_rate,
+               MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
+               MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
                DEFAULT_INPUT_RATE,
                &group_info,
                &subgroup_info,

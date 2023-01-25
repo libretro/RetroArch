@@ -6634,10 +6634,6 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_INPUT_RATE,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
          break;
       case DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST:
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -6677,25 +6673,21 @@ unsigned menu_displaylist_build_list(
                   PARSE_ONLY_UINT, false) == 0)
             count++;
          break;
-      case DISPLAYLIST_AUDIO_INPUT_SETTINGS_LIST:
+      case DISPLAYLIST_MICROPHONE_SETTINGS_LIST:
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_ENABLE_MICROPHONE,
-                  PARSE_ONLY_BOOL, false) == 0)
+                  MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
+                  PARSE_ONLY_UINT, false) == 0)
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_INPUT_DEVICE,
+                  MENU_ENUM_LABEL_MICROPHONE_DEVICE,
                   PARSE_ONLY_STRING, false) == 0)
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_INPUT_RATE,
+                  MENU_ENUM_LABEL_MICROPHONE_LATENCY,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_INPUT_LATENCY,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_INPUT_BLOCK_FRAMES,
+                  MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
          break;
@@ -6723,7 +6715,6 @@ unsigned menu_displaylist_build_list(
 #endif
          menu_displaylist_build_info_selective_t build_list[] = {
             {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,           PARSE_ACTION,     true  },
-            {MENU_ENUM_LABEL_AUDIO_INPUT_SETTINGS,            PARSE_ACTION,     true  },
             {MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,        PARSE_ACTION,     true  },
             {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,  PARSE_ACTION,     true  },
             {MENU_ENUM_LABEL_MIDI_SETTINGS,                   PARSE_ACTION,     true  },
@@ -9302,7 +9293,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,                     PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,                PARSE_ONLY_BOOL, true },
                {MENU_ENUM_LABEL_AUDIO_LATENCY,                         PARSE_ONLY_UINT, true },
-               {MENU_ENUM_LABEL_AUDIO_INPUT_LATENCY,                   PARSE_ONLY_UINT, true },
+               {MENU_ENUM_LABEL_MICROPHONE_LATENCY,                    PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,              PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,                   PARSE_ONLY_UINT, true },
 #ifdef HAVE_RUNAHEAD
@@ -13293,7 +13284,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST:
-      case DISPLAYLIST_AUDIO_INPUT_SETTINGS_LIST:
+      case DISPLAYLIST_MICROPHONE_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
       case DISPLAYLIST_HELP_SCREEN_LIST:
       case DISPLAYLIST_INFORMATION_LIST:

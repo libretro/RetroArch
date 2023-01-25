@@ -255,7 +255,7 @@ static void mic_driver_open_mic_internal(retro_microphone_t* microphone)
    const microphone_driver_t *mic_driver = mic_st->driver;
    void *driver_context                  = mic_st->driver_context;
    unsigned runloop_audio_latency        = runloop_state_get_ptr()->audio_latency;
-   unsigned setting_audio_latency        = settings->uints.audio_input_latency;
+   unsigned setting_audio_latency        = settings->uints.microphone_latency;
    unsigned actual_sample_rate           = 0;
    unsigned audio_latency                = (runloop_audio_latency > setting_audio_latency) ?
                                            runloop_audio_latency : setting_audio_latency;
@@ -274,10 +274,10 @@ static void mic_driver_open_mic_internal(retro_microphone_t* microphone)
       goto error;
 
    microphone->microphone_context = mic_driver->open_mic(driver_context,
-      *settings->arrays.audio_input_device ? settings->arrays.audio_input_device : NULL,
-      settings->uints.audio_input_sample_rate,
+      *settings->arrays.microphone_device ? settings->arrays.microphone_device : NULL,
+      settings->uints.microphone_sample_rate,
       audio_latency,
-      settings->uints.audio_input_block_frames,
+      settings->uints.microphone_block_frames,
       &actual_sample_rate);
 
    if (!microphone->microphone_context)
@@ -288,10 +288,10 @@ static void mic_driver_open_mic_internal(retro_microphone_t* microphone)
    if (actual_sample_rate != 0)
    {
       RARCH_LOG("[Audio]: Requested microphone sample rate of %uHz, got %uHz. Updating settings with this value.\n",
-                settings->uints.audio_input_sample_rate,
+                settings->uints.microphone_sample_rate,
                 actual_sample_rate
       );
-      configuration_set_uint(settings, settings->uints.audio_input_sample_rate, actual_sample_rate);
+      configuration_set_uint(settings, settings->uints.microphone_sample_rate, actual_sample_rate);
    }
 
    RARCH_LOG("[Audio]: Initialized microphone\n", actual_sample_rate);

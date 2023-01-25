@@ -336,7 +336,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
             break;
         case MENU_ENUM_LABEL_AUDIO_DEVICE:
-        case MENU_ENUM_LABEL_AUDIO_INPUT_DEVICE:
             {
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DEVICE), len);
 #ifdef HAVE_ALSA

@@ -107,16 +107,12 @@ MSG_HASH(
    "audio_block_frames"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_AUDIO_INPUT_BLOCK_FRAMES,
-   "audio_input_block_frames"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DEVICE,
    "audio_device"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_AUDIO_INPUT_DEVICE,
-   "audio_input_device"
+   MENU_ENUM_LABEL_MICROPHONE_DEVICE,
+   "microphone_device"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DRIVER,
@@ -135,10 +131,6 @@ MSG_HASH(
    "audio_enable"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_AUDIO_ENABLE_MICROPHONE,
-   "audio_enable_microphone"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_FILTER_DIR,
    "audio_filter_dir"
    )
@@ -149,10 +141,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_LATENCY,
    "audio_latency"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_AUDIO_INPUT_LATENCY,
-   "audio_input_latency"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,
@@ -170,10 +158,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
    "audio_output_rate"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_AUDIO_INPUT_RATE,
-   "audio_input_rate"
-)
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
    "audio_rate_control_delta"
@@ -199,10 +183,6 @@ MSG_HASH(
    "audio_output_settings"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_AUDIO_INPUT_SETTINGS,
-   "audio_input_settings"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_SYNC,
    "audio_sync"
    )
@@ -223,8 +203,24 @@ MSG_HASH(
    "audio_wasapi_sh_buffer_length"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_SETTINGS,
+   "microphone_settings"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MICROPHONE_DRIVER,
    "microphone_driver"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
+   "microphone_input_rate"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_LATENCY,
+   "microphone_latency"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES,
+   "microphone_block_frames"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,
@@ -5866,8 +5862,8 @@ MSG_HASH(
    "deferred_audio_output_settings_list"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_AUDIO_INPUT_SETTINGS_LIST,
-   "deferred_audio_input_settings_list"
+   MENU_ENUM_LABEL_DEFERRED_MICROPHONE_SETTINGS_LIST,
+   "deferred_microphone_settings_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST,
