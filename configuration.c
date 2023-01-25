@@ -3412,6 +3412,34 @@ static bool config_load_file(global_t *global,
       check_verbosity_settings(conf, settings);
    }
 
+   if (!path_is_empty(RARCH_PATH_CONFIG_OVERRIDE))
+   {
+      /* Don't destroy append_config_path, store in temporary
+       * variable. */
+      char tmp_append_path[PATH_MAX_LENGTH];
+      const char *extra_path = NULL;
+      strlcpy(tmp_append_path, path_get(RARCH_PATH_CONFIG_OVERRIDE),
+            sizeof(tmp_append_path));
+      extra_path = strtok_r(tmp_append_path, "|", &save);
+
+      while (extra_path)
+      {
+         bool result = config_append_file(conf, extra_path);
+
+         if (!first_load)
+         {
+            RARCH_LOG("[Config]: Appending override config: \"%s\".\n", extra_path);
+
+            if (!result)
+               RARCH_ERR("[Config]: Failed to append override config: \"%s\".\n", extra_path);
+         }
+         extra_path = strtok_r(NULL, "|", &save);
+      }
+
+      /* Re-check verbosity settings */
+      check_verbosity_settings(conf, settings);
+   }
+
 #if 0
    if (verbosity_is_enabled())
    {
@@ -3995,10 +4023,10 @@ bool config_load_override(void *data)
       RARCH_LOG("[Overrides]: Core-specific overrides found at \"%s\".\n",
             core_path);
 
-      if (should_append)
+      if (should_append && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
       {
          size_t _len      = strlcpy(tmp_path,
-               path_get(RARCH_PATH_CONFIG_APPEND),
+               path_get(RARCH_PATH_CONFIG_OVERRIDE),
                sizeof(tmp_path));
          tmp_path[_len  ] = '|';
          tmp_path[_len+1] = '\0';
@@ -4008,7 +4036,6 @@ bool config_load_override(void *data)
       else
          strlcpy(tmp_path, core_path, sizeof(tmp_path));
 
-      path_set(RARCH_PATH_CONFIG_APPEND, tmp_path);
       path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
 
       should_append     = true;
@@ -4026,10 +4053,10 @@ bool config_load_override(void *data)
          RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
                content_path);
 
-         if (should_append)
+         if (should_append && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
          {
             size_t _len      = strlcpy(tmp_path,
-                  path_get(RARCH_PATH_CONFIG_APPEND),
+                  path_get(RARCH_PATH_CONFIG_OVERRIDE),
                   sizeof(tmp_path));
             tmp_path[_len  ] = '|';
             tmp_path[_len+1] = '\0';
@@ -4039,7 +4066,6 @@ bool config_load_override(void *data)
          else
             strlcpy(tmp_path, content_path, sizeof(tmp_path));
 
-         path_set(RARCH_PATH_CONFIG_APPEND, tmp_path);
          path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
 
          should_append     = true;
@@ -4055,10 +4081,10 @@ bool config_load_override(void *data)
          RARCH_LOG("[Overrides]: Game-specific overrides found at \"%s\".\n",
                game_path);
 
-         if (should_append)
+         if (should_append && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
          {
             size_t _len      = strlcpy(tmp_path,
-			    path_get(RARCH_PATH_CONFIG_APPEND),
+			    path_get(RARCH_PATH_CONFIG_OVERRIDE),
 			    sizeof(tmp_path));
             tmp_path[_len  ] = '|';
             tmp_path[_len+1] = '\0';
@@ -4068,7 +4094,6 @@ bool config_load_override(void *data)
          else
             strlcpy(tmp_path, game_path, sizeof(tmp_path));
 
-         path_set(RARCH_PATH_CONFIG_APPEND, tmp_path);
          path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
 
          should_append     = true;
@@ -4100,8 +4125,6 @@ bool config_load_override(void *data)
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
-   path_clear(RARCH_PATH_CONFIG_APPEND);
-
    return true;
 }
 
@@ -4123,7 +4146,6 @@ bool config_load_override_file(const char *config_path)
 
    if (path_is_valid(config_path))
    {
-      path_set(RARCH_PATH_CONFIG_APPEND, config_path);
       path_set(RARCH_PATH_CONFIG_OVERRIDE, config_path);
       should_append = true;
    }
@@ -4152,8 +4174,6 @@ bool config_load_override_file(const char *config_path)
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
-   path_clear(RARCH_PATH_CONFIG_APPEND);
-
    return true;
 }
 
@@ -4167,7 +4187,6 @@ bool config_load_override_file(const char *config_path)
  */
 bool config_unload_override(void)
 {
-   path_clear(RARCH_PATH_CONFIG_APPEND);
    path_clear(RARCH_PATH_CONFIG_OVERRIDE);
 
    /* Toggle has_save_path to false so it resets */
