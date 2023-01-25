@@ -223,6 +223,10 @@ MSG_HASH(
    "audio_wasapi_sh_buffer_length"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_DRIVER,
+   "microphone_driver"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,
    "autosave_interval"
    )

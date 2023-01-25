@@ -1439,6 +1439,15 @@ struct string_list *string_list_new_special(enum string_list_type type,
             string_list_append(s, opt, attr);
          }
          break;
+      case STRING_LIST_MICROPHONE_DRIVERS:
+         for (i = 0; microphone_drivers[i]; i++)
+         {
+            const char *opt  = microphone_drivers[i]->ident;
+            *len            += strlen(opt) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+         break;
       case STRING_LIST_AUDIO_RESAMPLER_DRIVERS:
          for (i = 0; audio_resampler_driver_find_handle(i); i++)
          {

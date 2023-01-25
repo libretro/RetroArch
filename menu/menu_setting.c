@@ -10481,6 +10481,15 @@ static bool setting_append_list(
 
             j++;
 
+            string_options_entries[j].target         = settings->arrays.microphone_driver;
+            string_options_entries[j].len            = sizeof(settings->arrays.microphone_driver);
+            string_options_entries[j].name_enum_idx  = MENU_ENUM_LABEL_MICROPHONE_DRIVER;
+            string_options_entries[j].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER;
+            string_options_entries[j].default_value  = config_get_default_microphone();
+            string_options_entries[j].values         = config_get_microphone_driver_options();
+
+            j++;
+
             string_options_entries[j].target         = settings->arrays.audio_resampler;
             string_options_entries[j].len            = sizeof(settings->arrays.audio_resampler);
             string_options_entries[j].name_enum_idx  = MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER;

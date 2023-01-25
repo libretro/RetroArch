@@ -755,6 +755,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_remember_selection,       MENU_
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_driver,                  MENU_ENUM_SUBLABEL_VIDEO_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_driver,                  MENU_ENUM_SUBLABEL_AUDIO_DRIVER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_driver,             MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_driver,                  MENU_ENUM_SUBLABEL_INPUT_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_joypad_driver,                 MENU_ENUM_SUBLABEL_JOYPAD_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_resampler_driver,        MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER)
@@ -3602,6 +3603,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUDIO_DRIVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_driver);
+            break;
+         case MENU_ENUM_LABEL_MICROPHONE_DRIVER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_driver);
             break;
          case MENU_ENUM_LABEL_VIDEO_DRIVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_driver);

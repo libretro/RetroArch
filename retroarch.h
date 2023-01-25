@@ -141,6 +141,15 @@ void rarch_favorites_deinit(void);
  **/
 const char* config_get_audio_driver_options(void);
 
+/**
+ * config_get_microphone_driver_options:
+ *
+ * Get an enumerated list of all microphone driver names, separated by '|'.
+ *
+ * Returns: string listing of all microphone driver names, separated by '|'.
+ **/
+const char* config_get_microphone_driver_options(void);
+
 /* Camera */
 
 unsigned int retroarch_get_rotation(void);

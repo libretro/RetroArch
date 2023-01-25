@@ -1040,6 +1040,15 @@ const char *config_get_default_video(void);
 const char *config_get_default_audio(void);
 
 /**
+ * config_get_default_microphone:
+ *
+ * Gets default microphone driver.
+ *
+ * Returns: Default microphone driver.
+ **/
+const char *config_get_default_microphone(void);
+
+/**
  * config_get_default_audio_resampler:
  *
  * Gets default audio resampler driver.

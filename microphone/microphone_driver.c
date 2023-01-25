@@ -22,6 +22,7 @@
 #include "memalign.h"
 #include "audio/conversion/s16_to_float.h"
 #include "audio/conversion/float_to_s16.h"
+#include "list_special.h"
 
 static microphone_driver_state_t mic_driver_st = {0}; /* double alignment */
 
@@ -66,6 +67,18 @@ unsigned mic_driver_get_sample_size(void)
 {
    microphone_driver_state_t *mic_st = &mic_driver_st;
    return (mic_st->flags & MICROPHONE_FLAG_USE_FLOAT) ? sizeof(float) : sizeof(int16_t);
+}
+
+/**
+ * config_get_microphone_driver_options:
+ *
+ * Get an enumerated list of all microphone driver names, separated by '|'.
+ *
+ * Returns: string listing of all microphone driver names, separated by '|'.
+ **/
+const char *config_get_microphone_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_MICROPHONE_DRIVERS, NULL);
 }
 
 bool microphone_driver_find_driver(
@@ -157,14 +170,10 @@ bool microphone_driver_init_internal(void *settings_data)
 {
    float  *in_samples_buf         = NULL;
    settings_t *settings           = (settings_t*)settings_data;
-   size_t max_bufsamples          = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    bool audio_enable_microphone   = settings->bools.audio_enable_input;
-   bool audio_sync                = settings->bools.audio_sync;
-   bool audio_rate_control        = settings->bools.audio_rate_control;
    float slowmotion_ratio         = settings->floats.slowmotion_ratio;
    size_t insamples_max           = AUDIO_CHUNK_SIZE_NONBLOCKING * 1 * AUDIO_MAX_RATIO * slowmotion_ratio;
    int16_t *in_conv_buf           = (int16_t*)memalign_alloc(64, insamples_max * sizeof(int16_t));
-   size_t audio_buf_length        = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float);
    bool verbosity_enabled         = verbosity_is_enabled();
 
    convert_s16_to_float_init_simd();

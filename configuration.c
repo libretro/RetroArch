@@ -139,9 +139,18 @@ enum audio_driver_enum
    AUDIO_NULL
 };
 
+enum microphone_driver_enum
+{
+   MICROPHONE_ALSA = AUDIO_NULL + 1,
+   MICROPHONE_ALSATHREAD,
+   MICROPHONE_SDL2,
+   MICROPHONE_WASAPI,
+   MICROPHONE_NULL,
+};
+
 enum audio_resampler_driver_enum
 {
-   AUDIO_RESAMPLER_CC       = AUDIO_NULL + 1,
+   AUDIO_RESAMPLER_CC       = MICROPHONE_NULL + 1,
    AUDIO_RESAMPLER_SINC,
    AUDIO_RESAMPLER_NEAREST,
    AUDIO_RESAMPLER_NULL
@@ -516,6 +525,21 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ROAR;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_EXT;
 #else
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
+#endif
+
+#if (defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP) && defined(HAVE_WASAPI)
+/* The default mic driver on Windows is WASAPI if it's available. */
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_WASAPI;
+#elif defined(HAVE_ALSA) && defined(HAVE_THREADS)
+/* The default mic driver on Linux is the threaded ALSA driver, if available. */
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_ALSATHREAD;
+#elif defined(HAVE_ALSA)
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_ALSA;
+#elif defined(HAVE_SDL2)
+/* The default fallback driver is SDL2, if available. */
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_SDL2;
+#else
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_NULL;
 #endif
 
 #if defined(RS90) || defined(MIYOO)
@@ -902,6 +926,35 @@ const char *config_get_default_audio(void)
 
    return "null";
 }
+
+/**
+ * config_get_default_microphone:
+ *
+ * Gets default microphone driver.
+ *
+ * Returns: Default microphone driver.
+ **/
+const char *config_get_default_microphone(void)
+{
+   enum microphone_driver_enum default_driver = MICROPHONE_DEFAULT_DRIVER;
+
+   switch (default_driver)
+   {
+      case MICROPHONE_ALSA:
+         return "alsa";
+      case MICROPHONE_ALSATHREAD:
+         return "alsathread";
+      case MICROPHONE_WASAPI:
+         return "wasapi";
+      case MICROPHONE_SDL2:
+         return "sdl2";
+      case MICROPHONE_NULL:
+         break;
+   }
+
+   return "null";
+}
+
 
 const char *config_get_default_record(void)
 {
@@ -1427,6 +1480,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
 #endif
    SETTING_ARRAY("video_context_driver",     settings->arrays.video_context_driver,   false, NULL, true);
    SETTING_ARRAY("audio_driver",             settings->arrays.audio_driver,           false, NULL, true);
+   SETTING_ARRAY("microphone_driver",        settings->arrays.microphone_driver,      false, NULL, true);
    SETTING_ARRAY("audio_resampler",          settings->arrays.audio_resampler,        false, NULL, true);
    SETTING_ARRAY("input_driver",             settings->arrays.input_driver,           false, NULL, true);
    SETTING_ARRAY("input_joypad_driver",      settings->arrays.input_joypad_driver,    false, NULL, true);
@@ -2513,6 +2567,7 @@ void config_set_defaults(void *data)
    int size_settings_size          = sizeof(settings->sizes)   / sizeof(settings->sizes.placeholder);
    const char *def_video           = config_get_default_video();
    const char *def_audio           = config_get_default_audio();
+   const char *def_microphone      = config_get_default_microphone();
    const char *def_audio_resampler = config_get_default_audio_resampler();
    const char *def_input           = config_get_default_input();
    const char *def_joypad          = config_get_default_joypad();
@@ -2616,6 +2671,10 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->arrays.audio_driver,
             def_audio);
+   if (def_microphone)
+      configuration_set_string(settings,
+            settings->arrays.microphone_driver,
+            def_microphone);
    if (def_audio_resampler)
       configuration_set_string(settings,
             settings->arrays.audio_resampler,
