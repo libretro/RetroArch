@@ -428,6 +428,16 @@ static const void *find_driver_nonempty(
          return audio_drivers[i];
       }
    }
+   else if (string_is_equal(label, "microphone_driver"))
+   {
+      if (microphone_drivers[i])
+      {
+         const char *ident = microphone_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return microphone_drivers[i];
+      }
+   }
    else if (string_is_equal(label, "record_driver"))
    {
       if (record_drivers[i])
