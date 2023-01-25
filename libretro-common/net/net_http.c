@@ -448,7 +448,7 @@ static int net_http_new_socket(struct http_connection_t *conn)
       /* Temp fix, don't use new timeout/poll code for cheevos http requests */
          bool timeout = true;
 #ifdef __WIN32
-      if (!strcmp(conn->domain, "retroachievements.org\0"))
+      if (!strcmp(conn->domain, "retroachievements.org"))
          timeout = false;
 #endif
 
