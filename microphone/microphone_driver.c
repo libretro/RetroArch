@@ -558,7 +558,7 @@ retro_microphone_t *microphone_driver_open_mic(void)
    }
    else
    { /* If the driver isn't ready to create a microphone... */
-      RARCH_LOG("[Microphone]: Microphone requested before audio context was ready; deferring initialization\n");
+      RARCH_LOG("[Microphone]: Microphone requested before driver context was ready; deferring initialization\n");
    }
 
    return &mic_st->microphone;
