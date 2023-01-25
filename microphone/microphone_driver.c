@@ -176,6 +176,7 @@ bool microphone_driver_init_internal(void *settings_data)
    if (!settings->bools.microphone_enable)
    { /* If the user has mic support turned off... */
       mic_driver_st.flags &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
+      RARCH_WARN("[Microphone]: Refused to initialize microphone driver because it's disabled in the settings\n");
       return false;
    }
 
@@ -206,14 +207,14 @@ bool microphone_driver_init_internal(void *settings_data)
    if (!mic_driver_st.driver_context)
       goto error;
 
-   RARCH_LOG("[Microphone]: Started synchronous microphone driver\n");
+   RARCH_LOG("[Microphone]: Initialized microphone driver\n");
 
    mic_driver_st.flags  &= ~MICROPHONE_DRIVER_FLAG_CONTROL;
 
    if (  mic_driver_st.microphone.active &&
          !mic_driver_st.microphone.microphone_context)
    { /* If the core requested a microphone before the driver was able to provide one...*/
-      /* Now that the driver and driver context are ready, let's initialize the mid */
+     /* Now that the driver and driver context are ready, let's initialize the mic */
       mic_driver_open_mic_internal(&mic_driver_st.microphone);
 
       if (mic_driver_st.microphone.microphone_context)
@@ -285,7 +286,7 @@ static void mic_driver_open_mic_internal(retro_microphone_t* microphone)
       configuration_set_uint(settings, settings->uints.microphone_sample_rate, actual_sample_rate);
    }
 
-   RARCH_LOG("[Microphone]: Initialized microphone\n", actual_sample_rate);
+   RARCH_LOG("[Microphone]: Initialized microphone\n");
    return;
 error:
    mic_driver_microphone_handle_free(microphone);
