@@ -1367,6 +1367,7 @@ DATA RUNLOOP
 #include "../tasks/task_patch.c"
 #endif
 #include "../tasks/task_save.c"
+#include "../tasks/task_movie.c"
 #include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
 #include "../tasks/task_playlist_manager.c"

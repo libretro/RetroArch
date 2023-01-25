@@ -1193,9 +1193,7 @@ void command_event_init_cheats(
    bool allow_cheats             = true;
 #endif
 #ifdef HAVE_BSV_MOVIE
-   bsv_movie_t *
-	  bsv_movie_state_handle      = (bsv_movie_t*)bsv_movie_data;
-   allow_cheats                 &= !(bsv_movie_state_handle != NULL);
+   allow_cheats                 &= !(bsv_movie_data != NULL);
 #endif
 
    if (!allow_cheats)

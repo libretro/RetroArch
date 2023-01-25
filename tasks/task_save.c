@@ -1611,6 +1611,28 @@ void content_wait_for_save_state_task(void)
    task_queue_wait(content_save_state_in_progress, NULL);
 }
 
+
+static bool task_load_state_finder(retro_task_t *task, void *user_data)
+{
+   return (task && task->handler == task_load_handler);
+}
+
+/* Returns true if a load state task is in progress */
+bool content_load_state_in_progress(void* data)
+{
+   task_finder_data_t find_data;
+
+   find_data.func     = task_load_state_finder;
+   find_data.userdata = NULL;
+
+   return task_queue_find(&find_data);
+}
+
+void content_wait_for_load_state_task(void)
+{
+   task_queue_wait(content_load_state_in_progress, NULL);
+}
+
 /**
  * content_load_state:
  * @path                  : path that state will be loaded from.

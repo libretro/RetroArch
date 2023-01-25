@@ -108,6 +108,45 @@ enum rarch_movie_type
    RARCH_MOVIE_RECORD
 };
 
+#ifdef HAVE_BSV_MOVIE
+enum bsv_flags
+{
+   BSV_FLAG_MOVIE_START_RECORDING    = (1 << 0),
+   BSV_FLAG_MOVIE_START_PLAYBACK     = (1 << 1),
+   BSV_FLAG_MOVIE_PLAYBACK           = (1 << 2),
+   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 3),
+   BSV_FLAG_MOVIE_END                = (1 << 4)
+};
+
+struct bsv_state
+{
+   uint8_t flags;
+   /* Movie playback/recording support. */
+   char movie_path[PATH_MAX_LENGTH];
+   /* Immediate playback/recording. */
+   char movie_start_path[PATH_MAX_LENGTH];
+};
+
+struct bsv_movie
+{
+   intfstream_t *file;
+   uint8_t *state;
+   /* A ring buffer keeping track of positions
+    * in the file for each frame. */
+   size_t *frame_pos;
+   size_t frame_mask;
+   size_t frame_ptr;
+   size_t min_file_pos;
+   size_t state_size;
+
+   bool playback;
+   bool first_rewind;
+   bool did_rewind;
+};
+
+typedef struct bsv_movie bsv_movie_t;
+#endif
+
 /**
  * line_complete callback (when carriage return is pressed)
  *
@@ -949,13 +988,15 @@ void input_overlay_init(void);
 
 #ifdef HAVE_BSV_MOVIE
 void bsv_movie_frame_rewind(void);
-
-bool bsv_movie_init(input_driver_state_t *input_st);
-
 void bsv_movie_deinit(input_driver_state_t *input_st);
 
-bool bsv_movie_check(input_driver_state_t *input_st,
-      settings_t *settings);
+bool movie_start_playback(input_driver_state_t *input_st, char *path);
+bool movie_start_record(input_driver_state_t *input_st, char *path);
+bool movie_stop_playback();
+bool movie_stop_record(input_driver_state_t *input_st);
+bool movie_toggle_record(input_driver_state_t *input_st, settings_t *settings);
+bool movie_stop(input_driver_state_t *input_st);
+
 #endif
 
 /**
