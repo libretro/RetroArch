@@ -19,6 +19,7 @@
 #include <queues/fifo_queue.h>
 #include <string/stdstring.h>
 
+#include "./wasapi.h"
 #include "../common/mmdevice_common.h"
 #include "../common/mmdevice_common_inline.h"
 
@@ -40,7 +41,7 @@ typedef struct
    bool running;
 } wasapi_t;
 
-static IMMDevice *wasapi_init_device(const char *id)
+IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
 {
    HRESULT hr;
    UINT32 dev_count, i;
@@ -104,7 +105,7 @@ static IMMDevice *wasapi_init_device(const char *id)
          idx_found = 0;
 
       hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-            eRender, DEVICE_STATE_ACTIVE, &collection);
+            data_flow, DEVICE_STATE_ACTIVE, &collection);
       if (FAILED(hr))
          goto error;
 
@@ -127,7 +128,7 @@ static IMMDevice *wasapi_init_device(const char *id)
    else
    {
       hr = _IMMDeviceEnumerator_GetDefaultAudioEndpoint(
-            enumerator, eRender, eConsole, &device);
+            enumerator, data_flow, eConsole, &device);
       if (FAILED(hr))
          goto error;
    }
@@ -499,9 +500,9 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       return NULL;
 
    w->exclusive              = exclusive_mode;
-   w->device                 = wasapi_init_device(dev_id);
+   w->device                 = wasapi_init_device(dev_id, eRender);
    if (!w->device && dev_id)
-      w->device = wasapi_init_device(NULL);
+      w->device = wasapi_init_device(NULL, eRender);
    if (!w->device)
       goto error;
 
