@@ -672,6 +672,7 @@ bool rcheevos_unload(void)
 
    if (rcheevos_locals.loaded)
    {
+      unsigned count = 0;
 #ifdef HAVE_MENU
       rcheevos_menu_reset_badges();
 
@@ -683,6 +684,45 @@ bool rcheevos_unload(void)
             rcheevos_locals.menuitem_count      = 0;
       }
 #endif
+
+      count = rcheevos_locals.game.achievement_count;
+      rcheevos_locals.game.achievement_count = 0;
+      if (rcheevos_locals.game.achievements)
+      {
+         rcheevos_racheevo_t* achievement = rcheevos_locals.game.achievements;
+         rcheevos_racheevo_t* end = achievement + count;
+         while (achievement < end)
+         {
+            CHEEVOS_FREE(achievement->title);
+            CHEEVOS_FREE(achievement->description);
+            CHEEVOS_FREE(achievement->badge);
+            CHEEVOS_FREE(achievement->memaddr);
+
+            ++achievement;
+         }
+
+         CHEEVOS_FREE(rcheevos_locals.game.achievements);
+         rcheevos_locals.game.achievements      = NULL;
+      }
+
+      count = rcheevos_locals.game.leaderboard_count;
+      rcheevos_locals.game.leaderboard_count = 0;
+      if (rcheevos_locals.game.leaderboards)
+      {
+         rcheevos_ralboard_t* lboard = rcheevos_locals.game.leaderboards;
+         rcheevos_ralboard_t* end = lboard + count;
+         while (lboard < end)
+         {
+            CHEEVOS_FREE(lboard->title);
+            CHEEVOS_FREE(lboard->description);
+            CHEEVOS_FREE(lboard->mem);
+
+            ++lboard;
+         }
+
+         CHEEVOS_FREE(rcheevos_locals.game.leaderboards);
+         rcheevos_locals.game.leaderboards      = NULL;
+      }
 
       if (rcheevos_locals.game.title)
       {
@@ -1534,6 +1574,9 @@ static void rcheevos_show_game_placard(void)
    int number_of_unsupported         = 0;
    int number_of_core                = 0;
    int mode                          = RCHEEVOS_ACTIVE_SOFTCORE;
+
+   if (rcheevos_locals.game.id < 0) /* make sure there's actually a game loaded */
+      return;
 
    if (rcheevos_locals.hardcore_active)
       mode = RCHEEVOS_ACTIVE_HARDCORE;

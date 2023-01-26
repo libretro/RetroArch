@@ -197,14 +197,6 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
     self->measured_value = eval_state.measured_value.value.u32;
   }
 
-  /* if the state is WAITING and the trigger is ready to fire, ignore it and reset the hit counts */
-  /* otherwise, if the state is WAITING, proceed to activating the trigger */
-  if (self->state == RC_TRIGGER_STATE_WAITING && ret) {
-    rc_reset_trigger(self);
-    self->has_hits = 0;
-    return RC_TRIGGER_STATE_WAITING;
-  }
-
   /* if any ResetIf condition was true, reset the hit counts */
   if (eval_state.was_reset) {
     /* if the measured value came from a hit count, reset it. do this before calling
@@ -247,6 +239,13 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
     is_primed = 0;
   }
   else if (ret) {
+    /* if the state is WAITING and the trigger is ready to fire, ignore it and reset the hit counts */
+    if (self->state == RC_TRIGGER_STATE_WAITING) {
+      rc_reset_trigger(self);
+      self->has_hits = 0;
+      return RC_TRIGGER_STATE_WAITING;
+    }
+
     /* trigger was triggered */
     self->state = RC_TRIGGER_STATE_TRIGGERED;
     return RC_TRIGGER_STATE_TRIGGERED;

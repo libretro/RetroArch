@@ -230,6 +230,10 @@ static uint32_t rc_cd_find_file_sector(void* track_handle, const char* path, uns
   if (!track_handle)
     return 0;
 
+  /* we start at the root. don't need to explicitly find it */
+  if (*path == '\\')
+    ++path;
+
   filename_length = strlen(path);
   slash = strrchr(path, '\\');
   if (slash)
@@ -966,6 +970,9 @@ static int rc_hash_n64(char hash[33], const char* path)
     rc_hash_verbose("converting n64 to z64");
     is_n64 = 1;
   }
+  else if (buffer[0] == 0xE8 || buffer[0] == 0x22) /* ndd format (don't byteswap) */
+  {
+  }
   else
   {
     free(buffer);
@@ -1469,7 +1476,7 @@ static int rc_hash_find_playstation_executable(void* track_handle, const char* b
 
         if (strncmp(ptr, cdrom_prefix, cdrom_prefix_len) == 0)
           ptr += cdrom_prefix_len;
-        if (*ptr == '\\')
+        while (*ptr == '\\')
           ++ptr;
 
         start = ptr;

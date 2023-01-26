@@ -1,3 +1,67 @@
+# v10.6.0
+* add RC_RUNTIME_EVENT_ACHIEVEMENT_PROGRESS_UPDATED
+* use optimized comparators for most common condition logic
+* fix game identification of psx ISOs that have extra slashes in their boot path
+* fix game identification of ndd files
+
+# v10.5.0
+* add RC_MEMSIZE_MBF32_LE
+* add RC_OPERATOR_XOR
+* add RC_CONSOLE_ATARI_JAGUAR_CD and hash/memory map for Atari Jaguar CD
+* add RC_CONSOLE_ARCADIA_2001 and hash/memory map for Arcadia 2001
+* add RC_CONSOLE_INTERTON_VC_4000 and hash/memory map for Interton VC 4000
+* add RC_CONSOLE_ELEKTOR_TV_GAMES_COMPUTER and hash/memory map for Elektor TV Games Computer
+* split RC_CONSOLE_PC_ENGINE_CD off of RC_CONSOLE_PC_ENGINE
+* add hash/memory map for RC_CONSOLE_NEO_GEO_CD
+* add additional 256KB of RAM to memory map for RC_CONSOLE_SEGA_32X
+* validation: don't report redundancy between trigger and non-trigger conditions
+* validation: don't report range validation errors for float comparisons
+* change default image host to media.retroachievements.org
+* fix decoding of denormalized floats
+* fix full line comments in the middle of Display: section causing RC_MISSING_DISPLAY_STRING
+
+# v10.4.0
+* add rc_libretro_hash_set_t with support for #SAVEDISK: m3u extension
+* add rc_libretro_is_system_allowed for finer-grain control over core support
+* fix measured value from hitcount not resetting while paused
+* add RC_CONSOLE_WASM and hash/memory map for WASM-4
+* add scratchpad memory to RC_CONSOLE_PLAYSTATION_2 memory map
+* add hash/memory map for RC_CONSOLE_FAIRCHILD_CHANNEL_F
+* add hash/memory map for RC_CONSOLE_COMMODORE_64
+* add memory map for RC_CONSOLE_AMIGA
+
+# v10.3.3
+* add RC_CONSOLE_ARDUBOY and hash/memory map for Arduboy
+* add display_name to rc_api_login_response_t
+* detect logical conflicts and redundancies in validator
+* fix tab sequences in JSON responses being turned into t
+* fix overflow when float value has more than 9 digits after the decimal
+* fix libretro memory mapping when disconnect mask breaks a region into multiple blocks
+* fix non-virtualized file system call when reading some iso files
+
+# v10.3.2
+* fix RC_OPERAND_PRIOR for bit sizes other than RC_MEMSIZE_BIT_0
+* add memory map and hash for Amstrad CPC
+* fix an issue where fetch_game_data and fetch_user_unlocks could return RC_MISSING_VALUE instead of acknowledging a server error
+
+# v10.3.1
+* allow empty description in rc_api_init_update_leaderboard_request
+* fix buffered n64 hash when no filereader is registered
+* add memory map and hash for Mega Duck
+
+# v10.3.0
+* support for floating point memory sizes and logic
+* add built-in macros for rich presence: @Number, @Score, @Centisecs, @Seconds, @Minutes, @ASCIIChar, @UnicodeChar
+* add rapi functions for fetch_code_notes, update_code_note, upload_achievement, update_leaderboard, fetch_badge_range, and add_game_hash
+* add lower_is_better and hidden flags to leaderboards in rc_api_fetch_game_data_response_t
+* add achievements_remaining to rc_api_award_achievement_response_t
+* add console enums for PC6000, PICO, MEGADUCK and ZEEBO
+* add memory map for Dreamcast
+* capture leaderboard/rich presence state in rc_runtime_progress data
+* support for hashing Dreamcast bin/cues
+* support for hashing buffered NDS ROMs
+* fix prior for sizes smaller than a byte sometimes returning current value
+
 # v10.2.0
 
 * add RC_MEMSIZE_16_BITS_BE, RC_MEMSIZE_24_BITS_BE, and RC_MEMSIZE_32_BITS_BE
