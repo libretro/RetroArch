@@ -227,9 +227,9 @@ static void wasapi_microphone_close_mic(void *driver_context, void *microphone_c
    CloseHandle(write_event);
 }
 
-static struct string_list *wasapi_microphone_device_list_new(const void *u)
+static struct string_list *wasapi_microphone_device_list_new(const void *driver_context)
 {
-   return mmdevice_list_new(u, eCapture);
+   return mmdevice_list_new(driver_context, eCapture);
 }
 
 static void wasapi_microphone_device_list_free(const void *driver_context, struct string_list *devices)
