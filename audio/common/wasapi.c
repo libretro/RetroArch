@@ -23,7 +23,7 @@
 #include "string/stdstring.h"
 #include "mmdevice_common.h"
 
-static void wasapi_log_hr(HRESULT hr, char* buffer, size_t length)
+void wasapi_log_hr(HRESULT hr, char* buffer, size_t length)
 {
    FormatMessage(
          FORMAT_MESSAGE_IGNORE_INSERTS |
