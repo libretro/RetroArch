@@ -321,6 +321,12 @@
  * load times on platforms with slow IO */
 #define DEFAULT_CORE_INFO_CACHE_ENABLE true
 
+/* Specifies whether to ignore core info
+ * savestate capabilities, allowing to
+ * experiment with related features
+ * (run ahead, rewind, etc) */
+#define DEFAULT_CORE_INFO_SAVESTATE_BYPASS false
+
 /* Specifies whether to 'reload' (fork and quit)
  * RetroArch when launching content with the
  * currently loaded core

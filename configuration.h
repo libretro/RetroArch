@@ -905,6 +905,7 @@ typedef struct settings
       bool check_firmware_before_loading;
       bool core_option_category_enable;
       bool core_info_cache_enable;
+      bool core_info_savestate_bypass;
 #ifndef HAVE_DYNAMIC
       bool always_reload_core_on_run_content;
 #endif

@@ -1486,6 +1486,10 @@ MSG_HASH(
    "core_info_cache_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "core_info_savestate_bypass"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,
    "dummy_on_core_shutdown"
    )

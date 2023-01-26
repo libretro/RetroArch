@@ -10606,9 +10606,9 @@ static bool setting_append_list(
          {
             unsigned i, listing = 0;
 #ifndef HAVE_DYNAMIC
-            struct bool_entry bool_entries[9];
+            struct bool_entry bool_entries[10];
 #else
-            struct bool_entry bool_entries[8];
+            struct bool_entry bool_entries[9];
 #endif
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
@@ -10672,6 +10672,13 @@ static bool setting_append_list(
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE;
             bool_entries[listing].default_value  = DEFAULT_CORE_INFO_CACHE_ENABLE;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
+
+            bool_entries[listing].target         = &settings->bools.core_info_savestate_bypass;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS;
+            bool_entries[listing].default_value  = DEFAULT_CORE_INFO_SAVESTATE_BYPASS;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
             listing++;
 
