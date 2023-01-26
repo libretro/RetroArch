@@ -1201,6 +1201,10 @@ MSG_HASH(
    "設定檔。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "前往下一層目錄位置。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
    "影格遙控器"
    )
@@ -1367,6 +1371,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "設定影像處理使用的驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "圖形裝置介面(GDI)驅動程式。使用 Windows 原始圖形介面，不推薦使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -2286,7 +2294,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
-   "左/右鍵 切換要使用的音源輸出裝置。依據音效驅動程式顯示可使用的裝置。"
+   "左/右鍵 切換要使用的音源輸出裝置。\n依據音效驅動程式顯示可使用的裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -2373,6 +2381,10 @@ MSG_HASH(
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_STREAM,
+   "混音串流 #%d: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
    "播放"
    )
@@ -2419,6 +2431,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
    "調整音訊串流的音量。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "狀態 : 未使用"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
+   "狀態 : 暫停"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
+   "狀態 : 播放中"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   "狀態 : 播放中 (循環播放)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+   "狀態 : 播放中 (順序播放)"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -3202,12 +3234,20 @@ MSG_HASH(
    "裝置類型"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE,
+   "設定模擬遊戲主機的控制器類型。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    "十字鍵使用類比搖桿"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "設定方向鍵使用類比搖桿操作。強制模式下核心模擬類比搖桿輸入將無法使用。"
+   "設定十字鍵使用類比搖桿輸入。強制模式下核心模擬類比搖桿輸入將無法使用。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
+   "設定十字鍵使用類比搖桿輸入。\n非強制模式 - 核心支援模擬類比搖桿時，此選項設定被忽略。\n強制模式 - 核心支援模擬類比搖桿時，支援模擬類比搖桿的輸入將無法使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -3216,6 +3256,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "用戶連接埠 (遊戲主機)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "設定控制器連接到用戶連接埠的編號(預設%u)。應用於多人控制一角色，或一人控制多角色。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -3673,7 +3717,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-   "載入即時存檔時，不覆蓋存檔記憶體(SaveRAM)，可能會導致發生錯誤。僅限支援SAV格式的核心使用。"
+   "載入即時存檔時，不覆蓋存檔記憶體(SaveRAM)，可能會導致發生錯誤。僅限支援SRM格式的核心使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -3681,7 +3725,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-   "設定自動儲存成記憶存檔的時間(秒)。僅限支援SAV格式的核心使用。"
+   "設定自動儲存成記憶存檔的時間(秒)。僅限支援SRM格式的核心使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -3729,7 +3773,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "使用壓縮格式儲存記憶存檔，減少檔案的大小，但儲存和載入的速度變慢。僅限支援SAV格式的核心使用。"
+   "使用壓縮格式儲存記憶存檔，減少檔案的大小，但儲存和載入的速度變慢。僅限支援SRM格式的核心使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -4007,15 +4051,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
-   "低"
+   "低畫質影片檔 (MKV格式)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
-   "中速"
+   "中畫質影片檔 (MKV格式)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
-   "高"
+   "高畫質影片檔 (MKV格式)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
+   "無損影片檔 (MKV格式)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST,
+   "低質量視訊檔 (WebM格式)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY,
+   "高質量視訊檔 (WebM格式)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_GIF,
+   "動態圖檔 (GIF格式)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_APNG,
+   "動態圖檔 (APNG格式)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
@@ -4079,7 +4143,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
-   "中速"
+   "中"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
@@ -4645,40 +4709,80 @@ MSG_HASH(
    "通知位置 (水平)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
+   "自訂顯示螢幕通知的水平位置。設定值 <0> 為最左方，設定值 <1> 為最右方。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    "通知位置 (垂直)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
+   "自訂顯示螢幕通知的垂直位置。設定值 <0> 為最下方，設定值 <1> 為最上方。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
    "字體顏色 (紅)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
+   "自訂螢幕通知字體的紅光值，有效數值介於0到255之間。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
    "字體顏色 (綠)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
+   "自訂螢幕通知字體的綠光值，有效數值介於0到255之間。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
    "字體顏色 (藍)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
+   "自訂螢幕通知字體的藍光值，有效數值介於0到255之間。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
    "通知背景色"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+   "開啟螢幕通知的背景顏色。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
    "通知背景顏色 (紅)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED,
+   "自訂螢幕通知背景的紅光值，有效數值介於0到255之間。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
    "通知背景顏色 (綠)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
+   "自訂螢幕通知背景的綠光值，有效數值介於0到255之間。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
    "通知背景顏色 (藍)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
+   "自訂螢幕通知背景的藍光值，有效數值介於0到255之間。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
    "通知背景不透明度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+   "自訂螢幕通知背景的不透明度，有效數值介於0.00到1.00之間。"
    )
 
 /* Settings > User Interface */
@@ -5327,7 +5431,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-   "在「儲存專用主題」選項中顯示「儲存為核心專用主題」選項。"
+   "在「專用主題」選項中顯示「儲存為核心專用主題」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
@@ -5335,7 +5439,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   "在「儲存專用主題」選項中顯示「儲存為遊戲專用主題」選項。"
+   "在「專用主題」選項中顯示「儲存為遊戲專用主題」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
@@ -5915,7 +6019,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "設定執行遊戲顯示完成度的通知。設定 <全部驗證的遊戲> 時顯示未建立成就項目的通知。"
+   "顯示執行遊戲的完成度通知。設定 <全部驗證的遊戲> 時顯示未建立成就項目的通知。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -5931,7 +6035,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
-   "成就解鎖時顯示通知。"
+   "遊戲成就解鎖時顯示通知。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
@@ -5947,7 +6051,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "顯示成就解鎖提示。"
+   "顯示成就解鎖的提示圖標。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -5955,7 +6059,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
-   "顯示 RetroAchievements 帳戶登錄相關的訊息。"
+   "顯示帳號登錄相關的訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
@@ -6639,7 +6743,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "輸入您的 RetroAchievements 帳號密碼。限制輸入二百五十五個字元。"
+   "輸入您的 RetroAchievements 登錄密碼。限制輸入二百五十五個字元。"
    )
 
 /* Settings > User > Accounts > YouTube */
@@ -6895,7 +6999,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
-   "設定遊戲記憶存檔的儲存位置。未設置的情況下，將嘗試儲存在遊戲的資料夾中。"
+   "設定核心預設記憶存檔的儲存位置。未設置的情況下，將嘗試儲存在遊戲的資料夾中。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
+   "儲存全部核心預設的記憶存檔到此資料夾。\n包含記憶存檔(*.srm)、操作重播檔(*.bsv)、實時時鐘(*.rtc)等相關檔案。\n此路徑位置會被命令行介面的指令取代。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
@@ -7089,6 +7197,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
    "<從此處開始掃描全部檔案>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SCAN_THIS_DIRECTORY,
+   "從此路徑開始掃描，所有資料夾中支援的檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_FILE,
@@ -7829,6 +7941,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
    "手動搜尋金手指"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
+   "掃描記憶體數值，手動搜尋金手指。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
@@ -8636,6 +8752,10 @@ MSG_HASH(
    "上一層目錄"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_PARENT_DIRECTORY,
+   "返回上一層目錄位置。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
    "沒有找到資料夾。"
    )
@@ -8808,7 +8928,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
-   "<使用當前目錄>"
+   "<使用目前路徑>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_USE_THIS_DIRECTORY,
+   "套用此路徑為預設位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
@@ -11098,6 +11222,10 @@ MSG_HASH(
    "使用目前核心系統載入檔案。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   "載入類型: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
    "沒有可用的連線遊戲主機。"
    )
@@ -11124,6 +11252,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
    "連接埠"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "連接埠 %d 裝置名稱: %s (#%d)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
+   "裝置名稱: %s\n隨插即用檔案: %s\n供應商編號/產品編號: %d/%d"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
@@ -12555,6 +12691,10 @@ MSG_HASH(
    "載入即時存檔 (%d)。"
    )
 MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "已載入即時存檔 (自動)。"
+   )
+MSG_HASH(
    MSG_LOADING,
    "載入中"
    )
@@ -12751,6 +12891,10 @@ MSG_HASH(
    "儲存即時存檔 (%d)。"
    )
 MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "已儲存即時存檔 (自動)。"
+   )
+MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
    "成功儲存至"
    )
@@ -12935,16 +13079,32 @@ MSG_HASH(
    "已載入: 連接埠"
    )
 MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT_NR,
+   "%s 已配置到連接埠%u。"
+   )
+MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
    "已斷開連接埠"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
+   "%s 已斷開從連接埠%u。"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "未設定"
    )
 MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_NR,
+   "%s (%u/%u) 未建立隨插即用。"
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
    "未設定，將使用內定值"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
+   "%s (%u/%u) 未載入隨插即用。"
    )
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
@@ -13428,11 +13588,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE,
-   "無法進入遊戲模式"
+   "無法進入優化模式"
    )
 MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
-   "無法進入遊戲模式 - 請確認遊戲模式擴展已安裝並執行"
+   "無法進入優化模式 - 請確認優化模式擴展已安裝並執行"
    )
 MSG_HASH(
    MSG_VRR_RUNLOOP_ENABLED,
@@ -13702,11 +13862,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
-   "遊戲模式"
+   "優化模式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
-   "可提高效能、減少延遲並修復音訊噪音等問題。您需要下載「遊戲模式」擴展 https://github.com/FeralInteractive/gamemode 才能正常執行。"
+   "可提高效能、減少延遲並修復音訊噪音等問題。需要下載優化模式擴展(GameMode) https://github.com/FeralInteractive/gamemode 才能正常執行。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
+   "僅限 Linux 作業系統使用。\n透過自動設定 CPU 和 GPU 獲得最佳效能並修復音訊噪音等問題。\n需要下載優化模式擴展才能正確執行。優化模式擴展(GameMode)相關的資訊，請參閱 https://github.com/FeralInteractive/gamemode。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
@@ -13727,6 +13891,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
    "使用螢幕觸控"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
+   "使用螢幕觸控，非背面觸控板。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
