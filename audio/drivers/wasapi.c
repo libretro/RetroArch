@@ -477,7 +477,7 @@ audio_driver_t audio_wasapi = {
    wasapi_free,
    wasapi_use_float,
    "wasapi",
-   mmdevice_list_new,
+   mmdevice_list_new_render,
    wasapi_device_list_free,
    wasapi_write_avail,
    wasapi_buffer_size

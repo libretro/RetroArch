@@ -21,7 +21,17 @@
 #include "mmdevice_common.h"
 #include "mmdevice_common_inline.h"
 
-void *mmdevice_list_new(void *u)
+void *mmdevice_list_new_render(void *u)
+{
+   return mmdevice_list_new(u, eRender);
+}
+
+void *mmdevice_list_new_capture(void *u)
+{
+   return mmdevice_list_new(u, eCapture);
+}
+
+void *mmdevice_list_new(void *u, EDataFlow data_flow)
 {
    HRESULT hr;
    UINT i;
@@ -54,7 +64,7 @@ void *mmdevice_list_new(void *u)
       goto error;
 
    hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-         eRender, DEVICE_STATE_ACTIVE, &collection);
+         data_flow, DEVICE_STATE_ACTIVE, &collection);
    if (FAILED(hr))
       goto error;
 

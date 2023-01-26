@@ -17,10 +17,13 @@
 #define _MMDEVICE_COMMON_H
 
 #include <stdlib.h>
+#include "mmdevice_common_inline.h"
 
 RETRO_BEGIN_DECLS
 
-void *mmdevice_list_new(void *u);
+void *mmdevice_list_new_render(void *u);
+void *mmdevice_list_new_capture(void *u);
+void *mmdevice_list_new(void *u, EDataFlow data_flow);
 
 RETRO_END_DECLS
 
