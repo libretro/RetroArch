@@ -941,7 +941,8 @@ endif
 ifeq ($(HAVE_WASAPI), 1)
 	HAVE_MMDEVAPI = 1
    OBJ += audio/drivers/wasapi.o \
-          audio/common/wasapi.o
+          audio/common/wasapi.o \
+          microphone/drivers/wasapi.o
    DEFINES += -DHAVE_WASAPI
    LIBS += -lole32 -lksuser
 endif
