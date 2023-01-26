@@ -77,6 +77,247 @@ static void wasapi_microphone_free(void *driver_context)
    free(wasapi);
 }
 
+static bool wasapi_microphone_flush(
+      wasapi_microphone_t *wasapi,
+      wasapi_microphone_handle_t *microphone,
+      const void * buffer,
+      size_t buffer_size)
+{
+   BYTE *dest         = NULL;
+   UINT32 frame_count = buffer_size / microphone->frame_size;
+
+   if (FAILED(_IAudioCaptureClient_GetBuffer(
+         microphone->capture, frame_count, &dest)))
+      return false;
+
+   memcpy(dest, buffer, buffer_size);
+   if (FAILED(_IAudioCaptureClient_ReleaseBuffer(
+         microphone->renderer, frame_count,
+         0)))
+      return false;
+
+   return true;
+}
+
+static bool wasapi_microphone_flush_buffer(
+      wasapi_microphone_t *wasapi,
+      wasapi_microphone_handle_t *microphone,
+      size_t buffer_size)
+{
+   BYTE *dest         = NULL;
+   UINT32 frame_count = buffer_size / microphone->frame_size;
+   if (FAILED(_IAudioCaptureClient_GetBuffer(
+         microphone->renderer, frame_count, &dest)))
+      return false;
+
+   fifo_read(microphone->buffer, dest, buffer_size);
+   if (FAILED(_IAudioCaptureClient_ReleaseBuffer(
+         microphone->renderer, frame_count,
+         0)))
+      return false;
+
+   return true;
+}
+
+/**
+ *
+ * @param wasapi
+ * @param microphone
+ * @param buffer
+ * @param buffer_size
+ * @return The number of bytes that were read
+ */
+static ssize_t wasapi_microphone_read_sh_buffer(
+   wasapi_microphone_t *wasapi,
+   wasapi_microphone_handle_t *microphone,
+   const void *buffer,
+   size_t buffer_size)
+{
+   ssize_t written    = -1;
+   UINT32 padding     = 0;
+   size_t write_avail = FIFO_WRITE_AVAIL(microphone->buffer);
+
+   if (!write_avail)
+   {
+      size_t read_avail  = 0;
+      if (WaitForSingleObject(microphone->write_event, INFINITE) != WAIT_OBJECT_0)
+         return -1;
+
+      if (FAILED(_IAudioClient_GetCurrentPadding(microphone->client, &padding)))
+         return -1;
+
+      read_avail  = FIFO_READ_AVAIL(microphone->buffer);
+      write_avail = microphone->engine_buffer_size - padding * microphone->frame_size;
+      written     = read_avail < write_avail ? read_avail : write_avail;
+      if (written)
+         if (!wasapi_microphone_flush_buffer(microphone, written))
+            return -1;
+   }
+
+   write_avail = FIFO_WRITE_AVAIL(microphone->buffer);
+   written     = buffer_size < write_avail ? buffer_size : write_avail;
+   if (written)
+      fifo_write(microphone->buffer, buffer, written);
+
+   return written;
+}
+
+static ssize_t wasapi_microphone_read_sh(
+      wasapi_microphone_t *wasapi,
+      wasapi_microphone_handle_t *microphone,
+      const void *buffer,
+      size_t buffer_size)
+{
+   size_t write_avail = 0;
+   ssize_t written    = -1;
+   UINT32 padding     = 0;
+
+   if (WaitForSingleObject(microphone->write_event, INFINITE) != WAIT_OBJECT_0)
+      return -1;
+
+   if (FAILED(_IAudioClient_GetCurrentPadding(microphone->client, &padding)))
+      return -1;
+
+   write_avail = microphone->engine_buffer_size - padding * microphone->frame_size;
+   if (!write_avail)
+      return 0;
+
+   written = buffer_size < write_avail ? buffer_size : write_avail;
+   if (written)
+      if (!wasapi_microphone_flush(microphone, buffer, written))
+         return -1;
+
+   return written;
+}
+
+static ssize_t wasapi_microphone_read_sh_nonblock(
+      wasapi_microphone_t *wasapi,
+      wasapi_microphone_handle_t *microphone,
+      const void *buffer,
+      size_t buffer_size)
+{
+   size_t write_avail       = 0;
+   ssize_t written          = -1;
+   UINT32 padding           = 0;
+
+   if (microphone->buffer)
+   {
+      write_avail           = FIFO_WRITE_AVAIL(microphone->buffer);
+      if (!write_avail)
+      {
+         size_t read_avail  = 0;
+         if (FAILED(_IAudioClient_GetCurrentPadding(microphone->client, &padding)))
+            return -1;
+
+         read_avail  = FIFO_READ_AVAIL(microphone->buffer);
+         write_avail = microphone->engine_buffer_size - padding * microphone->frame_size;
+         written     = read_avail < write_avail ? read_avail : write_avail;
+         if (written)
+            if (!wasapi_microphone_flush_buffer(microphone, written))
+               return -1;
+      }
+
+      write_avail = FIFO_WRITE_AVAIL(microphone->buffer);
+      written     = buffer_size < write_avail ? buffer_size : write_avail;
+      if (written)
+         fifo_write(microphone->buffer, buffer, written);
+   }
+   else
+   {
+      if (FAILED(_IAudioClient_GetCurrentPadding(microphone->client, &padding)))
+         return -1;
+
+      if (!(write_avail = microphone->engine_buffer_size - padding * microphone->frame_size))
+         return 0;
+
+      written = buffer_size < write_avail ? buffer_size : write_avail;
+      if (written)
+         if (!wasapi_microphone_flush(microphone, buffer, written))
+            return -1;
+   }
+
+   return written;
+}
+
+static ssize_t wasapi_microphone_read_ex(
+   wasapi_microphone_t *wasapi,
+   wasapi_microphone_handle_t *microphone,
+   const void * buffer,
+   size_t buffer_size,
+   DWORD ms)
+{
+   ssize_t written    = 0;
+   size_t write_avail = FIFO_WRITE_AVAIL(microphone->buffer);
+
+   if (!write_avail)
+   {
+      if (WaitForSingleObject(microphone->write_event, ms) != WAIT_OBJECT_0)
+         return 0;
+
+      if (!wasapi_microphone_flush_buffer(microphone, microphone->engine_buffer_size))
+         return -1;
+
+      write_avail = microphone->engine_buffer_size;
+   }
+
+   written = buffer_size < write_avail ? buffer_size : write_avail;
+   fifo_write(microphone->buffer, buffer, written);
+
+   return written;
+}
+
+static ssize_t wasapi_microphone_read(void *driver_context, void *mic_context, void *buffer, size_t buffer_size)
+{
+   size_t bytes_read                      = 0;
+   wasapi_microphone_t *wasapi            = (wasapi_microphone_t *)driver_context;
+   wasapi_microphone_handle_t *microphone = (wasapi_microphone_handle_t*)mic_context;
+
+   if (!wasapi || !microphone || !buffer)
+      return -1;
+
+   if (wasapi->nonblock)
+   {
+      if (microphone->exclusive)
+         return wasapi_microphone_read_ex(wasapi, microphone, buffer, buffer_size, 0);
+      return wasapi_microphone_read_sh_nonblock(wasapi, microphone, buffer, buffer_size);
+   }
+
+   if (microphone->exclusive)
+   {
+      ssize_t read;
+      for (read = -1; bytes_read < buffer_size; bytes_read += read)
+      {
+         read = wasapi_microphone_read_ex(wasapi, microphone, (char*)buffer + bytes_read, buffer_size - bytes_read, INFINITE);
+         if (read == -1)
+            return -1;
+      }
+   }
+   else
+   {
+      ssize_t read;
+      if (microphone->buffer)
+      {
+         for (read = -1; bytes_read < buffer_size; bytes_read += read)
+         {
+            read = wasapi_microphone_read_sh_buffer(wasapi, microphone, (char*)buffer + bytes_read, buffer_size - bytes_read);
+            if (read == -1)
+               return -1;
+         }
+      }
+      else
+      {
+         for (read = -1; bytes_read < buffer_size; bytes_read += read)
+         {
+            read = wasapi_microphone_read_sh(microphone, (char*)buffer + bytes_read, buffer_size - bytes_read);
+            if (read == -1)
+               return -1;
+         }
+      }
+   }
+
+   return bytes_read;
+}
+
 static void *wasapi_microphone_open_mic(void *driver_context, const char *dev_id, unsigned rate, unsigned latency,
                                         unsigned u1, unsigned *u2)
 {
@@ -243,7 +484,7 @@ static void wasapi_microphone_device_list_free(const void *driver_context, struc
 microphone_driver_t microphone_wasapi = {
       wasapi_microphone_init,
       wasapi_microphone_free,
-      NULL,
+      wasapi_microphone_read,
       NULL,
       NULL,
       NULL,
