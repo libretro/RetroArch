@@ -21,7 +21,7 @@
 #include "mmdevice_common.h"
 #include "mmdevice_common_inline.h"
 
-void *mmdevice_list_new(void *u, EDataFlow data_flow)
+void *mmdevice_list_new(const void *u, EDataFlow data_flow)
 {
    HRESULT hr;
    UINT i;

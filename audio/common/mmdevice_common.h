@@ -21,9 +21,7 @@
 
 RETRO_BEGIN_DECLS
 
-void *mmdevice_list_new_render(void *u);
-void *mmdevice_list_new_capture(void *u);
-void *mmdevice_list_new(void *u, EDataFlow data_flow);
+void *mmdevice_list_new(const void *u, EDataFlow data_flow);
 
 RETRO_END_DECLS
 
