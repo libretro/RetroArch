@@ -467,6 +467,11 @@ static size_t wasapi_buffer_size(void *wh)
    return w->engine_buffer_size;
 }
 
+static void *wasapi_device_list_new(void *u)
+{
+   return mmdevice_list_new(u, eRender);
+}
+
 audio_driver_t audio_wasapi = {
    wasapi_init,
    wasapi_write,
@@ -477,7 +482,7 @@ audio_driver_t audio_wasapi = {
    wasapi_free,
    wasapi_use_float,
    "wasapi",
-   mmdevice_list_new_render,
+   wasapi_device_list_new,
    wasapi_device_list_free,
    wasapi_write_avail,
    wasapi_buffer_size

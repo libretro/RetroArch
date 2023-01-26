@@ -21,16 +21,6 @@
 #include "mmdevice_common.h"
 #include "mmdevice_common_inline.h"
 
-void *mmdevice_list_new_render(void *u)
-{
-   return mmdevice_list_new(u, eRender);
-}
-
-void *mmdevice_list_new_capture(void *u)
-{
-   return mmdevice_list_new(u, eCapture);
-}
-
 void *mmdevice_list_new(void *u, EDataFlow data_flow)
 {
    HRESULT hr;
