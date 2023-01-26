@@ -1405,6 +1405,8 @@
 					"-DHAVE_PATCH",
 					"-DHAVE_UPDATE_CORE_INFO",
 					"-DHAVE_VULKAN",
+					"-D_7ZIP_ST",
+					"-DHAVE_7ZIP",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
 				PRODUCT_NAME = RetroArch;
@@ -1513,6 +1515,8 @@
 					"-DHAVE_PATCH",
 					"-DHAVE_UPDATE_CORE_INFO",
 					"-DHAVE_VULKAN",
+					"-D_7ZIP_ST",
+					"-DHAVE_7ZIP",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
