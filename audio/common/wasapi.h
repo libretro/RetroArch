@@ -1,4 +1,5 @@
 /*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2011-2017 Daniel De Matteis
  *  Copyright (C) 2023 Jesse Talavera-Greenberg
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -13,12 +14,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * Contains WASAPI-specific support functions that are used
+ * by the WASAPI audio and microphone drivers.
+ *
+ */
 
-#ifndef RETROARCH_WASAPI_H
-#define RETROARCH_WASAPI_H
+#ifndef RETROARCH_COMMON_WASAPI_H
+#define RETROARCH_COMMON_WASAPI_H
 
 #include "../common/mmdevice_common_inline.h"
+#include "boolean.h"
 
 IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow);
+IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
+                                 bool *float_fmt, unsigned *rate, unsigned latency);
 
-#endif /* RETROARCH_WASAPI_H */
+#endif /* RETROARCH_COMMON_WASAPI_H */
