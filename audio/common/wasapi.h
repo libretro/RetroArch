@@ -26,6 +26,7 @@
 #include "../common/mmdevice_common_inline.h"
 #include "boolean.h"
 
+void wasapi_log_hr(HRESULT hr, char* buffer, size_t length);
 IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow);
 IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
                                  bool *float_fmt, unsigned *rate, unsigned latency);

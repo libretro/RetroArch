@@ -23,6 +23,20 @@
 #include "string/stdstring.h"
 #include "mmdevice_common.h"
 
+static void wasapi_log_hr(HRESULT hr, char* buffer, size_t length)
+{
+   FormatMessage(
+         FORMAT_MESSAGE_IGNORE_INSERTS |
+         FORMAT_MESSAGE_FROM_SYSTEM |
+         FORMAT_MESSAGE_FROM_HMODULE,
+         NULL,
+         hr,
+         MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
+         buffer,
+         length - 1,
+         NULL);
+}
+
 static unsigned wasapi_pref_rate(unsigned i)
 {
    const unsigned r[] = { 48000, 44100, 96000, 192000, 32000 };
