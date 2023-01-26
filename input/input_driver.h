@@ -27,7 +27,7 @@
 #include <retro_inline.h>
 #include <libretro.h>
 #include <retro_miscellaneous.h>
-
+#include <streams/interface_stream.h>
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif /* HAVE_CONFIG_H */
