@@ -151,7 +151,7 @@ static ssize_t wasapi_microphone_read_sh_buffer(
       write_avail = microphone->engine_buffer_size - padding * microphone->frame_size;
       written     = read_avail < write_avail ? read_avail : write_avail;
       if (written)
-         if (!wasapi_microphone_flush_buffer(microphone, written))
+         if (!wasapi_microphone_flush_buffer(wasapi, microphone, written))
             return -1;
    }
 
@@ -185,7 +185,7 @@ static ssize_t wasapi_microphone_read_sh(
 
    written = buffer_size < write_avail ? buffer_size : write_avail;
    if (written)
-      if (!wasapi_microphone_flush(microphone, buffer, written))
+      if (!wasapi_microphone_flush(wasapi, microphone, buffer, written))
          return -1;
 
    return written;
@@ -214,7 +214,7 @@ static ssize_t wasapi_microphone_read_sh_nonblock(
          write_avail = microphone->engine_buffer_size - padding * microphone->frame_size;
          written     = read_avail < write_avail ? read_avail : write_avail;
          if (written)
-            if (!wasapi_microphone_flush_buffer(microphone, written))
+            if (!wasapi_microphone_flush_buffer(wasapi, microphone, written))
                return -1;
       }
 
@@ -233,7 +233,7 @@ static ssize_t wasapi_microphone_read_sh_nonblock(
 
       written = buffer_size < write_avail ? buffer_size : write_avail;
       if (written)
-         if (!wasapi_microphone_flush(microphone, buffer, written))
+         if (!wasapi_microphone_flush(wasapi, microphone, buffer, written))
             return -1;
    }
 
@@ -255,7 +255,7 @@ static ssize_t wasapi_microphone_read_ex(
       if (WaitForSingleObject(microphone->read_event, ms) != WAIT_OBJECT_0)
          return 0;
 
-      if (!wasapi_microphone_flush_buffer(microphone, microphone->engine_buffer_size))
+      if (!wasapi_microphone_flush_buffer(wasapi, microphone, microphone->engine_buffer_size))
          return -1;
 
       write_avail = microphone->engine_buffer_size;
@@ -309,7 +309,7 @@ static ssize_t wasapi_microphone_read(void *driver_context, void *mic_context, v
       {
          for (read = -1; bytes_read < buffer_size; bytes_read += read)
          {
-            read = wasapi_microphone_read_sh(microphone, (char*)buffer + bytes_read, buffer_size - bytes_read);
+            read = wasapi_microphone_read_sh(wasapi, microphone, (char*)buffer + bytes_read, buffer_size - bytes_read);
             if (read == -1)
                return -1;
          }
