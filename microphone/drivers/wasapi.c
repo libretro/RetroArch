@@ -23,7 +23,7 @@
 
 typedef struct
 {
-   HANDLE write_event;
+   HANDLE              read_event;
    IMMDevice           *device;
    LPWSTR              device_id;
    IAudioClient        *client;
@@ -141,7 +141,7 @@ static ssize_t wasapi_microphone_read_sh_buffer(
    if (!write_avail)
    {
       size_t read_avail  = 0;
-      if (WaitForSingleObject(microphone->write_event, INFINITE) != WAIT_OBJECT_0)
+      if (WaitForSingleObject(microphone->read_event, INFINITE) != WAIT_OBJECT_0)
          return -1;
 
       if (FAILED(_IAudioClient_GetCurrentPadding(microphone->client, &padding)))
@@ -173,7 +173,7 @@ static ssize_t wasapi_microphone_read_sh(
    ssize_t written    = -1;
    UINT32 padding     = 0;
 
-   if (WaitForSingleObject(microphone->write_event, INFINITE) != WAIT_OBJECT_0)
+   if (WaitForSingleObject(microphone->read_event, INFINITE) != WAIT_OBJECT_0)
       return -1;
 
    if (FAILED(_IAudioClient_GetCurrentPadding(microphone->client, &padding)))
@@ -252,7 +252,7 @@ static ssize_t wasapi_microphone_read_ex(
 
    if (!write_avail)
    {
-      if (WaitForSingleObject(microphone->write_event, ms) != WAIT_OBJECT_0)
+      if (WaitForSingleObject(microphone->read_event, ms) != WAIT_OBJECT_0)
          return 0;
 
       if (!wasapi_microphone_flush_buffer(microphone, microphone->engine_buffer_size))
@@ -468,14 +468,14 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
       RARCH_LOG("[WASAPI]: Intermediate buffer is off. \n");
    }
 
-   microphone->write_event = CreateEventA(NULL, FALSE, FALSE, NULL);
-   if (!microphone->write_event)
+   microphone->read_event = CreateEventA(NULL, FALSE, FALSE, NULL);
+   if (!microphone->read_event)
    {
       RARCH_ERR("[WASAPI]: Failed to allocate capture device's event handle\n");
       goto error;
    }
 
-   hr = _IAudioClient_SetEventHandle(microphone->client, microphone->write_event);
+   hr = _IAudioClient_SetEventHandle(microphone->client, microphone->read_event);
    if (FAILED(hr))
    {
       wasapi_log_hr(hr, error_message, sizeof(error_message));
@@ -520,8 +520,8 @@ error:
    IFACE_RELEASE(microphone->capture);
    IFACE_RELEASE(microphone->client);
    IFACE_RELEASE(microphone->device);
-   if (microphone->write_event)
-      CloseHandle(microphone->write_event);
+   if (microphone->read_event)
+      CloseHandle(microphone->read_event);
    if (microphone->buffer)
       fifo_free(microphone->buffer);
    if (microphone->device_id)
@@ -541,7 +541,7 @@ static void wasapi_microphone_close_mic(void *driver_context, void *microphone_c
    if (!wasapi || !microphone)
       return;
 
-   write_event = microphone->write_event;
+   write_event = microphone->read_event;
 
    IFACE_RELEASE(microphone->capture);
    if (microphone->client)
