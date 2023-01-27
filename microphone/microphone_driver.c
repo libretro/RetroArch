@@ -313,12 +313,25 @@ bool microphone_driver_set_mic_state(retro_microphone_t *microphone, bool state)
    const microphone_driver_t *mic_driver = mic_st->driver;
    void *driver_context                  = mic_st->driver_context;
 
-   if (!microphone || !microphone->active || !mic_driver || !mic_driver->set_mic_active)
+   if (!microphone || !microphone->active || !mic_driver || !mic_driver->start_mic || !mic_driver->stop_mic || !mic_driver->mic_alive)
       return false;
 
    if (driver_context && microphone->microphone_context)
    { /* If the driver is initialized... */
-      bool success = mic_driver->set_mic_active(driver_context, microphone->microphone_context, state);
+      bool success;
+      if (state)
+      { /* If we want to enable this mic... */
+         success = mic_driver->mic_alive(driver_context, microphone->microphone_context)
+               || mic_driver->start_mic(driver_context, microphone->microphone_context);
+
+         /* Enable the mic, or do nothing and report success if it's already enabled. */
+      }
+      else
+      { /* If we want to pause this mic... */
+         success = !mic_driver->mic_alive(driver_context, microphone->microphone_context)
+               || mic_driver->stop_mic(driver_context, microphone->microphone_context);
+         /* Disable the mic, or do nothing and report success if it's already disabled. */
+      }
 
       if (success)
          RARCH_DBG("[Microphone]: Set initialized mic state to %s\n",
@@ -346,12 +359,12 @@ bool microphone_driver_get_mic_state(const retro_microphone_t *microphone)
    const microphone_driver_t *mic_driver = mic_st->driver;
    void *driver_context                  = mic_st->driver_context;
 
-   if (!microphone || !microphone->active || !mic_driver || !mic_driver->get_mic_active)
+   if (!microphone || !microphone->active || !mic_driver || !mic_driver->mic_alive)
       return false;
 
    if (driver_context && microphone->microphone_context)
    { /* If the driver is initialized... */
-      return mic_driver->get_mic_active(driver_context, microphone->microphone_context);
+      return mic_driver->mic_alive(driver_context, microphone->microphone_context);
    }
    else
    { /* The driver's not ready yet,
@@ -402,8 +415,8 @@ static void microphone_driver_flush(
          microphone->sample_buffer_length &&         /* ...with a non-empty sample buffer... */
 
          mic_st->driver->read &&                     /* ...and valid function pointers... */
-         mic_st->driver->get_mic_active &&
-         mic_st->driver->get_mic_active(             /* ...and it's enabled... */
+         mic_st->driver->mic_alive &&
+         mic_st->driver->mic_alive(                  /* ...and it's enabled... */
                mic_st->driver_context,
                microphone->microphone_context))
    {

@@ -289,7 +289,7 @@ static void sdl_microphone_close_mic(void *data, void *microphone_context)
    }
 }
 
-static bool sdl_microphone_get_mic_active(const void *data, const void *microphone_context)
+static bool sdl_microphone_mic_alive(const void *data, const void *microphone_context)
 {
    const sdl_microphone_t *sdl                   = (const sdl_microphone_t*)data;
    const sdl_microphone_handle_t *microphone = (const sdl_microphone_handle_t*)microphone_context;
@@ -319,6 +319,16 @@ static bool sdl_microphone_set_mic_active(void *data, void *microphone_context, 
    RARCH_DBG("[SDL audio]: Set state of microphone %u to %s\n",
       microphone->device_id, enabled ? "enabled" : "disabled");
    return true;
+}
+
+static bool sdl_microphone_start_mic(void *data, void *microphone_context)
+{
+   return sdl_microphone_set_mic_active(data, microphone_context, true);
+}
+
+static bool sdl_microphone_stop_mic(void *data, void *microphone_context)
+{
+   return sdl_microphone_set_mic_active(data, microphone_context, false);
 }
 
 static void sdl_microphone_set_nonblock_state(void *data, bool state)
@@ -439,15 +449,16 @@ microphone_driver_t microphone_sdl = {
       sdl_microphone_init,
       sdl_microphone_free,
       sdl_microphone_read,
-      sdl_microphone_stop,
       sdl_microphone_start,
+      sdl_microphone_stop,
       sdl_microphone_alive,
-      sdl_microphone_set_mic_active,
-      sdl_microphone_get_mic_active,
       sdl_microphone_set_nonblock_state,
       "sdl2",
       NULL,
       NULL,
       sdl_microphone_open_mic,
-      sdl_microphone_close_mic
+      sdl_microphone_close_mic,
+      sdl_microphone_mic_alive,
+      sdl_microphone_start_mic,
+      sdl_microphone_stop_mic
 };
