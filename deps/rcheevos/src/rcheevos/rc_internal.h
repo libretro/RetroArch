@@ -146,6 +146,22 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse, in
 int rc_test_condset(rc_condset_t* self, rc_eval_state_t* eval_state);
 void rc_reset_condset(rc_condset_t* self);
 
+enum {
+  RC_PROCESSING_COMPARE_DEFAULT = 0,
+  RC_PROCESSING_COMPARE_MEMREF_TO_CONST,
+  RC_PROCESSING_COMPARE_MEMREF_TO_DELTA,
+  RC_PROCESSING_COMPARE_MEMREF_TO_MEMREF,
+  RC_PROCESSING_COMPARE_DELTA_TO_MEMREF,
+  RC_PROCESSING_COMPARE_DELTA_TO_CONST,
+  RC_PROCESSING_COMPARE_MEMREF_TO_CONST_TRANSFORMED,
+  RC_PROCESSING_COMPARE_MEMREF_TO_DELTA_TRANSFORMED,
+  RC_PROCESSING_COMPARE_MEMREF_TO_MEMREF_TRANSFORMED,
+  RC_PROCESSING_COMPARE_DELTA_TO_MEMREF_TRANSFORMED,
+  RC_PROCESSING_COMPARE_DELTA_TO_CONST_TRANSFORMED,
+  RC_PROCESSING_COMPARE_ALWAYS_TRUE,
+  RC_PROCESSING_COMPARE_ALWAYS_FALSE
+};
+
 rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse, int is_indirect);
 int rc_test_condition(rc_condition_t* self, rc_eval_state_t* eval_state);
 void rc_evaluate_condition_value(rc_typed_value_t* value, rc_condition_t* self, rc_eval_state_t* eval_state);
