@@ -1744,12 +1744,20 @@ MSG_HASH(
    "Запретить запуск хранителя экрана системой."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   "Отключает хранитель экрана. Данная настройка может игнорироваться видеодрайвером."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    "Рендеринг в отдельном потоке"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    "Улучшает производительность, но увеличивает задержку ввода и понижает плавность изображения. Используйте только при недостаточной скорости эмуляции."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   "Использовать многопоточной видеодрайвер. Может улучшать производительность, но также влияет на задержку и плавность изображения."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
@@ -2521,6 +2529,22 @@ MSG_HASH(
    "Изменить стандартное устройство, используемое драйвером звука. Зависит от драйвера."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
+   "Пользовательское значение PCM-устройства для драйвера ALSA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
+   "Пользовательское значение пути для драйвера OSS (напр. /dev/dsp)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   "Пользовательское имя порта для драйвера JACK (напр. system:playback1, system:playback_2)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   "Пользовательский IP-адрес сервера RSound для драйвера RSound."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Задержка звука (мс)"
    )
@@ -2586,12 +2610,20 @@ MSG_HASH(
    "Выбор устройства ввода."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_INPUT,
+   "Устанавливает устройство ввода (зависит от драйвера). При значении 'ВЫКЛ' ввод MIDI будет отключен. Также может быть задано имя устройства."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    "Вывод"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
    "Выбор устройства вывода."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
+   "Устанавливает устройство вывода (зависит от драйвера). При значении 'ВЫКЛ' вывод MIDI будет отключен. Также может быть задано имя устройства.\nЕсли включено и приложение/игра поддерживает вывод MIDI, некоторые звуки (в зависимости от игры/приложения) будут генерироваться MIDI-уст[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
@@ -2725,6 +2757,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    "Влияет на то, как в RetroArch производится опрос ввода. В зависимости от текущей конфигурации, установка 'Ранний' или 'Поздний' может уменьшить задержку ввода."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
+   "Влияет на то, как осуществляется опроса ввода в RetroArch.\nРанний - опрос ввода производится перед обработкой кадра.\nОбычный - непосредственно при запросе на опрос.\nПоздний - при первом запросе состояния ввода для кадра.\nВ зависимости от конфигурации, значения 'Ранний' или 'Поз[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -3779,6 +3815,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
    "Хранить в локальном кэше данные об установленных ядрах. Существенно ускоряет загрузку на платформах с медленным доступом к памяти."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
+   "Обходить возможности сохранений в сведениях о ядре"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "Определяет, игнорировать ли возможности быстрых сохранений в сведениях о ядре, позволяя экспериментировать со связанными функциями (забегание, обратная перемотка и т.д.)."
+   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -3859,6 +3903,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
    "Сохранять изменения в файл конфигурации при выходе."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
+   "При выходе сохранять изменения в файл конфигурации. Полезно для внесённых в меню изменений. Перезаписывает файл конфигурации, не сохраняя комментарии."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
@@ -3954,6 +4002,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
    "Автоматически сохранять энергонезависимую память с заданным интервалом (в секундах)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
+   "Автоматически сохраняет энергонезависимую SRAM с заданным интервалом. По умолчанию выключено. Интервал измеряется в секундах. Значение 0 отключает автосохранение."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -8536,6 +8588,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
    "Фильтр"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
+   "Аппаратный фильтр для данного прохода. Если выбрано 'По умолчанию', будет использоваться 'Линейный' или 'Ближайший' фильтр, в зависимости от установки 'Билинейная фильтрация' в настройках изображения."
+  )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCALE,
    "Масштаб"

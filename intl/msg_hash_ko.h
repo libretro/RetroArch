@@ -211,7 +211,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "RetroArch를 종료합니다. 프로그램을 하드 방식(SIGKILL 등) 으로 종료하면 구성 등을 저장하지 않고 RetroArch가 종료됩니다. 유닉스 계열의 경우, SIGINT/SIGTERM을 사용하면 깨끗한 초기화 해제가 가능합니다."
+   "RetroArch를 종료합니다. 프로그램을 강제 종료(SIGKILL 등)할 경우 RetroArch의 구성 등이 저장되지 않고 종료됩니다. 유닉스 계열 운영체제의 경우, SIGINT/SIGTERM을 사용하면 정상 종료가 가능합니다."
    )
 
 /* Main Menu > Load Core */
@@ -1254,7 +1254,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
-   "플레인 파일입니다."
+   "일반 파일입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
@@ -1290,11 +1290,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   "OSD 표시"
+   "온스크린 디스플레이"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   "디스플레이 오버레이 및 키보드 오버레이, 화면 알림 설정을 변경합니다."
+   "디스플레이 오버레이 및 키보드 오버레이, 온스크린 알림 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
@@ -1921,6 +1921,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    "사용할 디스플레이를 선택합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
+   "선호하는 모니터입니다. 0(기본값)으로 설정하는 것은 특별히 선호하는 모니터가 없다는 의미이고, 1 이상(1이 첫 번째 모니터)으로 설정하는 것은 RetroArch에게 해당 모니터를 사용할 것을 제안하는 것입니다."
+   )
 #if defined (WIIU)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
@@ -2343,12 +2347,20 @@ MSG_HASH(
    "프레임 지연 (ms)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "지연 시간을 줄이지만 비디오 버벅거림이 발생할 확률이 높아집니다. 비디오 출력 이후와 코어 프레임 이전 사이에 밀리초 단위의 지연을 추가합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "자동 프레임 지연"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
    "필요한 경우 '프레임 지연'을 일시적으로 감소시키며 프레임 누락을 방지합니다. '프레임 지연'이 0일 경우 시작 값은 프레임 간격의 절반입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
+   "목표 프레임 레이트에 안정적으로 도달할 때까지 임시로 '프레임 지연'을 감소시킵니다. 측정은 '프레임 지연'이 0일 때 프레임 시간의 절반에서부터 시작됩니다. (예: NTSC에서는 8, PAL에서는 10)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2466,6 +2478,10 @@ MSG_HASH(
    "오디오 볼륨(dB)입니다. 0 dB로 설정 시 증폭이 적용되지 않은 정상 볼륨 상태가 됩니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
+   "dB로 나타낸 오디오 볼륨입니다. 0 dB는 증폭이 적용되지 않은 일반 볼륨입니다. 증폭은 실행 중에 볼륨 높임/볼륨 낮춤 입력으로 조정될 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    "오디오 믹서 볼륨 크기 (dB)"
    )
@@ -2535,6 +2551,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
    "오디오 드라이버가 사용할 기본 오디오 장치를 설정합니다. 이 옵션은 드라이버 종속적입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
+   "ALSA 드라이버의 사용자 지정 PCM 장치 값입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
+   "OSS 드라이버의 경로 값입니다. (예: /dev/dsp)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   "JACK 드라이버의 포트명 값입니다. (예: system:playback1,system:playback_2)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   "RSound 드라이버가 존재하는 RSound 서버의 IP 주소입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -2735,6 +2767,18 @@ MSG_HASH(
    "RetroArch에서 지원할 최대 사용자 수를 설정합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "폴링 방식 (재시작 필요)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+   "RetroArch에서 입력 폴링이 수행되는 방식을 설정합니다. 시스템 구성에 따라 '일찍' 또는 '늦게'로 설정 시 지연시간이 줄어들 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
+   "RetroArch에서 입력 폴링이 수행되는 방식을 설정합니다.\n일찍 - 입력 폴링이 프레임 처리 이전에 수행됩니다.\n보통 - 입력 폴링이 폴링 요청이 발생할 때 수행됩니다.\n늦게 - 입력 폴링이 매 프레임에서 처음으로 입력 상태 요청이 발생할 때마다 수행됩니다.\n시스템 구성에 따라 '일찍' 또는 '늦게'로 설정 시 지연시간이 줄어들 수 있습니다. 이 설정은 넷플레이 중에는 무시됩니[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "이 코어에 입력설정 파일 사용"
    )
@@ -2764,6 +2808,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
    "물리적 키보드 선택"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "이 장치를 게임패드가 아닌 물리적 키보드로서 사용합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "만일 RetroArch가 하드웨어 키보드를 게임패드로 인식할 경우, 이 설정을 활성화해 RetroArch가 잘못 인식된 해당 장치를 키보드인 것처럼 다루도록 강제할 수 있습니다.\n이 설정은 Android TV 장치에서 컴퓨터를 에뮬레이트하려 하는데 장치에 직접 연결 가능한 물리적 키보드가 존재할 경우 등의 상황에서 유용하게 사용될 수 있습니다."
    )
 #endif
 MSG_HASH(
@@ -2805,6 +2857,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
    "컨트롤러 연결 해제 시 컨텐츠 일시정지"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
+   "컨트롤러가 연결 해제될 경우 컨텐츠를 일시정지합니다. 시작 버튼을 누르면 일시정지를 해제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -3022,6 +3078,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "핫키 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "할당된 경우, 다른 모든 핫키는 '핫키 사용' 키를 누른 채로 입력해야 합니다. 일반 입력에 영향을 끼치지 않으면서 컨트롤러 버튼을 핫키로 할당할 수 있게 합니다. '핫키 사용' 키를 컨트롤러에만 할당할 경우 키보드 핫키는 컨트롤러의 '핫키 사용' 키를 누르지 않아도 사용할 수 있으며, 컨트롤러와 키보드 모두 할당할 경우 두 장치의 '핫키 사용' 키는 두 장치 모두에서 사용[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -3366,15 +3426,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
-   "화면의 기술 통계 표시를 켜거나 끕니다."
+   "온스크린 기술적 통계 표시를 켜거나 끕니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "화상 키보드 (켜기/끄기)"
+   "온스크린 키보드 (켜기/끄기)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "화상 키보드를 켜거나 끕니다."
+   "온스크린 키보드를 켜거나 끕니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -3382,7 +3442,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT,
-   "현재 활성 화면 오버레이의 다음 사용 가능한 레이아웃으로 전환합니다."
+   "현재 활성된 온스크린 오버레이의 다음 사용 가능한 레이아웃으로 전환합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
@@ -3734,6 +3794,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
    "설치된 코어 정보에 대한 로컬 캐시를 구축합니다. 디스크 성능이 좋지 않은 플랫폼에서 불러오는 시간을 크게 줄일 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
+   "코어 정보 상태저장 기능 여부 무시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "코어 정보의 상태저장 기능 제공 여부를 무시할지 설정합니다. 관련 기능(미리 실행, 되감기 등)을 시험해볼 수 있게 됩니다."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4334,11 +4402,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
-   "화면 오버레이"
+   "온스크린 오버레이"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
-   "베젤과 화면 상의 컨트롤을 조정합니다."
+   "베젤과 온스크린 컨트롤을 조정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
@@ -4350,11 +4418,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "화면 알림"
+   "온스크린 알림"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "화면 알림을 조정합니다."
+   "온스크린 알림을 조정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
@@ -4373,7 +4441,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-   "오버레이는 테두리 및 화면 제어에 사용됩니다."
+   "오버레이는 테두리 및 온스크린 컨트롤에 사용됩니다."
    )
 
 MSG_HASH(
@@ -4412,7 +4480,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
-   "인식된 입력을 화면 오버레이에 표시합니다. '터치됨'은 누르거나 클릭한 오버레이 요소를 강조 표시합니다. '물리적(컨트롤러)'은 일반적으로 연결된 컨트롤러/키보드에서 코어로 전달되는 실제 입력을 강조 표시합니다."
+   "인식된 입력을 온스크린 오버레이에 표시합니다. '터치'는 누르거나 클릭한 오버레이 요소를 강조 표시합니다. '물리 (컨트롤러)'는 연결된 컨트롤러/키보드에서 코어로 전달되는 실제 입력을 강조 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
@@ -4436,7 +4504,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
-   "화면 오버레이를 사용할 때 마우스 커서를 표시합니다."
+   "온스크린 오버레이를 사용할 때 마우스 커서를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
@@ -4622,11 +4690,11 @@ MSG_HASH( /* FIXME Unused */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
-   "화면 알림"
+   "온스크린 알림"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
-   "화면 메시지를 표시합니다."
+   "화면에 메시지를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
@@ -4818,7 +4886,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-   "스크린샷을 찍을 때 화면에 원하는 시간과 함께 흰색 깜박임 효과를 표시합니다."
+   "스크린샷을 찍을 때 화면에 원하는 시간동안 흰색 깜박임 효과를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
@@ -4874,7 +4942,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
-   "화면 텍스트에 대한 사용자 지정 X축 위치를 지정합니다. 0은 왼쪽 가장자리입니다."
+   "온스크린 텍스트에 대한 사용자 지정 X축 위치를 지정합니다. 0은 왼쪽 가장자리입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
@@ -4882,23 +4950,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
-   "화면 텍스트에 대한 사용자 지정 Y축 위치를 지정합니다. 0은 아래쪽 가장자리입니다."
+   "온스크린 텍스트에 대한 사용자 지정 Y축 위치를 지정합니다. 0은 아래쪽 가장자리입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
-   "알림 빨간색"
+   "알림 색 (빨강)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
+   "온스크린 알림 글자 색의 빨간색 값을 설정합니다. 유효한 값은 0에서 255 사이입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
-   "알림 녹색"
+   "알림 색 (초록)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
+   "온스크린 알림 글자 색의 초록색 값을 설정합니다. 유효한 값은 0에서 255 사이입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
-   "알림 파란색"
+   "알림 색 (파랑)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
+   "온스크린 알림 글자 색의 파란색 값을 설정합니다. 유효한 값은 0에서 255 사이입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
    "알림 배경"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+   "온스크린 알림에 배경 색상을 사용합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
@@ -5543,11 +5627,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
-   "'화면 오버레이' 표시하기"
+   "'온스크린 오버레이' 표시"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-   "'화면 오버레이' 옵션을 표시합니다."
+   "'온스크린 오버레이' 옵션을 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
@@ -5746,11 +5830,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "'Osd' 표시하기"
+   "'온스크린 디스플레이' 표시"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "'OSD' 설정을 표시합니다."
+   "'온스크린 디스플레이' 설정을 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
@@ -6088,7 +6172,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
-   "메뉴"
+   "모양"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
@@ -6132,7 +6216,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
-   "업적 알림이 다른 유형의 화면 알림과 일치해야 하는지 여부를 설정합니다. 수동 패딩/위치 값을 설정하려면 비활성화합니다."
+   "도전과제 알림에 다른 유형의 온스크린 알림과 같은 크기의 패딩을 사용할지 설정합니다. 비활성화하면 수동으로 패딩 및 위치 값을 정할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
@@ -6154,20 +6238,52 @@ MSG_HASH(
 /* Settings > Achievements > Visibility */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
+   "표시 설정"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
-   "표시되는 메시지 및 화면 요소를 변경합니다. 기능을 비활성화하지 않습니다."
+   "어떤 메시지 및 온스크린 요소를 표시할지 변경합니다. 기능을 비활성화하지 않습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
+   "시작 시 요약 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
+   "불러와진 게임에 대한 정보와 사용자의 현재 진행도를 표시합니다.\n'확인된 모든 게임'으로 설정할 경우 등록된 도전과제가 없는 게임에서도 요약을 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "확인된 모든 게임"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
+   "도전과제가 있는 게임"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
-   "알림 잠금 해제"
+   "달성 알림"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
+   "도전과제 달성 시 알림을 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
+   "완전 정복 알림"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
+   "게임의 모든 도전과제를 달성 시 알림을 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
+   "활성 도전 지표"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "특정 업적을 달성할 수 있는 동안 화면 표시기를 표시합니다."
+   "특정 도전 과제를 달성할 수 있을 때 화면에 지표를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -11083,7 +11199,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
-   "화면 오버레이"
+   "온스크린 오버레이"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
@@ -13521,6 +13637,10 @@ MSG_HASH(
    "Windows의 파일 접근 권한 설정을 엽니다"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   "broadFileSystemAccess 권한을 활성화하기 위해 Windows 권한 설정을 엽니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
    "열기..."
    )
@@ -13693,6 +13813,10 @@ MSG_HASH(
    "성능 향상, 지연시간 감소, 소리 찢어짐 문제 해결 등의 효과를 볼 수 있습니다. 사용하려면 https://github.com/FeralInteractive/gamemode 가 필요합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
+   "Linux에서 GameMode를 활성화하면 자동으로 CPU와 GPU를 최고 성능 모드로 변경하여 지연 시간이 줄어들고, 오디오 깨짐이 고쳐지고, 전체적인 성능이 최대화되는 등의 효과를 볼 수 있습니다.\n사용하려면 GameMode 소프트웨어가 설치되어 있어야 합니다. GameMode를 설치하는 방법은 https://github.com/FeralInteractive/gamemode 에서 확인하실 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "PAL60 모드 사용"
    )
@@ -13711,6 +13835,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
    "전면 터치 선호"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
+   "후면 대신 전면 터치를 사용합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
@@ -13857,6 +13985,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "시간대를 설정하여 날짜와 시간을 현재 위치에 맞게 조정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TIMEZONE,
+   "사용 가능한 시간대 목록을 표시합니다. 시간대를 선택하면, 시간과 날짜가 선택한 시간대에 맞춰 조정됩니다. 시스템/하드웨어 시간이 UTC에 맞춰져 있다고 가정합니다."
    )
 MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,

@@ -2307,6 +2307,14 @@ MSG_HASH(
    "Ritardo Frame (ms)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "Riduce la latenza al costo di un rischio più elevato di intercettazioni video. Aggiunge un ritardo in millisecondi dopo la presentazione video e prima della cornice principale."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
+   "Imposta quanti millisecondi di ritardo dopo la presentazione video prima di eseguire il core. Puoi ridurre la latenza al costo di un rischio più elevato di balbuzia. Il massimo è %d."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Ritardo Automatico Del Frame"
    )
@@ -2725,6 +2733,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    "Numero massimo di utenti supportati da RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "Sistema di Polling (Riavvio Richiesto)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3798,6 +3810,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
    "Mantieni le cache locali persistenti nelle informazioni del core installato. Riduce notevolmente i tempi di caricamento su piattaforme con accesso al disco lento."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
+   "Supera le informazioni del core per le informazioni del salvataggio di stato"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "Specifica se ignorare le funzionalità di salvataggio di stato delle informazioni di base, consentendo di sperimentare con le caratteristiche correlate (Run-Ahead, riavvolgi, ecc)."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(

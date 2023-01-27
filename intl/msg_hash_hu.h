@@ -3863,6 +3863,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
    "Egy állandó helyi gyorsítótár karbantartása a telepített magok információival. Nagyban csökkenti a betöltési időt lassú lemezelérésű platformokon."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
+   "Maginformációs fájl mentési tulajdonságainak átlépése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "A maginformációs fájl állapotmentési információinak figyelmen kívül hagyása. Így lehet kísérletezni az ezzel összefüggő funkciókkal (runahead, visszatekerés, stb.)."
+   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -8137,6 +8145,14 @@ MSG_HASH(
    "Tartalomkönyvtár specifikus beállítások törlése"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
+   "Aktív beállítás fájl"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
+   "A jelenleg használt konfigurációs fájl."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
    "Beállítások visszaállítása"
    )
@@ -8176,6 +8192,14 @@ MSG_HASH(
 
 /* Quick Menu > Controls > Manage Remap Files */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
+   "Aktív remap fájl"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
+   "A jelenleg használt remap fájl."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
    "Remap fájl betöltése"
@@ -8831,12 +8855,36 @@ MSG_HASH(
 /* Quick Menu > Overrides */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO,
+   "Aktív felülbíráló fájl"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
+   "A jelenleg használt felülbíráló fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
+   "Felülbíráló fájl betöltése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
+   "Betöltés és a jelenlegi konfiguráció lecserélése."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "Magspecifikus felülbírálat mentése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "Felülbíráló konfigurációs fájl mentése, amely minden tartalomra érvényes, amit ez a mag tölt be. Felülbírálja a fő konfigurációt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "Magspecifikus felülbírálat eltávolítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "A felülbíráló konfigurációs fájl törlése, amely minden, ezen magba betöltött tartalomra vonatkozik."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -8847,12 +8895,36 @@ MSG_HASH(
    "Felülbíráló konfigurációs fájl mentése, amely minden tartalomra érvényes, ami a jelenlegi fájllal azonos könyvtárban helyezkedik el. Felülbírálja a fő konfigurációt."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "Tartalomkönyvtár specifikus felülbírálat eltávolítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "A felülbíráló konfigurációs fájl törlése, amely minden olyan tartalomra vonatkozik, ami a jelenlegi fájl könyvtárában helyezkedik el."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
    "Játékspecifikus felülbírálat mentése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
    "Felülbíráló konfigurációs fájl mentése, amely csak a jelenlegi tartalomra érvényes. Felülbírálja a fő konfigurációt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "Játékspecifikus felülbírálat eltávolítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "A felülbíráló konfigurációs fájl törlése, amely csak a jelenlegi tartalomra vonatkozik."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
+   "Felülbírálat betöltésének visszavonása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD,
+   "Minden beállítás visszaállítása a rendszerszintű beállításokra."
    )
 
 /* Quick Menu > Achievements */
@@ -12591,8 +12663,24 @@ MSG_HASH(
    "Hiba a felülbíráló fájlok mentésekor."
    )
 MSG_HASH(
+   MSG_OVERRIDES_ERROR_REMOVING,
+   "Hiba a felülbíráló fájlok eltávolításakor."
+   )
+MSG_HASH(
    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
    "Felülbíráló fájlok mentése sikeres."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
+   "Felülbíráló fájlok eltávolítása sikeres."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
+   "Felülbíráló fájlok betöltésének visszavonása sikeres."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_NOT_SAVED,
+   "Nincs mit menteni. Felülbírálat mentése elvetve."
    )
 MSG_HASH(
    MSG_PAUSED,
