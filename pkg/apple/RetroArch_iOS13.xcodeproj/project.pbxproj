@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0714E7142983A5AC00E6B45B /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */; };
+		0714E7152983A5E500E6B45B /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		9204BE101D319EF300BD49DB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
@@ -117,6 +119,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		0714E7162983A5E500E6B45B /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				0714E7152983A5E500E6B45B /* libMoltenVK.dylib in Embed Libraries */,
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9292D6F528F549D500E47A75 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -142,6 +155,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = tvOS/modules/libMoltenVK.dylib; sourceTree = "<group>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -459,6 +473,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0714E7142983A5AC00E6B45B /* libMoltenVK.dylib in Frameworks */,
 				926C77F121FD26E800103EDE /* GameController.framework in Frameworks */,
 				926C77EF21FD263800103EDE /* AudioToolbox.framework in Frameworks */,
 			);
@@ -1145,6 +1160,7 @@
 			isa = PBXGroup;
 			children = (
 				92EDD1622982E40C00AD33B4 /* libMoltenVK.dylib */,
+				0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */,
 				9210C2F124B3A19100E6FE7C /* Metal.framework */,
 				9210C2F024B3A19100E6FE7C /* MetalKit.framework */,
 				92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */,
@@ -1233,6 +1249,7 @@
 				926C77D421FD1E6500103EDE /* Frameworks */,
 				92CC057521FE2D4900FF79F0 /* ShellScript */,
 				926C77D521FD1E6500103EDE /* Resources */,
+				0714E7162983A5E500E6B45B /* Embed Libraries */,
 			);
 			buildRules = (
 			);
@@ -1806,76 +1823,91 @@
 					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
 					"$(DEPS_DIR)/glslang/glslang/SPIRV",
 					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
+					../../gfx/include,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/tvOS/modules",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 1.14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-DDONT_WANT_ARM_OPTIMIZATIONS",
-					"-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_STB_FONT",
-					"-DHAVE_HID",
-					"-DHAVE_NETWORKING",
-					"-DHAVE_IFINFO",
-					"-DHAVE_NETPLAYDISCOVERY",
-					"-DHAVE_RUNAHEAD",
-					"-DHAVE_TRANSLATE",
-					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_BUILTINMINIUPNPC",
-					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_ONLINE_UPDATER",
-					"-DHAVE_LANGEXTRA",
-					"-DHAVE_CHEEVOS",
-					"-DRC_DISABLE_LUA",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_RGUI",
-					"-DHAVE_CONFIGFILE",
-					"-DHAVE_MENU",
-					"-DHAVE_GFX_WIDGETS",
-					"-DHAVE_LIBRETRODB",
+					"-DENABLE_HLSL",
+					"-DGLSLANG_OSINCLUDE_UNIX",
+					"-DHAVE_7ZIP",
 					"-DHAVE_AUDIOMIXER",
-					"-DIOS",
+					"-DHAVE_BTSTACK",
+					"-DHAVE_BUILTINGLSLANG",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CHEATS",
+					"-DHAVE_CHEEVOS",
+					"-DHAVE_COCOATOUCH",
+					"-DHAVE_COCOA_METAL",
+					"-DHAVE_CONFIGFILE",
+					"-DHAVE_COREAUDIO",
+					"-DHAVE_DYNAMIC",
+					"-DHAVE_FILTERS_BUILTIN",
+					"-DHAVE_GFX_WIDGETS",
+					"-DHAVE_GLSL",
+					"-DHAVE_GLSLANG",
+					"-DHAVE_GRIFFIN",
+					"-DHAVE_HID",
+					"-DHAVE_IFINFO",
+					"-DHAVE_IMAGEVIEWER",
+					"-DHAVE_KEYMAPPER",
+					"-DHAVE_LANGEXTRA",
+					"-DHAVE_LIBRETRODB",
+					"-DHAVE_MAIN",
+					"-DHAVE_MENU",
+					"-DHAVE_METAL",
+					"-DHAVE_MFI",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKING",
+					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-					"-DHAVE_CC_RESAMPLER",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DRARCH_MOBILE",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_VIDEO_LAYOUT",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOATOUCH",
-					"-DHAVE_MAIN",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_THREADS",
-					"-DHAVE_FILTERS_BUILTIN",
-					"-DHAVE_XMB",
 					"-DHAVE_OZONE",
+					"-DHAVE_PATCH",
+					"-DHAVE_RBMP",
+					"-DHAVE_REWIND",
+					"-DHAVE_RGUI",
+					"-DHAVE_RJPEG",
+					"-DHAVE_RPNG",
+					"-DHAVE_RTGA",
+					"-DHAVE_RUNAHEAD",
+					"-DHAVE_RWAV",
+					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_SHADERPIPELINE",
-					"-D_LZMA_UINT32_IS_ULONG",
-					"-DHAVE_MFI",
-					"-DHAVE_KEYMAPPER",
-					"-DHAVE_COCOA_METAL",
-					"-DHAVE_METAL",
 					"-DHAVE_SLANG",
 					"-DHAVE_SPIRV_CROSS",
-					"-DHAVE_GLSLANG",
+					"-DHAVE_STB_FONT",
+					"-DHAVE_STB_VORBIS",
+					"-DHAVE_THREADS",
+					"-DHAVE_TRANSLATE",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_CORE_INFO",
+					"-DHAVE_VIDEO_LAYOUT",
+					"-DHAVE_VULKAN",
+					"-DHAVE_XMB",
+					"-DHAVE_ZLIB",
+					"-DINLINE=inline",
+					"-DIOS",
+					"-DRARCH_INTERNAL",
+					"-DRARCH_MOBILE",
+					"-DRC_DISABLE_LUA",
 					"-DWANT_GLSLANG",
-					"-DGLSLANG_OSINCLUDE_UNIX",
-					"-DENABLE_HLSL",
-					"-DHAVE_BUILTINGLSLANG",
+					"-D_7ZIP_ST",
+					"-D_LZMA_UINT32_IS_ULONG",
+					"-D__LIBRETRO__",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1944,85 +1976,92 @@
 					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
 					"$(DEPS_DIR)/glslang/glslang/SPIRV",
 					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
+					../../gfx/include,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/tvOS/modules",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 1.14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (
-					"-DNS_BLOCK_ASSERTIONS=1",
-					"-DNDEBUG",
 					"-DDONT_WANT_ARM_OPTIMIZATIONS",
-					"-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_STB_FONT",
-					"-DHAVE_HID",
-					"-DHAVE_NETWORKING",
-					"-DHAVE_IFINFO",
-					"-DHAVE_NETPLAYDISCOVERY",
-					"-DHAVE_RUNAHEAD",
-					"-DHAVE_TRANSLATE",
-					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_BUILTINMINIUPNPC",
-					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_ONLINE_UPDATER",
-					"-DHAVE_LANGEXTRA",
-					"-DHAVE_CHEEVOS",
-					"-DRC_DISABLE_LUA",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_RGUI",
-					"-DHAVE_CONFIGFILE",
-					"-DHAVE_MENU",
-					"-DHAVE_GFX_WIDGETS",
-					"-DHAVE_LIBRETRODB",
+					"-DENABLE_HLSL",
+					"-DGLSLANG_OSINCLUDE_UNIX",
+					"-DHAVE_7ZIP",
 					"-DHAVE_AUDIOMIXER",
-					"-DIOS",
+					"-DHAVE_BTSTACK",
+					"-DHAVE_BUILTINGLSLANG",
+					"-DHAVE_BUILTINMINIUPNPC",
+					"-DHAVE_CC_RESAMPLER",
+					"-DHAVE_CHEATS",
+					"-DHAVE_CHEEVOS",
+					"-DHAVE_COCOATOUCH",
+					"-DHAVE_COCOA_METAL",
+					"-DHAVE_CONFIGFILE",
+					"-DHAVE_COREAUDIO",
+					"-DHAVE_DYNAMIC",
+					"-DHAVE_FILTERS_BUILTIN",
+					"-DHAVE_GFX_WIDGETS",
+					"-DHAVE_GLSL",
+					"-DHAVE_GLSLANG",
+					"-DHAVE_GRIFFIN",
+					"-DHAVE_HID",
+					"-DHAVE_IFINFO",
+					"-DHAVE_IMAGEVIEWER",
+					"-DHAVE_KEYMAPPER",
+					"-DHAVE_LANGEXTRA",
+					"-DHAVE_LIBRETRODB",
+					"-DHAVE_MAIN",
+					"-DHAVE_MENU",
+					"-DHAVE_METAL",
+					"-DHAVE_MFI",
+					"-DHAVE_MINIUPNPC",
+					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_NETWORKGAMEPAD",
+					"-DHAVE_NETWORKING",
+					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
-					"-DHAVE_CC_RESAMPLER",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DRARCH_MOBILE",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_VIDEO_LAYOUT",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOATOUCH",
-					"-DHAVE_MAIN",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_THREADS",
-					"-DHAVE_FILTERS_BUILTIN",
-					"-DHAVE_7ZIP",
-					"-D_7ZIP_ST",
-					"-DHAVE_XMB",
 					"-DHAVE_OZONE",
+					"-DHAVE_PATCH",
+					"-DHAVE_RBMP",
+					"-DHAVE_REWIND",
+					"-DHAVE_RGUI",
+					"-DHAVE_RJPEG",
+					"-DHAVE_RPNG",
+					"-DHAVE_RTGA",
+					"-DHAVE_RUNAHEAD",
+					"-DHAVE_RWAV",
+					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_SHADERPIPELINE",
-					"-D_LZMA_UINT32_IS_ULONG",
-					"-DHAVE_MFI",
-					"-DHAVE_KEYMAPPER",
-					"-DHAVE_COCOA_METAL",
-					"-DHAVE_METAL",
 					"-DHAVE_SLANG",
 					"-DHAVE_SPIRV_CROSS",
-					"-DHAVE_GLSLANG",
+					"-DHAVE_STB_FONT",
+					"-DHAVE_STB_VORBIS",
+					"-DHAVE_THREADS",
+					"-DHAVE_TRANSLATE",
+					"-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_CORE_INFO",
+					"-DHAVE_VIDEO_LAYOUT",
+					"-DHAVE_VULKAN",
+					"-DHAVE_XMB",
+					"-DHAVE_ZLIB",
+					"-DINLINE=inline",
+					"-DIOS",
+					"-DNDEBUG",
+					"-DNS_BLOCK_ASSERTIONS=1",
+					"-DRARCH_INTERNAL",
+					"-DRARCH_MOBILE",
+					"-DRC_DISABLE_LUA",
 					"-DWANT_GLSLANG",
-					"-DGLSLANG_OSINCLUDE_UNIX",
-					"-DENABLE_HLSL",
-					"-DHAVE_BUILTINGLSLANG",
-					"-DHAVE_CHEATS",
-					"-DHAVE_SCREENSHOTS",
-					"-DHAVE_REWIND",
-					"-DHAVE_PATCH",
-					"-DHAVE_RWAV",
-					"-DHAVE_BTSTACK",
+					"-D_7ZIP_ST",
+					"-D_LZMA_UINT32_IS_ULONG",
+					"-D__LIBRETRO__",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
