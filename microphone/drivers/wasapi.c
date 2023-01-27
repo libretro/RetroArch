@@ -25,12 +25,14 @@ typedef struct
 {
    HANDLE write_event;
    IMMDevice           *device;
+   LPWSTR              device_id;
    IAudioClient        *client;
    IAudioCaptureClient *capture;
    fifo_buffer_t       *buffer; /* NULL in unbuffered shared mode */
    size_t frame_size;          /* 2 or 4 only */
    size_t engine_buffer_size;
    bool exclusive;
+   bool running;
 } wasapi_microphone_handle_t;
 
 typedef struct wasapi_microphone
@@ -60,7 +62,6 @@ static void *wasapi_microphone_init(void)
 
    return wasapi;
 }
-
 
 static void wasapi_microphone_free(void *driver_context)
 {
@@ -165,7 +166,7 @@ static ssize_t wasapi_microphone_read_sh_buffer(
 static ssize_t wasapi_microphone_read_sh(
       wasapi_microphone_t *wasapi,
       wasapi_microphone_handle_t *microphone,
-      const void *buffer,
+      void *buffer,
       size_t buffer_size)
 {
    size_t write_avail = 0;
@@ -193,7 +194,7 @@ static ssize_t wasapi_microphone_read_sh(
 static ssize_t wasapi_microphone_read_sh_nonblock(
       wasapi_microphone_t *wasapi,
       wasapi_microphone_handle_t *microphone,
-      const void *buffer,
+      void *buffer,
       size_t buffer_size)
 {
    size_t write_avail       = 0;
@@ -242,7 +243,7 @@ static ssize_t wasapi_microphone_read_sh_nonblock(
 static ssize_t wasapi_microphone_read_ex(
    wasapi_microphone_t *wasapi,
    wasapi_microphone_handle_t *microphone,
-   const void * buffer,
+   void * buffer,
    size_t buffer_size,
    DWORD ms)
 {
@@ -318,12 +319,66 @@ static ssize_t wasapi_microphone_read(void *driver_context, void *mic_context, v
    return bytes_read;
 }
 
-static void *wasapi_microphone_open_mic(void *driver_context, const char *dev_id, unsigned rate, unsigned latency,
-                                        unsigned u1, unsigned *u2)
+static bool wasapi_microphone_mic_alive(const void *driver_context, const void *mic_context);
+static bool wasapi_microphone_start_mic(void *driver_context, void *microphone_context);
+static bool wasapi_microphone_start(void *driver_context, bool is_shutdown)
+{
+   wasapi_microphone_t *wasapi = (wasapi_microphone_t*)driver_context;
+
+   if (!wasapi)
+      return false;
+
+   if (wasapi->microphone && wasapi_microphone_mic_alive(wasapi, wasapi->microphone))
+   { /* If we have a microphone that was active at the time the driver stopped... */
+      bool result = wasapi_microphone_start_mic(wasapi, wasapi->microphone);
+   }
+
+   wasapi->running = true;
+
+   return true;
+}
+
+static bool wasapi_microphone_stop_mic(void *driver_context, void *microphone_context);
+static bool wasapi_microphone_stop(void *driver_context)
+{
+   wasapi_microphone_t *wasapi = (wasapi_microphone_t*)driver_context;
+
+   if (!wasapi)
+      return false;
+
+   if (wasapi->microphone && wasapi_microphone_mic_alive(wasapi, wasapi->microphone))
+   { /* If we have a microphone that we need to pause... */
+
+   }
+
+   wasapi->running = false;
+
+   return true;
+}
+
+static bool wasapi_microphone_alive(void *driver_context)
+{
+   wasapi_microphone_t *wasapi = (wasapi_microphone_t*)driver_context;
+
+   return wasapi->running;
+}
+
+static void wasapi_microphone_set_nonblock_state(void *driver_context, bool nonblock)
+{
+   wasapi_microphone_t *wasapi = (wasapi_microphone_t*)driver_context;
+
+   RARCH_LOG("[WASAPI mic]: Sync %s.\n", nonblock ? "off" : "on");
+
+   wasapi->nonblock = nonblock;
+}
+
+static void *wasapi_microphone_open_mic(void *driver_context, const char *device, unsigned rate,
+                                        unsigned latency, unsigned block_frames, unsigned *new_rate)
 {
    char error_message[256]       = {0};
    settings_t *settings          = config_get_ptr();
    HRESULT hr;
+   DWORD flags                   = 0;
    UINT32 frame_count            = 0;
    REFERENCE_TIME dev_period     = 0;
    BYTE *dest                    = NULL;
@@ -337,31 +392,57 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *dev_id
       return NULL;
 
    microphone->exclusive              = exclusive_mode;
-   microphone->device                 = wasapi_init_device(dev_id, eCapture);
-   if (!microphone->device && dev_id)
+   microphone->device                 = wasapi_init_device(device, eCapture);
+   if (device && !microphone->device)
+   { /* If we requested a particular capture device, but couldn't open it... */
+      RARCH_WARN("[WASAPI]: Failed to open requested capture device \"%s\", attempting to open default device\n", device);
       microphone->device = wasapi_init_device(NULL, eCapture);
+   }
+
    if (!microphone->device)
+   {
+      RARCH_ERR("[WASAPI]: Failed to open capture device\n");
       goto error;
+   }
+
+   hr = _IMMDevice_GetId(microphone->device, &microphone->device_id);
+   if (FAILED(hr))
+   {
+      wasapi_log_hr(hr, error_message, sizeof(error_message));
+      RARCH_ERR("[WASAPI]: Failed to get ID of capture device: %s\n", error_message);
+      goto error;
+   }
 
    microphone->client = wasapi_init_client(microphone->device,
                                            &microphone->exclusive, &float_format, &rate, latency);
    if (!microphone->client)
+   {
+      RARCH_ERR("[WASAPI]: Failed to open client for capture device \"%ls\"\n", microphone->device_id);
       goto error;
+   }
 
    hr = _IAudioClient_GetBufferSize(microphone->client, &frame_count);
    if (FAILED(hr))
+   {
+      wasapi_log_hr(hr, error_message, sizeof(error_message));
+      RARCH_ERR("[WASAPI]: Failed to get buffer size of IAudioClient for capture device \"%ls\": %s\n",
+          microphone->device_id, error_message);
       goto error;
+   }
 
-   microphone->frame_size         = float_format ? 8 : 4;
+   microphone->frame_size         = float_format ? sizeof(float) : sizeof(int16_t);
    microphone->engine_buffer_size = frame_count * microphone->frame_size;
 
    if (microphone->exclusive)
    {
       microphone->buffer = fifo_new(microphone->engine_buffer_size);
       if (!microphone->buffer)
+      {
+         RARCH_ERR("[WASAPI]: Failed to initialize FIFO queue for capture device.\n");
          goto error;
+      }
 
-      RARCH_LOG("[WASAPI]: Intermediate buffer length is %u frames (%.1fms).\n",
+      RARCH_LOG("[WASAPI]: Intermediate capture buffer length is %u frames (%.1fms).\n",
                 frame_count, (double)frame_count * 1000.0 / rate);
    }
    else if (sh_buffer_length)
@@ -389,31 +470,47 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *dev_id
 
    microphone->write_event = CreateEventA(NULL, FALSE, FALSE, NULL);
    if (!microphone->write_event)
+   {
+      RARCH_ERR("[WASAPI]: Failed to allocate capture device's event handle\n");
       goto error;
+   }
 
    hr = _IAudioClient_SetEventHandle(microphone->client, microphone->write_event);
    if (FAILED(hr))
+   {
+      wasapi_log_hr(hr, error_message, sizeof(error_message));
+      RARCH_ERR("[WASAPI]: Failed to set capture device's event handle: %s\n", error_message);
       goto error;
+   }
 
    hr = _IAudioClient_GetService(microphone->client,
-                                 IID_IAudioRenderClient, (void**)&microphone->capture);
+                                 IID_IAudioCaptureClient, (void**)&microphone->capture);
    if (FAILED(hr))
+   {
+      wasapi_log_hr(hr, error_message, sizeof(error_message));
+      RARCH_ERR("[WASAPI]: Failed to get capture device's IAudioCaptureClient service: %s\n", error_message);
       goto error;
+   }
 
-   hr = _IAudioCaptureClient_GetBuffer(microphone->capture, frame_count, &dest);
+   /* Get and release the buffer, just to ensure that we can. */
+   hr = _IAudioCaptureClient_GetBuffer(microphone->capture, &dest, &frame_count, &flags, NULL, NULL);
    if (FAILED(hr))
+   {
+      wasapi_log_hr(hr, error_message, sizeof(error_message));
+      RARCH_ERR("[WASAPI]: Failed to get capture client buffer: %s\n", error_message);
       goto error;
+   }
 
-   hr = _IAudioCaptureClient_ReleaseBuffer(
-         microphone->capture, frame_count,
-         AUDCLNT_BUFFERFLAGS_SILENT);
+   hr = _IAudioCaptureClient_ReleaseBuffer(microphone->capture, 0);
    if (FAILED(hr))
-      goto error;
+   {
+      wasapi_log_hr(hr, error_message, sizeof(error_message));
+      RARCH_ERR("[WASAPI]: Failed to release capture client buffer: %s\n", error_message);
 
-   hr = _IAudioClient_Start(microphone->client);
-   if (FAILED(hr))
       goto error;
+   }
 
+   wasapi->microphone = microphone;
 
    return microphone;
 
@@ -427,6 +524,8 @@ error:
       CloseHandle(microphone->write_event);
    if (microphone->buffer)
       fifo_free(microphone->buffer);
+   if (microphone->device_id)
+      CoTaskMemFree(microphone->device_id);
    free(microphone);
 
    return NULL;
@@ -451,6 +550,8 @@ static void wasapi_microphone_close_mic(void *driver_context, void *microphone_c
    IFACE_RELEASE(microphone->device);
    if (microphone->buffer)
       fifo_free(microphone->buffer);
+   if (microphone->device_id)
+      CoTaskMemFree(microphone->device_id);
    free(microphone);
 
    ir = WaitForSingleObject(write_event, 20);
@@ -458,14 +559,82 @@ static void wasapi_microphone_close_mic(void *driver_context, void *microphone_c
    {
       char error[256];
       wasapi_log_hr(HRESULT_FROM_WIN32(GetLastError()), error, sizeof(error));
-      RARCH_ERR("[WASAPI mic]: WaitForSingleObject failed with error %d.\n", GetLastError());
+      RARCH_ERR("[WASAPI mic]: WaitForSingleObject failed with error %d: %s\n", GetLastError(), error);
    }
 
    /* If event isn't signaled log and leak */
-   if (!(ir == WAIT_OBJECT_0))
+   if (ir != WAIT_OBJECT_0)
       return;
 
    CloseHandle(write_event);
+}
+
+static bool wasapi_microphone_start_mic(void *driver_context, void *microphone_context)
+{
+   wasapi_microphone_t *wasapi = (wasapi_microphone_t*)driver_context;
+   wasapi_microphone_handle_t *microphone = (wasapi_microphone_handle_t*)microphone_context;
+
+   if (!wasapi || !microphone)
+      return false;
+
+   if (wasapi_microphone_alive(wasapi))
+   { /* If the microphone should be active... */
+      HRESULT hr = _IAudioClient_Start(microphone->client);
+
+      if (SUCCEEDED(hr) || hr == AUDCLNT_E_NOT_STOPPED)
+      { /* Starting an active microphone is not an error */
+
+         microphone->running = true;
+      }
+      else
+      {
+         char error[256];
+         wasapi_log_hr(hr, error, sizeof(error));
+         RARCH_ERR("[WASAPI mic]: Failed to start capture device \"%ls\"'s IAudioClient: %s\n", microphone->device_id, error);
+         microphone->running = false;
+      }
+   }
+   else
+   {
+      microphone->running = true;
+      /* The microphone will resume next time the driver itself is resumed */
+   }
+
+
+   return microphone->running;
+}
+
+static bool wasapi_microphone_stop_mic(void *driver_context, void *microphone_context)
+{
+   wasapi_microphone_t *w = (wasapi_microphone_t*)driver_context;
+   wasapi_microphone_handle_t *microphone = (wasapi_microphone_handle_t*)microphone_context;
+   HRESULT hr;
+
+   if (!w || !microphone)
+      return false;
+
+   hr = _IAudioClient_Stop(microphone->client);
+   if (FAILED(hr))
+   {
+      char error[256];
+      wasapi_log_hr(hr, error, sizeof(error));
+      RARCH_ERR("[WASAPI mic]: Failed to stop capture device \"%ls\"'s IAudioClient: %s\n", microphone->device_id, error);
+      return false;
+   }
+
+   RARCH_LOG("[WASAPI mic]: Stopped capture device \"%ls\"\n", microphone->device_id);
+
+   microphone->running = false;
+
+   return true;
+}
+
+static bool wasapi_microphone_mic_alive(const void *driver_context, const void *mic_context)
+{
+   wasapi_microphone_handle_t *microphone = (wasapi_microphone_handle_t *)mic_context;
+   (void)driver_context;
+
+   return microphone && microphone->running;
 }
 
 static struct string_list *wasapi_microphone_device_list_new(const void *driver_context)
@@ -485,15 +654,16 @@ microphone_driver_t microphone_wasapi = {
       wasapi_microphone_init,
       wasapi_microphone_free,
       wasapi_microphone_read,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
+      wasapi_microphone_start,
+      wasapi_microphone_stop,
+      wasapi_microphone_alive,
+      wasapi_microphone_set_nonblock_state,
       "wasapi",
       wasapi_microphone_device_list_new,
       wasapi_microphone_device_list_free,
       wasapi_microphone_open_mic,
-      wasapi_microphone_close_mic
+      wasapi_microphone_close_mic,
+      wasapi_microphone_mic_alive,
+      wasapi_microphone_start_mic,
+      wasapi_microphone_stop_mic
 };
