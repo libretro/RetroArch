@@ -37,6 +37,21 @@ void wasapi_log_hr(HRESULT hr, char* buffer, size_t length)
          NULL);
 }
 
+static const char* wasapi_data_flow_name(EDataFlow data_flow)
+{
+   switch (data_flow)
+   {
+      case eCapture:
+         return "eCapture";
+      case eRender:
+         return "eRender";
+      case eAll:
+         return "eAll";
+      default:
+         return "<unknown>";
+   }
+}
+
 static unsigned wasapi_pref_rate(unsigned i)
 {
    const unsigned r[] = { 48000, 44100, 96000, 192000, 32000 };
@@ -291,14 +306,16 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
    IMMDeviceEnumerator *enumerator = NULL;
    IMMDevice *device               = NULL;
    IMMDeviceCollection *collection = NULL;
+   const char *data_flow_name      = wasapi_data_flow_name(data_flow);
+   char error_message[256]         = {0};
 
    if (id)
    {
-      RARCH_LOG("[WASAPI]: Initializing device %s ...\n", id);
+      RARCH_LOG("[WASAPI]: Initializing %s device \"%s\" ...\n", data_flow_name, id);
    }
    else
    {
-      RARCH_LOG("[WASAPI]: Initializing default device.. \n");
+      RARCH_LOG("[WASAPI]: Initializing default %s device.. \n", data_flow_name);
    }
 
 #ifdef __cplusplus
@@ -309,40 +326,45 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
                          &IID_IMMDeviceEnumerator, (void **)&enumerator);
 #endif
    if (FAILED(hr))
+   {
+      wasapi_log_hr(hr, error_message, sizeof(error_message));
+      RARCH_ERR("[WASAPI]: Failed to create device enumerator: %s\n", error_message);
       goto error;
+   }
 
    if (id)
-   {
+   { /* If a specific device was requested... */
       int32_t idx_found        = -1;
       struct string_list *list = (struct string_list*)mmdevice_list_new(NULL, data_flow);
 
-      /* Search for device name first */
-      if (list)
+      if (!list)
       {
-         if (list->elems)
+         RARCH_ERR("[WASAPI]: Failed to allocate %s device list\n", data_flow_name);
+         goto error;
+      }
+
+      if (list->elems)
+      { /* If any devices were found... */
+         unsigned d;
+         for (d = 0; d < list->size; d++)
          {
-            unsigned i;
-            for (i = 0; i < list->size; i++)
+            RARCH_LOG("[WASAPI]: %u : %s\n", d, list->elems[d].data);
+            if (string_is_equal(id, list->elems[d].data))
             {
-               RARCH_LOG("[WASAPI]: %d : %s\n", i, list->elems[i].data);
-               if (string_is_equal(id, list->elems[i].data))
-               {
-                  idx_found = i;
-                  break;
-               }
-            }
-            /* Index was not found yet based on name string,
-             * just assume id is a one-character number index. */
-
-            if (idx_found == -1 && isdigit(id[0]))
-            {
-               idx_found = strtoul(id, NULL, 0);
-               RARCH_LOG("[WASAPI]: Fallback, device index is a single number index instead: %d.\n", idx_found);
-
+               idx_found = d;
+               break;
             }
          }
-         string_list_free(list);
+         /* Index was not found yet based on name string,
+          * just assume id is a one-character number index. */
+
+         if (idx_found == -1 && isdigit(id[0]))
+         {
+            idx_found = strtoul(id, NULL, 0);
+            RARCH_LOG("[WASAPI]: Fallback, %s device index is a single number index instead: %u.\n", data_flow_name, idx_found);
+         }
       }
+      string_list_free(list);
 
       if (idx_found == -1)
          idx_found = 0;
@@ -350,17 +372,26 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
       hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
                                                    data_flow, DEVICE_STATE_ACTIVE, &collection);
       if (FAILED(hr))
+      {
+         wasapi_log_hr(hr, error_message, sizeof(error_message));
          goto error;
+      }
 
       hr = _IMMDeviceCollection_GetCount(collection, &dev_count);
       if (FAILED(hr))
+      {
+         wasapi_log_hr(hr, error_message, sizeof(error_message));
          goto error;
+      }
 
       for (i = 0; i < dev_count; ++i)
       {
          hr = _IMMDeviceCollection_Item(collection, i, &device);
          if (FAILED(hr))
+         {
+            wasapi_log_hr(hr, error_message, sizeof(error_message));
             goto error;
+         }
 
          if (i == idx_found)
             break;
@@ -373,7 +404,10 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
       hr = _IMMDeviceEnumerator_GetDefaultAudioEndpoint(
             enumerator, data_flow, eConsole, &device);
       if (FAILED(hr))
+      {
+         wasapi_log_hr(hr, error_message, sizeof(error_message));
          goto error;
+      }
    }
 
    if (!device)
@@ -384,17 +418,17 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
 
    return device;
 
-   error:
+error:
    IFACE_RELEASE(collection);
    IFACE_RELEASE(enumerator);
 
    if (id)
    {
-      RARCH_WARN("[WASAPI]: Failed to initialize device.\n");
+      RARCH_WARN("[WASAPI]: Failed to initialize %s device \"%s\"\n", data_flow_name, id);
    }
    else
    {
-      RARCH_ERR("[WASAPI]: Failed to initialize device.\n");
+      RARCH_ERR("[WASAPI]: Failed to initialize default %s device\n", data_flow_name);
    }
 
    return NULL;
