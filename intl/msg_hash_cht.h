@@ -72,6 +72,10 @@ MSG_HASH(
    "選擇要使用的核心。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "瀏覽 libretro 核心。\n首次執行請先安裝遊戲支援的核心，安裝後使用載入檔案開啟遊戲檔案，即可開始體驗復古電玩遊戲。\n應用類型的核心，可由此選項載入後執行。\n部分核心有額外系統，可由此選項載入後開啟。\n執行實體光碟片時，需先由此選項載入支援的核心。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "載入檔案"
    )
@@ -1330,7 +1334,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   "變更成就的設定。"
+   "變更成就相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
@@ -1346,7 +1350,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   "變更列表的設定。"
+   "變更列表相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
@@ -1421,6 +1425,10 @@ MSG_HASH(
    "設定鍵盤、滑鼠和光線槍等輸入裝置使用的驅動程式。此選項會依據顯示驅動程式強制變更。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   "輸入裝置使用的驅動程式。\n依據設定的顯示驅動程式此選項會強制變更。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "控制器"
    )
@@ -1437,8 +1445,48 @@ MSG_HASH(
    "設定影像處理使用的驅動程式。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
+   "Apple平台 Metal 驅動程式。\n支援Slang格式的著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   "Direct3D 8 驅動程式。\n不支援著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   "Direct3D 9 驅動程式。\n支援Cg格式的著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   "Direct3D 9 驅動程式。\n支援HLSL格式的著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "Direct3D 10 驅動程式。\n支援Slang格式的著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "Direct3D 11 驅動程式。\n支援高動態範圍(HDR)和Slang格式的著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "Direct3D 12 驅動程式。\n支援高動態範圍(HDR)和Slang格式的著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   "Wii U 驅動程式。\n支援Slang格式的著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   "Switch 驅動程式。\n支援GLSL格式的著色器。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
    "圖形裝置介面(GDI)驅動程式。使用 Windows 原始圖形介面，不推薦使用。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   "顯示驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -1447,6 +1495,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "設定音訊訊號使用的驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   "OpenAL 驅動程式。\n音效驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   "OpenSL 驅動程式。\n音效驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
+   "DirectSound 驅動程式。\n用於 Windows 95 到 Windows XP 的音效驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -1580,12 +1640,20 @@ MSG_HASH(
    "開啟時停用作業系統設定的螢幕保護程式。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   "停用螢幕保護程式。\n依據設定的顯示驅動程式此選項可能失效。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    "單執行緒影像處理"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    "開啟時影像延遲為代價提高效能，僅限無法全速執行時使用。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   "使用單執行緒進行影像處理。\n開啟時影像延遲為代價提高效能。\n低效能的裝置執行時可嘗試開啟此選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
@@ -1821,7 +1889,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "設定套用自動切換更新率的顯示模式。使用設定的顯示模式時，依據執行的核心和檔案，自動切換螢幕更新率。"
+   "設定自動切換更新率的顯示模式。使用設定的顯示模式時，依據執行的核心和檔案，自動切換螢幕更新率。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
@@ -2354,11 +2422,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "左/右鍵 切換要使用的音源輸出裝置。依據音效驅動程式顯示可使用的裝置。"
+   "左/右鍵 選擇音源輸出裝置。依據音效驅動程式顯示可使用的裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
-   "左/右鍵 切換要使用的音源輸出裝置。\n依據音效驅動程式顯示可使用的裝置。"
+   "左/右鍵 選擇音源輸出裝置。\n依據音效驅動程式顯示可使用的裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -2423,7 +2491,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_INPUT,
-   "選擇輸入裝置。"
+   "左/右鍵 選擇輸入裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
@@ -2431,7 +2499,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
-   "選擇輸出裝置。"
+   "左/右鍵 選擇輸出裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
@@ -2584,7 +2652,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-   "自動載入隨插即用檔。開啟時如通知「未設定」，設定控制器按鍵選項中，支援儲存為預設檔。"
+   "自動載入隨插即用檔。「連接埠 # 控制器」選項中支援儲存為預設檔。"
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
@@ -3600,6 +3668,10 @@ MSG_HASH(
    "部分核心具有結束應用程式的功能，載入虛擬核心能阻止應用程式直接結束。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
+   "部分核心具有結束應用程式的功能，關閉此選項時執行項目關閉，將觸發結束應用程式。\n開啟此選項時載入虛擬核心阻止直接結束，可繼續使用應用程式。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
    "自動重開執行核心"
    )
@@ -3626,6 +3698,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
    "已安裝核心資料庫持久性本地快取。儲存空間讀取較慢的平台上減少載入時間。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
+   "忽略支援即時存檔資訊"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "開啟時執行核心忽略支援即時存檔資訊，可用於開啟倒帶、超前執行和搶占幀數等相關功能。"
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -3853,7 +3933,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "壓縮即時存檔"
+   "即時存檔使用壓縮格式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
@@ -10387,7 +10467,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "開啟時覆蓋列表的資訊欄，支援按鍵切換顯示。當「主要的預覽縮圖」關閉時不會顯示。"
+   "開啟時覆蓋列表的資訊欄，支援按鍵切換顯示。當「主要的預覽縮圖」關閉時此選項被忽略。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
@@ -11335,7 +11415,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
-   "輸入裝置名稱: %s\n隨插即用配置: %s\n供應商編號/產品編號: %d/%d"
+   "連接裝置名稱: %s\n隨插即用配置: %s\n供應商編號/產品編號: %d/%d"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
