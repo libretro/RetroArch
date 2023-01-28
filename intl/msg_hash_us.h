@@ -3027,6 +3027,18 @@ MSG_HASH(
    "Single Button (Hold)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "Classic mode, two-button operation. Hold a button and tap the Turbo button to activate the press-release sequence.\nTurbo button can be assigned in Settings/Input/Port 1 Controls."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "Toggle mode. Press the Turbo button once to activate the press-release sequence for the selected default button, press it once again to switch it off.\nTurbo button can be assigned in Settings/Input/Port 1 Controls."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Hold mode. The press-release sequence for the selected default button is active as long as Turbo button is held down.\nTurbo button can be assigned in Settings/Input/Port 1 Controls.\nTo emulate the autofire function of the home computer era, set Turbo and default buttons to be the same as the joystick fire button."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
    "Turbo Default Button"
    )

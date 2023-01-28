@@ -430,6 +430,19 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD), len);
             break;
 #endif
+        case MENU_ENUM_LABEL_INPUT_TURBO_MODE:
+            {
+               unsigned mode = settings ? settings->uints.input_turbo_mode : INPUT_TURBO_MODE_LAST;
+               if (mode == INPUT_TURBO_MODE_CLASSIC)
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC), len);
+               else if (mode == INPUT_TURBO_MODE_SINGLEBUTTON)
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON), len);
+               else if (mode == INPUT_TURBO_MODE_SINGLEBUTTON_HOLD)
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD), len);
+               else
+                  strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
+            }
+            break;
         default:
             if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
