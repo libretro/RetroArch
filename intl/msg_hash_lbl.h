@@ -952,6 +952,10 @@ MSG_HASH(
    "deferred_dropdown_box_list_netplay_mitm_server"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE,
+   "deferred_dropdown_box_list_audio_device"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
    "deferred_configurations_list"
    )
