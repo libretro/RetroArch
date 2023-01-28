@@ -3786,12 +3786,14 @@ static int action_ok_remap_file_flush(const char *path,
 static int action_ok_override_unload(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#ifdef HAVE_CONFIGFILE
    if (!config_unload_override())
       return 0;
    runloop_msg_queue_push(
          msg_hash_to_str(MSG_OVERRIDES_UNLOADED_SUCCESSFULLY),
          1, 100, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#endif
    return 0;
 }
 

@@ -3334,6 +3334,7 @@ static bool config_load_file(global_t *global,
    unsigned i;
    char tmp_str[PATH_MAX_LENGTH];
    static bool first_load                          = true;
+   bool without_overrides                          = false;
    unsigned msg_color                              = 0;
    char *save                                      = NULL;
    char *override_username                         = NULL;
@@ -3353,10 +3354,19 @@ static bool config_load_file(global_t *global,
    struct config_size_setting *size_settings       = NULL;
    struct config_array_setting *array_settings     = NULL;
    struct config_path_setting *path_settings       = NULL;
-   config_file_t *conf                             = path ? config_file_new_from_path_to_string(path) : open_default_config_file();
+   config_file_t *conf                             = NULL;
    uint16_t rarch_flags                            = retroarch_get_flags();
 
    tmp_str[0]                                      = '\0';
+
+   /* Override config comparison must be compared to config before overrides */
+   if (string_is_equal(path, "without-overrides"))
+   {
+      path              = path_get(RARCH_PATH_CONFIG);
+      without_overrides = true;
+   }
+
+   conf = (path) ? config_file_new_from_path_to_string(path) : open_default_config_file();
 
    if (!conf)
    {
@@ -3413,7 +3423,7 @@ static bool config_load_file(global_t *global,
       check_verbosity_settings(conf, settings);
    }
 
-   if (!path_is_empty(RARCH_PATH_CONFIG_OVERRIDE))
+   if (!path_is_empty(RARCH_PATH_CONFIG_OVERRIDE) && !without_overrides)
    {
       /* Don't destroy append_config_path, store in temporary
        * variable. */
@@ -4126,6 +4136,11 @@ bool config_load_override(void *data)
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
+   if (!string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
+      runloop_state_get_ptr()->flags |=  RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+   else
+      runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+
    return true;
 }
 
@@ -4175,6 +4190,11 @@ bool config_load_override_file(const char *config_path)
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
+   if (!string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
+      runloop_state_get_ptr()->flags |=  RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+   else
+      runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+
    return true;
 }
 
@@ -4188,6 +4208,7 @@ bool config_load_override_file(const char *config_path)
  */
 bool config_unload_override(void)
 {
+   runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
    path_clear(RARCH_PATH_CONFIG_OVERRIDE);
 
    /* Toggle has_save_path to false so it resets */
@@ -5110,7 +5131,7 @@ int8_t config_save_overrides(enum override_type type, void *data, bool remove)
 
    /* Load the original config file in memory */
    config_load_file(global_get_ptr(),
-         path_get(RARCH_PATH_CONFIG), settings);
+         "without-overrides", settings);
 
    bool_settings       = populate_settings_bool(settings,   &bool_settings_size);
    tmp_i               = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
@@ -5344,20 +5365,26 @@ int8_t config_save_overrides(enum override_type type, void *data, bool remove)
          {
             if (filestream_delete(override_path) == 0)
             {
-               config_load_override(&runloop_state_get_ptr()->system);
                ret = -1;
                RARCH_LOG("[Overrides]: %s: \"%s\".\n",
-                     "Deleting",
-                     override_path);
+                     "Deleted", override_path);
             }
          }
          else if (conf->modified)
          {
             ret = config_file_write(conf, override_path, true);
-            path_set(RARCH_PATH_CONFIG_OVERRIDE, override_path);
-            RARCH_LOG("[Overrides]: %s: \"%s\".\n",
-                  "Saving",
-                  override_path);
+
+            if (ret)
+            {
+               path_set(RARCH_PATH_CONFIG_OVERRIDE, override_path);
+               RARCH_LOG("[Overrides]: %s: \"%s\".\n",
+                     "Saved", override_path);
+            }
+            else
+            {
+               RARCH_LOG("[Overrides]: %s: \"%s\".\n",
+                     "Failed to save", override_path);
+            }
          }
       }
 

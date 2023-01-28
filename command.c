@@ -1062,9 +1062,6 @@ bool command_event_save_config(
       return true;
    }
 
-   if (runloop_get_flags() & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
-      return false;
-
    if (!string_is_empty(str))
    {
       snprintf(s, len, "%s \"%s\".",
@@ -1574,12 +1571,16 @@ void command_event_save_current_config(enum override_type type)
 
             if (path_is_empty(RARCH_PATH_CONFIG))
             {
-               strlcpy(msg, "[Config]: Config directory not set, cannot save configuration.", sizeof(msg));
+               strlcpy(msg, "Config directory not set, cannot save configuration.", sizeof(msg));
                runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
             else
             {
-               command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
+               if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
+                  strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ACTIVE_NOT_SAVING), sizeof(msg));
+               else
+                  command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
+
                runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
          }
