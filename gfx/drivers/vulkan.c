@@ -3181,27 +3181,41 @@ static void vulkan_set_texture_frame(void *data,
    unsigned idx                        = 0;
    struct vk_texture *texture          = NULL;
    struct vk_texture *texture_optimal  = NULL;
+   VkFormat fmt                        = VK_FORMAT_B8G8R8A8_UNORM;
+   int do_memcpy                       = 1;
    const VkComponentMapping br_swizzle = {
       VK_COMPONENT_SWIZZLE_B,
       VK_COMPONENT_SWIZZLE_G,
       VK_COMPONENT_SWIZZLE_R,
       VK_COMPONENT_SWIZZLE_A,
    };
+   VkComponentMapping *ptr_swizzle = NULL;
 
    if (!vk)
       return;
+
+   if (!rgb32)
+   {
+       VkFormatProperties formatProperties;
+       vkGetPhysicalDeviceFormatProperties(vk->context->gpu, VK_FORMAT_B4G4R4A4_UNORM_PACK16, &formatProperties);
+       if (formatProperties.optimalTilingFeatures != 0)
+       {
+           /* B4G4R4A4 must be supported, but R4G4B4A4 is optional,
+            * just apply the swizzle in the image view instead. */
+           fmt = VK_FORMAT_B4G4R4A4_UNORM_PACK16;
+           ptr_swizzle = &br_swizzle;
+       }
+       else
+           do_memcpy = 0;
+   }
 
    idx             = vk->context->current_frame_index;
    texture         = &vk->menu.textures[idx  ];
    texture_optimal = &vk->menu.textures_optimal[idx  ];
 
-   /* B4G4R4A4 must be supported, but R4G4B4A4 is optional,
-    * just apply the swizzle in the image view instead. */
    *texture = vulkan_create_texture(vk,
          texture->memory ? texture : NULL,
-         width, height,
-         rgb32 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-         NULL, rgb32 ? NULL : &br_swizzle,
+         width, height, fmt, NULL, ptr_swizzle,
          texture_optimal->memory ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED);
 
    vkMapMemory(vk->context->device, texture->memory,
@@ -3212,7 +3226,25 @@ static void vulkan_set_texture_frame(void *data,
    stride    = (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)) * width;
 
    for (y = 0; y < height; y++, dst += texture->stride, src += stride)
-      memcpy(dst, src, stride);
+   {
+       if (do_memcpy)
+           memcpy(dst, src, stride);
+       else
+       {
+           uint16_t *srcpix = (uint16_t*)src;
+           uint32_t *dstpix = (uint32_t*)dst;
+           uint32_t pix;
+           unsigned x;
+           for (x = 0; x < width; x++, srcpix++, dstpix++)
+           {
+               pix = *srcpix;
+               *dstpix = ((pix & 0xf000) >>  8) |
+                         ((pix & 0x0f00) <<  4) |
+                         ((pix & 0x00f0) << 16) |
+                         ((pix & 0x000f) << 28);
+           }
+       }
+   }
 
    vk->menu.alpha      = alpha;
    vk->menu.last_index = idx;
@@ -3220,9 +3252,7 @@ static void vulkan_set_texture_frame(void *data,
    if (texture->type == VULKAN_TEXTURE_STAGING)
       *texture_optimal = vulkan_create_texture(vk,
             texture_optimal->memory ? texture_optimal : NULL,
-            width, height,
-            rgb32 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-            NULL, rgb32 ? NULL : &br_swizzle,
+            width, height, fmt, NULL, ptr_swizzle,
             VULKAN_TEXTURE_DYNAMIC);
    else
    {
