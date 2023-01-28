@@ -3173,7 +3173,8 @@ static void vulkan_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   unsigned y, stride;
+   int y;
+   unsigned stride;
    uint8_t *ptr                        = NULL;
    uint8_t *dst                        = NULL;
    const uint8_t *src                  = NULL;
@@ -3182,7 +3183,7 @@ static void vulkan_set_texture_frame(void *data,
    struct vk_texture *texture          = NULL;
    struct vk_texture *texture_optimal  = NULL;
    VkFormat fmt                        = VK_FORMAT_B8G8R8A8_UNORM;
-   int do_memcpy                       = 1;
+   bool do_memcpy                      = true;
    const VkComponentMapping br_swizzle = {
       VK_COMPONENT_SWIZZLE_B,
       VK_COMPONENT_SWIZZLE_G,
@@ -3202,18 +3203,18 @@ static void vulkan_set_texture_frame(void *data,
        {
            /* B4G4R4A4 must be supported, but R4G4B4A4 is optional,
             * just apply the swizzle in the image view instead. */
-           fmt = VK_FORMAT_B4G4R4A4_UNORM_PACK16;
+           fmt         = VK_FORMAT_B4G4R4A4_UNORM_PACK16;
            ptr_swizzle = &br_swizzle;
        }
        else
-           do_memcpy = 0;
+           do_memcpy   = false;
    }
 
-   idx             = vk->context->current_frame_index;
-   texture         = &vk->menu.textures[idx  ];
-   texture_optimal = &vk->menu.textures_optimal[idx  ];
+   idx                 = vk->context->current_frame_index;
+   texture             = &vk->menu.textures[idx  ];
+   texture_optimal     = &vk->menu.textures_optimal[idx  ];
 
-   *texture = vulkan_create_texture(vk,
+   *texture            = vulkan_create_texture(vk,
          texture->memory ? texture : NULL,
          width, height, fmt, NULL, ptr_swizzle,
          texture_optimal->memory ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED);
@@ -3225,25 +3226,28 @@ static void vulkan_set_texture_frame(void *data,
    src       = (const uint8_t*)frame;
    stride    = (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)) * width;
 
-   for (y = 0; y < height; y++, dst += texture->stride, src += stride)
+   if (do_memcpy)
    {
-       if (do_memcpy)
-           memcpy(dst, src, stride);
-       else
-       {
-           uint16_t *srcpix = (uint16_t*)src;
-           uint32_t *dstpix = (uint32_t*)dst;
-           uint32_t pix;
-           unsigned x;
-           for (x = 0; x < width; x++, srcpix++, dstpix++)
-           {
-               pix = *srcpix;
-               *dstpix = ((pix & 0xf000) >>  8) |
-                         ((pix & 0x0f00) <<  4) |
-                         ((pix & 0x00f0) << 16) |
-                         ((pix & 0x000f) << 28);
-           }
-       }
+      for (y = 0; y < height; y++, dst += texture->stride, src += stride)
+         memcpy(dst, src, stride);
+   }
+   else
+   {
+      for (y = 0; y < height; y++, dst += texture->stride, src += stride)
+      {
+         int x;
+         uint16_t *srcpix = (uint16_t*)src;
+         uint32_t *dstpix = (uint32_t*)dst;
+         for (x = 0; x < width; x++, srcpix++, dstpix++)
+         {
+            uint32_t pix = *srcpix;
+            *dstpix      = (
+                  (pix & 0xf000) >>  8)
+               | ((pix & 0x0f00) <<  4)
+               | ((pix & 0x00f0) << 16)
+               | ((pix & 0x000f) << 28);
+         }
+      }
    }
 
    vk->menu.alpha      = alpha;
