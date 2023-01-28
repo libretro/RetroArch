@@ -34,9 +34,9 @@ microphone_driver_t microphone_null = {
       NULL,
       NULL,
       NULL,
-      NULL,
-      NULL,
       "null",
+      NULL,
+      NULL,
       NULL,
       NULL
 };
