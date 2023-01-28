@@ -3190,7 +3190,7 @@ static void vulkan_set_texture_frame(void *data,
       VK_COMPONENT_SWIZZLE_R,
       VK_COMPONENT_SWIZZLE_A,
    };
-   VkComponentMapping *ptr_swizzle = NULL;
+   const VkComponentMapping *ptr_swizzle = NULL;
 
    if (!vk)
       return;
