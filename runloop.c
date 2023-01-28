@@ -3968,7 +3968,6 @@ void runloop_event_deinit_core(void)
    {
       /* Reload the original config */
       config_unload_override();
-      runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
    }
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -4525,12 +4524,7 @@ bool runloop_event_init_core(
 
 #ifdef HAVE_CONFIGFILE
    if (auto_overrides_enable)
-   {
-      if (config_load_override(&runloop_st->system))
-         runloop_st->flags |=  RUNLOOP_FLAG_OVERRIDES_ACTIVE;
-      else
-         runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
-   }
+      config_load_override(&runloop_st->system);
 #endif
 
    /* Cannot access these settings-related parameters

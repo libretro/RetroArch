@@ -2616,7 +2616,6 @@ bool command_event(enum event_command cmd, void *data)
             {
                /* Reload the original config */
                config_unload_override();
-               runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 
                if (!settings->bools.video_fullscreen)
                {
@@ -6223,7 +6222,6 @@ bool retroarch_main_init(int argc, char *argv[])
          {
             /* Reload the original config */
             config_unload_override();
-            runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
          }
 #endif
 
@@ -6947,7 +6945,6 @@ bool retroarch_main_quit(void)
       {
          /* Reload the original config */
          config_unload_override();
-         runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
       }
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)

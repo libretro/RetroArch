@@ -13703,6 +13703,10 @@ MSG_HASH(
    "Nothing to save. Overrides not saved."
    )
 MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "Not saving. Overrides active."
+   )
+MSG_HASH(
    MSG_PAUSED,
    "Paused."
    )

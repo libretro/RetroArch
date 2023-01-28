@@ -13747,48 +13747,45 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             content_dir_name[0]              = '\0';
             override_path[0]                 = '\0';
 
-            if (!string_is_empty(rarch_path_override))
+            fill_pathname_application_special(config_directory,
+                  sizeof(config_directory),
+                  APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+
+            if (has_content)
             {
-               fill_pathname_application_special(config_directory,
-                     sizeof(config_directory),
-                     APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+               /* Game-specific path */
+               fill_pathname_join_special_ext(override_path,
+                     config_directory, core_name,
+                     path_basename_nocompression(rarch_path_basename),
+                     FILE_PATH_CONFIG_EXTENSION,
+                     sizeof(override_path));
 
-               if (has_content)
-               {
-                  /* Game-specific path */
-                  fill_pathname_join_special_ext(override_path,
-                        config_directory, core_name,
-                        path_basename_nocompression(rarch_path_basename),
-                        FILE_PATH_CONFIG_EXTENSION,
-                        sizeof(override_path));
+               game_override_remove = path_is_valid(override_path);
+               override_path[0]     = '\0';
 
-                  game_override_remove = path_is_valid(override_path);
-                  override_path[0]     = '\0';
+               /* Contentdir-specific path */
+               fill_pathname_parent_dir_name(content_dir_name,
+                     rarch_path_basename, sizeof(content_dir_name));
+               fill_pathname_join_special_ext(override_path,
+                     config_directory, core_name,
+                     content_dir_name,
+                     FILE_PATH_CONFIG_EXTENSION,
+                     sizeof(override_path));
 
-                  /* Contentdir-specific path */
-                  fill_pathname_parent_dir_name(content_dir_name,
-                        rarch_path_basename, sizeof(content_dir_name));
-                  fill_pathname_join_special_ext(override_path,
-                        config_directory, core_name,
-                        content_dir_name,
-                        FILE_PATH_CONFIG_EXTENSION,
-                        sizeof(override_path));
+               content_dir_override_remove = path_is_valid(override_path);
+               override_path[0]            = '\0';
+            }
 
-                  content_dir_override_remove = path_is_valid(override_path);
-                  override_path[0]            = '\0';
-               }
+            {
+               /* Core-specific path */
+               fill_pathname_join_special_ext(override_path,
+                     config_directory, core_name,
+                     core_name,
+                     FILE_PATH_CONFIG_EXTENSION,
+                     sizeof(override_path));
 
-               {
-                  /* Core-specific path */
-                  fill_pathname_join_special_ext(override_path,
-                        config_directory, core_name,
-                        core_name,
-                        FILE_PATH_CONFIG_EXTENSION,
-                        sizeof(override_path));
-
-                  core_override_remove = path_is_valid(override_path);
-                  override_path[0]     = '\0';
-               }
+               core_override_remove = path_is_valid(override_path);
+               override_path[0]     = '\0';
             }
 
             /* Show currently 'active' override file */
