@@ -125,9 +125,6 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
       /* for requested rate (first) and all preferred rates */
       for (j = 0; rate_res; ++j)
       {
-         RARCH_LOG("[WASAPI]: Initializing client (exclusive, %s, %uHz, %ums) ...\n",
-               float_fmt_res ? "float" : "pcm", rate_res, latency);
-
          wasapi_set_format(&wf, float_fmt_res, rate_res);
 #ifdef __cplusplus
          hr = client->Initialize(AUDCLNT_SHAREMODE_EXCLUSIVE,
@@ -206,6 +203,9 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    *float_fmt = float_fmt_res;
    *rate      = rate_res;
 
+   RARCH_LOG("[WASAPI]: Initialized exclusive %s client at %uHz, latency %ums\n",
+      float_fmt_res ? "float" : "pcm", rate_res, latency);
+
    return client;
 
 error:
@@ -238,9 +238,6 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       /* for requested rate (first) and all preferred rates */
       for (j = 0; rate_res; ++j)
       {
-         RARCH_LOG("[WASAPI]: Initializing client (shared, %s, %uHz, %ums) ...\n",
-               float_fmt_res ? "float" : "pcm", rate_res, latency);
-
          wasapi_set_format(&wf, float_fmt_res, rate_res);
 #ifdef __cplusplus
          hr = client->Initialize(AUDCLNT_SHAREMODE_SHARED,
@@ -290,6 +287,9 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
    *float_fmt = float_fmt_res;
    *rate      = rate_res;
+
+   RARCH_LOG("[WASAPI]: Initialized shared %s client at %uHz, latency %ums\n",
+      float_fmt_res ? "float" : "pcm", rate_res, latency);
 
    return client;
 
