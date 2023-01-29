@@ -13733,7 +13733,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             rarch_system_info_t *system      = &runloop_st->system;
 
             const char *rarch_path_basename  = path_get(RARCH_PATH_BASENAME);
-            const char *rarch_path_override  = path_get(RARCH_PATH_CONFIG_OVERRIDE);
             const char *core_name            = system ? system->info.library_name : NULL;
             char config_directory[PATH_MAX_LENGTH];
             char content_dir_name[PATH_MAX_LENGTH];
