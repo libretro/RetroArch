@@ -2482,6 +2482,10 @@ MSG_HASH(
    "Громкость звука (в дБ). Значение 0 дБ соответствует стандартному уровню громкости без усиления."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
+   "Громкость звука в дБ. Значение 0 дБ соответствует нормальной громкости без усиления. Уровень усиления можно изменять во время игры клавишами Увеличить громкость / Уменьшить громкость."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    "Уровень громкости микшера (дБ)"
    )
@@ -6405,6 +6409,10 @@ MSG_HASH(
    "Запускать Netplay в режиме наблюдателя."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
+   "Определяет, запускать ли Netplay в режиме наблюдателя. Если включено, при запуске Netplay будет открываться в режиме наблюдателя. Вы всегда можете изменить режим позже."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
    "Затухание чата"
    )
@@ -6459,6 +6467,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
    "Частота (в кадрах), с которой Netplay будет проверять синхронизацию хоста и клиента."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
+   "Частота в кадрах, с которой Netplay сверяет синхронизацию клиента и хоста. Для большинства ядер не даёт видимого эффекта и может игнорироваться. Для недетерминированных ядер данное значение устанавливает периодичность синхронизации пиров Netplay. С нестабильными ядрами устано[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -8948,6 +8960,10 @@ MSG_HASH(
    "Предыдущий каталог"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_PARENT_DIRECTORY,
+   "Вернуться в родительский каталог."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
    "Каталог не найден"
    )
@@ -9101,6 +9117,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
    "<Использовать данный каталог>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_USE_THIS_DIRECTORY,
+   "Выберите для установки в качестве каталога."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,

@@ -3791,6 +3791,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
    "Udržování trvalé místní mezipaměti nainstalovaných informací o jádře. Výrazně zkracuje dobu načítání na platformách s pomalým přístupem k disku."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
+   "Obejít základní informace pro funkce uložených pozic"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "Určuje, zda se mají ignorovat základní možnosti ukládání informací, což umožňuje experimentovat se souvisejícími funkcemi (běh dopředu, přetáčení atd.)."
+   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -8057,6 +8065,14 @@ MSG_HASH(
    "Možnosti Odstranění Obsahu Adresáře"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
+   "Soubor aktivních možností"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
+   "Aktuální používaný soubor možností."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
    "Resetovat Možnosti"
    )
@@ -8096,6 +8112,14 @@ MSG_HASH(
 
 /* Quick Menu > Controls > Manage Remap Files */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
+   "Aktivní soubor přemapování"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
+   "Aktuální používaný soubor přemapování."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
    "Načtení Souboru s Přemapováním"
@@ -8743,12 +8767,36 @@ MSG_HASH(
 /* Quick Menu > Overrides */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO,
+   "Aktivní soubor přepisu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
+   "Aktuální používaný soubor přepisu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
+   "Načíst přepisovací soubor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
+   "Načtení a nahrazení aktuální konfigurace."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "Uložit Přepis Jádra"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "Uloží konfigurační soubor přepisu, který se použije pro veškerý obsah načtený pomocí tohoto jádra. Bude mít přednost před hlavní konfigurací."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "Odstranění přepisů jádra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "Odstranění přepsaného konfiguračního souboru, který se použije pro veškerý obsah načtený pomocí tohoto jádra."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -8759,12 +8807,36 @@ MSG_HASH(
    "Uloží přepisovací konfigurační soubor, který se použije pro veškerý obsah načtený ze stejného adresáře jako aktuální soubor. Bude mít přednost před hlavní konfigurací."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "Odstranění přepisů adresáře obsahu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "Odstranění přepisovacího konfiguračního souboru, který se použije pro veškerý obsah načtený ze stejného adresáře jako aktuální soubor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
    "Uložit Přepis Hry"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
    "Uloží konfigurační soubor přepisu, který se použije pouze pro aktuální obsah. Bude mít přednost před hlavní konfigurací."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "Odstranění přepisů hry"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "Odstranění konfiguračního souboru přepisu, který bude platit pouze pro aktuální obsah."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
+   "Vyložení přepisu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD,
+   "Obnovení všech možností na globální konfigurační hodnoty."
    )
 
 /* Quick Menu > Achievements */
@@ -12635,8 +12707,24 @@ MSG_HASH(
    "Chyba při ukládání přepsání."
    )
 MSG_HASH(
+   MSG_OVERRIDES_ERROR_REMOVING,
+   "Chyba při odstraňování přepisů."
+   )
+MSG_HASH(
    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
    "Přepsání byla úspěšně uložena."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
+   "Přepisování bylo úspěšně odstraněno."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
+   "Přepisování bylo úspěšně vyloženo."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_NOT_SAVED,
+   "Není co zachraňovat. Přepsání není uloženo."
    )
 MSG_HASH(
    MSG_PAUSED,

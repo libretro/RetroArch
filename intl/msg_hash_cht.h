@@ -84,6 +84,10 @@ MSG_HASH(
    "選擇要執行的檔案，支援播放圖片、影片和音樂等多種檔案格式。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "瀏覽儲存空間，載入支援的檔案。\n首次執行請先安裝遊戲支援的核心，安裝後使用此選項開啟遊戲檔案，即可開始體驗復古電玩遊戲。\n※ 無法開啟遊戲時:\n設定選項中開啟管理核心，查看核心是否缺少重要檔案。\n嘗試使用其他支援的核心開啟，或替換遊戲原始檔案。\n如果仍然無法開啟，可使用英語嘗試聯繫官方解決 https://www.github.com/libretro/RetroArch/issues。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
    "載入光碟片"
    )
@@ -1445,6 +1449,30 @@ MSG_HASH(
    "設定影像處理使用的驅動程式。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   "OpenGL 1.x 驅動程式。\n應用程式最低需求: OpenGL 1.1。不支援著色器。\n條件允許的情況下，請使用更高版本的 OpenGL 驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
+   "OpenGL 2.x 驅動程式。\n此驅動程式除了軟體渲染的核心，還允許使用 libretro GL 核心。\n應用程式最低需求: OpenGL 2.0 或 OpenGLES 2.0。支援GLSL格式的著色器。\n條件允許的情況下，建議使用 glcore 驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   "OpenGL 3.x 驅動程式。\n此驅動程式除了軟體渲染的核心，還允許使用 libretro GL 核心。\n應用程式最低需求: OpenGL 3.2 或 OpenGLES 3.0+。支援Slang格式的著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   "Vulkan 驅動程式。\n此驅動程式除了軟體渲染的核心，還允許使用 libretro Vulkan 核心。\n應用程式最低需求: Vulkan 1.0。支援高動態範圍(HDR)和Slang格式的著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
+   "SDL 1.2 驅動程式。/n軟體渲染的驅動程式，效能被認定為次優。可作為最後的選項。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
+   "SDL 2 驅動程式。/n軟體渲染的驅動程式，效能取決於裝置。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
    "Apple平台 Metal 驅動程式。\n支援Slang格式的著色器。"
    )
@@ -1473,6 +1501,14 @@ MSG_HASH(
    "Direct3D 12 驅動程式。\n支援高動態範圍(HDR)和Slang格式的著色器。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "DispmanX 驅動程式。\n用於樹莓派微型單板電腦中的 Videocore IV GPU。不支援覆蓋元件和著色器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
+   "LibCACA 驅動程式。\n字符輸出而不是圖形。不推薦使用。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
    "Wii U 驅動程式。\n支援Slang格式的著色器。"
    )
@@ -1497,6 +1533,18 @@ MSG_HASH(
    "設定音訊訊號使用的驅動程式。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   "預設 ALSA 驅動程式。\n進階Linux聲音架構(ALSA)。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
+   "ALSA 驅動程式。\n進階Linux聲音架構(ALSA)，支援多執行緒。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
+   "RoarAudio sound system 驅動程式。\n音效驅動程式。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
    "OpenAL 驅動程式。\n音效驅動程式。"
    )
@@ -1507,6 +1555,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
    "DirectSound 驅動程式。\n用於 Windows 95 到 Windows XP 的音效驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
+   "JACK Audio Connection Kit 驅動程式。\n音效驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -1555,6 +1607,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
    "設定選單使用的佈景主題。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   "XMB主題。\n看起來像第七世代遊戲機控制台選單(PS3)。和Ozone主題有相似的功能。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
+   "Ozone主題。\n大多數平台上預設使用的主題。主要針對控制器瀏覽選單進行優化。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
+   "RGUI主題。\n此選單主題有最低效能的要求，可以在低解析度的螢幕上使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -2243,6 +2307,10 @@ MSG_HASH(
    "自動有效的減少「幀數延遲」防止丟失影格。當「幀數延遲」設定 <0> 時，起點時間為半幀。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
+   "自動有效的減少「幀數延遲」防止丟失影格。當「幀數延遲」設定 <0> 時，起點時間為半幀。\n例如: 8用於NTSC使用和10用於PAL使用。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    "自動"
    )
@@ -2358,6 +2426,10 @@ MSG_HASH(
    "設定音訊音量增益(分貝)。設定 <0> 時正常音量未增益。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
+   "設定音訊音量增益(分貝)。設定 <0> 時正常音量未增益。\n可在執行時使用增加音量和減少音量快捷鍵，調整合適的增益效果。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    "混音器音量增益 (分貝)"
    )
@@ -2429,6 +2501,10 @@ MSG_HASH(
    "左/右鍵 選擇音源輸出裝置。\n依據音效驅動程式顯示可使用的裝置。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
+   "ALSA 驅動程式。\n進階Linux聲音架構(ALSA)，自訂PCM裝置設定值。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "音訊延遲 (毫秒)"
    )
@@ -2494,12 +2570,20 @@ MSG_HASH(
    "左/右鍵 選擇輸入裝置。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_INPUT,
+   "左/右鍵 選擇輸入裝置，依據MIDI驅動程式顯示可使用裝置。關閉時輸入裝置將被禁用。此選項支援輸入名稱連接裝置。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    "輸出"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
    "左/右鍵 選擇輸出裝置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
+   "左/右鍵 選擇輸出裝置，依據MIDI驅動程式顯示可使用裝置。關閉時輸出裝置將被禁用。此選項支援輸入名稱連接裝置。\n當執行核心支援MIDI輸出時，依據支援程度由MIDI裝置輸出音效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
@@ -2797,6 +2881,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
    "單鍵 (按住)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "單次模式，先按住需要連發的按鍵，按一下連發鍵開啟，當連發中的按鍵放開時失效。\n「連發鍵」可在「設定→輸入→連接端 # 控制器」選項中個別設定。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "單鍵開關模式，按一下連發鍵開啟連發預設單鍵，預設的單鍵會持續連發，直到再按一下連發鍵關閉。\n「連發鍵」可在「設定→輸入→連接端 # 控制器」選項中個別設定。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "單鍵按住模式。按住連發鍵開啟連發預設單鍵，預設的單鍵會持續連發，直到放開連發鍵時關閉。\n「連發鍵」可在「設定→輸入→連接端 # 控制器」選項中個別設定。\n模擬家用電腦時代的自動射擊功能，請將連發預設單鍵配置到射擊按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
@@ -3684,6 +3780,10 @@ MSG_HASH(
    "載入遊戲前檢查必需的韌體(BIOS)。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
+   "部分核心有必需載入的韌體。\n開啟此選項時，執行缺少必需的韌體，將不允許執行核心。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
    "核心選項分類"
    )
@@ -3884,6 +3984,10 @@ MSG_HASH(
    "設定自動儲存成記憶存檔的時間(秒)。僅限支援SRM格式的核心使用。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
+   "依設定秒數自動將存檔記憶體轉存成記憶存檔(SRM格式)。僅限支援SRM格式的核心使用。\n關閉時執行項目關閉或結束時建立，如果應用程式意外中止將不建立記憶存檔。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "自動增加即時存檔編號"
    )
@@ -4005,6 +4109,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
    "設定核心日誌事件等級。如果核心送出的事件等級，低於設定時將被忽略。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
+   "設定核心日誌事件等級。\n核心日誌等級低於前端日誌等級時，核心事件將被忽略。\n除非開啟詳細模式(--verbose)，否則此選項必須高於前端日誌等級的設定。\n0級 = 除錯事件\n1級 = 訊息事件\n2級 = 警告事件\n3級 = 錯誤事件"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
@@ -5136,6 +5244,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
    "支援啟動桌面選單套件 (進階設定)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_UI_COMPANION_START_ON_BOOT,
+   "啟動時開啟桌面選單的進階設定選項。\n此選項關閉時「啟動時開啟桌面選單」選項失去作用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
@@ -6337,6 +6449,10 @@ MSG_HASH(
    "使用觀眾模式加入連線遊戲。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
+   "設定使用觀眾模式進行連線遊戲。\n開啟時建立主機和連線主機，都使用觀眾模式開始。\n連線遊戲使用身分可用快捷鍵切換。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
    "淡化對話訊息"
    )
@@ -6393,12 +6509,20 @@ MSG_HASH(
    "驗證主機和用戶端是否同步頻率(幀數)。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
+   "驗證主機和客戶端是否同步的幀頻率。\n大多數的核心 - 沒有明顯的影響可忽略。\n非確定的核心 - 設定值為同步頻率使用的幀數。\n有問題的核心 - 設定值大於零將嚴重影響效能。/n設定 <0> 時不執行檢查。此選項僅在連線遊戲的主機上使用。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
    "輸入延遲幀數"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "設定按鍵輸入延遲幀數，用於隱藏網路延遲。可降低CPU使用率並減少畫面誤差，代價是明顯的按鍵延遲。"
+   "設定按鍵輸入延遲幀數，用於掩蓋網路延遲。可降低CPU使用率並減少畫面誤差，代價是明顯的按鍵延遲。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "設定按鍵輸入延遲幀數，用於連線遊戲時掩蓋網路延遲。\n連線遊戲中此選項延遲本地輸入，用於執行幀數更接近從網路接收的幀數。\n可降低CPU使用率並減少畫面誤差，代價是明顯的按鍵延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -6406,7 +6530,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "設定按鍵輸入延遲幀數範圍，用於隱藏網路延遲。可降低CPU使用率並減少畫面誤差，代價是無預測的按鍵延遲。"
+   "設定按鍵輸入延遲幀數範圍，用於掩蓋網路延遲。可降低CPU使用率並減少畫面誤差，代價是無預測的按鍵延遲。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "設定按鍵輸入延遲幀數範圍，用於連線遊戲時掩蓋網路延遲。\n設定時將動態調整輸入延遲幀數，平衡CPU執行時間、輸入延遲和網路延遲。\n可降低CPU使用率並減少畫面誤差，代價是無預測的按鍵延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -6832,6 +6960,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_LANGUAGE,
    "設定使用的語言。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
+   "選擇語言進行本地化選單和本地化通知。變更時需要重新啟動才能生效。\n每個語言最後有顯示翻譯完成度。未完成的翻譯，使用英語顯示。"
+   )
 
 /* Settings > User > Privacy */
 
@@ -6869,6 +7001,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "遊玩經典遊戲贏得成就！欲了解更多信息！請訪問 https://retroachievements.org 網站！等你來挑戰！"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "RetroAchievements 使用帳號。\n請前往 RetroAchievements.org 網站，並註冊一個免費帳號。\n完成註冊後，輸入帳號與密碼在復古電玩中開啟成就系統。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
@@ -8486,11 +8622,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
-   "監視著色器設置變更"
+   "自動應用變化"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
-   "自動建立應用變化著色器配置檔到儲存空間。"
+   "著色器設定變更時，自動應用變化，儲存配置檔到儲存空間。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
+   "著色器設定變更時，自動應用變化，儲存「retroarch.slangp/.cgp/.glslp」配置檔到儲存空間。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -8507,6 +8647,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    "載入著色器配置檔，自動設置著色器通道參數。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
+   "載入著色器配置檔，自動設置著色器通道參數。\n依據顯示驅動程式載入支援的格式(Cg, GLSL, Slang)，可從「主選單→資訊→裝置資訊」選項中查看支援。\n載入位置可從「設定→資料夾→著色器」選項中變更。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
@@ -8546,7 +8690,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
-   "儲存目前設置至「影像著色器」根目錄「retroarch.slangp」配置檔，可使用著色器快捷鍵載入。\n儲存為應用變化配置檔時，可變更著色器通道數量，加入單通道著色器，每次變更都需應用變化一次。"
+   "儲存目前設置至「著色器」根目錄「retroarch.slangp/.cgp/.glslp」配置檔，可使用快捷鍵載入。\n儲存為應用變化配置檔時，可變更著色器通道數量，加入單通道著色器，每次變更都需應用變化一次。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
+   "變更著色器通道、參數、過濾器和縮放後，都需應用變化套用變更。\n應用變化時會儲存配置檔，儲存至「著色器」根目錄「retroarch.slangp/.cgp/.glslp」配置檔，此配置檔不會自動刪除，每次應用變化都會取代此配置檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -8565,16 +8713,32 @@ MSG_HASH(
    "設定著色器管線通道的數量。\n每個通道 <未使用> 可載入單通道著色器，載入後「應用變化」即可套用設定。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES,
+   "設定著色器管線通道的數量。\n每個通道可載入單通道著色器，載入後可變更參數、過濾器和縮放，最後應用變化即可套用變更。\n此選項設定 <0> 時並應用變化會清除載入的著色器。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER,
    "著色器"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
+   "載入單通道著色器。\n全部載入的檔案類型必須相同(Cg格式、GLSL格式、Slang格式)。\n載入位置可從「設定→資料夾→著色器」選項中變更。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
    "過濾器"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
+   "此通道的硬體過濾器。\n設定 <預設> 時由顯示「雙線性過濾」選項設定，\n開啟雙線性過濾為線性，關閉雙線性過濾為最近。"
+  )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCALE,
    "縮放"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
+   "此通道的縮放比例。\n每個通道的縮放比例會累加。例如: 通道#0使用2倍，通道#1使用2倍，最後輸出為4倍。\n最後的通道過濾器設定 <預設> 時，縮放比例將延伸至全螢幕，由顯示「雙線性過濾」選項設定，將使用1倍縮放或延伸至全螢幕，具體取決於最後的通道。"
    )
 
 /* Quick Menu > Shaders > Save */

@@ -2503,6 +2503,18 @@ MSG_HASH(
    "Pojedynczy przycisk (Przytrzymanie)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "Tryb klasyczny, operacja dwóch przycisków. Przytrzymaj przycisk i naciśnij przycisk Turbo, aby aktywować sekwencję odblokowania.\nPrzycisk Turbo może być przypisany w Ustawieniach/Input/Port 1 Controls."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "Przełącz tryb. Naciśnij przycisk Turbo, aby aktywować sekwencję uwalniania dla wybranego przycisku domyślnego, naciśnij go ponownie aby go wyłączyć.\nPrzycisk Turbo może być przypisany w Ustawieniach/Input/Port 1 Controls."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Tryb przytrzymania. Sekwencja zwolnienia dla wybranego domyślnego przycisku jest aktywna, dopóki przycisk Turbo jest przytrzymywany w dół.\nPrzycisk Turbo może być przypisany w Ustawieniach/Input/Port 1 Controls.\nAby emulować funkcję autoognia w epoce komputera domowego, ustaw Turbo i domyślne przyciski aby były takie same jak przycisk ognia joysticka."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
    "Domyślny przycisk turbo"
    )

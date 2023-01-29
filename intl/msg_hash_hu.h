@@ -2955,6 +2955,18 @@ MSG_HASH(
    "Egygombos (nyomva tartás)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "Klasszikus mód, kétgombos működés. Egy gombot nyomva tartva és a Turbo gombot megnyomva aktiválódik a megnyomás-elengedés szekvencia.\nA Turbo gomb a Beállítások / Bemenet / 1. csatlakozó beállításai alatt adható meg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "Átkapcsoló mód. A Turbo gombot egyszer megnyomva a kiválasztott alapértelmezett gombra aktiválódik a megnyomás-elengedés szekvencia, még egyszer megnyomva kikapcsol.\nA Turbo gomb a Beállítások / Bemenet / 1. csatlakozó beállításai alatt adható meg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Nyomva tartó mód. A kiválasztott alapértelmezett gomb megnyomás-elengedés szekvenciája addig aktív, amíg a Turbo gomb le van nyomva.\nA Turbo gomb a Beállítások / Bemenet / 1. csatlakozó beállításai alatt adható meg.\nA házi számítógépek korszakának autofire funkciójának emulálásához a Turbo és az alapértelmezett gomb legyen ugyanat, mint a joystick tűzgombja."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
    "Az alapértelmezett turbó gomb"
    )

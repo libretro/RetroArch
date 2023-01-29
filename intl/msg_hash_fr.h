@@ -2935,6 +2935,18 @@ MSG_HASH(
    "Touche simple (maintenir)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "Mode classique, fonctionnement à deux touches. Maintenez enfoncé une touche et appuyez sur la touche Turbo pour activer la séquence de déclenchement.\nLa touche Turbo peut être assignée dans Réglages/Entrées/Touches du port 1."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "Mode activer/désactiver. Appuyez une fois sur la touche Turbo pour activer la séquence de déclenchement pour la touche par défaut sélectionnée, appuyez une seconde fois pour la désactiver.\nLa touche Turbo peut être assignée dans Réglages/Entrées/Touches du port 1."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Mode maintenir. La séquence de déclenchement pour la touche par défaut sélectionnée est active tant que la touche Turbo est enfoncée.\nLa touche Turbo peut être assignée dans Réglages/Entrées/Touches du port 1.\nPour émuler la fonction tir automatique de l'ère des ordinateurs domestiques, définissez les touches Turbo et les touches par défaut à être les mêmes que la touche de tir de la manette."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
    "Touche turbo par défaut"
    )
@@ -12869,6 +12881,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_OVERRIDES_NOT_SAVED,
    "Rien à sauvegarder. Configuration de substitution non enregistrée."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "Pas d'enregistrement. Configuration de substitution active."
    )
 MSG_HASH(
    MSG_PAUSED,

@@ -2963,6 +2963,18 @@ MSG_HASH(
    "Botón dedicado (mantener)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "Modo de manejo clásico de dos botones. Mantén pulsado un botón y pulsa a la vez el botón de turbo para activar la secuencia de pulsación y liberación.\nEl botón de turbo puede asignarse en Ajustes/Entrada/Controles del puerto 1."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "Modo de alternancia. Pulsa el botón de turbo una vez para activar la secuencia de pulsación y liberación del botón predeterminado seleccionado y vuelve a pulsar el botón de turbo para desactivarlo.\nEl botón de turbo puede asignarse en Ajustes/Entrada/Controles del puerto 1."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Modo de mantener pulsado el botón. La secuencia de pulsación y liberación para el botón predeterminado seleccionado se mantendrá activa siempre y cuando se mantenga pulsado el botón de turbo.\nEl botón de turbo puede asignarse en Ajustes/Entrada/Controles del puerto 1.\nSi deseas emular el método de autodisparo/«autofire» de la época de los PC domésticos, asigna los botones de turbo y predeterminado para que sean el mismo que el botón de disparo del mando."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
    "Botón predeterminado del turbo"
    )
@@ -12913,6 +12925,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_OVERRIDES_NOT_SAVED,
    "No hay nada que guardar. No se han guardado las personalizaciones."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "Guardado bloqueado. Personalizaciones activas."
    )
 MSG_HASH(
    MSG_PAUSED,

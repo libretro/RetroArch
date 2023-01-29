@@ -3769,11 +3769,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
-   "Umgehung der Core Info Savestates Funktionen"
+   "Umgehung der Core-Info-Savestates-Funktionen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Legt fest, ob Savestatefähigkeiten der Core Info ignoriert werden sollen, so dass mit verwandten Funktionen experimentiert werden kann (Run-Ahead, Zurückspulen, usw)."
+   "Legt fest, ob Savestatefähigkeiten der Core Info ignoriert werden sollen, so dass mit verwandten Funktionen experimentiert werden kann (Run-Ahead, Zurückspulen usw)."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -8688,7 +8688,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "Die Überschreibungs-Konfigurationsdatei für alle Inhalte löschen, die mit diesem Core geladen werden."
+   "Die Überschreibungskonfigurationsdatei für alle Inhalte löschen, die mit diesem Core geladen werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -8700,11 +8700,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "Inhaltsverzeichnis-Überschreibungen entfernen"
+   "Inhaltsverzeichnisüberschreibungen entfernen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "Die Überschreibungs-Konfigurationsdatei für alle Inhalte löschen, die aus demselben Verzeichnis wie die aktuelle Datei geladen werden."
+   "Die Überschreibungskonfigurationsdatei für alle Inhalte löschen, die aus demselben Verzeichnis wie die aktuelle Datei geladen werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -8716,11 +8716,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "Spiel-Überschreibungen entfernen"
+   "Spielüberschreibungen entfernen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "Die Überschreibungs-Konfigurationsdatei löschen, die nur für den aktuellen Inhalt gilt."
+   "Die Überschreibungskonfigurationsdatei löschen, die nur für den aktuellen Inhalt gilt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
