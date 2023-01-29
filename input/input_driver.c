@@ -4316,7 +4316,8 @@ static void input_keys_pressed(
    {
       for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
       {
-         bool bit_pressed = binds[port][i].valid
+         bool other_pressed = input_keys_pressed_other_sources(input_st, i, p_new_state);
+         bool bit_pressed   = binds[port][i].valid
                && input_state_wrap(
                      input_st->current_driver,
                      input_st->current_data,
@@ -4329,12 +4330,13 @@ static void input_keys_pressed(
                      i);
 
          if (     bit_pressed
-               || BIT64_GET(lifecycle_state, i)
-               || input_keys_pressed_other_sources(input_st, i, p_new_state))
+               || other_pressed
+               || BIT64_GET(lifecycle_state, i))
          {
             if (libretro_hotkey_set || keyboard_hotkey_set)
             {
-               if (block_hotkey[i])
+               /* Do not block "other source" (input overlay) presses */
+               if (block_hotkey[i] && !other_pressed)
                   continue;
             }
 
