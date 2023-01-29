@@ -213,28 +213,7 @@ void retro_main_log_file_deinit(void)
 #if !defined(HAVE_LOGGER)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
-#if TARGET_OS_IPHONE
-#if TARGET_IPHONE_SIMULATOR
-   vprintf(fmt, ap);
-#else
-   static aslclient asl_client;
-   static int asl_initialized = 0;
-   if (!asl_initialized)
-   {
-      asl_client      = asl_open(
-            FILE_PATH_PROGRAM_NAME,
-            "com.apple.console",
-            ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
-      asl_initialized = 1;
-   }
-   aslmsg msg = asl_new(ASL_TYPE_MSG);
-   asl_set(msg, ASL_KEY_READ_UID, "-1");
-   if (tag)
-      asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
-   asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
-   asl_free(msg);
-#endif
-#elif defined(_XBOX1)
+#if defined(_XBOX1)
    /* FIXME: Using arbitrary string as fmt argument is unsafe. */
    char msg_new[256];
    char buffer[256];
@@ -299,7 +278,29 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if defined(__WINRT__)
    OutputDebugStringA(buffer);
 #endif
+#else /* !HAVE_QT && !__WINRT__ */
+#if TARGET_OS_IPHONE
+#if TARGET_IPHONE_SIMULATOR
+   vprintf(fmt, ap);
 #else
+   static aslclient asl_client;
+   static int asl_initialized = 0;
+   if (!asl_initialized)
+   {
+      asl_client      = asl_open(
+                                 FILE_PATH_PROGRAM_NAME,
+                                 "com.apple.console",
+                                 ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
+      asl_initialized = 1;
+   }
+   aslmsg msg = asl_new(ASL_TYPE_MSG);
+   asl_set(msg, ASL_KEY_READ_UID, "-1");
+   if (tag)
+      asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
+   asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
+   asl_free(msg);
+#endif
+#endif
 #if defined(HAVE_LIBNX)
    mutexLock(&g_verbosity->mtx);
 #endif
