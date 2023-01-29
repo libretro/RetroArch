@@ -1506,6 +1506,7 @@ static float ozone_last_framebuffer_opacity = -1.0f;
 /* Forward declarations */
 static void ozone_cursor_animation_cb(void *userdata);
 static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation);
+static void ozone_unload_thumbnail_textures(void *data);
 
 static INLINE uint8_t ozone_count_lines(const char *str)
 {
@@ -8529,6 +8530,7 @@ static void ozone_refresh_thumbnail_image(void *data, unsigned i)
       return;
 
    ozone->flags &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
+   ozone_unload_thumbnail_textures(ozone);
 
    /* Refresh metadata */
    if (!i)

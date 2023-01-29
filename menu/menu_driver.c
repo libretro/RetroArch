@@ -8282,6 +8282,7 @@ int generic_menu_entry_action(
       const char *deferred_path = menu ? menu->deferred_path : NULL;
       const char *flush_target  = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
       size_t stack_offset       = 1;
+      unsigned i                = 0;
       bool reset_navigation     = true;
 
       /* Loop backwards through the menu stack to
@@ -8330,6 +8331,9 @@ int generic_menu_entry_action(
        * the menu stack. We therefore have to force a
        * RARCH_MENU_CTL_UNSET_PREVENT_POPULATE */
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+
+      /* Ozone requires thumbnail refreshing */
+      menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, &i);
 
       if (reset_navigation)
          menu_st->selection_ptr = 0;
