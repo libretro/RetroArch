@@ -1455,7 +1455,6 @@ static void btstack_hid_free(const void *data)
    btpad_set_inquiry_state(true);
    btstack_set_poweron(false);
 
-   free(slots);
    if (hid)
       free(hid);
 }
