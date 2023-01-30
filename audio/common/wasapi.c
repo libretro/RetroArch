@@ -80,6 +80,19 @@ const char *hresult_name(HRESULT hr)
    }
 }
 
+const char *sharemode_name(AUDCLNT_SHAREMODE mode)
+{
+   switch (mode)
+   {
+      case AUDCLNT_SHAREMODE_SHARED:
+         return "shared";
+      case AUDCLNT_SHAREMODE_EXCLUSIVE:
+         return "exclusive";
+      default:
+         return "<unknown>";
+   }
+}
+
 const char* wasapi_error(DWORD error)
 {
    static char error_message[256];
