@@ -324,15 +324,9 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       for (j = 0; rate_res; ++j)
       {
          wasapi_set_format(&wf, float_fmt_res, rate_res, channels);
-#ifdef __cplusplus
-         hr = client->Initialize(AUDCLNT_SHAREMODE_SHARED,
+         hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_SHARED,
                AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
                0, 0, (WAVEFORMATEX*)&wf, NULL);
-#else
-         hr = client->lpVtbl->Initialize(client, AUDCLNT_SHAREMODE_SHARED,
-               AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
-               0, 0, (WAVEFORMATEX*)&wf, NULL);
-#endif
 
          if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
          {
@@ -344,15 +338,9 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
             if (FAILED(hr))
                return NULL;
 
-#ifdef __cplusplus
-            hr = client->Initialize(AUDCLNT_SHAREMODE_SHARED,
+            hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_SHARED,
                   AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
                   0, 0, (WAVEFORMATEX*)&wf, NULL);
-#else
-            hr = client->lpVtbl->Initialize(client, AUDCLNT_SHAREMODE_SHARED,
-                  AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
-                  0, 0, (WAVEFORMATEX*)&wf, NULL);
-#endif
          }
          if (hr != AUDCLNT_E_UNSUPPORTED_FORMAT)
          {
