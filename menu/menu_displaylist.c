@@ -6675,12 +6675,20 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_MICROPHONE_SETTINGS_LIST:
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
-                  PARSE_ONLY_UINT, false) == 0)
+                  MENU_ENUM_LABEL_MICROPHONE_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_DRIVER,
+                  PARSE_ONLY_STRING_OPTIONS, false) == 0)
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_MICROPHONE_DEVICE,
                   PARSE_ONLY_STRING, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
+                  PARSE_ONLY_UINT, false) == 0)
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_MICROPHONE_LATENCY,
@@ -6689,6 +6697,18 @@ unsigned menu_displaylist_build_list(
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES,
                   PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+                  PARSE_ONLY_INT, false) == 0)
             count++;
          break;
       case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
@@ -6715,6 +6735,7 @@ unsigned menu_displaylist_build_list(
 #endif
          menu_displaylist_build_info_selective_t build_list[] = {
             {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,           PARSE_ACTION,     true  },
+            {MENU_ENUM_LABEL_MICROPHONE_SETTINGS,             PARSE_ACTION,     true  },
             {MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,        PARSE_ACTION,     true  },
             {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,  PARSE_ACTION,     true  },
             {MENU_ENUM_LABEL_MIDI_SETTINGS,                   PARSE_ACTION,     true  },

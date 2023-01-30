@@ -468,4 +468,6 @@ bool microphone_driver_find_driver(
       const char *prefix,
       bool verbosity_enabled);
 
+bool microphone_driver_get_devices_list(void **ptr);
+
 #endif /* RETROARCH_MICROPHONE_DRIVER_H */

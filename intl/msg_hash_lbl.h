@@ -131,6 +131,10 @@ MSG_HASH(
    "audio_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_ENABLE,
+   "microphone_enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_FILTER_DIR,
    "audio_filter_dir"
    )
@@ -221,6 +225,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES,
    "microphone_block_frames"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "microphone_wasapi_exclusive_mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "microphone_wasapi_float_format"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "microphone_wasapi_sh_buffer_length"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,

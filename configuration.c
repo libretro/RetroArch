@@ -2070,7 +2070,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("audio_rate_control",           &settings->bools.audio_rate_control, true, DEFAULT_RATE_CONTROL, false);
 #ifdef HAVE_WASAPI
    SETTING_BOOL("audio_wasapi_exclusive_mode",  &settings->bools.audio_wasapi_exclusive_mode, true, DEFAULT_WASAPI_EXCLUSIVE_MODE, false);
+   SETTING_BOOL("microphone_wasapi_exclusive_mode",  &settings->bools.microphone_wasapi_exclusive_mode, true, DEFAULT_WASAPI_EXCLUSIVE_MODE, false);
    SETTING_BOOL("audio_wasapi_float_format",    &settings->bools.audio_wasapi_float_format, true, DEFAULT_WASAPI_FLOAT_FORMAT, false);
+   SETTING_BOOL("microphone_wasapi_float_format",    &settings->bools.microphone_wasapi_float_format, true, DEFAULT_WASAPI_FLOAT_FORMAT, false);
 #endif
 
    SETTING_BOOL("savestates_in_content_dir",     &settings->bools.savestates_in_content_dir, true, DEFAULT_SAVESTATES_IN_CONTENT_DIR, false);
@@ -2499,6 +2501,7 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #ifdef HAVE_WASAPI
    SETTING_INT("audio_wasapi_sh_buffer_length", &settings->ints.audio_wasapi_sh_buffer_length, true, DEFAULT_WASAPI_SH_BUFFER_LENGTH, false);
+   SETTING_INT("microphone_wasapi_sh_buffer_length", &settings->ints.microphone_wasapi_sh_buffer_length, true, DEFAULT_WASAPI_SH_BUFFER_LENGTH, false);
 #endif
    SETTING_INT("crt_switch_center_adjust",      &settings->ints.crt_switch_center_adjust, false, DEFAULT_CRT_SWITCH_CENTER_ADJUST, false);
    SETTING_INT("crt_switch_porch_adjust",      &settings->ints.crt_switch_porch_adjust, false, DEFAULT_CRT_SWITCH_PORCH_ADJUST, false);

@@ -2555,16 +2555,24 @@ MSG_HASH(
 
 /* Settings > Audio > Input */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "Microphone"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   "Enable audio input."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "Device"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
-   "Override the default input device the audio driver uses. This is driver dependent."
+   "Override the default input device the microphone driver uses. This is driver dependent."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
-   "Override the default input device the audio driver uses. This is driver dependent."
+   "Override the default input device the microphone driver uses. This is driver dependent."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
@@ -2580,7 +2588,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
-   "Desired audio input latency in milliseconds. Might not be honored if the audio driver can't provide given latency."
+   "Desired audio input latency in milliseconds. Might not be honored if the microphone driver can't provide given latency."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "WASAPI Exclusive Mode"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "Allow the WASAPI driver to take exclusive control of the microphone device. If disabled, it will use shared mode instead."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "WASAPI Float Format"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Use float format for the WASAPI driver, if supported by your audio device."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "WASAPI Shared Buffer Length"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "The intermediate buffer length (in frames) when using the WASAPI driver in shared mode."
    )
 
 /* Settings > Audio > Resampler */

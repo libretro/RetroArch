@@ -533,6 +533,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_always_reload_core_on_run_content, M
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_refresh_rate,            MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_refresh_rate_polled,     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_enable,                  MENU_ENUM_SUBLABEL_AUDIO_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_enable,             MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_enable_menu,             MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_sounds,                   MENU_ENUM_SUBLABEL_MENU_SOUNDS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_max_timing_skew,         MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW)
@@ -779,6 +780,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_dsp_plugin_remove,       MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_exclusive_mode,   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_float_format,     MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_sh_buffer_length, MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_wasapi_exclusive_mode,   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_wasapi_float_format,     MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_wasapi_sh_buffer_length, MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH)
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_opacity,                 MENU_ENUM_SUBLABEL_OVERLAY_OPACITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_scale_landscape,         MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE)
@@ -3559,6 +3563,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_wasapi_sh_buffer_length);
             break;
+         case MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_wasapi_exclusive_mode);
+            break;
+         case MENU_ENUM_LABEL_MICROPHONE_WASAPI_FLOAT_FORMAT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_wasapi_float_format);
+            break;
+         case MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_wasapi_sh_buffer_length);
+            break;
          case MENU_ENUM_LABEL_MENU_WALLPAPER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_wallpaper);
             break;
@@ -4174,6 +4187,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUDIO_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_enable);
+            break;
+         case MENU_ENUM_LABEL_MICROPHONE_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_enable);
             break;
          case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_enable_menu);

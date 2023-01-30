@@ -644,3 +644,12 @@ bool microphone_driver_deinit(void)
    microphone_driver_close_microphones();
    return microphone_driver_deinit_internal();
 }
+
+bool microphone_driver_get_devices_list(void **data)
+{
+   struct string_list**ptr     = (struct string_list**)data;
+   if (!ptr)
+      return false;
+   *ptr = mic_driver_st.devices_list;
+   return true;
+}

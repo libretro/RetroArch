@@ -531,9 +531,9 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    UINT32 frame_count            = 0;
    REFERENCE_TIME dev_period     = 0;
    BYTE *dest                    = NULL;
-   bool float_format             = settings->bools.audio_wasapi_float_format;
-   bool exclusive_mode           = settings->bools.audio_wasapi_exclusive_mode;
-   int sh_buffer_length          = settings->ints.audio_wasapi_sh_buffer_length;
+   bool float_format             = settings->bools.microphone_wasapi_float_format;
+   bool exclusive_mode           = settings->bools.microphone_wasapi_exclusive_mode;
+   int sh_buffer_length          = settings->ints.microphone_wasapi_sh_buffer_length;
    wasapi_microphone_t *wasapi   = (wasapi_microphone_t*)driver_context;
    wasapi_microphone_handle_t *microphone = calloc(1, sizeof(wasapi_microphone_handle_t));
 

@@ -105,6 +105,7 @@ typedef struct settings
       int location_update_interval_distance;
       int state_slot;
       int audio_wasapi_sh_buffer_length;
+      int microphone_wasapi_sh_buffer_length;
       int crt_switch_center_adjust;
       int crt_switch_porch_adjust;
 #ifdef HAVE_VULKAN
@@ -615,6 +616,8 @@ typedef struct settings
 
       /* Microphone */
       bool microphone_enable;
+      bool microphone_wasapi_exclusive_mode;
+      bool microphone_wasapi_float_format;
 
       /* Input */
       bool input_remap_binds_enable;
