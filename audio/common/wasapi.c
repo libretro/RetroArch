@@ -163,12 +163,21 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    HRESULT hr                     = _IMMDevice_Activate(device,
          IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
+
    if (FAILED(hr))
+   {
+      RARCH_ERR("[WASAPI]: IMMDevice::Activate failed (%s): %s",
+         hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
       return NULL;
+   }
 
    hr = _IAudioClient_GetDevicePeriod(client, NULL, &minimum_period);
    if (FAILED(hr))
+   {
+      RARCH_ERR("[WASAPI]: Failed to get device period of exclusive-mode client (%s): %s",
+         hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
       goto error;
+   }
 
    /* buffer_duration is in 100ns units */
    buffer_duration = latency * 10000.0;
@@ -197,16 +206,25 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 #endif
          if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
          {
+            RARCH_WARN("[WASAPI] Unaligned buffer size: %s", wasapi_error(HRESULT_CODE(hr)));
             hr = _IAudioClient_GetBufferSize(client, &buffer_length);
             if (FAILED(hr))
+            {
+               RARCH_ERR("[WASAPI] Failed to get buffer size of client (%s): %s",
+                  hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
                goto error;
+            }
 
             IFACE_RELEASE(client);
             hr                     = _IMMDevice_Activate(device,
                   IID_IAudioClient,
                   CLSCTX_ALL, NULL, (void**)&client);
             if (FAILED(hr))
+            {
+               RARCH_ERR("[WASAPI] IMMDevice::Activate failed (%s): %s",
+                  hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
                return NULL;
+            }
 
             buffer_duration = 10000.0 * 1000.0 / rate_res * buffer_length + 0.5;
 #ifdef __cplusplus
@@ -226,7 +244,11 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
                   IID_IAudioClient,
                   CLSCTX_ALL, NULL, (void**)&client);
             if (FAILED(hr))
+            {
+               RARCH_ERR("[WASAPI] IMMDevice::Activate failed (%s): %s",
+                  hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
                return NULL;
+            }
 
 #ifdef __cplusplus
             hr = client->Initialize(AUDCLNT_SHAREMODE_EXCLUSIVE,
@@ -258,7 +280,11 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    }
 
    if (FAILED(hr))
+   {
+      RARCH_ERR("[WASAPI]: Failed to create exclusive-mode client with %s: %s",
+         hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
       goto error;
+   }
 
    *float_fmt = float_fmt_res;
    *rate      = rate_res;
@@ -285,8 +311,12 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    HRESULT hr           = _IMMDevice_Activate(device,
          IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
+
    if (FAILED(hr))
+   { /* If we couldn't create the IAudioClient... */
+      RARCH_ERR("[WASAPI]: Failed to create %s IAudioClient with %s: %s", hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
       return NULL;
+   }
 
    /* once for float, once for pcm (requested first) */
    for (i = 0; i < 2; ++i)
@@ -343,7 +373,11 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    }
 
    if (FAILED(hr))
+   {
+      RARCH_ERR("[WASAPI]: IAudioClient::Initialize failed with %s: %s", hresult_name(hr),
+                wasapi_error(HRESULT_CODE(hr)));
       goto error;
+   }
 
    *float_fmt = float_fmt_res;
    *rate      = rate_res;
@@ -503,6 +537,10 @@ IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
    REFERENCE_TIME device_period  = 0;
    REFERENCE_TIME stream_latency = 0;
    UINT32 buffer_length          = 0;
+
+   RARCH_DBG("[WASAPI]: Requesting %s %s client (rate=%uHz, latency=%ums).\n",
+      *exclusive ? "exclusive" : "shared",
+      *float_fmt ? "float" : "pcm", *rate, latency);
 
    if (*exclusive)
    {
