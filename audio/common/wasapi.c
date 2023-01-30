@@ -37,7 +37,7 @@ void wasapi_log_hr(HRESULT hr, char* buffer, size_t length)
          NULL);
 }
 
-static const char *hresult_name(HRESULT hr)
+const char *hresult_name(HRESULT hr)
 {
    switch (hr)
    {
@@ -80,7 +80,7 @@ static const char *hresult_name(HRESULT hr)
    }
 }
 
-static const char* wasapi_last_error(DWORD error)
+const char* wasapi_error(DWORD error)
 {
    static char error_message[256];
 
