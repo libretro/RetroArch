@@ -512,7 +512,7 @@ error:
 }
 
 IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
-      bool *float_fmt, unsigned *rate, unsigned latency)
+      bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels)
 {
    HRESULT hr;
    IAudioClient *client;
@@ -527,20 +527,22 @@ IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
 
    if (*exclusive)
    {
-      client = wasapi_init_client_ex(device, float_fmt, rate, latency);
+      client = wasapi_init_client_ex(device, float_fmt, rate, latency, channels);
       if (!client)
       {
-         client = wasapi_init_client_sh(device, float_fmt, rate, latency);
+         RARCH_WARN("[WASAPI] Failed to initialize exclusive client, attempting shared client.\n");
+         client = wasapi_init_client_sh(device, float_fmt, rate, latency, channels);
          if (client)
             *exclusive = false;
       }
    }
    else
    {
-      client = wasapi_init_client_sh(device, float_fmt, rate, latency);
+      client = wasapi_init_client_sh(device, float_fmt, rate, latency, channels);
       if (!client)
       {
-         client = wasapi_init_client_ex(device, float_fmt, rate, latency);
+         RARCH_WARN("[WASAPI] Failed to initialize shared client, attempting exclusive client.\n");
+         client = wasapi_init_client_ex(device, float_fmt, rate, latency, channels);
          if (client)
             *exclusive = true;
       }
