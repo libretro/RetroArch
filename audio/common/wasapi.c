@@ -208,15 +208,9 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
       for (j = 0; rate_res; ++j)
       {
          wasapi_set_format(&wf, float_fmt_res, rate_res);
-#ifdef __cplusplus
-         hr = client->Initialize(AUDCLNT_SHAREMODE_EXCLUSIVE,
+         hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
                AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
                buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
-#else
-         hr = client->lpVtbl->Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
-               AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
-               buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
-#endif
          if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
          {
             RARCH_WARN("[WASAPI] Unaligned buffer size: %s", wasapi_error(HRESULT_CODE(hr)));
@@ -240,15 +234,9 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
             }
 
             buffer_duration = 10000.0 * 1000.0 / rate_res * buffer_length + 0.5;
-#ifdef __cplusplus
-            hr = client->Initialize(AUDCLNT_SHAREMODE_EXCLUSIVE,
+            hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
                   AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
                   buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
-#else
-            hr = client->lpVtbl->Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
-                  AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
-                  buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
-#endif
          }
          if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
          {
@@ -263,15 +251,9 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
                return NULL;
             }
 
-#ifdef __cplusplus
-            hr = client->Initialize(AUDCLNT_SHAREMODE_EXCLUSIVE,
+            hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
                   AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
                   buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
-#else
-            hr = client->lpVtbl->Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
-                  AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
-                  buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
-#endif
          }
          if (hr != AUDCLNT_E_UNSUPPORTED_FORMAT)
          {
