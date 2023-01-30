@@ -13786,8 +13786,8 @@ static bool setting_append_list(
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
          (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
-         (*list)[list_info->index - 1].action_left   = &setting_string_action_left_audio_device;
-         (*list)[list_info->index - 1].action_right  = &setting_string_action_right_audio_device;
+         (*list)[list_info->index - 1].action_left   = &setting_string_action_left_microphone_device;
+         (*list)[list_info->index - 1].action_right  = &setting_string_action_right_microphone_device;
 #endif
 
          CONFIG_UINT(
