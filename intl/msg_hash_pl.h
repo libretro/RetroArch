@@ -11707,6 +11707,10 @@ MSG_HASH(
    "Przesłonięcia zostały pomyślnie zapisane."
    )
 MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "Nie zapisywane. Nadpisuje aktywne."
+   )
+MSG_HASH(
    MSG_PAUSED,
    "Wstrzymane."
    )

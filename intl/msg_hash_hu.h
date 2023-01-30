@@ -12695,6 +12695,10 @@ MSG_HASH(
    "Nincs mit menteni. Felülbírálat mentése elvetve."
    )
 MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "Nincs mentés. Felülbíráló fájl aktív."
+   )
+MSG_HASH(
    MSG_PAUSED,
    "Megállítva."
    )

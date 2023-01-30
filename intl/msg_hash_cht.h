@@ -331,19 +331,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-   "更新預覽縮圖 (舊版)"
+   "更新列表預覽縮圖"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "選擇列表下載並更新全部預覽縮圖。"
+   "選擇列表更新全部的預覽縮圖，更新遊戲資料庫全部建立的項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   "更新預覽縮圖"
+   "更新項目預覽縮圖"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "選擇列表下載並更新全部預覽縮圖。"
+   "選擇列表更新項目的預覽縮圖，更新符合遊戲資料庫加入的項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -1170,7 +1170,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   "變更設定檔儲存和載入的設定。"
+   "變更設定相關儲存和載入的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
@@ -1178,7 +1178,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   "變更遊戲儲存和載入相關的設定。"
+   "變更遊戲相關儲存和載入的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1555,6 +1555,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
    "DirectSound 驅動程式。\n用於 Windows 95 到 Windows XP 的音效驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
+   "Windows Audio Session API 驅動程式。\nWindows音頻會話API(WASAPI)用於 Windows 7 及更高版本的音效驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
@@ -2308,7 +2312,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "自動有效的減少「幀數延遲」防止丟失影格。當「幀數延遲」設定 <0> 時，起點時間為半幀。\n例如: 8用於NTSC使用和10用於PAL使用。"
+   "自動有效的減少「幀數延遲」防止丟失影格。當「幀數延遲」設定 <0> 時，起點時間為半幀。\n例如: 設定 <8> 適用於NTSC格式使用，設定 <10> 適用於PAL格式使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2341,6 +2345,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    "同步核心請求的時間。僅限支援可變更新率的裝置(G-Sync, FreeSync, HDMI 2.1 VRR)。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
+   "準確同步執行幀率。相當於強制1倍速執行，支援快轉模式。/n裝置更新率同步執行核心的幀率，沒有動態音訊速率控制。"
    )
 
 /* Settings > Audio */
@@ -2571,7 +2579,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MIDI_INPUT,
-   "左/右鍵 選擇輸入裝置，依據MIDI驅動程式顯示可使用裝置。關閉時輸入裝置將被禁用。此選項支援輸入名稱連接裝置。"
+   "左/右鍵 選擇輸入裝置，依據MIDI驅動程式顯示可使用裝置。\n關閉時輸入裝置將被禁用。此選項支援輸入名稱連接裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
@@ -2583,7 +2591,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
-   "左/右鍵 選擇輸出裝置，依據MIDI驅動程式顯示可使用裝置。關閉時輸出裝置將被禁用。此選項支援輸入名稱連接裝置。\n當執行核心支援MIDI輸出時，依據支援程度由MIDI裝置輸出音效。"
+   "左/右鍵 選擇輸出裝置，依據MIDI驅動程式顯示可使用裝置。\n關閉時輸出裝置將被禁用。此選項支援輸入名稱連接裝置。\n當執行核心支援MIDI輸出時，依據支援程度由MIDI裝置輸出音效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
@@ -2892,7 +2900,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "單鍵按住模式。按住連發鍵開啟連發預設單鍵，預設的單鍵會持續連發，直到放開連發鍵時關閉。\n「連發鍵」可在「設定→輸入→連接端 # 控制器」選項中個別設定。\n模擬家用電腦時代的自動射擊功能，請將連發預設單鍵配置到射擊按鍵。"
+   "單鍵按住模式。按住連發鍵開啟連發預設單鍵，預設的單鍵會持續連發，直到放開連發鍵時關閉。\n「連發鍵」可在「設定→輸入→連接端 # 控制器」選項中個別設定。\n用於模擬個人電腦時代的按住自動射擊功能，請將連發預設單鍵配置到射擊使用的按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
@@ -3038,6 +3046,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
    "設定後變更快捷鍵的操作方式，必須先按住組合鍵才能觸發快捷鍵。控制器組合鍵相關選項不影響。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
+   "組合鍵設定到鍵盤、控制器和類比控制器時，使用快捷鍵需先按住組合鍵。\n可用於完整的使用電腦鍵盤，不被快捷鍵妨礙鍵盤輸入。\n可用於控制器組合快捷鍵，設定組合鍵並加入延遲，可用按鍵加入所需的快捷鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -3299,7 +3311,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE,
-   "將目前執行的內容，錄製成影片的開關。"
+   "將目前執行的內容，錄製成指定格式的開關。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
@@ -3373,7 +3385,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
-   "執行搶占幀數的開關。"
+   "搶占幀數的開關。"
    )
 
 MSG_HASH(
@@ -3702,7 +3714,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "隱藏開啟超前執行時，核心不支援儲存即時存檔的警告通知。"
+   "隱藏開啟超前執行時，核心不支援即時存檔的警告通知。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
@@ -3734,7 +3746,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "隱藏開啟搶占幀數時，核心不支援儲存即時存檔的警告通知。"
+   "隱藏開啟搶占幀數時，核心不支援即時存檔的警告通知。"
    )
 
 /* Settings > Core */
@@ -3886,7 +3898,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
-   "「關閉」時儲存變更的核心設定，「結束復古電玩」時儲存變更的設定。"
+   "「關閉」時儲存變更的核心選項，「結束復古電玩」時儲存變更的設定。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
+   "執行項目「關閉」時儲存變更的核心選項。\n「結束復古電玩」時儲存變更的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
@@ -5336,11 +5352,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-   "顯示「更新預覽縮圖 (舊版)」"
+   "顯示「更新列表預覽縮圖」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-   "在「線上更新」選項中顯示「更新預覽縮圖 (舊版)」選項。"
+   "在「線上更新」選項中顯示「更新列表預覽縮圖」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
@@ -6212,7 +6228,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
-   "變更成就通知顯示的方式。"
+   "變更成就通知顯示的方式。需要開啟「螢幕通知圖標」才能顯示選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR,
@@ -6279,7 +6295,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
-   "變更成就通知相關的設定。"
+   "變更成就通知相關的設定。需要「開啟螢幕通知」才會顯示成就通知。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
@@ -7484,7 +7500,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-   "掃描資料夾中全部檔案，並建立符合遊戲資料庫的遊戲。"
+   "掃描資料夾中核心支援的檔案，並建立符合遊戲資料庫的遊戲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
@@ -7500,7 +7516,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_FILE,
-   "掃描檔案或壓縮檔，並建立符合遊戲資料庫的遊戲。"
+   "掃描核心支援格式的單一檔案，並建立符合遊戲資料庫的遊戲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
@@ -7508,7 +7524,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "掃描指定位置的檔案，無須符合遊戲資料庫直接建立。"
+   "掃描指定資料夾直接建立列表，可忽略核心支援和遊戲資料庫。"
    )
 
 /* Import Content > Scan File */
@@ -8000,7 +8016,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
-   "開始錄製影片。"
+   "開始錄製成指定的格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
@@ -8126,7 +8142,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
-   "目前使用的核心選項設定檔。"
+   "目前使用的核心選項設定檔。優先順序: 遊戲>路徑>核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
@@ -8174,7 +8190,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
-   "目前使用的自訂按鍵設定檔。"
+   "目前使用的自訂按鍵設定檔。優先順序: 遊戲>路徑>核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
@@ -8674,7 +8690,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "儲存目前著色器設置為預設。"
+   "儲存目前著色器設置為預設。優先順序: 遊戲>路徑>核心>應用程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
@@ -8848,7 +8864,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
-   "目前使用的專用主題設定檔。"
+   "目前使用的專用主題設定檔。優先順序: 遊戲>路徑>核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
@@ -8864,7 +8880,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "儲存目前應用程式設定檔已變更的參數，包含螢幕覆蓋和螢幕佈景的設定，並預設為此核心的專用主題。"
+   "儲存目前應用程式設定變更的選項，包含螢幕覆蓋和螢幕佈景的設定，並預設為此核心的專用主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -8880,7 +8896,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "儲存目前應用程式設定檔已變更的參數，包含螢幕覆蓋和螢幕佈景的設定，並預設為此路徑的專用主題。"
+   "儲存目前應用程式設定變更的選項，包含螢幕覆蓋和螢幕佈景的設定，並預設為此路徑的專用主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -8896,7 +8912,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "儲存目前應用程式設定檔已變更的參數，包含螢幕覆蓋和螢幕佈景的設定，並預設為此遊戲的專用主題。"
+   "儲存目前應用程式設定變更的選項，包含螢幕覆蓋和螢幕佈景的設定，並預設為此遊戲的專用主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -13103,6 +13119,10 @@ MSG_HASH(
    "未儲存專用主題，設定檔無變更的參數。"
    )
 MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "未儲存專用主題，唯讀檔案。"
+   )
+MSG_HASH(
    MSG_PAUSED,
    "暫停。"
    )
@@ -13552,7 +13572,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PREEMPT_DISABLED,
-   "搶占幀數已關閉。"
+   "已關閉搶占幀數。"
    )
 MSG_HASH(
    MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
