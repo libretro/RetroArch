@@ -37,6 +37,66 @@ void wasapi_log_hr(HRESULT hr, char* buffer, size_t length)
          NULL);
 }
 
+static const char *hresult_name(HRESULT hr)
+{
+   switch (hr)
+   {
+      case E_NOINTERFACE:
+         return "E_NOINTERFACE";
+      case E_POINTER:
+         return "E_POINTER";
+      case E_OUTOFMEMORY:
+         return "E_OUTOFMEMORY";
+      case E_INVALIDARG:
+         return "E_INVALIDARG";
+      case AUDCLNT_E_DEVICE_INVALIDATED:
+         return "AUDCLNT_E_DEVICE_INVALIDATED";
+      case AUDCLNT_E_ALREADY_INITIALIZED:
+         return "AUDCLNT_E_ALREADY_INITIALIZED";
+      case AUDCLNT_E_WRONG_ENDPOINT_TYPE:
+         return "AUDCLNT_E_WRONG_ENDPOINT_TYPE";
+      case AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED:
+         return "AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED";
+      case AUDCLNT_E_BUFFER_SIZE_ERROR:
+         return "AUDCLNT_E_BUFFER_SIZE_ERROR";
+      case AUDCLNT_E_CPUUSAGE_EXCEEDED:
+         return "AUDCLNT_E_CPUUSAGE_EXCEEDED";
+      case AUDCLNT_E_DEVICE_IN_USE:
+         return "AUDCLNT_E_DEVICE_IN_USE";
+      case AUDCLNT_E_ENDPOINT_CREATE_FAILED:
+         return "AUDCLNT_E_ENDPOINT_CREATE_FAILED";
+      case AUDCLNT_E_INVALID_DEVICE_PERIOD:
+         return "AUDCLNT_E_INVALID_DEVICE_PERIOD";
+      case AUDCLNT_E_UNSUPPORTED_FORMAT:
+         return "AUDCLNT_E_UNSUPPORTED_FORMAT";
+      case AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED:
+         return "AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED";
+      case AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL:
+         return "AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL";
+      case AUDCLNT_E_SERVICE_NOT_RUNNING:
+         return "AUDCLNT_E_SERVICE_NOT_RUNNING";
+      default:
+         return "<unknown>";
+   }
+}
+
+static const char* wasapi_last_error(DWORD error)
+{
+   static char error_message[256];
+
+   FormatMessage(
+         FORMAT_MESSAGE_IGNORE_INSERTS |
+         FORMAT_MESSAGE_FROM_SYSTEM,
+         NULL,
+         error,
+         MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
+         error_message,
+         sizeof(error_message) - 1,
+         NULL);
+
+   return error_message;
+}
+
 static const char* wasapi_data_flow_name(EDataFlow data_flow)
 {
    switch (data_flow)
