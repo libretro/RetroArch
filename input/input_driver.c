@@ -5447,7 +5447,7 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
 
 #ifdef HAVE_BSV_MOVIE
    /* Save input to BSV record, if enabled */
-   if (BSV_MOVIE_IS_PLAYBACK_OFF())
+   if (BSV_MOVIE_IS_RECORDING())
    {
       result = swap_if_big16(result);
       intfstream_write(input_st->bsv_movie_state_handle->file, &result, 2);

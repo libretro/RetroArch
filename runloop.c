@@ -4681,9 +4681,9 @@ void runloop_path_fill_names(void)
    runloop_path_init_savefile_internal(runloop_st);
 
 #ifdef HAVE_BSV_MOVIE
-   strlcpy(input_st->bsv_movie_state.movie_path,
+   strlcpy(input_st->bsv_movie_state.movie_auto_path,
          runloop_st->name.savefile,
-         sizeof(input_st->bsv_movie_state.movie_path));
+         sizeof(input_st->bsv_movie_state.movie_auto_path));
 #endif
 
    if (string_is_empty(runloop_st->runtime_content_path_basename))
@@ -6970,6 +6970,11 @@ int runloop_iterate(void)
       input_st->bsv_movie_state_handle->first_rewind =
          !input_st->bsv_movie_state_handle->did_rewind;
       input_st->bsv_movie_state_handle->did_rewind   = false;
+   }
+   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
+   {
+      movie_stop_playback(input_st);
+      command_event(CMD_EVENT_PAUSE, NULL);
    }
 #endif
 

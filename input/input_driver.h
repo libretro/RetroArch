@@ -114,15 +114,16 @@ enum bsv_flags
    BSV_FLAG_MOVIE_START_RECORDING    = (1 << 0),
    BSV_FLAG_MOVIE_START_PLAYBACK     = (1 << 1),
    BSV_FLAG_MOVIE_PLAYBACK           = (1 << 2),
-   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 3),
-   BSV_FLAG_MOVIE_END                = (1 << 4)
+   BSV_FLAG_MOVIE_RECORDING          = (1 << 3),
+   BSV_FLAG_MOVIE_END                = (1 << 4),
+   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 5),
 };
 
 struct bsv_state
 {
    uint8_t flags;
    /* Movie playback/recording support. */
-   char movie_path[PATH_MAX_LENGTH];
+   char movie_auto_path[PATH_MAX_LENGTH];
    /* Immediate playback/recording. */
    char movie_start_path[PATH_MAX_LENGTH];
 };
