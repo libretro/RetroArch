@@ -136,9 +136,9 @@ static unsigned wasapi_pref_rate(unsigned i)
 }
 
 static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
-      bool float_fmt, unsigned rate)
+      bool float_fmt, unsigned rate, unsigned channels)
 {
-   wf->Format.nChannels               = 2;
+   wf->Format.nChannels               = channels;
    wf->Format.nSamplesPerSec          = rate;
 
    if (float_fmt)
@@ -149,7 +149,7 @@ static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
       wf->Format.wBitsPerSample       = 32;
       wf->Format.cbSize               = sizeof(WORD) + sizeof(DWORD) + sizeof(GUID);
       wf->Samples.wValidBitsPerSample = 32;
-      wf->dwChannelMask               = KSAUDIO_SPEAKER_STEREO;
+      wf->dwChannelMask               = channels == 1 ? KSAUDIO_SPEAKER_MONO : KSAUDIO_SPEAKER_STEREO;
       wf->SubFormat                   = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
    }
    else
@@ -163,7 +163,7 @@ static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
 }
 
 static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
-      bool *float_fmt, unsigned *rate, unsigned latency)
+      bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels)
 {
    WAVEFORMATEXTENSIBLE wf;
    int i, j;
@@ -207,7 +207,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
       /* for requested rate (first) and all preferred rates */
       for (j = 0; rate_res; ++j)
       {
-         wasapi_set_format(&wf, float_fmt_res, rate_res);
+         wasapi_set_format(&wf, float_fmt_res, rate_res, channels);
          hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
                AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
                buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
@@ -296,7 +296,7 @@ error:
 }
 
 static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
-      bool *float_fmt, unsigned *rate, unsigned latency)
+      bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels)
 {
    WAVEFORMATEXTENSIBLE wf;
    int i, j;
@@ -323,7 +323,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       /* for requested rate (first) and all preferred rates */
       for (j = 0; rate_res; ++j)
       {
-         wasapi_set_format(&wf, float_fmt_res, rate_res);
+         wasapi_set_format(&wf, float_fmt_res, rate_res, channels);
 #ifdef __cplusplus
          hr = client->Initialize(AUDCLNT_SHAREMODE_SHARED,
                AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,

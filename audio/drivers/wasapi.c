@@ -65,7 +65,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       goto error;
 
    w->client = wasapi_init_client(w->device,
-         &w->exclusive, &float_format, &rate, latency);
+         &w->exclusive, &float_format, &rate, latency, 2);
    if (!w->client)
       goto error;
 

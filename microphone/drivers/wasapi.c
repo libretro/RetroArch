@@ -563,7 +563,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    }
 
    microphone->client = wasapi_init_client(microphone->device,
-                                           &microphone->exclusive, &float_format, &rate, latency);
+      &microphone->exclusive, &float_format, &rate, latency, 1);
    if (!microphone->client)
    {
       RARCH_ERR("[WASAPI]: Failed to open client for capture device \"%ls\"\n", microphone->device_id);
