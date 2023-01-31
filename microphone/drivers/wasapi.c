@@ -113,9 +113,9 @@ static bool wasapi_microphone_fetch_buffer(
    hr = _IAudioCaptureClient_GetBuffer(microphone->capture, &mic_input, &frame_count, &buffer_status_flags, NULL, NULL);
    if (FAILED(hr))
    {
-      char error[256];
-      wasapi_log_hr(hr, error, sizeof(error));
-      RARCH_ERR("[WASAPI]: Failed to get capture device \"%ls\"'s buffer: %s\n", microphone->device_id, error);
+      RARCH_ERR("[WASAPI]: Failed to get capture device \"%ls\"'s buffer (%s)\n",
+         microphone->device_id,
+         hresult_name(hr));
       return false;
    }
 
@@ -123,9 +123,9 @@ static bool wasapi_microphone_fetch_buffer(
    hr = _IAudioCaptureClient_ReleaseBuffer(microphone->capture, buffer_status_flags);
    if (FAILED(hr))
    {
-      char error[256];
-      wasapi_log_hr(hr, error, sizeof(error));
-      RARCH_ERR("[WASAPI]: Failed to release capture device \"%ls\"'s buffer: %s\n", microphone->device_id, error);
+      RARCH_ERR("[WASAPI]: Failed to release capture device \"%ls\"'s buffer (%s)\n",
+         microphone->device_id,
+         hresult_name(hr));
       return false;
    }
 
@@ -151,9 +151,9 @@ static bool wasapi_microphone_fetch_fifo(
    hr = _IAudioCaptureClient_GetBuffer(microphone->capture, &mic_input, &frame_count, &buffer_status_flags, NULL, NULL);
    if (FAILED(hr))
    {
-      char error[256];
-      wasapi_log_hr(hr, error, sizeof(error));
-      RARCH_ERR("[WASAPI]: Failed to get capture device \"%ls\"'s buffer: %s\n", microphone->device_id, error);
+      RARCH_ERR("[WASAPI]: Failed to get capture device \"%ls\"'s buffer: %s\n",
+         microphone->device_id,
+         hresult_name(hr));
       return false;
    }
 
@@ -161,9 +161,9 @@ static bool wasapi_microphone_fetch_fifo(
    hr = _IAudioCaptureClient_ReleaseBuffer(microphone->capture, buffer_status_flags);
    if (FAILED(hr))
    {
-      char error[256];
-      wasapi_log_hr(hr, error, sizeof(error));
-      RARCH_ERR("[WASAPI]: Failed to release capture device \"%ls\"'s buffer: %s\n", microphone->device_id, error);
+      RARCH_ERR("[WASAPI]: Failed to release capture device \"%ls\"'s buffer: %s\n",
+         microphone->device_id,
+         hresult_name(hr));
       return false;
    }
 
@@ -198,7 +198,7 @@ static bool wasapi_microphone_wait_for_capture_event(wasapi_microphone_handle_t 
          return false;
       }
       default:
-         RARCH_ERR("[WASAPI]: Failed to wait for capture device \"%ls\" event: Unknown error\n", microphone->device_id);
+         RARCH_ERR("[WASAPI]: Failed to wait for capture device \"%ls\" event: %s\n", microphone->device_id, wasapi_error(GetLastError()));
          return false;
    }
 }
@@ -739,9 +739,8 @@ static bool wasapi_microphone_start_mic(void *driver_context, void *microphone_c
       }
       else
       {
-         char error[256];
-         wasapi_log_hr(hr, error, sizeof(error));
-         RARCH_ERR("[WASAPI mic]: Failed to start capture device \"%ls\"'s IAudioClient: %s\n", microphone->device_id, error);
+         RARCH_ERR("[WASAPI mic]: Failed to start capture device \"%ls\"'s IAudioClient: %s\n",
+            microphone->device_id, hresult_name(hr));
          microphone->running = false;
       }
    }
@@ -767,9 +766,8 @@ static bool wasapi_microphone_stop_mic(void *driver_context, void *microphone_co
    hr = _IAudioClient_Stop(microphone->client);
    if (FAILED(hr))
    {
-      char error[256];
-      wasapi_log_hr(hr, error, sizeof(error));
-      RARCH_ERR("[WASAPI mic]: Failed to stop capture device \"%ls\"'s IAudioClient: %s\n", microphone->device_id, error);
+      RARCH_ERR("[WASAPI mic]: Failed to stop capture device \"%ls\"'s IAudioClient: %s\n",
+         microphone->device_id, hresult_name(hr));
       return false;
    }
 
