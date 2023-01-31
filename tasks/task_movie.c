@@ -21,6 +21,7 @@
 #include <string.h>
 #include <time.h>
 #include <compat/strl.h>
+#include <file/file_path.h>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -243,6 +244,7 @@ bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
      }
 
    input_st->bsv_movie_state_handle         = state;
+   input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_RECORDING;
    snprintf(msg, sizeof(msg),
             "%s \"%s\".", movie_rec_str,
             path);
@@ -310,7 +312,7 @@ static void moviectl_start_playback_cb(retro_task_t *task,
   struct bsv_state *state = (struct bsv_state *)task_data;
   input_driver_state_t *input_st = input_state_get_ptr();
   input_st->bsv_movie_state = *state;
-  bsv_movie_start_playback(input_st, state->movie_path);
+  bsv_movie_start_playback(input_st, state->movie_start_path);
   free(state);
 }
 bool content_load_state_in_progress(void* data);
@@ -337,7 +339,7 @@ static void moviectl_start_record_cb(retro_task_t *task,
   struct bsv_state *state = (struct bsv_state *)task_data;
   input_driver_state_t *input_st = input_state_get_ptr();
   input_st->bsv_movie_state = *state;
-  bsv_movie_start_record(input_st, state->movie_path);
+  bsv_movie_start_record(input_st, state->movie_start_path);
   free(state);
 }
 
@@ -353,11 +355,7 @@ bool movie_toggle_record(input_driver_state_t *input_st, settings_t *settings)
 
       configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
 
-      _len = strlcpy(path,
-                     input_st->bsv_movie_state.movie_path, sizeof(path));
-      if (state_slot > 0)
-        snprintf(path + _len, sizeof(path) - _len, "%d", state_slot);
-      strlcat(path, ".bsv", sizeof(path));
+      fill_str_dated_filename(path, input_st->bsv_movie_state.movie_auto_path, "bsv", sizeof(path));
 
       return movie_start_record(input_st, path);
     }
@@ -373,8 +371,6 @@ bool movie_stop_playback(input_driver_state_t *input_st){
     {
       return false;
     }
-  if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END))
-    return false;
   movie_playback_end_str = msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED);
   runloop_msg_queue_push(
                          movie_playback_end_str, 2, 180, false,
@@ -423,7 +419,7 @@ bool movie_start_playback(input_driver_state_t *input_st, char *path)
   if (!task || !state)
     goto error;
   *state = input_st->bsv_movie_state;
-  strlcpy(state->movie_path, path, sizeof(state->movie_path));
+  strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
   task->type                    = TASK_TYPE_NONE;
   task->state                   = state;
   task->handler                 = task_moviectl_playback_handler;
@@ -453,12 +449,12 @@ bool movie_start_record(input_driver_state_t *input_st, char*path)
     goto error;
 
   *state = input_st->bsv_movie_state;
-  strlcpy(state->movie_path, path, sizeof(state->movie_path));
+  strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
 
   msg[0] = '\0';
   snprintf(msg, sizeof(msg),
            "%s \"%s\".", movie_rec_str,
-           state->movie_path);
+           path);
 
   task->type                    = TASK_TYPE_NONE;
   task->state                   = state;
