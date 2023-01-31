@@ -248,26 +248,27 @@ done:
 static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
       bool float_fmt, unsigned rate, unsigned channels)
 {
-   wf->Format.nChannels               = channels;
-   wf->Format.nSamplesPerSec          = rate;
+   WORD wBitsPerSample = float_fmt ? 32 : 16;
+   WORD nBlockAlign = (channels * wBitsPerSample) / 8;
+   DWORD nAvgBytesPerSec = rate * nBlockAlign;
+
+   wf->Format.nChannels       = channels;
+   wf->Format.nSamplesPerSec  = rate;
+   wf->Format.nAvgBytesPerSec = nAvgBytesPerSec;
+   wf->Format.nBlockAlign     = nBlockAlign;
+   wf->Format.wBitsPerSample  = wBitsPerSample;
 
    if (float_fmt)
    {
       wf->Format.wFormatTag           = WAVE_FORMAT_EXTENSIBLE;
-      wf->Format.nAvgBytesPerSec      = rate * 8;
-      wf->Format.nBlockAlign          = 8;
-      wf->Format.wBitsPerSample       = 32;
       wf->Format.cbSize               = sizeof(WORD) + sizeof(DWORD) + sizeof(GUID);
-      wf->Samples.wValidBitsPerSample = 32;
+      wf->Samples.wValidBitsPerSample = wBitsPerSample;
       wf->dwChannelMask               = channels == 1 ? KSAUDIO_SPEAKER_MONO : KSAUDIO_SPEAKER_STEREO;
       wf->SubFormat                   = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
    }
    else
    {
       wf->Format.wFormatTag           = WAVE_FORMAT_PCM;
-      wf->Format.nAvgBytesPerSec      = rate * 4;
-      wf->Format.nBlockAlign          = 4;
-      wf->Format.wBitsPerSample       = 16;
       wf->Format.cbSize               = 0;
    }
 }
