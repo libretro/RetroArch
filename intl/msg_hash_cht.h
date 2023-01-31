@@ -335,7 +335,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "選擇列表更新全部的預覽縮圖，更新遊戲資料庫全部建立的項目。"
+   "選擇列表更新全部的預覽縮圖，僅限遊戲資料庫已經建立的項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
@@ -343,7 +343,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "選擇列表更新項目的預覽縮圖，更新符合遊戲資料庫加入的項目。"
+   "選擇列表更新項目的預覽縮圖，僅限符合遊戲資料庫名稱的項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -2920,11 +2920,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   "觸覺反饋和震動"
+   "觸覺回饋和震動"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   "變更觸覺反饋和震動的設定。"
+   "變更觸覺回饋和震動的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -2983,7 +2983,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
-   "設定觸覺反饋震感效果的強弱。"
+   "設定觸覺回饋震感效果的強弱。"
    )
 
 /* Settings > Input > Menu Controls */
@@ -6606,7 +6606,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-   "瀏覽列表時，自動下載缺少的預覽縮圖。開啟此選項會嚴重影響效能。"
+   "瀏覽列表時自動下載缺少的預覽縮圖。開啟此選項會嚴重影響效能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
@@ -6708,7 +6708,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
-   "依字母順序排列項目"
+   "字母順序排列項目"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
@@ -6716,7 +6716,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
-   "儲存列表為舊格式"
+   "列表儲存為舊格式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
@@ -6724,19 +6724,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
-   "壓縮列表"
+   "列表使用壓縮格式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
-   "壓縮列表資料寫入到儲存空間。減少檔案大小和載入時間，CPU使用率增加(可忽略不計)。可用於新舊格式的列表。"
+   "使用壓縮格式儲存列表。減少檔案大小和載入時間，CPU使用率增加(可忽略不計)。可用於新舊格式的列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "列表中顯示預設核心"
+   "項目顯示載入核心"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "列表項目額外顯示已預設的載入核心。開啟顯示項目子標籤時，此選項將被忽略。"
+   "列表項目額外顯示載入核心名稱。開啟「顯示項目子標籤」時此選項被忽略。Ozone主題預設資訊欄顯示不影響。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -6844,11 +6844,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   "上一次執行顯示方式"
+   "上一次執行顯示格式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   "設定 [上一次執行] 時間戳記訊息，日期和時間的顯示方式。選項 <上午/下午> 對某些平台的效能影響很小。"
+   "設定上一次執行日期和時間的顯示方式。選項 <上午/下午> 對某些平台的效能輕微影響。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
@@ -6880,7 +6880,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
-   "開啟時加入「開始資料夾」參數，依開始資料夾路徑的設定，自動變更列表項目的路徑。用於移動到開啟此選項的裝置上。"
+   "開啟時加入「開始資料夾」參數，依開始資料夾路徑設定，自動變更列表項目路徑。可用於移動到開啟此選項的裝置。"
    )
 
 /* Settings > Playlists > Playlist Management */

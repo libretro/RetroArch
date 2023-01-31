@@ -2936,15 +2936,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "Mode classique, fonctionnement à deux touches. Maintenez enfoncé une touche et appuyez sur la touche Turbo pour activer la séquence de déclenchement.\nLa touche Turbo peut être assignée dans Réglages/Entrées/Touches du port 1."
+   "Mode classique, fonctionnement à deux touches. Maintenez une touche enfoncée et pressez la touche Turbo pour activer la séquence de déclenchement.\nLa touche Turbo peut être assignée dans Réglages/Entrées/Touches du port 1."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Mode activer/désactiver. Appuyez une fois sur la touche Turbo pour activer la séquence de déclenchement pour la touche par défaut sélectionnée, appuyez une seconde fois pour la désactiver.\nLa touche Turbo peut être assignée dans Réglages/Entrées/Touches du port 1."
+   "Mode activer/désactiver. Pressez une fois la touche Turbo pour activer la séquence de déclenchement pour la touche par défaut sélectionnée, une seconde fois pour la désactiver.\nLa touche Turbo peut être assignée dans Réglages/Entrées/Touches du port 1."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Mode maintenir. La séquence de déclenchement pour la touche par défaut sélectionnée est active tant que la touche Turbo est enfoncée.\nLa touche Turbo peut être assignée dans Réglages/Entrées/Touches du port 1.\nPour émuler la fonction tir automatique de l'ère des ordinateurs domestiques, définissez les touches Turbo et les touches par défaut à être les mêmes que la touche de tir de la manette."
+   "Mode maintenir. La séquence de déclenchement pour la touche par défaut sélectionnée est active tant que la touche Turbo est enfoncée.\nLa touche Turbo peut être assignée dans Réglages/Entrées/Touches du port 1.\nPour émuler la fonction tir automatique de l'ère des ordinateurs de famille, définissez les touches Turbo et les touches par défaut sur la même touche que celle du tir de la manette."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
@@ -3853,11 +3853,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
-   "Contourner les informations du cœur pour les fonctionnalités de sauvegardes instantanées"
+   "Ignorer les informations du cœur pour les fonctionnalités de sauvegarde instantanée"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Spécifie s'il faut ignorer les informations du cœur sur les fonctionnalités de sauvegarde instantanée, permettant d'expérimenter avec les fonctionnalités associées (exécution en avance, rembobinage, etc)."
+   "Spécifie s'il faut ignorer les informations du cœur pour les fonctionnalités de sauvegarde instantanée, ceci permettant d'expérimenter avec les fonctionnalités associées (exécution en avance, rembobinage, etc)."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -12884,7 +12884,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_OVERRIDES_ACTIVE_NOT_SAVING,
-   "Pas d'enregistrement. Configuration de substitution active."
+   "Ne sauvegarde pas. Configuration de substitution active."
    )
 MSG_HASH(
    MSG_PAUSED,

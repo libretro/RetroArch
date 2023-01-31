@@ -2888,7 +2888,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "Standard aktive Taste für Turbo-Modus 'Single Button'."
+   "Standard aktive Taste für Turbo-Modus 'Einzeltaste'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
