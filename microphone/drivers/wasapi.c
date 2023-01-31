@@ -195,14 +195,6 @@ static bool wasapi_microphone_wait_for_capture_event(wasapi_microphone_handle_t 
          /* Time out; there's nothing here for us. */
          RARCH_ERR("[WASAPI]: Failed to wait for capture device \"%ls\" event: Timeout after %ums\n", microphone->device_id, timeout);
          return false;
-      case WAIT_FAILED:
-      {
-         HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-         char error_message[256];
-         wasapi_log_hr(hr, error_message, sizeof(error_message));
-         RARCH_ERR("[WASAPI]: Failed to wait for capture device \"%ls\" event: %s\n", microphone->device_id, error_message);
-         return false;
-      }
       default:
          RARCH_ERR("[WASAPI]: Failed to wait for capture device \"%ls\" event: %s\n", microphone->device_id, wasapi_error(GetLastError()));
          return false;
@@ -670,8 +662,6 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    return microphone;
 
 error:
-   wasapi_log_hr(hr, error_message, sizeof(error_message));
-   RARCH_ERR("[WASAPI]: Failed to open microphone: %s\n", error_message);
    IFACE_RELEASE(microphone->capture);
    IFACE_RELEASE(microphone->client);
    IFACE_RELEASE(microphone->device);
