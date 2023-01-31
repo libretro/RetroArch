@@ -246,7 +246,7 @@ static ssize_t wasapi_microphone_read_shared_buffered(
             return -1;
    }
 
-   read_avail = FIFO_WRITE_AVAIL(microphone->buffer);
+   read_avail = FIFO_READ_AVAIL(microphone->buffer);
    bytes_to_read = MIN(buffer_size, read_avail);
    if (bytes_to_read)
       fifo_read(microphone->buffer, buffer, bytes_to_read);
