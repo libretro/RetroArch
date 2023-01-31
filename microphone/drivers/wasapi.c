@@ -615,7 +615,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
       RARCH_LOG("[WASAPI]: Intermediate buffer is off. \n");
    }
 
-   microphone->read_event = CreateEventA(NULL, FALSE, FALSE, "Microphone Read");
+   microphone->read_event = CreateEventA(NULL, FALSE, FALSE, NULL);
    if (!microphone->read_event)
    {
       RARCH_ERR("[WASAPI]: Failed to allocate capture device's event handle\n");
