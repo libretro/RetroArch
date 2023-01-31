@@ -4791,13 +4791,14 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
    handle->frame_pos[handle->frame_ptr] = intfstream_tell(handle->file);
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
    {
+      int i;
       /* write key events, frame is over */
-     intfstream_write(handle->file, &(handle->key_event_count), 1);
-     for(int i = 0; i < handle->key_event_count; i++)
-     {
-        intfstream_write(handle->file, &(handle->key_events[i]), sizeof(bsv_key_data_t));
-     }
-     bsv_movie_handle_clear_key_events(handle);
+      intfstream_write(handle->file, &(handle->key_event_count), 1);
+      for(i = 0; i < handle->key_event_count; i++)
+      {
+         intfstream_write(handle->file, &(handle->key_events[i]), sizeof(bsv_key_data_t));
+      }
+      bsv_movie_handle_clear_key_events(handle);
    }
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
    {
@@ -4808,7 +4809,8 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       }
       if (intfstream_read(handle->file, &(handle->key_event_count), 1) == 1)
       {
-         for(int i = 0; i < handle->key_event_count; i++)
+         int i;
+         for(i = 0; i < handle->key_event_count; i++)
          {
             if (intfstream_read(handle->file, &(handle->key_events[i]), sizeof(bsv_key_data_t)) != sizeof(bsv_key_data_t))
             {
@@ -5284,22 +5286,24 @@ void input_driver_poll(void)
 #ifdef HAVE_BSV_MOVIE
    if (BSV_MOVIE_IS_PLAYBACK_ON())
    {
-     runloop_state_t *runloop_st   = runloop_state_get_ptr();
-     retro_keyboard_event_t *key_event                 = &runloop_st->key_event;
+      runloop_state_t *runloop_st   = runloop_state_get_ptr();
+      retro_keyboard_event_t *key_event                 = &runloop_st->key_event;
 
-     if(*key_event && *key_event == runloop_st->frontend_key_event)
-     {
-       bsv_key_data_t k;
-       for(int i = 0; i < input_st->bsv_movie_state_handle->key_event_count; i++) {
+      if(*key_event && *key_event == runloop_st->frontend_key_event)
+      {
+         int i;
+         bsv_key_data_t k;
+         for(i = 0; i < input_st->bsv_movie_state_handle->key_event_count; i++)
+         {
 #ifdef HAVE_CHEEVOS
-         rcheevos_pause_hardcore();
+            rcheevos_pause_hardcore();
 #endif
-         k = input_st->bsv_movie_state_handle->key_events[i];
-         input_keyboard_event(k.down, swap_if_big32(k.code), swap_if_big32(k.character), swap_if_big16(k.mod), RETRO_DEVICE_KEYBOARD);
-       }
-       /* Have to clear here so we don't double-apply key events */
-       bsv_movie_handle_clear_key_events(input_st->bsv_movie_state_handle);
-     }
+            k = input_st->bsv_movie_state_handle->key_events[i];
+            input_keyboard_event(k.down, swap_if_big32(k.code), swap_if_big32(k.character), swap_if_big16(k.mod), RETRO_DEVICE_KEYBOARD);
+         }
+         /* Have to clear here so we don't double-apply key events */
+         bsv_movie_handle_clear_key_events(input_st->bsv_movie_state_handle);
+      }
    }
 #endif
 }
