@@ -107,6 +107,7 @@ static bool wasapi_microphone_fetch_buffer(
 {
    BYTE *mic_input = NULL;
    UINT32 frame_count = 0;
+   UINT32 byte_count = 0;
    DWORD buffer_status_flags = 0;
    HRESULT hr;
 
@@ -118,9 +119,10 @@ static bool wasapi_microphone_fetch_buffer(
          hresult_name(hr));
       return false;
    }
+   byte_count = frame_count * microphone->frame_size;
 
    memcpy(buffer, mic_input, MIN(buffer_size, frame_count));
-   hr = _IAudioCaptureClient_ReleaseBuffer(microphone->capture, buffer_status_flags);
+   hr = _IAudioCaptureClient_ReleaseBuffer(microphone->capture, byte_count);
    if (FAILED(hr))
    {
       RARCH_ERR("[WASAPI]: Failed to release capture device \"%ls\"'s buffer (%s)\n",
@@ -145,6 +147,7 @@ static bool wasapi_microphone_fetch_fifo(
 {
    BYTE *mic_input = NULL;
    UINT32 frame_count = 0;
+   UINT32 byte_count = 0;
    DWORD buffer_status_flags = 0;
    HRESULT hr;
 
@@ -156,9 +159,12 @@ static bool wasapi_microphone_fetch_fifo(
          hresult_name(hr));
       return false;
    }
+   byte_count = frame_count * microphone->frame_size;
+   // TODO: As written, this can drop frames
+   // TODO: Determine if the queue can fit the available frames. If not, don't read them
 
-   fifo_write(microphone->buffer, mic_input, MIN(buffer_size, frame_count));
-   hr = _IAudioCaptureClient_ReleaseBuffer(microphone->capture, buffer_status_flags);
+   fifo_write(microphone->buffer, mic_input, MIN(buffer_size, byte_count));
+   hr = _IAudioCaptureClient_ReleaseBuffer(microphone->capture, frame_count);
    if (FAILED(hr))
    {
       RARCH_ERR("[WASAPI]: Failed to release capture device \"%ls\"'s buffer: %s\n",
