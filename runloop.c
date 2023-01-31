@@ -6064,9 +6064,14 @@ static enum runloop_state_enum runloop_check_state(
    {
       static bool old_frameadvance  = false;
       static bool old_pause_pressed = false;
+      static bool pauseframeadvance = false;
       bool frameadvance_pressed     = false;
-      bool trig_frameadvance        = false;
+      bool frameadvance_trigger     = false;
       bool pause_pressed            = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
+
+      /* Reset frameadvance pause when triggering pause */
+      if (pause_pressed)
+         pauseframeadvance          = false;
 
       /* Allow unpausing with Start */
       if (runloop_paused && settings->bools.pause_on_disconnect)
@@ -6098,11 +6103,15 @@ static enum runloop_state_enum runloop_check_state(
 #endif
       {
          frameadvance_pressed = BIT256_GET(current_bits, RARCH_FRAMEADVANCE);
-         trig_frameadvance    = frameadvance_pressed && !old_frameadvance;
+         frameadvance_trigger = frameadvance_pressed && !old_frameadvance;
 
-         /* FRAMEADVANCE will set us into pause mode. */
-         pause_pressed       |= (!(runloop_st->flags & RUNLOOP_FLAG_PAUSED))
-            && trig_frameadvance;
+         /* FRAMEADVANCE will set us into special pause mode. */
+         if (frameadvance_trigger)
+         {
+            pauseframeadvance = true;
+            if (!(runloop_st->flags & RUNLOOP_FLAG_PAUSED))
+               pause_pressed = true;
+         }
       }
 
       /* Decide pause hotkey */
@@ -6118,7 +6127,7 @@ static enum runloop_state_enum runloop_check_state(
       {
 #ifdef HAVE_REWIND
          /* Frame advance must also trigger rewind save */
-         if (trig_frameadvance && runloop_paused)
+         if (frameadvance_trigger && runloop_paused)
             state_manager_check_rewind(
                &runloop_st->rewind_st,
                &runloop_st->current_core,
@@ -6130,12 +6139,16 @@ static enum runloop_state_enum runloop_check_state(
 
          /* Check if it's not oneshot */
 #ifdef HAVE_REWIND
-         if (!(trig_frameadvance || BIT256_GET(current_bits, RARCH_REWIND)))
+         if (!(frameadvance_trigger || BIT256_GET(current_bits, RARCH_REWIND)))
 #else
-         if (!trig_frameadvance)
+         if (!frameadvance_trigger)
 #endif
             focused = false;
          else
+            runloop_paused = false;
+
+         /* Drop to RUNLOOP_STATE_POLLED_AND_SLEEP if frameadvance is triggered */
+         if (pauseframeadvance)
             runloop_paused = false;
       }
    }
