@@ -4692,6 +4692,142 @@ static int16_t input_state_device(
    return res;
 }
 
+#ifdef HAVE_BSV_MOVIE
+void bsv_movie_handle_clear_key_events(bsv_movie_t*);
+void bsv_movie_free(bsv_movie_t*);
+void bsv_movie_deinit(input_driver_state_t *input_st)
+{
+   if (input_st->bsv_movie_state_handle)
+      bsv_movie_free(input_st->bsv_movie_state_handle);
+   input_st->bsv_movie_state_handle = NULL;
+}
+
+void bsv_movie_frame_rewind(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
+
+   if (!handle)
+      return;
+
+   handle->did_rewind = true;
+
+   if (     (handle->frame_ptr <= 1)
+         && (handle->frame_pos[0] == handle->min_file_pos))
+   {
+      /* If we're at the beginning... */
+      handle->frame_ptr = 0;
+      intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
+   }
+   else
+   {
+      /* First time rewind is performed, the old frame is simply replayed.
+       * However, playing back that frame caused us to read data, and push
+       * data to the ring buffer.
+       *
+       * Sucessively rewinding frames, we need to rewind past the read data,
+       * plus another. */
+      handle->frame_ptr = (handle->frame_ptr -
+            (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
+      intfstream_seek(handle->file,
+            (int)handle->frame_pos[handle->frame_ptr], SEEK_SET);
+   }
+
+   if (intfstream_tell(handle->file) <= (long)handle->min_file_pos)
+   {
+      /* We rewound past the beginning. */
+
+      if (!handle->playback)
+      {
+         retro_ctx_serialize_info_t serial_info;
+
+         /* If recording, we simply reset
+          * the starting point. Nice and easy. */
+
+         intfstream_seek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
+
+         serial_info.data = handle->state;
+         serial_info.size = handle->state_size;
+
+         core_serialize(&serial_info);
+
+         intfstream_write(handle->file, handle->state, handle->state_size);
+      }
+      else
+         intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
+   }
+}
+void bsv_movie_handle_clear_key_events(bsv_movie_t *movie)
+{
+   /* zero out key events when playing back or recording */
+   movie->key_event_count=0;
+}
+void bsv_movie_handle_push_key_event(bsv_movie_t *movie, uint8_t down, uint16_t mod, uint32_t code, uint32_t character)
+{
+   bsv_key_data_t data;
+   data.down = down;
+   data.mod = swap_if_big16(mod);
+   data.code = swap_if_big32(code);
+   data.character = swap_if_big32(character);
+   movie->key_events[movie->key_event_count] = data;
+   movie->key_event_count++;
+}
+
+void bsv_movie_finish_rewind(input_driver_state_t *input_st)
+{
+   bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
+   if(!handle)
+      return;
+   handle->frame_ptr    = (handle->frame_ptr + 1) & handle->frame_mask;
+   handle->first_rewind = !handle->did_rewind;
+   handle->did_rewind   = false;
+}
+void bsv_movie_next_frame(input_driver_state_t *input_st)
+{
+   /* Used for rewinding while playback/record. */
+   bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
+   if (!handle)
+      return;
+   handle->frame_pos[handle->frame_ptr] = intfstream_tell(handle->file);
+   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
+   {
+      /* write key events, frame is over */
+     intfstream_write(handle->file, &(handle->key_event_count), 1);
+     for(int i = 0; i < handle->key_event_count; i++)
+     {
+        intfstream_write(handle->file, &(handle->key_events[i]), sizeof(bsv_key_data_t));
+     }
+     bsv_movie_handle_clear_key_events(handle);
+   }
+   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
+   {
+      /* read next key events, a frame happened for sure? but don't apply them yet */
+      if(handle->key_event_count != 0)
+      {
+         RARCH_ERR("[Movie] BSV keyboard replay reading next frame while some unused keys still in queue\n");
+      }
+      if (intfstream_read(handle->file, &(handle->key_event_count), 1) == 1)
+      {
+         for(int i = 0; i < handle->key_event_count; i++)
+         {
+            if (intfstream_read(handle->file, &(handle->key_events[i]), sizeof(bsv_key_data_t)) != sizeof(bsv_key_data_t))
+            {
+               /* Unnatural EOF */
+               RARCH_ERR("[Movie] BSV keyboard replay ran out of keyboard inputs too early\n");
+            }
+         }
+      }
+      else
+      {
+         RARCH_LOG("[Movie] EOF after buttons\n",handle->key_event_count);
+         /* Natural(?) EOF */
+         input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+      }
+   }
+}
+
+#endif
+
 void input_driver_poll(void)
 {
    size_t i, j;
@@ -5145,74 +5281,28 @@ void input_driver_poll(void)
       }
    }
 #endif
-}
-
 #ifdef HAVE_BSV_MOVIE
-void bsv_movie_free(bsv_movie_t*);
-void bsv_movie_deinit(input_driver_state_t *input_st)
-{
-   if (input_st->bsv_movie_state_handle)
-      bsv_movie_free(input_st->bsv_movie_state_handle);
-   input_st->bsv_movie_state_handle = NULL;
-}
-
-void bsv_movie_frame_rewind(void)
-{
-   input_driver_state_t *input_st = &input_driver_st;
-   bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
-
-   if (!handle)
-      return;
-
-   handle->did_rewind = true;
-
-   if (     (handle->frame_ptr <= 1)
-         && (handle->frame_pos[0] == handle->min_file_pos))
+   if (BSV_MOVIE_IS_PLAYBACK_ON())
    {
-      /* If we're at the beginning... */
-      handle->frame_ptr = 0;
-      intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
-   }
-   else
-   {
-      /* First time rewind is performed, the old frame is simply replayed.
-       * However, playing back that frame caused us to read data, and push
-       * data to the ring buffer.
-       *
-       * Sucessively rewinding frames, we need to rewind past the read data,
-       * plus another. */
-      handle->frame_ptr = (handle->frame_ptr -
-            (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
-      intfstream_seek(handle->file,
-            (int)handle->frame_pos[handle->frame_ptr], SEEK_SET);
-   }
+     runloop_state_t *runloop_st   = runloop_state_get_ptr();
+     retro_keyboard_event_t *key_event                 = &runloop_st->key_event;
 
-   if (intfstream_tell(handle->file) <= (long)handle->min_file_pos)
-   {
-      /* We rewound past the beginning. */
-
-      if (!handle->playback)
-      {
-         retro_ctx_serialize_info_t serial_info;
-
-         /* If recording, we simply reset
-          * the starting point. Nice and easy. */
-
-         intfstream_seek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
-
-         serial_info.data = handle->state;
-         serial_info.size = handle->state_size;
-
-         core_serialize(&serial_info);
-
-         intfstream_write(handle->file, handle->state, handle->state_size);
-      }
-      else
-         intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
-   }
-}
-
+     if(*key_event && *key_event == runloop_st->frontend_key_event)
+     {
+       bsv_key_data_t k;
+       for(int i = 0; i < input_st->bsv_movie_state_handle->key_event_count; i++) {
+#ifdef HAVE_CHEEVOS
+         rcheevos_pause_hardcore();
 #endif
+         k = input_st->bsv_movie_state_handle->key_events[i];
+         input_keyboard_event(k.down, swap_if_big32(k.code), swap_if_big32(k.character), swap_if_big16(k.mod), RETRO_DEVICE_KEYBOARD);
+       }
+       /* Have to clear here so we don't double-apply key events */
+       bsv_movie_handle_clear_key_events(input_st->bsv_movie_state_handle);
+     }
+   }
+#endif
+}
 
 int16_t input_state_internal(unsigned port, unsigned device,
       unsigned idx, unsigned id)
@@ -6206,6 +6296,18 @@ void input_keyboard_event(bool down, unsigned code,
       }
 
       if (*key_event)
+      {
+         if(*key_event == runloop_st->frontend_key_event)
+         {
+#ifdef HAVE_BSV_MOVIE
+            /* Save input to BSV record, if recording */
+            if (BSV_MOVIE_IS_RECORDING())
+            {
+               bsv_movie_handle_push_key_event(input_st->bsv_movie_state_handle, down, mod, code, character);
+            }
+#endif
+         }
          (*key_event)(down, code, character, mod);
+      }
    }
 }

@@ -128,6 +128,17 @@ struct bsv_state
    char movie_start_path[PATH_MAX_LENGTH];
 };
 
+/* These data are always little-endian. */
+struct bsv_key_data {
+  uint8_t down;
+  uint16_t mod;
+  uint8_t _padding;
+  uint32_t code;
+  uint32_t character;
+};
+
+typedef struct bsv_key_data bsv_key_data_t;
+
 struct bsv_movie
 {
    intfstream_t *file;
@@ -140,6 +151,11 @@ struct bsv_movie
    size_t min_file_pos;
    size_t state_size;
 
+   /* Staging variables for keyboard events */
+   uint8_t key_event_count;
+   bsv_key_data_t key_events[255];
+
+   /* Rewind state */
    bool playback;
    bool first_rewind;
    bool did_rewind;
@@ -989,6 +1005,8 @@ void input_overlay_init(void);
 
 #ifdef HAVE_BSV_MOVIE
 void bsv_movie_frame_rewind(void);
+void bsv_movie_next_frame(input_driver_state_t *input_st);
+void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);
 
 bool movie_start_playback(input_driver_state_t *input_st, char *path);

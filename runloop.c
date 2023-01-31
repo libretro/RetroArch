@@ -6740,10 +6740,7 @@ int runloop_iterate(void)
 #endif
 
 #ifdef HAVE_BSV_MOVIE
-   /* Used for rewinding while playback/record. */
-   if (input_st->bsv_movie_state_handle)
-      input_st->bsv_movie_state_handle->frame_pos[input_st->bsv_movie_state_handle->frame_ptr]
-         = intfstream_tell(input_st->bsv_movie_state_handle->file);
+   bsv_movie_next_frame(input_st);
 #endif
 
    if (     camera_st->cb.caps
@@ -6974,15 +6971,11 @@ int runloop_iterate(void)
    }
 
 #ifdef HAVE_BSV_MOVIE
-   if (input_st->bsv_movie_state_handle)
+   bsv_movie_finish_rewind(input_st);
+   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
    {
-      input_st->bsv_movie_state_handle->frame_ptr    =
-         (input_st->bsv_movie_state_handle->frame_ptr + 1)
-         & input_st->bsv_movie_state_handle->frame_mask;
-
-      input_st->bsv_movie_state_handle->first_rewind =
-         !input_st->bsv_movie_state_handle->did_rewind;
-      input_st->bsv_movie_state_handle->did_rewind   = false;
+      movie_stop_playback(input_st);
+      command_event(CMD_EVENT_PAUSE, NULL);
    }
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
    {
