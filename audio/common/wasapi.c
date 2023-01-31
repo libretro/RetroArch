@@ -171,6 +171,8 @@ static unsigned wasapi_pref_rate(unsigned i)
    return r[i];
 }
 
+static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
+                              bool float_fmt, unsigned rate, unsigned channels);
 /**
  * Selects a device format
  * @param[in,out] format The place where the chosen format will be written,
@@ -179,9 +181,10 @@ static unsigned wasapi_pref_rate(unsigned i)
  * @param mode todo
  * @return true if successful, false if there was an error or a suitable format wasn't found
  */
-static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode)
+static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels)
 {
    static const unsigned preferred_rates[] = { 48000, 44100, 96000, 192000, 32000 };
+   const bool preferred_formats[] = {format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE, format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE};
    WAVEFORMATEXTENSIBLE *suggested_format = NULL;
    bool result = false;
    HRESULT hr = _IAudioClient_IsFormatSupported(client, mode,
@@ -191,26 +194,49 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
    {
       case S_OK:
          /* The requested format is okay without any changes */
+         RARCH_DBG("[WASAPI]: Desired format (%s, %u-channel, %uHz) can be used as-is.\n",
+            wave_format_name(format), format->Format.nChannels, format->Format.nSamplesPerSec);
          result = true;
          break;
       case S_FALSE:
          /* The requested format is unsupported, but Windows has suggested a similar one. */
          // TODO: Check that the suggested format meets RetroArch's requirements
+         RARCH_DBG("[WASAPI]: Windows suggests a format of (%s, %u-channel, %uHz).\n",
+            wave_format_name(suggested_format), suggested_format->Format.nChannels, suggested_format->Format.nSamplesPerSec);
          *format = *suggested_format;
          result = true;
          break;
       case AUDCLNT_E_UNSUPPORTED_FORMAT:
-         /* The requested format is unsupported, and Windows was unable to suggest another.
-          * Usually happens with exclusive mode. */
-         // TODO: Try to pick a format manually
+      { /* The requested format is unsupported, and Windows was unable to suggest another.
+         * Usually happens with exclusive mode. */
+         int i, j;
+         WAVEFORMATEXTENSIBLE possible_format;
+         HRESULT format_check_hr;
+         RARCH_WARN("[WASAPI]: Requested format not supported, and Windows could not suggest one. RetroArch will do so.\n");
+         for (i = 0; i < ARRAY_SIZE(preferred_formats); ++i)
+         {
+            for (j = 0; j < ARRAY_SIZE(preferred_rates); ++j)
+            {
+               wasapi_set_format(&possible_format, preferred_formats[i], preferred_rates[j], channels);
+               format_check_hr = _IAudioClient_IsFormatSupported(client, mode, (const WAVEFORMATEX *) &possible_format, NULL);
+               if (SUCCEEDED(format_check_hr))
+               {
+                  *format = possible_format;
+                  result = true;
+                  RARCH_DBG("[WASAPI]: RetroArch suggests a format of (%s, %u-channel, %uHz).\n",
+                            wave_format_name(format), format->Format.nChannels, format->Format.nSamplesPerSec);
+                  goto done;
+               }
+            }
+         }
+      }
       default:
          /* Something else went wrong. */
-         RARCH_ERR("[WASAPI]: Failed to select client format (%s): %s",
-                   hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
+         RARCH_ERR("[WASAPI]: Failed to select client format: %s\n", hresult_name(hr));
          result = false;
          break;
    }
-
+done:
    if (suggested_format)
    { /* IAudioClient::IsFormatSupported allocates a format object */
       CoTaskMemFree(suggested_format);
