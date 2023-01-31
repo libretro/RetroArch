@@ -136,44 +136,51 @@ static bool wasapi_microphone_fetch_buffer(
 
 /**
  * Flushes microphone's most recent input to the provided context's FIFO queue.
+ * WASAPI requires that fetched input be consumed in its entirety,
+ * so this may return 0 if the queue doesn't have room.
  * @param microphone Pointer to the microphone context.
- * @param buffer The buffer in which incoming samples will be stored.
- * @param buffer_size The length of \c buffer, in bytes.
- * @return True if the read was successful
+ * @return The number of bytes written to the queue, or -1 if there was an error.
+ * May be 0
  */
-static bool wasapi_microphone_fetch_fifo(
-      wasapi_microphone_handle_t *microphone,
-      size_t buffer_size)
+static ssize_t wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *microphone)
 {
    BYTE *mic_input = NULL;
-   UINT32 frame_count = 0;
-   UINT32 byte_count = 0;
+   UINT32 frames_read = 0;
+   UINT32 bytes_read = 0;
+   ssize_t frames_enqueued = 0;
    DWORD buffer_status_flags = 0;
    HRESULT hr;
 
-   hr = _IAudioCaptureClient_GetBuffer(microphone->capture, &mic_input, &frame_count, &buffer_status_flags, NULL, NULL);
+   hr = _IAudioCaptureClient_GetBuffer(microphone->capture, &mic_input, &frames_read, &buffer_status_flags, NULL, NULL);
    if (FAILED(hr))
    {
       RARCH_ERR("[WASAPI]: Failed to get capture device \"%ls\"'s buffer: %s\n",
          microphone->device_id,
          hresult_name(hr));
-      return false;
+      return -1;
    }
-   byte_count = frame_count * microphone->frame_size;
-   // TODO: As written, this can drop frames
-   // TODO: Determine if the queue can fit the available frames. If not, don't read them
+   bytes_read = frames_read * microphone->frame_size;
 
-   fifo_write(microphone->buffer, mic_input, MIN(buffer_size, byte_count));
-   hr = _IAudioCaptureClient_ReleaseBuffer(microphone->capture, frame_count);
+   if (FIFO_WRITE_AVAIL(microphone->buffer) >= bytes_read)
+   { /* If the queue has room for the packets we just got... */
+      fifo_write(microphone->buffer, mic_input, bytes_read);
+      /* ...then enqueue the bytes directly from the mic's buffer */
+      frames_enqueued = frames_read;
+   }
+   /* If there's insufficient room in the queue, then we can't read the packet.
+    * In that case, we leave the packet for next time. */
+
+   hr = _IAudioCaptureClient_ReleaseBuffer(microphone->capture, frames_enqueued);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI]: Failed to release capture device \"%ls\"'s buffer: %s\n",
+      RARCH_ERR("[WASAPI]: Failed to release capture device \"%ls\"'s buffer after having read %u frames: %s\n",
          microphone->device_id,
+         frames_enqueued,
          hresult_name(hr));
-      return false;
+      return -1;
    }
 
-   return true;
+   return frames_enqueued * (ssize_t)microphone->frame_size;
 }
 
 /**
@@ -242,7 +249,7 @@ static ssize_t wasapi_microphone_read_shared_buffered(
       bytes_to_read  = MIN(write_avail, read_avail);
 
       if (bytes_to_read > 0)
-         if (!wasapi_microphone_fetch_fifo(microphone, bytes_to_read))
+         if (wasapi_microphone_fetch_fifo(microphone) < 0)
             return -1;
    }
 
@@ -334,7 +341,7 @@ static ssize_t wasapi_microphone_read_shared_nonblock(
          read_avail = microphone->engine_buffer_size - available_frames * microphone->frame_size;
          bytes_to_read     = MIN(write_avail, read_avail);
          if (bytes_to_read)
-            if (!wasapi_microphone_fetch_fifo(microphone, bytes_to_read))
+            if (wasapi_microphone_fetch_fifo(microphone) < 0)
                return -1;
       }
 
@@ -386,22 +393,21 @@ static ssize_t wasapi_microphone_read_exclusive(
    size_t buffer_size,
    DWORD timeout)
 {
-   ssize_t bytes_read     = 0;
-   size_t bytes_available = FIFO_READ_AVAIL(microphone->buffer);
+   ssize_t bytes_read      = 0; /* Number of bytes sent to the core */
+   ssize_t bytes_available = FIFO_READ_AVAIL(microphone->buffer);
 
    if (!bytes_available)
-   { /* If the incoming sample queue is empty... */
+   { /* If we don't have any queued samples to give to the core... */
       if (!wasapi_microphone_wait_for_capture_event(microphone, timeout))
       { /* If we couldn't wait for the microphone to signal a capture event... */
          return -1;
       }
 
-      if (!wasapi_microphone_fetch_fifo(microphone, microphone->engine_buffer_size))
+      bytes_available = wasapi_microphone_fetch_fifo(microphone);
+      if (bytes_available < 0)
       { /* If we couldn't fetch samples from the microphone... */
          return -1;
       }
-
-      bytes_available = microphone->engine_buffer_size;
    }
 
    /* Now that we have samples available, let's give them to the core */
