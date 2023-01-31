@@ -495,7 +495,7 @@ static bool wasapi_microphone_stop(void *driver_context)
 
    if (wasapi->microphone && wasapi_microphone_mic_alive(wasapi, wasapi->microphone))
    { /* If we have a microphone that we need to pause... */
-
+      bool result = wasapi_microphone_stop_mic(wasapi, wasapi->microphone);
    }
 
    wasapi->running = false;
