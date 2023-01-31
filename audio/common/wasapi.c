@@ -279,8 +279,6 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    WAVEFORMATEXTENSIBLE wf;
    int i, j;
    IAudioClient *client           = NULL;
-   bool float_fmt_res             = *float_fmt;
-   unsigned rate_res              = *rate;
    REFERENCE_TIME minimum_period  = 0;
    REFERENCE_TIME buffer_duration = 0;
    UINT32 buffer_length           = 0;
@@ -308,7 +306,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    if (buffer_duration < minimum_period)
       buffer_duration = minimum_period;
 
-   wasapi_set_format(&wf, float_fmt_res, rate_res, channels);
+   wasapi_set_format(&wf, *float_fmt, *rate, channels);
    RARCH_LOG("[WASAPI]: Requesting format: %u-bit %u-channel client with %s samples at %uHz\n",
       wf.Format.wBitsPerSample,
       wf.Format.nChannels, wave_format_name(&wf), wf.Format.nSamplesPerSec);
@@ -350,7 +348,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          return NULL;
       }
 
-      buffer_duration = 10000.0 * 1000.0 / rate_res * buffer_length + 0.5;
+      buffer_duration = 10000.0 * 1000.0 / (*rate) * buffer_length + 0.5;
       hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
             AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
             buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
@@ -388,7 +386,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
       goto error;
    }
 
-   *float_fmt = IsEqualGUID(&wf.SubFormat, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT);
+   *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM;
    *rate      = wf.Format.nSamplesPerSec;
 
    RARCH_LOG("[WASAPI]: Initialized exclusive %s client at %uHz, latency %ums\n",
@@ -461,7 +459,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       goto error;
    }
 
-   *float_fmt = IsEqualGUID(&wf.SubFormat, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT);
+   *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM;
    *rate      = wf.Format.nSamplesPerSec;
 
    RARCH_LOG("[WASAPI]: Initialized shared %s client at %uHz, latency %ums\n",
