@@ -76,6 +76,18 @@ const char *hresult_name(HRESULT hr)
          return "AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL";
       case AUDCLNT_E_SERVICE_NOT_RUNNING:
          return "AUDCLNT_E_SERVICE_NOT_RUNNING";
+      case AUDCLNT_E_INVALID_SIZE:
+         return "AUDCLNT_E_INVALID_SIZE";
+      case AUDCLNT_E_OUT_OF_ORDER:
+         return "AUDCLNT_E_OUT_OF_ORDER";
+      case AUDCLNT_S_BUFFER_EMPTY:
+         return "AUDCLNT_S_BUFFER_EMPTY";
+      case S_OK:
+         return "S_OK";
+      case AUDCLNT_E_BUFFER_ERROR:
+         return "AUDCLNT_E_BUFFER_ERROR";
+      case AUDCLNT_E_BUFFER_OPERATION_PENDING:
+         return "AUDCLNT_E_BUFFER_OPERATION_PENDING";
       default:
          return "<unknown>";
    }
