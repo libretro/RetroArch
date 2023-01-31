@@ -80,6 +80,29 @@ const char *hresult_name(HRESULT hr)
    }
 }
 
+const char *wave_subtype_name(const GUID *guid)
+{
+   if (IsEqualGUID(guid, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT))
+   {
+      return "KSDATAFORMAT_SUBTYPE_IEEE_FLOAT";
+   }
+
+   return "<unknown sub-format>";
+}
+
+const char *wave_format_name(const WAVEFORMATEXTENSIBLE *format)
+{
+   switch (format->Format.wFormatTag)
+   {
+      case WAVE_FORMAT_PCM:
+         return "WAVE_FORMAT_PCM";
+      case WAVE_FORMAT_EXTENSIBLE:
+         return wave_subtype_name(&format->SubFormat);
+      default:
+         return "<unknown>";
+   }
+}
+
 const char *sharemode_name(AUDCLNT_SHAREMODE mode)
 {
    switch (mode)
