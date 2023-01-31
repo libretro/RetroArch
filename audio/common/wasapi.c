@@ -159,6 +159,54 @@ static unsigned wasapi_pref_rate(unsigned i)
    return r[i];
 }
 
+/**
+ * Selects a device format
+ * @param[in,out] format The place where the chosen format will be written,
+ * as well as the first format checked.
+ * @param client TODO
+ * @param mode todo
+ * @return true if successful, false if there was an error or a suitable format wasn't found
+ */
+static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode)
+{
+   static const unsigned preferred_rates[] = { 48000, 44100, 96000, 192000, 32000 };
+   WAVEFORMATEXTENSIBLE *suggested_format = NULL;
+   bool result = false;
+   HRESULT hr = _IAudioClient_IsFormatSupported(client, mode,
+      (const WAVEFORMATEX *) format, (WAVEFORMATEX **) &suggested_format);
+   /* The Windows docs say that casting these arguments to WAVEFORMATEX* is okay. */
+   switch (hr)
+   {
+      case S_OK:
+         /* The requested format is okay without any changes */
+         result = true;
+         break;
+      case S_FALSE:
+         /* The requested format is unsupported, but Windows has suggested a similar one. */
+         // TODO: Check that the suggested format meets RetroArch's requirements
+         *format = *suggested_format;
+         result = true;
+         break;
+      case AUDCLNT_E_UNSUPPORTED_FORMAT:
+         /* The requested format is unsupported, and Windows was unable to suggest another.
+          * Usually happens with exclusive mode. */
+         // TODO: Try to pick a format manually
+      default:
+         /* Something else went wrong. */
+         RARCH_ERR("[WASAPI]: Failed to select client format (%s): %s",
+                   hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
+         result = false;
+         break;
+   }
+
+   if (suggested_format)
+   { /* IAudioClient::IsFormatSupported allocates a format object */
+      CoTaskMemFree(suggested_format);
+   }
+
+   return result;
+}
+
 static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
       bool float_fmt, unsigned rate, unsigned channels)
 {
