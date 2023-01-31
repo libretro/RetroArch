@@ -703,6 +703,8 @@ static void wasapi_microphone_close_mic(void *driver_context, void *microphone_c
       CoTaskMemFree(microphone->device_id);
    free(microphone);
 
+   wasapi->microphone = NULL;
+
    ir = WaitForSingleObject(write_event, 20);
    if (ir == WAIT_FAILED)
    {
