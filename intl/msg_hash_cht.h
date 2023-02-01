@@ -1103,7 +1103,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   "切換選單"
+   "快捷選單"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
@@ -1346,7 +1346,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   "變更主機和網路的設定。"
+   "變更網路相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -1558,7 +1558,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
-   "Windows Audio Session API 驅動程式。\nWindows音頻會話API(WASAPI)用於 Windows 7 及更高版本的音效驅動程式。"
+   "Windows Audio Session API 驅動程式。\n用於 Windows 7 及更高版本作業系統的音效驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
@@ -2812,7 +2812,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "控制器與裝置斷開連接時暫停遊戲。"
+   "控制器與裝置斷開連接時暫停執行項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -3061,19 +3061,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   "選單切換 (控制器組合鍵)"
+   "快捷選單 (控制器組合鍵)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   "設定選單開啟和關閉，使用控制器操作的按鍵。"
+   "執行項目時選單的開關，使用控制器操作的按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
-   "選單切換"
+   "快捷選單"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "執行項目時開啟選單的開關。"
+   "執行項目時選單的開關。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
@@ -3507,11 +3507,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
-   "用戶連接埠 (遊戲主機)"
+   "核心連接埠"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
-   "設定控制器連接到用戶連接埠的編號(預設%u)。應用於多人控制一角色，或一人控制多角色。"
+   "設定控制器連接到核心用戶連接埠%u。可用於多人控制一個角色。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -3726,7 +3726,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "執行搶占幀數"
+   "開啟搶占幀數"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
@@ -6370,7 +6370,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "透過代理或中繼伺服器進行網際網路連接。連線位於防火牆後或有 NAT/UPnP 問題時推薦開啟。"
+   "透過代理或中繼伺服器進行網際網路連線。連線位於防火牆後或有 NAT/UPnP 問題時推薦開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
@@ -6410,11 +6410,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
-   "伺服器地址"
+   "連線主機地址"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
-   "連接伺服器的地址。"
+   "預設「手動連線到主機」的連線主機地址。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
@@ -6446,7 +6446,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
-   "用戶端連接到主機使用的密碼。"
+   "用戶連線到主機使用的登入密碼。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
@@ -6454,7 +6454,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-   "用戶端以觀眾身分連接到主機使用的密碼。"
+   "用戶以觀眾身分連線到主機使用的登入密碼。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
@@ -6462,11 +6462,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   "使用觀眾模式加入連線遊戲。"
+   "使用觀眾身分建立和連線到主機。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
-   "設定使用觀眾模式進行連線遊戲。\n開啟時建立主機和連線主機，都使用觀眾模式開始。\n連線遊戲使用身分可用快捷鍵切換。"
+   "開啟時建立和連線到主機，都使用觀眾身分開始。\n連線遊戲使用的身分，在連線時可用快捷鍵切換。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
@@ -6522,11 +6522,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "驗證主機和用戶端是否同步頻率(幀數)。"
+   "驗證主機端和用戶端是否同步頻率(幀數)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
-   "驗證主機和客戶端是否同步的幀頻率。\n大多數的核心 - 沒有明顯的影響可忽略。\n非確定的核心 - 設定值為同步頻率使用的幀數。\n有問題的核心 - 設定值大於零將嚴重影響效能。/n設定 <0> 時不執行檢查。此選項僅在連線遊戲的主機上使用。"
+   "驗證主機端和用戶端是否同步的頻率(幀數)。\n大多數的核心 - 沒有明顯的影響可忽略。\n非確定的核心 - 設定值為同步頻率使用的幀數。\n有問題的核心 - 設定值大於零將嚴重影響效能。/n設定 <0> 時不執行檢查。此選項僅在連線遊戲的主機上使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -6538,7 +6538,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "設定按鍵輸入延遲幀數，用於連線遊戲時掩蓋網路延遲。\n連線遊戲中此選項延遲本地輸入，用於執行幀數更接近從網路接收的幀數。\n可降低CPU使用率並減少畫面誤差，代價是明顯的按鍵延遲。"
+   "設定按鍵輸入延遲所使用的幀數，用於連線遊戲時掩蓋網路延遲。\n連線遊戲時延遲本地輸入，使執行幀數更接近從網路接收的幀數，\n同時可降低CPU使用率並減少畫面誤差，代價是明顯的按鍵延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -6550,7 +6550,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "設定按鍵輸入延遲幀數範圍，用於連線遊戲時掩蓋網路延遲。\n設定時將動態調整輸入延遲幀數，平衡CPU執行時間、輸入延遲和網路延遲。\n可降低CPU使用率並減少畫面誤差，代價是無預測的按鍵延遲。"
+   "設定按鍵輸入延遲幀數範圍最大值，用於連線遊戲時掩蓋網路延遲。\n動態調整輸入延遲幀數，平衡CPU執行時間、輸入延遲和網路延遲，\n同時降低CPU使用率並減少畫面誤差，代價是無法預測的按鍵延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -7051,7 +7051,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "輸入您的 RetroAchievements 登錄密碼。限制輸入二百五十五個字元。"
+   "輸入您的 RetroAchievements 登入密碼。限制輸入二百五十五個字元。"
    )
 
 /* Settings > User > Accounts > YouTube */
@@ -7418,7 +7418,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "用戶端模式連線至主機。"
+   "用戶模式連線到主機。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
@@ -7442,7 +7442,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
-   "顯示密碼登錄的主機"
+   "顯示密碼登入的主機"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
@@ -8872,7 +8872,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
-   "載入專用主題並替換目前的設定。"
+   "載入專用主題並變更目前的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -9284,11 +9284,11 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Unused? */
    MENU_ENUM_LABEL_VALUE_RETROKEYBOARD,
-   "Retro鍵盤"
+   "電腦鍵盤"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETROPAD,
-   "Retro觸控板"
+   "遊戲控制器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
@@ -9520,11 +9520,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TRUE,
-   "正確"
+   "開"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FALSE,
-   "錯誤"
+   "關"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLED,
@@ -10277,11 +10277,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
-   "選單切換動畫"
+   "選單頁面切換動畫"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
-   "選單切換畫面時觸發的圖示動畫。"
+   "選單頁面切換畫面時觸發的圖示動畫。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
@@ -11874,7 +11874,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
-   "掃描並連線區域網路上的主機。"
+   "掃描並連線至區域網路上的連線遊戲主機。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
@@ -12085,7 +12085,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
-   "切換選單"
+   "快捷選單"
    )
 
 /* Discord Status */
@@ -12279,7 +12279,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
-   "請輸入主機登錄密碼"
+   "請輸入主機登入密碼"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_CHAT,
@@ -12776,7 +12776,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_BIND_SOCKET,
-   "無法綁定插座。"
+   "無法綁定網路插座。"
    )
 MSG_HASH(
    MSG_FAILED_TO_CREATE_THE_DIRECTORY,
@@ -12820,7 +12820,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
-   "無法從用戶端接收標頭。"
+   "無法從用戶端接收標題。"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_NICKNAME,
@@ -12828,15 +12828,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
-   "無法從主機接收暱稱。"
+   "無法從主機端接收暱稱。"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
-   "無法從主機接收暱稱字數。"
+   "無法從主機端接收暱稱字數。"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
-   "無法從主機接收 SRAM 資料。"
+   "無法從主機端接收存檔數據。"
    )
 MSG_HASH(
    MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
@@ -12872,11 +12872,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
-   "無法對主機傳送暱稱。"
+   "無法對主機端傳送暱稱。"
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
-   "無法對用戶端傳送記憶數據。"
+   "無法對用戶端傳送存檔數據。"
    )
 MSG_HASH(
    MSG_FAILED_TO_START_AUDIO_DRIVER,
@@ -13696,7 +13696,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "無法從主機接收標題"
+   "無法從主機端接收標題。"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
