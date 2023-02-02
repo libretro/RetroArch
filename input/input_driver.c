@@ -57,6 +57,7 @@
 #endif
 #include "../tasks/tasks_internal.h"
 #include <formats/rjson.h>
+#include <file/file_path.h>
 
 #define HOLD_BTN_DELAY_SEC 2
 
