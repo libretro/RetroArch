@@ -920,6 +920,9 @@ void input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
       const char *word, size_t len);
 
+bool input_keyboard_line_event(
+      input_driver_state_t *input_st,
+      input_keyboard_line_t *state, uint32_t character);
 /**
  * input_keyboard_start_line:
  * @userdata                 : Userdata.
