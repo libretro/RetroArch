@@ -434,6 +434,20 @@ enum input_driver_state_flags
    INP_FLAG_REMAPPING_CACHE_ACTIVE   = (1 << 9),
    INP_FLAG_DEFERRED_WAIT_KEYS       = (1 << 10)
 };
+typedef struct
+{
+   const char* name;
+   const char* mark;
+   char* comp[4];
+   char* grid[OSK_CHARS_MAX]; 
+}  osk_keyboard_t;
+
+#ifdef HAVE_LANGEXTRA
+extern osk_keyboard_t* osk_keyboard[64];
+extern osk_keyboard_t* osk_country[RETRO_LANGUAGE_LAST][OSK_PER_LANG];
+int    get_osk_composition( char *padd);
+bool   input_read_keyboard();
+#endif
 
 typedef struct
 {
@@ -474,7 +488,7 @@ typedef struct
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *remote;
 #endif
-   char    *osk_grid[45];                                /* ptr alignment */ 
+   osk_keyboard_t* osk; 
 #if defined(HAVE_TRANSLATE)
 #if defined(HAVE_ACCESSIBILITY)
    int ai_gamepad_state[MAX_USERS];
@@ -488,8 +502,6 @@ typedef struct
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
    unsigned old_analog_dpad_mode[MAX_USERS];
    unsigned old_libretro_device[MAX_USERS];
-   unsigned osk_last_codepoint;
-   unsigned osk_last_codepoint_len;
    unsigned input_hotkey_block_counter;
 #ifdef HAVE_ACCESSIBILITY
    unsigned gamepad_input_override;
