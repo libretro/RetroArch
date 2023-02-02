@@ -1083,21 +1083,6 @@ static void xmb_render_messagebox_internal(
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
    }
 
-   if (input_dialog_display_kb)
-   {
-      input_driver_state_t *input_st = input_state_get_ptr();
-      gfx_display_draw_keyboard(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            xmb->textures.list[XMB_TEXTURE_KEY_HOVER],
-            xmb->font,
-            input_st->osk_grid,
-            input_st->osk_ptr,
-            0xffffffff);
-   }
-
    string_list_deinitialize(&list);
 }
 
@@ -6269,11 +6254,33 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       const char *str   = menu_input_dialog_get_buffer();
       const char *label = menu_input_dialog_get_label_buffer();
-      size_t _len       = strlcpy(msg, label, sizeof(msg));
-      msg[_len  ]       = '\n';
-      msg[_len+1]       = '\0';
-      strlcat(msg, str, sizeof(msg));
-      render_background = true;
+      input_driver_state_t *input_st =  input_state_get_ptr();
+      bool draw_placeholder   = string_is_empty(str);
+      int  usable_width       =  (int)video_width - (xmb->margins_dialog * 8) ;
+      if(  usable_width < 1) return;
+      if( !input_st->osk ) return;
+      gfx_display_draw_keyboard(
+         p_disp,     
+         userdata,
+         video_width,
+         video_height,
+         xmb->textures.list[XMB_TEXTURE_KEY_HOVER],
+         xmb->font,
+         input_st->osk->grid,
+         input_st->osk_ptr,
+         0xffffffff);
+       
+      gfx_display_draw_edit(
+         p_disp,
+         userdata,
+         video_width,
+         video_height,   
+         xmb->font,
+         draw_placeholder ? 0x808080ff : 0xffffffff,
+         draw_placeholder ? label : str,
+         input_st->osk->mark,
+         input_st->keyboard_line.ptr,
+         xmb->last_scale_factor);
    }
 
    if (!string_is_empty(xmb->box_message))
