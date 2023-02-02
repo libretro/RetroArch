@@ -7144,8 +7144,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    /* Handle onscreen keyboard */
    if (menu_input_dialog_get_display_kb())
    {
-      size_t _len;
-      char msg[255];
       const char *str   = menu_input_dialog_get_buffer();
       const char *label = menu_input_dialog_get_label_buffer();
 
@@ -7163,29 +7161,32 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             mui->colors.screen_fade,
             NULL);
 
-      /* Draw message box */
-      _len        = strlcpy(msg, label, sizeof(msg));
-      msg[_len  ] = '\n';
-      msg[_len+1] = '\0';
-      strlcat(msg, str, sizeof(msg));
-      materialui_render_messagebox(mui,
-            p_disp,
-            userdata, video_width, video_height,
-            video_height / 4, msg);
-
       /* Draw onscreen keyboard */
       {
          input_driver_state_t *input_st = input_state_get_ptr();
-         gfx_display_draw_keyboard(
+         bool is_empty = string_is_empty(str);
+         if( input_st->osk )
+         {
+            gfx_display_draw_keyboard(
                p_disp,
                userdata,
                video_width,
                video_height,
                mui->textures.list[MUI_TEXTURE_KEY_HOVER],
                mui->font_data.list.font,
-               input_st->osk_grid,
+               input_st->osk->grid,
                input_st->osk_ptr,
                0xFFFFFFFF);
+            gfx_display_draw_edit(
+               p_disp,  userdata, video_width,
+               video_height,
+               mui->font_data.list.font,
+               is_empty ? 0x808080ff :  0xffffffff,
+               is_empty ? label : str,
+               input_st->osk->mark,
+               input_st->keyboard_line.ptr,
+               mui->last_scale_factor);
+         }
       }
 
       /* Flush message box & osk text
