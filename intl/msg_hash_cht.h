@@ -2744,7 +2744,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-   "自動載入隨插即用檔。「連接埠 # 控制器」選項中支援儲存為預設檔。"
+   "自動載入隨插即用配置檔。選項「連接埠 # 控制器」中可建立隨插即用配置檔。"
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
@@ -3942,7 +3942,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
-   "使用核心選項共用設定檔"
+   "核心選項共用設定檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
@@ -6860,11 +6860,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
-   "掃描無須支援核心"
+   "掃描忽略支援核心"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
-   "允許在未安裝支援核心的情況下，掃描檔案並建立或加入項目到列表。"
+   "開啟時「匯入遊戲」忽略支援核心的資訊。允許未安裝核心，掃描檔案並建立列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
@@ -8512,27 +8512,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
-   "重複次數"
+   "重複數值次數"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
-   "重複金手指的次數。當所有重複選項同時使用，可變更多個記憶體。"
+   "重複套用金手指「數值」寫入此記憶體位置之後的次數。用於變更大範圍記憶體位置的數值。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
-   "每次重複位置增加"
+   "重複增加位置"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
-   "每次重複時「記憶體位置」增加，使用此數值乘以「記憶體搜尋大小」。"
+   "每次重複套用時增加記憶體位置，使用此選項設定值乘以「記憶體搜尋大小」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
-   "每次重複增加數值"
+   "重複增加變數"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
-   "每次重複時「數值」加上此數值。"
+   "每次重複時套用的「數值」加上此選項設定值。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
@@ -9292,7 +9292,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
-   "類比搖桿"
+   "支援類比搖桿"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NONE,
