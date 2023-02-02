@@ -1297,27 +1297,6 @@ float menu_input_get_dpi(
    return dpi;
 }
 
-bool input_event_osk_show_symbol_pages(
-      menu_handle_t *menu)
-{
-#if defined(HAVE_LANGEXTRA)
-#if defined(HAVE_RGUI)
-   bool menu_has_fb      = (menu &&
-         menu->driver_ctx &&
-         menu->driver_ctx->set_texture);
-   unsigned language     = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
-   return !menu_has_fb ||
-         ((language == RETRO_LANGUAGE_JAPANESE) ||
-          (language == RETRO_LANGUAGE_KOREAN) ||
-          (language == RETRO_LANGUAGE_CHINESE_SIMPLIFIED) ||
-          (language == RETRO_LANGUAGE_CHINESE_TRADITIONAL));
-#else  /* HAVE_RGUI */
-   return true;
-#endif /* HAVE_RGUI */
-#else  /* HAVE_LANGEXTRA */
-   return false;
-#endif /* HAVE_LANGEXTRA */
-}
 
 static void menu_driver_list_free(
       const menu_ctx_driver_t *menu_driver_ctx,
@@ -1868,73 +1847,38 @@ void menu_input_key_bind_poll_bind_get_rested_axes(
 }
 
 void input_event_osk_iterate(
-      void *osk_grid,
+      osk_keyboard_t** osk,
       enum osk_type osk_idx)
 {
 #ifndef HAVE_LANGEXTRA
    /* If HAVE_LANGEXTRA is not defined, define some ASCII-friendly pages. */
-   static const char *uppercase_grid[] = {
-      "1","2","3","4","5","6","7","8","9","0","Bksp",
-      "Q","W","E","R","T","Y","U","I","O","P","Enter",
-      "A","S","D","F","G","H","J","K","L","+","Lower",
-      "Z","X","C","V","B","N","M"," ","_","/","Next"};
-   static const char *lowercase_grid[] = {
-      "1","2","3","4","5","6","7","8","9","0","Bksp",
-      "q","w","e","r","t","y","u","i","o","p","Enter",
-      "a","s","d","f","g","h","j","k","l","@","Upper",
-      "z","x","c","v","b","n","m"," ","-",".","Next"};
-   static const char *symbols_page1_grid[] = {
-      "1","2","3","4","5","6","7","8","9","0","Bksp",
-      "!","\"","#","$","%","&","'","*","(",")","Enter",
-      "+",",","-","~","/",":",";","=","<",">","Lower",
-      "?","@","[","\\","]","^","_","|","{","}","Next"};
-#endif
-   switch (osk_idx)
+   static osk_keyboard_t default_keyboard[3] = 
    {
-#ifdef HAVE_LANGEXTRA
-      case OSK_HIRAGANA_PAGE1:
-         memcpy(osk_grid,
-               hiragana_page1_grid,
-               sizeof(hiragana_page1_grid));
-         break;
-      case OSK_HIRAGANA_PAGE2:
-         memcpy(osk_grid,
-               hiragana_page2_grid,
-               sizeof(hiragana_page2_grid));
-         break;
-      case OSK_KATAKANA_PAGE1:
-         memcpy(osk_grid,
-               katakana_page1_grid,
-               sizeof(katakana_page1_grid));
-         break;
-      case OSK_KATAKANA_PAGE2:
-         memcpy(osk_grid,
-               katakana_page2_grid,
-               sizeof(katakana_page2_grid));
-         break;
-      case OSK_KOREAN_PAGE1:
-         memcpy(osk_grid,
-               korean_page1_grid,
-               sizeof(korean_page1_grid));
-         break;
+      { "lower", "en", NULL, NULL, NULL, NULL,  
+        "1","2","3","4","5","6","7","8","9","0","_","Bksp",
+        "q","w","e","r","t","y","u","i","o","p","+","Enter",
+        "a","s","d","f","g","h","j","k","l","@","\"","Upper",
+        "z","x","c","v","b","n","m"," ",",",".","?","Next" },
+      { "upper", "EN", NULL, NULL, NULL, NULL,   
+        "1","2","3","4","5","6","7","8","9","0","-","Bksp",
+        "Q","W","E","R","T","Y","U","I","O","P","=","Enter",
+        "A","S","D","F","G","H","J","K","L",";","'","Lower",
+        "Z","X","C","V","B","N","M"," ",",",".","/","Next" },
+      { "symbol", "SY", NULL, NULL, NULL, NULL,   
+        "1","2","3","4","5","6","7","8","9","0"," ","Bksp",
+        "!","\"","#","$","%","&","'","*","(",")"," ","Enter",
+        "+",",","-","~","/",":",";","=","<",">"," ","Lower",
+        "?","@","[","\\","]","^","_","|","{","}"," ","Next" }
+   };
+   if( osk_idx<0 && osk_idx>OSK_SYMBOLS_PAGE1   ) osk_idx = 0;
+   *osk = &default_keyboard[osk_idx];
+#else
+   int lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
+   if( lang<0 || lang >= RETRO_LANGUAGE_LAST) lang = 0;
+   if( osk_idx<0 && osk_idx>=OSK_PER_LANG    ) osk_idx = 0;
+   *osk = osk_country[lang][osk_idx];
 #endif
-      case OSK_SYMBOLS_PAGE1:
-         memcpy(osk_grid,
-               symbols_page1_grid,
-               sizeof(uppercase_grid));
-         break;
-      case OSK_UPPERCASE_LATIN:
-         memcpy(osk_grid,
-               uppercase_grid,
-               sizeof(uppercase_grid));
-         break;
-      case OSK_LOWERCASE_LATIN:
-      default:
-         memcpy(osk_grid,
-               lowercase_grid,
-               sizeof(lowercase_grid));
-         break;
-   }
+   return; 
 }
 
 void menu_input_get_mouse_hw_state(
@@ -5655,10 +5599,6 @@ bool menu_input_dialog_get_display_kb(void)
             input_keyboard_line_append(&input_st->keyboard_line,
                   word, strlen(word));
 
-            osk_update_last_codepoint(
-                  &input_st->osk_last_codepoint,
-                  &input_st->osk_last_codepoint_len,
-                  word);
             buf[i+1]     = oldchar;
          }
       }
@@ -5934,14 +5874,14 @@ unsigned menu_event(
       if (!steam_has_osk_open())
       {
 #endif
-      bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
-
-      input_event_osk_iterate(input_st->osk_grid, input_st->osk_idx);
+ 
+ 
+      input_event_osk_iterate( &input_st->osk, input_st->osk_idx);
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (input_st->osk_ptr < 33)
+         if (input_st->osk_ptr < OSK_CHARS_MAX-OSK_CHARS_PER_LINE )
             input_st->osk_ptr += OSK_CHARS_PER_LINE;
       }
 
@@ -5955,7 +5895,7 @@ unsigned menu_event(
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (input_st->osk_ptr < 43)
+         if (input_st->osk_ptr < OSK_CHARS_MAX-1)
             input_st->osk_ptr += 1;
       }
 
@@ -5966,46 +5906,46 @@ unsigned menu_event(
             input_st->osk_ptr -= 1;
       }
 
+#ifndef HAVE_LANGEXTRA
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (input_st->osk_idx > OSK_TYPE_UNKNOWN + 1)
+         if (input_st->osk_idx > OSK_LOWERCASE_LATIN)
             input_st->osk_idx = ((enum osk_type)
                   (input_st->osk_idx - 1));
          else
-            input_st->osk_idx = ((enum osk_type)(show_osk_symbols
-                     ? OSK_TYPE_LAST - 1
-                     : OSK_SYMBOLS_PAGE1));
+            input_st->osk_idx = (enum osk_type) (OSK_TYPE_LAST - 1);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (input_st->osk_idx < (show_osk_symbols
-                  ? OSK_TYPE_LAST - 1
-                  : OSK_SYMBOLS_PAGE1))
+         if (input_st->osk_idx <  OSK_TYPE_LAST - 1) 
             input_st->osk_idx = ((enum osk_type)(
                      input_st->osk_idx + 1));
          else
-            input_st->osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+            input_st->osk_idx = ((enum osk_type)OSK_LOWERCASE_LATIN);
       }
+#else
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+          input_osk_next( &input_st->osk_idx,-2 );
 
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+      input_osk_next( &input_st->osk_idx,2) ;
+#endif
       if (BIT256_GET_PTR(p_trigger_input, menu_ok_btn))
       {
          if (input_st->osk_ptr >= 0)
             input_event_osk_append(
                   &input_st->keyboard_line,
                   &input_st->osk_idx,
-                  &input_st->osk_last_codepoint,
-                  &input_st->osk_last_codepoint_len,
                   input_st->osk_ptr,
-                  show_osk_symbols,
-                  input_st->osk_grid[input_st->osk_ptr],
-                  strlen(input_st->osk_grid[input_st->osk_ptr]));
+                  input_st->osk->grid[input_st->osk_ptr],
+                  strlen(input_st->osk->grid[input_st->osk_ptr]));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
-         input_keyboard_event(true, '\x7f', '\x7f',
+          input_keyboard_event(true, RETROK_BACKSPACE, '\b', 
                0, RETRO_DEVICE_KEYBOARD);
 
       /* send return key to close keyboard input window */
@@ -6150,8 +6090,7 @@ static int menu_input_pointer_post_iterate(
       point.retcode = 0;
 
       menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
-      if (point.retcode > -1)
-         input_st->osk_ptr = point.retcode;
+      input_st->osk_ptr = point.retcode;
    }
 
    /* Select + X/Y position */
@@ -6441,20 +6380,24 @@ static int menu_input_pointer_post_iterate(
              * has remained stationary */
             if (!menu_input->pointer.dragged)
             {
+               gfx_osk_state_t* osk_st = gfx_state_get_ptr();
                menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
                if (point.retcode > -1)
                {
-                  bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
                   input_st->osk_ptr     = point.retcode;
                   input_event_osk_append(
                         &input_st->keyboard_line,
                         &input_st->osk_idx,
-                        &input_st->osk_last_codepoint,
-                        &input_st->osk_last_codepoint_len,
                         point.retcode,
-                        show_osk_symbols,
-                        input_st->osk_grid[input_st->osk_ptr],
-                        strlen(input_st->osk_grid[input_st->osk_ptr]));
+                        input_st->osk->grid[input_st->osk_ptr],
+                        strlen(input_st->osk->grid[input_st->osk_ptr]));
+               }
+               if( osk_st->ptr == -2) input_osk_next( &input_st->osk_idx,2 );
+               if( osk_st->ptr == -1) osk_st->hide_keyboard = !osk_st->hide_keyboard;
+               if( osk_st->ptr && (osk_st->ptr-1) <= input_st->keyboard_line.size )
+               {
+                  input_st->keyboard_line.ptr = osk_st->ptr-1;
+                  input_keyboard_line_event(input_st,&input_st->keyboard_line, OSK_COMPOSITION);
                }
             }
 #ifdef HAVE_MIST
