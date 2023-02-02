@@ -105,16 +105,16 @@ static bool bsv_movie_init_playback(
          return false;
       }
       core_serialize_size( &info);
-
-      if (info.size == state_size)
+      /* For cores like dosbox, the reported size is not always
+         correct. So we just give a warning if they don't match up. */
+      serial_info.data_const = handle->state;
+      serial_info.size       = state_size;
+      core_unserialize(&serial_info);
+      if (info.size != state_size)
       {
-         serial_info.data_const = handle->state;
-         serial_info.size       = state_size;
-         core_unserialize(&serial_info);
-      }
-      else
          RARCH_WARN("%s\n",
                msg_hash_to_str(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION));
+      }
    }
 
    handle->min_file_pos = sizeof(header) + state_size;
