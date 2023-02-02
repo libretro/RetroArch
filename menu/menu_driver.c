@@ -1852,24 +1852,33 @@ void input_event_osk_iterate(
 {
 #ifndef HAVE_LANGEXTRA
    /* If HAVE_LANGEXTRA is not defined, define some ASCII-friendly pages. */
-   static osk_keyboard_t default_keyboard[3] = 
+   static osk_keyboard_t default_keyboard[3] ={
    {
-      { "lower", "en", NULL, NULL, NULL, NULL,  
-        "1","2","3","4","5","6","7","8","9","0","_","Bksp",
-        "q","w","e","r","t","y","u","i","o","p","+","Enter",
-        "a","s","d","f","g","h","j","k","l","@","\"","Upper",
-        "z","x","c","v","b","n","m"," ",",",".","?","Next" },
-      { "upper", "EN", NULL, NULL, NULL, NULL,   
-        "1","2","3","4","5","6","7","8","9","0","-","Bksp",
-        "Q","W","E","R","T","Y","U","I","O","P","=","Enter",
-        "A","S","D","F","G","H","J","K","L",";","'","Lower",
-        "Z","X","C","V","B","N","M"," ",",",".","/","Next" },
-      { "symbol", "SY", NULL, NULL, NULL, NULL,   
-        "1","2","3","4","5","6","7","8","9","0"," ","Bksp",
-        "!","\"","#","$","%","&","'","*","(",")"," ","Enter",
-        "+",",","-","~","/",":",";","=","<",">"," ","Lower",
-        "?","@","[","\\","]","^","_","|","{","}"," ","Next" }
-   };
+     "lower", "en",
+     {"","","",""},
+     {
+      "1","2","3","4","5","6","7","8","9","0","_","Bksp",
+      "q","w","e","r","t","y","u","i","o","p","+","Enter",
+      "a","s","d","f","g","h","j","k","l","@","\"","Upper",
+      "z","x","c","v","b","n","m"," ",",",".","?","Next"}
+   },
+   {
+     "upper", "EN",  {"","","",""},
+     {
+      "1","2","3","4","5","6","7","8","9","0","-","Bksp",
+      "Q","W","E","R","T","Y","U","I","O","P","=","Enter",
+      "A","S","D","F","G","H","J","K","L",";","'","Lower",
+      "Z","X","C","V","B","N","M"," ",",",".","/","Next"}
+   },
+   {
+     "symbol", "SY", {"","","",""},
+     {
+      "1","2","3","4","5","6","7","8","9","0"," ","Bksp",
+      "!","\"","#","$","%","&","'","*","(",")"," ","Enter",
+      "+",",","-","~","/",":",";","=","<",">"," ","Lower",
+      "?","@","[","\\","]","^","_","|","{","}"," ","Next"}
+   }};
+   
    if( osk_idx<0 && osk_idx>OSK_SYMBOLS_PAGE1   ) osk_idx = 0;
    *osk = &default_keyboard[osk_idx];
 #else
@@ -1880,7 +1889,6 @@ void input_event_osk_iterate(
 #endif
    return; 
 }
-
 void menu_input_get_mouse_hw_state(
       gfx_display_t *p_disp,
       menu_handle_t *menu,
