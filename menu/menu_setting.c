@@ -12535,7 +12535,10 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+#endif
 
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
+    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.video_window_save_positions,

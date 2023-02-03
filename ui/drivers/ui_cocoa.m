@@ -511,6 +511,59 @@ static ui_application_t ui_application_cocoa = {
 
 @end
 
+#if defined(HAVE_COCOA_METAL)
+@implementation WindowListener
+
+/* Similarly to SDL, we'll respond to key events
+ * by doing nothing so we don't beep.
+ */
+- (void)flagsChanged:(NSEvent *)event { }
+- (void)keyDown:(NSEvent *)event { }
+- (void)keyUp:(NSEvent *)event { }
+
+- (void)windowDidBecomeKey:(NSNotification *)notification
+{
+    [apple_platform updateWindowedMode];
+}
+
+- (void)windowDidMove:(NSNotification *)notification
+{
+   settings_t *settings             = config_get_ptr();
+   bool window_save_positions       = settings->bools.video_window_save_positions;
+   BOOL is_fullscreen = (self.window.styleMask
+         & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen;
+
+   if (!window_save_positions || is_fullscreen)
+       return;
+
+   NSRect frame = self.window.frame;
+   settings->uints.window_position_x      = (unsigned)frame.origin.x;
+   settings->uints.window_position_y      = (unsigned)frame.origin.y;
+   settings->uints.window_position_width  = (unsigned)frame.size.width;
+   settings->uints.window_position_height = (unsigned)frame.size.height;
+}
+
+- (void)windowDidResize:(NSNotification *)notification
+{
+   settings_t *settings             = config_get_ptr();
+   bool window_save_positions       = settings->bools.video_window_save_positions;
+   BOOL is_fullscreen = (self.window.styleMask
+         & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen;
+
+   if (!window_save_positions || is_fullscreen)
+       return;
+
+   NSRect frame = self.window.frame;
+   settings->uints.window_position_x      = (unsigned)frame.origin.x;
+   settings->uints.window_position_y      = (unsigned)frame.origin.y;
+   settings->uints.window_position_width  = (unsigned)frame.size.width;
+   settings->uints.window_position_height = (unsigned)frame.size.height;
+}
+
+@end
+#endif
+
+
 @implementation RetroArch_OSX
 
 @synthesize window = _window;
@@ -537,6 +590,7 @@ static ui_application_t ui_application_cocoa = {
 
 #ifdef HAVE_COCOA_METAL
    _listener = [WindowListener new];
+   _listener.window = self.window;
 
    [self.window setNextResponder:_listener];
    self.window.delegate = _listener;
@@ -635,6 +689,7 @@ static ui_application_t ui_application_cocoa = {
       if (!is_fullscreen)
       {
          [self.window toggleFullScreen:self];
+         self.window.alphaValue = 1;
          return;
       }
    }
@@ -642,12 +697,51 @@ static ui_application_t ui_application_cocoa = {
    {
       if (is_fullscreen)
          [self.window toggleFullScreen:self];
+      [self updateWindowedSize:mode];
+      [self updateWindowedMode];
    }
 
-   /* HACK(sgc): ensure MTKView posts a drawable resize event */
-   if (mode.width > 0)
-      [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
-   [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
+   [self.window displayIfNeeded];
+}
+
+- (void)updateWindowedSize:(gfx_ctx_mode_t)mode
+{
+   settings_t *settings             = config_get_ptr();
+   bool windowed_full               = settings->bools.video_windowed_fullscreen;
+   bool window_save_positions       = settings->bools.video_window_save_positions;
+
+   if (windowed_full)
+       return;
+
+   if (window_save_positions)
+   {
+      NSRect frame;
+      frame.origin.x    = settings->uints.window_position_x;
+      frame.origin.y    = settings->uints.window_position_y;
+      frame.size.width  = settings->uints.window_position_width;
+      frame.size.height = settings->uints.window_position_height;
+      [self.window setFrame:frame display:YES];
+   }
+   else
+      [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
+}
+
+- (void)updateWindowedMode
+{
+   settings_t *settings      = config_get_ptr();
+   bool windowed_full        = settings->bools.video_windowed_fullscreen;
+   bool show_decorations     = settings->bools.video_window_show_decorations;
+   CGFloat opacity           = (CGFloat)settings->uints.video_window_opacity / (CGFloat)100.0;
+
+   if (windowed_full || !self.window.keyWindow)
+       return;
+
+   if (show_decorations)
+       self.window.styleMask |= NSWindowStyleMaskTitled;
+   else
+       self.window.styleMask &= ~NSWindowStyleMaskTitled;
+
+   self.window.alphaValue = opacity;
 }
 
 - (void)setCursorVisible:(bool)v
