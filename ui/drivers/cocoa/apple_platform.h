@@ -17,6 +17,7 @@ typedef enum apple_view_type
 
 #if defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
 @interface WindowListener : NSResponder<NSWindowDelegate>
+@property (nonatomic) NSWindow* window;
 @end
 #endif
 
@@ -37,6 +38,9 @@ typedef enum apple_view_type
  * the displays should not sleep.
  */
 - (bool)setDisableDisplaySleep:(bool)disable;
+#if defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
+- (void)updateWindowedMode;
+#endif
 @end
 
 #endif
