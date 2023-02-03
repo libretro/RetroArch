@@ -359,7 +359,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-   "下載核心需要的系統檔案。"
+   "下載必需的核心系統檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
@@ -2820,7 +2820,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "設定類比搖桿方向軸作用區，僅限自訂「十字鍵使用類比搖桿」時使用。"
+   "設定類比搖桿方向軸作用區, 僅限自訂「十字鍵使用類比搖桿」時使用｡"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
@@ -6848,7 +6848,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   "設定上一次執行日期和時間的顯示方式。選項 <上午/下午> 對某些平台的效能輕微影響。"
+   "設定上一次執行日期和時間的顯示方式。選項 <上午/下午> 輕微影響某些平台的效能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
@@ -7131,7 +7131,7 @@ MSG_HASH( /* FIXME Not RGUI specific */
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "設定核心、著色器和控制器等多種設定檔的儲存位置。"
+   "設定核心､ 著色器和控制器等多種設定檔的儲存位置｡"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -8512,11 +8512,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
-   "重複數值次數"
+   "重複寫入次數"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
-   "重複套用金手指「數值」寫入此記憶體位置之後的次數。用於變更大範圍記憶體位置的數值。"
+   "重複套用「數值」寫入此記憶體位置之後的次數。用於變更大範圍記憶體位置的數值。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
@@ -8532,7 +8532,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
-   "每次重複時套用的「數值」加上此選項設定值。"
+   "每次重複套用時「數值」加上此選項設定值。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
