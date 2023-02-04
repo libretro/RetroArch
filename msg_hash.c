@@ -55,9 +55,6 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
          ret = msg_hash_get_help_chs_enum(msg, s, len);
          break;
-      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         ret = msg_hash_get_help_cht_enum(msg, s, len);
-         break;
       case RETRO_LANGUAGE_GREEK:
          ret = msg_hash_get_help_el_enum(msg, s, len);
          break;
@@ -85,6 +82,7 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_ITALIAN:
       case RETRO_LANGUAGE_DUTCH:
       case RETRO_LANGUAGE_POLISH:
+      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
       default:
          break;
    }
