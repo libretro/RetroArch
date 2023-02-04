@@ -493,6 +493,7 @@ struct ozone_handle
       ozone_footer_label_t reset_to_default;
       ozone_footer_label_t metadata_toggle;
       ozone_footer_label_t help;
+      ozone_footer_label_t clear;
    } footer_labels;
 
    struct
@@ -7633,9 +7634,7 @@ static bool ozone_help_available(ozone_handle_t *ozone, size_t current_selection
    help_msg[0] = '\0';
 
    MENU_ENTRY_INITIALIZE(last_entry);
-   last_entry.flags |= MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
-                    | MENU_ENTRY_FLAG_VALUE_ENABLED
-                    | MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
+   last_entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
    menu_entry_get(&last_entry, 0, current_selection, NULL, true);
 
    /* If sublabels are not visible, they can be displayed as help. */
@@ -7651,6 +7650,30 @@ static bool ozone_help_available(ozone_handle_t *ozone, size_t current_selection
             (ozone->flags & OZONE_FLAG_IS_PLAYLIST) ||
             (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
          );
+}
+
+static bool ozone_clear_available(ozone_handle_t *ozone, size_t current_selection)
+{
+   menu_entry_t last_entry;
+
+   MENU_ENTRY_INITIALIZE(last_entry);
+   menu_entry_get(&last_entry, 0, current_selection, NULL, true);
+
+   if (last_entry.setting_type == ST_BIND)
+   {
+      return true;
+   }
+   else if (last_entry.type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+         && last_entry.type <= MENU_SETTINGS_INPUT_DESC_END)
+   {
+      return true;
+   }
+   else if (last_entry.type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+         && last_entry.type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      return true;
+   }
+   return false;
 }
 
 static bool ozone_is_current_entry_settings(size_t current_selection)
@@ -8675,6 +8698,10 @@ static void ozone_cache_footer_labels(ozone_handle_t *ozone)
    ozone_cache_footer_label(ozone,
          &ozone->footer_labels.help,
          MENU_ENUM_LABEL_VALUE_HELP);
+
+   ozone_cache_footer_label(ozone,
+         &ozone->footer_labels.clear,
+         MENU_ENUM_LABEL_VALUE_CLEAR_SETTING);
 
    /* Record current language setting */
    ozone->footer_labels_language = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
@@ -10208,6 +10235,9 @@ static void ozone_draw_footer(
          fullscreen_thumbnails_available &&
          !((ozone->is_quick_menu && menu_is_running_quick_menu()) 
                || (ozone->flags & OZONE_FLAG_IS_STATE_SLOT));
+   bool clear_setting_enabled            =
+         !thumbnail_cycle_enabled        &&
+         ozone_clear_available(ozone, menu_navigation_get_selection());
    bool reset_to_default_available        =
          !fullscreen_thumbnails_available &&
          ozone_is_current_entry_settings(menu_navigation_get_selection());
@@ -10223,6 +10253,8 @@ static void ozone_draw_footer(
     *   - ok
     *   - back
     *   - search
+    *   - cycle thumbnails
+    *   - clear settings (mutually exclusive with cycle)
     *   - toggle fullscreen thumbs (playlists only)
     *   - reset to default (non-playlist only)
     *   - toggle metadata (playlists only)
@@ -10237,13 +10269,18 @@ static void ozone_draw_footer(
    float cycle_x                          = (thumbnail_cycle_enabled)
          ? search_x - ozone->footer_labels.cycle.width - icon_size - (2.0f * icon_padding)
          : search_x;
-   float reset_to_default_x               = (reset_to_default_available)
-         ? cycle_x - ozone->footer_labels.reset_to_default.width - icon_size - (2.0f * icon_padding)
+   float clear_x                          = (clear_setting_enabled)
+         ? cycle_x - ozone->footer_labels.clear.width - icon_size - (2.0f * icon_padding)
          : cycle_x;
-   float help_x                           = reset_to_default_x
-         - ozone->footer_labels.help.width - icon_size - (2.0f * icon_padding);
-   float fullscreen_thumbs_x              = cycle_x
-         - ozone->footer_labels.fullscreen_thumbs.width - icon_size - (2.0f * icon_padding);
+   float reset_to_default_x               = (reset_to_default_available)
+         ? clear_x - ozone->footer_labels.reset_to_default.width - icon_size - (2.0f * icon_padding)
+         : clear_x;
+   float help_x                           = (help_available)
+         ? reset_to_default_x - ozone->footer_labels.help.width - icon_size - (2.0f * icon_padding)
+         : reset_to_default_x;
+   float fullscreen_thumbs_x              = (fullscreen_thumbnails_available)
+         ? help_x - ozone->footer_labels.fullscreen_thumbs.width - icon_size - (2.0f * icon_padding)
+         : help_x;
    float metadata_toggle_x                = fullscreen_thumbs_x
          - ozone->footer_labels.metadata_toggle.width - icon_size - (2.0f * icon_padding);
    gfx_display_ctx_driver_t *dispctx      = p_disp->dispctx;
@@ -10431,6 +10468,25 @@ static void ozone_draw_footer(
                   1.0f,
                   col,
                   mymat);
+
+         /* > Clear setting */
+         if (clear_setting_enabled)
+            ozone_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  icon_size,
+                  icon_size,
+                  ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L],
+                  clear_x,
+                  icon_y,
+                  video_width,
+                  video_height,
+                  0.0f,
+                  1.0f,
+                  col,
+                  mymat);
       }
 
       if (dispctx->blend_end)
@@ -10555,6 +10611,22 @@ static void ozone_draw_footer(
             ozone->fonts.footer.font,
             ozone->footer_labels.help.str,
             help_x + icon_size + icon_padding,
+            footer_text_y,
+            video_width,
+            video_height,
+            ozone->theme->text_rgba,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
+
+   /* > Clear settings */
+   if (clear_setting_enabled)
+      gfx_display_draw_text(
+            ozone->fonts.footer.font,
+            ozone->footer_labels.clear.str,
+            clear_x + icon_size + icon_padding_half,
             footer_text_y,
             video_width,
             video_height,
