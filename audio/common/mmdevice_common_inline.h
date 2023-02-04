@@ -75,6 +75,8 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
     ( (This) -> GetBuffer(ppData,pNumFramesToRead,pdwFlags,pu64DevicePosition,pu64QPCPosition) )
 #define _IAudioCaptureClient_ReleaseBuffer(This,NumFramesRead)	\
     ( (This) -> ReleaseBuffer(NumFramesRead) )
+#define _IAudioCaptureClient_GetNextPacketSize(This,pNumFramesInNextPacket)	\
+   ( (This) -> GetNextPacketSize(pNumFramesInNextPacket) )
 #else
 #define _IMMDeviceCollection_Item(This,nDevice,ppdevice) (This)->lpVtbl->Item(This,nDevice,ppdevice)
 #define _IAudioClient_Start(This)	( (This)->lpVtbl -> Start(This) )
@@ -105,6 +107,8 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
     ( (This)->lpVtbl -> GetBuffer(This,ppData,pNumFramesToRead,pdwFlags,pu64DevicePosition,pu64QPCPosition) )
 #define _IAudioCaptureClient_ReleaseBuffer(This,NumFramesRead)	\
     ( (This)->lpVtbl -> ReleaseBuffer(This,NumFramesRead) )
+#define _IAudioCaptureClient_GetNextPacketSize(This,pNumFramesInNextPacket)	\
+   ( (This)-> lpVtbl -> GetNextPacketSize(This,pNumFramesInNextPacket) )
 #endif
 
 #ifdef __cplusplus
