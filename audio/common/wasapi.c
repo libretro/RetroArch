@@ -427,18 +427,15 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
    if (FAILED(hr))
    { /* If we couldn't create the IAudioClient... */
-      RARCH_ERR("[WASAPI]: Failed to create %s IAudioClient with %s: %s", hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
+      RARCH_ERR("[WASAPI]: Failed to create %s IAudioClient: %s\n", hresult_name(hr));
       return NULL;
    }
 
    wasapi_set_format(&wf, float_fmt_res, rate_res, channels);
 
-   RARCH_LOG("[WASAPI]: Requesting %u-channel client with %s samples at %uHz\n",
-      wf.Format.nChannels, wave_format_name(&wf), wf.Format.nSamplesPerSec);
-
    if (wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_SHARED, channels))
    {
-      RARCH_LOG("[WASAPI]: Got %u-channel client with %s samples at %uHz\n",
+      RARCH_LOG("[WASAPI]: Requesting %u-channel shared-mode client with %s samples at %uHz\n",
          wf.Format.nChannels, wave_format_name(&wf), wf.Format.nSamplesPerSec);
    }
    else
@@ -467,16 +464,15 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI]: IAudioClient::Initialize failed with %s: %s", hresult_name(hr),
-                wasapi_error(HRESULT_CODE(hr)));
+      RARCH_ERR("[WASAPI]: IAudioClient::Initialize failed: %s\n", hresult_name(hr));
       goto error;
    }
 
    *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM;
    *rate      = wf.Format.nSamplesPerSec;
 
-   RARCH_LOG("[WASAPI]: Initialized shared %s client at %uHz, latency %ums\n",
-      wave_format_name(&wf), *rate, latency);
+   RARCH_LOG("[WASAPI]: Initialized shared %s client at %uHz\n",
+      wave_format_name(&wf), *rate);
 
    return client;
 
@@ -664,28 +660,55 @@ IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
    /* next calls are allowed to fail (we losing info only) */
 
    if (*exclusive)
+   {
       hr = _IAudioClient_GetDevicePeriod(client, NULL, &device_period);
+      if (SUCCEEDED(hr))
+      {
+         RARCH_LOG("[WASAPI]: Minimum exclusive-mode device period is %uns (= %.1fms)\n",
+            device_period * 100, (double)device_period * 100 / 1e6);
+      }
+      /* device_period is in 100ns units */
+   }
    else
+   {
       hr = _IAudioClient_GetDevicePeriod(client, &device_period, NULL);
+      if (SUCCEEDED(hr))
+      {
+         RARCH_LOG("[WASAPI]: Default shared-mode device period is %uns (= %.1fms)\n",
+                   device_period * 100, (double)device_period * 100 / 1e6);
+      }
+   }
 
    if (FAILED(hr))
    {
-      RARCH_WARN("[WASAPI]: IAudioClient::GetDevicePeriod failed with error 0x%.8X.\n", hr);
+      RARCH_WARN("[WASAPI]: IAudioClient::GetDevicePeriod failed: %s\n", hresult_name(hr));
    }
 
    if (!*exclusive)
    {
       hr = _IAudioClient_GetStreamLatency(client, &stream_latency);
-      if (FAILED(hr))
+      if (SUCCEEDED(hr))
       {
-         RARCH_WARN("[WASAPI]: IAudioClient::GetStreamLatency failed with error 0x%.8X.\n", hr);
+         RARCH_LOG("[WASAPI]: Shared stream latency is %uns (= %.1fms)\n",
+            stream_latency * 100, (double)stream_latency * 100 / 1e6);
+      }
+      else
+      {
+         RARCH_WARN("[WASAPI]: IAudioClient::GetStreamLatency failed: %s\n", hresult_name(hr));
       }
    }
 
    hr = _IAudioClient_GetBufferSize(client, &buffer_length);
-   if (FAILED(hr))
+   if (SUCCEEDED(hr))
    {
-      RARCH_WARN("[WASAPI]: IAudioClient::GetBufferSize failed with error 0x%.8X.\n", hr);
+      size_t num_samples = buffer_length * channels;
+      size_t num_bytes = num_samples * (*float_fmt ? sizeof(float) : sizeof(int16_t));
+      RARCH_LOG("[WASAPI]: Endpoint buffer size is %u audio frames (= %u samples, = %u bytes)\n",
+         buffer_length, num_samples, num_bytes);
+   }
+   else
+   {
+      RARCH_WARN("[WASAPI]: IAudioClient::GetBufferSize failed: %s.\n", hresult_name(hr));
    }
 
    if (*exclusive)
