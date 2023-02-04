@@ -301,16 +301,14 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI]: IMMDevice::Activate failed (%s): %s",
-         hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
+      RARCH_ERR("[WASAPI]: IMMDevice::Activate failed: %s\n", hresult_name(hr));
       return NULL;
    }
 
    hr = _IAudioClient_GetDevicePeriod(client, NULL, &minimum_period);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI]: Failed to get device period of exclusive-mode client (%s): %s",
-         hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
+      RARCH_ERR("[WASAPI]: Failed to get device period of exclusive-mode client: %s\n", hresult_name(hr));
       goto error;
    }
 
