@@ -280,6 +280,9 @@ static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
    {
       wf->Format.wFormatTag           = WAVE_FORMAT_PCM;
       wf->Format.cbSize               = 0;
+      wf->Samples.wValidBitsPerSample = 0;
+      wf->dwChannelMask               = 0;
+      memset(&wf->SubFormat, 0, sizeof(wf->SubFormat));
    }
 }
 
