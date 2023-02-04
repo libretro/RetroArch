@@ -73,7 +73,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "瀏覽 libretro 核心。\n首次執行請先安裝遊戲支援的核心，安裝後使用載入檔案開啟遊戲檔案，即可開始體驗復古電玩遊戲。\n應用類型的核心，可由此選項載入後執行。\n部分核心有額外系統，可由此選項載入後開啟。\n執行實體光碟片時，需先由此選項載入支援的核心。"
+   "瀏覽 libretro 核心。\n首次執行請先安裝遊戲支援的核心, 安裝後使用載入檔案開啟遊戲檔案, 即可開始體驗復古電玩遊戲。\n應用類型的核心, 可由此選項載入後執行。\n額外系統的核心, 可由此選項載入後使用。\n執行實體光碟片時需先使用此選項載入支援的核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -85,7 +85,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "瀏覽儲存空間，載入支援的檔案。\n首次執行請先安裝遊戲支援的核心，安裝後使用此選項開啟遊戲檔案，即可開始體驗復古電玩遊戲。\n※ 無法開啟遊戲時:\n設定選項中開啟管理核心，查看核心是否缺少重要檔案。\n嘗試使用其他支援的核心開啟，或替換遊戲原始檔案。\n如果仍然無法開啟，可使用英語嘗試聯繫官方解決 https://www.github.com/libretro/RetroArch/issues。"
+   "瀏覽儲存空間, 載入支援的檔案。\n首次執行請先安裝遊戲支援的核心, 安裝後使用此選項開啟遊戲檔案, 即可開始體驗復古電玩遊戲。\n※ 無法開啟遊戲時:\n設定選項中開啟管理核心, 查看核心是否缺少重要檔案。\n可嘗試使用其他支援的核心開啟, 或替換遊戲原始檔案。\n如果仍然無法開啟, 請使用英語聯繫官方 https://www.github.com/libretro/RetroArch/issues。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -545,11 +545,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "在「應用核心」列表中不顯示"
+   "應用核心列表中不顯示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "在「應用核心」列表中不顯示此核心。僅限「應用核心」設定為 <自訂> 時使用。"
+   "在「應用核心」列表中不顯示此核心。 ※僅限選單內容顯示應用核心設定為<自訂>時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
