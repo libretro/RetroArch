@@ -3,6 +3,7 @@
 #include <vulkan/vulkan_symbol_wrapper.h>
 
 PFN_vkCreateInstance vulkan_symbol_wrapper_vkCreateInstance;
+PFN_vkEnumerateInstanceVersion vulkan_symbol_wrapper_vkEnumerateInstanceVersion;
 PFN_vkEnumerateInstanceExtensionProperties vulkan_symbol_wrapper_vkEnumerateInstanceExtensionProperties;
 PFN_vkEnumerateInstanceLayerProperties vulkan_symbol_wrapper_vkEnumerateInstanceLayerProperties;
 PFN_vkDestroyInstance vulkan_symbol_wrapper_vkDestroyInstance;
@@ -189,6 +190,7 @@ VkBool32 vulkan_symbol_wrapper_load_global_symbols(void)
     if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(NULL, "vkCreateInstance", vkCreateInstance)) return VK_FALSE;
     if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(NULL, "vkEnumerateInstanceExtensionProperties", vkEnumerateInstanceExtensionProperties)) return VK_FALSE;
     if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(NULL, "vkEnumerateInstanceLayerProperties", vkEnumerateInstanceLayerProperties)) return VK_FALSE;
+    VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(NULL, "vkEnumerateInstanceVersion", vkEnumerateInstanceVersion);
     return VK_TRUE;
 }
 

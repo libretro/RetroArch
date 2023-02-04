@@ -1274,7 +1274,7 @@ static bool vulkan_load_device_symbols(gfx_ctx_vulkan_data_t *vk)
    return true;
 }
 
-static bool vulkan_find_extensions(const char **exts, unsigned num_exts,
+static bool vulkan_find_extensions(const char * const *exts, unsigned num_exts,
       const VkExtensionProperties *properties, unsigned property_count)
 {
    unsigned i, ext;
@@ -1297,7 +1297,7 @@ static bool vulkan_find_extensions(const char **exts, unsigned num_exts,
    return true;
 }
 
-static bool vulkan_find_instance_extensions(const char **exts, unsigned num_exts)
+static bool vulkan_find_instance_extensions(const char * const *exts, unsigned num_exts)
 {
    uint32_t property_count;
    bool ret                          = true;
@@ -1332,12 +1332,13 @@ end:
 }
 
 static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
-      const char **enabled, unsigned *enabled_count,
+      const char **enabled, unsigned *inout_enabled_count,
       const char **exts, unsigned num_exts,
       const char **optional_exts, unsigned num_optional_exts)
 {
    uint32_t property_count;
    unsigned i;
+   unsigned count                    = *inout_enabled_count;
    bool ret                          = true;
    VkExtensionProperties *properties = NULL;
 
@@ -1364,15 +1365,16 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
       goto end;
    }
 
-   memcpy((void*)enabled, exts, num_exts * sizeof(*exts));
-   *enabled_count = num_exts;
+   memcpy(enabled + count, exts, num_exts * sizeof(*exts));
+   count += num_exts;
 
    for (i = 0; i < num_optional_exts; i++)
       if (vulkan_find_extensions(&optional_exts[i], 1, properties, property_count))
-         enabled[(*enabled_count)++] = optional_exts[i];
+         enabled[count++] = optional_exts[i];
 
 end:
    free(properties);
+   *inout_enabled_count = count;
    return ret;
 }
 
@@ -1447,6 +1449,56 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
    return true;
 }
 
+static const char *vulkan_device_extensions[]  = {
+   "VK_KHR_swapchain",
+};
+
+static const char *vulkan_optional_device_extensions[] = {
+   "VK_KHR_sampler_mirror_clamp_to_edge",
+};
+
+static VkDevice vulkan_context_create_device_wrapper(
+      VkPhysicalDevice gpu, void *opaque,
+      const VkDeviceCreateInfo *create_info)
+{
+   gfx_ctx_vulkan_data_t *vk = (gfx_ctx_vulkan_data_t *)opaque;
+   VkDeviceCreateInfo info = *create_info;
+   VkDevice device = VK_NULL_HANDLE;
+   const char **device_extensions;
+   VkResult res;
+
+   device_extensions = (const char **)malloc(
+         (info.enabledExtensionCount +
+               ARRAY_SIZE(vulkan_device_extensions) +
+               ARRAY_SIZE(vulkan_optional_device_extensions)) * sizeof(const char *));
+
+   memcpy(device_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
+   info.ppEnabledExtensionNames = device_extensions;
+
+   if (!(vulkan_find_device_extensions(gpu,
+         device_extensions, &info.enabledExtensionCount,
+         vulkan_device_extensions, ARRAY_SIZE(vulkan_device_extensions),
+         vulkan_optional_device_extensions,
+         ARRAY_SIZE(vulkan_optional_device_extensions))))
+   {
+      RARCH_ERR("[Vulkan]: Could not find required device extensions.\n");
+      return VK_NULL_HANDLE;
+   }
+
+   /* When we get around to using fancier features we can chain in PDF2 stuff. */
+
+   if ((res = vkCreateDevice(gpu, &info, NULL, &device)) != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan]: Failed to create device (%d).\n", res);
+      device = VK_NULL_HANDLE;
+      goto end;
+   }
+
+end:
+   free(device_extensions);
+   return device;
+}
+
 static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 {
    uint32_t queue_count;
@@ -1461,14 +1513,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    const char *enabled_device_extensions[8];
    unsigned enabled_device_extension_count = 0;
 
-   static const char *device_extensions[]  = {
-      "VK_KHR_swapchain",
-   };
-
-   static const char *optional_device_extensions[] = {
-      "VK_KHR_sampler_mirror_clamp_to_edge",
-   };
-
    struct retro_hw_render_context_negotiation_interface_vulkan *iface =
       (struct retro_hw_render_context_negotiation_interface_vulkan*)video_driver_get_context_negotiation_interface();
 
@@ -1478,29 +1522,55 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       iface = NULL;
    }
 
-   if (iface && iface->interface_version != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION)
+   if (iface && iface->interface_version == 0)
    {
       RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's the wrong interface version.\n");
       iface = NULL;
    }
+
+   if (iface)
+      RARCH_LOG("[Vulkan]: Got HW context negotiation interface %u.\n", iface->interface_version);
 
    if (!vulkan_context_init_gpu(vk))
       return false;
 
    if (!cached_device_vk && iface && iface->create_device)
    {
-      struct retro_vulkan_context context     = { 0 };
-      const VkPhysicalDeviceFeatures features = { 0 };
+      struct retro_vulkan_context context = { 0 };
 
-      bool ret = iface->create_device(&context, vk->context.instance,
-            vk->context.gpu,
-            vk->vk_surface,
-            vulkan_symbol_wrapper_instance_proc_addr(),
-            device_extensions,
-            ARRAY_SIZE(device_extensions),
-            NULL,
-            0,
-            &features);
+      bool ret = false;
+
+      if (iface->interface_version >= 2 && iface->create_device2)
+      {
+         ret = iface->create_device2(&context, vk->context.instance,
+               vk->context.gpu,
+               vk->vk_surface,
+               vulkan_symbol_wrapper_instance_proc_addr(),
+               vulkan_context_create_device_wrapper, vk);
+
+         if (!ret)
+         {
+            RARCH_WARN("[Vulkan]: Failed to create_device2 on provided VkPhysicalDevice, letting core decide which GPU to use.\n");
+            vk->context.gpu = VK_NULL_HANDLE;
+            ret = iface->create_device2(&context, vk->context.instance,
+                  vk->context.gpu,
+                  vk->vk_surface,
+                  vulkan_symbol_wrapper_instance_proc_addr(),
+                  vulkan_context_create_device_wrapper, vk);
+         }
+      }
+      else
+      {
+         ret = iface->create_device(&context, vk->context.instance,
+               vk->context.gpu,
+               vk->vk_surface,
+               vulkan_symbol_wrapper_instance_proc_addr(),
+               vulkan_device_extensions,
+               ARRAY_SIZE(vulkan_device_extensions),
+               NULL,
+               0,
+               &features);
+      }
 
       if (!ret)
       {
@@ -1517,6 +1587,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          vk->context.queue                = context.queue;
          vk->context.gpu                  = context.gpu;
          vk->context.graphics_queue_index = context.queue_family_index;
+         vk->context.queue                = context.queue;
 
          if (context.presentation_queue != context.queue)
          {
@@ -1637,9 +1708,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
       if (!(vulkan_find_device_extensions(vk->context.gpu,
               enabled_device_extensions, &enabled_device_extension_count,
-              device_extensions, ARRAY_SIZE(device_extensions),
-              optional_device_extensions,
-              ARRAY_SIZE(optional_device_extensions))))
+              vulkan_device_extensions, ARRAY_SIZE(vulkan_device_extensions),
+              vulkan_optional_device_extensions,
+              ARRAY_SIZE(vulkan_optional_device_extensions))))
       {
           RARCH_ERR("[Vulkan]: Could not find required device extensions.\n");
           return false;
@@ -1652,7 +1723,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       device_info.queueCreateInfoCount    = 1;
       device_info.pQueueCreateInfos       = &queue_info;
       device_info.enabledExtensionCount   = enabled_device_extension_count;
-      device_info.ppEnabledExtensionNames = enabled_device_extension_count ? enabled_device_extensions : NULL;
+      device_info.ppEnabledExtensionNames = enabled_device_extensions;
       device_info.pEnabledFeatures        = &features;
 
       if (cached_device_vk)
@@ -1677,8 +1748,11 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       return false;
    }
 
-   vkGetDeviceQueue(vk->context.device,
-      vk->context.graphics_queue_index, 0, &vk->context.queue);
+   if (vk->context.queue == VK_NULL_HANDLE)
+   {
+      vkGetDeviceQueue(vk->context.device,
+            vk->context.graphics_queue_index, 0, &vk->context.queue);
+   }
 
 #ifdef HAVE_THREADS
    vk->context.queue_lock = slock_new();
@@ -1692,23 +1766,117 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    return true;
 }
 
+static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkInstanceCreateInfo *create_info)
+{
+   gfx_ctx_vulkan_data_t *vk = (gfx_ctx_vulkan_data_t *)opaque;
+   VkInstanceCreateInfo info = *create_info;
+   VkInstance instance = VK_NULL_HANDLE;
+   const char **instance_extensions;
+   const char **instance_layers;
+   VkResult res;
+   uint32_t i;
+
+   instance_extensions = (const char **)malloc((info.enabledExtensionCount + 3) * sizeof(const char *));
+   instance_layers = (const char **)malloc((info.enabledLayerCount + 1) * sizeof(const char *));
+
+   memcpy(instance_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
+   memcpy(instance_layers, info.ppEnabledLayerNames, info.enabledLayerCount * sizeof(const char *));
+   info.ppEnabledExtensionNames = instance_extensions;
+   info.ppEnabledLayerNames = instance_layers;
+
+   instance_extensions[info.enabledExtensionCount++] = "VK_KHR_surface";
+
+   switch (vk->wsi_type)
+   {
+      case VULKAN_WSI_WAYLAND:
+         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_wayland_surface";
+         break;
+      case VULKAN_WSI_ANDROID:
+         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_android_surface";
+         break;
+      case VULKAN_WSI_WIN32:
+         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_win32_surface";
+         break;
+      case VULKAN_WSI_XLIB:
+         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_xlib_surface";
+         break;
+      case VULKAN_WSI_XCB:
+         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_xcb_surface";
+         break;
+      case VULKAN_WSI_MIR:
+         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_mir_surface";
+         break;
+      case VULKAN_WSI_DISPLAY:
+         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_display";
+         break;
+      case VULKAN_WSI_MVK_MACOS:
+         instance_extensions[info.enabledExtensionCount++] = "VK_MVK_macos_surface";
+         break;
+      case VULKAN_WSI_MVK_IOS:
+         instance_extensions[info.enabledExtensionCount++] = "VK_MVK_ios_surface";
+         break;
+      case VULKAN_WSI_NONE:
+      default:
+         break;
+   }
+
+#ifdef VULKAN_DEBUG
+   instance_layers[info.enabledLayerCount++] = "VK_LAYER_KHRONOS_validation";
+   instance_extensions[info.enabledExtensionCount++] = "VK_EXT_debug_utils";
+#endif
+
+   VkLayerProperties properties[128];
+   uint32_t layer_count = ARRAY_SIZE(properties);
+   vkEnumerateInstanceLayerProperties(&layer_count, properties);
+
+   /* Be careful about validating supported instance extensions when using explicit layers.
+    * If core wants to enable debug layers, we'll have to do deeper validation and query
+    * supported extensions per-layer which is annoying. vkCreateInstance will validate this on its own anyways. */
+   if (info.enabledLayerCount == 0 &&
+      !vulkan_find_instance_extensions(info.ppEnabledExtensionNames, info.enabledExtensionCount))
+   {
+      RARCH_ERR("[Vulkan]: Instance does not support required extensions.\n");
+      goto end;
+   }
+
+   if (info.pApplicationInfo)
+   {
+      uint32_t supported_instance_version = VK_API_VERSION_1_0;
+      if (!vkEnumerateInstanceVersion || vkEnumerateInstanceVersion(&supported_instance_version) != VK_SUCCESS)
+         supported_instance_version = VK_API_VERSION_1_0;
+
+      if (supported_instance_version < info.pApplicationInfo->apiVersion)
+      {
+         RARCH_ERR("[Vulkan]: Core requests apiVersion %u.%u, but it is not supported by loader.\n",
+               VK_VERSION_MAJOR(info.pApplicationInfo->apiVersion),
+               VK_VERSION_MINOR(info.pApplicationInfo->apiVersion));
+         goto end;
+      }
+   }
+
+   if ((res = vkCreateInstance(&info, NULL, &instance)) != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan]: Failed to create Vulkan instance (%d).\n", res);
+      RARCH_ERR("[Vulkan]: If VULKAN_DEBUG=1 is enabled, make sure Vulkan validation layers are installed.\n");
+      for (i = 0; i < info.enabledLayerCount; i++)
+         RARCH_ERR("[Vulkan]: Core explicitly enables layer (%s), this might be cause of failure.\n", info.ppEnabledLayerNames[i]);
+      instance = VK_NULL_HANDLE;
+      goto end;
+   }
+
+end:
+   free(instance_extensions);
+   free(instance_layers);
+   return instance;
+}
+
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type)
 {
-   unsigned i;
    PFN_vkGetInstanceProcAddr GetInstanceProcAddr;
-   const char *instance_extensions[4];
-   VkResult res                         = VK_SUCCESS;
-   bool use_instance_ext                = false;
-   VkInstanceCreateInfo info            = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
-   VkApplicationInfo app                = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
-   unsigned ext_count                   = 0;
+   VkApplicationInfo app = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
    struct retro_hw_render_context_negotiation_interface_vulkan *iface =
       (struct retro_hw_render_context_negotiation_interface_vulkan*)video_driver_get_context_negotiation_interface();
-#ifdef VULKAN_DEBUG
-   static const char *instance_layers[] = { "VK_LAYER_KHRONOS_validation" };
-   instance_extensions[ext_count++]     = "VK_EXT_debug_utils";
-#endif
 
    if (iface && iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
    {
@@ -1716,47 +1884,13 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       iface = NULL;
    }
 
-   if (iface && iface->interface_version != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION)
+   if (iface && iface->interface_version == 0)
    {
       RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's the wrong interface version.\n");
       iface = NULL;
    }
 
-   instance_extensions[ext_count++] = "VK_KHR_surface";
-
-   switch (type)
-   {
-      case VULKAN_WSI_WAYLAND:
-         instance_extensions[ext_count++] = "VK_KHR_wayland_surface";
-         break;
-      case VULKAN_WSI_ANDROID:
-         instance_extensions[ext_count++] = "VK_KHR_android_surface";
-         break;
-      case VULKAN_WSI_WIN32:
-         instance_extensions[ext_count++] = "VK_KHR_win32_surface";
-         break;
-      case VULKAN_WSI_XLIB:
-         instance_extensions[ext_count++] = "VK_KHR_xlib_surface";
-         break;
-      case VULKAN_WSI_XCB:
-         instance_extensions[ext_count++] = "VK_KHR_xcb_surface";
-         break;
-      case VULKAN_WSI_MIR:
-         instance_extensions[ext_count++] = "VK_KHR_mir_surface";
-         break;
-      case VULKAN_WSI_DISPLAY:
-         instance_extensions[ext_count++] = "VK_KHR_display";
-         break;
-      case VULKAN_WSI_MVK_MACOS:
-         instance_extensions[ext_count++] = "VK_MVK_macos_surface";
-         break;
-      case VULKAN_WSI_MVK_IOS:
-         instance_extensions[ext_count++] = "VK_MVK_ios_surface";
-         break;
-      case VULKAN_WSI_NONE:
-      default:
-         break;
-   }
+   vk->wsi_type = type;
 
    if (!vulkan_library)
    {
@@ -1765,9 +1899,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 #elif __APPLE__
       vulkan_library = dylib_load("libMoltenVK.dylib");
 #else
-      vulkan_library = dylib_load("libvulkan.so");
+      vulkan_library = dylib_load("libvulkan.so.1");
       if (!vulkan_library)
-         vulkan_library = dylib_load("libvulkan.so.1");
+         vulkan_library = dylib_load("libvulkan.so");
 #endif
    }
 
@@ -1796,50 +1930,86 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       return false;
    }
 
-   use_instance_ext                  = vulkan_find_instance_extensions(instance_extensions, ext_count);
+   app.pApplicationName   = msg_hash_to_str(MSG_PROGRAM);
+   app.applicationVersion = 0;
+   app.pEngineName        = msg_hash_to_str(MSG_PROGRAM);
+   app.engineVersion      = 0;
+   app.apiVersion         = VK_API_VERSION_1_0;
 
-   app.pApplicationName              = msg_hash_to_str(MSG_PROGRAM);
-   app.applicationVersion            = 0;
-   app.pEngineName                   = msg_hash_to_str(MSG_PROGRAM);
-   app.engineVersion                 = 0;
-   app.apiVersion                    = VK_MAKE_VERSION(1, 0, 18);
-
-   info.pApplicationInfo             = &app;
-   info.enabledExtensionCount        = use_instance_ext ? ext_count : 0;
-   info.ppEnabledExtensionNames      = use_instance_ext ? instance_extensions : NULL;
-#ifdef VULKAN_DEBUG
-   info.enabledLayerCount            = ARRAY_SIZE(instance_layers);
-   info.ppEnabledLayerNames          = instance_layers;
-#endif
+   if (iface && !iface->get_application_info && iface->interface_version >= 2)
+   {
+      RARCH_ERR("[Vulkan]: Core did not provide application info as required by v2.\n");
+      return false;
+   }
 
    if (iface && iface->get_application_info)
    {
-      info.pApplicationInfo = iface->get_application_info();
-#ifdef VULKAN_DEBUG
-      if (info.pApplicationInfo->pApplicationName)
+      const VkApplicationInfo *app_info = iface->get_application_info();
+
+      if (!app_info && iface->interface_version >= 2)
       {
-         RARCH_LOG("[Vulkan]: App: %s (version %u)\n",
-               info.pApplicationInfo->pApplicationName,
-               info.pApplicationInfo->applicationVersion);
+         RARCH_ERR("[Vulkan]: Core did not provide application info as required by v2.\n");
+         return false;
       }
 
-      if (info.pApplicationInfo->pEngineName)
+      if (app_info)
       {
-         RARCH_LOG("[Vulkan]: Engine: %s (version %u)\n",
-               info.pApplicationInfo->pEngineName,
-               info.pApplicationInfo->engineVersion);
-      }
+         app = *app_info;
+#ifdef VULKAN_DEBUG
+         if (app.pApplicationName)
+         {
+            RARCH_LOG("[Vulkan]: App: %s (version %u)\n",
+                  app.pApplicationName, app.applicationVersion);
+         }
+
+         if (app.pEngineName)
+         {
+            RARCH_LOG("[Vulkan]: Engine: %s (version %u)\n",
+                  app.pEngineName, app.engineVersion);
+         }
 #endif
+      }
+   }
+
+   if (app.apiVersion < VK_API_VERSION_1_1)
+   {
+      /* Try to upgrade to at least Vulkan 1.1 so that we can more easily make use of advanced features.
+       * Vulkan 1.0 drivers are completely irrelevant these days. */
+      uint32_t supported;
+      if (vkEnumerateInstanceVersion &&
+            vkEnumerateInstanceVersion(&supported) == VK_SUCCESS &&
+            supported >= VK_API_VERSION_1_1)
+      {
+         app.apiVersion = VK_API_VERSION_1_1;
+      }
    }
 
    if (cached_instance_vk)
    {
-      vk->context.instance           = cached_instance_vk;
-      cached_instance_vk             = NULL;
-      res                            = VK_SUCCESS;
+      vk->context.instance = cached_instance_vk;
+      cached_instance_vk   = NULL;
    }
    else
-      res = vkCreateInstance(&info, NULL, &vk->context.instance);
+   {
+      if (iface && iface->interface_version >= 2 && iface->create_instance)
+      {
+         vk->context.instance = iface->create_instance(
+               GetInstanceProcAddr, &app,
+               vulkan_context_create_instance_wrapper, vk);
+      }
+      else
+      {
+         VkInstanceCreateInfo info = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
+         info.pApplicationInfo = &app;
+         vk->context.instance = vulkan_context_create_instance_wrapper(vk, &info);
+      }
+
+      if (vk->context.instance == VK_NULL_HANDLE)
+      {
+         RARCH_ERR("Failed to create Vulkan instance.\n");
+         return false;
+      }
+   }
 
 #ifdef VULKAN_DEBUG
    VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
@@ -1869,22 +2039,6 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    }
    RARCH_LOG("[Vulkan]: Enabling Vulkan debug layers.\n");
 #endif
-
-   /* Try different API versions if driver has compatible
-    * but slightly different VK_API_VERSION. */
-   for (i = 1; i < 4 && res == VK_ERROR_INCOMPATIBLE_DRIVER; i++)
-   {
-      info.pApplicationInfo = &app;
-      app.apiVersion = VK_MAKE_VERSION(1, 0, i);
-      res = vkCreateInstance(&info, NULL, &vk->context.instance);
-   }
-
-   if (res != VK_SUCCESS)
-   {
-      RARCH_ERR("Failed to create Vulkan instance (%d).\n", res);
-      RARCH_ERR("If VULKAN_DEBUG=1 is enabled, make sure Vulkan validation layers are installed.\n");
-      return false;
-   }
 
    if (!vulkan_load_instance_symbols(vk))
    {
@@ -2466,6 +2620,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
          vkDestroyDevice(vk->context.device, NULL);
          vk->context.device = NULL;
       }
+
       if (vk->context.instance)
       {
          if (vk->context.destroy_device)

@@ -72,6 +72,10 @@
 #include <encodings/utf.h>
 
 #include <libretro.h>
+#ifdef HAVE_VULKAN
+#include <libretro_vulkan.h>
+#endif
+
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
 
@@ -3340,6 +3344,24 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                RARCH_ERR("[Environ]: Failed to retrieve extended game info.\n");
                *game_info_ext = NULL;
                return false;
+            }
+         }
+         break;
+
+      case RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT:
+         {
+            struct retro_hw_render_context_negotiation_interface *iface =
+                  (struct retro_hw_render_context_negotiation_interface*)data;
+
+#ifdef HAVE_VULKAN
+            if (iface->interface_type == RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
+            {
+               iface->interface_version = RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION;
+            }
+            else
+#endif
+            {
+               iface->interface_version = 0;
             }
          }
          break;

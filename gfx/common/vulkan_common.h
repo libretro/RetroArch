@@ -209,6 +209,7 @@ typedef struct gfx_ctx_vulkan_data
    VkSwapchainKHR swapchain;     /* ptr alignment */
    struct vulkan_emulated_mailbox mailbox;
    uint8_t flags;
+   enum vulkan_wsi_type wsi_type;
 } gfx_ctx_vulkan_data_t;
 
 struct vulkan_display_surface_info
