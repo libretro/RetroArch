@@ -42,20 +42,29 @@ const char *hresult_name(HRESULT hr)
 {
    switch (hr)
    {
-      case E_NOINTERFACE:
-         return "E_NOINTERFACE";
-      case E_POINTER:
-         return "E_POINTER";
-      case E_OUTOFMEMORY:
-         return "E_OUTOFMEMORY";
+      /* Standard error codes */
       case E_INVALIDARG:
          return "E_INVALIDARG";
-      case AUDCLNT_E_DEVICE_INVALIDATED:
-         return "AUDCLNT_E_DEVICE_INVALIDATED";
+      case E_NOINTERFACE:
+         return "E_NOINTERFACE";
+      case E_OUTOFMEMORY:
+         return "E_OUTOFMEMORY";
+      case E_POINTER:
+         return "E_POINTER";
+      /* Standard success codes */
+      case S_FALSE:
+         return "S_FALSE";
+      case S_OK:
+         return "S_OK";
+      /* AUDCLNT error codes */
       case AUDCLNT_E_ALREADY_INITIALIZED:
          return "AUDCLNT_E_ALREADY_INITIALIZED";
-      case AUDCLNT_E_WRONG_ENDPOINT_TYPE:
-         return "AUDCLNT_E_WRONG_ENDPOINT_TYPE";
+      case AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL:
+         return "AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL";
+      case AUDCLNT_E_BUFFER_ERROR:
+         return "AUDCLNT_E_BUFFER_ERROR";
+      case AUDCLNT_E_BUFFER_OPERATION_PENDING:
+         return "AUDCLNT_E_BUFFER_OPERATION_PENDING";
       case AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED:
          return "AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED";
       case AUDCLNT_E_BUFFER_SIZE_ERROR:
@@ -64,30 +73,31 @@ const char *hresult_name(HRESULT hr)
          return "AUDCLNT_E_CPUUSAGE_EXCEEDED";
       case AUDCLNT_E_DEVICE_IN_USE:
          return "AUDCLNT_E_DEVICE_IN_USE";
+      case AUDCLNT_E_DEVICE_INVALIDATED:
+         return "AUDCLNT_E_DEVICE_INVALIDATED";
       case AUDCLNT_E_ENDPOINT_CREATE_FAILED:
          return "AUDCLNT_E_ENDPOINT_CREATE_FAILED";
-      case AUDCLNT_E_INVALID_DEVICE_PERIOD:
-         return "AUDCLNT_E_INVALID_DEVICE_PERIOD";
-      case AUDCLNT_E_UNSUPPORTED_FORMAT:
-         return "AUDCLNT_E_UNSUPPORTED_FORMAT";
       case AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED:
          return "AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED";
-      case AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL:
-         return "AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL";
-      case AUDCLNT_E_SERVICE_NOT_RUNNING:
-         return "AUDCLNT_E_SERVICE_NOT_RUNNING";
+      case AUDCLNT_E_INVALID_DEVICE_PERIOD:
+         return "AUDCLNT_E_INVALID_DEVICE_PERIOD";
       case AUDCLNT_E_INVALID_SIZE:
          return "AUDCLNT_E_INVALID_SIZE";
+      case AUDCLNT_E_NOT_INITIALIZED:
+         return "AUDCLNT_E_NOT_INITIALIZED";
       case AUDCLNT_E_OUT_OF_ORDER:
          return "AUDCLNT_E_OUT_OF_ORDER";
+      case AUDCLNT_E_SERVICE_NOT_RUNNING:
+         return "AUDCLNT_E_SERVICE_NOT_RUNNING";
+      case AUDCLNT_E_UNSUPPORTED_FORMAT:
+         return "AUDCLNT_E_UNSUPPORTED_FORMAT";
+      case AUDCLNT_E_WRONG_ENDPOINT_TYPE:
+         return "AUDCLNT_E_WRONG_ENDPOINT_TYPE";
+      /* AUDCLNT success codes */
       case AUDCLNT_S_BUFFER_EMPTY:
          return "AUDCLNT_S_BUFFER_EMPTY";
-      case S_OK:
-         return "S_OK";
-      case AUDCLNT_E_BUFFER_ERROR:
-         return "AUDCLNT_E_BUFFER_ERROR";
-      case AUDCLNT_E_BUFFER_OPERATION_PENDING:
-         return "AUDCLNT_E_BUFFER_OPERATION_PENDING";
+      /* Something else; probably from an API that we started using
+       * after mic support was implemented */
       default:
          return "<unknown>";
    }
