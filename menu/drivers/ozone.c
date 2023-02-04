@@ -494,6 +494,7 @@ struct ozone_handle
       ozone_footer_label_t metadata_toggle;
       ozone_footer_label_t help;
       ozone_footer_label_t clear;
+      ozone_footer_label_t scan;
    } footer_labels;
 
    struct
@@ -7676,6 +7677,24 @@ static bool ozone_clear_available(ozone_handle_t *ozone, size_t current_selectio
    return false;
 }
 
+static bool ozone_scan_available(ozone_handle_t *ozone, size_t current_selection)
+{
+   menu_entry_t last_entry;
+
+   MENU_ENTRY_INITIALIZE(last_entry);
+   menu_entry_get(&last_entry, 0, current_selection, NULL, true);
+
+   switch (last_entry.type)
+   {
+      case FILE_TYPE_DIRECTORY:
+         return true;
+      case FILE_TYPE_CARCHIVE:
+      case FILE_TYPE_PLAIN:
+         return true;
+   }
+   return false;
+}
+
 static bool ozone_is_current_entry_settings(size_t current_selection)
 {
    menu_entry_t last_entry;
@@ -8702,6 +8721,10 @@ static void ozone_cache_footer_labels(ozone_handle_t *ozone)
    ozone_cache_footer_label(ozone,
          &ozone->footer_labels.clear,
          MENU_ENUM_LABEL_VALUE_CLEAR_SETTING);
+
+   ozone_cache_footer_label(ozone,
+         &ozone->footer_labels.scan,
+         MENU_ENUM_LABEL_VALUE_SCAN_ENTRY);
 
    /* Record current language setting */
    ozone->footer_labels_language = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
@@ -10238,6 +10261,10 @@ static void ozone_draw_footer(
    bool clear_setting_enabled            =
          !thumbnail_cycle_enabled        &&
          ozone_clear_available(ozone, menu_navigation_get_selection());
+   bool scan_enabled                     =
+         !thumbnail_cycle_enabled        &&
+         !clear_setting_enabled          &&
+         ozone_scan_available(ozone, menu_navigation_get_selection());
    bool reset_to_default_available        =
          !fullscreen_thumbnails_available &&
          ozone_is_current_entry_settings(menu_navigation_get_selection());
@@ -10252,13 +10279,14 @@ static void ozone_draw_footer(
     * > From right to left, these are ordered:
     *   - ok
     *   - back
-    *   - search
-    *   - cycle thumbnails
-    *   - clear settings (mutually exclusive with cycle)
-    *   - toggle fullscreen thumbs (playlists only)
-    *   - reset to default (non-playlist only)
-    *   - toggle metadata (playlists only)
-    *   - help (non-playlist only) */
+    *   - (X) search
+    *   - (Y) cycle thumbnails (playlists only)
+    *   - (Y) clear settings (keybinds only)
+    *   - (Y) scan entry (certain file types only)
+    *   - (Start) toggle fullscreen thumbs (playlists only)
+    *   - (Start) reset to default (settings only)
+    *   - (Select) toggle metadata (playlists only)
+    *   - (Select) help (non-playlist only) */
    float ok_x                             = (float)video_width
          - footer_margin - ozone->footer_labels.ok.width - icon_size - icon_padding;
    float back_x                           = ok_x
@@ -10272,9 +10300,12 @@ static void ozone_draw_footer(
    float clear_x                          = (clear_setting_enabled)
          ? cycle_x - ozone->footer_labels.clear.width - icon_size - (2.0f * icon_padding)
          : cycle_x;
-   float reset_to_default_x               = (reset_to_default_available)
-         ? clear_x - ozone->footer_labels.reset_to_default.width - icon_size - (2.0f * icon_padding)
+   float scan_x                           = (scan_enabled)
+         ? clear_x - ozone->footer_labels.scan.width - icon_size - (2.0f * icon_padding)
          : clear_x;
+   float reset_to_default_x               = (reset_to_default_available)
+         ? scan_x - ozone->footer_labels.reset_to_default.width - icon_size - (2.0f * icon_padding)
+         : scan_x;
    float help_x                           = (help_available)
          ? reset_to_default_x - ozone->footer_labels.help.width - icon_size - (2.0f * icon_padding)
          : reset_to_default_x;
@@ -10487,8 +10518,27 @@ static void ozone_draw_footer(
                   1.0f,
                   col,
                   mymat);
-      }
 
+         /* > Scan entry */
+         if (scan_enabled)
+            ozone_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  icon_size,
+                  icon_size,
+                  ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L],
+                  scan_x,
+                  icon_y,
+                  video_width,
+                  video_height,
+                  0.0f,
+                  1.0f,
+                  col,
+                  mymat);
+      }
+      
       if (dispctx->blend_end)
          dispctx->blend_end(userdata);
    }
@@ -10636,6 +10686,23 @@ static void ozone_draw_footer(
             false,
             1.0f,
             false);
+
+   /* > Scan entry */
+   if (scan_enabled)
+      gfx_display_draw_text(
+            ozone->fonts.footer.font,
+            ozone->footer_labels.scan.str,
+            scan_x + icon_size + icon_padding_half,
+            footer_text_y,
+            video_width,
+            video_height,
+            ozone->theme->text_rgba,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
+
 
    /* Core title or Switch icon */
    if (menu_core_enable)
