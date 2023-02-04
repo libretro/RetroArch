@@ -117,7 +117,8 @@ struct retro_hw_render_context_negotiation_interface_vulkan
 {
    /* Must be set to RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN. */
    enum retro_hw_render_context_negotiation_interface_type interface_type;
-   /* Must be set to RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION. */
+   /* Usually set to RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION,
+    * but can be lower depending on GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT. */
    unsigned interface_version;
 
    /* If non-NULL, returns a VkApplicationInfo struct that the frontend can use instead of
@@ -129,6 +130,11 @@ struct retro_hw_render_context_negotiation_interface_vulkan
     * a core version of 1.1 should be requested. Features beyond that can be requested with extensions.
     * Vulkan 1.0 is only appropriate for legacy cores, but is still supported.
     * A frontend is free to bump the instance creation apiVersion as necessary if the frontend requires more advanced core features.
+    *
+    * v2: This function must not be NULL, and must not return NULL.
+    * v1: It was not clearly defined if this function could return NULL.
+    *     Frontends should be defensive and provide a default VkApplicationInfo
+    *     if this function returns NULL or if this function is NULL.
     */
    retro_vulkan_get_application_info_t get_application_info;
 
