@@ -1936,22 +1936,39 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    app.engineVersion      = 0;
    app.apiVersion         = VK_API_VERSION_1_0;
 
+   if (iface && !iface->get_application_info && iface->interface_version >= 2)
+   {
+      RARCH_ERR("[Vulkan]: Core did not provide application info as required by v2.\n");
+      return false;
+   }
+
    if (iface && iface->get_application_info)
    {
-      app = *iface->get_application_info();
-#ifdef VULKAN_DEBUG
-      if (app.pApplicationName)
+      const VkApplicationInfo *app_info = iface->get_application_info();
+
+      if (!app_info && iface->interface_version >= 2)
       {
-         RARCH_LOG("[Vulkan]: App: %s (version %u)\n",
-               app.pApplicationName, app.applicationVersion);
+         RARCH_ERR("[Vulkan]: Core did not provide application info as required by v2.\n");
+         return false;
       }
 
-      if (app.pEngineName)
+      if (app_info)
       {
-         RARCH_LOG("[Vulkan]: Engine: %s (version %u)\n",
-               app.pEngineName, app.engineVersion);
-      }
+         app = *app_info;
+#ifdef VULKAN_DEBUG
+         if (app.pApplicationName)
+         {
+            RARCH_LOG("[Vulkan]: App: %s (version %u)\n",
+                  app.pApplicationName, app.applicationVersion);
+         }
+
+         if (app.pEngineName)
+         {
+            RARCH_LOG("[Vulkan]: Engine: %s (version %u)\n",
+                  app.pEngineName, app.engineVersion);
+         }
 #endif
+      }
    }
 
    if (app.apiVersion < VK_API_VERSION_1_1)
