@@ -415,7 +415,6 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels)
 {
    WAVEFORMATEXTENSIBLE wf;
-   int i, j;
    IAudioClient *client = NULL;
    bool float_fmt_res   = *float_fmt;
    unsigned rate_res    = *rate;
