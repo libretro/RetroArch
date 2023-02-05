@@ -375,7 +375,7 @@ static bool alsa_microphone_set_mic_active(void *driver_context, void *microphon
    return true;
 }
 
-static bool alsa_microphone_get_mic_active(const void *driver_context, const void *microphone_context)
+static bool alsa_microphone_mic_alive(const void *driver_context, const void *microphone_context)
 {
    alsa_microphone_t *alsa              = (alsa_microphone_t*)driver_context;
    alsa_microphone_handle_t *microphone = (alsa_microphone_handle_t*)microphone_context;
@@ -457,19 +457,38 @@ static void alsa_microphone_close_mic(void *driver_context, void *microphone_con
    }
 }
 
+static bool alsa_microphone_start_mic(void *driver_context, void *microphone_context)
+{
+   return alsa_microphone_set_mic_active(driver_context, microphone_context, true);
+}
+
+static bool alsa_microphone_stop_mic(void *driver_context, void *microphone_context)
+{
+   return alsa_microphone_set_mic_active(driver_context, microphone_context, true);
+}
+
+static bool alsa_microphone_mic_use_float(const void *driver_context, const void *microphone_context)
+{
+   alsa_microphone_handle_t *microphone = (alsa_microphone_handle_t*)microphone_context;
+
+   return microphone->stream_info.has_float;
+}
+
 microphone_driver_t microphone_alsa = {
-   alsa_microphone_init,
-   alsa_microphone_free,
-   alsa_microphone_read,
-   alsa_microphone_stop,
-   alsa_microphone_start,
-   alsa_microphone_alive,
-   alsa_microphone_set_mic_active,
-   alsa_microphone_get_mic_active,
-   alsa_microphone_set_nonblock_state,
-   "alsa",
-   alsa_microphone_device_list_new,
-   alsa_microphone_device_list_free,
-   alsa_microphone_open_mic,
-   alsa_microphone_close_mic
+        alsa_microphone_init,
+        alsa_microphone_free,
+        alsa_microphone_read,
+        alsa_microphone_start,
+        alsa_microphone_stop,
+        alsa_microphone_alive,
+        alsa_microphone_set_nonblock_state,
+        "alsa",
+        alsa_microphone_device_list_new,
+        alsa_microphone_device_list_free,
+        alsa_microphone_open_mic,
+        alsa_microphone_close_mic,
+        alsa_microphone_mic_alive,
+        alsa_microphone_start_mic,
+        alsa_microphone_stop_mic,
+        alsa_microphone_mic_use_float
 };
