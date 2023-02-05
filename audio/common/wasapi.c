@@ -452,7 +452,10 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
             IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
       if (FAILED(hr))
+      {
+         RARCH_ERR("[WASAPI]: IMMDevice::Activate failed: %s\n", hresult_name(hr));
          return NULL;
+      }
 
       hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_SHARED,
             AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
