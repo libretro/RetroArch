@@ -5205,6 +5205,10 @@ MSG_HASH(
    "Nápoveda"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
+   "Vyčistiť"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
    "Načítavam obsah"
    )

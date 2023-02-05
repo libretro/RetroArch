@@ -10801,6 +10801,10 @@ MSG_HASH(
    "Ohje"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
+   "Tyhjennä"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
    "Äänen ja videon ongelmanratkaisu"
    )

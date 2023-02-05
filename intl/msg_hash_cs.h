@@ -11445,6 +11445,10 @@ MSG_HASH(
    "Nápověda"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
+   "Vyčistit"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
    "Řešení Problémů se Zvukem/Videem"
    )

@@ -9269,6 +9269,10 @@ MSG_HASH(
    "ヘルプ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
+   "クリア"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
    "オーディオとビデオのトラブルシューティング"
    )

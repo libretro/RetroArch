@@ -6789,6 +6789,10 @@ MSG_HASH(
    "Довідка"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
+   "Очистити"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
    "Зміна накладки віртуального контролера"
    )

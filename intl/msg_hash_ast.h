@@ -3345,6 +3345,10 @@ MSG_HASH(
    "Ayuda"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
+   "Llimpiar"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
    "¿Qué ye un nucleu?"
    )

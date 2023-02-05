@@ -3677,6 +3677,10 @@ MSG_HASH(
    "Hjälp"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
+   "Rensa"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
    "Databasinställningar"
    )
