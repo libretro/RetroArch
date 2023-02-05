@@ -285,6 +285,11 @@ static void mic_driver_open_mic_internal(retro_microphone_t* microphone)
       configuration_set_uint(settings, settings->uints.microphone_sample_rate, actual_sample_rate);
    }
 
+   if (mic_driver->mic_use_float && mic_driver->mic_use_float(mic_st->driver_context, microphone->microphone_context))
+   {
+      microphone->flags |= MICROPHONE_FLAG_USE_FLOAT;
+   }
+
    RARCH_LOG("[Microphone]: Initialized microphone\n");
    return;
 error:

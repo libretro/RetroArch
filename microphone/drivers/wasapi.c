@@ -817,6 +817,17 @@ static void wasapi_microphone_device_list_free(const void *driver_context, struc
       string_list_free(sl);
 }
 
+static bool wasapi_microphone_use_float(const void *driver_context, const void *microphone_context)
+{
+   wasapi_microphone_handle_t *microphone = (wasapi_microphone_handle_t *)microphone_context;
+   (void)driver_context;
+
+   if (!driver_context || !microphone)
+      return false;
+
+   return microphone->frame_size == sizeof(float);
+}
+
 microphone_driver_t microphone_wasapi = {
       wasapi_microphone_init,
       wasapi_microphone_free,
@@ -832,5 +843,6 @@ microphone_driver_t microphone_wasapi = {
       wasapi_microphone_close_mic,
       wasapi_microphone_mic_alive,
       wasapi_microphone_start_mic,
-      wasapi_microphone_stop_mic
+      wasapi_microphone_stop_mic,
+      wasapi_microphone_use_float
 };

@@ -304,6 +304,8 @@ typedef struct microphone_driver
    bool (*start_mic)(void *driver_context, void *microphone_context);
 
    bool (*stop_mic)(void *driver_context, void *microphone_context);
+
+   bool (*mic_use_float)(const void *driver_context, const void *microphone_context);
 } microphone_driver_t;
 
 typedef struct
