@@ -39,11 +39,6 @@ typedef struct sdl_microphone_handle
 
 typedef struct sdl_microphone
 {
-#ifdef HAVE_THREADS
-   slock_t *lock;
-   scond_t *cond;
-#endif
-
    bool nonblock;
    bool is_paused;
 
@@ -83,25 +78,9 @@ static void *sdl_microphone_init(void)
    if (!sdl)
       return NULL;
 
-#ifdef HAVE_THREADS
-   sdl->lock = slock_new();
-   sdl->cond = scond_new();
-   if (!sdl->lock || !sdl->cond)
-   {
-      goto error;
-   }
-#endif
-
    return sdl;
 
 error:
-#ifdef HAVE_THREADS
-   if (sdl)
-   {
-      slock_free(sdl->lock);
-      scond_free(sdl->cond);
-   }
-#endif
    free(sdl);
    return NULL;
 }
@@ -116,11 +95,6 @@ static void sdl_microphone_free(void *data)
    {
       if (sdl->microphone)
          sdl_microphone_close_mic(sdl, sdl->microphone);
-
-#ifdef HAVE_THREADS
-      slock_free(sdl->lock);
-      scond_free(sdl->cond);
-#endif
 
       SDL_QuitSubSystem(SDL_INIT_AUDIO);
    }
