@@ -574,7 +574,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    else if (sh_buffer_length)
    {
       if (sh_buffer_length < 0)
-      {
+      { /* If the user selected the "default" shared buffer length... */
          hr = _IAudioClient_GetDevicePeriod(microphone->client, &dev_period, NULL);
          if (FAILED(hr))
             goto error;
@@ -591,7 +591,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    }
    else
    {
-      RARCH_LOG("[WASAPI]: Intermediate buffer is off. \n");
+      RARCH_LOG("[WASAPI]: Intermediate capture buffer is off.\n");
    }
 
    microphone->read_event = CreateEventA(NULL, FALSE, FALSE, NULL);
