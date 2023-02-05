@@ -3951,17 +3951,7 @@ enum msg_hash_enums
 
 const char *msg_hash_to_str(enum msg_hash_enums msg);
 
-const char *msg_hash_to_str_fr(enum msg_hash_enums msg);
-
 const char *msg_hash_to_str_ru(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_de(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_es(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_eo(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_it(enum msg_hash_enums msg);
 
 const char *msg_hash_to_str_jp(enum msg_hash_enums msg);
 int msg_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len);
@@ -3975,23 +3965,16 @@ int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len);
 const char *msg_hash_to_str_pt_pt(enum msg_hash_enums msg);
 int msg_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len);
 
-const char *msg_hash_to_str_pl(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_nl(enum msg_hash_enums msg);
-
 const char *msg_hash_to_str_vn(enum msg_hash_enums msg);
 int msg_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_chs(enum msg_hash_enums msg);
 int msg_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len);
 
-const char *msg_hash_to_str_cht(enum msg_hash_enums msg);
 int msg_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_us(enum msg_hash_enums msg);
 int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_ar(enum msg_hash_enums msg);
 
 const char *msg_hash_to_str_el(enum msg_hash_enums msg);
 int msg_hash_get_help_el_enum(enum msg_hash_enums msg, char *s, size_t len);
@@ -3999,31 +3982,9 @@ int msg_hash_get_help_el_enum(enum msg_hash_enums msg, char *s, size_t len);
 const char *msg_hash_to_str_tr(enum msg_hash_enums msg);
 int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len);
 
-const char *msg_hash_to_str_sk(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_fa(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_he(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_ast(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_fi(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_id(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_sv(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_uk(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_cs(enum msg_hash_enums msg);
-
 const char *msg_hash_to_str_val(enum msg_hash_enums msg);
 
 const char *msg_hash_to_str_ca(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_en(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_hu(enum msg_hash_enums msg);
 
 int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);
 
@@ -4060,7 +4021,6 @@ void msg_hash_set_uint(enum msg_hash_action type, unsigned val);
  *   rendering implementation */
 const char *msg_hash_get_wideglyph_str(void);
 const char *msg_hash_get_wideglyph_str_chs(void);
-const char *msg_hash_get_wideglyph_str_cht(void);
 const char *msg_hash_get_wideglyph_str_jp(void);
 const char *msg_hash_get_wideglyph_str_ko(void);
 

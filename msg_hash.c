@@ -27,6 +27,14 @@
 
 #include "msg_hash.h"
 
+#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
+#if (_MSC_VER >= 1700)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#pragma execution_character_set("utf-8")
+#endif
+#pragma warning(disable:4566)
+#endif
+
 /* TODO/FIXME - static public global variable */
 static unsigned uint_user_language;
 
@@ -175,6 +183,253 @@ const char *get_user_language_iso639_1(bool limit)
    }
    return "en";
 }
+
+#ifdef HAVE_LANGEXTRA
+static const char *msg_hash_to_str_he(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_he.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_sk(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_sk.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_uk(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_uk.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_eo(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+      #include "intl/msg_hash_eo.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_pl.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_fi(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_fi.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_hu(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_hu.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_en(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_en.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_it(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_it.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_fa(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_fa.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_ast(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_ast.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+      #include "intl/msg_hash_nl.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_sv(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_sv.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_id(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_id.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_cs(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_cs.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_ar(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_ar.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_fr.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_cht(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_cht.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_de(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+      #include "intl/msg_hash_de.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_es(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_es.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_get_wideglyph_str_cht(void)
+{
+   return "主";
+}
+#endif
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)
 {

@@ -33,8 +33,8 @@
 
 int msg_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-    if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
-        msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
+    if (   (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END)
+        && (msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN))
     {
        unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
 
