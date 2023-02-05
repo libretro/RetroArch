@@ -16,7 +16,6 @@
 
 #include "wasapi.h"
 #include <stdio.h>
-#include <guiddef.h>
 #include "microphone/microphone_driver.h"
 #include "queues/fifo_queue.h"
 #include "configuration.h"
@@ -28,10 +27,9 @@ void wasapi_log_hr(HRESULT hr, char* buffer, size_t length)
 {
    FormatMessage(
          FORMAT_MESSAGE_IGNORE_INSERTS |
-         FORMAT_MESSAGE_FROM_SYSTEM |
-         FORMAT_MESSAGE_FROM_HMODULE,
+         FORMAT_MESSAGE_FROM_SYSTEM,
          NULL,
-         hr,
+         GetLastError(),
          MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
          buffer,
          length - 1,
