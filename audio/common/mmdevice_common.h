@@ -23,6 +23,12 @@ RETRO_BEGIN_DECLS
 
 void *mmdevice_list_new(const void *u, EDataFlow data_flow);
 
+/**
+ * Gets the friendly name of the provided IMMDevice.
+ * The string must be freed with free().
+ */
+char* mmdevice_name(IMMDevice *device);
+
 RETRO_END_DECLS
 
 #endif
