@@ -579,7 +579,9 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
          if (FAILED(hr))
             goto error;
 
-         sh_buffer_length = dev_period * rate / 10000000;
+         sh_buffer_length = (dev_period * rate / 10000000) * 2;
+         /* Default buffer seems to be too small, resulting in slowdown.
+          * Doubling it seems to work okay. Dunno why. */
       }
 
       microphone->buffer = fifo_new(sh_buffer_length * microphone->frame_size);
