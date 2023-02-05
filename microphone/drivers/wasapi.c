@@ -240,50 +240,6 @@ static bool wasapi_microphone_wait_for_capture_event(wasapi_microphone_handle_t 
 }
 
 /**
- * Reads samples from a shared-mode microphone,
- * fetching new ones directly from the device if necessary.
- *
- * @param wasapi
- * @param microphone
- * @param buffer
- * @param buffer_size
- * @return The number of bytes that were read
- */
-static ssize_t wasapi_microphone_read_shared_buffered(
-   wasapi_microphone_handle_t *microphone,
-   void *buffer,
-   size_t buffer_size)
-{
-   ssize_t bytes_to_read   = 0;
-   ssize_t bytes_available = FIFO_READ_AVAIL(microphone->buffer);
-   UINT32 available_frames = 0;
-
-   if (!bytes_available)
-   { /* If we don't have any samples we could give to the core... */
-      if (!wasapi_microphone_wait_for_capture_event(microphone, INFINITE))
-      { /* If we couldn't wait for the microphone to signal a capture event... */
-         return -1;
-      }
-
-      if (FAILED(_IAudioClient_GetCurrentPadding(microphone->client, &available_frames)))
-         return -1;
-
-      bytes_available = wasapi_microphone_fetch_fifo(microphone);
-      if (bytes_available < 0)
-      { /* If we couldn't fetch samples from the microphone... */
-         return -1;
-      }
-   }
-
-   bytes_available = FIFO_READ_AVAIL(microphone->buffer);
-   bytes_to_read = MIN(buffer_size, bytes_available);
-   if (bytes_to_read)
-      fifo_read(microphone->buffer, buffer, bytes_to_read);
-
-   return bytes_to_read;
-}
-
-/**
  * Reads incoming samples from a shared-mode microphone,
  * without buffering any.
  * @param microphone
@@ -408,7 +364,7 @@ static ssize_t wasapi_microphone_read_shared_nonblock(
  * \c INFINITE means that this function will wait indefinitely.
  * @return
  */
-static ssize_t wasapi_microphone_read_exclusive(
+static ssize_t wasapi_microphone_read_buffered(
    wasapi_microphone_handle_t *microphone,
    void * buffer,
    size_t buffer_size,
@@ -452,7 +408,7 @@ static ssize_t wasapi_microphone_read(void *driver_context, void *mic_context, v
    if (wasapi->nonblock)
    { /* If microphones shouldn't block... */
       if (microphone->exclusive)
-         return wasapi_microphone_read_exclusive(microphone, buffer, buffer_size, 0);
+         return wasapi_microphone_read_buffered(microphone, buffer, buffer_size, 0);
       return wasapi_microphone_read_shared_nonblock(microphone, buffer, buffer_size);
    }
 
@@ -461,8 +417,8 @@ static ssize_t wasapi_microphone_read(void *driver_context, void *mic_context, v
       ssize_t read;
       for (read = -1; bytes_read < buffer_size; bytes_read += read)
       {
-         read = wasapi_microphone_read_exclusive(microphone, (char *) buffer + bytes_read, buffer_size - bytes_read,
-                                                 INFINITE);
+         read = wasapi_microphone_read_buffered(microphone, (char *) buffer + bytes_read, buffer_size - bytes_read,
+                                                INFINITE);
          if (read == -1)
             return -1;
       }
@@ -474,7 +430,8 @@ static ssize_t wasapi_microphone_read(void *driver_context, void *mic_context, v
       {
          for (read = -1; bytes_read < buffer_size; bytes_read += read)
          {
-            read = wasapi_microphone_read_shared_buffered(microphone, (char *) buffer + bytes_read, buffer_size - bytes_read);
+            read = wasapi_microphone_read_buffered(microphone, (char *) buffer + bytes_read, buffer_size - bytes_read,
+                                                   INFINITE);
             if (read == -1)
                return -1;
          }
