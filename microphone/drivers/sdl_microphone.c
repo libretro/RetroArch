@@ -419,6 +419,11 @@ static bool sdl_microphone_start(void *data, bool is_shutdown)
    return true;
 }
 
+static bool sdl_microphone_mic_use_float(const void *driver_context, const void *microphone_context)
+{
+   return false;
+}
+
 microphone_driver_t microphone_sdl = {
       sdl_microphone_init,
       sdl_microphone_free,
@@ -434,5 +439,6 @@ microphone_driver_t microphone_sdl = {
       sdl_microphone_close_mic,
       sdl_microphone_mic_alive,
       sdl_microphone_start_mic,
-      sdl_microphone_stop_mic
+      sdl_microphone_stop_mic,
+      sdl_microphone_mic_use_float
 };
