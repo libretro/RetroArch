@@ -261,12 +261,13 @@ static void vulkan_init_pipeline_layout(
 {
    VkPipelineLayoutCreateInfo layout_info;
    VkDescriptorSetLayoutCreateInfo set_layout_info;
-   VkDescriptorSetLayoutBinding bindings[3];
+   VkDescriptorSetLayoutBinding bindings[5];
 
    bindings[0].binding            = 0;
    bindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
    bindings[0].descriptorCount    = 1;
-   bindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+   bindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT |
+                                    VK_SHADER_STAGE_COMPUTE_BIT;
    bindings[0].pImmutableSamplers = NULL;
 
    bindings[1].binding            = 1;
@@ -281,11 +282,23 @@ static void vulkan_init_pipeline_layout(
    bindings[2].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
    bindings[2].pImmutableSamplers = NULL;
 
+   bindings[3].binding            = 3;
+   bindings[3].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+   bindings[3].descriptorCount    = 1;
+   bindings[3].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+   bindings[3].pImmutableSamplers = NULL;
+
+   bindings[4].binding            = 4;
+   bindings[4].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+   bindings[4].descriptorCount    = 1;
+   bindings[4].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+   bindings[4].pImmutableSamplers = NULL;
+
    set_layout_info.sType          = 
       VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
    set_layout_info.pNext          = NULL;
    set_layout_info.flags          = 0;
-   set_layout_info.bindingCount   = 3;
+   set_layout_info.bindingCount   = 5;
    set_layout_info.pBindings      = bindings;
 
    vkCreateDescriptorSetLayout(vk->context->device,
@@ -323,6 +336,10 @@ static void vulkan_init_pipelines(vk_t *vk)
    static const uint32_t font_frag[] =
 #include "vulkan_shaders/font.frag.inc"
       ;
+
+   static const uint32_t rgb565_to_rgba8888_comp[] =
+#include "vulkan_shaders/rgb565_to_rgba8888.comp.inc"
+   ;
 
    static const uint32_t pipeline_ribbon_vert[] =
 #include "vulkan_shaders/pipeline_ribbon.vert.inc"
@@ -378,6 +395,8 @@ static void vulkan_init_pipelines(vk_t *vk)
 
    VkGraphicsPipelineCreateInfo pipe                     = {
       VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
+   VkComputePipelineCreateInfo cpipe                     = {
+      VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO };
    VkShaderModuleCreateInfo module_info                  = {
       VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
    VkVertexInputAttributeDescription attributes[3]       = {{0}};
@@ -642,6 +661,19 @@ static void vulkan_init_pipelines(vk_t *vk)
       vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
       vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
    }
+
+   cpipe.layout = vk->pipelines.layout;
+   cpipe.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+   cpipe.stage.pName = "main";
+   cpipe.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+
+   module_info.codeSize   = sizeof(rgb565_to_rgba8888_comp);
+   module_info.pCode      = rgb565_to_rgba8888_comp;
+   vkCreateShaderModule(vk->context->device,
+         &module_info, NULL, &cpipe.stage.module);
+   vkCreateComputePipelines(vk->context->device, vk->pipelines.cache,
+         1, &cpipe, NULL, &vk->pipelines.rgb565_to_rgba8888);
+   vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
 }
 
 static void vulkan_init_samplers(vk_t *vk)
@@ -811,6 +843,8 @@ static void vulkan_deinit_pipelines(vk_t *vk)
          vk->pipelines.alpha_blend, NULL);
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.font, NULL);
+   vkDestroyPipeline(vk->context->device,
+         vk->pipelines.rgb565_to_rgba8888, NULL);
 #ifdef VULKAN_HDR_SWAPCHAIN
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.hdr, NULL);
@@ -1476,11 +1510,7 @@ static void *vulkan_init(const video_info_t *video,
       vk->flags         &= ~VK_FLAG_FULLSCREEN;
    vk->tex_w             = RARCH_SCALE_BASE * video->input_scale;
    vk->tex_h             = RARCH_SCALE_BASE * video->input_scale;
-   if (vk->context->flags & VK_CTX_FLAG_HAS_PACK16_FMTS)
-       vk->tex_fmt       = video->rgb32
-          ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
-   else
-       vk->tex_fmt       = VK_FORMAT_B8G8R8A8_UNORM;
+   vk->tex_fmt           = video->rgb32 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
    if (video->force_aspect)
       vk->flags         |=  VK_FLAG_KEEP_ASPECT;
    else
@@ -1510,9 +1540,11 @@ static void *vulkan_init(const video_info_t *video,
    if (vk->context)
    {
       int i;
-      static const VkDescriptorPoolSize pool_sizes[2] = {
+      static const VkDescriptorPoolSize pool_sizes[4] = {
          { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
          { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS * 2 },
+         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
       };
       vk->num_swapchain_images = vk->context->num_swapchain_images;
 
@@ -1530,7 +1562,7 @@ static void *vulkan_init(const video_info_t *video,
          vk->swapchain[i].descriptor_manager =
             vulkan_create_descriptor_manager(
                   vk->context->device,
-                  pool_sizes, 2, vk->pipelines.set_layout);
+                  pool_sizes, 4, vk->pipelines.set_layout);
          vk->swapchain[i].vbo                = 
             vulkan_buffer_chain_init(
                VULKAN_BUFFER_BLOCK_SIZE, 16,
@@ -1618,9 +1650,11 @@ static void vulkan_check_swapchain(vk_t *vk)
    if (vk->context)
    {
       int i;
-      static const VkDescriptorPoolSize pool_sizes[2] = {
+      static const VkDescriptorPoolSize pool_sizes[4] = {
          { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
          { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS * 2 },
+         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
       };
       vk->num_swapchain_images = vk->context->num_swapchain_images;
 
@@ -1638,7 +1672,7 @@ static void vulkan_check_swapchain(vk_t *vk)
          vk->swapchain[i].descriptor_manager =
             vulkan_create_descriptor_manager(
                   vk->context->device,
-                  pool_sizes, 2, vk->pipelines.set_layout);
+                  pool_sizes, 4, vk->pipelines.set_layout);
 
          vk->swapchain[i].vbo       = vulkan_buffer_chain_init(
                VULKAN_BUFFER_BLOCK_SIZE,
@@ -2314,36 +2348,11 @@ static bool vulkan_frame(void *data, const void *frame,
                   vk,
                   &chain->texture_optimal,
                   frame_width, frame_height,
-                  chain->texture_optimal.format,
+                  chain->texture.format, /* Ensure we use the original format and not any remapped format. */
                   NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
       }
 
-      if (!vk->video.rgb32 && !(vk->context->flags & VK_CTX_FLAG_HAS_PACK16_FMTS))
-      {
-          uint16_t *rgb565_src = ((uint16_t*)frame) + (frame_height * pitch / 2/*bpp*/);
-          uint32_t *bgra8888_dst = ((uint32_t*)chain->texture.mapped) + (frame_height * chain->texture.stride / 4/*bpp*/);
-          uint16_t rgbpix;
-          uint32_t bgrapix;
-          unsigned x;
-          for (y = frame_height; y > 0; y--)
-          {
-              rgb565_src -= pitch / 2/*bpp*/;
-              bgra8888_dst -= chain->texture.stride / 4/*bpp*/;
-              for (x = frame_width; x > 0; )
-              {
-                  x--;
-                  rgbpix = rgb565_src[x];
-                  bgrapix = 0xff00;
-                  bgrapix |= (rgbpix & 0xf800) >> 8;
-                  bgrapix <<= 8;
-                  bgrapix |= (rgbpix & 0x07e0) >> 3;
-                  bgrapix <<= 8;
-                  bgrapix |= (rgbpix & 0x1f) << 3;
-                  bgra8888_dst[x] = bgrapix;
-              }
-          }
-      }
-      else if (frame != chain->texture.mapped)
+      if (frame != chain->texture.mapped)
       {
          dst = (uint8_t*)chain->texture.mapped;
          if (     (chain->texture.stride == pitch )
@@ -2362,7 +2371,7 @@ static bool vulkan_frame(void *data, const void *frame,
       {
          struct vk_texture *dynamic = &chain->texture_optimal;
          struct vk_texture *staging = &chain->texture;
-         VULKAN_COPY_STAGING_TO_DYNAMIC(vk, vk->cmd, dynamic, staging);
+         vulkan_copy_staging_to_dynamic(vk, vk->cmd, dynamic, staging);
       }
 
       vk->last_valid_index = frame_index;
@@ -2471,7 +2480,7 @@ static bool vulkan_frame(void *data, const void *frame,
                   struct vk_texture *dynamic = optimal;
                   struct vk_texture *staging = texture;
                   VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, staging);
-                  VULKAN_COPY_STAGING_TO_DYNAMIC(vk, vk->cmd,
+                  vulkan_copy_staging_to_dynamic(vk, vk->cmd,
                         dynamic, staging);
                   vk->menu.dirty[vk->menu.last_index] = false;
                }
@@ -3129,7 +3138,7 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
                &chain->texture_optimal,
                framebuffer->width,
                framebuffer->height,
-               chain->texture_optimal.format,
+               chain->texture.format, /* Ensure we use the non-remapped format. */
                NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
       }
    }

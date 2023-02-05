@@ -432,6 +432,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    VkCommandBufferAllocateInfo cmd_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
    VkSubmitInfo submit_info             = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
    VkCommandBufferBeginInfo begin_info  = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+   uint32_t buffer_width;
 
    memset(&tex, 0, sizeof(tex));
 
@@ -445,8 +446,29 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    info.mipLevels          = 1;
    info.samples            = VK_SAMPLE_COUNT_1_BIT;
 
-   buffer_info.size        = width * height * vulkan_format_to_bpp(format);
+   /* Align stride to 4 bytes to make sure we can use compute shader uploads without too many problems. */
+   buffer_width            = width * vulkan_format_to_bpp(format);
+   buffer_width            = (buffer_width + 3u) & ~3u;
+   buffer_info.size        = buffer_width * height;
    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+   /* Compatibility concern. Some Apple hardware does not support rgb565.
+    * Use compute shader uploads instead.
+    * If we attempt to use streamed texture, force staging path.
+    * If we're creating fallback dynamic texture, force RGBA8888. */
+   if (format == VK_FORMAT_R5G6B5_UNORM_PACK16)
+   {
+      if (type == VULKAN_TEXTURE_STREAMED)
+      {
+         type = VULKAN_TEXTURE_STAGING;
+      }
+      else if (type == VULKAN_TEXTURE_DYNAMIC)
+      {
+         format = VK_FORMAT_R8G8B8A8_UNORM;
+         info.format = format;
+         info.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+      }
+   }
 
    if (type == VULKAN_TEXTURE_STREAMED)
    {
@@ -483,7 +505,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       case VULKAN_TEXTURE_DYNAMIC:
          retro_assert(!initial && "Dynamic textures must not have initial data.\n");
          info.tiling        = VK_IMAGE_TILING_OPTIMAL;
-         info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT |
+         info.usage        |= VK_IMAGE_USAGE_SAMPLED_BIT |
                               VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
          info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -497,7 +519,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
          break;
 
       case VULKAN_TEXTURE_STAGING:
-         buffer_info.usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+         buffer_info.usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
          info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
          info.tiling        = VK_IMAGE_TILING_LINEAR;
          break;
@@ -665,7 +687,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    {
       layout.offset   = 0;
       layout.size     = buffer_info.size;
-      layout.rowPitch = width * vulkan_format_to_bpp(format);
+      layout.rowPitch = buffer_width;
    }
    else
       memset(&layout, 0, sizeof(layout));
@@ -3073,11 +3095,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          return false;
       }  
 
-      VkFormatProperties formatProperties;
-      vkGetPhysicalDeviceFormatProperties(vk->context.gpu, VK_FORMAT_R5G6B5_UNORM_PACK16, &formatProperties);
-      if (formatProperties.optimalTilingFeatures != 0)
-          vk->context.flags |= VK_CTX_FLAG_HAS_PACK16_FMTS;
-
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (settings->bools.video_hdr_enable)
          vk->context.flags |=  VK_CTX_FLAG_HDR_ENABLE;
@@ -3321,4 +3338,134 @@ void vulkan_set_uniform_buffer(
    write.pTexelBufferView     = NULL;
 
    vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
+}
+
+void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
+      struct vk_texture *dynamic, struct vk_texture *staging)
+{
+   bool compute_upload = dynamic->format != staging->format;
+
+   if (compute_upload)
+   {
+      const uint32_t ubo[3] = { dynamic->width, dynamic->height, staging->stride / 4 /* in terms of u32 words */ };
+      VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+      VkDescriptorBufferInfo buffer_info;
+      VkDescriptorImageInfo image_info;
+      struct vk_buffer_range range;
+      VkDescriptorSet set;
+
+      VULKAN_IMAGE_LAYOUT_TRANSITION(
+            cmd,
+            dynamic->image,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_GENERAL,
+            0,
+            VK_ACCESS_SHADER_WRITE_BIT,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+      /* staging->format is always RGB565 here. Can be expanded as needed. */
+      retro_assert(staging->format == VK_FORMAT_R5G6B5_UNORM_PACK16);
+
+      set = vulkan_descriptor_manager_alloc(
+            vk->context->device,
+            &vk->chain->descriptor_manager);
+
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+            sizeof(ubo), &range))
+         return;
+
+      memcpy(range.data, ubo, sizeof(ubo));
+      vulkan_set_uniform_buffer(vk->context->device,
+            set,
+            0,
+            range.buffer,
+            range.offset,
+            sizeof(ubo));
+
+      image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+      image_info.imageView = dynamic->view;
+      image_info.sampler = VK_NULL_HANDLE;
+
+      buffer_info.buffer = staging->buffer;
+      buffer_info.offset = 0;
+      buffer_info.range = VK_WHOLE_SIZE;
+
+      write.descriptorCount = 1;
+      write.pTexelBufferView = NULL;
+      write.dstArrayElement = 0;
+      write.dstSet = set;
+
+      write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+      write.dstBinding = 3;
+      write.pImageInfo = &image_info;
+      write.pBufferInfo = NULL;
+
+      vkUpdateDescriptorSets(vk->context->device, 1, &write, 0, NULL);
+
+      write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      write.dstBinding = 4;
+      write.pImageInfo = NULL;
+      write.pBufferInfo = &buffer_info;
+
+      vkUpdateDescriptorSets(vk->context->device, 1, &write, 0, NULL);
+
+      vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vk->pipelines.rgb565_to_rgba8888);
+      vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vk->pipelines.layout, 0, 1, &set, 0, NULL);
+      vkCmdDispatch(cmd, (dynamic->width + 15) / 16, (dynamic->height + 7) / 8, 1);
+
+      VULKAN_IMAGE_LAYOUT_TRANSITION(
+            cmd,
+            dynamic->image,
+            VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_ACCESS_SHADER_WRITE_BIT,
+            VK_ACCESS_SHADER_READ_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+   }
+   else
+   {
+      VkBufferImageCopy region;
+
+      VULKAN_IMAGE_LAYOUT_TRANSITION(
+            cmd,
+            dynamic->image,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            0,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT);
+      region.bufferOffset = 0;
+      region.bufferRowLength = 0;
+      region.bufferImageHeight = 0;
+      region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      region.imageSubresource.mipLevel = 0;
+      region.imageSubresource.baseArrayLayer = 0;
+      region.imageSubresource.layerCount = 1;
+      region.imageOffset.x = 0;
+      region.imageOffset.y = 0;
+      region.imageOffset.z = 0;
+      region.imageExtent.width = dynamic->width;
+      region.imageExtent.height = dynamic->height;
+      region.imageExtent.depth = 1;
+      vkCmdCopyBufferToImage(
+            cmd,
+            staging->buffer,
+            dynamic->image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1,
+            &region);
+      VULKAN_IMAGE_LAYOUT_TRANSITION(
+            cmd,
+            dynamic->image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_ACCESS_SHADER_READ_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+   }
+   dynamic->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
