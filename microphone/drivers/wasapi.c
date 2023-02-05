@@ -145,7 +145,6 @@ static bool wasapi_microphone_fetch_buffer(
 static ssize_t wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *microphone)
 {
    UINT32 next_packet_size = 0;
-   volatile int loops = 0;
    /* Shared-mode capture streams split their input buffer into multiple packets,
     * while exclusive-mode capture streams just use the one.
     *
@@ -160,7 +159,6 @@ static ssize_t wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *micropho
       UINT32 bytes_read = 0;
       DWORD buffer_status_flags = 0;
       HRESULT hr;
-      ++loops;
 
       hr = _IAudioCaptureClient_GetBuffer(microphone->capture, &mic_input, &frames_read, &buffer_status_flags, NULL, NULL);
       if (FAILED(hr))
