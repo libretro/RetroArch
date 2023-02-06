@@ -58,7 +58,7 @@
 #include "../tasks/tasks_internal.h"
 #include <formats/rjson.h>
 #include <file/file_path.h>
-#include <file_path_special.h>
+#include "../file_path_special.h"
 #define HOLD_BTN_DELAY_SEC 2
 
 /* Depends on ASCII character values */
