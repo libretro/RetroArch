@@ -56,7 +56,9 @@
 #include "../tasks/task_content.h"
 #endif
 #include "../tasks/tasks_internal.h"
-
+#include <formats/rjson.h>
+#include <file/file_path.h>
+#include <file_path_special.h>
 #define HOLD_BTN_DELAY_SEC 2
 
 /* Depends on ASCII character values */
@@ -64,9 +66,6 @@
 
 #define INPUT_REMOTE_KEY_PRESSED(input_st, key, port) (input_st->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
 
-#define IS_COMPOSITION(c)       ( (c & 0x0F000000) ? 1 : 0)
-#define IS_COMPOSITION_KR(c)    ( (c & 0x01000000) ? 1 : 0)
-#define IS_END_COMPOSITION(c)   ( (c & 0xF0000000) ? 1 : 0)
 
 /**
  * check_input_driver_block_hotkey:
@@ -1027,25 +1026,19 @@ void input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
       const char *word, size_t len)
 {
-   size_t i;
+   int tail = keyboard_line->size - keyboard_line->ptr;
+   int ptr  = keyboard_line->ptr;
    char *newbuf                = (char*)realloc(
          keyboard_line->buffer,
-         keyboard_line->size + len * 2);
+         keyboard_line->size + len + 2 );
 
    if (!newbuf)
       return;
 
-   memmove(
-         newbuf + keyboard_line->ptr + len,
-         newbuf + keyboard_line->ptr,
-         keyboard_line->size - keyboard_line->ptr + len);
-
-   for (i = 0; i < len; i++)
-   {
-      newbuf[keyboard_line->ptr]= word[i];
-      keyboard_line->ptr++;
-      keyboard_line->size++;
-   }
+   if( tail ) memmove( newbuf+ptr+len, newbuf+ptr, tail ); 
+   if( len  ) memcpy ( newbuf+ptr    , word      , len  ); 
+   keyboard_line->ptr  += len;
+   keyboard_line->size += len;
 
    newbuf[keyboard_line->size]  = '\0';
 
@@ -2585,190 +2578,148 @@ void input_config_get_bind_string_joyaxis(
    }
 }
 
-void osk_update_last_codepoint(
-      unsigned *last_codepoint,
-      unsigned *last_codepoint_len,
-      const char *word)
-{
-   const char *letter         = word;
-   const char    *pos         = letter;
-
-   if (word[0] == 0)
-   {
-      *last_codepoint         = 0;
-      *last_codepoint_len     = 0;
-      return;
-   }
-
-   for (;;)
-   {
-      unsigned codepoint      = utf8_walk(&letter);
-      if (letter[0] == 0)
-      {
-         *last_codepoint      = codepoint;
-         *last_codepoint_len  = (unsigned)(letter - pos);
-         break;
-      }
-      pos                     = letter;
-   }
-}
 
 #ifdef HAVE_LANGEXTRA
 /* combine 3 korean elements. make utf8 character */
-static unsigned get_kr_utf8( int c1,int c2,int c3)
+static uint32_t get_kr_utf8( int c1,int c2,int c3)
 {
    int  uv = c1 * (28 * 21) + c2 * 28 + c3 + 0xac00; 
    int  tv = (uv >> 12) | ((uv & 0x0f00) << 2) | ((uv & 0xc0) << 2) | ((uv & 0x3f) << 16);
    return  (tv | 0x8080e0);
 }
 
-/* utf8 korean composition */
-static unsigned get_kr_composition( char* pcur, char* padd)
+int get_osk_composition( char* padd)
 {
-   static char cc1[] = {"ㄱㄱㄲ ㄷㄷㄸ ㅂㅂㅃ ㅅㅅㅆ ㅈㅈㅉ"};
-   static char cc2[] = {"ㅗㅏㅘ ㅗㅐㅙ ㅗㅣㅚ ㅜㅓㅝ ㅜㅔㅞ ㅜㅣㅟ ㅡㅣㅢ"};    
-   static char cc3[] = {"ㄱㄱㄲ ㄱㅅㄳ ㄴㅈㄵ ㄴㅎㄶ ㄹㄱㄺ ㄹㅁㄻ ㄹㅂㄼ ㄹㅅㄽ ㄹㅌㄾ ㄹㅍㄿ ㄹㅎㅀ ㅂㅅㅄ ㅅㅅㅆ"};
-   static char s1[]  = {"ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣㆍㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ"}; 
-   char *tmp1        = NULL;
-   char *tmp2        = NULL;
-   int c1            = -1;
-   int c2            = -1;
-   int c3            =  0;
-   int nv            = -1;
-   char utf8[8]      = {0, 0, 0, 0, 0, 0, 0, 0};
-   unsigned ret      =  *((unsigned*)pcur);
-
-   /* check korean */
-   if (!pcur[0] || !pcur[1] || !pcur[2] || pcur[3])
-      return ret;
-   if (!padd[0] || !padd[1] || !padd[2] || padd[3])
-      return ret;
-   if ((tmp1 = strstr(s1, pcur)))
-      c1 = (int)((tmp1 - s1) / 3);
-   if ((tmp1 = strstr(s1, padd)))
-      nv = (int)((tmp1 - s1) / 3);
-   if (nv == -1 || nv >= 19 + 21)
-      return ret;
-
-   /* single element composition  */
-   strlcpy(utf8, pcur, sizeof(utf8));
-   strlcat(utf8, padd, sizeof(utf8));
-
-   if ((tmp2 = strstr(cc1, utf8)))
-   {   
-      *((unsigned*)padd) = *((unsigned*)(tmp2 + 6)) & 0xffffff;
-      return 0;
-   }
-   else if ((tmp2 = strstr(cc2, utf8)))
-   {   
-      *((unsigned*)padd) = *((unsigned*)(tmp2 + 6)) & 0xffffff;
-      return 0;
-   }
-   if (tmp2 && tmp2 < cc2 + sizeof(cc2) - 10)
-   {  
-      *((unsigned*)padd) = *((unsigned*)(tmp2 + 6)) & 0xffffff;
-      return 0;
-   }
-
-   if (c1 >= 19)
-      return ret;
-
-   if (c1 == -1)
-   {
-      int tv = ((pcur[0] & 0x0f) << 12) | ((pcur[1] & 0x3f) << 6) | (pcur[2] & 0x03f);
-      tv     = tv  - 0xac00;
-      c1     = tv  / (28 * 21);
-      c2     = (tv % (28 * 21)) / 28;
-      c3     = (tv % (28));
-      if (c1 < 0 || c1 >= 19 || c2 < 0 || c2 > 21 || c3 < 0 || c3 > 28)
-         return ret;
-   }
-
-   if (c1 == -1 && c2 == -1 && c3 == 0)
-      return ret;
+   /* get composition string from keyboard.json */
+   static char pcmp[4] = {0,};
+   char  utf8[8] = {0,};
+   char* tmp1;
+   char* tmp2;
+   int   len1 = strlen(pcmp);
+   int   len2 = strlen(padd);
+   int   c1 = -1;
+   int   c2 = -1;
+   int   c3 =  0;
+   int   nv = -1;
+   uint32_t  nins = 0; 
+   input_driver_state_t* input_st = &input_driver_st;
+   osk_keyboard_t* osk = input_st->osk;
+   input_keyboard_line_t *state = &input_st->keyboard_line;
+   char* cc; 
+   char* s1; 
+   int   tv;
+   if( !osk ) return 0;
+   cc = osk->comp[0]; 
+   s1 = osk->comp[3]; 
    
-   if (c2 == -1 && c3 == 0)
-   {
-      /* 2nd element attach */
-      if (nv < 19)
-         return ret;
-      c2  = nv - 19;
+   if( !cc ) return 0;
+   snprintf(utf8,8,"%s%s",pcmp,padd);
+   if( pcmp[0]==0 || len1==0 || len2==0 || !state->buffer || len1>state->ptr || len1>state->size ) 
+   {  
+      memcpy(pcmp,padd,sizeof(uint32_t));
+      return 0;
    }
-   else
-      if (c2 >= 0 && c3 == 0)
+   if( (tmp1=strstr(cc,utf8)) )
+   {
+      len2 = strlen(utf8);
+      tmp2 = tmp1 + len2;
+      *((uint32_t*)padd) = utf8_get(&tmp2,NULL);
+      memcpy(pcmp,padd,sizeof(uint32_t));
+      if( state->buffer )
+      memmove(state->buffer + state->ptr-len1, state->buffer+state->ptr,  state->size - state->ptr + 1    );
+      state->ptr -=len1; 
+      state->size-=len1;
+      return 1;
+   }
+   cc = osk->comp[1];
+   if( !cc || !pcmp[0] || len1!=3 || len2!=3 || !state->buffer || len1>state->ptr || len1>state->size ) 
+   {
+      memcpy(pcmp,padd,sizeof(uint32_t));
+      return 0;
+   }
+   tv = ((pcmp[0]&0x0f)<<12) | ((pcmp[1]&0x3f)<<6) | (pcmp[2]&0x03f);
+   if( (tmp1=strstr(s1,pcmp)) )  c1 = (tmp1-s1)/3;
+   if( (tmp1=strstr(s1,padd)) )  nv = (tmp1-s1)/3;
+   if( nv == -1 || nv>=19+21  )  return 0;
+   memcpy(pcmp,padd,sizeof(uint32_t));
+   if( c1 == -1 )
+   {
+      tv = tv - 0xac00;
+      c1 = tv/(28*21);
+      c2 = (tv%(28*21))/28;
+      c3 = tv%28;
+      if(c1<0 || c1>19 || c2<0 || c2>21 || c3<0 || c3>28 ) return 0;
+   } 
+   if( c1 >= 19 ) return 0;  
+   if( c1==-1 && c2==-1 && c3==0)   return 0; 
+   if( c2==-1 && c3==0 )                       /* 2nd element attach */
+   {
+      if( nv<19 ) return 0;
+      c2 = nv-19;	
+   }  else
+   if( c2>=0 && c3==0 )
+   {
+     if(nv<19)                                 /* 3rd element attach */
       {
-         if (nv < 19)
-         {
-            /* 3rd element attach */
-            if (!(tmp1 = strstr(s1 + (19 + 21) * 3, padd)))
-               return ret;
-            c3 = (int)((tmp1 - s1) / 3 - 19 - 21);
-         }
-         else
-         {
-            /* 2nd element transform */
-            strlcpy(utf8, s1 + (19 + c2) * 3, 4);
-            utf8[3] = 0;
-            strlcat(utf8, padd, sizeof(utf8));
-            if (!(tmp2 = strstr(cc2, utf8)) || tmp2 >= cc2 + sizeof(cc2) - 10)
-               return ret;
-            strlcpy(utf8, tmp2 + 6, 4);
-            utf8[3] = 0;
-            if (!(tmp1 = strstr(s1 + (19) * 3, utf8)))
-               return ret;
-            c2 = (int)((tmp1 - s1) / 3 - 19);
-         }
-      }
-      else
-         if (c3 > 0)
-         {
-            strlcpy(utf8, s1 + (19 + 21 + c3) * 3, 4); 
-            utf8[3] = 0;
-            if (nv < 19)
-            {
-               /* 3rd element transform */
-               strlcat(utf8, padd, sizeof(utf8));
-               if (    !(tmp2 = strstr(cc3, utf8)) 
-                     || (tmp2 >= cc3 + sizeof(cc3) - 10))
-                     return ret;
-               strlcpy(utf8, tmp2 + 6, 4);
-               utf8[3] = 0;
-               if (!(tmp1 = strstr(s1 + (19 + 21) * 3, utf8)))
-                  return ret;
-               c3 = (int)((tmp1 - s1) / 3 - 19 - 21);
-            }
-            else
-            {   
-               int tv = 0;
-               if ((tmp2 = strstr(cc3, utf8)))
-                  tv = (tmp2 - cc3) % 10;
-               if (tv == 6)
-               {
-                  /*  complex 3rd element -> disassemble */
-                  strlcpy(utf8, tmp2 - 3, 4);
-                  if (!(tmp1 = strstr(s1, utf8)))
-                     return ret;
-                  tv = (int)((tmp1 - s1) / 3);
-                  strlcpy(utf8, tmp2 - 6, 4);
-                  if (!(tmp1 = strstr(s1 + (19 + 21) * 3, utf8)))
-                     return ret;
-                  c3 = (int)((tmp1 - s1) / 3 - 19 - 21);
-               }
-               else
-               {
-                  if (!(tmp1 = strstr(s1, utf8)) || (tmp1 - s1) >= 19 * 3)
-                     return ret;
-                  tv = (int)((tmp1 - s1) / 3);
-                  c3 = 0;
-               }
-               *((unsigned*)padd) = get_kr_utf8(tv, nv - 19, 0);
-               return get_kr_utf8(c1, c2, c3);
-            }
-         }
-         else
-            return ret;
-   *((unsigned*)padd) = get_kr_utf8(c1, c2, c3);
-   return 0;
+         if( !(tmp1=strstr(s1+(19+21)*3,padd)) ) return 0;		
+         c3 = (tmp1-s1)/3 - 19-21;
+      }  else                                  /* 2nd element transform */
+      {
+         strlcpy(utf8,s1+(19+c2)*3,4); utf8[3]=0;
+         strlcat(utf8,padd,8);
+         if( !(tmp2=strstr(cc,utf8)) || tmp2>cc+sizeof(cc)-10 )	return 0;
+         strlcpy(utf8,tmp2+6,4); utf8[3]=0;
+         if( !(tmp1=strstr(s1+(19)*3,utf8)) ) return 0;
+         c2 = (tmp1-s1)/3 - 19;
+       }
+   }  else
+   if( c3>0 )
+   {
+     strlcpy(utf8,s1+(19+21+c3)*3,4); 
+     utf8[3]=0;
+     cc = osk->comp[2];
+     if( nv<19)                               /* 3rd element transform */
+     {
+        int cc_len = strlen(cc);
+        strcat(utf8,padd);
+        if( !(tmp2=strstr(cc,utf8)) || tmp2>=cc+cc_len-10 )	return 0;
+        strlcpy(utf8,tmp2+6,4); utf8[3]=0;
+        if( !(tmp1=strstr(s1+(19+21)*3,utf8)) )	return 0;
+        c3 = (tmp1-s1)/3 -19-21;
+     }  else
+     {   
+        int n1 = 0;
+        if( (tmp2=strstr(cc,utf8)) ) n1 = (tmp2-cc)%10;   
+        if( n1==6 )                         /* complex 3rd element -> disassemble */
+        {
+           strlcpy(utf8,tmp2-6,4);
+           if( !(tmp1=strstr(s1+(19+21)*3,utf8)) ) return 0;
+           c3 = (tmp1-s1)/3 -19-21;
+           nins =  get_kr_utf8(c1,c2,c3);
+           strlcpy(utf8,tmp2-3,4);
+           if( !(tmp1=strstr(s1,utf8)) )   return 0;
+           c1 = (tmp1-s1)/3;
+       }  else
+       {
+         nins =  get_kr_utf8(c1,c2,0);
+         if( !(tmp1=strstr(s1,utf8)) || (tmp1-s1)>=19*3) return 0;
+         c1 = (tmp1-s1)/3;
+       }
+       c2 = nv-19;
+       c3 = 0;
+     }
+   } else
+   {
+     return 0;
+   }
+   memmove( state->buffer+state->ptr-len1, state->buffer+state->ptr, len1+1 );
+   state->ptr  -= len1; 
+   state->size -= len1;
+   if( nins )  input_keyboard_line_append( state, (char*)&nins, 3);  
+   nins = get_kr_utf8(c1,c2,c3);
+   memcpy(padd,(char*)&nins,sizeof(uint32_t));
+   memcpy(pcmp,(char*)&nins,sizeof(uint32_t));
+   return 1;
 }
 #endif
 
@@ -2781,199 +2732,279 @@ static unsigned get_kr_composition( char* pcur, char* padd)
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-static bool input_keyboard_line_event(
+bool input_keyboard_line_event(
       input_driver_state_t *input_st,
-      input_keyboard_line_t *state, uint32_t character)
+      input_keyboard_line_t *state, uint32_t character)  
 {
-   char array[2];
-   bool            ret         = false;
-   const char            *word = NULL;
-   char            c           = (character >= 128) ? '?' : character;
+   static char* composition = NULL;
+#ifdef HAVE_LANGEXTRA
+   static int   comp_size   = 64;
+   int len;
+   uint32_t flag  = character & OSK_COMPOSITION;
+#endif
+   uint64_t data  = character & (OSK_COMPOSITION^0xFFFFFFFF);    /* for 4 byte utf-8(emoticon) null check. */
+   if( !character ) return false;                               /* each key down send ch:0*/
 
 #ifdef HAVE_LANGEXTRA
-   static uint32_t composition = 0;
-   /* reset composition, when edit box is opened. */
-   if (state->size == 0)
-      composition = 0;
-   /* reset composition, when 1 byte(=english) input */ 
-   if (character && character < 0xff)
-      composition = 0;
-   if (IS_COMPOSITION(character) || IS_END_COMPOSITION(character))
-   {
-      size_t len = strlen((char*)&composition);
-      if (composition && state->buffer && state->size >= len && state->ptr >= len)
-      {              
-         memmove(state->buffer + state->ptr-len, state->buffer + state->ptr, len + 1);
+   if( !composition   ) composition = (char*) malloc(comp_size);
+   if (state->size == 0 )
+      composition[0] = 0;
+   len = strlen(composition);
+   if( character==OSK_COMPOSITION || (data<0x80) ) /* input pure english -> end composition */			
+   { 
+      if( len && len<=state->ptr && len<=state->size && state->buffer)
+      {
+         memmove(state->buffer + state->ptr-len, state->buffer+state->ptr,  state->size - state->ptr + 1    );
          state->ptr  -= len;
          state->size -= len;
       }
-      if (IS_COMPOSITION_KR(character) && composition)
-      {  
-         unsigned new_comp;
-         character   = character & 0xffffff;
-         new_comp    = get_kr_composition((char*)&composition, (char*)&character); 
-         if (new_comp)
-            input_keyboard_line_append(state, (char*)&new_comp, 3);
-         composition = character;
-      }
-      else
-      {
-         if (IS_END_COMPOSITION(character))
-            composition = 0; 
-         else
-            composition = character & 0xffffff;
-         character     &= 0xffffff;
-      }
-      if (len && composition == 0)
-         word = state->buffer;  
-      if (character)
-         input_keyboard_line_append(state, (char*)&character, strlen((char*)&character));
-      word = state->buffer;
+      composition[0]=0;
+      get_osk_composition(composition);  /* when cursor is moved, composing word in edit box is removed (jp,cn). not kr. */
    }
-   else
+   if( !data ) return false;
+
+   if( flag & OSK_COMPOSITION) 
+   {
+      if (comp_size < len+8 )
+      {
+           comp_size  += 64;
+           composition = (char*)realloc(composition,comp_size);
+      }
+      strcat( composition,  (char*)&data);
+   } 
 #endif
 
-   /* Treat extended chars as ? as we cannot support
-    * printable characters for unicode stuff. */
-
-   if (c == '\r' || c == '\n')
+   if( data == (uint64_t)'\r' || data == (uint64_t)'\n')
    {
       state->cb(state->userdata, state->buffer);
+      return true;
 
-      array[0] = c;
-      array[1] = 0;
-
-      ret      = true;
-      word     = array;
-   }
-   else if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
+   }  else
+   if( data == (uint64_t)'\b' || data == (uint64_t)'\x7f') /* 0x7f is ASCII for del */
    {
-      if (state->ptr)
+      char* prv  = state->buffer;
+      int   ulen = utf8len(prv);
+      int   ptr  = 0;
+      int   i;
+      int   size = 0;
+      for( i=0; i<ulen; i++)
       {
-         unsigned i;
-
-         for (i = 0; i < input_st->osk_last_codepoint_len; i++)
-         {
-            memmove(state->buffer + state->ptr - 1,
-                  state->buffer + state->ptr,
-                  state->size - state->ptr + 1);
-            state->ptr--;
-            state->size--;
-         }
-
-         word     = state->buffer;
+          char* nxt  = prv;
+          utf8_get(&nxt,&size);   
+          ptr = prv - state->buffer; 
+          if( data == RETROK_BACKSPACE && state->ptr == nxt-state->buffer )  break; 
+          if( data == RETROK_DELETE    && state->ptr == prv-state->buffer )  break; 
+          prv = nxt;
+           size = 0;
+      };
+      if( size && size<=state->size && state->buffer)
+      { 
+           memmove(state->buffer + ptr, state->buffer + ptr + size,  state->size - ptr - size + 1 );
+           state->ptr   = ptr;
+           state->size -= size;
       }
-   }
-   else if (ISPRINT(c))
+     if(  composition)  composition[0]=0;
+
+   } else 
    {
-      /* Handle left/right here when suitable */
-      char *newbuf = (char*)
-         realloc(state->buffer, state->size + 2);
-      if (!newbuf)
-         return false;
-
-      memmove(newbuf + state->ptr + 1,
-            newbuf + state->ptr,
-            state->size - state->ptr + 1);
-      newbuf[state->ptr] = c;
-      state->ptr++;
-      state->size++;
-      newbuf[state->size] = '\0';
-
-      state->buffer = newbuf;
-
-      array[0] = c;
-      array[1] = 0;
-
-      word     = array;
+      input_keyboard_line_append(state,  (char*)&data, strlen( (char*)&data) ); 
    }
 
-   /* OSK - update last character */
-   if (word)
-      osk_update_last_codepoint(
-            &input_st->osk_last_codepoint,
-            &input_st->osk_last_codepoint_len,
-            word);
+   return false;
+}
+ 
+/* keyboard layout data. */
+osk_keyboard_t* osk_keyboard[64]={0,};
+osk_keyboard_t* osk_country[RETRO_LANGUAGE_LAST][OSK_PER_LANG];
 
-   return ret;
+void input_osk_next(enum osk_type *osk_idx, int delta)
+{
+#ifdef HAVE_LANGEXTRA
+   int i;
+   int lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
+   if (osk_country[lang][0])
+   {
+     int loop = (OSK_PER_LANG/delta);
+     if( delta<0 ) loop = -(OSK_PER_LANG/delta);
+     for(i=0; i<loop; i++)
+     {
+        *osk_idx = *osk_idx + delta;
+        if( *osk_idx>=OSK_PER_LANG ) *osk_idx = *osk_idx - OSK_PER_LANG;
+        if( osk_country[lang][*osk_idx] ) return;
+     }
+   }
+#endif
+   if (*osk_idx <  OSK_TYPE_LAST - 1 )
+         *osk_idx = (enum osk_type)(*osk_idx + 1);
+   else
+         *osk_idx = ((enum osk_type)OSK_LOWERCASE_LATIN);
 }
 
 
 void input_event_osk_append(
       input_keyboard_line_t *keyboard_line,
       enum osk_type *osk_idx,
-      unsigned *osk_last_codepoint,
-      unsigned *osk_last_codepoint_len,
       int ptr,
-      bool show_symbol_pages,
       const char *word,
       size_t word_len)
 {
-#ifdef HAVE_LANGEXTRA
-   if (string_is_equal(word, "\xe2\x87\xa6")) /* backspace character */
-      input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(word, "\xe2\x8f\x8e")) /* return character */
+   if (string_is_equal(word, "\xe2\x87\xa6")) 
+      input_keyboard_event(true, RETROK_BACKSPACE, '\b', 0, RETRO_DEVICE_KEYBOARD);	
+   else if (string_is_equal(word, "\xe2\x8f\x8e"))
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-   else
-   if (string_is_equal(word, "\xe2\x87\xa7")) /* up arrow */
-      *osk_idx = OSK_UPPERCASE_LATIN;
-   else if (string_is_equal(word, "\xe2\x87\xa9")) /* down arrow */
-      *osk_idx = OSK_LOWERCASE_LATIN;
-   else if (string_is_equal(word,"\xe2\x8a\x95")) /* plus sign (next button) */
-   {
-      if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_KOREAN   )
-      {
-         static int prv_osk = OSK_TYPE_UNKNOWN+1;
-         if (*osk_idx < OSK_KOREAN_PAGE1 )
-         {
-            prv_osk = *osk_idx;
-            *osk_idx =  OSK_KOREAN_PAGE1;
-         }
-         else
-            *osk_idx = (enum osk_type)prv_osk;
-      }
-      else
-      if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
-         *osk_idx = (enum osk_type)(*osk_idx + 1);
-      else
-         *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
-   }
-   else if (*osk_idx == OSK_KOREAN_PAGE1 && word && word_len == 3)
-   {
-      unsigned character = *((unsigned*)word) | 0x01000000;
-      input_keyboard_line_event(&input_driver_st,  keyboard_line, character);
-   }
-#else
-   if (string_is_equal(word, "Bksp"))
-      input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+   else if (string_is_equal(word, "\xe2\x87\xa7"))      
+      *osk_idx = (*osk_idx) | 0x01 ;
+   else if (string_is_equal(word, "\xe2\x87\xa9")) 
+      *osk_idx = (*osk_idx) & 0xFE ;
+   else if (string_is_equal(word,"\xe2\x8a\x95"))
+      input_osk_next( osk_idx, 2);
+   else if (string_is_equal(word, "Bksp"))
+      input_keyboard_event(true, '\b', '\b', 0, RETRO_DEVICE_KEYBOARD);
    else if (string_is_equal(word, "Enter"))
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-   else
-   if (string_is_equal(word, "Upper"))
+   else if (string_is_equal(word, "Upper"))
       *osk_idx = OSK_UPPERCASE_LATIN;
    else if (string_is_equal(word, "Lower"))
       *osk_idx = OSK_LOWERCASE_LATIN;
    else if (string_is_equal(word, "Next"))
-      if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
-         *osk_idx = (enum osk_type)(*osk_idx + 1);
-      else
-         *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
-#endif
-   else
+       input_osk_next( osk_idx, 1);
+   else 
    {
+#ifdef HAVE_LANGEXTRA
+      if( word_len>0 && word_len<4 )
+      { 
+         uint32_t character = 0;
+         memcpy( &character, word, word_len+1);
+         if( get_osk_composition( (char*)&character ) ) 
+         {
+            word = (char*) &character;
+            word_len = strlen(word);
+         }
+      }
+#endif
       input_keyboard_line_append(keyboard_line, word, word_len);
-      osk_update_last_codepoint(
-            osk_last_codepoint,
-            osk_last_codepoint_len,
-            word);
    }
 }
+
+
+#ifdef HAVE_LANGEXTRA
+
+enum 
+{
+   OSK_MODE_1_NAME    = 1,
+   OSK_MODE_2_MARK    = 2,
+   OSK_MODE_3_COMP    = 3,
+   OSK_MODE_4_GRID    = 4,
+   OSK_MODE_5_COUNTRY = 5,
+   OSK_MODE_6_LAYOUT  = 6
+};
+typedef struct
+{   
+   int    country;
+   int    keyboard;
+   int    index;
+   int    mode;
+} JSON_OSK_Context;
+
+static bool JSON_OSK_ObjectMemberHandler(void *context, const char *str, size_t len)
+{
+   JSON_OSK_Context *pCtx = (JSON_OSK_Context *)context;
+   if( len==0 ) return true;
+   pCtx->index = 0;
+   if( string_is_equal(str,"name"))	
+   {   pCtx->mode = OSK_MODE_1_NAME;
+       osk_keyboard[pCtx->keyboard] = (osk_keyboard_t*) calloc( 1,sizeof(osk_keyboard_t) );
+       pCtx->keyboard++;
+   }   else
+   if( string_is_equal(str,"mark"   )) pCtx->mode = OSK_MODE_2_MARK;    else
+   if( string_is_equal(str,"comp"   )) pCtx->mode = OSK_MODE_3_COMP;    else
+   if( string_is_equal(str,"grid"   )) pCtx->mode = OSK_MODE_4_GRID;    else
+   if( string_is_equal(str,"country")) pCtx->mode = OSK_MODE_5_COUNTRY; else
+   if( string_is_equal(str,"layout" )) pCtx->mode = OSK_MODE_6_LAYOUT;  else
+       pCtx->mode = 0; 
+   return true;
+}
+
+static bool JSON_OSK_StringHandler     (void *ct,const char*str, size_t len)
+{
+   JSON_OSK_Context *pCtx = (JSON_OSK_Context*)ct; 
+   int index   = pCtx->index;
+   pCtx->index++;
+   if( pCtx->mode <0 )  return true;
+   if( pCtx->mode == OSK_MODE_1_NAME || pCtx->mode == OSK_MODE_2_MARK ||
+       pCtx->mode == OSK_MODE_3_COMP || pCtx->mode == OSK_MODE_4_GRID ) 
+   {
+      int keyboard   = pCtx->keyboard-1; 
+      if( keyboard<0 || !osk_keyboard[keyboard] ) return true;
+      if( pCtx->mode == OSK_MODE_1_NAME ) 
+          osk_keyboard[keyboard]->name = strdup(str);  else
+      if( pCtx->mode == OSK_MODE_2_MARK ) osk_keyboard[keyboard]->mark = strdup(str);  else
+      if( pCtx->mode == OSK_MODE_3_COMP ) 
+          osk_keyboard[keyboard]->comp[index] = strdup(str);  else
+      if( pCtx->mode == OSK_MODE_4_GRID && index<OSK_CHARS_MAX) osk_keyboard[keyboard]->grid[index] = strdup(str); 
+   }
+   if( pCtx->mode == OSK_MODE_5_COUNTRY  )   pCtx->country = string_to_unsigned(str);
+   if( pCtx->mode == OSK_MODE_6_LAYOUT   )
+   {
+         int i;
+         int country = pCtx->country;
+         osk_country[country][index] = 0;
+         for( i=0; i<64; i++)
+         {
+            if( !osk_keyboard[i]) break;
+            if( !string_is_equal(osk_keyboard[i]->name,str))	continue;
+            osk_country[country][index] = osk_keyboard[i];
+            return true;
+         }
+   }
+   return true;
+}
+static bool JSON_OSK_NumberHandler      (void *context, const char*str,size_t len)  { return true;}
+static bool JSON_OSK_BoolHandler        (void *context, bool value  )  { return true;}
+static bool JSON_OSK_StartObjectHandler (void *context)  { return true;}
+static bool JSON_OSK_EndObjectHandler   (void *context)  { return true;}
+static bool JSON_OSK_StartArrayHandler  (void *context)  { return true;}
+static bool JSON_OSK_EndArrayHandler    (void *context)  { return true;}
+bool input_read_keyboard()
+{
+    rjson_t* parser;
+    JSON_OSK_Context context = {0};
+    char path[256]   = {0};
+	intfstream_t *file;
+    settings_t *settings = config_get_ptr();
+    fill_pathname_join_special(path, settings->paths.directory_assets, "keyboard.json", sizeof(path));
+	file = intfstream_open_file( path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+    while(true)
+    {
+       if (!(parser = rjson_open_stream(file))) break;
+       rjson_set_options(parser, RJSON_OPTION_ALLOW_UTF8BOM  | RJSON_OPTION_ALLOW_COMMENTS
+                 | RJSON_OPTION_ALLOW_UNESCAPED_CONTROL_CHARACTERS | RJSON_OPTION_REPLACE_INVALID_ENCODING);
+       if (rjson_parse(parser, &context, 
+                JSON_OSK_ObjectMemberHandler, JSON_OSK_StringHandler, JSON_OSK_NumberHandler,
+                JSON_OSK_StartObjectHandler,  JSON_OSK_EndObjectHandler, JSON_OSK_StartArrayHandler, JSON_OSK_EndArrayHandler,
+                JSON_OSK_BoolHandler, NULL) 
+                != RJSON_DONE)
+       {
+            break;
+       }
+       rjson_free(parser);
+       break;
+   };
+     intfstream_close(file);
+     free(file);
+     return true;
+}
+
+#endif
 
 void *input_driver_init_wrap(input_driver_t *input, const char *name)
 {
    void *ret                   = NULL;
    if (!input)
       return NULL;
+#ifdef HAVE_LANGEXTRA
+   input_read_keyboard();
+#endif
    if ((ret = input->init(name)))
    {
       input_driver_init_joypads();
