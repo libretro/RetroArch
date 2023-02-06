@@ -331,6 +331,7 @@ enum retro_key
    RETROK_CLEAR          = 12,
    RETROK_RETURN         = 13,
    RETROK_PAUSE          = 19,
+   RETROK_PASTE          = 22,
    RETROK_ESCAPE         = 27,
    RETROK_SPACE          = 32,
    RETROK_EXCLAIM        = 33,
