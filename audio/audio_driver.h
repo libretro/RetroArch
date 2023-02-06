@@ -167,13 +167,84 @@ typedef struct audio_driver
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
+/**
+ * Bit flags that describe the current state of the audio driver.
+ */
 enum audio_driver_state_flags
 {
+   /**
+    * Indicates that the driver was successfully created
+    * and is currently valid.
+    * You may submit samples for output at any time.
+    *
+    * This flag does \em not mean that the player will hear anything;
+    * the driver might be suspended.
+    *
+    * @see AUDIO_FLAG_SUSPENDED
+    */
    AUDIO_FLAG_ACTIVE       = (1 << 0),
+
+   /**
+    * Indicates that the audio driver outputs floating-point samples,
+    * as opposed to integer samples.
+    *
+    * All audio is sent through the resampler,
+    * which operates on floating-point samples.
+    *
+    * If this flag is set, then the resampled output doesn't need
+    * to be converted back to \c int16_t format.
+    *
+    * This won't affect the audio that the core writes;
+    * either way, it's supposed to output \c int16_t samples.
+    *
+    * This flag won't be set if the selected audio driver
+    * doesn't support (or is configured to not use) \c float samples.
+    *
+    * @see audio_driver_t::use_float
+    */
    AUDIO_FLAG_USE_FLOAT    = (1 << 1),
+
+   /**
+    * Indicates that the audio driver is not currently rendering samples,
+    * although it's valid and can be resumed.
+    *
+    * Usually set when RetroArch needs to simulate audio output
+    * without actually rendering samples (e.g. runahead),
+    * or when reinitializing the driver.
+    *
+    * Samples will still be accepted, but they will be silently dropped.
+    */
    AUDIO_FLAG_SUSPENDED    = (1 << 2),
+
+   /**
+    * Indicates that the audio mixer is available
+    * and can mix one or more audio streams.
+    *
+    * Will not be set if RetroArch was built without \c HAVE_AUDIOMIXER.
+    */
    AUDIO_FLAG_MIXER_ACTIVE = (1 << 3),
+
+   /**
+    * Indicates that the frontend will never need audio from the core,
+    * usually when runahead is active.
+    *
+    * When set, any audio received by the core will not be processed.
+    *
+    * Will not be set if RetroArch was built without \c HAVE_RUNAHEAD.
+    *
+    * @see RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE
+    */
    AUDIO_FLAG_HARD_DISABLE = (1 << 4),
+
+   /**
+    * Indicates that audio rate control is enabled.
+    * This means that the audio system will adjust the rate at which
+    * it sends samples to the driver,
+    * minimizing the occurrences of buffer overrun or underrun.
+    *
+    * @see audio_driver_t::write_avail
+    * @see audio_driver_t::buffer_size
+    */
    AUDIO_FLAG_CONTROL      = (1 << 5)
 };
 
