@@ -274,6 +274,20 @@ uint32_t utf8_walk(const char **string)
    return ret | (first & 31) << 6;
 }
 
+/* return utf8 and size  */
+uint32_t utf8_get(char **string, int* psize)
+{
+   uint32_t  ret    = 0;
+   uint8_t*  pret   = (uint8_t*)&ret;
+   char* orig = *string;
+   pret[0] = UTF8_WALKBYTE(string);
+   if( pret[0] >= 0xC0) pret[1] = UTF8_WALKBYTE(string); 
+   if( pret[0] >= 0xE0) pret[2] = UTF8_WALKBYTE(string); 
+   if( pret[0] >= 0xF0) pret[3] = UTF8_WALKBYTE(string); 
+   if( psize )	*psize = (*string - orig);
+   return ret;
+}
+
 static bool utf16_to_char(uint8_t **utf_data,
       size_t *dest_len, const uint16_t *in)
 {
@@ -408,6 +422,19 @@ char *local_to_utf8_string_alloc(const char *str)
       return strdup(str); /* Assume string needs no modification if not on Windows */
 #endif
 	return NULL;
+}
+
+char* codepage_to_utf8_string_alloc(const char *str, enum CodePage codepage)
+{
+   if (str && *str)
+   {
+#if defined(_WIN32) && !defined(_XBOX) && !defined(UNICODE)
+      return mb_to_mb_string_alloc(str, codepage, CODEPAGE_UTF8);
+#else
+      return strdup(str);
+#endif
+   }
+   return NULL;
 }
 
 /**
