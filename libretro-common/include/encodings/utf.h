@@ -118,6 +118,8 @@ char *utf8_to_local_string_alloc(const char *str);
  **/
 char *local_to_utf8_string_alloc(const char *str);
 
+uint32_t utf8_get( char **string, int* psize);
+char* codepage_to_utf8_string_alloc(const char *str, enum CodePage codepage);
 /**
  * utf8_to_utf16_string_alloc:
  * 
