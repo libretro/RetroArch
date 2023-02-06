@@ -51,7 +51,7 @@
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../core_info.h"
-
+#include "../../input/input_osk.h"
 #if !defined(_XBOX)
 
 #include <commdlg.h>
@@ -920,8 +920,52 @@ static LRESULT CALLBACK wnd_proc_common(
             /* Seems to be hard to synchronize
              * WM_CHAR and WM_KEYDOWN properly.
              */
-            input_keyboard_event(true, RETROK_UNKNOWN,
-                  wparam, mod, RETRO_DEVICE_KEYBOARD);
+            /* ctrl-v  paste clip board */
+            if( wparam == RETROK_PASTE || (wparam>127 && wparam<256) )  
+            {
+                int   size = 0;
+                char* utf8 = NULL;
+                int   codepage;
+                WORD  lang = LOWORD(GetKeyboardLayout(0));
+                char  data[8];
+                GetLocaleInfoA( MAKELCID(lang,SORT_DEFAULT), LOCALE_IDEFAULTANSICODEPAGE, data, _countof(data) );
+                codepage = atoi(data);
+                if( wparam == RETROK_PASTE )
+                {
+                    if( IsClipboardFormatAvailable(CF_TEXT) && OpenClipboard(hwnd) ) 
+                    {
+                        HGLOBAL hglb = GetClipboardData(CF_TEXT); 
+                        LPTSTR  str  = NULL;
+                        char*   cur  = NULL;
+                        int     ulen = 0;
+                        int     i;
+                        if( hglb ) str  =  GlobalLock(hglb); 
+                        if( str  ) utf8 = codepage_to_utf8_string_alloc((const char*)str, (enum CodePage)codepage);
+                        if( utf8 ) ulen = utf8len(utf8);
+                        cur = utf8;
+                        for( i=0; i<ulen; i++)	input_keyboard_event(true, RETROK_UNKNOWN, utf8_get(&cur,0), 0, RETRO_DEVICE_KEYBOARD);
+                        if( utf8 ) free(utf8);
+                        if( hglb ) GlobalUnlock(hglb); 
+                        CloseClipboard();  
+                    } 
+                    return TRUE;
+                }
+                if( wparam>127 && wparam<256 ) 
+                {   
+                    uint32_t orig = wparam;
+                    wparam   = '?';
+                    if( codepage ) 
+                    {
+                        char*   cur  = NULL;
+                        utf8 = codepage_to_utf8_string_alloc((const char*)&orig,  (enum CodePage)codepage);
+                        if( utf8 ) cur = utf8;
+                        input_keyboard_event(true, RETROK_UNKNOWN, utf8_get(&cur,0) , 0,   RETRO_DEVICE_KEYBOARD);
+                        free(utf8);
+                        return TRUE;
+                    }
+                }
+            }
+            input_keyboard_event(true, RETROK_UNKNOWN, wparam, mod,  RETRO_DEVICE_KEYBOARD);
          }
          return TRUE;
       case WM_CLOSE:
@@ -1175,41 +1219,48 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
    bool keydown                  = true;
    bool quit                     = false;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
+   static int rsv_comp  = 0;
    switch (message)
    {
+      case WM_IME_STARTCOMPOSITION: 
+         rsv_comp =1;
+         break;
       case WM_IME_ENDCOMPOSITION:
-         input_keyboard_event(true, 1, 0x80000000, 0, RETRO_DEVICE_KEYBOARD);
+         input_keyboard_event(true, 1, OSK_COMPOSITION, 0, RETRO_DEVICE_KEYBOARD);
+            rsv_comp = 0;
          break;
       case WM_IME_COMPOSITION:
          {
             HIMC    hIMC = ImmGetContext(hwnd);
             unsigned gcs = lparam & (GCS_COMPSTR|GCS_RESULTSTR);
-            if (gcs)
+            wchar_t* wstr = NULL;
+            char*    utf8 = NULL;
+            while( gcs )
             {
-               int i;
-               wchar_t wstr[4]={0,};
-               int len1 = ImmGetCompositionStringW(hIMC, gcs, wstr, 4);
-               wstr[2]  = wstr[1];
-               wstr[1]  = 0;
-               if ((len1 <= 0) || (len1 > 4))
-                  break;
-               for (i = 0; i < len1; i = i + 2)
+               int len = ImmGetCompositionStringW(hIMC, gcs, NULL, 0);
+               if( !len ) break;
+               wstr = (wchar_t*) malloc(len+2);
+               if( !wstr ) break; 
+               len = ImmGetCompositionStringW(hIMC, gcs, wstr, len) / 2;
+               if( !len ) break;
+               wstr[len] = L'\0';
+               utf8 = utf16_to_utf8_string_alloc(wstr);
+               if ( utf8 )
                {
-                  size_t len2;
-                  char *utf8   = utf16_to_utf8_string_alloc(wstr+i);
-                  if (!utf8)
-                     continue;
-                  len2         = strlen(utf8) + 1;
-                  if (len2 >= 1 && len2 <= 3)
+                  int i; 
+                  char* nxt = utf8;
+                  input_keyboard_event(true, 1, OSK_COMPOSITION, 0, RETRO_DEVICE_KEYBOARD);
+                  for (i=0; i<len; i++)
                   {
-                     if (len2 >= 2)
-                        utf8[3] = (gcs) | (gcs >> 4);
-                     input_keyboard_event(true, 1, *((int*)utf8), 0, RETRO_DEVICE_KEYBOARD);
+                    uint32_t ch   = utf8_get(&nxt,0);
+                    if( !(gcs&GCS_RESULTSTR) ) ch = ch | OSK_COMPOSITION; 
+                    input_keyboard_event(true, 1, ch , 0, RETRO_DEVICE_KEYBOARD);
                   }
-                  free(utf8);
                }
+               break;
             }
+            if( utf8) free(utf8);
+            if (wstr) free(wstr);
             ImmReleaseContext(hwnd, hIMC);
             return 0;   
          }
@@ -1220,6 +1271,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
          /* fall-through */
       case WM_KEYDOWN:              /* Key pressed  */
       case WM_SYSKEYDOWN:           /* Key pressed  */
+         if( keydown && rsv_comp ) return 0;
          quit                     = true;
          {
             uint16_t mod          = 0;
