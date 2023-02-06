@@ -4609,15 +4609,14 @@ static void rgui_render_osk(
    input_driver_state_t 
          *input_st          = input_state_get_ptr();
    int osk_ptr              = input_st->osk_ptr;
-   char **osk_grid          = input_st->osk_grid;
    const char *input_str    = menu_input_dialog_get_buffer();
    const char *input_label  = menu_input_dialog_get_label_buffer();
 
    /* Sanity check 1 */
-   if (osk_ptr < 0 || osk_ptr >= 44 || !osk_grid[0])
+   if ( !input_st->osk )
       return;
    
-   key_text_offset_x      = 8;
+   key_text_offset_x      = 7;
    key_text_offset_y      = 6;
    key_width              = rgui->font_width  + (key_text_offset_x * 2);
    key_height             = rgui->font_height + (key_text_offset_y * 2);
@@ -4633,7 +4632,7 @@ static void rgui_render_osk(
    input_str_max_length   = input_label_max_length - 1;
    input_offset_x         = 10 + (keyboard_width - (input_label_max_length * rgui->font_width_stride)) / 2;
    input_offset_y         = 10;
-   osk_width              = keyboard_width + 20;
+   osk_width              = keyboard_width + 18;
    osk_height             = keyboard_offset_y + keyboard_height + 10;
    osk_x                  = (fb_width - osk_width) / 2;
    osk_y                  = (fb_height - osk_height) / 2;
@@ -4775,7 +4774,7 @@ static void rgui_render_osk(
    }
    
    /* Draw keyboard 'keys' */
-   for (key_index = 0; key_index < 44; key_index++)
+   for (key_index = 0; key_index < OSK_CHARS_MAX; key_index++)
    {
       unsigned key_row     = (unsigned)(key_index / OSK_CHARS_PER_LINE);
       unsigned key_column  = (unsigned)(key_index - (key_row * OSK_CHARS_PER_LINE));
@@ -4783,7 +4782,7 @@ static void rgui_render_osk(
       int key_text_x       = osk_x + keyboard_offset_x + key_text_offset_x + (key_column * key_width);
       int key_text_y       = osk_y + keyboard_offset_y + key_text_offset_y + (key_row    * key_height);
       
-      const char *key_text = osk_grid[key_index];
+      const char *key_text = input_st->osk->grid[key_index];
       
       /* 'Command' keys use custom symbols - have to
        * detect them and use rgui_blit_symbol(). Everything
