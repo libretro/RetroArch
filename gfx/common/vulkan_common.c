@@ -1483,13 +1483,10 @@ static VkDevice vulkan_context_create_device_wrapper(
       VkPhysicalDevice gpu, void *opaque,
       const VkDeviceCreateInfo *create_info)
 {
-   gfx_ctx_vulkan_data_t *vk = (gfx_ctx_vulkan_data_t *)opaque;
-   VkDeviceCreateInfo info = *create_info;
-   VkDevice device = VK_NULL_HANDLE;
-   const char **device_extensions;
    VkResult res;
-
-   device_extensions = (const char **)malloc(
+   VkDeviceCreateInfo info        = *create_info;
+   VkDevice device                = VK_NULL_HANDLE;
+   const char **device_extensions = (const char **)malloc(
          (info.enabledExtensionCount +
                ARRAY_SIZE(vulkan_device_extensions) +
                ARRAY_SIZE(vulkan_optional_device_extensions)) * sizeof(const char *));
@@ -1508,7 +1505,6 @@ static VkDevice vulkan_context_create_device_wrapper(
    }
 
    /* When we get around to using fancier features we can chain in PDF2 stuff. */
-
    if ((res = vkCreateDevice(gpu, &info, NULL, &device)) != VK_SUCCESS)
    {
       RARCH_ERR("[Vulkan]: Failed to create device (%d).\n", res);
