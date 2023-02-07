@@ -85,7 +85,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "瀏覽儲存空間載入支援的檔案。\n首次執行請先安裝遊戲支援的核心, 安裝後使用此選項開啟遊戲檔案, 即可開始體驗復古電玩遊戲。\n無法開啟遊戲時:\n設定選項中開啟管理核心, 查看核心是否缺少必需檔案。\n可嘗試使用其他支援的核心開啟, 或替換遊戲原始檔案。\n如果仍然無法開啟, 可用錯誤回報請使用英語聯繫官方。"
+   "瀏覽儲存空間載入支援的檔案。\n首次執行請先安裝遊戲支援的核心, 安裝後使用此選項開啟遊戲檔案, 即可開始體驗復古電玩遊戲。\n無法開啟遊戲時:\n設定選項中開啟管理核心, 查看核心是否缺少必需檔案。\n可嘗試使用其他支援的核心開啟, 或替換遊戲原始檔案。\n如果仍然無法開啟, 可使用英語線上錯誤回報聯繫官方。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -167,7 +167,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS,
-   "設定應用程式, 部分設定需重新啟動。"
+   "變更應用程式相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
@@ -1246,7 +1246,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
-   "普通檔案。"
+   "未分類檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
@@ -2892,15 +2892,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "單次模式。\n先按住需要連發的按鍵, 按一下[連發鍵]開啟, 當連發中的按鍵放開時失效。\n[連發鍵] 可在「設定→輸入→連接端#控制器」選項中設定。"
+   "單次模式。\n先按住需要使用連發的按鍵, 再按一下[連發鍵]開啟連發, 當連發中的按鍵放開時失效。\n[連發鍵]可在「設定/輸入/連接端#控制器」 選項中個別設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "單鍵開關模式。\n按一下[連發鍵]開啟連發預設單鍵, 預設的單鍵會持續連發, 直到再按一下[連發鍵]關閉。\n[連發鍵] 可在「設定→輸入→連接端#控制器」選項中設定。"
+   "單鍵開關模式。\n按一下[連發鍵]開啟連發預設單鍵, 預設的單鍵會持續連發, 直到再按一下[連發鍵]關閉。\n[連發鍵]可在「設定/輸入/連接端#控制器」 選項中個別設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "單鍵按住模式。\n按住連發鍵開啟連發預設單鍵, 預設的單鍵會持續連發, 直到放開連發鍵時關閉。\n[連發鍵] 可在「設定→輸入→連接端#控制器」選項中設定。\n用於模擬個人電腦時代的按住自動射擊功能, 請將連發預設單鍵配置到射擊使用的按鍵。"
+   "單鍵按住模式。\n按住[連發鍵]時開啟連發預設單鍵, 預設的單鍵會持續連發, 直到放開[連發鍵]時關閉。\n[連發鍵]可在「設定/輸入/連接端#控制器」 選項中個別設定。\n用於模擬個人電腦時代的按住自動射擊功能, 請將連發預設單鍵配置到射擊使用的按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
@@ -2912,11 +2912,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   "連發鍵"
+   "管理連發鍵"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "變更控制器[連發鍵]的設定。"
+   "變更連發鍵的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -5607,7 +5607,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "顯示「即時存檔」選項"
+   "顯示「即時存檔」整合選項"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -6446,7 +6446,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
-   "用戶連線到主機使用的登入密碼。"
+   "玩家連線到主機使用的登入密碼。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
@@ -6454,7 +6454,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-   "用戶以觀眾身分連線到主機使用的登入密碼。"
+   "觀眾連線到主機使用的登入密碼。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
@@ -6466,7 +6466,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
-   "開啟時建立和連線到主機, 都使用觀眾身分開始。\n連線遊戲使用的身分, 在連線時可用快捷鍵切換。"
+   "開啟時建立和連線到主機都使用觀眾身分開始, 連線遊戲執行時可用快捷鍵切換所使用的身分。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
@@ -6494,11 +6494,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
-   "允許暫停"
+   "允許暫停模式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "允許玩家在網絡遊戲期間暫停遊戲。"
+   "允許連線遊戲使用暫停模式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -6514,7 +6514,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "禁止非主副模式下的連接, 不推薦使用, 除非裝置的效能非常低, 但網路連線速度非常快。"
+   "禁止非主副模式下的連接, 不推薦開啟除非裝置的效能非常低, 但網路連線速度非常快。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -6645,7 +6645,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
-   "下載核心選項中顯示實驗版核心, 實驗版用於開發與測試, 不推薦用於預設載入核心。"
+   "下載核心選項中顯示實驗版核心, 實驗版用於開發與測試, 不推薦用於項目的預設載入核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
@@ -8435,11 +8435,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
-   "刪除指定位置 ([左/右鍵]=指定位置)"
+   "刪除指定位置 ([左/右鍵]指定位置)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
-   "加入指定位置 ([左/右鍵]=指定位置)"
+   "加入指定位置 ([左/右鍵]指定位置)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
@@ -8504,7 +8504,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
-   "瀏覽位置數值: %08X ([左/右鍵]=瀏覽記憶體位置)"
+   "瀏覽位置數值: %08X ([左/右鍵]瀏覽記憶體位置)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
@@ -8670,7 +8670,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
-   "載入著色器配置檔, 自動設置著色器通道參數。\n依據顯示驅動程式載入支援的格式, 可從「主選單→資訊→裝置資訊」選項中查看, Cg、GLSL、Slang支援情況。\n載入位置可從「設定→資料夾→著色器」選項中變更。"
+   "載入著色器配置檔並自動設置著色器通道參數。\n支援格式可從「設定/驅動程式/顯示」選項, 按說明鍵查看著色器支援格式。\n載入位置可從「設定/資料夾/著色器」選項中變更。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
@@ -8742,7 +8742,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
-   "載入單通道著色器。\n全部載入的檔案類型必須相同, Cg、GLSL、Slang格式。\n載入位置可從「設定→資料夾→著色器」選項中變更。"
+   "載入單通道著色器。\n全部載入的檔案類型必須相同, Cg、GLSL、Slang格式。\n載入位置可從「設定/資料夾/著色器」選項中變更。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
@@ -8868,7 +8868,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
-   "目前使用的專用主題設定檔。\n載入優先順序: 遊戲>路徑>核心。"
+   "目前使用的專用主題設定檔。\n載入優先順序: 遊戲>路徑>核心>應用程式設定檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
@@ -12331,7 +12331,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_PEER_PAUSED,
-   "用戶端「%s」使用暫停模式。"
+   "連線端「%s」使用暫停模式。"
    )
 MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
@@ -13224,7 +13224,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
-   "無法使用倒帶模式, 已開啟單執行緒音訊。"
+   "無法使用倒帶模式, 執行正在音訊處理。"
    )
 MSG_HASH(
    MSG_REWIND_REACHED_END,

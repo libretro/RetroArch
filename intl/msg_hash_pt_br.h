@@ -12139,6 +12139,18 @@ MSG_HASH(
    "configurado na porta"
    )
 MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT_NR,
+   "%s configurado na porta %u"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT,
+   "desconectado da porta"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
+   "%s desconectado da porta %u"
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "não configurado"
    )
