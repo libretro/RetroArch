@@ -304,7 +304,7 @@ static void frontend_ps2_get_env(int *argc, char *argv[],
 
 static void common_init_drivers(bool extra_drivers) 
 {
-   init_drivers(true);
+   init_drivers(extra_drivers);
 
    poweroffSetCallback(&poweroffHandler, NULL);
 
