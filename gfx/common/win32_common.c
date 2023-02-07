@@ -52,6 +52,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../core_info.h"
 #include "../../input/input_osk.h"
+
 #if !defined(_XBOX)
 
 #include <commdlg.h>
@@ -920,6 +921,7 @@ static LRESULT CALLBACK wnd_proc_common(
             /* Seems to be hard to synchronize
              * WM_CHAR and WM_KEYDOWN properly.
              */
+
             /* ctrl-v  paste clip board */
             if( wparam == RETROK_PASTE || (wparam>127 && wparam<256) )  
             {
@@ -965,7 +967,8 @@ static LRESULT CALLBACK wnd_proc_common(
                     }
                 }
             }
-            input_keyboard_event(true, RETROK_UNKNOWN, wparam, mod,  RETRO_DEVICE_KEYBOARD);
+            input_keyboard_event(true, RETROK_UNKNOWN,
+                  wparam, mod, RETRO_DEVICE_KEYBOARD);
          }
          return TRUE;
       case WM_CLOSE:
@@ -1227,7 +1230,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
          break;
       case WM_IME_ENDCOMPOSITION:
          input_keyboard_event(true, 1, OSK_COMPOSITION, 0, RETRO_DEVICE_KEYBOARD);
-            rsv_comp = 0;
+         rsv_comp = 0;
          break;
       case WM_IME_COMPOSITION:
          {
@@ -1253,7 +1256,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                   for (i=0; i<len; i++)
                   {
                     uint32_t ch   = utf8_get(&nxt,0);
-                    if( !(gcs&GCS_RESULTSTR) ) ch = ch | OSK_COMPOSITION; 
+                    if( !(gcs&GCS_RESULTSTR) ) ch = ch | OSK_COMPOSITION;
                     input_keyboard_event(true, 1, ch , 0, RETRO_DEVICE_KEYBOARD);
                   }
                }
