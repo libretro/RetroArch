@@ -105,7 +105,6 @@ typedef struct settings
       int location_update_interval_distance;
       int state_slot;
       int audio_wasapi_sh_buffer_length;
-      int microphone_wasapi_sh_buffer_length;
       int crt_switch_center_adjust;
       int crt_switch_porch_adjust;
 #ifdef HAVE_VULKAN
@@ -162,6 +161,7 @@ typedef struct settings
       unsigned microphone_block_frames;
       unsigned audio_latency;
       unsigned microphone_latency;
+      unsigned microphone_wasapi_sh_buffer_length;
 
       unsigned fps_update_interval;
       unsigned memory_update_interval;

@@ -5093,6 +5093,18 @@ static void setting_get_string_representation_int_audio_wasapi_sh_buffer_length(
    else
       strlcpy(s, "Auto", len);
 }
+
+static void setting_get_string_representation_uint_microphone_wasapi_sh_buffer_length(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   if (*setting->value.target.unsigned_integer > 0)
+      snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
+   else
+      strlcpy(s, "Auto", len);
+}
 #endif
 
 static void setting_get_string_representation_crt_switch_resolution_super(
@@ -14034,9 +14046,9 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
-            CONFIG_INT(
+            CONFIG_UINT(
                   list, list_info,
-                  &settings->ints.microphone_wasapi_sh_buffer_length,
+                  &settings->uints.microphone_wasapi_sh_buffer_length,
                   MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
                   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
                   DEFAULT_WASAPI_SH_BUFFER_LENGTH,
@@ -14045,10 +14057,10 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, -16.0f, 0.0f, 16.0f, true, false);
+            menu_settings_list_current_add_range(list, list_info, 0.0f, 0.0f, 16.0f, true, false);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
             (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_int_audio_wasapi_sh_buffer_length;
+                  &setting_get_string_representation_uint_microphone_wasapi_sh_buffer_length;
             }
 #endif
 
