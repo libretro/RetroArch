@@ -171,8 +171,9 @@ typedef struct microphone_driver
 
 
    /**
-    * Frees the driver context and closes all microphones.
-    * There is no need to call close_mic after calling this function.
+    * Frees the driver context.
+    * There is no need to close the microphones in this function,
+    * the microphone system will do that before calling this.
     * Does nothing if \c driver_context is \c NULL.
     *
     * @param driver_context Pointer to the microphone driver context.
@@ -215,7 +216,7 @@ typedef struct microphone_driver
    ssize_t (*read)(void *driver_context, void *mic_context, void *buffer, size_t buffer_size);
 
    /**
-    * Sets the nonblocking state of all microphones.
+    * Sets the nonblocking state of the driver.
     * Primarily used for fast-forwarding.
     * If the driver is in blocking mode (the default),
     * \c ::read() will block the current thread
@@ -275,6 +276,9 @@ typedef struct microphone_driver
     * but driver implementations do not need to concern themselves with that;
     * when the driver is ready, it will call this function.
     *
+    * Opened microphones must *not* be activated,
+    * i.e. \c mic_alive on a newly-opened microphone should return \c false.
+    *
     * @param data Handle to the driver context
     * that was originally returned by ::init.
     * @param device A specific device name (or other options)
@@ -321,9 +325,8 @@ typedef struct microphone_driver
 
    /**
     * Returns the active state of the provided microphone.
-    * Note that this describes the user-facing state of the microphone;
-    * this function can still return \c true if the mic driver is paused
-    * or muted.
+    * This is the state of the device itself,
+    * not of any user-decided state.
     *
     * @param[in] driver_context Pointer to the driver context.
     * Will be the value that was returned by \c ::init().
@@ -334,10 +337,43 @@ typedef struct microphone_driver
     */
    bool (*mic_alive)(const void *driver_context, const void *mic_context);
 
+   /**
+    * Begins capture activity on the provided microphone.
+    *
+    * @param[in] driver_context Pointer to the driver context.
+    * Will be the value that was returned by \c ::init().
+    * @param[in] mic_context Pointer to a particular microphone's context.
+    * Will be a value that was returned by \c ::open_mic().
+    * @return \c true if the microphone was successfully started
+    * or if it was already running. \c false if there was an error.
+    */
    bool (*start_mic)(void *driver_context, void *microphone_context);
 
+   /**
+    * Pauses capture activity on the provided microphone.
+    * This function must not deallocate the microphone.
+    *
+    * @param[in] driver_context Pointer to the driver context.
+    * Will be the value that was returned by \c ::init().
+    * @param[in] mic_context Pointer to a particular microphone's context.
+    * Will be a value that was returned by \c ::open_mic().
+    * @return \c true if the microphone was successfully paused
+    * or if it was already stopped. \c false if there was an error.
+    */
    bool (*stop_mic)(void *driver_context, void *microphone_context);
 
+   /**
+    * Queries whether this microphone captures floating-point samples,
+    * as opposed to 16-bit integer samples.
+    *
+    * Optional; if not provided, then \c int16_t samples are assumed.
+    *
+    * @param[in] driver_context Pointer to the driver context.
+    * Will be the value that was returned by \c ::init().
+    * @param[in] mic_context Pointer to a particular microphone's context.
+    * Will be a value that was returned by \c ::open_mic().
+    * @return \c true if this microphone provides floating-point samples.
+    */
    bool (*mic_use_float)(const void *driver_context, const void *microphone_context);
 } microphone_driver_t;
 
@@ -381,17 +417,25 @@ typedef struct
 } microphone_driver_state_t;
 
 /**
- * Starts the active microphone driver.
+ * Starts all enabled microphones,
+ * and opens all pending microphones.
+ *
  * @param is_shutdown TODO
- * @return \c true if the configured driver was started,
+ * @return \c true if the configured driver was started
+ * and pending microphones opened,
  * \c false if there was an error.
  */
 bool microphone_driver_start(bool is_shutdown);
 
 /**
- * Stops the active microphone driver.
+ * Stops all enabled microphones.
+ * It is not an error to call this function
+ * if the mic driver is already stopped,
+ * or if there are no open microphones.
+ *
  * Microphones will not receive any input
  * until \c microphone_driver_start is called again.
+ *
  * @return \c true if the driver was stopped,
  * \c false if there was an error.
  */
