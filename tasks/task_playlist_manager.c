@@ -15,9 +15,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <ctype.h>
 
 #include <string/stdstring.h>
@@ -27,7 +28,6 @@
 
 #include "tasks_internal.h"
 
-#include "../configuration.h"
 #include "../msg_hash.h"
 #include "../file_path_special.h"
 #include "../playlist.h"

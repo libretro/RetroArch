@@ -2039,10 +2039,6 @@ MSG_HASH(
    "الحد الأقصى لعدد المستخدمين المدعومين من RetroArch."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "سلوك نوع الاستطلاع"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "تذكير الروابط لهذا النواة"
    )
@@ -7569,6 +7565,10 @@ MSG_HASH(
    "مساعدة"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
+   "مسح"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
    "استكشاف الأخطاء في الصوت/الفيديو"
    )
@@ -8531,10 +8531,6 @@ MSG_HASH(
    "فتحت لقطة من الخانة [%d]."
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "فتحت لقطة من الخانة [-1] (تلقائي)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "جار التحميل"
    )
@@ -8693,10 +8689,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "حفظ الحالة إلى فتحة #%d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "حفظ الحالة إلى الفتحة #-1 (تلقائي)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

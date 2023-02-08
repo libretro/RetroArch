@@ -1334,12 +1334,10 @@ const char *core_option_manager_get_category_desc(core_option_manager_t *opt,
    {
       struct core_category *category = &opt->cats[i];
 
-      if ((key_hash == category->key_hash) &&
-          !string_is_empty(category->key) &&
-          string_is_equal(key, category->key))
-      {
+      if (   (key_hash == category->key_hash)
+          && !string_is_empty(category->key)
+          &&  string_is_equal(key, category->key))
          return category->desc;
-      }
    }
 
    return NULL;
@@ -1375,12 +1373,10 @@ const char *core_option_manager_get_category_info(core_option_manager_t *opt,
    {
       struct core_category *category = &opt->cats[i];
 
-      if ((key_hash == category->key_hash) &&
-          !string_is_empty(category->key) &&
-          string_is_equal(key, category->key))
-      {
+      if (   (key_hash == category->key_hash)
+          && !string_is_empty(category->key)
+          &&  string_is_equal(key, category->key))
          return category->info;
-      }
    }
 
    return NULL;
@@ -1404,14 +1400,12 @@ const char *core_option_manager_get_category_info(core_option_manager_t *opt,
 bool core_option_manager_get_category_visible(core_option_manager_t *opt,
       const char *key)
 {
+   size_t i;
    nested_list_item_t *category_item = NULL;
    nested_list_t *option_list        = NULL;
-   nested_list_item_t *option_item   = NULL;
-   const struct core_option *option  = NULL;
-   size_t i;
 
-   if (!opt ||
-       string_is_empty(key))
+   if (  !opt 
+       || string_is_empty(key))
       return false;
 
    /* Fetch category item from map */
@@ -1426,10 +1420,9 @@ bool core_option_manager_get_category_visible(core_option_manager_t *opt,
    /* Loop over child options */
    for (i = 0; i < nested_list_get_size(option_list); i++)
    {
-      option_item = nested_list_get_item_idx(option_list, i);
-      option      = (const struct core_option *)
+      nested_list_item_t *option_item  = nested_list_get_item_idx(option_list, i);
+      const struct core_option *option = (const struct core_option *)
             nested_list_item_get_value(option_item);
-
       /* Check if current option is visible */
       if (option && option->visible)
          return true;
@@ -1463,9 +1456,9 @@ bool core_option_manager_get_idx(core_option_manager_t *opt,
    uint32_t key_hash;
    size_t i;
 
-   if (!opt ||
-       string_is_empty(key) ||
-       !idx)
+   if (  !opt
+       || string_is_empty(key)
+       || !idx)
       return false;
 
    key_hash = core_option_manager_hash_string(key);
@@ -1474,9 +1467,9 @@ bool core_option_manager_get_idx(core_option_manager_t *opt,
    {
       struct core_option *option = &opt->opts[i];
 
-      if ((key_hash == option->key_hash) &&
-          !string_is_empty(option->key) &&
-          string_is_equal(key, option->key))
+      if (   (key_hash == option->key_hash)
+          && !string_is_empty(option->key)
+          &&  string_is_equal(key, option->key))
       {
          *idx = i;
          return true;
@@ -1511,10 +1504,10 @@ bool core_option_manager_get_val_idx(core_option_manager_t *opt,
    uint32_t val_hash;
    size_t i;
 
-   if (!opt ||
-       (idx >= opt->size) ||
-       string_is_empty(val) ||
-       !val_idx)
+   if (   !opt
+       || (idx >= opt->size)
+       || string_is_empty(val)
+       || !val_idx)
       return false;
 
    val_hash = core_option_manager_hash_string(val);
@@ -1560,20 +1553,17 @@ const char *core_option_manager_get_desc(core_option_manager_t *opt,
 {
    const char *desc = NULL;
 
-   if (!opt ||
-       (idx >= opt->size))
+   if (   !opt
+       || (idx >= opt->size))
       return NULL;
-
    /* Try categorised description first,
     * if requested */
    if (categorized)
       desc = opt->opts[idx].desc_categorized;
-
    /* Fall back to legacy description, if
     * required */
    if (string_is_empty(desc))
-      desc = opt->opts[idx].desc;
-
+      return opt->opts[idx].desc;
    return desc;
 }
 
@@ -1600,20 +1590,18 @@ const char *core_option_manager_get_info(core_option_manager_t *opt,
 {
    const char *info = NULL;
 
-   if (!opt ||
-       (idx >= opt->size))
+   if (   !opt
+       || (idx >= opt->size))
       return NULL;
 
    /* Try categorised information first,
     * if requested */
    if (categorized)
       info = opt->opts[idx].info_categorized;
-
    /* Fall back to legacy information, if
     * required */
    if (string_is_empty(info))
-      info = opt->opts[idx].info;
-
+      return opt->opts[idx].info;
    return info;
 }
 
@@ -1634,8 +1622,8 @@ const char *core_option_manager_get_val(core_option_manager_t *opt,
 {
    struct core_option *option = NULL;
 
-   if (!opt ||
-       (idx >= opt->size))
+   if (   !opt
+       || (idx >= opt->size))
       return NULL;
 
    option = (struct core_option*)&opt->opts[idx];
@@ -1661,8 +1649,8 @@ const char *core_option_manager_get_val_label(core_option_manager_t *opt,
 {
    struct core_option *option = NULL;
 
-   if (!opt ||
-       (idx >= opt->size))
+   if (   !opt 
+       || (idx >= opt->size))
       return NULL;
 
    option = (struct core_option*)&opt->opts[idx];
@@ -1772,8 +1760,8 @@ void core_option_manager_adjust_val(core_option_manager_t* opt,
 {
    struct core_option* option = NULL;
 
-   if (!opt ||
-       (idx >= opt->size))
+   if (   !opt
+       || (idx >= opt->size))
       return;
 
    option        = (struct core_option*)&opt->opts[idx];
@@ -1819,8 +1807,8 @@ void core_option_manager_adjust_val(core_option_manager_t* opt,
 void core_option_manager_set_default(core_option_manager_t *opt,
       size_t idx, bool refresh_menu)
 {
-   if (!opt ||
-       (idx >= opt->size))
+   if (   !opt
+       || (idx >= opt->size))
       return;
 
    opt->opts[idx].index = opt->opts[idx].default_index;

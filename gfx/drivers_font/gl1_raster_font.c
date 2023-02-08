@@ -148,8 +148,11 @@ static void *gl1_raster_font_init(void *data,
          font->gl->ctx_driver->make_current(false);
 
    glGenTextures(1, &font->tex);
-
-   gl1_bind_texture(font->tex, GL_CLAMP, GL_LINEAR, GL_LINEAR);
+   glBindTexture(GL_TEXTURE_2D, font->tex);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
    font->atlas      = font->font_driver->get_atlas(font->font_data);
    font->tex_width  = next_pow2(font->atlas->width);

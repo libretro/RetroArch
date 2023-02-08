@@ -315,6 +315,7 @@ struct rarch_state
    char path_libretro[PATH_MAX_LENGTH];
    char path_config_file[PATH_MAX_LENGTH];
    char path_config_append_file[PATH_MAX_LENGTH];
+   char path_config_override_file[PATH_MAX_LENGTH];
    char path_core_options_file[PATH_MAX_LENGTH];
    char dir_system[PATH_MAX_LENGTH];
    char dir_savefile[PATH_MAX_LENGTH];
@@ -1625,6 +1626,10 @@ char *path_get_ptr(enum rarch_path_type type)
          if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
             return p_rarch->path_config_append_file;
          break;
+      case RARCH_PATH_CONFIG_OVERRIDE:
+         if (!path_is_empty(RARCH_PATH_CONFIG_OVERRIDE))
+            return p_rarch->path_config_override_file;
+         break;
       case RARCH_PATH_CORE:
          return p_rarch->path_libretro;
       case RARCH_PATH_NONE:
@@ -1662,6 +1667,10 @@ const char *path_get(enum rarch_path_type type)
          if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
             return p_rarch->path_config_append_file;
          break;
+      case RARCH_PATH_CONFIG_OVERRIDE:
+         if (!path_is_empty(RARCH_PATH_CONFIG_OVERRIDE))
+            return p_rarch->path_config_override_file;
+         break;
       case RARCH_PATH_CORE:
          return p_rarch->path_libretro;
       case RARCH_PATH_NONE:
@@ -1692,6 +1701,8 @@ size_t path_get_realsize(enum rarch_path_type type)
          return sizeof(p_rarch->path_config_file);
       case RARCH_PATH_CONFIG_APPEND:
          return sizeof(p_rarch->path_config_append_file);
+      case RARCH_PATH_CONFIG_OVERRIDE:
+         return sizeof(p_rarch->path_config_override_file);
       case RARCH_PATH_CORE:
          return sizeof(p_rarch->path_libretro);
       case RARCH_PATH_NONE:
@@ -1734,6 +1745,10 @@ bool path_set(enum rarch_path_type type, const char *path)
          strlcpy(p_rarch->path_config_file, path,
                sizeof(p_rarch->path_config_file));
          break;
+      case RARCH_PATH_CONFIG_OVERRIDE:
+         strlcpy(p_rarch->path_config_override_file, path,
+               sizeof(p_rarch->path_config_override_file));
+         break;
       case RARCH_PATH_CORE_OPTIONS:
          strlcpy(p_rarch->path_core_options_file, path,
                sizeof(p_rarch->path_core_options_file));
@@ -1773,12 +1788,16 @@ bool path_is_empty(enum rarch_path_type type)
          if (string_is_empty(p_rarch->path_config_file))
             return true;
          break;
-      case RARCH_PATH_CORE_OPTIONS:
-         if (string_is_empty(p_rarch->path_core_options_file))
-            return true;
-         break;
       case RARCH_PATH_CONFIG_APPEND:
          if (string_is_empty(p_rarch->path_config_append_file))
+            return true;
+         break;
+      case RARCH_PATH_CONFIG_OVERRIDE:
+         if (string_is_empty(p_rarch->path_config_override_file))
+            return true;
+         break;
+      case RARCH_PATH_CORE_OPTIONS:
+         if (string_is_empty(p_rarch->path_core_options_file))
             return true;
          break;
       case RARCH_PATH_CONTENT:
@@ -1830,6 +1849,9 @@ void path_clear(enum rarch_path_type type)
       case RARCH_PATH_CONFIG_APPEND:
          *p_rarch->path_config_append_file = '\0';
          break;
+      case RARCH_PATH_CONFIG_OVERRIDE:
+         *p_rarch->path_config_override_file = '\0';
+         break;
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -1849,6 +1871,7 @@ static void path_clear_all(void)
    path_clear(RARCH_PATH_CONTENT);
    path_clear(RARCH_PATH_CONFIG);
    path_clear(RARCH_PATH_CONFIG_APPEND);
+   path_clear(RARCH_PATH_CONFIG_OVERRIDE);
    path_clear(RARCH_PATH_CORE_OPTIONS);
    path_clear(RARCH_PATH_BASENAME);
 }
@@ -2184,11 +2207,7 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_BSV_MOVIE
             input_driver_state_t *input_st = input_state_get_ptr();
-            if (!recording_st->enable)
-               command_event(CMD_EVENT_RECORD_INIT, NULL);
-            else
-               command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-            bsv_movie_check(input_st, settings);
+            movie_toggle_record(input_st, settings);
 #endif
          }
          break;
@@ -2459,7 +2478,10 @@ bool command_event(enum event_command cmd, void *data)
              * we absolutely cannot change game state. */
             input_driver_state_t *input_st   = input_state_get_ptr();
             if (input_st->bsv_movie_state_handle)
+              {
+                RARCH_LOG("[Load] [Movie] Can't load state during movie playback or record\n");
                return false;
+              }
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -2471,6 +2493,12 @@ bool command_event(enum event_command cmd, void *data)
 #endif
             if (!command_event_main_state(cmd))
                return false;
+            /* Run next frame to see the core output while paused */
+            else if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+            {
+               runloop_st->flags               &= ~RUNLOOP_FLAG_PAUSED;
+               runloop_st->run_frames_and_pause = 1;
+            }
 
 #if HAVE_RUNAHEAD
             command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
@@ -2520,6 +2548,13 @@ bool command_event(enum event_command cmd, void *data)
          /* Recalibrate frame delay target */
          if (settings->bools.video_frame_delay_auto)
             video_st->frame_delay_target = 0;
+
+         /* Run a few frames to blank core output while paused */
+         if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+         {
+            runloop_st->flags               &= ~RUNLOOP_FLAG_PAUSED;
+            runloop_st->run_frames_and_pause = 8;
+         }
 
 #if HAVE_RUNAHEAD
          command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
@@ -2612,7 +2647,6 @@ bool command_event(enum event_command cmd, void *data)
             {
                /* Reload the original config */
                config_unload_override();
-               runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 
                if (!settings->bools.video_fullscreen)
                {
@@ -3352,6 +3386,21 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
 #ifdef HAVE_CONFIGFILE
          command_event_save_current_config(OVERRIDE_GAME);
+#endif
+         break;
+      case CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE:
+#ifdef HAVE_CONFIGFILE
+         command_event_remove_current_config(OVERRIDE_CORE);
+#endif
+         break;
+      case CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+#ifdef HAVE_CONFIGFILE
+         command_event_remove_current_config(OVERRIDE_CONTENT_DIR);
+#endif
+         break;
+      case CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME:
+#ifdef HAVE_CONFIGFILE
+         command_event_remove_current_config(OVERRIDE_GAME);
 #endif
          break;
       case CMD_EVENT_MENU_SAVE_CONFIG:
@@ -4477,7 +4526,7 @@ void main_exit(void *args)
    task_queue_deinit();
 
    ui_companion_driver_deinit();
-   rarch_config_deinit();
+   retroarch_config_deinit();
 
    frontend_driver_shutdown(false);
 
@@ -4551,9 +4600,9 @@ int rarch_main(int argc, char *argv[], void *data)
 
    libretro_free_system_info(&runloop_st->system.info);
    command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
-   rarch_favorites_deinit();
+   retroarch_favorites_deinit();
 
-   rarch_config_init();
+   retroarch_config_init();
 
    retroarch_deinit_drivers(&runloop_st->retro_ctx);
    retroarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
@@ -5908,6 +5957,17 @@ static bool retroarch_parse_input_and_config(
       runloop_st->entry_state_slot = 0;
       RARCH_WARN("Trying to load entry state without content. Ignoring.\n");
    }
+   #ifdef HAVE_BSV_MOVIE
+   if (runloop_st->entry_state_slot)
+   {
+     input_driver_state_t *input_st = input_state_get_ptr();
+     if(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK) {
+        runloop_st->entry_state_slot = 0;
+        RARCH_WARN("Trying to load entry state while BSV playback is active. Ignoring entry state.\n");
+     }
+   }
+   #endif
+
 
    /* Check whether a core has been set via the
     * command line interface */
@@ -6212,7 +6272,6 @@ bool retroarch_main_init(int argc, char *argv[])
          {
             /* Reload the original config */
             config_unload_override();
-            runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
          }
 #endif
 
@@ -6421,9 +6480,8 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             cheat_manager_state_free();
 #endif
 #ifdef HAVE_BSV_MOVIE
-            bsv_movie_deinit(input_st);
+            movie_stop(input_st);
 #endif
-
             command_event(CMD_EVENT_CORE_DEINIT, NULL);
 
             content_deinit();
@@ -6446,19 +6504,6 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          p_rarch->flags &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
          break;
 #endif
-      case RARCH_CTL_GET_CORE_OPTION_SIZE:
-         {
-            unsigned *idx = (unsigned*)data;
-            if (!idx)
-               return false;
-            if (runloop_st->core_options)
-               *idx = (unsigned)runloop_st->core_options->size;
-            else
-               *idx = 0;
-         }
-         break;
-      case RARCH_CTL_HAS_CORE_OPTIONS:
-         return (runloop_st->core_options != NULL);
       case RARCH_CTL_CORE_OPTIONS_LIST_GET:
          {
             core_option_manager_t **coreopts = (core_option_manager_t**)data;
@@ -6468,8 +6513,8 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY:
-         if (runloop_st->core_options &&
-             runloop_st->core_options_callback.update_display)
+         if (   runloop_st->core_options
+             && runloop_st->core_options_callback.update_display)
          {
             /* Note: The update_display() callback may read
              * core option values via RETRO_ENVIRONMENT_GET_VARIABLE.
@@ -6503,14 +6548,6 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_st->flags |=   RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE;
          break;
 #endif
-      case RARCH_CTL_SET_MISSING_BIOS:
-         runloop_st->missing_bios = true;
-         break;
-      case RARCH_CTL_UNSET_MISSING_BIOS:
-         runloop_st->missing_bios = false;
-         break;
-      case RARCH_CTL_IS_MISSING_BIOS:
-         return runloop_st->missing_bios;
       case RARCH_CTL_GET_PERFCNT:
          {
             bool **perfcnt = (bool**)data;
@@ -6883,6 +6920,15 @@ bool retroarch_main_quit(void)
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
+   bool config_save_on_exit      = settings->bools.config_save_on_exit;
+
+#if !defined(HAVE_DYNAMIC)
+      /* Salamander sets RUNLOOP_FLAG_SHUTDOWN_INITIATED prior, so we need to handle it seperately */
+      /* config_save_file_salamander() must be called independent of config_save_on_exit */
+      config_save_file_salamander();
+      if (config_save_on_exit)
+         command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+#endif
 
 #ifdef HAVE_PRESENCE
    {
@@ -6918,9 +6964,10 @@ bool retroarch_main_quit(void)
        * as for UWP depending on `OnSuspending` is not important as we can call it directly here
        * specifically we need to get width,height which requires UI thread and it will not be available on exit
        */
-      bool config_save_on_exit = settings->bools.config_save_on_exit;
+#if defined(HAVE_DYNAMIC)
       if (config_save_on_exit)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+#endif
 
       command_event_save_auto_state(
             settings->bools.savestate_auto_save,
@@ -6948,7 +6995,6 @@ bool retroarch_main_quit(void)
       {
          /* Reload the original config */
          config_unload_override();
-         runloop_st->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
       }
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -6964,7 +7010,7 @@ bool retroarch_main_quit(void)
    return true;
 }
 
-enum retro_language rarch_get_language_from_iso(const char *iso639)
+enum retro_language retroarch_get_language_from_iso(const char *iso639)
 {
    unsigned i;
    enum retro_language lang = RETRO_LANGUAGE_ENGLISH;
@@ -7030,7 +7076,7 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
    return lang;
 }
 
-void rarch_favorites_init(void)
+void retroarch_favorites_init(void)
 {
    settings_t *settings                = config_get_ptr();
    int content_favorites_size          = settings ? settings->ints.content_favorites_size : 0;
@@ -7051,7 +7097,7 @@ void rarch_favorites_init(void)
    if (content_favorites_size >= 0)
       playlist_config.capacity = (size_t)content_favorites_size;
 
-   rarch_favorites_deinit();
+   retroarch_favorites_deinit();
 
    RARCH_LOG("[Playlist]: %s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
@@ -7069,7 +7115,7 @@ void rarch_favorites_init(void)
       playlist_qsort(g_defaults.content_favorites);
 }
 
-void rarch_favorites_deinit(void)
+void retroarch_favorites_deinit(void)
 {
    if (!g_defaults.content_favorites)
       return;

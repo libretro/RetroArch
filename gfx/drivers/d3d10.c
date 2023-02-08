@@ -249,6 +249,7 @@ static void d3d10_get_overlay_interface(void* data, const video_overlay_interfac
 
 static void d3d10_render_overlay(d3d10_video_t *d3d10)
 {
+   UINT offset = 0, stride = 0;
    int i;
 
    if (d3d10->flags & D3D10_ST_FLAG_OVERLAYS_FULLSCREEN)
@@ -259,7 +260,9 @@ static void d3d10_render_overlay(d3d10_video_t *d3d10)
    d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
          d3d10->blend_enable, NULL,
          D3D10_DEFAULT_SAMPLE_MASK);
-   D3D10SetVertexBuffer(d3d10->device, 0, d3d10->overlays.vbo, sizeof(d3d10_sprite_t), 0);
+   stride = sizeof(d3d10_sprite_t);
+   d3d10->device->lpVtbl->IASetVertexBuffers(
+         d3d10->device, 0, 1, (D3D10Buffer* const)&d3d10->overlays.vbo, &stride, &offset);
    d3d10->device->lpVtbl->PSSetSamplers(d3d10->device, 0, 1,
          &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
 
@@ -1269,6 +1272,7 @@ static bool d3d10_gfx_frame(
       video_frame_info_t* video_info)
 {
    unsigned           i;
+   UINT offset = 0, stride    = 0;
    d3d10_texture_t*   texture = NULL;
    d3d10_video_t      * d3d10 = (d3d10_video_t*)data;
    D3D10Device       context  = d3d10->device;
@@ -1387,7 +1391,9 @@ static bool d3d10_gfx_frame(
                   width, height, pitch, d3d10->format, frame, &d3d10->frame.texture[0]);
    }
 
-   D3D10SetVertexBuffer(context, 0, d3d10->frame.vbo, sizeof(d3d10_vertex_t), 0);
+   stride = sizeof(d3d10_vertex_t);
+   context->lpVtbl->IASetVertexBuffers(
+         context, 0, 1, (D3D10Buffer* const)&d3d10->frame.vbo, &stride, &offset);
    context->lpVtbl->OMSetBlendState(context, d3d10->blend_disable, NULL,
          D3D10_DEFAULT_SAMPLE_MASK);
 
@@ -1530,11 +1536,13 @@ static bool d3d10_gfx_frame(
    if (    (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE) 
          && d3d10->menu.texture.handle)
    {
+      UINT offset = 0, stride = 0;
       if (d3d10->flags & D3D10_ST_FLAG_MENU_FULLSCREEN)
          context->lpVtbl->RSSetViewports(context, 1, &d3d10->viewport);
 
       d3d10_set_shader(context, &d3d10->shaders[VIDEO_SHADER_STOCK_BLEND]);
-      D3D10SetVertexBuffer(context, 0, d3d10->menu.vbo, sizeof(d3d10_vertex_t), 0);
+      context->lpVtbl->IASetVertexBuffers(
+            context, 0, 1, (D3D10Buffer* const)&d3d10->menu.vbo, &stride, &offset);
       context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d10->ubo);
       d3d10_set_texture_and_sampler(context, 0, &d3d10->menu.texture);
       context->lpVtbl->Draw(context, 4, 0);
@@ -1560,8 +1568,11 @@ static bool d3d10_gfx_frame(
    if (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE)
 #endif
    {
+      UINT offset = 0, stride = 0;
+      stride = sizeof(d3d10_sprite_t);
       context->lpVtbl->RSSetViewports(context, 1, &d3d10->viewport);
-      D3D10SetVertexBuffer(context, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
+      context->lpVtbl->IASetVertexBuffers(
+            context, 0, 1, (D3D10Buffer* const)&d3d10->sprites.vbo, &stride, &offset);
    }
 #endif
 
@@ -1574,11 +1585,14 @@ static bool d3d10_gfx_frame(
       {
          if (osd_params)
          {
+            UINT stride = 0, offset = 0;
             context->lpVtbl->RSSetViewports(context, 1, &d3d10->viewport);
             d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
                   d3d10->blend_enable, NULL,
                   D3D10_DEFAULT_SAMPLE_MASK);
-            D3D10SetVertexBuffer(context, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
+            stride = sizeof(d3d10_sprite_t);
+            context->lpVtbl->IASetVertexBuffers(
+                  context, 0, 1, (D3D10Buffer* const)&d3d10->sprites.vbo, &stride, &offset);
             font_driver_render_msg(d3d10,
                   stat_text,
                   (const struct font_params*)osd_params, NULL);
@@ -1598,11 +1612,14 @@ static bool d3d10_gfx_frame(
 
    if (msg && *msg)
    {
+      UINT offset = 0, stride = 0;
       d3d10->device->lpVtbl->RSSetViewports(d3d10->device, 1, &d3d10->viewport);
       d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
             d3d10->blend_enable, NULL,
             D3D10_DEFAULT_SAMPLE_MASK);
-      D3D10SetVertexBuffer(d3d10->device, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
+      stride = sizeof(d3d10_sprite_t);
+      d3d10->device->lpVtbl->IASetVertexBuffers(
+            d3d10->device, 0, 1, (D3D10Buffer* const)&d3d10->sprites.vbo, &stride, &offset);
       font_driver_render_msg(d3d10, msg, NULL, NULL);
    }
    d3d10->flags &= ~D3D10_ST_FLAG_SPRITES_ENABLE;
@@ -1626,13 +1643,13 @@ static void d3d10_gfx_set_nonblock_state(void* data, bool toggle,
 
    if (toggle)
    {
-      d3d10->flags        &= ~D3D10_ST_FLAG_VSYNC;
-      d3d10->swap_interval =  0;
+      d3d10->flags         &= ~D3D10_ST_FLAG_VSYNC;
+      d3d10->swap_interval  =  0;
    }
    else
    {
-      d3d10->flags        |=  D3D10_ST_FLAG_VSYNC;
-      d3d10->swap_interval =  swap_interval;
+      d3d10->flags         |=  D3D10_ST_FLAG_VSYNC;
+      d3d10->swap_interval  =  swap_interval;
    }
 }
 

@@ -7873,6 +7873,13 @@ static enum menu_action rgui_parse_menu_entry_action(
             rgui_toggle_fs_thumbnail(rgui, config_get_ptr()->bools.menu_rgui_inline_thumbnails);
             new_action = MENU_ACTION_NOOP;
          }
+
+         if (string_is_equal(rgui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU)))
+         {
+            /* Jump to first item on Main Menu */
+            menu_navigation_set_selection(0);
+            new_action = MENU_ACTION_NOOP;
+         }
          break;
       case MENU_ACTION_START:
          /* Playlist thumbnail fullscreen toggle */

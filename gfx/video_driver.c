@@ -2716,6 +2716,10 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
    video_info->hard_sync                   = settings->bools.video_hard_sync;
    video_info->hard_sync_frames            = settings->uints.video_hard_sync_frames;
+   video_info->runahead                    = settings->bools.run_ahead_enabled;
+   video_info->runahead_second_instance    = settings->bools.run_ahead_secondary_instance;
+   video_info->preemptive_frames           = settings->bools.preemptive_frames_enable;
+   video_info->runahead_frames             = settings->uints.run_ahead_frames;
    video_info->fps_show                    = settings->bools.video_fps_show;
    video_info->memory_show                 = settings->bools.video_memory_show;
    video_info->statistics_show             = settings->bools.video_statistics_show;
@@ -3334,7 +3338,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       else
 #endif
       {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
+    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
          bool window_custom_size_enable = settings->bools.video_window_save_positions;
 #else
          bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;
@@ -3999,6 +4004,7 @@ void video_driver_frame(const void *data, unsigned width,
    if (render_frame && video_info.statistics_show)
    {
       audio_statistics_t audio_stats;
+      char runahead_stats[128];
       double stddev                          = 0.0;
       struct retro_system_av_info *av_info   = &video_st->av_info;
       unsigned red                           = 255;
@@ -4027,18 +4033,34 @@ void video_driver_frame(const void *data, unsigned width,
 
       audio_compute_buffer_statistics(&audio_stats);
 
+      runahead_stats[0] = '\0';
+
+      if (video_info.runahead && !video_info.runahead_second_instance)
+         snprintf(runahead_stats, sizeof(runahead_stats),
+                  " -Run-Ahead Mode: Single Instance\n -Latency frames removed: %u\n",
+                  video_info.runahead_frames);
+      else if (video_info.runahead && video_info.runahead_second_instance)
+         snprintf(runahead_stats, sizeof(runahead_stats),
+                  " -Run-Ahead Mode: Second Instance\n -Latency frames removed: %u\n",
+                  video_info.runahead_frames);
+      else if (video_info.preemptive_frames)
+         snprintf(runahead_stats, sizeof(runahead_stats),
+                  " -Run-Ahead Mode: Preemptive Frames\n -Latency frames removed: %u\n",
+                  video_info.runahead_frames);
+
       snprintf(video_info.stat_text,
             sizeof(video_info.stat_text),
             "Video Statistics:\n -Frame rate: %6.2f fps\n -Frame time: %6.2f ms\n -Frame time deviation: %.3f %%\n"
-            " -Frame delay (target/effective): %u/%u ms\n -Frame count: %" PRIu64"\n -Viewport: %d x %d x %3.2f\n"
+            " -Frame count: %" PRIu64"\n -Frame delay (target/effective): %u/%u ms\n%s -Viewport: %d x %d x %3.2f\n"
             "Audio Statistics:\n -Average buffer saturation: %.2f %%\n -Standard deviation: %.2f %%\n -Time spent close to underrun: %.2f %%\n -Time spent close to blocking: %.2f %%\n -Sample count: %d\n"
             "Core Geometry:\n -Size: %u x %u\n -Max Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n",
             last_fps,
             frame_time / 1000.0f,
             100.0f * stddev,
+            video_st->frame_count,
             video_st->frame_delay_target,
             video_st->frame_delay_effective,
-            video_st->frame_count,
+            runahead_stats,
             video_info.width,
             video_info.height,
             video_info.refresh_rate,

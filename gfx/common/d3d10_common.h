@@ -222,20 +222,6 @@ typedef struct
    uint16_t flags;
 } d3d10_video_t;
 
-#if !defined(__cplusplus) || defined(CINTERFACE)
-static INLINE void D3D10SetVertexBuffer(
-      D3D10Device device_context,
-      UINT               slot,
-      D3D10Buffer const  vertex_buffer,
-      UINT               stride,
-      UINT               offset)
-{
-   device_context->lpVtbl->IASetVertexBuffers(
-         device_context, slot, 1, (D3D10Buffer* const)&vertex_buffer, &stride, &offset);
-}
-/* end of auto-generated */
-#endif
-
 void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture);
 
 static INLINE void d3d10_release_texture(d3d10_texture_t* texture)
@@ -276,15 +262,6 @@ static INLINE void d3d10_release_shader(d3d10_shader_t* shader)
    Release(shader->vs);
    Release(shader->ps);
    Release(shader->gs);
-}
-
-static INLINE DXGI_FORMAT
-d3d10_get_closest_match_texture2D(D3D10Device device, DXGI_FORMAT desired_format)
-{
-   return d3d10_get_closest_match(
-         device, desired_format,
-           D3D10_FORMAT_SUPPORT_TEXTURE2D 
-         | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE);
 }
 
 static INLINE void d3d10_set_shader(D3D10Device ctx, d3d10_shader_t* shader)

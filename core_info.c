@@ -1376,11 +1376,10 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
    /* Get list of file extensions to include
     * > core + lock */
    strlcpy(exts, core_exts, sizeof(exts));
+   strlcat(exts, "|lck",      sizeof(exts));
 #if defined(HAVE_DYNAMIC)
    /* > 'standalone exempt' */
-   strlcat(exts, "|lck|lsae", sizeof(exts));
-#else
-   strlcat(exts, "|lck",      sizeof(exts));
+   strlcat(exts, "|lsae", sizeof(exts));
 #endif
 
    /* Fetch core directory listing */
@@ -2777,6 +2776,10 @@ void core_info_qsort(core_info_list_t *core_info_list,
 bool core_info_current_supports_savestate(void)
 {
    core_info_state_t *p_coreinfo = &core_info_st;
+   settings_t        *settings   = config_get_ptr();
+
+   if (settings->bools.core_info_savestate_bypass)
+      return true;
 
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
@@ -2791,6 +2794,10 @@ bool core_info_current_supports_savestate(void)
 bool core_info_current_supports_rewind(void)
 {
    core_info_state_t *p_coreinfo = &core_info_st;
+   settings_t        *settings   = config_get_ptr();
+
+   if (settings->bools.core_info_savestate_bypass)
+      return true;
 
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
@@ -2805,6 +2812,10 @@ bool core_info_current_supports_rewind(void)
 bool core_info_current_supports_netplay(void)
 {
    core_info_state_t *p_coreinfo = &core_info_st;
+   settings_t        *settings   = config_get_ptr();
+
+   if (settings->bools.core_info_savestate_bypass)
+      return true;
 
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
@@ -2819,6 +2830,10 @@ bool core_info_current_supports_netplay(void)
 bool core_info_current_supports_runahead(void)
 {
    core_info_state_t *p_coreinfo = &core_info_st;
+   settings_t        *settings   = config_get_ptr();
+
+   if (settings->bools.core_info_savestate_bypass)
+      return true;
 
    /* If no core is currently loaded, assume
     * by default that all savestate functionality

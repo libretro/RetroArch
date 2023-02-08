@@ -30,6 +30,7 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
 {
    ctr_scale_vector_t scale_vector;
    int colorR, colorG, colorB, colorA;
+   ctr_scale_vector_t *vec          = NULL;
    ctr_vertex_t *v                  = NULL;
    struct ctr_texture *texture      = NULL;
    const float *color               = NULL;
@@ -44,9 +45,13 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
    if (!texture)
       return;
 
-   ctr_set_scale_vector(&scale_vector,
-         CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT,
-         texture->width, texture->height);
+   vec                = &scale_vector;
+   CTR_SET_SCALE_VECTOR(
+         vec,
+         CTR_TOP_FRAMEBUFFER_WIDTH,
+         CTR_TOP_FRAMEBUFFER_HEIGHT,
+         texture->width,
+         texture->height);
    GPUCMD_AddWrite(GPUREG_GSH_BOOLUNIFORM, 0);
    ctrGuSetVertexShaderFloatUniform(0, (float*)&scale_vector, 1);
 

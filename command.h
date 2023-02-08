@@ -190,11 +190,14 @@ enum event_command
    CMD_EVENT_MENU_TOGGLE,
    /* Configuration saving. */
    CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG,
+   CMD_EVENT_MENU_SAVE_CONFIG,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   CMD_EVENT_MENU_SAVE_CONFIG,
+   CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   CMD_EVENT_MENU_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
    /* Applies shader changes. */
    CMD_EVENT_SHADERS_APPLY_CHANGES,
    /* A new shader preset has been loaded */
@@ -321,45 +324,6 @@ command_t* command_stdin_new(void);
 command_t* command_uds_new(void);
 
 bool command_network_send(const char *cmd_);
-
-#ifdef HAVE_BSV_MOVIE
-enum bsv_flags
-{
-   BSV_FLAG_MOVIE_START_RECORDING    = (1 << 0),
-   BSV_FLAG_MOVIE_START_PLAYBACK     = (1 << 1),
-   BSV_FLAG_MOVIE_PLAYBACK           = (1 << 2),
-   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 3),
-   BSV_FLAG_MOVIE_END                = (1 << 4)
-};
-
-struct bsv_state
-{
-   uint8_t flags;
-   /* Movie playback/recording support. */
-   char movie_path[PATH_MAX_LENGTH];
-   /* Immediate playback/recording. */
-   char movie_start_path[PATH_MAX_LENGTH];
-};
-
-struct bsv_movie
-{
-   intfstream_t *file;
-   uint8_t *state;
-   /* A ring buffer keeping track of positions
-    * in the file for each frame. */
-   size_t *frame_pos;
-   size_t frame_mask;
-   size_t frame_ptr;
-   size_t min_file_pos;
-   size_t state_size;
-
-   bool playback;
-   bool first_rewind;
-   bool did_rewind;
-};
-
-typedef struct bsv_movie bsv_movie_t;
-#endif
 
 #ifdef HAVE_CONFIGFILE
 bool command_event_save_config(
@@ -565,6 +529,13 @@ bool command_event_save_core_config(
  * autosave state.
  **/
 void command_event_save_current_config(enum override_type type);
+
+/**
+ * command_event_remove_current_config:
+ *
+ * Removes current configuration file from disk.
+ **/
+void command_event_remove_current_config(enum override_type type);
 #endif
 
 /**

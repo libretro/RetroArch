@@ -4787,10 +4787,6 @@ MSG_HASH(
    "Estado carregado a partir da posição #%d."
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Estado carregado a partir da posição #-1 (automático)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Carregando"
    )
@@ -4941,10 +4937,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Estado guardado na posição #%d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Estado guardado na posição #-1 (automático)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

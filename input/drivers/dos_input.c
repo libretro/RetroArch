@@ -15,12 +15,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include <retro_miscellaneous.h>
-
-#include "../../config.def.h"
 
 #include "../input_driver.h"
 #include "../input_keymaps.h"

@@ -2007,19 +2007,22 @@ static void xmb_set_title(xmb_handle_t *xmb)
       if (!path)
          return;
 
-      /* Set alternative title when available */
-      if (node && node->console_name)
-         strlcpy(xmb->title_name_alt,
-               node->console_name,
-               sizeof(xmb->title_name_alt));
-
+      /* Use real title for dynamic backgrounds */
       fill_pathname_base(
             xmb->title_name, path, sizeof(xmb->title_name));
       path_remove_extension(xmb->title_name);
 
-      /* Add current search terms */
-      menu_entries_search_append_terms_string(
-            xmb->title_name, sizeof(xmb->title_name));
+      /* Set alternative title for visible header */
+      if (node && node->console_name)
+      {
+         strlcpy(xmb->title_name_alt,
+               node->console_name,
+               sizeof(xmb->title_name_alt));
+
+         /* Add current search terms to alternative title */
+         menu_entries_search_append_terms_string(
+               xmb->title_name_alt, sizeof(xmb->title_name_alt));
+      }
    }
 }
 
@@ -2088,6 +2091,9 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
          ia = xmb->categories_active_alpha;
          iz = xmb->categories_active_zoom;
       }
+
+      if (!xmb->allow_horizontal_animation)
+         continue;
 
       /* Horizontal icon animation */
 
@@ -2753,6 +2759,9 @@ static void xmb_populate_entries(void *data,
    {
       xmb_selection_pointer_changed(xmb, false);
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+
+      /* Refresh title for search terms */
+      xmb_set_title(xmb);
       return;
    }
 
@@ -2896,12 +2905,16 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
       case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR:
       case MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME:
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
       case MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS:
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
       case MENU_ENUM_LABEL_LOAD_STATE:
       case MENU_ENUM_LABEL_CONFIGURATIONS:
       case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
       case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
+      case MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD:
       case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
       case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
@@ -2943,7 +2956,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY:
       case MENU_ENUM_LABEL_SCAN_DIRECTORY:
       case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST:
-      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
       case MENU_ENUM_LABEL_FAVORITES: /* "Start Directory" */
       case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
@@ -2982,7 +2994,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_DISC];
       case MENU_ENUM_LABEL_CONTENT_SETTINGS:
       case MENU_ENUM_LABEL_UPDATE_ASSETS:
-      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
          return xmb->textures.list[XMB_TEXTURE_QUICKMENU];
@@ -2997,7 +3008,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES:
       case MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
-      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
       case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION:
       case MENU_ENUM_LABEL_CORE_INFORMATION:
@@ -3148,9 +3158,13 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE:
       case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR:
       case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
+      case MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE:
+      case MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+      case MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME:
          return xmb->textures.list[XMB_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_CORE_OPTIONS_RESET:
       case MENU_ENUM_LABEL_REMAP_FILE_RESET:
+      case MENU_ENUM_LABEL_OVERRIDE_UNLOAD:
          return xmb->textures.list[XMB_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_CORE_OPTIONS_FLUSH:
       case MENU_ENUM_LABEL_REMAP_FILE_FLUSH:
@@ -4463,6 +4477,10 @@ static bool INLINE xmb_fullscreen_thumbnails_available(xmb_handle_t *xmb)
 extern int action_switch_thumbnail(const char *path,
       const char *label, unsigned type, size_t idx);
 
+static int xmb_menu_entry_action(
+      void *userdata, menu_entry_t *entry,
+      size_t i, enum menu_action action);
+
 static enum menu_action xmb_parse_menu_entry_action(
       xmb_handle_t *xmb, enum menu_action action)
 {
@@ -4596,6 +4614,42 @@ static enum menu_action xmb_parse_menu_entry_action(
          {
             xmb_hide_fullscreen_thumbnails(xmb, true);
             xmb->want_fullscreen_thumbnails = false;
+            return MENU_ACTION_NOOP;
+         }
+
+         /* Back up to Main Menu and first item */
+         if (     !menu_entries_search_get_terms()
+               &&  menu_entries_get_stack_size(0) == 1)
+         {
+            if (xmb_get_system_tab(xmb,
+                  (unsigned)xmb->categories_selection_ptr) == XMB_SYSTEM_TAB_MAIN)
+            {
+               /* Jump to first item on Main Menu */
+               menu_navigation_set_selection(0);
+               xmb_selection_pointer_changed(xmb, true);
+            }
+            else
+            {
+               /* Jump to Main Menu */
+               size_t i           = 0;
+               size_t current_tab = xmb->categories_selection_ptr;
+
+               menu_entry_t entry;
+               MENU_ENTRY_INITIALIZE(entry);
+               menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+
+               /* Icon animations get stuck if they happen too fast,
+                  therefore allow it only on the last action */
+               xmb->allow_horizontal_animation    = false;
+               for (i = 0; i < current_tab; i++)
+               {
+                  if (i == current_tab - 1)
+                     xmb->allow_horizontal_animation    = true;
+
+                  xmb_menu_entry_action(xmb,
+                        &entry, menu_navigation_get_selection(), MENU_ACTION_LEFT);
+               }
+            }
             return MENU_ACTION_NOOP;
          }
          break;

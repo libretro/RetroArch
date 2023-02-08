@@ -75,6 +75,27 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
       CFRunLoopWakeUp(CFRunLoopGetMain());
 }
 
+static void rarch_start_draw_observer()
+{
+   if (iterate_observer && CFRunLoopObserverIsValid(iterate_observer))
+       return;
+
+   if (iterate_observer != NULL)
+      CFRelease(iterate_observer);
+   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
+                                              true, 0, rarch_draw_observer, 0);
+   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
+}
+
+static void rarch_stop_draw_observer()
+{
+    if (!iterate_observer || !CFRunLoopObserverIsValid(iterate_observer))
+        return;
+    CFRunLoopObserverInvalidate(iterate_observer);
+    CFRelease(iterate_observer);
+    iterate_observer = NULL;
+}
+
 apple_frontend_settings_t apple_frontend_settings;
 
 void get_ios_version(int *major, int *minor)
@@ -361,6 +382,7 @@ enum
    [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
    [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
    [[_renderView.trailingAnchor constraintEqualToAnchor:rootView.trailingAnchor] setActive:YES];
+   [_renderView layoutIfNeeded];
 }
 
 - (apple_view_type_t)viewType { return _vt; }
@@ -416,9 +438,7 @@ enum
 
    rarch_main(argc, argv, NULL);
 
-   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
-         true, 0, rarch_draw_observer, 0);
-   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
+   rarch_start_draw_observer();
 
 #ifdef HAVE_MFI
    extern void *apple_gamecontroller_joypad_init(void *data);
@@ -426,17 +446,20 @@ enum
 #endif
 }
 
-- (void)applicationDidEnterBackground:(UIApplication *)application { }
+- (void)applicationDidEnterBackground:(UIApplication *)application
+{
+   rarch_stop_draw_observer();
+}
 
 - (void)applicationWillTerminate:(UIApplication *)application
 {
-   CFRunLoopObserverInvalidate(iterate_observer);
-   CFRelease(iterate_observer);
-   iterate_observer = NULL;
+   rarch_stop_draw_observer();
+   retroarch_main_quit();
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
+   rarch_start_draw_observer();
    settings_t *settings            = config_get_ptr();
    bool ui_companion_start_on_boot = settings->bools.ui_companion_start_on_boot;
 

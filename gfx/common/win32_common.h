@@ -70,7 +70,8 @@ enum win32_common_flags
    WIN32_CMN_FLAG_RESIZED         = (1 << 1),
    WIN32_CMN_FLAG_TASKBAR_CREATED = (1 << 2),
    WIN32_CMN_FLAG_RESTORE_DESKTOP = (1 << 3),
-   WIN32_CMN_FLAG_INITED          = (1 << 4)
+   WIN32_CMN_FLAG_INITED          = (1 << 4),
+   WIN32_CMN_FLAG_SWAP_MOUSE_BTNS = (1 << 5)
 };
 
 extern uint8_t g_win32_flags;
@@ -104,8 +105,8 @@ bool win32_get_video_output(DEVMODE *dm, int mode, size_t len);
 bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name);
 
 void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
-	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
-	RECT *rect, RECT *mon_rect, DWORD *style);
+      unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
+      RECT *rect, RECT *mon_rect, DWORD *style);
 #endif
 void win32_monitor_from_window(void);
 #endif
@@ -123,7 +124,7 @@ bool win32_window_create(void *data, unsigned style,
 bool win32_suppress_screensaver(void *data, bool enable);
 
 bool win32_get_metrics(void *data,
-	enum display_metric_types type, float *value);
+      enum display_metric_types type, float *value);
 
 void win32_show_cursor(void *data, bool state);
 

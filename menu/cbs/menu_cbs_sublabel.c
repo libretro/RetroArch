@@ -527,6 +527,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dummy_on_core_shutdown,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dummy_check_missing_firmware,  MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_option_category_enable,   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_info_cache_enable,        MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_info_savestate_bypass,    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS)
 #ifndef HAVE_DYNAMIC
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_always_reload_core_on_run_content, MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT)
 #endif
@@ -915,12 +916,21 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_current_config_override_core,  
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_current_config_override_content_dir,
                                                                                    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_current_config_override_game,     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remove_current_config_override_core,   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remove_current_config_override_content_dir,
+                                                                                   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remove_current_config_override_game,   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_options,                        MENU_ENUM_SUBLABEL_SHADER_OPTIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_input_remapping_options,          MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remap_file_manager_list,               MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remap_file_info,                       MENU_ENUM_SUBLABEL_REMAP_FILE_INFO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remap_file_reset,                      MENU_ENUM_SUBLABEL_REMAP_FILE_RESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remap_file_flush,                      MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_override_file_info,                    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_override_file_load,                    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_override_unload,                       MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_option_override_list,             MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_option_override_info,             MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_options_reset,                    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_options_flush,                    MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_show_advanced_settings,                MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS)
@@ -1390,9 +1400,10 @@ static int action_bind_sublabel_subsystem_load(
    unsigned j = 0;
    char buf[4096];
 
+   buf[0] = '\0';
+
    for (j = 0; j < content_get_subsystem_rom_id(); j++)
    {
-      strlcat(buf, "   ", sizeof(buf));
       strlcat(buf, path_basename(content_get_subsystem_rom(j)), sizeof(buf));
       if (j != content_get_subsystem_rom_id() - 1)
          strlcat(buf, "\n", sizeof(buf));
@@ -3140,6 +3151,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_option_override_list);
             break;
+         case MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_INFO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_option_override_info);
+            break;
          case MENU_ENUM_LABEL_CORE_OPTIONS_RESET:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_options_reset);
             break;
@@ -3152,11 +3166,23 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_REMAP_FILE_MANAGER_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_file_manager_list);
             break;
+         case MENU_ENUM_LABEL_REMAP_FILE_INFO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_file_info);
+            break;
          case MENU_ENUM_LABEL_REMAP_FILE_RESET:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_file_reset);
             break;
          case MENU_ENUM_LABEL_REMAP_FILE_FLUSH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_file_flush);
+            break;
+         case MENU_ENUM_LABEL_OVERRIDE_FILE_INFO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_override_file_info);
+            break;
+         case MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_override_file_load);
+            break;
+         case MENU_ENUM_LABEL_OVERRIDE_UNLOAD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_override_unload);
             break;
          case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
 #ifdef HAVE_CHEATS
@@ -3186,6 +3212,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_current_config_override_content_dir);
+            break;
+         case MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remove_current_config_override_game);
+            break;
+         case MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remove_current_config_override_core);
+            break;
+         case MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remove_current_config_override_content_dir);
             break;
          case MENU_ENUM_LABEL_RESTART_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_restart_content);
@@ -4211,6 +4246,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_info_cache_enable);
+            break;
+         case MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_info_savestate_bypass);
             break;
 #ifndef HAVE_DYNAMIC
          case MENU_ENUM_LABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT:

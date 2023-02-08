@@ -181,7 +181,7 @@ static bool connmanctl_tether_status(connman_t *connman)
 }
 
 static void connmanctl_tether_toggle(
-      connman_t *connman, bool switch_on, char* apname, char* passkey)
+      connman_t *connman, bool switch_on, char* ap_name, char *pass_key)
 {
    /* Starts / stops the tethering service on wi-fi device */
    char output[256]     = {0};
@@ -193,7 +193,7 @@ static void connmanctl_tether_toggle(
 
    snprintf(connman->command, sizeof(connman->command), "\
          connmanctl tether wifi %s %s %s",
-         switch_on ? "on" : "off", apname, passkey);
+         switch_on ? "on" : "off", ap_name, pass_key);
 
    command_file = popen(connman->command, "r");
 
@@ -386,9 +386,8 @@ static bool connmanctl_connect_ssid(
       connmanctl_tether_toggle(connman, false, "", "");
    }
 
-   snprintf(connman->command, sizeof(connman->command),
-         "connmanctl connect %s",
-         netinfo->netid);
+   strlcpy(connman->command, "connmanctl connect ", sizeof(connman->command));
+   strlcat(connman->command, netinfo->netid,        sizeof(connman->command));
 
    pclose(popen(connman->command, "r"));
 
@@ -565,9 +564,9 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
     * tethering service is already running / not running
     * before performing the desired action
     */
+   char ap_name[64];
+   char pass_key[256];
    FILE *command_file  = NULL;
-   char apname[64]     = {0};
-   char passkey[256]   = {0};
    char ln[512]        = {0};
    char ssid[64]       = {0};
    char service[256]   = {0};
@@ -612,10 +611,10 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
          RARCH_LOG("[CONNMANCTL] Tether start stop: creating new config \"%s\"\n",
                configfile);
 
-         snprintf(apname, sizeof(apname), "LakkaAccessPoint");
-         snprintf(passkey, sizeof(passkey), "RetroArch");
+         strlcpy(ap_name, "LakkaAccessPoint", sizeof(ap_name));
+         strlcpy(pass_key, "RetroArch",       sizeof(pass_key));
 
-         fprintf(command_file, "APNAME=%s\nPASSWORD=%s", apname, passkey);
+         fprintf(command_file, "APNAME=%s\nPASSWORD=%s", ap_name, pass_key);
 
          fclose(command_file);
 
@@ -653,21 +652,19 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
 
                if (i == 1)
                {
-                  strlcpy(apname, ln, sizeof(apname));
+                  strlcpy(ap_name, ln, sizeof(ap_name));
 
                   RARCH_LOG("[CONNMANCTL] Tether start stop: found APNAME: \"%s\"\n",
-                        apname);
+                        ap_name);
 
                   continue;
                }
 
                if (i == 2)
                {
-                  strlcpy(passkey, ln, sizeof(passkey));
-
+                  strlcpy(pass_key, ln, sizeof(pass_key));
                   RARCH_LOG("[CONNMANCTL] Tether start stop: found PASSWORD: \"%s\"\n",
-                        passkey);
-
+                        pass_key);
                   continue;
                }
 
@@ -682,7 +679,7 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
          pclose(command_file);
       }
 
-      if (!apname || !passkey)
+      if (!ap_name || !pass_key)
       {
          RARCH_ERR("[CONNMANCTL] Tether start stop: APNAME or PASSWORD missing\n");
 
@@ -753,7 +750,7 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
 
       snprintf(connman->command, sizeof(connman->command),
             msg_hash_to_str(MSG_LOCALAP_STARTING),
-            apname, passkey);
+            ap_name, pass_key);
 
       runloop_msg_queue_push(connman->command,
             1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
@@ -782,7 +779,7 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
    RARCH_LOG("[CONNMANCTL] Tether start stop: calling tether_toggle()\n");
 
    /* call the tether toggle function */
-   connmanctl_tether_toggle(connman, start, apname, passkey);
+   connmanctl_tether_toggle(connman, start, ap_name, pass_key);
 
    RARCH_LOG("[CONNMANCTL] Tether start stop: end\n");
 }

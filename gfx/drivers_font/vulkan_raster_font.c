@@ -312,7 +312,7 @@ static void vulkan_font_flush(vulkan_raster_t *font)
       dynamic_tex                 = &font->texture_optimal;
       staging_tex                 = &font->texture;
 
-      VULKAN_COPY_STAGING_TO_DYNAMIC(font->vk, staging,
+      vulkan_copy_staging_to_dynamic(font->vk, staging,
             dynamic_tex, staging_tex);
 
       vkEndCommandBuffer(staging);

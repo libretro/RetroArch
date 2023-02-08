@@ -200,6 +200,9 @@ struct rc_condition_t {
 
   /* Whether or not the condition evaluated true on the last check */
   char is_true;
+
+  /* Unique identifier of optimized comparator to use */
+  char optimized_comparator;
 };
 
 /*****************************************************************************\

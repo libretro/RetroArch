@@ -257,6 +257,7 @@ endif
 
 OBJ += \
        tasks/task_save.o \
+       tasks/task_movie.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
        tasks/task_playlist_manager.o \
@@ -447,37 +448,17 @@ ifeq ($(HAVE_LANGEXTRA), 1)
    DEFINES += -DHAVE_LANGEXTRA
    DEF_FLAGS += -finput-charset=UTF-8
 
-   OBJ += intl/msg_hash_de.o \
-          intl/msg_hash_eo.o \
-          intl/msg_hash_es.o \
-          intl/msg_hash_fr.o \
-          intl/msg_hash_it.o \
+   OBJ += intl/msg_hash_ca.o \
+          intl/msg_hash_chs.o \
+          intl/msg_hash_el.o \
           intl/msg_hash_ja.o \
           intl/msg_hash_ko.o \
-          intl/msg_hash_nl.o \
-          intl/msg_hash_pl.o \
           intl/msg_hash_pt_br.o \
           intl/msg_hash_pt_pt.o \
           intl/msg_hash_ru.o \
-          intl/msg_hash_vn.o \
-          intl/msg_hash_chs.o \
-          intl/msg_hash_cht.o \
-          intl/msg_hash_ar.o \
-          intl/msg_hash_el.o \
           intl/msg_hash_tr.o \
-          intl/msg_hash_sk.o \
-          intl/msg_hash_fa.o \
-          intl/msg_hash_he.o \
-          intl/msg_hash_ast.o \
-          intl/msg_hash_fi.o \
-          intl/msg_hash_id.o \
-          intl/msg_hash_sv.o \
-          intl/msg_hash_uk.o \
-          intl/msg_hash_cs.o \
           intl/msg_hash_val.o \
-          intl/msg_hash_ca.o \
-          intl/msg_hash_en.o \
-          intl/msg_hash_hu.o
+          intl/msg_hash_vn.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)

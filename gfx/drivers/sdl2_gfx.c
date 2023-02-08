@@ -276,7 +276,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
       }
    }
 
-   vid->should_resize = false;
+   vid->flags &= ~SDL2_FLAG_SHOULD_RESIZE;
 
    sdl_refresh_renderer(vid);
 }
@@ -399,7 +399,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
 
    vid->video         = *video;
    vid->video.smooth  = video->smooth;
-   vid->should_resize = true;
+   vid->flags        |=  SDL2_FLAG_SHOULD_RESIZE;
 
    sdl_tex_zero(&vid->frame);
    sdl_tex_zero(&vid->menu);
@@ -456,14 +456,13 @@ static void check_window(sdl2_video_t *vid)
       switch (event.type)
       {
          case SDL_QUIT:
-            vid->quitting = true;
+            vid->flags |= SDL2_FLAG_QUITTING;
             break;
 
          case SDL_WINDOWEVENT:
             if (event.window.event == SDL_WINDOWEVENT_RESIZED)
-               vid->should_resize = true;
+               vid->flags |= SDL2_FLAG_SHOULD_RESIZE;
             break;
-
          default:
             break;
       }
@@ -480,7 +479,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    bool menu_is_alive    = video_info->menu_is_alive;
 #endif
 
-   if (vid->should_resize)
+   if (vid->flags & SDL2_FLAG_SHOULD_RESIZE)
       sdl_refresh_viewport(vid);
 
    if (frame)
@@ -518,7 +517,6 @@ static void sdl2_gfx_set_nonblock_state(void *data, bool toggle,
       bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
-
    vid->video.vsync  = !toggle;
    sdl_refresh_renderer(vid);
 }
@@ -527,7 +525,9 @@ static bool sdl2_gfx_alive(void *data)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    check_window(vid);
-   return !vid->quitting;
+   if (vid->flags & SDL2_FLAG_QUITTING)
+      return false;
+   return true;
 }
 
 static bool sdl2_gfx_focus(void *data)
@@ -539,9 +539,6 @@ static bool sdl2_gfx_focus(void *data)
 
 static bool sdl2_gfx_suppress_screensaver(void *data, bool enable)
 {
-   (void)data;
-   (void)enable;
-
    if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
    {
 #ifdef HAVE_X11
@@ -553,14 +550,8 @@ static bool sdl2_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool sdl2_gfx_has_windowed(void *data)
-{
-   (void)data;
-
-   /* TODO - implement */
-
-   return true;
-}
+/* TODO/FIXME - implement */
+static bool sdl2_gfx_has_windowed(void *data) { return true; }
 
 static void sdl2_gfx_free(void *data)
 {
@@ -633,13 +624,13 @@ static void sdl2_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
       return;
 
    vid->video.force_aspect = true;
-   vid->should_resize      = true;
+   vid->flags             |= SDL2_FLAG_SHOULD_RESIZE;
 }
 
 static void sdl2_poke_apply_state_changes(void *data)
 {
-   sdl2_video_t *vid = (sdl2_video_t*)data;
-   vid->should_resize = true;
+   sdl2_video_t *vid       = (sdl2_video_t*)data;
+   vid->flags             |= SDL2_FLAG_SHOULD_RESIZE;
 }
 
 static void sdl2_poke_set_texture_frame(void *data,

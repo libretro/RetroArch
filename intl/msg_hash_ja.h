@@ -1955,10 +1955,6 @@ MSG_HASH(
    "パフォーマンスが目標のリフレッシュレートを下回るまでは垂直同期が有効になります. パフォーマンスがリアルタイムを下回ったときのちらつきを最小限にでき, 効率もよくなります."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "ビデオのちらつきリスクが高くなりますが, 遅延を減少します. 垂直同期の後に遅延(ms)を追加します."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    "自動"
    )
@@ -2301,10 +2297,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    "RetroArchで対応するユーザの最大数です."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "ポーリングの挙動"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -9277,6 +9269,10 @@ MSG_HASH(
    "ヘルプ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
+   "クリア"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
    "オーディオとビデオのトラブルシューティング"
    )
@@ -10223,10 +10219,6 @@ MSG_HASH(
    "スロット%dからステートロードしました"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "スロット-1 (自動)からステートロードしました"
-   )
-MSG_HASH(
    MSG_LOADING,
    "ロード中"
    )
@@ -10385,10 +10377,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "スロット%dにステートセーブしました"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "スロット-1 (自動)にステートセーブしました"
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

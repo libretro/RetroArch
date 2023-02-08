@@ -261,12 +261,13 @@ static void vulkan_init_pipeline_layout(
 {
    VkPipelineLayoutCreateInfo layout_info;
    VkDescriptorSetLayoutCreateInfo set_layout_info;
-   VkDescriptorSetLayoutBinding bindings[3];
+   VkDescriptorSetLayoutBinding bindings[5];
 
    bindings[0].binding            = 0;
    bindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
    bindings[0].descriptorCount    = 1;
-   bindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+   bindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT |
+                                    VK_SHADER_STAGE_COMPUTE_BIT;
    bindings[0].pImmutableSamplers = NULL;
 
    bindings[1].binding            = 1;
@@ -281,11 +282,23 @@ static void vulkan_init_pipeline_layout(
    bindings[2].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
    bindings[2].pImmutableSamplers = NULL;
 
+   bindings[3].binding            = 3;
+   bindings[3].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+   bindings[3].descriptorCount    = 1;
+   bindings[3].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+   bindings[3].pImmutableSamplers = NULL;
+
+   bindings[4].binding            = 4;
+   bindings[4].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+   bindings[4].descriptorCount    = 1;
+   bindings[4].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT;
+   bindings[4].pImmutableSamplers = NULL;
+
    set_layout_info.sType          = 
       VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
    set_layout_info.pNext          = NULL;
    set_layout_info.flags          = 0;
-   set_layout_info.bindingCount   = 3;
+   set_layout_info.bindingCount   = 5;
    set_layout_info.pBindings      = bindings;
 
    vkCreateDescriptorSetLayout(vk->context->device,
@@ -323,6 +336,10 @@ static void vulkan_init_pipelines(vk_t *vk)
    static const uint32_t font_frag[] =
 #include "vulkan_shaders/font.frag.inc"
       ;
+
+   static const uint32_t rgb565_to_rgba8888_comp[] =
+#include "vulkan_shaders/rgb565_to_rgba8888.comp.inc"
+   ;
 
    static const uint32_t pipeline_ribbon_vert[] =
 #include "vulkan_shaders/pipeline_ribbon.vert.inc"
@@ -378,6 +395,8 @@ static void vulkan_init_pipelines(vk_t *vk)
 
    VkGraphicsPipelineCreateInfo pipe                     = {
       VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
+   VkComputePipelineCreateInfo cpipe                     = {
+      VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO };
    VkShaderModuleCreateInfo module_info                  = {
       VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
    VkVertexInputAttributeDescription attributes[3]       = {{0}};
@@ -642,6 +661,19 @@ static void vulkan_init_pipelines(vk_t *vk)
       vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
       vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
    }
+
+   cpipe.layout = vk->pipelines.layout;
+   cpipe.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+   cpipe.stage.pName = "main";
+   cpipe.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+
+   module_info.codeSize   = sizeof(rgb565_to_rgba8888_comp);
+   module_info.pCode      = rgb565_to_rgba8888_comp;
+   vkCreateShaderModule(vk->context->device,
+         &module_info, NULL, &cpipe.stage.module);
+   vkCreateComputePipelines(vk->context->device, vk->pipelines.cache,
+         1, &cpipe, NULL, &vk->pipelines.rgb565_to_rgba8888);
+   vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
 }
 
 static void vulkan_init_samplers(vk_t *vk)
@@ -811,6 +843,8 @@ static void vulkan_deinit_pipelines(vk_t *vk)
          vk->pipelines.alpha_blend, NULL);
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.font, NULL);
+   vkDestroyPipeline(vk->context->device,
+         vk->pipelines.rgb565_to_rgba8888, NULL);
 #ifdef VULKAN_HDR_SWAPCHAIN
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.hdr, NULL);
@@ -1476,8 +1510,7 @@ static void *vulkan_init(const video_info_t *video,
       vk->flags         &= ~VK_FLAG_FULLSCREEN;
    vk->tex_w             = RARCH_SCALE_BASE * video->input_scale;
    vk->tex_h             = RARCH_SCALE_BASE * video->input_scale;
-   vk->tex_fmt           = video->rgb32
-      ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
+   vk->tex_fmt           = video->rgb32 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
    if (video->force_aspect)
       vk->flags         |=  VK_FLAG_KEEP_ASPECT;
    else
@@ -1507,9 +1540,11 @@ static void *vulkan_init(const video_info_t *video,
    if (vk->context)
    {
       int i;
-      static const VkDescriptorPoolSize pool_sizes[2] = {
+      static const VkDescriptorPoolSize pool_sizes[4] = {
          { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
          { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS * 2 },
+         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
       };
       vk->num_swapchain_images = vk->context->num_swapchain_images;
 
@@ -1527,7 +1562,7 @@ static void *vulkan_init(const video_info_t *video,
          vk->swapchain[i].descriptor_manager =
             vulkan_create_descriptor_manager(
                   vk->context->device,
-                  pool_sizes, 2, vk->pipelines.set_layout);
+                  pool_sizes, 4, vk->pipelines.set_layout);
          vk->swapchain[i].vbo                = 
             vulkan_buffer_chain_init(
                VULKAN_BUFFER_BLOCK_SIZE, 16,
@@ -1615,9 +1650,11 @@ static void vulkan_check_swapchain(vk_t *vk)
    if (vk->context)
    {
       int i;
-      static const VkDescriptorPoolSize pool_sizes[2] = {
+      static const VkDescriptorPoolSize pool_sizes[4] = {
          { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
          { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS * 2 },
+         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
       };
       vk->num_swapchain_images = vk->context->num_swapchain_images;
 
@@ -1635,7 +1672,7 @@ static void vulkan_check_swapchain(vk_t *vk)
          vk->swapchain[i].descriptor_manager =
             vulkan_create_descriptor_manager(
                   vk->context->device,
-                  pool_sizes, 2, vk->pipelines.set_layout);
+                  pool_sizes, 4, vk->pipelines.set_layout);
 
          vk->swapchain[i].vbo       = vulkan_buffer_chain_init(
                VULKAN_BUFFER_BLOCK_SIZE,
@@ -2063,6 +2100,126 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
 #endif
 }
 
+/* VBO will be written to here. */
+static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
+{
+   if (quad->texture && quad->texture->image)
+      vulkan_transition_texture(vk, vk->cmd, quad->texture);
+
+   if (quad->pipeline != vk->tracker.pipeline)
+   {
+      VkRect2D sci;
+      vkCmdBindPipeline(vk->cmd,
+            VK_PIPELINE_BIND_POINT_GRAPHICS, quad->pipeline);
+
+      vk->tracker.pipeline = quad->pipeline;
+      /* Changing pipeline invalidates dynamic state. */
+      vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
+         sci               = vk->tracker.scissor;
+      else
+      {
+         /* No scissor -> viewport */
+         sci.offset.x      = vk->vp.x;
+         sci.offset.y      = vk->vp.y;
+         sci.extent.width  = vk->vp.width;
+         sci.extent.height = vk->vp.height;
+      }
+
+      vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+      vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+
+      vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
+   }
+   else if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
+   {
+      VkRect2D sci;
+      if (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR)
+         sci               = vk->tracker.scissor;
+      else
+      {
+         /* No scissor -> viewport */
+         sci.offset.x      = vk->vp.x;
+         sci.offset.y      = vk->vp.y;
+         sci.extent.width  = vk->vp.width;
+         sci.extent.height = vk->vp.height;
+      }
+
+      vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+      vkCmdSetScissor (vk->cmd, 0, 1, &sci);
+
+      vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
+   }
+
+   /* Upload descriptors */
+   {
+      VkDescriptorSet set;
+      struct vk_buffer_range range;
+
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+               sizeof(*quad->mvp), &range))
+         return;
+
+      if (
+               string_is_equal_fast(quad->mvp,
+                  &vk->tracker.mvp, sizeof(*quad->mvp))
+            || quad->texture->view != vk->tracker.view
+            || quad->sampler != vk->tracker.sampler)
+      {
+         /* Upload UBO */
+         struct vk_buffer_range range;
+
+         if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+                  sizeof(*quad->mvp), &range))
+            return;
+
+         memcpy(range.data, quad->mvp, sizeof(*quad->mvp));
+
+         set = vulkan_descriptor_manager_alloc(
+               vk->context->device,
+               &vk->chain->descriptor_manager);
+
+         vulkan_write_quad_descriptors(
+               vk->context->device,
+               set,
+               range.buffer,
+               range.offset,
+               sizeof(*quad->mvp),
+               quad->texture,
+               quad->sampler);
+
+         vkCmdBindDescriptorSets(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+               vk->pipelines.layout, 0,
+               1, &set, 0, NULL);
+
+         vk->tracker.view    = quad->texture->view;
+         vk->tracker.sampler = quad->sampler;
+         vk->tracker.mvp     = *quad->mvp;
+      }
+   }
+
+   /* Upload VBO */
+   {
+      struct vk_buffer_range range;
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+               6 * sizeof(struct vk_vertex), &range))
+         return;
+
+      {
+         struct vk_vertex         *pv = (struct vk_vertex*)range.data;
+         const struct vk_color *color = &quad->color;
+
+         VULKAN_WRITE_QUAD_VBO(pv, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, color);
+      }
+
+      vkCmdBindVertexBuffers(vk->cmd, 0, 1,
+            &range.buffer, &range.offset);
+   }
+
+   /* Draw the quad */
+   vkCmdDraw(vk->cmd, 6, 1, 0, 0);
+}
+
 static bool vulkan_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
@@ -2191,7 +2348,7 @@ static bool vulkan_frame(void *data, const void *frame,
                   vk,
                   &chain->texture_optimal,
                   frame_width, frame_height,
-                  chain->texture_optimal.format,
+                  chain->texture.format, /* Ensure we use the original format and not any remapped format. */
                   NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
       }
 
@@ -2214,7 +2371,7 @@ static bool vulkan_frame(void *data, const void *frame,
       {
          struct vk_texture *dynamic = &chain->texture_optimal;
          struct vk_texture *staging = &chain->texture;
-         VULKAN_COPY_STAGING_TO_DYNAMIC(vk, vk->cmd, dynamic, staging);
+         vulkan_copy_staging_to_dynamic(vk, vk->cmd, dynamic, staging);
       }
 
       vk->last_valid_index = frame_index;
@@ -2323,7 +2480,7 @@ static bool vulkan_frame(void *data, const void *frame,
                   struct vk_texture *dynamic = optimal;
                   struct vk_texture *staging = texture;
                   VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, staging);
-                  VULKAN_COPY_STAGING_TO_DYNAMIC(vk, vk->cmd,
+                  vulkan_copy_staging_to_dynamic(vk, vk->cmd,
                         dynamic, staging);
                   vk->menu.dirty[vk->menu.last_index] = false;
                }
@@ -2981,7 +3138,7 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
                &chain->texture_optimal,
                framebuffer->width,
                framebuffer->height,
-               chain->texture_optimal.format,
+               chain->texture.format, /* Ensure we use the non-remapped format. */
                NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
       }
    }
@@ -3025,7 +3182,8 @@ static void vulkan_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   unsigned y, stride;
+   int y;
+   unsigned stride;
    uint8_t *ptr                        = NULL;
    uint8_t *dst                        = NULL;
    const uint8_t *src                  = NULL;
@@ -3033,27 +3191,41 @@ static void vulkan_set_texture_frame(void *data,
    unsigned idx                        = 0;
    struct vk_texture *texture          = NULL;
    struct vk_texture *texture_optimal  = NULL;
+   VkFormat fmt                        = VK_FORMAT_B8G8R8A8_UNORM;
+   bool do_memcpy                      = true;
    const VkComponentMapping br_swizzle = {
       VK_COMPONENT_SWIZZLE_B,
       VK_COMPONENT_SWIZZLE_G,
       VK_COMPONENT_SWIZZLE_R,
       VK_COMPONENT_SWIZZLE_A,
    };
+   const VkComponentMapping *ptr_swizzle = NULL;
 
    if (!vk)
       return;
 
-   idx             = vk->context->current_frame_index;
-   texture         = &vk->menu.textures[idx  ];
-   texture_optimal = &vk->menu.textures_optimal[idx  ];
+   if (!rgb32)
+   {
+       VkFormatProperties formatProperties;
+       vkGetPhysicalDeviceFormatProperties(vk->context->gpu, VK_FORMAT_B4G4R4A4_UNORM_PACK16, &formatProperties);
+       if (formatProperties.optimalTilingFeatures != 0)
+       {
+           /* B4G4R4A4 must be supported, but R4G4B4A4 is optional,
+            * just apply the swizzle in the image view instead. */
+           fmt         = VK_FORMAT_B4G4R4A4_UNORM_PACK16;
+           ptr_swizzle = &br_swizzle;
+       }
+       else
+           do_memcpy   = false;
+   }
 
-   /* B4G4R4A4 must be supported, but R4G4B4A4 is optional,
-    * just apply the swizzle in the image view instead. */
-   *texture = vulkan_create_texture(vk,
+   idx                 = vk->context->current_frame_index;
+   texture             = &vk->menu.textures[idx  ];
+   texture_optimal     = &vk->menu.textures_optimal[idx  ];
+
+   *texture            = vulkan_create_texture(vk,
          texture->memory ? texture : NULL,
-         width, height,
-         rgb32 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-         NULL, rgb32 ? NULL : &br_swizzle,
+         width, height, fmt, NULL, ptr_swizzle,
          texture_optimal->memory ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED);
 
    vkMapMemory(vk->context->device, texture->memory,
@@ -3063,8 +3235,29 @@ static void vulkan_set_texture_frame(void *data,
    src       = (const uint8_t*)frame;
    stride    = (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)) * width;
 
-   for (y = 0; y < height; y++, dst += texture->stride, src += stride)
-      memcpy(dst, src, stride);
+   if (do_memcpy)
+   {
+      for (y = 0; y < height; y++, dst += texture->stride, src += stride)
+         memcpy(dst, src, stride);
+   }
+   else
+   {
+      for (y = 0; y < height; y++, dst += texture->stride, src += stride)
+      {
+         int x;
+         uint16_t *srcpix = (uint16_t*)src;
+         uint32_t *dstpix = (uint32_t*)dst;
+         for (x = 0; x < width; x++, srcpix++, dstpix++)
+         {
+            uint32_t pix = *srcpix;
+            *dstpix      = (
+                  (pix & 0xf000) >>  8)
+               | ((pix & 0x0f00) <<  4)
+               | ((pix & 0x00f0) << 16)
+               | ((pix & 0x000f) << 28);
+         }
+      }
+   }
 
    vk->menu.alpha      = alpha;
    vk->menu.last_index = idx;
@@ -3072,9 +3265,7 @@ static void vulkan_set_texture_frame(void *data,
    if (texture->type == VULKAN_TEXTURE_STAGING)
       *texture_optimal = vulkan_create_texture(vk,
             texture_optimal->memory ? texture_optimal : NULL,
-            width, height,
-            rgb32 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-            NULL, rgb32 ? NULL : &br_swizzle,
+            width, height, fmt, NULL, ptr_swizzle,
             VULKAN_TEXTURE_DYNAMIC);
    else
    {

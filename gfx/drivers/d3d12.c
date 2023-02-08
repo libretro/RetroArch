@@ -2512,8 +2512,9 @@ static bool d3d12_gfx_frame(
 
          if (d3d12->pass[i].rt.handle)
          {
-            d3d12_resource_transition(
-                  d3d12->queue.cmd, d3d12->pass[i].rt.handle,
+            D3D12_RESOURCE_TRANSITION(
+                  d3d12->queue.cmd,
+		  d3d12->pass[i].rt.handle,
                   D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                   D3D12_RESOURCE_STATE_RENDER_TARGET);
 
@@ -2534,8 +2535,9 @@ static bool d3d12_gfx_frame(
             else
                D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 4, 0);
 
-            d3d12_resource_transition(
-                  d3d12->queue.cmd, d3d12->pass[i].rt.handle,
+            D3D12_RESOURCE_TRANSITION(
+                  d3d12->queue.cmd,
+		  d3d12->pass[i].rt.handle,
                   D3D12_RESOURCE_STATE_RENDER_TARGET,
                   D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
             texture = &d3d12->pass[i].rt;
@@ -2554,9 +2556,13 @@ static bool d3d12_gfx_frame(
             d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
       D3D12SetGraphicsRootSignature(d3d12->queue.cmd,
             d3d12->desc.rootSignature);
-      d3d12_set_texture(d3d12->queue.cmd, &d3d12->frame.texture[0]);
-      d3d12_set_sampler(d3d12->queue.cmd,
-            d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+      D3D12SetGraphicsRootDescriptorTable(d3d12->queue.cmd,
+		      ROOT_ID_TEXTURE_T,
+		      d3d12->frame.texture[0].gpu_descriptor[0]);
+      D3D12SetGraphicsRootDescriptorTable(d3d12->queue.cmd,
+		      ROOT_ID_SAMPLER_T,
+		      d3d12->samplers[
+		      RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
       D3D12SetGraphicsRootConstantBufferView(
             d3d12->queue.cmd, ROOT_ID_UBO,
             d3d12->frame.ubo_view.BufferLocation);
@@ -2568,8 +2574,9 @@ static bool d3d12_gfx_frame(
 #ifdef HAVE_DXGI_HDR
    if ((d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) && use_back_buffer)
    {
-      d3d12_resource_transition(
-            d3d12->queue.cmd, d3d12->chain.back_buffer.handle,
+      D3D12_RESOURCE_TRANSITION(
+            d3d12->queue.cmd,
+	    d3d12->chain.back_buffer.handle,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             D3D12_RESOURCE_STATE_RENDER_TARGET);
 
@@ -2589,7 +2596,7 @@ static bool d3d12_gfx_frame(
    else
 #endif
    {
-      d3d12_resource_transition(
+      D3D12_RESOURCE_TRANSITION(
             d3d12->queue.cmd,
             d3d12->chain.renderTargets[d3d12->chain.frame_index],
             D3D12_RESOURCE_STATE_PRESENT,
@@ -2630,7 +2637,12 @@ static bool d3d12_gfx_frame(
          D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
       }
 
-      d3d12_set_texture_and_sampler(d3d12->queue.cmd, &d3d12->menu.texture);
+      D3D12SetGraphicsRootDescriptorTable(d3d12->queue.cmd,
+		      ROOT_ID_TEXTURE_T,
+		      d3d12->menu.texture.gpu_descriptor[0]);
+      D3D12SetGraphicsRootDescriptorTable(d3d12->queue.cmd,
+		      ROOT_ID_SAMPLER_T,
+		      d3d12->menu.texture.sampler);
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->menu.vbo_view);
       D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
    }
@@ -2711,14 +2723,15 @@ static bool d3d12_gfx_frame(
    /* Copy over back buffer to swap chain render targets */
    if ((d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) && use_back_buffer)
    {
-      d3d12_resource_transition(
+      D3D12_RESOURCE_TRANSITION(
          d3d12->queue.cmd,
          d3d12->chain.renderTargets[d3d12->chain.frame_index],
          D3D12_RESOURCE_STATE_PRESENT,
          D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-      d3d12_resource_transition(
-         d3d12->queue.cmd, d3d12->chain.back_buffer.handle,
+      D3D12_RESOURCE_TRANSITION(
+         d3d12->queue.cmd,
+	 d3d12->chain.back_buffer.handle,
          D3D12_RESOURCE_STATE_RENDER_TARGET,
          D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
       D3D12SetPipelineState(d3d12->queue.cmd,
@@ -2735,9 +2748,13 @@ static bool d3d12_gfx_frame(
 
       D3D12SetGraphicsRootSignature(d3d12->queue.cmd,
             d3d12->desc.rootSignature);
-      d3d12_set_texture(d3d12->queue.cmd, &d3d12->chain.back_buffer);
-      d3d12_set_sampler(d3d12->queue.cmd,
-            d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+      D3D12SetGraphicsRootDescriptorTable(d3d12->queue.cmd,
+		      ROOT_ID_TEXTURE_T,
+		      d3d12->chain.back_buffer.gpu_descriptor[0]);
+      D3D12SetGraphicsRootDescriptorTable(d3d12->queue.cmd,
+		      ROOT_ID_SAMPLER_T,
+		      d3d12->samplers[
+		      RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
       D3D12SetGraphicsRootConstantBufferView(
          d3d12->queue.cmd, ROOT_ID_UBO,
          d3d12->hdr.ubo_view.BufferLocation);
@@ -2756,7 +2773,7 @@ static bool d3d12_gfx_frame(
    }
 #endif
 
-   d3d12_resource_transition(
+   D3D12_RESOURCE_TRANSITION(
          d3d12->queue.cmd,
          d3d12->chain.renderTargets[d3d12->chain.frame_index],
          D3D12_RESOURCE_STATE_RENDER_TARGET,

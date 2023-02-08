@@ -9353,6 +9353,18 @@ static enum menu_action materialui_parse_menu_entry_action(
                materialui_switch_tabs(mui, main_menu_tab, MENU_ACTION_NOOP);
                new_action = MENU_ACTION_NOOP;
             }
+            else if (main_menu_tab_index == mui->nav_bar.active_menu_tab_index)
+            {
+               /* Jump to first item on Main Menu */
+               menu_navigation_set_selection(0);
+               materialui_navigation_set(mui, true);
+            }
+         }
+         else if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
+         {
+            /* Jump to first item on current menu */
+            menu_navigation_set_selection(0);
+            materialui_navigation_set(mui, true);
          }
          break;
       default:
@@ -10650,7 +10662,10 @@ static void materialui_list_insert(
                node->icon_texture_index = MUI_TEXTURE_UNDO_LOAD_STATE;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE)))
+            else if (
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_UNLOAD))
+                  )
             {
                node->icon_texture_index = MUI_TEXTURE_UNDO_SAVE_STATE;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
@@ -10688,6 +10703,9 @@ static void materialui_list_insert(
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DELETE_PLAYLIST)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE))
                   )
             {
@@ -10836,6 +10854,7 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_META_CHEAT_SEARCH)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_START_OR_CONT)) ||

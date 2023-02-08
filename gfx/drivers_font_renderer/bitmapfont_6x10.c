@@ -17,11 +17,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libretro.h>
-
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <ctype.h>
 #include <boolean.h>
 
@@ -70,51 +68,46 @@ bitmapfont_lut_t *bitmapfont_6x10_load(unsigned language)
     * specified language */
    switch (language)
    {
-      /* Needed individually for any non-Latin languages */
-      case RETRO_LANGUAGE_ENGLISH:
-      {
-         font_file = FONT_6X10_FILE_ENG;
-         font_size = FONT_6X10_SIZE_ENG;
-         glyph_min = FONT_6X10_GLYPH_MIN_ENG;
-         glyph_max = FONT_6X10_GLYPH_MAX_ENG;
-         break;
-      }
-
-      /* All Latin alphabet languages go here */
-      case RETRO_LANGUAGE_FRENCH:
-      case RETRO_LANGUAGE_SPANISH:
-      case RETRO_LANGUAGE_GERMAN:
-      case RETRO_LANGUAGE_ITALIAN:
-      case RETRO_LANGUAGE_DUTCH:
-      case RETRO_LANGUAGE_PORTUGUESE_BRAZIL:
-      case RETRO_LANGUAGE_PORTUGUESE_PORTUGAL:
-      case RETRO_LANGUAGE_ESPERANTO:
-      case RETRO_LANGUAGE_POLISH:
-      case RETRO_LANGUAGE_VIETNAMESE:
-      case RETRO_LANGUAGE_TURKISH:
-      case RETRO_LANGUAGE_SLOVAK:
-      case RETRO_LANGUAGE_ASTURIAN:
-      case RETRO_LANGUAGE_FINNISH:
-      case RETRO_LANGUAGE_INDONESIAN:
-      case RETRO_LANGUAGE_SWEDISH:
-      case RETRO_LANGUAGE_CZECH:
-      case RETRO_LANGUAGE_HUNGARIAN:
-      /* These languages are not yet added
-      case RETRO_LANGUAGE_ROMANIAN:
-      case RETRO_LANGUAGE_CROATIAN:
-      case RETRO_LANGUAGE_SERBIAN:
-      case RETRO_LANGUAGE_WELSH:
-      */
-      {
-         font_file = FONT_6X10_FILE_LSE;
-         font_size = FONT_6X10_SIZE_LSE;
-         glyph_min = FONT_6X10_GLYPH_MIN_LSE;
-         glyph_max = FONT_6X10_GLYPH_MAX_LSE;
-         break;
-      }
-
-      default:
-         break;
+	   /* Needed individually for any non-Latin languages */
+	   case RETRO_LANGUAGE_ENGLISH:
+	      font_file = FONT_6X10_FILE_ENG;
+	      font_size = FONT_6X10_SIZE_ENG;
+	      glyph_min = FONT_6X10_GLYPH_MIN_ENG;
+	      glyph_max = FONT_6X10_GLYPH_MAX_ENG;
+	      break;
+	      /* All Latin alphabet languages go here */
+	   case RETRO_LANGUAGE_FRENCH:
+	   case RETRO_LANGUAGE_SPANISH:
+	   case RETRO_LANGUAGE_GERMAN:
+	   case RETRO_LANGUAGE_ITALIAN:
+	   case RETRO_LANGUAGE_DUTCH:
+	   case RETRO_LANGUAGE_PORTUGUESE_BRAZIL:
+	   case RETRO_LANGUAGE_PORTUGUESE_PORTUGAL:
+	   case RETRO_LANGUAGE_ESPERANTO:
+	   case RETRO_LANGUAGE_POLISH:
+	   case RETRO_LANGUAGE_VIETNAMESE:
+	   case RETRO_LANGUAGE_TURKISH:
+	   case RETRO_LANGUAGE_SLOVAK:
+	   case RETRO_LANGUAGE_ASTURIAN:
+	   case RETRO_LANGUAGE_FINNISH:
+	   case RETRO_LANGUAGE_INDONESIAN:
+	   case RETRO_LANGUAGE_SWEDISH:
+	   case RETRO_LANGUAGE_CZECH:
+	   case RETRO_LANGUAGE_HUNGARIAN:
+#if 0
+	   /* These languages are not yet added */
+	   case RETRO_LANGUAGE_ROMANIAN:
+	   case RETRO_LANGUAGE_CROATIAN:
+	   case RETRO_LANGUAGE_SERBIAN:
+	   case RETRO_LANGUAGE_WELSH:
+#endif
+	      font_file = FONT_6X10_FILE_LSE;
+	      font_size = FONT_6X10_SIZE_LSE;
+	      glyph_min = FONT_6X10_GLYPH_MIN_LSE;
+	      glyph_max = FONT_6X10_GLYPH_MAX_LSE;
+	      break;
+	   default:
+	      break;
    }
 
    /* Sanity check: should only trigger on bug */

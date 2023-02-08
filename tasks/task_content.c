@@ -257,7 +257,7 @@ bool content_file_override_set(
          RBUF_RESIZE(p_content->content_override_list,
                num_entries + 1);
 
-         RARCH_LOG("[Content Override]: File Extension: '%s' - need_fullpath: %s, persistent_data: %s\n",
+         RARCH_LOG("[Content Override]: File Extension: '%3s' - need_fullpath: %s, persistent_data: %s\n",
                ext, overrides[i].need_fullpath ? "TRUE" : "FALSE",
                overrides[i].persistent_data ? "TRUE" : "FALSE");
 
@@ -1482,7 +1482,7 @@ static bool content_load(content_ctx_info_t *info,
 #endif
 
    command_event(CMD_EVENT_HISTORY_INIT, NULL);
-   rarch_favorites_init();
+   retroarch_favorites_init();
    command_event(CMD_EVENT_RESUME, NULL);
    command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
@@ -1854,8 +1854,9 @@ static bool firmware_update_status(
 {
    char s[PATH_MAX_LENGTH];
    core_info_ctx_firmware_t firmware_info;
-   bool set_missing_firmware  = false;
-   core_info_t *core_info     = NULL;
+   bool set_missing_firmware         = false;
+   core_info_t *core_info            = NULL;
+   runloop_state_t       *runloop_st = runloop_state_get_ptr();
    
    core_info_get_current_core(&core_info);
 
@@ -1878,13 +1879,13 @@ static bool firmware_update_status(
          core_info->path,
          firmware_info.directory.system);
 
-   retroarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
-
    core_info_list_update_missing_firmware(&firmware_info,
          &set_missing_firmware);
 
    if (set_missing_firmware)
-      retroarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+      runloop_st->missing_bios    = true;
+   else
+      runloop_st->missing_bios    = false;
 
    if (
             (content_ctx->flags & CONTENT_INFO_FLAG_BIOS_IS_MISSING)
@@ -1934,7 +1935,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
-   if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
+   if (runloop_st->missing_bios)
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -2024,7 +2025,7 @@ bool task_push_load_content_from_playlist_from_menu(
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
-   if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
+   if (runloop_st->missing_bios)
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -2164,7 +2165,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
-   if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
+   if (runloop_st->missing_bios)
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
@@ -2271,9 +2272,7 @@ bool task_push_load_contentless_core_from_menu(
    content_information_ctx_t content_ctx = {0};
    content_state_t *p_content            = content_state_get_ptr();
    bool ret                              = true;
-#if defined(HAVE_DYNAMIC)
    runloop_state_t *runloop_st           = runloop_state_get_ptr();
-#endif
    settings_t *settings                  = config_get_ptr();
    const char *path_dir_system           = settings->paths.directory_system;
    bool check_firmware_before_loading    = settings->bools.check_firmware_before_loading;
@@ -2283,12 +2282,12 @@ bool task_push_load_contentless_core_from_menu(
    if (string_is_empty(core_path))
       return false;
 
-   content_ctx.flags     = 0;
+   content_ctx.flags                         = 0;
 
    if (check_firmware_before_loading)
-      content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
-   if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
-      content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
+      content_ctx.flags                     |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
+   if (runloop_st->missing_bios)
+      content_ctx.flags                     |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    if (!string_is_empty(path_dir_system))
       content_ctx.directory_system           = strdup(path_dir_system);
 
@@ -2399,8 +2398,8 @@ bool task_push_load_content_with_new_core_from_menu(
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
-   if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
-      content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
+   if (runloop_st->missing_bios)
+      content_ctx.flags                      |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
@@ -2506,8 +2505,8 @@ static bool task_load_content_internal(
    if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
       content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
 #endif
-   if (retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL))
-      content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
+   if (runloop_st->missing_bios)
+      content_ctx.flags                      |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;

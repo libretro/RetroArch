@@ -398,6 +398,19 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       if (cbs->setting && cbs->setting->type)
          entry->setting_type        = cbs->setting->type;
 
+      /* Exceptions without cbs->setting->type */
+      if (!entry->setting_type)
+      {
+         switch (entry->type)
+         {
+            case MENU_SETTING_ACTION_CORE_LOCK:
+               entry->setting_type  = ST_BOOL;
+               break;
+            default:
+               break;
+         }
+      }
+
       if (cbs->checked)
          entry->flags |= MENU_ENTRY_FLAG_CHECKED;
 
@@ -476,9 +489,11 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       core_option_manager_t *coreopts = NULL;
       size_t option_index             = entry->type - MENU_SETTINGS_CORE_OPTION_START;
       retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
-      option = (struct core_option*)&coreopts->opts[option_index];
 
-      if (option->vals->size == 2)
+      if (coreopts)
+         option                       = (struct core_option*)&coreopts->opts[option_index];
+
+      if (option && option->vals && option->vals->size == 2)
          entry->setting_type = ST_BOOL;
    }
 
@@ -6901,8 +6916,8 @@ void retroarch_menu_running(void)
             true);
    }
 
-   /* Prevent stray input (for a single frame) */
-   menu_st->input_driver_flushing_input = 1;
+   /* Prevent stray input */
+   menu_st->input_driver_flushing_input = 2;
 
 #ifdef HAVE_AUDIOMIXER
    if (audio_enable_menu && audio_enable_menu_bgm)
@@ -6970,9 +6985,8 @@ void retroarch_menu_running_finished(bool quit)
             false);
    }
 
-   /* Prevent stray input
-    * (for a single frame) */
-   menu_st->input_driver_flushing_input = 1;
+   /* Prevent stray input */
+   menu_st->input_driver_flushing_input = 2;
 
    if (!quit)
    {
@@ -7130,7 +7144,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_st->entries.begin               = 0;
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
-            rarch_favorites_deinit();
+            retroarch_favorites_deinit();
 
             menu_st->dialog_st.pending_push  = false;
             menu_st->dialog_st.current_id    = 0;
@@ -8286,6 +8300,7 @@ int generic_menu_entry_action(
       const char *deferred_path = menu ? menu->deferred_path : NULL;
       const char *flush_target  = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
       size_t stack_offset       = 1;
+      unsigned i                = 0;
       bool reset_navigation     = true;
 
       /* Loop backwards through the menu stack to
@@ -8334,6 +8349,9 @@ int generic_menu_entry_action(
        * the menu stack. We therefore have to force a
        * RARCH_MENU_CTL_UNSET_PREVENT_POPULATE */
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+
+      /* Ozone requires thumbnail refreshing */
+      menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, &i);
 
       if (reset_navigation)
          menu_st->selection_ptr = 0;

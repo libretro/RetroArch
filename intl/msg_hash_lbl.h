@@ -119,6 +119,141 @@ MSG_HASH(
    "audio_driver"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_RSOUND,
+   "rsound"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_AUDIOIO,
+   "audioio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_OSS,
+   "oss"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_ALSA,
+   "alsa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_ALSATHREAD,
+   "alsathread"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_TINYALSA,
+   "tinyalsa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_ROAR,
+   "roar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_COREAUDIO,
+   "coreaudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_COREAUDIO3,
+   "coreaudio3"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_AL,
+   "openal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SL,
+   "opensl"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SDL,
+   "sdl"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SDL2,
+   "sdl2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_DSOUND,
+   "dsound"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_WASAPI,
+   "wasapi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_XAUDIO,
+   "xaudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PULSE,
+   "pulse"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_EXT,
+   "ext"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_XENON360,
+   "xenon360"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PS3,
+   "ps3"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_WII,
+   "gx"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_WIIU,
+   "AX"
+   )
+#if defined(VITA)
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PSP,
+   "vita"
+   )
+#elif defined(ORBIS)
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PSP,
+   "orbis"
+   )
+#else
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PSP,
+   "psp"
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PS2,
+   "ps2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_CTR,
+   "dsp"
+   )
+#if defined(HAVE_LIBNX)
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SWITCH,
+   "switch_audren_thread"
+   )
+#else
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SWITCH,
+   "switch"
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_RWEBAUDIO,
+   "rwebaudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_JACK,
+   "jack"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_NULL,
+   "null"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
    "audio_dsp_plugin"
    )
@@ -857,6 +992,10 @@ MSG_HASH(
    "deferred_dropdown_box_list_netplay_mitm_server"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE,
+   "deferred_dropdown_box_list_audio_device"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
    "deferred_configurations_list"
    )
@@ -1389,6 +1528,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE,
    "core_info_cache_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "core_info_savestate_bypass"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,
@@ -3175,6 +3318,14 @@ MSG_HASH(
    "save_current_config"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,
+   "override_file_load"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERRIDE_UNLOAD,
+   "override_unload"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "save_current_config_override_core"
    )
@@ -3185,6 +3336,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
    "save_current_config_override_game"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "remove_current_config_override_core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "remove_current_config_override_content_dir"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "remove_current_config_override_game"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SAVE_NEW_CONFIG,

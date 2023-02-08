@@ -444,7 +444,7 @@ void rc_init_parse_state_memrefs(rc_parse_state_t* parse, rc_memref_t** memrefs)
   *memrefs = 0;
 }
 
-static unsigned rc_get_memref_value_value(rc_memref_value_t* memref, int operand_type) {
+static unsigned rc_get_memref_value_value(const rc_memref_value_t* memref, int operand_type) {
   switch (operand_type)
   {
     /* most common case explicitly first, even though it could be handled by default case.

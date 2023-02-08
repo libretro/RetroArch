@@ -81,6 +81,7 @@ enum  runloop_state_enum
    RUNLOOP_STATE_ITERATE = 0,
    RUNLOOP_STATE_POLLED_AND_SLEEP,
    RUNLOOP_STATE_MENU_ITERATE,
+   RUNLOOP_STATE_PAUSE,
    RUNLOOP_STATE_END,
    RUNLOOP_STATE_QUIT
 };
@@ -266,6 +267,7 @@ struct runloop
 #endif
 
    uint32_t flags;
+   int8_t run_frames_and_pause;
 
    char runtime_content_path_basename[8192];
    char current_library_name[NAME_MAX_LENGTH];

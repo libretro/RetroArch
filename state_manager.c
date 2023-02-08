@@ -591,9 +591,9 @@ void state_manager_event_init(
 
    rewind_st->size               = 0;
    rewind_st->flags             &= ~(
-                             STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED
-                           | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
-                           | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED
+                                   STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED
+                                 | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
+                                 | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED
                                     );
    rewind_st->flags             |= STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED;
 
@@ -666,10 +666,10 @@ void state_manager_event_deinit(
    rewind_st->state              = NULL;
    rewind_st->size               = 0;
    rewind_st->flags             &= ~(
-                             STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED
-                           | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
-                           | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED
-                           | STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED    
+                                   STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED
+                                 | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
+                                 | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED
+                                 | STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED
                                     );
 
    /* Restore regular (non-rewind) core audio
@@ -796,7 +796,8 @@ bool state_manager_check_rewind(
       cnt = (cnt + 1) % (rewind_granularity ?
             rewind_granularity : 1); /* Avoid possible SIGFPE. */
 
-      if ((cnt == 0) || retroarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL))
+      if (     !is_paused
+            && ((cnt == 0) || retroarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL)))
       {
          void *state = NULL;
 

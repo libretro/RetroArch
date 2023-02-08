@@ -424,11 +424,12 @@ static void gl2_set_viewport(gl2_t *gl,
    {
       video_viewport_get_scaled_integer(&gl->vp,
             viewport_width, viewport_height,
-            video_driver_get_aspect_ratio(), gl->keep_aspect);
+            video_driver_get_aspect_ratio(),
+            (gl->flags & GL2_FLAG_KEEP_ASPECT));
       viewport_width  = gl->vp.width;
       viewport_height = gl->vp.height;
    }
-   else if (gl->keep_aspect && !force_full)
+   else if ((gl->flags & GL2_FLAG_KEEP_ASPECT) && !force_full)
    {
       float desired_aspect = video_driver_get_aspect_ratio();
 
@@ -556,7 +557,7 @@ static void gl2_renderchain_render(
       mip_level = i + 1;
 
       if (gl->shader->mipmap_input(gl->shader_data, mip_level)
-            && gl->have_mipmap)
+            && (gl->flags & GL2_FLAG_HAVE_MIPMAP))
          glGenerateMipmap(GL_TEXTURE_2D);
 
       glClear(GL_COLOR_BUFFER_BIT);
@@ -623,8 +624,8 @@ static void gl2_renderchain_render(
    mip_level = chain->fbo_pass + 1;
 
    if (
-         gl->shader->mipmap_input(gl->shader_data, mip_level) &&
-         gl->have_mipmap)
+            gl->shader->mipmap_input(gl->shader_data, mip_level)
+         && (gl->flags & GL2_FLAG_HAVE_MIPMAP))
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
@@ -669,8 +670,9 @@ static void gl2_renderchain_deinit_fbo(gl2_t *gl,
       if (gl->fbo_feedback_texture)
          glDeleteTextures(1, &gl->fbo_feedback_texture);
 
-      gl->fbo_inited           = false;
-      gl->fbo_feedback_enable  = false;
+      gl->flags               &= ~(GL2_FLAG_FBO_INITED
+                               |   GL2_FLAG_FBO_FEEDBACK_ENABLE
+                                  );
       gl->fbo_feedback_pass    = 0;
       gl->fbo_feedback_texture = 0;
       gl->fbo_feedback         = 0;
@@ -688,23 +690,17 @@ static void gl2_renderchain_deinit_fbo(gl2_t *gl,
    }
 }
 
-static void gl2_renderchain_deinit_hw_render(
-      gl2_t *gl,
-      gl2_renderchain_data_t *chain)
+static void gl2_renderchain_deinit_hw_render(gl2_t *gl, gl2_renderchain_data_t *chain)
 {
-   if (!gl)
-      return;
-
-   if (gl->shared_context_use)
+   if (gl->flags    & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
-
-   if (gl->hw_render_fbo_init)
+   if (gl->flags    & GL2_FLAG_HW_RENDER_FBO_INIT)
       gl2_delete_fb(gl->textures, gl->hw_render_fbo);
    if (chain->flags & GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT)
       gl2_delete_rb(gl->textures, chain->hw_render_depth);
-   gl->hw_render_fbo_init = false;
+   gl->flags &= ~GL2_FLAG_HW_RENDER_FBO_INIT;
 
-   if (gl->shared_context_use)
+   if (gl->flags    & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 }
 
@@ -717,29 +713,22 @@ static bool gl2_create_fbo_targets(gl2_t *gl, gl2_renderchain_data_t *chain)
 
    for (i = 0; i < (unsigned)chain->fbo_pass; i++)
    {
-      GLenum status;
-
       gl2_bind_fb(chain->fbo[i]);
       gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER,
             RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, chain->fbo_texture[i], 0);
-
-      status = gl2_check_fb_status(RARCH_GL_FRAMEBUFFER);
-      if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
+      if (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER) != RARCH_GL_FRAMEBUFFER_COMPLETE)
          goto error;
    }
 
    if (gl->fbo_feedback_texture)
    {
-      GLenum status;
-
       gl2_gen_fb(1, &gl->fbo_feedback);
       gl2_bind_fb(gl->fbo_feedback);
       gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER,
             RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
             gl->fbo_feedback_texture, 0);
 
-      status = gl2_check_fb_status(RARCH_GL_FRAMEBUFFER);
-      if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
+      if (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER) != RARCH_GL_FRAMEBUFFER_COMPLETE)
          goto error;
 
       /* Make sure the feedback textures are cleared
@@ -927,7 +916,7 @@ static void gl2_create_fbo_textures(gl2_t *gl,
             (gl2_renderchain_data_t*)gl->renderchain_data,
             i, chain->fbo_texture[i]);
 
-   if (gl->fbo_feedback_enable)
+   if (gl->flags & GL2_FLAG_FBO_FEEDBACK_ENABLE)
    {
       glGenTextures(1, &gl->fbo_feedback_texture);
       gl2_create_fbo_texture(gl,
@@ -1111,7 +1100,7 @@ static void gl2_renderchain_init(
          && (!(scale.flags & FBO_SCALE_FLAG_VALID)))
       return;
 
-   if (!gl->has_fbo)
+   if (!(gl->flags & GL2_FLAG_HAVE_FBO))
    {
       RARCH_ERR("[GL]: Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
       return;
@@ -1158,22 +1147,25 @@ static void gl2_renderchain_init(
             gl->fbo_rect[i].width, gl->fbo_rect[i].height);
    }
 
-   gl->fbo_feedback_enable = gl->shader->get_feedback_pass(gl->shader_data,
-         &gl->fbo_feedback_pass);
+   if (gl->shader->get_feedback_pass(gl->shader_data, &gl->fbo_feedback_pass))
+   {
+      if (gl->fbo_feedback_pass < (unsigned)chain->fbo_pass)
+      {
+         RARCH_LOG("[GL]: Creating feedback FBO %d @ %ux%u.\n", i,
+               gl->fbo_rect[gl->fbo_feedback_pass].width,
+               gl->fbo_rect[gl->fbo_feedback_pass].height);
+         gl->flags |=  GL2_FLAG_FBO_FEEDBACK_ENABLE;
+      }
+      else
+      {
+         RARCH_WARN("[GL]: Tried to create feedback FBO of pass #%u, but there are only %d FBO passes. Will use input texture as feedback texture.\n",
+               gl->fbo_feedback_pass, chain->fbo_pass);
+         gl->flags &= ~GL2_FLAG_FBO_FEEDBACK_ENABLE;
+      }
+   }
+   else
+      gl->flags    &= ~GL2_FLAG_FBO_FEEDBACK_ENABLE;
 
-   if (gl->fbo_feedback_enable && gl->fbo_feedback_pass
-         < (unsigned)chain->fbo_pass)
-   {
-      RARCH_LOG("[GL]: Creating feedback FBO %d @ %ux%u.\n", i,
-            gl->fbo_rect[gl->fbo_feedback_pass].width,
-            gl->fbo_rect[gl->fbo_feedback_pass].height);
-   }
-   else if (gl->fbo_feedback_enable)
-   {
-      RARCH_WARN("[GL]: Tried to create feedback FBO of pass #%u, but there are only %d FBO passes. Will use input texture as feedback texture.\n",
-              gl->fbo_feedback_pass, chain->fbo_pass);
-      gl->fbo_feedback_enable = false;
-   }
 
    gl2_create_fbo_textures(gl, chain);
    if (!gl || !gl2_create_fbo_targets(gl, chain))
@@ -1183,7 +1175,7 @@ static void gl2_renderchain_init(
       return;
    }
 
-   gl->fbo_inited = true;
+   gl->flags |= GL2_FLAG_FBO_INITED;
 }
 
 static bool gl2_renderchain_init_hw_render(
@@ -1191,7 +1183,6 @@ static bool gl2_renderchain_init_hw_render(
       gl2_renderchain_data_t *chain,
       unsigned width, unsigned height)
 {
-   GLenum status;
    unsigned i;
    bool depth                           = false;
    bool stencil                         = false;
@@ -1202,7 +1193,7 @@ static bool gl2_renderchain_init_hw_render(
 
    /* We can only share texture objects through contexts.
     * FBOs are "abstract" objects and are not shared. */
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    RARCH_LOG("[GL]: Initializing HW render (%ux%u).\n", width, height);
@@ -1211,7 +1202,7 @@ static bool gl2_renderchain_init_hw_render(
    RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %d px.\n",
          max_fbo_size, max_renderbuffer_size);
 
-   if (!gl->has_fbo)
+   if (!(gl->flags & GL2_FLAG_HAVE_FBO))
       return false;
 
    RARCH_LOG("[GL]: Supports FBO (render-to-texture).\n");
@@ -1230,6 +1221,7 @@ static bool gl2_renderchain_init_hw_render(
 
    for (i = 0; i < gl->textures; i++)
    {
+      GLenum status;
       gl2_bind_fb(gl->hw_render_fbo[i]);
       gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER,
             RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
@@ -1282,9 +1274,9 @@ static bool gl2_renderchain_init_hw_render(
    }
 
    gl2_renderchain_bind_backbuffer();
-   gl->hw_render_fbo_init = true;
+   gl->flags |= GL2_FLAG_HW_RENDER_FBO_INIT;
 
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
    return true;
 }
@@ -1301,7 +1293,7 @@ static void gl2_renderchain_bind_prev_texture(
 
    /* Implement feedback by swapping out FBO/textures
     * for FBO pass #N and feedbacks. */
-   if (gl->fbo_feedback_enable)
+   if (gl->flags & GL2_FLAG_FBO_FEEDBACK_ENABLE)
    {
       GLuint tmp_fbo                 = gl->fbo_feedback;
       GLuint tmp_tex                 = gl->fbo_feedback_texture;
@@ -1316,15 +1308,15 @@ static bool gl2_renderchain_read_viewport(
       gl2_t *gl,
       uint8_t *buffer, bool is_idle)
 {
-   unsigned                     num_pixels = 0;
+   unsigned num_pixels    = 0;
 
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
-   num_pixels = gl->vp.width * gl->vp.height;
+   num_pixels             = gl->vp.width * gl->vp.height;
 
 #ifdef HAVE_GL_ASYNC_READBACK
-   if (gl->pbo_readback_enable)
+   if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
    {
       const uint8_t *ptr  = NULL;
 
@@ -1403,12 +1395,12 @@ static bool gl2_renderchain_read_viewport(
       gl->readback_buffer_screenshot = NULL;
    }
 
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 
 error:
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return false;
@@ -1421,7 +1413,7 @@ error:
    glDisable(GL_DITHER)
 #else
 #define gl2_renderchain_restore_default_state(gl) \
-   if (!gl->core_context_in_use) \
+   if (!(gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE)) \
       glEnable(GL_TEXTURE_2D); \
    glDisable(GL_DEPTH_TEST); \
    glDisable(GL_CULL_FACE); \
@@ -1491,7 +1483,7 @@ static void gl2_renderchain_copy_frame(
                0, 0, 0, width, height, gl->texture_type,
                gl->texture_fmt, gl->conv_buffer);
       }
-      else if (gl->support_unpack_row_length)
+      else if (gl->flags & GL2_FLAG_HAVE_UNPACK_ROW_LENGTH)
       {
          glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
          glTexSubImage2D(GL_TEXTURE_2D,
@@ -1532,7 +1524,7 @@ static void gl2_renderchain_copy_frame(
       const GLvoid *data_buf = frame;
       glPixelStorei(GL_UNPACK_ALIGNMENT, gl2_get_alignment(pitch));
 
-      if (gl->base_size == 2 && !gl->have_es2_compat)
+      if (gl->base_size == 2 && (!(gl->flags & GL2_FLAG_HAVE_ES2_COMPAT)))
       {
          /* Convert to 32-bit textures on desktop GL.
           *
@@ -1687,10 +1679,10 @@ static void gl2_renderchain_resolve_extensions(gl2_t *gl,
    }
 
    /* Use regular textures if we use HW render. */
-   if ( !gl->hw_render_use 
-      && gl_check_capability(GL_CAPS_EGLIMAGE) 
-      && gl->ctx_driver->image_buffer_init
-      && gl->ctx_driver->image_buffer_init(gl->ctx_data, video))
+   if ( (!(gl->flags & GL2_FLAG_HW_RENDER_USE))
+      &&  (gl_check_capability(GL_CAPS_EGLIMAGE))
+      &&  (gl->ctx_driver->image_buffer_init)
+      &&  (gl->ctx_driver->image_buffer_init(gl->ctx_data, video)))
       chain->flags |=  GL2_CHAIN_FLAG_EGL_IMAGES;
    else
       chain->flags &= ~GL2_CHAIN_FLAG_EGL_IMAGES;
@@ -1927,7 +1919,7 @@ static void gl2_render_overlay(gl2_t *gl)
 
    glEnable(GL_BLEND);
 
-   if (gl->overlay_full_screen)
+   if (gl->flags & GL2_FLAG_OVERLAY_FULLSCREEN)
       glViewport(0, 0, width, height);
 
    /* Ensure that we reset the attrib array. */
@@ -1953,7 +1945,7 @@ static void gl2_render_overlay(gl2_t *gl)
    gl->coords.tex_coord = gl->tex_info.coord;
    gl->coords.color     = gl->white_color_ptr;
    gl->coords.vertices  = 4;
-   if (gl->overlay_full_screen)
+   if (gl->flags & GL2_FLAG_OVERLAY_FULLSCREEN)
       glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
 }
 #endif
@@ -2106,11 +2098,11 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
 
 #ifdef HAVE_GLSL
    if (type == RARCH_SHADER_GLSL)
-      gl_glsl_set_context_type(gl->core_context_in_use,
+      gl_glsl_set_context_type(gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE,
             hwr->version_major, hwr->version_minor);
 #endif
 
-   init_data.gl.core_context_enabled = gl->core_context_in_use;
+   init_data.gl.core_context_enabled = gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE;
    init_data.shader_type             = type;
    init_data.shader                  = NULL;
    init_data.shader_data             = NULL;
@@ -2141,7 +2133,7 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
 static uintptr_t gl2_get_current_framebuffer(void *data)
 {
    gl2_t *gl = (gl2_t*)data;
-   if (!gl || !gl->has_fbo)
+   if (!gl || (!(gl->flags & GL2_FLAG_HAVE_FBO)))
       return 0;
    return gl->hw_render_fbo[(gl->tex_index + 1) % gl->textures];
 }
@@ -2251,7 +2243,8 @@ static void gl2_init_textures(gl2_t *gl)
    /* GLES is picky about which format we use here.
     * Without extensions, we can *only* render to 16-bit FBOs. */
 
-   if (gl->hw_render_use && gl->base_size == sizeof(uint32_t))
+   if (     (gl->flags & GL2_FLAG_HW_RENDER_USE) 
+         && (gl->base_size == sizeof(uint32_t)))
    {
       if (gl_check_capability(GL_CAPS_ARGB8))
       {
@@ -2312,7 +2305,7 @@ static void gl2_set_texture_frame(void *data,
    if (!gl)
       return;
 
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
    if (!gl->menu_texture)
@@ -2327,19 +2320,25 @@ static void gl2_set_texture_frame(void *data,
    gl->menu_texture_alpha = alpha;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
 static void gl2_set_texture_enable(void *data, bool state, bool full_screen)
 {
-   gl2_t *gl                     = (gl2_t*)data;
+   gl2_t *gl                    = (gl2_t*)data;
 
    if (!gl)
       return;
 
-   gl->menu_texture_enable      = state;
-   gl->menu_texture_full_screen = full_screen;
+   if (state)
+      gl->flags                |=  GL2_FLAG_MENU_TEXTURE_ENABLE;
+   else
+      gl->flags                &= ~GL2_FLAG_MENU_TEXTURE_ENABLE;
+   if (full_screen)
+      gl->flags                |=  GL2_FLAG_MENU_TEXTURE_FULLSCREEN;
+   else
+      gl->flags                &= ~GL2_FLAG_MENU_TEXTURE_FULLSCREEN;
 }
 
 static void gl2_render_osd_background(gl2_t *gl, const char *msg)
@@ -2511,7 +2510,7 @@ static INLINE void gl2_draw_texture(gl2_t *gl)
 
    glEnable(GL_BLEND);
 
-   if (gl->menu_texture_full_screen)
+   if (gl->flags & GL2_FLAG_MENU_TEXTURE_FULLSCREEN)
    {
       glViewport(0, 0, width, height);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -2602,7 +2601,7 @@ static void gl2_video_layout_fbo_free(gl2_t *gl)
 
 static void gl2_video_layout_viewport(gl2_t *gl)
 {
-   if (gl->video_layout_resize)
+   if (gl->flags & GL2_FLAG_VIDEO_LAYOUT_RESIZE)
    {
       if (gl->video_layout_fbo)
          gl2_video_layout_fbo_free(gl);
@@ -2611,7 +2610,7 @@ static void gl2_video_layout_viewport(gl2_t *gl)
 
       video_layout_view_change();
 
-      gl->video_layout_resize = false;
+      gl->flags &= ~(GL2_FLAG_VIDEO_LAYOUT_RESIZE);
    }
 
    if (video_layout_view_on_change())
@@ -2656,7 +2655,7 @@ static void gl2_video_layout_init(gl2_t *gl)
 {
    uint32_t px;
 
-   gl->video_layout_resize = true;
+   gl->flags |= GL2_FLAG_VIDEO_LAYOUT_RESIZE;
 
    /* white 1px texture for drawing solid colors */
    px = 0xFFFFFFFF;
@@ -2896,11 +2895,11 @@ static bool gl2_frame(void *data, const void *frame,
    if (!gl)
       return false;
 
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
 #ifndef HAVE_OPENGLES
-   if (gl->core_context_in_use)
+   if (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE)
       glBindVertexArray(chain->vao);
 #endif
 
@@ -2912,7 +2911,7 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
 
    /* Render to texture in first pass. */
-   if (gl->fbo_inited)
+   if (gl->flags & GL2_FLAG_FBO_INITED)
    {
       gl2_renderchain_recompute_pass_sizes(
             gl, chain,
@@ -2922,14 +2921,14 @@ static bool gl2_frame(void *data, const void *frame,
       gl2_renderchain_start_render(gl, chain);
    }
 
-   if (gl->should_resize)
+   if (gl->flags & GL2_FLAG_SHOULD_RESIZE)
    {
       if (gl->ctx_driver->set_resize)
          gl->ctx_driver->set_resize(gl->ctx_data,
             width, height);
-      gl->should_resize = false;
+      gl->flags &= ~GL2_FLAG_SHOULD_RESIZE;
 
-      if (gl->fbo_inited)
+      if (gl->flags & GL2_FLAG_FBO_INITED)
       {
          /* On resize, we might have to recreate our FBOs
           * due to "Viewport" scale, and set a new viewport. */
@@ -2944,14 +2943,14 @@ static bool gl2_frame(void *data, const void *frame,
                unsigned img_width   = fbo_rect->max_img_width;
                unsigned img_height  = fbo_rect->max_img_height;
 
-               if ((img_width  > fbo_rect->width) ||
-                     (img_height > fbo_rect->height))
+               if (     (img_width  > fbo_rect->width)
+                     || (img_height > fbo_rect->height))
                {
                   /* Check proactively since we might suddently
                    * get sizes of tex_w width or tex_h height. */
                   unsigned max                    = img_width > img_height ? img_width : img_height;
                   unsigned pow2_size              = next_pow2(max);
-                  bool update_feedback            = gl->fbo_feedback_enable
+                  bool update_feedback            = (gl->flags & GL2_FLAG_FBO_FEEDBACK_ENABLE)
                      && (unsigned)i == gl->fbo_feedback_pass;
 
                   fbo_rect->width                 = pow2_size;
@@ -2987,7 +2986,7 @@ static bool gl2_frame(void *data, const void *frame,
          gl2_set_viewport(gl, width, height, false, true);
 
 #ifdef HAVE_VIDEO_LAYOUT
-      gl->video_layout_resize = true;
+      gl->flags |= GL2_FLAG_VIDEO_LAYOUT_RESIZE;
 #endif
    }
 
@@ -3004,7 +3003,7 @@ static bool gl2_frame(void *data, const void *frame,
    /* Can be NULL for frame dupe / NULL render. */
    if (frame)
    {
-      if (!gl->hw_render_fbo_init)
+      if (!(gl->flags & GL2_FLAG_HW_RENDER_FBO_INIT))
       {
          gl2_update_input_size(gl, frame_width, frame_height, pitch, true);
 
@@ -3014,16 +3013,17 @@ static bool gl2_frame(void *data, const void *frame,
 
       /* No point regenerating mipmaps
        * if there are no new frames. */
-      if (gl->tex_mipmap && gl->have_mipmap)
+      if (     (gl->flags & GL2_FLAG_TEXTURE_MIPMAP) 
+            && (gl->flags & GL2_FLAG_HAVE_MIPMAP))
          glGenerateMipmap(GL_TEXTURE_2D);
    }
 
    /* Have to reset rendering state which libretro core
     * could easily have overridden. */
-   if (gl->hw_render_fbo_init)
+   if (gl->flags & GL2_FLAG_HW_RENDER_FBO_INIT)
    {
       gl2_update_input_size(gl, frame_width, frame_height, pitch, false);
-      if (!gl->fbo_inited)
+      if (!(gl->flags & GL2_FLAG_FBO_INITED))
       {
          gl2_renderchain_bind_backbuffer();
          gl2_set_viewport(gl, width, height, false, true);
@@ -3046,7 +3046,7 @@ static bool gl2_frame(void *data, const void *frame,
 
    feedback_info              = gl->tex_info;
 
-   if (gl->fbo_feedback_enable)
+   if (gl->flags & GL2_FLAG_FBO_FEEDBACK_ENABLE)
    {
       const struct video_fbo_rect
          *rect                        = &gl->fbo_rect[gl->fbo_feedback_pass];
@@ -3087,7 +3087,7 @@ static bool gl2_frame(void *data, const void *frame,
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-   if (gl->fbo_inited)
+   if (gl->flags & GL2_FLAG_FBO_INITED)
       gl2_renderchain_render(gl,
             chain,
             frame_count, &gl->tex_info, &feedback_info);
@@ -3101,12 +3101,12 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (gl->overlay_enable && overlay_behind_menu)
+   if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
       gl2_render_overlay(gl);
 #endif
 
 #if defined(HAVE_MENU)
-   if (gl->menu_texture_enable)
+   if (gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE)
    {
       menu_driver_frame(menu_is_alive, video_info);
 
@@ -3122,7 +3122,7 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (gl->overlay_enable && !overlay_behind_menu)
+   if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && !overlay_behind_menu)
       gl2_render_overlay(gl);
 #endif
 
@@ -3142,7 +3142,7 @@ static bool gl2_frame(void *data, const void *frame,
       gl->ctx_driver->update_window_title(gl->ctx_data);
 
    /* Reset state which could easily mess up libretro core. */
-   if (gl->hw_render_fbo_init)
+   if (gl->flags & GL2_FLAG_HW_RENDER_FBO_INIT)
    {
       gl->shader->use(gl, gl->shader_data, 0, true);
       glBindTexture(GL_TEXTURE_2D, 0);
@@ -3156,10 +3156,10 @@ static bool gl2_frame(void *data, const void *frame,
             gl->readback_buffer_screenshot);
 
    /* Don't readback if we're in menu mode. */
-   else if (gl->pbo_readback_enable)
+   else if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
 #ifdef HAVE_MENU
          /* Don't readback if we're in menu mode. */
-         if (!gl->menu_texture_enable)
+         if (!(gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE))
 #endif
             gl2_pbo_async_readback(gl);
 
@@ -3175,7 +3175,7 @@ static bool gl2_frame(void *data, const void *frame,
          && !input_driver_nonblock_state
          && !runloop_is_slowmotion
          && !runloop_is_paused 
-         && !gl->menu_texture_enable)
+         && (!(gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE)))
     {
         int n;
         for (n = 0; n < black_frame_insertion; ++n)
@@ -3191,9 +3191,9 @@ static bool gl2_frame(void *data, const void *frame,
 
    /* check if we are fast forwarding or in menu, 
     * if we are ignore hard sync */
-   if (  gl->have_sync
-         && hard_sync
-         && !input_driver_nonblock_state
+   if (     (gl->flags & GL2_FLAG_HAVE_SYNC)
+         &&  hard_sync
+         &&  !input_driver_nonblock_state
          )
    {
       glClear(GL_COLOR_BUFFER_BIT);
@@ -3203,10 +3203,10 @@ static bool gl2_frame(void *data, const void *frame,
    }
 
 #ifndef HAVE_OPENGLES
-   if (gl->core_context_in_use)
+   if (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE)
       glBindVertexArray(0);
 #endif
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 }
@@ -3245,10 +3245,10 @@ static void gl2_free(void *data)
    gl2_video_layout_free(gl);
 #endif
 
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
-   if (gl->have_sync)
+   if (gl->flags & GL2_FLAG_HAVE_SYNC)
       gl2_renderchain_fence_free(gl,
             (gl2_renderchain_data_t*)
             gl->renderchain_data);
@@ -3275,14 +3275,14 @@ static void gl2_free(void *data)
 
    scaler_ctx_gen_reset(&gl->scaler);
 
-   if (gl->pbo_readback_enable)
+   if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
    {
       glDeleteBuffers(4, gl->pbo_readback);
       scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
    }
 
 #ifndef HAVE_OPENGLES
-   if (gl->core_context_in_use)
+   if (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE)
    {
       gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)
          gl->renderchain_data;
@@ -3308,50 +3308,62 @@ static void gl2_set_nonblock_state(
       bool adaptive_vsync_enabled,
       unsigned swap_interval)
 {
-   int interval                = 0;
    gl2_t             *gl        = (gl2_t*)data;
 
    if (!gl)
       return;
 
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
-
-   if (!state)
-      interval = swap_interval;
 
    if (gl->ctx_driver->swap_interval)
    {
-      if (adaptive_vsync_enabled && interval == 1)
+      int interval              = 0;
+      if (!state)
+         interval               = swap_interval;
+      if (interval == 1 && adaptive_vsync_enabled)
          interval = -1;
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
    }
-   if (gl->shared_context_use)
+
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
 static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const video_info_t *video)
 {
-   settings_t *settings          = config_get_ptr();
-   bool video_hard_sync          = settings->bools.video_hard_sync;
-
-   /* have_es2_compat - GL_RGB565 internal format support.
-    * Even though ES2 support is claimed, the format
-    * is not supported on older ATI catalyst drivers.
+   /* GL2_FLAG_HAVE_ES2_COMPAT  - GL_RGB565 internal format support.
+    *                             Even though ES2 support is claimed, the format
+    *                             is not supported on older ATI catalyst drivers.
     *
-    * The speed gain from using GL_RGB565 is worth
-    * adding some workarounds for.
+    *                             The speed gain from using GL_RGB565 is worth
+    *                             adding some workarounds for.
     *
-    * have_sync       - Use ARB_sync to reduce latency.
+    * GL2_FLAG_HAVE_SYNC         - Use ARB_sync to reduce latency.
     */
-   gl->have_full_npot_support    = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
-   gl->have_mipmap               = gl_check_capability(GL_CAPS_MIPMAP);
-   gl->have_es2_compat           = gl_check_capability(GL_CAPS_ES2_COMPAT);
-   gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
-   gl->have_sync                 = gl_check_capability(GL_CAPS_SYNC);
+   if (gl_check_capability(GL_CAPS_MIPMAP))
+      gl->flags                 |=  GL2_FLAG_HAVE_MIPMAP;
+   if (gl_check_capability(GL_CAPS_ES2_COMPAT))
+      gl->flags                 |=  GL2_FLAG_HAVE_ES2_COMPAT;
+   else
+      gl->flags                 &= ~GL2_FLAG_HAVE_ES2_COMPAT;
 
-   if (gl->have_sync && video_hard_sync)
-      RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
+   if (gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH))
+      gl->flags                 |=  GL2_FLAG_HAVE_UNPACK_ROW_LENGTH;
+   else
+      gl->flags                 &= ~GL2_FLAG_HAVE_UNPACK_ROW_LENGTH;
+
+   if (gl_check_capability(GL_CAPS_SYNC))
+   {
+      settings_t *settings       = config_get_ptr();
+      bool video_hard_sync       = settings->bools.video_hard_sync;
+
+      gl->flags                 |=  GL2_FLAG_HAVE_SYNC;
+      if (video_hard_sync)
+         RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
+   }
+   else
+      gl->flags                 &= ~GL2_FLAG_HAVE_SYNC;
 
    video_driver_unset_rgba();
 
@@ -3373,7 +3385,7 @@ static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const v
    /* Useful for debugging, but kinda obnoxious otherwise. */
    RARCH_LOG("[GL]: Supported extensions:\n");
 
-   if (gl->core_context_in_use)
+   if (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE)
    {
 #ifdef GL_NUM_EXTENSIONS
       GLint i;
@@ -3411,19 +3423,19 @@ static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const v
 
 static INLINE void gl2_set_texture_fmts(gl2_t *gl, bool rgb32)
 {
-   gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT16;
-   gl->texture_type = RARCH_GL_TEXTURE_TYPE16;
-   gl->texture_fmt  = RARCH_GL_FORMAT16;
-   gl->base_size    = sizeof(uint16_t);
+   gl->internal_fmt       = RARCH_GL_INTERNAL_FORMAT16;
+   gl->texture_type       = RARCH_GL_TEXTURE_TYPE16;
+   gl->texture_fmt        = RARCH_GL_FORMAT16;
+   gl->base_size          = sizeof(uint16_t);
 
    if (rgb32)
    {
-      bool use_rgba    = video_driver_supports_rgba();
+      bool use_rgba       = video_driver_supports_rgba();
 
-      gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT32;
-      gl->texture_type = RARCH_GL_TEXTURE_TYPE32;
-      gl->texture_fmt  = RARCH_GL_FORMAT32;
-      gl->base_size    = sizeof(uint32_t);
+      gl->internal_fmt    = RARCH_GL_INTERNAL_FORMAT32;
+      gl->texture_type    = RARCH_GL_TEXTURE_TYPE32;
+      gl->texture_fmt     = RARCH_GL_FORMAT32;
+      gl->base_size       = sizeof(uint32_t);
 
       if (use_rgba)
       {
@@ -3432,12 +3444,12 @@ static INLINE void gl2_set_texture_fmts(gl2_t *gl, bool rgb32)
       }
    }
 #ifndef HAVE_OPENGLES
-   else if (gl->have_es2_compat)
+   else if (gl->flags & GL2_FLAG_HAVE_ES2_COMPAT)
    {
       RARCH_LOG("[GL]: Using GL_RGB565 for texture uploads.\n");
-      gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT16_565;
-      gl->texture_type = RARCH_GL_TEXTURE_TYPE16_565;
-      gl->texture_fmt  = RARCH_GL_FORMAT16_565;
+      gl->internal_fmt    = RARCH_GL_INTERNAL_FORMAT16_565;
+      gl->texture_type    = RARCH_GL_TEXTURE_TYPE16_565;
+      gl->texture_fmt     = RARCH_GL_FORMAT16_565;
    }
 #endif
 }
@@ -3472,7 +3484,7 @@ static bool gl2_init_pbo_readback(gl2_t *gl)
 
       if (!scaler_ctx_gen_filter(scaler))
       {
-         gl->pbo_readback_enable = false;
+         gl->flags             &= ~GL2_FLAG_PBO_READBACK_ENABLE;
          RARCH_ERR("[GL]: Failed to initialize pixel conversion for PBO.\n");
          glDeleteBuffers(4, gl->pbo_readback);
          return false;
@@ -3507,16 +3519,21 @@ static const gfx_ctx_driver_t *gl2_get_context(gl2_t *gl)
 #else
    enum gfx_ctx_api api                 = GFX_CTX_OPENGL_API;
 #endif
-   gl->shared_context_use                = video_shared_context
-      && hwr->context_type != RETRO_HW_CONTEXT_NONE;
+   if (video_shared_context
+      && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
+      gl->flags                        |=  GL2_FLAG_SHARED_CONTEXT_USE;
+   else
+      gl->flags                        &= ~GL2_FLAG_SHARED_CONTEXT_USE;
 
    if (     (runloop_get_flags() & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT)
          && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
-      gl->shared_context_use = true;
+      gl->flags                        |=  GL2_FLAG_SHARED_CONTEXT_USE;
 
    gfx_ctx = video_context_driver_init_first(gl,
          settings->arrays.video_context_driver,
-         api, major, minor, gl->shared_context_use, &ctx_data);
+         api, major, minor,
+         gl->flags & GL2_FLAG_SHARED_CONTEXT_USE,
+         &ctx_data);
 
    if (ctx_data)
       gl->ctx_data = ctx_data;
@@ -3804,7 +3821,7 @@ static void *gl2_init(const video_info_t *video,
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
    {
       gl_query_core_context_set(true);
-      gl->core_context_in_use = true;
+      gl->flags |= GL2_FLAG_CORE_CONTEXT_IN_USE;
 
       if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
       {
@@ -3845,11 +3862,15 @@ static void *gl2_init(const video_info_t *video,
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
-   gl->hw_render_use    = false;
-   gl->has_fbo          = gl_check_capability(GL_CAPS_FBO);
-
-   if (gl->has_fbo && hwr->context_type != RETRO_HW_CONTEXT_NONE)
-      gl->hw_render_use = true;
+   gl->flags              &= ~GL2_FLAG_HW_RENDER_USE;
+   if (gl_check_capability(GL_CAPS_FBO))
+   {
+      gl->flags           |=  GL2_FLAG_HAVE_FBO;
+      if (hwr->context_type != RETRO_HW_CONTEXT_NONE)
+         gl->flags        |=  GL2_FLAG_HW_RENDER_USE;
+   }
+   else
+      gl->flags           &= ~GL2_FLAG_HAVE_FBO;
 
    if (!gl2_resolve_extensions(gl, ctx_driver->ident, video))
       goto error;
@@ -3858,8 +3879,8 @@ static void *gl2_init(const video_info_t *video,
    gl2_begin_debug(gl);
 #endif
 
-   gl->vsync      = video->vsync;
-   gl->fullscreen = video->fullscreen;
+   if (video->fullscreen)
+      gl->flags  |=  GL2_FLAG_FULLSCREEN;
 
    mode_width     = 0;
    mode_height    = 0;
@@ -3895,13 +3916,13 @@ static void *gl2_init(const video_info_t *video,
     */
    gl->textures         = 4;
 
-   if (gl->hw_render_use)
+   if (gl->flags & GL2_FLAG_HW_RENDER_USE)
    {
       /* All on GPU, no need to excessively
        * create textures. */
       gl->textures = 1;
 #ifdef GL_DEBUG
-      if (gl->shared_context_use)
+      if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       {
          gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
          gl2_begin_debug(gl);
@@ -3943,29 +3964,34 @@ static void *gl2_init(const video_info_t *video,
          shader_info_num);
 
    gl->tex_w = gl->tex_h = (RARCH_SCALE_BASE * video->input_scale);
-   gl->keep_aspect     = video->force_aspect;
+   if (video->force_aspect)
+      gl->flags       |=  GL2_FLAG_KEEP_ASPECT;
+   else
+      gl->flags       &= ~GL2_FLAG_KEEP_ASPECT;
 
 #if defined(HAVE_ODROIDGO2)
    if (settings->bools.video_ctx_scaling)
-       gl->keep_aspect = false;
+      gl->flags &= ~GL2_FLAG_KEEP_ASPECT;
    else
 #endif
-
    /* Apparently need to set viewport for passes
     * when we aren't using FBOs. */
-   gl2_set_shader_viewports(gl);
+      gl2_set_shader_viewports(gl);
 
    mip_level            = 1;
-   gl->tex_mipmap       = gl->shader->mipmap_input(gl->shader_data, mip_level);
+   if (gl->shader->mipmap_input(gl->shader_data, mip_level))
+      gl->flags        |=  GL2_FLAG_TEXTURE_MIPMAP;
+   else
+      gl->flags        &= ~GL2_FLAG_TEXTURE_MIPMAP;
 
    if (gl->shader->filter_type(gl->shader_data,
             1, &force_smooth))
-      gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ?
-            GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
+      gl->tex_min_filter = (gl->flags & GL2_FLAG_TEXTURE_MIPMAP) 
+         ? (force_smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
          : (force_smooth ? GL_LINEAR : GL_NEAREST);
    else
-      gl->tex_min_filter = gl->tex_mipmap ?
-         (video->smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
+      gl->tex_min_filter = (gl->flags & GL2_FLAG_TEXTURE_MIPMAP)
+         ? (video->smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
          : (video->smooth ? GL_LINEAR : GL_NEAREST);
 
    gl->tex_mag_filter = gl2_min_filter_to_mag(gl->tex_min_filter);
@@ -4000,10 +4026,10 @@ static void *gl2_init(const video_info_t *video,
          (gl2_renderchain_data_t*)gl->renderchain_data,
          gl->tex_w, gl->tex_h);
 
-   if (gl->has_fbo)
+   if (gl->flags & GL2_FLAG_HAVE_FBO)
    {
-      if (gl->hw_render_use &&
-            !gl2_renderchain_init_hw_render(gl, (gl2_renderchain_data_t*)gl->renderchain_data, gl->tex_w, gl->tex_h))
+      if (     (gl->flags & GL2_FLAG_HW_RENDER_USE)
+            && !gl2_renderchain_init_hw_render(gl, (gl2_renderchain_data_t*)gl->renderchain_data, gl->tex_w, gl->tex_h))
       {
          RARCH_ERR("[GL]: Hardware rendering context initialization failed.\n");
          goto error;
@@ -4029,13 +4055,17 @@ static void *gl2_init(const video_info_t *video,
     * driver.recording_data, because recording is
     * not initialized yet.
     */
-   gl->pbo_readback_enable = video_gpu_record
-      && recording_st->enable;
-
-   if (gl->pbo_readback_enable && gl2_init_pbo_readback(gl))
+   if (  video_gpu_record
+      && recording_st->enable)
    {
-      RARCH_LOG("[GL]: Async PBO readback enabled.\n");
+      gl->flags |=  GL2_FLAG_PBO_READBACK_ENABLE;
+      if (gl2_init_pbo_readback(gl))
+      {
+         RARCH_LOG("[GL]: Async PBO readback enabled.\n");
+      }
    }
+   else
+      gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
 
    if (!gl_check_error(&error_string))
    {
@@ -4048,7 +4078,7 @@ static void *gl2_init(const video_info_t *video,
    gl2_video_layout_init(gl);
 #endif
 
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return gl;
@@ -4064,7 +4094,7 @@ static bool gl2_alive(void *data)
    bool ret             = false;
    bool quit            = false;
    bool resize          = false;
-   gl2_t         *gl     = (gl2_t*)data;
+   gl2_t         *gl    = (gl2_t*)data;
    unsigned temp_width  = gl->video_width;
    unsigned temp_height = gl->video_height;
 
@@ -4080,11 +4110,11 @@ static bool gl2_alive(void *data)
    }
 #endif
    if (quit)
-      gl->quitting = true;
+      gl->flags   |= GL2_FLAG_QUITTING;
    else if (resize)
-      gl->should_resize = true;
+      gl->flags   |= GL2_FLAG_SHOULD_RESIZE;
 
-   ret = !gl->quitting;
+   ret             = !(gl->flags & GL2_FLAG_QUITTING);
 
    if (temp_width != 0 && temp_height != 0)
    {
@@ -4121,7 +4151,7 @@ static void gl2_update_tex_filter_frame(gl2_t *gl)
        video_smooth = false;
 #endif
 
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
    if (!gl->shader->filter_type(gl->shader_data,
@@ -4131,10 +4161,13 @@ static void gl2_update_tex_filter_frame(gl2_t *gl)
    mip_level             = 1;
    wrap_type             = gl->shader->wrap_type(gl->shader_data, 1);
    wrap_mode             = gl2_wrap_type_to_enum(wrap_type);
-   gl->tex_mipmap        = gl->shader->mipmap_input(gl->shader_data, mip_level);
+   if (gl->shader->mipmap_input(gl->shader_data, mip_level))
+      gl->flags         |=  GL2_FLAG_TEXTURE_MIPMAP;
+   else
+      gl->flags         &= ~GL2_FLAG_TEXTURE_MIPMAP;
    gl->video_info.smooth = smooth;
-   new_filt              = gl->tex_mipmap ? (smooth ?
-         GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
+   new_filt              = (gl->flags & GL2_FLAG_TEXTURE_MIPMAP)
+      ? (smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
       : (smooth ? GL_LINEAR : GL_NEAREST);
 
    if (new_filt == gl->tex_min_filter && wrap_mode == gl->wrap_mode)
@@ -4154,7 +4187,7 @@ static void gl2_update_tex_filter_frame(gl2_t *gl)
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
@@ -4170,7 +4203,7 @@ static bool gl2_set_shader(void *data,
    if (!gl)
       return false;
 
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
    fallback = gl2_get_fallback_shader_type(type);
@@ -4191,7 +4224,7 @@ static bool gl2_set_shader(void *data,
       path = NULL;
    }
 
-   if (gl->fbo_inited)
+   if (gl->flags & GL2_FLAG_FBO_INITED)
    {
       gl2_renderchain_deinit_fbo(gl,
             (gl2_renderchain_data_t*)gl->renderchain_data);
@@ -4232,7 +4265,7 @@ static bool gl2_set_shader(void *data,
 
    if (textures > gl->textures) /* Have to reinit a bit. */
    {
-      if (gl->hw_render_use && gl->fbo_inited)
+      if ((gl->flags & GL2_FLAG_HW_RENDER_USE) && (gl->flags & GL2_FLAG_FBO_INITED))
          gl2_renderchain_deinit_hw_render(gl, (gl2_renderchain_data_t*)
                gl->renderchain_data);
 
@@ -4247,7 +4280,7 @@ static bool gl2_set_shader(void *data,
       gl2_init_textures(gl);
       gl2_init_textures_data(gl);
 
-      if (gl->hw_render_use)
+      if (gl->flags & GL2_FLAG_HW_RENDER_USE)
          gl2_renderchain_init_hw_render(gl,
                (gl2_renderchain_data_t*)gl->renderchain_data,
                gl->tex_w, gl->tex_h);
@@ -4259,13 +4292,13 @@ static bool gl2_set_shader(void *data,
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl2_set_shader_viewports(gl);
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return true;
 
 error:
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 #endif
    return false;
@@ -4274,7 +4307,7 @@ error:
 static void gl2_viewport_info(void *data, struct video_viewport *vp)
 {
    unsigned top_y, top_dist;
-   gl2_t *gl        = (gl2_t*)data;
+   gl2_t *gl       = (gl2_t*)data;
    unsigned width  = gl->video_width;
    unsigned height = gl->video_height;
 
@@ -4313,7 +4346,7 @@ unsigned *height_p, size_t *pitch_p)
    void* buffer         = NULL;
    void* buffer_texture = NULL;
 
-   if (gl->hw_render_use)
+   if (gl->flags & GL2_FLAG_HW_RENDER_USE)
    {
       buffer = malloc(pitch * height);
       if (!buffer)
@@ -4337,7 +4370,7 @@ unsigned *height_p, size_t *pitch_p)
    *height_p = height;
    *pitch_p  = pitch;
 
-   if (gl->hw_render_use)
+   if (gl->flags & GL2_FLAG_HW_RENDER_USE)
    {
       int i;
       for (i = 0; i < height ; i++)
@@ -4364,7 +4397,7 @@ static bool gl2_overlay_load(void *data,
    if (!gl)
       return false;
 
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
    gl2_free_overlay(gl);
@@ -4373,7 +4406,7 @@ static bool gl2_overlay_load(void *data,
 
    if (!gl->overlay_tex)
    {
-      if (gl->shared_context_use)
+      if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
          gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
       return false;
    }
@@ -4412,30 +4445,36 @@ static bool gl2_overlay_load(void *data,
          gl->overlay_color_coord[16 * i + j] = 1.0f;
    }
 
-   if (gl->shared_context_use)
+   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 }
 
 static void gl2_overlay_enable(void *data, bool state)
 {
-   gl2_t *gl = (gl2_t*)data;
-
+   gl2_t *gl          = (gl2_t*)data;
    if (!gl)
       return;
 
-   gl->overlay_enable = state;
+   if (state)
+      gl->flags      |=  GL2_FLAG_OVERLAY_ENABLE;
+   else
+      gl->flags      &= ~GL2_FLAG_OVERLAY_ENABLE;
 
-   if (gl->fullscreen && gl->ctx_driver->show_mouse)
+   if ((gl->flags & GL2_FLAG_FULLSCREEN) && gl->ctx_driver->show_mouse)
       gl->ctx_driver->show_mouse(gl->ctx_data, state);
 }
 
 static void gl2_overlay_full_screen(void *data, bool enable)
 {
    gl2_t *gl = (gl2_t*)data;
+   if (!gl)
+      return;
 
-   if (gl)
-      gl->overlay_full_screen = enable;
+   if (enable)
+      gl->flags |=  GL2_FLAG_OVERLAY_FULLSCREEN;
+   else
+      gl->flags &= ~GL2_FLAG_OVERLAY_FULLSCREEN;
 }
 
 static void gl2_overlay_set_alpha(void *data, unsigned image, float mod)
@@ -4446,8 +4485,7 @@ static void gl2_overlay_set_alpha(void *data, unsigned image, float mod)
    if (!gl)
       return;
 
-   color = (GLfloat*)&gl->overlay_color_coord[image * 16];
-
+   color         = (GLfloat*)&gl->overlay_color_coord[image * 16];
    color[ 0 + 3] = mod;
    color[ 4 + 3] = mod;
    color[ 8 + 3] = mod;
@@ -4464,11 +4502,7 @@ static const video_overlay_interface_t gl2_overlay_interface = {
 };
 
 static void gl2_get_overlay_interface(void *data,
-      const video_overlay_interface_t **iface)
-{
-   (void)data;
-   *iface = &gl2_overlay_interface;
-}
+      const video_overlay_interface_t **iface) {*iface = &gl2_overlay_interface;}
 #endif
 
 static retro_proc_address_t gl2_get_proc_address(void *data, const char *sym)
@@ -4488,47 +4522,43 @@ static void gl2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    if (!gl)
       return;
 
-   gl->keep_aspect   = true;
+   gl->flags        |= (GL2_FLAG_KEEP_ASPECT
+                     |  GL2_FLAG_SHOULD_RESIZE);
 #if defined(HAVE_ODROIDGO2)
    if (config_get_ptr()->bools.video_ctx_scaling)
-       gl->keep_aspect = false;
+      gl->flags     &= ~GL2_FLAG_KEEP_ASPECT;
 #endif
-   gl->should_resize = true;
 }
 
 static void gl2_apply_state_changes(void *data)
 {
-   gl2_t *gl = (gl2_t*)data;
-
+   gl2_t *gl            = (gl2_t*)data;
    if (gl)
-      gl->should_resize = true;
+      gl->flags        |= GL2_FLAG_SHOULD_RESIZE;
 }
 
 static void gl2_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    gl2_t *gl         = (gl2_t*)data;
-   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_size)
-      return;
-   gl->ctx_driver->get_video_output_size(
-         gl->ctx_data,
-         width, height, desc, desc_len);
+   if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_size)
+      gl->ctx_driver->get_video_output_size(
+            gl->ctx_data,
+            width, height, desc, desc_len);
 }
 
 static void gl2_get_video_output_prev(void *data)
 {
    gl2_t *gl = (gl2_t*)data;
-   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_prev)
-      return;
-   gl->ctx_driver->get_video_output_prev(gl->ctx_data);
+   if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_prev)
+      gl->ctx_driver->get_video_output_prev(gl->ctx_data);
 }
 
 static void gl2_get_video_output_next(void *data)
 {
    gl2_t *gl = (gl2_t*)data;
-   if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_next)
-      return;
-   gl->ctx_driver->get_video_output_next(gl->ctx_data);
+   if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_next)
+      gl->ctx_driver->get_video_output_next(gl->ctx_data);
 }
 
 static void video_texture_load_gl2(
@@ -4542,13 +4572,13 @@ static void video_texture_load_gl2(
    const void *pixels = NULL;
    /* Generate the OpenGL texture object */
    glGenTextures(1, &id);
-   *idptr = id;
+   *idptr             = id;
 
    if (ti)
    {
-      width  = ti->width;
-      height = ti->height;
-      pixels = ti->pixels;
+      width           = ti->width;
+      height          = ti->height;
+      pixels          = ti->pixels;
    }
 
    gl_load_texture_data(id,
@@ -4591,7 +4621,7 @@ static uintptr_t gl2_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      gl2_t *gl                     = (gl2_t*)video_data;
+      gl2_t *gl                    = (gl2_t*)video_data;
       custom_command_method_t func = video_texture_load_wrap_gl2;
 
       if (gl->ctx_driver->make_current)
@@ -4645,7 +4675,7 @@ static float gl2_get_refresh_rate(void *data)
 
 static uint32_t gl2_get_flags(void *data)
 {
-   uint32_t             flags   = 0;
+   uint32_t flags = 0;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
@@ -4685,23 +4715,14 @@ static const video_poke_interface_t gl2_poke_interface = {
 };
 
 static void gl2_get_poke_interface(void *data,
-      const video_poke_interface_t **iface)
-{
-   (void)data;
-   *iface = &gl2_poke_interface;
-}
-
+      const video_poke_interface_t **iface)     { *iface = &gl2_poke_interface; }
 #ifdef HAVE_GFX_WIDGETS
-static bool gl2_gfx_widgets_enabled(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool gl2_gfx_widgets_enabled(void *data) { return true; }
 #endif
 
 static bool gl2_has_windowed(void *data)
 {
-   gl2_t *gl        = (gl2_t*)data;
+   gl2_t *gl = (gl2_t*)data;
    if (gl && gl->ctx_driver)
       return gl->ctx_driver->has_windowed;
    return false;
@@ -4709,7 +4730,7 @@ static bool gl2_has_windowed(void *data)
 
 static bool gl2_focus(void *data)
 {
-   gl2_t *gl        = (gl2_t*)data;
+   gl2_t *gl = (gl2_t*)data;
    if (gl && gl->ctx_driver && gl->ctx_driver->has_focus)
       return gl->ctx_driver->has_focus(gl->ctx_data);
    return true;

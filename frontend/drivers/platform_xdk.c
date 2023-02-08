@@ -99,7 +99,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 #endif
 
 #if defined(_XBOX1)
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_CORE], "D:");
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], "D:", g_defaults.dirs[DEFAULT_DIR_CORE]);
    fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_CORE],
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
@@ -141,22 +141,22 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
          g_defaults.dirs[DEFAULT_DIR_CORE],
          "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #elif defined(_XBOX360)
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_CORE],
-         "game:");
-   strcpy_literal(g_defaults.path_config,
-         "game:\\retroarch.cfg");
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-         "game:");
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
-         "game:\\savestates");
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-         "game:\\playlists");
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_SRAM],
-         "game:\\savefiles");
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-         "game:\\system");
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_LOGS],
-         "game:\\logs");
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE],
+         "game:", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   strlcpy(g_defaults.path_config,
+         "game:\\retroarch.cfg", sizeof(g_defaults.path_config));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+         "game:", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+         "game:\\savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+         "game:\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_SRAM],
+         "game:\\savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+         "game:\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_LOGS],
+         "game:\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
          g_defaults.dirs[DEFAULT_DIR_CORE],

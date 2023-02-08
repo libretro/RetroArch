@@ -221,7 +221,10 @@ static void d3d12_font_render_line(
             d3d12);
 
    D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe_font);
-   d3d12_set_texture_and_sampler(d3d12->queue.cmd, &font->texture);
+   D3D12SetGraphicsRootDescriptorTable(d3d12->queue.cmd,
+         ROOT_ID_TEXTURE_T, font->texture.gpu_descriptor[0]);
+   D3D12SetGraphicsRootDescriptorTable(d3d12->queue.cmd,
+         ROOT_ID_SAMPLER_T, font->texture.sampler);
    D3D12DrawInstanced(d3d12->queue.cmd, count, 1, d3d12->sprites.offset, 0);
 
    D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);

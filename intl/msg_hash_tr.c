@@ -22,7 +22,6 @@
 #include <string/stdstring.h>
 
 #include "../msg_hash.h"
-#include "../verbosity.h"
 
 #ifdef RARCH_INTERNAL
 #include "../configuration.h"
@@ -116,10 +115,6 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
           case RARCH_NETPLAY_HOST_TOGGLE:
              snprintf(s, len,
                    "Netplay barındırma özelliğini açar/kapatır.");
-             break;
-          case RARCH_NETPLAY_GAME_WATCH:
-             snprintf(s, len,
-                   "Netplay toggle play/spectate mode.");
              break;
           case RARCH_ENABLE_HOTKEY:
              snprintf(s, len,
@@ -1398,44 +1393,9 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Performans karşılığında gecikmeyi \n"
                              "azaltır.");
             break;
-        case MENU_ENUM_LABEL_REWIND_GRANULARITY:
-            snprintf(s, len,
-                     "Rewind granularity.\n"
-                             " \n"
-                             " When rewinding defined number of \n"
-                             "frames, you can rewind several frames \n"
-                             "at a time, increasing the rewinding \n"
-                             "speed.");
-            break;
-        case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE:
-            snprintf(s, len,
-                     "Rewind buffer size (MB).\n"
-                             " \n"
-                             " The amount of memory in MB to reserve \n"
-                             "for rewinding.  Increasing this value \n"
-                             "increases the rewind history length.\n");
-            break;
-        case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
-            snprintf(s, len,
-                     "Rewind buffer size step (MB).\n"
-                             " \n"
-                             " Each time you increase or decrease \n"
-                             "the rewind buffer size value via this \n"
-                             "UI it will change by this amount.\n");
-            break;
         case MENU_ENUM_LABEL_SCREENSHOT:
             snprintf(s, len,
                      "Ekran görüntüsü al.");
-            break;
-        case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
-            snprintf(s, len,
-                     "Sets how many milliseconds to delay\n"
-                             "after VSync before running the core.\n"
-                             "\n"
-                             "Can reduce latency at the cost of\n"
-                             "higher risk of stuttering.\n"
-                             " \n"
-                             "Maximum is 15.");
             break;
         case MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES:
             snprintf(s, len,
@@ -1471,39 +1431,12 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Bu, yalnızca 'Çıkışta Konfigürasyonu Kaydet'\n"
                              "etkinse config dosyasında güncellenir.\n");
             break;
-        case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
-            snprintf(s, len, "Toggles fullscreen.");
-            break;
-        case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
-            snprintf(s, len,
-                     "Block SRAM from being overwritten \n"
-                             "when loading save states.\n"
-                             " \n"
-                             "Might potentially lead to buggy games.");
-            break;
-        case MENU_ENUM_LABEL_PAUSE_NONACTIVE:
-            snprintf(s, len,
-                     "Pause gameplay when window focus \n"
-                             "is lost.");
-            break;
-        case MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT:
-            snprintf(s, len,
-                     "Screenshots output of GPU shaded \n"
-                             "material if available.");
-            break;
         case MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY:
             snprintf(s, len,
                      "Ekran görüntüsü Dizini. \n"
                              " \n"
                              "Ekran görüntülerinin bulunacağı dizin."
             );
-            break;
-        case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
-            snprintf(s, len,
-                     "VSync Swap Interval.\n"
-                             " \n"
-                             "Uses a custom swap interval for VSync. Set this \n"
-                             "to effectively halve monitor refresh rate.");
             break;
         case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
             snprintf(s, len,
@@ -1549,24 +1482,6 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "When slowmotion, content will slow\n"
                              "down by factor.");
             break;
-        case MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD:
-            snprintf(s, len,
-                     "Defines the axis threshold.\n"
-                             " \n"
-                             "How far an axis must be tilted to result\n"
-                             "in a button press.\n"
-                             " Possible values are [0.0, 1.0].");
-            break;
-        case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
-            snprintf(s, len,
-                     "Turbo period.\n"
-                             " \n"
-                             "Describes the period of which turbo-enabled\n"
-                             "buttons toggle.\n"
-                             " \n"
-                             "Numbers are described in frames."
-            );
-            break;
         case MENU_ENUM_LABEL_INPUT_DUTY_CYCLE:
             snprintf(s, len,
                      "Duty cycle.\n"
@@ -1592,28 +1507,11 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_MENU_WALLPAPER:
             snprintf(s, len, "Arka plan olarak ayarlamak için resmin yolu.");
             break;
-        case MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND:
-            snprintf(s, len,
-                     "Wrap-around to beginning and/or end \n"
-                             "if boundary of list is reached \n"
-                             "horizontally and/or vertically.");
-            break;
-        case MENU_ENUM_LABEL_PAUSE_LIBRETRO:
-            snprintf(s, len,
-                     "If disabled, the game will keep \n"
-                             "running in the background when we are in the \n"
-                             "menu.");
-            break;
         case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
             snprintf(s, len,
                      "Ekran koruyucuyu önler. Is a hint that \n"
                              "does not necessarily have to be \n"
                              "honored by the video driver.");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_MODE:
-            snprintf(s, len,
-                     "Netplay client mode for the current user. \n"
-                             "Will be 'Server' mode if disabled.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
             snprintf(s, len,
@@ -1637,107 +1535,11 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "modunda olacaktır. Daha sonra modu değiştirmek her \n"
                              "zaman mümkündür.");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES:
-            snprintf(s, len,
-                     "Whether to allow connections in slave mode. \n"
-                             " \n"
-                             "Slave-mode clients require very little processing \n"
-                             "power on either side, but will suffer \n"
-                             "significantly from network latency.");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
-            snprintf(s, len,
-                     "Whether to disallow connections not in slave mode. \n"
-                             " \n"
-                             "Not recommended except for very fast networks \n"
-                             "with very weak machines. \n");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
-            snprintf(s, len,
-                     "The frequency in frames with which netplay \n"
-                             "will verify that the host and client are in \n"
-                             "sync. \n"
-                             " \n"
-                             "With most cores, this value will have no \n"
-                             "visible effect and can be ignored. With \n"
-                             "nondeterminstic cores, this value determines \n"
-                             "how often the netplay peers will be brought \n"
-                             "into sync. With buggy cores, setting this \n"
-                             "to any non-zero value will cause severe \n"
-                             "performance issues. Set to zero to perform \n"
-                             "no checks. This value is only used on the \n"
-                             "netplay host. \n");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
-            snprintf(s, len,
-                     "The number of frames of input latency for \n"
-                     "netplay to use to hide network latency. \n"
-                     " \n"
-                     "When in netplay, this option delays local \n"
-                     "input, so that the frame being run is \n"
-                     "closer to the frames being received from \n"
-                     "the network. This reduces jitter and makes \n"
-                     "netplay less CPU-intensive, but at the \n"
-                     "price of noticeable input lag. \n");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE:
-            snprintf(s, len,
-                     "The range of frames of input latency that \n"
-                     "may be used by netplay to hide network \n"
-                     "latency. \n"
-                     "\n"
-                     "If set, netplay will adjust the number of \n"
-                     "frames of input latency dynamically to \n"
-                     "balance CPU time, input latency and \n"
-                     "network latency. This reduces jitter and \n"
-                     "makes netplay less CPU-intensive, but at \n"
-                     "the price of unpredictable input lag. \n");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL:
-            snprintf(s, len,
-                     "When hosting, attempt to listen for\n"
-                             "connections from the public internet, using\n"
-                             "UPnP or similar technologies to escape LANs. \n");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER:
-            snprintf(s, len,
-                     "When hosting a netplay session, relay connection through a \n"
-                             "man-in-the-middle server \n"
-                             "to get around firewalls or NAT/UPnP issues. \n");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
-            snprintf(s, len,
-                     "Specifies the man-in-the-middle server \n"
-                             "to use for netplay. A server that is \n"
-                             "located closer to you may have less latency. \n");
-            break;
-        case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
-            snprintf(s, len,
-                     "Maximum amount of swapchain images. This \n"
-                             "can tell the video driver to use a specific \n"
-                             "video buffering mode. \n"
-                             " \n"
-                             "Single buffering - 1\n"
-                             "Double buffering - 2\n"
-                             "Triple buffering - 3\n"
-                             " \n"
-                             "Setting the right buffering mode can have \n"
-                             "a big impact on latency.");
-            break;
         case MENU_ENUM_LABEL_VIDEO_SMOOTH:
             snprintf(s, len,
                      "Resmi bilinear filtreleme ile pürüzsüzleştirir. \n"
                              "Gölgelendiriciler kullanılıyorsa devre dışı bırakılmalıdır.");
             break;
-      case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
-         snprintf(s, len,
-#ifdef HAVE_ODROIDGO2
-               "RGA scaling and bicubic filtering. May break widgets."
-#else
-               "Hardware context scaling (if available)."
-#endif
-         );
-         break;
         case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
             snprintf(s, len,
                      "Menü içindeki geçerli tarihi ve/veya saati gösterir.");
@@ -1892,18 +1694,6 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Konum servislerine izin ver veya verme \n"
                              "çekirdekler tarafından erişilir.");
             break;
-        case MENU_ENUM_LABEL_TURBO:
-            snprintf(s, len,
-                     "Turbo enable.\n"
-                             " \n"
-                             "Holding the turbo while pressing another \n"
-                             "button will let the button enter a turbo \n"
-                             "mode where the button state is modulated \n"
-                             "with a periodic signal. \n"
-                             " \n"
-                             "The modulation stops when the button \n"
-                             "itself (not turbo button) is released.");
-            break;
         case MENU_ENUM_LABEL_OSK_ENABLE:
             snprintf(s, len,
                      "Ekran klavyesini etkinleştir/devre dışı bırak.");
@@ -1942,18 +1732,6 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Netplay toggle play/spectate mode.");
             break;
-        case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
-            snprintf(s, len,
-                     "Increment cheat index.\n");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_INDEX_MINUS:
-            snprintf(s, len,
-                     "Decrement cheat index.\n");
-            break;
-        case MENU_ENUM_LABEL_SHADER_PREV:
-            snprintf(s, len,
-                     "Applies previous shader in directory.");
-            break;
         case MENU_ENUM_LABEL_SHADER_NEXT:
             snprintf(s, len,
                      "Dizindeki bir sonraki gölgelendiriciyi uygular.");
@@ -1961,26 +1739,6 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_RESET:
             snprintf(s, len,
                      "İçeriği sıfırla.\n");
-            break;
-        case MENU_ENUM_LABEL_PAUSE_TOGGLE:
-            snprintf(s, len,
-                     "Toggle between paused and non-paused state.");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_TOGGLE:
-            snprintf(s, len,
-                     "Toggle cheat index.\n");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_IDX:
-            snprintf(s, len,
-                     "Index position in list.\n");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION:
-            snprintf(s, len,
-                     "Address bitmask when Memory Search Size < 8-bit.\n");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_REPEAT_COUNT:
-            snprintf(s, len,
-                     "The number of times the cheat will be applied.\nUse with the other two Iteration options to affect large areas of memory.");
             break;
         case MENU_ENUM_LABEL_CHEAT_REPEAT_ADD_TO_ADDRESS:
             snprintf(s, len,
@@ -2006,22 +1764,6 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Sol/Sağ ile değerleri değiştirinn");
             break;
-        case MENU_ENUM_LABEL_CHEAT_SEARCH_LT:
-            snprintf(s, len,
-                     " ");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_SEARCH_GT:
-            snprintf(s, len,
-                     " ");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_SEARCH_EQ:
-            snprintf(s, len,
-                     " ");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ:
-            snprintf(s, len,
-                     " ");
-            break;
         case MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS:
             snprintf(s, len,
                      "Sol/Sağ ile değerleri değiştirin\n");
@@ -2030,47 +1772,10 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Değeri değiştirmek için Sol/Sağ\n");
             break;
-        case MENU_ENUM_LABEL_CHEAT_ADD_MATCHES:
-            snprintf(s, len,
-                     " ");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_VIEW_MATCHES:
-            snprintf(s, len,
-                     " ");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_CREATE_OPTION:
-            snprintf(s, len,
-                     " ");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_DELETE_OPTION:
-            snprintf(s, len,
-                     " ");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
-            snprintf(s, len,
-                     " ");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
-            snprintf(s, len,
-                     " ");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
-            snprintf(s, len,
-                     " ");
-            break;
-        case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
-            snprintf(s, len,
-                     " ");
-            break;
         case MENU_ENUM_LABEL_CHEAT_BIG_ENDIAN:
             snprintf(s, len,
                      "Büyük endia   : 258 = 0x0102\n"
                      "Küçük endia : 258 = 0x0201");
-            break;
-        case MENU_ENUM_LABEL_HOLD_FAST_FORWARD:
-            snprintf(s, len,
-                     "Hold for fast-forward. Releasing button \n"
-                             "disables fast-forward.");
             break;
         case MENU_ENUM_LABEL_SLOWMOTION_HOLD:
             snprintf(s, len,
@@ -2083,23 +1788,6 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_BSV_RECORD_TOGGLE:
             snprintf(s, len,
                      "Kayıt yapma arasında geçiş yapmak için");
-            break;
-        case MENU_ENUM_LABEL_L_X_PLUS:
-        case MENU_ENUM_LABEL_L_X_MINUS:
-        case MENU_ENUM_LABEL_L_Y_PLUS:
-        case MENU_ENUM_LABEL_L_Y_MINUS:
-        case MENU_ENUM_LABEL_R_X_PLUS:
-        case MENU_ENUM_LABEL_R_X_MINUS:
-        case MENU_ENUM_LABEL_R_Y_PLUS:
-        case MENU_ENUM_LABEL_R_Y_MINUS:
-            snprintf(s, len,
-                     "Axis for analog stick (DualShock-esque).\n"
-                             " \n"
-                             "Bound as usual, however, if a real analog \n"
-                             "axis is bound, it can be read as a true analog.\n"
-                             " \n"
-                             "Positive X axis is right. \n"
-                             "Positive Y axis is down.");
             break;
         case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
             snprintf(s, len,
@@ -2131,52 +1819,35 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
             );
             break;
-        case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
-            snprintf(s, len,
-                     "You can change the virtual gamepad overlay\n"
-                             "by going to '%s' -> '%s'."
-                             " \n"
-                             "From there you can change the overlay,\n"
-                             "change the size and opacity of the buttons, etc.\n"
-                             " \n"
-                             "NOTE: By default, virtual gamepad overlays are\n"
-                             "hidden when in the menu.\n"
-                             "If you'd like to change this behavior,\n"
-                             "you can set '%s' to false.",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
-            );
-            break;
-        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE:
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE:
             snprintf(s, len,
                      "OSD için arka plan rengini etkinleştirir.");
             break;
-        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED:
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED:
             snprintf(s, len,
                      "OSD arka plan renginin kırmızı değerini ayarlar. Geçerli değerler 0 ile 255 arasındadır.");
             break;
-        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN:
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN:
             snprintf(s, len,
                      "OSD arka plan renginin yeşil değerini ayarlar. Geçerli değerler 0 ile 255 arasındadır.");
             break;
-        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE:
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE:
             snprintf(s, len,
                      "OSD arka plan renginin mavi değerini ayarlar. Geçerli değerler 0 ile 255 arasındadır.");
             break;
-        case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY:
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY:
             snprintf(s, len,
                      "OSD arka plan renginin opaklığını ayarlar. Geçerli değerler 0,0 ile 1,0 arasındadır.");
             break;
-        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED:
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED:
             snprintf(s, len,
                      "OSD metin renginin kırmızı değerini ayarlar. Geçerli değerler 0 ile 255 arasındadır.");
             break;
-        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN:
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN:
             snprintf(s, len,
                      "OSD metin renginin yeşil değerini ayarlar. Geçerli değerler 0 ile 255 arasındadır.");
             break;
-        case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE:
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE:
             snprintf(s, len,
                      "OSD metin renginin mavi değerini ayarlar. Geçerli değerler 0 ile 255 arasındadır.");
             break;

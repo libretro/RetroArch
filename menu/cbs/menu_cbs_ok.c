@@ -115,6 +115,7 @@ enum
    ACTION_OK_LOAD_STREAM_CONFIGFILE,
    ACTION_OK_LOAD_RECORD_CONFIGFILE,
    ACTION_OK_LOAD_REMAPPING_FILE,
+   ACTION_OK_LOAD_OVERRIDE_FILE,
    ACTION_OK_LOAD_CHEAT_FILE,
    ACTION_OK_SUBSYSTEM_ADD,
    ACTION_OK_LOAD_CONFIG_FILE,
@@ -278,6 +279,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_AUDIO_DEVICE:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
@@ -832,6 +835,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_AUDIO_DEVICE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
 #ifdef HAVE_NETWORKING
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER:
          info.type          = type;
@@ -1164,6 +1176,28 @@ int generic_action_ok_displaylist_push(const char *path,
             info.type          = type;
             info.directory_ptr = idx;
             info_path          = !string_is_empty(tmp) ? tmp : settings->paths.directory_input_remapping;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
+         break;
+      case ACTION_OK_DL_OVERRIDE_FILE:
+         {
+            struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
+            const char *core_name            = system ? system->library_name : NULL;
+
+            if (!string_is_empty(core_name))
+            {
+               fill_pathname_join_special(tmp,
+                     settings->paths.directory_menu_config,
+                     core_name, sizeof(tmp));
+               if (!path_is_directory(tmp))
+                  tmp[0] = '\0';
+            }
+
+            filebrowser_clear_type();
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = !string_is_empty(tmp) ? tmp : settings->paths.directory_menu_config;
             info_label         = label;
             dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          }
@@ -2173,6 +2207,15 @@ static int generic_action_ok(const char *path,
          }
 #endif
          break;
+      case ACTION_OK_LOAD_OVERRIDE_FILE:
+#ifdef HAVE_CONFIGFILE
+         flush_char = msg_hash_to_str(flush_id);
+         config_unload_override();
+
+         if (!config_load_override_file(action_path))
+            return -1;
+#endif
+         break;
       case ACTION_OK_LOAD_CHEAT_FILE:
 #ifdef HAVE_CHEATS
          flush_char = msg_hash_to_str(flush_id);
@@ -2314,6 +2357,7 @@ DEFAULT_ACTION_OK_SET(action_ok_cheat_file_load_append,      ACTION_OK_LOAD_CHEA
 DEFAULT_ACTION_OK_SET(action_ok_record_configfile_load,      ACTION_OK_LOAD_RECORD_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
 DEFAULT_ACTION_OK_SET(action_ok_stream_configfile_load,      ACTION_OK_LOAD_STREAM_CONFIGFILE,       MENU_ENUM_LABEL_RECORDING_SETTINGS)
 DEFAULT_ACTION_OK_SET(action_ok_remap_file_load,      ACTION_OK_LOAD_REMAPPING_FILE,   MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST)
+DEFAULT_ACTION_OK_SET(action_ok_override_file_load,   ACTION_OK_LOAD_OVERRIDE_FILE,    MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 DEFAULT_ACTION_OK_SET(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET,           MENU_ENUM_LABEL_SHADER_OPTIONS)
 DEFAULT_ACTION_OK_SET(action_ok_shader_pass_load,     ACTION_OK_LOAD_SHADER_PASS,      MENU_ENUM_LABEL_SHADER_OPTIONS)
@@ -3734,6 +3778,20 @@ static int action_ok_remap_file_flush(const char *path,
          msg, 1, 100, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
+   return 0;
+}
+
+static int action_ok_override_unload(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_CONFIGFILE
+   if (!config_unload_override())
+      return 0;
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_OVERRIDES_UNLOADED_SUCCESSFULLY),
+         1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#endif
    return 0;
 }
 
@@ -5885,6 +5943,7 @@ DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_add_load, ACTION_OK_DL_SUBSYSTEM_LOAD
 DEFAULT_ACTION_OK_FUNC(action_ok_record_configfile, ACTION_OK_DL_RECORD_CONFIGFILE)
 DEFAULT_ACTION_OK_FUNC(action_ok_stream_configfile, ACTION_OK_DL_STREAM_CONFIGFILE)
 DEFAULT_ACTION_OK_FUNC(action_ok_remap_file, ACTION_OK_DL_REMAP_FILE)
+DEFAULT_ACTION_OK_FUNC(action_ok_override_file, ACTION_OK_DL_OVERRIDE_FILE)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset, ACTION_OK_DL_SHADER_PRESET)
 DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_prepend, ACTION_OK_DL_SHADER_PRESET_PREPEND)
@@ -6764,6 +6823,26 @@ static int action_ok_push_dropdown_item_disk_index(const char *path,
    menu_navigation_set_selection(0);
 
    return 0;
+}
+
+static int action_ok_push_dropdown_item_audio_device(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *menu_path        = NULL;
+   enum msg_hash_enums enum_idx;
+   rarch_setting_t     *setting;
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+   enum_idx = (enum msg_hash_enums)atoi(menu_path);
+   setting  = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   strlcpy(setting->value.target.string, label, setting->size);
+
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
 static int action_ok_push_dropdown_item_input_device_type(const char *path,
@@ -8256,7 +8335,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #if defined(HAVE_VIDEO_LAYOUT)
          {MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH,                   action_ok_video_layout},
 #endif
-         {MENU_ENUM_LABEL_REMAP_FILE_LOAD,                     action_ok_remap_file},
          {MENU_ENUM_LABEL_RECORD_CONFIG,                       action_ok_record_configfile},
          {MENU_ENUM_LABEL_STREAM_CONFIG,                       action_ok_stream_configfile},
 #ifdef HAVE_RGUI
@@ -8379,6 +8457,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,                 action_ok_cheat_apply_changes},
          {MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,                  action_ok_cheat_file_save_as},
 #endif
+         {MENU_ENUM_LABEL_REMAP_FILE_LOAD,                     action_ok_remap_file},
          {MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,                action_ok_remap_file_save_core},
          {MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,         action_ok_remap_file_save_content_dir},
          {MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,                action_ok_remap_file_save_game},
@@ -8387,6 +8466,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,              action_ok_remap_file_remove_game},
          {MENU_ENUM_LABEL_REMAP_FILE_RESET,                    action_ok_remap_file_reset},
          {MENU_ENUM_LABEL_REMAP_FILE_FLUSH,                    action_ok_remap_file_flush},
+         {MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,                  action_ok_override_file},
+         {MENU_ENUM_LABEL_OVERRIDE_UNLOAD,                     action_ok_override_unload},
          {MENU_ENUM_LABEL_PLAYLISTS_TAB,                       action_ok_content_collection_list},
          {MENU_ENUM_LABEL_BROWSE_URL_LIST,                     action_ok_browse_url_list},
          {MENU_ENUM_LABEL_CORE_LIST,                           action_ok_core_list},
@@ -8493,6 +8574,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH,                   action_ok_video_layout},
 #endif
          {MENU_ENUM_LABEL_REMAP_FILE_LOAD,                     action_ok_remap_file},
+         {MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,                  action_ok_override_file},
          {MENU_ENUM_LABEL_RECORD_CONFIG,                       action_ok_record_configfile},
          {MENU_ENUM_LABEL_STREAM_CONFIG,                       action_ok_stream_configfile},
          {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,              action_ok_rgui_menu_theme_preset},
@@ -8701,6 +8783,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_description_kbd);
             break;
+         case MENU_SETTING_DROPDOWN_ITEM_AUDIO_DEVICE:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_audio_device);
+            break;
 #ifdef HAVE_NETWORKING
          case MENU_SETTING_DROPDOWN_ITEM_NETPLAY_MITM_SERVER:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_netplay_mitm_server);
@@ -8785,6 +8870,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_set_manual_content_scan_dat_file);
             break;
          case FILE_TYPE_CONFIG:
+            if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD)))
+            {
+               BIND_ACTION_OK(cbs, action_ok_override_file_load);
+               break;
+            }
             BIND_ACTION_OK(cbs, action_ok_config_load);
             break;
          case FILE_TYPE_PARENT_DIRECTORY:

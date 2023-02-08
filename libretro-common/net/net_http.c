@@ -440,7 +440,19 @@ static int net_http_new_socket(struct http_connection_t *conn)
          fd = -1;
          goto done;
       }
-      if (ssl_socket_connect(conn->sock_state.ssl_ctx, addr, true, true)
+
+      /* TODO: Properly figure out what's going wrong when the newer 
+         timeout/poll code interacts with mbed and winsock
+         https://github.com/libretro/RetroArch/issues/14742 */
+
+      /* Temp fix, don't use new timeout/poll code for cheevos http requests */
+         bool timeout = true;
+#ifdef __WIN32
+      if (!strcmp(conn->domain, "retroachievements.org"))
+         timeout = false;
+#endif
+
+      if (ssl_socket_connect(conn->sock_state.ssl_ctx, addr, timeout, true)
             < 0)
       {
          fd = -1;
@@ -1199,14 +1211,16 @@ void net_http_delete(struct http_t *state)
 
    if (state->sock_state.fd >= 0)
    {
-      socket_close(state->sock_state.fd);
 #ifdef HAVE_SSL
       if (state->sock_state.ssl && state->sock_state.ssl_ctx)
       {
+         ssl_socket_close(state->sock_state.ssl_ctx);
          ssl_socket_free(state->sock_state.ssl_ctx);
          state->sock_state.ssl_ctx = NULL;
       }
+      else
 #endif
+      socket_close(state->sock_state.fd);
    }
    free(state);
 }

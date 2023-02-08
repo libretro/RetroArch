@@ -67,8 +67,6 @@ static unsigned sixel_video_pitch      = 0;
 static unsigned sixel_video_bits       = 0;
 static unsigned sixel_menu_bits        = 0;
 static double sixel_video_scale        = 1;
-static bool sixel_rgb32                = false;
-static bool sixel_menu_rgb32           = false;
 static unsigned *sixel_temp_buf        = NULL;
 
 static int sixel_write(char *data, int size, void *priv)
@@ -201,7 +199,6 @@ static void *sixel_gfx_init(const video_info_t *video,
    *input                               = NULL;
    *input_data                          = NULL;
 
-   sixel_rgb32                          = video->rgb32;
    sixel_video_bits                     = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)

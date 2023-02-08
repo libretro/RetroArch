@@ -440,10 +440,10 @@ bool slang_reflect(
       return false;
    }
 
-   uint32_t vertex_ubo    = vertex.uniform_buffers.empty() ? 0 : vertex.uniform_buffers[0].id;
-   uint32_t fragment_ubo  = fragment.uniform_buffers.empty() ? 0 : fragment.uniform_buffers[0].id;
-   uint32_t vertex_push   = vertex.push_constant_buffers.empty() ? 0 : vertex.push_constant_buffers[0].id;
-   uint32_t fragment_push = fragment.push_constant_buffers.empty() ? 0 : fragment.push_constant_buffers[0].id;
+   uint32_t vertex_ubo    = vertex.uniform_buffers.empty() ? 0 : (uint32_t)vertex.uniform_buffers[0].id;
+   uint32_t fragment_ubo  = fragment.uniform_buffers.empty() ? 0 : (uint32_t)fragment.uniform_buffers[0].id;
+   uint32_t vertex_push   = vertex.push_constant_buffers.empty() ? 0 : (uint32_t)vertex.push_constant_buffers[0].id;
+   uint32_t fragment_push = fragment.push_constant_buffers.empty() ? 0 : (uint32_t)fragment.push_constant_buffers[0].id;
 
    if (vertex_ubo &&
          vertex_compiler.get_decoration(

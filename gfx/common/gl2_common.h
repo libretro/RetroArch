@@ -31,8 +31,8 @@
 #include <glsym/glsym.h>
 #include <formats/image.h>
 
+#include "../video_driver.h"
 #include "../video_coord_array.h"
-#include "../../retroarch.h"
 
 RETRO_BEGIN_DECLS
 
@@ -156,6 +156,33 @@ RETRO_BEGIN_DECLS
 
 typedef struct gl2 gl2_t;
 
+enum gl2_flags
+{
+   GL2_FLAG_VIDEO_LAYOUT_RESIZE    = (1 <<  0),
+   GL2_FLAG_TEXTURE_MIPMAP         = (1 <<  1),
+   GL2_FLAG_SHOULD_RESIZE          = (1 <<  2),
+   GL2_FLAG_HAVE_MIPMAP            = (1 <<  3),
+   GL2_FLAG_QUITTING               = (1 <<  4),
+   GL2_FLAG_FULLSCREEN             = (1 <<  5),
+   GL2_FLAG_KEEP_ASPECT            = (1 <<  6),
+   GL2_FLAG_HAVE_FBO               = (1 <<  7),
+   GL2_FLAG_HW_RENDER_USE          = (1 <<  8),
+   GL2_FLAG_FBO_INITED             = (1 <<  9),
+   GL2_FLAG_FBO_FEEDBACK_ENABLE    = (1 << 10),
+   GL2_FLAG_HW_RENDER_FBO_INIT     = (1 << 11),
+   GL2_FLAG_SHARED_CONTEXT_USE     = (1 << 12),
+   GL2_FLAG_CORE_CONTEXT_IN_USE    = (1 << 13),
+   GL2_FLAG_HAVE_SYNC              = (1 << 14),
+   GL2_FLAG_HAVE_UNPACK_ROW_LENGTH = (1 << 15),
+   GL2_FLAG_HAVE_ES2_COMPAT        = (1 << 16),
+   GL2_FLAG_PBO_READBACK_ENABLE    = (1 << 17),
+   GL2_FLAG_OVERLAY_ENABLE         = (1 << 18),
+   GL2_FLAG_OVERLAY_FULLSCREEN     = (1 << 19),
+   GL2_FLAG_MENU_TEXTURE_ENABLE    = (1 << 20),
+   GL2_FLAG_MENU_TEXTURE_FULLSCREEN= (1 << 21),
+   GL2_FLAG_NONE                   = (1 << 22)
+};
+
 struct gl2
 {
    const shader_backend_t *shader;
@@ -192,6 +219,8 @@ struct gl2
    GLuint video_layout_white_texture;
 #endif
 
+   uint32_t flags;
+
    unsigned video_width;
    unsigned video_height;
 
@@ -226,35 +255,7 @@ struct gl2
    struct video_tex_info prev_info[GFX_MAX_TEXTURES]; /* unsigned alignment */
    struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];   /* unsigned alignment */
 
-#ifdef HAVE_VIDEO_LAYOUT
-   bool video_layout_resize;
-#endif
-   bool vsync;
-   bool tex_mipmap;
-   bool fbo_inited;
-   bool fbo_feedback_enable;
-   bool hw_render_fbo_init;
-   bool has_fbo;
-   bool hw_render_use;
-   bool core_context_in_use;
-   bool shared_context_use;
-
-   bool should_resize;
-   bool quitting;
-   bool fullscreen;
-   bool keep_aspect;
-   bool support_unpack_row_length;
-   bool have_es2_compat;
-   bool have_full_npot_support;
-   bool have_mipmap;
-
-   bool overlay_enable;
-   bool overlay_full_screen;
-   bool menu_texture_enable;
-   bool menu_texture_full_screen;
-   bool have_sync;
    bool pbo_readback_valid[4];
-   bool pbo_readback_enable;
 };
 
 #define GL2_BIND_TEXTURE(id, wrap_mode, mag_filter, min_filter) \

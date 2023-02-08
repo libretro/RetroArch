@@ -74,6 +74,8 @@ bool content_deserialize_state(const void* serialized_data, size_t serialized_si
 
 /* Waits for any in-progress save state tasks to finish */
 void content_wait_for_save_state_task(void);
+/* Waits for any in-progress load state tasks to finish */
+void content_wait_for_load_state_task(void);
 
 /* Copy a save state. */
 bool content_rename_state(const char *origin, const char *dest);

@@ -337,10 +337,15 @@ enum msg_hash_enums
    MSG_LOADING_FAVORITES_FILE,
    MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
    MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
+   MSG_OVERRIDES_NOT_SAVED,
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
+   MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
+   MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
+   MSG_OVERRIDES_ERROR_SAVING,
+   MSG_OVERRIDES_ERROR_REMOVING,
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
    MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   MSG_OVERRIDES_ERROR_SAVING,
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
    MSG_AUTOLOADING_SAVESTATE_FROM,
    MSG_FOUND_AUTO_SAVESTATE_IN,
@@ -381,6 +386,7 @@ enum msg_hash_enums
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
    MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
    MSG_REMAP_FILE_RESET,
+   MSG_OVERRIDE_UNLOAD,
    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
    MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
    MSG_ERROR_SAVING_REMAP_FILE,
@@ -854,6 +860,9 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
    MENU_LABEL(INPUT_TURBO_DEFAULT_BUTTON),
 
    MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX,
@@ -1769,9 +1778,11 @@ enum msg_hash_enums
 #endif
    MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST,
    MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST,
+   MENU_ENUM_LABEL_DEFERRED_OVERRIDE_FILE_MANAGER_LIST,
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST,
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL,
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION,
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE,
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PARAMETER,
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PRESET_PARAMETER,
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES,
@@ -2051,6 +2062,7 @@ enum msg_hash_enums
    MENU_LBL_H(AUDIO_MAX_TIMING_SKEW),
    MENU_LABEL(AUDIO_OUTPUT_RATE),
    MENU_LBL_H(AUDIO_DEVICE),
+   MENU_ENUM_LABEL_AUDIO_DEVICE_LIST,
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
@@ -2356,6 +2368,66 @@ enum msg_hash_enums
    MENU_LABEL(VIDEO_DRIVER),
    MENU_LABEL(INPUT_DRIVER),
    MENU_LABEL(MIDI_DRIVER),
+
+   MENU_ENUM_LABEL_AUDIO_DRIVER_RSOUND,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_AUDIOIO,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_OSS,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_ALSA,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_ALSATHREAD,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_TINYALSA,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_ROAR,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_COREAUDIO,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_COREAUDIO3,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_AL,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SL,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SDL,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SDL2,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_DSOUND,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_WASAPI,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_XAUDIO,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PULSE,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_EXT,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_XENON360,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PS3,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_WII,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_WIIU,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PSP,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PS2,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_CTR,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_SWITCH,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_RWEBAUDIO,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_JACK,
+   MENU_ENUM_LABEL_AUDIO_DRIVER_NULL,
+
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AUDIOIO,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_COREAUDIO,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_COREAUDIO3,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SDL,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SDL2,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_XAUDIO,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_EXT,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_XENON360,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PS3,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WII,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WIIU,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PSP,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PS2,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_CTR,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SWITCH,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RWEBAUDIO,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_NULL,
 
    MENU_ENUM_LABEL_VIDEO_DRIVER_GL,
    MENU_ENUM_LABEL_VIDEO_DRIVER_GL1,
@@ -2684,6 +2756,7 @@ enum msg_hash_enums
 
    MENU_LBL_H(DUMMY_ON_CORE_SHUTDOWN),
    MENU_LBL_H(CHECK_FOR_MISSING_FIRMWARE),
+   MENU_LABEL(CORE_INFO_SAVESTATE_BYPASS),
    MENU_LABEL(CORE_OPTION_CATEGORY_ENABLE),
    MENU_LABEL(CORE_INFO_CACHE_ENABLE),
 #ifndef HAVE_DYNAMIC
@@ -2858,6 +2931,8 @@ enum msg_hash_enums
 
    MENU_LABEL(CUSTOM_RATIO),
    MENU_LABEL(HELP),
+   MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
+   MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    MENU_LABEL(CHEAT_DATABASE_PATH),
    MENU_LABEL(CURSOR_DIRECTORY),
    MENU_LABEL(OSK_OVERLAY_DIRECTORY),
@@ -3025,6 +3100,10 @@ enum msg_hash_enums
    MENU_LABEL(REMAP_FILE_REMOVE_GAME),
    MENU_LABEL(REMAP_FILE_RESET),
    MENU_LABEL(REMAP_FILE_FLUSH),
+
+   MENU_LABEL(OVERRIDE_FILE_INFO),
+   MENU_LABEL(OVERRIDE_FILE_LOAD),
+   MENU_LABEL(OVERRIDE_UNLOAD),
 
    MENU_LABEL(RESTART_CONTENT),
    MENU_LABEL(RESUME),
@@ -3330,6 +3409,9 @@ enum msg_hash_enums
    MENU_LABEL(SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
    MENU_LABEL(SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
    MENU_LABEL(SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
+   MENU_LABEL(REMOVE_CURRENT_CONFIG_OVERRIDE_CORE),
+   MENU_LABEL(REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
+   MENU_LABEL(REMOVE_CURRENT_CONFIG_OVERRIDE_GAME),
 
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
@@ -3882,22 +3964,7 @@ enum msg_hash_enums
 
 const char *msg_hash_to_str(enum msg_hash_enums msg);
 
-const char *msg_hash_to_str_fr(enum msg_hash_enums msg);
-int msg_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len);
-
 const char *msg_hash_to_str_ru(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_de(enum msg_hash_enums msg);
-int msg_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_es(enum msg_hash_enums msg);
-int msg_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_eo(enum msg_hash_enums msg);
-int msg_hash_get_help_eo_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_it(enum msg_hash_enums msg);
-int msg_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_jp(enum msg_hash_enums msg);
 int msg_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len);
@@ -3911,26 +3978,16 @@ int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len);
 const char *msg_hash_to_str_pt_pt(enum msg_hash_enums msg);
 int msg_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len);
 
-const char *msg_hash_to_str_pl(enum msg_hash_enums msg);
-int msg_hash_get_help_pl_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_nl(enum msg_hash_enums msg);
-int msg_hash_get_help_nl_enum(enum msg_hash_enums msg, char *s, size_t len);
-
 const char *msg_hash_to_str_vn(enum msg_hash_enums msg);
 int msg_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_chs(enum msg_hash_enums msg);
 int msg_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len);
 
-const char *msg_hash_to_str_cht(enum msg_hash_enums msg);
 int msg_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_us(enum msg_hash_enums msg);
 int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_ar(enum msg_hash_enums msg);
-int msg_hash_get_help_ar_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_el(enum msg_hash_enums msg);
 int msg_hash_get_help_el_enum(enum msg_hash_enums msg, char *s, size_t len);
@@ -3938,44 +3995,9 @@ int msg_hash_get_help_el_enum(enum msg_hash_enums msg, char *s, size_t len);
 const char *msg_hash_to_str_tr(enum msg_hash_enums msg);
 int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len);
 
-const char *msg_hash_to_str_sk(enum msg_hash_enums msg);
-int msg_hash_get_help_sk_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_fa(enum msg_hash_enums msg);
-int msg_hash_get_help_fa_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_he(enum msg_hash_enums msg);
-int msg_hash_get_help_he_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_ast(enum msg_hash_enums msg);
-int msg_hash_get_help_ast_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_fi(enum msg_hash_enums msg);
-int msg_hash_get_help_fi_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_id(enum msg_hash_enums msg);
-int msg_hash_get_help_id_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_sv(enum msg_hash_enums msg);
-int msg_hash_get_help_sv_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_uk(enum msg_hash_enums msg);
-int msg_hash_get_help_uk_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_cs(enum msg_hash_enums msg);
-int msg_hash_get_help_cs_enum(enum msg_hash_enums msg, char *s, size_t len);
-
 const char *msg_hash_to_str_val(enum msg_hash_enums msg);
-int msg_hash_get_help_val_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_ca(enum msg_hash_enums msg);
-int msg_hash_get_help_ca_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_en(enum msg_hash_enums msg);
-int msg_hash_get_help_en_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_hu(enum msg_hash_enums msg);
-int msg_hash_get_help_hu_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);
 
@@ -4012,7 +4034,6 @@ void msg_hash_set_uint(enum msg_hash_action type, unsigned val);
  *   rendering implementation */
 const char *msg_hash_get_wideglyph_str(void);
 const char *msg_hash_get_wideglyph_str_chs(void);
-const char *msg_hash_get_wideglyph_str_cht(void);
 const char *msg_hash_get_wideglyph_str_jp(void);
 const char *msg_hash_get_wideglyph_str_ko(void);
 

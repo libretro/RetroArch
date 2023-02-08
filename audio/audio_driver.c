@@ -662,7 +662,7 @@ bool audio_driver_init_internal(
                audio_driver_st.current_audio))
       {
          RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
-	 return false;
+         return false;
       }
    }
    else
@@ -821,8 +821,8 @@ void audio_driver_sample(int16_t left, int16_t right)
    }
 
    if (!(    (runloop_flags & RUNLOOP_FLAG_PAUSED)
-		   || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
-		   || !(audio_st->output_samples_buf)))
+         || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
+         || !(audio_st->output_samples_buf)))
       audio_driver_flush(audio_st,
             config_get_ptr()->floats.slowmotion_ratio,
             config_get_ptr()->bools.audio_fastforward_mute,

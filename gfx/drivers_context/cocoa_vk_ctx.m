@@ -125,6 +125,16 @@ static void cocoa_vk_gfx_ctx_get_video_size(void *data,
    *width                          = CGRectGetWidth(size);
    *height                         = CGRectGetHeight(size);
 }
+#else
+static void cocoa_vk_gfx_ctx_get_video_size(void *data,
+      unsigned* width, unsigned* height)
+{
+    float screenscale               = cocoa_screen_get_native_scale();
+    MTKView *g_view                 = apple_platform.renderView;
+    CGRect size                     = g_view.bounds;
+    *width                          = CGRectGetWidth(size)  * screenscale;
+    *height                         = CGRectGetHeight(size) * screenscale;
+}
 #endif
 
 static gfx_ctx_proc_t cocoa_vk_gfx_ctx_get_proc_address(const char *symbol_name)
@@ -271,7 +281,22 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height, bool fullscreen)
 {
+   id g_view                      = apple_platform.renderView;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
+   cocoa_ctx->width               = width;
+   cocoa_ctx->height              = height;
+
+   if (!vulkan_surface_create(&cocoa_ctx->vk,
+                              VULKAN_WSI_MVK_IOS,
+                              NULL,
+                              (BRIDGE void *)g_view,
+                              cocoa_ctx->width,
+                              cocoa_ctx->height,
+                              cocoa_ctx->swap_interval))
+   {
+      RARCH_ERR("[iOS Vulkan]: Failed to create surface.\n");
+      return false;
+   }
 
    /* TODO: Maybe iOS users should be able to 
     * show/hide the status bar here? */
@@ -285,6 +310,13 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 
    if (!cocoa_ctx)
       return NULL;
+
+   [apple_platform setViewType:APPLE_VIEW_TYPE_VULKAN];
+   if (!vulkan_context_init(&cocoa_ctx->vk, VULKAN_WSI_MVK_IOS))
+   {
+      free(cocoa_ctx);
+      return NULL;
+   }
 
    return cocoa_ctx;
 }

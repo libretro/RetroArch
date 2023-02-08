@@ -2246,6 +2246,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 {
    int i;
    QVector<QHash<QString, QString> > infoList;
+   runloop_state_t *runloop_st         = runloop_state_get_ptr();
    QHash<QString, QString> currentCore = getSelectedCore();
    core_info_t *core_info              = NULL;
    QByteArray currentCorePathArray     = currentCore["core_path"].toUtf8();
@@ -2421,12 +2422,12 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->paths.directory_system;
 
-      retroarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
-
       update_missing_firmware        = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
 
       if (set_missing_firmware)
-         retroarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+         runloop_st->missing_bios    = true;
+      else
+         runloop_st->missing_bios    = false;
 
       if (update_missing_firmware)
       {

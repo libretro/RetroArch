@@ -1161,6 +1161,42 @@ MSG_HASH(
    "Zmień ustawienia przeglądarki plików."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   "Plik konfiguracyjny."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   "Skompresowany plik archiwum."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   "Plik kursora bazy danych."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   "Plik konfiguracyjny."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   "Plik cieniowania."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
+   "Remapuj plik kontrolny."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
+   "Plik Cheat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   "Plik bazy danych."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   "Plik czcionki TrueType."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
    "Dławienie klatek"
    )
@@ -1298,6 +1334,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "Sterownik wejścia do użycia. Niektóre sterowniki wideo wymuszają inny sterownik wejścia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
    "Sterownik wejścia do użycia. Niektóre sterowniki wideo wymuszają inny sterownik wejścia."
    )
 MSG_HASH(
@@ -1983,10 +2023,6 @@ MSG_HASH(
    "Opóźnienie ramki (ms)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Zmniejsza opóźnienie kosztem zwiększonego ryzyka stłuczenia wideo. Dodaje opóźnienie po VSync (w ms)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatyczne opóźnienie ramki"
    )
@@ -2335,10 +2371,6 @@ MSG_HASH(
    "Maksymalna liczba użytkowników obsługiwanych przez RetroArch."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "Zachowanie odpytywania danych"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "Przemapowanie elementów sterujących dla tego rdzenia"
    )
@@ -2471,6 +2503,18 @@ MSG_HASH(
    "Pojedynczy przycisk (Przytrzymanie)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "Tryb klasyczny, operacja dwóch przycisków. Przytrzymaj przycisk i naciśnij przycisk Turbo, aby aktywować sekwencję odblokowania.\nPrzycisk Turbo może być przypisany w Ustawieniach/Input/Port 1 Controls."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "Przełącz tryb. Naciśnij przycisk Turbo, aby aktywować sekwencję uwalniania dla wybranego przycisku domyślnego, naciśnij go ponownie aby go wyłączyć.\nPrzycisk Turbo może być przypisany w Ustawieniach/Input/Port 1 Controls."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Tryb przytrzymania. Sekwencja zwolnienia dla wybranego domyślnego przycisku jest aktywna, dopóki przycisk Turbo jest przytrzymywany w dół.\nPrzycisk Turbo może być przypisany w Ustawieniach/Input/Port 1 Controls.\nAby emulować funkcję autoognia w epoce komputera domowego, ustaw Turbo i domyślne przyciski aby były takie same jak przycisk ognia joysticka."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
    "Domyślny przycisk turbo"
    )
@@ -2594,10 +2638,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "Aktywacja klawisza skrótu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   "Po przypisaniu klawisz 'Skrót włączony' musi być trzymany przed rozpoznaniem innych skrótów klawiszowych. Umożliwia mapowanie przycisków kontrolera do funkcji skrótu klawiszowego bez wpływu na normalne wprowadzanie danych. Przypisanie modyfikatora tylko do kontrolera nie będzie wymagało go dla klawiatury, ale oba modyfikatory działają dla obu urządzeń."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -5477,6 +5517,54 @@ MSG_HASH(
 
 /* Settings > Achievements > Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
+   "Widoczność"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
+   "Zmień które wiadomości i elementy na ekranie są wyświetlane. Nie wyłącza funkcjonalności."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
+   "Wszystkie zidentyfikowane gry"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
+   "Gry z Osiągnięciami"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
+   "Odblokuj powiadomienia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
+   "Pokazuje powiadomienie, gdy osiągnięcie jest odblokowane."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
+   "Pokazuje powiadomienie, gdy wszystkie osiągnięcia dla gry są odblokowane."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
+   "Aktywne wskaźniki wyzwań"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
+   "Pokazuje wskaźniki na ekranie, podczas gdy niektóre osiągnięcia mogą być zdobyte."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
+   "Wiadomości logowania"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+   "Pokazuje wiadomości związane z logowaniem konta RetroAchievements."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+   "Pokazuje dodatkowe komunikaty diagnostyczne i komunikaty o błędach."
+   )
 
 /* Settings > Network */
 
@@ -6534,6 +6622,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
    "Konfigurowalne skanowanie na podstawie nazw plików zawartości. Nie wymaga zawartości do dopasowania bazy danych."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
+   "Skanuj"
+   )
 
 /* Import Content > Scan File */
 
@@ -7066,7 +7158,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
-   "Aktywny plik opcji:"
+   "Aktywny plik opcji"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
+   "Bieżący plik opcji w użyciu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
@@ -7101,8 +7197,8 @@ MSG_HASH(
 /* Quick Menu > Controls > Manage Remap Files */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
-   "Aktywny plik remap'u:"
+   MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
+   "Aktualny plik ponownego mapowania w użyciu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
@@ -10130,10 +10226,6 @@ MSG_HASH(
    "Podsystemy"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
-   " Bieżąca zawartość: %s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
    "Nie znaleziono hostów gry sieciowej."
    )
@@ -10383,6 +10475,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Pomoc"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
+   "Wyczyść"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
@@ -11544,7 +11640,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Załadowany stan z gniazda #-1 (automatyczny)."
+   "Stan załadowany z gniazda #-1 (Auto)."
    )
 MSG_HASH(
    MSG_LOADING,
@@ -11617,6 +11713,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
    "Przesłonięcia zostały pomyślnie zapisane."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "Nie zapisywane. Nadpisuje aktywne."
    )
 MSG_HASH(
    MSG_PAUSED,
@@ -11712,7 +11812,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Zapisany stan do gniazda #-1 (auto)."
+   "Zapisano stan do gniazda #-1 (Auto)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

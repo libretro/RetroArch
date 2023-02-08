@@ -129,6 +129,12 @@ static const rc_disallowed_setting_t _rc_disallowed_snes9x_settings[] = {
   { NULL, NULL }
 };
 
+static const rc_disallowed_setting_t _rc_disallowed_vice_settings[] = {
+  { "vice_autostart", "disabled" }, /* autostart dictates initial load and reset from menu */
+  { "vice_reset", "!autostart" }, /* reset dictates behavior when pressing reset button (END) */
+  { NULL, NULL }
+};
+
 static const rc_disallowed_setting_t _rc_disallowed_virtual_jaguar_settings[] = {
   { "virtualjaguar_pal", "enabled" },
   { NULL, NULL }
@@ -152,6 +158,7 @@ static const rc_disallowed_core_settings_t rc_disallowed_core_settings[] = {
   { "QUASI88", _rc_disallowed_quasi88_settings },
   { "SMS Plus GX", _rc_disallowed_smsplus_settings },
   { "Snes9x", _rc_disallowed_snes9x_settings },
+  { "VICE x64", _rc_disallowed_vice_settings },
   { "Virtual Jaguar", _rc_disallowed_virtual_jaguar_settings },
   { NULL, NULL }
 };
@@ -613,7 +620,7 @@ void rc_libretro_hash_set_init(struct rc_libretro_hash_set_t* hash_set,
   char image_path[1024];
   char* m3u_contents;
   char* ptr;
-  size_t file_len;
+  int64_t file_len;
   void* file_handle;
   int index = 0;
 

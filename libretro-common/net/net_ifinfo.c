@@ -55,12 +55,13 @@ bool net_ifinfo_new(net_ifinfo_t *list)
    PIP_ADAPTER_ADDRESSES addr;
    struct net_ifinfo_entry *entry;
    size_t                interfaces = 0;
-   ULONG                 flags      = GAA_FLAG_SKIP_ANYCAST |
-      GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
+   ULONG                 flags      = GAA_FLAG_SKIP_ANYCAST
+                                    | GAA_FLAG_SKIP_MULTICAST 
+                                    | GAA_FLAG_SKIP_DNS_SERVER;
    ULONG                 len        = 15 * 1024;
    PIP_ADAPTER_ADDRESSES addresses  = (PIP_ADAPTER_ADDRESSES)calloc(1, len);
 
-   list->entries = NULL;
+   list->entries                    = NULL;
 
    if (!addresses)
       goto failure;
@@ -104,15 +105,14 @@ bool net_ifinfo_new(net_ifinfo_t *list)
    if (!interfaces)
       goto failure;
 
-   list->entries =
-      (struct net_ifinfo_entry*)calloc(interfaces, sizeof(*list->entries));
-   if (!list->entries)
+   if (!(list->entries =
+      (struct net_ifinfo_entry*)calloc(interfaces, sizeof(*list->entries))))
       goto failure;
-   list->size    = 0;
 
+   list->size    = 0;
    /* Now create the entries. */
-   addr  = addresses;
-   entry = list->entries;
+   addr          = addresses;
+   entry         = list->entries;
 
    do
    {
@@ -161,22 +161,19 @@ failure:
    return false;
 #elif defined(VITA)
    SceNetCtlInfo info;
-
-   list->entries = (struct net_ifinfo_entry*)calloc(2, sizeof(*list->entries));
-   if (!list->entries)
+   if (!(list->entries = (struct net_ifinfo_entry*)calloc(2, sizeof(*list->entries))))
    {
       list->size = 0;
-
       return false;
    }
 
-   strcpy_literal(list->entries[0].name, "lo");
-   strcpy_literal(list->entries[0].host, "127.0.0.1");
+   strlcpy(list->entries[0].name, "lo",        sizeof(list->entries[0].name));
+   strlcpy(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
    list->size = 1;
 
    if (!sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &info))
    {
-      strcpy_literal(list->entries[1].name, "wlan");
+      strlcpy(list->entries[1].name, "wlan", sizeof(list->entries[1].name));
       strlcpy(list->entries[1].host, info.ip_address,
          sizeof(list->entries[1].host));
       list->size++;
@@ -185,17 +182,14 @@ failure:
    return true;
 #elif defined(HAVE_LIBNX) || defined(_3DS) || defined(GEKKO)
    uint32_t addr = 0;
-
-   list->entries = (struct net_ifinfo_entry*)calloc(2, sizeof(*list->entries));
-   if (!list->entries)
+   if (!(list->entries = (struct net_ifinfo_entry*)calloc(2, sizeof(*list->entries))))
    {
       list->size = 0;
-
       return false;
    }
 
-   strcpy_literal(list->entries[0].name, "lo");
-   strcpy_literal(list->entries[0].host, "127.0.0.1");
+   strlcpy(list->entries[0].name, "lo", sizeof(list->entries[0].name));
+   strlcpy(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
    list->size = 1;
 
 #if defined(HAVE_LIBNX)
@@ -213,8 +207,7 @@ failure:
    if (addr)
    {
       uint8_t *addr8 = (uint8_t*)&addr;
-
-      strcpy_literal(list->entries[1].name,
+      strlcpy(list->entries[1].name,
 #if defined(HAVE_LIBNX)
          "switch"
 #elif defined(_3DS)
@@ -222,7 +215,7 @@ failure:
 #else
          "gekko"
 #endif
-      );
+      , sizeof(list->entries[1].name));
       snprintf(list->entries[1].host, sizeof(list->entries[1].host),
          "%d.%d.%d.%d",
          (int)addr8[0], (int)addr8[1], (int)addr8[2], (int)addr8[3]);
@@ -236,13 +229,13 @@ failure:
    size_t         interfaces = 0;
    struct ifaddrs *addresses = NULL;
 
-   list->entries = NULL;
+   list->entries             = NULL;
 
    if (getifaddrs(&addresses) || !addresses)
       goto failure;
 
    /* Count the number of valid interfaces first. */
-   addr = addresses;
+   addr                      = addresses;
 
    do
    {

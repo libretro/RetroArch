@@ -22,34 +22,12 @@
 #include <string/stdstring.h>
 
 #include "../msg_hash.h"
-#include "../verbosity.h"
-
-#ifdef RARCH_INTERNAL
-#include "../configuration.h"
-#include "../config.def.h"
-
-int msg_hash_get_help_val_enum(enum msg_hash_enums msg, char *s, size_t len)
-{
-   int ret = 0;
-
-   switch (msg)
-   {
-      case MSG_UNKNOWN:
-      default:
-         ret = -1;
-         break;
-   }
-
-   return ret;
-}
-
-#endif
 
 #ifdef HAVE_MENU
 static const char *menu_hash_to_str_val_label_enum(enum msg_hash_enums msg)
 {
-   if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
-         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
+   if (   msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END
+       && msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
    {
       static char hotkey_lbl[128] = {0};
       unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
