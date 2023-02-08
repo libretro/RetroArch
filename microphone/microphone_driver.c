@@ -165,13 +165,14 @@ static void mic_driver_open_mic_internal(retro_microphone_t* microphone);
 bool microphone_driver_init_internal(void *settings_data)
 {
    settings_t *settings   = (settings_t*)settings_data;
+   microphone_driver_state_t *mic_st = &mic_driver_st;
    float slowmotion_ratio = settings->floats.slowmotion_ratio;
    bool verbosity_enabled = verbosity_is_enabled();
    size_t insamples_max   = AUDIO_CHUNK_SIZE_NONBLOCKING * 1 * AUDIO_MAX_RATIO * slowmotion_ratio;
 
    if (!settings->bools.microphone_enable)
    { /* If the user has mic support turned off... */
-      mic_driver_st.flags &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
+      mic_st->flags &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
       RARCH_WARN("[Microphone]: Refused to initialize microphone driver because it's disabled in the settings\n");
       return false;
    }
@@ -186,21 +187,21 @@ bool microphone_driver_init_internal(void *settings_data)
       goto error;
    }
 
-   mic_driver_st.input_samples_conv_buf_length = insamples_max;
-   mic_driver_st.input_samples_conv_buf        = (int16_t*)memalign_alloc(64, mic_driver_st.input_samples_conv_buf_length);
-   if (!mic_driver_st.input_samples_conv_buf)
+   mic_st->input_samples_conv_buf_length = insamples_max;
+   mic_st->input_samples_conv_buf        = (int16_t*)memalign_alloc(64, mic_driver_st.input_samples_conv_buf_length);
+   if (!mic_st->input_samples_conv_buf)
       goto error;
 
-   mic_driver_st.input_samples_buf_length = insamples_max * sizeof(float);
-   mic_driver_st.input_samples_buf = (float*)memalign_alloc(64, mic_driver_st.input_samples_buf_length);
-   if (!mic_driver_st.input_samples_buf)
+   mic_st->input_samples_buf_length = insamples_max * sizeof(float);
+   mic_st->input_samples_buf = (float*)memalign_alloc(64, mic_driver_st.input_samples_buf_length);
+   if (!mic_st->input_samples_buf)
       goto error;
 
-   if (!mic_driver_st.driver || !mic_driver_st.driver->init)
+   if (!mic_st->driver || !mic_st->driver->init)
       goto error;
 
-   mic_driver_st.driver_context = mic_driver_st.driver->init();
-   if (!mic_driver_st.driver_context)
+   mic_st->driver_context = mic_st->driver->init();
+   if (!mic_st->driver_context)
       goto error;
 
    RARCH_LOG("[Microphone]: Initialized microphone driver\n");
@@ -226,8 +227,8 @@ bool microphone_driver_init_internal(void *settings_data)
    return true;
 
 error:
-   RARCH_ERR("[Microphone]: Failed to initialize microphone driver. Will continue without audio input.\n");
-   mic_driver_st.flags &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
+   RARCH_ERR("[Microphone]: Failed to start microphone driver. Will continue without audio input.\n");
+   mic_st->flags &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
    return microphone_driver_deinit();
 }
 
