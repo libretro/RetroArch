@@ -27,7 +27,7 @@
 #include <asm-generic/errno.h>
 
 #include "../audio_driver.h"
-#include "alsa.h"
+#include "../common/alsa.h" /* For some common functions/types */
 #include "../../verbosity.h"
 
 typedef struct alsa_thread

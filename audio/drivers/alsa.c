@@ -23,7 +23,7 @@
 #include <asm-generic/errno.h>
 
 #include "../audio_driver.h"
-#include "alsa.h"
+#include "../common/alsa.h"
 #include "../../verbosity.h"
 
 typedef struct alsa
