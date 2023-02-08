@@ -698,6 +698,7 @@ void runloop_runtime_log_deinit(
 static bool runloop_clear_all_thread_waits(
       unsigned clear_threads, void *data)
 {
+   /* Does this need to treat the microphone driver the same way? */
    if (clear_threads > 0)
       audio_driver_start(false);
    else
@@ -3779,6 +3780,7 @@ static bool core_unload_game(void)
    }
 
    audio_driver_stop();
+   microphone_driver_stop();
 
    return true;
 }
