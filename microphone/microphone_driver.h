@@ -141,24 +141,11 @@ struct retro_microphone
    size_t sample_buffer_length;
 
    /**
-    * Number of bytes that were copied into the buffer in the most recent flush.
-    * Accounts for resampling
-    **/
-   size_t most_recent_copy_length;
-
-   enum microphone_state_flags flags;
-
-   /* May be enabled even before the driver is ready */
-   bool pending_enabled;
-
-   /**
-    * True if this object represents a valid or pending microphone.
-    * Mostly exists because retro_microphone is statically allocated,
-    * so there's no reason to check it against NULL.
+    * Bit flags that describe the state of this microphone.
+    *
+    * @see microphone_state_flags
     */
-   bool active;
-
-   bool error;
+   enum microphone_state_flags flags;
 };
 
 /**
@@ -391,11 +378,6 @@ typedef struct
    retro_microphone_t microphone;
 
    enum microphone_driver_state_flags flags;
-
-   /**
-    * If \c true, all microphones return silence.
-    */
-   bool mute_enable;
 } microphone_driver_state_t;
 
 /**
