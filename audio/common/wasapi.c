@@ -169,16 +169,6 @@ static const char* wasapi_data_flow_name(EDataFlow data_flow)
    }
 }
 
-static unsigned wasapi_pref_rate(unsigned i)
-{
-   const unsigned r[] = { 48000, 44100, 96000, 192000, 32000 };
-
-   if (i >= sizeof(r) / sizeof(unsigned))
-      return 0;
-
-   return r[i];
-}
-
 static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
                               bool float_fmt, unsigned rate, unsigned channels);
 /**
