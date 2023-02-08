@@ -549,7 +549,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "在「應用核心」列表中不顯示此核心, 僅限選單內容中顯示應用核心設定為<自訂>時使用。"
+   "在「應用核心」列表中不顯示此核心, 僅限「設定/選單/選單內容」選項中, 顯示「應用核心」設定為<自訂>時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -1622,7 +1622,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
-   "RGUI主題。\n此選單主題有最低效能的要求, 可以在低解析度的螢幕上使用。"
+   "RGUI主題。\n此選單主題效能需求為最低, 並適合低解析度的螢幕使用。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   "GLUI主題。\n行動裝置預設使用的主題, 針對觸控螢幕和指標裝置(滑鼠/軌跡球)設計而成。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1876,6 +1880,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    "設定用於輸出影像的螢幕編號。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
+   "設定<0>時自動偵測可用的顯示器。\n設定裝置連接多部顯示器的識別編號, 用於應用程式影像輸出使用的顯示器。\n可用於連接直式和橫式兩部顯示器, 項目執行後依需求設定儲存為專用主題。"
    )
 #if defined (WIIU)
 MSG_HASH(
@@ -2912,7 +2920,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   "管理連發鍵"
+   "連發設定"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
@@ -3049,7 +3057,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
-   "組合鍵設定到鍵盤、控制器和類比控制器時, 使用快捷鍵需先按住組合鍵。\n可用於完整的使用電腦鍵盤, 不被快捷鍵妨礙鍵盤輸入。\n可用於控制器組合快捷鍵, 設定組合鍵並加入延遲, 可用按鍵加入所需的快捷鍵。"
+   "組合鍵設定到鍵盤、控制器和類比控制器時, 使用快捷鍵需先按住組合鍵。\n適用於支援鍵盤的核心, 可完整的使用電腦鍵盤輸入, 不被應用程式快捷鍵妨礙。\n可用於控制器組合快捷鍵, 設定組合鍵並加入延遲, 可用的按鍵加入所需快捷鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -6978,7 +6986,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
-   "選擇語言進行本地化選單和本地化通知, 變更時需要重新啟動才能生效。\n每個語言最後有顯示翻譯完成度, 未完成的翻譯將使用英語顯示。"
+   "選擇語言進行本地化選單和本地化通知, 變更時需要重新啟動才能生效。\n每個語言最後有顯示應用程式翻譯進度, 未完成的翻譯將使用英語顯示。"
    )
 
 /* Settings > User > Privacy */
