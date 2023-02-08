@@ -2797,6 +2797,15 @@ bool command_event(enum event_command cmd, void *data)
                   RUNLOOP_FLAG_SHUTDOWN_INITIATED))
             return false;
          break;
+      case CMD_EVENT_MICROPHONE_STOP:
+         if (!microphone_driver_stop())
+            return false;
+         break;
+      case CMD_EVENT_MICROPHONE_START:
+         if (!microphone_driver_start(runloop_st->flags &
+                  RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+            return false;
+         break;
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
             audio_driver_state_t
@@ -3435,9 +3444,15 @@ bool command_event(enum event_command cmd, void *data)
             bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
 #endif
             if (menu_pause_libretro)
+            { /* If entering the menu pauses the game... */
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
+               command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
+            }
             else
+            {
                command_event(CMD_EVENT_AUDIO_START, NULL);
+               command_event(CMD_EVENT_MICROPHONE_START, NULL);
+            }
          }
          else
          {

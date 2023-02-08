@@ -120,6 +120,10 @@ enum event_command
    CMD_EVENT_AUDIO_START,
    /* Mutes audio. */
    CMD_EVENT_AUDIO_MUTE_TOGGLE,
+   /* Stops all enabled microphones. */
+   CMD_EVENT_MICROPHONE_STOP,
+   /* Starts all enabled microphones */
+   CMD_EVENT_MICROPHONE_START,
    /* Volume adjustments. */
    CMD_EVENT_VOLUME_UP,
    CMD_EVENT_VOLUME_DOWN,
