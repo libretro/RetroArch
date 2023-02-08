@@ -28,15 +28,92 @@
 enum microphone_driver_state_flags
 {
    /**
-    * Indicates that the microphone driver is active.
-    * Microphones can be opened, closed, and read.
+    * Indicates that the driver was successfully created
+    * and is currently valid.
+    * You may open microphones and query them for samples at any time.
+    *
+    * This flag does \em not mean that the core will receive anything;
+    * the driver might be suspended.
     */
-   MICROPHONE_DRIVER_FLAG_ACTIVE       = (1 << 0),
+   MICROPHONE_DRIVER_FLAG_ACTIVE  = (1 << 0),
+   MICROPHONE_DRIVER_FLAG_ENABLED = (1 << 1),
+   MICROPHONE_DRIVER_FLAG_CONTROL = (1 << 2)
 };
 
 enum microphone_state_flags
 {
-   MICROPHONE_FLAG_USE_FLOAT    = (1 << 0)
+   /**
+    * Indicates that the microphone was successfully created
+    * and is currently valid.
+    * You may query it for samples at any time.
+    *
+    * This flag does \em not mean that the core will receive anything,
+    * as there are several situations where a mic will return silence.
+    *
+    * If this flag is not set, then the others are meaningless.
+    * Reads from this microphone will return an error.
+    */
+   MICROPHONE_FLAG_ACTIVE = (1 << 0),
+
+   /**
+    * Indicates that the core considers this microphone "on"
+    * and ready to retrieve audio.
+    *
+    * Even if a microphone is opened, the user might not want it running
+    * at all times; they might prefer to hold a button to use it.
+    *
+    * If this flag is not set, the microphone will not process input.
+    * Reads from it will return silence.
+    */
+   MICROPHONE_FLAG_ENABLED = (1 << 1),
+
+   /**
+    * Indicates that this microphone was requested
+    * before the microphone driver was initialized,
+    * so the driver will need to create this microphone
+    * when it's ready.
+    *
+    * If this flag is set, reads from this microphone return silence
+    * of the requested length.
+    */
+   MICROPHONE_FLAG_PENDING = (1 << 2),
+
+   /**
+    * Indicates that the microphone provides floating-point samples,
+    * as opposed to integer samples.
+    *
+    * All audio is sent through the resampler,
+    * which operates on floating-point samples.
+    *
+    * If this flag is set, then the resampled output doesn't need
+    * to be converted back to \c int16_t format.
+    *
+    * This won't affect the audio that the core receives;
+    * either way, it's supposed to receive \c int16_t samples.
+    *
+    * This flag won't be set if the selected microphone driver
+    * doesn't support (or is configured to not use) \c float samples.
+    *
+    * @see microphone_driver_t::mic_use_float
+    */
+   MICROPHONE_FLAG_USE_FLOAT = (1 << 3),
+
+   /**
+    * Indicates that the microphone driver is not currently retrieving samples,
+    * although it's valid and can be resumed.
+    *
+    * Usually set when RetroArch needs to simulate audio input
+    * without actually rendering samples (e.g. runahead),
+    * or when reinitializing the driver.
+    *
+    * If this flag is set, reads from this microphone return silence
+    * of the requested length.
+    *
+    * This is different from \c MICROPHONE_FLAG_ACTIVE and \c MICROPHONE_FLAG_ENABLED;
+    * \c MICROPHONE_FLAG_ACTIVE indicates that the microphone is valid,
+    * and \c MICROPHONE_FLAG_ENABLED indicates that the core has the microphone turned on.
+    */
+   MICROPHONE_FLAG_SUSPENDED = (1 << 4)
 };
 
 /**
