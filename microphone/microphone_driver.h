@@ -228,37 +228,6 @@ typedef struct microphone_driver
    ssize_t (*read)(void *driver_context, void *mic_context, void *buffer, size_t buffer_size);
 
    /**
-    * Resumes the driver from the paused state.
-    * Microphones will resume activity \em if they were already active
-    * before the driver was stopped.
-    **/
-   bool (*start)(void *data, bool is_shutdown);
-
-   /**
-    * Temporarily pauses all microphones.
-    * The return value of \c get_mic_state will not be updated,
-    * but all microphones will stop recording until \c start is called.
-    *
-    * @param driver_context Pointer to the driver context.
-    * Will be the value that was returned by \c ::init().
-    * @return \c true if microphone driver was successfully paused,
-    * \c false if there was an error.
-    **/
-   bool (*stop)(void *driver_context);
-
-   /**
-    * Queries whether the driver is active.
-    * This only queries the overall driver state,
-    * not the state of individual microphones.
-    *
-    * @param driver_context Pointer to the driver context.
-    * Will be the value that was returned by \c ::init().
-    * @return \c true if the driver is active.
-    * \c false if not or if there was an error.
-    */
-   bool (*alive)(void *driver_context);
-
-   /**
     * Sets the nonblocking state of all microphones.
     * Primarily used for fast-forwarding.
     * If the driver is in blocking mode (the default),
