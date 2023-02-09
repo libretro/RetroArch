@@ -66,6 +66,7 @@ void alsa_thread_free_info_members(alsa_thread_info_t *info);
 /**
  * Sets the state of the PCM stream without updating the mic state
  */
-bool alsa_set_mic_enabled_internal(snd_pcm_t *microphone, bool enabled);
+bool alsa_start_pcm(snd_pcm_t *pcm);
+bool alsa_stop_pcm(snd_pcm_t *pcm);
 
 #endif /* _RETROARCH_ALSA */

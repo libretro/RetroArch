@@ -26,17 +26,11 @@
 typedef struct alsa_thread_microphone_handle
 {
    alsa_thread_info_t info;
-   bool is_paused;
 } alsa_thread_microphone_handle_t;
 
 typedef struct alsa_thread
 {
-   /* Only one microphone is supported right now;
-    * the driver state should track multiple microphone handles,
-    * but the driver *context* should track multiple microphone contexts */
-   alsa_thread_microphone_handle_t *microphone;
    bool nonblock;
-   bool is_paused;
 } alsa_thread_microphone_t;
 
 static void *alsa_thread_microphone_init(void)
@@ -61,9 +55,6 @@ static void alsa_thread_microphone_free(void *driver_context)
 
    if (alsa)
    {
-      if (alsa->microphone)
-         alsa_thread_microphone_close_mic(alsa, alsa->microphone);
-
       free(alsa);
    }
 }
@@ -160,7 +151,7 @@ static void alsa_microphone_worker_thread(void *microphone_context)
       }
    }
 
-   end:
+end:
    slock_lock(microphone->info.cond_lock);
    microphone->info.thread_dead = true;
    scond_signal(microphone->info.cond);
@@ -169,7 +160,6 @@ static void alsa_microphone_worker_thread(void *microphone_context)
    RARCH_DBG("[ALSA] [capture thread %p]: Ending microphone worker thread\n", thread_id);
 }
 
-static bool alsa_thread_microphone_set_mic_active(void *driver_context, void *microphone_context, bool enabled);
 static ssize_t alsa_thread_microphone_read(void *driver_context, void *microphone_context, void *buf, size_t size)
 {
    alsa_thread_microphone_t *alsa              = (alsa_thread_microphone_t*)driver_context;
@@ -181,10 +171,6 @@ static ssize_t alsa_thread_microphone_read(void *driver_context, void *microphon
 
    if (microphone->info.thread_dead) /* If the mic thread is shutting down... */
       return -1;
-
-   if (microphone->is_paused)
-      if (!alsa_thread_microphone_set_mic_active(alsa, microphone, true))
-         return -1;
 
    state = snd_pcm_state(microphone->info.pcm);
    if (state != SND_PCM_STATE_RUNNING)
@@ -273,34 +259,7 @@ static ssize_t alsa_thread_microphone_read(void *driver_context, void *microphon
 }
 
 static bool alsa_thread_microphone_mic_alive(const void *driver_context, const void *microphone_context);
-static bool alsa_thread_microphone_start(void *driver_context, bool is_shutdown)
-{
-   alsa_thread_microphone_t *alsa = (alsa_thread_microphone_t*)driver_context;
 
-   if (alsa)
-      alsa->is_paused = false;
-   return true;
-}
-
-static bool alsa_thread_microphone_alive(void *driver_context)
-{
-   alsa_thread_microphone_t *alsa = (alsa_thread_microphone_t*)driver_context;
-   if (!alsa)
-      return false;
-   return !alsa->is_paused;
-}
-
-static bool alsa_thread_microphone_stop(void *driver_context)
-{
-   alsa_thread_microphone_t *alsa = (alsa_thread_microphone_t*)driver_context;
-
-   if (alsa)
-      alsa->is_paused = true;
-   return true;
-}
-
-
-static void alsa_thread_microphone_close_mic(void *driver_context, void *microphone_context);
 static void *alsa_thread_microphone_open_mic(void *driver_context,
    const char *device,
    unsigned rate,
@@ -342,10 +301,9 @@ static void *alsa_thread_microphone_open_mic(void *driver_context,
    }
    RARCH_DBG("[ALSA]: Initialized microphone worker thread\n");
 
-   alsa->microphone = microphone;
    return microphone;
 
-   error:
+error:
    RARCH_ERR("[ALSA]: Failed to initialize microphone...\n");
 
    if (microphone)
@@ -357,62 +315,31 @@ static void *alsa_thread_microphone_open_mic(void *driver_context,
 
       alsa_thread_microphone_close_mic(alsa, microphone);
    }
-   alsa->microphone = NULL;
+
    return NULL;
 }
 
 static void alsa_thread_microphone_close_mic(void *driver_context, void *microphone_context)
 {
-   alsa_thread_microphone_t *alsa               = (alsa_thread_microphone_t *)driver_context;
    alsa_thread_microphone_handle_t *microphone  = (alsa_thread_microphone_handle_t*)microphone_context;
+   (void)driver_context;
 
-   if (alsa && microphone)
+   if (microphone)
    {
       alsa_thread_free_info_members(&microphone->info);
-
-      alsa->microphone = NULL;
       free(microphone);
    }
 }
 
 static bool alsa_thread_microphone_mic_alive(const void *driver_context, const void *microphone_context)
 {
-   alsa_thread_microphone_t *alsa = (alsa_thread_microphone_t*)driver_context;
    alsa_thread_microphone_handle_t *microphone = (alsa_thread_microphone_handle_t *)microphone_context;
+   (void)driver_context;
 
-   if (!alsa || !microphone)
+   if (!microphone)
       return false;
 
-   return !microphone->is_paused;
-}
-
-static bool alsa_thread_microphone_set_mic_active(void *driver_context, void *microphone_context, bool enabled)
-{
-   alsa_thread_microphone_t *alsa               = (alsa_thread_microphone_t*)driver_context;
-   alsa_thread_microphone_handle_t  *microphone = (alsa_thread_microphone_handle_t*)microphone_context;
-
-   if (!alsa || !microphone)
-      return false;
-   /* Both params must be non-null */
-
-   if (!microphone->info.stream_info.can_pause)
-   {
-      RARCH_WARN("[ALSA]: Microphone \"%s\" cannot be paused\n", snd_pcm_name(microphone->info.pcm));
-      return true;
-   }
-
-   if (!alsa->is_paused)
-   { /* If the entire audio driver isn't paused... */
-      if (alsa_set_mic_enabled_internal(microphone->info.pcm, enabled))
-      {
-         // TODO: Do I need to synchronize microphone->is_paused?
-         microphone->is_paused = !enabled;
-         return true;
-      }
-      return false;
-   }
-
-   return true;
+   return snd_pcm_state(microphone->info.pcm) == SND_PCM_STATE_RUNNING;
 }
 
 static void alsa_thread_microphone_set_nonblock_state(void *driver_context, bool state)
@@ -436,12 +363,24 @@ static void alsa_thread_microphone_device_list_free(const void *driver_context, 
 
 static bool alsa_thread_microphone_start_mic(void *driver_context, void *microphone_context)
 {
-   return alsa_thread_microphone_set_mic_active(driver_context, microphone_context, true);
+   alsa_thread_microphone_handle_t *microphone = (alsa_thread_microphone_handle_t*)microphone_context;
+   (void)driver_context;
+
+   if (!microphone)
+      return false;
+
+   return alsa_start_pcm(microphone->info.pcm);
 }
 
 static bool alsa_thread_microphone_stop_mic(void *driver_context, void *microphone_context)
 {
-   return alsa_thread_microphone_set_mic_active(driver_context, microphone_context, true);
+   alsa_thread_microphone_handle_t *microphone = (alsa_thread_microphone_handle_t*)microphone_context;
+   (void)driver_context;
+
+   if (!microphone)
+      return false;
+
+   return alsa_stop_pcm(microphone->info.pcm);
 }
 
 static bool alsa_thread_microphone_mic_use_float(const void *driver_context, const void *microphone_context)
