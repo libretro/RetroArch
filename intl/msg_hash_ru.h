@@ -7070,6 +7070,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "Открывайте достижения в классических играх. Для дополнительной информации посетите 'https://retroachievements.org'."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "Данные для входа в учётную запись RetroAchievements. Посетите retroachievements.org для создания бесплатной учётной записи.\nПосле завершения регистрации введите имя пользователя и пароль в RetroArch."
+   )
 
 /* Settings > User > Accounts > RetroAchievements */
 
@@ -7344,6 +7348,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    "Каталог хранения внутриигровых сохранений. Если не задано, для создания сохранений будет использоваться рабочий каталог контента."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
+   "Помещать все файлы сохранений (*.srm) в данный каталог. Включает связанные файлы .bsv, .rt, .psrm и т.д. Может переопределяться отдельными опциями командной строки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
@@ -8671,6 +8679,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    "Автоматически применять изменения, внесённые в файлы шейдера."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
+   "Отслеживать изменения в файлах шейдера. После сохранения изменений шейдера в память, он будет автоматически перекомпилирован и применён к запущенному контенту."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,

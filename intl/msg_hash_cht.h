@@ -1969,7 +1969,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
-   "僅限無邊框全螢幕模式"
+   "僅限全螢幕獨占模式"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
@@ -2002,35 +2002,35 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   "用全螢幕模式執行"
+   "開啟全螢幕模式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "使用全螢幕模式執行, 可在執行時切換為視窗模式。"
+   "開啟時啟動和執行使用全螢幕模式, 可隨時切換為視窗模式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   "無邊框全螢幕模式"
+   "視窗全螢幕模式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   "開啟時防止全螢幕模式變更為無邊框視窗模式。"
+   "開啟時使用視窗全螢幕模式, 防止開啟全螢幕模式時變更螢幕解析度。\n關閉時使用全螢幕獨占模式, 使用自訂的寬度和高度切換螢幕解析度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   "全螢幕寬度"
+   "自訂獨占模式寬度"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   "設定全螢幕的顯示寬度, 未設定時套用「螢幕解析度」。"
+   "自訂全螢幕獨占模式的顯示寬度, 設定<0>時自動套用「螢幕解析度」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   "全螢幕高度"
+   "自訂獨占模式高度"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   "設定全螢幕的顯示高度, 未設定時套用「螢幕解析度」。"
+   "自訂全螢幕獨占模式的顯示高度, 設定<0>時自動套用「螢幕解析度」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
@@ -2097,7 +2097,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   "設定視窗顯示的寬度。"
+   "自訂視窗顯示的寬度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
@@ -2105,7 +2105,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   "設定視窗顯示的高度。"
+   "自訂視窗顯示的高度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
@@ -2132,7 +2132,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "顯示基本尺寸由核心登錄的大小和寬高比, 設定「寬高比」為<自訂>時, 套用自訂的寬度和高度。"
+   "核心登錄的寬高比為整數縮放基本大小, 設定「寬高比」為<自訂>時套用自訂的寬度和高度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
@@ -2176,7 +2176,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
-   "全螢幕"
+   "填滿螢幕"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -2367,7 +2367,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   "變更音效相關的設定。"
+   "變更音源輸出相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
@@ -2968,7 +2968,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "結束前確認"
+   "結束前再確認"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
@@ -4124,7 +4124,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   "設定前端日誌事件等級, 如果前端送出的事件等級, 低於設定時將被忽略。"
+   "設定前端日誌事件等級, 如果前端送出的事件等級, 低於此選項設定時將被忽略。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
@@ -4132,7 +4132,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
-   "設定核心日誌事件等級, 如果核心送出的事件等級, 低於設定時將被忽略。"
+   "設定核心日誌事件等級, 如果核心送出的事件等級, 低於前端的等級時將被忽略。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
@@ -9871,7 +9871,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
-   "設定配色, 設定<自訂>時可載入預設主題。"
+   "設定選單的顏色主題, 設定<自訂>時可自訂選單預設主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
@@ -9927,7 +9927,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "開啟時列表中[Y鍵=切換][選擇鍵=全螢幕]。"
+   "開啟時列表中顯示預覽縮圖, 按[開始鍵]縮圖全螢幕顯示, 按[Y鍵]可切換縮圖類型。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
