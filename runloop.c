@@ -3387,17 +3387,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
-      case RETRO_ENVIRONMENT_GET_MICROPHONE_ENABLED:
-         {
-            bool *microphone_enabled = (bool *)data;
-
-            if (microphone_enabled == NULL)
-               return false;
-            /* User didn't provide a pointer for a response, what can we do? */
-
-            *microphone_enabled = settings->bools.microphone_enable;
-            return true;
-         }
       case RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT:
          {
             struct retro_hw_render_context_negotiation_interface *iface =

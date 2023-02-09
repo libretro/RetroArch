@@ -1806,11 +1806,6 @@ enum retro_mod
                                             * Returns false if mic support is disabled
                                             */
 
-#define RETRO_ENVIRONMENT_GET_MICROPHONE_ENABLED (75 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* bool * --
-                                            * Returns true if the user has enabled the microphone,
-                                            * regardless of whether the current audio driver supports it.
-                                            */
 /* VFS functionality */
 
 /* File paths:
