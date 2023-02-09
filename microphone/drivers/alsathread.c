@@ -17,7 +17,8 @@
 #include <alsa/pcm.h>
 #include <asm-generic/errno.h>
 
-#include "audio/common/alsa.h" /* For some common functions/types */
+#include "audio/common/alsa.h"
+#include "audio/common/alsathread.h"
 #include "microphone/microphone_driver.h"
 #include "verbosity.h"
 #include "retro_assert.h"

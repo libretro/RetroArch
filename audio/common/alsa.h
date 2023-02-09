@@ -35,18 +35,6 @@ typedef struct alsa_stream_info {
    bool can_pause;
 } alsa_stream_info_t;
 
-typedef struct alsa_thread_info
-{
-   snd_pcm_t *pcm;
-   fifo_buffer_t *buffer;
-   sthread_t *worker_thread;
-   slock_t *fifo_lock;
-   scond_t *cond;
-   slock_t *cond_lock;
-   alsa_stream_info_t stream_info;
-   volatile bool thread_dead;
-} alsa_thread_info_t;
-
 int alsa_init_pcm(snd_pcm_t **pcm,
    const char* device,
    snd_pcm_stream_t stream,
@@ -61,11 +49,6 @@ void *alsa_device_list_new(void *data);
 struct string_list *alsa_device_list_type_new(const char* type);
 void alsa_device_list_free(void *data, void *array_list_data);
 
-void alsa_thread_free_info_members(alsa_thread_info_t *info);
-
-/**
- * Sets the state of the PCM stream without updating the mic state
- */
 bool alsa_start_pcm(snd_pcm_t *pcm);
 bool alsa_stop_pcm(snd_pcm_t *pcm);
 

@@ -16,18 +16,16 @@
 
 #include <stdlib.h>
 
-#include <lists/string_list.h>
-
 #include <alsa/asoundlib.h>
 
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
 #include <string/stdstring.h>
-#include <retro_assert.h>
 #include <asm-generic/errno.h>
 
 #include "../audio_driver.h"
 #include "../common/alsa.h" /* For some common functions/types */
+#include "../common/alsathread.h"
 #include "../../verbosity.h"
 
 typedef struct alsa_thread
@@ -96,34 +94,6 @@ end:
    slock_unlock(alsa->info.cond_lock);
    free(buf);
    RARCH_DBG("[ALSA] [playback thread %p]: Ending playback worker thread\n", thread_id);
-}
-
-void alsa_thread_free_info_members(alsa_thread_info_t *info)
-{
-   if (info)
-   {
-      if (info->worker_thread)
-      {
-         slock_lock(info->cond_lock);
-         info->thread_dead = true;
-         slock_unlock(info->cond_lock);
-         sthread_join(info->worker_thread);
-      }
-      if (info->buffer)
-         fifo_free(info->buffer);
-      if (info->cond)
-         scond_free(info->cond);
-      if (info->fifo_lock)
-         slock_free(info->fifo_lock);
-      if (info->cond_lock)
-         slock_free(info->cond_lock);
-      if (info->pcm)
-      {
-         alsa_free_pcm(info->pcm);
-      }
-   }
-   /* Do NOT free() info itself; it's embedded within another struct
-    * that will be freed. */
 }
 
 static bool alsa_thread_use_float(void *data)
