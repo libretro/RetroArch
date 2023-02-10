@@ -160,7 +160,6 @@ int setupCamera(ps3_input_t *ps3)
             ps3->camread.buffer = ps3->camInf.buffer;
             ps3->camread.version = 0x0100;
             ps3->cam_buf = (u8 *)(u64)ps3->camread.buffer;
-            ps3->camread.buffer);
             break;
          default:
             error = 1;
