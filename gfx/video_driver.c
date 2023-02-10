@@ -119,8 +119,12 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(HAVE_VITAGL) | defined(HAVE_VITAGLES)
    &vita_ctx,
 #endif
-#if !defined(__PSL1GHT__) && defined(__PS3__)
+#if defined(__PS3__)
+#if defined(__PSL1GHT__)
+   &gfx_ctx_psl1ght,
+#else
    &gfx_ctx_ps3,
+#endif
 #endif
 #if defined(HAVE_LIBNX) && defined(HAVE_OPENGL)
    &switch_ctx,
@@ -3164,6 +3168,8 @@ enum gfx_ctx_api video_context_driver_get_api(void)
          return GFX_CTX_VULKAN_API;
       else if (string_is_equal(video_ident, "metal"))
          return GFX_CTX_METAL_API;
+      else if (string_is_equal(video_ident, "rsx"))
+         return GFX_CTX_RSX_API;
 
       return GFX_CTX_NONE;
    }
