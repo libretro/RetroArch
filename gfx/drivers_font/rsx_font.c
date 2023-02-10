@@ -85,11 +85,13 @@ static void rsx_font_free(void *data,
 
    rsxClearSurface(font->rsx->context, GCM_CLEAR_Z);
    gcmSetWaitFlip(font->rsx->context);
+#if 0
+   /* TODO fix crash on loading core */
    if (font->texture.data)
       rsxFree(font->texture.data);
    if (font->vertices)
       rsxFree(font->vertices);
-
+#endif
    free(font);
 }
 
@@ -159,23 +161,20 @@ static void *rsx_font_init(void *data,
 
    font->atlas        = font->font_driver->get_atlas(font->font_data);
 
-   font->vpo          = font->rsx->vpo;
-   font->fpo          = font->rsx->fpo;
-   font->fp_ucode     = font->rsx->fp_ucode;
-   font->vp_ucode     = font->rsx->vp_ucode;
-   font->fp_offset    = font->rsx->fp_offset;
+   font->vpo          = font->rsx->vpo[VIDEO_SHADER_STOCK_BLEND];
+   font->fpo          = font->rsx->fpo[VIDEO_SHADER_STOCK_BLEND];
+   font->fp_ucode     = font->rsx->fp_ucode[VIDEO_SHADER_STOCK_BLEND];
+   font->vp_ucode     = font->rsx->vp_ucode[VIDEO_SHADER_STOCK_BLEND];
+   font->fp_offset    = font->rsx->fp_offset[VIDEO_SHADER_STOCK_BLEND];
 
-   font->proj_matrix  = font->rsx->proj_matrix;
-   font->pos_index    = font->rsx->pos_index;
-   font->uv_index     = font->rsx->uv_index;
-   font->col_index    = font->rsx->col_index;
-   font->tex_unit     = font->rsx->tex_unit;
+   font->proj_matrix  = font->rsx->proj_matrix[VIDEO_SHADER_STOCK_BLEND];
+   font->pos_index    = font->rsx->pos_index[VIDEO_SHADER_STOCK_BLEND];
+   font->uv_index     = font->rsx->uv_index[VIDEO_SHADER_STOCK_BLEND];
+   font->col_index    = font->rsx->col_index[VIDEO_SHADER_STOCK_BLEND];
+   font->tex_unit     = font->rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND];
 
-   font->vertices     = (rsx_vertex_t *)rsxMemalign(128, MAX_MSG_LEN_CHUNK*sizeof(rsx_vertex_t)*6);
-
-   rsxAddressToOffset(&font->vertices[0].x, &font->pos_offset);
-   rsxAddressToOffset(&font->vertices[0].u, &font->uv_offset);
-   rsxAddressToOffset(&font->vertices[0].r, &font->col_offset);
+   font->vertices     = (rsx_vertex_t *)rsxMemalign(128, sizeof(rsx_vertex_t) * RSX_MAX_FONT_VERTICES);
+   font->rsx->font_vert_idx = 0;
 
    font->tex_width    = font->atlas->width;
    font->tex_height   = font->atlas->height;
@@ -245,24 +244,37 @@ static void rsx_font_draw_vertices(rsx_font_t *font,
       font->atlas->dirty   = false;
    }
 
-   for (i = 0; i < coords->vertices; i++)
+   int end_vert_idx = font->rsx->font_vert_idx + coords->vertices;
+   if (end_vert_idx > RSX_MAX_FONT_VERTICES)
    {
-      font->vertices[i].x = *vertex++;
-      font->vertices[i].y = *vertex++;
-      font->vertices[i].z = 0.0f;
-      font->vertices[i].u = *tex_coord++;
-      font->vertices[i].v = *tex_coord++;
-      font->vertices[i].r = *color++;
-      font->vertices[i].g = *color++;
-      font->vertices[i].b = *color++;
-      font->vertices[i].a = *color++;
+      font->rsx->font_vert_idx = 0;
+      end_vert_idx = font->rsx->font_vert_idx + coords->vertices;
    }
+   rsx_vertex_t *vertices = &font->vertices[font->rsx->font_vert_idx];
+   for (i = font->rsx->font_vert_idx; i < end_vert_idx; i++)
+   {
+      vertices[i].x = *vertex++;
+      vertices[i].y = *vertex++;
+      vertices[i].u = *tex_coord++;
+      vertices[i].v = *tex_coord++;
+      vertices[i].r = *color++;
+      vertices[i].g = *color++;
+      vertices[i].b = *color++;
+      vertices[i].a = *color++;
+   }
+   rsxAddressToOffset(&vertices[font->rsx->font_vert_idx].x, &font->pos_offset);
+   rsxAddressToOffset(&vertices[font->rsx->font_vert_idx].u, &font->uv_offset);
+   rsxAddressToOffset(&vertices[font->rsx->font_vert_idx].r, &font->col_offset);
+   font->rsx->font_vert_idx = end_vert_idx;
 
-   rsxBindVertexArrayAttrib(font->rsx->context, font->pos_index->index, 0, font->pos_offset, sizeof(rsx_vertex_t), 3, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+   rsxBindVertexArrayAttrib(font->rsx->context, font->pos_index->index, 0, font->pos_offset, sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
    rsxBindVertexArrayAttrib(font->rsx->context, font->uv_index->index, 0, font->uv_offset, sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
    rsxBindVertexArrayAttrib(font->rsx->context, font->col_index->index, 0, font->col_offset, sizeof(rsx_vertex_t), 4, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
 
-   rsxSetVertexProgramParameter(font->rsx->context, font->vpo, font->proj_matrix, (float*)&font->rsx->mvp_no_rot);
+   rsxLoadVertexProgram(font->rsx->context, font->vpo, font->vp_ucode);
+   rsxSetVertexProgramParameter(font->rsx->context, font->vpo, font->proj_matrix, (float *)&font->rsx->mvp_no_rot);
+   rsxLoadFragmentProgramLocation(font->rsx->context, font->fpo, font->fp_offset, GCM_LOCATION_RSX);
+
    rsxClearSurface(font->rsx->context, GCM_CLEAR_Z);
    rsxDrawVertexArray(font->rsx->context, GCM_TYPE_TRIANGLES, 0, coords->vertices);
 }
@@ -397,12 +409,9 @@ static void rsx_font_setup_viewport(unsigned width, unsigned height,
 
   if (font->rsx)
   {
+     rsxSetBlendEnable(font->rsx->context, GCM_TRUE);
      rsxSetBlendFunc(font->rsx->context, GCM_SRC_ALPHA, GCM_ONE_MINUS_SRC_ALPHA, GCM_SRC_ALPHA, GCM_ONE_MINUS_SRC_ALPHA);
      rsxSetBlendEquation(font->rsx->context, GCM_FUNC_ADD, GCM_FUNC_ADD);
-     rsxSetBlendEnable(font->rsx->context, GCM_TRUE);
-
-     rsxLoadVertexProgram(font->rsx->context, font->vpo, font->vp_ucode);
-     rsxLoadFragmentProgramLocation(font->rsx->context, font->fpo, font->fp_offset, GCM_LOCATION_RSX);
 
      rsxLoadTexture(font->rsx->context, font->tex_unit->index, &font->texture.tex);
      rsxTextureControl(font->rsx->context, font->tex_unit->index, GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
@@ -503,10 +512,12 @@ static void rsx_font_render_msg(
 
       if (!font->block)
       {
-         rsxTextureControl(font->rsx->context, font->rsx->tex_unit->index, GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
+         /* restore viewport */
+         rsxTextureControl(font->rsx->context, font->tex_unit->index, GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
          rsxSetBlendEnable(font->rsx->context, GCM_FALSE);
          video_driver_set_viewport(width, height, false, true);
       }
+      font->rsx->font_vert_idx = 0;
    }
 }
 
@@ -533,10 +544,12 @@ static void rsx_font_flush_block(unsigned width, unsigned height,
 
    if (font->rsx)
    {
-      rsxTextureControl(font->rsx->context, font->rsx->tex_unit->index, GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
+      /* restore viewport */
+      rsxTextureControl(font->rsx->context, font->tex_unit->index, GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
       rsxSetBlendEnable(font->rsx->context, GCM_FALSE);
       video_driver_set_viewport(width, height, block->fullscreen, true);
    }
+   font->rsx->font_vert_idx = 0;
 }
 
 static void rsx_font_bind_block(void *data, void *userdata)
