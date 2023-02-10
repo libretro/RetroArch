@@ -93,6 +93,8 @@ bool microphone_driver_start(bool is_shutdown)
             RARCH_ERR("[Microphone]: Failed to initialize a previously pending microphone; microphone will not be used\n");
 
             microphone_driver_close_mic(microphone);
+            /* Not returning false because a mic failure shouldn't take down the driver;
+             * what if the player just unplugged their mic? */
          }
       }
       else
@@ -301,6 +303,7 @@ bool microphone_driver_init_internal(void *settings_data)
       mic_st->resampler_ident[0] = '\0';
 
    mic_st->resampler_quality = microphone_driver_get_resampler_quality(settings);
+   mic_st->source_ratio_original = 1.0f; // TODO: Figure out what this means and give it an actual value
 
    if (!retro_resampler_realloc(
             &mic_st->resampler_data,
@@ -514,130 +517,104 @@ static void microphone_driver_flush(
       int16_t *frames, size_t num_frames,
       bool is_slowmotion, bool is_fastmotion)
 {
-   // TODO: Get rid of some of these checks, microphone_driver_read does them
-   if (!mic_st || !mic_st->driver || !mic_st->driver_context)
-      /* If the driver state is invalid... */
+   struct resampler_data resampler_data;
+   unsigned sample_size = mic_driver_get_sample_size(microphone);
+   size_t bytes_to_read = MIN(mic_st->input_frames_length, num_frames * sample_size);
+   ssize_t bytes_read   = mic_st->driver->read(
+         mic_st->driver_context,
+         microphone->microphone_context,
+         mic_st->input_frames,
+         bytes_to_read);
+   /* First, get the most recent mic data */
+
+   if (bytes_read <= 0)
       return;
 
-   if (!(mic_st->flags & MICROPHONE_FLAG_ACTIVE))
-      /* If mic support isn't on... */
-      return;
+   resampler_data.input_frames = bytes_read / sample_size;
+   /* This is in frames, not samples or bytes;
+    * we're up-channeling the audio to stereo,
+    * so this number still applies. */
 
-   if (!microphone || !microphone->microphone_context)
-      /* If the mic isn't initialized... */
-      return;
+   resampler_data.output_frames = 0;
+   /* The resampler sets the value of output_frames */
 
-   if (!(microphone->flags & MICROPHONE_FLAG_ACTIVE)
-         || !(microphone->flags & MICROPHONE_FLAG_ENABLED)
-         || (microphone->flags & MICROPHONE_FLAG_PENDING)
-         || (microphone->flags & MICROPHONE_FLAG_SUSPENDED))
-      return;
+   /* First we need to format the input for the resampler. */
+   if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
+   {/* If this mic provides floating-point samples... */
 
-   if (mic_st &&                                   /* If the driver state is valid... */
-         (mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE) && /* ...and mic support is on... */
-         mic_st->driver &&
-       mic_st->driver_context &&                   /* ...and the mic driver is initialized... */
-         mic_st->input_frames &&                /* ...with scratch space... */
-         microphone &&
-         (microphone->flags & MICROPHONE_FLAG_ACTIVE) && /* ...and the mic itself is initialized... */
-         (microphone->flags & MICROPHONE_FLAG_ENABLED) &&                       /* ...and enabled... */
-         !(microphone->flags & MICROPHONE_FLAG_PENDING) &&
-         !(microphone->flags & MICROPHONE_FLAG_SUSPENDED) &&
-         microphone->microphone_context &&           /* ...and ready... */
-         microphone->sample_buffer &&
-         microphone->sample_buffer_length &&         /* ...with a non-empty sample buffer... */
-
-         mic_st->driver->read &&                     /* ...and valid function pointers... */
-         mic_st->driver->mic_alive &&
-         mic_st->driver->mic_alive(                  /* ...and it's running... */
-               mic_st->driver_context,
-               microphone->microphone_context))
-   {
-      struct resampler_data resampler_data;
-      unsigned sample_size = mic_driver_get_sample_size(microphone);
-      size_t bytes_to_read = MIN(mic_st->input_frames_length, num_frames * sample_size);
-      ssize_t bytes_read   = mic_st->driver->read(
-            mic_st->driver_context,
-            microphone->microphone_context,
-            mic_st->input_frames,
-            bytes_to_read);
-      /* First, get the most recent mic data */
-
-      if (bytes_read <= 0)
-         return;
-
-      resampler_data.input_frames = bytes_read / sample_size;
-      /* This is in frames, not samples or bytes;
-       * we're up-channeling the audio to stereo,
-       * so this number still applies. */
-
-      resampler_data.output_frames = 0;
-      /* The resampler sets the value of output_frames */
-
-      /* First we need to format the input for the resampler. */
-      if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
-      {/* If this mic provides floating-point samples... */
-
-         /* Samples are already in floating-point, so we just need to up-channel them. */
-         convert_to_dual_mono_float(mic_st->dual_mono_frames, mic_st->input_frames, resampler_data.input_frames);
-      }
-      else
-      {
-         /* Samples are 16-bit, so we need to convert them first. */
-         convert_s16_to_float(mic_st->converted_input_frames, mic_st->input_frames, resampler_data.input_frames, 1.0f);
-         convert_to_dual_mono_float(mic_st->dual_mono_frames, mic_st->converted_input_frames, resampler_data.input_frames);
-      }
-
-      /* Now we resample the mic data. */
-      resampler_data.data_in = mic_st->dual_mono_frames;
-      resampler_data.data_out = mic_st->resampled_frames;
-      mic_st->resampler->process(mic_st->resampler_data, &resampler_data);
-
-      /* Next, we convert the resampled data back to mono... */
-      convert_to_mono_float_left(mic_st->resampled_mono_frames, mic_st->resampled_frames, resampler_data.input_frames);
-      /* Why the left channel? No particular reason.
-       * Left and right channels are the same in this case anyway. */
-
-      /* Finally, we convert the audio back to 16-bit ints, as the mic interface requires. */
-      convert_float_to_s16(mic_st->final_frames, mic_st->resampled_mono_frames, resampler_data.input_frames);
-
-      memcpy(frames, mic_st->final_frames, resampler_data.input_frames * sizeof(int16_t));
+      /* Samples are already in floating-point, so we just need to up-channel them. */
+      convert_to_dual_mono_float(mic_st->dual_mono_frames, mic_st->input_frames, resampler_data.input_frames);
    }
-}
+   else
+   {
+      /* Samples are 16-bit, so we need to convert them first. */
+      convert_s16_to_float(mic_st->converted_input_frames, mic_st->input_frames, resampler_data.input_frames, 1.0f);
+      convert_to_dual_mono_float(mic_st->dual_mono_frames, mic_st->converted_input_frames, resampler_data.input_frames);
+   }
 
+   /* Now we resample the mic data. */
+   resampler_data.data_in  = mic_st->dual_mono_frames;
+   resampler_data.data_out = mic_st->resampled_frames;
+   resampler_data.ratio    = 1.0f; // TODO: Set the same way the audio driver does it
+   mic_st->resampler->process(mic_st->resampler_data, &resampler_data);
+
+   /* Next, we convert the resampled data back to mono... */
+   convert_to_mono_float_left(mic_st->resampled_mono_frames, mic_st->resampled_frames, resampler_data.input_frames);
+   /* Why the left channel? No particular reason.
+    * Left and right channels are the same in this case anyway. */
+
+   /* Finally, we convert the audio back to 16-bit ints, as the mic interface requires. */
+   convert_float_to_s16(mic_st->final_frames, mic_st->resampled_mono_frames, resampler_data.input_frames);
+
+   memcpy(frames, mic_st->final_frames, resampler_data.input_frames * sizeof(int16_t));
+
+}
 
 int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size_t num_frames)
 {
-   uint32_t runloop_flags;
+   uint32_t runloop_flags            = runloop_get_flags();
    size_t frames_remaining           = num_frames;
    microphone_driver_state_t *mic_st = &mic_driver_st;
+   const microphone_driver_t *driver = mic_st->driver;
+
+   if (!frames || !microphone)
+      /* If the provided arguments aren't valid... */
+      return -1;
 
    if (!(mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE)
-       || !frames
-       || !microphone
-       || !(microphone->flags & MICROPHONE_FLAG_ACTIVE)
-         )
-   { /* If the driver, microphone, or provided arguments aren't valid... */
+         || !(microphone->flags & MICROPHONE_FLAG_ACTIVE))
+      /* If the microphone or driver aren't active... */
       return -1;
-   }
+
+   if (!driver || !driver->read || !driver->mic_alive)
+      /* If the driver is invalid or doesn't have the functions it needs... */
+      return -1;
 
    if (num_frames == 0)
       /* If the core didn't actually ask for any frames... */
       return 0;
 
    if ((microphone->flags & MICROPHONE_FLAG_PENDING)
-         || (microphone->flags & MICROPHONE_FLAG_SUSPENDED)
-         || !(microphone->flags & MICROPHONE_FLAG_ENABLED)
+      || (microphone->flags & MICROPHONE_FLAG_SUSPENDED)
+      || !(microphone->flags & MICROPHONE_FLAG_ENABLED)
       )
    { /* If the microphone is pending, suspended, or disabled... */
       memset(frames, 0, num_frames * sizeof(*frames));
       return (int)num_frames;
-      /* ...then copy silence to the provided buffer. Not an error */
+      /* ...then copy silence to the provided buffer. Not an error,
+       * because the user might have requested a microphone
+       * before the driver could provide it. */
    }
 
-   runloop_flags = runloop_get_flags();
+   if (!mic_st->driver_context || !microphone->microphone_context)
+      /* If the driver or microphone's state haven't been allocated... */
+      return -1;
 
-   // TODO: Check if the mic is alive here
+   if (!driver->mic_alive(mic_st->driver_context, microphone->microphone_context))
+   { /* If the mic isn't active like it should be at this point... */
+      RARCH_ERR("[Microphone]: Mic frontend has the mic enabled, but the backend has it disabled.\n");
+      return -1;
+   }
 
    do
    {
