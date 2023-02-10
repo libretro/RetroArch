@@ -1,0 +1,15 @@
+void main
+(
+  float2 texcoord,
+  float2 position,
+  float4 color,
+  uniform float4x4 modelViewProj,
+  out float4 oPosition : POSITION,
+  out float2 oTexCoord : TEXCOORD0,
+  out float4 oColor : COLOR
+)
+{
+  oPosition = mul(float4(position, 0.0, 1.0), modelViewProj);
+  oTexCoord = texcoord;
+  oColor = color;
+}
