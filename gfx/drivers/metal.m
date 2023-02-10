@@ -174,9 +174,7 @@
 
       [apple_platform setVideoMode:mode];
 
-#ifdef HAVE_COCOATOUCH
       [self mtkView:view drawableSizeWillChange:CGSizeMake(mode.width, mode.height)];
-#endif
 
       *input         = NULL;
       *inputData     = NULL;
