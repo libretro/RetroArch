@@ -958,7 +958,9 @@ ifeq ($(HAVE_NEON),1)
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
-       $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o
+       $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o \
+       $(LIBRETRO_COMM_DIR)/audio/conversion/mono_to_stereo_float.o \
+       $(LIBRETRO_COMM_DIR)/audio/conversion/stereo_to_mono_float.o \
 
 ifeq ($(HAVE_RWAV), 1)
 DEFINES += -DHAVE_RWAV
