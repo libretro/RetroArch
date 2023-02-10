@@ -66,7 +66,7 @@ unsigned mic_driver_get_sample_size(const retro_microphone_t *microphone)
    return (microphone->flags & MICROPHONE_FLAG_USE_FLOAT) ? sizeof(float) : sizeof(int16_t);
 }
 
-static void mic_driver_open_mic_internal(retro_microphone_t* microphone);
+static bool mic_driver_open_mic_internal(retro_microphone_t* microphone);
 bool microphone_driver_start(bool is_shutdown)
 {
    microphone_driver_state_t *mic_st = &mic_driver_st;
@@ -81,9 +81,7 @@ bool microphone_driver_start(bool is_shutdown)
          /* The microphone context shouldn't have been created yet */
 
          /* Now that the driver and driver context are ready, let's initialize the mic */
-         mic_driver_open_mic_internal(microphone);
-
-         if (microphone->microphone_context)
+         if (mic_driver_open_mic_internal(microphone))
          {
             /* open_mic_internal will start the microphone if it's enabled */
             RARCH_DBG("[Microphone]: Initialized a previously-pending microphone\n");
@@ -283,9 +281,8 @@ error:
 /**
  *
  * @param microphone Handle to the microphone to init with a context
- * Check the value of microphone->microphone_context to see if this function succeeded
  */
-static void mic_driver_open_mic_internal(retro_microphone_t* microphone)
+static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
 {
    microphone_driver_state_t *mic_st     = &mic_driver_st;
    settings_t *settings                  = config_get_ptr();
@@ -300,7 +297,7 @@ static void mic_driver_open_mic_internal(retro_microphone_t* microphone)
    size_t insamples_max                  = AUDIO_CHUNK_SIZE_NONBLOCKING * 1 * AUDIO_MAX_RATIO * slowmotion_ratio;
 
    if (!microphone || !mic_driver || !(mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE))
-      return;
+      return false;
 
    microphone->sample_buffer_length = insamples_max * sizeof(int16_t);
    microphone->sample_buffer        =
@@ -337,10 +334,11 @@ static void mic_driver_open_mic_internal(retro_microphone_t* microphone)
 
    microphone->flags &= ~MICROPHONE_FLAG_PENDING;
    RARCH_LOG("[Microphone]: Initialized microphone\n");
-   return;
+   return true;
 error:
    mic_driver_microphone_handle_free(microphone);
    RARCH_ERR("[Microphone]: Driver attempted to initialize the microphone but failed\n");
+   return false;
 }
 
 void microphone_driver_close_mic(retro_microphone_t *microphone)
@@ -628,9 +626,7 @@ retro_microphone_t *microphone_driver_open_mic(void)
 
    if (driver_context)
    { /* If the microphone driver is ready to open a microphone... */
-      mic_driver_open_mic_internal(&mic_st->microphone);
-
-      if (mic_st->microphone.microphone_context) /* If the microphone was successfully initialized... */
+      if (mic_driver_open_mic_internal(&mic_st->microphone)) /* If the microphone was successfully initialized... */
          RARCH_LOG("[Microphone]: Opened the requested microphone successfully\n");
       else
          goto error;
