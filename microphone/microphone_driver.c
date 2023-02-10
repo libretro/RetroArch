@@ -618,10 +618,7 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
 
    do
    {
-      size_t frames_to_read =
-            (frames_remaining > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1)) ?
-            (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1) : frames_remaining;
-
+      size_t frames_to_read = MIN(AUDIO_CHUNK_SIZE_NONBLOCKING >> 1, frames_remaining);
       if (!(runloop_flags & RUNLOOP_FLAG_PAUSED)
             && (mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE)
             && mic_st->input_frames)
