@@ -24,6 +24,8 @@
 #include "audio/conversion/float_to_s16.h"
 #include "list_special.h"
 #include "retro_assert.h"
+#include "string/stdstring.h"
+#include "audio/conversion/dual_mono.h"
 
 static microphone_driver_state_t mic_driver_st;
 
@@ -220,13 +222,21 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone)
    /* Do NOT free the microphone handle itself! It's allocated statically! */
 }
 
+static enum resampler_quality microphone_driver_get_resampler_quality(
+      settings_t *settings)
+{
+   if (settings)
+      return (enum resampler_quality)settings->uints.audio_resampler_quality;
+   return RESAMPLER_QUALITY_DONTCARE;
+}
+
 bool microphone_driver_init_internal(void *settings_data)
 {
    settings_t *settings   = (settings_t*)settings_data;
    microphone_driver_state_t *mic_st = &mic_driver_st;
    float slowmotion_ratio = settings->floats.slowmotion_ratio;
    bool verbosity_enabled = verbosity_is_enabled();
-   size_t insamples_max   = AUDIO_CHUNK_SIZE_NONBLOCKING * 1 * AUDIO_MAX_RATIO * slowmotion_ratio;
+   size_t max_frames   = AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO * slowmotion_ratio;
 
    if (!settings->bools.microphone_enable)
    { /* If the user has mic support turned off... */
@@ -245,14 +255,35 @@ bool microphone_driver_init_internal(void *settings_data)
       goto error;
    }
 
-   mic_st->input_samples_conv_buf_length = insamples_max;
-   mic_st->input_samples_conv_buf        = (int16_t*)memalign_alloc(64, mic_driver_st.input_samples_conv_buf_length);
-   if (!mic_st->input_samples_conv_buf)
+   mic_st->input_frames_length = max_frames * sizeof(float);
+   mic_st->input_frames = (float*)memalign_alloc(64, mic_st->input_frames_length);
+   if (!mic_st->input_frames)
       goto error;
 
-   mic_st->input_samples_buf_length = insamples_max * sizeof(float);
-   mic_st->input_samples_buf = (float*)memalign_alloc(64, mic_driver_st.input_samples_buf_length);
-   if (!mic_st->input_samples_buf)
+   mic_st->converted_input_frames_length = max_frames * sizeof(float);
+   mic_st->converted_input_frames = (float*)memalign_alloc(64, mic_st->converted_input_frames_length);
+   if (!mic_st->converted_input_frames)
+      goto error;
+
+   /* Need room for dual-mono frames */
+   mic_st->dual_mono_frames_length = max_frames * sizeof(float) * 2;
+   mic_st->dual_mono_frames = (float*)memalign_alloc(64, mic_st->dual_mono_frames_length);
+   if (!mic_st->dual_mono_frames)
+      goto error;
+
+   mic_st->resampled_frames_length = max_frames * sizeof(float) * 2;
+   mic_st->resampled_frames = (float*) memalign_alloc(64, mic_st->resampled_frames_length);
+   if (!mic_st->resampled_frames)
+      goto error;
+
+   mic_st->resampled_mono_frames_length = max_frames * sizeof(float);
+   mic_st->resampled_mono_frames = (float*) memalign_alloc(64, mic_st->resampled_mono_frames_length);
+   if (!mic_st->resampled_mono_frames)
+      goto error;
+
+   mic_st->final_frames_length = max_frames * sizeof(int16_t);
+   mic_st->final_frames = (int16_t*) memalign_alloc(64, mic_st->final_frames_length);
+   if (!mic_st->final_frames)
       goto error;
 
    if (!mic_st->driver || !mic_st->driver->init)
@@ -261,6 +292,26 @@ bool microphone_driver_init_internal(void *settings_data)
    mic_st->driver_context = mic_st->driver->init();
    if (!mic_st->driver_context)
       goto error;
+
+   if (!string_is_empty(settings->arrays.audio_resampler))
+      strlcpy(mic_st->resampler_ident,
+            settings->arrays.audio_resampler,
+            sizeof(mic_st->resampler_ident));
+   else
+      mic_st->resampler_ident[0] = '\0';
+
+   mic_st->resampler_quality = microphone_driver_get_resampler_quality(settings);
+
+   if (!retro_resampler_realloc(
+            &mic_st->resampler_data,
+            &mic_st->resampler,
+            mic_st->resampler_ident,
+            mic_st->resampler_quality,
+            mic_st->source_ratio_original))
+   {
+      RARCH_ERR("[Microphone]: Failed to initialize resampler \"%s\".\n", mic_st->resampler_ident);
+      goto error;
+   }
 
    RARCH_LOG("[Microphone]: Initialized microphone driver\n");
 
@@ -463,11 +514,32 @@ static void microphone_driver_flush(
       int16_t *frames, size_t num_frames,
       bool is_slowmotion, bool is_fastmotion)
 {
+   // TODO: Get rid of some of these checks, microphone_driver_read does them
+   if (!mic_st || !mic_st->driver || !mic_st->driver_context)
+      /* If the driver state is invalid... */
+      return;
+
+   if (!(mic_st->flags & MICROPHONE_FLAG_ACTIVE))
+      /* If mic support isn't on... */
+      return;
+
+   if (!microphone || !microphone->microphone_context)
+      /* If the mic isn't initialized... */
+      return;
+
+   if (!(microphone->flags & MICROPHONE_FLAG_ACTIVE)
+         || !(microphone->flags & MICROPHONE_FLAG_ENABLED)
+         || (microphone->flags & MICROPHONE_FLAG_PENDING)
+         || (microphone->flags & MICROPHONE_FLAG_SUSPENDED))
+      return;
+
+
+   if (microphone->flags & MICROPHONE_FLAG_PENDING)
    if (mic_st &&                                   /* If the driver state is valid... */
          (mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE) && /* ...and mic support is on... */
          mic_st->driver &&
-         mic_st->driver_context &&                   /* ...and the mic driver is initialized... */
-         mic_st->input_samples_buf &&                /* ...with scratch space... */
+       mic_st->driver_context &&                   /* ...and the mic driver is initialized... */
+         mic_st->input_frames &&                /* ...with scratch space... */
          microphone &&
          (microphone->flags & MICROPHONE_FLAG_ACTIVE) && /* ...and the mic itself is initialized... */
          (microphone->flags & MICROPHONE_FLAG_ENABLED) &&                       /* ...and enabled... */
@@ -483,31 +555,55 @@ static void microphone_driver_flush(
                mic_st->driver_context,
                microphone->microphone_context))
    {
-      void *buffer_source  = NULL;
+      struct resampler_data resampler_data;
       unsigned sample_size = mic_driver_get_sample_size(microphone);
-      size_t bytes_to_read = MIN(mic_st->input_samples_buf_length, num_frames * sample_size);
+      size_t bytes_to_read = MIN(mic_st->input_frames_length, num_frames * sample_size);
       ssize_t bytes_read   = mic_st->driver->read(
             mic_st->driver_context,
             microphone->microphone_context,
-            mic_st->input_samples_buf,
+            mic_st->input_frames,
             bytes_to_read);
       /* First, get the most recent mic data */
 
       if (bytes_read <= 0)
          return;
 
+      resampler_data.input_frames = bytes_read / sample_size;
+      /* This is in frames, not samples or bytes;
+       * we're up-channeling the audio to stereo,
+       * so this number still applies. */
 
+      resampler_data.output_frames = 0;
+      /* The resampler sets the value of output_frames */
+
+      /* First we need to format the input for the resampler. */
       if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
-      {
-         convert_float_to_s16(mic_st->input_samples_conv_buf, mic_st->input_samples_buf, bytes_read / sample_size);
-         buffer_source = mic_st->input_samples_conv_buf;
+      {/* If this mic provides floating-point samples... */
+
+         /* Samples are already in floating-point, so we just need to up-channel them. */
+         convert_to_dual_mono_float(mic_st->dual_mono_frames, mic_st->input_frames, resampler_data.input_frames);
       }
       else
       {
-         buffer_source = mic_st->input_samples_buf;
+         /* Samples are 16-bit, so we need to convert them first. */
+         convert_s16_to_float(mic_st->converted_input_frames, mic_st->input_frames, resampler_data.input_frames, 1.0f);
+         convert_to_dual_mono_float(mic_st->dual_mono_frames, mic_st->converted_input_frames, resampler_data.input_frames);
       }
 
-      memcpy(frames, buffer_source, num_frames * sizeof(int16_t));
+      /* Now we resample the mic data. */
+      resampler_data.data_in = mic_st->dual_mono_frames;
+      resampler_data.data_out = mic_st->resampled_frames;
+      mic_st->resampler->process(mic_st->resampler_data, &resampler_data);
+
+      /* Next, we convert the resampled data back to mono... */
+      convert_to_mono_float_left(mic_st->resampled_mono_frames, mic_st->resampled_frames, resampler_data.input_frames);
+      /* Why the left channel? No particular reason.
+       * Left and right channels are the same in this case anyway. */
+
+      /* Finally, we convert the audio back to 16-bit ints, as the mic interface requires. */
+      convert_float_to_s16(mic_st->final_frames, mic_st->resampled_mono_frames, resampler_data.input_frames);
+
+      memcpy(frames, mic_st->final_frames, resampler_data.input_frames * sizeof(int16_t));
    }
 }
 
@@ -553,7 +649,7 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
 
       if (!(runloop_flags & RUNLOOP_FLAG_PAUSED)
             && (mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE)
-            && mic_st->input_samples_buf)
+            && mic_st->input_frames)
          /* If the game is running, the audio driver and mic are running,
           * and the input sample buffer is valid... */
          microphone_driver_flush(mic_st,
@@ -686,14 +782,45 @@ bool microphone_driver_deinit(void)
       mic_st->driver_context = NULL;
    }
 
-   if (mic_st->input_samples_conv_buf)
-      memalign_free(mic_st->input_samples_conv_buf);
-   mic_st->input_samples_conv_buf = NULL;
+   if (mic_st->input_frames)
+      memalign_free(mic_st->input_frames);
+   mic_st->input_frames = NULL;
+   mic_st->input_frames_length = 0;
 
-   if (mic_st->input_samples_buf)
-      memalign_free(mic_st->input_samples_buf);
-   mic_st->input_samples_buf = NULL;
-   mic_st->flags &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
+   if (mic_st->converted_input_frames)
+      memalign_free(mic_st->converted_input_frames);
+   mic_st->converted_input_frames = NULL;
+   mic_st->converted_input_frames_length = 0;
+
+   if (mic_st->dual_mono_frames)
+      memalign_free(mic_st->dual_mono_frames);
+   mic_st->dual_mono_frames = NULL;
+   mic_st->dual_mono_frames_length = 0;
+
+   if (mic_st->resampled_frames)
+      memalign_free(mic_st->resampled_frames);
+   mic_st->resampled_frames = NULL;
+   mic_st->resampled_frames_length = 0;
+
+   if (mic_st->resampled_mono_frames)
+      memalign_free(mic_st->resampled_mono_frames);
+   mic_st->resampled_mono_frames = NULL;
+   mic_st->resampled_mono_frames_length = 0;
+
+   if (mic_st->final_frames)
+      memalign_free(mic_st->final_frames);
+   mic_st->final_frames = NULL;
+   mic_st->final_frames_length = 0;
+
+   if (mic_st->resampler && mic_st->resampler_data)
+      mic_st->resampler->free(mic_st->resampler_data);
+
+   mic_st->resampler          = NULL;
+   mic_st->resampler_data     = NULL;
+   mic_st->resampler_quality  = RESAMPLER_QUALITY_DONTCARE;
+   mic_st->flags             &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
+
+   memset(mic_st->resampler_ident, '\0', sizeof(mic_st->resampler_ident));
 
    return true;
 }

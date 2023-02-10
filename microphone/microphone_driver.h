@@ -21,6 +21,7 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 #include "audio/audio_defines.h"
+#include "audio/audio_resampler.h"
 
 #define MAX_SUPPORTED_MICROPHONES 8
 #define MICROPHONE_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
@@ -377,28 +378,87 @@ typedef struct microphone_driver
    bool (*mic_use_float)(const void *driver_context, const void *microphone_context);
 } microphone_driver_t;
 
-typedef struct
+typedef struct microphone_driver_state
 {
-   struct string_list *devices_list;
+   /**
+    * The buffer that receives samples from the microphone backend,
+    * before they're processed.
+    */
+   void *input_frames;
 
    /**
-    * A scratch buffer for audio input to be received.
+    * The length of \c input_frames in bytes.
     */
-   void  *input_samples_buf;
-   size_t input_samples_buf_length;
+   size_t input_frames_length;
 
    /**
-    * A scratch buffer for processed audio output to be converted to 16-bit,
-    * so that it can be sent to the core.
+    * The buffer that receives samples that have been
+    * converted to floating-point format, if necessary.
     */
-   int16_t *input_samples_conv_buf;
-   size_t input_samples_conv_buf_length;
+   float *converted_input_frames;
+
+   /**
+    * The length of \c converted_input_frames in bytes.
+    */
+   size_t converted_input_frames_length;
+
+   /**
+    * The buffer that stores microphone samples
+    * after they've been converted to floating-point format
+    * and up-channeled to dual-mono.
+    */
+   float *dual_mono_frames;
+
+   /**
+    * The length of \c dual_mono_frames in bytes.
+    */
+   size_t dual_mono_frames_length;
+
+   /**
+    * The buffer that stores microphone samples
+    * after they've been converted to float,
+    * up-channeled to dual-mono,
+    * and resampled.
+    */
+   float *resampled_frames;
+
+   /**
+    * The length of \c resampled_frames in bytes.
+    */
+   size_t resampled_frames_length;
+
+
+   /**
+    * The buffer that stores microphone samples
+    * after they've been resampled
+    * and converted to mono.
+    */
+   float *resampled_mono_frames;
+
+   /**
+    * The length of \c resampled_mono_frames in bytes.
+    */
+   size_t resampled_mono_frames_length;
+
+   /**
+    * The buffer that contains the microphone input
+    * after it's been totally processed and converted.
+    * The contents of this buffer will be provided to the core.
+    */
+   int16_t *final_frames;
+
+   /**
+    * The length of \c final_frames in bytes.
+    */
+   size_t final_frames_length;
 
    /**
     * The current microphone driver.
     * Will be a pointer to one of the elements of \c microphone_drivers.
     */
    const microphone_driver_t *driver;
+
+   struct string_list *devices_list;
 
    /**
     * Opaque handle to the driver-specific context.
@@ -414,6 +474,17 @@ typedef struct
    retro_microphone_t microphone;
 
    enum microphone_driver_state_flags flags;
+
+   enum resampler_quality resampler_quality;
+
+   char resampler_ident[64];
+
+   const retro_resampler_t *resampler;
+
+   void *resampler_data;
+
+   double source_ratio_original;
+   double source_ratio_current;
 } microphone_driver_state_t;
 
 /**
