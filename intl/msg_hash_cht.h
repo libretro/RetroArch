@@ -61,7 +61,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "目前執行遊戲的相關設定。"
+   "目前執行項目的相關設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
@@ -208,6 +208,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "結束復古電玩應用程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "結束復古電玩。\n應用程式強制關閉或立即終止時, 將無法儲存變更的設定檔。\n類Unix的作業系統, 可使用中斷訊號和終止訊號正確的結束。"
    )
 
 /* Main Menu > Load Core */
@@ -2006,7 +2010,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "開啟時啟動和執行使用全螢幕模式, 可隨時切換為視窗模式。"
+   "開啟時使用全螢幕模式, 可隨時關閉切換為視窗模式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
@@ -2288,7 +2292,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "設定垂直同步切換的除數, 顯示器更新率依除數降低, 設定<自動>時自動與幀率同步。\n例如: 在60FPS螢幕上執行30FPS遊戲, 或在120FPS螢幕上執行60FPS遊戲。"
+   "設定垂直同步切換的除數, 顯示器更新率依除數降低, 設定<自動>時自動與幀率同步。\n例如: 在60Hz螢幕上執行30FPS遊戲, 或在120Hz螢幕上執行60FPS遊戲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
@@ -2296,7 +2300,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
-   "自適應垂直同步"
+   "智能垂直同步"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
@@ -2308,7 +2312,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "增加畫面停頓風險減少延遲, 影像出現之後與核心處理影格之前加入毫秒的延遲。"
+   "增加畫面停頓減少按鍵輸入延遲, 影像出現後與核心處理影格前加入毫秒的延遲。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
+   "影像出現後與核心處理影格前加入毫秒的延遲, 增加畫面停頓為代價減少按鍵輸入延遲。\n最大值: %d 毫秒。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2336,7 +2344,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   "強制同步中央處理器和圖形處理器, 以效能為代價減少延遲。"
+   "強制同步中央處理器和圖形處理器, 以效能為代價減少按鍵輸入延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
@@ -2344,7 +2352,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   "開啟「強制圖形處理器同步」時顯示, 設定中央處理器快於圖形處理器的執行幀數。"
+   "開啟「強制圖形處理器同步」時, 設定中央處理器提前圖形處理器的執行幀數。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
+   "開啟「強制圖形處理器同步」時, 設定中央處理器提前圖形處理器的執行幀數。\n最大幀數: 3。\n0 = 與圖形處理器同步。\n1 = 提前執行1幀。\n 2 = 提前執行..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
@@ -2732,11 +2744,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-   "設定應用程式進行輸入輪詢的方式, 設定為<較早>或<稍晚>可減少延遲, 取決於裝置的效能。"
+   "設定應用程式進行輸入輪詢的方式, 設定為<較早>或<稍晚>可減少按鍵輸入延遲, 取決於裝置的效能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
-   "設定應用程式進行輸入輪詢的方式。\n較早 - 處理幀之前執行。\n正常 - 接收輸入時執行。\n稍晚 - 處理幀之後執行。\n依據裝置的效能, 設定為<較早>或<稍晚>可減少延遲。\n進行連線遊戲時此選項設定將被忽略。"
+   "設定應用程式進行輸入輪詢的方式。\n較早 - 處理影格前執行。\n正常 - 接收輸入時執行。\n稍晚 - 處理影格後執行。\n依據裝置的效能, 設定為<較早>或<稍晚>可減少按鍵輸入延遲。\n進行連線遊戲時此選項設定將被忽略。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -2788,19 +2800,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
-   "自動滑鼠鎖定"
+   "自動鎖定滑鼠"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
-   "啟動應用程式時, 限制滑鼠可移動位置在應用程式視窗中。"
+   "開啟時滑鼠游標可移動範圍僅限視窗內, 鎖定後游標可準確的移動和點擊。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
-   "自動鍵盤和滑鼠鎖定"
+   "自動鎖定鍵盤和滑鼠"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   "開啟時禁用快捷鍵, 鍵盤輸入只傳送到執行的核心, 並將滑鼠鎖定在視窗內, 設定<偵測>核心登錄支援鍵盤時開啟。"
+   "開啟時禁用快捷鍵, 鍵盤輸入只傳送到執行的核心, 並鎖定滑鼠游標在視窗內, 設定<偵測>僅限核心登錄支援鍵盤時開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
@@ -3340,19 +3352,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "滑鼠鎖定 (開關)"
+   "鎖定滑鼠 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "將滑鼠鎖定在應用程式視窗的開關。"
+   "鎖定滑鼠游標在視窗的開關, 開啟時滑鼠游標可移動範圍僅限視窗內, 鎖定後游標可準確的移動和點擊。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
-   "鍵盤和滑鼠鎖定 (開關)"
+   "鎖定鍵盤和滑鼠 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
-   "將鍵盤和滑鼠鎖定的開關, 開啟時禁用快捷鍵, 鍵盤輸入只傳送到執行中的核心, 並將滑鼠鎖定在視窗內。"
+   "將鍵盤和滑鼠鎖定的開關, 開啟時禁用快捷鍵, 鍵盤輸入只傳送到執行的核心, 並鎖定滑鼠游標在視窗內。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -5271,7 +5283,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_UI_COMPANION_START_ON_BOOT,
-   "啟動時開啟桌面選單的進階設定選項。\n此選項關閉時「啟動時開啟桌面選單」選項失去作用。"
+   "「啟動時開啟桌面選單」的進階設定。\n此選項關閉時「啟動時開啟桌面選單」選項將失效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
@@ -9037,7 +9049,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
-   "沒有可用的我的最愛項目。"
+   "沒有項目加入到我的最愛。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
@@ -9552,11 +9564,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
-   "鎖定"
+   "未解鎖"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
-   "解鎖"
+   "已解鎖"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE,
@@ -11659,7 +11671,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "強制顯示驅動程式, 使用特定的緩衝模式。"
+   "設定顯示驅動程式, 使用特定的緩衝模式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "交換鏈結圖像的最大數量。\n用於設定顯示驅動程式使用的影像緩衝模式。\n1 = 單緩衝區。\n2 = 雙緩衝區。\n3 = 三重緩衝。\n設定正確的緩衝模式會對延遲產生很大影響。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
@@ -11667,15 +11683,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   "強制同步中央處理器和圖形處理器, 以效能為代價減少延遲。"
+   "設定影像的最大延遲幀數, 以影像延遲幀數為代價減少按鍵輸入延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   "最大影格延遲"
+   "最大延遲幀數"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
-   "強制顯示驅動程式, 使用特定的緩衝模式。"
+   "設定影像的最大延遲幀數。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
@@ -12972,11 +12988,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_FOCUS_ON,
-   "開啟鍵盤和滑鼠鎖定。"
+   "已開啟鎖定鍵盤和滑鼠。"
    )
 MSG_HASH(
    MSG_GAME_FOCUS_OFF,
-   "關閉鍵盤和滑鼠鎖定。"
+   "已關閉鎖定鍵盤和滑鼠。"
    )
 MSG_HASH(
    MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
