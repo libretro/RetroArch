@@ -65,7 +65,7 @@
 #endif
 
 #if defined(PSP) && defined(HAVE_KERNEL_PRX)
-#include "../../bootstrap/psp1/kernel_functions.h"
+#include "../../bootstrap/psp1/kernel_functions/kernel_functions.h"
 #endif
 
 #if defined(HAVE_VITAGLES)
