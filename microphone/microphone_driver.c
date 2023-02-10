@@ -345,8 +345,7 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
    unsigned runloop_audio_latency        = runloop_state_get_ptr()->audio_latency;
    unsigned setting_audio_latency        = settings->uints.microphone_latency;
    unsigned actual_sample_rate           = 0;
-   unsigned audio_latency                = (runloop_audio_latency > setting_audio_latency) ?
-                                           runloop_audio_latency : setting_audio_latency;
+   unsigned audio_latency                = MAX(runloop_audio_latency, setting_audio_latency);
    float slowmotion_ratio                = settings->floats.slowmotion_ratio;
    size_t insamples_max                  = AUDIO_CHUNK_SIZE_NONBLOCKING * 1 * AUDIO_MAX_RATIO * slowmotion_ratio;
 
