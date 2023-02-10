@@ -1803,7 +1803,7 @@ enum retro_mod
                                             * all function pointers will be non-NULL.
                                             * Otherwise, all function pointers will be NULL.
                                             *
-                                            * Returns false if mic support is disabled
+                                            * Returns false if mic support is disabled.
                                             */
 
 /* VFS functionality */
@@ -3840,9 +3840,13 @@ typedef struct retro_microphone retro_microphone_t;
  *
  * This should only be called from the main thread.
  *
- * @returns \c NULL if a microphone couldn't be initialized.
+ * @returns Pointer to the newly-opened microphone,
+ * or \c NULL if one couldn't be opened.
  * This likely means that no microphone is plugged in and recognized,
  * or the maximum number of supported microphones has been reached.
+ *
+ * @note Microphones are \em inactive by default;
+ * to begin recording, call set_microphone_state(new_handle, true).
  */
 typedef retro_microphone_t *(RETRO_CALLCONV *retro_init_microphone_t)(void);
 
