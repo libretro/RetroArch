@@ -127,7 +127,7 @@ bool microphone_driver_stop(void)
    }
    /* If the mic is pending, then we don't need to do anything. */
 
-   RARCH_DBG("[Audio]: Stopped microphone driver \"%s\"\n", mic_st->driver->ident);
+   RARCH_DBG("[Microphone]: Stopped microphone driver \"%s\"\n", mic_st->driver->ident);
 
    return result;
 }
