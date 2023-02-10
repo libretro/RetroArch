@@ -533,8 +533,6 @@ static void microphone_driver_flush(
          || (microphone->flags & MICROPHONE_FLAG_SUSPENDED))
       return;
 
-
-   if (microphone->flags & MICROPHONE_FLAG_PENDING)
    if (mic_st &&                                   /* If the driver state is valid... */
          (mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE) && /* ...and mic support is on... */
          mic_st->driver &&
