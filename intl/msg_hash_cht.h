@@ -1095,7 +1095,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-   "確認"
+   "確定"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
@@ -1521,6 +1521,10 @@ MSG_HASH(
    "Switch驅動程式。\n支援GLSL格式的著色器。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   "OpenVG驅動程式。\n使用OpenVG硬體加速二維向量圖形API。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
    "圖形裝置介面(GDI)驅動程式。\n使用Windows原始圖形介面, 不推薦使用。"
    )
@@ -1575,6 +1579,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    "設定音訊重新取樣器使用的方式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
+   "正弦波處理。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   "餘弦波處理。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
+   "最近重新取樣處理。\n此重新取樣器忽略品質的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
@@ -1740,6 +1756,10 @@ MSG_HASH(
    "在幀之間插入全黑幀, 用於消除高更新率螢幕的殘影。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "在幀之間插入全黑幀, 用於消除使用120Hz的顯示器, 顯示60Hz內容時產生的殘影。\n依據此選項設定幀數, 調整「垂直同步切換間隔」設定, 以達到準確的動態速率控制。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "圖形處理器截圖"
    )
@@ -1810,6 +1830,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    "套用中央處理器架構的影像濾鏡, 套用時可能影響效能, 部分濾鏡有限制色彩深度(16位元或32位元)。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
+   "使用中央處理器架構的影像濾鏡, 依據套用的濾鏡可能會嚴重影響效能,\n部分濾鏡有限制色彩深度, 僅適用色彩深度使用16位元或32位元的核心。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
+   "使用中央處理器架構的影像濾鏡, 依據套用的濾鏡可能會嚴重影響效能,\n部分濾鏡有限制色彩深度, 僅適用色彩深度使用16位元或32位元的核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
@@ -2533,6 +2561,14 @@ MSG_HASH(
    "ALSA驅動程式。\n進階Linux聲音架構(ALSA), 自訂PCM裝置設定值。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
+   "Open Sound System驅動程式。\n自訂路徑位置 (例如: /dev/dsp)。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   "JACK Audio Connection Kit驅動程式。\n自訂連接埠名編號 (例如: system:playback1、 system:playback_2)。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "音訊延遲 (毫秒)"
    )
@@ -2832,7 +2868,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "控制器與裝置斷開連接時暫停執行項目。"
+   "裝置連接控制器斷開時暫停執行中的項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -3034,11 +3070,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "交換確定和取消的按鍵"
+   "交換確定和返回的按鍵"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "交換確定和取消的按鍵, 開啟為美國版操作[B/A鍵], 關閉為日本版操作[A/B鍵]。"
+   "交換確定和返回的按鍵, 開啟為美國版操作[B/A鍵], 關閉為日本版操作[A/B鍵]。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
@@ -5147,11 +5183,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
-   "當選單開啟時暫停遊戲"
+   "當開啟選單時暫停遊戲"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "選單中操作設定選項時, 暫停執行中的項目。"
+   "當開啟快捷選單操作時暫停執行中的項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -5215,15 +5251,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
-   "滑鼠支援"
+   "支援滑鼠瀏覽"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-   "允許使用滑鼠控制選單。"
+   "允許使用滑鼠瀏覽控制選單。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
-   "觸控支援"
+   "支援觸控螢幕"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POINTER_ENABLE,
@@ -5231,7 +5267,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   "執行緒任務"
+   "單執行緒任務"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
@@ -5243,7 +5279,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   "非應用程式視窗操作時, 暫停執行中的項目。"
+   "非應用程式視窗操作時暫停執行中的項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
@@ -5496,7 +5532,7 @@ MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_A
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "在主選單和載入檔案的列表中顯示「匯入遊戲」選項。"
+   "在主選單或列表選單中顯示「匯入遊戲」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -6078,7 +6114,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "切換到另一個選單頁面時, 記住選單中選項的位置。"
+   "切換選單頁面時記住選項的位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -7664,7 +7700,7 @@ MSG_HASH(
 /* Explore tab */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
-   "正在初始化列表..."
+   "列表正在初始化..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
@@ -7918,7 +7954,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
-   "目前核心"
+   "已載入"
    )
 
 /* Playlist Item > Information */
@@ -8619,7 +8655,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "開啟虛擬光碟機托盤並取出載入的映像檔, 開啟「當選單開啟時暫停遊戲」時, 部分核心須等到繼續遊戲後幾秒才載入。"
+   "開啟虛擬光碟機托盤並取出載入的映像檔, 開啟「當開啟選單時暫停遊戲」時, 部分核心須等到繼續遊戲後幾秒才載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -8627,7 +8663,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "載入所選擇的映像檔編號, 開啟「當選單開啟時暫停遊戲」時, 部分核心須等到繼續遊戲後幾秒才載入。"
+   "載入所選擇的映像檔編號, 開啟「當開啟選單時暫停遊戲」時, 部分核心須等到繼續遊戲後幾秒才載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -11579,7 +11615,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
-   "使用目前核心系統載入檔案。"
+   "使用目前核心的系統載入檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
@@ -12584,7 +12620,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,
-   "無法初始化自動儲存。"
+   "自動儲存無法初始化。"
    )
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
@@ -13048,7 +13084,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LIBRETRO_ABI_BREAK,
-   "針對此Libretro實現不同版本的Libretro編譯。"
+   "此 libretro 針對其他版本編譯。"
    )
 MSG_HASH(
    MSG_LIBRETRO_FRONTEND,
@@ -13108,7 +13144,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_FAILED,
-   "無法初始化連線遊戲。"
+   "連線遊戲無法初始化。"
    )
 MSG_HASH(
    MSG_NETPLAY_UNSUPPORTED,
@@ -13232,23 +13268,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REWINDING,
-   "倒帶進行中。"
+   "倒帶中。"
    )
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
-   "倒帶無法使用, 此核心不支援即時存檔。"
+   "倒帶模式無法使用, 此核心不支援即時存檔。"
    )
 MSG_HASH(
    MSG_REWIND_INIT,
-   "初始化倒帶緩衝區大小"
+   "初始化倒帶模式緩衝區使用大小"
    )
 MSG_HASH(
    MSG_REWIND_INIT_FAILED,
-   "無法初始化倒帶緩衝區, 倒帶將被關閉。"
+   "倒帶模式已關閉無法初始化緩衝區。"
    )
 MSG_HASH(
    MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
-   "無法使用倒帶模式, 執行正在音訊處理。"
+   "無法使用倒帶模式正在執行音訊處理。"
    )
 MSG_HASH(
    MSG_REWIND_REACHED_END,
