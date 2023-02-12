@@ -456,7 +456,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
     * Use compute shader uploads instead.
     * If we attempt to use streamed texture, force staging path.
     * If we're creating fallback dynamic texture, force RGBA8888. */
-   if (format == VK_FORMAT_R5G6B5_UNORM_PACK16)
+   if (vulkan_remap_to_texture_format(format) != format)
    {
       if (type == VULKAN_TEXTURE_STREAMED)
       {
@@ -464,7 +464,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       }
       else if (type == VULKAN_TEXTURE_DYNAMIC)
       {
-         format = VK_FORMAT_R8G8B8A8_UNORM;
+         format = vulkan_remap_to_texture_format(format);
          info.format = format;
          info.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
       }
@@ -3360,7 +3360,8 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-      /* staging->format is always RGB565 here. Can be expanded as needed. */
+      /* staging->format is always RGB565 here.
+       * Can be expanded as needed if more cases are added to vulkan_remap_to_texture_format. */
       retro_assert(staging->format == VK_FORMAT_R5G6B5_UNORM_PACK16);
 
       set = vulkan_descriptor_manager_alloc(

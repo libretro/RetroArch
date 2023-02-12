@@ -935,7 +935,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.queue                 = vk->context->queue;
    info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
    info.num_passes            = 0;
-   info.original_format       = vk->tex_fmt;
+   info.original_format       = vulkan_remap_to_texture_format(vk->tex_fmt);
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
    info.swapchain.viewport    = vk->vk_vp;
@@ -1007,7 +1007,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    info.queue                 = vk->context->queue;
    info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
    info.num_passes            = 0;
-   info.original_format       = vk->tex_fmt;
+   info.original_format       = vulkan_remap_to_texture_format(vk->tex_fmt);
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
    info.swapchain.viewport    = vk->vk_vp;
