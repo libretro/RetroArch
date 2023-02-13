@@ -703,7 +703,7 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  +3) \
 DECL_AXIS(r_y_minus, -3)
 
-#define IOS_MFI_DEFAULT_BINDS \
+#define MFI_DEFAULT_BINDS \
 DECL_BTN(a, 8) \
 DECL_BTN(b, 0) \
 DECL_BTN(x, 9) \
@@ -802,8 +802,8 @@ const char* const input_builtin_autoconfs[] =
 #ifdef EMSCRIPTEN
    DECL_AUTOCONF_PID(1, 1, "rwebpad", EMSCRIPTEN_DEFAULT_BINDS),
 #endif
-#if TARGET_OS_IPHONE
-   DECL_AUTOCONF_DEVICE("mFi Controller", "mfi", IOS_MFI_DEFAULT_BINDS),
+#if HAVE_MFI
+   DECL_AUTOCONF_DEVICE("mFi Controller", "mfi", MFI_DEFAULT_BINDS),
 #endif
    NULL
 };
