@@ -3290,12 +3290,12 @@ static void rgui_prepare_colors(
    rgui->colors.ss_particle_color       = argb32_to_pixel_platform_format(
          ss_particle_color_argb32 | 0xFF000000);
 
-   /* Disabled color is a mix of normal color and shadow color, with 50% opacity */
+   /* Disabled color is a mix of normal color and shadow color, with 100% opacity */
    disabled_color_argb32                = (theme_colors.normal_color +
          theme_colors.shadow_color +
-               (theme_colors.normal_color ^ theme_colors.shadow_color)) >> 1;
+               ((theme_colors.normal_color ^ theme_colors.shadow_color) & 0x1010101)) >> 1;
    rgui->colors.disabled_color          = argb32_to_pixel_platform_format(
-         disabled_color_argb32 | 0x7F000000);
+         disabled_color_argb32 | 0xFF000000);
 
    rgui->flags                         |= RGUI_FLAG_BG_MODIFIED
                                         | RGUI_FLAG_FORCE_REDRAW;
@@ -5643,7 +5643,7 @@ static void rgui_render(
                            : (term_end_x - ((entry_value_len + 1) * rgui->font_width_stride)),
                      y,
                      false,
-                     rgui->colors.disabled_color,
+                     (entry_selected) ? entry_color : rgui->colors.disabled_color,
                      rgui->colors.shadow_color);
                break;
             case RGUI_ENTRY_VALUE_CHECKMARK:
