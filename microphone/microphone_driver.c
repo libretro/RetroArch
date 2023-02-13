@@ -302,8 +302,13 @@ bool microphone_driver_init_internal(void *settings_data)
    else
       mic_st->resampler_ident[0] = '\0';
 
-   mic_st->resampler_quality = microphone_driver_get_resampler_quality(settings);
-   mic_st->source_ratio_original = 1.0f; // TODO: Figure out what this means and give it an actual value
+   mic_st->resampler_quality     = microphone_driver_get_resampler_quality(settings);
+   mic_st->source_ratio_original = (double)settings->uints.audio_output_sample_rate / settings->uints.microphone_sample_rate;
+   if (!isfinite(mic_st->source_ratio_original))
+   {
+      mic_st->source_ratio_original = 1.0f;
+   }
+   mic_st->source_ratio_current  = mic_st->source_ratio_original;
 
    if (!retro_resampler_realloc(
             &mic_st->resampler_data,
@@ -554,7 +559,11 @@ static void microphone_driver_flush(
    /* Now we resample the mic data. */
    resampler_data.data_in  = mic_st->dual_mono_frames;
    resampler_data.data_out = mic_st->resampled_frames;
-   resampler_data.ratio    = 1.0f; // TODO: Set the same way the audio driver does it
+   resampler_data.ratio    = mic_st->source_ratio_current;
+
+   if (is_slowmotion)
+      resampler_data.ratio *= slowmotion_ratio;
+
    mic_st->resampler->process(mic_st->resampler_data, &resampler_data);
 
    /* Next, we convert the resampled data back to mono... */
