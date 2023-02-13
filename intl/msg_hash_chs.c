@@ -835,6 +835,20 @@ int msg_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
          }
          break;
+      case MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER:
+         {
+            const char *lbl = settings ? settings->arrays.microphone_resampler : NULL;
+
+            if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC)))
+               strlcpy(s,
+                     "Windowed SINC implementation.", len);
+            else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
+               strlcpy(s,
+                     "Convoluted Cosine implementation.", len);
+            else if (string_is_empty(s))
+               strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
+         }
+         break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
          snprintf(s, len,
                "载入预设渲染器. \n"

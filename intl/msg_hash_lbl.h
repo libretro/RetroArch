@@ -306,6 +306,10 @@ MSG_HASH(
    "audio_resampler_driver"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "microphone_resampler_driver"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_SETTINGS,
    "audio_settings"
    )
@@ -5026,6 +5030,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
    "audio_resampler_quality"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "microphone_resampler_quality"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC,

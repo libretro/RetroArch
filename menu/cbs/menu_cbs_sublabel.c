@@ -760,6 +760,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_driver,             MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_driver,                  MENU_ENUM_SUBLABEL_INPUT_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_joypad_driver,                 MENU_ENUM_SUBLABEL_JOYPAD_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_resampler_driver,        MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_resampler_driver,   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_camera_driver,                 MENU_ENUM_SUBLABEL_CAMERA_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_location_driver,               MENU_ENUM_SUBLABEL_LOCATION_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_driver,                   MENU_ENUM_SUBLABEL_MENU_DRIVER)
@@ -852,6 +853,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_battery_level_enable,               
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_sublabels,                   MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_navigation_wraparound,                 MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_resampler_quality,               MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_resampler_quality,          MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_host,                   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_client,                 MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_disconnect,                    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT)
@@ -2388,6 +2390,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_resampler_quality);
             break;
+         case MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_resampler_quality);
+            break;
          case MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE:
 #ifdef HAVE_MATERIALUI
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_icons_enable);
@@ -3641,6 +3646,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_resampler_driver);
+            break;
+         case MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_resampler_driver);
             break;
          case MENU_ENUM_LABEL_JOYPAD_DRIVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_joypad_driver);

@@ -1645,6 +1645,14 @@ MSG_HASH(
    "Audio resampler driver to use."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "Microphone Resampler"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "Microphone resampler driver to use."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
    "Windowed Sinc implementation."
    )
@@ -2685,6 +2693,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
    "Override the default input device the microphone driver uses. This is driver dependent."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "Resampler Quality"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "Lower this value to favor performance/lower latency over audio quality, increase for better audio quality at the expense of performance/lower latency."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,

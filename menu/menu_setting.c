@@ -10687,6 +10687,15 @@ static bool setting_append_list(
 
             j++;
 
+            string_options_entries[j].target         = settings->arrays.microphone_resampler;
+            string_options_entries[j].len            = sizeof(settings->arrays.microphone_resampler);
+            string_options_entries[j].name_enum_idx  = MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER;
+            string_options_entries[j].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER;
+            string_options_entries[j].default_value  = config_get_default_audio_resampler();
+            string_options_entries[j].values         = config_get_audio_resampler_driver_options();
+
+            j++;
+
             string_options_entries[j].target         = settings->arrays.camera_driver;
             string_options_entries[j].len            = sizeof(settings->arrays.camera_driver);
             string_options_entries[j].name_enum_idx  = MENU_ENUM_LABEL_CAMERA_DRIVER;
@@ -14147,6 +14156,23 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
          menu_settings_list_current_add_range(list, list_info, 1000, 192000, 100.0, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.microphone_resampler_quality,
+               MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY,
+               MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+               DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_audio_resampler_quality;
+         menu_settings_list_current_add_range(list, list_info, RESAMPLER_QUALITY_DONTCARE, RESAMPLER_QUALITY_HIGHEST, 1.0, true, true);
 
 #ifdef HAVE_WASAPI
          if (string_is_equal(settings->arrays.microphone_driver, "wasapi"))

@@ -6882,6 +6882,17 @@ unsigned menu_displaylist_build_list(
                   PARSE_ONLY_STRING, false) == 0)
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER,
+                  PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         if (string_is_not_equal(settings->arrays.microphone_resampler, "null"))
+         {
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+         }
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
                   PARSE_ONLY_UINT, false) == 0)
             count++;

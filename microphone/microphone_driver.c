@@ -228,7 +228,7 @@ static enum resampler_quality microphone_driver_get_resampler_quality(
       settings_t *settings)
 {
    if (settings)
-      return (enum resampler_quality)settings->uints.audio_resampler_quality;
+      return (enum resampler_quality)settings->uints.microphone_resampler_quality;
    return RESAMPLER_QUALITY_DONTCARE;
 }
 
@@ -295,9 +295,9 @@ bool microphone_driver_init_internal(void *settings_data)
    if (!mic_st->driver_context)
       goto error;
 
-   if (!string_is_empty(settings->arrays.audio_resampler))
+   if (!string_is_empty(settings->arrays.microphone_resampler))
       strlcpy(mic_st->resampler_ident,
-            settings->arrays.audio_resampler,
+            settings->arrays.microphone_resampler,
             sizeof(mic_st->resampler_ident));
    else
       mic_st->resampler_ident[0] = '\0';

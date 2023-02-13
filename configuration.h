@@ -169,6 +169,7 @@ typedef struct settings
       unsigned input_block_timeout;
 
       unsigned audio_resampler_quality;
+      unsigned microphone_resampler_quality;
 
       unsigned input_turbo_period;
       unsigned input_turbo_duty_cycle;
@@ -432,6 +433,7 @@ typedef struct settings
       char audio_driver[32];
       char microphone_driver[32];
       char audio_resampler[32];
+      char microphone_resampler[32];
       char input_driver[32];
       char input_joypad_driver[32];
       char midi_driver[32];

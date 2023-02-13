@@ -1490,6 +1490,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("audio_driver",             settings->arrays.audio_driver,           false, NULL, true);
    SETTING_ARRAY("microphone_driver",        settings->arrays.microphone_driver,      false, NULL, true);
    SETTING_ARRAY("audio_resampler",          settings->arrays.audio_resampler,        false, NULL, true);
+   SETTING_ARRAY("microphone_resampler",     settings->arrays.microphone_resampler,   false, NULL, true);
    SETTING_ARRAY("input_driver",             settings->arrays.input_driver,           false, NULL, true);
    SETTING_ARRAY("input_joypad_driver",      settings->arrays.input_joypad_driver,    false, NULL, true);
    SETTING_ARRAY("input_keyboard_layout",    settings->arrays.input_keyboard_layout,  false, NULL, true);
@@ -2258,6 +2259,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("audio_latency",                &settings->uints.audio_latency, false, 0 /* TODO */, false);
    SETTING_UINT("microphone_latency",           &settings->uints.microphone_latency, false, 0 /* TODO */, false);
    SETTING_UINT("audio_resampler_quality",      &settings->uints.audio_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
+   SETTING_UINT("microphone_resampler_quality", &settings->uints.microphone_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
    SETTING_UINT("audio_block_frames",           &settings->uints.audio_block_frames, true, 0, false);
    SETTING_UINT("microphone_block_frames",      &settings->uints.microphone_block_frames, true, 0, false);
 #ifdef HAVE_WASAPI
@@ -2692,6 +2694,10 @@ void config_set_defaults(void *data)
    if (def_audio_resampler)
       configuration_set_string(settings,
             settings->arrays.audio_resampler,
+            def_audio_resampler);
+   if (def_audio_resampler)
+      configuration_set_string(settings,
+            settings->arrays.microphone_resampler,
             def_audio_resampler);
    if (def_input)
       configuration_set_string(settings,
