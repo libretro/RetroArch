@@ -73,7 +73,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "瀏覽libretro核心。\n首次執行請先安裝遊戲支援的核心, 安裝後使用載入檔案開啟遊戲檔案, 即可開始體驗復古電玩遊戲。\n應用類型的核心可由此選項載入後執行, 額外系統的核心可由此選項載入後使用。\n執行實體光碟片時需先使用此選項載入支援的核心, 載入後使用載入光碟片開啟。"
+   "瀏覽和安裝已建立的libretro核心。\n首次執行請先安裝遊戲支援的核心, 安裝後使用載入檔案開啟遊戲檔案, 即可開始體驗復古電玩遊戲。\n應用類型的核心可由此載入後使用「執行核心」。\n額外系統的核心可由此載入後使用「核心系統」。\n執行實體光碟片時需先由此載入對應的核心, 載入後使用「載入光碟片」執行。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -85,7 +85,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "瀏覽儲存空間載入支援的檔案。\n首次執行請先安裝遊戲支援的核心, 安裝後使用此選項開啟遊戲檔案, 即可開始體驗復古電玩遊戲。\n無法開啟遊戲時:\n設定選項中開啟管理核心, 查看核心是否缺少必需檔案。\n可嘗試使用其他支援的核心開啟, 或替換遊戲原始檔案。\n如果仍然無法開啟, 可使用英語線上錯誤回報聯繫官方。"
+   "瀏覽儲存空間載入支援的檔案。\n首次執行請先安裝遊戲支援的核心, 安裝後使用此選項開啟遊戲檔案, 即可開始體驗復古電玩遊戲。\n無法開啟遊戲時:\n設定選項中開啟管理核心, 查看核心是否缺少必需檔案。\n可嘗試使用其他支援的核心開啟, 或替換遊戲原始檔案。\n如果仍然無法開啟, 請使用英語上傳錯誤回報聯繫官方。\n錯誤回報網址: www.github.com/libretro/ RetroArch/issues 。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -93,7 +93,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "載入實體光碟片, 需預先載入支援光碟片資料的核心。"
+   "載入實體光碟片, 需預先載入對應光碟片資料的核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
@@ -1745,7 +1745,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
-   "使用單執行緒進行影像處理。\n開啟時影像延遲為代價提高效能。\n低效能的裝置執行時可嘗試開啟此選項。"
+   "使用單執行緒進行影像處理, 開啟時影像延遲為代價提高效能。\n低效能的裝置執行時可嘗試開啟此選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
@@ -1829,7 +1829,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "套用中央處理器架構的影像濾鏡, 套用時可能影響效能, 部分濾鏡有限制色彩深度(16位元或32位元)。"
+   "套用中央處理器架構的影像濾鏡, 套用時可能影響效能, 部分濾鏡限制色彩深度(16位元或32位元), 僅適用核心支援的格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
@@ -1984,12 +1984,16 @@ MSG_HASH(
    "由應用程式計算的目前螢幕更新率(Hz)。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
+   "目前螢幕更新率(Hz), 按[開始鍵]可重新計算設定的垂直更新率, 按[確定鍵]可將此數值套用至「垂直更新率」選項。\n音訊輸入速率計算公式 = 遊戲輸入速率 x 螢幕更新率 / 遊戲更新率。\n如果核心未回報任何數值, 則使用NTSC預設值以實現兼容性。\n該值應保持接近到60Hz避免大量音調變化, 如果顯示器不是或不接近60Hz顯示時, 請關閉「垂直同步」並儲存設定檔。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
    "螢幕預設更新率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-   "裝置預設的螢幕更新率。"
+   "裝置預設的螢幕更新率, 按[確定鍵]可套用預設值至「垂直更新率」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
@@ -2352,11 +2356,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "自動有效的減少「幀數延遲」防止丟失影格, 當「幀數延遲」設定<0>時起點時間為半幀。"
+   "自動有效的減少幀數延遲防止丟失影格, 當「幀數延遲」設定<0>時起點時間為半幀。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "自動有效的減少「幀數延遲」防止丟失影格, 當「幀數延遲」設定<0>時起點時間為半幀。\n例如: 設定<8>適用於NTSC格式使用, 設定<10>適用於PAL格式使用。"
+   "自動有效的減少幀數延遲防止丟失影格, 當「幀數延遲」設定<0>時起點時間為半幀。\n例如: 設定<8>適用於NTSC格式使用, 設定<10>適用於PAL格式使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2384,7 +2388,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
-   "開啟「強制圖形處理器同步」時, 設定中央處理器提前圖形處理器的執行幀數。\n最大幀數: 3。\n0 = 與圖形處理器同步。\n1 = 提前執行1幀。\n 2 = 提前執行..."
+   "開啟「強制圖形處理器同步」時, 設定中央處理器提前圖形處理器的執行幀數。\n最大幀數: 3。\n0 = 與圖形處理器同步。\n1 = 提前執行1幀。\n2 = 提前執行..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
@@ -2718,7 +2722,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "狀態 : 暫停"
+   "狀態 : 已停止"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
@@ -13192,7 +13196,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PAUSED,
-   "暫停。"
+   "開啟暫停模式。"
    )
 MSG_HASH(
    MSG_PROGRAM,
@@ -13428,7 +13432,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNPAUSED,
-   "取消暫停。"
+   "關閉暫停模式。"
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
