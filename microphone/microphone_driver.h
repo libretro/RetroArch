@@ -479,8 +479,16 @@ typedef struct microphone_driver_state
 
    char resampler_ident[64];
 
+   /**
+    * Pointer to the configured resampler for microphones.
+    * May be different than the audio driver's resampler.
+    */
    const retro_resampler_t *resampler;
 
+   /**
+    * Pointer to the resampler-specific context.
+    * Not shared with the audio driver's resampler.
+    */
    void *resampler_data;
 
    double source_ratio_original;
