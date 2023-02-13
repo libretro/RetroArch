@@ -105,9 +105,14 @@ static void alsa_microphone_worker_thread(void *microphone_context)
       /* If underrun, fill rest with silence. */
       memset(buf + fifo_size, 0, microphone->info.stream_info.period_size - fifo_size);
 
-      errnum = snd_pcm_wait(microphone->info.pcm, -1);
+      errnum = snd_pcm_wait(microphone->info.pcm, 33);
 
-      if (errnum == -EPIPE || errnum == -ESTRPIPE || errnum == -EINTR)
+      if (errnum == 0)
+      {
+         RARCH_DBG("[ALSA] [capture thread %p]: Timeout after 33ms waiting for input\n", thread_id);
+         continue;
+      }
+      else if (errnum == -EPIPE || errnum == -ESTRPIPE || errnum == -EINTR)
       {
          RARCH_WARN("[ALSA] [capture thread %p]: Wait error: %s\n",
                     thread_id,
