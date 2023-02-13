@@ -2895,6 +2895,18 @@ MSG_HASH(
    "Jedno tlačítko (Podržení)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "Klasický režim, ovládání dvěma tlačítky. Podržením tlačítka a klepnutím na tlačítko Turbo aktivujete sekvenci stisknutí a uvolnění.\nTlačítko Turbo lze přiřadit v nabídce Nastavení/Vstup/Port 1 Ovládání."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "Režim přepínání. Jedním stisknutím tlačítka Turbo aktivujete sekvenci stisknutí a uvolnění vybraného výchozího tlačítka, dalším stisknutím tlačítka Turbo jej vypnete.\nTlačítko Turbo lze přiřadit v nabídce Nastavení/Vstup/Port 1 Ovládání."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Režim podržení. Sekvence stisknutí a uvolnění vybraného výchozího tlačítka je aktivní, dokud je tlačítko Turbo stisknuté.\nTlačítko Turbo lze přiřadit v nabídce Nastavení/Vstup/Port 1 Ovládání.\nChcete-li napodobit funkci automatického střelby v éře domácího počítače, nastavte tlačítka Turbo a výchozí tlačítko jako tlačítko střelby joysticku."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
    "Výchozí Tlačítko Turba"
    )
@@ -7457,6 +7469,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
    "Konfigurovatelné skenování na základě názvů souborů s obsahem. Nevyžaduje shodu obsahu s databází."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
+   "Skenovat"
    )
 
 /* Import Content > Scan File */
@@ -12729,6 +12745,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_OVERRIDES_NOT_SAVED,
    "Není co zachraňovat. Přepsání není uloženo."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "Neuloženo. Přepisuje aktivní."
    )
 MSG_HASH(
    MSG_PAUSED,

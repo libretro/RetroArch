@@ -391,13 +391,17 @@ static void filebrowser_parse(
          if (filebrowser_type == FILEBROWSER_SELECT_COLLECTION)
             file_type = FILE_TYPE_PLAYLIST_COLLECTION;
 
-         if (path_type == RARCH_CONTENT_MUSIC)
-            file_type = FILE_TYPE_MUSIC;
-         else if (builtin_mediaplayer_enable ||
+         if (builtin_mediaplayer_enable ||
                   builtin_imageviewer_enable)
          {
             switch (path_type)
             {
+               case RARCH_CONTENT_MUSIC:
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+                  if (builtin_mediaplayer_enable)
+                     file_type = FILE_TYPE_MUSIC;
+#endif
+                  break;
                case RARCH_CONTENT_MOVIE:
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
                   if (builtin_mediaplayer_enable)

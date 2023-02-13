@@ -50,7 +50,7 @@ OBJS = frontend/frontend_salamander.o \
 		 verbosity.o
 
 ifeq ($(HAVE_KERNEL_PRX), 1)
-OBJS += bootstrap/psp1/kernel_functions.o
+OBJS   += bootstrap/psp1/kernel_functions.o
 CFLAGS += -DHAVE_KERNEL_PRX
 endif
 

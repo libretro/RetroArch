@@ -53,12 +53,14 @@ else
 GIT			= git.exe
 endif
 
-SHADER_OBJS = gfx/drivers/rsx_shaders/vpshader_basic.vpo.o \
-              gfx/drivers/rsx_shaders/fpshader_basic.fpo.o
+SHADER_OBJS = gfx/drivers/rsx_shaders/modern_opaque.vpo.o \
+              gfx/drivers/rsx_shaders/modern_opaque.fpo.o \
+              gfx/drivers/rsx_shaders/modern_alpha_blend.vpo.o \
+              gfx/drivers/rsx_shaders/modern_alpha_blend.fpo.o
 
 LIBCO_OBJ = libretro-common/libco/ps3.o
 
-OBJ = $(SHADER_OBJS) $(LIBCO_OBJ) griffin/griffin.o
+OBJ = $(SHADER_OBJS) $(LIBCO_OBJ) libretro-common/memmap/memmap.o griffin/griffin.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -78,12 +80,11 @@ SHARED_FLAGS += -DHAVE_MENU \
 		-DRARCH_CONSOLE \
 		-DHAVE_OVERLAY \
 		-DHAVE_HEADSET \
-		-DHAVE_CG \
-		-DHAVE_CG_RUNTIME_COMPILER \
 		-DHAVE_SYSMODULES \
 		-DHAVE_SYSUTILS \
 		-DHAVE_RARCH_EXEC \
 		-DHAVE_MOUSE \
+		-DHAVE_LIGHTGUN \
 		-DHAVE_ZLIB \
 		-DHAVE_RPNG \
 		-DHAVE_GRIFFIN=1 \
@@ -99,8 +100,15 @@ SHARED_FLAGS += -DHAVE_MENU \
 		-DHAVE_MULTIMAN \
 		-DHAVE_MEMINFO \
 		-DHAVE_RGUI \
+		-DHAVE_XMB \
+		-DHAVE_OZONE \
+		-DHAVE_GFX_WIDGETS \
+		-DHAVE_MENU_BUFFER \
 		-DHAVE_FREETYPE \
-		-DHAVE_CORE_INFO_CACHE
+		-DHAVE_CORE_INFO_CACHE \
+		-DHAVE_7ZIP \
+		-D_7ZIP_ST
+
 CFLAGS += -std=gnu99 $(SHARED_FLAGS)
 CXXFLAGS += $(SHARED_FLAGS)
 

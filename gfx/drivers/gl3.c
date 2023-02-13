@@ -1035,19 +1035,13 @@ static void *gl3_init(const video_info_t *video,
 
 #ifdef GL_DEBUG
    gl3_begin_debug(gl);
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
    {
-      if (gl->hw_render_enable)
-      {
+      if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
          gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
-         gl3_begin_debug(gl);
+      gl3_begin_debug(gl);
+      if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
          gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
-      }
-   }
-   else
-   {
-      if (gl->hw_render_enable)
-         gl3_begin_debug(gl);
    }
 #endif
 
