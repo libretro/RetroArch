@@ -1166,7 +1166,6 @@
 				05BF821820ED69D100D95B19 /* core_info.c */,
 				05BF821B20ED69D100D95B19 /* core_info.h */,
 				05BF821920ED69D100D95B19 /* core.h */,
-				0548E2B220F976E10094A083 /* driver.c */,
 				0548E2B520F976E20094A083 /* driver.h */,
 				0548E2B320F976E10094A083 /* dynamic.c */,
 				0548E2B420F976E10094A083 /* dynamic.h */,
@@ -1709,7 +1708,6 @@
 					"$(SRCBASE)/pkg/apple/Frameworks/MoltenVK/dylib/macOS",
 					"$(PROJECT_DIR)/Frameworks/MoltenVK/dylib/macOS",
 				);
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-DHAVE_MAIN",
@@ -1821,7 +1819,10 @@
 					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				RUN_CLANG_STATIC_ANALYZER = YES;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -1852,6 +1853,8 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_UNROLL_LOOPS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -1878,6 +1881,9 @@
 					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				MTL_IGNORE_WARNINGS = YES;
 				SDKROOT = macosx;
 			};
 			name = Release;
