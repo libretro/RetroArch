@@ -904,6 +904,7 @@ LEDS
 
 #if defined(HAVE_RPILED)
 #include "../led/drivers/led_rpi.c"
+#include "../led/drivers/led_sys_linux.c"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)

@@ -2416,7 +2416,8 @@ ifeq ($(HAVE_STATIC_AUDIO_FILTERS), 1)
 endif
 
 ifeq ($(HAVE_RPILED), 1)
-   OBJ += led/drivers/led_rpi.o
+   OBJ += led/drivers/led_rpi.o \
+          led/drivers/led_sys_linux.o
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
