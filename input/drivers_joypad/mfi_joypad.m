@@ -368,7 +368,7 @@ static void mfi_joypad_autodetect_add(unsigned autoconf_pad)
     id<CHHapticPatternPlayer> player = [self.engine createPlayerWithPattern:pattern error:&error];
     if (error)
         return nil;
-    player.isMuted = YES;
+    [player stopAtTime:0 error:&error];
     return player;
 }
 
@@ -606,6 +606,8 @@ static int16_t apple_gamecontroller_joypad_state(
 static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
       enum retro_rumble_effect type, uint16_t strength)
 {
+    NSError *error;
+
     if (pad >= MAX_MFI_CONTROLLERS)
         return false;
     if (@available(iOS 14, tvOS 14, macOS 11, *)) {
@@ -616,13 +618,9 @@ static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
         if (!player)
             return false;
         if (strength == 0)
-        {
-            player.isMuted = YES;
-            return true;
-        }
+            [player stopAtTime:0 error:&error];
         else
         {
-            player.isMuted = NO;
             float str = (float)strength / 65535.0f;
             CHHapticDynamicParameter *param = [[CHHapticDynamicParameter alloc]
                                                initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
@@ -632,9 +630,8 @@ static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
             [player sendParameters:[NSArray arrayWithObject:param] atTime:0 error:&error];
             if (!error)
                 [player startAtTime:0 error:&error];
-            return error;
         }
-        return true;
+        return error;
     } else {
         return false;
     }
