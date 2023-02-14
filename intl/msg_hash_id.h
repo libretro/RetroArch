@@ -2737,10 +2737,6 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
-   "Ingat Pilihan saat Mengganti Tab"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
    "Ingat posisi dari kursor pada menu saat beralih ke tab lain."
    )

@@ -6801,14 +6801,6 @@ MSG_HASH(
    "Завантаження вмісту"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
-   "Сканування на наявність вмісту"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
-   "Що таке ядро?"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
    "Відправити зневаджувальну інформацію"
    )

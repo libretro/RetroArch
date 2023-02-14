@@ -3776,10 +3776,6 @@ MSG_HASH(
    "Automatické Spuštění Jádra"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-   "Kontrola Chybějícího Firmwaru Před Načtením"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Před pokusem o načtení obsahu zkontrolujte, zda je k dispozici veškerý požadovaný firmware."
    )
@@ -4287,24 +4283,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Resetování po Posunu Vpřed"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
    "Vynulování počítadla času snímku po rychlém převíjení vpřed."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Resetování po Načtení Pozice"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
    "Vynulování čítače času snímku po načtení pozice."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Resetování po Uložení Pozice"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
@@ -4483,10 +4467,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    "Skrytí překryvné vrstvy v nabídce a její opětovné zobrazení při opuštění nabídky."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-   "Skrytí Překryvné Vrstvy u Připojeného Her. Ovladače"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -5110,16 +5090,8 @@ MSG_HASH(
    "Pozastavení aktuálně spuštěného obsahu, pokud je nabídka aktivní."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Obnovení Obsahu po Použití Funkce Uložení Pozic"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
    "Automatické zavření nabídky a obnovení obsahu po uložení nebo načtení pozice. Vypnutím této funkce lze zlepšit výkon ukládání pozice na velmi pomalých zařízeních."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "Obnovení Obsahu po Výměně Disků"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
@@ -6023,10 +5995,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    "Při zobrazování dlouhého textu menu se použije plynulá animace posouvání. Má malý dopad na výkon."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
-   "Zapamatování výběru při změně karet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
@@ -11477,14 +11445,6 @@ MSG_HASH(
    "Načítání Obsahu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
-   "Vyhledávání Obsahu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
-   "Co je Jádro?"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
    "Odeslat Informace o Ladění"
    )
@@ -11848,10 +11808,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Nastavení disku v zásobníku"
-   )
-MSG_HASH(
-   MSG_WAITING_FOR_CLIENT,
-   "Čekání na klienta..."
    )
 MSG_HASH(
    MSG_ROOM_NOT_CONNECTABLE,

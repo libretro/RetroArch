@@ -2172,10 +2172,6 @@ MSG_HASH(
    "Iniciar um núcleo automaticamente"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-   "Verificar por firmware em falta antes do carregamento de conteúdo"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Verifica se todo o firmware necessário está presentes antes de tentar carregar conteúdo."
    )
@@ -4149,14 +4145,6 @@ MSG_HASH(
    "Carregando Conteúdo"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
-   "Procurando por conteúdo"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
-   "O que é um núcleo?"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
    "Definições da base de dados"
    )
@@ -4332,10 +4320,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Colocando o disco na área de notificação"
-   )
-MSG_HASH(
-   MSG_WAITING_FOR_CLIENT,
-   "Aguardando pelo cliente ..."
    )
 MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,

@@ -5301,10 +5301,6 @@ MSG_HASH(
    "Načítavam obsah"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
-   "Čo je jadro?"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
    "Odoslať ladiace informácie"
    )
@@ -5424,10 +5420,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
    "Súbor už existuje. Ukladám do záložného bufferu"
-   )
-MSG_HASH(
-   MSG_WAITING_FOR_CLIENT,
-   "Čakám na klienta..."
    )
 MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,

@@ -2488,10 +2488,6 @@ MSG_HASH(
    "Iniciar nucli automàticament"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-   "Comprovar si manca el microprogramari (firmware) abans de carregar"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Comprova que el microprogramari necessari estiga disponible abans de carregar el contingut."
    )
