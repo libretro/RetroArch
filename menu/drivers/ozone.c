@@ -7830,6 +7830,20 @@ static void ozone_start_cursor_wiggle(
    ozone->flags2                        |= OZONE_FLAG2_CURSOR_WIGGLING;
 }
 
+static void ozone_set_thumbnail_delay(bool on)
+{
+   if (on)
+   {
+      gfx_thumbnail_set_stream_delay(OZONE_THUMBNAIL_STREAM_DELAY);
+      gfx_thumbnail_set_fade_duration(-1.0f);
+   }
+   else
+   {
+      gfx_thumbnail_set_stream_delay(0);
+      gfx_thumbnail_set_fade_duration(1);
+   }
+}
+
 /* Common thumbnail switch requires FILE_TYPE_RPL_ENTRY,
  * which only works with playlists, therefore activate it
  * manually for Quick Menu, Explore and Database */
@@ -7900,11 +7914,13 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             ozone_show_fullscreen_thumbnails(ozone);
             ozone->flags2 |= OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS;
+            ozone_set_thumbnail_delay(false);
             new_action     = MENU_ACTION_NOOP;
          }
          else if ((ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
                || (ozone->flags2 & OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS))
          {
+            ozone_set_thumbnail_delay(true);
             ozone_hide_fullscreen_thumbnails(ozone, true);
             ozone->flags2 &= ~OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS;
             new_action     = MENU_ACTION_NOOP;
@@ -8090,8 +8106,10 @@ static enum menu_action ozone_parse_menu_entry_action(
                && (ozone->flags & OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE)
                && (ozone->show_thumbnail_bar))
          {
-            ozone_show_fullscreen_thumbnails(ozone);
-            ozone->flags2 |= OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS;
+            if (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+               ozone_hide_fullscreen_thumbnails(ozone, true);
+            else
+               ozone_show_fullscreen_thumbnails(ozone);
             new_action     = MENU_ACTION_NOOP;
             break;
          }
@@ -8099,6 +8117,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          if (     (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
                || (ozone->flags2 & OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS))
          {
+            ozone_set_thumbnail_delay(true);
             ozone_hide_fullscreen_thumbnails(ozone, true);
             ozone->flags2 &= ~OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS;
             if (     (!(ozone->flags & OZONE_FLAG_IS_STATE_SLOT))
@@ -8153,6 +8172,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          if (     (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
                || (ozone->flags2 & OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS))
          {
+            ozone_set_thumbnail_delay(true);
             ozone_hide_fullscreen_thumbnails(ozone, true);
             ozone->flags  &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
             ozone->flags2 &= ~OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS;
@@ -10256,6 +10276,7 @@ static void ozone_draw_footer(
          ozone_metadata_override_available(ozone, settings);
    bool thumbnail_cycle_enabled           =
          fullscreen_thumbnails_available &&
+         !(ozone->flags & OZONE_FLAG_IS_FILE_LIST) &&
          !((ozone->is_quick_menu && menu_is_running_quick_menu()) 
                || (ozone->flags & OZONE_FLAG_IS_STATE_SLOT));
    bool clear_setting_enabled            =
