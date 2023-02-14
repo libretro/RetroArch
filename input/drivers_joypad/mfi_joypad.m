@@ -120,7 +120,8 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
         {
             /* Support "Options" button present in PS4 / XBox One controllers */
             *buttons         |= gp.buttonOptions.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-            *buttons         |= gp.buttonHome.pressed ? (1 << RARCH_FIRST_CUSTOM_BIND) : 0;
+            if (@available(iOS 14, tvOS 14, macOS 11, *))
+                *buttons         |= gp.buttonHome.pressed ? (1 << RARCH_FIRST_CUSTOM_BIND) : 0;
 
             /* Support buttons that aren't supported by older mFi controller via "hotkey" combinations:
              *
@@ -190,7 +191,8 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
         GCExtendedGamepad *gp = (GCExtendedGamepad *)controller.extendedGamepad;
         gp.buttonOptions.preferredSystemGestureState = GCSystemGestureStateDisabled;
         gp.buttonMenu.preferredSystemGestureState    = GCSystemGestureStateDisabled;
-        gp.buttonHome.preferredSystemGestureState    = GCSystemGestureStateDisabled;
+        if (@available(macOS 11, *))
+            gp.buttonHome.preferredSystemGestureState    = GCSystemGestureStateDisabled;
     }
 #endif
     
