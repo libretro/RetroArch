@@ -1795,15 +1795,11 @@ enum retro_mod
 
 #define RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE (74 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_microphone_interface * --
-                                            * Returns an interface that can be used to receive audio from the audio driver.
+                                            * Returns an interface that can be used to receive input from the microphone driver.
                                             *
-                                            * Create the interface and this callback will populate it.
-                                            *
-                                            * If the frontend and audio driver support microphones,
-                                            * all function pointers will be non-NULL.
-                                            * Otherwise, all function pointers will be NULL.
-                                            *
-                                            * Returns false if mic support is disabled.
+                                            * Returns true if microphone support is available,
+                                            * even if no microphones are plugged in.
+                                            * Returns false if mic support is disabled or unavailable.
                                             */
 
 /* VFS functionality */
@@ -3856,6 +3852,9 @@ typedef retro_microphone_t *(RETRO_CALLCONV *retro_open_mic_t)(void);
  * and free up the resources that it allocated.
  * Afterwards, the handle is invalid and must not be used.
  *
+ * A frontend may close opened microphones when unloading content,
+ * but cores should close their microphones anyway.
+ *
  * @param microphone Pointer to the microphone that was allocated by \c open_mic.
  * If \c NULL, this function does nothing.
  */
@@ -3906,9 +3905,6 @@ typedef bool (RETRO_CALLCONV *retro_get_mic_state_t)(const retro_microphone_t *m
  * \em Must be called every frame unless \c microphone is disabled,
  * similar to how \c retro_audio_sample_batch_t works.
  *
- * If using \c RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK,
- * then this function should be called within the provided callback.
- *
  * @param microphone Opaque handle to the microphone
  * whose recent input will be retrieved.
  * @param samples The buffer that will be used to store the microphone's data.
@@ -3926,17 +3922,15 @@ typedef bool (RETRO_CALLCONV *retro_get_mic_state_t)(const retro_microphone_t *m
  * Will return -1 if the microphone is disabled,
  * the audio driver is paused,
  * or there was an error.
- *
- * @see RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK
  */
 typedef int (RETRO_CALLCONV *retro_read_mic_t)(retro_microphone_t *microphone, int16_t* samples, size_t num_samples);
 
 /**
  * An interface for querying the microphone and accessing data read from it.
  * All fields in this interface are populated by the frontend
- * by way of the the RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE callback.
- * All fields will be non-NULL,
- * even if the frontend (or its audio driver) doesn't support microphones.
+ * within the RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE callback.
+ *
+ * @see RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE
  */
 struct retro_microphone_interface
 {
