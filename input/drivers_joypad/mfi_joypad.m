@@ -387,14 +387,8 @@ static void mfi_joypad_autodetect_add(unsigned autoconf_pad)
 - (void)shutdown
 {
     if (@available(iOS 14, tvOS 14, macOS 11, *)) {
-        if (self.weakPlayer)
-            [self.weakPlayer cancelAndReturnError:nil];
         _weakPlayer = nil;
-        if (self.strongPlayer)
-            [self.strongPlayer cancelAndReturnError:nil];
         _strongPlayer = nil;
-        if (self.engine)
-            [self.engine stopWithCompletionHandler:nil];
         self.engine = nil;
     }
 }
@@ -454,7 +448,7 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
            for (GCController *connectedController in mfiControllers)
            {
               if (     connectedController.microGamepad    != nil
-                    || connectedController.extendedGamepad == nil )
+                    && connectedController.extendedGamepad == nil )
                  connectedNonGameControllerIndex = index;
               index++;
            }
@@ -626,7 +620,6 @@ static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
                                                initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
                                                value:str
                                                relativeTime:0];
-            NSError *error;
             [player sendParameters:[NSArray arrayWithObject:param] atTime:0 error:&error];
             if (!error)
                 [player startAtTime:0 error:&error];

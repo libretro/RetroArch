@@ -2082,6 +2082,10 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("android_input_disconnect_workaround",   &settings->bools.android_input_disconnect_workaround, true, false, false);
 #endif
 
+#if defined(HAVE_COCOATOUCH) && defined(TARGET_OS_TV)
+   SETTING_BOOL("gcdwebserver_alert",    &settings->bools.gcdwebserver_alert, true, true, false);
+#endif
+
    *size = count;
 
    return tmp;
