@@ -3846,20 +3846,20 @@ typedef struct retro_microphone retro_microphone_t;
  * or the maximum number of supported microphones has been reached.
  *
  * @note Microphones are \em inactive by default;
- * to begin recording, call set_microphone_state(new_handle, true).
+ * to begin recording, call set_mic_state(new_handle, true).
  */
-typedef retro_microphone_t *(RETRO_CALLCONV *retro_init_microphone_t)(void);
+typedef retro_microphone_t *(RETRO_CALLCONV *retro_open_mic_t)(void);
 
 /**
- * Closes a microphone that was initialized with \c retro_init_microphone.
+ * Closes a microphone that was initialized with \c open_mic.
  * Calling this function will stop all microphone activity
  * and free up the resources that it allocated.
  * Afterwards, the handle is invalid and must not be used.
  *
- * @param microphone Pointer to the microphone that was allocated by init_microphone.
+ * @param microphone Pointer to the microphone that was allocated by \c open_mic.
  * If \c NULL, this function does nothing.
  */
-typedef void (RETRO_CALLCONV *retro_free_microphone_t)(retro_microphone_t *microphone);
+typedef void (RETRO_CALLCONV *retro_close_mic_t)(retro_microphone_t *microphone);
 
 /**
  * Enables or disables the given microphone.
@@ -3880,14 +3880,14 @@ typedef void (RETRO_CALLCONV *retro_free_microphone_t)(retro_microphone_t *micro
  *
  * @param microphone Opaque handle to the microphone
  * whose state will be adjusted.
- * This will have been provided by \c init_microphone.
+ * This will have been provided by \c open_mic.
  * @param state \c true if the microphone should receive audio input,
  * @c false if it should be idle.
  * @returns \c true if the microphone's state was successfully set,
  * \c false if \c microphone is invalid
  * or if there was an error.
  */
-typedef bool (RETRO_CALLCONV *retro_set_microphone_state_t)(retro_microphone_t *microphone, bool state);
+typedef bool (RETRO_CALLCONV *retro_set_mic_state_t)(retro_microphone_t *microphone, bool state);
 
 /**
  * Queries the active state of a microphone at the given index.
@@ -3899,7 +3899,7 @@ typedef bool (RETRO_CALLCONV *retro_set_microphone_state_t)(retro_microphone_t *
  * @return true if the provided \c microphone is valid and active,
  * false if not or if there was an error.
  */
-typedef bool (RETRO_CALLCONV *retro_get_microphone_state_t)(const retro_microphone_t *microphone);
+typedef bool (RETRO_CALLCONV *retro_get_mic_state_t)(const retro_microphone_t *microphone);
 
 /**
  * Retrieves the input processed by the microphone since the last call.
@@ -3929,7 +3929,7 @@ typedef bool (RETRO_CALLCONV *retro_get_microphone_state_t)(const retro_micropho
  *
  * @see RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK
  */
-typedef int (RETRO_CALLCONV *retro_get_microphone_input_t)(retro_microphone_t *microphone, int16_t* samples, size_t num_samples);
+typedef int (RETRO_CALLCONV *retro_read_mic_t)(retro_microphone_t *microphone, int16_t* samples, size_t num_samples);
 
 /**
  * An interface for querying the microphone and accessing data read from it.
@@ -3945,11 +3945,11 @@ struct retro_microphone_interface
     * Set by the frontend.
     */
    bool supported;
-   retro_init_microphone_t init_microphone;
-   retro_free_microphone_t free_microphone;
-   retro_set_microphone_state_t set_microphone_state;
-   retro_get_microphone_state_t get_microphone_state;
-   retro_get_microphone_input_t get_microphone_input;
+   retro_open_mic_t open_mic;
+   retro_close_mic_t close_mic;
+   retro_set_mic_state_t set_mic_state;
+   retro_get_mic_state_t get_mic_state;
+   retro_read_mic_t read_mic;
 };
 
 /* Callbacks */

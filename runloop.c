@@ -3385,11 +3385,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
 
             microphone->supported            = true;
-            microphone->init_microphone      = microphone_driver_open_mic;
-            microphone->free_microphone      = microphone_driver_close_mic;
-            microphone->set_microphone_state = microphone_driver_set_mic_state;
-            microphone->get_microphone_state = microphone_driver_get_mic_state;
-            microphone->get_microphone_input = microphone_driver_read;
+            microphone->open_mic      = microphone_driver_open_mic;
+            microphone->close_mic      = microphone_driver_close_mic;
+            microphone->set_mic_state = microphone_driver_set_mic_state;
+            microphone->get_mic_state = microphone_driver_get_mic_state;
+            microphone->read_mic = microphone_driver_read;
          }
          break;
       case RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT:
