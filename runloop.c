@@ -3352,39 +3352,44 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE:
          {
             struct retro_microphone_interface* microphone = (struct retro_microphone_interface *)data;
-            const microphone_driver_t *mic_driver         = microphone_state_get_ptr()->driver;
+            microphone_driver_state_t *mic_st             = microphone_state_get_ptr();
+            const microphone_driver_t *driver             = mic_st->driver;
 
             RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE.\n");
-
-            if (!mic_driver)
-            {
-               RARCH_DBG("[Environ]: Couldn't initialize microphone interface, driver is not initialized\n");
-               return false;
-            }
 
             if (!microphone)
                return false;
             /* User didn't provide a pointer for a response, what can we do? */
 
+            /* Initialize the interface... */
+            memset(microphone, 0, sizeof(*microphone));
+
+            if (driver == &microphone_null)
+            { /* If the null driver is active... */
+               RARCH_ERR("[Environ]: Cannot initialize microphone interface, active driver is null\n");
+               return false;
+            }
+
             if (!settings->bools.microphone_enable)
-               return false;
-
-            if (mic_driver->init)
-            {
-               microphone->supported            = true;
-               microphone->init_microphone      = microphone_driver_open_mic;
-               microphone->free_microphone      = microphone_driver_close_mic;
-               microphone->set_microphone_state = microphone_driver_set_mic_state;
-               microphone->get_microphone_state = microphone_driver_get_mic_state;
-               microphone->get_microphone_input = microphone_driver_read;
-            }
-            else
-            {
-               memset(microphone, 0, sizeof(*microphone));
-               /* Clears all function pointers and sets supported to false */
-
+            { /* If mic support is off... */
+               RARCH_ERR("[Environ]: Will not initialize microphone interface, support is turned off\n");
                return false;
             }
+
+            /* The core might request a mic before the mic driver is initialized,
+             * so we still have to see if the frontend intends to init a mic driver. */
+            if (!driver && string_is_equal(settings->arrays.microphone_driver, "null"))
+            { /* If we're going to load the null driver... */
+               RARCH_ERR("[Environ]: Cannot initialize microphone interface, configured driver is null\n");
+               return false;
+            }
+
+            microphone->supported            = true;
+            microphone->init_microphone      = microphone_driver_open_mic;
+            microphone->free_microphone      = microphone_driver_close_mic;
+            microphone->set_microphone_state = microphone_driver_set_mic_state;
+            microphone->get_microphone_state = microphone_driver_get_mic_state;
+            microphone->get_microphone_input = microphone_driver_read;
          }
          break;
       case RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT:

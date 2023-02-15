@@ -665,18 +665,26 @@ retro_microphone_t *microphone_driver_open_mic(void)
       return NULL;
    }
 
-   if (!mic_driver)
-   {
-      RARCH_ERR("[Microphone]: Failed to open microphone due to uninitialized driver\n");
-      return NULL;
-   }
-
    if (!settings->bools.microphone_enable)
    { /* Not checking mic_st->flags because they might not be set yet;
       * don't forget, the core can ask for a mic
       * before the audio driver is ready to create one. */
       RARCH_WARN("[Microphone]: Refused to open microphone because it's disabled in the settings\n");
       // TODO: Log a message to the on-screen display
+      return NULL;
+   }
+
+   if (mic_driver == &microphone_null)
+   {
+      RARCH_WARN("[Microphone]: Cannot open microphone, null driver is configured.\n");
+      return NULL;
+   }
+
+   if (!mic_driver &&
+         (string_is_equal(settings->arrays.microphone_driver, "null")
+            || string_is_empty(settings->arrays.microphone_driver)))
+   { /* If the mic driver hasn't been initialized, but it's not going to be... */
+      RARCH_ERR("[Microphone]: Cannot open microphone as the driver won't be initialized\n");
       return NULL;
    }
 

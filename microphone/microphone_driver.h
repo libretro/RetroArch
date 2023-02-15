@@ -566,6 +566,13 @@ bool microphone_driver_get_mic_state(const retro_microphone_t *microphone);
 int microphone_driver_read(retro_microphone_t *microphone, int16_t* samples, size_t num_samples);
 
 /**
+ * A trivial backend with no functions and an identifier of "null".
+ * Effectively disables mic support or serves as a stand-in
+ * on platforms that lack mic backends.
+ */
+extern microphone_driver_t microphone_null;
+
+/**
  * The ALSA-backed microphone driver.
  */
 extern microphone_driver_t microphone_alsa;
