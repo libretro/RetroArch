@@ -85,7 +85,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "瀏覽儲存空間載入支援的檔案。\n首次執行請先安裝遊戲支援的核心, 安裝後使用此選項開啟遊戲檔案, 即可開始體驗復古電玩遊戲。\n無法開啟遊戲時:\n設定選項中開啟管理核心, 查看核心是否缺少必需檔案。\n可嘗試使用其他支援的核心開啟, 或替換遊戲原始檔案。\n如果仍然無法開啟, 請使用英語上傳錯誤回報聯繫官方。\n錯誤回報網址: https://www.github.com /libretro/RetroArch/issues [...]"
+   "瀏覽儲存空間載入支援的檔案。\n首次執行請先安裝遊戲支援的核心, 安裝後使用此選項開啟遊戲檔案, 即可開始體驗復古電玩遊戲。\n無法開啟遊戲時:\n設定選項中開啟管理核心, 查看核心是否缺少必需檔案。\n可嘗試使用其他支援的核心開啟, 或替換遊戲原始檔案。\n如果仍然無法開啟, 請使用英語上傳錯誤回報聯繫官方。\n錯誤回報網址: www.github.com /libretro/RetroArch/issues 。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -1454,19 +1454,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
-   "OpenGL 1.x 驅動程式。\n應用程式最低需求: OpenGL 1.1。\n不支援著色器。\n條件允許的情況下, 請使用更高版本的OpenGL驅動程式。"
+   "OpenGL 1.x 驅動程式。\n系統最低需求: OpenGL 1.1。\n不支援著色器。\n條件允許的情況下, 請使用更高版本的OpenGL驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
-   "OpenGL 2.x 驅動程式。\n此驅動程式除了軟體渲染的核心, 還允許使用libretro GL核心。\n應用程式最低需求: OpenGL 2.0 或 OpenGLES 2.0。\n支援GLSL格式的著色器。\n條件允許的情況下, 建議使用glcore驅動程式。"
+   "OpenGL 2.x 驅動程式。\n系統最低需求: OpenGL 2.0 或 OpenGLES 2.0。\n此驅動程式除了軟體渲染的核心, 還允許使用libretro GL核心。\n支援GLSL格式的著色器。\n條件允許的情況下, 建議使用glcore驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
-   "OpenGL 3.x 驅動程式。\n此驅動程式除了軟體渲染的核心, 還允許使用libretro GL核心。\n應用程式最低需求: OpenGL 3.2 或 OpenGLES 3.0+。\n支援Slang格式的著色器。"
+   "OpenGL 3.x 驅動程式。\n系統最低需求: OpenGL 3.2 或 OpenGLES 3.0+。\n此驅動程式除了軟體渲染的核心, 還允許使用libretro GL核心。\n支援Slang格式的著色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
-   "Vulkan驅動程式。\n此驅動程式除了軟體渲染的核心, 還允許使用libretro Vulkan核心。\n應用程式最低需求: Vulkan 1.0。\n支援高動態範圍(HDR)和Slang格式的著色器。"
+   "Vulkan驅動程式。\n系統最低需求: Vulkan 1.0。\n此驅動程式除了軟體渲染的核心, 還允許使用libretro Vulkan核心。\n支援高動態範圍(HDR)和Slang格式的著色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
@@ -1973,19 +1973,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "設定螢幕的垂直更新率, 用於計算適合的音訊輸入速率。\n僅限顯示選項中「單執行緒影像處理」關閉時使用。"
+   "設定螢幕的垂直更新率, 用於計算適合的音訊輸入速率, 僅限顯示選項中「單執行緒影像處理」關閉時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   "目前螢幕更新率"
+   "目前畫面更新率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   "由應用程式計算的目前螢幕更新率(Hz)。"
+   "由應用程式計算的目前畫面更新率(Hz)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
-   "目前螢幕更新率(Hz), 按[開始鍵]可重新計算設定的垂直更新率, 按[確定鍵]可將此數值套用至「垂直更新率」選項。\n音訊輸入速率計算公式 = 遊戲輸入速率 x 螢幕更新率 / 遊戲更新率。\n如果核心未回報任何數值, 則使用NTSC預設值以實現兼容性。\n該值應保持接近到60Hz避免大量音調變化, 如果顯示器不是或不接近60Hz顯示時, 請關閉「垂直同步」並儲存設定檔。"
+   "由應用程式計算的目前畫面更新率(Hz), 僅限顯示選項中「單執行緒影像處理」關閉時使用。\n按[開始鍵]可重新計算設定的垂直更新率, 按[確定鍵]可將此數值套用至「垂直更新率」選項。\n音訊輸入速率計算公式 = 遊戲輸入速率 x 螢幕更新率 / 遊戲更新率。\n如果核心未回報任何數值, 則使用NTSC預設值以實現兼容性。\n該值應保持接近到60Hz避免大量音調變化, 如果顯示器不是或不[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
@@ -2554,11 +2554,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "[左/右鍵]選擇音源輸出裝置, 依據音效驅動程式顯示可使用的裝置。"
+   "選擇音源輸出裝置, 依據音效驅動程式顯示可使用的裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
-   "[左/右鍵]選擇音源輸出裝置。\n依據音效驅動程式顯示可使用的裝置。"
+   "選擇音源輸出裝置, 依據音效驅動程式顯示可使用的裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
@@ -3844,6 +3844,10 @@ MSG_HASH(
    "自動重開執行核心"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
+   "載入前檢查韌體"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "載入核心前檢查必需的韌體(BIOS)。"
    )
@@ -4274,11 +4278,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
-   "影格時間計數器"
+   "影格即時統計"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "變更影格生成時間計數器的設定。\n僅限顯示選項中「單執行緒影像處理」關閉時使用。"
+   "變更影格即時統計的設定。\n僅限顯示選項中「單執行緒影像處理」關閉時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -4287,6 +4291,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
    "限制快轉模式執行時的最高倍速, 設定<0>時不限制。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
+   "限制快轉模式執行時的最高倍速, 設定<0>時不限制。\n應用程式進入休眠模式時確保不超過最高倍速, 可限制的最高倍速依據裝置效能和執行項目變更。\n將此選項設定不限制並開啟顯示FPS, 將快轉模式(FPS)除以一般模式(FPS), 等於此裝置執行此項目的最高倍速。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
@@ -4351,16 +4359,28 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "關閉快轉模式後重置"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "快轉後重置影格生成時間計數器。"
+   "關閉快轉模式後重置目前畫面更新率。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+   "載入即時存檔後重置"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "載入即時存檔後, 重置影格生成時間計數器。"
+   "載入即時存檔後重置目前畫面更新率。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+   "儲存即時存檔後重置"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "儲存即時存檔後, 重置影格生成時間計數器。"
+   "儲存即時存檔後重置目前畫面更新率。"
    )
 
 /* Settings > Recording */
@@ -4551,6 +4571,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    "開啟時覆蓋元件在選單開啟時隱藏, 選單關閉時顯示, 用於避免最上層圖層為覆蓋元件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "控制器連接時隱藏"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -5174,8 +5198,16 @@ MSG_HASH(
    "當開啟快捷選單操作時暫停執行中的項目。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "操作即時存檔後關閉"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
    "使用快捷選單的儲存、載入和還原即時存檔後, 自動關閉選單回到遊戲中, 關閉時低效能的裝置, 可提高儲存速度。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   "操作虛擬光碟機後關閉"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
@@ -6085,16 +6117,20 @@ MSG_HASH(
    "開啟時滾動文字使用平滑動畫顯示, 不建議關閉此選項。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+   "切換頁面記住選項"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
    "切換選單頁面時記住選項的位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
-   "總是"
+   "全部記住"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
-   "僅適用於列表"
+   "僅適用於記住列表頁面"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
@@ -6700,7 +6736,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
-   "開啟歷史、圖片、音樂和影片列表的儲存瀏覽。"
+   "開啟歷史、圖片、音樂和影片列表的儲存已執行項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
@@ -6708,7 +6744,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
-   "限制歷史、圖片、音樂和影片列表的項目數量。"
+   "限制歷史、圖片、音樂和影片列表的儲存項目的數量。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
@@ -6852,7 +6888,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   "。"
+   " "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
@@ -7335,7 +7371,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
-   "設定核心預設記憶存檔的儲存位置, 未設置的情況下, 將嘗試儲存在遊戲的資料夾中。"
+   "設定核心預設記憶存檔的儲存位置, 未設定位置的情況下, 將嘗試儲存在執行檔案的資料夾中。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
@@ -7347,7 +7383,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "設定應用程式即時存檔的儲存位置, 未設置的情況下, 將嘗試儲存在遊戲的資料夾中。"
+   "設定應用程式即時存檔的儲存位置, 未設定位置的情況下, 將嘗試儲存在執行檔案的資料夾中。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -8363,7 +8399,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
-   "[左/右鍵]設定搜尋方式, 設定完成後按下「建立新的搜尋」選項, 即可開始搜尋。"
+   "[左/右鍵]設定搜尋方式, 設定完成後按下[確定鍵]建立新的搜尋。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
@@ -8375,7 +8411,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
-   "搜尋目標數值"
+   "搜尋目標數值 ([確定鍵]搜尋)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
@@ -9264,7 +9300,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
-   "總是"
+   "全部列表"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER,
@@ -9560,11 +9596,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLED,
-   "開啟"
+   "開"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISABLED,
-   "關閉"
+   "關"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
@@ -11578,6 +11614,10 @@ MSG_HASH(
    "在此顯示最近執行的歷史項目。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
+   "載入檔案與執行項目時儲存項目到歷史列表中。\n預設的歷史列表儲存位置為復古電玩的根目錄。\n當「設定/列表」選項中「歷史儲存」關閉時, 不會儲存已執行項目並在主選單中不顯示歷史列表。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
    "多媒體"
    )
@@ -11883,6 +11923,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
    "檔案載入中"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
+   "掃描檔案"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
+   "什麼是核心?"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
@@ -12235,7 +12283,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PRIVATE_OR_SHARED_ADDRESS,
-   "外部網路具有私人或共享地址, 可以考慮使用代理或中繼伺服器。"
+   "建立區域網路連線主機具有私人或公用地址, 可以考慮使用代理或中繼伺服器。"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
@@ -12250,8 +12298,12 @@ MSG_HASH(
    "將光碟片放入托盤中。"
    )
 MSG_HASH(
+   MSG_WAITING_FOR_CLIENT,
+   "等待挑戰者加入..."
+   )
+MSG_HASH(
    MSG_ROOM_NOT_CONNECTABLE,
-   "無法建立網際網路連線主機。"
+   "主機僅限使用區域網路連線。"
    )
 MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
@@ -12267,7 +12319,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_PLAYER_S_LEFT,
-   "「%.*s」用戶端加入圍觀群眾。"
+   "「%.*s」加入圍觀群眾。"
    )
 MSG_HASH(
    MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
@@ -14412,7 +14464,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
-   "選擇您的時區, 自動設定您的日期和時間。"
+   "選擇時區自動設定日期和時間。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TIMEZONE,
+   "顯示可使用的時區選項, 依選擇的時區自動設定日期和時間。\n此為假設系統和硬體的時間與世界協調時間一致。"
    )
 MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,
