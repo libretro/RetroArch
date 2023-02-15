@@ -52,6 +52,9 @@ extern id apple_platform;
 #endif
 
 #if defined(HAVE_COCOATOUCH)
+void rarch_start_draw_observer();
+void rarch_stop_draw_observer();
+
 @interface RetroArch_iOS : UINavigationController<ApplePlatform, UIApplicationDelegate,
 UINavigationControllerDelegate> {
     UIView *_renderView;

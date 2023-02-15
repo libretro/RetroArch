@@ -394,19 +394,33 @@ void *glkitview_init(void);
         [servers appendString:[NSString stringWithFormat:@"%@",server.bonjourServerURL]];
     
 #if TARGET_OS_TV || TARGET_OS_IOS
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
+    settings_t *settings = config_get_ptr();
+    if (!settings->bools.gcdwebserver_alert)
+        return;
+
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
 #if TARGET_OS_TV
-    [alert addAction:[UIAlertAction actionWithTitle:@"OK"
-        style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-    }]];
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK"
+            style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                rarch_start_draw_observer();
+        }]];
+        [alert addAction:[UIAlertAction actionWithTitle:@"Don't Show Again"
+            style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                rarch_start_draw_observer();
+                configuration_set_bool(settings, settings->bools.gcdwebserver_alert, false);
+        }]];
 #elif TARGET_OS_IOS
-    [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        [[WebServer sharedInstance] webUploader].delegate = nil;
-        [[WebServer sharedInstance] stopUploader];
-    }]];
+        [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            [[WebServer sharedInstance] webUploader].delegate = nil;
+            [[WebServer sharedInstance] stopUploader];
+        }]];
 #endif
-    [self presentViewController:alert animated:YES completion:^{
-    }];
+        [self presentViewController:alert animated:YES completion:^{
+            rarch_stop_draw_observer();
+        }];
+    });
 #endif
 }
 

@@ -75,7 +75,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
       CFRunLoopWakeUp(CFRunLoopGetMain());
 }
 
-static void rarch_start_draw_observer()
+void rarch_start_draw_observer()
 {
    if (iterate_observer && CFRunLoopObserverIsValid(iterate_observer))
        return;
@@ -87,7 +87,7 @@ static void rarch_start_draw_observer()
    CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
 }
 
-static void rarch_stop_draw_observer()
+void rarch_stop_draw_observer()
 {
     if (!iterate_observer || !CFRunLoopObserverIsValid(iterate_observer))
         return;

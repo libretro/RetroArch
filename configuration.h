@@ -976,6 +976,10 @@ typedef struct settings
 #ifdef ANDROID
       bool android_input_disconnect_workaround;
 #endif
+
+#if defined(HAVE_COCOATOUCH) && defined(TARGET_OS_TV)
+      bool gcdwebserver_alert;
+#endif
    } bools;
 
 } settings_t;
