@@ -1278,7 +1278,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
-   "前往下一層目錄位置。"
+   "前往下一層目錄。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1981,11 +1981,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   "由應用程式計算的目前畫面更新率(Hz)。"
+   "由應用程式計算的目前畫面更新率(Hz), 僅限顯示選項中「單執行緒影像處理」關閉時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
-   "由應用程式計算的目前畫面更新率(Hz), 僅限顯示選項中「單執行緒影像處理」關閉時使用。\n按[開始鍵]可重新計算設定的垂直更新率, 按[確定鍵]可將此數值套用至「垂直更新率」選項。\n音訊輸入速率計算公式 = 遊戲輸入速率 x 螢幕更新率 / 遊戲更新率。\n如果核心未回報任何數值, 則使用NTSC預設值以實現兼容性。\n該值應保持接近到60Hz避免大量音調變化, 如果顯示器不是或不[...]"
+   "由應用程式計算的目前畫面更新率(Hz)。\n按[開始鍵]可重新計算設定的垂直更新率, 按[確定鍵]可將此數值套用至「垂直更新率」選項。\n音訊輸入速率計算方式 = 原始音訊速率 x 垂直更新率 / 畫面更新率。\n如果核心未回報任何數值, 則使用NTSC格式(60Hz)以實現兼容性。\n該值應保持接近到60Hz避免大量音調變化, 如果顯示器不是或不接近60Hz顯示時, 請關閉「垂直同步」並儲存設定[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
@@ -2619,12 +2619,20 @@ MSG_HASH(
    "設定音訊輸入速率最大變化值, 提高音訊間距不準確為代價實現時序變化。\n例如: NTSC顯示器上執行PAL核心。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
+   "設定音訊輸入速率最大變化值實現時序變化。\n例如: NTSC顯示器上執行PAL核心, 代價為音訊間距不準確。\n計算方式: 原始速率x(1.0+/-(此選項設定值))。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    "動態音訊速率控制"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    "同步影像和音訊消除時序偏移, 此選項關閉時不可能正確同步。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
+   "設定<0>時關閉音訊速率控制, 其他數值動態調整音訊輸入的速率。\n計算方式: 原始速率x(1.0+/-(此選項設定值))。"
    )
 
 /* Settings > Audio > MIDI */
@@ -4294,7 +4302,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
-   "限制快轉模式執行時的最高倍速, 設定<0>時不限制。\n應用程式進入休眠模式時確保不超過最高倍速, 可限制的最高倍速依據裝置效能和執行項目變更。\n將此選項設定不限制並開啟顯示FPS, 將快轉模式(FPS)除以一般模式(FPS), 等於此裝置執行此項目的最高倍速。"
+   "限制快轉模式執行時的最高倍速(倍速xFPS), 設定<0>時不限制。\n應用程式進入休眠模式確保不會超過最高倍速, 不要指望限制的倍速會準確。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
@@ -5203,7 +5211,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "使用快捷選單的儲存、載入和還原即時存檔後, 自動關閉選單回到遊戲中, 關閉時低效能的裝置, 可提高儲存速度。"
+   "使用快捷選單的儲存、載入和還原即時存檔後, 自動關閉選單回到遊戲中, 關閉時低效能的裝置可提高儲存速度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
@@ -6622,7 +6630,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-   "建立連線遊戲時, 使用通用隨插即用(UPnP)或類似技術, 攔截區域網路外部的連接。"
+   "建立連線主機時檢測公用網路, 使用通用隨插即用(UPnP)或類似技術, 攔截外網連接到區域網路。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
@@ -7084,7 +7092,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "RetroAchievements使用帳號。\n請前往RetroAchievements網站, 並註冊一個免費帳號。\n完成註冊後, 輸入帳號與密碼在復古電玩中開啟成就系統。"
+   "復古成就使用帳號。\n請前往RetroAchievements網站, 並註冊一個免費帳號。\n完成註冊後輸入帳號與密碼, 在設定選項中開啟成就系統。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
@@ -8320,7 +8328,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "掃描記憶體數值, 手動搜尋金手指。"
+   "掃描記憶體數值, 手動搜尋與加入金手指。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
@@ -8734,7 +8742,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
-   "載入著色器配置檔並自動設置著色器通道參數。\n支援格式可從「設定/驅動程式/顯示」選項, 按說明鍵查看著色器支援格式。\n載入位置可從「設定/資料夾/著色器」選項中變更。"
+   "載入著色器配置檔並自動設置著色器通道參數。\n支援格式可從「設定/驅動程式/顯示」選項, 按[說明鍵]查看著色器支援格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
@@ -8742,7 +8750,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
-   "目前載入著色器的通道, 最前編號添加配置檔, 並自動應用變化。"
+   "目前載入著色器的最前通道, 加入配置檔並自動應用變化。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
@@ -8750,7 +8758,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "目前載入的著色器加入配置檔並自動應用變化。"
+   "已載入著色器加入配置檔並自動應用變化。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
@@ -8798,7 +8806,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES,
-   "設定著色器管線通道的數量。\n每個通道可載入單通道著色器, 載入後可變更參數、過濾器和縮放, 最後應用變化即可套用變更。\n此選項設定<0>時並應用變化會清除載入的著色器。"
+   "設定著色器管線通道的數量。\n每個通道可載入單通道著色器, 載入後可變更參數、過濾器和縮放, 最後「應用變化」即可套用變更。\n此選項設定<0>時並應用變化會清除載入的著色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER,
@@ -8806,7 +8814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
-   "載入單通道著色器。\n全部載入的檔案類型必須相同, Cg、GLSL、Slang格式。\n載入位置可從「設定/資料夾/著色器」選項中變更。"
+   "載入單通道著色器。\n全部載入的檔案類型必須相同, Cg、GLSL、Slang格式。\n載入位置可從「設定/資料夾/著色器」選項中變更, 變更時請考量預設的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
@@ -8814,7 +8822,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
-   "此通道的硬體過濾器。\n設定<預設>時由顯示「雙線性過濾」選項設定, 開啟雙線性過濾為線性, 關閉雙線性過濾為最近。"
+   "此通道的硬體過濾器。\n此選項設定<預設>時, 將依顯示選項中「雙線性過濾」開或關的設定, 使用過濾器為線性處理或最近處理。"
   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCALE,
@@ -8822,7 +8830,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
-   "此通道的縮放比例。\n每個通道的縮放比例會累加。\n例如: 通道#0使用2倍, 通道#1使用2倍, 最後輸出為4倍。\n最後的通道過濾器設定<預設>時, 縮放比例將延伸至全螢幕, 由顯示「雙線性過濾」選項設定, 將使用1倍縮放或延伸至全螢幕, 具體取決於最後的通道。"
+   "此通道的縮放比例, 每個通道的縮放比例會累加。\n例如: 通道#0使用2倍, 通道#1使用2倍, 最後輸出為4倍。\n當最後的通道有設定縮放比例, 並且過濾器設定為<預設>時, 將依顯示選項中「雙線性過濾」開或關的設定, 使用1倍縮放或延伸至全螢幕, 具體取決於最後通道的設定。"
    )
 
 /* Quick Menu > Shaders > Save */
@@ -9157,7 +9165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_PARENT_DIRECTORY,
-   "返回上一層目錄位置。"
+   "返回上一層目錄。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
@@ -9332,11 +9340,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
-   "<使用目前路徑>"
+   "<使用目前位置>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_USE_THIS_DIRECTORY,
-   "套用此路徑為預設位置。"
+   "使用目前路徑為預設位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
@@ -11615,7 +11623,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
-   "載入檔案與執行項目時儲存項目到歷史列表中。\n預設的歷史列表儲存位置為復古電玩的根目錄。\n當「設定/列表」選項中「歷史儲存」關閉時, 不會儲存已執行項目並在主選單中不顯示歷史列表。"
+   "載入檔案與執行項目時儲存項目到歷史列表中, 預設的歷史列表儲存位置為復古電玩的根目錄。\n當「設定/列表」選項中「歷史儲存」關閉時, 不會儲存已執行項目並在主選單中不顯示歷史列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
@@ -12283,7 +12291,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PRIVATE_OR_SHARED_ADDRESS,
-   "建立區域網路連線主機具有私人或公用地址, 可以考慮使用代理或中繼伺服器。"
+   "建立區域網路連線主機, 具有私人或公用的IP地址, 請考慮使用代理或中繼伺服器。"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
@@ -12339,7 +12347,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
-   "警告: 主機端與用戶端執行不同版本的應用程式, 如果出現問題, 請使用相同的版本。"
+   "警告: 主機端與用戶端執行不同版本的應用程式, 如果出現問題請使用相同的版本。"
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORES,
@@ -12347,7 +12355,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
-   "警告: 主機端與用戶端執行不同版本的核心, 如果出現問題, 請使用相同的版本。"
+   "警告: 主機端與用戶端執行不同版本的核心, 如果出現問題請使用相同的版本。"
    )
 MSG_HASH(
    MSG_NETPLAY_ENDIAN_DEPENDENT,
@@ -12427,7 +12435,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
-   "正在執行"
+   "正在挑戰"
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_SPECTATING,
@@ -12435,7 +12443,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_CLIENT_DEVICES,
-   "裝置"
+   "手把配置"
    )
 MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
@@ -14114,7 +14122,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
-   "請開啟Windows應用程式使用權限, 「允許應用程式存取您的檔案系統」功能。"
+   "請開啟Windows應用程式使用權限, 隱私權設定「允許應用程式存取您的檔案系統」功能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
