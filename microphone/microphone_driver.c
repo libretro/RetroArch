@@ -197,7 +197,13 @@ static void mic_driver_microphone_handle_init(retro_microphone_t *microphone, co
 
       microphone->requested_params.rate = params ? params->rate : settings->uints.microphone_sample_rate;
       microphone->actual_params.rate = 0;
-      microphone->effective_params.rate = 0;
+      /* We don't set the actual parameters until we actually open the mic.
+       * (Remember, the core can request one before the driver is ready. */
+      microphone->effective_params.rate = params ? params->rate : settings->uints.microphone_sample_rate;
+      /* We set the effective parameters because
+       * the frontend has to do what it can
+       * to give the core what it asks for. */
+
    }
 }
 
