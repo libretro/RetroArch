@@ -395,7 +395,8 @@ static void wasapi_set_nonblock_state(void *wh, bool nonblock)
 {
    wasapi_t *w = (wasapi_t*)wh;
 
-   RARCH_LOG("[WASAPI]: Sync %s.\n", nonblock ? "off" : "on");
+   if (w->nonblock != nonblock)
+      RARCH_LOG("[WASAPI]: Sync %s.\n", nonblock ? "off" : "on");
 
    w->nonblock = nonblock;
 }
