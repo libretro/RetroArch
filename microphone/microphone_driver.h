@@ -147,6 +147,13 @@ struct retro_microphone
     * @see microphone_state_flags
     */
    enum microphone_state_flags flags;
+
+   /**
+    * The sample rate of the data provided by this mic.
+    * May be different than the mic's native rate,
+    * but it will be resampled to match if necessary.
+    */
+   unsigned rate;
 };
 
 /**
@@ -526,7 +533,7 @@ bool microphone_driver_stop(void);
  * @return Pointer to the newly-opened microphone,
  * or \c NULL if there was an error.
  */
-retro_microphone_t *microphone_driver_open_mic(void);
+retro_microphone_t *microphone_driver_open_mic(const retro_microphone_params_t *params);
 
 /**
  * Driver function for closing an open microphone.
@@ -564,6 +571,8 @@ bool microphone_driver_get_mic_state(const retro_microphone_t *microphone);
  * @return The number of samples that were read, or -1 if there was an error.
  */
 int microphone_driver_read(retro_microphone_t *microphone, int16_t* samples, size_t num_samples);
+
+unsigned microphone_driver_get_mic_rate(retro_microphone_t *microphone);
 
 /**
  * A trivial backend with no functions and an identifier of "null".

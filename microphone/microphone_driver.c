@@ -648,11 +648,16 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
    return num_frames;
 }
 
+unsigned microphone_driver_get_mic_rate(retro_microphone_t *microphone)
+{
+   return microphone ? microphone->rate : 0;
+}
+
 /* NOTE: The core may request a microphone before the driver is ready.
  * A pending handle will be provided in that case, and the frontend will
  * initialize the microphone when the time is right;
  * do not call this function twice on the same mic. */
-retro_microphone_t *microphone_driver_open_mic(void)
+retro_microphone_t *microphone_driver_open_mic(const retro_microphone_params_t *params)
 {
    microphone_driver_state_t *mic_st     = &mic_driver_st;
    const settings_t *settings            = config_get_ptr();
