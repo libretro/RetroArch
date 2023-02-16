@@ -149,11 +149,21 @@ struct retro_microphone
    enum microphone_state_flags flags;
 
    /**
-    * The sample rate of the data provided by this mic.
-    * May be different than the mic's native rate,
-    * but it will be resampled to match if necessary.
+    * The requested microphone parameters,
+    * taken from the core's open_mic call.
     */
-   unsigned rate;
+   retro_microphone_params_t requested_params;
+
+   /**
+    * The parameters of the microphone as it was provided.
+    */
+   retro_microphone_params_t actual_params;
+
+   /**
+    * The parameters of the microphone after any resampling
+    * or other changes.
+    */
+   retro_microphone_params_t effective_params;
 };
 
 /**

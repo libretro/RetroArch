@@ -185,14 +185,19 @@ bool microphone_driver_find_driver(
    return true;
 }
 
-static void mic_driver_microphone_handle_init(retro_microphone_t *microphone)
+static void mic_driver_microphone_handle_init(retro_microphone_t *microphone, const retro_microphone_params_t *params)
 {
    if (microphone)
    {
+      const settings_t *settings = config_get_ptr();
       microphone->microphone_context   = NULL;
       microphone->flags                = MICROPHONE_FLAG_ACTIVE;
       microphone->sample_buffer        = NULL;
       microphone->sample_buffer_length = 0;
+
+      microphone->requested_params.rate = params ? params->rate : settings->uints.microphone_sample_rate;
+      microphone->actual_params.rate = 0;
+      microphone->effective_params.rate = 0;
    }
 }
 
@@ -349,7 +354,6 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
    void *driver_context                  = mic_st->driver_context;
    unsigned runloop_audio_latency        = runloop_state_get_ptr()->audio_latency;
    unsigned setting_audio_latency        = settings->uints.microphone_latency;
-   unsigned actual_sample_rate           = 0;
    unsigned audio_latency                = MAX(runloop_audio_latency, setting_audio_latency);
    float slowmotion_ratio                = settings->floats.slowmotion_ratio;
    size_t insamples_max                  = AUDIO_CHUNK_SIZE_NONBLOCKING * 1 * AUDIO_MAX_RATIO * slowmotion_ratio;
@@ -366,24 +370,20 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
 
    microphone->microphone_context = mic_driver->open_mic(driver_context,
       *settings->arrays.microphone_device ? settings->arrays.microphone_device : NULL,
-      settings->uints.microphone_sample_rate,
+      microphone->requested_params.rate,
       audio_latency,
       settings->uints.microphone_block_frames,
-      &actual_sample_rate);
+      &microphone->actual_params.rate);
 
    if (!microphone->microphone_context)
       goto error;
 
    microphone_driver_set_mic_state(microphone, microphone->flags & MICROPHONE_FLAG_ENABLED);
 
-   if (actual_sample_rate != 0)
-   {
-      RARCH_LOG("[Microphone]: Requested microphone sample rate of %uHz, got %uHz. Updating settings with this value.\n",
-                settings->uints.microphone_sample_rate,
-                actual_sample_rate
-      );
-      configuration_set_uint(settings, settings->uints.microphone_sample_rate, actual_sample_rate);
-   }
+   RARCH_LOG("[Microphone]: Requested microphone sample rate of %uHz, got %uHz.\n",
+             microphone->requested_params.rate,
+             microphone->actual_params.rate
+   );
 
    if (mic_driver->mic_use_float && mic_driver->mic_use_float(mic_st->driver_context, microphone->microphone_context))
    {
@@ -650,7 +650,7 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
 
 unsigned microphone_driver_get_mic_rate(retro_microphone_t *microphone)
 {
-   return microphone ? microphone->rate : 0;
+   return microphone ? microphone->effective_params.rate : 0;
 }
 
 /* NOTE: The core may request a microphone before the driver is ready.
@@ -710,7 +710,7 @@ retro_microphone_t *microphone_driver_open_mic(const retro_microphone_params_t *
     * if that happens, we have to initialize the microphones later.
     * But the user still wants a handle, so we'll give them one.
     */
-   mic_driver_microphone_handle_init(&mic_st->microphone);
+   mic_driver_microphone_handle_init(&mic_st->microphone, params);
    /* If driver_context is NULL, the handle won't have a valid microphone context (but we'll create one later) */
 
    if (driver_context)
