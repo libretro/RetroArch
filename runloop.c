@@ -3364,6 +3364,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             /* Initialize the interface... */
             memset(microphone, 0, sizeof(*microphone));
 
+            if (microphone->interface_version != RETRO_MICROPHONE_INTERFACE_VERSION)
+            {
+               RARCH_ERR("[Environ]: Core requested unexpected microphone interface version %u, only %u is available\n",
+                  microphone->interface_version,
+                  RETRO_MICROPHONE_INTERFACE_VERSION);
+
+               return false;
+            }
+
             if (driver == &microphone_null)
             { /* If the null driver is active... */
                RARCH_ERR("[Environ]: Cannot initialize microphone interface, active driver is null\n");
@@ -3384,7 +3393,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                return false;
             }
 
-            microphone->supported     = true;
+            microphone->interface_version = RETRO_MICROPHONE_INTERFACE_VERSION;
             microphone->open_mic      = microphone_driver_open_mic;
             microphone->close_mic     = microphone_driver_close_mic;
             microphone->get_params    = microphone_driver_get_effective_params;

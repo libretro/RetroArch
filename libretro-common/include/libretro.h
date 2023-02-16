@@ -3966,6 +3966,8 @@ typedef bool (RETRO_CALLCONV *retro_get_mic_state_t)(const retro_microphone_t *m
  */
 typedef int (RETRO_CALLCONV *retro_read_mic_t)(retro_microphone_t *microphone, int16_t* samples, size_t num_samples);
 
+#define RETRO_MICROPHONE_INTERFACE_VERSION 1
+
 /**
  * An interface for querying the microphone and accessing data read from it.
  * All fields in this interface are populated by the frontend
@@ -3976,10 +3978,12 @@ typedef int (RETRO_CALLCONV *retro_read_mic_t)(retro_microphone_t *microphone, i
 struct retro_microphone_interface
 {
    /**
-    * True if the driver and frontend support microphones.
-    * Set by the frontend.
+    * The version of this microphone interface.
+    * Set by the core to request a particular version,
+    * and set by the frontend to indicate the returned version.
+    * 0 indicates that the interface is invalid or uninitialized.
     */
-   bool supported;
+   unsigned interface_version;
    retro_open_mic_t open_mic;
    retro_close_mic_t close_mic;
    retro_get_mic_params_t get_params;
