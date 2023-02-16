@@ -42,7 +42,7 @@ typedef struct
 } wasapi_t;
 
 static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
-      unsigned u1, unsigned *u2)
+      unsigned u1, unsigned *new_rate)
 {
    HRESULT hr;
    UINT32 frame_count        = 0;
@@ -136,6 +136,9 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       goto error;
    w->running  = true;
    w->nonblock = !settings->bools.audio_sync;
+
+   if (new_rate)
+      *new_rate = rate;
 
    return w;
 
