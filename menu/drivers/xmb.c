@@ -425,6 +425,7 @@ typedef struct xmb_handle
 
    /* Favorites, History, Images, Music, Videos, user generated */
    bool is_playlist;
+   bool is_playlist_information;
    bool is_db_manager_list;
    bool is_explore_list;
    bool is_contentless_cores;
@@ -2708,6 +2709,10 @@ static void xmb_populate_entries(void *data,
          !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION)) &&
          !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL));
 
+   xmb->is_playlist_information =
+         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION)) ||
+         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL));
+
    /* Determine whether this is a database manager list */
    was_db_manager_list     = xmb->is_db_manager_list && depth >= 4;
    xmb->is_db_manager_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST));
@@ -3613,15 +3618,15 @@ static int xmb_draw_item(
    unsigned entry_type                 = 0;
    const float half_size               = xmb->icon_size / 2.0f;
    uintptr_t texture_switch            = 0;
-   bool do_draw_text                   = false;
-   unsigned ticker_limit               = 35 * xmb_scale_mod[0];
-   unsigned line_ticker_width          = 45 * xmb_scale_mod[3];
-   xmb_node_t *   node                 = (xmb_node_t*)list->list[i].userdata;
+   bool draw_text_value                = false;
+   int extra_margins_setting_left      = 0;
+   unsigned ticker_limit               = ((xmb->use_ps3_layout) ? 38 : 35) * xmb_scale_mod[0];
+   unsigned line_ticker_width          = ((xmb->use_ps3_layout) ? 48 : 45) * xmb_scale_mod[3];
+   xmb_node_t *node                    = (xmb_node_t*)list->list[i].userdata;
    bool use_smooth_ticker              = settings->bools.menu_ticker_smooth;
-   enum gfx_animation_ticker_type
-      menu_ticker_type                 = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-   unsigned xmb_thumbnail_scale_factor =
-      settings->uints.menu_xmb_thumbnail_scale_factor;
+   enum gfx_animation_ticker_type menu_ticker_type
+                                       = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+   unsigned xmb_thumbnail_scale_factor = settings->uints.menu_xmb_thumbnail_scale_factor;
    bool menu_xmb_vertical_thumbnails   = settings->bools.menu_xmb_vertical_thumbnails;
    bool menu_show_sublabels            = settings->bools.menu_show_sublabels;
    bool menu_switch_icons              = settings->bools.menu_xmb_switch_icons;
@@ -3694,20 +3699,20 @@ static int xmb_draw_item(
             || string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
-            texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
+            texture_switch  = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
          else
-            do_draw_text   = true;
+            draw_text_value = true;
       }
       else if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED))
             || string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
-            texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
+            texture_switch  = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
          else
-            do_draw_text   = true;
+            draw_text_value = true;
       }
       else
-         do_draw_text   = true;
+         draw_text_value = true;
    }
    else
    {
@@ -3737,27 +3742,30 @@ static int xmb_draw_item(
          }
 
          if (!found)
-            do_draw_text = true;
+            draw_text_value = true;
       }
       else
-         do_draw_text = true;
+         draw_text_value = true;
    }
 
-   if (string_is_empty(entry.value))
+   if (!texture_switch)
    {
-      if ((xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE) ||
-            !xmb->use_ps3_layout ||
-            (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
-             && ((xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
-                  || (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_PENDING))) ||
-            (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
-             && ((xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
-                  || (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_PENDING))
-             && menu_xmb_vertical_thumbnails)
+      if (
+            (
+               (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+            || (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
+               && (  (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+                  || (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_PENDING)))
+            || (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
+               && (  (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+                  || (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_PENDING)))
+            )
+            && !xmb->is_playlist_information
+            && xmb->use_ps3_layout
          )
       {
-         ticker_limit      = 40 * xmb_scale_mod[1];
-         line_ticker_width = 50 * xmb_scale_mod[3];
+         if (xmb->is_playlist)
+            ticker_limit      = 40 * xmb_scale_mod[1];
 
          /* Can increase text length if thumbnail is downscaled */
          if (xmb_thumbnail_scale_factor < 100)
@@ -3772,11 +3780,21 @@ static int xmb_draw_item(
                   (unsigned)(ticker_scale_factor * 10.0f * xmb_scale_mod[3]);
          }
       }
-      else
-      {
-         ticker_limit           = 70 * xmb_scale_mod[2];
-         line_ticker_width      = 60 * xmb_scale_mod[3];
-      }
+      else if (!draw_text_value || string_is_empty(entry.value))
+         ticker_limit           = ((xmb->use_ps3_layout) ? 78 : 56) * xmb_scale_mod[2];
+   }
+
+   switch (entry_type)
+   {
+      case FILE_TYPE_DOWNLOAD_CORE:
+         /* Special margin for 'installed' tag value */
+         extra_margins_setting_left = ((xmb->use_ps3_layout) ? 260 : 180) * xmb->last_scale_factor * xmb_scale_mod[2];
+         ticker_limit               = ((xmb->use_ps3_layout) ? 78 : 56) * xmb_scale_mod[2];
+         break;
+      default:
+         if (xmb->is_quick_menu || xmb->is_state_slot)
+            extra_margins_setting_left = -(100 * xmb->last_scale_factor * xmb_scale_mod[2]);
+         break;
    }
 
    if (!string_is_empty(entry.rich_label))
@@ -3819,6 +3837,9 @@ static int xmb_draw_item(
       float icon_ratio = icon_space / height / icon_space * 4;
       float scr_margin = xmb->margins_screen_top + (icon_space / icon_ratio / 400);
       float factor     = menu_xmb_vertical_fade_factor / 100.0f / icon_ratio;
+
+      if (!xmb->use_ps3_layout)
+         scr_margin -= (xmb->margins_screen_top / 10);
 
       /* Top */
       if (i < current)
@@ -3871,7 +3892,7 @@ static int xmb_draw_item(
             line_ticker_smooth.font                 = xmb->font2;
             line_ticker_smooth.font_scale           = 1.0f;
 
-            line_ticker_smooth.field_width          = (unsigned)(xmb->font2_size * 0.6f * line_ticker_width);
+            line_ticker_smooth.field_width          = (unsigned)(xmb->font2_size * 0.55f * line_ticker_width);
             /* The calculation here is incredibly obtuse. I think
              * this is correct... (c.f. xmb_item_y()) */
             line_ticker_smooth.field_height         = (unsigned)(
@@ -3915,12 +3936,13 @@ static int xmb_draw_item(
             gfx_animation_line_ticker(&line_ticker);
          }
 
-         label_offset = - xmb->margins_label_top;
+         label_offset = -xmb->margins_label_top;
 
          /* Draw sublabel */
          xmb_draw_text(xmb_shadows_enable, xmb, settings,
                entry_sublabel,
-               sublabel_x, ticker_y_offset + sublabel_y,
+               sublabel_x,
+               ticker_y_offset + sublabel_y,
                1, node->label_alpha, TEXT_ALIGN_LEFT,
                width, height, xmb->font2);
 
@@ -3985,9 +4007,14 @@ static int xmb_draw_item(
    }
 
    xmb_draw_text(xmb_shadows_enable, xmb, settings, tmp,
-         (float)ticker_x_offset + node->x + xmb->margins_screen_left +
-         xmb->icon_spacing_horizontal + xmb->margins_label_left,
-         xmb->margins_screen_top + node->y + label_offset,
+         (float)ticker_x_offset
+               + node->x
+               + xmb->margins_screen_left
+               + xmb->icon_spacing_horizontal
+               + xmb->margins_label_left,
+         xmb->margins_screen_top
+               + node->y
+               + label_offset,
          1, node->label_alpha, TEXT_ALIGN_LEFT,
          width, height, xmb->font);
 
@@ -3996,7 +4023,7 @@ static int xmb_draw_item(
    if (use_smooth_ticker)
    {
       ticker_smooth.selected    = (i == current);
-      ticker_smooth.field_width = xmb->font_size * 0.5f * 35 * xmb_scale_mod[7];
+      ticker_smooth.field_width = xmb->font_size * 0.5f * ((xmb->use_ps3_layout) ? 38 : 18) * xmb_scale_mod[7];
       ticker_smooth.src_str     = entry.value;
       ticker_smooth.dst_str     = tmp;
       ticker_smooth.dst_str_len = sizeof(tmp);
@@ -4007,7 +4034,7 @@ static int xmb_draw_item(
    else
    {
       ticker.s                  = tmp;
-      ticker.len                = 35 * xmb_scale_mod[7];
+      ticker.len                = ((xmb->use_ps3_layout) ? 38 : 18) * xmb_scale_mod[7];
       ticker.selected           = (i == current);
       ticker.str                = entry.value;
 
@@ -4015,17 +4042,19 @@ static int xmb_draw_item(
          gfx_animation_ticker(&ticker);
    }
 
-   if (do_draw_text)
+   if (draw_text_value)
       xmb_draw_text(xmb_shadows_enable, xmb, settings, tmp,
-            (float)ticker_x_offset + node->x +
-            + xmb->margins_screen_left
-            + xmb->icon_spacing_horizontal
-            + xmb->margins_label_left
-            + xmb->margins_setting_left,
-            xmb->margins_screen_top + node->y + xmb->margins_label_top,
-            1,
-            node->label_alpha,
-            TEXT_ALIGN_LEFT,
+            (float)ticker_x_offset
+                  + node->x
+                  + xmb->margins_screen_left
+                  + xmb->icon_spacing_horizontal
+                  + xmb->margins_label_left
+                  + xmb->margins_setting_left
+                  + extra_margins_setting_left,
+            xmb->margins_screen_top
+                  + node->y
+                  + xmb->margins_label_top,
+            1, node->label_alpha, TEXT_ALIGN_LEFT,
             width, height, xmb->font);
 
    gfx_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
@@ -4316,6 +4345,7 @@ static INLINE float xmb_get_scale_factor(float menu_scale_factor,
       scale_factor = ((menu_scale_factor * (float)width) / 1920.0f) * 1.5f;
 #endif
    }
+
    /* Apply safety limit */
    if (scale_factor < 0.1f)
       return 0.1f;
@@ -4448,12 +4478,12 @@ static void xmb_show_fullscreen_thumbnails(
       animation_entry.subject      = &xmb->fullscreen_thumbnail_alpha;
       animation_entry.cb           = NULL;
       animation_entry.userdata     = NULL;
+
+      /* Push animation */
+      gfx_animation_push(&animation_entry);
    }
    else
       xmb->fullscreen_thumbnail_alpha = 1.0f;
-
-   /* Push animation */
-   gfx_animation_push(&animation_entry);
 
    /* Enable fullscreen thumbnails */
    xmb->fullscreen_thumbnail_selection = selection;
@@ -5200,7 +5230,7 @@ static void xmb_draw_fullscreen_thumbnails(
       gfx_thumbnail_t *left_thumbnail  = NULL;
       int view_width                    = (int)video_width;
       int view_height                   = (int)video_height;
-      int thumbnail_margin              = (int)(xmb->icon_size / 2.0f);
+      int thumbnail_margin              = (int)(xmb->icon_size / 4.0f);
       bool show_right_thumbnail         = false;
       bool show_left_thumbnail          = false;
       unsigned num_thumbnails           = 0;
@@ -5211,7 +5241,7 @@ static void xmb_draw_fullscreen_thumbnails(
       float *menu_color                 = xmb_gradient_ident(xmb_color_theme);
       /* XMB doesn't have a proper theme interface, so
        * hard-code this alpha value for now... */
-      float background_alpha            = 0.75f;
+      float background_alpha            = 0.90f;
       float background_color[16]        = {
          0.0f, 0.0f, 0.0f, 1.0f,
          0.0f, 0.0f, 0.0f, 1.0f,
@@ -5226,7 +5256,7 @@ static void xmb_draw_fullscreen_thumbnails(
          0.0f, 0.0f, 0.0f, 0.0f,
          0.0f, 0.0f, 0.0f, 0.0f,
       };
-      int frame_width                   = (int)(xmb->icon_size / 6.0f);
+      int frame_width                   = (int)(xmb->icon_size / 8.0f);
       float frame_color[16]             = {
          1.0f, 1.0f, 1.0f, 1.0f,
          1.0f, 1.0f, 1.0f, 1.0f,
@@ -5521,7 +5551,8 @@ static void xmb_draw_fullscreen_thumbnails(
       /* Draw thumbnails */
 
       /* > Configure shadow effect */
-      if (xmb_shadows_enable)
+      /* > Disabled for now since the images already have a background border */
+      if (0 && xmb_shadows_enable)
       {
          float shadow_offset            = xmb->icon_size / 24.0f;
 
@@ -5531,7 +5562,7 @@ static void xmb_draw_fullscreen_thumbnails(
          thumbnail_shadow.drop.y_offset = shadow_offset;
       }
       else
-         thumbnail_shadow.type = GFX_THUMBNAIL_SHADOW_NONE;
+         thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_NONE;
 
       /* > Right */
       if (show_right_thumbnail)
@@ -5697,6 +5728,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Configure shadow effect */
    if (xmb_shadows_enable)
    {
+#if 0
       /* Drop shadow for thumbnails needs to be larger
        * than for text/icons, and also needs to scale
        * with screen dimensions */
@@ -5709,6 +5741,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       thumbnail_shadow.alpha         = GFX_SHADOW_ALPHA;
       thumbnail_shadow.drop.x_offset = shadow_offset;
       thumbnail_shadow.drop.y_offset = shadow_offset;
+#else
+      thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_OUTLINE;
+      thumbnail_shadow.alpha         = 0.50f;
+      thumbnail_shadow.outline.width = 2 * xmb->last_scale_factor;
+      if (thumbnail_shadow.outline.width < 1)
+         thumbnail_shadow.outline.width = 1;
+#endif
    }
    else
       thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_NONE;
@@ -5816,7 +5855,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
     * so many combinations here that we would go insane
     * trying to rationalise this any further... */
 
-   /* Save state thumbnail, right side */
+   /* Save state thumbnail, right side in PS3 layout, left in PSP layout */
    if ((xmb->is_quick_menu || xmb->is_state_slot) &&
          ((xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE) ||
           (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING)))
@@ -5827,6 +5866,18 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       float scaled_thumb_height = thumb_height * thumbnail_scale_factor;
       float thumb_x             = right_thumbnail_margin_x + ((thumb_width - scaled_thumb_width) / 2.0f);
       float thumb_y             = xmb->margins_title_top + (xmb->icon_size / 4.0f) + ((thumb_height - scaled_thumb_height) / 2.0f);
+
+      if (!xmb->use_ps3_layout)
+      {
+         float y_offset      = ((xmb->depth != 1) ? 1.2f : -0.25f) * xmb->icon_size;
+
+         thumb_width         = xmb->icon_size * 2.4f;
+         thumb_height        = thumbnail_margin_height_under - xmb->margins_title_bottom - (xmb->icon_size / 6.0f) - y_offset;
+         scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
+         scaled_thumb_height = thumb_height * thumbnail_scale_factor;
+         thumb_x             = (thumb_width - scaled_thumb_width) / 2.0f;
+         thumb_y             = xmb->margins_screen_top + xmb->icon_size + y_offset;
+      }
 
       gfx_thumbnail_draw(
             userdata,
@@ -6400,6 +6451,11 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->items_passive_alpha      = 0.85;
 
    xmb->shadow_offset            = 2.0;
+   if (scale_factor < 1)
+      xmb->shadow_offset        *= scale_factor * 1.5;
+   if (xmb->shadow_offset > 2.0)
+      xmb->shadow_offset         = 2.0;
+
    xmb->font_size                = new_font_size;
    xmb->font2_size               = 24.0           * scale_factor;
    xmb->cursor_size              = 64.0           * scale_factor;
@@ -6407,7 +6463,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->icon_spacing_horizontal  = 200.0          * scale_factor;
    xmb->icon_spacing_vertical    = 64.0           * scale_factor;
 
-   xmb->margins_screen_top       = (256+32)       * scale_factor;
+   xmb->margins_screen_top       = (256 + 32)     * scale_factor;
    xmb->margins_screen_left      = 336.0          * scale_factor;
 
    xmb->margins_title_left       = (margins_title * scale_factor) + (4 * scale_factor) + (margins_title_h_offset * scale_factor);
@@ -6417,7 +6473,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->margins_label_left       = 85.0           * scale_factor;
    xmb->margins_label_top        = new_font_size / 3.0;
 
-   xmb->margins_setting_left     = 600.0          * scale_factor * xmb_scale_mod[6];
+   xmb->margins_setting_left     = 670.0          * scale_factor * xmb_scale_mod[6];
    xmb->margins_dialog           = 48             * scale_factor;
    xmb->margins_slice            = 16             * scale_factor;
 }
@@ -6427,7 +6483,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    float scale_factor            = xmb->last_scale_factor;
    float margins_title           = xmb->margins_title;
    float margins_title_h_offset  = xmb->margins_title_horizontal_offset;
-   unsigned new_font_size        = 32.0     * scale_factor;
+   unsigned new_font_size        = 28.0           * scale_factor;
 
    xmb->above_subitem_offset     =  1.5;
    xmb->above_item_offset        = -1.0;
@@ -6446,25 +6502,58 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 
    xmb->shadow_offset            = 1.0;
    xmb->font_size                = new_font_size;
-   xmb->font2_size               = 24.0     * scale_factor;
+   xmb->font2_size               = 22.0           * scale_factor;
    xmb->cursor_size              = 64.0;
-   xmb->icon_size                = 128.0    * scale_factor;
-   xmb->icon_spacing_horizontal  = 250.0    * scale_factor;
-   xmb->icon_spacing_vertical    = 108.0    * scale_factor;
+   xmb->icon_size                = 128.0          * scale_factor;
+   xmb->icon_spacing_horizontal  = 250.0          * scale_factor;
+   xmb->icon_spacing_vertical    = 108.0          * scale_factor;
 
-   xmb->margins_screen_top       = (256+32) * scale_factor;
-   xmb->margins_screen_left      = 136.0    * scale_factor;
+   xmb->margins_screen_top       = (256 + 32)     * scale_factor;
+   xmb->margins_screen_left      = 136.0          * scale_factor;
 
    xmb->margins_title_left       = (margins_title * scale_factor) + (4 * scale_factor) + (margins_title_h_offset * scale_factor);
    xmb->margins_title_top        = (margins_title * scale_factor) + (new_font_size - (new_font_size / 6) * scale_factor);
    xmb->margins_title_bottom     = (margins_title * scale_factor) + (4 * scale_factor);
 
-   xmb->margins_label_left       = 85.0     * scale_factor;
+   xmb->margins_label_left       = 85.0           * scale_factor;
    xmb->margins_label_top        = new_font_size / 3.0;
 
-   xmb->margins_setting_left     = 600.0    * scale_factor;
-   xmb->margins_dialog           = 48       * scale_factor;
-   xmb->margins_slice            = 16       * scale_factor;
+   xmb->margins_setting_left     = 540.0          * scale_factor * xmb_scale_mod[6];
+   xmb->margins_dialog           = 48             * scale_factor;
+   xmb->margins_slice            = 16             * scale_factor;
+}
+
+static void xmb_init_scale_mod(void)
+{
+   uint8_t i;
+   settings_t *settings       = config_get_ptr();
+   float scale_value          = settings->floats.menu_scale_factor * 100.0f;
+
+   /* scaling multiplier formulas made from these values:     */
+   /* xmb_scale 50 = {2.5, 2.5,   2, 1.7, 2.5,   4, 2.4, 2.5} */
+   /* xmb_scale 75 = {  2, 1.6, 1.6, 1.4, 1.5, 2.3, 1.9, 1.3} */
+   {
+      /* text length & word wrap (base 35 apply to file browser, 1st column) */
+      xmb_scale_mod[0] = -0.03 * scale_value + 4.083;
+      /* playlist text length when thumbnail is ON (small, base 40) */
+      xmb_scale_mod[1] = -0.03 * scale_value + 3.95;
+      /* playlist text length when thumbnail is OFF (large, base 70) */
+      xmb_scale_mod[2] = -0.02 * scale_value + 3.033;
+      /* sub-label length & word wrap */
+      xmb_scale_mod[3] = -0.014 * scale_value + 2.416;
+      /* thumbnail size & vertical margin from top */
+      xmb_scale_mod[4] = -0.03 * scale_value + 3.916;
+      /* thumbnail horizontal left margin (horizontal positioning) */
+      xmb_scale_mod[5] = -0.06 * scale_value + 6.933;
+      /* margin before 2nd column start (shaders parameters, cheats...) */
+      xmb_scale_mod[6] = -0.024 * scale_value + 3.400;
+      /* text length & word wrap (base 35 apply to 2nd column in cheats, shaders, etc) */
+      xmb_scale_mod[7] = 134.179 * pow(scale_value, -1.0778);
+
+      for (i = 0; i < 8; i++)
+         if (xmb_scale_mod[i] < 1)
+            xmb_scale_mod[i] = 1;
+   }
 }
 
 static void xmb_layout(xmb_handle_t *xmb)
@@ -6476,6 +6565,7 @@ static void xmb_layout(xmb_handle_t *xmb)
    unsigned end               = (unsigned)menu_entries_get_size();
 
    video_driver_get_size(&width, &height);
+   xmb_init_scale_mod();
 
    if (xmb->use_ps3_layout)
       xmb_layout_ps3(xmb, width);
@@ -6594,40 +6684,11 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    settings_t *settings       = config_get_ptr();
    gfx_animation_t *p_anim    = anim_get_ptr();
    menu_handle_t *menu        = (menu_handle_t*)calloc(1, sizeof(*menu));
-   float scale_value          = settings->floats.menu_scale_factor * 100.0f;
-
-   /* scaling multiplier formulas made from these values:     */
-   /* xmb_scale 50 = {2.5, 2.5,   2, 1.7, 2.5,   4, 2.4, 2.5} */
-   /* xmb_scale 75 = {  2, 1.6, 1.6, 1.4, 1.5, 2.3, 1.9, 1.3} */
-
-   if (scale_value < 100)
-   {
-      /* text length & word wrap (base 35 apply to file browser, 1st column) */
-      xmb_scale_mod[0] = -0.03 * scale_value + 4.083;
-      /* playlist text length when thumbnail is ON (small, base 40) */
-      xmb_scale_mod[1] = -0.03 * scale_value + 3.95;
-      /* playlist text length when thumbnail is OFF (large, base 70) */
-      xmb_scale_mod[2] = -0.02 * scale_value + 3.033;
-      /* sub-label length & word wrap */
-      xmb_scale_mod[3] = -0.014 * scale_value + 2.416;
-      /* thumbnail size & vertical margin from top */
-      xmb_scale_mod[4] = -0.03 * scale_value + 3.916;
-      /* thumbnail horizontal left margin (horizontal positioning) */
-      xmb_scale_mod[5] = -0.06 * scale_value + 6.933;
-      /* margin before 2nd column start (shaders parameters, cheats...) */
-      xmb_scale_mod[6] = -0.028 * scale_value + 3.866;
-      /* text length & word wrap (base 35 apply to 2nd column in cheats, shaders, etc) */
-      xmb_scale_mod[7] = 134.179 * pow(scale_value, -1.0778);
-
-      for (i = 0; i < 8; i++)
-         if (xmb_scale_mod[i] < 1)
-            xmb_scale_mod[i] = 1;
-   }
-
    if (!menu)
       return NULL;
 
    video_driver_get_size(&width, &height);
+   xmb_init_scale_mod();
 
    if (!(xmb = (xmb_handle_t*)calloc(1, sizeof(xmb_handle_t))))
    {
