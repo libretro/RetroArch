@@ -3970,8 +3970,6 @@ typedef int (RETRO_CALLCONV *retro_read_mic_t)(retro_microphone_t *microphone, i
 
 /**
  * An interface for querying the microphone and accessing data read from it.
- * All fields in this interface are populated by the frontend
- * within the RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE callback.
  *
  * @see RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE
  */
