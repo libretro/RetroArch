@@ -3136,7 +3136,7 @@ static void setting_get_string_representation_state_slot(rarch_setting_t *settin
 
    snprintf(s, len, "%d", *setting->value.target.integer);
    if (*setting->value.target.integer == -1)
-      strlcat(s, " (Auto)", len);
+      strlcpy(s, "Auto", len);
 }
 
 static void setting_get_string_representation_percentage(rarch_setting_t *setting,
