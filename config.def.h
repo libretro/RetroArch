@@ -1124,7 +1124,7 @@
 #define DEFAULT_WASAPI_EXCLUSIVE_MODE true
 #define DEFAULT_WASAPI_FLOAT_FORMAT false
 /* auto */
-#define DEFAULT_WASAPI_SH_BUFFER_LENGTH -16
+#define DEFAULT_WASAPI_SH_BUFFER_LENGTH 0
 #endif
 
 /* Automatically mute audio when fast forward
