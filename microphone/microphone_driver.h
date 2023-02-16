@@ -582,7 +582,7 @@ bool microphone_driver_get_mic_state(const retro_microphone_t *microphone);
  */
 int microphone_driver_read(retro_microphone_t *microphone, int16_t* samples, size_t num_samples);
 
-unsigned microphone_driver_get_mic_rate(retro_microphone_t *microphone);
+bool microphone_driver_get_effective_params(const retro_microphone_t *microphone, retro_microphone_params_t *params);
 
 /**
  * A trivial backend with no functions and an identifier of "null".

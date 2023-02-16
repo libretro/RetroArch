@@ -648,9 +648,19 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
    return num_frames;
 }
 
-unsigned microphone_driver_get_mic_rate(retro_microphone_t *microphone)
+bool microphone_driver_get_effective_params(const retro_microphone_t *microphone, retro_microphone_params_t *params)
 {
-   return microphone ? microphone->effective_params.rate : 0;
+   if (!microphone || !params)
+      /* If the arguments are null... */
+      return false;
+
+   if (!(microphone->flags & MICROPHONE_FLAG_ACTIVE))
+      /* If this isn't an opened microphone... */
+      return false;
+
+   *params = microphone->effective_params;
+
+   return true;
 }
 
 /* NOTE: The core may request a microphone before the driver is ready.

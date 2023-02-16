@@ -3387,7 +3387,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             microphone->supported     = true;
             microphone->open_mic      = microphone_driver_open_mic;
             microphone->close_mic     = microphone_driver_close_mic;
-            microphone->get_mic_rate  = microphone_driver_get_mic_rate;
+            microphone->get_params    = microphone_driver_get_effective_params;
             microphone->set_mic_state = microphone_driver_set_mic_state;
             microphone->get_mic_state = microphone_driver_get_mic_state;
             microphone->read_mic      = microphone_driver_read;

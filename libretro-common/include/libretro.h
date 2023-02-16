@@ -3885,18 +3885,21 @@ typedef retro_microphone_t *(RETRO_CALLCONV *retro_open_mic_t)(const retro_micro
 typedef void (RETRO_CALLCONV *retro_close_mic_t)(retro_microphone_t *microphone);
 
 /**
- * Returns the sample rate of this microphone.
- * Input provided by \c read_mic will be resampled
- * from the native rate to the one requested in \c open_mic,
- * so this will return that value.
+ * Returns the configured parameters of this microphone.
+ * These may differ from what was requested depending on
+ * the driver and device configuration.
  *
- * @param microphone Opaque handle to the microphone
- * whose sample rate will be retrieved.
+ * Will not change after the mic was opened.
  *
- * @return The sample rate of this microphone in Hz,
- * or 0 if there was an error.
+ * @param microphone[in] Opaque handle to the microphone
+ * whose parameters will be retrieved.
+ * @param params[out] The parameters object that the
+ * microphone's parameters will be copied to.
+ *
+ * @return \c true if the parameters were retrieved,
+ * \c false if there was an error.
  */
-typedef unsigned (RETRO_CALLCONV *retro_get_mic_rate_t)(retro_microphone_t *microphone);
+typedef bool (RETRO_CALLCONV *retro_get_mic_params_t)(const retro_microphone_t *microphone, retro_microphone_params_t *params);
 
 /**
  * Enables or disables the given microphone.
@@ -3979,7 +3982,7 @@ struct retro_microphone_interface
    bool supported;
    retro_open_mic_t open_mic;
    retro_close_mic_t close_mic;
-   retro_get_mic_rate_t get_mic_rate;
+   retro_get_mic_params_t get_params;
    retro_set_mic_state_t set_mic_state;
    retro_get_mic_state_t get_mic_state;
    retro_read_mic_t read_mic;
