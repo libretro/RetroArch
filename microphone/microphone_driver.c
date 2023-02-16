@@ -203,7 +203,6 @@ static void mic_driver_microphone_handle_init(retro_microphone_t *microphone, co
       /* We set the effective parameters because
        * the frontend has to do what it can
        * to give the core what it asks for. */
-
    }
 }
 
