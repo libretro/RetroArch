@@ -3361,9 +3361,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                return false;
             /* User didn't provide a pointer for a response, what can we do? */
 
-            /* Initialize the interface... */
-            memset(microphone, 0, sizeof(*microphone));
-
             if (microphone->interface_version != RETRO_MICROPHONE_INTERFACE_VERSION)
             {
                RARCH_ERR("[Environ]: Core requested unexpected microphone interface version %u, only %u is available\n",
@@ -3372,6 +3369,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
                return false;
             }
+
+            /* Initialize the interface... */
+            memset(microphone, 0, sizeof(*microphone));
 
             if (driver == &microphone_null)
             { /* If the null driver is active... */
