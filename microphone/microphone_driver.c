@@ -530,17 +530,18 @@ bool microphone_driver_get_mic_state(const retro_microphone_t *microphone)
  *
  * @see audio_driver_flush()
  */
-static void microphone_driver_flush(
+static size_t microphone_driver_flush(
       microphone_driver_state_t *mic_st,
       retro_microphone_t *microphone,
       float slowmotion_ratio,
       bool audio_fastforward_mute,
-      int16_t *frames, size_t num_frames,
+      size_t num_frames,
       bool is_slowmotion, bool is_fastmotion)
 {
    struct resampler_data resampler_data;
    unsigned sample_size = mic_driver_get_sample_size(microphone);
    size_t bytes_to_read = MIN(mic_st->input_frames_length, num_frames * sample_size);
+   size_t frames_to_enqueue;
    ssize_t bytes_read   = mic_st->driver->read(
          mic_st->driver_context,
          microphone->microphone_context,
@@ -549,7 +550,7 @@ static void microphone_driver_flush(
    /* First, get the most recent mic data */
 
    if (bytes_read <= 0)
-      return;
+      return 0;
 
    resampler_data.input_frames = bytes_read / sample_size;
    /* This is in frames, not samples or bytes;
@@ -567,6 +568,23 @@ static void microphone_driver_flush(
 
    if (is_slowmotion)
       resampler_data.ratio *= slowmotion_ratio;
+
+   if (fabs(resampler_data.ratio - 1.0f) < 1e-8)
+   { /* If the mic's native rate is practically the same as the requested one... */
+      frames_to_enqueue = MIN(FIFO_WRITE_AVAIL(microphone->outgoing_samples), resampler_data.input_frames);
+      if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
+      { /* If this mic provides floating-point samples... */
+         convert_float_to_s16(mic_st->final_frames, mic_st->input_frames, resampler_data.input_frames);
+         fifo_write(microphone->outgoing_samples, mic_st->final_frames, frames_to_enqueue * sizeof(int16_t));
+      }
+      else
+      {
+         fifo_write(microphone->outgoing_samples, mic_st->input_frames, frames_to_enqueue * sizeof(int16_t));
+      }
+
+      return resampler_data.input_frames;
+   }
+   /* Couldn't take the fast path, so let's resample the mic input */
 
    /* First we need to format the input for the resampler. */
    if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
@@ -586,15 +604,16 @@ static void microphone_driver_flush(
    microphone->resampler->process(microphone->resampler_data, &resampler_data);
 
    /* Next, we convert the resampled data back to mono... */
-   convert_to_mono_float_left(mic_st->resampled_mono_frames, mic_st->resampled_frames, resampler_data.input_frames);
+   convert_to_mono_float_left(mic_st->resampled_mono_frames, mic_st->resampled_frames, resampler_data.output_frames);
    /* Why the left channel? No particular reason.
     * Left and right channels are the same in this case anyway. */
 
    /* Finally, we convert the audio back to 16-bit ints, as the mic interface requires. */
-   convert_float_to_s16(mic_st->final_frames, mic_st->resampled_mono_frames, resampler_data.input_frames);
+   convert_float_to_s16(mic_st->final_frames, mic_st->resampled_mono_frames, resampler_data.output_frames);
 
-   memcpy(frames, mic_st->final_frames, resampler_data.input_frames * sizeof(int16_t));
-
+   frames_to_enqueue = MIN(FIFO_WRITE_AVAIL(microphone->outgoing_samples), resampler_data.output_frames);
+   fifo_write(microphone->outgoing_samples, mic_st->final_frames, frames_to_enqueue * sizeof(int16_t));
+   return resampler_data.output_frames;
 }
 
 int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size_t num_frames)
@@ -603,13 +622,16 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
    size_t frames_remaining           = num_frames;
    microphone_driver_state_t *mic_st = &mic_driver_st;
    const microphone_driver_t *driver = mic_st->driver;
+   bool core_paused                  = runloop_flags & RUNLOOP_FLAG_PAUSED;
+   bool driver_active                = mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE;
+   float slowmotion_ratio            = config_get_ptr()->floats.slowmotion_ratio;
+   bool fastforward_mute             = config_get_ptr()->bools.audio_fastforward_mute;
 
    if (!frames || !microphone)
       /* If the provided arguments aren't valid... */
       return -1;
 
-   if (!(mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE)
-         || !(microphone->flags & MICROPHONE_FLAG_ACTIVE))
+   if (!driver_active || !(microphone->flags & MICROPHONE_FLAG_ACTIVE))
       /* If the microphone or driver aren't active... */
       return -1;
 
@@ -643,28 +665,33 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
       return -1;
    }
 
-   do
-   {
-      size_t frames_to_read = MIN(AUDIO_CHUNK_SIZE_NONBLOCKING >> 1, frames_remaining);
-      if (!(runloop_flags & RUNLOOP_FLAG_PAUSED)
-            && (mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE)
-            && mic_st->input_frames)
-         /* If the game is running, the audio driver and mic are running,
-          * and the input sample buffer is valid... */
-         microphone_driver_flush(mic_st,
-                                 microphone,
-                                 config_get_ptr()->floats.slowmotion_ratio,
-                                 config_get_ptr()->bools.audio_fastforward_mute,
-                                 frames,
-                                 frames_to_read,
-                                 runloop_flags & RUNLOOP_FLAG_SLOWMOTION,
-                                 runloop_flags & RUNLOOP_FLAG_FASTMOTION);
-      frames_remaining -= frames_to_read;
-      frames           += frames_to_read;
-   }
-   while (frames_remaining > 0);
+   if (num_frames > microphone->outgoing_samples->size)
+      /* If the core asked for more frames than we can fit... */
+      return -1;
 
-   return num_frames;
+   retro_assert(mic_st->input_frames != NULL);
+
+   while (FIFO_READ_AVAIL(microphone->outgoing_samples) < num_frames * sizeof(int16_t))
+   { /* Until we can give the core the frames it asked for... */
+      size_t frames_to_read = MIN(AUDIO_CHUNK_SIZE_NONBLOCKING, frames_remaining);
+      size_t frames_read = 0;
+      if (!core_paused)
+         /* If the game is running and the mic driver is active... */
+         frames_read = microphone_driver_flush(mic_st,
+            microphone,
+            slowmotion_ratio,
+            fastforward_mute,
+            frames_to_read,
+            runloop_flags & RUNLOOP_FLAG_SLOWMOTION,
+            runloop_flags & RUNLOOP_FLAG_FASTMOTION);
+
+      /* Otherwise, advance the counters. We're not gonna get new data,
+       * but we still need to finish this loop */
+      frames_remaining -= frames_read;
+   } /* If the queue already has enough samples to give, the loop will be skipped */
+
+   fifo_read(microphone->outgoing_samples, frames, num_frames * sizeof(int16_t));
+   return (int)num_frames;
 }
 
 bool microphone_driver_get_effective_params(const retro_microphone_t *microphone, retro_microphone_params_t *params)
