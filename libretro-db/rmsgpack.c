@@ -66,34 +66,11 @@
 #define _MPF_NIL        0xc0
 
 static const uint8_t MPF_FIXMAP   = _MPF_FIXMAP;
-static const uint8_t MPF_MAP16    = _MPF_MAP16;
 static const uint8_t MPF_MAP32    = _MPF_MAP32;
 
 static const uint8_t MPF_FIXARRAY = _MPF_FIXARRAY;
-static const uint8_t MPF_ARRAY16  = _MPF_ARRAY16;
-static const uint8_t MPF_ARRAY32  = _MPF_ARRAY32;
 
 static const uint8_t MPF_FIXSTR   = _MPF_FIXSTR;
-static const uint8_t MPF_STR8     = _MPF_STR8;
-static const uint8_t MPF_STR16    = _MPF_STR16;
-static const uint8_t MPF_STR32    = _MPF_STR32;
-
-static const uint8_t MPF_BIN8     = _MPF_BIN8;
-static const uint8_t MPF_BIN16    = _MPF_BIN16;
-static const uint8_t MPF_BIN32    = _MPF_BIN32;
-
-static const uint8_t MPF_FALSE    = _MPF_FALSE;
-static const uint8_t MPF_TRUE     = _MPF_TRUE;
-
-static const uint8_t MPF_INT8     = _MPF_INT8;
-static const uint8_t MPF_INT16    = _MPF_INT16;
-static const uint8_t MPF_INT32    = _MPF_INT32;
-static const uint8_t MPF_INT64    = _MPF_INT64;
-
-static const uint8_t MPF_UINT8    = _MPF_UINT8;
-static const uint8_t MPF_UINT16   = _MPF_UINT16;
-static const uint8_t MPF_UINT32   = _MPF_UINT32;
-static const uint8_t MPF_UINT64   = _MPF_UINT64;
 
 static const uint8_t MPF_NIL      = _MPF_NIL;
 
@@ -101,6 +78,7 @@ int rmsgpack_write_array_header(RFILE *fd, uint32_t size)
 {
    uint16_t tmp_i16;
    uint32_t tmp_i32;
+   static const uint8_t MPF_ARRAY32  = _MPF_ARRAY32;
 
    if (size < 16)
    {
@@ -111,6 +89,7 @@ int rmsgpack_write_array_header(RFILE *fd, uint32_t size)
    }
    else if (size == (uint16_t)size)
    {
+      static const uint8_t MPF_ARRAY16  = _MPF_ARRAY16;
       if (filestream_write(fd, &MPF_ARRAY16, sizeof(MPF_ARRAY16)) == -1)
          return -1;
       tmp_i16 = swap_if_little16(size);
@@ -144,6 +123,7 @@ int rmsgpack_write_map_header(RFILE *fd, uint32_t size)
    }
    else if (size == (uint16_t)size)
    {
+      static const uint8_t MPF_MAP16    = _MPF_MAP16;
       if (filestream_write(fd, &MPF_MAP16, sizeof(MPF_MAP16)) == -1)
          return -1;
       tmp_i16 = swap_if_little16(size);
@@ -176,6 +156,7 @@ int rmsgpack_write_string(RFILE *fd, const char *s, uint32_t len)
    }
    else if (len == (uint8_t)len)
    {
+      static const uint8_t MPF_STR8     = _MPF_STR8;
       if (filestream_write(fd, &MPF_STR8, sizeof(MPF_STR8)) == -1)
          return -1;
       tmp_i8 = (uint8_t)len;
@@ -185,6 +166,7 @@ int rmsgpack_write_string(RFILE *fd, const char *s, uint32_t len)
    }
    else if (len == (uint16_t)len)
    {
+      static const uint8_t MPF_STR16    = _MPF_STR16;
       if (filestream_write(fd, &MPF_STR16, sizeof(MPF_STR16)) == -1)
          return -1;
       tmp_i16 = swap_if_little16(len);
@@ -194,6 +176,7 @@ int rmsgpack_write_string(RFILE *fd, const char *s, uint32_t len)
    }
    else
    {
+      static const uint8_t MPF_STR32    = _MPF_STR32;
       if (filestream_write(fd, &MPF_STR32, sizeof(MPF_STR32)) == -1)
          return -1;
       tmp_i32 = swap_if_little32(len);
@@ -218,6 +201,7 @@ int rmsgpack_write_bin(RFILE *fd, const void *s, uint32_t len)
 
    if (len == (uint8_t)len)
    {
+      static const uint8_t MPF_BIN8     = _MPF_BIN8;
       if (filestream_write(fd, &MPF_BIN8, sizeof(MPF_BIN8)) == -1)
          return -1;
       tmp_i8 = (uint8_t)len;
@@ -226,6 +210,7 @@ int rmsgpack_write_bin(RFILE *fd, const void *s, uint32_t len)
    }
    else if (len == (uint16_t)len)
    {
+      static const uint8_t MPF_BIN16    = _MPF_BIN16;
       if (filestream_write(fd, &MPF_BIN16, sizeof(MPF_BIN16)) == -1)
          return -1;
       tmp_i16 = swap_if_little16(len);
@@ -234,6 +219,7 @@ int rmsgpack_write_bin(RFILE *fd, const void *s, uint32_t len)
    }
    else
    {
+      static const uint8_t MPF_BIN32    = _MPF_BIN32;
       if (filestream_write(fd, &MPF_BIN32, sizeof(MPF_BIN32)) == -1)
          return -1;
       tmp_i32 = swap_if_little32(len);
@@ -254,8 +240,10 @@ int rmsgpack_write_nil(RFILE *fd)
 
 int rmsgpack_write_bool(RFILE *fd, int value)
 {
+   static const uint8_t MPF_FALSE    = _MPF_FALSE;
    if (value)
    {
+      static const uint8_t MPF_TRUE  = _MPF_TRUE;
       if (filestream_write(fd, &MPF_TRUE, sizeof(MPF_TRUE)) == -1)
          return -1;
    }
@@ -288,6 +276,7 @@ int rmsgpack_write_int(RFILE *fd, int64_t value)
    }
    else if (value == (int8_t)value)
    {
+      static const uint8_t MPF_INT8     = _MPF_INT8;
       if (filestream_write(fd, &MPF_INT8, sizeof(MPF_INT8)) == -1)
          return -1;
 
@@ -298,6 +287,7 @@ int rmsgpack_write_int(RFILE *fd, int64_t value)
    }
    else if (value == (int16_t)value)
    {
+      static const uint8_t MPF_INT16    = _MPF_INT16;
       if (filestream_write(fd, &MPF_INT16, sizeof(MPF_INT16)) == -1)
          return -1;
 
@@ -308,6 +298,7 @@ int rmsgpack_write_int(RFILE *fd, int64_t value)
    }
    else if (value == (int32_t)value)
    {
+      static const uint8_t MPF_INT32    = _MPF_INT32;
       if (filestream_write(fd, &MPF_INT32, sizeof(MPF_INT32)) == -1)
          return -1;
 
@@ -318,6 +309,7 @@ int rmsgpack_write_int(RFILE *fd, int64_t value)
    }
    else
    {
+      static const uint8_t MPF_INT64    = _MPF_INT64;
       if (filestream_write(fd, &MPF_INT64, sizeof(MPF_INT64)) == -1)
          return -1;
 
@@ -339,6 +331,7 @@ int rmsgpack_write_uint(RFILE *fd, uint64_t value)
 
    if (value == (uint8_t)value)
    {
+      static const uint8_t MPF_UINT8    = _MPF_UINT8;
       if (filestream_write(fd, &MPF_UINT8, sizeof(MPF_UINT8)) == -1)
          return -1;
 
@@ -349,6 +342,7 @@ int rmsgpack_write_uint(RFILE *fd, uint64_t value)
    }
    else if (value == (uint16_t)value)
    {
+      static const uint8_t MPF_UINT16   = _MPF_UINT16;
       if (filestream_write(fd, &MPF_UINT16, sizeof(MPF_UINT16)) == -1)
          return -1;
 
@@ -359,6 +353,7 @@ int rmsgpack_write_uint(RFILE *fd, uint64_t value)
    }
    else if (value == (uint32_t)value)
    {
+      static const uint8_t MPF_UINT32   = _MPF_UINT32;
       if (filestream_write(fd, &MPF_UINT32, sizeof(MPF_UINT32)) == -1)
          return -1;
 
@@ -369,6 +364,7 @@ int rmsgpack_write_uint(RFILE *fd, uint64_t value)
    }
    else
    {
+      static const uint8_t MPF_UINT64   = _MPF_UINT64;
       if (filestream_write(fd, &MPF_UINT64, sizeof(MPF_UINT64)) == -1)
          return -1;
 
