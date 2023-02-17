@@ -6872,6 +6872,9 @@ bool retroarch_main_quit(void)
    settings_t *settings          = config_get_ptr();
    bool config_save_on_exit      = settings->bools.config_save_on_exit;
 
+   /* Restore video driver before saving */
+   video_driver_restore_cached(settings);
+
 #if !defined(HAVE_DYNAMIC)
    {
       /* Salamander sets RUNLOOP_FLAG_SHUTDOWN_INITIATED prior, so we need to handle it seperately */
@@ -6917,9 +6920,6 @@ bool retroarch_main_quit(void)
        * specifically we need to get width,height which requires UI thread and it will not be available on exit
        */
 #if defined(HAVE_DYNAMIC)
-      /* Restore video driver before saving */
-      video_driver_restore_cached(settings);
-
       if (config_save_on_exit)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 #endif
