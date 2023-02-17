@@ -512,11 +512,6 @@ bool microphone_driver_get_mic_state(const retro_microphone_t *microphone)
  * Pull queued microphone samples from the driver
  * and copy them to the provided buffer(s).
  *
- * Only one mic is supported right now,
- * but the API is designed to accommodate multiple.
- * If multi-mic support is implemented,
- * you'll want to update this function.
- *
  * Note that microphone samples are provided in mono,
  * so a "sample" and a "frame" are equivalent here.
  *
