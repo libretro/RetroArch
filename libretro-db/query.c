@@ -120,7 +120,6 @@ static struct rmsgpack_dom_value func_equals(
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
-   struct argument arg;
    struct rmsgpack_dom_value res;
 
    res.type      = RDT_BOOL;
@@ -128,12 +127,12 @@ static struct rmsgpack_dom_value func_equals(
 
    if (argc == 1)
    {
-      arg = argv[0];
+      struct argument arg = argv[0];
 
       if (arg.type == AT_VALUE)
       {
-         if (  input.type       == RDT_UINT && 
-               arg.a.value.type == RDT_INT)
+         if (     input.type       == RDT_UINT
+               && arg.a.value.type == RDT_INT)
          {
             arg.a.value.type      = RDT_UINT;
             arg.a.value.val.uint_ = arg.a.value.val.int_;
@@ -149,7 +148,7 @@ static struct rmsgpack_dom_value query_func_operator_or(
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
-   unsigned i;
+   int i;
    struct rmsgpack_dom_value res;
 
    res.type      = RDT_BOOL;
@@ -161,7 +160,7 @@ static struct rmsgpack_dom_value query_func_operator_or(
          res = func_equals(input, 1, &argv[i]);
       else
          res = query_func_is_true(
-               argv[i].a.invocation.func(input,
+                  argv[i].a.invocation.func(input,
                   argv[i].a.invocation.argc,
                   argv[i].a.invocation.argv
                   ), 0, NULL);
@@ -177,7 +176,7 @@ static struct rmsgpack_dom_value query_func_operator_and(
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
-   unsigned i;
+   int i;
    struct rmsgpack_dom_value res;
 
    res.type      = RDT_BOOL;
@@ -243,12 +242,8 @@ static struct rmsgpack_dom_value query_func_glob(
       unsigned argc, const struct argument * argv)
 {
    struct rmsgpack_dom_value res;
-   unsigned i    = 0;
-
    res.type      = RDT_BOOL;
    res.val.bool_ = 0;
-
-   (void)i;
 
    if (argc != 1)
       return res;
@@ -292,7 +287,7 @@ static void query_raise_unknown_function(
 
 static void query_argument_free(struct argument *arg)
 {
-   unsigned i;
+   int i;
 
    if (arg->type != AT_FUNCTION)
    {
@@ -369,17 +364,12 @@ static int query_peek(struct buffer buff, const char * data,
             data, size_data) == 0);
 }
 
-static int query_is_eot(struct buffer buff)
-{
-   return ((unsigned)buff.offset >= buff.len);
-}
-
 static struct buffer query_get_char(
       char *s, size_t len,
       struct buffer buff, char * c,
       const char ** error)
 {
-   if (query_is_eot(buff))
+   if ((unsigned)buff.offset >= buff.len)
    {
       snprintf(s, len,
             "%" PRIu64 "::Unexpected EOF",
@@ -440,8 +430,9 @@ static struct buffer query_parse_string(
       value->type            = is_binstr ? RDT_BINARY : RDT_STRING;
       value->val.string.len  = (uint32_t)((buff.data + buff.offset) - str_start - 1);
 
-      count                  = is_binstr ? (value->val.string.len + 1) / 2
-         : (value->val.string.len + 1);
+      count                  = value->val.string.len + 1;
+      if (is_binstr)
+	      count         /= 2;
       value->val.string.buff = (char*)calloc(count, sizeof(char));
 
       if (!value->val.string.buff)
@@ -454,9 +445,8 @@ static struct buffer query_parse_string(
       }
       else if (is_binstr)
       {
-         unsigned i;
+         int i, j        = 0;
          const char *tok = str_start;
-         unsigned      j = 0;
 
          for (i = 0; i < value->val.string.len; i += 2)
          {
@@ -510,9 +500,9 @@ static struct buffer query_parse_value(
       value->val.bool_   = 0;
    }
    else if (
-         query_peek(buff, "b", STRLEN_CONST("b"))  || 
-         query_peek(buff, "\"", STRLEN_CONST("\"")) ||
-         query_peek(buff, "'", STRLEN_CONST("'")))
+            query_peek(buff, "b",  STRLEN_CONST("b"))
+         || query_peek(buff, "\"", STRLEN_CONST("\"")) 
+         || query_peek(buff, "'",  STRLEN_CONST("'")))
       buff = query_parse_string(s, len,
              buff, value, error);
    else if (ISDIGIT((int)buff.data[buff.offset]))
@@ -524,7 +514,7 @@ static void query_peek_char(char *s, size_t len,
       struct buffer buff, char *c,
       const char **error)
 {
-   if (query_is_eot(buff))
+   if ((unsigned)buff.offset >= buff.len)
    {
       snprintf(s, len,
             "%" PRIu64 "::Unexpected EOF",
@@ -545,7 +535,7 @@ static struct buffer query_get_ident(
 {
    char c = '\0';
 
-   if (query_is_eot(buff))
+   if ((unsigned)buff.offset >= buff.len)
    {
       snprintf(s, _len,
             "%" PRIu64 "::Unexpected EOF",
@@ -1004,7 +994,7 @@ void libretrodb_query_inc_ref(libretrodb_query_t *q)
 int libretrodb_query_filter(libretrodb_query_t *q,
       struct rmsgpack_dom_value *v)
 {
-   struct invocation inv = ((struct query *)q)->root;
+   struct invocation inv         = ((struct query *)q)->root;
    struct rmsgpack_dom_value res = inv.func(*v, inv.argc, inv.argv);
    return (res.type == RDT_BOOL && res.val.bool_);
 }
