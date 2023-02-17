@@ -230,6 +230,12 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone)
       microphone->sample_buffer = NULL;
    }
 
+   if (microphone->resampler && microphone->resampler->free && microphone->resampler_data)
+      microphone->resampler->free(microphone->resampler_data);
+
+   microphone->resampler      = NULL;
+   microphone->resampler_data = NULL;
+
    memset(microphone, 0, sizeof(*microphone));
    /* Do NOT free the microphone handle itself! It's allocated statically! */
 }
@@ -313,23 +319,6 @@ bool microphone_driver_init_internal(void *settings_data)
       mic_st->resampler_ident[0] = '\0';
 
    mic_st->resampler_quality     = microphone_driver_get_resampler_quality(settings);
-   mic_st->source_ratio_original = (double)settings->uints.audio_output_sample_rate / settings->uints.microphone_sample_rate;
-   if (!isfinite(mic_st->source_ratio_original))
-   {
-      mic_st->source_ratio_original = 1.0f;
-   }
-   mic_st->source_ratio_current  = mic_st->source_ratio_original;
-
-   if (!retro_resampler_realloc(
-            &mic_st->resampler_data,
-            &mic_st->resampler,
-            mic_st->resampler_ident,
-            mic_st->resampler_quality,
-            mic_st->source_ratio_original))
-   {
-      RARCH_ERR("[Microphone]: Failed to initialize resampler \"%s\".\n", mic_st->resampler_ident);
-      goto error;
-   }
 
    RARCH_LOG("[Microphone]: Initialized microphone driver\n");
 
@@ -393,6 +382,19 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
    if (mic_driver->mic_use_float && mic_driver->mic_use_float(mic_st->driver_context, microphone->microphone_context))
    {
       microphone->flags |= MICROPHONE_FLAG_USE_FLOAT;
+   }
+
+   microphone->original_ratio = (double)microphone->effective_params.rate / microphone->actual_params.rate;
+
+   if (!retro_resampler_realloc(
+         &microphone->resampler_data,
+         &microphone->resampler,
+         mic_st->resampler_ident,
+         mic_st->resampler_quality,
+         microphone->original_ratio))
+   {
+      RARCH_ERR("[Microphone]: Failed to initialize resampler \"%s\".\n", mic_st->resampler_ident);
+      goto error;
    }
 
    microphone->flags &= ~MICROPHONE_FLAG_PENDING;
@@ -546,6 +548,15 @@ static void microphone_driver_flush(
 
    resampler_data.output_frames = 0;
    /* The resampler sets the value of output_frames */
+
+   resampler_data.data_in  = mic_st->dual_mono_frames;
+   resampler_data.data_out = mic_st->resampled_frames;
+   /* The buffers that will be used for the resampler's input and output */
+
+   resampler_data.ratio    = (double)microphone->effective_params.rate / (double)microphone->actual_params.rate;
+
+   if (is_slowmotion)
+      resampler_data.ratio *= slowmotion_ratio;
 
    /* First we need to format the input for the resampler. */
    if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
@@ -820,14 +831,8 @@ bool microphone_driver_deinit(void)
    mic_st->final_frames = NULL;
    mic_st->final_frames_length = 0;
 
-   if (mic_st->resampler && mic_st->resampler_data)
-      mic_st->resampler->free(mic_st->resampler_data);
-
-   mic_st->resampler          = NULL;
-   mic_st->resampler_data     = NULL;
    mic_st->resampler_quality  = RESAMPLER_QUALITY_DONTCARE;
    mic_st->flags             &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
-
    memset(mic_st->resampler_ident, '\0', sizeof(mic_st->resampler_ident));
 
    return true;

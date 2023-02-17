@@ -164,6 +164,20 @@ struct retro_microphone
     * or other changes.
     */
    retro_microphone_params_t effective_params;
+
+   /**
+    * Pointer to the configured resampler for microphones.
+    * May be different than the audio driver's resampler.
+    */
+   const retro_resampler_t *resampler;
+
+   /**
+    * Pointer to the resampler-specific context.
+    * Not shared with the audio driver's resampler.
+    */
+   void *resampler_data;
+
+   double original_ratio;
 };
 
 /**
@@ -495,21 +509,6 @@ typedef struct microphone_driver_state
    enum resampler_quality resampler_quality;
 
    char resampler_ident[64];
-
-   /**
-    * Pointer to the configured resampler for microphones.
-    * May be different than the audio driver's resampler.
-    */
-   const retro_resampler_t *resampler;
-
-   /**
-    * Pointer to the resampler-specific context.
-    * Not shared with the audio driver's resampler.
-    */
-   void *resampler_data;
-
-   double source_ratio_original;
-   double source_ratio_current;
 } microphone_driver_state_t;
 
 /**
