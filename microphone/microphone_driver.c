@@ -573,14 +573,7 @@ static void microphone_driver_flush(
    }
 
    /* Now we resample the mic data. */
-   resampler_data.data_in  = mic_st->dual_mono_frames;
-   resampler_data.data_out = mic_st->resampled_frames;
-   resampler_data.ratio    = mic_st->source_ratio_current;
-
-   if (is_slowmotion)
-      resampler_data.ratio *= slowmotion_ratio;
-
-   mic_st->resampler->process(mic_st->resampler_data, &resampler_data);
+   microphone->resampler->process(microphone->resampler_data, &resampler_data);
 
    /* Next, we convert the resampled data back to mono... */
    convert_to_mono_float_left(mic_st->resampled_mono_frames, mic_st->resampled_frames, resampler_data.input_frames);
