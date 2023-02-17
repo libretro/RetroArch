@@ -7417,8 +7417,15 @@ unsigned menu_displaylist_build_list(
                for (i = 0; i < interfaces.size; i++)
                {
                   struct net_ifinfo_entry *entry = &interfaces.entries[i];
-                  snprintf(buf + _len, sizeof(buf) - _len, " (%s) : %s\n",
-                     entry->name, entry->host);
+                  char host_trimmed[64];
+
+                  /* Trim "%"-suffix from host */
+                  strlcpy(host_trimmed, entry->host, sizeof(host_trimmed));
+                  host_trimmed[string_index_last_occurance(host_trimmed, '%')] = '\0';
+
+                  snprintf(buf + _len, sizeof(buf) - _len, " (%s): %s\n",
+                        entry->name, host_trimmed);
+
                   if (menu_entries_append(list, buf, entry->name,
                         MENU_ENUM_LABEL_NETWORK_INFO_ENTRY,
                         MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
