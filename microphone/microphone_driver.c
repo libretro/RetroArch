@@ -650,7 +650,7 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
                                  runloop_flags & RUNLOOP_FLAG_SLOWMOTION,
                                  runloop_flags & RUNLOOP_FLAG_FASTMOTION);
       frames_remaining -= frames_to_read;
-      frames           += frames_to_read << 1;
+      frames           += frames_to_read;
    }
    while (frames_remaining > 0);
 
