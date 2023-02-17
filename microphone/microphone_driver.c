@@ -230,6 +230,12 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone)
       microphone->sample_buffer = NULL;
    }
 
+   if (microphone->outgoing_samples)
+   {
+      fifo_free(microphone->outgoing_samples);
+      microphone->outgoing_samples = NULL;
+   }
+
    if (microphone->resampler && microphone->resampler->free && microphone->resampler_data)
       microphone->resampler->free(microphone->resampler_data);
 
@@ -360,6 +366,10 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
          (int16_t*)memalign_alloc(64, microphone->sample_buffer_length);
 
    if (!microphone->sample_buffer)
+      goto error;
+
+   microphone->outgoing_samples = fifo_new(max_samples * sizeof(int16_t));
+   if (!microphone->outgoing_samples)
       goto error;
 
    microphone->microphone_context = mic_driver->open_mic(driver_context,

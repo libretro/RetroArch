@@ -22,6 +22,7 @@
 #include <libretro.h>
 #include "audio/audio_defines.h"
 #include "audio/audio_resampler.h"
+#include "queues/fifo_queue.h"
 
 #define MAX_SUPPORTED_MICROPHONES 8
 #define MICROPHONE_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
@@ -147,6 +148,11 @@ struct retro_microphone
     * @see microphone_state_flags
     */
    enum microphone_state_flags flags;
+
+   /**
+    * Samples that will be sent to the core.
+    */
+   fifo_buffer_t *outgoing_samples;
 
    /**
     * The requested microphone parameters,
