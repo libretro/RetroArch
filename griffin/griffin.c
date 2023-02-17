@@ -1685,3 +1685,12 @@ ANDROID PLAY FEATURE DELIVERY
 #if defined(ANDROID)
 #include "../play_feature_delivery/play_feature_delivery.c"
 #endif
+
+/*============================================================
+STEAM INTEGRATION USING MIST
+============================================================ */
+#ifdef HAVE_MIST
+#include "../steam/steam.c"
+#include "../tasks/task_steam.c"
+#include "../network/presence.c"
+#endif
