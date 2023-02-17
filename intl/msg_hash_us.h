@@ -2704,11 +2704,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
-   "Input Rate (Hz)"
+   "Default Input Rate (Hz)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
-   "Audio input sample rate."
+   "Audio input sample rate, used if a core doesn't request a specific number."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
