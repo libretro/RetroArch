@@ -350,12 +350,12 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
    unsigned setting_audio_latency        = settings->uints.microphone_latency;
    unsigned audio_latency                = MAX(runloop_audio_latency, setting_audio_latency);
    float slowmotion_ratio                = settings->floats.slowmotion_ratio;
-   size_t insamples_max                  = AUDIO_CHUNK_SIZE_NONBLOCKING * 1 * AUDIO_MAX_RATIO * slowmotion_ratio;
+   size_t max_samples                    = AUDIO_CHUNK_SIZE_NONBLOCKING * 1 * AUDIO_MAX_RATIO * slowmotion_ratio;
 
    if (!microphone || !mic_driver || !(mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE))
       return false;
 
-   microphone->sample_buffer_length = insamples_max * sizeof(int16_t);
+   microphone->sample_buffer_length = max_samples * sizeof(int16_t);
    microphone->sample_buffer        =
          (int16_t*)memalign_alloc(64, microphone->sample_buffer_length);
 
