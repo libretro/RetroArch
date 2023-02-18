@@ -1768,7 +1768,7 @@ static bool gl2_add_lut(
       bool lut_mipmap,
       unsigned lut_filter,
       enum gfx_wrap_type lut_wrap_type,
-      unsigned i, GLuint *textures_lut)
+      size_t i, GLuint *textures_lut)
 {
    struct texture_image img;
    enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;

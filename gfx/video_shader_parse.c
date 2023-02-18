@@ -618,7 +618,7 @@ void video_shader_resolve_parameters(struct video_shader *shader)
 
          /* Even though the pass is set in the loop too, 
           * not all passes have parameters */
-         param->pass = i;
+         param->pass = (int)i;
 
          while ((shader->num_parameters < ARRAY_SIZE(shader->parameters)) 
                && (line_index < lines.size))
@@ -644,7 +644,7 @@ void video_shader_resolve_parameters(struct video_shader *shader)
             if (ret == 5)
                param->step  = 0.1f * (param->maximum - param->minimum);
 
-            param->pass     = i;
+            param->pass     = (int)i;
 
 #ifdef DEBUG
             RARCH_DBG("[Shaders]: Found #pragma parameter %s (%s) %f %f %f %f in pass %d.\n",
@@ -817,7 +817,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
 
       formatted_num[0]                     = '\0';
 
-      snprintf(formatted_num, sizeof(formatted_num), "%u", i);
+      snprintf(formatted_num, sizeof(formatted_num), "%u", (int)i);
 
       strlcpy(key, "shader",      sizeof(key));
       strlcat(key, formatted_num, sizeof(key));
@@ -1616,7 +1616,7 @@ static bool video_shader_load_root_config_into_shader(
 
       for (i = 0; i < shader->passes; i++)
       {
-         if (!video_shader_parse_pass(conf, &shader->pass[i], i))
+         if (!video_shader_parse_pass(conf, &shader->pass[i], (unsigned)i))
          {
             string_list_deinitialize(&file_list);
             return false;
@@ -1633,7 +1633,7 @@ static bool video_shader_load_root_config_into_shader(
    {
       for (i = 0; i < shader->passes; i++)
       {
-         if (!video_shader_parse_pass(conf, &shader->pass[i], i))
+         if (!video_shader_parse_pass(conf, &shader->pass[i], (unsigned)i))
             return false;
       }
    }

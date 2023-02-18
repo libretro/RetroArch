@@ -287,7 +287,7 @@ static void gl3_render_overlay(gl3_t *gl,
    {
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
-      glDrawArrays(GL_TRIANGLE_STRIP, 4 * i, 4);
+      glDrawArrays(GL_TRIANGLE_STRIP, (GLint)(4 * i), 4);
    }
 
    glDisableVertexAttribArray(0);
@@ -1290,8 +1290,8 @@ static bool gl3_overlay_load(void *data,
       gl->overlay_tex[i] = id;
 
       /* Default. Stretch to whole screen. */
-      gl3_overlay_tex_geom(gl, i, 0, 0, 1, 1);
-      gl3_overlay_vertex_geom(gl, i, 0, 0, 1, 1);
+      gl3_overlay_tex_geom   (gl, (unsigned)i, 0, 0, 1, 1);
+      gl3_overlay_vertex_geom(gl, (unsigned)i, 0, 0, 1, 1);
 
       for (j = 0; j < 16; j++)
          gl->overlay_color_coord[16 * i + j] = 1.0f;

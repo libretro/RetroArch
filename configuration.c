@@ -2742,14 +2742,14 @@ void config_set_defaults(void *data)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      settings->uints.input_joypad_index[i] = i;
+      settings->uints.input_joypad_index[i] = (unsigned)i;
 #ifdef SWITCH /* Switch prefered default dpad mode */
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_LSTICK;
 #else
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_NONE;
 #endif
-      input_config_set_device(i, RETRO_DEVICE_JOYPAD);
-      settings->uints.input_mouse_index[i] = i;
+      input_config_set_device((unsigned)i, RETRO_DEVICE_JOYPAD);
+      settings->uints.input_mouse_index[i] = (unsigned)i;
    }
 
    video_driver_reset_custom_viewport(settings);
