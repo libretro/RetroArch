@@ -308,7 +308,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
-   "在此顯示不需要載入檔案的已安裝核心。"
+   "在此顯示可直接執行的核心。"
    )
 
 /* Main Menu > Online Updater */
@@ -4578,7 +4578,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-   "開啟時覆蓋元件在選單開啟時隱藏, 選單關閉時顯示, 用於避免最上層圖層為覆蓋元件。"
+   "開啟時覆蓋元件在選單開啟時隱藏, 避免使用的覆蓋元件高於選單顯示。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -4591,7 +4591,7 @@ MSG_HASH(
 #if defined(ANDROID)
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
-   "連接埠1連接控制器時, 隱藏螢幕覆蓋元件, 控制器斷開連接時不會自動恢復。"
+   "連接埠1連接控制器時, 隱藏螢幕覆蓋元件, 控制器斷開時不會自動恢復。"
    )
 #endif
 MSG_HASH(
@@ -6094,7 +6094,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
-   "預覽縮圖放大限制"
+   "限制預覽縮圖尺寸"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
@@ -6454,11 +6454,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-   "自訂伺服器地址"
+   "自訂伺服器位址"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "輸入自訂的代理或中繼伺服器地址。\n格式: 地址 或 地址|連接埠。"
+   "輸入自訂的代理或中繼伺服器位址。\n格式: 位址 或 位址|通訊埠號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
@@ -6482,23 +6482,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
-   "連線主機地址"
+   "連線主機位址"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
-   "預設「手動連線到主機」的連線主機地址。"
+   "預設「手動連線到主機」的連線主機位址。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
-   "連線遊戲TCP連接埠"
+   "主機通訊埠號"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
-   "主機IP地址的連接埠, 可以是TCP或UDP連接埠。"
+   "主機網際網路協定位址的通訊埠號, 可以是TCP或UDP通訊埠號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
-   "連線人數限制"
+   "限制連線人數"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
@@ -6506,7 +6506,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
-   "網路延遲限制 (PING值)"
+   "限制網路延遲 (PING值)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
@@ -6518,7 +6518,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
-   "玩家連線到主機使用的登入密碼。"
+   "玩家連線到主機使用的登入密碼, 使用此密碼登入主機可以切換身分。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
@@ -6526,15 +6526,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-   "觀眾連線到主機使用的登入密碼。"
+   "觀眾連線到主機使用的登入密碼, 使用此密碼登入主機無法切換身分。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
-   "觀眾模式連線"
+   "觀眾身分連線"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   "使用觀眾身分建立和連線到主機。"
+   "使用觀眾的身分建立或連線主機, 建立或連線主機後可切換使用身分。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
@@ -6566,11 +6566,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
-   "允許暫停模式"
+   "主機允許暫停"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "允許連線遊戲使用暫停模式。"
+   "建立主機之後允許使用暫停模式, 不推薦開啟暫停模式容易造成斷線。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -6586,19 +6586,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "禁止非主副模式下的連接, 不推薦開啟除非裝置的效能非常低, 但網路連線速度非常快。"
+   "禁用非主副模式下的連接, 不推薦開啟除非裝置的效能非常低, 但網路的連線速度非常快。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "連線遊戲檢查幀數"
+   "定期檢查同步 (幀數)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "驗證主機端和用戶端是否同步頻率(幀數)。"
+   "定期檢查主機端和用戶端是否同步的時間(幀數)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
-   "驗證主機端和用戶端是否同步的頻率(幀數)。\n大多數的核心 - 設定值沒有明顯的影響可忽略。\n非確定的核心 - 設定值為驗證同步頻率的時間。\n有問題的核心 - 設定值大於零將嚴重影響效能。\n設定<0>時不執行檢查, 此選項僅在連線遊戲的主機上使用。"
+   "定期檢查主機端和用戶端是否同步的時間(幀數)。\n大多數的核心 - 沒有明顯影響可忽略。\n非確定的核心 - 定期檢查同步的時間。\n有問題的核心 - 開啟時嚴重影響效能。\n設定<0>時關閉不執行檢查, 此選項僅在連線遊戲的主機上使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -6626,11 +6626,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
-   "連線遊戲NAT穿透"
+   "主機NAT穿透"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-   "建立連線主機時檢測公用網路, 使用通用隨插即用(UPnP)或類似技術, 攔截外網連接到區域網路。"
+   "建立連線主機時嘗試監聽公用網路的連線, 使用UPnP或相似技術退出區域網路。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
@@ -8814,7 +8814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
-   "載入單通道著色器。\n全部載入的檔案類型必須相同, Cg、GLSL、Slang格式。\n載入位置可從「設定/資料夾/著色器」選項中變更, 變更時請考量預設的儲存位置。"
+   "載入單通道著色器, 載入的檔案類型必須相同, Cg、GLSL、Slang格式。\n載入位置可從「設定/資料夾/著色器」選項中變更, 變更時請考量預設的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
@@ -8929,7 +8929,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
-   "沒有可變更的參數。"
+   "沒有可以變更的參數。"
    )
 
 /* Quick Menu > Overrides */
@@ -9011,7 +9011,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "沒有可顯示的成就。"
+   "沒有可以顯示的成就。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
@@ -9078,26 +9078,26 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
-   "沒有可顯示的項目。"
+   "沒有可以顯示的項目。"
    )
 
 /* Miscellaneous UI Items */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
-   "沒有可使用的核心。"
+   "沒有可以使用的核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
-   "沒有可設定的核心選項。"
+   "沒有可以設定的核心選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE,
-   "沒有可顯示的核心資訊。"
+   "沒有可以顯示的核心資訊。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE_BACKUPS_AVAILABLE,
-   "沒有可使用的核心備份。"
+   "沒有可以使用的核心備份。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
@@ -9121,11 +9121,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
-   "沒有可顯示的資訊。"
+   "沒有可以顯示的資訊。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
-   "沒有可執行的項目。"
+   "沒有可以執行的項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
@@ -9133,11 +9133,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
-   "沒有可使用的藍牙裝置。"
+   "沒有可以使用的藍牙裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
-   "沒有可使用的網路。"
+   "沒有可以使用的網路。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE,
@@ -9169,11 +9169,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
-   "沒有找到資料夾。"
+   "找不到資料夾。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ITEMS,
-   "沒有可顯示的內容。"
+   "沒有可以顯示的內容。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FILE,
@@ -9312,7 +9312,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER,
-   "從不"
+   "從來不想"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE,
@@ -11076,7 +11076,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
-   "記住檔案瀏覽器最後使用頁籤:"
+   "記住檔案瀏覽器最後頁籤:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
@@ -11496,7 +11496,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SHADER_NO_PASSES,
-   "沒有可用的著色器通道。"
+   "沒有可以使用的通道。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RESET_PASS,
@@ -11528,11 +11528,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
-   "預覽縮圖快取限制:"
+   "限制預覽縮圖快取大小:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
-   "拖曳預覽縮圖大小限制:"
+   "限制拖曳預覽縮圖尺寸:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
@@ -11643,7 +11643,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
-   "沒有可連線的主機。"
+   "沒有可以連線的主機。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
@@ -11651,11 +11651,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
-   "沒有可使用的效能計數器。"
+   "沒有可以使用的效能計數器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
-   "沒有可使用的列表。"
+   "沒有可以使用的列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
@@ -11787,11 +11787,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
-   "沒有可用的核心。"
+   "缺少核心或核心資料庫。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
-   "沒有可用的列表。"
+   "缺少可以使用的列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
@@ -11799,7 +11799,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
-   "無法透過檔名與驗證碼找到符合的遊戲。"
+   "無法透過檔名與驗證碼找到符合的檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_START_GONG,
@@ -12291,7 +12291,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PRIVATE_OR_SHARED_ADDRESS,
-   "建立區域網路連線主機, 具有私人或公用的IP地址, 請考慮使用代理或中繼伺服器。"
+   "建立區域網路連線主機, 具有私人或公用的IP位址, 請考慮使用代理或中繼伺服器。"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
@@ -12311,7 +12311,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ROOM_NOT_CONNECTABLE,
-   "主機僅限使用區域網路連線。"
+   "主機僅限使用區域網路連線加入。"
    )
 MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
@@ -12648,7 +12648,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
-   "開啟命令行介面 連接埠"
+   "開啟命令行介面在通訊埠號"
    )
 MSG_HASH(
    MSG_BYTES,
@@ -12764,7 +12764,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
-   "沒有可用的修正檔。"
+   "沒有可以使用的修正檔。"
    )
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
@@ -13000,7 +13000,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FILE_NOT_FOUND,
-   "未找到檔案"
+   "找不到檔案。"
    )
 MSG_HASH(
    MSG_FOUND_AUTO_SAVESTATE_IN,
@@ -13028,11 +13028,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "遊戲自訂核心選項位置"
+   "自訂遊戲核心選項位置"
    )
 MSG_HASH(
    MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "路徑自訂核心選項位置"
+   "自訂路徑核心選項位置"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
@@ -14599,7 +14599,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
-   "未找到主題"
+   "找不到主題。"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
