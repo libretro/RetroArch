@@ -104,9 +104,6 @@ static int bintree_iterate_internal(struct bintree_node *n,
 
 static void bintree_free_node(struct bintree_node *n)
 {
-   if (!n)
-      return;
-
    if (n->value == NIL_NODE)
    {
       free(n);
@@ -114,8 +111,10 @@ static void bintree_free_node(struct bintree_node *n)
    }
 
    n->value = NULL;
-   bintree_free_node(n->left);
-   bintree_free_node(n->right);
+   if (n->left)
+      bintree_free_node(n->left);
+   if (n->right)
+      bintree_free_node(n->right);
    free(n);
 }
 
@@ -137,16 +136,15 @@ bintree_t *bintree_new(bintree_cmp_func cmp, void *ctx)
    if (!t)
       return NULL;
 
-   t->root = bintree_new_nil_node(NULL);
-   t->cmp  = cmp;
-   t->ctx  = ctx;
+   t->root      = bintree_new_nil_node(NULL);
+   t->cmp       = cmp;
+   t->ctx       = ctx;
 
    return t;
 }
 
 void bintree_free(bintree_t *t)
 {
-   if (!t)
-      return;
-   bintree_free_node(t->root);
+   if (t && t->root)
+      bintree_free_node(t->root);
 }

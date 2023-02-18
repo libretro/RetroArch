@@ -51,7 +51,7 @@ struct buffer
 
 enum argument_type
 {
-   AT_FUNCTION,
+   AT_FUNCTION = 0,
    AT_VALUE
 };
 
@@ -107,8 +107,8 @@ static struct rmsgpack_dom_value query_func_is_true(
 {
    struct rmsgpack_dom_value res;
 
-   res.type      = RDT_BOOL;
-   res.val.bool_ = 0;
+   res.type         = RDT_BOOL;
+   res.val.bool_    = 0;
 
    if (!(argc > 0 || input.type != RDT_BOOL))
       res.val.bool_ = input.val.bool_;
@@ -122,12 +122,12 @@ static struct rmsgpack_dom_value func_equals(
 {
    struct rmsgpack_dom_value res;
 
-   res.type      = RDT_BOOL;
-   res.val.bool_ = 0;
+   res.type                       = RDT_BOOL;
+   res.val.bool_                  = 0;
 
    if (argc == 1)
    {
-      struct argument arg = argv[0];
+      struct argument arg         = argv[0];
 
       if (arg.type == AT_VALUE)
       {
@@ -137,7 +137,7 @@ static struct rmsgpack_dom_value func_equals(
             arg.a.value.type      = RDT_UINT;
             arg.a.value.val.uint_ = arg.a.value.val.int_;
          }
-         res.val.bool_ = (rmsgpack_dom_value_cmp(&input, &arg.a.value) == 0);
+         res.val.bool_            = (rmsgpack_dom_value_cmp(&input, &arg.a.value) == 0);
       }
    }
 
@@ -249,13 +249,12 @@ static struct rmsgpack_dom_value query_func_glob(
       return res;
    if (argv[0].type != AT_VALUE || argv[0].a.value.type != RDT_STRING)
       return res;
-   if (input.type != RDT_STRING)
-      return res;
-   res.val.bool_ = rl_fnmatch(
-         argv[0].a.value.val.string.buff,
-         input.val.string.buff,
-         0
-         ) == 0;
+   if (input.type == RDT_STRING)
+      res.val.bool_ = rl_fnmatch(
+            argv[0].a.value.val.string.buff,
+            input.val.string.buff,
+            0
+            ) == 0;
    return res;
 }
 
@@ -307,15 +306,10 @@ static struct buffer query_parse_integer(
       struct rmsgpack_dom_value *value,
       const char **error)
 {
-   bool test   = false;
-
    value->type = RDT_INT;
-
-   test        = (sscanf(buff.data + buff.offset,
-                         STRING_REP_INT64,
-                         (int64_t*)&value->val.int_) == 0);
-
-   if (test)
+   if (sscanf(buff.data + buff.offset,
+            STRING_REP_INT64,
+            (int64_t*)&value->val.int_) == 0)
    {
       snprintf(s, len,
             "%" PRIu64 "::Expected number",
@@ -393,16 +387,15 @@ static struct buffer query_parse_string(
    char terminator        = '\0';
    char c                 = '\0';
    int  is_binstr         = 0;
-   buff = query_get_char(s, len,buff, &terminator, error);
+   buff                   = query_get_char(s, len,buff, &terminator, error);
 
    if (*error)
       return buff;
 
    if (terminator == 'b')
    {
-      is_binstr = 1;
-      buff      = query_get_char(s, len,
-             buff, &terminator, error);
+      is_binstr           = 1;
+      buff                = query_get_char(s, len, buff, &terminator, error);
    }
 
    if (terminator != '"' && terminator != '\'')
@@ -733,8 +726,6 @@ static struct rmsgpack_dom_value query_func_all_map(
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument *argv)
 {
-   unsigned i;
-   struct argument arg;
    struct rmsgpack_dom_value res;
    struct rmsgpack_dom_value nil_value;
    struct rmsgpack_dom_value *value = NULL;
@@ -750,34 +741,35 @@ static struct rmsgpack_dom_value query_func_all_map(
       return res;
    }
 
-   if (input.type != RDT_MAP)
-      return res;
-
-   for (i = 0; i < argc; i += 2)
+   if (input.type == RDT_MAP)
    {
-      arg = argv[i];
-      if (arg.type != AT_VALUE)
+      unsigned i;
+      for (i = 0; i < argc; i += 2)
       {
-         res.val.bool_ = 0;
-         return res;
+         struct argument arg = argv[i];
+         if (arg.type != AT_VALUE)
+         {
+            res.val.bool_ = 0;
+            return res;
+         }
+         /* All missing fields are nil */
+         if (!(value = rmsgpack_dom_value_map_value(&input, &arg.a.value)))
+            value = &nil_value;
+         arg      = argv[i + 1];
+         if (arg.type == AT_VALUE)
+            res   = func_equals(*value, 1, &arg);
+         else
+         {
+            res   = query_func_is_true(arg.a.invocation.func(
+                     *value,
+                     arg.a.invocation.argc,
+                     arg.a.invocation.argv
+                     ), 0, NULL);
+            value = NULL;
+         }
+         if (!res.val.bool_)
+            break;
       }
-      value = rmsgpack_dom_value_map_value(&input, &arg.a.value);
-      if (!value) /* All missing fields are nil */
-         value = &nil_value;
-      arg = argv[i + 1];
-      if (arg.type == AT_VALUE)
-         res = func_equals(*value, 1, &arg);
-      else
-      {
-         res = query_func_is_true(arg.a.invocation.func(
-                  *value,
-                  arg.a.invocation.argc,
-                  arg.a.invocation.argv
-                  ), 0, NULL);
-         value = NULL;
-      }
-      if (!res.val.bool_)
-         break;
    }
    return res;
 }
