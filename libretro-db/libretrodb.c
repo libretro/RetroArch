@@ -507,7 +507,7 @@ int libretrodb_create_index(libretrodb_t *db,
       memcpy(buff_u64, &item_loc, sizeof(uint64_t));
 
       /* Value is not unique? */
-      if (bintree_insert(tree, buff) != 0)
+      if (bintree_insert(tree, tree->root, buff) != 0)
       {
          rmsgpack_dom_value_print(field);
          goto clean;
@@ -527,7 +527,7 @@ int libretrodb_create_index(libretrodb_t *db,
 
    nictx.db     = db;
    nictx.idx    = &idx;
-   bintree_iterate(tree, node_iter, &nictx);
+   bintree_iterate(tree->root, node_iter, &nictx);
 
 clean:
    rmsgpack_dom_value_free(&item);
@@ -535,8 +535,8 @@ clean:
       free(buff);
    if (cur.is_valid)
       libretrodb_cursor_close(&cur);
-   if (tree)
-      bintree_free(tree);
+   if (tree && tree->root)
+      bintree_free(tree->root);
    free(tree);
    return 0;
 }
