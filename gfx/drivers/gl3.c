@@ -58,7 +58,7 @@ static const struct video_ortho gl3_default_ortho = {0, 1, 0, 1, -1, 1};
 
 static void gl3_deinit_fences(gl3_t *gl)
 {
-   int i;
+   size_t i;
    for (i = 0; i < gl->fence_count; i++)
    {
       if (gl->fences[i])
@@ -256,7 +256,7 @@ static void gl3_overlay_tex_geom(void *data,
 static void gl3_render_overlay(gl3_t *gl,
       unsigned width, unsigned height)
 {
-   int i;
+   size_t i;
 
    glEnable(GL_BLEND);
    glDisable(GL_CULL_FACE);
@@ -1252,7 +1252,8 @@ static void video_texture_load_gl3(
 static bool gl3_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
-   int i, j;
+   size_t i;
+   int j;
    GLuint id;
    gl3_t *gl = (gl3_t*)data;
    const struct texture_image *images =
@@ -1878,7 +1879,7 @@ static bool gl3_frame(void *data, const void *frame,
          && !runloop_is_paused 
          && (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)))
     {
-        int n;
+        size_t n;
         for (n = 0; n < black_frame_insertion; ++n)
         {
           glClearColor(0.0f, 0.0f, 0.0f, 1.0f);

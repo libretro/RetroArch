@@ -706,12 +706,12 @@ static void gl2_renderchain_deinit_hw_render(gl2_t *gl, gl2_renderchain_data_t *
 
 static bool gl2_create_fbo_targets(gl2_t *gl, gl2_renderchain_data_t *chain)
 {
-   int i;
+   size_t i;
 
    glBindTexture(GL_TEXTURE_2D, 0);
    gl2_gen_fb(chain->fbo_pass, chain->fbo);
 
-   for (i = 0; i < (unsigned)chain->fbo_pass; i++)
+   for (i = 0; i < (size_t)chain->fbo_pass; i++)
    {
       gl2_bind_fb(chain->fbo[i]);
       gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER,
@@ -937,7 +937,7 @@ static void gl2_renderchain_recompute_pass_sizes(
       unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
 {
-   int i;
+   size_t i;
    bool size_modified       = false;
    GLint max_size           = 0;
    unsigned last_width      = width;
@@ -948,7 +948,7 @@ static void gl2_renderchain_recompute_pass_sizes(
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
 
    /* Calculate viewports for FBOs. */
-   for (i = 0; i < (unsigned)chain->fbo_pass; i++)
+   for (i = 0; i < (size_t)chain->fbo_pass; i++)
    {
       struct video_fbo_rect  *fbo_rect   = &gl->fbo_rect[i];
       struct gfx_fbo_scale *fbo_scale    = &chain->fbo_scale[i];
@@ -1609,7 +1609,7 @@ static void gl2_renderchain_fence_free(void *data,
 {
 #ifndef HAVE_OPENGLES
 #ifdef HAVE_GL_SYNC
-   int i;
+   size_t i;
    for (i = 0; i < chain->fence_count; i++)
    {
       glClientWaitSync(chain->fences[i],
@@ -1814,7 +1814,7 @@ bool gl2_load_luts(
       const void *shader_data,
       GLuint *textures_lut)
 {
-   int i;
+   size_t i;
    const struct video_shader *shader =
       (const struct video_shader*)shader_data;
    unsigned num_luts                 = MIN(shader->luts, GFX_MAX_TEXTURES);
@@ -2203,8 +2203,7 @@ static void gl2_update_input_size(gl2_t *gl, unsigned width,
 
 static void gl2_init_textures_data(gl2_t *gl)
 {
-   int i;
-
+   size_t i;
    for (i = 0; i < gl->textures; i++)
    {
       gl->last_width[i]  = gl->tex_w;
@@ -2932,10 +2931,9 @@ static bool gl2_frame(void *data, const void *frame,
       {
          /* On resize, we might have to recreate our FBOs
           * due to "Viewport" scale, and set a new viewport. */
-         int i;
-
+         size_t i;
          /* Check if we have to recreate our FBO textures. */
-         for (i = 0; i < (unsigned)chain->fbo_pass; i++)
+         for (i = 0; i < (size_t)chain->fbo_pass; i++)
          {
             struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
             if (fbo_rect)
@@ -3177,7 +3175,7 @@ static bool gl2_frame(void *data, const void *frame,
          && !runloop_is_paused 
          && (!(gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE)))
     {
-        int n;
+        size_t n;
         for (n = 0; n < black_frame_insertion; ++n)
         {
           glClearColor(0.0f, 0.0f, 0.0f, 1.0f);

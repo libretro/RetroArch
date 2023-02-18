@@ -1387,7 +1387,7 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
       goto end;
    }
 
-   memcpy(enabled + count, exts, num_exts * sizeof(*exts));
+   memcpy((void*)(enabled + count), exts, num_exts * sizeof(*exts));
    count += num_exts;
 
    for (i = 0; i < num_optional_exts; i++)
@@ -1491,7 +1491,7 @@ static VkDevice vulkan_context_create_device_wrapper(
                ARRAY_SIZE(vulkan_device_extensions) +
                ARRAY_SIZE(vulkan_optional_device_extensions)) * sizeof(const char *));
 
-   memcpy(device_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
+   memcpy((void*)device_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
    info.ppEnabledExtensionNames = device_extensions;
 
    if (!(vulkan_find_device_extensions(gpu,
@@ -1513,7 +1513,7 @@ static VkDevice vulkan_context_create_device_wrapper(
    }
 
 end:
-   free(device_extensions);
+   free((void*)device_extensions);
    return device;
 }
 
@@ -1797,8 +1797,8 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    instance_extensions = (const char **)malloc((info.enabledExtensionCount + 3) * sizeof(const char *));
    instance_layers = (const char **)malloc((info.enabledLayerCount + 1) * sizeof(const char *));
 
-   memcpy(instance_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
-   memcpy(instance_layers, info.ppEnabledLayerNames, info.enabledLayerCount * sizeof(const char *));
+   memcpy((void*)instance_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
+   memcpy((void*)instance_layers, info.ppEnabledLayerNames, info.enabledLayerCount * sizeof(const char *));
    info.ppEnabledExtensionNames = instance_extensions;
    info.ppEnabledLayerNames = instance_layers;
 
@@ -1883,8 +1883,8 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    }
 
 end:
-   free(instance_extensions);
-   free(instance_layers);
+   free((void*)instance_extensions);
+   free((void*)instance_layers);
    return instance;
 }
 

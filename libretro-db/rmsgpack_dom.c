@@ -150,7 +150,7 @@ static int dom_read_map_start(uint32_t len, void *data)
 
 static int dom_read_array_start(uint32_t len, void *data)
 {
-	int i;
+	size_t i;
 	struct dom_reader_state *dom_state = (struct dom_reader_state *)data;
 	struct rmsgpack_dom_value *v       = dom_reader_state_pop(dom_state);
 	struct rmsgpack_dom_value *items   = NULL;
@@ -176,7 +176,7 @@ static int dom_read_array_start(uint32_t len, void *data)
 
 void rmsgpack_dom_value_free(struct rmsgpack_dom_value *v)
 {
-   int i;
+   size_t i;
    switch (v->type)
    {
       case RDT_STRING:

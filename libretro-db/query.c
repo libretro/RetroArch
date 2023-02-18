@@ -148,7 +148,7 @@ static struct rmsgpack_dom_value query_func_operator_or(
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
-   int i;
+   size_t i;
    struct rmsgpack_dom_value res;
 
    res.type      = RDT_BOOL;
@@ -176,7 +176,7 @@ static struct rmsgpack_dom_value query_func_operator_and(
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
-   int i;
+   size_t i;
    struct rmsgpack_dom_value res;
 
    res.type      = RDT_BOOL;
@@ -287,7 +287,7 @@ static void query_raise_unknown_function(
 
 static void query_argument_free(struct argument *arg)
 {
-   int i;
+   size_t i;
 
    if (arg->type != AT_FUNCTION)
    {
@@ -445,7 +445,8 @@ static struct buffer query_parse_string(
       }
       else if (is_binstr)
       {
-         int i, j        = 0;
+         size_t i;
+         int j           = 0;
          const char *tok = str_start;
 
          for (i = 0; i < value->val.string.len; i += 2)

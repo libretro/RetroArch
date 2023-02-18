@@ -648,7 +648,7 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
 
 int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, const void *s, uint64_t len)
 {
-   int64_t pos = 0;
+   int64_t pos   = 0;
    size_t result = -1;
 
    if (!stream)
@@ -656,7 +656,7 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
-      pos = retro_vfs_file_tell_impl(stream);
+      pos    = retro_vfs_file_tell_impl(stream);
       result = fwrite(s, 1, (size_t)len, stream->fp);
 
       if (result != -1 && pos + result > stream->size)
@@ -669,7 +669,7 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
       return -1;
 #endif
 
-   pos = retro_vfs_file_tell_impl(stream);
+   pos    = retro_vfs_file_tell_impl(stream);
    result = write(stream->fd, s, (size_t)len);
 
    if (result != -1 && pos + result > stream->size)

@@ -3182,7 +3182,7 @@ static void vulkan_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   int y;
+   size_t y;
    unsigned stride;
    uint8_t *ptr                        = NULL;
    uint8_t *dst                        = NULL;
@@ -3244,7 +3244,7 @@ static void vulkan_set_texture_frame(void *data,
    {
       for (y = 0; y < height; y++, dst += texture->stride, src += stride)
       {
-         int x;
+         size_t x;
          uint16_t *srcpix = (uint16_t*)src;
          uint32_t *dstpix = (uint32_t*)dst;
          for (x = 0; x < width; x++, srcpix++, dstpix++)

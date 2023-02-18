@@ -1559,7 +1559,7 @@ static INLINE bool preempt_ptr_input_dirty(preempt_t *preempt,
 static INLINE void preempt_input_poll(preempt_t *preempt,
       runloop_state_t *runloop_st, settings_t *settings)
 {
-   int p;
+   size_t p;
    int16_t joypad_state;
    retro_input_state_t state_cb   = input_driver_state_wrapper;
    unsigned max_users             = settings->uints.input_max_users;
