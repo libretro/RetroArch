@@ -49,11 +49,11 @@ static struct rmsgpack_dom_value *dom_reader_state_pop(
 static int dom_reader_state_push(
       struct dom_reader_state *s, struct rmsgpack_dom_value *v)
 {
-	if ((s->i + 1) == MAX_DEPTH)
-		return -1;
-	s->i++;
-	s->stack[s->i] = v;
-	return 0;
+   if ((s->i + 1) == MAX_DEPTH)
+      return -1;
+   s->i++;
+   s->stack[s->i] = v;
+   return 0;
 }
 
 static int dom_read_nil(void *data)
@@ -148,28 +148,28 @@ static int dom_read_map_start(uint32_t len, void *data)
 
 static int dom_read_array_start(uint32_t len, void *data)
 {
-	size_t i;
-	struct dom_reader_state *dom_state = (struct dom_reader_state *)data;
-	struct rmsgpack_dom_value *v       = dom_reader_state_pop(dom_state);
-	struct rmsgpack_dom_value *items   = NULL;
+   size_t i;
+   struct dom_reader_state *dom_state = (struct dom_reader_state *)data;
+   struct rmsgpack_dom_value *v       = dom_reader_state_pop(dom_state);
+   struct rmsgpack_dom_value *items   = NULL;
 
-	v->type                            = RDT_ARRAY;
-	v->val.array.len                   = len;
-	v->val.array.items                 = NULL;
+   v->type                            = RDT_ARRAY;
+   v->val.array.len                   = len;
+   v->val.array.items                 = NULL;
 
-	if (!(items = (struct rmsgpack_dom_value *)
-      calloc(len, sizeof(*items))))
-		return -1;
+   if (!(items = (struct rmsgpack_dom_value *)
+            calloc(len, sizeof(*items))))
+      return -1;
 
-	v->val.array.items = items;
+   v->val.array.items                 = items;
 
-	for (i = 0; i < len; i++)
+   for (i = 0; i < len; i++)
    {
       if (dom_reader_state_push(dom_state, &items[i]) < 0)
          return -1;
    }
 
-	return 0;
+   return 0;
 }
 
 void rmsgpack_dom_value_free(struct rmsgpack_dom_value *v)
@@ -223,8 +223,7 @@ struct rmsgpack_dom_value *rmsgpack_dom_value_map_value(
 
 int rmsgpack_dom_value_cmp(
       const struct rmsgpack_dom_value *a,
-      const struct rmsgpack_dom_value *b
-)
+      const struct rmsgpack_dom_value *b)
 {
    if ((a != b) && (a->type == b->type))
    {
@@ -342,6 +341,7 @@ void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj)
          printf("]");
    }
 }
+
 int rmsgpack_dom_write(RFILE *fd, const struct rmsgpack_dom_value *obj)
 {
    unsigned i;

@@ -87,17 +87,16 @@ int bintree_iterate(struct bintree_node *n, bintree_iter_cb cb, void *ctx)
 
 void bintree_free(struct bintree_node *n)
 {
-   if (n->value == NIL_NODE)
-   {
-      free(n);
+   if (!n)
       return;
+   if (n->value != NIL_NODE)
+   {
+	   n->value = NULL;
+	   if (n->left)
+		   bintree_free(n->left);
+	   if (n->right)
+		   bintree_free(n->right);
    }
-
-   n->value = NULL;
-   if (n->left)
-      bintree_free(n->left);
-   if (n->right)
-      bintree_free(n->right);
    free(n);
 }
 
