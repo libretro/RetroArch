@@ -169,26 +169,6 @@ clean:
    return rv;
 }
 
-static int libretrodb_read_index_header(RFILE *fd, libretrodb_index_t *idx)
-{
-   uint64_t name_len = 50;
-   return rmsgpack_dom_read_into(fd,
-         "name", idx->name, &name_len,
-         "key_size", &idx->key_size,
-         "next", &idx->next, NULL);
-}
-
-static void libretrodb_write_index_header(RFILE *fd, libretrodb_index_t *idx)
-{
-   rmsgpack_write_map_header(fd, 3);
-   rmsgpack_write_string(fd, "name", STRLEN_CONST("name"));
-   rmsgpack_write_string(fd, idx->name, (uint32_t)strlen(idx->name));
-   rmsgpack_write_string(fd, "key_size", (uint32_t)STRLEN_CONST("key_size"));
-   rmsgpack_write_uint(fd, idx->key_size);
-   rmsgpack_write_string(fd, "next", STRLEN_CONST("next"));
-   rmsgpack_write_uint(fd, idx->next);
-}
-
 void libretrodb_close(libretrodb_t *db)
 {
    if (db->fd)
@@ -251,7 +231,12 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
    /* TODO: this should use filestream_eof instead */
    while (offset < eof)
    {
-      libretrodb_read_index_header(db->fd, idx);
+      uint64_t name_len = 50;
+      /* Read index header */
+      rmsgpack_dom_read_into(db->fd,
+            "name",     idx->name, &name_len,
+            "key_size", &idx->key_size,
+            "next",     &idx->next, NULL);
 
       if (strncmp(index_name, idx->name, strlen(idx->name)) == 0)
          return 0;
@@ -274,7 +259,7 @@ static int binsearch(const void *buff, const void *item,
 
    if (rv == 0)
    {
-      *offset = *(uint64_t *)(current + field_size);
+      *offset         = *(uint64_t *)(current + field_size);
       return 0;
    }
 
@@ -300,7 +285,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
    if (libretrodb_find_index(db, index_name, &idx) < 0)
       return -1;
 
-   bufflen = idx.next;
+   bufflen        = idx.next;
 
    if (!(buff = malloc(bufflen)))
       return -1;
@@ -469,9 +454,9 @@ int libretrodb_create_index(libretrodb_t *db,
    if (!tree || (libretrodb_cursor_open(db, &cur, NULL) != 0))
       goto clean;
 
-   key.type            = RDT_STRING;
-   key.val.string.len  = (uint32_t)strlen(field_name);
-   key.val.string.buff = (char *) field_name;   /* We know we aren't going to change it */
+   key.type                         = RDT_STRING;
+   key.val.string.len               = (uint32_t)strlen(field_name);
+   key.val.string.buff              = (char *)field_name;   /* We know we aren't going to change it */
 
    while (libretrodb_cursor_read_item(&cur, &item) == 0)
    {
@@ -523,7 +508,15 @@ int libretrodb_create_index(libretrodb_t *db,
 
    idx.key_size = field_size;
    idx.next     = db->count * (field_size + sizeof(uint64_t));
-   libretrodb_write_index_header(db->fd, &idx);
+
+   /* Write index header */
+   rmsgpack_write_map_header(db->fd, 3);
+   rmsgpack_write_string(db->fd, "name", STRLEN_CONST("name"));
+   rmsgpack_write_string(db->fd, idx.name, (uint32_t)strlen(idx.name));
+   rmsgpack_write_string(db->fd, "key_size", (uint32_t)STRLEN_CONST("key_size"));
+   rmsgpack_write_uint  (db->fd, idx.key_size);
+   rmsgpack_write_string(db->fd, "next", STRLEN_CONST("next"));
+   rmsgpack_write_uint  (db->fd, idx.next);
 
    nictx.db     = db;
    nictx.idx    = &idx;

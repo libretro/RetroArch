@@ -405,22 +405,22 @@ static int rmsgpack_read_int(RFILE *fd, int64_t *out, size_t size)
 
 static int rmsgpack_read_buff(RFILE *fd, size_t size, char **pbuff, uint64_t *len)
 {
-   uint64_t tmp_len = 0;
-   ssize_t read_len = 0;
+   ssize_t read_len;
+   uint64_t tmp_len   = 0;
 
    if (rmsgpack_read_uint(fd, &tmp_len, size) == -1)
       return -1;
 
-   *pbuff = (char *)malloc((size_t)(tmp_len + 1) * sizeof(char));
+   *pbuff             = (char *)malloc((size_t)(tmp_len + 1) * sizeof(char));
 
-   if ((read_len = filestream_read(fd, *pbuff, (size_t)tmp_len)) == -1)
+   if ((read_len      = filestream_read(fd, *pbuff, (size_t)tmp_len)) == -1)
    {
       free(*pbuff);
       *pbuff = NULL;
       return -1;
    }
 
-   *len = read_len;
+   *len               = read_len;
    (*pbuff)[read_len] = 0;
 
    /* Throw warning on read_len != tmp_len ? */
