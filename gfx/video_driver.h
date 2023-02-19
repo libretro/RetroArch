@@ -19,7 +19,6 @@
 
 #include <stddef.h>
 
-
 #include <libretro.h>
 #include <retro_common_api.h>
 #include <boolean.h>

@@ -49,6 +49,8 @@
 #include "../defaults.h"
 #include "../command.h"
 #include "../configuration.h"
+#include "../core.h"
+#include "../gfx/video_driver.h"
 #include "../paths.h"
 #include "../msg_hash.h"
 #include "../runloop.h"

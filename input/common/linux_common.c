@@ -89,7 +89,7 @@ static void linux_terminal_restore_signal(int sig)
 
 bool linux_terminal_disable_input(void)
 {
-   struct sigaction sa = {{0}};
+   struct sigaction sa = {0};
 
    /* Avoid accidentally typing stuff. */
    if (!isatty(0))
