@@ -113,7 +113,7 @@ static int16_t ps3_joypad_axis_state(unsigned port, uint32_t joyaxis)
          break;
       case 2:
       case 3:
-         val = analog_state[port][1][axis-2];
+         val = analog_state[port][1][axis - 2];
          break;
    }
 

@@ -123,7 +123,7 @@ static int16_t ps2_joypad_axis_state(unsigned port_num, uint32_t joyaxis)
          break;
       case 2:
       case 3:
-         val = analog_state[port_num][1][axis-2];
+         val = analog_state[port_num][1][axis - 2];
          break;
    }
 

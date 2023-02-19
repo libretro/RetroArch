@@ -87,7 +87,7 @@ static int16_t qnx_joypad_axis_state(
          break;
       case 2:
       case 3:
-         val = controller->analog1[axis-2];
+         val = controller->analog1[axis - 2];
          break;
    }
 

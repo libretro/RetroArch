@@ -178,55 +178,71 @@ static int16_t dinput_joypad_axis_state(
       const struct dinput_joypad_data *pad,
       uint32_t joyaxis)
 {
-   int val                              = 0;
-   int axis                             = -1;
-   bool is_neg                          = false;
-   bool is_pos                          = false;
-
    if (AXIS_NEG_GET(joyaxis) <= 7)
    {
-      axis   = AXIS_NEG_GET(joyaxis);
-      is_neg = true;
+      int16_t val = 0;
+      int axis    = AXIS_NEG_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+            val = pad->joy_state.lX;
+            break;
+         case 1:
+            val = pad->joy_state.lY;
+            break;
+         case 2:
+            val = pad->joy_state.lZ;
+            break;
+         case 3:
+            val = pad->joy_state.lRx;
+            break;
+         case 4:
+            val = pad->joy_state.lRy;
+            break;
+         case 5:
+            val = pad->joy_state.lRz;
+            break;
+         case 6:
+         case 7:
+            val = pad->joy_state.rglSlider[axis - 6];
+            break;
+      }
+      if (val < 0)
+         return val;
    }
    else if (AXIS_POS_GET(joyaxis) <= 7)
    {
-      axis   = AXIS_POS_GET(joyaxis);
-      is_pos = true;
+      int16_t val = 0;
+      int axis    = AXIS_POS_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+            val = pad->joy_state.lX;
+            break;
+         case 1:
+            val = pad->joy_state.lY;
+            break;
+         case 2:
+            val = pad->joy_state.lZ;
+            break;
+         case 3:
+            val = pad->joy_state.lRx;
+            break;
+         case 4:
+            val = pad->joy_state.lRy;
+            break;
+         case 5:
+            val = pad->joy_state.lRz;
+            break;
+         case 6:
+         case 7:
+            val = pad->joy_state.rglSlider[axis - 6];
+            break;
+      }
+      if (val > 0)
+         return val;
    }
-   else
-      return 0;
-
-   switch (axis)
-   {
-      case 0:
-         val = pad->joy_state.lX;
-         break;
-      case 1:
-         val = pad->joy_state.lY;
-         break;
-      case 2:
-         val = pad->joy_state.lZ;
-         break;
-      case 3:
-         val = pad->joy_state.lRx;
-         break;
-      case 4:
-         val = pad->joy_state.lRy;
-         break;
-      case 5:
-         val = pad->joy_state.lRz;
-         break;
-      case 6:
-      case 7:
-         val = pad->joy_state.rglSlider[axis - 6];
-         break;
-   }
-
-   if (is_neg && val > 0)
-      return 0;
-   else if (is_pos && val < 0)
-      return 0;
-   return val;
+   return 0;
 }
 
 static int32_t dinput_joypad_button(unsigned port, uint16_t joykey)

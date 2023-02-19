@@ -536,31 +536,23 @@ static void apple_gamecontroller_joypad_get_buttons(unsigned port,
 static int16_t apple_gamecontroller_joypad_axis(
       unsigned port, uint32_t joyaxis)
 {
-    int16_t val  = 0;
-    int16_t axis = -1;
-    bool is_neg  = false;
-    bool is_pos  = false;
-
     if (AXIS_NEG_GET(joyaxis) < 4)
     {
-        axis     = AXIS_NEG_GET(joyaxis);
-        is_neg   = true;
+       int16_t val  = 0;
+       int16_t axis = AXIS_NEG_GET(joyaxis);
+       if (axis >= 0 && axis < 4)
+          if ((val = mfi_axes[port][axis]) < 0)
+             return val;
     }
     else if(AXIS_POS_GET(joyaxis) < 4)
     {
-        axis     = AXIS_POS_GET(joyaxis);
-        is_pos   = true;
+       int16_t val  = 0;
+       int16_t axis = AXIS_POS_GET(joyaxis);
+       if (axis >= 0 && axis < 4)
+          if ((val = mfi_axes[port][axis]) > 0)
+             return val;
     }
-    else
-       return 0;
-
-    if (axis >= 0 && axis < 4)
-       val  = mfi_axes[port][axis];
-    if (is_neg && val > 0)
-       return 0;
-    else if (is_pos && val < 0)
-       return 0;
-    return val;
+    return 0;
 }
 
 static int16_t apple_gamecontroller_joypad_state(

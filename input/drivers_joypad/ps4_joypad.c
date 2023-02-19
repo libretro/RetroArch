@@ -174,16 +174,12 @@ static int16_t ps4_joypad_axis(unsigned port, uint32_t joyaxis)
    switch (axis)
    {
       case 0:
-         val = analog_state[port][0][0];
-         break;
       case 1:
-         val = analog_state[port][0][1];
+         val = analog_state[port][0][axis];
          break;
       case 2:
-         val = analog_state[port][1][0];
-         break;
       case 3:
-         val = analog_state[port][1][1];
+         val = analog_state[port][1][axis - 2];
          break;
    }
 
