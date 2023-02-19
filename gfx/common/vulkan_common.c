@@ -587,7 +587,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 #endif
             type = VULKAN_TEXTURE_STAGING;
             vkDestroyImage(device, tex.image, NULL);
-            tex.image          = (VkImage)NULL;
+            tex.image          = VK_NULL_HANDLE;
             info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
 
             buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -2936,11 +2936,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkSurfaceCapabilitiesKHR surface_properties;
    VkSurfaceFormatKHR formats[256];
    VkPresentModeKHR present_modes[16];
-   VkSurfaceFormatKHR format;
    VkExtent2D swapchain_size;
    VkSwapchainKHR old_swapchain;
    VkSwapchainCreateInfoKHR info;
    VkSurfaceTransformFlagBitsKHR pre_transform;
+   VkSurfaceFormatKHR format               = { VK_FORMAT_UNDEFINED, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
    VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
    settings_t                    *settings = config_get_ptr();
