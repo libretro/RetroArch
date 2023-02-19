@@ -42,6 +42,7 @@
 #include "../common/wayland_common.h"
 
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 
 /* TODO/FIXME -
  * fix game focus toggle */
@@ -312,7 +313,7 @@ static int16_t input_wl_state(
                            res_x = res_screen_x;
                            res_y = res_screen_y;
                         }
-                        return ((res_x >= -0x7fff) && (res_y >= -0x7fff)) /* Inside? */
+                        if ((res_x >= -0x7fff) && (res_y >= -0x7fff)) /* Inside? */
                            return res_x;
                      }
                      break;

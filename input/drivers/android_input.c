@@ -24,6 +24,7 @@
 #include <dynamic/dylib.h>
 #include <retro_inline.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -931,7 +932,7 @@ static bool is_configured_as_physical_keyboard(int vendor_id, int product_id, co
     bool compare_by_id;
     int keyboard_vendor_id;
     int keyboard_product_id;
-    char keyboard_name[sizeof(settings->arrays.input_android_physical_keyboard)];
+    char keyboard_name[256];
     settings_t *settings = config_get_ptr();
 
     if (sscanf(settings->arrays.input_android_physical_keyboard, "%04x:%04x ", &keyboard_vendor_id, &keyboard_product_id) != 2)
