@@ -28,8 +28,6 @@
 #include <boolean.h>
 #include <libretro.h>
 
-#include "../../config.def.h"
-
 #include "../input_driver.h"
 
 static void xdk_input_free_input(void *data) { }

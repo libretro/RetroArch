@@ -119,11 +119,6 @@ static void ps3_connect_keyboard(ps3_input_t *ps3, int port)
    ps3->connected[port] = 1;
 }
 
-static void ps3_disconnect_keyboard(ps3_input_t *ps3, int port)
-{
-   ps3->connected[port] = 0;
-}
-
 #ifdef HAVE_LIGHTGUN
 void endCamera(ps3_input_t *ps3)
 {
@@ -135,62 +130,54 @@ void endCamera(ps3_input_t *ps3)
 
 int setupCamera(ps3_input_t *ps3)
 {
-   int ret;
    int error = 0;
 
    cameraGetType(0, &ps3->type);
-   if (ps3->type == CAM_TYPE_PLAYSTATION_EYE) {
-      ps3->camInf.format = CAM_FORM_RAW8;
-      ps3->camInf.framerate = 60;
-      ps3->camInf.resolution = CAM_RESO_VGA;
-      ps3->camInf.info_ver = 0x0101;
-      ps3->camInf.container = ps3->container;
+   if (ps3->type == CAM_TYPE_PLAYSTATION_EYE)
+   {
+      ps3->camInf.format         = CAM_FORM_RAW8;
+      ps3->camInf.framerate      = 60;
+      ps3->camInf.resolution     = CAM_RESO_VGA;
+      ps3->camInf.info_ver       = 0x0101;
+      ps3->camInf.container      = ps3->container;
 
-      ret = cameraOpenEx(0, &ps3->camInf);
-      switch (ret)
+      switch (cameraOpenEx(0, &ps3->camInf))
       {
          case CAMERA_ERRO_DOUBLE_OPEN:
             cameraClose(0);
-            error = 1;
+            error                = 1;
             break;
          case CAMERA_ERRO_NO_DEVICE_FOUND:
-            error = 1;
+            error                = 1;
             break;
          case 0:
-            ps3->camread.buffer = ps3->camInf.buffer;
+            ps3->camread.buffer  = ps3->camInf.buffer;
             ps3->camread.version = 0x0100;
-            ps3->cam_buf = (u8 *)(u64)ps3->camread.buffer;
+            ps3->cam_buf         = (u8 *)(u64)ps3->camread.buffer;
             break;
          default:
-            error = 1;
+            error                = 1;
+            break;
       }
    }
    else
-   {
       error = 1;
-   }
    return error;
 }
 
 int initCamera(ps3_input_t *ps3)
 {
-  int ret;
-
-  ret = sysMemContainerCreate(&ps3->container, 0x200000);
-  ret = cameraInit();
+  int ret = sysMemContainerCreate(&ps3->container, 0x200000);
+  ret     = cameraInit();
   if (ret == 0)
-  {
-    ret = setupCamera(ps3);
-  }
+    return setupCamera(ps3);
   return ret;
 
 }
 
 int readCamera(ps3_input_t *ps3)
 {
-   int ret;
-
-   ret = cameraReadEx(0, &ps3->camread);
+   int ret = cameraReadEx(0, &ps3->camread);
    switch (ret)
    {
       case CAMERA_ERRO_NEED_START:
@@ -205,36 +192,26 @@ int readCamera(ps3_input_t *ps3)
        break;
   }
   if (ret == 0 && ps3->camread.readcount != 0)
-  {
      return ps3->camread.readcount;
-  }
-  else
-  {
-     return 0;
-  }
+  return 0;
 }
 
 int proccessGem(ps3_input_t *ps3, int t)
 {
-   int ret;
-   switch (t) {
+   switch (t)
+   {
       case 0:
-         ret = gemUpdateStart(ps3->camread.buffer, ps3->camread.timestamp);
-         break;
+         return gemUpdateStart(ps3->camread.buffer, ps3->camread.timestamp);
       case 1:
-         ret = gemConvertVideoStart(ps3->camread.buffer);
-         break;
+         return gemConvertVideoStart(ps3->camread.buffer);
       case 2:
-         ret = gemUpdateFinish();
-         break;
+         return gemUpdateFinish();
       case 3:
-         ret = gemConvertVideoFinish();
-         break;
+         return gemConvertVideoFinish();
       default:
-         ret = -1;
          break;
-  }
-  return ret;
+   }
+   return -1;
 
 }
 
@@ -272,54 +249,38 @@ int processMove(ps3_input_t *ps3)
 
 int initSpurs(ps3_input_t *ps3)
 {
-   int ret;
    int i;
-   sys_ppu_thread_t ppu_thread_id;
    int ppu_prio;
+   sys_ppu_thread_t ppu_thread_id;
    unsigned int nthread;
-
-   ret = sysSpuInitialize(6, 0);
-   ret = sysThreadGetId(&ppu_thread_id);
-   ret = sysThreadGetPriority(ppu_thread_id, &ppu_prio);
+   int ret      = sysSpuInitialize(6, 0);
+   ret          = sysThreadGetId(&ppu_thread_id);
+   ret          = sysThreadGetPriority(ppu_thread_id, &ppu_prio);
 
    /* initialize spurs */
-   ps3->spurs = (Spurs *)memalign(SPURS_ALIGN, sizeof(Spurs));
+   ps3->spurs   = (Spurs *)memalign(SPURS_ALIGN, sizeof(Spurs));
    SpursAttribute attributeSpurs;
 
-   ret = spursAttributeInitialize(&attributeSpurs, 5, 250, ppu_prio - 1, true);
-   if (ret)
-   {
+   if ((ret     = spursAttributeInitialize(&attributeSpurs, 5, 250, ppu_prio - 1, true)))
       return (ret);
-   }
 
-   ret = spursAttributeSetNamePrefix(&attributeSpurs, SPURS_PREFIX_NAME, strlen(SPURS_PREFIX_NAME));
-   if (ret)
-   {
+   if ((ret     = spursAttributeSetNamePrefix(&attributeSpurs, SPURS_PREFIX_NAME, strlen(SPURS_PREFIX_NAME))))
       return (ret);
-   }
 
-   ret = spursInitializeWithAttribute(ps3->spurs, &attributeSpurs);
-   if (ret)
-   {
+   if ((ret     = spursInitializeWithAttribute(ps3->spurs, &attributeSpurs)))
       return (ret);
-   }
 
-   ret = spursGetNumSpuThread(ps3->spurs, &nthread);
-   if (ret)
-   {
+   if ((ret     = spursGetNumSpuThread(ps3->spurs, &nthread)))
       return (ret);
-   }
 
    ps3->threads = (sys_spu_thread_t *)malloc(sizeof(sys_spu_thread_t) * nthread);
 
-   ret = spursGetSpuThreadId(ps3->spurs, ps3->threads, &nthread);
-   if (ret)
-   {
+   if ((ret = spursGetSpuThreadId(ps3->spurs, ps3->threads, &nthread)))
       return (ret);
-   }
 
    SpursInfo info;
    ret = spursGetInfo(ps3->spurs, &info);
+
    return 0;
 }
 
@@ -345,14 +306,12 @@ static inline void initAttributeGem(gemAttribute * attribute,
 {
    int i;
 
-   attribute->version = 2;
-   attribute->max = max_connect;
-   attribute->spurs = spurs;
-   attribute->memory = memory_ptr;
+   attribute->version              = 2;
+   attribute->max                  = max_connect;
+   attribute->spurs                = spurs;
+   attribute->memory               = memory_ptr;
    for (i = 0; i < 8; ++i)
-   {
-    attribute->spu_priorities[i] = spu_priorities[i];
-   }
+      attribute->spu_priorities[i] = spu_priorities[i];
 }
 
 int initGemVideoConvert(ps3_input_t *ps3)
@@ -360,9 +319,9 @@ int initGemVideoConvert(ps3_input_t *ps3)
    ps3->gem_video_convert.version        = 2;
    ps3->gem_video_convert.format         = 2; /* GEM_RGBA_640x480; */
    ps3->gem_video_convert.conversion     = GEM_AUTO_WHITE_BALANCE 
-	                                 | GEM_COMBINE_PREVIOUS_INPUT_FRAME
+                                         | GEM_COMBINE_PREVIOUS_INPUT_FRAME
                                          | GEM_FILTER_OUTLIER_PIXELS 
-				         | GEM_GAMMA_BOOST;
+				                             | GEM_GAMMA_BOOST;
    ps3->gem_video_convert.gain           = 1.0f;
    ps3->gem_video_convert.red_gain       = 1.0f;
    ps3->gem_video_convert.green_gain     = 1.0f;
@@ -386,8 +345,7 @@ int initGem(ps3_input_t *ps3)
    if (initSpurs(ps3))
       return -1;
 
-   ps3->gem_memory = (void *)malloc(gemGetMemorySize(1));
-   if (!ps3->gem_memory)
+   if (!(ps3->gem_memory = (void *)malloc(gemGetMemorySize(1))))
       return -1;
 
    initAttributeGem(&gem_attr, 1, ps3->gem_memory,
@@ -507,7 +465,7 @@ static void ps3_input_poll(void *data)
          ps3_connect_keyboard(ps3, i);
 #if 0
       if (!ps3->kbinfo.status[i] && ps3->connected[i])
-         ps3_disconnect_keyboard(ps3, i);
+         ps3->connected[i] = 0;
 #endif
    }
 
@@ -615,16 +573,17 @@ static bool psl1ght_keyboard_port_input_pressed(
    }
 
    code = rarch_keysym_lut[id];
-   if (code == 0)
-      return false;
-   for (i = 0; i < MAX_KB_PORT_NUM; i++)
+   if (code != 0)
    {
-      if (ps3->kbinfo.status[i])
+      for (i = 0; i < MAX_KB_PORT_NUM; i++)
       {
-         for (j = 0; j < ps3->kbdata[i].nb_keycode; j++)
+         if (ps3->kbinfo.status[i])
          {
-            if (ps3->kbdata[i].keycode[j] == code)
-               return true;
+            for (j = 0; j < ps3->kbdata[i].nb_keycode; j++)
+            {
+               if (ps3->kbdata[i].keycode[j] == code)
+                  return true;
+            }
          }
       }
    }
@@ -636,24 +595,25 @@ static bool psl1ght_keyboard_port_input_pressed(
 static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
       unsigned user, unsigned id)
 {
-   if (!ps3->mice_connected)
-      return 0;
-
-   mouseData mouse_state;
-   ioMouseGetData(id, &mouse_state);
-
-   switch (id)
+   if (ps3->mice_connected)
    {
-      /* TODO: mouse wheel up/down */
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return (mouse_state.buttons & CELL_MOUSE_BUTTON_1);
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return (mouse_state.buttons & CELL_MOUSE_BUTTON_2);
-      case RETRO_DEVICE_ID_MOUSE_X:
-         return (mouse_state.x_axis);
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         return (mouse_state.y_axis);
+      mouseData mouse_state;
+      ioMouseGetData(id, &mouse_state);
+
+      switch (id)
+      {
+         /* TODO: mouse wheel up/down */
+         case RETRO_DEVICE_ID_MOUSE_LEFT:
+            return (mouse_state.buttons & CELL_MOUSE_BUTTON_1);
+         case RETRO_DEVICE_ID_MOUSE_RIGHT:
+            return (mouse_state.buttons & CELL_MOUSE_BUTTON_2);
+         case RETRO_DEVICE_ID_MOUSE_X:
+            return (mouse_state.x_axis);
+         case RETRO_DEVICE_ID_MOUSE_Y:
+            return (mouse_state.y_axis);
+      }
    }
+
    return 0;
 }
 #endif
@@ -721,9 +681,9 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
    /* tracking mode 2: 3D coordinate system (move pointer position by moving the
  * whole controller) */
    VmathVector4 v;
-   v.vec128              = ps3->gem_state.pos;
-   pointer_x             = v.vec128[0];
-   pointer_y             = v.vec128[1];
+   v.vec128                    = ps3->gem_state.pos;
+   pointer_x                   = v.vec128[0];
+   pointer_y                   = v.vec128[1];
 #endif
 
    if (video_driver_translate_coord_viewport_wrap(&vp,
@@ -778,11 +738,11 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
             break;
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
             if (inside)
-               return (res_x);
+               return res_x;
             break;
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
             if (inside)
-               return (~res_y);
+               return ~res_y;
             break;
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
             return !inside;
@@ -809,49 +769,49 @@ static int16_t ps3_input_state(
 {
    ps3_input_t *ps3           = (ps3_input_t*)data;
 
-   if (!ps3)
-      return 0;
-
-   switch (device)
+   if (ps3)
    {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            int i;
-            int16_t ret = 0;
-
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+      switch (device)
+      {
+         case RETRO_DEVICE_JOYPAD:
+            if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
             {
-               if (binds[port][i].valid)
+               int i;
+               int16_t ret = 0;
+
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (psl1ght_keyboard_port_input_pressed(
-                           ps3, binds[port][i].key))
-                     ret |= (1 << i);
+                  if (binds[port][i].valid)
+                  {
+                     if (psl1ght_keyboard_port_input_pressed(
+                              ps3, binds[port][i].key))
+                        ret |= (1 << i);
+                  }
                }
+
+               return ret;
             }
 
-            return ret;
-         }
-
-         if (binds[port][id].valid)
-         {
-            if (psl1ght_keyboard_port_input_pressed(
-                     ps3, binds[port][id].key))
-               return 1;
-         }
-         break;
-      case RETRO_DEVICE_ANALOG:
-         break;
-      case RETRO_DEVICE_KEYBOARD:
-         return psl1ght_keyboard_port_input_pressed(ps3, id);
+            if (binds[port][id].valid)
+            {
+               if (psl1ght_keyboard_port_input_pressed(
+                        ps3, binds[port][id].key))
+                  return 1;
+            }
+            break;
+         case RETRO_DEVICE_ANALOG:
+            break;
+         case RETRO_DEVICE_KEYBOARD:
+            return psl1ght_keyboard_port_input_pressed(ps3, id);
 #ifdef HAVE_MOUSE
-      case RETRO_DEVICE_MOUSE:
-         return ps3_mouse_device_state(ps3, port, id);
+         case RETRO_DEVICE_MOUSE:
+            return ps3_mouse_device_state(ps3, port, id);
 #endif
 #ifdef HAVE_LIGHTGUN
-      case RETRO_DEVICE_LIGHTGUN:
-         return ps3_lightgun_device_state(ps3, port, id);
+         case RETRO_DEVICE_LIGHTGUN:
+            return ps3_lightgun_device_state(ps3, port, id);
 #endif
+      }
    }
 
    return 0;

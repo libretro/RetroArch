@@ -317,34 +317,34 @@ static bool psp_input_set_sensor_state(void *data, unsigned port,
 {
    psp_input_t *psp = (psp_input_t*)data;
 	
-   if (!psp)
-      return false;
-  
-   switch (action)
+   if (psp)
    {
-      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
-         return true;
-      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
-      case RETRO_SENSOR_GYROSCOPE_DISABLE:
-         if(psp->sensors_enabled)
-         {
-            psp->sensors_enabled = false;
-            sceMotionMagnetometerOff();
-            sceMotionStopSampling();
-         }
-         return true;
-      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
-      case RETRO_SENSOR_GYROSCOPE_ENABLE:
-         if(!psp->sensors_enabled)
-         {
-            psp->sensors_enabled = true;
-            sceMotionStartSampling();
-            sceMotionMagnetometerOn();
-         }
-         return true;
-      case RETRO_SENSOR_DUMMY:
-      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
-         break;
+      switch (action)
+      {
+         case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+            return true;
+         case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         case RETRO_SENSOR_GYROSCOPE_DISABLE:
+            if(psp->sensors_enabled)
+            {
+               psp->sensors_enabled = false;
+               sceMotionMagnetometerOff();
+               sceMotionStopSampling();
+            }
+            return true;
+         case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         case RETRO_SENSOR_GYROSCOPE_ENABLE:
+            if(!psp->sensors_enabled)
+            {
+               psp->sensors_enabled = true;
+               sceMotionStartSampling();
+               sceMotionMagnetometerOn();
+            }
+            return true;
+         case RETRO_SENSOR_DUMMY:
+         case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+            break;
+      }
    }
    
    return false;
@@ -358,7 +358,7 @@ static float psp_input_get_sensor_input(void *data,
    psp_input_t *psp = (psp_input_t*)data;
 	
    if(!psp || !psp->sensors_enabled)
-      return false;
+      return 0.0f;
 
    if(id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_GYROSCOPE_Z)
    {
@@ -399,9 +399,9 @@ static void *vita_input_initialize(const char *joypad_driver)
    for (i = 0; i <= VITA_MAX_SCANCODE; i++)
       psp->keyboard_state[i] = false;
    for (i = 0; i < 6; i++)
-      psp->prev_keys[i] = 0;
-   psp->mouse_x = 0;
-   psp->mouse_y = 0;
+      psp->prev_keys[i]      = 0;
+   psp->mouse_x              = 0;
+   psp->mouse_y              = 0;
 
    return psp;
 }

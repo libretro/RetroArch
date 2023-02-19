@@ -384,13 +384,13 @@ static int16_t rwebinput_mouse_state(
       case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
          return !!(mouse->buttons & (1 << RWEBINPUT_MOUSE_BTN5));
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         return mouse->scroll_y < 0.0;
+         return mouse->scroll_y < 0.0f;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         return mouse->scroll_y > 0.0;
+         return mouse->scroll_y > 0.0f;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         return mouse->scroll_x < 0.0;
+         return mouse->scroll_x < 0.0f;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         return mouse->scroll_x > 0.0;
+         return mouse->scroll_x > 0.0f;
    }
 
    return 0;

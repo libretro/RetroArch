@@ -23,8 +23,6 @@
 
 #include <libretro.h>
 
-#include "../../config.def.h"
-
 #include "../input_driver.h"
 
 /* TODO/FIXME - add joypad driver */

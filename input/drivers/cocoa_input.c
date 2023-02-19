@@ -47,8 +47,8 @@ static bool apple_key_state[MAX_KEYS];
 void apple_direct_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
-    int appleKey = rarch_keysym_lut[code];
-    apple_key_state[appleKey] = down;
+    int apple_key              = rarch_keysym_lut[code];
+    apple_key_state[apple_key] = down;
     input_keyboard_event(down,
           code,
           character, (enum retro_mod)mod, device);
@@ -326,7 +326,7 @@ static const unsigned char MAC_NATIVE_TO_HID[128] = {
 void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
-   code                         = HIDKEY(code);
+   code                  = HIDKEY(code);
    if (code == 0 || code >= MAX_KEYS)
       return;
 
@@ -480,12 +480,13 @@ static int16_t cocoa_input_state(
                   }
 #ifdef IOS
 #ifdef HAVE_IOS_TOUCHMOUSE
-                  if (apple->window_pos_x > 0) {
+                  if (apple->window_pos_x > 0)
+                  {
                      val = apple->window_pos_x - apple->mouse_x_last;
                      apple->mouse_x_last = apple->window_pos_x;
-                  } else {
-                     val = apple->mouse_rel_x;
                   }
+                  else
+                     val = apple->mouse_rel_x;
 #else
                   val = apple->mouse_rel_x;
 #endif
@@ -505,14 +506,15 @@ static int16_t cocoa_input_state(
                   }
 #ifdef IOS
 #ifdef HAVE_IOS_TOUCHMOUSE
-                  if (apple->window_pos_y > 0) {
+                  if (apple->window_pos_y > 0)
+                  {
                      val = apple->window_pos_y - apple->mouse_y_last;
                      apple->mouse_y_last = apple->window_pos_y;
-                  } else {
-                     val = apple->mouse_rel_y;
                   }
+                  else
+                     val = apple->mouse_rel_y;
 #else
-                  val = apple->mouse_rel_y;
+                  val    = apple->mouse_rel_y;
 #endif
 #else
                   val = apple->window_pos_y - apple->mouse_y_last;
@@ -537,36 +539,36 @@ static int16_t cocoa_input_state(
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          {
-            const bool want_full = (device == RARCH_DEVICE_POINTER_SCREEN);
 
             if (idx < apple->touch_count && (idx < MAX_TOUCHES))
             {
-               int16_t x, y;
                const cocoa_touch_data_t *touch = (const cocoa_touch_data_t *)
                   &apple->touches[idx];
 
-               if (!touch)
-                  return 0;
-
-               x = touch->fixed_x;
-               y = touch->fixed_y;
-
-               if (want_full)
+               if (touch)
                {
-                  x = touch->full_x;
-                  y = touch->full_y;
-               }
+                  int16_t x, y;
+                  const bool want_full         = (device == RARCH_DEVICE_POINTER_SCREEN);
 
-               switch (id)
-               {
-                  case RETRO_DEVICE_ID_POINTER_PRESSED:
-                     return (x != -0x8000) && (y != -0x8000);
-                  case RETRO_DEVICE_ID_POINTER_X:
-                     return x;
-                  case RETRO_DEVICE_ID_POINTER_Y:
-                     return y;
-                  case RETRO_DEVICE_ID_POINTER_COUNT:
-                     return apple->touch_count;
+                  switch (id)
+                  {
+                     case RETRO_DEVICE_ID_POINTER_PRESSED:
+                        x = touch->fixed_x;
+                        y = touch->fixed_y;
+
+                        if (want_full)
+                        {
+                           x = touch->full_x;
+                           y = touch->full_y;
+                        }
+                        return (x != -0x8000) && (y != -0x8000); /* Inside? */
+                     case RETRO_DEVICE_ID_POINTER_X:
+                        return want_full ? touch->full_x : touch->fixed_x;
+                     case RETRO_DEVICE_ID_POINTER_Y:
+                        return want_full ? touch->full_y : touch->fixed_y;
+                     case RETRO_DEVICE_ID_POINTER_COUNT:
+                        return apple->touch_count;
+                  }
                }
             }
          }
