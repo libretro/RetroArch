@@ -37,6 +37,7 @@
 
 #include "../input_keymaps.h"
 #include "../../frontend/frontend_driver.h"
+#include "../../verbosity.h"
 
 #define DND_ACTION WL_DATA_DEVICE_MANAGER_DND_ACTION_MOVE
 #define FILE_MIME "text/uri-list"
@@ -847,7 +848,7 @@ static void wl_data_device_handle_drop(void *data,
    while ((read = getline(&line,  &len, stream)) != -1)
    {
       line[strcspn(line, "\r\n")] = 0;
-      RARCH_LOG("[Wayland]: > \"%s\"\n", line);
+      RARCH_DBG("[Wayland]: > \"%s\"\n", line);
 
       /* TODO/FIXME: Convert from file:// URI, Implement file loading
        * Drag and Drop */
