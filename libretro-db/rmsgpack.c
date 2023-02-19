@@ -137,54 +137,56 @@ int rmsgpack_write_map_header(RFILE *fd, uint32_t size)
 
 int rmsgpack_write_string(RFILE *fd, const char *s, uint32_t len)
 {
-   uint8_t tmp_i8;
-   uint16_t tmp_i16;
-   uint32_t tmp_i32;
-   int written   = sizeof(uint8_t);
-
    if (len < 32)
    {
-      tmp_i8 = len | MPF_FIXSTR;
-      if (filestream_write(fd, &tmp_i8, sizeof(uint8_t)) == -1)
-         return -1;
+      uint8_t tmp_i8 = len | MPF_FIXSTR;
+      if (filestream_write(fd, &tmp_i8, sizeof(uint8_t)) != -1)
+         if (filestream_write(fd, s, len) != -1)
+            return (sizeof(uint8_t) + len);
    }
    else if (len == (uint8_t)len)
    {
       static const uint8_t MPF_STR8     = _MPF_STR8;
-      if (filestream_write(fd, &MPF_STR8, sizeof(MPF_STR8)) == -1)
-         return -1;
-      tmp_i8 = (uint8_t)len;
-      if (filestream_write(fd, &tmp_i8, sizeof(uint8_t)) == -1)
-         return -1;
-      written += sizeof(uint8_t);
+      if (filestream_write(fd, &MPF_STR8, sizeof(MPF_STR8)) != -1)
+      {
+         uint8_t tmp_i8 = (uint8_t)len;
+         if (filestream_write(fd, &tmp_i8, sizeof(uint8_t)) != -1)
+         {
+            int written = sizeof(uint8_t) + sizeof(uint8_t);
+            if (filestream_write(fd, s, len) != -1)
+               return written + len;
+         }
+      }
    }
    else if (len == (uint16_t)len)
    {
       static const uint8_t MPF_STR16    = _MPF_STR16;
-      if (filestream_write(fd, &MPF_STR16, sizeof(MPF_STR16)) == -1)
-         return -1;
-      tmp_i16 = swap_if_little16(len);
-      if (filestream_write(fd, &tmp_i16, sizeof(uint16_t)) == -1)
-         return -1;
-      written += sizeof(uint16_t);
+      if (filestream_write(fd, &MPF_STR16, sizeof(MPF_STR16)) != -1)
+      {
+         uint16_t tmp_i16 = swap_if_little16(len);
+         if (filestream_write(fd, &tmp_i16, sizeof(uint16_t)) != -1)
+         {
+            int written = sizeof(uint8_t) + sizeof(uint16_t);
+            if (filestream_write(fd, s, len) != -1)
+               return written + len;
+         }
+      }
    }
    else
    {
       static const uint8_t MPF_STR32    = _MPF_STR32;
-      if (filestream_write(fd, &MPF_STR32, sizeof(MPF_STR32)) == -1)
-         return -1;
-      tmp_i32 = swap_if_little32(len);
-      if (filestream_write(fd, &tmp_i32, sizeof(uint32_t)) == -1)
-         return -1;
-      written += sizeof(uint32_t);
+      if (filestream_write(fd, &MPF_STR32, sizeof(MPF_STR32)) != -1)
+      {
+         uint32_t tmp_i32 = swap_if_little32(len);
+         if (filestream_write(fd, &tmp_i32, sizeof(uint32_t)) != -1)
+         {
+            int written = sizeof(uint8_t) + sizeof(uint32_t);
+            if (filestream_write(fd, s, len) != -1)
+               return written + len;
+         }
+      }
    }
-
-   if (filestream_write(fd, s, len) == -1)
-      return -1;
-
-   written += len;
-
-   return written;
+   return -1;
 }
 
 int rmsgpack_write_bin(RFILE *fd, const void *s, uint32_t len)
@@ -250,124 +252,105 @@ int rmsgpack_write_bool(RFILE *fd, int value)
 
 int rmsgpack_write_int(RFILE *fd, int64_t value)
 {
-   int8_t tmp_i8;
-   int16_t tmp_i16;
-   int32_t tmp_i32;
-   uint8_t tmpval;
-   int     written = sizeof(uint8_t);
-
    if (value >= 0 && value < 128)
    {
-      tmpval = (uint8_t)value;
-      if (filestream_write(fd, &tmpval, sizeof(uint8_t)) == -1)
-         return -1;
+      uint8_t tmpval = (uint8_t)value;
+      if (filestream_write(fd, &tmpval, sizeof(uint8_t)) != -1)
+         return sizeof(uint8_t);
    }
    else if (value >= -32 && value < 0)
    {
-      tmpval = (uint8_t)(value + 256); /* -32..-1 => 0xE0 .. 0xFF */
-      if (filestream_write(fd, &tmpval, sizeof(uint8_t)) == -1)
-         return -1;
+      uint8_t tmpval = (uint8_t)(value + 256); /* -32..-1 => 0xE0 .. 0xFF */
+      if (filestream_write(fd, &tmpval, sizeof(uint8_t)) != -1)
+         return sizeof(uint8_t);
    }
    else if (value == (int8_t)value)
    {
       static const uint8_t MPF_INT8     = _MPF_INT8;
-      if (filestream_write(fd, &MPF_INT8, sizeof(MPF_INT8)) == -1)
-         return -1;
-
-      tmp_i8 = (int8_t)value;
-      if (filestream_write(fd, &tmp_i8, sizeof(int8_t)) == -1)
-         return -1;
-      written += sizeof(int8_t);
+      if (filestream_write(fd, &MPF_INT8, sizeof(MPF_INT8)) != -1)
+      {
+         int8_t tmp_i8 = (int8_t)value;
+         if (filestream_write(fd, &tmp_i8, sizeof(int8_t)) != -1)
+            return (sizeof(uint8_t) + sizeof(int8_t));
+      }
    }
    else if (value == (int16_t)value)
    {
       static const uint8_t MPF_INT16    = _MPF_INT16;
-      if (filestream_write(fd, &MPF_INT16, sizeof(MPF_INT16)) == -1)
-         return -1;
-
-      tmp_i16 = swap_if_little16((uint16_t)value);
-      if (filestream_write(fd, &tmp_i16, sizeof(int16_t)) == -1)
-         return -1;
-      written += sizeof(int16_t);
+      if (filestream_write(fd, &MPF_INT16, sizeof(MPF_INT16)) != -1)
+      {
+         int16_t tmp_i16 = swap_if_little16((uint16_t)value);
+         if (filestream_write(fd, &tmp_i16, sizeof(int16_t)) != -1)
+            return (sizeof(uint8_t) + sizeof(int16_t));
+      }
    }
    else if (value == (int32_t)value)
    {
       static const uint8_t MPF_INT32    = _MPF_INT32;
-      if (filestream_write(fd, &MPF_INT32, sizeof(MPF_INT32)) == -1)
-         return -1;
-
-      tmp_i32 = swap_if_little32((uint32_t)value);
-      if (filestream_write(fd, &tmp_i32, sizeof(int32_t)) == -1)
-         return -1;
-      written += sizeof(int32_t);
+      if (filestream_write(fd, &MPF_INT32, sizeof(MPF_INT32)) != -1)
+      {
+         int32_t tmp_i32 = swap_if_little32((uint32_t)value);
+         if (filestream_write(fd, &tmp_i32, sizeof(int32_t)) != -1)
+            return (sizeof(uint8_t) + sizeof(int32_t));
+      }
    }
    else
    {
       static const uint8_t MPF_INT64    = _MPF_INT64;
-      if (filestream_write(fd, &MPF_INT64, sizeof(MPF_INT64)) == -1)
-         return -1;
-
-      value = swap_if_little64(value);
-      if (filestream_write(fd, &value, sizeof(int64_t)) == -1)
-         return -1;
-      written += sizeof(int64_t);
+      if (filestream_write(fd, &MPF_INT64, sizeof(MPF_INT64)) != -1)
+      {
+         value = swap_if_little64(value);
+         if (filestream_write(fd, &value, sizeof(int64_t)) != -1)
+            return (sizeof(uint8_t) + sizeof(int64_t));
+      }
    }
 
-   return written;
+   return -1;
 }
 
 int rmsgpack_write_uint(RFILE *fd, uint64_t value)
 {
-   uint8_t tmp_i8;
-   uint16_t tmp_i16;
-   uint32_t tmp_i32;
-   int written = sizeof(uint8_t);
-
    if (value == (uint8_t)value)
    {
       static const uint8_t MPF_UINT8    = _MPF_UINT8;
-      if (filestream_write(fd, &MPF_UINT8, sizeof(MPF_UINT8)) == -1)
-         return -1;
-
-      tmp_i8 = (uint8_t)value;
-      if (filestream_write(fd, &tmp_i8, sizeof(uint8_t)) == -1)
-         return -1;
-      written += sizeof(uint8_t);
+      if (filestream_write(fd, &MPF_UINT8, sizeof(MPF_UINT8)) != -1)
+      {
+         uint8_t tmp_i8 = (uint8_t)value;
+         if (filestream_write(fd, &tmp_i8, sizeof(uint8_t)) != -1)
+            return (sizeof(uint8_t) + sizeof(uint8_t));
+      }
    }
    else if (value == (uint16_t)value)
    {
       static const uint8_t MPF_UINT16   = _MPF_UINT16;
-      if (filestream_write(fd, &MPF_UINT16, sizeof(MPF_UINT16)) == -1)
-         return -1;
-
-      tmp_i16 = swap_if_little16((uint16_t)value);
-      if (filestream_write(fd, &tmp_i16, sizeof(uint16_t)) == -1)
-         return -1;
-      written += sizeof(uint16_t);
+      if (filestream_write(fd, &MPF_UINT16, sizeof(MPF_UINT16)) != -1)
+      {
+         uint16_t tmp_i16 = swap_if_little16((uint16_t)value);
+         if (filestream_write(fd, &tmp_i16, sizeof(uint16_t)) != -1)
+            return (sizeof(uint8_t) + sizeof(uint16_t));
+      }
    }
    else if (value == (uint32_t)value)
    {
       static const uint8_t MPF_UINT32   = _MPF_UINT32;
-      if (filestream_write(fd, &MPF_UINT32, sizeof(MPF_UINT32)) == -1)
-         return -1;
-
-      tmp_i32 = swap_if_little32((uint32_t)value);
-      if (filestream_write(fd, &tmp_i32, sizeof(uint32_t)) == -1)
-         return -1;
-      written += sizeof(uint32_t);
+      if (filestream_write(fd, &MPF_UINT32, sizeof(MPF_UINT32)) != -1)
+      {
+         uint32_t tmp_i32 = swap_if_little32((uint32_t)value);
+         if (filestream_write(fd, &tmp_i32, sizeof(uint32_t)) != -1)
+            return (sizeof(uint8_t) + sizeof(uint32_t));
+      }
    }
    else
    {
       static const uint8_t MPF_UINT64   = _MPF_UINT64;
-      if (filestream_write(fd, &MPF_UINT64, sizeof(MPF_UINT64)) == -1)
-         return -1;
-
-      value = swap_if_little64(value);
-      if (filestream_write(fd, &value, sizeof(uint64_t)) == -1)
-         return -1;
-      written += sizeof(uint64_t);
+      if (filestream_write(fd, &MPF_UINT64, sizeof(MPF_UINT64)) != -1)
+      {
+         value = swap_if_little64(value);
+         if (filestream_write(fd, &value, sizeof(uint64_t)) != -1)
+            return (sizeof(uint8_t) + sizeof(uint64_t));
+      }
    }
-   return written;
+   return -1;
 }
 
 static int rmsgpack_read_uint(RFILE *fd, uint64_t *out, size_t size)
@@ -595,14 +578,14 @@ int rmsgpack_read(RFILE *fd,
          break;
       case _MPF_ARRAY16:
       case _MPF_ARRAY32:
-         if (rmsgpack_read_uint(fd, &tmp_len, 2<<(type - _MPF_ARRAY16)) == -1)
-            return -1;
-         return rmsgpack_read_array(fd, (uint32_t)tmp_len, callbacks, data);
+         if (rmsgpack_read_uint(fd, &tmp_len, 2<<(type - _MPF_ARRAY16)) != -1)
+            return rmsgpack_read_array(fd, (uint32_t)tmp_len, callbacks, data);
+         return -1;
       case _MPF_MAP16:
       case _MPF_MAP32:
-         if (rmsgpack_read_uint(fd, &tmp_len, 2<<(type - _MPF_MAP16)) == -1)
-            return -1;
-         return rmsgpack_read_map(fd, (uint32_t)tmp_len, callbacks, data);
+         if (rmsgpack_read_uint(fd, &tmp_len, 2<<(type - _MPF_MAP16)) != -1)
+            return rmsgpack_read_map(fd, (uint32_t)tmp_len, callbacks, data);
+         return -1;
    }
 
 end:
