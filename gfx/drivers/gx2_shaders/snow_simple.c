@@ -16,15 +16,16 @@
 #include <stddef.h>
 #include <malloc.h>
 #include <string.h>
-#include <wiiu/gx2/common.h>
+#include <gx2/enum.h>
+#include <array_helper.h>
 #include "gx2_shader_inl.h"
 #include "menu_shaders.h"
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
-   u64 cf[32];
-   u64 alu[16];
+   uint64_t cf[32];
+   uint64_t alu[16];
 } vs_program =
 {
    {
@@ -62,27 +63,27 @@ static struct
    },
 };
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
-   u64 cf[32];
-   u64 alu[56];
-   u64 alu1[27];
-   u64 alu2[51];
-   u64 alu3[27];
-   u64 alu4[52];
-   u64 alu5[27];
-   u64 alu6[51];
-   u64 alu7[27];
-   u64 alu8[52];
-   u64 alu9[27];
-   u64 alu10[52];
-   u64 alu11[27];
-   u64 alu12[52];
-   u64 alu13[27];
-   u64 alu14[52];
-   u64 alu15[27];
-   u64 alu16[6];
+   uint64_t cf[32];
+   uint64_t alu[56];
+   uint64_t alu1[27];
+   uint64_t alu2[51];
+   uint64_t alu3[27];
+   uint64_t alu4[52];
+   uint64_t alu5[27];
+   uint64_t alu6[51];
+   uint64_t alu7[27];
+   uint64_t alu8[52];
+   uint64_t alu9[27];
+   uint64_t alu10[52];
+   uint64_t alu11[27];
+   uint64_t alu12[52];
+   uint64_t alu13[27];
+   uint64_t alu14[52];
+   uint64_t alu15[27];
+   uint64_t alu16[6];
 } ps_program =
 {
    {

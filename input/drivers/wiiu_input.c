@@ -21,7 +21,7 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 
-#include <wiiu/nsyskbd.h>
+#include <nsyskbd/ra_nsyskbd.h>
 #include <wiiu/vpad.h>
 
 #ifdef HAVE_CONFIG_H

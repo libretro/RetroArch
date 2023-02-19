@@ -16,15 +16,16 @@
 #include <stddef.h>
 #include <malloc.h>
 #include <string.h>
-#include <wiiu/gx2/common.h>
+#include <gx2/enum.h>
+#include <array_helper.h>
 #include "gx2_shader_inl.h"
 #include "menu_shaders.h"
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
-   u64 cf[32];
-   u64 alu[16];
+   uint64_t cf[32];
+   uint64_t alu[16];
 } vs_program =
 {
    {
@@ -62,23 +63,23 @@ static struct
    },
 };
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
-   u64 cf[32];
-   u64 alu[70];
-   u64 alu1[19];
-   u64 alu2[31];
-   u64 alu3[25];
-   u64 alu4[31];
-   u64 alu5[25];
-   u64 alu6[31];
-   u64 alu7[25];
-   u64 alu8[31];
-   u64 alu9[25];
-   u64 alu10[31];
-   u64 alu11[25];
-   u64 alu12[17];
+   uint64_t cf[32];
+   uint64_t alu[70];
+   uint64_t alu1[19];
+   uint64_t alu2[31];
+   uint64_t alu3[25];
+   uint64_t alu4[31];
+   uint64_t alu5[25];
+   uint64_t alu6[31];
+   uint64_t alu7[25];
+   uint64_t alu8[31];
+   uint64_t alu9[25];
+   uint64_t alu10[31];
+   uint64_t alu11[25];
+   uint64_t alu12[17];
 } ps_program =
 {
    {

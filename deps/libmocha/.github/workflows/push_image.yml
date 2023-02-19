@@ -1,0 +1,33 @@
+name: Publish Docker Image
+on:
+  push:
+    branches:
+      - main
+jobs:
+  clang-format:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: clang-format
+      run: |
+        docker run --rm -v ${PWD}:/src  wiiuenv/clang-format:13.0.0-2 -r ./source ./include
+  build:
+    runs-on: ubuntu-latest
+    needs: clang-format
+    steps:
+    - uses: actions/checkout@master
+    - name: Get release version
+      id: get_release_tag
+      run: |
+        echo RELEASE_VERSION=$(echo $(date '+%Y%m%d')) >> $GITHUB_ENV
+        echo REPOSITORY_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//" | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
+        echo REPOSITORY_OWNER=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $1}' |  sed 's/[^a-zA-Z0-9]//g' | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
+    - name: Publish to Registry
+      uses: elgohr/Publish-Docker-Github-Action@master
+      with:
+        name: ${{ env.REPOSITORY_OWNER }}/${{ env.REPOSITORY_NAME }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        snapshot: true
+        cache: true
+        tags: "latest, ${{ env.RELEASE_VERSION }}"

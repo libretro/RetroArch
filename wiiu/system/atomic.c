@@ -2,7 +2,7 @@
  * This should add them back in.
  */
 
-#include <wiiu/os/atomic.h>
+#include <coreinit/atomic.h>
 
 /**
  * Performs an atomic swap of a single piece of data. In each function,

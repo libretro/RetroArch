@@ -20,7 +20,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
-void setup_os_exceptions(void);
+void init_os_exceptions(void);
+void deinit_os_exceptions(void);
 
 #ifdef __cplusplus
 }

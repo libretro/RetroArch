@@ -17,10 +17,13 @@
 #include <malloc.h>
 #include <string.h>
 #include "memory.h"
-#include <wiiu/mem.h>
+#include <coreinit/memheap.h>
+#include <coreinit/memexpheap.h>
+#include <coreinit/memfrmheap.h>
+#include <proc_ui/procui.h>
 
-static MEMExpandedHeap* mem1_heap;
-static MEMExpandedHeap* bucket_heap;
+static MEMHeapHandle mem1_heap;
+static MEMHeapHandle bucket_heap;
 
 void memoryInitialize(void)
 {
@@ -46,82 +49,27 @@ void memoryInitialize(void)
 
 void memoryRelease(void)
 {
-    MEMDestroyExpHeap(mem1_heap);
-    MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1), MEM_FRAME_HEAP_FREE_ALL);
-    mem1_heap = NULL;
+    if (ProcUIInForeground()) {
+        MEMDestroyExpHeap(mem1_heap);
+        MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1), MEM_FRM_HEAP_FREE_ALL);
+        mem1_heap = NULL;
 
-    MEMDestroyExpHeap(bucket_heap);
-    MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_FG), MEM_FRAME_HEAP_FREE_ALL);
-    bucket_heap = NULL;
-}
-
-void* _memalign_r(struct _reent *r, size_t alignment, size_t size)
-{
-   return MEMAllocFromExpHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2), size, alignment);
-}
-
-void* _malloc_r(struct _reent *r, size_t size)
-{
-   return _memalign_r(r, 4, size);
-}
-
-void _free_r(struct _reent *r, void *ptr)
-{
-   if (ptr)
-      MEMFreeToExpHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2), ptr);
-}
-
-size_t _malloc_usable_size_r(struct _reent *r, void *ptr)
-{
-   return MEMGetSizeForMBlockExpHeap(ptr);
-}
-
-void * _realloc_r(struct _reent *r, void *ptr, size_t size)
-{
-   void *realloc_ptr = NULL;
-   if (!ptr)
-      return _malloc_r(r, size);
-
-   if (_malloc_usable_size_r(r, ptr) >= size)
-      return ptr;
-
-   realloc_ptr = _malloc_r(r, size);
-
-   if(!realloc_ptr)
-      return NULL;
-
-   memcpy(realloc_ptr, ptr, _malloc_usable_size_r(r, ptr));
-   _free_r(r, ptr);
-
-   return realloc_ptr;
-}
-
-void* _calloc_r(struct _reent *r, size_t num, size_t size)
-{
-   void *ptr = _malloc_r(r, num*size);
-
-   if(ptr)
-      memset(ptr, 0, num*size);
-
-   return ptr;
-}
-
-void * _valloc_r(struct _reent *r, size_t size)
-{
-   return _memalign_r(r, 64, size);
+        MEMDestroyExpHeap(bucket_heap);
+        MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_FG), MEM_FRM_HEAP_FREE_ALL);
+        bucket_heap = NULL;
+    }
 }
 
 /* some wrappers */
 
 void * MEM2_alloc(unsigned int size, unsigned int align)
 {
-   return MEMAllocFromExpHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2), size, align);
+   return memalign(align, size);
 }
 
 void MEM2_free(void *ptr)
 {
-   if (ptr)
-      MEMFreeToExpHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2), ptr);
+   free(ptr);
 }
 
 void * MEM1_alloc(unsigned int size, unsigned int align)

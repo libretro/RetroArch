@@ -173,37 +173,37 @@ static void kpad_register(unsigned channel, uint8_t device_type)
    }
 }
 
-static void kpad_poll_one_channel(unsigned channel, KPADData *kpad)
+static void kpad_poll_one_channel(unsigned channel, KPADStatus *kpad)
 {
-   kpad_register(channel, kpad->device_type);
-   switch(kpad->device_type)
+   kpad_register(channel, kpad->extensionType);
+   switch(kpad->extensionType)
    {
       case WIIMOTE_TYPE_PRO:
-         joypad_state.kpad.wiimotes[channel].button_state = kpad->classic.btns_h
+         joypad_state.kpad.wiimotes[channel].button_state = kpad->classic.hold
             & ~WIIU_PRO_BUTTON_MASK;
          pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
-               WIIU_READ_STICK(kpad->classic.lstick_x),
-               WIIU_READ_STICK(kpad->classic.lstick_y),
-               WIIU_READ_STICK(kpad->classic.rstick_x),
-               WIIU_READ_STICK(kpad->classic.rstick_y), 0, 0);
+               WIIU_READ_STICK(kpad->classic.leftStick.x),
+               WIIU_READ_STICK(kpad->classic.leftStick.y),
+               WIIU_READ_STICK(kpad->classic.rightStick.x),
+               WIIU_READ_STICK(kpad->classic.rightStick.y), 0, 0);
          break;
       case WIIMOTE_TYPE_CLASSIC:
-         joypad_state.kpad.wiimotes[channel].button_state = kpad->classic.btns_h
+         joypad_state.kpad.wiimotes[channel].button_state = kpad->classic.hold
             & ~CLASSIC_BUTTON_MASK;
          pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
-               WIIU_READ_STICK(kpad->classic.lstick_x),
-               WIIU_READ_STICK(kpad->classic.lstick_y),
-               WIIU_READ_STICK(kpad->classic.rstick_x),
-               WIIU_READ_STICK(kpad->classic.rstick_y), 0, 0);
+               WIIU_READ_STICK(kpad->classic.leftStick.x),
+               WIIU_READ_STICK(kpad->classic.leftStick.y),
+               WIIU_READ_STICK(kpad->classic.rightStick.x),
+               WIIU_READ_STICK(kpad->classic.rightStick.y), 0, 0);
          break;
       case WIIMOTE_TYPE_NUNCHUK:
-         joypad_state.kpad.wiimotes[channel].button_state = kpad->btns_h;
+         joypad_state.kpad.wiimotes[channel].button_state = kpad->hold;
          pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
-               WIIU_READ_STICK(kpad->nunchuck.stick_x),
-               WIIU_READ_STICK(kpad->nunchuck.stick_y), 0, 0, 0, 0);
+               WIIU_READ_STICK(kpad->nunchuck.stick.x),
+               WIIU_READ_STICK(kpad->nunchuck.stick.y), 0, 0, 0, 0);
          break;
       case WIIMOTE_TYPE_WIIPLUS:
-         joypad_state.kpad.wiimotes[channel].button_state = kpad->btns_h;
+         joypad_state.kpad.wiimotes[channel].button_state = kpad->hold;
          pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
                0, 0, 0, 0, 0, 0);
          break;
@@ -227,7 +227,7 @@ static void kpad_deregister(unsigned channel)
 static void kpad_poll(void)
 {
    unsigned channel;
-   KPADData kpad;
+   KPADStatus kpad;
    int32_t result = 0;
 
    for (channel = 0; channel < WIIU_WIIMOTE_CHANNELS; channel++)
@@ -250,7 +250,7 @@ static void kpad_poll(void)
 
       /* Several reads when a device is connected or an attachment added give */
       /* bogus results, try to weed them out */
-      if (kpad.wpad_error || kpad.device_type == 255) {
+      if (kpad.error || kpad.extensionType == 255) {
          continue;
       }
 

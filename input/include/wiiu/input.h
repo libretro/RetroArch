@@ -24,11 +24,11 @@
 #include "hid_types.h"
 #include "../gamepad.h"
 
-#include <wiiu/os.h>
-#include <wiiu/syshid.h>
 #include <wiiu/vpad.h>
-#include <wiiu/kpad.h>
 #include <wiiu/pad_strings.h>
+
+#include <padscore/kpad.h>
+#include <padscore/wpad.h>
 
 #include "../../connect/joypad_connection.h"
 #include "../../../retroarch.h"

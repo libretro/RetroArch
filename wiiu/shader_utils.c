@@ -3,7 +3,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include <wiiu/gx2.h>
+
+#include <gx2/mem.h>
+
 #include <wiiu/system/memory.h>
 #include <wiiu/shader_utils.h>
 #include <wiiu/wiiu_dbg.h>
@@ -28,9 +30,9 @@ void GX2InitShader(GX2Shader *shader)
    shader->fs.size = GX2CalcFetchShaderSizeEx(shader->vs.attribVarCount,
                      GX2_FETCH_SHADER_TESSELLATION_NONE, GX2_TESSELLATION_MODE_DISCRETE);
 #ifdef GX2_CAN_ACCESS_DATA_SECTION
-   shader->fs.program = MEM2_alloc(shader->fs.size, GX2_SHADER_ALIGNMENT);
+   shader->fs.program = MEM2_alloc(shader->fs.size, GX2_SHADER_PROGRAM_ALIGNMENT);
 #else
-   shader->fs.program = MEM2_alloc(shader->fs.size + sizeof(org_programs_t), GX2_SHADER_ALIGNMENT);
+   shader->fs.program = MEM2_alloc(shader->fs.size + sizeof(org_programs_t), GX2_SHADER_PROGRAM_ALIGNMENT);
 #endif
    GX2InitFetchShaderEx(&shader->fs, (uint8_t *)shader->fs.program,
                         shader->vs.attribVarCount,
@@ -45,21 +47,21 @@ void GX2InitShader(GX2Shader *shader)
    org->gs_program = shader->gs.program;
    org->gs_copy_program = shader->gs.copyProgram;
 
-   shader->vs.program = MEM2_alloc(shader->vs.size, GX2_SHADER_ALIGNMENT);
+   shader->vs.program = MEM2_alloc(shader->vs.size, GX2_SHADER_PROGRAM_ALIGNMENT);
    memcpy(shader->vs.program, org->vs_program, shader->vs.size);
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, shader->vs.program, shader->vs.size);
 
-   shader->ps.program = MEM2_alloc(shader->ps.size, GX2_SHADER_ALIGNMENT);
+   shader->ps.program = MEM2_alloc(shader->ps.size, GX2_SHADER_PROGRAM_ALIGNMENT);
    memcpy(shader->ps.program, org->ps_program, shader->ps.size);
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, shader->ps.program, shader->ps.size);
 
    if (org->gs_program)
    {
-      shader->gs.program = MEM2_alloc(shader->gs.size, GX2_SHADER_ALIGNMENT);
+      shader->gs.program = MEM2_alloc(shader->gs.size, GX2_SHADER_PROGRAM_ALIGNMENT);
       memcpy(shader->gs.program, org->gs_program, shader->gs.size);
       GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, shader->gs.program, shader->gs.size);
 
-      shader->gs.copyProgram = MEM2_alloc(shader->gs.copyProgramSize, GX2_SHADER_ALIGNMENT);
+      shader->gs.copyProgram = MEM2_alloc(shader->gs.copyProgramSize, GX2_SHADER_PROGRAM_ALIGNMENT);
       memcpy(shader->gs.copyProgram, org->gs_copy_program, shader->gs.copyProgramSize);
       GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, shader->gs.copyProgram, shader->gs.copyProgramSize);
    }
@@ -200,7 +202,7 @@ static void dump_ps_data(GX2PixelShader* ps)
    }
 }
 
-static void check_shader_verbose(u32 *shader, u32 shader_size, u32 *org, u32 org_size, const char *name)
+static void check_shader_verbose(uint32_t *shader, uint32_t shader_size, uint32_t *org, uint32_t org_size, const char *name)
 {
    unsigned i;
 
@@ -226,12 +228,12 @@ static void check_shader_verbose(u32 *shader, u32 shader_size, u32 *org, u32 org
    }
 }
 
-static void check_shader(const void *shader_, u32 shader_size, const void *org_, u32 org_size, const char *name)
+static void check_shader(const void *shader_, uint32_t shader_size, const void *org_, uint32_t org_size, const char *name)
 {
    unsigned i;
    bool different = false;
-   u32 *shader    = (u32 *)shader_;
-   u32 *org       = (u32 *)org_;
+   uint32_t *shader    = (uint32_t *)shader_;
+   uint32_t *org       = (uint32_t *)org_;
 
    printf("%-20s : ", name);
 
@@ -323,7 +325,7 @@ typedef struct
 typedef struct
 {
    GFDBlockHeader header;
-   u8 data[];
+   uint8_t data[];
 } GFDBlock;
 
 void gfd_free(GFDFile* gfd)
@@ -346,7 +348,7 @@ static bool gfd_relocate_block(GFDBlock* block)
    if ((rel->patchOffset & GFD_RELOCATIONS_TYPE_MASK) != GFD_RELOCATIONS_DATA)
       return false;
 
-   u32* patches = (u32*)(block->data + (rel->patchOffset & GFD_RELOCATIONS_VALUE_MASK));
+   uint32_t* patches = (uint32_t*)(block->data + (rel->patchOffset & GFD_RELOCATIONS_VALUE_MASK));
 
    for (i = 0; i < rel->patchCount; i++)
    {
@@ -355,11 +357,11 @@ static bool gfd_relocate_block(GFDBlock* block)
          if ((patches[i] & GFD_RELOCATIONS_TYPE_MASK) != GFD_RELOCATIONS_DATA)
             return false;
 
-         u32* ptr = (u32*)(block->data + (patches[i] & GFD_RELOCATIONS_VALUE_MASK));
+         uint32_t* ptr = (uint32_t*)(block->data + (patches[i] & GFD_RELOCATIONS_VALUE_MASK));
          if ((((*ptr) & GFD_RELOCATIONS_TYPE_MASK) != GFD_RELOCATIONS_DATA) &&
             (((*ptr) & GFD_RELOCATIONS_TYPE_MASK) != GFD_RELOCATIONS_TEXT))
             return false;
-         *ptr = (u32)block->data + ((*ptr) & GFD_RELOCATIONS_VALUE_MASK);
+         *ptr = (uint32_t)block->data + ((*ptr) & GFD_RELOCATIONS_VALUE_MASK);
       }
    }
 
@@ -378,7 +380,7 @@ GFDFile *gfd_open(const char *filename)
    fseek(fp, 0, SEEK_END);
    size      = ftell(fp);
    fseek(fp, 0, SEEK_SET);
-   gfd->data = MEM2_alloc(size, GX2_SHADER_ALIGNMENT);
+   gfd->data = MEM2_alloc(size, GX2_SHADER_PROGRAM_ALIGNMENT);
    fread(gfd->data, 1, size, fp);
    fclose(fp);
 
@@ -454,7 +456,7 @@ GFDFile *gfd_open(const char *filename)
             break;
       }
 
-      block = (GFDBlock *)((u8 *)block + block->header.headerSize + block->header.dataSize);
+      block = (GFDBlock *)((uint8_t *)block + block->header.headerSize + block->header.dataSize);
    }
 
    if (!gfd->vs)

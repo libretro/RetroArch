@@ -15,8 +15,6 @@
  */
 
 #include <string.h>
-#include <wiiu/os.h>
-#include <wiiu/gx2.h>
 #include <formats/image.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
@@ -203,8 +201,8 @@ static void *wiiu_gfx_init(const video_info_t *video,
 {
    unsigned i;
    float refresh_rate              = 60.0f / 1.001f;
-   u32 size                        = 0;
-   u32 tmp                         = 0;
+   uint32_t size                   = 0;
+   uint32_t tmp                    = 0;
    void *wiiuinput                 = NULL;
    wiiu_video_t *wiiu              = (wiiu_video_t*)calloc(1, sizeof(*wiiu));
    settings_t *settings            = config_get_ptr();
@@ -226,9 +224,9 @@ static void *wiiu_gfx_init(const video_info_t *video,
 
    /* video initialize */
    wiiu->cmd_buffer = MEM2_alloc(0x400000, 0x40);
-   u32 init_attributes[] =
+   uint32_t init_attributes[] =
    {
-      GX2_INIT_CMD_BUF_BASE, (u32)wiiu->cmd_buffer,
+      GX2_INIT_CMD_BUF_BASE, (uint32_t)wiiu->cmd_buffer,
       GX2_INIT_CMD_BUF_POOL_SIZE, 0x400000,
       GX2_INIT_ARGC, 0,
       GX2_INIT_ARGV, 0,
@@ -319,17 +317,17 @@ static void *wiiu_gfx_init(const video_info_t *video,
 
    GX2SetShader(&frame_shader);
 
-   wiiu->ubo_vp  = MEM1_alloc(sizeof(*wiiu->ubo_vp), GX2_UNIFORM_BLOCK_ALIGNMENT);
+   wiiu->ubo_vp  = MEM1_alloc(sizeof(*wiiu->ubo_vp), GX2_SHADER_PROGRAM_ALIGNMENT);
    wiiu->ubo_vp->width = wiiu->color_buffer.surface.width;
    wiiu->ubo_vp->height = wiiu->color_buffer.surface.height;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->ubo_vp, sizeof(*wiiu->ubo_vp));
 
-   wiiu->ubo_tex = MEM1_alloc(sizeof(*wiiu->ubo_tex), GX2_UNIFORM_BLOCK_ALIGNMENT);
+   wiiu->ubo_tex = MEM1_alloc(sizeof(*wiiu->ubo_tex), GX2_SHADER_PROGRAM_ALIGNMENT);
    wiiu->ubo_tex->width = 1.0;
    wiiu->ubo_tex->height = 1.0;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->ubo_tex, sizeof(*wiiu->ubo_tex));
 
-   wiiu->ubo_mvp = MEM1_alloc(sizeof(*wiiu->ubo_mvp), GX2_UNIFORM_BLOCK_ALIGNMENT);
+   wiiu->ubo_mvp = MEM1_alloc(sizeof(*wiiu->ubo_mvp), GX2_SHADER_PROGRAM_ALIGNMENT);
    wiiu_set_projection(wiiu);
 
    wiiu->input_ring_buffer_size = GX2CalcGeometryShaderInputRingBufferSize(
@@ -967,14 +965,14 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu,
          *dst = wiiu->shader_preset->pass[pass].frame_count_mod ?
                 frame_count % wiiu->shader_preset->pass[pass].frame_count_mod :
                 frame_count;
-         *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
+         *(uint32_t *)dst = __builtin_bswap32(*(uint32_t *)dst);
          continue;
       }
 
       if (string_is_equal(id, "FrameDirection"))
       {
          *dst = frame_direction;
-         *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
+         *(uint32_t *)dst = __builtin_bswap32(*(uint32_t *)dst);
          continue;
       }
 
@@ -1069,7 +1067,7 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu,
          if (string_is_equal(id, wiiu->shader_preset->parameters[k].id))
          {
             *dst = wiiu->shader_preset->parameters[k].current;
-            *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
+            *(uint32_t *)dst = __builtin_bswap32(*(uint32_t *)dst);
             break;
          }
       }
@@ -1107,7 +1105,7 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
       if (wiiu->last_vsync >= last_vsync)
       {
          GX2WaitForVsync();
-         wiiu->last_vsync = last_vsync + ms_to_ticks(17);
+         wiiu->last_vsync = last_vsync + OSMillisecondsToTicks(17);
       }
       else
          wiiu->last_vsync = last_vsync;
@@ -1518,7 +1516,7 @@ static bool wiiu_gfx_set_shader(void *data,
       for (j = 0; j < 2 && j < wiiu->pass[i].gfd->vs->uniformBlockCount; j++)
       {
          wiiu->pass[i].vs_ubos[j] = MEM2_alloc(wiiu->pass[i].gfd->vs->uniformBlocks[j].size,
-               GX2_UNIFORM_BLOCK_ALIGNMENT);
+               GX2_SHADER_PROGRAM_ALIGNMENT);
          memset(wiiu->pass[i].vs_ubos[j], 0, wiiu->pass[i].gfd->vs->uniformBlocks[j].size);
          GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->pass[i].vs_ubos[j],
                wiiu->pass[i].gfd->vs->uniformBlocks[j].size);
@@ -1527,7 +1525,7 @@ static bool wiiu_gfx_set_shader(void *data,
       for (j = 0; j < 2 && j < wiiu->pass[i].gfd->ps->uniformBlockCount; j++)
       {
          wiiu->pass[i].ps_ubos[j] = MEM2_alloc(wiiu->pass[i].gfd->ps->uniformBlocks[j].size,
-               GX2_UNIFORM_BLOCK_ALIGNMENT);
+               GX2_SHADER_PROGRAM_ALIGNMENT);
          memset(wiiu->pass[i].ps_ubos[j], 0, wiiu->pass[i].gfd->ps->uniformBlocks[j].size);
          GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->pass[i].ps_ubos[j],
                wiiu->pass[i].gfd->ps->uniformBlocks[j].size);

@@ -39,7 +39,7 @@
 #endif
 
 #ifdef WIIU
-#include <wiiu/os.h>
+#include <coreinit/memory.h>
 #endif
 
 #include FT_FREETYPE_H
@@ -277,7 +277,7 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       void* font_data         = NULL;
       uint32_t font_data_size = 0;
 
-      if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0,
+      if (!OSGetSharedData(OS_SHAREDDATATYPE_FONT_STANDARD, 0,
                &font_data, &font_data_size))
          goto error;
 

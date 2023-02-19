@@ -19,7 +19,6 @@
 #include <malloc.h>
 #include <math.h>
 #include <encodings/utf.h>
-#include <wiiu/gx2.h>
 
 #include "../font_driver.h"
 #include "../common/gx2_common.h"
@@ -82,7 +81,7 @@ static void* wiiu_font_init(void* data, const char* font_path,
          font->texture.surface.imageSize);
 
    font->atlas->dirty    = false;
-   font->ubo_tex         = MEM1_alloc(sizeof(*font->ubo_tex), GX2_UNIFORM_BLOCK_ALIGNMENT);
+   font->ubo_tex         = MEM1_alloc(sizeof(*font->ubo_tex), GX2_SHADER_PROGRAM_ALIGNMENT);
    font->ubo_tex->width  = font->texture.surface.width;
    font->ubo_tex->height = font->texture.surface.height;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, font->ubo_tex,

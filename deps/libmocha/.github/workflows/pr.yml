@@ -1,0 +1,25 @@
+name: CI-PR
+
+on: [pull_request]
+
+jobs:
+  clang-format:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: clang-format
+      run: |
+        docker run --rm -v ${PWD}:/src  wiiuenv/clang-format:13.0.0-2 -r ./source ./include
+  build-lib:
+    runs-on: ubuntu-22.04
+    needs: clang-format
+    steps:
+    - uses: actions/checkout@v2
+    - name: build lib
+      run: |
+        docker build . -f Dockerfile.buildlocal -t builder
+        docker run --rm -v ${PWD}:/project builder make
+    - uses: actions/upload-artifact@master
+      with:
+       name: lib
+       path: "lib/*.a"

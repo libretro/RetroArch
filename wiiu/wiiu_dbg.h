@@ -5,25 +5,6 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-#ifdef __wiiu__
-#include <wiiu/types.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* void wait_for_input(void); */
-/* void dump_result_value(Result val); */
-void* OSGetSymbolName(u32 addr, char* out, u32 out_size);
-void DisassemblePPCRange(void *start, void *end, void* printf_func, void* GetSymbolName_func, u32 flags);
-
-#ifdef __cplusplus
-}
-#endif
-
-#define DEBUG_DISASM(start, count) DisassemblePPCRange((void*)start, (u32*)(start) + (count), printf, OSGetSymbolName, 0)
-#endif /* WIIU */
-
 /* #define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0) */
 #define DEBUG_LINE() do{printf("%s:%4d %s().\n", __FILE__, __LINE__, __FUNCTION__);fflush(stdout);}while(0)
 #define DEBUG_STR(X) do{printf( "%s: %s\n", #X, (char*)(X));fflush(stdout);}while(0)
