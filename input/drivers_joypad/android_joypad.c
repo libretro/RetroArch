@@ -77,13 +77,13 @@ static int16_t android_joypad_axis_state(
 {
    if (AXIS_NEG_GET(joyaxis) < MAX_AXIS)
    {
-      int val = android_app->analog_state[port][AXIS_NEG_GET(joyaxis)];
+      int16_t val = android_app->analog_state[port][AXIS_NEG_GET(joyaxis)];
       if (val < 0)
          return val;
    }
    else if (AXIS_POS_GET(joyaxis) < MAX_AXIS)
    {
-      int val = android_app->analog_state[port][AXIS_POS_GET(joyaxis)];
+      int16_t val = android_app->analog_state[port][AXIS_POS_GET(joyaxis)];
       if (val > 0)
          return val;
    }
