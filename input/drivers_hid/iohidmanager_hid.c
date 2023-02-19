@@ -663,7 +663,7 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
       goto error;
 
    adapter->handle     = device;
-   adapter->locationId = deviceLocationId;
+   adapter->locationId = device_location_id;
 
    ret                 = IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
 
