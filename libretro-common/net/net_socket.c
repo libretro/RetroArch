@@ -182,7 +182,7 @@ bool socket_set_block(int fd, bool block)
    u_long i = !block;
 
    return !ioctlsocket(fd, FIONBIO, &i);
-#elif !defined(__PSL1GHT__) && defined(__PS3__) || defined(VITA) || defined(WIIU)
+#elif defined(__PS3__) || defined(VITA) || defined(WIIU)
    int i = !block;
 
    return !setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(i));
@@ -212,7 +212,7 @@ int socket_close(int fd)
 #if defined(_WIN32) && !defined(_XBOX360)
    /* WinSock has headers from the stone age. */
    return closesocket(fd);
-#elif !defined(__PSL1GHT__) && defined(__PS3__) || defined(WIIU)
+#elif defined(__PS3__) || defined(WIIU)
    return socketclose(fd);
 #elif defined(VITA)
    return sceNetSocketClose(fd);
@@ -224,7 +224,7 @@ int socket_close(int fd)
 int socket_select(int nfds, fd_set *readfds, fd_set *writefds,
       fd_set *errorfds, struct timeval *timeout)
 {
-#if !defined(__PSL1GHT__) && defined(__PS3__)
+#if defined(__PS3__)
    return socketselect(nfds, readfds, writefds, errorfds, timeout);
 #elif defined(VITA)
    int i, j;
