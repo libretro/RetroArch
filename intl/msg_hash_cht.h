@@ -315,11 +315,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "下載核心"
+   "下載安裝和更新核心"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   "更新全部已安裝的核心"
+   "更新全部已安裝核心"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
@@ -351,11 +351,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   "下載核心附加元件"
+   "下載核心附加檔案"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   "下載免費的核心附加元件。"
+   "下載免費的核心附加檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -2427,7 +2427,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "變更音訊同步的設定"
+   "變更音訊同步的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
@@ -3102,7 +3102,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   "開啟時全部連接埠可以控制選單，關閉時僅限連接埠1控制選單。"
+   "開啟時全部連接埠可以控制選單, 關閉時僅限連接埠1控制選單。"
    )
 
 /* Settings > Input > Hotkeys */
@@ -3758,7 +3758,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "執行虛擬核心邏輯超前一幀或多幀, 偵測到控制器輸入時載入, 用於降低按鍵輸入延遲。"
+   "執行虛擬核心邏輯超前一幀或多幀, 接收到控制器輸入時載入, 用於降低按鍵輸入延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
@@ -3881,7 +3881,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
-   "忽略支援即時存檔資訊"
+   "忽略即時存檔資訊"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
@@ -4014,7 +4014,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
-   "開啟時將全部核心選項設定, 儲存到共用檔案 retroarch-core-options .cfg, 關閉時各別儲存在設定檔資料夾中。"
+   "開啟時將全部核心選項設定, 儲存到共用檔案「 retroarch-core-options.cfg 」, 關閉時各別儲存在設定檔資料夾中。"
    )
 
 /* Settings > Saving */
@@ -4057,7 +4057,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-   "載入即時存檔時, 不覆蓋存檔記憶體(SaveRAM), 可能會導致發生錯誤, 僅限支援SRM格式的核心使用。"
+   "載入即時存檔時不覆蓋存檔記憶體(SaveRAM), 可能會導致發生錯誤, 僅限支援SRM格式的核心使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -4109,7 +4109,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "使用儲存即時存檔時, 額外儲存截圖, 並在快捷選單中顯示縮圖。"
+   "使用儲存即時存檔時額外儲存截圖, 並在快捷選單中顯示縮圖。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
@@ -4117,7 +4117,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "使用壓縮格式儲存記憶存檔, 減少檔案的大小, 但儲存和載入的速度變慢, 僅限支援SRM格式的核心使用。"
+   "使用壓縮格式儲存記憶存檔, 減少檔案的大小但儲存和載入的速度變慢, 僅限支援SRM格式的核心使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -4125,7 +4125,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
-   "使用壓縮格式儲存即時存檔, 減少檔案的大小, 但儲存和載入的速度變慢。"
+   "使用壓縮格式儲存即時存檔, 減少檔案的大小但儲存和載入的速度變慢。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
@@ -4157,7 +4157,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
-   "儲存每個項目的執行時間, 儲存在列表資料夾中, 依核心名稱建立資料夾。"
+   "儲存每個項目的執行時間, 儲存在列表/日誌/建立核心名稱資料夾, 依項目的執行核心儲存和載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
@@ -4165,7 +4165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "儲存每個項目的執行時間, 儲存在列表資料夾中的共用資料夾。"
+   "儲存每個項目的執行時間, 儲存在列表資料夾中的日誌資料夾, 項目的原始檔名相同時會重複寫入。"
    )
 
 /* Settings > Logging */
@@ -4515,7 +4515,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
-   "UDP 串流連接埠"
+   "串流UDP通訊埠號"
    )
 
 /* Settings > On-Screen Display */
@@ -5958,7 +5958,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "顯示「螢幕選單」選項"
+   "顯示「螢幕選單」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
@@ -6442,7 +6442,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "透過代理或中繼伺服器進行網際網路連線, 連線位於防火牆後, 或有NAT/UPnP問題時推薦開啟。"
+   "透過代理或中繼伺服器進行連線, 連線時位於防火牆後, 或有NAT/UPnP問題時推薦開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
@@ -6566,11 +6566,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
-   "主機允許暫停"
+   "主機允許選單暫停"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "建立主機之後允許使用暫停模式, 不推薦開啟暫停模式容易造成斷線。"
+   "建立的主機允許選單暫停模式, 不推薦開啟容易造成中斷連線。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -6808,11 +6808,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "列表項目額外顯示載入核心名稱, 開啟「顯示項目子標籤」時此選項被忽略, Ozone主題預設資訊欄顯示不影響。"
+   "列表項目額外顯示載入核心名稱, 開啟「顯示項目的子標籤」時此選項被忽略, Ozone主題由資訊欄顯示不影響。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
-   "顯示項目子標籤"
+   "顯示項目的子標籤"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
@@ -6924,7 +6924,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "壓縮檔模糊比對"
+   "壓縮檔僅比對名稱"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
@@ -9093,7 +9093,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE,
-   "沒有可以顯示的核心資訊。"
+   "找不到此核心資料庫。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE_BACKUPS_AVAILABLE,
@@ -9169,7 +9169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
-   "找不到資料夾。"
+   "找不到此資料夾。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ITEMS,
@@ -11304,11 +11304,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
-   "「全部列表」最大列表項目數:"
+   "「全部列表」的最大項目數:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
-   "「全部列表」最大欄位項目數:"
+   "「全部列表」的最大欄位數:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
@@ -13000,7 +13000,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FILE_NOT_FOUND,
-   "找不到檔案。"
+   "找不到此檔案。"
    )
 MSG_HASH(
    MSG_FOUND_AUTO_SAVESTATE_IN,
@@ -14599,7 +14599,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
-   "找不到主題。"
+   "找不到此主題。"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
