@@ -54,12 +54,9 @@ static void *x_input_init(const char *joypad_driver)
 {
    x11_input_t *x11;
 
+   /* Currently active window is not an X11 window. Cannot use this driver. */
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
-   {
-      RARCH_ERR("Currently active window is not an X11 window. Cannot use this driver.\n");
       return NULL;
-   }
-
    if (!(x11 = (x11_input_t*)calloc(1, sizeof(*x11))))
       return NULL;
 
