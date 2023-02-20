@@ -970,7 +970,7 @@ static void rsx_clear_surface(rsx_t* rsx)
                   | GCM_CLEAR_A
                   | GCM_CLEAR_S
                   | GCM_CLEAR_Z);
-   rsxSetZControl(rsx->context, 0, 1, 1);
+   rsxSetZMinMaxControl(rsx->context, 0, 1, 1);
 }
 
 static void rsx_draw_vertices(rsx_t* rsx)
