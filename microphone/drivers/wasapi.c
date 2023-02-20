@@ -93,7 +93,7 @@ static void wasapi_microphone_free(void *driver_context)
  * @param microphone Pointer to the microphone context.
  * @return The number of bytes in the queue, or -1 if there was an error.
  */
-static ssize_t wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *microphone)
+static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *microphone)
 {
    UINT32 next_packet_size = 0;
    /* Shared-mode capture streams split their input buffer into multiple packets,
@@ -201,14 +201,14 @@ static bool wasapi_microphone_wait_for_capture_event(wasapi_microphone_handle_t 
  * \c INFINITE means that this function will wait indefinitely.
  * @return
  */
-static ssize_t wasapi_microphone_read_buffered(
+static int wasapi_microphone_read_buffered(
    wasapi_microphone_handle_t *microphone,
    void * buffer,
    size_t buffer_size,
    DWORD timeout)
 {
-   ssize_t bytes_read      = 0; /* Number of bytes sent to the core */
-   ssize_t bytes_available = FIFO_READ_AVAIL(microphone->buffer);
+   int bytes_read      = 0; /* Number of bytes sent to the core */
+   int bytes_available = FIFO_READ_AVAIL(microphone->buffer);
 
    if (!bytes_available)
    { /* If we don't have any queued samples to give to the core... */
@@ -233,9 +233,9 @@ static ssize_t wasapi_microphone_read_buffered(
    return bytes_read;
 }
 
-static ssize_t wasapi_microphone_read(void *driver_context, void *mic_context, void *buffer, size_t buffer_size)
+static int wasapi_microphone_read(void *driver_context, void *mic_context, void *buffer, size_t buffer_size)
 {
-   size_t bytes_read                      = 0;
+   int bytes_read                         = 0;
    wasapi_microphone_t *wasapi            = (wasapi_microphone_t *)driver_context;
    wasapi_microphone_handle_t *microphone = (wasapi_microphone_handle_t*)mic_context;
 
@@ -249,7 +249,7 @@ static ssize_t wasapi_microphone_read(void *driver_context, void *mic_context, v
 
    if (microphone->exclusive)
    {
-      ssize_t read;
+      int read;
       for (read = -1; bytes_read < buffer_size; bytes_read += read)
       {
          read = wasapi_microphone_read_buffered(microphone, (char *) buffer + bytes_read, buffer_size - bytes_read,
@@ -260,7 +260,7 @@ static ssize_t wasapi_microphone_read(void *driver_context, void *mic_context, v
    }
    else
    {
-      ssize_t read;
+      int read;
 
       for (read = -1; bytes_read < buffer_size; bytes_read += read)
       {

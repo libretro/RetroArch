@@ -247,7 +247,7 @@ typedef struct microphone_driver
     * If this microphone is in non-blocking mode and no new data is available,
     * the driver should return 0 rather than -1.
     */
-   ssize_t (*read)(void *driver_context, void *mic_context, void *buffer, size_t buffer_size);
+   int (*read)(void *driver_context, void *mic_context, void *buffer, size_t buffer_size);
 
    /**
     * Sets the nonblocking state of the driver.

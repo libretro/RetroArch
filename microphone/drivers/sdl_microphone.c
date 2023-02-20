@@ -308,9 +308,9 @@ static void sdl_microphone_set_nonblock_state(void *driver_context, bool state)
       sdl->nonblock = state;
 }
 
-static ssize_t sdl_microphone_read(void *driver_context, void *microphone_context, void *buf, size_t size)
+static int sdl_microphone_read(void *driver_context, void *microphone_context, void *buf, size_t size)
 {
-   ssize_t ret                         = 0;
+   int ret                             = 0;
    sdl_microphone_t *sdl               = (sdl_microphone_t*)driver_context;
    sdl_microphone_handle_t *microphone = (sdl_microphone_handle_t*)microphone_context;
 
@@ -330,7 +330,7 @@ static ssize_t sdl_microphone_read(void *driver_context, void *microphone_contex
          /* ...then read as much data as will fit in buf */
       }
       SDL_UnlockAudioDevice(microphone->device_id); /* Let the mic thread run again */
-      ret = read_amt;
+      ret = (int)read_amt;
    }
    else
    {
@@ -370,7 +370,7 @@ static ssize_t sdl_microphone_read(void *driver_context, void *microphone_contex
             read += read_amt;
          }
       }
-      ret = read;
+      ret = (int)read;
    }
 
    return ret;

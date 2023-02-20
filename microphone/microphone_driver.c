@@ -15,14 +15,14 @@
 
 #include <math.h>
 #include "microphone_driver.h"
-#include "configuration.h"
-#include "driver.h"
-#include "verbosity.h"
-#include "runloop.h"
+#include "../configuration.h"
+#include "../driver.h"
+#include "../verbosity.h"
+#include "../runloop.h"
 #include "memalign.h"
 #include "audio/conversion/s16_to_float.h"
 #include "audio/conversion/float_to_s16.h"
-#include "list_special.h"
+#include "../list_special.h"
 #include "retro_assert.h"
 #include "string/stdstring.h"
 #include "audio/conversion/dual_mono.h"
@@ -537,7 +537,7 @@ static size_t microphone_driver_flush(
    unsigned sample_size = mic_driver_get_sample_size(microphone);
    size_t bytes_to_read = MIN(mic_st->input_frames_length, num_frames * sample_size);
    size_t frames_to_enqueue;
-   ssize_t bytes_read   = mic_st->driver->read(
+   int bytes_read       = mic_st->driver->read(
          mic_st->driver_context,
          microphone->microphone_context,
          mic_st->input_frames,
