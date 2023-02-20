@@ -124,7 +124,7 @@ static void ps3_connect_keyboard(ps3_input_t *ps3, int port)
 }
 
 #ifdef HAVE_LIGHTGUN
-void endCamera(ps3_input_t *ps3)
+static void ps3_end_camera(ps3_input_t *ps3)
 {
    cameraStop(0);
    cameraClose(0);
@@ -132,7 +132,7 @@ void endCamera(ps3_input_t *ps3)
    sysMemContainerDestroy(ps3->container);
 }
 
-int setupCamera(ps3_input_t *ps3)
+static int ps3_setup_camera(ps3_input_t *ps3)
 {
    int error = 0;
 
@@ -169,17 +169,19 @@ int setupCamera(ps3_input_t *ps3)
    return error;
 }
 
-int initCamera(ps3_input_t *ps3)
+#if 0
+/* TODO/FIXME - function never used? */
+static int ps3_init_camera(ps3_input_t *ps3)
 {
   int ret = sysMemContainerCreate(&ps3->container, 0x200000);
   ret     = cameraInit();
   if (ret == 0)
-    return setupCamera(ps3);
+    return ps3_setup_camera(ps3);
   return ret;
-
 }
+#endif
 
-int readCamera(ps3_input_t *ps3)
+static int ps3_read_camera(ps3_input_t *ps3)
 {
    int ret = cameraReadEx(0, &ps3->camread);
    switch (ret)
@@ -200,7 +202,7 @@ int readCamera(ps3_input_t *ps3)
   return 0;
 }
 
-int proccessGem(ps3_input_t *ps3, int t)
+static int ps3_process_gem(ps3_input_t *ps3, int t)
 {
    switch (t)
    {
@@ -219,12 +221,14 @@ int proccessGem(ps3_input_t *ps3, int t)
 
 }
 
-int processMove(ps3_input_t *ps3)
+#if 0
+/* TODO/FIXME - not used for now */
+static int ps3_process_move(ps3_input_t *ps3)
 {
    const unsigned int hues[] = { 4 << 24, 4 << 24, 4 << 24, 4 << 24 };
    int ret = -1;
 
-   if (readCamera(ps3) > 0)
+   if (ps3_read_camera(ps3) > 0)
    {
       ret = gemUpdateStart(ps3->camread.buffer, ps3->camread.timestamp);
       if (ret == 0)
@@ -250,8 +254,9 @@ int processMove(ps3_input_t *ps3)
 
    return ret;
 }
+#endif
 
-int initSpurs(ps3_input_t *ps3)
+static int ps3_init_spurs(ps3_input_t *ps3)
 {
    int ppu_prio;
    sys_ppu_thread_t ppu_thread_id;
@@ -287,7 +292,7 @@ int initSpurs(ps3_input_t *ps3)
    return 0;
 }
 
-int endSpurs(ps3_input_t *ps3)
+static int ps3_end_spurs(ps3_input_t *ps3)
 {
    spursFinalize(ps3->spurs);
    free(ps3->spurs);
@@ -295,17 +300,18 @@ int endSpurs(ps3_input_t *ps3)
    return 0;
 }
 
-int endGem(ps3_input_t *ps3)
+static int ps3_end_gem(ps3_input_t *ps3)
 {
-   endSpurs(ps3);
+   ps3_end_spurs(ps3);
    gemEnd();
    free(ps3->gem_memory);
    return 0;
 }
 
-static inline void initAttributeGem(gemAttribute * attribute,
-   u32 max_connect, void *memory_ptr,
-   Spurs *spurs, const u8 spu_priorities[8])
+static inline void ps3_init_attribute_gem(
+      gemAttribute * attribute,
+      u32 max_connect, void *memory_ptr,
+      Spurs *spurs, const u8 spu_priorities[8])
 {
    int i;
 
@@ -317,7 +323,7 @@ static inline void initAttributeGem(gemAttribute * attribute,
       attribute->spu_priorities[i] = spu_priorities[i];
 }
 
-int initGemVideoConvert(ps3_input_t *ps3)
+static int ps3_init_gem_video_convert(ps3_input_t *ps3)
 {
    ps3->gem_video_convert.version        = 2;
    ps3->gem_video_convert.format         = 2; /* GEM_RGBA_640x480; */
@@ -338,30 +344,30 @@ int initGemVideoConvert(ps3_input_t *ps3)
    return gemPrepareVideoConvert(&ps3->gem_video_convert);
 }
 
-int initGem(ps3_input_t *ps3)
+static int ps3_init_gem(ps3_input_t *ps3)
 {
    gemAttribute gem_attr;
    u8 gem_spu_priorities[8] = { 1, 1, 1, 1, 1, 0, 0, 0 };	/* execute */
                 /* libgem jobs */
                 /* on 5 SPUs */
-   if (initSpurs(ps3))
+   if (ps3_init_spurs(ps3))
       return -1;
 
    if (!(ps3->gem_memory = (void *)malloc(gemGetMemorySize(1))))
       return -1;
 
-   initAttributeGem(&gem_attr, 1, ps3->gem_memory,
+   ps3_init_attribute_gem(&gem_attr, 1, ps3->gem_memory,
 		   ps3->spurs, gem_spu_priorities);
 
    gemInit(&gem_attr);
-   initGemVideoConvert(ps3);
+   ps3_init_gem_video_convert(ps3);
    gemPrepareCamera (128, 0.5);
    gemReset(0);
 
    return 0;
 }
 
-void readGemPad(ps3_input_t *ps3, int num_gem)
+static void ps3_read_gem_pad(ps3_input_t *ps3, int num_gem)
 {
    unsigned int hues[] = { 4 << 24, 4 << 24, 4 << 24, 4 << 24 };
    int ret             = gemGetState(0, 0, -22000, &ps3->gem_state);
@@ -383,7 +389,9 @@ void readGemPad(ps3_input_t *ps3, int num_gem)
    }
 }
 
-void readGemAccPosition(int num_gem)
+#if 0
+/* TODO/FIXME - functions not used for now */
+static void ps3_read_gem_acc_position(int num_gem)
 {
    vec_float4 position;
    VmathVector4 v;
@@ -392,7 +400,7 @@ void readGemAccPosition(int num_gem)
    v.vec128 = position;
 }
 
-void readGemInertial(ps3_input_t *ps3, int num_gem)
+static void ps3_read_gem_inertial(ps3_input_t *ps3, int num_gem)
 {
    VmathVector4 v;
    gemGetInertialState(num_gem, 0, -22000, &ps3->gem_inertial_state);
@@ -401,16 +409,17 @@ void readGemInertial(ps3_input_t *ps3, int num_gem)
    v.vec128 = ps3->gem_inertial_state.gyro;
    v.vec128 = ps3->gem_inertial_state.gyro_bias;
 }
+#endif
 
-void readGem(ps3_input_t *ps3)
+static void ps3_read_gem(ps3_input_t *ps3)
 {
    VmathVector4 v;
 
-   proccessGem(ps3, 0);
-   proccessGem(ps3, 1);
-   proccessGem(ps3, 2);
-   proccessGem(ps3, 3);
-   readGemPad(ps3, 0);		/* This will read buttons from Move */
+   ps3_process_gem(ps3, 0);
+   ps3_process_gem(ps3, 1);
+   ps3_process_gem(ps3, 2);
+   ps3_process_gem(ps3, 3);
+   ps3_read_gem_pad(ps3, 0); /* This will read buttons from Move */
    v.vec128 = ps3->gem_state.pos;
    switch (ps3->newGemPad)
    {
@@ -438,13 +447,13 @@ void readGem(ps3_input_t *ps3)
       case 64:
          ps3->cross_pressed++;
 #if 0
-         readGemAccPosition(0);
+         ps3_read_gem_acc_position(0);
 #endif
          break;
       case 128:
          ps3->square_pressed++;
 #if 0
-         readGemInertial(ps3, 0);
+         ps3_read_gem_inertial(ps3, 0);
 #endif
          break;
       default:
@@ -642,8 +651,8 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
    if (!ps3->gem_connected || !ps3->gem_init)
       return 0;
 
-   readCamera(ps3);
-   readGem(ps3);
+   ps3_read_camera(ps3);
+   ps3_read_gem(ps3);
 
    videoGetState(0, 0, &state);
    videoGetResolution(state.displayMode.resolution, &res);
@@ -828,8 +837,8 @@ static void ps3_input_free_input(void *data)
     ioMouseEnd();
 #endif
 #ifdef HAVE_LIGHTGUN
-    endGem((ps3_input_t *)data);
-    endCamera((ps3_input_t *)data);
+    ps3_end_gem((ps3_input_t *)data);
+    ps3_end_camera((ps3_input_t *)data);
 #endif
 }
 
@@ -872,9 +881,9 @@ static void* ps3_input_init(const char *joypad_driver)
          {
             if (!sysMemContainerCreate(&ps3->container, 0x200000))
             {
-               if (!setupCamera(ps3))
+               if (!ps3_setup_camera(ps3))
                {
-                  if (!initGem(ps3))
+                  if (!ps3_init_gem(ps3))
                      ps3->gem_init = 1;
                }
             }
