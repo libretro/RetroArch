@@ -211,17 +211,17 @@ static int16_t dos_joypad_state(
    uint16_t port_idx                    = joypad_info->joy_idx;
    uint16_t *buf                        = dos_keyboard_state_get(port_idx);
 
-   if (port_idx >= DEFAULT_MAX_PADS)
-      return 0;
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   if (port_idx < DEFAULT_MAX_PADS)
    {
-      /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
-         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
-      if ((uint16_t)joykey != NO_BTN && dos_joypad_button_state(
-               buf, (uint16_t)joykey))
-         ret |= ( 1 << i);
+	   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+	   {
+		   /* Auto-binds are per joypad, not per user. */
+		   const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+			   ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+		   if ((uint16_t)joykey != NO_BTN && dos_joypad_button_state(
+					   buf, (uint16_t)joykey))
+			   ret |= ( 1 << i);
+	   }
    }
 
    return ret;

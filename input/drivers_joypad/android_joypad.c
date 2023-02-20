@@ -87,7 +87,6 @@ static int16_t android_joypad_axis_state(
       if (val > 0)
          return val;
    }
-
    return 0;
 }
 

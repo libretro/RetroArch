@@ -373,16 +373,18 @@ static int16_t sdl_joypad_axis_state(
 {
    if (AXIS_NEG_GET(joyaxis) < pad->num_axes)
    {
-      int16_t val    = sdl_pad_get_axis(pad, AXIS_NEG_GET(joyaxis));
-      /* -0x8000 can cause trouble if we later abs() it. */
-      if (val < -0x7fff) 
-         return -0x7fff;
-      else if (val < 0)
+      int16_t val  = sdl_pad_get_axis(pad, AXIS_NEG_GET(joyaxis));
+      if (val < 0)
+      {
+         /* Clamp - -0x8000 can cause trouble if we later abs() it. */
+         if (val < -0x7fff) 
+            return -0x7fff;
          return val;
+      }
    }
    else if (AXIS_POS_GET(joyaxis) < pad->num_axes)
    {
-      int16_t val    = sdl_pad_get_axis(pad, AXIS_POS_GET(joyaxis));
+      int16_t val  = sdl_pad_get_axis(pad, AXIS_POS_GET(joyaxis));
       if (val > 0)
          return val;
    }

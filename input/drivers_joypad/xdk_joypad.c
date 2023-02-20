@@ -133,48 +133,56 @@ static int32_t xdk_joypad_button(unsigned port, uint16_t joykey)
 static int16_t xdk_joypad_axis_state(XINPUT_GAMEPAD *pad,
       unsigned port, uint32_t joyaxis)
 {
-   int val             = 0;
-   int axis            = -1;
-   bool is_neg         = false;
-   bool is_pos         = false;
-
    if (AXIS_NEG_GET(joyaxis) <= 3)
    {
-      axis             = AXIS_NEG_GET(joyaxis);
-      is_neg           = true;
+      int16_t val  = 0;
+      int16_t axis = AXIS_NEG_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+            val = pad->sThumbLX;
+            break;
+         case 1:
+            val = pad->sThumbLY;
+            break;
+         case 2:
+            val = pad->sThumbRX;
+            break;
+         case 3:
+            val = pad->sThumbRY;
+            break;
+      }
+      if (val < 0)
+      {
+         /* Clamp to avoid warnings */
+         if (val == -32768)
+            return -32767;
+         return val;
+      }
    }
    else if (AXIS_POS_GET(joyaxis) <= 5)
    {
-      axis             = AXIS_POS_GET(joyaxis);
-      is_pos           = true;
+      int16_t val  = 0;
+      int16_t axis = AXIS_POS_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+            val = pad->sThumbLX;
+            break;
+         case 1:
+            val = pad->sThumbLY;
+            break;
+         case 2:
+            val = pad->sThumbRX;
+            break;
+         case 3:
+            val = pad->sThumbRY;
+            break;
+      }
+      if (val > 0)
+         return val;
    }
-   else
-      return 0;
-
-   switch (axis)
-   {
-      case 0:
-         val = pad->sThumbLX;
-         break;
-      case 1:
-         val = pad->sThumbLY;
-         break;
-      case 2:
-         val = pad->sThumbRX;
-         break;
-      case 3:
-         val = pad->sThumbRY;
-         break;
-   }
-
-   if (is_neg && val > 0)
-      return 0;
-   else if (is_pos && val < 0)
-      return 0;
-   /* Clamp to avoid warnings */
-   else if (val == -32768)
-      return -32767;
-   return val;
+   return 0;
 }
 
 static int16_t xdk_joypad_axis(unsigned port, uint32_t joyaxis)

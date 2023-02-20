@@ -31,7 +31,7 @@
 
 /* TODO/FIXME - static globals */
 static uint64_t pad_state[DEFAULT_MAX_PADS];
-static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
+static int16_t  analog_state[DEFAULT_MAX_PADS][2][2];
 static uint64_t pads_connected[DEFAULT_MAX_PADS];
 #if 0
 sensor_t accelerometer_state[DEFAULT_MAX_PADS];

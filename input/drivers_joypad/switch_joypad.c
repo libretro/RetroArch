@@ -119,7 +119,7 @@ static int16_t switch_joypad_axis_state(unsigned port, uint32_t joyaxis)
    {
       int16_t val  = 0;
       int16_t axis = AXIS_NEG_GET(joyaxis);
-      switch(axis)
+      switch (axis)
       {
          case 0:
          case 1:
@@ -137,7 +137,7 @@ static int16_t switch_joypad_axis_state(unsigned port, uint32_t joyaxis)
    {
       int16_t val   = 0;
       int16_t axis  = AXIS_POS_GET(joyaxis);
-      switch(axis)
+      switch (axis)
       {
          case 0:
          case 1:

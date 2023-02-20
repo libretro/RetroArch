@@ -538,19 +538,17 @@ static int16_t apple_gamecontroller_joypad_axis(
 {
     if (AXIS_NEG_GET(joyaxis) < 4)
     {
-       int16_t val  = 0;
        int16_t axis = AXIS_NEG_GET(joyaxis);
-       if (axis >= 0 && axis < 4)
-          if ((val = mfi_axes[port][axis]) < 0)
-             return val;
+       int16_t val  = mfi_axes[port][axis];
+       if (val < 0)
+          return val;
     }
     else if(AXIS_POS_GET(joyaxis) < 4)
     {
-       int16_t val  = 0;
        int16_t axis = AXIS_POS_GET(joyaxis);
-       if (axis >= 0 && axis < 4)
-          if ((val = mfi_axes[port][axis]) > 0)
-             return val;
+       int16_t val  = mfi_axes[port][axis];
+       if (val > 0)
+          return val;
     }
     return 0;
 }
@@ -564,26 +562,26 @@ static int16_t apple_gamecontroller_joypad_state(
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
 
-   if (port_idx >= DEFAULT_MAX_PADS)
-      return 0;
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   if (port_idx < DEFAULT_MAX_PADS)
    {
-      /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
-         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
-      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
-         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-      if (     (uint16_t)joykey != NO_BTN 
-            && !GET_HAT_DIR(i)
-            && (i < 32)
-            && ((mfi_buttons[port_idx] & (1 << i)) != 0)
-         )
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(apple_gamecontroller_joypad_axis(port_idx, joyaxis)) 
-             / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+      {
+         /* Auto-binds are per joypad, not per user. */
+         const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+            ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+         const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+            ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+         if (     (uint16_t)joykey != NO_BTN 
+               && !GET_HAT_DIR(i)
+               && (i < 32)
+               && ((mfi_buttons[port_idx] & (1 << i)) != 0)
+            )
+            ret |= ( 1 << i);
+         else if (joyaxis != AXIS_NONE &&
+               ((float)abs(apple_gamecontroller_joypad_axis(port_idx, joyaxis)) 
+                / 0x8000) > joypad_info->axis_threshold)
+            ret |= (1 << i);
+      }
    }
 
    return ret;

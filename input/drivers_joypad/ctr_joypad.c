@@ -64,12 +64,12 @@ static int32_t ctr_joypad_button(unsigned port_num, uint16_t joykey)
 
 static void ctr_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
-	if (port_num < DEFAULT_MAX_PADS)
+   if (port_num < DEFAULT_MAX_PADS)
    {
-		BITS_COPY16_PTR( state, pad_state );
-	}
+      BITS_COPY16_PTR( state, pad_state );
+   }
    else
-		BIT256_CLEAR_ALL_PTR(state);
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t ctr_joypad_axis_state(unsigned port_num, uint32_t joyaxis)

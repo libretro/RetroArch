@@ -259,7 +259,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
             pad->axes[axes]   = udev_compute_axis(abs, abs->value);
             /* Deal with analog triggers that report -32767 to 32767
                by testing if the axis initial value is negative, allowing for
-               for some slop (1300 =~ 4%)in an axis centred around 0.
+               for some slop (1300 =~ 4%) in an axis centred around 0.
                The actual work is done in udev_joypad_axis.
                All bets are off if you're sitting on it. Reinitailise it by unpluging
                and plugging back in. */
