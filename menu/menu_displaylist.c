@@ -8494,9 +8494,11 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_CHEEVOS_APPEARANCE_SETTINGS_LIST:
          {
+#if defined(HAVE_CHEEVOS) && defined(HAVE_GFX_WIDGETS)
             unsigned cheevos_anchor  = settings->uints.cheevos_appearance_anchor;
             bool     cheevos_autopad = settings->bools.cheevos_appearance_padding_auto;
             bool     gfx_widgets     = settings->bools.menu_enable_widgets;
+#endif
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_ANCHOR,                             PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,                       PARSE_ONLY_BOOL,   true},

@@ -249,7 +249,6 @@ int processMove(ps3_input_t *ps3)
 
 int initSpurs(ps3_input_t *ps3)
 {
-   int i;
    int ppu_prio;
    sys_ppu_thread_t ppu_thread_id;
    unsigned int nthread;
@@ -262,21 +261,21 @@ int initSpurs(ps3_input_t *ps3)
    SpursAttribute attributeSpurs;
 
    if ((ret     = spursAttributeInitialize(&attributeSpurs, 5, 250, ppu_prio - 1, true)))
-      return (ret);
+      return ret;
 
    if ((ret     = spursAttributeSetNamePrefix(&attributeSpurs, SPURS_PREFIX_NAME, strlen(SPURS_PREFIX_NAME))))
-      return (ret);
+      return ret;
 
    if ((ret     = spursInitializeWithAttribute(ps3->spurs, &attributeSpurs)))
-      return (ret);
+      return ret;
 
    if ((ret     = spursGetNumSpuThread(ps3->spurs, &nthread)))
-      return (ret);
+      return ret;
 
    ps3->threads = (sys_spu_thread_t *)malloc(sizeof(sys_spu_thread_t) * nthread);
 
    if ((ret = spursGetSpuThreadId(ps3->spurs, ps3->threads, &nthread)))
-      return (ret);
+      return ret;
 
    SpursInfo info;
    ret = spursGetInfo(ps3->spurs, &info);
@@ -337,7 +336,6 @@ int initGemVideoConvert(ps3_input_t *ps3)
 
 int initGem(ps3_input_t *ps3)
 {
-   int i;
    gemAttribute gem_attr;
    u8 gem_spu_priorities[8] = { 1, 1, 1, 1, 1, 0, 0, 0 };	/* execute */
                 /* libgem jobs */
@@ -351,7 +349,7 @@ int initGem(ps3_input_t *ps3)
    initAttributeGem(&gem_attr, 1, ps3->gem_memory,
 		   ps3->spurs, gem_spu_priorities);
 
-   gemInit (&gem_attr);
+   gemInit(&gem_attr);
    initGemVideoConvert(ps3);
    gemPrepareCamera (128, 0.5);
    gemReset(0);
@@ -392,8 +390,7 @@ void readGemAccPosition(int num_gem)
 
 void readGemInertial(ps3_input_t *ps3, int num_gem)
 {
-   VmathVector4 v;
-   int ret  = gemGetInertialState(num_gem, 0, -22000, &ps3->gem_inertial_state);
+   gemGetInertialState(num_gem, 0, -22000, &ps3->gem_inertial_state);
    v.vec128 = ps3->gem_inertial_state.accelerometer;
    v.vec128 = ps3->gem_inertial_state.accelerometer_bias;
    v.vec128 = ps3->gem_inertial_state.gyro;
@@ -622,15 +619,14 @@ static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
 static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
       unsigned user, unsigned id)
 {
-   float center_x;
    float center_y;
    float pointer_x;
    float pointer_y;
    videoState state;
-   videoConfiguration vconfig;
    videoResolution res;
    VmathVector4 ray_start, ray_dir;
    struct video_viewport vp;
+   float center_x              = 0.0f;
    const int edge_detect       = 32700;
    bool inside                 = false;
    int16_t res_x               = 0;
@@ -687,7 +683,7 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
 #endif
 
    if (video_driver_translate_coord_viewport_wrap(&vp,
-           center_x + ((pointer_x - ps3->adj_x)*sensitivity), center_y + ((pointer_y - ps3->adj_y)*sensitivity),
+           center_x + ((pointer_x - ps3->adj_x) * sensitivity), center_y + ((pointer_y - ps3->adj_y) * sensitivity),
            &res_x, &res_y, &res_screen_x, &res_screen_y))
    {
 
@@ -869,7 +865,7 @@ static void* ps3_input_init(const char *joypad_driver)
          {
             if (!sysMemContainerCreate(&ps3->container, 0x200000))
             {
-               if (!setupCamera(ps3));
+               if (!setupCamera(ps3))
                {
                   if (!initGem(ps3))
                      ps3->gem_init = 1;
