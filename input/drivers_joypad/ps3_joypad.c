@@ -77,12 +77,12 @@ static int32_t ps3_joypad_button(unsigned port, uint16_t joykey)
 
 static void ps3_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
-	if (port_num < DEFAULT_MAX_PADS)
+   if (port_num < DEFAULT_MAX_PADS)
    {
-		BITS_COPY16_PTR( state, pad_state[port_num] );
-	}
+      BITS_COPY16_PTR( state, pad_state[port_num] );
+   }
    else
-		BIT256_CLEAR_ALL_PTR(state);
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t ps3_joypad_axis_state(unsigned port, uint32_t joyaxis)
@@ -138,29 +138,29 @@ static int16_t ps3_joypad_state(
       const struct retro_keybind *binds,
       unsigned port)
 {
-   unsigned i;
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
 
-   if (port_idx >= DEFAULT_MAX_PADS)
-      return 0;
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   if (port_idx < DEFAULT_MAX_PADS)
    {
-      /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
-         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
-      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
-         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-      if (
+      unsigned i;
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+      {
+         /* Auto-binds are per joypad, not per user. */
+         const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+            ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+         const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+            ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+         if (
                (uint16_t)joykey != NO_BTN 
-            && pad_state[port_idx] & (UINT64_C(1) << (uint16_t)joykey)
-         )
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(ps3_joypad_axis_state(port_idx, joyaxis)) 
-             / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
+               && pad_state[port_idx] & (UINT64_C(1) << (uint16_t)joykey)
+            )
+            ret |= ( 1 << i);
+         else if (joyaxis != AXIS_NONE &&
+               ((float)abs(ps3_joypad_axis_state(port_idx, joyaxis)) 
+                / 0x8000) > joypad_info->axis_threshold)
+            ret |= (1 << i);
+      }
    }
 
    return ret;
@@ -175,6 +175,7 @@ static void ps3_joypad_poll(void)
 
    for (port = 0; port < DEFAULT_MAX_PADS; port++)
    {
+      int i, j;
       padData state_tmp;
 
       if (pad_info.port_status[port] & CELL_PAD_STATUS_ASSIGN_CHANGES)
@@ -250,8 +251,8 @@ static void ps3_joypad_poll(void)
 #endif
       }
 
-      for (int i = 0; i < 2; i++)
-         for (int j = 0; j < 2; j++)
+      for (i = 0; i < 2; i++)
+         for (j = 0; j < 2; j++)
             if (analog_state[port][i][j] == -0x8000)
                analog_state[port][i][j] = -0x7fff;
    }

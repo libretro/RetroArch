@@ -49,10 +49,10 @@ static int LockData(void *a, int size)
    if (__dpmi_get_segment_base_address(_my_ds(), &baseaddr) != -1)
    {
       __dpmi_meminfo region;
-	   region.handle  = 0;
-	   region.size    = size;
-	   region.address = baseaddr + (uint32_t)a;
-	   if (__dpmi_lock_linear_region(&region) != -1)
+      region.handle  = 0;
+      region.size    = size;
+      region.address = baseaddr + (uint32_t)a;
+      if (__dpmi_lock_linear_region(&region) != -1)
          return 0;
    }
    return -1;
