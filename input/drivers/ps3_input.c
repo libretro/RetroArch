@@ -57,21 +57,26 @@ typedef struct ps3_input
 #endif
 } ps3_input_t;
 
-#ifdef HAVE_MOUSE
 static void ps3_input_poll(void *data)
 {
-   CellMouseInfo mouse_info;
    ps3_input_t *ps3 = (ps3_input_t*)data;
-
-   cellMouseGetInfo(&mouse_info);
+#ifdef HAVE_MOUSE
+   mouseInfo mouse_info;
+   ioMouseGetInfo(&mouse_info);
+#ifdef __PSL1GHT__
+   ps3->mice_connected = mouse_info.connected;
+#else
    ps3->mice_connected = mouse_info.now_connect;
+#endif
+#endif
 }
 
+#ifdef HAVE_MOUSE
 static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
       unsigned user, unsigned id)
 {
-   CellMouseData mouse_state;
-   cellMouseGetData(id, &mouse_state);
+   mouseData mouse_state;
+   ioMouseGetData(id, &mouse_state);
 
    switch (id)
    {
@@ -147,7 +152,7 @@ static void ps3_input_free_input(void *data)
       return;
 
 #ifdef HAVE_MOUSE
-   cellMouseEnd();
+   ioMouseEnd();
 #endif
    free(data);
 }
@@ -159,7 +164,7 @@ static void* ps3_input_init(const char *joypad_driver)
       return NULL;
 
 #ifdef HAVE_MOUSE
-   cellMouseInit(MAX_MICE);
+   ioMouseInit(MAX_MICE);
 #endif
 
    return ps3;
@@ -178,22 +183,22 @@ static uint64_t ps3_input_get_capabilities(void *data)
 static bool ps3_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate)
 {
-   CellPadInfo2 pad_info;
+   padInfo2 pad_info;
 
    switch (action)
    {
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
-         cellPadGetInfo2(&pad_info);
+         ioPadGetInfo2(&pad_info);
          if ((pad_info.device_capability[port]
                   & CELL_PAD_CAPABILITY_SENSOR_MODE)
                == CELL_PAD_CAPABILITY_SENSOR_MODE)
          {
-            cellPadSetPortSetting(port, CELL_PAD_SETTING_SENSOR_ON);
+            ioPadSetPortSetting(port, CELL_PAD_SETTING_SENSOR_ON);
             return true;
          }
          break;
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
-         cellPadSetPortSetting(port, 0);
+         ioPadSetPortSetting(port, 0);
          return true;
       default:
          break;
@@ -204,11 +209,7 @@ static bool ps3_input_set_sensor_state(void *data, unsigned port,
 
 input_driver_t input_ps3 = {
    ps3_input_init,
-#ifdef HAVE_MOUSE
    ps3_input_poll,
-#else
-   NULL,                         /* poll */
-#endif
    ps3_input_state,
    ps3_input_free_input,
    ps3_input_set_sensor_state,

@@ -165,6 +165,7 @@ extern int audioAddData(uint32_t portNum, float *data,
 #define ioPadGetData cellPadGetData
 #define ioPadInit cellPadInit
 #define ioPadEnd cellPadEnd
+#define ioPadSetPortSetting cellPadSetPortSetting 
 #endif
 
 /*============================================================
@@ -198,6 +199,13 @@ extern int audioAddData(uint32_t portNum, float *data,
 
 #else
 #include <cell/mouse.h>
+#define mouseInfo CellMouseInfo
+#define mouseData CellMouseData
+
+#define ioMouseInit cellMouseInit
+#define ioMouseGetData cellMouseGetData
+#define ioMouseEnd cellMouseEnd
+#define ioMouseGetInfo cellMouseGetInfo
 #endif
 
 #endif

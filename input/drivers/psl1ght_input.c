@@ -551,7 +551,11 @@ static void ps3_input_poll(void *data)
 #ifdef HAVE_MOUSE
    mouseInfo mouse_info;
    ioMouseGetInfo(&mouse_info);
+#ifdef __PSL1GHT__
    ps3->mice_connected = mouse_info.connected;
+#else
+   ps3->mice_connected = mouse_info.now_connect;
+#endif
 #endif
 #ifdef HAVE_LIGHTGUN
    gemInfo gem_info;
@@ -606,23 +610,20 @@ static bool psl1ght_keyboard_port_input_pressed(
 static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
       unsigned user, unsigned id)
 {
-   if (ps3->mice_connected)
-   {
-      mouseData mouse_state;
-      ioMouseGetData(id, &mouse_state);
+   mouseData mouse_state;
+   ioMouseGetData(id, &mouse_state);
 
-      switch (id)
-      {
-         /* TODO: mouse wheel up/down */
-         case RETRO_DEVICE_ID_MOUSE_LEFT:
-            return (mouse_state.buttons & CELL_MOUSE_BUTTON_1);
-         case RETRO_DEVICE_ID_MOUSE_RIGHT:
-            return (mouse_state.buttons & CELL_MOUSE_BUTTON_2);
-         case RETRO_DEVICE_ID_MOUSE_X:
-            return (mouse_state.x_axis);
-         case RETRO_DEVICE_ID_MOUSE_Y:
-            return (mouse_state.y_axis);
-      }
+   switch (id)
+   {
+      /* TODO: mouse wheel up/down */
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         return (mouse_state.buttons & CELL_MOUSE_BUTTON_1);
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         return (mouse_state.buttons & CELL_MOUSE_BUTTON_2);
+      case RETRO_DEVICE_ID_MOUSE_X:
+         return (mouse_state.x_axis);
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         return (mouse_state.y_axis);
    }
 
    return 0;
@@ -817,7 +818,9 @@ static int16_t ps3_input_state(
             return psl1ght_keyboard_port_input_pressed(ps3, id);
 #ifdef HAVE_MOUSE
          case RETRO_DEVICE_MOUSE:
-            return ps3_mouse_device_state(ps3, port, id);
+            if (ps3->mice_connected)
+               return ps3_mouse_device_state(ps3, port, id);
+            break;
 #endif
 #ifdef HAVE_LIGHTGUN
          case RETRO_DEVICE_LIGHTGUN:
