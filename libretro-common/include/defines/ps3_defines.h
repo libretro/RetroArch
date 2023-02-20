@@ -723,13 +723,24 @@ extern int audioAddData(uint32_t portNum, float *data,
 #ifndef O_RDWR
 #define O_RDWR CELL_FS_O_RDWR
 #endif
+#ifndef sysFsStat
 #define sysFsStat cellFsStat
-#define sysFSStat CellFsStat
+#endif
+#ifndef sysFSDirent
 #define sysFSDirent CellFsDirent
+#endif
+#ifndef sysFsOpendir
 #define sysFsOpendir cellFsOpendir
+#endif
+#ifndef sysFsReaddir
 #define sysFsReaddir cellFsReaddir
+#endif
+#ifndef sysFSDirent
 #define sysFSDirent CellFsDirent
+#endif
+#ifndef sysFsClosedir
 #define sysFsClosedir cellFsClosedir
+#endif
 #endif
 
 #endif
