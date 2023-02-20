@@ -111,23 +111,22 @@ void dinput_destroy_context(void)
 
 bool dinput_init_context(void)
 {
-   if (g_dinput_ctx)
-      return true;
-
-   /* Who said we shouldn't have same call signature in a COM API? <_< */
+   if (!g_dinput_ctx)
+   {
+      /* Who said we shouldn't have same call signature in a COM API? <_< */
 #ifdef __cplusplus
-   if (!(SUCCEEDED(DirectInput8Create(
-                  GetModuleHandle(NULL), DIRECTINPUT_VERSION,
-                  IID_IDirectInput8,
-                  (void**)&g_dinput_ctx, NULL))))
-#else
       if (!(SUCCEEDED(DirectInput8Create(
                      GetModuleHandle(NULL), DIRECTINPUT_VERSION,
-                     &IID_IDirectInput8,
+                     IID_IDirectInput8,
                      (void**)&g_dinput_ctx, NULL))))
+#else
+         if (!(SUCCEEDED(DirectInput8Create(
+                        GetModuleHandle(NULL), DIRECTINPUT_VERSION,
+                        &IID_IDirectInput8,
+                        (void**)&g_dinput_ctx, NULL))))
 #endif
-         return false;
-
+            return false;
+   }
    return true;
 }
 
@@ -138,8 +137,7 @@ static void *dinput_init(const char *joypad_driver)
    if (!dinput_init_context())
       return NULL;
 
-   di = (struct dinput_input*)calloc(1, sizeof(*di));
-   if (!di)
+   if (!(di = (struct dinput_input*)calloc(1, sizeof(*di))))
       return NULL;
 
    if (!string_is_empty(joypad_driver))
@@ -309,12 +307,12 @@ static void dinput_poll(void *data)
       BYTE *rgb_buttons_ptr     = &mouse_state.rgbButtons[0];
       bool swap_mouse_buttons   = g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS;
       
-      point.x = 0;
-      point.y = 0;
+      point.x                   = 0;
+      point.y                   = 0;
 
-      mouse_state.lX = 0;
-      mouse_state.lY = 0;
-      mouse_state.lZ = 0;
+      mouse_state.lX            = 0;
+      mouse_state.lY            = 0;
+      mouse_state.lZ            = 0;
 
       for (
             ; rgb_buttons_ptr < mouse_state.rgbButtons + 8
@@ -409,7 +407,7 @@ static void dinput_poll(void *data)
 static bool dinput_mouse_button_pressed(
       struct dinput_input *di, unsigned port, unsigned key)
 {
-	bool result;
+	bool result = false;
 
 	switch (key)
    {
@@ -426,22 +424,22 @@ static bool dinput_mouse_button_pressed(
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
          result        = di->flags & DINP_FLAG_MOUSE_WU_BTN;
          di->flags    &= ~DINP_FLAG_MOUSE_WU_BTN;
-         return result;
+         break;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
          result        = di->flags & DINP_FLAG_MOUSE_WD_BTN;
          di->flags    &= ~DINP_FLAG_MOUSE_WD_BTN;
-         return result;
+         break;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
          result        = di->flags & DINP_FLAG_MOUSE_HWU_BTN;
          di->flags    &= ~DINP_FLAG_MOUSE_HWU_BTN;
-         return result;
+         break;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
          result        = di->flags & DINP_FLAG_MOUSE_HWD_BTN;
          di->flags    &= ~DINP_FLAG_MOUSE_HWD_BTN;
-         return result;
+         break;
    }
 
-	return false;
+	return result;
 }
 
 static int16_t dinput_lightgun_aiming_state(
@@ -490,10 +488,11 @@ static int16_t dinput_lightgun_aiming_state(
                &vp, x, y,
                &res_x, &res_y, &res_screen_x, &res_screen_y))
    {
-      bool inside =    (res_x >= -edge_detect) 
+      bool inside =    
+            (res_x >= -edge_detect) 
          && (res_y >= -edge_detect)
-         && (res_x <= edge_detect)
-         && (res_y <= edge_detect);
+         && (res_x <=  edge_detect)
+         && (res_y <=  edge_detect);
 
       switch (id)
       {
