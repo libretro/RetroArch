@@ -145,7 +145,7 @@ enum microphone_driver_enum
    MICROPHONE_ALSATHREAD,
    MICROPHONE_SDL2,
    MICROPHONE_WASAPI,
-   MICROPHONE_NULL,
+   MICROPHONE_NULL
 };
 
 enum audio_resampler_driver_enum
