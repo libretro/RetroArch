@@ -726,7 +726,6 @@ retro_microphone_t *microphone_driver_open_mic(const retro_microphone_params_t *
       * don't forget, the core can ask for a mic
       * before the audio driver is ready to create one. */
       RARCH_WARN("[Microphone]: Refused to open microphone because it's disabled in the settings\n");
-      // TODO: Log a message to the on-screen display
       return NULL;
    }
 
