@@ -280,6 +280,9 @@ static bool ps3_joypad_rumble(unsigned pad,
             strength = 255;
          params.motor[1] = strength;
          break;
+      case RETRO_RUMBLE_DUMMY:
+      default:
+	 break;
    }
 
    cellPadSetActDirect(pad, &params);

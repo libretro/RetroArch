@@ -3415,13 +3415,13 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_load_texture,
    vulkan_unload_texture,
    vulkan_set_video_mode,
-   vulkan_get_refresh_rate, /* get_refresh_rate */
-   NULL,
+   vulkan_get_refresh_rate,            /* get_refresh_rate */
+   NULL,                               /* set_filtering */
    vulkan_get_video_output_size,
    vulkan_get_video_output_prev,
    vulkan_get_video_output_next,
-   NULL,
-   NULL,
+   NULL,                               /* get_current_framebuffer */
+   NULL,                               /* get_proc_address */
    vulkan_set_aspect_ratio,
    vulkan_apply_state_changes,
    vulkan_set_texture_frame,

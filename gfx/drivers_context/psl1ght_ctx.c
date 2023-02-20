@@ -35,7 +35,7 @@ typedef struct gfx_ctx_psl1ght_data
    PSGLdevice* gl_device;
    PSGLcontext* gl_context;
 #else
-   gcmContextData *rx_context;
+   void *empty;
 #endif
 } gfx_ctx_psl1ght_data_t;
 
@@ -50,23 +50,6 @@ static void gfx_ctx_psl1ght_get_resolution(unsigned idx,
 
    *width  = resolution.width;
    *height = resolution.height;
-}
-
-static float gfx_ctx_psl1ght_get_aspect_ratio(void *data)
-{
-   CellVideoOutState videoState;
-
-   cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &videoState);
-
-   switch (videoState.displayMode.aspect)
-   {
-      case CELL_VIDEO_OUT_ASPECT_4_3:
-         return 4.0f/3.0f;
-      case CELL_VIDEO_OUT_ASPECT_16_9:
-         break;
-   }
-
-   return 16.0f/9.0f;
 }
 
 static void gfx_ctx_psl1ght_get_available_resolutions(void)
@@ -148,7 +131,6 @@ static void gfx_ctx_psl1ght_set_swap_interval(void *data, int interval)
 static void gfx_ctx_psl1ght_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
-   
 }
 
 static bool gfx_ctx_psl1ght_has_focus(void *data) { return true; }
@@ -176,14 +158,12 @@ static void gfx_ctx_psl1ght_get_video_size(void *data,
 
 static void *gfx_ctx_psl1ght_init(void *video_driver)
 {
-   global_t *global = global_get_ptr();
+   global_t                *global = global_get_ptr();
    gfx_ctx_psl1ght_data_t *psl1ght = (gfx_ctx_psl1ght_data_t*)
       calloc(1, sizeof(gfx_ctx_psl1ght_data_t));
 
    if (!psl1ght)
       return NULL;
-
-
 
    global->console.screen.pal_enable =
       cellVideoOutGetResolutionAvailability(
@@ -239,10 +219,8 @@ static bool gfx_ctx_psl1ght_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    ps3_api = api;
-
    if (api == GFX_CTX_RSX_API)
       return true;
-
    return false;
 }
 
@@ -264,8 +242,8 @@ static void gfx_ctx_psl1ght_get_video_output_size(void *data,
    }
    else
    {
-      global->console.screen.pal_enable = false;
-      global->console.screen.pal60_enable = false;
+      global->console.screen.pal_enable      = false;
+      global->console.screen.pal60_enable    = false;
    }
 }
 

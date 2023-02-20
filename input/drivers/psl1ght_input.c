@@ -35,6 +35,10 @@
 
 #include "../../tasks/tasks_internal.h"
 
+#ifdef __PSL1GHT__
+#include <spurs/spurs.h>
+#endif
+
 #ifdef HAVE_LIGHTGUN
 #include <sys/spu.h>
 #include <io/camera.h>
@@ -390,6 +394,7 @@ void readGemAccPosition(int num_gem)
 
 void readGemInertial(ps3_input_t *ps3, int num_gem)
 {
+   VmathVector4 v;
    gemGetInertialState(num_gem, 0, -22000, &ps3->gem_inertial_state);
    v.vec128 = ps3->gem_inertial_state.accelerometer;
    v.vec128 = ps3->gem_inertial_state.accelerometer_bias;
@@ -667,7 +672,9 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
       to actual lightgun behavior) */
    ray_start.vec128            = ps3->gem_state.pos;
    VmathVector4 ray_tmp        = {.vec128 = {0.0f,0.0f,-1.0f,0.0f}};
-   const VmathQuat *quat       = &ps3->gem_state.quat;
+   const VmathQuat *quat       = &ps3->gem_state.quat; /* TODO/FIXME - warning - VmathVector3/VmathVector4 issue again */
+   /* TODO/FIXME - note: expected 'VmathVector3 * {aka struct _VmathVector3 *}' but argument is of type 'VmathVector4 * {aka struct _VmathVector4 *}'
+    * vmathQRotate takes type VmathVector3* instead of VmathVector4* */
    vmathQRotate(&ray_dir, quat, &ray_tmp);
    float t                     = -ray_start.vec128[2] / ray_dir.vec128[2];
    pointer_x                   = ray_start.vec128[0] + ray_dir.vec128[0]*t;

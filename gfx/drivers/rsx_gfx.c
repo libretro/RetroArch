@@ -741,6 +741,8 @@ static void rsx_unload_texture(void *data,
    }
 }
 
+#if 0
+/* TODO/FIXME - commenting this code out for now until it gets used */
 static void rsx_fill_black(uint32_t *dst, uint32_t *dst_end, size_t sz)
 {
   if (sz > dst_end - dst)
@@ -867,6 +869,7 @@ static void rsx_blit_buffer(
    if (dst < dst_end)
       memset(dst, 0, 4 * (dst_end - dst));
 }
+#endif
 
 static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
       const void *frame, unsigned width, unsigned height, unsigned pitch,
@@ -1346,6 +1349,9 @@ static void rsx_viewport_info(void* data, struct video_viewport* vp)
       *vp = gcm->vp;
 }
 
+#if 0
+/* TODO/FIXME - does this function have to be hooked up as a function callback
+ * or can it be removed? */
 static void rsx_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
@@ -1355,6 +1361,7 @@ static void rsx_set_osd_msg(void *data,
    if (gcm && gcm->msg_rendering_enabled)
       font_driver_render_msg(data, msg, params, font);
 }
+#endif
 
 static uint32_t rsx_get_flags(void *data) { return 0; }
 
@@ -1362,28 +1369,28 @@ static const video_poke_interface_t rsx_poke_interface = {
    rsx_get_flags,
    rsx_load_texture,
    rsx_unload_texture,
-   NULL,
-   NULL,
+   NULL,                                  /* set_video_mode   */
+   NULL,                                  /* get_refresh_rate */
    rsx_set_filtering,
    NULL,                                  /* get_video_output_size */
    NULL,                                  /* get_video_output_prev */
    NULL,                                  /* get_video_output_next */
    NULL,                                  /* get_current_framebuffer */
-   NULL,
+   NULL,                                  /* get_proc_address */
    rsx_set_aspect_ratio,
    rsx_apply_state_changes,
    rsx_set_texture_frame,
    rsx_set_texture_enable,
    font_driver_render_msg,
-   NULL,                   /* show_mouse */
-   NULL,                   /* grab_mouse_toggle */
-   NULL,                   /* get_current_shader */
-   NULL,                   /* get_current_software_framebuffer */
-   NULL,                   /* get_hw_render_interface */
-   NULL,                   /* set_hdr_max_nits */
-   NULL,                   /* set_hdr_paper_white_nits */
-   NULL,                   /* set_hdr_contrast */
-   NULL                    /* set_hdr_expand_gamut */
+   NULL,                                  /* show_mouse */
+   NULL,                                  /* grab_mouse_toggle */
+   NULL,                                  /* get_current_shader */
+   NULL,                                  /* get_current_software_framebuffer */
+   NULL,                                  /* get_hw_render_interface */
+   NULL,                                  /* set_hdr_max_nits */
+   NULL,                                  /* set_hdr_paper_white_nits */
+   NULL,                                  /* set_hdr_contrast */
+   NULL                                   /* set_hdr_expand_gamut */
 };
 
 static void rsx_get_poke_interface(void* data,
