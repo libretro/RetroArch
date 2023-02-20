@@ -116,7 +116,7 @@ static void gl1_render_overlay(gl1_t *gl,
    glPushMatrix();
    glLoadIdentity();
 
-   for (i = 0; i < gl->overlays; i++)
+   for (i = 0; i < (int)gl->overlays; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
       glDrawArrays(GL_TRIANGLE_STRIP, 4 * i, 4);
@@ -831,7 +831,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       {
          int y;
          /* copy lines into top-left portion of larger (power-of-two) buffer */
-         for (y = 0; y < height; y++)
+         for (y = 0; y < (int)height; y++)
             memcpy(gl1->video_buf + ((pot_width * (bits / 8)) * y),
                   (const unsigned char*)frame + (pitch * y),
                   width * (bits / 8));
@@ -995,7 +995,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          && !(gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE))
    {
         int n;
-        for (n = 0; n < video_info->black_frame_insertion; ++n)
+        for (n = 0; n < (int)video_info->black_frame_insertion; ++n)
         {
           glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
           glClear(GL_COLOR_BUFFER_BIT);			
@@ -1531,7 +1531,8 @@ static unsigned gl1_get_alignment(unsigned pitch)
 static bool gl1_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
-   int i, j;
+   size_t i;
+   int j;
    gl1_t *gl = (gl1_t*)data;
    const struct texture_image *images =
       (const struct texture_image*)image_data;
