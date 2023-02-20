@@ -1243,7 +1243,6 @@ static bool rsx_suppress_screensaver(void* data, bool enable) { return false; }
 
 static void rsx_free(void* data)
 {
-   int i;
    rsx_t* gcm = (rsx_t*)data;
 
    if (!gcm)
@@ -1274,9 +1273,7 @@ static void rsx_free(void* data)
      rsxFree(gcm->depth_buffer);
    if (gcm->fp_buffer)
      rsxFree(gcm->fp_buffer);
-#endif
 
-#if 0
    rsxFinish(gcm->context, 1);
    free(gcm->host_addr);
 #endif

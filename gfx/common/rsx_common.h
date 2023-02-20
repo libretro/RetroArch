@@ -38,8 +38,6 @@
 #define RSX_MAX_TEXTURE_VERTICES 4096 // Set > 0 for preallocated texture vertices
 #define RSX_MAX_FONT_VERTICES 8192
 
-#define GFX_MAX_SHADERS RSX_MAX_SHADERS
-
 /* Shader objects */
 extern const u8 modern_opaque_vpo_end[];
 extern const u8 modern_opaque_vpo[];
