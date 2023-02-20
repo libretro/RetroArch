@@ -130,6 +130,38 @@ static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
    texture->wrap_t        = GCM_TEXTURE_CLAMP_TO_EDGE;
 }
 
+static void rsx_set_projection(rsx_t *rsx,
+      struct video_ortho *ortho, bool allow_rotate)
+{
+   static math_matrix_4x4 rot     = {
+      { 0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    0.0f ,
+        0.0f,     0.0f,    0.0f,    1.0f }
+   };
+   float radians, cosine, sine;
+
+   /* Calculate projection. */
+   matrix_4x4_ortho(rsx->mvp_no_rot, ortho->left, ortho->right,
+         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
+
+   if (!allow_rotate)
+   {
+      rsx->mvp             = rsx->mvp_no_rot;
+      return;
+   }
+
+   radians                 = M_PI * rsx->rotation / 180.0f;
+   cosine                  = cosf(radians);
+   sine                    = sinf(radians);
+   MAT_ELEM_4X4(rot, 0, 0) = cosine;
+   MAT_ELEM_4X4(rot, 0, 1) = -sine;
+   MAT_ELEM_4X4(rot, 1, 0) = sine;
+   MAT_ELEM_4X4(rot, 1, 1) = cosine;
+   matrix_4x4_multiply(rsx->mvp, rot, rsx->mvp_no_rot);
+}
+
+
 static void rsx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
@@ -235,7 +267,6 @@ static void rsx_set_viewport(void *data, unsigned viewport_width,
       rsx->vp.height          = viewport_height;
    }
 }
-
 
 static const gfx_ctx_driver_t* rsx_get_context(rsx_t* rsx)
 {
@@ -627,37 +658,6 @@ static void* rsx_init(const video_info_t* video,
    }
 
    return rsx;
-}
-
-static void rsx_set_projection(rsx_t *rsx,
-      struct video_ortho *ortho, bool allow_rotate)
-{
-   static math_matrix_4x4 rot     = {
-      { 0.0f,     0.0f,    0.0f,    0.0f ,
-        0.0f,     0.0f,    0.0f,    0.0f ,
-        0.0f,     0.0f,    0.0f,    0.0f ,
-        0.0f,     0.0f,    0.0f,    1.0f }
-   };
-   float radians, cosine, sine;
-
-   /* Calculate projection. */
-   matrix_4x4_ortho(rsx->mvp_no_rot, ortho->left, ortho->right,
-         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
-
-   if (!allow_rotate)
-   {
-      rsx->mvp             = rsx->mvp_no_rot;
-      return;
-   }
-
-   radians                 = M_PI * rsx->rotation / 180.0f;
-   cosine                  = cosf(radians);
-   sine                    = sinf(radians);
-   MAT_ELEM_4X4(rot, 0, 0) = cosine;
-   MAT_ELEM_4X4(rot, 0, 1) = -sine;
-   MAT_ELEM_4X4(rot, 1, 0) = sine;
-   MAT_ELEM_4X4(rot, 1, 1) = cosine;
-   matrix_4x4_multiply(rsx->mvp, rot, rsx->mvp_no_rot);
 }
 
 static void rsx_update_viewport(rsx_t* rsx)
