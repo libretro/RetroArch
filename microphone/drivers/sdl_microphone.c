@@ -34,6 +34,7 @@ typedef struct sdl_microphone_handle
     */
    fifo_buffer_t *sample_buffer;
    SDL_AudioDeviceID device_id;
+   SDL_AudioSpec device_spec;
 } sdl_microphone_handle_t;
 
 typedef struct sdl_microphone
@@ -117,7 +118,6 @@ static void *sdl_microphone_open_mic(void *driver_context,
    sdl_microphone_handle_t *microphone = NULL;
    SDL_AudioSpec desired_spec          = {0};
    void *tmp                           = NULL;
-   SDL_AudioSpec out;
 
    (void)driver_context;
 
@@ -148,13 +148,19 @@ static void *sdl_microphone_open_mic(void *driver_context,
    frames = find_num_frames(rate, latency / 4);
 
    desired_spec.freq     = rate;
-   desired_spec.format   = AUDIO_S16SYS;
+   desired_spec.format   = AUDIO_F32SYS;
    desired_spec.channels = 1; /* Microphones only usually provide input in mono */
    desired_spec.samples  = frames;
    desired_spec.userdata = microphone;
    desired_spec.callback = sdl_audio_record_cb;
 
-   microphone->device_id = SDL_OpenAudioDevice(NULL, true, &desired_spec, &out, 0);
+   microphone->device_id = SDL_OpenAudioDevice(
+         NULL,
+         true,
+         &desired_spec,
+         &microphone->device_spec,
+         SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+
    if (microphone->device_id == 0)
    {
       RARCH_ERR("[SDL mic]: Failed to open SDL audio input device: %s\n", SDL_GetError());
@@ -163,12 +169,12 @@ static void *sdl_microphone_open_mic(void *driver_context,
    RARCH_DBG("[SDL mic]: Opened SDL audio input device with ID %u\n",
              microphone->device_id);
    RARCH_DBG("[SDL mic]: Requested a microphone frequency of %u Hz, got %u Hz\n",
-             desired_spec.freq, out.freq);
+             desired_spec.freq, microphone->device_spec.freq);
    RARCH_DBG("[SDL mic]: Requested %u channels for microphone, got %u\n",
-             desired_spec.channels, out.channels);
+             desired_spec.channels, microphone->device_spec.channels);
    RARCH_DBG("[SDL mic]: Requested a %u-sample microphone buffer, got %u samples (%u bytes)\n",
-             frames, out.samples, out.size);
-   RARCH_DBG("[SDL mic]: Got a microphone silence value of %u\n", out.silence);
+             frames, microphone->device_spec.samples, microphone->device_spec.size);
+   RARCH_DBG("[SDL mic]: Got a microphone silence value of %u\n", microphone->device_spec.silence);
    RARCH_DBG("[SDL mic]: Requested microphone audio format: %u-bit %s %s %s endian\n",
              SDL_AUDIO_BITSIZE(desired_spec.format),
              SDL_AUDIO_ISSIGNED(desired_spec.format) ? "signed" : "unsigned",
@@ -182,7 +188,7 @@ static void *sdl_microphone_open_mic(void *driver_context,
              SDL_AUDIO_ISBIGENDIAN(desired_spec.format) ? "big" : "little");
 
    if (new_rate)
-      *new_rate = out.freq;
+      *new_rate = microphone->device_spec.freq;
 
 #ifdef HAVE_THREADS
    microphone->lock = slock_new();
@@ -190,10 +196,10 @@ static void *sdl_microphone_open_mic(void *driver_context,
 #endif
 
    RARCH_LOG("[SDL audio]: Requested %u ms latency for input device, got %d ms\n",
-             latency, (int)(out.samples * 4 * 1000 / out.freq));
+             latency, (int)(microphone->device_spec.samples * 4 * 1000 / microphone->device_spec.freq));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
-   bufsize                   = out.samples * 2 * sizeof(int16_t);
+   bufsize                   = microphone->device_spec.samples * 2 * (SDL_AUDIO_BITSIZE(microphone->device_spec.format) / 8);
    tmp                       = calloc(1, bufsize);
    microphone->sample_buffer = fifo_new(bufsize);
 
@@ -370,6 +376,14 @@ static ssize_t sdl_microphone_read(void *driver_context, void *microphone_contex
    return ret;
 }
 
+static bool sdl_microphone_mic_use_float(const void *driver_context, const void *microphone_context)
+{
+   sdl_microphone_handle_t *microphone = (sdl_microphone_handle_t*)microphone_context;
+   (void)driver_context;
+
+   return SDL_AUDIO_ISFLOAT(microphone->device_spec.format);
+}
+
 microphone_driver_t microphone_sdl = {
       sdl_microphone_init,
       sdl_microphone_free,
@@ -383,5 +397,5 @@ microphone_driver_t microphone_sdl = {
       sdl_microphone_mic_alive,
       sdl_microphone_start_mic,
       sdl_microphone_stop_mic,
-      NULL /* mic_use_float */
+      sdl_microphone_mic_use_float,
 };
