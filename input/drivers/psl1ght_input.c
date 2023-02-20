@@ -624,13 +624,13 @@ static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
 static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
       unsigned user, unsigned id)
 {
-   float center_y;
    float pointer_x;
    float pointer_y;
    videoState state;
    videoResolution res;
    VmathVector4 ray_start, ray_dir;
    struct video_viewport vp;
+   float center_y              = 0.0f;
    float center_x              = 0.0f;
    const int edge_detect       = 32700;
    bool inside                 = false;

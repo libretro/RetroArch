@@ -33,7 +33,7 @@
 #define RSX_MAX_BUFFERS 2
 #define RSX_MAX_MENU_BUFFERS 2
 #define RSX_MAX_TEXTURES 4
-#define RSX_MAX_SHADERS 2
+#define RSX_MAX_SHADERS 10
 #define RSX_MAX_VERTICES 4
 #define RSX_MAX_TEXTURE_VERTICES 4096 // Set > 0 for preallocated texture vertices
 #define RSX_MAX_FONT_VERTICES 8192
@@ -113,7 +113,7 @@ typedef struct {
    u32* depth_buffer;
 
 #if defined(HAVE_MENU_BUFFER)
-   gcmSurface surface[RSX_MAX_BUFFERS+RSX_MAX_MENU_BUFFERS];
+   gcmSurface surface[RSX_MAX_BUFFERS + RSX_MAX_MENU_BUFFERS];
 #else
    gcmSurface surface[RSX_MAX_BUFFERS];
 #endif
