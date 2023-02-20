@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include <retro_inline.h>
+#include <boolean.h>
 #include <libretro_dspfilter.h>
 
 struct comb
@@ -185,7 +186,7 @@ static void revmodel_setmode(struct revmodel *rev, float value)
    revmodel_update(rev);
 }
 
-static void revmodel_init(struct revmodel *rev,int srate,bool right)
+static void revmodel_init(struct revmodel *rev,int srate, bool right)
 {
    unsigned c;
    static const int comb_lengths[8]    = { 1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617 };
@@ -276,8 +277,8 @@ static void *reverb_init(const struct dspfilter_info *info,
    config->get_float(userdata, "roomwidth", &roomwidth, 0.56f);
    config->get_float(userdata, "roomsize",  &roomsize,  0.56f);
 
-   revmodel_init(&rev->left,info->input_rate,false);
-   revmodel_init(&rev->right,info->input_rate,true);
+   revmodel_init(&rev->left,info->input_rate, false);
+   revmodel_init(&rev->right,info->input_rate, true);
 
    revmodel_setdamp(&rev->left, damping);
    revmodel_setdry(&rev->left, drytime);
