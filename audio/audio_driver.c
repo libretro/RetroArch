@@ -1689,13 +1689,14 @@ error:
 
 bool audio_driver_stop(void)
 {
+   bool stopped;
    if (     !audio_driver_st.current_audio
          || !audio_driver_st.current_audio->stop
          || !audio_driver_st.context_audio_data
          || !audio_driver_alive()
       )
       return false;
-   bool stopped = audio_driver_st.current_audio->stop(
+   stopped = audio_driver_st.current_audio->stop(
          audio_driver_st.context_audio_data);
 
    if (stopped)
