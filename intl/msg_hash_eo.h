@@ -542,6 +542,18 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "Rekomencu post uzi rapidan antaŭen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+   "Rekomencu post ŝarĝo de rapida savo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+   "Rekomencu post generi rapidan savon"
+   )
 
 /* Settings > Recording */
 
@@ -552,6 +564,10 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay */
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Kaŝu interkovro dum konekto de ludregilo"
+   )
 #if defined(ANDROID)
 #endif
 
@@ -576,6 +592,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    "Enable Kiosk Mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "Daŭrigu enhavon post uzado de rapida savo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   "Daŭrigu enhavon post ŝanĝado de diskoj"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -604,6 +628,10 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+   "Memoru elekton kiam ŝanĝas inter sekcioj"
+   )
 
 /* Settings > AI Service */
 
@@ -935,6 +963,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "help"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
+   "Serĉante enhavon"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
+   "Kio estas kerno?"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,

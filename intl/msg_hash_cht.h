@@ -1513,6 +1513,10 @@ MSG_HASH(
    "LibCACA驅動程式。\n字符輸出而不是圖形, 不推薦使用。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   "基本DRM顯示驅動程式。\n使用libdrm的低階顯示驅動程式, 用於使用GPU覆寫進行硬體縮放。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
    "Wii U驅動程式。\n支援Slang格式的著色器。"
    )
@@ -1541,12 +1545,24 @@ MSG_HASH(
    "設定音訊訊號使用的驅動程式。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
+   "用於連網音效系統的RSound驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   "Open Sound System驅動程式。\n預留的驅動程式。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
-   "預設ALSA驅動程式。\n進階Linux聲音架構(ALSA)。"
+   "ALSA驅動程式。\n預設的進階Linux聲音架構(ALSA)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
    "ALSA驅動程式。\n進階Linux聲音架構(ALSA)支援多執行緒。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
+   "ALSA驅動程式。\n進階Linux聲音架構(ALSA)無依賴項進行處理。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
@@ -1567,6 +1583,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
    "Windows Audio Session API驅動程式。\n用於Windows 7 及更高版本作業系統的音效驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
+   "PulseAudio驅動程式。\n如果前端系統使用PulseAudio, 請選擇此驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
@@ -2344,11 +2364,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "增加畫面停頓減少按鍵輸入延遲, 影像出現後與核心處理影格前加入毫秒的延遲。"
+   "增加畫面停頓減少按鍵輸入延遲, 影像顯示處理後與核心處理影格前加入毫秒的延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "影像出現後與核心處理影格前加入毫秒的延遲, 增加畫面停頓為代價減少按鍵輸入延遲。\n最大值: %d 毫秒。"
+   "影像顯示處理後與核心處理影格前加入毫秒的延遲, 增加畫面停頓為代價減少按鍵輸入延遲。\n最大值: %d 毫秒。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2562,15 +2582,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
-   "ALSA驅動程式。\n進階Linux聲音架構(ALSA), 自訂PCM裝置設定值。"
+   "ALSA驅動程式的自訂PCM裝置參數。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
-   "Open Sound System驅動程式。\n自訂路徑位置 (例如: /dev/dsp)。"
+   "OSS驅動程式的自訂路徑位置 (例如: /dev/dsp)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
-   "JACK Audio Connection Kit驅動程式。\n自訂連接埠名編號 (例如: system:playback1、 system:playback_2)。"
+   "JACK驅動程式的自訂連接埠名編號 (例如: system:playback1、 system:playback_2)。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   "RSound驅動程式的自訂服務器IP位址。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -2804,7 +2828,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   "使用執行核心的重新映射, 覆蓋按鍵輸入(部分主機的錯誤修正)。"
+   "使用執行核心的重新映射覆寫按鍵輸入, 用於修正部分平台的按鍵映射錯誤。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -6082,7 +6106,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-   "如果支援, 套用作業系統的主題配色, 關閉時可自訂主題配色。"
+   "支援時套用作業系統的主題配色, 關閉時可自訂選單主題配色。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
@@ -6098,7 +6122,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
-   "設定預覽縮圖的放大上限值(像素), 當預覽縮圖模糊不清時, 可提高此選項, 提高可能會降低效能。"
+   "設定預覽縮圖的放大上限值(像素), 當預覽縮圖模糊不清時可提高此選項, 提高可能會降低效能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
@@ -10647,7 +10671,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "隱藏列表連接號「-」之前的文字。\n例如: Sony - PlayStation 只顯示 PlayStation。"
+   "隱藏列表連接號「-」之前的文字, 例如「Sony-PlayStation」 只顯示「PlayStation」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -10655,7 +10679,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "截斷列表名稱開啟時, 連接號之後的文字, 依字母順序重新排序。"
+   "截斷列表名稱開啟時, 連接號之後的文字依字母順序重新排序。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
@@ -11727,7 +11751,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "設定顯示驅動程式, 使用特定的緩衝模式。"
+   "設定顯示驅動程式使用特定的緩衝模式, 正確的緩衝模式會對延遲產生很大影響。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -11739,15 +11763,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   "設定影像的最大延遲幀數, 以影像延遲幀數為代價減少按鍵輸入延遲。"
+   "開啟時依「最大幀數延遲」的設定, 以影像延遲幀數為代價減少按鍵輸入延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   "最大延遲幀數"
+   "最大幀數延遲"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
-   "設定影像的最大延遲幀數。"
+   "設定等候交換鏈結的最大延遲幀數, 用於核心處理影格後與影像顯示處理前加入延遲。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
@@ -14440,7 +14464,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
-   "管理作業系統層級的服務。"
+   "管理作業系統級別的服務。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
@@ -14531,7 +14555,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
-   "調整觸控感應區縮放大小, 適用於作業系統層級顯示使用。"
+   "調整觸控感應區縮放大小, 適用於作業系統級別的顯示比例。"
    )
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(

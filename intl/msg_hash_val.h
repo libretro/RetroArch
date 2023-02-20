@@ -2488,6 +2488,10 @@ MSG_HASH(
    "Iniciar nucli automàticament"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
+   "Comprovar si manca el microprogramari (firmware) abans de carregar"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Comprova que el microprogramari necessari estiga disponible abans de carregar el contingut."
    )
@@ -2562,6 +2566,18 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "Reiniciar després d'usar l'avançament ràpid"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+   "Reiniciar després de carregar un guardat ràpid"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+   "Reiniciar després de generar un guardat ràpid"
+   )
 
 /* Settings > Recording */
 
@@ -2572,6 +2588,10 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay */
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Ocultar superposició al connectar un comandament"
+   )
 #if defined(ANDROID)
 #endif
 MSG_HASH(
@@ -2612,6 +2632,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
    "Mostra els ajustos avançats per a usuaris experts."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "Reprendre contingut després d'usar un guardat ràpid"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   "Reprendre contingut al canviar de disc"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
@@ -2704,6 +2732,10 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+   "Recordar selecció al canviar entre seccions"
+   )
 
 /* Settings > AI Service */
 
@@ -3175,6 +3207,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Ajut"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
+   "Buscant continguts"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
+   "Què és un nucli?"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
