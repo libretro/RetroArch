@@ -762,11 +762,6 @@ static int dir_entry_compare(const void *left, const void *right)
    return (int) r - (int) l;
 }
 
-static void dir_list_prioritize(struct string_list *list)
-{
-   qsort(list->elems, list->size, sizeof(*list->elems), dir_entry_compare);
-}
-
 database_info_handle_t *database_info_dir_init(const char *dir,
       enum database_type type, retro_task_t *task,
       bool show_hidden_files)
@@ -789,7 +784,8 @@ database_info_handle_t *database_info_dir_init(const char *dir,
       return NULL;
    }
 
-   dir_list_prioritize(list);
+   /* dir list prioritize */
+   qsort(list->elems, list->size, sizeof(*list->elems), dir_entry_compare);
 
    db->status             = DATABASE_STATUS_ITERATE;
    db->type               = type;

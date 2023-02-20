@@ -30,7 +30,6 @@
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../verbosity.h"
 
 typedef struct x11_input
 {
@@ -55,14 +54,10 @@ static void *x_input_init(const char *joypad_driver)
 {
    x11_input_t *x11;
 
+   /* Currently active window is not an X11 window. Cannot use this driver. */
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
-   {
-      RARCH_ERR("Currently active window is not an X11 window. Cannot use this driver.\n");
       return NULL;
-   }
-
-   x11 = (x11_input_t*)calloc(1, sizeof(*x11));
-   if (!x11)
+   if (!(x11 = (x11_input_t*)calloc(1, sizeof(*x11))))
       return NULL;
 
    /* Borrow the active X window ... */
@@ -439,34 +434,32 @@ static void x_input_free(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
 
-   if (!x11)
-      return;
-
-   free(x11);
+   if (x11)
+      free(x11);
 }
 
 static void x_input_poll(void *data)
 {
    Window root_win;
    Window child_win;
-   x11_input_t *x11     = (x11_input_t*)data;
-   bool video_has_focus = video_driver_has_focus();
-   int root_x           = 0;
-   int root_y           = 0;
-   int win_x            = 0;
-   int win_y            = 0;
-   unsigned mask        = 0;
+   x11_input_t *x11         = (x11_input_t*)data;
+   bool video_has_focus     = video_driver_has_focus();
+   int root_x               = 0;
+   int root_y               = 0;
+   int win_x                = 0;
+   int win_y                = 0;
+   unsigned mask            = 0;
 
    /* If window loses focus, 'reset' keyboard
     * and ignore mouse input */
    if (!video_has_focus)
    {
       memset(x11->state, 0, sizeof(x11->state));
-      x11->mouse_delta_x = 0;
-      x11->mouse_delta_y = 0;
-      x11->mouse_l       = 0;
-      x11->mouse_m       = 0;
-      x11->mouse_r       = 0;
+      x11->mouse_delta_x    = 0;
+      x11->mouse_delta_y    = 0;
+      x11->mouse_l          = 0;
+      x11->mouse_m          = 0;
+      x11->mouse_r          = 0;
       return;
    }
 
@@ -477,11 +470,11 @@ static void x_input_poll(void *data)
     * window, ignore mouse input */
    if (!g_x11_entered)
    {
-      x11->mouse_delta_x = 0;
-      x11->mouse_delta_y = 0;
-      x11->mouse_l       = 0;
-      x11->mouse_m       = 0;
-      x11->mouse_r       = 0;
+      x11->mouse_delta_x    = 0;
+      x11->mouse_delta_y    = 0;
+      x11->mouse_l          = 0;
+      x11->mouse_m          = 0;
+      x11->mouse_r          = 0;
       return;
    }
 
@@ -495,9 +488,9 @@ static void x_input_poll(void *data)
       return;
 
    /* > Mouse buttons */
-   x11->mouse_l = mask & Button1Mask;
-   x11->mouse_m = mask & Button2Mask;
-   x11->mouse_r = mask & Button3Mask;
+   x11->mouse_l             = mask & Button1Mask;
+   x11->mouse_m             = mask & Button2Mask;
+   x11->mouse_r             = mask & Button3Mask;
 
    /* > Mouse pointer */
    if (!x11->mouse_grabbed)
@@ -505,25 +498,24 @@ static void x_input_poll(void *data)
       /* Mouse is not grabbed - this corresponds
        * to 'conventional' pointer input, using
        * absolute screen coordinates */
-      int mouse_last_x = x11->mouse_x;
-      int mouse_last_y = x11->mouse_y;
+      int mouse_last_x      = x11->mouse_x;
+      int mouse_last_y      = x11->mouse_y;
 
-      x11->mouse_x = win_x;
-      x11->mouse_y = win_y;
+      x11->mouse_x          = win_x;
+      x11->mouse_y          = win_y;
 
-      x11->mouse_delta_x = x11->mouse_x - mouse_last_x;
-      x11->mouse_delta_y = x11->mouse_y - mouse_last_y;
+      x11->mouse_delta_x    = x11->mouse_x - mouse_last_x;
+      x11->mouse_delta_y    = x11->mouse_y - mouse_last_y;
    }
    else
    {
       /* Mouse is grabbed - all pointer movement
        * must be considered 'relative' */
       XWindowAttributes win_attr;
-      int centre_x;
-      int centre_y;
-      int warp_x   = win_x;
-      int warp_y   = win_y;
-      bool do_warp = false;
+      int centre_x, centre_y;
+      int warp_x            = win_x;
+      int warp_y            = win_y;
+      bool do_warp          = false;
 
       /* Get dimensions/centre coordinates of
        * application window */
@@ -534,24 +526,31 @@ static void x_input_poll(void *data)
          return;
       }
 
-      centre_x = win_attr.width  >> 1;
-      centre_y = win_attr.height >> 1;
+      centre_x              = win_attr.width  >> 1;
+      centre_y              = win_attr.height >> 1;
 
       /* Get relative movement delta since last
        * poll event */
-      x11->mouse_delta_x = win_x - centre_x;
-      x11->mouse_delta_y = win_y - centre_y;
+      x11->mouse_delta_x    = win_x - centre_x;
+      x11->mouse_delta_y    = win_y - centre_y;
 
       /* Get effective 'absolute' pointer location
        * (last position + delta, bounded by current
        * application window dimensions) */
-      x11->mouse_x += x11->mouse_delta_x;
-      x11->mouse_x = (x11->mouse_x < 0)                ? 0                     : x11->mouse_x;
-      x11->mouse_x = (x11->mouse_x >= win_attr.width)  ? (win_attr.width - 1)  : x11->mouse_x;
+      x11->mouse_x         += x11->mouse_delta_x;
+      x11->mouse_y         += x11->mouse_delta_y;
 
-      x11->mouse_y += x11->mouse_delta_y;
-      x11->mouse_y = (x11->mouse_y < 0)                ? 0                     : x11->mouse_y;
-      x11->mouse_y = (x11->mouse_y >= win_attr.height) ? (win_attr.height - 1) : x11->mouse_y;
+      /* Clamp X */
+      if (x11->mouse_x < 0) 
+         x11->mouse_x       = 0;
+      if (x11->mouse_x >= win_attr.width)
+      x11->mouse_x          = (win_attr.width - 1);
+
+      /* Clamp Y */
+      if (x11->mouse_y < 0) 
+         x11->mouse_y       = 0;
+      if (x11->mouse_y >= win_attr.height)
+         x11->mouse_y       = (win_attr.height - 1);
 
       /* Hack/workaround:
        * - X11 gives absolute pointer coordinates
@@ -588,10 +587,8 @@ static void x_input_poll(void *data)
 static void x_grab_mouse(void *data, bool state)
 {
    x11_input_t *x11 = (x11_input_t*)data;
-   if (!x11)
-      return;
-
-   x11->mouse_grabbed = state;
+   if (x11)
+      x11->mouse_grabbed = state;
 }
 
 static uint64_t x_input_get_capabilities(void *data)

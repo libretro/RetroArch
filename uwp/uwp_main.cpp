@@ -829,43 +829,43 @@ extern "C" {
 
 	bool win32_get_metrics(void* data,
 		enum display_metric_types type, float* value)
-	{
-		switch (type)
-		{
-		   case DISPLAY_METRIC_PIXEL_WIDTH:
-		      *value                 = uwp_get_width();
-		      return true;
-		case DISPLAY_METRIC_PIXEL_HEIGHT:
-			  *value				 = uwp_get_height();
-		      return true;
-		case DISPLAY_METRIC_MM_WIDTH:
-		      /* 25.4 mm in an inch. */
+   {
+      switch (type)
+      {
+         case DISPLAY_METRIC_PIXEL_WIDTH:
+            *value                 = uwp_get_width();
+            return true;
+         case DISPLAY_METRIC_PIXEL_HEIGHT:
+            *value				 = uwp_get_height();
+            return true;
+         case DISPLAY_METRIC_MM_WIDTH:
+            /* 25.4 mm in an inch. */
             {
                int pixels_x        = DisplayInformation::GetForCurrentView()->ScreenWidthInRawPixels;
                int raw_dpi_x       = DisplayInformation::GetForCurrentView()->RawDpiX;
                int physical_width  = pixels_x / raw_dpi_x;
                *value              = 254 * physical_width / 10;
             }
-		      return true;
-		case DISPLAY_METRIC_MM_HEIGHT:
-		      /* 25.4 mm in an inch. */
+            return true;
+         case DISPLAY_METRIC_MM_HEIGHT:
+            /* 25.4 mm in an inch. */
             {
                int pixels_y        = DisplayInformation::GetForCurrentView()->ScreenHeightInRawPixels;
                int raw_dpi_y       = DisplayInformation::GetForCurrentView()->RawDpiY;
                int physical_height = pixels_y / raw_dpi_y;
                *value              = 254 * physical_height / 10;
             }
-		      return true;
-		case DISPLAY_METRIC_DPI:
-		      *value                 = DisplayInformation::GetForCurrentView()->RawDpiX;
-		      return true;
-		case DISPLAY_METRIC_NONE:
-		default:
-		      *value                 = 0;
-		      break;
-		}
-		return false;
-	}
+            return true;
+         case DISPLAY_METRIC_DPI:
+            *value                 = DisplayInformation::GetForCurrentView()->RawDpiX;
+            return true;
+         case DISPLAY_METRIC_NONE:
+         default:
+            *value                 = 0;
+            break;
+      }
+      return false;
+   }
 
 	void win32_check_window(void *data,
          bool *quit, bool *resize, unsigned *width, unsigned *height)
@@ -1099,50 +1099,50 @@ extern "C" {
 	}
 
 	const char* uwp_get_cpu_model_name(void)
-	{
+   {
       /* TODO/FIXME - Xbox codepath should have a hardcoded CPU model name */
-		if (is_running_on_xbox()) { }
+      if (is_running_on_xbox()) { }
       else
-		{
-			Platform::String^ cpu_id    = nullptr;
-			Platform::String^ cpu_name  = nullptr;
+      {
+         Platform::String^ cpu_id    = nullptr;
+         Platform::String^ cpu_name  = nullptr;
 
-			/* GUID_DEVICE_PROCESSOR: {97FADB10-4E33-40AE-359C-8BEF029DBDD0} */
-			Platform::String^ if_filter = L"System.Devices.InterfaceClassGuid:=\"{97FADB10-4E33-40AE-359C-8BEF029DBDD0}\"";
+         /* GUID_DEVICE_PROCESSOR: {97FADB10-4E33-40AE-359C-8BEF029DBDD0} */
+         Platform::String^ if_filter = L"System.Devices.InterfaceClassGuid:=\"{97FADB10-4E33-40AE-359C-8BEF029DBDD0}\"";
 
-			/* Enumerate all CPU DeviceInterfaces, and get DeviceInstanceID of the first one. */
-			cpu_id = RunAsyncAndCatchErrors<Platform::String^>([&]() {
-				return create_task(DeviceInformation::FindAllAsync(if_filter)).then(
-					[&](DeviceInformationCollection^ collection)
-				{
-					return dynamic_cast<Platform::String^>(
-						collection->GetAt(0)->Properties->Lookup(L"System.Devices.DeviceInstanceID"));
-				});
-			}, nullptr);
+         /* Enumerate all CPU DeviceInterfaces, and get DeviceInstanceID of the first one. */
+         cpu_id = RunAsyncAndCatchErrors<Platform::String^>([&]() {
+               return create_task(DeviceInformation::FindAllAsync(if_filter)).then(
+                     [&](DeviceInformationCollection^ collection)
+                     {
+                     return dynamic_cast<Platform::String^>(
+                           collection->GetAt(0)->Properties->Lookup(L"System.Devices.DeviceInstanceID"));
+                     });
+               }, nullptr);
 
-			if (cpu_id)
-			{
-				Platform::String^ dev_filter = L"System.Devices.DeviceInstanceID:=\"" + cpu_id + L"\"";
+         if (cpu_id)
+         {
+            Platform::String^ dev_filter = L"System.Devices.DeviceInstanceID:=\"" + cpu_id + L"\"";
 
-				/* Get the Device with the same ID as the DeviceInterface
-				 * Then get the name (description) of that Device
-				 * We have to do this because the DeviceInterface we get doesn't have a proper description. */
-				cpu_name = RunAsyncAndCatchErrors<Platform::String^>([&]() {
-					return create_task(
-						DeviceInformation::FindAllAsync(dev_filter, {}, DeviceInformationKind::Device)).then(
-							[&](DeviceInformationCollection^ collection)
-					{
-						return cpu_name = collection->GetAt(0)->Name;
-					});
-				}, nullptr);
-			}
+            /* Get the Device with the same ID as the DeviceInterface
+             * Then get the name (description) of that Device
+             * We have to do this because the DeviceInterface we get doesn't have a proper description. */
+            cpu_name = RunAsyncAndCatchErrors<Platform::String^>([&]() {
+                  return create_task(
+                        DeviceInformation::FindAllAsync(dev_filter, {}, DeviceInformationKind::Device)).then(
+                        [&](DeviceInformationCollection^ collection)
+                        {
+                        return cpu_name = collection->GetAt(0)->Name;
+                        });
+                  }, nullptr);
+         }
 
-			if (cpu_name)
+         if (cpu_name)
          {
             wcstombs(win32_cpu_model_name, cpu_name->Data(), sizeof(win32_cpu_model_name));
             return win32_cpu_model_name;
          }
-		}
+      }
       return "Unknown";
-	}
+   }
 }

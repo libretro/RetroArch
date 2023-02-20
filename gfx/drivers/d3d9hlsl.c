@@ -465,7 +465,7 @@ static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
 {
    if (chain->chain.passes->count >= 1)
    {
-      int i;
+      size_t i;
 
       d3d9_vertex_buffer_free(NULL,
             chain->chain.passes->data[0].vertex_decl);
@@ -484,7 +484,7 @@ static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
 
 static void d3d9_hlsl_destroy_resources(hlsl_renderchain_t *chain)
 {
-   int i;
+   size_t i;
 
    for (i = 0; i < TEXTURES; i++)
    {

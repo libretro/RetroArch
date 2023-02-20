@@ -340,11 +340,8 @@ static int32_t parport_joypad_button(unsigned port, uint16_t joykey)
    return 0;
 }
 
-static int16_t parport_joypad_axis(unsigned port, uint32_t joyaxis)
-{
-   /* Parport does not support analog sticks */
-   return 0;
-}
+/* TODO/FIXME - Parport does not support analog sticks */
+static int16_t parport_joypad_axis(unsigned port, uint32_t joyaxis) { return 0; }
 
 static int16_t parport_joypad_state(
       rarch_joypad_info_t *joypad_info,

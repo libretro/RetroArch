@@ -24,6 +24,7 @@
 		040A5A5722953F3300BD075F /* GCDWebUploader.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 040A5A4622953F3300BD075F /* GCDWebUploader.bundle */; };
 		040A5A5822953F3300BD075F /* GCDWebUploader.m in Sources */ = {isa = PBXBuildFile; fileRef = 040A5A4822953F3300BD075F /* GCDWebUploader.m */; };
 		04306A8724A2C600002CAEFE /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 04306A8624A2C600002CAEFE /* libz.tbd */; };
+		072DA117299B2F7800619B75 /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072DA116299B2F7800619B75 /* CoreHaptics.framework */; };
 		0FDA2A731BE1AFA800F2B5DA /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		0FDA2A761BE1AFA800F2B5DA /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		0FDA2A791BE1AFA800F2B5DA /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */; };
@@ -84,6 +85,7 @@
 		040A5A4722953F3300BD075F /* GCDWebUploader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDWebUploader.h; sourceTree = "<group>"; };
 		040A5A4822953F3300BD075F /* GCDWebUploader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDWebUploader.m; sourceTree = "<group>"; };
 		04306A8624A2C600002CAEFE /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
+		072DA116299B2F7800619B75 /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
 		0FDA2A911BE1AFA800F2B5DA /* RetroArchiOS9.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchiOS9.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RetroArch_iOS9-Info.plist"; sourceTree = SOURCE_ROOT; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
@@ -131,6 +133,7 @@
 				0FDA2A7D1BE1AFA800F2B5DA /* CoreMedia.framework in Frameworks */,
 				0FDA2A7E1BE1AFA800F2B5DA /* AVFoundation.framework in Frameworks */,
 				0FDA2A7F1BE1AFA800F2B5DA /* CoreVideo.framework in Frameworks */,
+				072DA117299B2F7800619B75 /* CoreHaptics.framework in Frameworks */,
 				0FDA2A801BE1AFA800F2B5DA /* AudioToolbox.framework in Frameworks */,
 				0FDA2A811BE1AFA800F2B5DA /* CoreAudio.framework in Frameworks */,
 				0FDA2A821BE1AFA800F2B5DA /* UIKit.framework in Frameworks */,
@@ -264,6 +267,7 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				072DA116299B2F7800619B75 /* CoreHaptics.framework */,
 				92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */,
 				92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */,
 				04306A8624A2C600002CAEFE /* libz.tbd */,

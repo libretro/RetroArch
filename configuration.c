@@ -669,7 +669,7 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_ANDROID;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL;
 #elif defined(DJGPP)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DOS;
-#elif defined(IOS)
+#elif defined(HAVE_MFI)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_MFI;
 #elif defined(HAVE_HID)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_HID;
@@ -2141,6 +2141,10 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("android_input_disconnect_workaround",   &settings->bools.android_input_disconnect_workaround, true, false, false);
 #endif
 
+#if defined(HAVE_COCOATOUCH) && defined(TARGET_OS_TV)
+   SETTING_BOOL("gcdwebserver_alert",    &settings->bools.gcdwebserver_alert, true, true, false);
+#endif
+
    *size = count;
 
    return tmp;
@@ -2569,7 +2573,7 @@ static void video_driver_default_settings(global_t *global)
  **/
 void config_set_defaults(void *data)
 {
-   int i;
+   size_t i;
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
@@ -2823,14 +2827,14 @@ void config_set_defaults(void *data)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      settings->uints.input_joypad_index[i] = i;
+      settings->uints.input_joypad_index[i] = (unsigned)i;
 #ifdef SWITCH /* Switch prefered default dpad mode */
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_LSTICK;
 #else
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_NONE;
 #endif
-      input_config_set_device(i, RETRO_DEVICE_JOYPAD);
-      settings->uints.input_mouse_index[i] = i;
+      input_config_set_device((unsigned)i, RETRO_DEVICE_JOYPAD);
+      settings->uints.input_mouse_index[i] = (unsigned)i;
    }
 
    video_driver_reset_custom_viewport(settings);

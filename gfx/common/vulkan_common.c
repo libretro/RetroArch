@@ -587,7 +587,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 #endif
             type = VULKAN_TEXTURE_STAGING;
             vkDestroyImage(device, tex.image, NULL);
-            tex.image          = (VkImage)NULL;
+            tex.image          = VK_NULL_HANDLE;
             info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
 
             buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -1387,7 +1387,7 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
       goto end;
    }
 
-   memcpy(enabled + count, exts, num_exts * sizeof(*exts));
+   memcpy((void*)(enabled + count), exts, num_exts * sizeof(*exts));
    count += num_exts;
 
    for (i = 0; i < num_optional_exts; i++)
@@ -1491,7 +1491,7 @@ static VkDevice vulkan_context_create_device_wrapper(
                ARRAY_SIZE(vulkan_device_extensions) +
                ARRAY_SIZE(vulkan_optional_device_extensions)) * sizeof(const char *));
 
-   memcpy(device_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
+   memcpy((void*)device_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
    info.ppEnabledExtensionNames = device_extensions;
 
    if (!(vulkan_find_device_extensions(gpu,
@@ -1513,7 +1513,7 @@ static VkDevice vulkan_context_create_device_wrapper(
    }
 
 end:
-   free(device_extensions);
+   free((void*)device_extensions);
    return device;
 }
 
@@ -1797,8 +1797,8 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    instance_extensions = (const char **)malloc((info.enabledExtensionCount + 3) * sizeof(const char *));
    instance_layers = (const char **)malloc((info.enabledLayerCount + 1) * sizeof(const char *));
 
-   memcpy(instance_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
-   memcpy(instance_layers, info.ppEnabledLayerNames, info.enabledLayerCount * sizeof(const char *));
+   memcpy((void*)instance_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
+   memcpy((void*)instance_layers, info.ppEnabledLayerNames, info.enabledLayerCount * sizeof(const char *));
    info.ppEnabledExtensionNames = instance_extensions;
    info.ppEnabledLayerNames = instance_layers;
 
@@ -1883,8 +1883,8 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    }
 
 end:
-   free(instance_extensions);
-   free(instance_layers);
+   free((void*)instance_extensions);
+   free((void*)instance_layers);
    return instance;
 }
 
@@ -2936,11 +2936,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkSurfaceCapabilitiesKHR surface_properties;
    VkSurfaceFormatKHR formats[256];
    VkPresentModeKHR present_modes[16];
-   VkSurfaceFormatKHR format;
    VkExtent2D swapchain_size;
    VkSwapchainKHR old_swapchain;
    VkSwapchainCreateInfoKHR info;
    VkSurfaceTransformFlagBitsKHR pre_transform;
+   VkSurfaceFormatKHR format               = { VK_FORMAT_UNDEFINED, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
    VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
    settings_t                    *settings = config_get_ptr();
@@ -3343,7 +3343,7 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
 
    if (compute_upload)
    {
-      const uint32_t ubo[3] = { dynamic->width, dynamic->height, staging->stride / 4 /* in terms of u32 words */ };
+      const uint32_t ubo[3] = { dynamic->width, dynamic->height, (uint32_t)(staging->stride / 4) /* in terms of u32 words */ };
       VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
       VkDescriptorBufferInfo buffer_info;
       VkDescriptorImageInfo image_info;

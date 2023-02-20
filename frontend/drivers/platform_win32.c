@@ -922,12 +922,11 @@ static const char *accessibility_win_language_code(const char* language)
    return "";
 }
 
-static bool terminate_win32_process(PROCESS_INFORMATION pi)
+static void terminate_win32_process(PROCESS_INFORMATION pi)
 {
    TerminateProcess(pi.hProcess,0);
    CloseHandle(pi.hProcess);
    CloseHandle(pi.hThread);
-   return true;
 }
 
 static PROCESS_INFORMATION g_pi;

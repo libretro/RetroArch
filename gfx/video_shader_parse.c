@@ -535,7 +535,7 @@ static struct video_shader_parameter *video_shader_parse_find_parameter(
       struct video_shader_parameter *params,
       unsigned num_params, const char *id)
 {
-   int i;
+   size_t i;
 
    for (i = 0; i < num_params; i++)
    {
@@ -557,7 +557,7 @@ static struct video_shader_parameter *video_shader_parse_find_parameter(
  **/
 void video_shader_resolve_parameters(struct video_shader *shader)
 {
-   int i;
+   size_t i;
    struct video_shader_parameter *param = &shader->parameters[0];
 
    shader->num_parameters = 0;
@@ -618,7 +618,7 @@ void video_shader_resolve_parameters(struct video_shader *shader)
 
          /* Even though the pass is set in the loop too, 
           * not all passes have parameters */
-         param->pass = i;
+         param->pass = (int)i;
 
          while ((shader->num_parameters < ARRAY_SIZE(shader->parameters)) 
                && (line_index < lines.size))
@@ -644,7 +644,7 @@ void video_shader_resolve_parameters(struct video_shader *shader)
             if (ret == 5)
                param->step  = 0.1f * (param->maximum - param->minimum);
 
-            param->pass     = i;
+            param->pass     = (int)i;
 
 #ifdef DEBUG
             RARCH_DBG("[Shaders]: Found #pragma parameter %s (%s) %f %f %f %f in pass %d.\n",
@@ -678,7 +678,7 @@ void video_shader_resolve_parameters(struct video_shader *shader)
 bool video_shader_load_current_parameter_values(
       config_file_t *conf, struct video_shader *shader)
 {
-   int i;
+   size_t i;
 
    if (!conf)
       return false;
@@ -781,7 +781,7 @@ static void shader_write_fbo(config_file_t *conf,
 static bool video_shader_write_root_preset(const struct video_shader *shader,
       const char *path)
 {
-   int i;
+   size_t i;
    char key[64];
    bool ret             = true;
    char *tmp            = (char*)malloc(3 * PATH_MAX_LENGTH);
@@ -817,7 +817,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
 
       formatted_num[0]                     = '\0';
 
-      snprintf(formatted_num, sizeof(formatted_num), "%u", i);
+      snprintf(formatted_num, sizeof(formatted_num), "%u", (int)i);
 
       strlcpy(key, "shader",      sizeof(key));
       strlcat(key, formatted_num, sizeof(key));
@@ -1113,7 +1113,7 @@ static bool video_shader_write_referenced_preset(
       const char *path_to_save,
       const struct video_shader *shader)
 {
-   int i;
+   size_t i;
    config_file_t *conf                    = NULL;
    config_file_t *ref_conf                = NULL;
    struct video_shader *ref_shader        = (struct video_shader*)
@@ -1562,7 +1562,7 @@ static bool video_shader_load_root_config_into_shader(
       settings_t *settings,
       struct video_shader *shader)
 {
-   int i;
+   size_t i;
    unsigned num_passes = 0;
    bool watch_files    = settings->bools.video_shader_watch_files;
 
@@ -1616,7 +1616,7 @@ static bool video_shader_load_root_config_into_shader(
 
       for (i = 0; i < shader->passes; i++)
       {
-         if (!video_shader_parse_pass(conf, &shader->pass[i], i))
+         if (!video_shader_parse_pass(conf, &shader->pass[i], (unsigned)i))
          {
             string_list_deinitialize(&file_list);
             return false;
@@ -1633,7 +1633,7 @@ static bool video_shader_load_root_config_into_shader(
    {
       for (i = 0; i < shader->passes; i++)
       {
-         if (!video_shader_parse_pass(conf, &shader->pass[i], i))
+         if (!video_shader_parse_pass(conf, &shader->pass[i], (unsigned)i))
             return false;
       }
    }
@@ -1674,7 +1674,7 @@ static bool video_shader_load_root_config_into_shader(
 static bool override_shader_values(config_file_t *override_conf,
       struct video_shader *shader)
 {
-   int i;
+   size_t i;
    bool return_val                     = false;
 
    if (!shader || !override_conf) 
@@ -1806,7 +1806,7 @@ static bool combine_shaders(struct video_shader *combined_shader,
                             struct video_shader *first_shader,
                             struct video_shader *second_shader)
 {
-   int i, j;
+   size_t i, j;
 
    for (i = 0; i < first_shader->passes && i <= GFX_MAX_SHADERS; i++)
    {

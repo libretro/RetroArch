@@ -175,10 +175,10 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
 
    if (slot->bitmap.buffer)
    {
+      unsigned y;
       const uint8_t *src    = (const uint8_t*)slot->bitmap.buffer;
       unsigned delta_width  = (handle->max_glyph_width > atlas_slot->glyph.width) ?
             (handle->max_glyph_width - atlas_slot->glyph.width) : 0;
-      unsigned x, y;
 
       /* When copying the glyph bitmap, it is
        * necessary to clear any unused regions of

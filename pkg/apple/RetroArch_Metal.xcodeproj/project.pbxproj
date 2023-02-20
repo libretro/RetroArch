@@ -40,7 +40,9 @@
 		05D7753520A567A400646447 /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
 		05D7753720A567A700646447 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
 		072976DD296284F600D6E00C /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
+		0746953A2997393000CCB7BD /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
 		079371D0296392420059A71C /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 07B634CF296391FF00B3D78D /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		0795A8C7299A095300D5035D /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
 		07B634D0296391FF00B3D78D /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 07B634CF296391FF00B3D78D /* libMoltenVK.dylib */; };
 		5061C8A41AE47E510080AE14 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5061C8A31AE47E510080AE14 /* libz.dylib */; };
 		509F0C9D1AA23AFC00619ECC /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
@@ -494,6 +496,8 @@
 		05F2874020F2BEEA00632D47 /* task_http.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_http.c; sourceTree = "<group>"; };
 		05F2874120F2BEEA00632D47 /* task_patch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_patch.c; sourceTree = "<group>"; };
 		072976DC296284F600D6E00C /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		074695362995C03900CCB7BD /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
+		0795A8C6299A095300D5035D /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
 		07B634CF296391FF00B3D78D /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = Frameworks/MoltenVK/dylib/macOS/libMoltenVK.dylib; sourceTree = "<group>"; };
 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
@@ -559,10 +563,12 @@
 			files = (
 				D27C508C2228362700113BC0 /* AudioToolbox.framework in Frameworks */,
 				072976DD296284F600D6E00C /* OpenGL.framework in Frameworks */,
+				0746953A2997393000CCB7BD /* GameController.framework in Frameworks */,
 				07B634D0296391FF00B3D78D /* libMoltenVK.dylib in Frameworks */,
 				D27C508B2228361D00113BC0 /* AVFoundation.framework in Frameworks */,
 				05A8E23C20A63CF50084ABDA /* QuartzCore.framework in Frameworks */,
 				05A8E23A20A63CED0084ABDA /* IOSurface.framework in Frameworks */,
+				0795A8C7299A095300D5035D /* CoreHaptics.framework in Frameworks */,
 				05A8E23820A63CB40084ABDA /* Metal.framework in Frameworks */,
 				05269A6220ABF20500C29F1E /* MetalKit.framework in Frameworks */,
 				5061C8A41AE47E510080AE14 /* libz.dylib in Frameworks */,
@@ -1160,7 +1166,6 @@
 				05BF821820ED69D100D95B19 /* core_info.c */,
 				05BF821B20ED69D100D95B19 /* core_info.h */,
 				05BF821920ED69D100D95B19 /* core.h */,
-				0548E2B220F976E10094A083 /* driver.c */,
 				0548E2B520F976E20094A083 /* driver.h */,
 				0548E2B320F976E10094A083 /* dynamic.c */,
 				0548E2B420F976E10094A083 /* dynamic.h */,
@@ -1385,6 +1390,8 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				0795A8C6299A095300D5035D /* CoreHaptics.framework */,
+				074695362995C03900CCB7BD /* GameController.framework */,
 				D27C50892228360D00113BC0 /* AudioToolbox.framework */,
 				07B634CF296391FF00B3D78D /* libMoltenVK.dylib */,
 				072976DC296284F600D6E00C /* OpenGL.framework */,
@@ -1701,13 +1708,13 @@
 					"$(SRCBASE)/pkg/apple/Frameworks/MoltenVK/dylib/macOS",
 					"$(PROJECT_DIR)/Frameworks/MoltenVK/dylib/macOS",
 				);
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-DHAVE_MAIN",
 					"-DHAVE_COCOA_METAL",
 					"-DHAVE_OPENGL_CORE",
 					"-DHAVE_VULKAN",
+					"-DHAVE_MFI",
 				);
 				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
@@ -1747,6 +1754,7 @@
 					"-DHAVE_COCOA_METAL",
 					"-DHAVE_OPENGL_CORE",
 					"-DHAVE_VULKAN",
+					"-DHAVE_MFI",
 				);
 				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
@@ -1811,7 +1819,10 @@
 					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				RUN_CLANG_STATIC_ANALYZER = YES;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -1842,6 +1853,8 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_UNROLL_LOOPS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -1868,6 +1881,9 @@
 					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				MTL_IGNORE_WARNINGS = YES;
 				SDKROOT = macosx;
 			};
 			name = Release;

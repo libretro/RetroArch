@@ -11715,7 +11715,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
-   "Warte auf Client ..."
+   "Auf Client warten ..."
    )
 MSG_HASH(
    MSG_ROOM_NOT_CONNECTABLE,

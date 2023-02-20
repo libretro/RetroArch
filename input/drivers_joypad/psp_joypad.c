@@ -136,41 +136,43 @@ static void psp_joypad_get_buttons(unsigned port, input_bits_t *state)
 
 static int16_t psp_joypad_axis_state(unsigned port, uint32_t joyaxis)
 {
-   int    val  = 0;
-   int    axis = -1;
-   bool is_neg = false;
-   bool is_pos = false;
-
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis   = AXIS_NEG_GET(joyaxis);
-      is_neg = true;
+      int16_t val  = 0;
+      int16_t axis = AXIS_NEG_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val = analog_state[port][0][axis];
+            break;
+         case 2:
+         case 3:
+            val = analog_state[port][1][axis - 2];
+            break;
+      }
+      if (val < 0)
+         return val;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis   = AXIS_POS_GET(joyaxis);
-      is_pos = true;
+      int16_t val  = 0;
+      int16_t axis = AXIS_POS_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val = analog_state[port][0][axis];
+            break;
+         case 2:
+         case 3:
+            val = analog_state[port][1][axis - 2];
+            break;
+      }
+      if (val > 0)
+         return val;
    }
-   else
-      return 0;
-
-   switch (axis)
-   {
-      case 0:
-      case 1:
-         val = analog_state[port][0][axis];
-         break;
-      case 2:
-      case 3:
-         val = analog_state[port][1][axis - 2];
-         break;
-   }
-
-   if (is_neg && val > 0)
-      return 0;
-   else if (is_pos && val < 0)
-      return 0;
-   return val;
+   return 0;
 }
 
 static int16_t psp_joypad_axis(unsigned port, uint32_t joyaxis)

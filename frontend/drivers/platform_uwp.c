@@ -52,16 +52,12 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
    char build_str[11]     = {0};
    bool server            = false;
    const char *arch       = "";
-
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
-   /* Windows 2000 and later */
    SYSTEM_INFO si         = {{0}};
    OSVERSIONINFOEX vi     = {0};
    vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
 
    GetSystemInfo(&si);
 
-   /* Available from NT 3.5 and Win95 */
    GetVersionEx((OSVERSIONINFO*)&vi);
 
    server = vi.wProductType != VER_NT_WORKSTATION;
@@ -83,13 +79,6 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
       default:
          break;
    }
-#else
-   OSVERSIONINFO vi = {0};
-   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-
-   /* Available from NT 3.5 and Win95 */
-   GetVersionEx(&vi);
-#endif
 
    if (major)
       *major = vi.dwMajorVersion;
@@ -203,8 +192,6 @@ enum frontend_powerstate frontend_uwp_get_powerstate(
 
 enum frontend_architecture frontend_uwp_get_arch(void)
 {
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
-   /* Windows 2000 and later */
    SYSTEM_INFO si = {{0}};
 
    GetSystemInfo(&si);
@@ -222,7 +209,6 @@ enum frontend_architecture frontend_uwp_get_arch(void)
       default:
          break;
    }
-#endif
 
    return FRONTEND_ARCH_NONE;
 }
@@ -362,36 +348,18 @@ static void frontend_uwp_env_get(int *argc, char *argv[],
 
 static uint64_t frontend_uwp_get_total_mem(void)
 {
-   /* OSes below 2000 don't have the Ex version,
-    * and non-Ex cannot work with >4GB RAM */
-#if _WIN32_WINNT >= 0x0500
    MEMORYSTATUSEX mem_info;
    mem_info.dwLength = sizeof(MEMORYSTATUSEX);
    GlobalMemoryStatusEx(&mem_info);
    return mem_info.ullTotalPhys;
-#else
-   MEMORYSTATUS mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUS);
-   GlobalMemoryStatus(&mem_info);
-   return mem_info.dwTotalPhys;
-#endif
 }
 
 static uint64_t frontend_uwp_get_free_mem(void)
 {
-   /* OSes below 2000 don't have the Ex version,
-    * and non-Ex cannot work with >4GB RAM */
-#if _WIN32_WINNT >= 0x0500
    MEMORYSTATUSEX mem_info;
    mem_info.dwLength = sizeof(MEMORYSTATUSEX);
    GlobalMemoryStatusEx(&mem_info);
-   return ((frontend_uwp_get_total_mem() - mem_info.ullAvailPhys));
-#else
-   MEMORYSTATUS mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUS);
-   GlobalMemoryStatus(&mem_info);
-   return ((frontend_uwp_get_total_mem() - mem_info.dwAvailPhys));
-#endif
+   return (mem_info.ullTotalPhys - mem_info.ullAvailPhys);
 }
 
 frontend_ctx_driver_t frontend_ctx_uwp = {

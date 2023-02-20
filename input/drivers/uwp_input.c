@@ -101,8 +101,8 @@ static int16_t uwp_input_state(
             {
                if ((binds[port][id].key < RETROK_LAST) 
                      && uwp_keyboard_pressed(binds[port][id].key)
-                     && ((id == RARCH_GAME_FOCUS_TOGGLE) || 
-                        !keyboard_mapping_blocked)
+                     && ((id == RARCH_GAME_FOCUS_TOGGLE)
+                     || !keyboard_mapping_blocked)
                      )
                   return 1;
                else if (uwp_mouse_state(port,

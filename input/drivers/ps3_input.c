@@ -73,9 +73,6 @@ static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
    CellMouseData mouse_state;
    cellMouseGetData(id, &mouse_state);
 
-   if (!ps3->mice_connected)
-      return 0;
-
    switch (id)
    {
       /* TODO: mouse wheel up/down */
@@ -107,34 +104,36 @@ static int16_t ps3_input_state(
 {
    ps3_input_t *ps3           = (ps3_input_t*)data;
 
-   if (!ps3)
-      return 0;
-
-   switch (device)
+   if (ps3)
    {
-      case RETRO_DEVICE_JOYPAD:
-      case RETRO_DEVICE_ANALOG:
-         break;
+      switch (device)
+      {
+         case RETRO_DEVICE_JOYPAD:
+         case RETRO_DEVICE_ANALOG:
+            break;
 #if 0
-      case RETRO_DEVICE_SENSOR_ACCELEROMETER:
-         switch (id)
-         {
-            /* Fixed range of 0x000 - 0x3ff */
-            case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X:
-               return ps3->accelerometer_state[port].x;
-            case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Y:
-               return ps3->accelerometer_state[port].y;
-            case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Z:
-               return ps3->accelerometer_state[port].z;
-            default:
-               break;
-         }
-         break;
+         case RETRO_DEVICE_SENSOR_ACCELEROMETER:
+            switch (id)
+            {
+               /* Fixed range of 0x000 - 0x3ff */
+               case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_X:
+                  return ps3->accelerometer_state[port].x;
+               case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Y:
+                  return ps3->accelerometer_state[port].y;
+               case RETRO_DEVICE_ID_SENSOR_ACCELEROMETER_Z:
+                  return ps3->accelerometer_state[port].z;
+               default:
+                  break;
+            }
+            break;
 #endif
 #ifdef HAVE_MOUSE
-      case RETRO_DEVICE_MOUSE:
-         return ps3_mouse_device_state(data, port, id);
+         case RETRO_DEVICE_MOUSE:
+            if (ps3->mice_connected)
+               return ps3_mouse_device_state(data, port, id);
+            break;
 #endif
+      }
    }
 
    return 0;

@@ -2429,10 +2429,6 @@ MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
    "Ttệp đã tồn tại. Đang lưu vào backup buffer"
    )
-MSG_HASH(
-   MSG_WAITING_FOR_CLIENT,
-   "Đang đợi máy khách  ..."
-   )
 
 MSG_HASH(
    MSG_AUDIO_VOLUME,

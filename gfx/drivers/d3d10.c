@@ -76,7 +76,7 @@ static void d3d10_clear_scissor(d3d10_video_t *d3d10, unsigned width, unsigned h
 #ifdef HAVE_OVERLAY
 static void d3d10_free_overlays(d3d10_video_t* d3d10)
 {
-   int i;
+   size_t i;
    for (i = 0; i < (unsigned)d3d10->overlays.count; i++)
       d3d10_release_texture(&d3d10->overlays.textures[i]);
 
@@ -146,7 +146,7 @@ static void d3d10_overlay_set_alpha(void* data, unsigned index, float mod)
 
 static bool d3d10_overlay_load(void* data, const void* image_data, unsigned num_images)
 {
-   int i;
+   size_t i;
    D3D10_BUFFER_DESC desc;
    d3d10_sprite_t*             sprites = NULL;
    d3d10_video_t*              d3d10   = (d3d10_video_t*)data;
@@ -346,7 +346,7 @@ static void d3d10_update_viewport(d3d10_video_t *d3d10, bool force_full)
 
 static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
 {
-   int i;
+   size_t i;
    if (!d3d10->shader_preset)
       return;
 
@@ -1170,7 +1170,7 @@ static void d3d10_init_history(d3d10_video_t* d3d10,
 static void d3d10_init_render_targets(d3d10_video_t* d3d10,
       unsigned width, unsigned height)
 {
-   int i;
+   size_t i;
    for (i = 0; i < d3d10->shader_preset->passes; i++)
    {
       struct video_shader_pass* pass = &d3d10->shader_preset->pass[i];

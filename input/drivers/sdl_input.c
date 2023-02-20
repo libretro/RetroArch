@@ -28,7 +28,6 @@
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
 #ifdef HAVE_SDL2
@@ -61,7 +60,8 @@ typedef struct sdl_input
 } sdl_input_t;
 
 #ifdef WEBOS
-enum sdl_webos_special_key {
+enum sdl_webos_special_key
+{
    sdl_webos_spkey_back,
    sdl_webos_spkey_size,
 };
@@ -202,14 +202,14 @@ static int16_t sdl_input_state(
                       sdl->mouse_wd = 0;
                       return 1;
                   }
-                  return 0;
+                  break;
                case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
                   if (sdl->mouse_wu != 0)
                   {
                       sdl->mouse_wu = 0;
                       return 1;
                   }
-                  return 0;
+                  break;
                case RETRO_DEVICE_ID_MOUSE_X:
                   return sdl->mouse_abs_x;
                case RETRO_DEVICE_ID_MOUSE_Y:
@@ -339,16 +339,14 @@ static void sdl2_grab_mouse(void *data, bool state)
 
    video_ptr = (sdl2_video_t*)video_driver_get_ptr();
 
-   if (!video_ptr)
-      return;
-
-   SDL_SetWindowGrab(video_ptr->window, state ? SDL_TRUE : SDL_FALSE);
+   if (video_ptr)
+      SDL_SetWindowGrab(video_ptr->window, state ? SDL_TRUE : SDL_FALSE);
 }
 #endif
 
 static void sdl_poll_mouse(sdl_input_t *sdl)
 {
-   Uint8 btn = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
+   Uint8 btn     = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
 
    SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
 
@@ -483,11 +481,11 @@ input_driver_t input_sdl = {
 SDL_bool SDL_webOSCursorVisibility(SDL_bool visible)
 {
    static SDL_bool (*fn)(SDL_bool visible) = NULL;
-   static bool dlsym_called = false;
+   static bool dlsym_called                = false;
    if (!dlsym_called)
    {
-      fn           = dlsym(RTLD_NEXT, "SDL_webOSCursorVisibility");
-      dlsym_called = true;
+      fn                                   = dlsym(RTLD_NEXT, "SDL_webOSCursorVisibility");
+      dlsym_called                         = true;
    }
    if (!fn)
    {

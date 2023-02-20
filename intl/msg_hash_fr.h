@@ -5163,7 +5163,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "Reprendre le contenu après le changement du disque"
+   "Reprendre le contenu après le changement de disques"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
@@ -6070,7 +6070,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
-   "Se souvenir de la sélection lors du changement d'onglets"
+   "Se rappeler de la sélection lors du changement d'onglets"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
@@ -11995,7 +11995,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
-   "En attente d'un client ..."
+   "En attente d'un client..."
    )
 MSG_HASH(
    MSG_ROOM_NOT_CONNECTABLE,

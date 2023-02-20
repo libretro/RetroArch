@@ -41,7 +41,7 @@ enum gfx_display_flags
    GFX_DISP_FLAG_FB_DIRTY         = (1 << 2)
 };
 
-#define GFX_SHADOW_ALPHA 0.50f
+#define GFX_SHADOW_ALPHA 0.75f
 
 /* Number of pixels corner-to-corner on a 1080p
  * display:

@@ -81,26 +81,25 @@ static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
 
 static const gfx_ctx_driver_t* rsx_get_context(rsx_t* rsx)
 {
-   const gfx_ctx_driver_t* gfx_ctx = NULL;
-   void* ctx_data = NULL;
-   settings_t* settings = config_get_ptr();
+   const gfx_ctx_driver_t* gfx_ctx      = NULL;
+   void* ctx_data                       = NULL;
+   settings_t* settings                 = config_get_ptr();
    struct retro_hw_render_callback* hwr = video_driver_get_hw_context();
-   
-   bool video_shared_context = settings->bools.video_shared_context;
-   enum gfx_ctx_api api = GFX_CTX_RSX_API;
+   bool video_shared_context            = settings->bools.video_shared_context;
+   enum gfx_ctx_api api                 = GFX_CTX_RSX_API;
 
-   rsx->shared_context_use = video_shared_context && hwr->context_type != RETRO_HW_CONTEXT_NONE;
+   rsx->shared_context_use              = video_shared_context && hwr->context_type != RETRO_HW_CONTEXT_NONE;
    
    if ((runloop_get_flags() & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT)
       && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
-      rsx->shared_context_use = true;
+      rsx->shared_context_use           = true;
 
    gfx_ctx = video_context_driver_init_first(rsx,
       settings->arrays.video_context_driver,
       api, 1, 0, rsx->shared_context_use, &ctx_data);
    
    if (ctx_data)
-      rsx->ctx_data = ctx_data;
+      rsx->ctx_data                     = ctx_data;
 
    return gfx_ctx;
 }
@@ -112,11 +111,10 @@ task_finder_data_t rsx_tasks_finder_data = {rsx_tasks_finder, NULL};
 
 static int rsx_make_buffer(rsxBuffer * buffer, u16 width, u16 height, int id)
 {
-   int depth   = sizeof(u32);
-   int pitch   = depth * width;
-   int size    = depth * width * height;
-   buffer->ptr = (uint32_t*)rsxMemalign (64, size);
-   if (!buffer->ptr)
+   int depth      = sizeof(u32);
+   int pitch      = depth * width;
+   int size       = depth * width * height;
+   if (!(buffer->ptr = (uint32_t*)rsxMemalign (64, size)))
       goto error;
 
    if (rsxAddressToOffset (buffer->ptr, &buffer->offset) != 0)
@@ -152,23 +150,45 @@ static int rsx_flip(gcmContextData *context, s32 buffer)
 
 #define GCM_LABEL_INDEX		255
 
-static void rsx_wait_rsx_idle(gcmContextData *context);
+static void rsx_wait_finish(gcmContextData *context, u32 sLabelVal)
+{
+  rsxSetWriteBackendLabel (context, GCM_LABEL_INDEX, sLabelVal);
+
+  rsxFlushBuffer (context);
+
+  while(*(vu32 *) gcmGetLabelAddress (GCM_LABEL_INDEX) != sLabelVal)
+    usleep(30);
+
+  sLabelVal++;
+}
+
+static void rsx_wait_rsx_idle(gcmContextData *context)
+{
+  u32 sLabelVal = 1;
+
+  rsxSetWriteBackendLabel (context, GCM_LABEL_INDEX, sLabelVal);
+  rsxSetWaitLabel (context, GCM_LABEL_INDEX, sLabelVal);
+
+  sLabelVal++;
+
+  rsx_wait_finish(context, sLabelVal);
+}
 
 static void rsx_wait_flip(void)
 {
-  while (gcmGetFlipStatus() != 0)
+  while(gcmGetFlipStatus() != 0)
     usleep (200);  /* Sleep, to not stress the cpu. */
   gcmResetFlipStatus();
 }
 
 static gcmContextData *rsx_init_screen(rsx_t* gcm)
 {
-   /* Context to keep track of the RSX buffer. */
-   gcmContextData              *context = NULL;
-   static gcmContextData *saved_context = NULL;
    videoState state;
    videoConfiguration vconfig;
    videoResolution res; /* Screen Resolution */
+   /* Context to keep track of the RSX buffer. */
+   gcmContextData              *context = NULL;
+   static gcmContextData *saved_context = NULL;
 
    if (!saved_context)
    {
@@ -208,7 +228,7 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
       goto error;
 
    /* Configure the buffer format to xRGB */
-   memset (&vconfig, 0, sizeof(videoConfiguration));
+   memset(&vconfig, 0, sizeof(videoConfiguration));
    vconfig.resolution = state.displayMode.resolution;
    vconfig.format     = VIDEO_BUFFER_FORMAT_XRGB;
    vconfig.pitch      = res.width * sizeof(u32);
@@ -227,7 +247,7 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
 
    gcmSetFlipMode (GCM_FLIP_VSYNC); /* Wait for VSYNC to flip */
 
-   gcm->depth_pitch = res.width * sizeof(u32);
+   gcm->depth_pitch  = res.width * sizeof(u32);
    gcm->depth_buffer = (u32 *) rsxMemalign (64, (res.height * gcm->depth_pitch));  //Beware, if was (res.height * gcm->depth_pitch)*2
    
    rsxAddressToOffset (gcm->depth_buffer, &gcm->depth_offset);
@@ -248,60 +268,37 @@ error:
    return NULL;
 }
 
-
-static void waitFinish(gcmContextData *context, u32 sLabelVal)
-{
-  rsxSetWriteBackendLabel (context, GCM_LABEL_INDEX, sLabelVal);
-
-  rsxFlushBuffer (context);
-
-  while (*(vu32 *) gcmGetLabelAddress (GCM_LABEL_INDEX) != sLabelVal)
-    usleep(30);
-
-  sLabelVal++;
-}
-
-static void rsx_wait_rsx_idle(gcmContextData *context)
-{
-  u32 sLabelVal = 1;
-
-  rsxSetWriteBackendLabel (context, GCM_LABEL_INDEX, sLabelVal);
-  rsxSetWaitLabel (context, GCM_LABEL_INDEX, sLabelVal);
-
-  sLabelVal++;
-
-  waitFinish(context, sLabelVal);
-}
-
 static void rsx_init_render_target(rsx_t *rsx, rsxBuffer * buffer, int id)
 {
+   u32 i;
    memset(&rsx->surface[id], 0, sizeof(gcmSurface));
-   rsx->surface[id].colorFormat		= GCM_SURFACE_X8R8G8B8;
-   rsx->surface[id].colorTarget		= GCM_SURFACE_TARGET_0;
-   rsx->surface[id].colorLocation[0]	= GCM_LOCATION_RSX;
-   rsx->surface[id].colorOffset[0]	= buffer->offset;
-   rsx->surface[id].colorPitch[0]	= rsx->width * 4;
-   for(u32 i=1; i < GCM_MAX_MRT_COUNT; i++) {
+   rsx->surface[id].colorFormat		      = GCM_SURFACE_X8R8G8B8;
+   rsx->surface[id].colorTarget		      = GCM_SURFACE_TARGET_0;
+   rsx->surface[id].colorLocation[0]	   = GCM_LOCATION_RSX;
+   rsx->surface[id].colorOffset[0]	      = buffer->offset;
+   rsx->surface[id].colorPitch[0]	      = rsx->width * 4;
+   for (i = 1; i < GCM_MAX_MRT_COUNT; i++)
+   {
       rsx->surface[id].colorLocation[i]	= GCM_LOCATION_RSX;
       rsx->surface[id].colorOffset[i]		= buffer->offset;
       rsx->surface[id].colorPitch[i]		= 64;
    }
-   rsx->surface[id].depthFormat		= GCM_SURFACE_ZETA_Z24S8;
-   rsx->surface[id].depthLocation	= GCM_LOCATION_RSX;
-   rsx->surface[id].depthOffset		= rsx->depth_offset;
-   rsx->surface[id].depthPitch		= rsx->width * 4;
-   rsx->surface[id].type			= GCM_SURFACE_TYPE_LINEAR;
-   rsx->surface[id].antiAlias		= GCM_SURFACE_CENTER_1;
-   rsx->surface[id].width			= rsx->width;
-   rsx->surface[id].height			= rsx->height;
-   rsx->surface[id].x				= 0;
-   rsx->surface[id].y				= 0;
+   rsx->surface[id].depthFormat		      = GCM_SURFACE_ZETA_Z24S8;
+   rsx->surface[id].depthLocation	      = GCM_LOCATION_RSX;
+   rsx->surface[id].depthOffset		      = rsx->depth_offset;
+   rsx->surface[id].depthPitch		      = rsx->width * 4;
+   rsx->surface[id].type			         = GCM_SURFACE_TYPE_LINEAR;
+   rsx->surface[id].antiAlias		         = GCM_SURFACE_CENTER_1;
+   rsx->surface[id].width			         = rsx->width;
+   rsx->surface[id].height			         = rsx->height;
+   rsx->surface[id].x				         = 0;
+   rsx->surface[id].y				         = 0;
 }
 
 static void rsx_init_vertices(rsx_t *rsx)
 {
-   rsx->vertices = (rsx_vertex_t *)rsxMemalign(128, sizeof(rsx_vertex_t) * RSX_MAX_VERTICES); /* vertices for menu and core */
-   rsx->vert_idx = 0;
+   rsx->vertices      = (rsx_vertex_t *)rsxMemalign(128, sizeof(rsx_vertex_t) * RSX_MAX_VERTICES); /* vertices for menu and core */
+   rsx->vert_idx      = 0;
 
    rsx->vertices[0].x = 0.0f;
    rsx->vertices[0].y = 0.0f;
@@ -348,15 +345,15 @@ static void rsx_init_vertices(rsx_t *rsx)
 
 static void rsx_init_shader(rsx_t *rsx)
 {
-   u32 fpsize = 0;
-   u32 vpsize = 0;
-   rsx->vp_ucode[VIDEO_SHADER_MENU] = NULL;
-   rsx->fp_ucode[VIDEO_SHADER_MENU] = NULL;
-   rsx->vpo[VIDEO_SHADER_MENU] = (rsxVertexProgram *)modern_opaque_vpo;
-   rsx->fpo[VIDEO_SHADER_MENU] = (rsxFragmentProgram *)modern_opaque_fpo;
+   u32 fpsize                                 = 0;
+   u32 vpsize                                 = 0;
+   rsx->vp_ucode[VIDEO_SHADER_MENU]           = NULL;
+   rsx->fp_ucode[VIDEO_SHADER_MENU]           = NULL;
+   rsx->vpo[VIDEO_SHADER_MENU]                = (rsxVertexProgram *)modern_opaque_vpo;
+   rsx->fpo[VIDEO_SHADER_MENU]                = (rsxFragmentProgram *)modern_opaque_fpo;
    rsxVertexProgramGetUCode(rsx->vpo[VIDEO_SHADER_MENU], &rsx->vp_ucode[VIDEO_SHADER_MENU], &vpsize);
    rsxFragmentProgramGetUCode(rsx->fpo[VIDEO_SHADER_MENU], &rsx->fp_ucode[VIDEO_SHADER_MENU], &fpsize);
-   rsx->fp_buffer[VIDEO_SHADER_MENU] = (u32 *)rsxMemalign(64, fpsize);
+   rsx->fp_buffer[VIDEO_SHADER_MENU]          = (u32 *)rsxMemalign(64, fpsize);
    if (!rsx->fp_buffer[VIDEO_SHADER_MENU])
    {
       RARCH_LOG("failed to allocate fp_buffer\n");
@@ -364,19 +361,19 @@ static void rsx_init_shader(rsx_t *rsx)
    }
    memcpy(rsx->fp_buffer[VIDEO_SHADER_MENU], rsx->fp_ucode[VIDEO_SHADER_MENU], fpsize);
    rsxAddressToOffset(rsx->fp_buffer[VIDEO_SHADER_MENU], &rsx->fp_offset[VIDEO_SHADER_MENU]);
-   rsx->proj_matrix[VIDEO_SHADER_MENU] = rsxVertexProgramGetConst(rsx->vpo[VIDEO_SHADER_MENU], "modelViewProj");
-   rsx->pos_index[VIDEO_SHADER_MENU] = rsxVertexProgramGetAttrib(rsx->vpo[VIDEO_SHADER_MENU], "position");
-   rsx->col_index[VIDEO_SHADER_MENU] = rsxVertexProgramGetAttrib(rsx->vpo[VIDEO_SHADER_MENU], "color");
-   rsx->uv_index[VIDEO_SHADER_MENU] = rsxVertexProgramGetAttrib(rsx->vpo[VIDEO_SHADER_MENU], "texcoord");
-   rsx->tex_unit[VIDEO_SHADER_MENU] = rsxFragmentProgramGetAttrib(rsx->fpo[VIDEO_SHADER_MENU], "texture");
+   rsx->proj_matrix[VIDEO_SHADER_MENU]        = rsxVertexProgramGetConst(rsx->vpo[VIDEO_SHADER_MENU], "modelViewProj");
+   rsx->pos_index[VIDEO_SHADER_MENU]          = rsxVertexProgramGetAttrib(rsx->vpo[VIDEO_SHADER_MENU], "position");
+   rsx->col_index[VIDEO_SHADER_MENU]          = rsxVertexProgramGetAttrib(rsx->vpo[VIDEO_SHADER_MENU], "color");
+   rsx->uv_index[VIDEO_SHADER_MENU]           = rsxVertexProgramGetAttrib(rsx->vpo[VIDEO_SHADER_MENU], "texcoord");
+   rsx->tex_unit[VIDEO_SHADER_MENU]           = rsxFragmentProgramGetAttrib(rsx->fpo[VIDEO_SHADER_MENU], "texture");
 
-   rsx->vp_ucode[VIDEO_SHADER_STOCK_BLEND] = NULL;
-   rsx->fp_ucode[VIDEO_SHADER_STOCK_BLEND] = NULL;
-   rsx->vpo[VIDEO_SHADER_STOCK_BLEND] = (rsxVertexProgram *)modern_alpha_blend_vpo;
-   rsx->fpo[VIDEO_SHADER_STOCK_BLEND] = (rsxFragmentProgram *)modern_alpha_blend_fpo;
+   rsx->vp_ucode[VIDEO_SHADER_STOCK_BLEND]    = NULL;
+   rsx->fp_ucode[VIDEO_SHADER_STOCK_BLEND]    = NULL;
+   rsx->vpo[VIDEO_SHADER_STOCK_BLEND]         = (rsxVertexProgram *)modern_alpha_blend_vpo;
+   rsx->fpo[VIDEO_SHADER_STOCK_BLEND]         = (rsxFragmentProgram *)modern_alpha_blend_fpo;
    rsxVertexProgramGetUCode(rsx->vpo[VIDEO_SHADER_STOCK_BLEND], &rsx->vp_ucode[VIDEO_SHADER_STOCK_BLEND], &vpsize);
    rsxFragmentProgramGetUCode(rsx->fpo[VIDEO_SHADER_STOCK_BLEND], &rsx->fp_ucode[VIDEO_SHADER_STOCK_BLEND], &fpsize);
-   rsx->fp_buffer[VIDEO_SHADER_STOCK_BLEND] = (u32 *)rsxMemalign(64, fpsize);
+   rsx->fp_buffer[VIDEO_SHADER_STOCK_BLEND]   = (u32 *)rsxMemalign(64, fpsize);
    if (!rsx->fp_buffer[VIDEO_SHADER_STOCK_BLEND])
    {
       RARCH_LOG("failed to allocate fp_buffer\n");
@@ -385,11 +382,11 @@ static void rsx_init_shader(rsx_t *rsx)
    memcpy(rsx->fp_buffer[VIDEO_SHADER_STOCK_BLEND], rsx->fp_ucode[VIDEO_SHADER_STOCK_BLEND], fpsize);
    rsxAddressToOffset(rsx->fp_buffer[VIDEO_SHADER_STOCK_BLEND], &rsx->fp_offset[VIDEO_SHADER_STOCK_BLEND]);
    rsx->proj_matrix[VIDEO_SHADER_STOCK_BLEND] = rsxVertexProgramGetConst(rsx->vpo[VIDEO_SHADER_STOCK_BLEND], "modelViewProj");
-   rsx->pos_index[VIDEO_SHADER_STOCK_BLEND] = rsxVertexProgramGetAttrib(rsx->vpo[VIDEO_SHADER_STOCK_BLEND], "position");
-   rsx->col_index[VIDEO_SHADER_STOCK_BLEND] = rsxVertexProgramGetAttrib(rsx->vpo[VIDEO_SHADER_STOCK_BLEND], "color");
-   rsx->uv_index[VIDEO_SHADER_STOCK_BLEND] = rsxVertexProgramGetAttrib(rsx->vpo[VIDEO_SHADER_STOCK_BLEND], "texcoord");
-   rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND] = rsxFragmentProgramGetAttrib(rsx->fpo[VIDEO_SHADER_STOCK_BLEND], "texture");
-   rsx->bgcolor[VIDEO_SHADER_STOCK_BLEND] = rsxFragmentProgramGetConst(rsx->fpo[VIDEO_SHADER_STOCK_BLEND], "bgcolor");
+   rsx->pos_index[VIDEO_SHADER_STOCK_BLEND]   = rsxVertexProgramGetAttrib(rsx->vpo[VIDEO_SHADER_STOCK_BLEND], "position");
+   rsx->col_index[VIDEO_SHADER_STOCK_BLEND]   = rsxVertexProgramGetAttrib(rsx->vpo[VIDEO_SHADER_STOCK_BLEND], "color");
+   rsx->uv_index[VIDEO_SHADER_STOCK_BLEND]    = rsxVertexProgramGetAttrib(rsx->vpo[VIDEO_SHADER_STOCK_BLEND], "texcoord");
+   rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND]    = rsxFragmentProgramGetAttrib(rsx->fpo[VIDEO_SHADER_STOCK_BLEND], "texture");
+   rsx->bgcolor[VIDEO_SHADER_STOCK_BLEND]     = rsxFragmentProgramGetConst(rsx->fpo[VIDEO_SHADER_STOCK_BLEND], "bgcolor");
 }
 
 static void* rsx_init(const video_info_t* video,
@@ -429,34 +426,34 @@ static void* rsx_init(const video_info_t* video,
 
    for (i = 0; i < RSX_MAX_TEXTURES; i++)
    {
-      rsx->texture[i].data = NULL;
+      rsx->texture[i].data   = NULL;
       rsx->texture[i].height = rsx->height;
-      rsx->texture[i].width = rsx->width;
+      rsx->texture[i].width  = rsx->width;
    }
-   rsx->menu_texture.data = NULL;
-   rsx->menu_texture.height = rsx->height;
-   rsx->menu_texture.width = rsx->width;
+   rsx->menu_texture.data    = NULL;
+   rsx->menu_texture.height  = rsx->height;
+   rsx->menu_texture.width   = rsx->width;
 
    rsx_init_shader(rsx);
    rsx_init_vertices(rsx);
 
    rsx_flip(rsx->context, RSX_MAX_BUFFERS - 1);
 
-   rsx->vp.x = 0;
-   rsx->vp.y = 0;
-   rsx->vp.width = rsx->width;
-   rsx->vp.height = rsx->height;
-   rsx->vp.full_width = rsx->width;
-   rsx->vp.full_height = rsx->height;
-   rsx->rgb32 = video->rgb32;
+   rsx->vp.x                 = 0;
+   rsx->vp.y                 = 0;
+   rsx->vp.width             = rsx->width;
+   rsx->vp.height            = rsx->height;
+   rsx->vp.full_width        = rsx->width;
+   rsx->vp.full_height       = rsx->height;
+   rsx->rgb32                = video->rgb32;
    video_driver_set_size(rsx->vp.width, rsx->vp.height);
    rsx_set_viewport(rsx, rsx->vp.width, rsx->vp.height, false, true);
 
    if (input && input_data)
    {
-      void *ps3input       = input_driver_init_wrap(&input_ps3, ps3_joypad.ident);
-      *input               = ps3input ? &input_ps3 : NULL;
-      *input_data          = ps3input;
+      void *ps3input         = input_driver_init_wrap(&input_ps3, ps3_joypad.ident);
+      *input                 = ps3input ? &input_ps3 : NULL;
+      *input_data            = ps3input;
    }
 
    rsx_context_bind_hw_render(rsx, true);
@@ -491,7 +488,7 @@ static void rsx_set_projection(rsx_t *rsx,
 
    if (!allow_rotate)
    {
-      rsx->mvp = rsx->mvp_no_rot;
+      rsx->mvp             = rsx->mvp_no_rot;
       return;
    }
 
@@ -505,45 +502,37 @@ static void rsx_set_projection(rsx_t *rsx,
    matrix_4x4_multiply(rsx->mvp, rot, rsx->mvp_no_rot);
 }
 
-static void rsx_update_viewport(rsx_t* rsx,
-      video_frame_info_t *video_info)
+static void rsx_update_viewport(rsx_t* rsx)
 {
-
-   unsigned temp_width                    = rsx->width;
-   unsigned temp_height                   = rsx->height;
    int x                     = 0;
    int y                     = 0;
-   float device_aspect       = ((float)temp_width) / temp_height;
-   float width               = temp_width;
-   float height              = temp_height;
+   unsigned viewport_width   = rsx->width;
+   unsigned viewport_height  = rsx->height;
+   float device_aspect       = ((float)viewport_width) / viewport_height;
    settings_t *settings      = config_get_ptr();
    bool video_scale_integer  = settings->bools.video_scale_integer;
    unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    if (video_scale_integer)
    {
-      video_viewport_get_scaled_integer(&rsx->vp, temp_width,
-            temp_height, video_driver_get_aspect_ratio(), rsx->keep_aspect);
-      width  = rsx->vp.width;
-      height = rsx->vp.height;
+      video_viewport_get_scaled_integer(&rsx->vp, viewport_width,
+            viewport_height, video_driver_get_aspect_ratio(), rsx->keep_aspect);
+      viewport_width         = rsx->vp.width;
+      viewport_height        = rsx->vp.height;
    }
    else if (rsx->keep_aspect)
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
-      if ( (rsx->rotation == ORIENTATION_VERTICAL) ||
-           (rsx->rotation == ORIENTATION_FLIPPED_ROTATED))
-      {
-         device_aspect = 1.0 / device_aspect;
-         width = temp_height;
-         height = temp_width;
-      }
+      float desired_aspect   = video_driver_get_aspect_ratio();
+
 #if defined(HAVE_MENU)
       if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         x      = video_info->custom_vp_x;
-         y      = video_info->custom_vp_y;
-         width  = video_info->custom_vp_width;
-         height = video_info->custom_vp_height;
+         const struct video_viewport *custom = video_viewport_get_custom();
+
+         x                   = custom->x;
+         y                   = custom->y;
+         viewport_width      = custom->width;
+         viewport_height     = custom->height;
       }
       else
 #endif
@@ -559,100 +548,10 @@ static void rsx_update_viewport(rsx_t* rsx,
          }
          else if (device_aspect > desired_aspect)
          {
-            delta = (desired_aspect / device_aspect - 1.0f)
+            delta           = (desired_aspect / device_aspect - 1.0f)
                / 2.0f + 0.5f;
-            x     = (int)roundf(width * (0.5f - delta));
-            width = (unsigned)roundf(2.0f * width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            y      = (int)roundf(height * (0.5f - delta));
-            height = (unsigned)roundf(2.0f * height * delta);
-         }
-
-         if ( (rsx->rotation == ORIENTATION_VERTICAL) ||
-              (rsx->rotation == ORIENTATION_FLIPPED_ROTATED)
-            )
-         {
-            x = (temp_width - width) * 0.5f;
-            y = (temp_height - height) * 0.5f;
-         }
-      }
-
-      rsx->vp.x      = x;
-      rsx->vp.y      = y;
-      rsx->vp.width  = width;
-      rsx->vp.height = height;
-   }
-   else
-   {
-      rsx->vp.x      = 0;
-      rsx->vp.y      = 0;
-      rsx->vp.width  = width;
-      rsx->vp.height = height;
-   }
-
-   rsx->vp.width      += rsx->vp.width&0x1;
-   rsx->vp.height     += rsx->vp.height&0x1;
-
-   rsx->should_resize  = false;
-}
-
-static void rsx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
-{
-   int x                     = 0;
-   int y                     = 0;
-   float device_aspect       = (float)viewport_width / viewport_height;
-   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
-   settings_t *settings      = config_get_ptr();
-   rsx_t *rsx        = (rsx_t*)data;
-   bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
-   rsx_viewport_t vp;
-
-   if (video_scale_integer && !force_full)
-   {
-      video_viewport_get_scaled_integer(&rsx->vp,
-            viewport_width, viewport_height,
-            video_driver_get_aspect_ratio(), rsx->keep_aspect);
-      viewport_width  = rsx->vp.width;
-      viewport_height = rsx->vp.height;
-   }
-   else if (rsx->keep_aspect && !force_full)
-   {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         const struct video_viewport *custom = video_viewport_get_custom();
-
-         x               = custom->x;
-         y               = custom->y;
-         viewport_width  = custom->width;
-         viewport_height = custom->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta          = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            x              = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
+            x               = (int)roundf(viewport_width * (0.5f - delta));
+            viewport_width  = (unsigned)roundf(2.0f * viewport_width * delta);
          }
          else
          {
@@ -663,36 +562,115 @@ static void rsx_set_viewport(void *data, unsigned viewport_width,
          }
       }
 
-      rsx->vp.x      = x;
-      rsx->vp.y      = y;
-      rsx->vp.width  = viewport_width;
-      rsx->vp.height = viewport_height;
+      rsx->vp.x             = x;
+      rsx->vp.y             = y;
+      rsx->vp.width         = viewport_width;
+      rsx->vp.height        = viewport_height;
    }
    else
    {
-      rsx->vp.x      = 0;
-      rsx->vp.y      = 0;
-      rsx->vp.width  = viewport_width;
-      rsx->vp.height = viewport_height;
+      rsx->vp.x             = 0;
+      rsx->vp.y             = 0;
+      rsx->vp.width         = viewport_width;
+      rsx->vp.height        = viewport_height;
    }
 
-   vp.min = 0.0f;
-   vp.max = 1.0f;
-   vp.x = rsx->vp.x;
-   vp.y = rsx->height - rsx->vp.y - rsx->vp.height;
-   vp.w = rsx->vp.width;
-   vp.h = rsx->vp.height;
-   vp.scale[0] = vp.w*0.5f;
-   vp.scale[1] = vp.h*-0.5f;
-   vp.scale[2] = (vp.max - vp.min)*0.5f;
-   vp.scale[3] = 0.0f;
-   vp.offset[0] = vp.x + vp.w*0.5f;
-   vp.offset[1] = vp.y + vp.h*0.5f;
-   vp.offset[2] = (vp.max + vp.min)*0.5f;
-   vp.offset[3] = 0.0f;
+   rsx->should_resize       = false;
+}
+
+static void rsx_set_viewport(void *data, unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate)
+{
+	int i;
+   rsx_viewport_t vp;
+   int x                     = 0;
+   int y                     = 0;
+   float device_aspect       = (float)viewport_width / viewport_height;
+   struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
+   settings_t *settings      = config_get_ptr();
+   rsx_t *rsx                = (rsx_t*)data;
+   bool video_scale_integer  = settings->bools.video_scale_integer;
+   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+
+   if (video_scale_integer && !force_full)
+   {
+      video_viewport_get_scaled_integer(&rsx->vp,
+            viewport_width, viewport_height,
+            video_driver_get_aspect_ratio(), rsx->keep_aspect);
+      viewport_width         = rsx->vp.width;
+      viewport_height        = rsx->vp.height;
+   }
+   else if (rsx->keep_aspect && !force_full)
+   {
+      float desired_aspect   = video_driver_get_aspect_ratio();
+
+#if defined(HAVE_MENU)
+      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      {
+         const struct video_viewport *custom = video_viewport_get_custom();
+
+         x                   = custom->x;
+         y                   = custom->y;
+         viewport_width      = custom->width;
+         viewport_height     = custom->height;
+      }
+      else
+#endif
+      {
+         float delta;
+         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
+         {
+            /* If the aspect ratios of screen and desired aspect
+             * ratio are sufficiently equal (floating point stuff),
+             * assume they are actually equal.
+             */
+         }
+         else if (device_aspect > desired_aspect)
+         {
+            delta            = (desired_aspect / device_aspect - 1.0f)
+               / 2.0f + 0.5f;
+            x                = (int)roundf(viewport_width * (0.5f - delta));
+            viewport_width   = (unsigned)roundf(2.0f * viewport_width * delta);
+         }
+         else
+         {
+            delta             = (device_aspect / desired_aspect - 1.0f)
+               / 2.0f + 0.5f;
+            y                 = (int)roundf(viewport_height * (0.5f - delta));
+            viewport_height   = (unsigned)roundf(2.0f * viewport_height * delta);
+         }
+      }
+
+      rsx->vp.x               = x;
+      rsx->vp.y               = y;
+      rsx->vp.width           = viewport_width;
+      rsx->vp.height          = viewport_height;
+   }
+   else
+   {
+      rsx->vp.x               = 0;
+      rsx->vp.y               = 0;
+      rsx->vp.width           = viewport_width;
+      rsx->vp.height          = viewport_height;
+   }
+
+   vp.min                     = 0.0f;
+   vp.max                     = 1.0f;
+   vp.x                       = rsx->vp.x;
+   vp.y                       = rsx->height - rsx->vp.y - rsx->vp.height;
+   vp.w                       = rsx->vp.width;
+   vp.h                       = rsx->vp.height;
+   vp.scale[0]                = vp.w *  0.5f;
+   vp.scale[1]                = vp.h * -0.5f;
+   vp.scale[2]                = (vp.max - vp.min) * 0.5f;
+   vp.scale[3]                = 0.0f;
+   vp.offset[0]               = vp.x + vp.w * 0.5f;
+   vp.offset[1]               = vp.y + vp.h * 0.5f;
+   vp.offset[2]               = (vp.max + vp.min) * 0.5f;
+   vp.offset[3]               = 0.0f;
 
    rsxSetViewport(rsx->context, vp.x, vp.y, vp.w, vp.h, vp.min, vp.max, vp.scale, vp.offset);
-   for(int i = 0; i < 8; i++)
+   for (i = 0; i < 8; i++)
       rsxSetViewportClip(rsx->context, i, rsx->width, rsx->height);
    rsxSetScissor(rsx->context, vp.x, vp.y, vp.w, vp.h);
 
@@ -701,13 +679,9 @@ static void rsx_set_viewport(void *data, unsigned viewport_width,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      rsx->vp.width  = viewport_width;
-      rsx->vp.height = viewport_height;
+      rsx->vp.width           = viewport_width;
+      rsx->vp.height          = viewport_height;
    }
-
-#if 0
-   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
-#endif
 }
 
 static unsigned rsx_wrap_type_to_enum(enum gfx_wrap_type type)
@@ -731,15 +705,13 @@ static unsigned rsx_wrap_type_to_enum(enum gfx_wrap_type type)
 static uintptr_t rsx_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
-   rsx_t *rsx = (rsx_t *)video_data;
+   rsx_t *rsx                     = (rsx_t *)video_data;
    struct texture_image *image    = (struct texture_image*)data;
-
-   rsx_texture_t *texture = (rsx_texture_t *)malloc(sizeof(rsx_texture_t));
-
-   texture->width = image->width;
-   texture->height = image->height;
-   texture->data = (u32*)rsxMemalign(128, (image->height * image->width*4));
-	 rsxAddressToOffset(texture->data, &texture->offset);
+   rsx_texture_t *texture         = (rsx_texture_t *)malloc(sizeof(rsx_texture_t));
+   texture->width                 = image->width;
+   texture->height                = image->height;
+   texture->data                  = (u32*)rsxMemalign(128, (image->height * image->width*4));
+   rsxAddressToOffset(texture->data, &texture->offset);
    rsx_load_texture_data(rsx, texture, image->pixels, image->width, image->height, image->width*4, true, false, filter_type);
 
    return (uintptr_t)texture;;
@@ -760,11 +732,13 @@ static void rsx_unload_texture(void *data,
    }
 }
 
+#if 0
+/* TODO/FIXME - commenting this code out for now until it gets used */
 static void rsx_fill_black(uint32_t *dst, uint32_t *dst_end, size_t sz)
 {
   if (sz > dst_end - dst)
     sz = dst_end - dst;
-  memset (dst, 0, sz * 4);
+  memset(dst, 0, sz * 4);
 }
 
 static void rsx_blit_buffer(
@@ -776,7 +750,6 @@ static void rsx_blit_buffer(
    uint32_t *dst_end;
    int pre_clean;
    int scale = 1, xofs = 0, yofs = 0;
-
    if (width > buffer->width)
       width = buffer->width;
    if (height > buffer->height)
@@ -784,27 +757,27 @@ static void rsx_blit_buffer(
 
    if (do_scaling)
    {
-      scale = buffer->width / width;
+      scale    = buffer->width / width;
       if (scale > buffer->height / height)
          scale = buffer->height / height;
       if (scale >= 10)
          scale = 10;
       if (scale >= 1)
       {
-         xofs = (buffer->width - width * scale) / 2;
-         yofs = (buffer->height - height * scale) / 2;
+         xofs  = (buffer->width - width * scale)   / 2;
+         yofs  = (buffer->height - height * scale) / 2;
       }
       else
          scale = 1;
    }
 
    /* TODO/FIXME: let RSX do the copy */
-   pre_clean = xofs + buffer->width * yofs;
-   dst       = buffer->ptr;
-   dst_end   = buffer->ptr + buffer->width * buffer->height;
+   pre_clean   = xofs + buffer->width * yofs;
+   dst         = buffer->ptr;
+   dst_end     = buffer->ptr + buffer->width * buffer->height;
 
    memset(dst, 0, pre_clean * 4);
-   dst      += pre_clean;
+   dst        += pre_clean;
 
    if (scale == 1)
    {
@@ -824,13 +797,14 @@ static void rsx_blit_buffer(
          const uint16_t *src = frame;
          for (i = 0; i < height; i++)
          {
-            for (int j = 0; j < width; j++, src++, dst++)
+            int j;
+            for (j = 0; j < width; j++, src++, dst++)
             {
                u16 rgb565 = *src;
-               u8 r = ((rgb565 >> 8) & 0xf8);
-               u8 g = ((rgb565 >> 3) & 0xfc);
-               u8 b = ((rgb565 << 3) & 0xfc);
-               *dst = (r<<16) | (g<<8) | b;
+               u8 r       = ((rgb565 >> 8) & 0xf8);
+               u8 g       = ((rgb565 >> 3) & 0xfc);
+               u8 b       = ((rgb565 << 3) & 0xfc);
+               *dst       = (r<<16) | (g<<8) | b;
             }
             rsx_fill_black(dst, dst_end, buffer->width - width);
 
@@ -846,14 +820,15 @@ static void rsx_blit_buffer(
          const uint32_t *src = frame;
          for (i = 0; i < height; i++)
          {
-            for (int j = 0; j < width; j++, src++)
+            int j, l;
+            for (j = 0; j < width; j++, src++)
             {
                u32 c = *src;
                for (int k = 0; k < scale; k++, dst++)
                   for (int l = 0; l < scale; l++)
                      dst[l * buffer->width] = c;
             }
-            for (int l = 0; l < scale; l++)
+            for (l = 0; l < scale; l++)
                rsx_fill_black(dst + l * buffer->width, dst_end, buffer->width - width * scale);
 
             dst += buffer->width * scale - width * scale;
@@ -865,13 +840,14 @@ static void rsx_blit_buffer(
          {
             for (int j = 0; j < width; j++, src++)
             {
+               int k, l;
                u16 rgb565 = *src;
-               u8 r = ((rgb565 >> 8) & 0xf8);
-               u8 g = ((rgb565 >> 3) & 0xfc);
-               u8 b = ((rgb565 << 3) & 0xfc);
-               u32 c = (r<<16) | (g<<8) | b;
-               for (int k = 0; k < scale; k++, dst++)
-                  for (int l = 0; l < scale; l++)
+               u8 r       = ((rgb565 >> 8) & 0xf8);
+               u8 g       = ((rgb565 >> 3) & 0xfc);
+               u8 b       = ((rgb565 << 3) & 0xfc);
+               u32 c      = (r<<16) | (g<<8) | b;
+               for (k = 0; k < scale; k++, dst++)
+                  for (l = 0; l < scale; l++)
                      dst[l * buffer->width] = c;
             }
             for (int l = 0; l < scale; l++)
@@ -886,22 +862,23 @@ static void rsx_blit_buffer(
    if (dst < dst_end)
       memset(dst, 0, 4 * (dst_end - dst));
 }
+#endif
 
 static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
       const void *frame, unsigned width, unsigned height, unsigned pitch,
       bool rgb32, bool menu, enum texture_filter_type filter_type)
 {
-   u32 mag_filter, min_filter;
    u8 *texbuffer;
-   const u8 *data = (u8 *)frame;
+   u32 mag_filter, min_filter;
+   const u8 *data         = (u8*)frame;
 
    if (!texture->data)
    {
-      texture->data = (u32 *)rsxMemalign(128, texture->height * pitch);
+      texture->data       = (u32 *)rsxMemalign(128, texture->height * pitch);
       rsxAddressToOffset(texture->data, &texture->offset);
    }
 
-   texbuffer  = (u8 *)texture->data;
+   texbuffer              = (u8*)texture->data;
    memcpy(texbuffer, data, height * pitch);
 
    texture->tex.format    = (rgb32 ? GCM_TEXTURE_FORMAT_A8R8G8B8 :
@@ -909,14 +886,14 @@ static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
    texture->tex.mipmap    = 1;
    texture->tex.dimension = GCM_TEXTURE_DIMS_2D;
    texture->tex.cubemap   = GCM_FALSE;
-   texture->tex.remap     =  ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT) |
-                              (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT) |
-                              (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT) |
-                              (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT) |
-                              (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT) |
-                              (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT) |
-                              (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT) |
-                              (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
+   texture->tex.remap     =  ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
    texture->tex.width     = width;
    texture->tex.height    = height;
    texture->tex.depth     = 1;
@@ -950,7 +927,8 @@ static void rsx_set_texture(rsx_t* rsx, rsx_texture_t *texture)
    rsxLoadTexture(rsx->context, rsx->tex_unit[VIDEO_SHADER_MENU]->index, &texture->tex);
    rsxTextureControl(rsx->context, rsx->tex_unit[VIDEO_SHADER_MENU]->index, GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
    rsxTextureFilter(rsx->context, rsx->tex_unit[VIDEO_SHADER_MENU]->index, 0, texture->min_filter, texture->mag_filter, GCM_TEXTURE_CONVOLUTION_QUINCUNX);
-   rsxTextureWrapMode(rsx->context, rsx->tex_unit[VIDEO_SHADER_MENU]->index, texture->wrap_s, texture->wrap_t, GCM_TEXTURE_CLAMP_TO_EDGE, 0, GCM_TEXTURE_ZFUNC_LESS, 0);
+   rsxTextureWrapMode(rsx->context, rsx->tex_unit[VIDEO_SHADER_MENU]->index, texture->wrap_s, texture->wrap_t, GCM_TEXTURE_CLAMP_TO_EDGE,
+         0, GCM_TEXTURE_ZFUNC_LESS, 0);
 }
 
 static void rsx_set_menu_texture(rsx_t* rsx, rsx_texture_t *texture)
@@ -958,8 +936,10 @@ static void rsx_set_menu_texture(rsx_t* rsx, rsx_texture_t *texture)
    rsxInvalidateTextureCache(rsx->context, GCM_INVALIDATE_TEXTURE);
    rsxLoadTexture(rsx->context, rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND]->index, &texture->tex);
    rsxTextureControl(rsx->context, rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND]->index, GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
-   rsxTextureFilter(rsx->context, rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND]->index, 0, texture->min_filter, texture->mag_filter, GCM_TEXTURE_CONVOLUTION_QUINCUNX);
-   rsxTextureWrapMode(rsx->context, rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND]->index, texture->wrap_s, texture->wrap_t, GCM_TEXTURE_CLAMP_TO_EDGE, 0, GCM_TEXTURE_ZFUNC_LESS, 0);
+   rsxTextureFilter(rsx->context, rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND]->index, 0, texture->min_filter,
+         texture->mag_filter, GCM_TEXTURE_CONVOLUTION_QUINCUNX);
+   rsxTextureWrapMode(rsx->context, rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND]->index, texture->wrap_s,
+         texture->wrap_t, GCM_TEXTURE_CLAMP_TO_EDGE, 0, GCM_TEXTURE_ZFUNC_LESS, 0);
 }
 
 static void rsx_clear_surface(rsx_t* rsx)
@@ -989,18 +969,19 @@ static void rsx_clear_surface(rsx_t* rsx)
                   | GCM_CLEAR_A
                   | GCM_CLEAR_S
                   | GCM_CLEAR_Z);
-   rsxSetZControl(rsx->context, 0, 1, 1);
+   rsxSetZMinMaxControl(rsx->context, 0, 1, 1);
 }
 
 static void rsx_draw_vertices(rsx_t* rsx)
 {
-   int end_vert_idx = rsx->vert_idx + 4;
+   rsx_vertex_t *vertices      = NULL;
+   int end_vert_idx            = rsx->vert_idx + 4;
    if (end_vert_idx > RSX_MAX_VERTICES)
    {
-      rsx->vert_idx = 0;
-      end_vert_idx = rsx->vert_idx + 4;
+      rsx->vert_idx            = 0;
+      end_vert_idx             = rsx->vert_idx + 4;
    }
-   rsx_vertex_t *vertices = &rsx->vertices[rsx->vert_idx];
+   vertices                    = &rsx->vertices[rsx->vert_idx];
 
    vertices[rsx->vert_idx+0].x = 0.0f;
    vertices[rsx->vert_idx+0].y = 0.0f;
@@ -1041,14 +1022,17 @@ static void rsx_draw_vertices(rsx_t* rsx)
    rsxAddressToOffset(&vertices[rsx->vert_idx].x, &rsx->pos_offset[VIDEO_SHADER_MENU]);
    rsxAddressToOffset(&vertices[rsx->vert_idx].u, &rsx->uv_offset[VIDEO_SHADER_MENU]);
    rsxAddressToOffset(&vertices[rsx->vert_idx].r, &rsx->col_offset[VIDEO_SHADER_MENU]);
-   rsx->vert_idx = end_vert_idx;
+   rsx->vert_idx               = end_vert_idx;
 
-   rsxBindVertexArrayAttrib(rsx->context, rsx->pos_index[VIDEO_SHADER_MENU]->index, 0, rsx->pos_offset[VIDEO_SHADER_MENU], sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
-   rsxBindVertexArrayAttrib(rsx->context, rsx->uv_index[VIDEO_SHADER_MENU]->index, 0, rsx->uv_offset[VIDEO_SHADER_MENU], sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
-   rsxBindVertexArrayAttrib(rsx->context, rsx->col_index[VIDEO_SHADER_MENU]->index, 0, rsx->col_offset[VIDEO_SHADER_MENU], sizeof(rsx_vertex_t), 4, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+   rsxBindVertexArrayAttrib(rsx->context, rsx->pos_index[VIDEO_SHADER_MENU]->index, 0,
+         rsx->pos_offset[VIDEO_SHADER_MENU], sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+   rsxBindVertexArrayAttrib(rsx->context, rsx->uv_index[VIDEO_SHADER_MENU]->index, 0,
+         rsx->uv_offset[VIDEO_SHADER_MENU], sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+   rsxBindVertexArrayAttrib(rsx->context, rsx->col_index[VIDEO_SHADER_MENU]->index, 0,
+         rsx->col_offset[VIDEO_SHADER_MENU], sizeof(rsx_vertex_t), 4, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
 
    rsxLoadVertexProgram(rsx->context, rsx->vpo[VIDEO_SHADER_MENU], rsx->vp_ucode[VIDEO_SHADER_MENU]);
-   rsxSetVertexProgramParameter(rsx->context, rsx->vpo[VIDEO_SHADER_MENU], rsx->proj_matrix[VIDEO_SHADER_MENU], (float *)&rsx->mvp_no_rot);
+   rsxSetVertexProgramParameter(rsx->context, rsx->vpo[VIDEO_SHADER_MENU], rsx->proj_matrix[VIDEO_SHADER_MENU], (float *)&rsx->mvp);
    rsxLoadFragmentProgramLocation(rsx->context, rsx->fpo[VIDEO_SHADER_MENU], rsx->fp_offset[VIDEO_SHADER_MENU], GCM_LOCATION_RSX);
 
    rsxClearSurface(rsx->context, GCM_CLEAR_Z);
@@ -1058,13 +1042,14 @@ static void rsx_draw_vertices(rsx_t* rsx)
 #if defined(HAVE_MENU)
 static void rsx_draw_menu_vertices(rsx_t* rsx)
 {
-   int end_vert_idx = rsx->vert_idx + 4;
+   rsx_vertex_t *vertices      = NULL;
+   int end_vert_idx            = rsx->vert_idx + 4;
    if (end_vert_idx > RSX_MAX_VERTICES)
    {
-      rsx->vert_idx = 0;
-      end_vert_idx = rsx->vert_idx + 4;
+      rsx->vert_idx            = 0;
+      end_vert_idx             = rsx->vert_idx + 4;
    }
-   rsx_vertex_t *vertices = &rsx->vertices[rsx->vert_idx];
+   vertices                    = &rsx->vertices[rsx->vert_idx];
 
    vertices[rsx->vert_idx+0].x = 0.0f;
    vertices[rsx->vert_idx+0].y = 0.0f;
@@ -1107,9 +1092,12 @@ static void rsx_draw_menu_vertices(rsx_t* rsx)
    rsxAddressToOffset(&vertices[rsx->vert_idx].r, &rsx->col_offset[VIDEO_SHADER_STOCK_BLEND]);
    rsx->vert_idx = end_vert_idx;
 
-   rsxBindVertexArrayAttrib(rsx->context, rsx->pos_index[VIDEO_SHADER_STOCK_BLEND]->index, 0, rsx->pos_offset[VIDEO_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
-   rsxBindVertexArrayAttrib(rsx->context, rsx->uv_index[VIDEO_SHADER_STOCK_BLEND]->index, 0, rsx->uv_offset[VIDEO_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
-   rsxBindVertexArrayAttrib(rsx->context, rsx->col_index[VIDEO_SHADER_STOCK_BLEND]->index, 0, rsx->col_offset[VIDEO_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 4, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+   rsxBindVertexArrayAttrib(rsx->context, rsx->pos_index[VIDEO_SHADER_STOCK_BLEND]->index, 0,
+         rsx->pos_offset[VIDEO_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+   rsxBindVertexArrayAttrib(rsx->context, rsx->uv_index[VIDEO_SHADER_STOCK_BLEND]->index, 0,
+         rsx->uv_offset[VIDEO_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+   rsxBindVertexArrayAttrib(rsx->context, rsx->col_index[VIDEO_SHADER_STOCK_BLEND]->index, 0,
+         rsx->col_offset[VIDEO_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 4, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
 
    rsxLoadVertexProgram(rsx->context, rsx->vpo[VIDEO_SHADER_STOCK_BLEND], rsx->vp_ucode[VIDEO_SHADER_STOCK_BLEND]);
    rsxSetVertexProgramParameter(rsx->context, rsx->vpo[VIDEO_SHADER_STOCK_BLEND], rsx->proj_matrix[VIDEO_SHADER_STOCK_BLEND], (float *)&rsx->mvp_no_rot);
@@ -1133,8 +1121,8 @@ static void rsx_update_screen(rsx_t* gcm)
    if (gcm->menu_frame_enable)
    {
       buffer             = &gcm->menuBuffers[gcm->menuBuffer];
-      gcm->menuBuffer = (gcm->menuBuffer+1)%RSX_MAX_MENU_BUFFERS;
-      gcm->nextBuffer = RSX_MAX_BUFFERS + gcm->menuBuffer;
+      gcm->menuBuffer    = (gcm->menuBuffer+1)%RSX_MAX_MENU_BUFFERS;
+      gcm->nextBuffer    = RSX_MAX_BUFFERS + gcm->menuBuffer;
    }
    else
    {
@@ -1144,7 +1132,7 @@ static void rsx_update_screen(rsx_t* gcm)
    }
 #else
    buffer                = &gcm->buffers[gcm->currentBuffer];
-   gcm->currentBuffer = (gcm->currentBuffer+1)%RSX_MAX_BUFFERS;
+   gcm->currentBuffer    = (gcm->currentBuffer+1)%RSX_MAX_BUFFERS;
    gcm->nextBuffer       = gcm->currentBuffer;
 #endif
 
@@ -1162,6 +1150,7 @@ static bool rsx_frame(void* data, const void* frame,
       uint64_t frame_count,
       unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
+   rsx_viewport_t vp;
    rsx_t *gcm                       = (rsx_t*)data;
 #ifdef HAVE_MENU
    bool statistics_show             = video_info->statistics_show;
@@ -1172,31 +1161,30 @@ static bool rsx_frame(void* data, const void* frame,
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active              = video_info->widgets_active;
 #endif
-   bool draw = false;
+   bool draw                        = false;
 
    if (gcm->should_resize)
-      rsx_update_viewport(gcm, video_info);
+      rsx_update_viewport(gcm);
 
-   rsx_viewport_t vp;
-   vp.min = 0.0f;
-   vp.max = 1.0f;
-   vp.x = gcm->vp.x;
-   vp.y = gcm->height - gcm->vp.y - gcm->vp.height;
-   vp.w = gcm->vp.width;
-   vp.h = gcm->vp.height;
-   vp.scale[0] = vp.w*0.5f;
-   vp.scale[1] = vp.h*-0.5f;
-   vp.scale[2] = (vp.max - vp.min)*0.5f;
-   vp.scale[3] = 0.0f;
-   vp.offset[0] = vp.x + vp.w*0.5f;
-   vp.offset[1] = vp.y + vp.h*0.5f;
-   vp.offset[2] = (vp.max + vp.min)*0.5f;
-   vp.offset[3] = 0.0f;
+   vp.min                           = 0.0f;
+   vp.max                           = 1.0f;
+   vp.x                             = gcm->vp.x;
+   vp.y                             = gcm->height - gcm->vp.y - gcm->vp.height;
+   vp.w                             = gcm->vp.width;
+   vp.h                             = gcm->vp.height;
+   vp.scale[0]                      = vp.w *  0.5f;
+   vp.scale[1]                      = vp.h * -0.5f;
+   vp.scale[2]                      = (vp.max - vp.min) * 0.5f;
+   vp.scale[3]                      = 0.0f;
+   vp.offset[0]                     = vp.x + vp.w * 0.5f;
+   vp.offset[1]                     = vp.y + vp.h * 0.5f;
+   vp.offset[2]                     = (vp.max + vp.min) * 0.5f;
+   vp.offset[3]                     = 0.0f;
    rsxSetViewport(gcm->context, vp.x, vp.y, vp.w, vp.h, vp.min, vp.max, vp.scale, vp.offset);
 
    if(frame && width && height)
    {
-      gcm->tex_index = ((gcm->tex_index + 1) % RSX_MAX_TEXTURES);
+      gcm->tex_index                = ((gcm->tex_index + 1) % RSX_MAX_TEXTURES);
       rsx_load_texture_data(gcm, &gcm->texture[gcm->tex_index], frame, width, height, pitch, gcm->rgb32, false,
                             gcm->smooth ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST);
       rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
@@ -1240,9 +1228,9 @@ static bool rsx_frame(void* data, const void* frame,
       rsx_update_screen(gcm);
       rsx_clear_surface(gcm);
    }
-   gcm->vert_idx = 0;
+   gcm->vert_idx         = 0;
    gcm->texture_vert_idx = 0;
-   gcm->font_vert_idx = 0;
+   gcm->font_vert_idx    = 0;
 
    return true;
 }
@@ -1251,7 +1239,6 @@ static void rsx_set_nonblock_state(void* data, bool toggle,
       bool a, unsigned b)
 {
    rsx_t* gcm = (rsx_t*)data;
-
    if (gcm)
       gcm->vsync = !toggle;
 }
@@ -1262,7 +1249,6 @@ static bool rsx_suppress_screensaver(void* data, bool enable) { return false; }
 
 static void rsx_free(void* data)
 {
-   int i;
    rsx_t* gcm = (rsx_t*)data;
 
    if (!gcm)
@@ -1293,9 +1279,7 @@ static void rsx_free(void* data)
      rsxFree(gcm->depth_buffer);
    if (gcm->fp_buffer)
      rsxFree(gcm->fp_buffer);
-#endif
 
-#if 0
    rsxFinish(gcm->context, 1);
    free(gcm->host_addr);
 #endif
@@ -1306,7 +1290,6 @@ static void rsx_set_texture_frame(void* data, const void* frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
    rsx_t* gcm              = (rsx_t*)data;
-
    gcm->menu_texture_alpha = alpha;
    gcm->menu_width         = width;
    gcm->menu_height        = height;
@@ -1358,7 +1341,6 @@ static void rsx_apply_state_changes(void* data)
    rsx_t* gcm = (rsx_t*)data;
    if (gcm)
       gcm->should_resize = true;
-
 }
 
 static void rsx_viewport_info(void* data, struct video_viewport* vp)
@@ -1368,6 +1350,9 @@ static void rsx_viewport_info(void* data, struct video_viewport* vp)
       *vp = gcm->vp;
 }
 
+#if 0
+/* TODO/FIXME - does this function have to be hooked up as a function callback
+ * or can it be removed? */
 static void rsx_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
@@ -1377,6 +1362,7 @@ static void rsx_set_osd_msg(void *data,
    if (gcm && gcm->msg_rendering_enabled)
       font_driver_render_msg(data, msg, params, font);
 }
+#endif
 
 static uint32_t rsx_get_flags(void *data) { return 0; }
 
@@ -1384,28 +1370,28 @@ static const video_poke_interface_t rsx_poke_interface = {
    rsx_get_flags,
    rsx_load_texture,
    rsx_unload_texture,
-   NULL,
-   NULL,
+   NULL,                                  /* set_video_mode   */
+   NULL,                                  /* get_refresh_rate */
    rsx_set_filtering,
    NULL,                                  /* get_video_output_size */
    NULL,                                  /* get_video_output_prev */
    NULL,                                  /* get_video_output_next */
    NULL,                                  /* get_current_framebuffer */
-   NULL,
+   NULL,                                  /* get_proc_address */
    rsx_set_aspect_ratio,
    rsx_apply_state_changes,
    rsx_set_texture_frame,
    rsx_set_texture_enable,
    font_driver_render_msg,
-   NULL,                   /* show_mouse */
-   NULL,                   /* grab_mouse_toggle */
-   NULL,                   /* get_current_shader */
-   NULL,                   /* get_current_software_framebuffer */
-   NULL,                   /* get_hw_render_interface */
-   NULL,                   /* set_hdr_max_nits */
-   NULL,                   /* set_hdr_paper_white_nits */
-   NULL,                   /* set_hdr_contrast */
-   NULL                    /* set_hdr_expand_gamut */
+   NULL,                                  /* show_mouse */
+   NULL,                                  /* grab_mouse_toggle */
+   NULL,                                  /* get_current_shader */
+   NULL,                                  /* get_current_software_framebuffer */
+   NULL,                                  /* get_hw_render_interface */
+   NULL,                                  /* set_hdr_max_nits */
+   NULL,                                  /* set_hdr_paper_white_nits */
+   NULL,                                  /* set_hdr_contrast */
+   NULL                                   /* set_hdr_expand_gamut */
 };
 
 static void rsx_get_poke_interface(void* data,

@@ -26,6 +26,7 @@
 
 #include "wayland_common.h"
 #include "../../frontend/frontend_driver.h"
+#include "../../verbosity.h"
 
 #define SPLASH_SHM_NAME "retroarch-wayland-vk-splash"
 

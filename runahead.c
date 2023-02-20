@@ -1559,7 +1559,7 @@ static INLINE bool preempt_ptr_input_dirty(preempt_t *preempt,
 static INLINE void preempt_input_poll(preempt_t *preempt,
       runloop_state_t *runloop_st, settings_t *settings)
 {
-   int p;
+   size_t p;
    int16_t joypad_state;
    retro_input_state_t state_cb   = input_driver_state_wrapper;
    unsigned max_users             = settings->uints.input_max_users;
@@ -1588,7 +1588,7 @@ static INLINE void preempt_input_poll(preempt_t *preempt,
 
             /* Check requested analogs */
             if (     preempt->analog_mask[p]
-                  && preempt_analog_input_dirty(preempt, state_cb, p, mapped_port))
+                  && preempt_analog_input_dirty(preempt, state_cb, (unsigned)p, mapped_port))
                runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
             break;
          case RETRO_DEVICE_MOUSE:
@@ -1596,7 +1596,7 @@ static INLINE void preempt_input_poll(preempt_t *preempt,
          case RETRO_DEVICE_POINTER:
             /* Check full device state */
             if (preempt_ptr_input_dirty(
-                  preempt, state_cb, preempt->ptr_dev[p], p, mapped_port))
+                  preempt, state_cb, preempt->ptr_dev[p], (unsigned)p, mapped_port))
                runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
             break;
          default:

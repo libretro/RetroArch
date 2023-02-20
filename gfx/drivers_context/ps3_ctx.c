@@ -29,8 +29,10 @@
 #include "../../verbosity.h"
 #include <defines/ps3_defines.h>
 #include "../../frontend/frontend_driver.h"
+#if defined(HAVE_PSGL)
 #include "../common/gl_common.h"
 #include "../common/gl2_common.h"
+#endif
 
 typedef struct gfx_ctx_ps3_data
 {
@@ -53,23 +55,6 @@ static void gfx_ctx_ps3_get_resolution(unsigned idx,
 
    *width  = resolution.width;
    *height = resolution.height;
-}
-
-static float gfx_ctx_ps3_get_aspect_ratio(void *data)
-{
-   CellVideoOutState videoState;
-
-   cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &videoState);
-
-   switch (videoState.displayMode.aspect)
-   {
-      case CELL_VIDEO_OUT_ASPECT_4_3:
-         return 4.0f/3.0f;
-      case CELL_VIDEO_OUT_ASPECT_16_9:
-         break;
-   }
-
-   return 16.0f/9.0f;
 }
 
 static void gfx_ctx_ps3_get_available_resolutions(void)
@@ -151,13 +136,17 @@ static void gfx_ctx_ps3_set_swap_interval(void *data, int interval)
 static void gfx_ctx_ps3_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
+#if defined(HAVE_PSGL)
    gl2_t *gl = data;
+#endif
 
    *quit    = false;
    *resize  = false;
 
+#if defined(HAVE_PSGL)
    if (gl->should_resize)
       *resize = true;
+#endif
 }
 
 static bool gfx_ctx_ps3_has_focus(void *data) { return true; }
@@ -190,7 +179,7 @@ static void *gfx_ctx_ps3_init(void *video_driver)
    PSGLdeviceParameters params;
    PSGLinitOptions options;
 #endif
-   global_t *global = global_get_ptr();
+   global_t        *global = global_get_ptr();
    gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
       calloc(1, sizeof(gfx_ctx_ps3_data_t));
 
@@ -207,9 +196,9 @@ static void *gfx_ctx_ps3_init(void *video_driver)
    psglInit(&options);
 
    params.enable            =
-      PSGL_DEVICE_PARAMETERS_COLOR_FORMAT |
-      PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT |
-      PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE;
+        PSGL_DEVICE_PARAMETERS_COLOR_FORMAT
+      | PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT
+      | PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE;
    params.colorFormat       = GL_ARGB_SCE;
    params.depthFormat       = GL_NONE;
    params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
@@ -301,13 +290,13 @@ static bool gfx_ctx_ps3_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    ps3_api = api;
-
+#ifdef HAVE_PSGL
    if (
-         api == GFX_CTX_OPENGL_API ||
-         api == GFX_CTX_OPENGL_ES_API
+            (api == GFX_CTX_OPENGL_API)
+         || (api == GFX_CTX_OPENGL_ES_API)
       )
       return true;
-
+#endif
    return false;
 }
 
@@ -329,8 +318,8 @@ static void gfx_ctx_ps3_get_video_output_size(void *data,
    }
    else
    {
-      global->console.screen.pal_enable = false;
-      global->console.screen.pal60_enable = false;
+      global->console.screen.pal_enable      = false;
+      global->console.screen.pal60_enable    = false;
    }
 }
 

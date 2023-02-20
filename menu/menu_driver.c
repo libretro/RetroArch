@@ -8063,7 +8063,9 @@ int generic_menu_entry_action(
          }
          else /* MENU_SCROLL_START_LETTER */
          {
+#ifdef HAVE_AUDIOMIXER
             size_t selection_old = menu_st->selection_ptr;
+#endif
             if (
                      menu_st->scroll.index_size
                   && menu_st->selection_ptr != 0
@@ -8121,7 +8123,9 @@ int generic_menu_entry_action(
          {
             if (menu_st->scroll.index_size)
             {
+#ifdef HAVE_AUDIOMIXER
                size_t selection_old = menu_st->selection_ptr;
+#endif
                if (menu_st->selection_ptr == menu_st->scroll.index_list[menu_st->scroll.index_size - 1])
                   menu_st->selection_ptr = selection_buf_size - 1;
                else

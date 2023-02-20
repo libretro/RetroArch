@@ -598,7 +598,7 @@ static int udev_input_add_device(udev_input_t *udev,
             mouse = 1;
 
             if (!test_bit(keycaps, BTN_MOUSE))
-               RARCH_LOG("[udev]: Waring REL pointer device (%s) has no mouse button\n",device->ident);
+               RARCH_DBG("[udev]: Waring REL pointer device (%s) has no mouse button\n",device->ident);
          }
       }
 
@@ -617,7 +617,7 @@ static int udev_input_add_device(udev_input_t *udev,
                device->mouse.abs = 2;
 
             if ( !test_bit(keycaps, BTN_TOUCH) && !test_bit(keycaps, BTN_MOUSE) )
-               RARCH_LOG("[udev]: Warning ABS pointer device (%s) has no touch or mouse button\n",device->ident);
+               RARCH_DBG("[udev]: Warning ABS pointer device (%s) has no touch or mouse button\n",device->ident);
          }
       }
 
@@ -631,7 +631,7 @@ static int udev_input_add_device(udev_input_t *udev,
 
          if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) == -1)
          {
-            RARCH_LOG("[udev]: ABS pointer device (%s) Failed to get ABS_X parameters \n",device->ident);
+            RARCH_DBG("[udev]: ABS pointer device (%s) Failed to get ABS_X parameters \n",device->ident);
             goto end;
          }
 
@@ -640,7 +640,7 @@ static int udev_input_add_device(udev_input_t *udev,
 
          if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) == -1)
          {
-            RARCH_LOG("[udev]: ABS pointer device (%s) Failed to get ABS_Y parameters \n",device->ident);
+            RARCH_DBG("[udev]: ABS pointer device (%s) Failed to get ABS_Y parameters \n",device->ident);
             goto end;
          }
          device->mouse.y_min = absinfo.minimum;
@@ -942,37 +942,29 @@ static int16_t udev_lightgun_aiming_state(
 {
 
    const int edge_detect       = 32700;
-   bool inside                 = false;
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
-
    udev_input_mouse_t *mouse   = udev_get_mouse(udev, port);
 
-   if (!mouse)
-      return 0;
-
-   res_x = udev_mouse_get_pointer_x(mouse, false);
-   res_y = udev_mouse_get_pointer_y(mouse, false);
-
-   inside =    (res_x >= -edge_detect)
-            && (res_y >= -edge_detect)
-            && (res_x <= edge_detect)
-            && (res_y <= edge_detect);
-
-   switch ( id )
+   if (mouse)
    {
-      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+      bool inside              = false;
+      int16_t res_x            = udev_mouse_get_pointer_x(mouse, false);
+      int16_t res_y            = udev_mouse_get_pointer_y(mouse, false);
+
+      switch ( id )
+      {
+         case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
             return res_x;
-         break;
-      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+         case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
             return res_y;
-         break;
-      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-         return !inside;
-      default:
-         break;
+         case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+            inside =   (res_x >= -edge_detect)
+               &&      (res_y >= -edge_detect)
+               &&      (res_x <=  edge_detect)
+               &&      (res_y <=  edge_detect);
+            return !inside;
+         default:
+            break;
+      }
    }
 
    return 0;
@@ -983,37 +975,37 @@ static int16_t udev_mouse_state(udev_input_t *udev,
 {
    udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
 
-   if (!mouse)
-      return 0;
-
-   if (id != RETRO_DEVICE_ID_MOUSE_X && id != RETRO_DEVICE_ID_MOUSE_Y &&
-         udev_pointer_is_off_window(udev))
-      return 0;
-
-   switch (id)
+   if (mouse)
    {
-      case RETRO_DEVICE_ID_MOUSE_X:
-         return screen ? udev->pointer_x : udev_mouse_get_x(mouse);
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         return screen ? udev->pointer_y : udev_mouse_get_y(mouse);
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return mouse->l;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return mouse->r;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         return mouse->m;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-         return mouse->b4;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-         return mouse->b5;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         return mouse->wu;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         return mouse->wd;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         return mouse->whu;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         return mouse->whd;
+      if (id != RETRO_DEVICE_ID_MOUSE_X && id != RETRO_DEVICE_ID_MOUSE_Y &&
+            udev_pointer_is_off_window(udev))
+         return 0;
+
+      switch (id)
+      {
+         case RETRO_DEVICE_ID_MOUSE_X:
+            return screen ? udev->pointer_x : udev_mouse_get_x(mouse);
+         case RETRO_DEVICE_ID_MOUSE_Y:
+            return screen ? udev->pointer_y : udev_mouse_get_y(mouse);
+         case RETRO_DEVICE_ID_MOUSE_LEFT:
+            return mouse->l;
+         case RETRO_DEVICE_ID_MOUSE_RIGHT:
+            return mouse->r;
+         case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+            return mouse->m;
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+            return mouse->b4;
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+            return mouse->b5;
+         case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+            return mouse->wu;
+         case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+            return mouse->wd;
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+            return mouse->whu;
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+            return mouse->whd;
+      }
    }
 
    return 0;
@@ -1063,20 +1055,19 @@ static int16_t udev_pointer_state(udev_input_t *udev,
 {
    udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
 
-   if (!mouse)
-      return 0;
-
-   switch (id)
+   if (mouse)
    {
-      case RETRO_DEVICE_ID_POINTER_X:
-         return udev_mouse_get_pointer_x(mouse, screen);
-      case RETRO_DEVICE_ID_POINTER_Y:
-         return udev_mouse_get_pointer_y(mouse, screen);
-      case RETRO_DEVICE_ID_POINTER_PRESSED:
-         if(mouse->abs == 1)
-           return mouse->pp;
-         else
-           return mouse->l;
+      switch (id)
+      {
+         case RETRO_DEVICE_ID_POINTER_X:
+            return udev_mouse_get_pointer_x(mouse, screen);
+         case RETRO_DEVICE_ID_POINTER_Y:
+            return udev_mouse_get_pointer_y(mouse, screen);
+         case RETRO_DEVICE_ID_POINTER_PRESSED:
+            if(mouse->abs == 1)
+               return mouse->pp;
+            return mouse->l;
+      }
    }
    return 0;
 }
@@ -1371,12 +1362,10 @@ static bool open_devices(udev_input_t *udev,
 
          if (fd != -1)
          {
-            int check = udev_input_add_device(udev, type, devnode, cb);
-            if (check == 0)
-               RARCH_LOG("[udev]: udev_input_add_device error : %s (%s).\n",
+            if (udev_input_add_device(udev, type, devnode, cb) == 0)
+               RARCH_DBG("[udev]: udev_input_add_device error : %s (%s).\n",
                      devnode, strerror(errno));
 
-            (void)check;
             close(fd);
          }
       }
@@ -1406,8 +1395,7 @@ static void *udev_input_init(const char *joypad_driver)
    if (!udev->udev)
       goto error;
 
-   udev->monitor = udev_monitor_new_from_netlink(udev->udev, "udev");
-   if (udev->monitor)
+   if ((udev->monitor = udev_monitor_new_from_netlink(udev->udev, "udev")))
    {
       udev_monitor_filter_add_match_subsystem_devtype(udev->monitor, "input", NULL);
       udev_monitor_enable_receiving(udev->monitor);
@@ -1467,7 +1455,7 @@ static void *udev_input_init(const char *joypad_driver)
    {
       if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
       {
-         RARCH_LOG("[udev]: Mouse #%u: \"%s\" (%s) %s\n",
+         RARCH_DBG("[udev]: Mouse #%u: \"%s\" (%s) %s\n",
             mouse,
             udev->devices[i]->ident,
             udev->devices[i]->mouse.abs ? "ABS" : "REL",
@@ -1478,7 +1466,7 @@ static void *udev_input_init(const char *joypad_driver)
        }
        else
        {
-          RARCH_LOG("[udev]: Keyboard #%u: \"%s\" (%s).\n",
+          RARCH_DBG("[udev]: Keyboard #%u: \"%s\" (%s).\n",
              keyboard,
              udev->devices[i]->ident,
              udev->devices[i]->devnode);

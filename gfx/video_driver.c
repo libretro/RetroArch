@@ -905,8 +905,12 @@ bool video_driver_monitor_adjust_system_rates(
       unsigned video_swap_interval,
       double input_fps)
 {
-   float target_video_sync_rate = timing_skew_hz
-         / (float)video_swap_interval;
+   settings_t *settings         = config_get_ptr();
+   float target_video_sync_rate = timing_skew_hz;
+
+   /* Divide target rate only when using Auto interval */
+   if (settings->uints.video_swap_interval == 0)
+      target_video_sync_rate /= (float)video_swap_interval;
 
    if (!vrr_runloop_enable)
    {
@@ -917,8 +921,8 @@ bool video_driver_monitor_adjust_system_rates(
       if (timing_skew <= audio_max_timing_skew)
          return true;
       RARCH_LOG("[Video]: Timings deviate too much. Will not adjust."
-            " (Display = %.2f Hz, Game = %.2f Hz)\n",
-            video_refresh_rate,
+            " (Target = %.2f Hz, Game = %.2f Hz)\n",
+            target_video_sync_rate,
             (float)input_fps);
    }
    return input_fps <= target_video_sync_rate;

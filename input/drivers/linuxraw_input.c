@@ -50,7 +50,7 @@ static void *linuxraw_input_init(const char *joypad_driver)
 
    if (linux_terminal_grab_stdin(NULL))
    {
-      RARCH_WARN("stdin is already used for content loading. Cannot use stdin for input.\n");
+      RARCH_DBG("stdin is already used for content loading. Cannot use stdin for input.\n");
       return NULL;
    }
 

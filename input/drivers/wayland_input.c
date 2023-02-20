@@ -56,8 +56,6 @@ static bool wayland_context_gettouchpos(
       unsigned id,
       unsigned* touch_x, unsigned* touch_y)
 {
-   if (id >= MAX_TOUCHES)
-       return false;
    *touch_x = wl->active_touch_positions[id].x;
    *touch_y = wl->active_touch_positions[id].y;
    return wl->active_touch_positions[id].active;
@@ -99,48 +97,44 @@ static void input_wl_poll(void *data)
 static int16_t input_wl_touch_state(input_ctx_wayland_data_t *wl,
       unsigned idx, unsigned id, bool screen)
 {
-   struct video_viewport vp;
-
-   bool inside                 = false;
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
-
-   vp.x                        = 0;
-   vp.y                        = 0;
-   vp.width                    = 0;
-   vp.height                   = 0;
-   vp.full_width               = 0;
-   vp.full_height              = 0;
-
-   if (idx > MAX_TOUCHES)
-      return 0;
-
-   if (!(video_driver_translate_coord_viewport_wrap(&vp,
-         wl->touches[idx].x, wl->touches[idx].y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y)))
-      return 0;
-
-   if (screen)
+   if (idx <= MAX_TOUCHES)
    {
-      res_x = res_screen_x;
-      res_y = res_screen_y;
-   }
+      struct video_viewport vp;
+      int16_t res_x               = 0;
+      int16_t res_y               = 0;
+      int16_t res_screen_x        = 0;
+      int16_t res_screen_y        = 0;
 
-   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
+      vp.x                        = 0;
+      vp.y                        = 0;
+      vp.width                    = 0;
+      vp.height                   = 0;
+      vp.full_width               = 0;
+      vp.full_height              = 0;
 
-   if (!inside)
-      return 0;
+      if (video_driver_translate_coord_viewport_wrap(&vp,
+                  wl->touches[idx].x, wl->touches[idx].y,
+                  &res_x, &res_y, &res_screen_x, &res_screen_y))
+      {
+         if (screen)
+         {
+            res_x = res_screen_x;
+            res_y = res_screen_y;
+         }
 
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_POINTER_X:
-         return res_x;
-      case RETRO_DEVICE_ID_POINTER_Y:
-         return res_y;
-      case RETRO_DEVICE_ID_POINTER_PRESSED:
-         return wl->touches[idx].active;
+         if ((res_x >= -0x7fff) && (res_y >= -0x7fff)) /* Inside? */
+         {
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_X:
+                  return res_x;
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  return res_y;
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  return wl->touches[idx].active;
+            }
+         }
+      }
    }
 
    return 0;
@@ -294,7 +288,6 @@ static int16_t input_wl_state(
             struct video_viewport vp;
             bool screen                 =
                (device == RARCH_DEVICE_POINTER_SCREEN);
-            bool inside                 = false;
             int16_t res_x               = 0;
             int16_t res_y               = 0;
             int16_t res_screen_x        = 0;
@@ -311,28 +304,39 @@ static int16_t input_wl_state(
                         wl->mouse.x, wl->mouse.y,
                         &res_x, &res_y, &res_screen_x, &res_screen_y))
             {
-               if (screen)
-               {
-                  res_x = res_screen_x;
-                  res_y = res_screen_y;
-               }
-
-               inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
-
                switch (id)
                {
                   case RETRO_DEVICE_ID_POINTER_X:
-                     if (inside)
-                        return res_x;
+                     {
+                        if (screen)
+                        {
+                           res_x = res_screen_x;
+                           res_y = res_screen_y;
+                        }
+                        if ((res_x >= -0x7fff) && (res_y >= -0x7fff)) /* Inside? */
+                           return res_x;
+                     }
                      break;
                   case RETRO_DEVICE_ID_POINTER_Y:
-                     if (inside)
-                        return res_y;
+                     {
+                        if (screen)
+                        {
+                           res_x = res_screen_x;
+                           res_y = res_screen_y;
+                        }
+                        if ((res_x >= -0x7fff) && (res_y >= -0x7fff)) /* Inside? */
+                           return res_y;
+                     }
                      break;
                   case RETRO_DEVICE_ID_POINTER_PRESSED:
                      return wl->mouse.left;
                   case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                     return !inside;
+                     if (screen)
+                     {
+                        res_x = res_screen_x;
+                        res_y = res_screen_y;
+                     }
+                     return (!((res_x >= -0x7fff) && (res_y >= -0x7fff)));
                   default:
                      break;
                }
@@ -340,43 +344,38 @@ static int16_t input_wl_state(
          }
          break;
       case RARCH_DEVICE_POINTER_SCREEN:
-         if (port > 0 ) return 0; /* TODO: support pointers on additional ports */
+         if (port > 0)
+            break; /* TODO: support pointers on additional ports */
          if (idx < MAX_TOUCHES)
             return input_wl_touch_state(wl, idx, id,
                   device == RARCH_DEVICE_POINTER_SCREEN);
          break;
       case RETRO_DEVICE_LIGHTGUN:
-         if (port > 0 ) return 0; /* TODO: support lightguns on additional ports */
+         if (port > 0)
+            break;                                      /* TODO: support lightguns on additional ports */
          switch (id)
          {
-            case RETRO_DEVICE_ID_LIGHTGUN_X: /* TODO: migrate to RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X */
-               return wl->mouse.delta_x; /* deprecated relative coordinates */
-            case RETRO_DEVICE_ID_LIGHTGUN_Y: /* TODO: migrate to RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y */
-               return wl->mouse.delta_y; /* deprecated relative coordinates */
-            case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN: /* TODO: implement this status check*/
-               return 0;
+            case RETRO_DEVICE_ID_LIGHTGUN_X:            /* TODO: migrate to RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X */
+               return wl->mouse.delta_x;                /* deprecated relative coordinates */
+            case RETRO_DEVICE_ID_LIGHTGUN_Y:            /* TODO: migrate to RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y */
+               return wl->mouse.delta_y;                /* deprecated relative coordinates */
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                return wl->mouse.left;
-            case RETRO_DEVICE_ID_LIGHTGUN_RELOAD: /* forced/faked off-screen shot */
+            case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:       /* forced/faked off-screen shot */
                return wl->mouse.middle;
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_A: /* TODO */
-               return 0;
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_B: /* TODO */
-               return 0;
             case RETRO_DEVICE_ID_LIGHTGUN_START:
                return wl->mouse.right;
             case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
                return wl->mouse.left && wl->mouse.right;
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_C: /* TODO */
-               return 0;
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP: /* TODO */
-               return 0;
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN: /* TODO */
-               return 0;
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT: /* TODO */
-               return 0;
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT: /* TODO */
-               return 0;
+            case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN: /* TODO: implement this status check*/
+            case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:        /* TODO */
+            case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:        /* TODO */
+            case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:        /* TODO */
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:      /* TODO */
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:    /* TODO */
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:    /* TODO */
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:   /* TODO */
+               break;
          }
          break;
    }

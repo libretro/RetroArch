@@ -258,53 +258,53 @@ static int32_t gx_joypad_button(unsigned port, uint16_t joykey)
 
 static void gx_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-	if (port < DEFAULT_MAX_PADS)
+   if (port < DEFAULT_MAX_PADS)
    {
-		BITS_COPY16_PTR( state, pad_state[port] );
-	}
+      BITS_COPY16_PTR( state, pad_state[port] );
+   }
    else
-		BIT256_CLEAR_ALL_PTR(state);
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t gx_joypad_axis_state(unsigned port, uint32_t joyaxis)
 {
-   int val     = 0;
-   int axis    = -1;
-   bool is_neg = false;
-   bool is_pos = false;
-
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis     = AXIS_NEG_GET(joyaxis);
-      is_neg   = true;
+      int16_t val  = 0;
+      int16_t axis = AXIS_NEG_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val   = analog_state[port][0][axis];
+            break;
+         case 2:
+         case 3:
+            val   = analog_state[port][1][axis - 2];
+            break;
+      }
+      if (val < 0)
+         return val;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis     = AXIS_POS_GET(joyaxis);
-      is_pos   = true;
+      int16_t val  = 0;
+      int16_t axis = AXIS_POS_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val   = analog_state[port][0][axis];
+            break;
+         case 2:
+         case 3:
+            val   = analog_state[port][1][axis - 2];
+            break;
+      }
+      if (val > 0)
+         return val;
    }
-
-   switch (axis)
-   {
-      case 0:
-         val   = analog_state[port][0][0];
-         break;
-      case 1:
-         val   = analog_state[port][0][1];
-         break;
-      case 2:
-         val   = analog_state[port][1][0];
-         break;
-      case 3:
-         val   = analog_state[port][1][1];
-         break;
-   }
-
-   if (is_neg && val > 0)
-      val      = 0;
-   else if (is_pos && val < 0)
-      val      = 0;
-   return val;
+   return 0;
 }
 
 static int16_t gx_joypad_axis(unsigned port, uint32_t joyaxis)

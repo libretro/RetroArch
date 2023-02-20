@@ -3488,10 +3488,6 @@ MSG_HASH(
    "Çekirdeği Otomatik Başlatır"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-   "Yüklemeden Önce Eksik Ürün Yazılımını Denetle"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "İçerik yüklemeyi denemeden önce gerekli tüm üretici yazılımının olup olmadığını kontrol edin."
    )
@@ -3975,24 +3971,12 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "İleri Sarmadan Sonra Sıfırla"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
    "Hızlı ileri sarmadan sonra kare süresi sayacını sıfırlayın."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Durum Yüklemesinden Sonra Sıfırla"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
    "Bir durum yükledikten sonra kare süresi sayacını sıfırlayın."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Durumu Kaydettikten Sonra Sıfırla"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
@@ -4167,10 +4151,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    "Menü içindeyken kaplamayı gizleyin ve menüden çıkarken tekrar gösterin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-   "Oyun Kumandası Bağlandığında Kaplamayı Gizle"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -4750,16 +4730,8 @@ MSG_HASH(
    "Menü etkinse, o anda çalışan içeriği duraklatın."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Durum Kayıtlarını Kullandıktan Sonra İçeriğe Devam Et"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
    "Bir durumu kaydettikten veya yükledikten sonra menüyü otomatik olarak kapatın ve içeriği sürdürün. Bunu devre dışı bırakmak, çok yavaş cihazlarda durum kaydı performansını artırabilir."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "Diskleri Değiştirdikten Sonra İçeriğe Devam Et"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
@@ -5659,10 +5631,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    "Uzun menü metnini görüntülerken yumuşak kaydırma animasyonunu kullanın. Küçük bir eksi performans etkisi vardır."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
-   "Sekmeleri Değiştirirken Seçimi Hatırla"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
@@ -11101,14 +11069,6 @@ MSG_HASH(
    "İçerik Yükleniyor"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
-   "İçerik Taranıyor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
-   "Çekirdek Nedir?"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
    "Hata Ayıklama Bilgisi Gönder"
    )
@@ -11472,10 +11432,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "Disk sistem tepsisi ayarı"
-   )
-MSG_HASH(
-   MSG_WAITING_FOR_CLIENT,
-   "İstemci bekleniyor..."
    )
 MSG_HASH(
    MSG_ROOM_NOT_CONNECTABLE,

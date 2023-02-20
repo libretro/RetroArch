@@ -320,9 +320,9 @@
       [self _drawCore];
       [self _drawMenu:video_info];
 
-      id<MTLRenderCommandEncoder> rce = _context.rce;
-
 #ifdef HAVE_OVERLAY
+       id<MTLRenderCommandEncoder> rce = _context.rce;
+
       if (_overlay.enabled)
       {
          [_context resetRenderViewport:_overlay.fullscreen ? kFullscreenViewport : kVideoViewport];

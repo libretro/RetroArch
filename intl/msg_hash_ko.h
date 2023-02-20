@@ -11887,7 +11887,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
-   "클라이언트 대기..."
+   "클라이언트를 기다리고 있습니다..."
    )
 MSG_HASH(
    MSG_ROOM_NOT_CONNECTABLE,
