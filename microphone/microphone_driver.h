@@ -20,12 +20,8 @@
 #include <lists/string_list.h>
 #include <retro_common_api.h>
 #include <libretro.h>
-#include "audio/audio_defines.h"
 #include "audio/audio_resampler.h"
 #include "queues/fifo_queue.h"
-
-#define MAX_SUPPORTED_MICROPHONES 8
-#define MICROPHONE_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 
 enum microphone_driver_state_flags
 {
@@ -627,21 +623,6 @@ microphone_driver_state_t *microphone_state_get_ptr(void);
  * and target platform.
  */
 extern microphone_driver_t *microphone_drivers[];
-
-
-/**
- * TODO
- * @param stats
- * @return
- */
-bool microphone_compute_buffer_statistics(audio_statistics_t *stats);
-
-float microphone_driver_monitor_adjust_system_rates(
-      double input_sample_rate,
-      double input_fps,
-      float video_refresh_rate,
-      unsigned video_swap_interval,
-      float audio_max_timing_skew);
 
 bool microphone_driver_init_internal(void *settings_data);
 
