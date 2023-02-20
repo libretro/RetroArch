@@ -59,33 +59,23 @@ static bool apple_gamecontroller_available(void)
     return true;
 }
 
-static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
+static void apple_gamecontroller_joypad_poll_internal(GCController *controller, uint32_t slot)
 {
-    uint32_t slot, pause, select, l3, r3;
-    uint32_t *buttons;
-    if (!controller)
-        return;
-
-    slot                  = (uint32_t)controller.playerIndex;
-    /* If we have not assigned a slot to this controller yet, ignore it. */
-    if (slot >= MAX_USERS)
-        return;
-
-    /* retain the values from the paused controller handler and pass them through */
-    /* The menu button can be pressed/unpressed 
+    uint32_t *buttons        = &mfi_buttons[slot];
+    /* Retain the values from the paused controller handler and pass them through.
+     * The menu button can be pressed/unpressed 
      * like any other button in iOS 13,
      * so no need to passthrough anything */
     if (@available(iOS 13, *))
-        *buttons          = 0;
+        *buttons             = 0;
     else
     {
-       buttons            = &mfi_buttons[slot];
        /* Use the paused controller handler for iOS versions below 13 */
-       pause              = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_START);
-       select             = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
-       l3                 = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_L3);
-       r3                 = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_R3);
-       *buttons           = 0 | pause | select | l3 | r3;
+       uint32_t pause        = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_START);
+       uint32_t select       = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+       uint32_t l3           = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_L3);
+       uint32_t r3           = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_R3);
+       *buttons              = 0 | pause | select | l3 | r3;
     }
     memset(mfi_axes[slot], 0, sizeof(mfi_axes[0]));
 
@@ -117,7 +107,7 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
         if (@available(iOS 13, tvOS 13, macOS 10.15, *))
         {
             /* Support "Options" button present in PS4 / XBox One controllers */
-            *buttons         |= gp.buttonOptions.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+            *buttons             |= gp.buttonOptions.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
             if (@available(iOS 14, tvOS 14, macOS 11, *))
                 *buttons         |= gp.buttonHome.pressed ? (1 << RARCH_FIRST_CUSTOM_BIND) : 0;
 
@@ -141,10 +131,10 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
         }
 #endif
 
-        mfi_axes[slot][0]     = gp.leftThumbstick.xAxis.value * 32767.0f;
-        mfi_axes[slot][1]     = gp.leftThumbstick.yAxis.value * 32767.0f;
-        mfi_axes[slot][2]     = gp.rightThumbstick.xAxis.value * 32767.0f;
-        mfi_axes[slot][3]     = gp.rightThumbstick.yAxis.value * 32767.0f;
+        mfi_axes[slot][0]         = gp.leftThumbstick.xAxis.value * 32767.0f;
+        mfi_axes[slot][1]         = gp.leftThumbstick.yAxis.value * 32767.0f;
+        mfi_axes[slot][2]         = gp.rightThumbstick.xAxis.value * 32767.0f;
+        mfi_axes[slot][3]         = gp.rightThumbstick.yAxis.value * 32767.0f;
 
     }
 
@@ -154,17 +144,16 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
     else if (controller.gamepad)
     {
         GCGamepad *gp = (GCGamepad *)controller.gamepad;
-
-        *buttons |= gp.dpad.up.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
-        *buttons |= gp.dpad.down.pressed     ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
-        *buttons |= gp.dpad.left.pressed     ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
-        *buttons |= gp.dpad.right.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-        *buttons |= gp.buttonA.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_B)     : 0;
-        *buttons |= gp.buttonB.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_A)     : 0;
-        *buttons |= gp.buttonX.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_Y)     : 0;
-        *buttons |= gp.buttonY.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_X)     : 0;
-        *buttons |= gp.leftShoulder.pressed  ? (1 << RETRO_DEVICE_ID_JOYPAD_L)     : 0;
-        *buttons |= gp.rightShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R)     : 0;
+        *buttons     |= gp.dpad.up.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+        *buttons     |= gp.dpad.down.pressed     ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+        *buttons     |= gp.dpad.left.pressed     ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+        *buttons     |= gp.dpad.right.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+        *buttons     |= gp.buttonA.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_B)     : 0;
+        *buttons     |= gp.buttonB.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_A)     : 0;
+        *buttons     |= gp.buttonX.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_Y)     : 0;
+        *buttons     |= gp.buttonY.pressed       ? (1 << RETRO_DEVICE_ID_JOYPAD_X)     : 0;
+        *buttons     |= gp.leftShoulder.pressed  ? (1 << RETRO_DEVICE_ID_JOYPAD_L)     : 0;
+        *buttons     |= gp.rightShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R)     : 0;
     }
 #pragma clang diagnostic pop
 }
@@ -175,7 +164,12 @@ static void apple_gamecontroller_joypad_poll(void)
         return;
 
     for (GCController *controller in [GCController controllers])
-        apple_gamecontroller_joypad_poll_internal(controller);
+    {
+       /* If we have not assigned a slot to this controller yet, ignore it. */
+       int32_t slot = controller ? controller.playerIndex : 0;
+       if (slot != -1 && (slot < MAX_USERS))
+          apple_gamecontroller_joypad_poll_internal(controller, slot);
+    }
 }
 
 static void apple_gamecontroller_joypad_register(GCController *controller)
