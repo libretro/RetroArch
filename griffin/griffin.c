@@ -930,6 +930,7 @@ RSOUND
 AUDIO
 ============================================================ */
 #include "../audio/audio_driver.c"
+#include "../microphone/microphone_driver.c"
 #if defined(__PS3__) || defined (__PSL1GHT__)
 #include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
@@ -958,6 +959,7 @@ AUDIO
 
 #if defined(HAVE_SDL2)
 #include "../audio/drivers/sdl_audio.c"
+#include "../microphone/drivers/sdl_microphone.c"
 #endif
 
 #ifdef HAVE_DSOUND
@@ -966,6 +968,8 @@ AUDIO
 
 #ifdef HAVE_WASAPI
 #include "../audio/drivers/wasapi.c"
+#include "../microphone/drivers/wasapi.c"
+#include "../audio/common/wasapi.c"
 #endif
 
 #ifdef HAVE_SL
@@ -977,7 +981,11 @@ AUDIO
 #include "../audio/drivers/alsa_qsa.c"
 #else
 #include "../audio/drivers/alsa.c"
+#include "../audio/common/alsa.c"
 #include "../audio/drivers/alsathread.c"
+#include "../audio/common/alsathread.c"
+#include "../microphone/drivers/alsa.c"
+#include "../microphone/drivers/alsathread.c"
 #endif
 #endif
 
