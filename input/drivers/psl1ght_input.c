@@ -48,7 +48,7 @@
 #endif
 
 #ifdef HAVE_MOUSE
-#define MAX_MICE 7
+#define PS3_MAX_MICE 7
 #endif
 
 /* TODO/FIXME -
@@ -857,7 +857,7 @@ static void* ps3_input_init(const char *joypad_driver)
    }
 
 #ifdef HAVE_MOUSE
-   ioMouseInit(MAX_MICE);
+   ioMouseInit(PS3_MAX_MICE);
 #endif
 #ifdef HAVE_LIGHTGUN
    ps3->gem_init      = 0;
