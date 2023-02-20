@@ -89,10 +89,17 @@ struct resampler_data
    size_t input_frames;
 
    /**
-    * The size of data_out, in frames (\em not bytes or samples);
+    * The number of frames (\em not bytes or samples) that the resampler produced.
+    * This value is set by the resampler.
+    * The resampler may not provide the same number of frames with each use,
+    * so be sure to check this value.
     */
    size_t output_frames;
 
+   /**
+    * The desired ratio of output_frames to input_frames.
+    * This value is used to determine the number of frames written to \c data_out.
+    */
    double ratio;
 };
 
