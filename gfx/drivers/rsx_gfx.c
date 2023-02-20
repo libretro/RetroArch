@@ -73,11 +73,169 @@
    if (rsx->shared_context_use) \
       rsx->ctx_driver->bind_hw_render(rsx->ctx_data, enable)
 
-static void rsx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate);
 static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
       const void *frame, unsigned width, unsigned height, unsigned pitch,
-      bool rgb32, bool menu, enum texture_filter_type filter_type);
+      bool rgb32, bool menu, enum texture_filter_type filter_type)
+{
+   u8 *texbuffer;
+   u32 mag_filter, min_filter;
+   const u8 *data         = (u8*)frame;
+
+   if (!texture->data)
+   {
+      texture->data       = (u32 *)rsxMemalign(128, texture->height * pitch);
+      rsxAddressToOffset(texture->data, &texture->offset);
+   }
+
+   texbuffer              = (u8*)texture->data;
+   memcpy(texbuffer, data, height * pitch);
+
+   texture->tex.format    = (rgb32 ? GCM_TEXTURE_FORMAT_A8R8G8B8 :
+         menu ? GCM_TEXTURE_FORMAT_A4R4G4B4 : GCM_TEXTURE_FORMAT_R5G6B5) | GCM_TEXTURE_FORMAT_LIN;
+   texture->tex.mipmap    = 1;
+   texture->tex.dimension = GCM_TEXTURE_DIMS_2D;
+   texture->tex.cubemap   = GCM_FALSE;
+   texture->tex.remap     =  ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
+   texture->tex.width     = width;
+   texture->tex.height    = height;
+   texture->tex.depth     = 1;
+   texture->tex.location  = GCM_LOCATION_RSX;
+   texture->tex.pitch     = pitch;
+   texture->tex.offset    = texture->offset;
+
+   switch (filter_type)
+   {
+      case TEXTURE_FILTER_MIPMAP_NEAREST:
+      case TEXTURE_FILTER_NEAREST:
+         min_filter       = GCM_TEXTURE_NEAREST;
+         mag_filter       = GCM_TEXTURE_NEAREST;
+         break;
+      case TEXTURE_FILTER_MIPMAP_LINEAR:
+      case TEXTURE_FILTER_LINEAR:
+         default:
+         min_filter       = GCM_TEXTURE_LINEAR;
+         mag_filter       = GCM_TEXTURE_LINEAR;
+         break;
+   }
+   texture->min_filter    = min_filter;
+   texture->mag_filter    = mag_filter;
+   texture->wrap_s        = GCM_TEXTURE_CLAMP_TO_EDGE;
+   texture->wrap_t        = GCM_TEXTURE_CLAMP_TO_EDGE;
+}
+
+static void rsx_set_viewport(void *data, unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate)
+{
+	int i;
+   rsx_viewport_t vp;
+   int x                     = 0;
+   int y                     = 0;
+   float device_aspect       = (float)viewport_width / viewport_height;
+   struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
+   settings_t *settings      = config_get_ptr();
+   rsx_t *rsx                = (rsx_t*)data;
+   bool video_scale_integer  = settings->bools.video_scale_integer;
+   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+
+   if (video_scale_integer && !force_full)
+   {
+      video_viewport_get_scaled_integer(&rsx->vp,
+            viewport_width, viewport_height,
+            video_driver_get_aspect_ratio(), rsx->keep_aspect);
+      viewport_width         = rsx->vp.width;
+      viewport_height        = rsx->vp.height;
+   }
+   else if (rsx->keep_aspect && !force_full)
+   {
+      float desired_aspect   = video_driver_get_aspect_ratio();
+
+#if defined(HAVE_MENU)
+      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      {
+         const struct video_viewport *custom = video_viewport_get_custom();
+
+         x                   = custom->x;
+         y                   = custom->y;
+         viewport_width      = custom->width;
+         viewport_height     = custom->height;
+      }
+      else
+#endif
+      {
+         float delta;
+         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
+         {
+            /* If the aspect ratios of screen and desired aspect
+             * ratio are sufficiently equal (floating point stuff),
+             * assume they are actually equal.
+             */
+         }
+         else if (device_aspect > desired_aspect)
+         {
+            delta            = (desired_aspect / device_aspect - 1.0f)
+               / 2.0f + 0.5f;
+            x                = (int)roundf(viewport_width * (0.5f - delta));
+            viewport_width   = (unsigned)roundf(2.0f * viewport_width * delta);
+         }
+         else
+         {
+            delta             = (device_aspect / desired_aspect - 1.0f)
+               / 2.0f + 0.5f;
+            y                 = (int)roundf(viewport_height * (0.5f - delta));
+            viewport_height   = (unsigned)roundf(2.0f * viewport_height * delta);
+         }
+      }
+
+      rsx->vp.x               = x;
+      rsx->vp.y               = y;
+      rsx->vp.width           = viewport_width;
+      rsx->vp.height          = viewport_height;
+   }
+   else
+   {
+      rsx->vp.x               = 0;
+      rsx->vp.y               = 0;
+      rsx->vp.width           = viewport_width;
+      rsx->vp.height          = viewport_height;
+   }
+
+   vp.min                     = 0.0f;
+   vp.max                     = 1.0f;
+   vp.x                       = rsx->vp.x;
+   vp.y                       = rsx->height - rsx->vp.y - rsx->vp.height;
+   vp.w                       = rsx->vp.width;
+   vp.h                       = rsx->vp.height;
+   vp.scale[0]                = vp.w *  0.5f;
+   vp.scale[1]                = vp.h * -0.5f;
+   vp.scale[2]                = (vp.max - vp.min) * 0.5f;
+   vp.scale[3]                = 0.0f;
+   vp.offset[0]               = vp.x + vp.w * 0.5f;
+   vp.offset[1]               = vp.y + vp.h * 0.5f;
+   vp.offset[2]               = (vp.max + vp.min) * 0.5f;
+   vp.offset[3]               = 0.0f;
+
+   rsxSetViewport(rsx->context, vp.x, vp.y, vp.w, vp.h, vp.min, vp.max, vp.scale, vp.offset);
+   for (i = 0; i < 8; i++)
+      rsxSetViewportClip(rsx->context, i, rsx->width, rsx->height);
+   rsxSetScissor(rsx->context, vp.x, vp.y, vp.w, vp.h);
+
+   rsx_set_projection(rsx, &ortho, allow_rotate);
+
+   /* Set last backbuffer viewport. */
+   if (!force_full)
+   {
+      rsx->vp.width           = viewport_width;
+      rsx->vp.height          = viewport_height;
+   }
+}
+
 
 static const gfx_ctx_driver_t* rsx_get_context(rsx_t* rsx)
 {
@@ -117,11 +275,11 @@ static int rsx_make_buffer(rsxBuffer * buffer, u16 width, u16 height, int id)
    if (!(buffer->ptr = (uint32_t*)rsxMemalign (64, size)))
       goto error;
 
-   if (rsxAddressToOffset (buffer->ptr, &buffer->offset) != 0)
+   if (rsxAddressToOffset(buffer->ptr, &buffer->offset) != 0)
       goto error;
 
    /* Register the display buffer with the RSX */
-   if (gcmSetDisplayBuffer (id, buffer->offset, pitch, width, height) != 0)
+   if (gcmSetDisplayBuffer(id, buffer->offset, pitch, width, height) != 0)
       goto error;
 
    buffer->width  = width;
@@ -152,11 +310,11 @@ static int rsx_flip(gcmContextData *context, s32 buffer)
 
 static void rsx_wait_finish(gcmContextData *context, u32 sLabelVal)
 {
-  rsxSetWriteBackendLabel (context, GCM_LABEL_INDEX, sLabelVal);
+  rsxSetWriteBackendLabel(context, GCM_LABEL_INDEX, sLabelVal);
 
-  rsxFlushBuffer (context);
+  rsxFlushBuffer(context);
 
-  while(*(vu32 *) gcmGetLabelAddress (GCM_LABEL_INDEX) != sLabelVal)
+  while(*(vu32 *)gcmGetLabelAddress(GCM_LABEL_INDEX) != sLabelVal)
     usleep(30);
 
   sLabelVal++;
@@ -166,8 +324,8 @@ static void rsx_wait_rsx_idle(gcmContextData *context)
 {
   u32 sLabelVal = 1;
 
-  rsxSetWriteBackendLabel (context, GCM_LABEL_INDEX, sLabelVal);
-  rsxSetWaitLabel (context, GCM_LABEL_INDEX, sLabelVal);
+  rsxSetWriteBackendLabel(context, GCM_LABEL_INDEX, sLabelVal);
+  rsxSetWaitLabel(context, GCM_LABEL_INDEX, sLabelVal);
 
   sLabelVal++;
 
@@ -177,7 +335,7 @@ static void rsx_wait_rsx_idle(gcmContextData *context)
 static void rsx_wait_flip(void)
 {
   while(gcmGetFlipStatus() != 0)
-    usleep (200);  /* Sleep, to not stress the cpu. */
+    usleep(200);  /* Sleep, to not stress the cpu. */
   gcmResetFlipStatus();
 }
 
@@ -194,7 +352,7 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
    {
       /* Allocate a 1Mb buffer, alligned to a 1Mb boundary                          
        * to be our shared IO memory with the RSX. */
-      void *host_addr = memalign (1024*1024, HOST_SIZE);
+      void *host_addr = memalign(1024*1024, HOST_SIZE);
 
       if (!host_addr)
          goto error;
@@ -204,9 +362,9 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
 #ifdef NV40TCL_RENDER_ENABLE
       /* There was an api breakage on 2020-07-10, let's
        * workaround this by using one of the new defines */
-      rsxInit (&context, CB_SIZE, HOST_SIZE, host_addr);
+      rsxInit(&context, CB_SIZE, HOST_SIZE, host_addr);
 #else
-      context = rsxInit (CB_SIZE, HOST_SIZE, host_addr);
+      context = rsxInit(CB_SIZE, HOST_SIZE, host_addr);
 #endif
       if (!context)
          goto error;
@@ -216,7 +374,7 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
       context = saved_context;
 
    /* Get the state of the display */
-   if (videoGetState (0, 0, &state) != 0)
+   if (videoGetState(0, 0, &state) != 0)
       goto error;
 
    /* Make sure display is enabled */
@@ -224,7 +382,7 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
       goto error;
 
    /* Get the current resolution */
-   if (videoGetResolution (state.displayMode.resolution, &res) != 0)
+   if (videoGetResolution(state.displayMode.resolution, &res) != 0)
       goto error;
 
    /* Configure the buffer format to xRGB */
@@ -239,18 +397,18 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
 
    rsx_wait_rsx_idle(context);
 
-   if (videoConfigure (0, &vconfig, NULL, 0) != 0)
+   if (videoConfigure(0, &vconfig, NULL, 0) != 0)
       goto error;
 
-   if (videoGetState (0, 0, &state) != 0)
+   if (videoGetState(0, 0, &state) != 0)
       goto error;
 
-   gcmSetFlipMode (GCM_FLIP_VSYNC); /* Wait for VSYNC to flip */
+   gcmSetFlipMode(GCM_FLIP_VSYNC); /* Wait for VSYNC to flip */
 
    gcm->depth_pitch  = res.width * sizeof(u32);
-   gcm->depth_buffer = (u32 *) rsxMemalign (64, (res.height * gcm->depth_pitch));  //Beware, if was (res.height * gcm->depth_pitch)*2
+   gcm->depth_buffer = (u32 *)rsxMemalign(64, (res.height * gcm->depth_pitch));  /* Beware, if was (res.height * gcm->depth_pitch) * 2 */
    
-   rsxAddressToOffset (gcm->depth_buffer, &gcm->depth_offset);
+   rsxAddressToOffset(gcm->depth_buffer, &gcm->depth_offset);
 
    gcmResetFlipStatus();
 
@@ -259,10 +417,10 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
 error:
 #if 0
    if (context)
-      rsxFinish (context, 0);
+      rsxFinish(context, 0);
 
    if (gcm->host_addr)
-      free (gcm->host_addr);
+      free(gcm->host_addr);
 #endif
 
    return NULL;
@@ -578,112 +736,6 @@ static void rsx_update_viewport(rsx_t* rsx)
    rsx->should_resize       = false;
 }
 
-static void rsx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
-{
-	int i;
-   rsx_viewport_t vp;
-   int x                     = 0;
-   int y                     = 0;
-   float device_aspect       = (float)viewport_width / viewport_height;
-   struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
-   settings_t *settings      = config_get_ptr();
-   rsx_t *rsx                = (rsx_t*)data;
-   bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
-
-   if (video_scale_integer && !force_full)
-   {
-      video_viewport_get_scaled_integer(&rsx->vp,
-            viewport_width, viewport_height,
-            video_driver_get_aspect_ratio(), rsx->keep_aspect);
-      viewport_width         = rsx->vp.width;
-      viewport_height        = rsx->vp.height;
-   }
-   else if (rsx->keep_aspect && !force_full)
-   {
-      float desired_aspect   = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         const struct video_viewport *custom = video_viewport_get_custom();
-
-         x                   = custom->x;
-         y                   = custom->y;
-         viewport_width      = custom->width;
-         viewport_height     = custom->height;
-      }
-      else
-#endif
-      {
-         float delta;
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta            = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            x                = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width   = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta             = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            y                 = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height   = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      rsx->vp.x               = x;
-      rsx->vp.y               = y;
-      rsx->vp.width           = viewport_width;
-      rsx->vp.height          = viewport_height;
-   }
-   else
-   {
-      rsx->vp.x               = 0;
-      rsx->vp.y               = 0;
-      rsx->vp.width           = viewport_width;
-      rsx->vp.height          = viewport_height;
-   }
-
-   vp.min                     = 0.0f;
-   vp.max                     = 1.0f;
-   vp.x                       = rsx->vp.x;
-   vp.y                       = rsx->height - rsx->vp.y - rsx->vp.height;
-   vp.w                       = rsx->vp.width;
-   vp.h                       = rsx->vp.height;
-   vp.scale[0]                = vp.w *  0.5f;
-   vp.scale[1]                = vp.h * -0.5f;
-   vp.scale[2]                = (vp.max - vp.min) * 0.5f;
-   vp.scale[3]                = 0.0f;
-   vp.offset[0]               = vp.x + vp.w * 0.5f;
-   vp.offset[1]               = vp.y + vp.h * 0.5f;
-   vp.offset[2]               = (vp.max + vp.min) * 0.5f;
-   vp.offset[3]               = 0.0f;
-
-   rsxSetViewport(rsx->context, vp.x, vp.y, vp.w, vp.h, vp.min, vp.max, vp.scale, vp.offset);
-   for (i = 0; i < 8; i++)
-      rsxSetViewportClip(rsx->context, i, rsx->width, rsx->height);
-   rsxSetScissor(rsx->context, vp.x, vp.y, vp.w, vp.h);
-
-   rsx_set_projection(rsx, &ortho, allow_rotate);
-
-   /* Set last backbuffer viewport. */
-   if (!force_full)
-   {
-      rsx->vp.width           = viewport_width;
-      rsx->vp.height          = viewport_height;
-   }
-}
-
 static unsigned rsx_wrap_type_to_enum(enum gfx_wrap_type type)
 {
    switch (type)
@@ -863,63 +915,6 @@ static void rsx_blit_buffer(
       memset(dst, 0, 4 * (dst_end - dst));
 }
 #endif
-
-static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
-      const void *frame, unsigned width, unsigned height, unsigned pitch,
-      bool rgb32, bool menu, enum texture_filter_type filter_type)
-{
-   u8 *texbuffer;
-   u32 mag_filter, min_filter;
-   const u8 *data         = (u8*)frame;
-
-   if (!texture->data)
-   {
-      texture->data       = (u32 *)rsxMemalign(128, texture->height * pitch);
-      rsxAddressToOffset(texture->data, &texture->offset);
-   }
-
-   texbuffer              = (u8*)texture->data;
-   memcpy(texbuffer, data, height * pitch);
-
-   texture->tex.format    = (rgb32 ? GCM_TEXTURE_FORMAT_A8R8G8B8 :
-         menu ? GCM_TEXTURE_FORMAT_A4R4G4B4 : GCM_TEXTURE_FORMAT_R5G6B5) | GCM_TEXTURE_FORMAT_LIN;
-   texture->tex.mipmap    = 1;
-   texture->tex.dimension = GCM_TEXTURE_DIMS_2D;
-   texture->tex.cubemap   = GCM_FALSE;
-   texture->tex.remap     =  ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT)
-                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT)
-                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT)
-                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT)
-                            | (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT)
-                            | (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT)
-                            | (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT)
-                            | (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
-   texture->tex.width     = width;
-   texture->tex.height    = height;
-   texture->tex.depth     = 1;
-   texture->tex.location  = GCM_LOCATION_RSX;
-   texture->tex.pitch     = pitch;
-   texture->tex.offset    = texture->offset;
-
-   switch (filter_type)
-   {
-      case TEXTURE_FILTER_MIPMAP_NEAREST:
-      case TEXTURE_FILTER_NEAREST:
-         min_filter       = GCM_TEXTURE_NEAREST;
-         mag_filter       = GCM_TEXTURE_NEAREST;
-         break;
-      case TEXTURE_FILTER_MIPMAP_LINEAR:
-      case TEXTURE_FILTER_LINEAR:
-         default:
-         min_filter       = GCM_TEXTURE_LINEAR;
-         mag_filter       = GCM_TEXTURE_LINEAR;
-         break;
-   }
-   texture->min_filter    = min_filter;
-   texture->mag_filter    = mag_filter;
-   texture->wrap_s        = GCM_TEXTURE_CLAMP_TO_EDGE;
-   texture->wrap_t        = GCM_TEXTURE_CLAMP_TO_EDGE;
-}
 
 static void rsx_set_texture(rsx_t* rsx, rsx_texture_t *texture)
 {
