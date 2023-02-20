@@ -27,7 +27,9 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
+#if 0
 #define LERP(p, f, t) ((((p * 10) * (t * 10)) / (f * 10)) / 10)
+#endif
 
 #if defined(ORBIS)
 #include <orbis/orbisPad.h>
@@ -222,10 +224,10 @@ static int16_t ps4_joypad_state(
 
 static void ps4_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
-	if (port_num < PS4_MAX_ORBISPADS)
+   if (port_num < PS4_MAX_ORBISPADS)
    {
-		BITS_COPY16_PTR( state, pad_state[port_num] );
-	}
+      BITS_COPY16_PTR( state, pad_state[port_num] );
+   }
    else
       BIT256_CLEAR_ALL_PTR(state);
 }
@@ -242,7 +244,7 @@ static void ps4_joypad_poll(void)
       unsigned j, k;
       unsigned i  = player;
 
-      if (ds_joypad_states[player].connected == false)
+      if (!ds_joypad_states[player].connected)
          continue;
 
       ret     = scePadReadState(ds_joypad_states[player].handle[0],&buttons);
