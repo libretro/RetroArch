@@ -674,43 +674,37 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
    size_t pos               = 0;
    int ready                = wl_ioready(fd, IOR_READ, PIPE_MS_TIMEOUT);
 
-   if (ready == 0)
-   {
+   if (ready == 0)     /* Pipe timeout? */
       bytes_read = -1;
-      RARCH_WARN("[Wayland]: Pipe timeout\n");
-   }
-   else if (ready < 0)
-   {
+   else if (ready < 0) /* Pipe select error? */
       bytes_read = -1;
-      RARCH_WARN("[Wayland]: Pipe select error");
-   }
    else
-      bytes_read = read(fd, temp, sizeof(temp));
-
-   if (bytes_read > 0)
    {
-      pos            = *total_length;
-      *total_length += bytes_read;
+	   if ((bytes_read = read(fd, temp, sizeof(temp))) > 0)
+	   {
+		   pos                   = *total_length;
+		   *total_length        += bytes_read;
 
-      if (null_terminate)
-         new_buffer_length = *total_length + 1;
-      else
-          new_buffer_length = *total_length;
+		   if (null_terminate)
+			   new_buffer_length  = *total_length + 1;
+		   else
+			   new_buffer_length = *total_length;
 
-      if (*buffer == NULL)
-         output_buffer = malloc(new_buffer_length);
-      else
-         output_buffer = realloc(*buffer, new_buffer_length);
+		   if (*buffer == NULL)
+			   output_buffer      = malloc(new_buffer_length);
+		   else
+			   output_buffer      = realloc(*buffer, new_buffer_length);
 
-      if (output_buffer)
-      {
-         memcpy((uint8_t*)output_buffer + pos, temp, bytes_read);
+		   if (output_buffer)
+		   {
+			   memcpy((uint8_t*)output_buffer + pos, temp, bytes_read);
 
-         if (null_terminate)
-            memset((uint8_t*)output_buffer + (new_buffer_length - 1), 0, 1);
+			   if (null_terminate)
+				   memset((uint8_t*)output_buffer + (new_buffer_length - 1), 0, 1);
 
-         *buffer = output_buffer;
-      }
+			   *buffer = output_buffer;
+		   }
+	   }
    }
 
    return bytes_read;
