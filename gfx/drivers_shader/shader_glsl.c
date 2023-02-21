@@ -37,6 +37,7 @@
 #include "../../state_manager.h"
 #endif
 #include "../../core.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #if defined(ORBIS)
@@ -1332,9 +1333,7 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    }
 
    if (uni->rotation >= 0)
-   {
       glUniform1i(uni->rotation, retroarch_get_rotation());
-   }
 
    /* Set lookup textures. */
    for (i = 0; i < glsl->shader->luts; i++)
