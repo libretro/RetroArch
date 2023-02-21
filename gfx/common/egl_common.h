@@ -121,6 +121,8 @@ bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value);
 bool egl_get_config_attrib(EGLDisplay dpy, EGLConfig config,
       EGLint attribute, EGLint *value);
 
+void egl_report_error(void);
+
 bool egl_has_config(egl_ctx_data_t *egl);
 
 RETRO_END_DECLS
