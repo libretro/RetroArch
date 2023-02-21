@@ -645,6 +645,10 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
        * before the driver could provide it. */
    }
 
+   /* Why mute the mic when the core isn't running at standard speed?
+    * Because I couldn't think of anything useful for the mic to do.
+    * If you can, send a PR! */
+
    if (!mic_st->driver_context || !microphone->microphone_context)
       /* If the driver or microphone's state haven't been allocated... */
       return -1;
