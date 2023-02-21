@@ -61,6 +61,39 @@ enum
    DRIVER_MICROPHONE_MASK   = 1 << DRIVER_MICROPHONE
 };
 
+/**
+ * These flags indicate special requirements or requests
+ * of a driver's setup or teardown process.
+ *
+ * They are passed to \c drivers_init and \c driver_deinit.
+ * Not all drivers will need them.
+ *
+ * @see drivers_init
+ * @see driver_deinit
+ */
+enum driver_lifetime_flags
+{
+   /**
+    * Indicates that the driver is being reset.
+    * When passed \c driver_deinit, indicates that the targeted drivers
+    * are about to be reinitialized.
+    * When passed to \c driver_init, indicates that the targeted drivers
+    * are in the middle of being reinitialized.
+    *
+    * This is useful for drivers that provide core-accessible resource handles,
+    * such as the microphone driver.
+    * When closed by normal means, such drivers will de-allocate the resources
+    * that their opened handles represent.
+    * If the game isn't being exited, then these resources would effectively
+    * be closed without the core knowing.
+    *
+    * This flag can be used to ensure that existing core-accessible handles
+    * are reinitialized with valid resources
+    * before the core notices that anything's wrong.
+    */
+   DRIVER_LIFETIME_RESET = 1 << 0
+};
+
 enum driver_ctl_state
 {
    RARCH_DRIVER_CTL_NONE = 0,
@@ -114,7 +147,7 @@ void driver_set_nonblock_state(void);
  * @flags determines which drivers get initialized.
  **/
 void drivers_init(settings_t *settings, int flags,
-      bool verbosity_enabled);
+      enum driver_lifetime_flags lifetime_flags, bool verbosity_enabled);
 
 /**
  * Driver ownership - set this to true if the platform in
@@ -131,7 +164,7 @@ void drivers_init(settings_t *settings, int flags,
  * Typically, if a driver intends to make use of this, it should
  * set this to true at the end of its 'init' function.
  **/
-void driver_uninit(int flags);
+void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags);
 
 void retro_input_poll_null(void);
 

@@ -727,6 +727,7 @@ void driver_set_nonblock_state(void)
 void drivers_init(
       settings_t *settings,
       int flags,
+      enum driver_lifetime_flags lifetime_flags,
       bool verbosity_enabled)
 {
    runloop_state_t *runloop_st       = runloop_state_get_ptr();
@@ -986,7 +987,7 @@ void drivers_init(
 #endif /* #ifndef HAVE_LAKKA_SWITCH */
 }
 
-void driver_uninit(int flags)
+void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
 {
    runloop_state_t *runloop_st      = runloop_state_get_ptr();
    video_driver_state_t *video_st   = video_state_get_ptr();
@@ -3226,15 +3227,15 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_AUDIO_REINIT:
-         driver_uninit(DRIVER_AUDIO_MASK);
-         drivers_init(settings, DRIVER_AUDIO_MASK, verbosity_is_enabled());
+         driver_uninit(DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET);
+         drivers_init(settings, DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
 #if defined(HAVE_AUDIOMIXER)
          audio_driver_load_system_sounds();
 #endif
          break;
       case CMD_EVENT_MICROPHONE_REINIT:
-         driver_uninit(DRIVER_MICROPHONE_MASK);
-         drivers_init(settings, DRIVER_MICROPHONE_MASK, verbosity_is_enabled());
+         driver_uninit(DRIVER_MICROPHONE_MASK, DRIVER_LIFETIME_RESET);
+         drivers_init(settings, DRIVER_MICROPHONE_MASK, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
          break;
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
@@ -4516,7 +4517,7 @@ void main_exit(void *args)
 #endif
 
    runloop_msg_queue_deinit();
-   driver_uninit(DRIVERS_CMD_ALL);
+   driver_uninit(DRIVERS_CMD_ALL, 0);
 
    retro_main_log_file_deinit();
 
@@ -4610,7 +4611,7 @@ int rarch_main(int argc, char *argv[], void *data)
    frontend_driver_init_first(data);
 
    if (runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
-      driver_uninit(DRIVERS_CMD_ALL);
+      driver_uninit(DRIVERS_CMD_ALL, 0);
 
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_create(&p_rarch->rarch_tls);
@@ -6303,7 +6304,7 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
          );
 #endif
-   drivers_init(settings, DRIVERS_CMD_ALL, verbosity_enabled);
+   drivers_init(settings, DRIVERS_CMD_ALL, 0, verbosity_enabled);
 #ifdef HAVE_COMMAND
    input_driver_deinit_command(input_st);
    input_driver_init_command(input_st, settings);

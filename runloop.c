@@ -3949,7 +3949,7 @@ void runloop_event_deinit_core(void)
    if (settings->bools.video_frame_delay_auto)
       video_st->frame_delay_target = 0;
 
-   driver_uninit(DRIVERS_CMD_ALL);
+   driver_uninit(DRIVERS_CMD_ALL, 0);
 
 #ifdef HAVE_CONFIGFILE
    if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
