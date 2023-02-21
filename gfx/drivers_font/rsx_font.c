@@ -161,17 +161,17 @@ static void *rsx_font_init(void *data,
 
    font->atlas        = font->font_driver->get_atlas(font->font_data);
 
-   font->vpo          = font->rsx->vpo[VIDEO_SHADER_STOCK_BLEND];
-   font->fpo          = font->rsx->fpo[VIDEO_SHADER_STOCK_BLEND];
-   font->fp_ucode     = font->rsx->fp_ucode[VIDEO_SHADER_STOCK_BLEND];
-   font->vp_ucode     = font->rsx->vp_ucode[VIDEO_SHADER_STOCK_BLEND];
-   font->fp_offset    = font->rsx->fp_offset[VIDEO_SHADER_STOCK_BLEND];
+   font->vpo          = font->rsx->vpo[RSX_SHADER_STOCK_BLEND];
+   font->fpo          = font->rsx->fpo[RSX_SHADER_STOCK_BLEND];
+   font->fp_ucode     = font->rsx->fp_ucode[RSX_SHADER_STOCK_BLEND];
+   font->vp_ucode     = font->rsx->vp_ucode[RSX_SHADER_STOCK_BLEND];
+   font->fp_offset    = font->rsx->fp_offset[RSX_SHADER_STOCK_BLEND];
 
-   font->proj_matrix  = font->rsx->proj_matrix[VIDEO_SHADER_STOCK_BLEND];
-   font->pos_index    = font->rsx->pos_index[VIDEO_SHADER_STOCK_BLEND];
-   font->uv_index     = font->rsx->uv_index[VIDEO_SHADER_STOCK_BLEND];
-   font->col_index    = font->rsx->col_index[VIDEO_SHADER_STOCK_BLEND];
-   font->tex_unit     = font->rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND];
+   font->proj_matrix  = font->rsx->proj_matrix[RSX_SHADER_STOCK_BLEND];
+   font->pos_index    = font->rsx->pos_index[RSX_SHADER_STOCK_BLEND];
+   font->uv_index     = font->rsx->uv_index[RSX_SHADER_STOCK_BLEND];
+   font->col_index    = font->rsx->col_index[RSX_SHADER_STOCK_BLEND];
+   font->tex_unit     = font->rsx->tex_unit[RSX_SHADER_STOCK_BLEND];
 
    font->vertices     = (rsx_vertex_t *)rsxMemalign(128, sizeof(rsx_vertex_t) * RSX_MAX_FONT_VERTICES);
    font->rsx->font_vert_idx = 0;
