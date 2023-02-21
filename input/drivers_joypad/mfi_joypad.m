@@ -166,7 +166,7 @@ static void apple_gamecontroller_joypad_poll(void)
     for (GCController *controller in [GCController controllers])
     {
        /* If we have not assigned a slot to this controller yet, ignore it. */
-       if (controller && (controller.playerIndex < MAX_USERS))
+       if (controller && (controller.playerIndex >= 0) && (controller.playerIndex < MAX_USERS))
           apple_gamecontroller_joypad_poll_internal(controller, (uint32_t)controller.playerIndex);
     }
 }
