@@ -63,6 +63,9 @@ typedef struct
 
 static void free_autoconfig_handle(autoconfig_handle_t *autoconfig_handle)
 {
+   if (!autoconfig_handle)
+      return;
+
    if (autoconfig_handle->dir_autoconfig)
    {
       free(autoconfig_handle->dir_autoconfig);
@@ -743,9 +746,7 @@ error:
       task = NULL;
    }
 
-   if (autoconfig_handle)
-      free_autoconfig_handle(autoconfig_handle);
-   autoconfig_handle = NULL;
+   free_autoconfig_handle(autoconfig_handle);
    return false;
 }
 
@@ -928,7 +929,6 @@ error:
    }
 
    free_autoconfig_handle(autoconfig_handle);
-   autoconfig_handle = NULL;
 
    return false;
 }
