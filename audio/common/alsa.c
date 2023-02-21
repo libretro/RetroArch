@@ -137,7 +137,7 @@ int alsa_init_pcm(snd_pcm_t **pcm,
       goto error;
    }
 
-   if (new_rate && (rate != orig_rate))
+   if (new_rate)
       *new_rate = rate;
 
    if ((snd_pcm_hw_params_set_buffer_time_near(*pcm, params, &latency_usec, NULL)) < 0)
