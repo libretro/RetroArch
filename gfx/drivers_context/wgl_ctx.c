@@ -117,21 +117,14 @@ typedef struct gfx_ctx_cgl_data
 
 static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 {
-   switch (win32_api)
-   {
-      case GFX_CTX_OPENGL_API:
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
-         {
-            gfx_ctx_proc_t func = (gfx_ctx_proc_t)wglGetProcAddress(symbol);
-            if (func)
-               return func;
-         }
-#endif
-         break;
-      default:
-         break;
+   if (win32_api == GFX_CTX_OPENGL_API)
+   {
+      gfx_ctx_proc_t func = (gfx_ctx_proc_t)wglGetProcAddress(symbol);
+      if (func)
+         return func;
    }
-
+#endif
 #ifdef HAVE_DYLIB
    return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
 #else
@@ -156,8 +149,7 @@ static bool wgl_has_extension(const char *extension, const char *extensions)
 
    for (;;)
    {
-      where = strstr(start, extension);
-      if (!where)
+      if (!(where = strstr(start, extension)))
          break;
 
       terminator = where + strlen(extension);
@@ -191,22 +183,21 @@ static void create_gl_context(HWND hwnd, bool *quit)
    }
    else
    {
-      win32_hrc = wglCreateContext(win32_hdc);
-
+      win32_hrc         = wglCreateContext(win32_hdc);
       /* We'll create shared context later if not. */
       if (win32_hrc && !core_context && !debug)
       {
-         win32_hw_hrc = wglCreateContext(win32_hdc);
+         win32_hw_hrc   = wglCreateContext(win32_hdc);
          if (win32_hw_hrc)
          {
             if (!wglShareLists(win32_hrc, win32_hw_hrc))
             {
                RARCH_LOG("[WGL]: Failed to share contexts.\n");
-               *quit = true;
+               *quit    = true;
             }
          }
          else
-            *quit = true;
+            *quit       = true;
       }
    }
 
@@ -219,7 +210,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
    }
    else
    {
-      *quit        = true;
+      *quit             = true;
       return;
    }
 
@@ -281,11 +272,11 @@ static void create_gl_context(HWND hwnd, bool *quit)
          int version_rows     = gl_version_rows;
          int (*versions)[2]   = gl_versions;
 
-         /* only try higher versions when core_context is true */
+         /* Only try higher versions when core_context is true */
          if (!core_context)
             version_rows = 1;
 
-         /* try versions from highest down to requested version */
+         /* Try versions from highest down to requested version */
          for (i = 0; i < version_rows; i++)
          {
             if (core_context)
@@ -320,7 +311,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
                   }
                }
 
-               /* found a suitable version that is high enough, we can stop now */
+               /* Found a suitable version that is high enough, we can stop now */
                break;
             }
             else if (
@@ -345,12 +336,12 @@ static void create_gl_context(HWND hwnd, bool *quit)
    }
 
    {
-
       const char *(WINAPI * wglGetExtensionsStringARB) (HDC) = 0;
       const char *extensions                                 = NULL;
+      wglGetExtensionsStringARB                              = 
+	      (const char *(WINAPI *) (HDC))
+	      gfx_ctx_wgl_get_proc_address("wglGetExtensionsStringARB");
 
-      wglGetExtensionsStringARB = (const char *(WINAPI *) (HDC))
-         gfx_ctx_wgl_get_proc_address("wglGetExtensionsStringARB");
       if (wglGetExtensionsStringARB)
       {
          extensions = wglGetExtensionsStringARB(win32_hdc);
@@ -442,8 +433,6 @@ void create_wgl_context(HWND hwnd, bool *quit)
 
 static void gfx_ctx_wgl_swap_interval(void *data, int interval)
 {
-   (void)data;
-
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -476,8 +465,6 @@ static void gfx_ctx_wgl_swap_interval(void *data, int interval)
 
 static void gfx_ctx_wgl_swap_buffers(void *data)
 {
-   (void)data;
-
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -617,6 +604,7 @@ static void *gfx_ctx_wgl_init(void *video_driver)
    WNDCLASSEX wndclass     = {0};
    gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)calloc(1, sizeof(*wgl));
    uint8_t win32_flags     = win32_get_flags();
+   settings_t *settings    = config_get_ptr();
 
    if (!wgl)
       return NULL;
@@ -635,28 +623,23 @@ static void *gfx_ctx_wgl_init(void *video_driver)
    win32_window_reset();
    win32_monitor_init();
 
-   {
-      settings_t *settings     = config_get_ptr();
-      wndclass.lpfnWndProc   = wnd_proc_wgl_common;
+   wndclass.lpfnWndProc    = wnd_proc_wgl_common;
 #ifdef HAVE_DINPUT
-      if (string_is_equal(settings->arrays.input_driver, "dinput"))
-         wndclass.lpfnWndProc   = wnd_proc_wgl_dinput;
+   if (string_is_equal(settings->arrays.input_driver, "dinput"))
+	   wndclass.lpfnWndProc = wnd_proc_wgl_dinput;
 #endif
 #ifdef HAVE_WINRAWINPUT
-      if (string_is_equal(settings->arrays.input_driver, "raw"))
-         wndclass.lpfnWndProc   = wnd_proc_wgl_winraw;
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+	   wndclass.lpfnWndProc = wnd_proc_wgl_winraw;
 #endif
-   }
 
    if (!win32_window_init(&wndclass, true, NULL))
-      goto error;
+   {
+      free(wgl);
+      return NULL;
+   }
 
    return wgl;
-
-error:
-   if (wgl)
-      free(wgl);
-   return NULL;
 }
 
 static bool gfx_ctx_wgl_set_video_mode(void *data,
@@ -666,25 +649,15 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
    {
       RARCH_ERR("[WGL]: win32_set_video_mode failed.\n");
-      goto error;
+      gfx_ctx_wgl_destroy(data);
+      return false;
    }
 
-   switch (win32_api)
-   {
-      case GFX_CTX_OPENGL_API:
-         p_swap_interval = (BOOL (APIENTRY *)(int))gfx_ctx_wgl_get_proc_address("wglSwapIntervalEXT");
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
+   if (win32_api == GFX_CTX_OPENGL_API)
+      p_swap_interval = (BOOL (APIENTRY *)(int))gfx_ctx_wgl_get_proc_address("wglSwapIntervalEXT");
 
    gfx_ctx_wgl_swap_interval(data, win32_interval);
    return true;
-
-error:
-   gfx_ctx_wgl_destroy(data);
-   return false;
 }
 
 static void gfx_ctx_wgl_input_driver(void *data,
@@ -718,16 +691,11 @@ static void gfx_ctx_wgl_input_driver(void *data,
 #endif
 }
 
-static enum gfx_ctx_api gfx_ctx_wgl_get_api(void *data)
-{
-   return win32_api;
-}
+static enum gfx_ctx_api gfx_ctx_wgl_get_api(void *data) { return win32_api; }
 
 static bool gfx_ctx_wgl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)data;
-
    win32_major = major;
    win32_minor = minor;
    win32_api   = api;

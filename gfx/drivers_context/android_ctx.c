@@ -74,9 +74,9 @@ static void *android_gfx_ctx_init(void *video_driver)
    EGLint format;
 #if 0
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
-   bool debug = hwr->debug_context;
+   bool debug                           = hwr->debug_context;
 #endif
-   EGLint attribs[] = {
+   EGLint attribs[]                     = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
       EGL_BLUE_SIZE, 8,
@@ -87,8 +87,8 @@ static void *android_gfx_ctx_init(void *video_driver)
       EGL_NONE
    };
 #endif
-   struct android_app *android_app = (struct android_app*)g_android;
-   android_ctx_data_t        *and  = (android_ctx_data_t*)
+   struct android_app *android_app      = (struct android_app*)g_android;
+   android_ctx_data_t        *and       = (android_ctx_data_t*)
       calloc(1, sizeof(*and));
 
    if (!android_app || !and)
@@ -96,7 +96,7 @@ static void *android_gfx_ctx_init(void *video_driver)
 
 #ifdef HAVE_OPENGLES
    if (g_es3)
-      attribs[1] = EGL_OPENGL_ES3_BIT_KHR;
+      attribs[1]                        = EGL_OPENGL_ES3_BIT_KHR;
 #endif
 
 #ifdef HAVE_EGL
@@ -108,7 +108,6 @@ static void *android_gfx_ctx_init(void *video_driver)
       egl_report_error();
       goto error;
    }
-
    if (!egl_get_native_visual_id(&and->egl, &format))
       goto error;
 #endif
@@ -135,9 +134,8 @@ error:
 static void android_gfx_ctx_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   android_ctx_data_t *and  = (android_ctx_data_t*)data;
-
 #ifdef HAVE_EGL
+   android_ctx_data_t *and  = (android_ctx_data_t*)data;
    egl_get_video_size(&and->egl, width, height);
 #endif
 }
@@ -184,31 +182,19 @@ static bool android_gfx_ctx_set_video_mode(void *data,
 #endif
       EGL_NONE
    };
-#endif
-#endif
 
-   switch (android_api)
+   if (android_api == GFX_CTX_OPENGL_ES_API)
    {
-      case GFX_CTX_OPENGL_API:
-         break;
-      case GFX_CTX_OPENGL_ES_API:
-#if defined(HAVE_OPENGLES) && defined(HAVE_EGL)
-         if (!egl_create_context(&and->egl, context_attributes))
-         {
-            egl_report_error();
-            return false;
-         }
-
-         if (!egl_create_surface(&and->egl, android_app->window))
-            return false;
-#endif
-         break;
-
-      case GFX_CTX_NONE:
-      default:
-         break;
+      if (!egl_create_context(&and->egl, context_attributes))
+      {
+         egl_report_error();
+         return false;
+      }
+      if (!egl_create_surface(&and->egl, android_app->window))
+         return false;
    }
-
+#endif
+#endif
    return true;
 }
 
@@ -236,7 +222,7 @@ static bool android_gfx_ctx_bind_api(void *data,
 #ifdef HAVE_OPENGLES
    version     = major * 100 + minor;
    if (version >= 300)
-      g_es3 = true;
+      g_es3    = true;
    if (api == GFX_CTX_OPENGL_ES_API)
       return true;
 #endif
@@ -300,26 +286,24 @@ dpi_fallback:
 
 static void android_gfx_ctx_swap_buffers(void *data)
 {
-   android_ctx_data_t *and  = (android_ctx_data_t*)data;
-
 #ifdef HAVE_EGL
+   android_ctx_data_t *and  = (android_ctx_data_t*)data;
    egl_swap_buffers(&and->egl);
 #endif
 }
 
 static void android_gfx_ctx_set_swap_interval(void *data, int swap_interval)
 {
-   android_ctx_data_t *and  = (android_ctx_data_t*)data;
-
 #ifdef HAVE_EGL
+   android_ctx_data_t *and  = (android_ctx_data_t*)data;
    egl_set_swap_interval(&and->egl, swap_interval);
 #endif
 }
 
 static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
 {
-   android_ctx_data_t *and  = (android_ctx_data_t*)data;
 #ifdef HAVE_EGL
+   android_ctx_data_t *and  = (android_ctx_data_t*)data;
    egl_bind_hw_render(&and->egl, enable);
 #endif
 }

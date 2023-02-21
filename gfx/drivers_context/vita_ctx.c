@@ -52,8 +52,8 @@ static void vita_swap_interval(void *data, int interval)
 
 static void vita_get_video_size(void *data, unsigned *width, unsigned *height)
 {
-   *width  = ATTR_VITA_WIDTH;
-   *height = ATTR_VITA_HEIGHT;
+   *width     = ATTR_VITA_WIDTH;
+   *height    = ATTR_VITA_HEIGHT;
 }
 
 static void vita_check_window(void *data, bool *quit,
@@ -65,12 +65,12 @@ static void vita_check_window(void *data, bool *quit,
 
    if (new_width != *width || new_height != *height)
    {
-      *width = new_width;
+      *width  = new_width;
       *height = new_height;
       *resize = true;
    }
 
-   *quit = (bool)false;
+   *quit      = (bool)false;
 }
 
 static void vita_swap_buffers(void *data)
@@ -110,24 +110,20 @@ static bool vita_set_video_mode(void *data,
 {
 #if defined(HAVE_VITAGLES)
   /* Create an EGL rendering context */
-   static const EGLint contextAttributeList[] = {
+   static const EGLint 
+	   ctx_attr_list[]   = {
       EGL_CONTEXT_CLIENT_VERSION, 2,
       EGL_NONE
    };
-
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
-
-   ctx_vita->width = ATTR_VITA_WIDTH;
-   ctx_vita->height = ATTR_VITA_HEIGHT;
-
-   ctx_vita->native_window = VITA_WINDOW_960X544;
-
-   ctx_vita->refresh_rate = 60;
+   ctx_vita->width           = ATTR_VITA_WIDTH;
+   ctx_vita->height          = ATTR_VITA_HEIGHT;
+   ctx_vita->native_window   = VITA_WINDOW_960X544;
+   ctx_vita->refresh_rate    = 60;
 
 #ifdef HAVE_EGL
-   if (!egl_create_context(&ctx_vita->egl, contextAttributeList))
+   if (!egl_create_context(&ctx_vita->egl, ctx_attr_list))
       goto error;
-
    if (!egl_create_surface(&ctx_vita->egl, ctx_vita->native_window))
       goto error;
 #endif
@@ -178,9 +174,8 @@ static void vita_show_mouse(void *data, bool state) { }
 static void vita_bind_hw_render(void *data, bool enable)
 {
 #if defined(HAVE_VITAGLES)
-   vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
-
 #ifdef HAVE_EGL
+   vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
    egl_bind_hw_render(&ctx_vita->egl, enable);
 #endif
 #endif
@@ -245,25 +240,14 @@ static uint32_t vita_get_flags(void *data)
 
    return flags;
 }
+
 static void vita_set_flags(void *data, uint32_t flags) { }
 
 #if defined(HAVE_VITAGLES)
 static float vita_get_refresh_rate(void *data)
 {
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
-
    return ctx_vita->refresh_rate;
-}
-#endif
-
-#if defined(HAVE_VITAGLES)
-static gfx_ctx_proc_t vita_get_proc_address(const char *symbol)
-{
-   gfx_ctx_proc_t ptr_sym = NULL;
-#ifdef HAVE_EGL
-   ptr_sym = egl_get_proc_address(symbol);
-#endif
-   return ptr_sym;
 }
 #endif
 
@@ -294,7 +278,7 @@ const gfx_ctx_driver_t vita_ctx = {
    vita_swap_buffers,
    vita_input_driver,
 #if defined(HAVE_VITAGLES)
-   vita_get_proc_address,
+   egl_get_proc_address,
 #else
    NULL,
 #endif

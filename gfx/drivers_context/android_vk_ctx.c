@@ -66,7 +66,10 @@ static void *android_gfx_ctx_vk_init(void *video_driver)
       return false;
 
    if (!vulkan_context_init(&and->vk, VULKAN_WSI_ANDROID))
-      goto error;
+   {
+      android_gfx_ctx_vk_destroy(and);
+      return NULL;
+   }
 
    slock_lock(android_app->mutex);
    if (!android_app->window)
@@ -78,11 +81,6 @@ static void *android_gfx_ctx_vk_init(void *video_driver)
 
    slock_unlock(android_app->mutex);
    return and;
-
-error:
-   android_gfx_ctx_vk_destroy(and);
-
-   return NULL;
 }
 
 static void android_gfx_ctx_vk_get_video_size(void *data,
@@ -97,13 +95,12 @@ static void android_gfx_ctx_vk_get_video_size(void *data,
 static void android_gfx_ctx_vk_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
-   struct android_app *android_app = (struct android_app*)g_android;
+   struct android_app *android_app      = (struct android_app*)g_android;
+   unsigned new_width                   = 0;
+   unsigned new_height                  = 0;
+   android_ctx_data_vk_t *and           = (android_ctx_data_vk_t*)data;
 
-   unsigned new_width       = 0;
-   unsigned new_height      = 0;
-   android_ctx_data_vk_t *and  = (android_ctx_data_vk_t*)data;
-
-   *quit = false;
+   *quit                                = false;
 
    if (android_app->content_rect.changed)
    {
@@ -132,10 +129,10 @@ static bool android_gfx_ctx_vk_set_resize(void *data,
       unsigned width, unsigned height)
 {
    android_ctx_data_vk_t        *and  = (android_ctx_data_vk_t*)data;
-   struct android_app *android_app = (struct android_app*)g_android;
+   struct android_app *android_app    = (struct android_app*)g_android;
 
-   and->width  = android_app->content_rect.width;
-   and->height = android_app->content_rect.height;
+   and->width                         = android_app->content_rect.width;
+   and->height                        = android_app->content_rect.height;
    RARCH_LOG("[Android]: Native window size: %u x %u.\n", and->width, and->height);
    if (!vulkan_create_swapchain(&and->vk, and->width, and->height, and->swap_interval))
    {
@@ -145,8 +142,8 @@ static bool android_gfx_ctx_vk_set_resize(void *data,
 
    if (and->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       vulkan_acquire_next_image(&and->vk);
-   and->vk.context.flags            |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
-   and->vk.flags                    &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+   and->vk.context.flags             |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   and->vk.flags                     &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
    return true;
 }
@@ -156,12 +153,9 @@ static bool android_gfx_ctx_vk_set_video_mode(void *data,
       bool fullscreen)
 {
    struct android_app *android_app = (struct android_app*)g_android;
-   android_ctx_data_vk_t *and = (android_ctx_data_vk_t*)data;
-
-   and->width  = ANativeWindow_getWidth(android_app->window);
-   and->height = ANativeWindow_getHeight(android_app->window);
-   RARCH_LOG("[Android]: Native window size: %u x %u.\n",
-         and->width, and->height);
+   android_ctx_data_vk_t *and      = (android_ctx_data_vk_t*)data;
+   and->width                      = ANativeWindow_getWidth(android_app->window);
+   and->height                     = ANativeWindow_getHeight(android_app->window);
    if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID,
             NULL, android_app->window,
             and->width, and->height, and->swap_interval))
@@ -169,7 +163,8 @@ static bool android_gfx_ctx_vk_set_video_mode(void *data,
       RARCH_ERR("[Android]: Failed to create surface.\n");
       return false;
    }
-
+   RARCH_LOG("[Android]: Native window size: %u x %u.\n",
+         and->width, and->height);
    return true;
 }
 
@@ -191,9 +186,7 @@ static enum gfx_ctx_api android_gfx_ctx_vk_get_api(void *data)
 static bool android_gfx_ctx_vk_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   if (api == GFX_CTX_VULKAN_API)
-      return true;
-   return false;
+   return (api == GFX_CTX_VULKAN_API);
 }
 
 static bool android_gfx_ctx_vk_has_focus(void *data)
@@ -243,10 +236,10 @@ static bool android_gfx_ctx_vk_get_metrics(void *data,
    return true;
 
 dpi_fallback:
-   /* add a fallback in case the device doesn't report DPI.
+   /* Add a fallback in case the device doesn't report DPI.
     * Hopefully fixes issues with the moto G2. */
-   dpi    = 90;
-   *value = (float)dpi;
+   dpi          = 90;
+   *value       = (float)dpi;
    return true;
 }
 
@@ -274,9 +267,9 @@ static void android_gfx_ctx_vk_set_swap_interval(void *data, int swap_interval)
    if (and->swap_interval != swap_interval)
    {
       RARCH_LOG("[Vulkan]: Setting swap interval: %u.\n", swap_interval);
-      and->swap_interval = swap_interval;
+      and->swap_interval       = swap_interval;
       if (and->vk.swapchain)
-         and->vk.flags |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+         and->vk.flags        |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    }
 }
 

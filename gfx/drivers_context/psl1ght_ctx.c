@@ -55,7 +55,7 @@ static void gfx_ctx_psl1ght_get_resolution(unsigned idx,
 static void gfx_ctx_psl1ght_get_available_resolutions(void)
 {
    unsigned i;
-   uint32_t videomode[] = {
+   uint32_t videomode[]      = {
       CELL_VIDEO_OUT_RESOLUTION_480,
       CELL_VIDEO_OUT_RESOLUTION_576,
       CELL_VIDEO_OUT_RESOLUTION_960x1080,
@@ -176,15 +176,13 @@ static void *gfx_ctx_psl1ght_init(void *video_driver)
 }
 
 static bool gfx_ctx_psl1ght_set_video_mode(void *data,
-      unsigned width, unsigned height,
-      bool fullscreen) { return true; }
+      unsigned width, unsigned height, bool fullscreen) { return true; }
 
 static void gfx_ctx_psl1ght_destroy_resources(gfx_ctx_psl1ght_data_t *ps3)
 {
+#if defined(HAVE_PSGL)
    if (!ps3)
       return;
-
-#if defined(HAVE_PSGL)
    psglDestroyContext(ps3->gl_context);
    psglDestroyDevice(ps3->gl_device);
 

@@ -165,9 +165,8 @@ static void gfx_ctx_ps3_swap_buffers(void *data)
 static void gfx_ctx_ps3_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)data;
-
 #if defined(HAVE_PSGL)
+   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)data;
    if (ps3)
       psglGetDeviceDimensions(ps3->gl_device, width, height);
 #endif
@@ -179,17 +178,17 @@ static void *gfx_ctx_ps3_init(void *video_driver)
    PSGLdeviceParameters params;
    PSGLinitOptions options;
 #endif
-   global_t        *global = global_get_ptr();
-   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
+   global_t        *global  = global_get_ptr();
+   gfx_ctx_ps3_data_t *ps3  = (gfx_ctx_ps3_data_t*)
       calloc(1, sizeof(gfx_ctx_ps3_data_t));
 
    if (!ps3)
       return NULL;
 
 #if defined(HAVE_PSGL)
-   options.enable         = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS;
-   options.maxSPUs        = 1;
-   options.initializeSPUs = GL_FALSE;
+   options.enable           = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS;
+   options.maxSPUs          = 1;
+   options.initializeSPUs   = GL_FALSE;
 
    /* Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL. */
    sys_spu_initialize(6, 1);
@@ -205,7 +204,7 @@ static void *gfx_ctx_ps3_init(void *video_driver)
 
    if (global->console.screen.resolutions.current.id)
    {
-      params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
+      params.enable        |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
 
       gfx_ctx_ps3_get_resolution(
             global->console.screen.resolutions.current.id,
@@ -223,15 +222,14 @@ static void *gfx_ctx_ps3_init(void *video_driver)
    if (global->console.screen.pal60_enable)
    {
       RARCH_LOG("[PSGL Context]: Setting temporal PAL60 mode.\n");
-      params.enable |= PSGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE;
-      params.enable |= PSGL_DEVICE_PARAMETERS_RESC_RATIO_MODE;
+      params.enable             |= PSGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE;
+      params.enable             |= PSGL_DEVICE_PARAMETERS_RESC_RATIO_MODE;
       params.rescPalTemporalMode = RESC_PAL_TEMPORAL_MODE_60_INTERPOLATE;
-      params.rescRatioMode = RESC_RATIO_MODE_FULLSCREEN;
+      params.rescRatioMode       = RESC_RATIO_MODE_FULLSCREEN;
    }
 
-   ps3->gl_device = psglCreateDeviceExtended(&params);
-   ps3->gl_context = psglCreateContext();
-
+   ps3->gl_device           = psglCreateDeviceExtended(&params);
+   ps3->gl_context          = psglCreateContext();
    psglMakeCurrent(ps3->gl_context, ps3->gl_device);
    psglResetCurrentContext();
 #endif
@@ -247,15 +245,13 @@ static void *gfx_ctx_ps3_init(void *video_driver)
 }
 
 static bool gfx_ctx_ps3_set_video_mode(void *data,
-      unsigned width, unsigned height,
-      bool fullscreen) { return true; }
+      unsigned width, unsigned height, bool fullscreen) { return true; }
 
 static void gfx_ctx_ps3_destroy_resources(gfx_ctx_ps3_data_t *ps3)
 {
+#if defined(HAVE_PSGL)
    if (!ps3)
       return;
-
-#if defined(HAVE_PSGL)
    psglDestroyContext(ps3->gl_context);
    psglDestroyDevice(ps3->gl_device);
 

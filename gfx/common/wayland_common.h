@@ -58,7 +58,7 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl);
 
 void gfx_ctx_wl_update_title_common(gfx_ctx_wayland_data_t *wl);
 
-bool gfx_ctx_wl_get_metrics_common(gfx_ctx_wayland_data_t *wl,
+bool gfx_ctx_wl_get_metrics_common(void *data,
       enum display_metric_types type, float *value);
 
 bool gfx_ctx_wl_init_common(

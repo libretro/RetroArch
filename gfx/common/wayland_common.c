@@ -282,11 +282,12 @@ void gfx_ctx_wl_update_title_common(gfx_ctx_wayland_data_t *wl)
    }
 }
 
-bool gfx_ctx_wl_get_metrics_common(gfx_ctx_wayland_data_t *wl,
+bool gfx_ctx_wl_get_metrics_common(void *data,
       enum display_metric_types type, float *value)
 {
-   output_info_t *tmp;
-   output_info_t *oi = wl->current_output;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   output_info_t *tmp         = NULL;
+   output_info_t *oi          = wl ? wl->current_output : NULL;
 
    if (!oi)
       wl_list_for_each_safe(oi, tmp, &wl->all_outputs, link)
@@ -340,10 +341,9 @@ static int create_shm_file(off_t size)
       for (retry_count = 0; retry_count < 100; retry_count++)
       {
          char *name;
-         if (asprintf (&name, "%s-%02d", SPLASH_SHM_NAME, retry_count) < 0)
+         if (asprintf(&name, "%s-%02d", SPLASH_SHM_NAME, retry_count) < 0)
             continue;
-         fd = shm_open(name, O_RDWR | O_CREAT, 0600);
-         if (fd >= 0)
+         if ((fd = shm_open(name, O_RDWR | O_CREAT, 0600)) >= 0)
          {
             shm_unlink(name);
             free(name);
@@ -433,8 +433,7 @@ static void shm_buffer_paint_checkerboard(
    }
 }
 
-
-static bool draw_splash_screen(gfx_ctx_wayland_data_t *wl)
+static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 {
    shm_buffer_t *buffer = create_shm_buffer(wl,
       wl->width * wl->buffer_scale,
@@ -594,7 +593,7 @@ bool gfx_ctx_wl_init_common(
    /* Bind SHM based wl_buffer to wl_surface until the vulkan surface is ready.
     * This shows the window which assigns us a display (wl_output)
     *  which is usefull for HiDPI and auto selecting a display for fullscreen. */
-   if (!draw_splash_screen(wl))
+   if (!wl_draw_splash_screen(wl))
       RARCH_ERR("[Wayland`]: Failed to draw splash screen\n");
 
    wl_display_roundtrip(wl->input.dpy);
@@ -625,7 +624,6 @@ bool gfx_ctx_wl_init_common(
 error:
    return false;
 }
-
 
 bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
       unsigned width, unsigned height)

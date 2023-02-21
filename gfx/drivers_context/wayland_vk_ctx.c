@@ -116,13 +116,6 @@ static void gfx_ctx_wl_update_title(void *data)
    gfx_ctx_wl_update_title_common(wl);
 }
 
-static bool gfx_ctx_wl_get_metrics(void *data,
-      enum display_metric_types type, float *value)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   return gfx_ctx_wl_get_metrics_common(wl, type, value);
-}
-
 #ifdef HAVE_LIBDECOR_H
 static void
 libdecor_frame_handle_configure(struct libdecor_frame *frame,
@@ -258,9 +251,7 @@ static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data)
 static bool gfx_ctx_wl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   if (api == GFX_CTX_VULKAN_API)
-         return true;
-   return false;
+   return (api == GFX_CTX_VULKAN_API);
 }
 
 static void *gfx_ctx_wl_get_context_data(void *data)
@@ -287,11 +278,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
    flush_wayland_fd(&wl->input);
 }
 
-static gfx_ctx_proc_t gfx_ctx_wl_get_proc_address(const char *symbol)
-{
-   return NULL;
-}
-
+static gfx_ctx_proc_t gfx_ctx_wl_get_proc_address(const char *symbol) { return NULL; }
 static void gfx_ctx_wl_bind_hw_render(void *data, bool enable) { }
 
 static uint32_t gfx_ctx_wl_get_flags(void *data)
@@ -320,7 +307,7 @@ const gfx_ctx_driver_t gfx_ctx_vk_wayland = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   gfx_ctx_wl_get_metrics,
+   gfx_ctx_wl_get_metrics_common,
    NULL,
    gfx_ctx_wl_update_title,
    gfx_ctx_wl_check_window,
