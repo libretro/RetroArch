@@ -258,9 +258,8 @@ bool microphone_driver_init_internal(void *settings_data)
 {
    settings_t *settings   = (settings_t*)settings_data;
    microphone_driver_state_t *mic_st = &mic_driver_st;
-   float slowmotion_ratio = settings->floats.slowmotion_ratio;
    bool verbosity_enabled = verbosity_is_enabled();
-   size_t max_frames   = AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO * slowmotion_ratio;
+   size_t max_frames   = AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO;
 
    if (!settings->bools.microphone_enable)
    { /* If the user has mic support turned off... */
@@ -355,8 +354,7 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
    unsigned runloop_audio_latency        = runloop_state_get_ptr()->audio_latency;
    unsigned setting_audio_latency        = settings->uints.microphone_latency;
    unsigned audio_latency                = MAX(runloop_audio_latency, setting_audio_latency);
-   float slowmotion_ratio                = settings->floats.slowmotion_ratio;
-   size_t max_samples                    = AUDIO_CHUNK_SIZE_NONBLOCKING * 1 * AUDIO_MAX_RATIO * slowmotion_ratio;
+   size_t max_samples                    = AUDIO_CHUNK_SIZE_NONBLOCKING * 1 * AUDIO_MAX_RATIO;
 
    if (!microphone || !mic_driver || !(mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE))
       return false;
