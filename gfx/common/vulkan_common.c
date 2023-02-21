@@ -420,7 +420,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       enum vk_texture_type type)
 {
    unsigned i;
+   uint32_t buffer_width;
    struct vk_texture tex;
+   VkFormat remap_tex_fmt;
    VkMemoryRequirements mem_reqs;
    VkSubresourceLayout layout;
    VkDevice device                      = vk->context->device;
@@ -432,7 +434,6 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    VkCommandBufferAllocateInfo cmd_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
    VkSubmitInfo submit_info             = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
    VkCommandBufferBeginInfo begin_info  = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-   uint32_t buffer_width;
 
    memset(&tex, 0, sizeof(tex));
 
@@ -452,19 +453,19 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    buffer_info.size        = buffer_width * height;
    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
+   remap_tex_fmt           = vulkan_remap_to_texture_format(format);
+
    /* Compatibility concern. Some Apple hardware does not support rgb565.
     * Use compute shader uploads instead.
     * If we attempt to use streamed texture, force staging path.
     * If we're creating fallback dynamic texture, force RGBA8888. */
-   if (vulkan_remap_to_texture_format(format) != format)
+   if (remap_tex_fmt != format)
    {
       if (type == VULKAN_TEXTURE_STREAMED)
-      {
-         type = VULKAN_TEXTURE_STAGING;
-      }
+         type        = VULKAN_TEXTURE_STAGING;
       else if (type == VULKAN_TEXTURE_DYNAMIC)
       {
-         format = vulkan_remap_to_texture_format(format);
+         format      = remap_tex_fmt;
          info.format = format;
          info.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
       }

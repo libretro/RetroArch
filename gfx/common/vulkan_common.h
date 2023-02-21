@@ -21,7 +21,7 @@
 #endif
 
 #include <lists/string_list.h>
-
+#include <retro_inline.h>
 
 #define VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS    16
 #define VULKAN_MAX_DESCRIPTOR_POOL_SIZES        16
@@ -745,12 +745,11 @@ void vulkan_set_uniform_buffer(
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
 
-static inline VkFormat vulkan_remap_to_texture_format(VkFormat fmt)
+static INLINE VkFormat vulkan_remap_to_texture_format(VkFormat fmt)
 {
    if (fmt == VK_FORMAT_R5G6B5_UNORM_PACK16)
       return VK_FORMAT_R8G8B8A8_UNORM;
-   else
-      return fmt;
+   return fmt;
 }
 
 RETRO_END_DECLS
