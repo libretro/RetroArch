@@ -554,6 +554,8 @@ static size_t microphone_driver_flush(
 
    if (fabs(resampler_data.ratio - 1.0f) < 1e-8)
    { /* If the mic's native rate is practically the same as the requested one... */
+
+      /* ...then skip the resampler, since it'll produce (more or less) identical results. */
       frames_to_enqueue = MIN(FIFO_WRITE_AVAIL(microphone->outgoing_samples), resampler_data.input_frames);
       if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
       { /* If this mic provides floating-point samples... */
