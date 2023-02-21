@@ -1586,7 +1586,8 @@ static bool gl_glsl_set_coords(void *shader_data,
    }
 
 #if defined(VITA)
-   if (uni->time >= 0) {
+   if (uni->time >= 0)
+   {
       float t = (sceKernelGetSystemTimeWide()) / (scePowerGetArmClockFrequency() * 1000.0);
       glUniform1f(uni->time, t);
    }
