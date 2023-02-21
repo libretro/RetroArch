@@ -166,7 +166,7 @@ end:
    RARCH_DBG("[ALSA] [capture thread %p]: Ending microphone worker thread\n", thread_id);
 }
 
-static ssize_t alsa_thread_microphone_read(void *driver_context, void *microphone_context, void *buf, size_t size)
+static int alsa_thread_microphone_read(void *driver_context, void *microphone_context, void *buf, size_t size)
 {
    alsa_thread_microphone_t *alsa              = (alsa_thread_microphone_t*)driver_context;
    alsa_thread_microphone_handle_t *microphone = (alsa_thread_microphone_handle_t*)microphone_context;
@@ -214,7 +214,7 @@ static ssize_t alsa_thread_microphone_read(void *driver_context, void *microphon
       /* "Here, take this queue back." */
       slock_unlock(microphone->info.fifo_lock);
 
-      return write_amt;
+      return (int)write_amt;
    }
    else
    {
@@ -260,7 +260,7 @@ static ssize_t alsa_thread_microphone_read(void *driver_context, void *microphon
 
          /* "I'll be right back..." */
       }
-      return written;
+      return (int)written;
    }
 }
 

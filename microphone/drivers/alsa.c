@@ -65,7 +65,7 @@ static void alsa_microphone_free(void *driver_context)
 }
 
 static bool alsa_microphone_start_mic(void *driver_context, void *microphone_context);
-static ssize_t alsa_microphone_read(void *driver_context, void *microphone_context, void *buf_, size_t size_)
+static int alsa_microphone_read(void *driver_context, void *microphone_context, void *buf_, size_t size_)
 {
    alsa_microphone_t *alsa              = (alsa_microphone_t*)driver_context;
    alsa_microphone_handle_t *microphone = (alsa_microphone_handle_t*)microphone_context;
