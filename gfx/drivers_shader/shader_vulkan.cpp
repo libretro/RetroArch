@@ -2483,6 +2483,9 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
                       frame_direction);
 
+   build_semantic_int(buffer, SLANG_SEMANTIC_ROTATION,
+                      retroarch_get_rotation());
+
    /* Standard inputs */
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);

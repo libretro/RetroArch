@@ -70,10 +70,12 @@ enum slang_semantic
    SLANG_SEMANTIC_FRAME_COUNT     = 3,
    /* int, frame direction */
    SLANG_SEMANTIC_FRAME_DIRECTION = 4,
+   /* int, rotation */
+   SLANG_SEMANTIC_ROTATION        = 5,
    SLANG_NUM_BASE_SEMANTICS,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER = 5,
+   SLANG_SEMANTIC_FLOAT_PARAMETER = 6,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC         = -1
