@@ -134,7 +134,6 @@ typedef struct vulkan_context
    VkPhysicalDeviceProperties gpu_properties;
    VkPhysicalDeviceMemoryProperties memory_properties;
 
-   VkPresentModeKHR present_modes[16];
    VkImage swapchain_images[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFence swapchain_fences[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFormat swapchain_format;
@@ -157,9 +156,9 @@ typedef struct vulkan_context
 
    unsigned swapchain_width;
    unsigned swapchain_height;
+   unsigned swap_interval;
    unsigned num_recycled_acquire_semaphores;
 
-   int8_t swap_interval;
    uint8_t flags;
 
    bool swapchain_fences_signalled[VULKAN_MAX_SWAPCHAIN_IMAGES];
@@ -725,7 +724,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type,
       void *display, void *surface,
       unsigned width, unsigned height,
-      int8_t swap_interval);
+      unsigned swap_interval);
 
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index);
 
@@ -733,7 +732,7 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk);
 
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
-      int8_t swap_interval);
+      unsigned swap_interval);
 
 void vulkan_set_uniform_buffer(
       VkDevice device,
