@@ -516,22 +516,13 @@ bool microphone_driver_get_mic_state(const retro_microphone_t *microphone)
  * so a "sample" and a "frame" are equivalent here.
  *
  * @param mic_st The overall state of the audio driver.
- * @param slowmotion_ratio TODO
- * @param audio_fastforward_mute True if no audio should be input while the game is in fast-forward.
  * @param[out] frames The buffer in which the core will receive microphone samples.
  * @param num_frames The size of \c frames, in samples.
- * @param is_slowmotion True if the player is running the core in slow-motion.
- * @param is_fastmotion True if the player is running the core in fast-forward.
- *
- * @see audio_driver_flush()
  */
 static size_t microphone_driver_flush(
       microphone_driver_state_t *mic_st,
       retro_microphone_t *microphone,
-      float slowmotion_ratio,
-      bool audio_fastforward_mute,
-      size_t num_frames,
-      bool is_slowmotion, bool is_fastmotion)
+      size_t num_frames)
 {
    struct resampler_data resampler_data;
    unsigned sample_size = mic_driver_get_sample_size(microphone);
@@ -560,9 +551,6 @@ static size_t microphone_driver_flush(
    /* The buffers that will be used for the resampler's input and output */
 
    resampler_data.ratio    = (double)microphone->effective_params.rate / (double)microphone->actual_params.rate;
-
-   if (is_slowmotion)
-      resampler_data.ratio *= slowmotion_ratio;
 
    if (fabs(resampler_data.ratio - 1.0f) < 1e-8)
    { /* If the mic's native rate is practically the same as the requested one... */
@@ -618,9 +606,10 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
    microphone_driver_state_t *mic_st = &mic_driver_st;
    const microphone_driver_t *driver = mic_st->driver;
    bool core_paused                  = runloop_flags & RUNLOOP_FLAG_PAUSED;
+   bool is_fastforward               = runloop_flags & RUNLOOP_FLAG_FASTMOTION;
+   bool is_slowmo                    = runloop_flags & RUNLOOP_FLAG_SLOWMOTION;
+   bool is_rewind                    = state_manager_frame_is_reversed();
    bool driver_active                = mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE;
-   float slowmotion_ratio            = config_get_ptr()->floats.slowmotion_ratio;
-   bool fastforward_mute             = config_get_ptr()->bools.audio_fastforward_mute;
 
    if (!frames || !microphone)
       /* If the provided arguments aren't valid... */
@@ -641,8 +630,12 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
    if ((microphone->flags & MICROPHONE_FLAG_PENDING)
       || (microphone->flags & MICROPHONE_FLAG_SUSPENDED)
       || !(microphone->flags & MICROPHONE_FLAG_ENABLED)
+      || is_fastforward
+      || is_slowmo
+      || is_rewind
       )
-   { /* If the microphone is pending, suspended, or disabled... */
+   { /* If the microphone is pending, suspended, or disabled...
+        ...or if the core is in fast-forward, slow-mo, or rewind...*/
       memset(frames, 0, num_frames * sizeof(*frames));
       return (int)num_frames;
       /* ...then copy silence to the provided buffer. Not an error,
@@ -672,13 +665,7 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
       size_t frames_read = 0;
       if (!core_paused)
          /* If the game is running and the mic driver is active... */
-         frames_read = microphone_driver_flush(mic_st,
-            microphone,
-            slowmotion_ratio,
-            fastforward_mute,
-            frames_to_read,
-            runloop_flags & RUNLOOP_FLAG_SLOWMOTION,
-            runloop_flags & RUNLOOP_FLAG_FASTMOTION);
+         frames_read = microphone_driver_flush(mic_st, microphone, frames_to_read);
 
       /* Otherwise, advance the counters. We're not gonna get new data,
        * but we still need to finish this loop */
