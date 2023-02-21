@@ -701,6 +701,10 @@ static ui_application_t ui_application_cocoa = {
       [self updateWindowedMode];
    }
 
+   /* HACK(sgc): ensure MTKView posts a drawable resize event */
+   if (mode.width > 0)
+       [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
+   [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
    [self.window displayIfNeeded];
 }
 
