@@ -267,7 +267,7 @@ video_driver_t video_null = {
 };
 
 const video_driver_t *video_drivers[] = {
-#ifdef __PSL1GHT__
+#ifdef HAVE_GCM
    &video_gcm,
 #endif
 #ifdef HAVE_VITA2D

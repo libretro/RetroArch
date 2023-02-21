@@ -111,7 +111,7 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #ifdef WIIU
    &gfx_display_ctx_wiiu,
 #endif
-#ifdef __PSL1GHT__
+#ifdef HAVE_GCM
    &gfx_display_ctx_rsx,
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)

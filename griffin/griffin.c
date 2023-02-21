@@ -535,7 +535,7 @@ VIDEO DRIVER
 #include "../gfx/drivers/xvideo.c"
 #endif
 
-#if defined(__PSL1GHT__)
+#if defined(HAVE_GCM)
 #include "../gfx/drivers/rsx_gfx.c"
 #include "../gfx/drivers_display/gfx_display_rsx.c"
 #elif defined(GEKKO)
@@ -642,7 +642,7 @@ FONTS
 #include "../gfx/drivers_font/wiiu_font.c"
 #endif
 
-#if defined(__PSL1GHT__)
+#if defined(HAVE_GCM)
 #include "../gfx/drivers_font/rsx_font.c"
 #endif
 

@@ -466,7 +466,7 @@ static bool wiiu_font_init_first(
 }
 #endif
 
-#ifdef __PSL1GHT__
+#ifdef HAVE_GCM
 static bool rsx_font_init_first(
       const void **font_driver, void **font_handle,
       void *video_data, const char *font_path,
@@ -580,7 +580,7 @@ static bool font_init_first(
          return switch_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
-#ifdef __PSL1GHT__
+#ifdef HAVE_GCM
       case FONT_DRIVER_RENDER_RSX:
          return rsx_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
