@@ -638,7 +638,7 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
         ...or if the core is in fast-forward, slow-mo, or rewind...*/
       memset(frames, 0, num_frames * sizeof(*frames));
       return (int)num_frames;
-      /* ...then copy silence to the provided buffer. Not an error,
+      /* ...then copy silence to the provided buffer. Not an error if the mic is pending,
        * because the user might have requested a microphone
        * before the driver could provide it. */
    }
