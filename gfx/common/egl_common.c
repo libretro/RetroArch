@@ -624,13 +624,3 @@ bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
 
    return true;
 }
-
-bool egl_has_config(egl_ctx_data_t *egl)
-{
-   if (!egl->config)
-   {
-      RARCH_ERR("[EGL]: No EGL configurations available.\n");
-      return false;
-   }
-   return true;
-}

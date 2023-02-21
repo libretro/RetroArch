@@ -181,7 +181,7 @@ static void *gfx_ctx_xegl_init(void *video_driver)
       goto error;
    }
 
-   if (n == 0 || !egl_has_config(&xegl->egl))
+   if (n == 0 || !&xegl->egl.config)
       goto error;
 #endif
 

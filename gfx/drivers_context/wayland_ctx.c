@@ -259,15 +259,11 @@ static bool gfx_ctx_wl_egl_init_context(gfx_ctx_wayland_data_t *wl)
             egl_default_accept_config_cb))
    {
       egl_report_error();
-      goto error;
+      return false;
    }
-
-   if (n == 0 || !egl_has_config(&wl->egl))
-      goto error;
+   if (n == 0 || !&wl->egl.config)
+      return false;
    return true;
-
-error:
-   return false;
 }
 #endif
 
@@ -275,23 +271,17 @@ static void *gfx_ctx_wl_init(void *data)
 {
    int i;
    gfx_ctx_wayland_data_t *wl = NULL;
-
    if (!gfx_ctx_wl_init_common(&toplevel_listener, &wl))
       goto error;
-
 #ifdef HAVE_EGL
    if (!gfx_ctx_wl_egl_init_context(wl))
       goto error;
 #endif
-
    return wl;
-
 error:
    gfx_ctx_wl_destroy_resources(wl);
-
    if (wl)
       free(wl);
-
    return NULL;
 }
 

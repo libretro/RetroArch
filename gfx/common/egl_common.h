@@ -74,8 +74,6 @@ extern bool g_egl_inited;
 extern unsigned g_egl_major;
 extern unsigned g_egl_minor;
 
-void egl_report_error(void);
-
 void egl_destroy(egl_ctx_data_t *egl);
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol);
