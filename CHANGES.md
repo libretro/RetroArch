@@ -14,6 +14,7 @@
 - D3D10: Fixed display driver scissoring implementation - can now accept 0 width/height
 - D3D11: Fixed display driver scissoring implementation - can now accept 0 width/height
 - D3D12: Fixed display driver scissoring implementation - can now accept 0 width/height
+- LIBRETRO/MICROPHONE: Add new API for microphone support.
 - LOCALIZATION: Updates
 - LOCALIZATION: Enable localization of video rotation, orientation, and aspect ratio option values.
 - LOCALIZATION: Mixer stream localization also added
@@ -35,6 +36,10 @@
 - MENU/CHEATS: Added missing icons in cheats (Delete + Copy After/Before)
 - MENU/CHEATS: Fixed label capitalization in cheats (Add New After/Before This)
 - MENU/SOUNDS: Add scrolling sounds for RGUI, XMB, MaterialUI and Ozone.
+- MICROPHONE: Add support for microphones.
+- MICROPHONE/ALSA: Add `alsa` and `alsathread` microphone drivers.
+- MICROPHONE/SDL: Add `sdl2` microphone driver.
+- MICROPHONE/WASAPI: Add `wasapi` microphone driver.
 - MIYOO: L3/R3 support for Dingux Gamepad controller device.
 - OSX/MACOS: Include OpenGL video driver on Metal macOS builds (10.13 and higher)
 - OSX/MACOS/METAL BUILD: Fix input events (keyboard/mouse) sometimes going lost when switching between fullscreen and windowed mode. Fixes lots of longstanding issues
