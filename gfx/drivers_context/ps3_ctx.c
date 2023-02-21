@@ -20,7 +20,9 @@
 #include "../../config.h"
 #endif
 
+#ifndef __PSL1GHT__
 #include <sys/spu_initialize.h>
+#endif
 
 #include <compat/strl.h>
 
@@ -28,6 +30,9 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include <defines/ps3_defines.h>
+#ifdef HAVE_GCM
+#include <rsx/rsx.h>
+#endif
 #include "../../frontend/frontend_driver.h"
 #if defined(HAVE_PSGL)
 #include "../common/gl_common.h"
@@ -45,7 +50,11 @@ typedef struct gfx_ctx_ps3_data
 } gfx_ctx_ps3_data_t;
 
 /* TODO/FIXME - static global */
+#ifdef HAVE_GCM
+static enum gfx_ctx_api ps3_api = GFX_CTX_RSX_API;
+#else
 static enum gfx_ctx_api ps3_api = GFX_CTX_NONE;
+#endif
 
 static void gfx_ctx_ps3_get_resolution(unsigned idx,
       unsigned *width, unsigned *height)
@@ -60,7 +69,7 @@ static void gfx_ctx_ps3_get_resolution(unsigned idx,
 static void gfx_ctx_ps3_get_available_resolutions(void)
 {
    unsigned i;
-   uint32_t videomode[] = {
+   uint32_t videomode[]      = {
       CELL_VIDEO_OUT_RESOLUTION_480,
       CELL_VIDEO_OUT_RESOLUTION_576,
       CELL_VIDEO_OUT_RESOLUTION_960x1080,
@@ -126,26 +135,29 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
 static void gfx_ctx_ps3_set_swap_interval(void *data, int interval)
 {
 #if defined(HAVE_PSGL)
-   if (interval == 1)
-      gl_enable(GL_VSYNC_SCE);
-   else
-      gl_disable(GL_VSYNC_SCE);
+   if (ps3_api == GFX_CTX_OPENGL_API || ps3_api == GFX_CTX_OPENGL_ES_API)
+   {
+      if (interval == 1)
+         gl_enable(GL_VSYNC_SCE);
+      else
+         gl_disable(GL_VSYNC_SCE);
+   }
 #endif
 }
 
 static void gfx_ctx_ps3_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
-#if defined(HAVE_PSGL)
-   gl2_t *gl = data;
-#endif
-
    *quit    = false;
    *resize  = false;
 
 #if defined(HAVE_PSGL)
-   if (gl->should_resize)
-      *resize = true;
+   if (ps3_api == GFX_CTX_OPENGL_API || ps3_api == GFX_CTX_OPENGL_ES_API)
+   {
+      gl2_t *gl = data;
+      if (gl->should_resize)
+         *resize = true;
+   }
 #endif
 }
 
@@ -155,7 +167,8 @@ static bool gfx_ctx_ps3_suppress_screensaver(void *data, bool enable) { return f
 static void gfx_ctx_ps3_swap_buffers(void *data)
 {
 #ifdef HAVE_PSGL
-   psglSwap();
+   if (ps3_api == GFX_CTX_OPENGL_API || ps3_api == GFX_CTX_OPENGL_ES_API)
+      psglSwap();
 #endif
 #ifdef HAVE_SYSUTILS
    cellSysutilCheckCallback();
@@ -166,9 +179,12 @@ static void gfx_ctx_ps3_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
 #if defined(HAVE_PSGL)
-   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)data;
-   if (ps3)
-      psglGetDeviceDimensions(ps3->gl_device, width, height);
+   if (ps3_api == GFX_CTX_OPENGL_API || ps3_api == GFX_CTX_OPENGL_ES_API)
+   {
+      gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)data;
+      if (ps3)
+         psglGetDeviceDimensions(ps3->gl_device, width, height);
+   }
 #endif
 }
 
@@ -252,10 +268,12 @@ static void gfx_ctx_ps3_destroy_resources(gfx_ctx_ps3_data_t *ps3)
 #if defined(HAVE_PSGL)
    if (!ps3)
       return;
-   psglDestroyContext(ps3->gl_context);
-   psglDestroyDevice(ps3->gl_device);
-
-   psglExit();
+   if (ps3_api == GFX_CTX_OPENGL_API || ps3_api == GFX_CTX_OPENGL_ES_API)
+   {
+      psglDestroyContext(ps3->gl_context);
+      psglDestroyDevice(ps3->gl_device);
+      psglExit();
+   }
 #endif
 }
 
@@ -287,10 +305,11 @@ static bool gfx_ctx_ps3_bind_api(void *data,
 {
    ps3_api = api;
 #ifdef HAVE_PSGL
-   if (
-            (api == GFX_CTX_OPENGL_API)
-         || (api == GFX_CTX_OPENGL_ES_API)
-      )
+   if (ps3_api == GFX_CTX_OPENGL_API || ps3_api == GFX_CTX_OPENGL_ES_API)
+      return true;
+#endif
+#ifdef HAVE_GCM
+   if (ps3_api == GFX_CTX_RSX_API)
       return true;
 #endif
    return false;

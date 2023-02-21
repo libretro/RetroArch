@@ -120,11 +120,7 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
    &vita_ctx,
 #endif
 #if defined(__PS3__)
-#if defined(__PSL1GHT__)
-   &gfx_ctx_psl1ght,
-#else
    &gfx_ctx_ps3,
-#endif
 #endif
 #if defined(HAVE_LIBNX) && defined(HAVE_OPENGL)
    &switch_ctx,
