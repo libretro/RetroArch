@@ -328,12 +328,14 @@ runloop_state_t *runloop_state_get_ptr(void)
    return &runloop_state;
 }
 
-#ifdef HAVE_REWIND
 bool state_manager_frame_is_reversed(void)
 {
+#ifdef HAVE_REWIND
    return (runloop_state.rewind_st.flags & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED) > 0;
-}
+#else
+   return false;
 #endif
+}
 
 content_state_t *content_state_get_ptr(void)
 {
