@@ -1076,7 +1076,7 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
       audio_state_get_ptr()->context_audio_data = NULL;
 
    if (flags & DRIVER_MICROPHONE_MASK)
-      microphone_driver_deinit();
+      microphone_driver_deinit(lifetime_flags & DRIVER_LIFETIME_RESET);
 
    if (flags & DRIVER_MIDI_MASK)
       midi_driver_free();

@@ -206,7 +206,7 @@ static void mic_driver_microphone_handle_init(retro_microphone_t *microphone, co
    }
 }
 
-static void mic_driver_microphone_handle_free(retro_microphone_t *microphone)
+static void mic_driver_microphone_handle_free(retro_microphone_t *microphone, bool is_reset)
 {
    microphone_driver_state_t *mic_st     = &mic_driver_st;
    const microphone_driver_t *mic_driver = mic_st->driver;
@@ -228,6 +228,7 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone)
    {
       memalign_free(microphone->sample_buffer);
       microphone->sample_buffer = NULL;
+      microphone->sample_buffer_length = 0;
    }
 
    if (microphone->outgoing_samples)
@@ -242,7 +243,17 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone)
    microphone->resampler      = NULL;
    microphone->resampler_data = NULL;
 
-   memset(microphone, 0, sizeof(*microphone));
+   if ((microphone->flags & MICROPHONE_FLAG_ACTIVE) && is_reset)
+   { /* If the mic driver is being reset and the microphone was already valid... */
+
+      microphone->flags |= MICROPHONE_FLAG_PENDING;
+      /* ...then we need to keep the handle itself valid.
+       * Otherwise the core will lose mic input. */
+   }
+   else
+   {
+      memset(microphone, 0, sizeof(*microphone));
+   }
    /* Do NOT free the microphone handle itself! It's allocated statically! */
 }
 
@@ -338,7 +349,7 @@ bool microphone_driver_init_internal(void *settings_data)
 error:
    RARCH_ERR("[Microphone]: Failed to start microphone driver. Will continue without audio input.\n");
    mic_st->flags &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
-   return microphone_driver_deinit();
+   return microphone_driver_deinit(false);
 }
 
 /**
@@ -409,12 +420,12 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
    RARCH_LOG("[Microphone]: Initialized microphone\n");
    return true;
 error:
-   mic_driver_microphone_handle_free(microphone);
+   mic_driver_microphone_handle_free(microphone, false);
    RARCH_ERR("[Microphone]: Driver attempted to initialize the microphone but failed\n");
    return false;
 }
 
-void microphone_driver_close_mic(retro_microphone_t *microphone)
+static void microphone_driver_close_mic_internal(retro_microphone_t *microphone, bool is_reset)
 {
    microphone_driver_state_t *mic_st     = &mic_driver_st;
    const microphone_driver_t *mic_driver = mic_st->driver;
@@ -425,8 +436,13 @@ void microphone_driver_close_mic(retro_microphone_t *microphone)
          mic_driver &&
          mic_driver->close_mic)
    {
-      mic_driver_microphone_handle_free(microphone);
+      mic_driver_microphone_handle_free(microphone, is_reset);
    }
+}
+
+void microphone_driver_close_mic(retro_microphone_t *microphone)
+{
+   mic_driver_microphone_handle_free(microphone, false);
 }
 
 bool microphone_driver_set_mic_state(retro_microphone_t *microphone, bool state)
@@ -769,21 +785,10 @@ retro_microphone_t *microphone_driver_open_mic(const retro_microphone_params_t *
 
    return &mic_st->microphone;
 error:
-   mic_driver_microphone_handle_free(&mic_st->microphone);
+   mic_driver_microphone_handle_free(&mic_st->microphone, false);
    /* This function cleans up any resources and unsets all flags */
 
    return NULL;
-}
-
-/* TODO: When adding support for multiple microphones,
- * make sure you clean them all up in here. */
-static bool microphone_driver_close_microphones(void)
-{
-   microphone_driver_state_t *mic_st     = &mic_driver_st;
-
-   microphone_driver_close_mic(&mic_st->microphone);
-
-   return true;
 }
 
 static bool microphone_driver_free_devices_list(void)
@@ -801,13 +806,13 @@ static bool microphone_driver_free_devices_list(void)
    return true;
 }
 
-bool microphone_driver_deinit(void)
+bool microphone_driver_deinit(bool is_reset)
 {
    microphone_driver_state_t *mic_st = &mic_driver_st;
    const microphone_driver_t *driver = mic_st->driver;
 
    microphone_driver_free_devices_list();
-   microphone_driver_close_microphones();
+   microphone_driver_close_mic_internal(&mic_st->microphone, is_reset);
 
    if (driver && driver->free)
    {

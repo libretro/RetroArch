@@ -626,7 +626,7 @@ extern microphone_driver_t *microphone_drivers[];
 
 bool microphone_driver_init_internal(void *settings_data);
 
-bool microphone_driver_deinit(void);
+bool microphone_driver_deinit(bool is_reset);
 
 bool microphone_driver_find_driver(
       void *settings_data,
