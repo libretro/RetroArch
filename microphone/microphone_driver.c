@@ -809,7 +809,8 @@ bool microphone_driver_deinit(void)
    microphone_driver_free_devices_list();
    microphone_driver_close_microphones();
 
-   if (driver && driver->free) {
+   if (driver && driver->free)
+   {
       if (mic_st->driver_context)
          driver->free(mic_st->driver_context);
 
