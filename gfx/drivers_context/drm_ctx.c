@@ -94,7 +94,7 @@ typedef struct hdmi_timings
 {
    int h_active_pixels; /* Horizontal pixels (width) */
    int h_sync_polarity; /* Invert HSync polarity */
-   int h_front_porch;   /* Horizontal forward padding from DE acitve edge */
+   int h_front_porch;   /* Horizontal forward padding from DE active edge */
    int h_sync_pulse;    /* HSync pulse width in pixel clocks */
    int h_back_porch;    /* Vertical back padding from DE active edge */
    int v_active_lines;  /* Vertical pixels height (lines) */
