@@ -218,9 +218,9 @@ static int alsa_thread_microphone_read(void *driver_context, void *microphone_co
    }
    else
    {
-      size_t written = 0;
-      while (written < size && !microphone->info.thread_dead)
-      { /* Until we've written all requested samples (or we're told to stop)... */
+      size_t read = 0;
+      while (read < size && !microphone->info.thread_dead)
+      { /* Until we've read all requested samples (or we're told to stop)... */
          size_t avail;
 
          /* "Hey, I'm gonna borrow the queue." */
@@ -247,20 +247,20 @@ static int alsa_thread_microphone_read(void *driver_context, void *microphone_co
          }
          else
          {
-            size_t write_amt = MIN(size - written, avail);
+            size_t read_amt = MIN(size - read, avail);
 
             /* "I'll just go ahead and consume all these samples..."
              * (As many as will fit in buf, or as many as are available.) */
-            fifo_write(microphone->info.buffer,(const char*)buf + written, write_amt);
+            fifo_read(microphone->info.buffer,buf + read, read_amt);
 
             /* "I'm done, you can take the queue back now." */
             slock_unlock(microphone->info.fifo_lock);
-            written += write_amt;
+            read += read_amt;
          }
 
          /* "I'll be right back..." */
       }
-      return (int)written;
+      return (int)read;
    }
 }
 
