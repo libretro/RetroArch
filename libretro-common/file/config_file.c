@@ -207,12 +207,13 @@ static char *config_file_strip_comment(char *str)
 
 static char *config_file_extract_value(char *line)
 {
+   char *dst = NULL;
    while (ISSPACE((int)*line))
       line++;
 
    /* Note: From this point on, an empty value
     * string is valid - and in this case, strldup("", sizeof(""))
-    * will be returned
+    * will be returned (see Note 2)
     * > If we instead return NULL, the the entry
     *   is ignored completely - which means we cannot
     *   track *changes* in entry value */
@@ -254,7 +255,13 @@ static char *config_file_extract_value(char *line)
          return strdup(value);
    }
 
-   return strldup("", sizeof(""));
+   /* Note 2: This is an unrolled strldup call 
+    * to avoid an unnecessary dependency -
+    * call is strldup("", sizeof(""))
+    **/
+   dst = (char*)malloc(sizeof(char*) * 2);
+   strlcpy(dst, "", 1);
+   return dst;
 }
 
 /* Move semantics? */
