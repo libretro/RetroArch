@@ -855,10 +855,9 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    _ftime64_s(&now);
 #elif defined(GEKKO)
    /* Avoid gettimeofday due to it being reported to be broken */
-   struct timeval tm;
    const uint64_t tickms = gettime() / TB_TIMER_CLOCK;
    now.tv_sec            = tickms / 1000;
-	now.tv_nsec           = tickms * 1000;
+   now.tv_nsec           = tickms * 1000;
 #else
    clock_gettime(CLOCK_REALTIME, &now);
 #endif
