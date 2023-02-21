@@ -491,6 +491,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
    "Enable Hardware Shared Context"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
+   "Kontrolu ĉu mankas firmvaro antaŭ alŝuto"
+   )
 #ifndef HAVE_DYNAMIC
 #endif
 #ifdef HAVE_MIST
@@ -989,6 +993,10 @@ MSG_HASH(
 
 /* Notifications */
 
+MSG_HASH(
+   MSG_WAITING_FOR_CLIENT,
+   "Atendante klienton..."
+   )
 
 MSG_HASH(
    MSG_CRC32_CHECKSUM_MISMATCH,

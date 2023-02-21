@@ -222,7 +222,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "透過網路安裝和更新核心。"
+   "透過網路選擇下載安裝和更新核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
@@ -1513,8 +1513,16 @@ MSG_HASH(
    "LibCACA驅動程式。\n字符輸出而不是圖形, 不推薦使用。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   "低階Exynos顯示驅動程式。\n使用三星Exynos單晶片系統的二維圖形區塊繪製。\n執行軟體渲染的核心效能為最佳。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
    "基本DRM顯示驅動程式。\n使用libdrm的低階顯示驅動程式, 用於使用GPU覆寫進行硬體縮放。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
+   "低階Sunxi顯示驅動程式。\n使用全志單晶片系統的二維圖形區塊。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
@@ -1693,7 +1701,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   "使用映像管螢幕輸出影像時相關的設定, 可上官方網站了解更多 CRT SwitchRes 的支援說明。"
+   "使用映像管螢幕輸出影像時相關的設定, 可參考CRT SwitchRes了解更多支援說明。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
@@ -2640,11 +2648,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
-   "設定音訊輸入速率最大變化值, 提高音訊間距不準確為代價實現時序變化。\n例如: NTSC顯示器上執行PAL核心。"
+   "設定音訊輸入速率最大變化值, 提高音訊間距不準確為代價實現時序變化。\n例如: NTSC顯示器上執行PAL核心, 代價為音訊間距不準確。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
-   "設定音訊輸入速率最大變化值實現時序變化。\n例如: NTSC顯示器上執行PAL核心, 代價為音訊間距不準確。\n計算方式: 原始速率x(1.0+/-(此選項設定值))。"
+   "設定音訊輸入速率最大變化值, 提高音訊間距不準確為代價實現時序變化。\n例如: NTSC顯示器上執行PAL核心, 代價為音訊間距不準確。\n計算方式: 音訊輸入速率x(1.0±(此選項設定值))。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -2656,7 +2664,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
-   "設定<0>時關閉音訊速率控制, 其他數值動態調整音訊輸入的速率。\n計算方式: 原始速率x(1.0+/-(此選項設定值))。"
+   "設定<0>時關閉音訊速率控制, 其他數值動態調整音訊輸入的速率。\n計算方式: 音訊輸入速率x(1.0±(此選項設定值))。"
    )
 
 /* Settings > Audio > MIDI */
@@ -2671,7 +2679,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MIDI_INPUT,
-   "[左/右鍵]選擇輸入裝置, 依據MIDI驅動程式顯示可使用裝置。\n關閉時輸入裝置將被禁用, 此選項支援輸入名稱連接裝置。"
+   "依據MIDI驅動程式顯示可使用裝置, 此選項支援輸入名稱連接輸入裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
@@ -2683,7 +2691,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
-   "[左/右鍵]選擇輸出裝置, 依據MIDI驅動程式顯示可使用裝置。\n關閉時輸出裝置將被禁用, 此選項支援輸入名稱連接裝置。\n當執行核心支援MIDI輸出時, 依據支援程度由MIDI裝置輸出音效。"
+   "依據MIDI驅動程式顯示可使用裝置, 此選項支援輸入名稱連接輸出裝置。\n當執行核心支援MIDI輸出時, 依據支援程度由MIDI裝置輸出音效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
@@ -2900,7 +2908,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "控制器斷開時暫停遊戲"
+   "控制器斷開時暫停核心"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
@@ -3137,7 +3145,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   "設定後變更快捷鍵的操作方式, 必須先按住組合鍵才能觸發快捷鍵, 控制器組合鍵相關選項不影響。"
+   "設定按鍵後變更快捷鍵的操作方式, 必須先按住組合鍵才能識別快捷鍵, 使用控制器組合鍵相關選項不影響。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
@@ -3149,7 +3157,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
-   "設定觸發[組合鍵]作用的延遲, 在延遲時間內可當一般按鍵使用, 應用於追加控制器的快捷鍵。"
+   "設定組合鍵的觸發識別延遲(幀數), 在延遲時間內可當作基本按鍵使用, 用於控制器基本按鍵設定為組合鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -3157,7 +3165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   "執行項目時選單的開關, 使用控制器操作的按鍵。"
+   "設定控制器組合鍵操作開啟快捷選單。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
@@ -3173,7 +3181,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
-   "設定「結束復古電玩」使用控制器操作的按鍵。"
+   "設定控制器組合鍵操作結束復古電玩。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
@@ -3189,7 +3197,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
-   "關閉目前執行的項目。"
+   "關閉目前執行項目的按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
@@ -3197,7 +3205,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RESET,
-   "重新開始執行的項目。"
+   "重新開始執行項目的按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
@@ -3237,7 +3245,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "按住時開啟倒帶模式, 放開後恢復正常模式, 必須「開啟倒帶」才可使用。"
+   "按住時開啟倒帶模式, 放開後恢復正常模式, 僅限影格搖控器選項中開啟倒帶時才可以使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -3452,7 +3460,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
-   "開啟傳統的桌面選單。"
+   "開啟傳統桌面選單的按鍵。"
    )
 
 MSG_HASH(
@@ -3461,7 +3469,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "顯示選項的同步中「準確同步執行幀率」的開關, 僅限支援可變更新率的裝置。"
+   "準確同步執行幀率的開關。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
@@ -3518,7 +3526,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "截取目前螢幕畫面, 翻譯成指定的語言, 必須「開啟人工智慧服務」並完成設定。"
+   "截取執行項目畫面並翻譯成指定的語言, 僅限人工智慧服務選項中開啟即時翻譯, 並且完成相關設定時才可以使用。"
    )
 
 MSG_HASH(
@@ -3527,7 +3535,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
-   "連線遊戲中, 顯示網路延遲計速器(PING值)的開關。"
+   "連線遊戲時顯示網路延遲計速器(PING值)的開關。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
@@ -3543,7 +3551,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
-   "連線遊戲中, 身分切換為玩家或觀眾的按鍵。"
+   "連線遊戲時身分切換為玩家或觀眾的按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
@@ -3551,7 +3559,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "連線遊戲時開啟輸入視窗傳送聊天對話。"
+   "連線遊戲時開啟輸入視窗傳送訊息的按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
@@ -3559,7 +3567,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "淡化對話訊息的開關。"
+   "連線遊戲時淡化對話訊息的開關。"
    )
 
 MSG_HASH(
@@ -3869,7 +3877,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
-   "部分核心具有結束應用程式的功能, 關閉此選項時執行項目關閉, 將觸發結束應用程式。\n開啟此選項時載入虛擬核心阻止直接結束, 可繼續使用應用程式。"
+   "部分核心具有結束應用程式的功能, 關閉此選項時執行項目關閉會結束應用程式。\n開啟此選項時載入虛擬核心阻止直接結束, 可繼續使用應用程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
@@ -3885,7 +3893,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
-   "載入核心前檢查必需的韌體。\n開啟此選項時, 缺少執行必需的韌體, 將不允許執行核心。"
+   "載入核心前檢查必需的韌體。\n開啟此選項時缺少必需的韌體將不允許執行核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
@@ -4038,7 +4046,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
-   "開啟時將全部核心選項設定, 儲存到共用檔案「 retroarch-core-options.cfg 」, 關閉時各別儲存在設定檔資料夾中。"
+   "開啟時全部核心選項儲存到共用設定檔「 retroarch-core-options .cfg」, 關閉時各別儲存在設定檔資料夾。"
    )
 
 /* Settings > Saving */
@@ -4260,7 +4268,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
-   "前端和核心的效能計數器, 計數器的數據, 可協助確定系統限制和微調效能, 開啟時在主選單中資訊選項內使用。"
+   "前端和核心的效能計數器, 計數器的數據可協助確定系統限制和微調效能, 開啟時在主選單中資訊選項內使用。"
    )
 
 /* Settings > File Browser */
@@ -4926,7 +4934,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
-   "連線遊戲中顯示目前的網路延遲(PING值), 僅限「螢幕通知圖標」開啟時使用。"
+   "連線遊戲時顯示目前的網路延遲(PING值), 僅限「螢幕通知圖標」開啟時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -5223,7 +5231,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
-   "當開啟選單時暫停遊戲"
+   "當開啟選單時暫停核心"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
@@ -5315,7 +5323,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   "非視窗操作時暫停遊戲"
+   "非視窗操作時暫停核心"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
@@ -6189,11 +6197,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
-   "開啟人工智慧服務"
+   "開啟即時翻譯"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
-   "開啟人工智慧服務, 需要翻譯時按快捷鍵執行。"
+   "開啟時必須完成即時翻譯相關的設定, 當執行項目需要翻譯時按快捷鍵執行。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
@@ -6201,7 +6209,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
-   "使用翻譯時暫停遊戲。"
+   "使用翻譯時暫停執行的項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
@@ -6273,7 +6281,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
-   "定期將遊戲資訊, 發送到RetroAchievements網站, 開啟「硬核模式」時此選項被忽略。"
+   "定期將遊戲資訊發送到復古成就網站, 開啟「硬核模式」時此選項被忽略。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
@@ -6594,7 +6602,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "建立的主機允許選單暫停模式, 不推薦開啟容易造成中斷連線。"
+   "建立的主機允許開啟選單時暫停執行的項目, 容易造成主機或用戶中斷連線不建議開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
@@ -7139,7 +7147,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
-   "輸入您的 RetroAchievements帳號名稱。"
+   "請輸入RetroAchievements帳號名稱。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
@@ -7147,7 +7155,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "輸入您的 RetroAchievements登入密碼, 限制輸入二百五十五個字元。"
+   "請輸入RetroAchievements登入密碼, 限制輸入二百五十五個字元。"
    )
 
 /* Settings > User > Accounts > YouTube */
@@ -8695,7 +8703,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "開啟虛擬光碟機托盤並取出載入的映像檔, 開啟「當開啟選單時暫停遊戲」時, 部分核心須等到繼續遊戲後幾秒才載入。"
+   "開啟虛擬光碟機托盤並取出載入的映像檔, 開啟「當開啟選單時暫停核心」時, 部分核心須等到繼續遊戲後幾秒才載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -8703,7 +8711,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "載入所選擇的映像檔編號, 開啟「當開啟選單時暫停遊戲」時, 部分核心須等到繼續遊戲後幾秒才載入。"
+   "載入所選擇的映像檔編號, 開啟「當開啟選單時暫停核心」時, 部分核心須等到繼續遊戲後幾秒才載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,

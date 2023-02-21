@@ -7318,6 +7318,10 @@ MSG_HASH(
    "S’ha rebut una connexió de: «%s (%s)»"
    )
 MSG_HASH(
+   MSG_WAITING_FOR_CLIENT,
+   "Esperant al client..."
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Jugant"
    )

@@ -3257,6 +3257,10 @@ MSG_HASH(
 
 /* Notifications */
 
+MSG_HASH(
+   MSG_WAITING_FOR_CLIENT,
+   "Esperant al client..."
+   )
 
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT_NR,
