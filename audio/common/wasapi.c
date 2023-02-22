@@ -23,19 +23,6 @@
 #include "string/stdstring.h"
 #include "mmdevice_common.h"
 
-void wasapi_log_hr(HRESULT hr, char* buffer, size_t length)
-{
-   FormatMessage(
-         FORMAT_MESSAGE_IGNORE_INSERTS |
-         FORMAT_MESSAGE_FROM_SYSTEM,
-         NULL,
-         GetLastError(),
-         MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
-         buffer,
-         length - 1,
-         NULL);
-}
-
 const char *hresult_name(HRESULT hr)
 {
    switch (hr)
@@ -119,19 +106,6 @@ const char *wave_format_name(const WAVEFORMATEXTENSIBLE *format)
          return "WAVE_FORMAT_PCM";
       case WAVE_FORMAT_EXTENSIBLE:
          return wave_subtype_name(&format->SubFormat);
-      default:
-         return "<unknown>";
-   }
-}
-
-const char *sharemode_name(AUDCLNT_SHAREMODE mode)
-{
-   switch (mode)
-   {
-      case AUDCLNT_SHAREMODE_SHARED:
-         return "shared";
-      case AUDCLNT_SHAREMODE_EXCLUSIVE:
-         return "exclusive";
       default:
          return "<unknown>";
    }
@@ -372,12 +346,11 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
    if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
    {
-      RARCH_WARN("[WASAPI] Unaligned buffer size: %s", wasapi_error(HRESULT_CODE(hr)));
+      RARCH_WARN("[WASAPI] Unaligned buffer size: %s\n", hresult_name(hr));
       hr = _IAudioClient_GetBufferSize(client, &buffer_length);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] Failed to get buffer size of client (%s): %s",
-            hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
+         RARCH_ERR("[WASAPI] Failed to get buffer size of client: %s\n", hresult_name(hr));
          goto error;
       }
 
@@ -387,8 +360,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
             CLSCTX_ALL, NULL, (void**)&client);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] IMMDevice::Activate failed (%s): %s",
-            hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
+         RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s\n", hresult_name(hr));
          return NULL;
       }
 
@@ -405,8 +377,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
             CLSCTX_ALL, NULL, (void**)&client);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] IMMDevice::Activate failed (%s): %s",
-            hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
+         RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s\n", hresult_name(hr));
          return NULL;
       }
 
@@ -425,8 +396,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI]: Failed to create exclusive-mode client with %s: %s",
-         hresult_name(hr), wasapi_error(HRESULT_CODE(hr)));
+      RARCH_ERR("[WASAPI]: Failed to create exclusive-mode client: %s\n", hresult_name(hr));
       goto error;
    }
 
@@ -523,7 +493,6 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
    IMMDevice *device               = NULL;
    IMMDeviceCollection *collection = NULL;
    const char *data_flow_name      = wasapi_data_flow_name(data_flow);
-   char error_message[256]         = {0};
 
    if (id)
    {
@@ -543,8 +512,7 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
 #endif
    if (FAILED(hr))
    {
-      wasapi_log_hr(hr, error_message, sizeof(error_message));
-      RARCH_ERR("[WASAPI]: Failed to create device enumerator: %s\n", error_message);
+      RARCH_ERR("[WASAPI]: Failed to create device enumerator: %s\n", hresult_name(hr));
       goto error;
    }
 
@@ -589,14 +557,14 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
                                                    data_flow, DEVICE_STATE_ACTIVE, &collection);
       if (FAILED(hr))
       {
-         wasapi_log_hr(hr, error_message, sizeof(error_message));
+         RARCH_ERR("[WASAPI]: Failed to enumerate audio endpoints: %s\n", hresult_name(hr));
          goto error;
       }
 
       hr = _IMMDeviceCollection_GetCount(collection, &dev_count);
       if (FAILED(hr))
       {
-         wasapi_log_hr(hr, error_message, sizeof(error_message));
+         RARCH_ERR("[WASAPI]: Failed to count IMMDevices: %s\n", hresult_name(hr));
          goto error;
       }
 
@@ -605,7 +573,7 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
          hr = _IMMDeviceCollection_Item(collection, i, &device);
          if (FAILED(hr))
          {
-            wasapi_log_hr(hr, error_message, sizeof(error_message));
+            RARCH_ERR("[WASAPI]: Failed to get IMMDevice #%d: %s\n", i, hresult_name(hr));
             goto error;
          }
 
@@ -621,7 +589,7 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
             enumerator, data_flow, eConsole, &device);
       if (FAILED(hr))
       {
-         wasapi_log_hr(hr, error_message, sizeof(error_message));
+         RARCH_ERR("[WASAPI]: Failed to get default audio endpoint: %s\n", hresult_name(hr));
          goto error;
       }
    }

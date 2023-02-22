@@ -458,9 +458,7 @@ static void wasapi_microphone_close_mic(void *driver_context, void *microphone_c
    ir = WaitForSingleObject(write_event, 20);
    if (ir == WAIT_FAILED)
    {
-      char error[256];
-      wasapi_log_hr(HRESULT_FROM_WIN32(GetLastError()), error, sizeof(error));
-      RARCH_ERR("[WASAPI mic]: WaitForSingleObject failed with error %d: %s\n", GetLastError(), error);
+      RARCH_ERR("[WASAPI mic]: WaitForSingleObject failed: %s\n", wasapi_error(GetLastError()));
    }
 
    /* If event isn't signaled log and leak */
