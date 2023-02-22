@@ -202,7 +202,7 @@ static bool wasapi_microphone_wait_for_capture_event(wasapi_microphone_handle_t 
  */
 static int wasapi_microphone_read_buffered(
    wasapi_microphone_handle_t *microphone,
-   void * buffer,
+   void *buffer,
    size_t buffer_size,
    DWORD timeout)
 {
