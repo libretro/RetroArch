@@ -2816,7 +2816,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->msg_queue_delay             = runloop_st->msg_queue_delay;
    video_info->runloop_is_paused           = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
    video_info->runloop_is_slowmotion       = runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION;
-   video_info->fastforward_frameskip       = settings->bools.fastforward_frameskip;
+   video_info->fastforward_frameskip       = settings->bools.fastforward_frameskip
+         && !string_is_equal(video_driver_get_ident(), "vulkan");
 
    video_info->input_driver_nonblock_state = input_st
          ? (input_st->flags & INP_FLAG_NONBLOCKING) : false;
