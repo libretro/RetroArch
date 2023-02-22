@@ -33,7 +33,7 @@ LIBDIRS += -L. -L$(PORTLIBS)/lib
 MACHDEP := -D__PSL1GHT__ -D__PS3__ -mcpu=cell
 CFLAGS += -Wall $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS := -lretro_psl1ght -laudio -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule -lm -ljpgdec -lpngdec -llv2 -lnet -lnetctl -lsysfs -lfreetype -lcamera -lgem -lspurs
+LIBS := -lretro_psl1ght -lrt -laudio -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule -lm -ljpgdec -lpngdec -llv2 -lnet -lnetctl -lsysfs -lfreetype -lcamera -lgem -lspurs
 
 # system platform
 system_platform = unix

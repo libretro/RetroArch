@@ -105,12 +105,12 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
    rsxSetViewport(rsx->context, vp.x, vp.y, vp.w, vp.h, vp.min, vp.max, vp.scale, vp.offset);
 
    rsxInvalidateTextureCache(rsx->context, GCM_INVALIDATE_TEXTURE);
-   rsxLoadTexture(rsx->context, rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND]->index, &texture->tex);
-   rsxTextureControl(rsx->context, rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND]->index,
+   rsxLoadTexture(rsx->context, rsx->tex_unit[RSX_SHADER_STOCK_BLEND]->index, &texture->tex);
+   rsxTextureControl(rsx->context, rsx->tex_unit[RSX_SHADER_STOCK_BLEND]->index,
          GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
-   rsxTextureFilter(rsx->context, rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND]->index, 0,
+   rsxTextureFilter(rsx->context, rsx->tex_unit[RSX_SHADER_STOCK_BLEND]->index, 0,
          texture->min_filter, texture->mag_filter, GCM_TEXTURE_CONVOLUTION_QUINCUNX);
-   rsxTextureWrapMode(rsx->context, rsx->tex_unit[VIDEO_SHADER_STOCK_BLEND]->index, texture->wrap_s,
+   rsxTextureWrapMode(rsx->context, rsx->tex_unit[RSX_SHADER_STOCK_BLEND]->index, texture->wrap_s,
          texture->wrap_t, GCM_TEXTURE_CLAMP_TO_EDGE, 0, GCM_TEXTURE_ZFUNC_LESS, 0);
 
 #if RSX_MAX_TEXTURE_VERTICES > 0
@@ -140,30 +140,30 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
       vertices[i].a         = *color++;
    }
    rsxAddressToOffset(&vertices[rsx->texture_vert_idx].x,
-         &rsx->pos_offset[VIDEO_SHADER_STOCK_BLEND]);
+         &rsx->pos_offset[RSX_SHADER_STOCK_BLEND]);
    rsxAddressToOffset(&vertices[rsx->texture_vert_idx].u,
-         &rsx->uv_offset[VIDEO_SHADER_STOCK_BLEND]);
+         &rsx->uv_offset[RSX_SHADER_STOCK_BLEND]);
    rsxAddressToOffset(&vertices[rsx->texture_vert_idx].r,
-         &rsx->col_offset[VIDEO_SHADER_STOCK_BLEND]);
+         &rsx->col_offset[RSX_SHADER_STOCK_BLEND]);
    rsx->texture_vert_idx  = end_vert_idx;
 
-   rsxBindVertexArrayAttrib(rsx->context, rsx->pos_index[VIDEO_SHADER_STOCK_BLEND]->index, 0,
-         rsx->pos_offset[VIDEO_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 2,
+   rsxBindVertexArrayAttrib(rsx->context, rsx->pos_index[RSX_SHADER_STOCK_BLEND]->index, 0,
+         rsx->pos_offset[RSX_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 2,
          GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
-   rsxBindVertexArrayAttrib(rsx->context, rsx->uv_index[VIDEO_SHADER_STOCK_BLEND]->index, 0,
-         rsx->uv_offset[VIDEO_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 2,
+   rsxBindVertexArrayAttrib(rsx->context, rsx->uv_index[RSX_SHADER_STOCK_BLEND]->index, 0,
+         rsx->uv_offset[RSX_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 2,
          GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
-   rsxBindVertexArrayAttrib(rsx->context, rsx->col_index[VIDEO_SHADER_STOCK_BLEND]->index, 0,
-         rsx->col_offset[VIDEO_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 4,
+   rsxBindVertexArrayAttrib(rsx->context, rsx->col_index[RSX_SHADER_STOCK_BLEND]->index, 0,
+         rsx->col_offset[RSX_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 4,
          GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
 
-   rsxLoadVertexProgram(rsx->context, rsx->vpo[VIDEO_SHADER_STOCK_BLEND],
-         rsx->vp_ucode[VIDEO_SHADER_STOCK_BLEND]);
+   rsxLoadVertexProgram(rsx->context, rsx->vpo[RSX_SHADER_STOCK_BLEND],
+         rsx->vp_ucode[RSX_SHADER_STOCK_BLEND]);
    rsxSetVertexProgramParameter(rsx->context,
-         rsx->vpo[VIDEO_SHADER_STOCK_BLEND], rsx->proj_matrix[VIDEO_SHADER_STOCK_BLEND],
+         rsx->vpo[RSX_SHADER_STOCK_BLEND], rsx->proj_matrix[RSX_SHADER_STOCK_BLEND],
          (float *)&rsx->mvp_no_rot);
    rsxLoadFragmentProgramLocation(rsx->context,
-         rsx->fpo[VIDEO_SHADER_STOCK_BLEND], rsx->fp_offset[VIDEO_SHADER_STOCK_BLEND],
+         rsx->fpo[RSX_SHADER_STOCK_BLEND], rsx->fp_offset[RSX_SHADER_STOCK_BLEND],
          GCM_LOCATION_RSX);
 
    rsxClearSurface(rsx->context, GCM_CLEAR_Z);
