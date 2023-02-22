@@ -2680,7 +2680,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
-   "Enable audio input."
+   "Enable audio input in supported cores. Has no overhead if the core isn't using a microphone."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
@@ -2724,7 +2724,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
-   "Allow the WASAPI driver to take exclusive control of the microphone device. If disabled, it will use shared mode instead."
+   "Allow RetroArch to take exclusive control of the microphone device when using the WASAPI microphone driver. If disabled, RetroArch will use shared mode instead."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
@@ -2732,7 +2732,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
-   "Use float format for the WASAPI driver, if supported by your audio device."
+   "Use floating-point input for the WASAPI driver, if supported by your audio device."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
