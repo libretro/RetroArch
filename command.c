@@ -68,7 +68,7 @@
 
 #define CMD_BUF_SIZE           4096
 
-void command_post_state_loaded();
+void command_post_state_loaded(void);
 
 #if defined(HAVE_COMMAND)
 
@@ -670,14 +670,10 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    {
       ret = content_load_state(state_path, false, false);
       if(ret)
-      {
-          command_post_state_loaded();
-      }
+         command_post_state_loaded();
    }
    else
-   {
       ret = false;
-   }
 
    cmd->replier(cmd, reply, strlen(reply));
    return ret;
@@ -1707,7 +1703,7 @@ void command_event_remove_current_config(enum override_type type)
 }
 #endif
 
-void command_post_state_loaded()
+void command_post_state_loaded(void)
 {
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
