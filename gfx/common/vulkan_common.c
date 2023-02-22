@@ -482,7 +482,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
       if ((format_properties.linearTilingFeatures & required) != required)
       {
-         RARCH_LOG("[Vulkan]: GPU does not support using linear images as textures. Falling back to copy path.\n");
+#ifdef VULKAN_DEBUG
+         RARCH_DBG("[Vulkan]: GPU does not support using linear images as textures. Falling back to copy path.\n");
+#endif
          type = VULKAN_TEXTURE_STAGING;
       }
    }
@@ -584,7 +586,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
          {
             /* Recreate texture but for STAGING this time ... */
 #ifdef VULKAN_DEBUG
-            RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
+            RARCH_DBG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
 #endif
             type = VULKAN_TEXTURE_STAGING;
             vkDestroyImage(device, tex.image, NULL);
@@ -3172,7 +3174,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       vk->context.num_swapchain_images = 1;
 
       memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));
-      RARCH_LOG("[Vulkan]: Cannot create a swapchain yet. Will try again later ...\n");
+      RARCH_DBG("[Vulkan]: Cannot create a swapchain yet. Will try again later ...\n");
       return true;
    }
 
