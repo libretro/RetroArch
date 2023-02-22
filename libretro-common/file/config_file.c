@@ -259,7 +259,7 @@ static char *config_file_extract_value(char *line)
     * to avoid an unnecessary dependency -
     * call is strldup("", sizeof(""))
     **/
-   dst = (char*)malloc(sizeof(char*) * 2);
+   dst = (char*)malloc(sizeof(char) * 2);
    strlcpy(dst, "", 1);
    return dst;
 }
