@@ -3383,7 +3383,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             if (!settings->bools.microphone_enable)
             { /* If mic support is off... */
-               RARCH_ERR("[Environ]: Will not initialize microphone interface, support is turned off\n");
+               RARCH_WARN("[Environ]: Will not initialize microphone interface, support is turned off\n");
                return false;
             }
 
