@@ -1800,6 +1800,9 @@ enum retro_mod
                                             * Returns true if microphone support is available,
                                             * even if no microphones are plugged in.
                                             * Returns false if mic support is disabled or unavailable.
+                                            *
+                                            * This callback can be invoked at any time,
+                                            * even before the microphone driver is ready.
                                             */
 
 /* VFS functionality */
@@ -3819,8 +3822,7 @@ struct retro_throttle_state
 
 /**
  * Opaque handle to a microphone that's been opened for use.
- * You don't access microphone objects directly;
- * use the retro_microphone_interface.
+ * The underlying object is accessed or created with \c retro_microphone_interface_t.
  */
 typedef struct retro_microphone retro_microphone_t;
 
@@ -3845,127 +3847,43 @@ typedef struct retro_microphone_params
 } retro_microphone_params_t;
 
 /**
- * Initializes a new microphone.
- * Assuming that microphone support is enabled and provided by the frontend,
- * you can call this whenever your core needs it.
- * You could call this to keep a microphone throughout your core's lifetime,
- * or you could call this when a microphone is plugged in to the emulated device.
- *
- * The returned handle will be valid until it's freed,
- * even if the audio driver is reinitialized.
- *
- * This should only be called from the main thread.
- *
- * @param args[in] Parameters used to create the microphone.
- * May be \c NULL, in which case the default value of each parameter will be used.
- *
- * @returns Pointer to the newly-opened microphone,
- * or \c NULL if one couldn't be opened.
- * This likely means that no microphone is plugged in and recognized,
- * or the maximum number of supported microphones has been reached.
- *
- * @note Microphones are \em inactive by default;
- * to begin recording, call set_mic_state(new_handle, true).
- * @see retro_microphone_params_t
+ * @copydoc retro_microphone_interface::open_mic
  */
 typedef retro_microphone_t *(RETRO_CALLCONV *retro_open_mic_t)(const retro_microphone_params_t *params);
 
 /**
- * Closes a microphone that was initialized with \c open_mic.
- * Calling this function will stop all microphone activity
- * and free up the resources that it allocated.
- * Afterwards, the handle is invalid and must not be used.
- *
- * A frontend may close opened microphones when unloading content,
- * but cores should close their microphones anyway.
- *
- * @param microphone Pointer to the microphone that was allocated by \c open_mic.
- * If \c NULL, this function does nothing.
+ * @copydoc retro_microphone_interface::close_mic
  */
 typedef void (RETRO_CALLCONV *retro_close_mic_t)(retro_microphone_t *microphone);
 
 /**
- * Returns the configured parameters of this microphone.
- * These may differ from what was requested depending on
- * the driver and device configuration.
- *
- * Will not change after the mic was opened.
- *
- * @param microphone[in] Opaque handle to the microphone
- * whose parameters will be retrieved.
- * @param params[out] The parameters object that the
- * microphone's parameters will be copied to.
- *
- * @return \c true if the parameters were retrieved,
- * \c false if there was an error.
+ * @copydoc retro_microphone_interface::get_params
  */
 typedef bool (RETRO_CALLCONV *retro_get_mic_params_t)(const retro_microphone_t *microphone, retro_microphone_params_t *params);
 
 /**
- * Enables or disables the given microphone.
- * Microphones are disabled by default
- * and must be explicitly enabled before they can be used.
- * Disabled microphones will not process incoming audio samples,
- * and will therefore have minimal impact on overall performance.
- * You may enable microphones throughout the lifetime of a core,
- * or only in instances where they're needed.
- *
- * Your core should be able to operate without microphone input;
- * we suggest substituting silence in this case.
- *
- * Calling this function while the audio driver is paused
- * \em will update the state of the microphone,
- * but it won't reactivate it.
- * You'll have to resume the audio driver for that.
- *
- * @param microphone Opaque handle to the microphone
- * whose state will be adjusted.
- * This will have been provided by \c open_mic.
- * @param state \c true if the microphone should receive audio input,
- * @c false if it should be idle.
- * @returns \c true if the microphone's state was successfully set,
- * \c false if \c microphone is invalid
- * or if there was an error.
+ * @copydoc retro_microphone_interface::set_mic_state
  */
 typedef bool (RETRO_CALLCONV *retro_set_mic_state_t)(retro_microphone_t *microphone, bool state);
 
 /**
- * Queries the active state of a microphone at the given index.
- * Will return whether the microphone is enabled,
- * even if the driver is paused.
- *
- * @param microphone Opaque handle to the microphone
- * whose state will be queried.
- * @return true if the provided \c microphone is valid and active,
- * false if not or if there was an error.
+ * @copydoc retro_microphone_interface::get_mic_state
  */
 typedef bool (RETRO_CALLCONV *retro_get_mic_state_t)(const retro_microphone_t *microphone);
 
 /**
- * Retrieves the input processed by the microphone since the last call.
- * \em Must be called every frame unless \c microphone is disabled,
- * similar to how \c retro_audio_sample_batch_t works.
- *
- * @param microphone Opaque handle to the microphone
- * whose recent input will be retrieved.
- * @param samples The buffer that will be used to store the microphone's data.
- * Microphone input is in mono (i.e. one number per sample).
- * Should be large enough to accommodate the expected number of samples per frame;
- * for example, a 44.1kHz sample rate at 60 FPS would require space for 735 samples.
- * @param num_samples The size of the data buffer, in samples (\em not bytes).
- * Microphone input is in mono, so a "frame" and a "sample" are equivalent in length here.
- *
- * @return The number of samples that were copied into \c samples.
- * Will return 0 if \c microphone is still pending
- * because the driver hasn't finished initializing.
- * This is not an error.
- *
- * Will return -1 if the microphone is disabled,
- * the audio driver is paused,
- * or there was an error.
+ * @copydoc retro_microphone_interface::read_mic
  */
 typedef int (RETRO_CALLCONV *retro_read_mic_t)(retro_microphone_t *microphone, int16_t* samples, size_t num_samples);
 
+/**
+ * The current version of the microphone interface.
+ * Will be incremented whenever \c retro_microphone_interface or \c retro_microphone_params_t
+ * receive new fields.
+ *
+ * Frontends using cores built against older mic interface versions
+ * should not access fields introduced in newer versions.
+ */
 #define RETRO_MICROPHONE_INTERFACE_VERSION 1
 
 /**
@@ -3982,11 +3900,126 @@ struct retro_microphone_interface
     * 0 indicates that the interface is invalid or uninitialized.
     */
    unsigned interface_version;
+
+   /**
+    * Initializes a new microphone.
+    * Assuming that microphone support is enabled and provided by the frontend,
+    * cores may call this function whenever necessary.
+    * A microphone could be opened throughout a core's lifetime,
+    * or it could wait until a microphone is plugged in to the emulated device.
+    *
+    * The returned handle will be valid until it's freed,
+    * even if the audio driver is reinitialized.
+    *
+    * This function is not guaranteed to be thread-safe.
+    *
+    * @param args[in] Parameters used to create the microphone.
+    * May be \c NULL, in which case the default value of each parameter will be used.
+    *
+    * @returns Pointer to the newly-opened microphone,
+    * or \c NULL if one couldn't be opened.
+    * This likely means that no microphone is plugged in and recognized,
+    * or the maximum number of supported microphones has been reached.
+    *
+    * @note Microphones are \em inactive by default;
+    * to begin capturing audio, call \c set_mic_state.
+    * @see retro_microphone_params_t
+    */
    retro_open_mic_t open_mic;
+
+   /**
+    * Closes a microphone that was initialized with \c open_mic.
+    * Calling this function will stop all microphone activity
+    * and free up the resources that it allocated.
+    * Afterwards, the handle is invalid and must not be used.
+    *
+    * A frontend may close opened microphones when unloading content,
+    * but this behavior is not guaranteed.
+    * Cores should close their microphones when exiting, just to be safe.
+    *
+    * @param microphone Pointer to the microphone that was allocated by \c open_mic.
+    * If \c NULL, this function does nothing.
+    *
+    * @note The handle might be reused if another microphone is opened later.
+    */
    retro_close_mic_t close_mic;
+
+   /**
+    * Returns the configured parameters of this microphone.
+    * These may differ from what was requested depending on
+    * the driver and device configuration.
+    *
+    * Cores should check these values before they start fetching samples.
+    *
+    * Will not change after the mic was opened.
+    *
+    * @param microphone[in] Opaque handle to the microphone
+    * whose parameters will be retrieved.
+    * @param params[out] The parameters object that the
+    * microphone's parameters will be copied to.
+    *
+    * @return \c true if the parameters were retrieved,
+    * \c false if there was an error.
+    */
    retro_get_mic_params_t get_params;
+
+   /**
+    * Enables or disables the given microphone.
+    * Microphones are disabled by default
+    * and must be explicitly enabled before they can be used.
+    * Disabled microphones will not process incoming audio samples,
+    * and will therefore have minimal impact on overall performance.
+    * Cores may enable microphones throughout their lifetime,
+    * or only for periods where they're needed.
+    *
+    * Cores that accept microphone input should be able to operate without it;
+    * we suggest substituting silence in this case.
+    *
+    * @param microphone Opaque handle to the microphone
+    * whose state will be adjusted.
+    * This will have been provided by \c open_mic.
+    * @param state \c true if the microphone should receive audio input,
+    * \c false if it should be idle.
+    * @returns \c true if the microphone's state was successfully set,
+    * \c false if \c microphone is invalid
+    * or if there was an error.
+    */
    retro_set_mic_state_t set_mic_state;
+
+   /**
+    * Queries the active state of a microphone at the given index.
+    * Will return whether the microphone is enabled,
+    * even if the driver is paused.
+    *
+    * @param microphone Opaque handle to the microphone
+    * whose state will be queried.
+    * @return \c true if the provided \c microphone is valid and active,
+    * \c false if not or if there was an error.
+    */
    retro_get_mic_state_t get_mic_state;
+
+   /**
+    * Retrieves the input processed by the microphone since the last call.
+    * \em Must be called every frame unless \c microphone is disabled,
+    * similar to how \c retro_audio_sample_batch_t works.
+    *
+    * @param[in] microphone Opaque handle to the microphone
+    * whose recent input will be retrieved.
+    * @param[out] samples The buffer that will be used to store the microphone's data.
+    * Microphone input is in mono (i.e. one number per sample).
+    * Should be large enough to accommodate the expected number of samples per frame;
+    * for example, a 44.1kHz sample rate at 60 FPS would require space for 735 samples.
+    * @param[in] num_samples The size of the data buffer in samples (\em not bytes).
+    * Microphone input is in mono, so a "frame" and a "sample" are equivalent in length here.
+    *
+    * @return The number of samples that were copied into \c samples.
+    * If \c microphone is pending driver initialization,
+    * this function will copy silence of the requested length into \c samples.
+    *
+    * Will return -1 if the microphone is disabled,
+    * the audio driver is paused,
+    * or there was an error.
+    */
    retro_read_mic_t read_mic;
 };
 
