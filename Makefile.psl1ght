@@ -31,7 +31,7 @@ INCLUDE += -I. -Ideps -Ideps/stb -Ilibretro-common/include/compat/zlib -Ilibretr
 LIBDIRS += -L. -L$(PORTLIBS)/lib
 
 MACHDEP := -D__PSL1GHT__ -D__PS3__ -mcpu=cell
-CFLAGS += -Wall $(MACHDEP) $(INCLUDE)
+CFLAGS += -Wall -Wno-unused $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
 LIBS := -lretro_psl1ght -lrt -laudio -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule -lm -ljpgdec -lpngdec -llv2 -lnet -lnetctl -lsysfs -lfreetype -lcamera -lgem -lspurs
 
