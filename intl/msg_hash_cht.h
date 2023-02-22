@@ -106,7 +106,7 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   "退出光碟片"
+   "退出光碟"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
@@ -1254,11 +1254,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
-   "影片檔案。\n可使用內建播放器開啟此檔案。"
+   "影片檔案。\n可以使用內建播放器開啟此檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
-   "音樂檔案。\n可使用內建播放器開啟此檔案。"
+   "音樂檔案。\n可以使用內建播放器開啟此檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
@@ -1266,7 +1266,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
-   "圖片檔案。\n可使用內建瀏覽器開啟此檔案。"
+   "圖片檔案。\n可以使用內建瀏覽器開啟此檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
@@ -1318,7 +1318,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   "變更翻譯服務相關的設定。"
+   "變更人工智慧服務相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
@@ -1857,7 +1857,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "套用中央處理器架構的影像濾鏡, 套用時可能影響效能, 部分濾鏡限制色彩深度(16位元或32位元), 僅適用核心支援的格式。"
+   "中央處理器架構的影像濾鏡套用時可能影響效能, 部分濾鏡限制色彩深度(16位元或32位元), 僅限核心支援的格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
@@ -2212,7 +2212,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
-   "設定顯示寬高比。"
+   "設定顯示寬高比, 當「整數縮放」開啟時畫面可能不會延伸到螢幕邊緣。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
@@ -6201,7 +6201,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
-   "開啟時必須完成即時翻譯相關的設定, 當執行項目需要翻譯時按快捷鍵執行。"
+   "開啟時必須完成即時翻譯相關的設定, 執行的項目需要翻譯時按快捷鍵執行。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
@@ -8699,31 +8699,31 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "退出光碟映像檔"
+   "取出光碟映像檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "開啟虛擬光碟機托盤並取出載入的映像檔, 開啟「當開啟選單時暫停核心」時, 部分核心須等到繼續遊戲後幾秒才載入。"
+   "虛擬光碟機托盤退出並取出載入的映像檔。\n設定選單選項中「當開啟選單時暫停核心」開啟時, 部分核心須等到繼續遊戲後幾秒才載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
-   "載入光碟映像檔"
+   "放入光碟映像檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "載入所選擇的映像檔編號, 開啟「當開啟選單時暫停核心」時, 部分核心須等到繼續遊戲後幾秒才載入。"
+   "虛擬光碟機托盤進入並載入選擇的映像檔。\n設定選單選項中「當開啟選單時暫停核心」開啟時, 部分核心須等到繼續遊戲後幾秒才載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-   "選擇光碟映像檔"
+   "載入光碟映像檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "選擇光碟映像檔載入執行, 並加入到映像檔可使用編號中, 加入編號後支援使用快捷鍵切換映像檔。\n注意事項: 這是舊功能, 建議使用M3U格式載入映像檔, 可跳過此步驟, 直接使用快捷鍵切換映像檔。"
+   "載入光碟映像檔直接執行並加入到可使用編號中, 已加入的映像檔編號可以使用快捷鍵切換映像檔。\n注意事項: 此選項為舊功能, 建議使用M3U格式載入映像檔, 可跳過此步驟直接使用快捷鍵切換映像檔。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "選擇光碟映像檔, 加入到編號中等待載入。\n注意事項: 這是舊功能, 建議使用M3U格式載入映像檔, 可跳過此步驟, 直接使用快捷鍵切換映像檔。"
+   "載入光碟映像檔並加入到編號中等待執行。\n注意事項: 此選項為舊功能, 建議使用M3U格式載入映像檔, 可跳過此步驟直接使用快捷鍵切換映像檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -8731,7 +8731,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "選擇要載入的光碟映像檔編號, 按下「載入光碟映像檔」執行。"
+   "選擇要放入的光碟映像檔編號, 使用「放入光碟映像檔」執行。"
    )
 
 /* Quick Menu > Shaders */
@@ -8883,7 +8883,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
-   "儲存目前著色器設置, 為新的配置檔, 可使用著色器快捷鍵載入。"
+   "儲存目前著色器設置為新的配置檔, 可使用著色器快捷鍵載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
@@ -9161,7 +9161,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
-   "沒有可變更的設定選項。"
+   "沒有可以設定的選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
