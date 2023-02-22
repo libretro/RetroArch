@@ -36,9 +36,7 @@ enum microphone_driver_state_flags
     * This flag does \em not mean that the core will receive audio;
     * the driver might be suspended.
     */
-   MICROPHONE_DRIVER_FLAG_ACTIVE  = (1 << 0),
-   MICROPHONE_DRIVER_FLAG_ENABLED = (1 << 1),
-   MICROPHONE_DRIVER_FLAG_CONTROL = (1 << 2)
+   MICROPHONE_DRIVER_FLAG_ACTIVE  = (1 << 0)
 };
 
 /**
