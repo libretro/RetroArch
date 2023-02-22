@@ -456,10 +456,25 @@ bool cocoa_has_focus(void *data)
 void cocoa_show_mouse(void *data, bool state)
 {
 #ifdef OSX
+    static bool desiredState;
+    static bool madeDocumentsCheck = false;
+    desiredState = state;
     if (state)
         [NSCursor unhide];
     else
-        [NSCursor hide];
+    {
+        if (madeDocumentsCheck)
+            [NSCursor hide];
+        else
+        {
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                NSArray<NSURL*> *arr = [[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask];
+                (void)[[NSFileManager defaultManager] contentsOfDirectoryAtPath:arr[0].path error:nil];
+                madeDocumentsCheck = true;
+                desiredState ? [NSCursor unhide] : [NSCursor hide];
+            });
+        }
+    }
 #endif
 }
 
