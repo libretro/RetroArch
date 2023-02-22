@@ -300,7 +300,6 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
       bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels)
 {
    WAVEFORMATEXTENSIBLE wf;
-   int i, j;
    IAudioClient *client           = NULL;
    REFERENCE_TIME minimum_period  = 0;
    REFERENCE_TIME buffer_duration = 0;
