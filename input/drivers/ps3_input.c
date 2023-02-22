@@ -114,6 +114,7 @@ typedef struct ps3_input
    u16 newGemAnalogT;
    u8 video_frame[640*480*4];
 #endif
+   int connected[MAX_KB_PORT_NUM];
 } ps3_input_t;
 
 static int mod_table[] = {
