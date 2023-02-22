@@ -534,7 +534,7 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_EXT;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
 #endif
 
-#if (defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP) && defined(HAVE_WASAPI)
+#if defined(HAVE_WASAPI)
 /* The default mic driver on Windows is WASAPI if it's available. */
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_WASAPI;
 #elif defined(HAVE_ALSA) && defined(HAVE_THREADS)
