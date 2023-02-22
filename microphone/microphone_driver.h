@@ -341,7 +341,7 @@ typedef struct microphone_driver
     * Each microphone driver interprets this differently,
     * and some may ignore it.
     * @param rate The requested sampling rate of the new microphone in Hz.
-    * @param latency TODO
+    * @param latency The desired latency of the new microphone, in milliseconds.
     * @param new_rate Pointer to the actual sample frequency,
     * if the microphone couldn't be initialized with the value given by rate.
     * If NULL, then the value will not be reported to the caller;
