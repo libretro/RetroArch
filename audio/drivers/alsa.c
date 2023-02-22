@@ -29,10 +29,6 @@
 typedef struct alsa
 {
    snd_pcm_t *pcm;
-
-   /* The error handler that was set before this driver was initialized.
-    * Likely to be equal to the default, but kept and restored just in case. */
-   snd_lib_error_handler_t prev_error_handler;
    alsa_stream_info_t stream_info;
    bool nonblock;
    bool is_paused;
@@ -42,25 +38,6 @@ static bool alsa_use_float(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
    return alsa->stream_info.has_float;
-}
-
-static void alsa_log_error(const char *file, int line, const char *function, int err, const char *fmt,...)
-{
-   va_list args;
-   char temp[256];
-   char errno_temp[256];
-
-   memset(temp, 0, sizeof(temp));
-   memset(errno_temp, 0, sizeof(temp));
-
-   va_start(args, fmt);
-   vsnprintf(temp, sizeof(temp), fmt, args);
-   if (err)
-      snprintf(errno_temp, sizeof(errno_temp), " (%s)", snd_strerror(err));
-
-   /* Write up to 255 characters. (The 256th will be \0.) */
-   va_end(args);
-   RARCH_ERR("[ALSA]: [%s:%s:%d]: %s%s\n", file, function, line, temp, errno_temp); /* To ensure that there's a newline at the end */
 }
 
 static void alsa_free(void *data);
@@ -75,9 +52,6 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
       RARCH_ERR("[ALSA]: Failed to allocate driver context\n");
       return NULL;
    }
-
-   //alsa->prev_error_handler = snd_lib_error;
-   //snd_lib_error_set_handler(alsa_log_error);
 
    RARCH_LOG("[ALSA]: Using ALSA version %s\n", snd_asoundlib_version());
 
@@ -248,11 +222,6 @@ static void alsa_free(void *data)
    if (alsa)
    {
       alsa_free_pcm(alsa->pcm);
-
-      if (alsa->prev_error_handler)
-      { /* If we ever changed the error handler, put it back. */
-         snd_lib_error_set_handler(alsa->prev_error_handler);
-      }
 
       snd_config_update_free_global();
       free(alsa);
