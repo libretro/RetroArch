@@ -32,22 +32,7 @@
 #include "../../verbosity.h"
 #include "retro_assert.h"
 
-/**
- * We need the SDL_{operation}AudioDevice functions for microphone support,
- * but those were introduced in SDL 2.0.0
- * (according to their docs).
- * Some legacy build platforms are stuck on 1.x.x,
- * so we have to accommodate them.
- * That comes in the form of stub implementations of the missing functions
- * that delegate to the non-Device versions.
- *
- * Only three platforms (as of this writing) are stuck on SDL 1.x.x,
- * so it's not a big deal to exclude mic support from them.
- **/
-#if HAVE_SDL2
-#define SDL_DRIVER_MIC_SUPPORT 1
-#define SDL_DRIVER_DEVICE_FUNCTIONS 1
-#else
+#ifndef HAVE_SDL2
 typedef Uint32 SDL_AudioDeviceID;
 
 /** Compatibility stub that defers to SDL_PauseAudio. */
@@ -164,7 +149,7 @@ static void *sdl_audio_init(const char *device,
 
    /* No compatibility stub for SDL_OpenAudioDevice because its return value
     * is different from that of SDL_OpenAudio. */
-#if SDL_DRIVER_DEVICE_FUNCTIONS
+#ifdef HAVE_SDL2
    sdl->speaker_device = SDL_OpenAudioDevice(NULL, false, &spec, &out, 0);
 
    if (sdl->speaker_device == 0)
