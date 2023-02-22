@@ -45,7 +45,7 @@ typedef struct
    rsx_texture_t texture;
    u32 tex_width;
    u32 tex_height;
-   rsxProgramAttrib *proj_matrix;
+   rsxProgramConst *proj_matrix;
    rsxProgramAttrib *pos_index;
    rsxProgramAttrib *uv_index;
    rsxProgramAttrib *col_index;
@@ -178,7 +178,7 @@ static void *rsx_font_init(void *data,
 
    font->tex_width    = font->atlas->width;
    font->tex_height   = font->atlas->height;
-   font->texture.data = (u8 *)rsxMemalign(128, (font->tex_height * font->tex_width));
+   font->texture.data = (u32 *)rsxMemalign(128, (font->tex_height * font->tex_width));
    rsxAddressToOffset(font->texture.data, &font->texture.offset);
 
    if (!font->texture.data)

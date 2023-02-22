@@ -646,14 +646,14 @@ static void frontend_ps3_process_args(int *argc, char *argv[])
 static size_t frontend_ps3_get_mem_total(void)
 {
    sys_memory_info_t mem_info;
-   sys_memory_get_user_memory_size(&mem_info);
+   sys_memory_get_user_memory_size((u64)&mem_info);
    return mem_info.total;
 }
 
 static size_t frontend_ps3_get_mem_used(void)
 {
    sys_memory_info_t mem_info;
-   sys_memory_get_user_memory_size(&mem_info);
+   sys_memory_get_user_memory_size((u64)&mem_info);
    return mem_info.avail;
 }
 #endif

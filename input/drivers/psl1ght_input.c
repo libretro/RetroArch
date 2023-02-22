@@ -207,9 +207,9 @@ static int ps3_process_gem(ps3_input_t *ps3, int t)
    switch (t)
    {
       case 0:
-         return gemUpdateStart(ps3->camread.buffer, ps3->camread.timestamp);
+         return gemUpdateStart((void *)(u64)ps3->camread.buffer, ps3->camread.timestamp);
       case 1:
-         return gemConvertVideoStart(ps3->camread.buffer);
+         return gemConvertVideoStart((void *)(u64)ps3->camread.buffer);
       case 2:
          return gemUpdateFinish();
       case 3:
@@ -638,7 +638,7 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
    float pointer_y;
    videoState state;
    videoResolution res;
-   VmathVector4 ray_start, ray_dir;
+   VmathVector3 ray_start, ray_dir;
    struct video_viewport vp;
    float center_y              = 0.0f;
    float center_x              = 0.0f;
@@ -681,10 +681,8 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
    /* tracking mode 1: laser pointer mode (this is closest 
       to actual lightgun behavior) */
    ray_start.vec128            = ps3->gem_state.pos;
-   VmathVector4 ray_tmp        = {.vec128 = {0.0f,0.0f,-1.0f,0.0f}};
-   const VmathQuat *quat       = &ps3->gem_state.quat; /* TODO/FIXME - warning - VmathVector3/VmathVector4 issue again */
-   /* TODO/FIXME - note: expected 'VmathVector3 * {aka struct _VmathVector3 *}' but argument is of type 'VmathVector4 * {aka struct _VmathVector4 *}'
-    * vmathQRotate takes type VmathVector3* instead of VmathVector4* */
+   VmathVector3 ray_tmp        = {.vec128 = {0.0f,0.0f,-1.0f,0.0f}};
+   const VmathQuat *quat       = (VmathQuat *)&ps3->gem_state.quat;
    vmathQRotate(&ray_dir, quat, &ray_tmp);
    float t                     = -ray_start.vec128[2] / ray_dir.vec128[2];
    pointer_x                   = ray_start.vec128[0] + ray_dir.vec128[0]*t;
