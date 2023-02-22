@@ -24,6 +24,7 @@
 
 #include <audio/conversion/dual_mono.h>
 
+/* TODO: Use SIMD instructions to make this faster (or show that it's not needed) */
 void convert_to_mono_float_left(float *out, const float *in, size_t frames)
 {
    unsigned i = 0;
@@ -36,3 +37,9 @@ void convert_to_mono_float_left(float *out, const float *in, size_t frames)
       out[i] = in[i * 2];
    }
 }
+
+/* Why is there no equivalent for int16_t samples?
+ * No inherent reason, I just didn't need one.
+ * If you do, open a pull request.
+ * Same goes for the lack of a convert_to_mono_float_right;
+ * I didn't need one, so I didn't write one. */

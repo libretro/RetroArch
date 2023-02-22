@@ -198,7 +198,7 @@ static void mic_driver_microphone_handle_init(retro_microphone_t *microphone, co
       microphone->requested_params.rate = params ? params->rate : settings->uints.microphone_sample_rate;
       microphone->actual_params.rate = 0;
       /* We don't set the actual parameters until we actually open the mic.
-       * (Remember, the core can request one before the driver is ready. */
+       * (Remember, the core can request one before the driver is ready.) */
       microphone->effective_params.rate = params ? params->rate : settings->uints.microphone_sample_rate;
       /* We set the effective parameters because
        * the frontend has to do what it can
@@ -247,7 +247,8 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone, bo
    { /* If the mic driver is being reset and the microphone was already valid... */
 
       microphone->flags |= MICROPHONE_FLAG_PENDING;
-      /* ...then we need to keep the handle itself valid.
+      /* ...then we need to keep the handle itself valid
+       * so it can be reinitialized.
        * Otherwise the core will lose mic input. */
    }
    else

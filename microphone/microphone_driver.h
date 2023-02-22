@@ -23,6 +23,9 @@
 #include "audio/audio_resampler.h"
 #include "queues/fifo_queue.h"
 
+/**
+ * Flags that indicate the current state of the microphone driver.
+ */
 enum microphone_driver_state_flags
 {
    /**
@@ -30,7 +33,7 @@ enum microphone_driver_state_flags
     * and is currently valid.
     * You may open microphones and query them for samples at any time.
     *
-    * This flag does \em not mean that the core will receive anything;
+    * This flag does \em not mean that the core will receive audio;
     * the driver might be suspended.
     */
    MICROPHONE_DRIVER_FLAG_ACTIVE  = (1 << 0),
@@ -38,6 +41,9 @@ enum microphone_driver_state_flags
    MICROPHONE_DRIVER_FLAG_CONTROL = (1 << 2)
 };
 
+/**
+ * Flags that indicate the current state of a particular microphone.
+ */
 enum microphone_state_flags
 {
    /**
@@ -49,7 +55,7 @@ enum microphone_state_flags
     * as there are several situations where a mic will return silence.
     *
     * If this flag is not set, then the others are meaningless.
-    * Reads from this microphone will return an error.
+    * In that case, reads from this microphone will return an error.
     */
    MICROPHONE_FLAG_ACTIVE = (1 << 0),
 
@@ -57,11 +63,11 @@ enum microphone_state_flags
     * Indicates that the core considers this microphone "on"
     * and ready to retrieve audio.
     *
-    * Even if a microphone is opened, the user might not want it running
-    * at all times; they might prefer to hold a button to use it.
+    * Even if a microphone is opened, the user might not want it running constantly;
+    * they might prefer to hold a button to use it.
     *
     * If this flag is not set, the microphone will not process input.
-    * Reads from it will return silence.
+    * Reads from it will return an error.
     */
    MICROPHONE_FLAG_ENABLED = (1 << 1),
 
@@ -70,6 +76,9 @@ enum microphone_state_flags
     * before the microphone driver was initialized,
     * so the driver will need to create this microphone
     * when it's ready.
+    *
+    * This flag is also used to reinitialize microphones
+    * that were closed as part of a driver reinit.
     *
     * If this flag is set, reads from this microphone return silence
     * of the requested length.
@@ -86,7 +95,7 @@ enum microphone_state_flags
     * If this flag is set, then the resampled output doesn't need
     * to be converted back to \c int16_t format.
     *
-    * This won't affect the audio that the core receives;
+    * This won't significantly affect the audio that the core receives;
     * either way, it's supposed to receive \c int16_t samples.
     *
     * This flag won't be set if the selected microphone driver
@@ -179,12 +188,15 @@ struct retro_microphone
     */
    void *resampler_data;
 
+   /**
+    * The ratio of the core-requested sample rate to the device's opened sample rate.
+    * If this is (almost) equal to 1, then resampling will be skipped.
+    */
    double original_ratio;
 };
 
 /**
  * Defines the implementation of a microphone driver.
- * Similar to audio_driver_t.
  * All functions are mandatory unless otherwise noted.
  */
 typedef struct microphone_driver
@@ -200,6 +212,8 @@ typedef struct microphone_driver
     *
     * @returns A handle to the microphone driver context,
     * or \c NULL if there was an error.
+    *
+    * @see microphone_driver_init_internal
     **/
    void *(*init)(void);
 
@@ -214,8 +228,7 @@ typedef struct microphone_driver
     * Provide the pointer that was returned by \c ::init(),
     * \em not one of the handles returned by \c ::mic_open().
     *
-    * @post The provided driver context is invalid,
-    * and all microphones are closed.
+    * @see microphone_driver_deinit
     */
    void (*free)(void *driver_context);
 
@@ -226,7 +239,7 @@ typedef struct microphone_driver
     * Since samples are in mono, a "frame" and a "sample" mean the same thing
     * in the context of microphone input.
     *
-    * If \c use_float() returns \c true,
+    * If \c ::mic_use_float returns \c true,
     * samples will be in 32-bit \c float format with a range of [-1.0, 1.0].
     * Otherwise, samples will be in signed 16-bit integer format.
     * Data will be in native byte order either way.
@@ -246,12 +259,21 @@ typedef struct microphone_driver
     * May be less than \c buffer_size if this microphone is non-blocking.
     * If this microphone is in non-blocking mode and no new data is available,
     * the driver should return 0 rather than -1.
+    *
+    * @note Do not apply resampling or up-channeling;
+    * the microphone frontend will do so.
+    * @note Do not return silence if unable to read samples;
+    * instead, return an error.
+    * The frontend will provide silence to the core in
+    * non-erroneous situations where microphone input is unsupported
+    * (such as in fast-forward or rewind).
+    *
+    * @see microphone_driver_read
     */
    int (*read)(void *driver_context, void *mic_context, void *buffer, size_t buffer_size);
 
    /**
     * Sets the nonblocking state of the driver.
-    * Primarily used for fast-forwarding.
     * If the driver is in blocking mode (the default),
     * \c ::read() will block the current thread
     * until all requested samples are provided.
@@ -280,6 +302,7 @@ typedef struct microphone_driver
     * The user can select from these devices on the options menu.
     *
     * Optional, but must be implemented if \c device_list_free is implemented.
+    * The list returned by this function must be freed with \c device_list_free.
     *
     * @param[in] driver_context Pointer to the driver context.
     * Will be the value that was returned by \c ::init().
@@ -295,32 +318,31 @@ typedef struct microphone_driver
     * Will do nothing if any parameter is \c NULL.
     *
     * @param[in] driver_context Pointer to the driver context.
-    * Will be the value that was returned by \c init().
+    * Will be the value that was returned by \c ::init.
     * @param[in] devices Pointer to the device list
     * that was returned by \c device_list_new.
     */
    void (*device_list_free)(const void *driver_context, struct string_list *devices);
 
    /**
-    * Initializes a microphone using the audio driver.
+    * Initializes a microphone.
     * Cores that use microphone functionality will call this via
-    * retro_microphone_interface::init_microphone.
+    * \c retro_microphone_interface_t::open_mic.
     *
     * The core may request a microphone before the driver is fully initialized,
     * but driver implementations do not need to concern themselves with that;
     * when the driver is ready, it will call this function.
     *
-    * Opened microphones must *not* be activated,
+    * Opened microphones must \em not be activated,
     * i.e. \c mic_alive on a newly-opened microphone should return \c false.
     *
     * @param data Handle to the driver context
-    * that was originally returned by ::init.
+    * that was originally returned by \c init.
     * @param device A specific device name (or other options)
     * to create the microphone with.
     * Each microphone driver interprets this differently,
     * and some may ignore it.
-    * @param rate The requested sampling rate of the new microphone,
-    * in Hz.
+    * @param rate The requested sampling rate of the new microphone in Hz.
     * @param latency TODO
     * @param block_frames TODO
     * @param new_rate Pointer to the actual sample frequency,
@@ -360,7 +382,7 @@ typedef struct microphone_driver
    /**
     * Returns the active state of the provided microphone.
     * This is the state of the device itself,
-    * not of any user-decided state.
+    * not the user's desired on/off state.
     *
     * @param[in] driver_context Pointer to the driver context.
     * Will be the value that was returned by \c ::init().
@@ -372,7 +394,7 @@ typedef struct microphone_driver
    bool (*mic_alive)(const void *driver_context, const void *mic_context);
 
    /**
-    * Begins capture activity on the provided microphone.
+    * Begins capture activity on the provided microphone, if necessary.
     *
     * @param[in] driver_context Pointer to the driver context.
     * Will be the value that was returned by \c ::init().
@@ -384,7 +406,7 @@ typedef struct microphone_driver
    bool (*start_mic)(void *driver_context, void *microphone_context);
 
    /**
-    * Pauses capture activity on the provided microphone.
+    * Pauses capture activity on the provided microphone, if necessary.
     * This function must not deallocate the microphone.
     *
     * @param[in] driver_context Pointer to the driver context.
@@ -516,6 +538,8 @@ typedef struct microphone_driver_state
 /**
  * Starts all enabled microphones,
  * and opens all pending microphones.
+ * It is not an error to call this function
+ * if the mic driver is already running.
  *
  * @param is_shutdown TODO
  * @return \c true if the configured driver was started
@@ -541,6 +565,9 @@ bool microphone_driver_stop(void);
 /**
  * Driver function for opening a microphone.
  * Provided to retro_microphone_interface::init_microphone().
+ * @param[in] params Parameters for the newly-opened microphone
+ * that the core requested.
+ * May be \c NULL, in which case defaults will be selected.
  * @return Pointer to the newly-opened microphone,
  * or \c NULL if there was an error.
  */
@@ -555,13 +582,19 @@ retro_microphone_t *microphone_driver_open_mic(const retro_microphone_params_t *
 void microphone_driver_close_mic(retro_microphone_t *microphone);
 
 /**
- * TODO
+ * Enables or disables the microphone.
+ *
+ * @returns \c true if the microphone's active state was set,
+ * \c false if there was an error.
  */
 bool microphone_driver_set_mic_state(retro_microphone_t *microphone, bool state);
 
 /**
- * TODO
- * @param microphone
+ * Queries the active state of the microphone.
+ * Inactive microphones return no audio,
+ * and it is an error to read from them.
+ *
+ * @param microphone The microphone to query.
  * @return The active state of \c microphone.
  * \c true if the microphone is ready to accept input,
  * \c false if not.

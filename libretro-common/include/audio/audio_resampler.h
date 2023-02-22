@@ -99,6 +99,8 @@ struct resampler_data
    /**
     * The desired ratio of output_frames to input_frames.
     * This value is used to determine the number of frames written to \c data_out.
+    * If this value is (almost) equal to 1,
+    * then resampling may be skipped.
     */
    double ratio;
 };

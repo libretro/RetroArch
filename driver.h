@@ -85,7 +85,7 @@ enum driver_lifetime_flags
     * When closed by normal means, such drivers will de-allocate the resources
     * that their opened handles represent.
     * If the game isn't being exited, then these resources would effectively
-    * be closed without the core knowing.
+    * be closed while the core might still be using them.
     *
     * This flag can be used to ensure that existing core-accessible handles
     * are reinitialized with valid resources

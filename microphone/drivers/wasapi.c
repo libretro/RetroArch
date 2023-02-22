@@ -31,11 +31,7 @@ typedef struct
 
    /**
     * The buffer in which samples from the microphone will be read and stored
-    * until the core fetches them.
-    * Will be \c NULL if the mic is opened in shared mode
-    * and a shared-buffer length is not given.
-    * If \c NULL, then samples are copied directly from the
-    * platform's underlying buffer to the driver.
+    * until the frontend fetches them.
     */
    fifo_buffer_t       *buffer;
 
@@ -91,7 +87,8 @@ static void wasapi_microphone_free(void *driver_context)
  * so the returned value may be less than the queue's size
  * if the next packet won't fit in it.
  * @param microphone Pointer to the microphone context.
- * @return The number of bytes in the queue, or -1 if there was an error.
+ * @return The number of bytes in the queue after fetching input,
+ * or -1 if there was an error.
  */
 static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *microphone)
 {
@@ -168,8 +165,8 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *microphone)
  *
  * @param microphone The microphone to wait on.
  * @param timeout The amount of time to wait, in milliseconds.
- * @return true if the event was signalled,
- * false if it timed out or there was an error.
+ * @return \c true if the event was signalled,
+ * \c false if it timed out or there was an error.
  */
 static bool wasapi_microphone_wait_for_capture_event(wasapi_microphone_handle_t *microphone, DWORD timeout)
 {
@@ -189,8 +186,9 @@ static bool wasapi_microphone_wait_for_capture_event(wasapi_microphone_handle_t 
 }
 
 /**
- * Reads samples from an exclusive-mode microphone,
+ * Reads samples from a microphone,
  * fetching more from it if necessary.
+ * Works for exclusive and shared-mode streams.
  *
  * @param microphone Pointer to the context of the microphone
  * from which samples will be read.
@@ -199,7 +197,8 @@ static bool wasapi_microphone_wait_for_capture_event(wasapi_microphone_handle_t 
  * @param timeout Timeout for new samples, in milliseconds.
  * 0 means that this function won't wait for new samples,
  * \c INFINITE means that this function will wait indefinitely.
- * @return
+ * @return The number of samples that were retrieved,
+ * or -1 if there was an error (including timeout).
  */
 static int wasapi_microphone_read_buffered(
    wasapi_microphone_handle_t *microphone,
@@ -480,7 +479,7 @@ static bool wasapi_microphone_start_mic(void *driver_context, void *microphone_c
    hr = _IAudioClient_Start(microphone->client);
 
    if (SUCCEEDED(hr) || hr == AUDCLNT_E_NOT_STOPPED)
-   { /* Starting an active microphone is not an error */
+   { /* Starting an already-active microphone is not an error */
       microphone->running = true;
    }
    else

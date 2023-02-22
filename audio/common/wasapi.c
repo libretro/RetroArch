@@ -186,19 +186,24 @@ static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
  * Selects a sample format suitable for the given device.
  * @param[in,out] format The place where the chosen format will be written,
  * as well as the first format checked.
- * @param client TODO
- * @param mode todo
- * @return true if successful, false if there was an error or a suitable format wasn't found
+ * @param[in] client The audio client (i.e. device handle) for which a format will be selected.
+ * @param[in] mode The device mode (shared or exclusive) that \c client will use.
+ * @param[in] channels The number of channels that will constitute one audio frame.
+ * @return \c true if successful, \c false if a suitable format wasn't found or there was an error.
+ * If \c true, the selected format will be written to \c format.
+ * If \c false, the value referred by \c format will be unchanged.
  */
 static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels)
 {
    static const unsigned preferred_rates[] = { 48000, 44100, 96000, 192000, 32000 };
    const bool preferred_formats[] = {format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE, format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE};
+   /* Try the requested sample format first, then try the other one */
    WAVEFORMATEXTENSIBLE *suggested_format = NULL;
    bool result = false;
    HRESULT hr = _IAudioClient_IsFormatSupported(client, mode,
       (const WAVEFORMATEX *) format, (WAVEFORMATEX **) &suggested_format);
    /* The Windows docs say that casting these arguments to WAVEFORMATEX* is okay. */
+
    switch (hr)
    {
       case S_OK:
@@ -224,8 +229,10 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
 
          break;
       case AUDCLNT_E_UNSUPPORTED_FORMAT:
-      { /* The requested format is unsupported, and Windows was unable to suggest another.
-         * Usually happens with exclusive mode. */
+      { /* The requested format is unsupported
+         * and Windows was unable to suggest another.
+         * Usually happens with exclusive mode.
+         * RetroArch will try selecting a format. */
          int i, j;
          WAVEFORMATEXTENSIBLE possible_format;
          HRESULT format_check_hr;
