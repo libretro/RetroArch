@@ -713,9 +713,6 @@ INPUT
 #elif defined(PS2)
 #include "../input/drivers/ps2_input.c"
 #include "../input/drivers_joypad/ps2_joypad.c"
-#elif defined(__PSL1GHT__)
-#include "../input/drivers/psl1ght_input.c"
-#include "../input/drivers_joypad/ps3_joypad.c"
 #elif defined(__PS3__)
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"

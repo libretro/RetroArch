@@ -41,8 +41,12 @@
 #include <sys/keycodes.h>
 #endif
 
+#ifdef __PS3__
 #ifdef __PSL1GHT__
 #include <io/kb.h>
+#else
+#include <ps3_defines.h>
+#endif
 #endif
 
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
@@ -1707,8 +1711,8 @@ const struct rarch_key_map rarch_key_map_dos[] = {
 };
 #endif
 
-#ifdef __PSL1GHT__
-const struct rarch_key_map rarch_key_map_psl1ght[] = {
+#if defined(__PS3__)
+const struct rarch_key_map rarch_key_map_ps3[] = {
    { KB_RAWKEY_A, RETROK_a },
    { KB_RAWKEY_B, RETROK_b },
    { KB_RAWKEY_C, RETROK_c },
