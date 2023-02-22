@@ -2836,8 +2836,7 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_MICROPHONE_START:
-         if (!microphone_driver_start(runloop_st->flags &
-                  RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+         if (!microphone_driver_start())
             return false;
          break;
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:

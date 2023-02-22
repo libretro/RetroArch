@@ -283,7 +283,7 @@ static void wasapi_microphone_set_nonblock_state(void *driver_context, bool nonb
 }
 
 static void *wasapi_microphone_open_mic(void *driver_context, const char *device, unsigned rate,
-                                        unsigned latency, unsigned block_frames, unsigned *new_rate)
+                                        unsigned latency, unsigned *new_rate)
 {
    settings_t *settings          = config_get_ptr();
    HRESULT hr;

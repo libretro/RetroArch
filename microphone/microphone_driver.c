@@ -69,7 +69,7 @@ unsigned mic_driver_get_sample_size(const retro_microphone_t *microphone)
 }
 
 static bool mic_driver_open_mic_internal(retro_microphone_t* microphone);
-bool microphone_driver_start(bool is_shutdown)
+bool microphone_driver_start(void)
 {
    microphone_driver_state_t *mic_st = &mic_driver_st;
    retro_microphone_t    *microphone = &mic_st->microphone;
@@ -104,10 +104,6 @@ bool microphone_driver_start(bool is_shutdown)
          RARCH_DBG("[Microphone]: Started a microphone that was enabled when the driver was last stopped\n");
       }
    }
-
-   RARCH_DBG("[Microphone]: Started microphone driver \"%s\" (is_shutdown=%s)\n",
-         mic_st->driver->ident,
-         is_shutdown ? "true" : "false");
 
    return true;
 }
@@ -342,7 +338,7 @@ bool microphone_driver_init_internal(void *settings_data)
    /* The mic driver was initialized, now we're ready to open mics */
    mic_st->flags |= MICROPHONE_DRIVER_FLAG_ACTIVE;
 
-   if (!microphone_driver_start(false))
+   if (!microphone_driver_start())
       goto error;
 
    return true;
@@ -386,7 +382,6 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
       *settings->arrays.microphone_device ? settings->arrays.microphone_device : NULL,
       microphone->requested_params.rate,
       audio_latency,
-      settings->uints.microphone_block_frames,
       &microphone->actual_params.rate);
 
    if (!microphone->microphone_context)

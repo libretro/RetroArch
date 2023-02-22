@@ -342,7 +342,6 @@ typedef struct microphone_driver
     * and some may ignore it.
     * @param rate The requested sampling rate of the new microphone in Hz.
     * @param latency TODO
-    * @param block_frames TODO
     * @param new_rate Pointer to the actual sample frequency,
     * if the microphone couldn't be initialized with the value given by rate.
     * If NULL, then the value will not be reported to the caller;
@@ -358,7 +357,7 @@ typedef struct microphone_driver
     * @note Your driver should keep track of the mic context
     */
    void *(*open_mic)(void *driver_context, const char *device, unsigned rate,
-                            unsigned latency, unsigned block_frames, unsigned *new_rate);
+                            unsigned latency, unsigned *new_rate);
 
    /**
     * Releases the resources used by a particular microphone
@@ -539,12 +538,11 @@ typedef struct microphone_driver_state
  * It is not an error to call this function
  * if the mic driver is already running.
  *
- * @param is_shutdown TODO
  * @return \c true if the configured driver was started
  * and pending microphones opened,
  * \c false if there was an error.
  */
-bool microphone_driver_start(bool is_shutdown);
+bool microphone_driver_start(void);
 
 /**
  * Stops all enabled microphones.

@@ -209,7 +209,6 @@ static void *alsa_microphone_open_mic(void *driver_context,
    const char *device,
    unsigned rate,
    unsigned latency,
-   unsigned block_frames,
    unsigned *new_rate)
 {
    alsa_microphone_t *alsa              = (alsa_microphone_t*)driver_context;
