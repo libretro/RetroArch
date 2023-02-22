@@ -211,6 +211,40 @@ extern int audioAddData(uint32_t portNum, float *data,
 #endif
 
 /*============================================================
+	INPUT KEYBOARD PROTOTYPES
+============================================================ */
+
+#ifdef __PSL1GHT__
+#include <io/kb.h>
+
+#define CELL_KB_RMODE_INPUTCHAR KB_RMODE_INPUTCHAR
+#define CELL_KB_CODETYPE_RAW    KB_CODETYPE_RAW
+
+#define cellKbData KbData
+#define cellKbInfo KbInfo
+
+#define cellKbSetCodeType ioKbSetCodeType
+#define cellKbSetReadMode ioKbSetReadMode
+#define cellKbInit ioKbInit
+#define cellKbGetInfo ioKbGetInfo
+#define cellKbRead ioKbRead
+#else
+#include <cell/keyboard.h>
+
+#define KB_RMODE_INPUTCHAR CELL_KB_RMODE_INPUTCHAR
+#define KB_CODETYPE_RAW    CELL_KB_CODETYPE_RAW
+
+#define KbData cellKbData
+#define KbInfo cellKbInfo
+
+#define ioKbSetCodeType cellKbSetCodeType
+#define ioKbSetReadMode cellKbSetReadMode
+#define ioKbInit cellKbInit
+#define ioKbGetInfo cellKbGetInfo
+#define ioKbRead cellKbRead
+#endif
+
+/*============================================================
 	OSK PROTOTYPES
 ============================================================ */
 
