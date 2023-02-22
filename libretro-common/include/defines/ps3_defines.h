@@ -242,6 +242,125 @@ extern int audioAddData(uint32_t portNum, float *data,
 #define ioKbInit cellKbInit
 #define ioKbGetInfo cellKbGetInfo
 #define ioKbRead cellKbRead
+
+/* Keyboard RAWDAT Key code (can't be converted to ASCII codes) */
+#define KB_RAWKEY_NO_EVENT			0x00
+#define KB_RAWKEY_E_ROLLOVER			0x01
+#define KB_RAWKEY_E_POSTFAIL			0x02
+#define KB_RAWKEY_E_UNDEF			0x03
+#define KB_RAWKEY_ESCAPE			0x29
+#define KB_RAWKEY_106_KANJI			0x35	/* The half-width/full width Kanji key code */
+#define KB_RAWKEY_CAPS_LOCK			0x39
+#define KB_RAWKEY_F1				0x3a
+#define KB_RAWKEY_F2				0x3b
+#define KB_RAWKEY_F3				0x3c
+#define KB_RAWKEY_F4				0x3d
+#define KB_RAWKEY_F5				0x3e
+#define KB_RAWKEY_F6				0x3f
+#define KB_RAWKEY_F7				0x40
+#define KB_RAWKEY_F8				0x41
+#define KB_RAWKEY_F9				0x42
+#define KB_RAWKEY_F10				0x43
+#define KB_RAWKEY_F11				0x44
+#define KB_RAWKEY_F12				0x45
+#define KB_RAWKEY_PRINTSCREEN			0x46
+#define KB_RAWKEY_SCROLL_LOCK			0x47
+#define KB_RAWKEY_PAUSE				0x48
+#define KB_RAWKEY_INSERT			0x49
+#define KB_RAWKEY_HOME				0x4a
+#define KB_RAWKEY_PAGE_UP			0x4b
+#define KB_RAWKEY_DELETE			0x4c
+#define KB_RAWKEY_END				0x4d
+#define KB_RAWKEY_PAGE_DOWN			0x4e
+#define KB_RAWKEY_RIGHT_ARROW			0x4f
+#define KB_RAWKEY_LEFT_ARROW			0x50
+#define KB_RAWKEY_DOWN_ARROW			0x51
+#define KB_RAWKEY_UP_ARROW			0x52
+#define KB_RAWKEY_NUM_LOCK			0x53
+#define KB_RAWKEY_APPLICATION			0x65	/* Application key code */
+#define KB_RAWKEY_KANA				0x88	/* Katakana/Hiragana/Romaji key code */
+#define KB_RAWKEY_HENKAN			0x8a	/* Conversion key code */
+#define KB_RAWKEY_MUHENKAN			0x8b	/* No Conversion key code */
+
+/* Keyboard RAW Key Code definition */
+#define KB_RAWKEY_A				0x04
+#define KB_RAWKEY_B				0x05
+#define KB_RAWKEY_C				0x06
+#define KB_RAWKEY_D				0x07
+#define KB_RAWKEY_E				0x08
+#define KB_RAWKEY_F				0x09
+#define KB_RAWKEY_G				0x0A
+#define KB_RAWKEY_H				0x0B
+#define KB_RAWKEY_I				0x0C
+#define KB_RAWKEY_J				0x0D
+#define KB_RAWKEY_K				0x0E
+#define KB_RAWKEY_L				0x0F
+#define KB_RAWKEY_M				0x10
+#define KB_RAWKEY_N				0x11
+#define KB_RAWKEY_O				0x12
+#define KB_RAWKEY_P				0x13
+#define KB_RAWKEY_Q				0x14
+#define KB_RAWKEY_R				0x15
+#define KB_RAWKEY_S				0x16
+#define KB_RAWKEY_T				0x17
+#define KB_RAWKEY_U				0x18
+#define KB_RAWKEY_V				0x19
+#define KB_RAWKEY_W				0x1A
+#define KB_RAWKEY_X				0x1B
+#define KB_RAWKEY_Y				0x1C
+#define KB_RAWKEY_Z				0x1D
+#define KB_RAWKEY_1				0x1E
+#define KB_RAWKEY_2				0x1F
+#define KB_RAWKEY_3				0x20
+#define KB_RAWKEY_4				0x21
+#define KB_RAWKEY_5				0x22
+#define KB_RAWKEY_6				0x23
+#define KB_RAWKEY_7				0x24
+#define KB_RAWKEY_8				0x25
+#define KB_RAWKEY_9				0x26
+#define KB_RAWKEY_0				0x27
+#define KB_RAWKEY_ENTER				0x28
+#define KB_RAWKEY_ESC				0x29
+#define KB_RAWKEY_BS				0x2A
+#define KB_RAWKEY_TAB				0x2B
+#define KB_RAWKEY_SPACE				0x2C
+#define KB_RAWKEY_MINUS				0x2D
+#define KB_RAWKEY_EQUAL_101			0x2E	/* = and + */
+#define KB_RAWKEY_ACCENT_CIRCONFLEX_106 	0x2E	/* ^ and ~ */
+#define KB_RAWKEY_LEFT_BRACKET_101		0x2F	/* [ */
+#define KB_RAWKEY_ATMARK_106			0x2F	/* @ */
+#define KB_RAWKEY_RIGHT_BRACKET_101		0x30	/* ] */
+#define KB_RAWKEY_LEFT_BRACKET_106		0x30	/* [ */
+#define KB_RAWKEY_BACKSLASH_101			0x31	/* \ and | */
+#define KB_RAWKEY_RIGHT_BRACKET_106		0x32	/* ] */
+#define KB_RAWKEY_SEMICOLON			0x33	/* ; */
+#define KB_RAWKEY_QUOTATION_101			0x34	/* ' and " */
+#define KB_RAWKEY_COLON_106			0x34	/* : and * */
+#define KB_RAWKEY_COMMA		    		0x36
+#define KB_RAWKEY_PERIOD			0x37
+#define KB_RAWKEY_SLASH		    		0x38
+#define KB_RAWKEY_CAPS_LOCK			0x39
+#define KB_RAWKEY_KPAD_NUMLOCK			0x53
+#define KB_RAWKEY_KPAD_SLASH			0x54
+#define KB_RAWKEY_KPAD_ASTERISK			0x55
+#define KB_RAWKEY_KPAD_MINUS			0x56
+#define KB_RAWKEY_KPAD_PLUS			0x57
+#define KB_RAWKEY_KPAD_ENTER			0x58
+#define KB_RAWKEY_KPAD_1			0x59
+#define KB_RAWKEY_KPAD_2			0x5A
+#define KB_RAWKEY_KPAD_3			0x5B
+#define KB_RAWKEY_KPAD_4			0x5C
+#define KB_RAWKEY_KPAD_5			0x5D
+#define KB_RAWKEY_KPAD_6			0x5E
+#define KB_RAWKEY_KPAD_7			0x5F
+#define KB_RAWKEY_KPAD_8			0x60
+#define KB_RAWKEY_KPAD_9			0x61
+#define KB_RAWKEY_KPAD_0			0x62
+#define KB_RAWKEY_KPAD_PERIOD			0x63
+#define KB_RAWKEY_BACKSLASH_106			0x87
+#define KB_RAWKEY_YEN_106			0x89
+
+#define KB_CODETYPE_RAW CELL_KB_CODETYPE_RAW
 #endif
 
 /*============================================================

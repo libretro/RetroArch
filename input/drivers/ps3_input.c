@@ -62,6 +62,8 @@
 #define PS3_MAX_MICE 7
 #endif
 
+#define PS3_MAX_KB_PORT_NUM 7
+
 /* TODO/FIXME -
  * fix game focus toggle */
 
@@ -78,7 +80,7 @@ typedef struct ps3_input
    unsigned mice_connected;
 #endif
    KbInfo kbinfo;
-   KbData kbdata[MAX_KB_PORT_NUM];
+   KbData kbdata[PS3_MAX_KB_PORT_NUM];
 #ifdef HAVE_LIGHTGUN
    cameraType type;
    cameraReadInfo camread;
@@ -114,7 +116,7 @@ typedef struct ps3_input
    u16 newGemAnalogT;
    u8 video_frame[640*480*4];
 #endif
-   int connected[MAX_KB_PORT_NUM];
+   int connected[PS3_MAX_KB_PORT_NUM];
 } ps3_input_t;
 
 static int mod_table[] = {
@@ -477,7 +479,7 @@ static void ps3_read_gem(ps3_input_t *ps3)
 static void ps3_input_poll(void *data)
 {
    unsigned i, j;
-   KbData last_kbdata[MAX_KB_PORT_NUM];
+   KbData last_kbdata[PS3_MAX_KB_PORT_NUM];
 #ifdef HAVE_MOUSE
    mouseInfo mouse_info;
 #endif
@@ -488,20 +490,20 @@ static void ps3_input_poll(void *data)
 
    ioKbGetInfo(&ps3->kbinfo);
 
-   for (i = 0; i < MAX_KB_PORT_NUM; i++)
+   for (i = 0; i < PS3_MAX_KB_PORT_NUM; i++)
    {
       if (ps3->kbinfo.status[i] && !ps3->connected[i])
          ps3_connect_keyboard(ps3, i);
    }
 
    memcpy(last_kbdata, ps3->kbdata, sizeof(last_kbdata));
-   for (i = 0; i < MAX_KB_PORT_NUM; i++)
+   for (i = 0; i < PS3_MAX_KB_PORT_NUM; i++)
    {
       if (ps3->kbinfo.status[i])
          ioKbRead(i, &ps3->kbdata[i]);
    }
 
-   for (i = 0; i < MAX_KB_PORT_NUM; i++)
+   for (i = 0; i < PS3_MAX_KB_PORT_NUM; i++)
    {
       /* Set keyboard modifier based on shift,ctrl and alt state */
       uint16_t mod          = 0;
@@ -524,7 +526,7 @@ static void ps3_input_poll(void *data)
          int code            = last_kbdata[i].keycode[j];
          int newly_depressed = 1;
 
-         for (k = 0; k < MAX_KB_PORT_NUM; i++)
+         for (k = 0; k < PS3_MAX_KB_PORT_NUM; i++)
          {
             if (ps3->kbdata[i].keycode[k] == code)
             {
@@ -546,7 +548,7 @@ static void ps3_input_poll(void *data)
          int code          = ps3->kbdata[i].keycode[j];
          int newly_pressed = 1;
 
-         for (k = 0; k < MAX_KB_PORT_NUM; i++)
+         for (k = 0; k < PS3_MAX_KB_PORT_NUM; i++)
          {
             if (last_kbdata[i].keycode[k] == code)
             {
@@ -590,7 +592,7 @@ static bool ps3_keyboard_port_input_pressed(
    {
       if (id == mod_table[i])
       {
-         for (j = 0; j < MAX_KB_PORT_NUM; j++)
+         for (j = 0; j < PS3_MAX_KB_PORT_NUM; j++)
          {
             if (ps3->kbinfo.status[j] 
                   && (ps3->kbdata[j].mkey._KbMkeyU.mkeys & (1 << i)))
@@ -602,7 +604,7 @@ static bool ps3_keyboard_port_input_pressed(
 
    if ((code = rarch_keysym_lut[id]) != 0)
    {
-      for (i = 0; i < MAX_KB_PORT_NUM; i++)
+      for (i = 0; i < PS3_MAX_KB_PORT_NUM; i++)
       {
          if (ps3->kbinfo.status[i])
          {
@@ -890,10 +892,10 @@ static void* ps3_input_init(const char *joypad_driver)
    /* Keyboard  */
 
    input_keymaps_init_keyboard_lut(rarch_key_map_ps3);
-   ioKbInit(MAX_KB_PORT_NUM);
+   ioKbInit(PS3_MAX_KB_PORT_NUM);
    ioKbGetInfo(&ps3->kbinfo);
 
-   for (i = 0; i < MAX_KB_PORT_NUM; i++)
+   for (i = 0; i < PS3_MAX_KB_PORT_NUM; i++)
    {
       if (ps3->kbinfo.status[i])
          ps3_connect_keyboard(ps3, i);
