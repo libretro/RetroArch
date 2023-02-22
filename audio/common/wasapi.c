@@ -246,6 +246,9 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
                }
             }
          }
+         RARCH_ERR("[WASAPI]: Failed to select client format: No suitable format available\n");
+         result = false;
+         break;
       }
       default:
          /* Something else went wrong. */
