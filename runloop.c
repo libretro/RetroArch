@@ -5913,7 +5913,12 @@ static enum runloop_state_enum runloop_check_state(
                &runloop_st->current_core,
                rewind_pressed,
                settings->uints.rewind_granularity,
-               runloop_paused,
+               runloop_paused
+#ifdef HAVE_MENU
+                     || (  (menu_st->flags & MENU_ST_FLAG_ALIVE)
+                        && settings->bools.menu_pause_libretro)
+#endif
+               ,
                s, sizeof(s), &t);
 
          old_rewind_pressed = rewind_pressed;
