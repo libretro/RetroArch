@@ -171,8 +171,45 @@ static const char* wasapi_data_flow_name(EDataFlow data_flow)
 
 static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
                               bool float_fmt, unsigned rate, unsigned channels);
+
 /**
- * Selects a device format
+ * @param[in] format The format to check.
+ * @return \c true if \c format is suitable for RetroArch.
+ */
+static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
+{
+   if (!format)
+      return false;
+
+   if (format->Format.nChannels == 0 || format->Format.nChannels > 2)
+      /* RetroArch only supports mono mic input and stereo speaker output */
+      return false;
+
+   switch (format->Format.wFormatTag)
+   {
+      case WAVE_FORMAT_PCM:
+         if (format->Format.wBitsPerSample != 16)
+            /* Integer samples must be 16-bit */
+            return false;
+         break;
+      case WAVE_FORMAT_EXTENSIBLE:
+         if (!IsEqualGUID(&format->SubFormat, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT))
+            /* RetroArch doesn't support any other subformat */
+            return false;
+
+         if (format->Format.wBitsPerSample != 32)
+            /* floating-point samples must be 32-bit */
+            return false;
+         break;
+      default:
+         /* Other formats are unsupported */
+         return false;
+   }
+
+   return true;
+}
+/**
+ * Selects a sample format suitable for the given device.
  * @param[in,out] format The place where the chosen format will be written,
  * as well as the first format checked.
  * @param client TODO
@@ -198,11 +235,19 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
          break;
       case S_FALSE:
          /* The requested format is unsupported, but Windows has suggested a similar one. */
-         // TODO: Check that the suggested format meets RetroArch's requirements
          RARCH_DBG("[WASAPI]: Windows suggests a format of (%s, %u-channel, %uHz).\n",
             wave_format_name(suggested_format), suggested_format->Format.nChannels, suggested_format->Format.nSamplesPerSec);
-         *format = *suggested_format;
-         result = true;
+         if (wasapi_is_format_suitable(suggested_format))
+         {
+            *format = *suggested_format;
+            result = true;
+         }
+         else
+         {
+            result = false;
+            RARCH_ERR("[WASAPI]: Windows suggested a format, but RetroArch can't use it.\n");
+         }
+
          break;
       case AUDCLNT_E_UNSUPPORTED_FORMAT:
       { /* The requested format is unsupported, and Windows was unable to suggest another.
