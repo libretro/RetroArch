@@ -3913,10 +3913,6 @@ MSG_HASH(
    "Hızlı İleri Sarma Kare Atlama"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
-   "Hızlı ileri sarma durumuna göre kareleri atlayın. Bu, güç tasarrufu sağlar ve 3. taraf kare sınırlamasının kullanılmasına izin verir."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    "Ağır-Çekim Oranı"
    )

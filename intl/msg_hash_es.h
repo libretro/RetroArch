@@ -4310,7 +4310,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
-   "Omite los fotogramas según la velocidad del avance rápido. Ahorra energía y permite el uso de limitadores de fotogramas de terceros."
+   "Omite fotogramas en función de la velocidad del avance rápido. Así se ahorra energía y se pueden utilizar limitadores de fotogramas de terceros. En Vulkan se ignorará esta opción para evitar que se omita el doble de fotogramas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
