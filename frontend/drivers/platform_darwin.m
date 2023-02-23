@@ -635,7 +635,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(
    *percent        = -1;
 
    if (!blob)
-      return FRONTEND_POWERSTATE_NONE
+      return FRONTEND_POWERSTATE_NONE;
 
    if (!(list = IOPSCopyPowerSourcesList(blob)))
    {
