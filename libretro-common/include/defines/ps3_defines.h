@@ -366,15 +366,15 @@ typedef struct KbLed
 {
 	union
    {
-      u32 leds;
+      uint32_t leds;
       struct
       {
-         u32 reserved	: 27;	/*!< \brief Reserved MSB */
-         u32 kana		: 1;	/*!< \brief LED Kana 0:OFF 1:ON Bit4 */
-         u32 compose		: 1;	/*!< \brief LED Compose 0:OFF 1:ON Bit3 */
-         u32 scroll_lock	: 1;	/*!< \brief LED Scroll Lock 0:OFF 1:ON Bit2 */
-         u32 caps_lock	: 1;	/*!< \brief LED Caps Lock 0:OFF 1:ON Bit1 */
-         u32 num_lock	: 1;	/*!< \brief LED Num Lock 0:OFF 1:ON Bit0 LSB */
+         uint32_t reserved	   : 27;	/*!< \brief Reserved MSB */
+         uint32_t kana		   : 1;	/*!< \brief LED Kana 0:OFF 1:ON Bit4 */
+         uint32_t compose		: 1;	/*!< \brief LED Compose 0:OFF 1:ON Bit3 */
+         uint32_t scroll_lock	: 1;	/*!< \brief LED Scroll Lock 0:OFF 1:ON Bit2 */
+         uint32_t caps_lock	: 1;	/*!< \brief LED Caps Lock 0:OFF 1:ON Bit1 */
+         uint32_t num_lock	   : 1;	/*!< \brief LED Num Lock 0:OFF 1:ON Bit0 LSB */
       }_KbLedS;
    }_KbLedU;
 } KbLed;
@@ -383,23 +383,23 @@ typedef struct KbLed
 /*! \brief Keyboard Modifier Key State. */
 typedef struct KbMkey
 {
-	union
+   union
    {
-		u32 mkeys;
-		struct
+      uint32_t mkeys;
+      struct
       {
-         u32 reserved	: 24;	/*!< \brief Reserved MSB */
-         u32 r_win		: 1;	/*!< \brief Modifier Key Right WIN 0:OFF 1:ON Bit7 */
-         u32 r_alt		: 1;	/*!< \brief Modifier Key Right ALT 0:OFF 1:ON Bit6 */
-         u32 r_shift		: 1;	/*!< \brief Modifier Key Right SHIFT 0:OFF 1:ON Bit5 */		
-         u32 r_ctrl		: 1;	/*!< \brief Modifier Key Right CTRL 0:OFF 1:ON Bit4 */
-         u32 l_win		: 1;	/*!< \brief Modifier Key Left WIN 0:OFF 1:ON Bit3 */
-         u32 l_alt		: 1;	/*!< \brief Modifier Key Left ALT 0:OFF 1:ON Bit2 */
-         u32 l_shift		: 1;	/*!< \brief Modifier Key Left SHIFT 0:OFF 1:ON Bit1 */
-         u32 l_ctrl		: 1;	/*!< \brief Modifier Key Left CTRL 0:OFF 1:ON Bit0 LSB */
+         uint32_t reserved	   : 24;	/*!< \brief Reserved MSB */
+         uint32_t r_win		   : 1;	/*!< \brief Modifier Key Right WIN 0:OFF 1:ON Bit7 */
+         uint32_t r_alt		   : 1;	/*!< \brief Modifier Key Right ALT 0:OFF 1:ON Bit6 */
+         uint32_t r_shift		: 1;	/*!< \brief Modifier Key Right SHIFT 0:OFF 1:ON Bit5 */		
+         uint32_t r_ctrl		: 1;	/*!< \brief Modifier Key Right CTRL 0:OFF 1:ON Bit4 */
+         uint32_t l_win		   : 1;	/*!< \brief Modifier Key Left WIN 0:OFF 1:ON Bit3 */
+         uint32_t l_alt		   : 1;	/*!< \brief Modifier Key Left ALT 0:OFF 1:ON Bit2 */
+         uint32_t l_shift		: 1;	/*!< \brief Modifier Key Left SHIFT 0:OFF 1:ON Bit1 */
+         uint32_t l_ctrl		: 1;	/*!< \brief Modifier Key Left CTRL 0:OFF 1:ON Bit0 LSB */
          /* For Macintosh Keyboard ALT & WIN correspond respectively to OPTION & APPLE keys */
       }_KbMkeyS;
-	}_KbMkeyU;
+   }_KbMkeyU;
 } KbMkey;
 
 /*! \brief Keyboard input data data structure. */
@@ -407,8 +407,8 @@ typedef struct KbData
 {
 	KbLed led;					/*!< \brief Keyboard Led State */
 	KbMkey mkey;				/*!< \brief Keyboard Modifier Key State */
-	s32 nb_keycode;				/*!< \brief Number of key codes (0 equal no data) */
-	u16 keycode[MAX_KEYCODES];	/*!< \brief Keycode values */
+	int32_t  nb_keycode;				/*!< \brief Number of key codes (0 equal no data) */
+	uint16_t keycode[MAX_KEYCODES];	/*!< \brief Keycode values */
 } KbData;
 #endif
 
