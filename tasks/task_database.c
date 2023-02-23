@@ -734,7 +734,7 @@ static int database_info_list_iterate_found_match(
       strlcpy(entry_label, db_info_entry->name, str_len);
    else if (!string_is_empty(entry_path))
    {
-      char *delim = strchr(entry_path, '#');
+      char *delim = (char*)strchr(entry_path, '#');
 
       if (delim)
          *delim = '\0';
