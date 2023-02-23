@@ -923,7 +923,7 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
    }
    else
    {
-      if(i < AUDIO_MIXER_MAX_VOICES)
+      if (i < AUDIO_MIXER_MAX_VOICES)
       {
          audio_mixer_release(voice);
          AUDIO_MIXER_UNLOCK(voice);

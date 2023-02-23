@@ -1390,7 +1390,7 @@ static int16_t btstack_hid_joypad_axis(void *data,
       if (val < 0)
          return val;
    }
-   else if(AXIS_POS_GET(joyaxis) < 4)
+   else if (AXIS_POS_GET(joyaxis) < 4)
    {
       int16_t val = pad_connection_get_axis(
             &slots[port], port, AXIS_POS_GET(joyaxis));

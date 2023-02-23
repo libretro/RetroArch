@@ -4108,12 +4108,12 @@ static bool event_init_content(
 
 #ifdef HAVE_BSV_MOVIE
    movie_stop(input_st);
-   if(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_RECORDING)
+   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_RECORDING)
    {
      configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
      movie_start_record(input_st, input_st->bsv_movie_state.movie_start_path);
    }
-   else if(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK)
+   else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK)
    {
      configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
      movie_start_playback(input_st, input_st->bsv_movie_state.movie_start_path);

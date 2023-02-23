@@ -777,7 +777,7 @@ static void rsx_unload_texture(void *data,
    {
 #if 0
       /* TODO fix crash on loading core */
-      if(texture->data)
+      if (texture->data)
          rsxFree(texture->data);
 #endif
       free(texture);
@@ -1177,7 +1177,7 @@ static bool rsx_frame(void* data, const void* frame,
    vp.offset[3]                     = 0.0f;
    rsxSetViewport(gcm->context, vp.x, vp.y, vp.w, vp.h, vp.min, vp.max, vp.scale, vp.offset);
 
-   if(frame && width && height)
+   if (frame && width && height)
    {
       gcm->tex_index                = ((gcm->tex_index + 1) % RSX_MAX_TEXTURES);
       rsx_load_texture_data(gcm, &gcm->texture[gcm->tex_index], frame, width, height, pitch, gcm->rgb32, false,
@@ -1324,7 +1324,7 @@ static void rsx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
 {
    rsx_t* gcm         = (rsx_t*)data;
 
-   if(!gcm)
+   if (!gcm)
       return;
 
    gcm->keep_aspect   = true;

@@ -68,7 +68,7 @@ static void *switch_joypad_init(void *data)
 
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
-      if(i == 0)
+      if (i == 0)
          padInitializeDefault(&pad_states[0]);
       else
          padInitialize(&pad_states[i], i);

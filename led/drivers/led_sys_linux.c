@@ -93,16 +93,16 @@ static void sys_led_set(int led, int state)
    int sysled = 0;
 
    /* Invalid LED? */
-   if((led < 0) || (led >= MAX_LEDS))
+   if ((led < 0) || (led >= MAX_LEDS))
       return;
 
    sysled = sys_cur->map[led];
-   if(sysled < 0)
+   if (sysled < 0)
       return;
 
-   if(sys_cur->setup[led] == 0)
+   if (sys_cur->setup[led] == 0)
       sys_cur->setup[led] = setup_sysled(sysled);
-   if(sys_cur->setup[led] > 0)
+   if (sys_cur->setup[led] > 0)
       set_sysled(sysled, state);
 }
 

@@ -402,7 +402,7 @@ static void *psp_init(const video_info_t *video,
    psp->vsync               = video->vsync;
    psp->rgb32               = video->rgb32;
 
-   if(psp->rgb32)
+   if (psp->rgb32)
    {
       u32 i;
       uint32_t* LUT_r_local = (uint32_t*)(SCEGU_VRAM_BP32_2);
@@ -620,7 +620,7 @@ static bool psp_frame(void *data, const void *frame,
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if(psp->menu.active)
+   if (psp->menu.active)
    {
       sceGuSendList(GU_TAIL, psp->menu.dList, &(psp->menu.context_storage));
       sceGuSync(0, 0);
@@ -646,7 +646,7 @@ static void psp_free(void *data)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
 
-   if(!(psp) || !(psp->main_dList))
+   if (!(psp) || !(psp->main_dList))
       return;
 
    sceDisplayWaitVblankStart();

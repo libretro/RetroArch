@@ -174,10 +174,10 @@ static bool switch_frame(void *data, const void *frame,
       for (x = 0; x < 1280; x++)
          sw->image[y*1280+x] = 0xFF000000;
 
-   if(width > 0 && height > 0)
+   if (width > 0 && height > 0)
    {
-      if(sw->last_width != width ||
-            sw->last_height != height)
+      if (   (sw->last_width  != width)
+          || (sw->last_height != height))
       {
          scaler_ctx_gen_reset(&sw->scaler);
 
@@ -193,7 +193,7 @@ static bool switch_frame(void *data, const void *frame,
 
          sw->scaler.scaler_type = SCALER_TYPE_POINT;
 
-         if(!scaler_ctx_gen_filter(&sw->scaler))
+         if (!scaler_ctx_gen_filter(&sw->scaler))
          {
             RARCH_ERR("failed to generate scaler for main image\n");
             return false;
@@ -245,11 +245,11 @@ static bool switch_frame(void *data, const void *frame,
 #endif
 
    r = surface_dequeue_buffer(&sw->surface, &out_buffer);
-   if(r != RESULT_OK)
+   if (r != RESULT_OK)
       return true; /* just skip the frame */
 
    r = surface_wait_buffer(&sw->surface);
-   if(r != RESULT_OK)
+   if (r != RESULT_OK)
       return true;
    gfx_slow_swizzling_blit(out_buffer, sw->image, 1280, 720, 0, 0);
 

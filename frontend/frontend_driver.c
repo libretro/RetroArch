@@ -582,7 +582,7 @@ void frontend_driver_attach_console(void)
       For now, we do this hack, but this absolutely should be redesigned
       as soon as possible.
     */
-   if(      frontend_driver_st.current_frontend_ctx 
+   if (     frontend_driver_st.current_frontend_ctx 
          && frontend_driver_st.current_frontend_ctx->attach_console)
       frontend_driver_st.current_frontend_ctx->attach_console();
 }

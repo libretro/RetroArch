@@ -535,7 +535,7 @@ static int16_t apple_gamecontroller_joypad_axis(
        if (val < 0)
           return val;
     }
-    else if(AXIS_POS_GET(joyaxis) < 4)
+    else if (AXIS_POS_GET(joyaxis) < 4)
     {
        int16_t axis = AXIS_POS_GET(joyaxis);
        int16_t val  = mfi_axes[port][axis];

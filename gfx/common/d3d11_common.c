@@ -188,7 +188,7 @@ d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT des
    DXGI_FORMAT default_list[] = {desired_format, DXGI_FORMAT_UNKNOWN};
    DXGI_FORMAT* format = dxgi_get_format_fallback_list(desired_format);
 
-   if(!format)
+   if (!format)
       format = default_list;
 
    while (*format != DXGI_FORMAT_UNKNOWN)

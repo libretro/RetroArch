@@ -1132,7 +1132,7 @@ static void handle_hotplug(android_input_t *android,
     * This device is composed of two hid devices
     * We make it look like one device
     */
-   else if(
+   else if (
             (
                string_starts_with_size(device_model, "R800", STRLEN_CONST("R800")) ||
                strstr(device_model, "Xperia Play") ||
@@ -1326,17 +1326,17 @@ static void engine_handle_touchpad(
       int action     =   AMOTION_EVENT_ACTION_MASK 
                        & AMotionEvent_getAction(event);
       int raw_action	=   AMotionEvent_getAction(event);
-      if(      action  == AMOTION_EVENT_ACTION_POINTER_DOWN 
+      if (     action  == AMOTION_EVENT_ACTION_POINTER_DOWN 
             || action  == AMOTION_EVENT_ACTION_POINTER_UP )
       {
          int pointer_index = (AMotionEvent_getAction( event ) & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
          pointer_id        = AMotionEvent_getPointerId( event, pointer_index);
       }
 
-      if(      action  == AMOTION_EVENT_ACTION_DOWN 
+      if (     action  == AMOTION_EVENT_ACTION_DOWN 
             || action  == AMOTION_EVENT_ACTION_POINTER_DOWN )
          touchstate[pointer_id].down = 1;
-      else if( action  == AMOTION_EVENT_ACTION_UP 
+      else if (action  == AMOTION_EVENT_ACTION_UP 
             || action  == AMOTION_EVENT_ACTION_POINTER_UP 
             || action  == AMOTION_EVENT_ACTION_CANCEL )
          touchstate[pointer_id].down = 0;
@@ -1669,8 +1669,9 @@ static int16_t android_input_state(
       case RETRO_DEVICE_MOUSE:
          {
             int val = 0;
-            if(port > 0)
+            if (port > 0)
                break; /* TODO: implement mouse for additional ports/players */
+
             switch (id)
             {
                case RETRO_DEVICE_ID_MOUSE_LEFT:
@@ -1703,7 +1704,7 @@ static int16_t android_input_state(
       case RETRO_DEVICE_LIGHTGUN:
          {
             int val = 0;
-            if(port > 0)
+            if (port > 0)
                break; /* TODO: implement lightgun for additional ports/players */
             switch (id)
             {

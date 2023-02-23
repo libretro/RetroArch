@@ -412,7 +412,7 @@ static int16_t udev_mouse_get_pointer_x(const udev_input_mouse_t *mouse, bool sc
 
    if (x < -0x7fff)
       return -0x7fff;
-   else if(x > 0x7fff)
+   else if (x > 0x7fff)
       return 0x7fff;
 
    return x;
@@ -457,7 +457,7 @@ static int16_t udev_mouse_get_pointer_y(const udev_input_mouse_t *mouse, bool sc
 
    if (y < -0x7fff)
       return -0x7fff;
-   else if(y > 0x7fff)
+   else if (y > 0x7fff)
       return 0x7fff;
 
    return y;
@@ -1064,7 +1064,7 @@ static int16_t udev_pointer_state(udev_input_t *udev,
          case RETRO_DEVICE_ID_POINTER_Y:
             return udev_mouse_get_pointer_y(mouse, screen);
          case RETRO_DEVICE_ID_POINTER_PRESSED:
-            if(mouse->abs == 1)
+            if (mouse->abs == 1)
                return mouse->pp;
             return mouse->l;
       }

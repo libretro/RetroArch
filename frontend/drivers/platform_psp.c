@@ -274,11 +274,10 @@ static void frontend_psp_init(void *data)
    memset(&appUtilBootParam, 0, sizeof(SceAppUtilBootParam));
    sceAppUtilInit(&appUtilParam, &appUtilBootParam);
 #if defined(HAVE_VITAGLES)
-   if(pibInit(PIB_SHACCCG|PIB_ENABLE_MSAA|PIB_GET_PROC_ADDR_CORE))
+   if (pibInit(PIB_SHACCCG|PIB_ENABLE_MSAA|PIB_GET_PROC_ADDR_CORE))
       return;
 #endif
 #else
-   (void)data;
    /* initialize debug screen */
    pspDebugScreenInit();
    pspDebugScreenClear();

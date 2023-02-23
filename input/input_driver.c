@@ -4776,7 +4776,7 @@ void bsv_movie_handle_push_key_event(bsv_movie_t *movie, uint8_t down, uint16_t 
 void bsv_movie_finish_rewind(input_driver_state_t *input_st)
 {
    bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
-   if(!handle)
+   if (!handle)
       return;
    handle->frame_ptr    = (handle->frame_ptr + 1) & handle->frame_mask;
    handle->first_rewind = !handle->did_rewind;
@@ -4803,7 +4803,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
    {
       /* read next key events, a frame happened for sure? but don't apply them yet */
-      if(handle->key_event_count != 0)
+      if (handle->key_event_count != 0)
       {
          RARCH_ERR("[Movie] BSV keyboard replay reading next frame while some unused keys still in queue\n");
       }
@@ -5289,7 +5289,7 @@ void input_driver_poll(void)
       runloop_state_t *runloop_st   = runloop_state_get_ptr();
       retro_keyboard_event_t *key_event                 = &runloop_st->key_event;
 
-      if(*key_event && *key_event == runloop_st->frontend_key_event)
+      if (*key_event && *key_event == runloop_st->frontend_key_event)
       {
          int i;
          bsv_key_data_t k;
@@ -6301,7 +6301,7 @@ void input_keyboard_event(bool down, unsigned code,
 
       if (*key_event)
       {
-         if(*key_event == runloop_st->frontend_key_event)
+         if (*key_event == runloop_st->frontend_key_event)
          {
 #ifdef HAVE_BSV_MOVIE
             /* Save input to BSV record, if recording */

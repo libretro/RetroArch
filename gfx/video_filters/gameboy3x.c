@@ -139,10 +139,10 @@ static void gameboy3x_initialize(struct filter_data *filt,
       filt->colors.xrgb8888.pixel_lut[i] = palette[i];
 
       /* Populate grid lookup tables */
-      grid_color = gameboy3x_get_grid_colour(palette[i], palette_grid);
+      grid_color                         = gameboy3x_get_grid_colour(palette[i], palette_grid);
 
-      filt->colors.rgb565.grid_lut[i]   = GAMEBOY_3X_RGB24_TO_RGB565(grid_color);
-      filt->colors.xrgb8888.grid_lut[i] = grid_color;
+      filt->colors.rgb565.grid_lut[i]    = GAMEBOY_3X_RGB24_TO_RGB565(grid_color);
+      filt->colors.xrgb8888.grid_lut[i]  = grid_color;
    }
 }
 
@@ -152,21 +152,18 @@ static void *gameboy3x_generic_create(const struct softfilter_config *config,
       unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
-   (void)simd;
-
    if (!filt)
       return NULL;
-
-   /* Apparently the code is not thread-safe,
-    * so force single threaded operation... */
-   filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data));
-   filt->threads = 1;
-   filt->in_fmt  = in_fmt;
-   if (!filt->workers)
+   if (!(filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data))))
    {
       free(filt);
       return NULL;
    }
+
+   /* Apparently the code is not thread-safe,
+    * so force single threaded operation... */
+   filt->threads = 1;
+   filt->in_fmt  = in_fmt;
 
    /* Initialise colour lookup tables */
    gameboy3x_initialize(filt, config, userdata);
@@ -185,9 +182,8 @@ static void gameboy3x_generic_output(void *data,
 static void gameboy3x_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
-   if (!filt) {
+   if (!filt)
       return;
-   }
    free(filt->workers);
    free(filt);
 }
@@ -230,8 +226,8 @@ static void gameboy3x_work_cb_rgb565(void *data, void *thread_data)
          /* Convert to lookup table index
           * > This can never be greater than 3,
           *   but check anyway... */
-         lut_index = in_rgb_mean >> 3;
-         lut_index = (lut_index > 3) ? 3 : lut_index;
+         lut_index       = in_rgb_mean >> 3;
+         lut_index       = (lut_index > 3) ? 3 : lut_index;
 
          /* Get output pixel and grid colours */
          out_pixel_color = *(pixel_lut + lut_index);
@@ -307,8 +303,8 @@ static void gameboy3x_work_cb_xrgb8888(void *data, void *thread_data)
          /* Convert to lookup table index
           * > This can never be greater than 3,
           *   but check anyway... */
-         lut_index = in_rgb_mean >> 6;
-         lut_index = (lut_index > 3) ? 3 : lut_index;
+         lut_index       = in_rgb_mean >> 6;
+         lut_index       = (lut_index > 3) ? 3 : lut_index;
 
          /* Get output pixel and grid colours */
          out_pixel_color = *(pixel_lut + lut_index);
@@ -354,22 +350,22 @@ static void gameboy3x_generic_packets(void *data,
    /* We are guaranteed single threaded operation
     * (filt->threads = 1) so we don't need to loop
     * over threads and can cull some code */
-   struct filter_data *filt = (struct filter_data*)data;
+   struct filter_data *filt           = (struct filter_data*)data;
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[0];
 
-   thr->out_data = (uint8_t*)output;
-   thr->in_data = (const uint8_t*)input;
-   thr->out_pitch = output_stride;
-   thr->in_pitch = input_stride;
-   thr->width = width;
-   thr->height = height;
+   thr->out_data                      = (uint8_t*)output;
+   thr->in_data                       = (const uint8_t*)input;
+   thr->out_pitch                     = output_stride;
+   thr->in_pitch                      = input_stride;
+   thr->width                         = width;
+   thr->height                        = height;
 
    if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
-      packets[0].work = gameboy3x_work_cb_rgb565;
+      packets[0].work                 = gameboy3x_work_cb_rgb565;
    else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
-      packets[0].work = gameboy3x_work_cb_xrgb8888;
+      packets[0].work                 = gameboy3x_work_cb_xrgb8888;
 
-   packets[0].thread_data = thr;
+   packets[0].thread_data             = thr;
 }
 
 static const struct softfilter_implementation gameboy3x_generic = {
@@ -391,7 +387,6 @@ static const struct softfilter_implementation gameboy3x_generic = {
 const struct softfilter_implementation *softfilter_get_implementation(
       softfilter_simd_mask_t simd)
 {
-   (void)simd;
    return &gameboy3x_generic;
 }
 

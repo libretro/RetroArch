@@ -123,19 +123,17 @@ static void CFSearchPathForDirectoriesInDomains(
 #else
    NSSearchPathDirectory dir = NSDocumentDirectory;
 #endif
-   CFStringRef array_val;
 #if __has_feature(objc_arc)
-   array_val = (__bridge CFStringRef)[
+   CFStringRef array_val     = (__bridge CFStringRef)[
          NSSearchPathForDirectoriesInDomains(dir,
             NSUserDomainMask, YES) firstObject];
 #else
-   NSArray *arr = NSSearchPathForDirectoriesInDomains(dir,
-						     NSUserDomainMask, YES);
-   if ([arr count] == 0) {
-     array_val = nil;
-   } else{
-     array_val = (CFStringRef)[arr objectAtIndex:0];
-   }
+   CFStringRef array_val     = nil;
+   NSArray *arr              = 
+      NSSearchPathForDirectoriesInDomains(dir,
+            NSUserDomainMask, YES);
+   if ([arr count] != 0)
+      array_val              = (CFStringRef)[arr objectAtIndex:0];
 #endif
    if (array_val)
       CFStringGetCString(array_val, s, len, kCFStringEncodingUTF8);
@@ -160,9 +158,15 @@ void get_ios_version(int *major, int *minor);
 #define PMGMT_STRMATCH(a,b) (CFStringCompare(a, b, 0) == kCFCompareEqualTo)
 #define PMGMT_GETVAL(k,v)   CFDictionaryGetValueIfPresent(dict, CFSTR(k), (const void **) v)
 
-/* Note that AC power sources also include a laptop battery it is charging. */
-static void checkps(CFDictionaryRef dict, bool * have_ac, bool * have_battery,
-      bool * charging, int *seconds, int *percent)
+/* Note that AC power sources also include a 
+ * laptop battery it is charging. */
+static void darwin_check_power_source(
+      CFDictionaryRef dict,
+      bool *have_ac,
+      bool *have_battery,
+      bool *charging,
+      int  *seconds,
+      int  *percent)
 {
    CFStringRef strval; /* don't CFRelease() this. */
    CFBooleanRef bval;
@@ -183,7 +187,7 @@ static void checkps(CFDictionaryRef dict, bool * have_ac, bool * have_battery,
    if (PMGMT_STRMATCH(strval, CFSTR(kIOPSACPowerValue)))
       is_ac = *have_ac = true;
    else if (!PMGMT_STRMATCH(strval, CFSTR(kIOPSBatteryPowerValue)))
-      return;                 /* not a battery? */
+      return; /* Not a battery? */
 
    if ((PMGMT_GETVAL(kIOPSIsChargingKey, &bval)) && (bval == kCFBooleanTrue))
       charge = true;
@@ -195,7 +199,7 @@ static void checkps(CFDictionaryRef dict, bool * have_ac, bool * have_battery,
       if (val > 0)
       {
          *have_battery = true;
-         maxpct        = (int) val;
+         maxpct        = (int)val;
       }
    }
 
@@ -206,7 +210,7 @@ static void checkps(CFDictionaryRef dict, bool * have_ac, bool * have_battery,
       if (val > 0)
       {
          *have_battery = true;
-         maxpct        = (int) val;
+         maxpct        = (int)val;
       }
    }
 
@@ -216,12 +220,12 @@ static void checkps(CFDictionaryRef dict, bool * have_ac, bool * have_battery,
       CFNumberGetValue(numval, kCFNumberSInt32Type, &val);
 
       /* Mac OS X reports 0 minutes until empty if you're plugged in. :( */
-      if ((val == 0) && (is_ac))
-         val = -1;           /* !!! FIXME: calc from timeToFull and capacity? */
+      if ((val == 0) && is_ac)
+         val = -1; /* !!! FIXME: calc from timeToFull and capacity? */
 
-      secs = (int) val;
+      secs = (int)val;
       if (secs > 0)
-         secs *= 60;         /* value is in minutes, so convert to seconds. */
+         secs *= 60; /* value is in minutes, so convert to seconds. */
    }
 
    if (PMGMT_GETVAL(kIOPSCurrentCapacityKey, &numval))
@@ -264,11 +268,8 @@ static void frontend_darwin_get_name(char *s, size_t len)
 {
 #if defined(IOS)
    struct utsname buffer;
-
-   if (uname(&buffer) != 0)
-      return;
-
-   strlcpy(s, buffer.machine, len);
+   if (uname(&buffer) == 0)
+      strlcpy(s, buffer.machine, len);
 #elif defined(OSX)
    size_t length = 0;
    sysctlbyname("hw.model", NULL, &length, NULL, 0);
@@ -348,10 +349,10 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    if (!bundle)
       return;
 
-   bundle_url  = CFBundleCopyBundleURL(bundle);
-   bundle_path = CFURLCopyPath(bundle_url);
+   bundle_url    = CFBundleCopyBundleURL(bundle);
+   bundle_path   = CFURLCopyPath(bundle_url);
    
-   resource_url = CFBundleCopyResourcesDirectoryURL(bundle);
+   resource_url  = CFBundleCopyResourcesDirectoryURL(bundle);
    resource_path = CFURLCopyPath(resource_url);
 
    CFRelease(resource_url);
@@ -379,8 +380,8 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
 #ifdef HAVE_METAL
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER],
-                      home_dir_buf, "shaders_slang",
-                      sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+         home_dir_buf, "shaders_slang",
+         sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
 #else
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER],
          home_dir_buf, "shaders_glsl",
@@ -450,14 +451,18 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
        int major, minor;
        get_ios_version(&major, &minor);
        if (major > 8)
-          strlcpy(g_defaults.path_buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/", sizeof(g_defaults.path_buildbot_server_url));
+          strlcpy(g_defaults.path_buildbot_server_url,
+                "http://buildbot.libretro.com/nightly/apple/ios9/latest/",
+                sizeof(g_defaults.path_buildbot_server_url));
     }
 #endif
 
 #if TARGET_OS_IOS
-    fill_pathname_join_special(assets_zip_path, bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
+    fill_pathname_join_special(assets_zip_path,
+          bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
 #else
-    fill_pathname_join_special(assets_zip_path, full_resource_path_buf, "assets.zip", sizeof(assets_zip_path));
+    fill_pathname_join_special(assets_zip_path,
+          full_resource_path_buf, "assets.zip", sizeof(assets_zip_path));
 #endif
 
     if (path_is_valid(assets_zip_path))
@@ -616,7 +621,8 @@ static int frontend_darwin_get_rating(void)
    return -1;
 }
 
-static enum frontend_powerstate frontend_darwin_get_powerstate(int *seconds, int *percent)
+static enum frontend_powerstate frontend_darwin_get_powerstate(
+      int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
 #if defined(OSX)
@@ -629,12 +635,13 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(int *seconds, int
    *percent        = -1;
 
    if (!blob)
-      goto end;
+      return FRONTEND_POWERSTATE_NONE
 
-   list = IOPSCopyPowerSourcesList(blob);
-
-   if (!list)
-      goto end;
+   if (!(list = IOPSCopyPowerSourcesList(blob)))
+   {
+      CFRelease(blob);
+      return FRONTEND_POWERSTATE_NONE;
+   }
 
    /* don't CFRelease() the list items, or dictionaries! */
    have_ac         = false;
@@ -647,7 +654,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(int *seconds, int
       CFTypeRef ps = (CFTypeRef)CFArrayGetValueAtIndex(list, i);
       CFDictionaryRef dict = IOPSGetPowerSourceDescription(blob, ps);
       if (dict)
-         checkps(dict, &have_ac, &have_battery, &charging,
+         darwin_check_power_source(dict, &have_ac, &have_battery, &charging,
                seconds, percent);
    }
 
@@ -661,38 +668,35 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(int *seconds, int
       ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
 
    CFRelease(list);
-end:
-   if (blob)
-      CFRelease(blob);
+   CFRelease(blob);
 #elif TARGET_OS_IOS
    float level;
    UIDevice *uidev = [UIDevice currentDevice];
-
-   if (!uidev)
-	   return ret;
-
-   [uidev setBatteryMonitoringEnabled:true];
-
-   switch (uidev.batteryState)
+   if (uidev)
    {
-	   case UIDeviceBatteryStateCharging:
-		   ret = FRONTEND_POWERSTATE_CHARGING;
-		   break;
-	   case UIDeviceBatteryStateFull:
-		   ret = FRONTEND_POWERSTATE_CHARGED;
-		   break;
-	   case UIDeviceBatteryStateUnplugged:
-		   ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
-		   break;
-	   case UIDeviceBatteryStateUnknown:
-		   break;
+      [uidev setBatteryMonitoringEnabled:true];
+
+      switch (uidev.batteryState)
+      {
+         case UIDeviceBatteryStateCharging:
+            ret = FRONTEND_POWERSTATE_CHARGING;
+            break;
+         case UIDeviceBatteryStateFull:
+            ret = FRONTEND_POWERSTATE_CHARGED;
+            break;
+         case UIDeviceBatteryStateUnplugged:
+            ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+            break;
+         case UIDeviceBatteryStateUnknown:
+            break;
+      }
+
+      level = uidev.batteryLevel;
+
+      *percent = ((level < 0.0f) ? -1 : ((int)((level * 100) + 0.5f)));
+
+      [uidev setBatteryMonitoringEnabled:false];
    }
-
-   level = uidev.batteryLevel;
-
-   *percent = ((level < 0.0f) ? -1 : ((int)((level * 100) + 0.5f)));
-
-   [uidev setBatteryMonitoringEnabled:false];
 #endif
    return ret;
 }
@@ -778,26 +782,24 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
    CFRelease(bundle_url);
 #endif
 #endif
-
    return ret;
 }
 
+/* TODO/FIXME - is adding iOS/tvOS support possible here? */
 static uint64_t frontend_darwin_get_total_mem(void)
 {
 #if defined(OSX)
     uint64_t size;
     int mib[2]     = { CTL_HW, HW_MEMSIZE };
-    u_int namelen  = sizeof(mib) / sizeof(mib[0]);
+    u_int namelen  = ARRAY_SIZE(mib);
     size_t len     = sizeof(size);
-
-    if (sysctl(mib, namelen, &size, &len, NULL, 0) < 0)
-        return 0;
-    return size;
-#else
-    return 0;
+    if (sysctl(mib, namelen, &size, &len, NULL, 0) >= 0)
+       return size;
 #endif
+    return 0;
 }
 
+/* TODO/FIXME - is adding iOS/tvOS support possible here? */
 static uint64_t frontend_darwin_get_free_mem(void)
 {
 #if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
@@ -808,12 +810,12 @@ static uint64_t frontend_darwin_get_free_mem(void)
 
     if (KERN_SUCCESS == host_page_size(mach_port, &page_size) &&
         KERN_SUCCESS == host_statistics64(mach_port, HOST_VM_INFO,
-                                          (host_info64_t)&vm_stats, &count))
+           (host_info64_t)&vm_stats, &count))
     {
-
-        long long used_memory = ((int64_t)vm_stats.active_count +
-                                 (int64_t)vm_stats.inactive_count +
-                                 (int64_t)vm_stats.wire_count) *  (int64_t)page_size;
+        long long used_memory = (
+              (int64_t)vm_stats.active_count   +
+              (int64_t)vm_stats.inactive_count +
+              (int64_t)vm_stats.wire_count)    * (int64_t)page_size;
         return used_memory;
     }
 #endif
@@ -822,7 +824,8 @@ static uint64_t frontend_darwin_get_free_mem(void)
 
 static const char* frontend_darwin_get_cpu_model_name(void)
 {
-   cpu_features_get_model_name(darwin_cpu_model_name, sizeof(darwin_cpu_model_name));
+   cpu_features_get_model_name(darwin_cpu_model_name,
+         sizeof(darwin_cpu_model_name));
    return darwin_cpu_model_name;
 }
 
@@ -851,7 +854,8 @@ static char* accessibility_mac_language_code(const char* language)
       return "Ioana";
    else if (string_is_equal(language,"pt_pt"))
       return "Joana";
-   else if (string_is_equal(language,"pt_bt") || string_is_equal(language,"pt"))
+   else if (string_is_equal(language,"pt_bt") 
+         || string_is_equal(language,"pt"))
       return "Luciana";
    else if (string_is_equal(language,"th"))
       return "Kanya";
@@ -865,7 +869,8 @@ static char* accessibility_mac_language_code(const char* language)
       return "Maged";
    else if (string_is_equal(language,"hu"))
       return "Mariska";
-   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
+   else if (string_is_equal(language,"zh_tw") 
+         || string_is_equal(language,"zh"))
       return "Mei-Jia";
    else if (string_is_equal(language,"el"))
       return "Melina";
@@ -889,8 +894,7 @@ static char* accessibility_mac_language_code(const char* language)
       return "Zosia";
    else if (string_is_equal(language,"cs")) 
       return "Zuzana";
-   else
-      return "";
+   return "";
 }
 
 static bool is_narrator_running_macos(void)
@@ -904,12 +908,12 @@ static bool accessibility_speak_macos(int speed,
    int pid;
    const char *voice      = get_user_language_iso639_1(false);
    char* language_speaker = accessibility_mac_language_code(voice);
-   char* speeds[10]       = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
-
+   char* speeds[10]       = {"80",  "100", "125", "150", "170", "210",
+                             "260", "310", "380", "450"};
    if (speed < 1)
-      speed = 1;
+      speed               = 1;
    else if (speed > 10)
-      speed = 10;
+      speed               = 10;
 
    if (priority < 10 && speak_pid > 0)
    {
@@ -952,8 +956,8 @@ static bool accessibility_speak_macos(int speed,
       else
       {
          char* cmd[] = {"say", NULL, "-r", NULL,  NULL};
-         cmd[1] = (char*) speak_text;
-         cmd[3] = speeds[speed-1];
+         cmd[1]      = (char*) speak_text;
+         cmd[3]      = speeds[speed-1];
          execvp("say",cmd);
       }
    }

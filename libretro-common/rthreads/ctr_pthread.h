@@ -242,7 +242,7 @@ static INLINE int pthread_detach(pthread_t thread)
 static INLINE int pthread_join(pthread_t thread, void **retval)
 {
    /*retval is ignored*/
-   if(threadJoin((Thread)thread, INT64_MAX))
+   if (threadJoin((Thread)thread, INT64_MAX))
       return -1;
 
    threadFree((Thread)thread);

@@ -37,13 +37,13 @@ cothread_t co_active(void)
 
 cothread_t co_create(unsigned int heapsize, void (*coentry)(void))
 {
+   ucontext_t *thread;
    if (!co_running)
       co_running = &co_primary;
-   ucontext_t *thread = (ucontext_t*)malloc(sizeof(ucontext_t));
 
-   if(thread)
+   if ((thread = (ucontext_t*)malloc(sizeof(ucontext_t))))
    {
-      if((!getcontext(thread) && !(thread->uc_stack.ss_sp = 0)) && (thread->uc_stack.ss_sp = malloc(heapsize)))
+      if ((!getcontext(thread) && !(thread->uc_stack.ss_sp = 0)) && (thread->uc_stack.ss_sp = malloc(heapsize)))
       {
          thread->uc_link = co_running;
          thread->uc_stack.ss_size = heapsize;
@@ -63,7 +63,7 @@ void co_delete(cothread_t cothread)
    if (!cothread)
       return;
 
-   if(((ucontext_t*)cothread)->uc_stack.ss_sp)
+   if (((ucontext_t*)cothread)->uc_stack.ss_sp)
       free(((ucontext_t*)cothread)->uc_stack.ss_sp);
    free(cothread);
 }
@@ -71,8 +71,7 @@ void co_delete(cothread_t cothread)
 void co_switch(cothread_t cothread)
 {
    ucontext_t *old_thread = co_running;
-
-   co_running = (ucontext_t*)cothread;
+   co_running             = (ucontext_t*)cothread;
    swapcontext(old_thread, co_running);
 }
 

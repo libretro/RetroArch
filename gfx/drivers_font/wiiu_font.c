@@ -213,7 +213,7 @@ static void wiiu_font_render_line(
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.v + wiiu->vertex_cache.current, count * sizeof(wiiu->vertex_cache.v));
 
-   if(font->atlas->dirty)
+   if (font->atlas->dirty)
    {
       for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
          memcpy(font->texture.surface.image + (i * font->texture.surface.pitch),

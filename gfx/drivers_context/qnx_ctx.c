@@ -132,7 +132,7 @@ static void *gfx_ctx_qnx_init(void *video_driver)
       goto error;
 #endif
 
-   if(!screen_win)
+   if (!screen_win)
    {
       if (screen_create_window(&screen_win, screen_ctx))
       {
@@ -308,7 +308,7 @@ static int dpi_get_density(qnx_ctx_data_t *qnx)
 {
     int screen_dpi[2];
 
-    if(!qnx)
+    if (!qnx)
         return -1;
 
     if (screen_get_display_property_iv(qnx->screen_disp,

@@ -1004,7 +1004,7 @@ bool dinput_handle_message(void *data,
                wParam == DBT_DEVICEREMOVECOMPLETE)
          {
             PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
-            if(pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
+            if (pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
             {
 #if 0
                PDEV_BROADCAST_DEVICEINTERFACE pDevInf = 

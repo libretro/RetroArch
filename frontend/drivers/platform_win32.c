@@ -469,7 +469,8 @@ static void init_nvda(void)
    /* The above code is executed on each accessibility speak event, so
     * we should only revert to powershell if nvda_lib wasn't loaded previously,
     * and we weren't able to load it on this call, or we don't HAVE_DYLIB */
-   if ((g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA) && !nvda_lib) {
+   if ((g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA) && !nvda_lib)
+   {
       g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
       g_plat_win32_flags |=  PLAT_WIN32_FLAG_USE_POWERSHELL;
    }

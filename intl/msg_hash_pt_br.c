@@ -2373,7 +2373,8 @@ static const char *menu_hash_to_str_pt_br_label_enum(enum msg_hash_enums msg)
 }
 #endif
 
-const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg) {
+const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg)
+{
 #ifdef HAVE_MENU
     const char *ret = menu_hash_to_str_pt_br_label_enum(msg);
 
@@ -2381,7 +2382,8 @@ const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg) {
        return ret;
 #endif
 
-    switch (msg) {
+    switch (msg)
+    {
 #include "msg_hash_pt_br.h"
         default:
 #if 0

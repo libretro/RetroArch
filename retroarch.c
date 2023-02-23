@@ -5910,7 +5910,8 @@ static bool retroarch_parse_input_and_config(
    if (runloop_st->entry_state_slot)
    {
      input_driver_state_t *input_st = input_state_get_ptr();
-     if(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK) {
+     if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK)
+     {
         runloop_st->entry_state_slot = 0;
         RARCH_WARN("Trying to load entry state while BSV playback is active. Ignoring entry state.\n");
      }

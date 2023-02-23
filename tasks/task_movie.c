@@ -322,7 +322,7 @@ static void moviectl_start_playback_cb(retro_task_t *task,
 static void task_moviectl_record_handler(retro_task_t *task)
 {
    /* Hang on until the state is loaded */
-   if(content_load_state_in_progress(NULL))
+   if (content_load_state_in_progress(NULL))
       return;
 
    /* trivial handler */
@@ -385,7 +385,7 @@ bool movie_stop_playback(input_driver_state_t *input_st)
 bool movie_stop_record(input_driver_state_t *input_st)
 {
    const char *movie_rec_stopped_str = msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED);
-   if(!(input_st->bsv_movie_state_handle))
+   if (!(input_st->bsv_movie_state_handle))
       return false;
    runloop_msg_queue_push(movie_rec_stopped_str,
          2, 180, true,
@@ -400,7 +400,7 @@ bool movie_stop(input_driver_state_t *input_st)
 {
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
       return movie_stop_playback(input_st);
-   else if(input_st->bsv_movie_state_handle)
+   else if (input_st->bsv_movie_state_handle)
       return movie_stop_record(input_st);
    return true;
 }

@@ -340,7 +340,7 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                            if (range == 3)
                               val *= 2;
 
-                           if(min == 1)
+                           if (min == 1)
                               val--;
 
                            switch(val)

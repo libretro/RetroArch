@@ -63,10 +63,10 @@ struct softfilter_thread_data
 
 struct filter_data
 {
-   unsigned threads;
-   struct softfilter_thread_data *workers;
-   unsigned in_fmt;
    picoscale_functions_t functions;
+   struct softfilter_thread_data *workers;
+   unsigned threads;
+   unsigned in_fmt;
 };
 
 /*******************************************************************
@@ -391,16 +391,15 @@ static void *picoscale_256x_320x240_generic_create(const struct softfilter_confi
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
-   /* Apparently the code is not thread-safe,
-    * so force single threaded operation... */
-   filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data));
-   filt->threads = 1;
-   filt->in_fmt  = in_fmt;
-   if (!filt->workers)
+   if (!(filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data))))
    {
       free(filt);
       return NULL;
    }
+   /* Apparently the code is not thread-safe,
+    * so force single threaded operation... */
+   filt->threads = 1;
+   filt->in_fmt  = in_fmt;
 
    /* Assign scaling functions */
    picoscale_256x_320x240_initialize(filt, config, userdata);
@@ -507,16 +506,17 @@ static void picoscale_256x_320x240_generic_packets(void *data,
    struct filter_data           *filt = (struct filter_data*)data;
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[0];
 
-   thr->out_data  = (uint8_t*)output;
-   thr->in_data   = (const uint8_t*)input;
-   thr->out_pitch = output_stride;
-   thr->in_pitch  = input_stride;
-   thr->width     = width;
-   thr->height    = height;
+   thr->out_data                      = (uint8_t*)output;
+   thr->in_data                       = (const uint8_t*)input;
+   thr->out_pitch                     = output_stride;
+   thr->in_pitch                      = input_stride;
+   thr->width                         = width;
+   thr->height                        = height;
 
+   /* TODO/FIXME - no XRGB8888 codepath? */
    if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
-      packets[0].work     = picoscale_256x_320x240_work_cb_rgb565;
-   packets[0].thread_data = thr;
+      packets[0].work                 = picoscale_256x_320x240_work_cb_rgb565;
+   packets[0].thread_data             = thr;
 }
 
 static const struct softfilter_implementation picoscale_256x_320x240_generic = {
@@ -538,7 +538,6 @@ static const struct softfilter_implementation picoscale_256x_320x240_generic = {
 const struct softfilter_implementation *softfilter_get_implementation(
       softfilter_simd_mask_t simd)
 {
-   (void)simd;
    return &picoscale_256x_320x240_generic;
 }
 

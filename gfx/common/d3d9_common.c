@@ -592,7 +592,7 @@ static void d3d9_get_video_size(d3d9_video_t *d3d,
 
    d3d->resolution_hd_enable    = false;
 
-   if(video_mode.fIsHiDef)
+   if (video_mode.fIsHiDef)
    {
       *width                    = 1280;
       *height                   = 720;
@@ -1196,17 +1196,15 @@ static void d3d9_video_texture_load_d3d(
    if (!ti)
       return;
 
-   if((info->type == TEXTURE_FILTER_MIPMAP_LINEAR) ||
-      (info->type == TEXTURE_FILTER_MIPMAP_NEAREST))
+   if (  (info->type == TEXTURE_FILTER_MIPMAP_LINEAR) 
+      || (info->type == TEXTURE_FILTER_MIPMAP_NEAREST))
       want_mipmap        = true;
 
-   tex = (LPDIRECT3DTEXTURE9)d3d9_texture_new(d3d->dev,
+   if (!(tex = (LPDIRECT3DTEXTURE9)d3d9_texture_new(d3d->dev,
                ti->width, ti->height, 0,
                usage, D3D9_ARGB8888_FORMAT,
                D3DPOOL_MANAGED, 0, 0, 0,
-               NULL, NULL, want_mipmap);
-
-   if (!tex)
+               NULL, NULL, want_mipmap)))
       return;
 
    IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);

@@ -216,7 +216,7 @@ static void d3d12_font_render_line(
       font->atlas->dirty = false;
    }
 
-   if(font->texture.dirty)
+   if (font->texture.dirty)
       d3d12_upload_texture(d3d12->queue.cmd, &font->texture,
             d3d12);
 

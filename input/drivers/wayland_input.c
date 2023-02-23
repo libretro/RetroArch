@@ -174,7 +174,7 @@ static int16_t input_wl_state(
                }
             }
 
-            if(!keyboard_mapping_blocked)
+            if (!keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
@@ -194,14 +194,14 @@ static int16_t input_wl_state(
          {
             if (binds[port][id].valid && binds[port][id].key < RETROK_LAST)
             {
-               if(id != RARCH_GAME_FOCUS_TOGGLE && !keyboard_mapping_blocked)
+               if (id != RARCH_GAME_FOCUS_TOGGLE && !keyboard_mapping_blocked)
                {
-                  if(BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]))
+                  if (BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]))
                      return 1;
                }
-               else if(id == RARCH_GAME_FOCUS_TOGGLE)
+               else if (id == RARCH_GAME_FOCUS_TOGGLE)
                {
-                  if(BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]))
+                  if (BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]))
                      return 1;
                }
 

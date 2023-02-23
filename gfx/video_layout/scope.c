@@ -134,7 +134,7 @@ void scope_repeat(scope_t *scope)
          else
          {
             gen->value.val_int += gen->increment.val_int;
-            if(gen->shift > 0)
+            if (gen->shift > 0)
                gen->value.val_int <<= gen->shift;
             else if (gen->shift < 0)
                gen->value.val_int >>= -gen->shift;

@@ -420,8 +420,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
                /* estamos haciendo handshake o bien se necesita iniciar un
                 * nuevo handshake ya que se inserta(quita una expansion. */
                int attachment = 0;
-
-               if(event != WM_RPT_CTRL_STATUS)
+               if (event != WM_RPT_CTRL_STATUS)
                   return 0;
 
                /* Is an attachment connected to
@@ -440,7 +439,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
 
                   /* Send the initialization code for the attachment */
 
-                  if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE))
+                  if (WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE))
                   {
                      /* Rehandshake. */
 
@@ -481,7 +480,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
                   WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_EXP);
                   wm->exp.type = EXP_NONE;
 
-                  if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE))
+                  if (WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE))
                   {
                      WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE_COMPLETE);
                      /* forzamos un handshake por si venimos
@@ -490,7 +489,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
                   }
                }
 
-               if(!attachment &&  WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE))
+               if (!attachment &&  WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE))
                {
                   wm->handshake_state = 2;
                   continue;
@@ -536,7 +535,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
             }
             return 0;
          case 5:
-            if(event !=  WM_RPT_READ)
+            if (event !=  WM_RPT_READ)
                return 0;
 
             wiimote_classic_ctrl_handshake(wm, &wm->exp.cc.classic, data,len);

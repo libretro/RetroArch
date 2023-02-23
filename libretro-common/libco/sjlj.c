@@ -33,7 +33,7 @@ static thread_local cothread_struct *creating, *co_running = 0;
 
 static void springboard(int ignored)
 {
-   if(sigsetjmp(creating->context, 0))
+   if (sigsetjmp(creating->context, 0))
       co_running->coentry();
 }
 
@@ -46,42 +46,40 @@ cothread_t co_active(void)
 
 cothread_t co_create(unsigned int size, void (*coentry)(void))
 {
-   if(!co_running)
+   cothread_struct *thread;
+   if (!co_running)
       co_running = &co_primary;
 
-   cothread_struct *thread = (cothread_struct*)malloc(sizeof(cothread_struct));
-
-   if(thread)
+   if ((thread = (cothread_struct*)malloc(sizeof(cothread_struct))))
    {
       stack_t stack;
       stack_t old_stack;
 
-      struct sigaction handler     = {{0}};
-      struct sigaction old_handler = {{0}};
-
       thread->coentry = thread->stack = 0;
 
-      stack.ss_flags = 0;
-      stack.ss_size = size;
-      thread->stack = stack.ss_sp = malloc(size);
+      stack.ss_flags  = 0;
+      stack.ss_size   = size;
+      thread->stack   = stack.ss_sp = malloc(size);
 
-      if(stack.ss_sp && !sigaltstack(&stack, &old_stack))
+      if (stack.ss_sp && !sigaltstack(&stack, &old_stack))
       {
-         handler.sa_handler = springboard;
-         handler.sa_flags   = SA_ONSTACK;
+         struct sigaction old_handler = {{0}};
+         struct sigaction handler     = {{0}};
+         handler.sa_handler           = springboard;
+         handler.sa_flags             = SA_ONSTACK;
          sigemptyset(&handler.sa_mask);
-         creating = thread;
+         creating                     = thread;
 
-         if(!sigaction(SIGUSR1, &handler, &old_handler))
+         if (!sigaction(SIGUSR1, &handler, &old_handler))
          {
-            if(!raise(SIGUSR1))
-               thread->coentry = coentry;
+            if (!raise(SIGUSR1))
+               thread->coentry        = coentry;
             sigaltstack(&old_stack, 0);
             sigaction(SIGUSR1, &old_handler, 0);
          }
       }
 
-      if(thread->coentry != coentry)
+      if (thread->coentry != coentry)
       {
          co_delete(thread);
          thread = 0;
@@ -95,7 +93,7 @@ void co_delete(cothread_t cothread)
 {
    if (cothread)
    {
-      if(((cothread_struct*)cothread)->stack)
+      if (((cothread_struct*)cothread)->stack)
          free(((cothread_struct*)cothread)->stack);
       free(cothread);
    }

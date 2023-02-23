@@ -57,8 +57,7 @@ bool d3d8_initialize_symbols(enum gfx_ctx_api api)
       return true;
 
 #if defined(DEBUG) || defined(_DEBUG)
-   g_d3d8_dll     = dylib_load("d3d8d.dll");
-   if(!g_d3d8_dll)
+   if (!(g_d3d8_dll = dylib_load("d3d8d.dll")))
 #endif
       g_d3d8_dll  = dylib_load("d3d8.dll");
 

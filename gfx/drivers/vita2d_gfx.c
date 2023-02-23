@@ -171,7 +171,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 
    if (frame)
    {
-      if(!(vita->texture&&vita2d_texture_get_datap(vita->texture)==frame))
+      if (!(vita->texture&&vita2d_texture_get_datap(vita->texture)==frame))
       {
          unsigned i;
          unsigned int stride;
@@ -252,7 +252,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-      if(vita->menu.texture)
+      if (vita->menu.texture)
       {
          if (vita->fullscreen)
             vita2d_draw_texture_scale(vita->menu.texture,
@@ -297,7 +297,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       gfx_widgets_frame(video_info);
 #endif
 
-   if(!string_is_empty(msg))
+   if (!string_is_empty(msg))
       font_driver_render_msg(vita, msg, NULL, NULL);
 
    vita2d_end_drawing();
@@ -782,7 +782,7 @@ static bool vita_get_current_sw_framebuffer(void *data,
    if (!vita->texture || vita->width != framebuffer->width ||
          vita->height != framebuffer->height)
    {
-      if(vita->texture)
+      if (vita->texture)
       {
          vita2d_wait_rendering_done();
          vita2d_free_texture(vita->texture);

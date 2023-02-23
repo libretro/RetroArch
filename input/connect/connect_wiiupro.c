@@ -219,7 +219,7 @@ static void hidpad_wiiupro_packet_handler(void *data,
 
    device->data.btn.home    = (packet[0x0C] & 0x8)  ? 1 : 0;
 
-   if(device->calib.calib_round < 5)
+   if (device->calib.calib_round < 5)
    {
        device->calib.hatvalue_calib[0] = (packet[4] |  (packet[4 + 1] << 8));
        device->calib.hatvalue_calib[1] = (packet[8] |  (packet[8 + 1] << 8));

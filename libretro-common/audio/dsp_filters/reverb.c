@@ -127,7 +127,7 @@ static float revmodel_process(struct revmodel *rev, float in)
 static void revmodel_update(struct revmodel *rev)
 {
    int i;
-   rev->wet1 = rev->wet * (rev->width / 2.0f + 0.5f);
+   rev->wet1         = rev->wet * (rev->width / 2.0f + 0.5f);
 
    if (rev->mode >= freezemode)
    {
@@ -138,15 +138,15 @@ static void revmodel_update(struct revmodel *rev)
    else
    {
       rev->roomsize1 = rev->roomsize;
-      rev->damp1 = rev->damp;
-      rev->gain = fixedgain;
+      rev->damp1     = rev->damp;
+      rev->gain      = fixedgain;
    }
 
    for (i = 0; i < NUMCOMBS; i++)
    {
       rev->combL[i].feedback = rev->roomsize1;
-      rev->combL[i].damp1 = rev->damp1;
-      rev->combL[i].damp2 = 1.0f - rev->damp1;
+      rev->combL[i].damp1    = rev->damp1;
+      rev->combL[i].damp2    = 1.0f - rev->damp1;
    }
 }
 
@@ -186,7 +186,7 @@ static void revmodel_setmode(struct revmodel *rev, float value)
    revmodel_update(rev);
 }
 
-static void revmodel_init(struct revmodel *rev,int srate, bool right)
+static void revmodel_init(struct revmodel *rev, int srate, bool right)
 {
    unsigned c;
    static const int comb_lengths[8]    = { 1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617 };
@@ -196,19 +196,19 @@ static void revmodel_init(struct revmodel *rev,int srate, bool right)
 
    for (c = 0; c < NUMCOMBS; ++c)
    {
-      rev->bufcomb[c] = malloc(r*comb_lengths[c]+stereosep*sizeof(float));
-      rev->combL[c].buffer  =  rev->bufcomb[c];
-      memset(rev->combL[c].buffer,0,r*comb_lengths[c]+stereosep*sizeof(float));
-      rev->combL[c].bufsize=r*comb_lengths[c]+stereosep;
+      rev->bufcomb[c]            = malloc(r * comb_lengths[c] + stereosep * sizeof(float));
+      rev->combL[c].buffer       = rev->bufcomb[c];
+      memset(rev->combL[c].buffer, 0, r * comb_lengths[c] + stereosep * sizeof(float));
+      rev->combL[c].bufsize      =    r * comb_lengths[c] + stereosep;
    }
 
    for (c = 0; c < NUMALLPASSES; ++c)
    {
-      rev->bufallpass[c] = malloc(r*allpass_lengths[c]+stereosep*sizeof(float));
-      rev->allpassL[c].buffer  =  rev->bufallpass[c];
-      memset(rev->allpassL[c].buffer,0,r*allpass_lengths[c]+stereosep*sizeof(float));
-      rev->allpassL[c].bufsize=r*allpass_lengths[c]+stereosep;
-      rev->allpassL[c].feedback = 0.5f;
+      rev->bufallpass[c]         = malloc(r * allpass_lengths[c] + stereosep * sizeof(float));
+      rev->allpassL[c].buffer    = rev->bufallpass[c];
+      memset(rev->allpassL[c].buffer, 0, r * allpass_lengths[c] + stereosep * sizeof(float));
+      rev->allpassL[c].bufsize   = r * allpass_lengths[c] + stereosep;
+      rev->allpassL[c].feedback  = 0.5f;
    }
 
    revmodel_setwet(rev, initialwet);
@@ -226,8 +226,8 @@ struct reverb_data
 
 static void reverb_free(void *data)
 {
-   struct reverb_data *rev = (struct reverb_data*)data;
    unsigned i;
+   struct reverb_data *rev = (struct reverb_data*)data;
 
    for (i = 0; i < NUMCOMBS; i++)
    {

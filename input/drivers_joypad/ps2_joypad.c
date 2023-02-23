@@ -80,8 +80,7 @@ static void *ps2_joypad_init(void *data)
             Port 0,3 -> Connector 7
             Port 1,3 -> Connector 8
           */
-
-         if((ret = padPortOpen(port, slot, padBuf[port][slot])) == 0)
+         if ((ret = padPortOpen(port, slot, padBuf[port][slot])) == 0)
             return NULL;
       }
    }

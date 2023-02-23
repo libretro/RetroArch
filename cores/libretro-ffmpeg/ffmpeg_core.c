@@ -1675,7 +1675,7 @@ static void decode_thread_seek(double time)
 
    decode_last_audio_time = time;
 
-   if(avformat_seek_file(fctx, -1, INT64_MIN, seek_to, INT64_MAX, 0) < 0)
+   if (avformat_seek_file(fctx, -1, INT64_MIN, seek_to, INT64_MAX, 0) < 0)
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] av_seek_frame() failed.\n");
 
    if (video_stream_index >= 0)

@@ -924,12 +924,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 #ifdef VITA
       glUseProgram(0);
       bool enabled = glIsEnabled(GL_DEPTH_TEST);
-      if(enabled)
+      if (enabled)
          glDisable(GL_DEPTH_TEST);
 #endif
       menu_driver_frame(menu_is_alive, video_info);
 #ifdef VITA
-      if(enabled)
+      if (enabled)
          glEnable(GL_DEPTH_TEST);
 #endif
    }

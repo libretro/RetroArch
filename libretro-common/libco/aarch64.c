@@ -66,19 +66,20 @@ static void crash(void)
 
 cothread_t co_create(unsigned int size, void (*entrypoint)(void))
 {
-   size = (size + 1023) & ~1023;
+	uint64_t *ptr     = NULL;
    cothread_t handle = 0;
+   size              = (size + 1023) & ~1023;
 #if HAVE_POSIX_MEMALIGN >= 1
    if (posix_memalign(&handle, 1024, size + 512) < 0)
       return 0;
 #else
-   handle = memalign(1024, size + 512);
+   handle            = memalign(1024, size + 512);
 #endif
 
    if (!handle)
       return handle;
 
-   uint64_t *ptr = (uint64_t*)handle;
+   ptr     = (uint64_t*)handle;
    /* Non-volatiles.  */
    ptr[0]  = 0; /* x8  */
    ptr[1]  = 0; /* x9  */

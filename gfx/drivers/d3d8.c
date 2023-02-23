@@ -573,14 +573,14 @@ static void d3d8_get_video_size(d3d8_video_t *d3d,
 
    /* Only valid in PAL mode, not valid for HDTV modes! */
 
-   if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
+   if (XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
       /* Check for 16:9 mode (PAL REGION) */
-      if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      if (video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
          *width = 720;
          /* 60 Hz, 720x480i */
-         if(video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+         if (video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
             *height = 480;
          else /* 50 Hz, 720x576i */
             *height = 576;
@@ -590,7 +590,7 @@ static void d3d8_get_video_size(d3d8_video_t *d3d,
    else
    {
       /* Check for 16:9 mode (NTSC REGIONS) */
-      if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      if (video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
          *width                    = 720;
          *height                   = 480;
@@ -598,23 +598,23 @@ static void d3d8_get_video_size(d3d8_video_t *d3d,
       }
    }
 
-   if(XGetAVPack() == XC_AV_PACK_HDTV)
+   if (XGetAVPack() == XC_AV_PACK_HDTV)
    {
-      if(video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+      if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       {
          *width                    = 640;
          *height                   = 480;
          d3d->widescreen_mode      = false;
          d3d->resolution_hd_enable = true;
       }
-      else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+      else if (video_mode & XC_VIDEO_FLAGS_HDTV_720p)
       {
          *width                    = 1280;
          *height                   = 720;
          d3d->widescreen_mode      = true;
          d3d->resolution_hd_enable = true;
       }
-      else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+      else if (video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
       {
          *width                    = 1920;
          *height                   = 1080;

@@ -108,7 +108,7 @@ static void hidpad_wiiugca_get_buttons(void *pad_data, input_bits_t *state)
    gca_pad_data_t *pad = (gca_pad_data_t *)pad_data;
    if (pad)
    {
-      if(pad->datatype == GCA_TYPE_PAD)
+      if (pad->datatype == GCA_TYPE_PAD)
       {
          BITS_COPY16_PTR(state, pad->buttons);
       }
@@ -134,10 +134,8 @@ static int16_t hidpad_wiiugca_get_axis(void *pad_data, unsigned axis)
 
    if (!pad || axis_data.axis >= 4)
       return 0;
-
-   if(pad->datatype == GCA_TYPE_PAD)
+   if (pad->datatype == GCA_TYPE_PAD)
       return gamepad_get_axis_value(pad->analog, &axis_data);
-
    return gamepad_get_axis_value(device->pad_data[0].analog, &axis_data);
 }
 
@@ -244,7 +242,7 @@ static void hidpad_wiiugca_set_rumble(void *data,
 const char *hidpad_wiiugca_get_name(void *pad_data)
 {
    gca_pad_data_t *pad = (gca_pad_data_t *)pad_data;
-   if(!pad || pad->datatype != GCA_TYPE_PAD)
+   if (!pad || pad->datatype != GCA_TYPE_PAD)
       return DEVICE_NAME;
 
    switch(pad->device_data->connected[pad->pad_index])
@@ -284,7 +282,7 @@ static void *hidpad_wiiugca_pad_init(void *device_data, int pad_index, joypad_co
 {
    gca_device_data_t *device = (gca_device_data_t *)device_data;
 
-   if(!device || pad_index < 0 || pad_index >= GCA_MAX_PAD || !joypad || device->pad_data[pad_index].joypad || !device->connected[pad_index])
+   if (!device || pad_index < 0 || pad_index >= GCA_MAX_PAD || !joypad || device->pad_data[pad_index].joypad || !device->connected[pad_index])
       return NULL;
 
    device->pad_data[pad_index].joypad = joypad;
@@ -295,18 +293,16 @@ static void hidpad_wiiugca_pad_deinit(void *pad_data)
 {
    gca_pad_data_t *pad = (gca_pad_data_t *)pad_data;
 
-   if(!pad)
-      return;
-
-   pad->joypad = NULL;
+   if (pad)
+      pad->joypad      = NULL;
 }
 
 static int8_t hidpad_wiiugca_status(void *device_data, int pad_index)
 {
-   gca_device_data_t *device = (gca_device_data_t *)device_data;
    int8_t result = 0;
+   gca_device_data_t *device = (gca_device_data_t *)device_data;
 
-   if(!device || pad_index < 0 || pad_index >= GCA_MAX_PAD)
+   if (!device || pad_index < 0 || pad_index >= GCA_MAX_PAD)
       return 0;
 
    if (device->connected[pad_index])
@@ -321,10 +317,8 @@ static int8_t hidpad_wiiugca_status(void *device_data, int pad_index)
 static joypad_connection_t *hidpad_wiiugca_joypad(void *device_data, int pad_index)
 {
    gca_device_data_t *device = (gca_device_data_t *)device_data;
-
-   if(!device || pad_index < 0 || pad_index >= GCA_MAX_PAD)
+   if (!device || pad_index < 0 || pad_index >= GCA_MAX_PAD)
       return 0;
-
    return device->pad_data[pad_index].joypad;
 }
 
