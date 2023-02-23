@@ -17,15 +17,18 @@
 #ifndef RSX_COMMON_H__
 #define RSX_COMMON_H__
 
-#include <rsx/rsx.h>
-#include <rsx/nv40.h>
-#include <ppu-types.h>
-
 #include <retro_inline.h>
 #include <string/stdstring.h>
 #include <gfx/math/matrix_4x4.h>
 
 #include <defines/ps3_defines.h>
+
+#ifdef __PSL1GHT__
+#include <rsx/rsx.h>
+#include <rsx/nv40.h>
+#include <ppu-types.h>
+#endif
+
 #include "../../driver.h"
 #include "../../retroarch.h"
 #include "../video_coord_array.h"
@@ -35,7 +38,7 @@
 #define RSX_MAX_TEXTURES 4
 #define RSX_MAX_SHADERS 2
 #define RSX_MAX_VERTICES 4
-#define RSX_MAX_TEXTURE_VERTICES 4096 // Set > 0 for preallocated texture vertices
+#define RSX_MAX_TEXTURE_VERTICES 4096 /* Set > 0 for preallocated texture vertices */
 #define RSX_MAX_FONT_VERTICES 8192
 
 #define RSX_SHADER_STOCK_BLEND (RSX_MAX_SHADERS - 1)
@@ -95,7 +98,8 @@ typedef struct
    uint32_t offset;
 } rsxBuffer;
 
-typedef struct {
+typedef struct
+{
    video_viewport_t vp;
    rsxBuffer buffers[RSX_MAX_BUFFERS];
 #if defined(HAVE_MENU_BUFFER)
@@ -104,15 +108,6 @@ typedef struct {
 #endif
    int currentBuffer, nextBuffer;
    gcmContextData* context;
-   u16 width;
-   u16 height;
-   u16 menu_width;
-   u16 menu_height;
-   bool menu_frame_enable;
-   bool rgb32;
-   bool vsync;
-   u32 depth_pitch;
-   u32 depth_offset;
    u32* depth_buffer;
 
 #if defined(HAVE_MENU_BUFFER)
@@ -120,11 +115,11 @@ typedef struct {
 #else
    gcmSurface surface[RSX_MAX_BUFFERS];
 #endif
-   int tex_index;
    rsx_texture_t texture[RSX_MAX_TEXTURES];
    rsx_texture_t menu_texture;
    rsx_vertex_t *vertices;
    rsx_vertex_t *texture_vertices;
+   int tex_index;
    int vert_idx;
    int texture_vert_idx;
    int font_vert_idx;
@@ -144,22 +139,33 @@ typedef struct {
    u32 *fp_buffer[RSX_MAX_SHADERS];
    u32 fp_offset[RSX_MAX_SHADERS];
    math_matrix_4x4 mvp, mvp_no_rot;
-   float menu_texture_alpha;
-
-   bool smooth;
-   unsigned rotation;
-   bool keep_aspect;
-   bool should_resize;
-   bool msg_rendering_enabled;
-
    const shader_backend_t* shader;
    void* shader_data;
    void* renderchain_data;
    void* ctx_data;
    const gfx_ctx_driver_t* ctx_driver;
-   bool shared_context_use;
 
    video_info_t video_info;
+
+   float menu_texture_alpha;
+
+   unsigned rotation;
+
+   u16 width;
+   u16 height;
+   u16 menu_width;
+   u16 menu_height;
+   u32 depth_pitch;
+   u32 depth_offset;
+
+   bool menu_frame_enable;
+   bool rgb32;
+   bool vsync;
+   bool smooth;
+   bool keep_aspect;
+   bool should_resize;
+   bool msg_rendering_enabled;
+   bool shared_context_use;
 } rsx_t;
 
 #endif

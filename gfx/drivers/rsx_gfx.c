@@ -16,6 +16,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
+#include <unistd.h>
+
+#include <time.h>
+#include <math.h>
 
 #include <retro_inline.h>
 #include <retro_math.h>
@@ -50,24 +54,19 @@
 
 #include <defines/ps3_defines.h>
 
-#include <rsx/rsx.h>
-#include <rsx/nv40.h>
-#include <ppu-types.h>
-
 #define CB_SIZE		0x100000
 #define HOST_SIZE	(32*1024*1024)
 
+#ifdef __PSL1GHT__
+#include <rsx/rsx.h>
+#include <rsx/nv40.h>
+#include <ppu-types.h>
 #include <ppu-lv2.h>
-#include <stdio.h>
-#include <malloc.h>
-#include <string.h>
-#include <unistd.h>
 #include <sysutil/video.h>
 #include <rsx/gcm_sys.h>
 #include <rsx/rsx.h>
 #include <io/pad.h>
-#include <time.h>
-#include <math.h>
+#endif
 
 #define rsx_context_bind_hw_render(rsx, enable) \
    if (rsx->shared_context_use) \
@@ -83,15 +82,19 @@ static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
 
    if (!texture->data)
    {
-      texture->data       = (u32 *)rsxMemalign(128, texture->height * pitch);
+      texture->data       = (u32*)rsxMemalign(128, texture->height * pitch);
       rsxAddressToOffset(texture->data, &texture->offset);
    }
 
    texbuffer              = (u8*)texture->data;
    memcpy(texbuffer, data, height * pitch);
 
-   texture->tex.format    = (rgb32 ? GCM_TEXTURE_FORMAT_A8R8G8B8 :
-         menu ? GCM_TEXTURE_FORMAT_A4R4G4B4 : GCM_TEXTURE_FORMAT_R5G6B5) | GCM_TEXTURE_FORMAT_LIN;
+   texture->tex.format    = (rgb32 
+                            ? GCM_TEXTURE_FORMAT_A8R8G8B8 :
+                            (menu)
+                            ? GCM_TEXTURE_FORMAT_A4R4G4B4 
+                            : GCM_TEXTURE_FORMAT_R5G6B5) 
+                            | GCM_TEXTURE_FORMAT_LIN;
    texture->tex.mipmap    = 1;
    texture->tex.dimension = GCM_TEXTURE_DIMS_2D;
    texture->tex.cubemap   = GCM_FALSE;
@@ -300,9 +303,9 @@ task_finder_data_t rsx_tasks_finder_data = {rsx_tasks_finder, NULL};
 
 static int rsx_make_buffer(rsxBuffer * buffer, u16 width, u16 height, int id)
 {
-   int depth      = sizeof(u32);
-   int pitch      = depth * width;
-   int size       = depth * width * height;
+   int depth         = sizeof(u32);
+   int pitch         = depth * width;
+   int size          = depth * width * height;
    if (!(buffer->ptr = (uint32_t*)rsxMemalign (64, size)))
       goto error;
 
@@ -381,8 +384,8 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
 
    if (!saved_context)
    {
-      /* Allocate a 1Mb buffer, alligned to a 1Mb boundary                          
-       * to be our shared IO memory with the RSX. */
+      /* Allocate a 1MB buffer, alligned to a 1MB boundary
+       * to be our shared I/O memory with the RSX. */
       void *host_addr = memalign(1024*1024, HOST_SIZE);
 
       if (!host_addr)
@@ -391,7 +394,7 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
       /* Initialise Reality, which sets up the 
        * command buffer and shared I/O memory */
 #ifdef NV40TCL_RENDER_ENABLE
-      /* There was an api breakage on 2020-07-10, let's
+      /* There was an API breakage on 2020-07-10, let's
        * workaround this by using one of the new defines */
       rsxInit(&context, CB_SIZE, HOST_SIZE, host_addr);
 #else
@@ -486,44 +489,44 @@ static void rsx_init_render_target(rsx_t *rsx, rsxBuffer * buffer, int id)
 
 static void rsx_init_vertices(rsx_t *rsx)
 {
-   rsx->vertices      = (rsx_vertex_t *)rsxMemalign(128, sizeof(rsx_vertex_t) * RSX_MAX_VERTICES); /* vertices for menu and core */
-   rsx->vert_idx      = 0;
+   rsx->vertices         = (rsx_vertex_t *)rsxMemalign(128, sizeof(rsx_vertex_t) * RSX_MAX_VERTICES); /* vertices for menu and core */
+   rsx->vert_idx         = 0;
 
-   rsx->vertices[0].x = 0.0f;
-   rsx->vertices[0].y = 0.0f;
-   rsx->vertices[0].u = 0.0f;
-   rsx->vertices[0].v = 1.0f;
-   rsx->vertices[0].r = 1.0f;
-   rsx->vertices[0].g = 1.0f;
-   rsx->vertices[0].b = 1.0f;
-   rsx->vertices[0].a = 1.0f;
+   rsx->vertices[0].x    = 0.0f;
+   rsx->vertices[0].y    = 0.0f;
+   rsx->vertices[0].u    = 0.0f;
+   rsx->vertices[0].v    = 1.0f;
+   rsx->vertices[0].r    = 1.0f;
+   rsx->vertices[0].g    = 1.0f;
+   rsx->vertices[0].b    = 1.0f;
+   rsx->vertices[0].a    = 1.0f;
 
-   rsx->vertices[1].x = 1.0f;
-   rsx->vertices[1].y = 0.0f;
-   rsx->vertices[1].u = 1.0f;
-   rsx->vertices[1].v = 1.0f;
-   rsx->vertices[1].r = 1.0f;
-   rsx->vertices[1].g = 1.0f;
-   rsx->vertices[1].b = 1.0f;
-   rsx->vertices[1].a = 1.0f;
+   rsx->vertices[1].x    = 1.0f;
+   rsx->vertices[1].y    = 0.0f;
+   rsx->vertices[1].u    = 1.0f;
+   rsx->vertices[1].v    = 1.0f;
+   rsx->vertices[1].r    = 1.0f;
+   rsx->vertices[1].g    = 1.0f;
+   rsx->vertices[1].b    = 1.0f;
+   rsx->vertices[1].a    = 1.0f;
 
-   rsx->vertices[2].x = 0.0f;
-   rsx->vertices[2].y = 1.0f;
-   rsx->vertices[2].u = 0.0f;
-   rsx->vertices[2].v = 0.0f;
-   rsx->vertices[2].r = 1.0f;
-   rsx->vertices[2].g = 1.0f;
-   rsx->vertices[2].b = 1.0f;
-   rsx->vertices[2].a = 1.0f;
+   rsx->vertices[2].x    = 0.0f;
+   rsx->vertices[2].y    = 1.0f;
+   rsx->vertices[2].u    = 0.0f;
+   rsx->vertices[2].v    = 0.0f;
+   rsx->vertices[2].r    = 1.0f;
+   rsx->vertices[2].g    = 1.0f;
+   rsx->vertices[2].b    = 1.0f;
+   rsx->vertices[2].a    = 1.0f;
 
-   rsx->vertices[3].x = 1.0f;
-   rsx->vertices[3].y = 1.0f;
-   rsx->vertices[3].u = 1.0f;
-   rsx->vertices[3].v = 0.0f;
-   rsx->vertices[3].r = 1.0f;
-   rsx->vertices[3].g = 1.0f;
-   rsx->vertices[3].b = 1.0f;
-   rsx->vertices[3].a = 1.0f;
+   rsx->vertices[3].x    = 1.0f;
+   rsx->vertices[3].y    = 1.0f;
+   rsx->vertices[3].u    = 1.0f;
+   rsx->vertices[3].v    = 0.0f;
+   rsx->vertices[3].r    = 1.0f;
+   rsx->vertices[3].g    = 1.0f;
+   rsx->vertices[3].b    = 1.0f;
+   rsx->vertices[3].a    = 1.0f;
 
 #if RSX_MAX_TEXTURE_VERTICES > 0
    /* Using preallocated texture vertices */
@@ -534,18 +537,18 @@ static void rsx_init_vertices(rsx_t *rsx)
 
 static void rsx_init_shader(rsx_t *rsx)
 {
-   u32 fpsize                                 = 0;
-   u32 vpsize                                 = 0;
+   u32 fpsize                               = 0;
+   u32 vpsize                               = 0;
    rsx->vp_ucode[RSX_SHADER_MENU]           = NULL;
    rsx->fp_ucode[RSX_SHADER_MENU]           = NULL;
-   rsx->vpo[RSX_SHADER_MENU]                = (rsxVertexProgram *)modern_opaque_vpo;
-   rsx->fpo[RSX_SHADER_MENU]                = (rsxFragmentProgram *)modern_opaque_fpo;
-   rsxVertexProgramGetUCode(rsx->vpo[RSX_SHADER_MENU], &rsx->vp_ucode[RSX_SHADER_MENU], &vpsize);
+   rsx->vpo[RSX_SHADER_MENU]                = (rsxVertexProgram*)modern_opaque_vpo;
+   rsx->fpo[RSX_SHADER_MENU]                = (rsxFragmentProgram*)modern_opaque_fpo;
+   rsxVertexProgramGetUCode(  rsx->vpo[RSX_SHADER_MENU], &rsx->vp_ucode[RSX_SHADER_MENU], &vpsize);
    rsxFragmentProgramGetUCode(rsx->fpo[RSX_SHADER_MENU], &rsx->fp_ucode[RSX_SHADER_MENU], &fpsize);
-   rsx->fp_buffer[RSX_SHADER_MENU]          = (u32 *)rsxMemalign(64, fpsize);
+   rsx->fp_buffer[RSX_SHADER_MENU]          = (u32*)rsxMemalign(64, fpsize);
    if (!rsx->fp_buffer[RSX_SHADER_MENU])
    {
-      RARCH_LOG("failed to allocate fp_buffer\n");
+      RARCH_ERR("failed to allocate fp_buffer\n");
       return;
    }
    memcpy(rsx->fp_buffer[RSX_SHADER_MENU], rsx->fp_ucode[RSX_SHADER_MENU], fpsize);
@@ -565,7 +568,7 @@ static void rsx_init_shader(rsx_t *rsx)
    rsx->fp_buffer[RSX_SHADER_STOCK_BLEND]   = (u32 *)rsxMemalign(64, fpsize);
    if (!rsx->fp_buffer[RSX_SHADER_STOCK_BLEND])
    {
-      RARCH_LOG("failed to allocate fp_buffer\n");
+      RARCH_ERR("failed to allocate fp_buffer\n");
       return;
    }
    memcpy(rsx->fp_buffer[RSX_SHADER_STOCK_BLEND], rsx->fp_ucode[RSX_SHADER_STOCK_BLEND], fpsize);
@@ -582,7 +585,8 @@ static void* rsx_init(const video_info_t* video,
       input_driver_t** input, void** input_data)
 {
    int i;
-   rsx_t* rsx = malloc(sizeof(rsx_t));
+   const gfx_ctx_driver_t* ctx_driver = NULL;
+   rsx_t* rsx                         = (rsx_t*)malloc(sizeof(rsx_t));
 
    if (!rsx)
       return NULL;
@@ -590,10 +594,12 @@ static void* rsx_init(const video_info_t* video,
    memset(rsx, 0, sizeof(rsx_t));
 
    rsx->context = rsx_init_screen(rsx);
-   const gfx_ctx_driver_t* ctx_driver = rsx_get_context(rsx);
 
-   if (!ctx_driver)
+   if (!(ctx_driver = rsx_get_context(rsx)))
+   {
+      free(rsx);
       return NULL;
+   }
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
    rsx->ctx_driver = ctx_driver;
@@ -875,9 +881,10 @@ static void rsx_blit_buffer(
             int j, l;
             for (j = 0; j < width; j++, src++)
             {
+               int k;
                u32 c = *src;
-               for (int k = 0; k < scale; k++, dst++)
-                  for (int l = 0; l < scale; l++)
+               for (k = 0; k < scale; k++, dst++)
+                  for (l = 0; l < scale; l++)
                      dst[l * buffer->width] = c;
             }
             for (l = 0; l < scale; l++)
@@ -886,13 +893,16 @@ static void rsx_blit_buffer(
             dst += buffer->width * scale - width * scale;
             src += pitch / 4 - width;
          }
-      } else {
+      }
+      else
+      {
          const uint16_t *src = frame;
          for (i = 0; i < height; i++)
          {
-            for (int j = 0; j < width; j++, src++)
+            int j, l;
+            for (j = 0; j < width; j++, src++)
             {
-               int k, l;
+               int k;
                u16 rgb565 = *src;
                u8 r       = ((rgb565 >> 8) & 0xf8);
                u8 g       = ((rgb565 >> 3) & 0xfc);
@@ -902,7 +912,7 @@ static void rsx_blit_buffer(
                   for (l = 0; l < scale; l++)
                      dst[l * buffer->width] = c;
             }
-            for (int l = 0; l < scale; l++)
+            for (l = 0; l < scale; l++)
                rsx_fill_black(dst + l * buffer->width, dst_end, buffer->width - width * scale);
 
             dst += buffer->width * scale - width * scale;
@@ -1085,7 +1095,7 @@ static void rsx_draw_menu_vertices(rsx_t* rsx)
    rsxAddressToOffset(&vertices[rsx->vert_idx].x, &rsx->pos_offset[RSX_SHADER_STOCK_BLEND]);
    rsxAddressToOffset(&vertices[rsx->vert_idx].u, &rsx->uv_offset[RSX_SHADER_STOCK_BLEND]);
    rsxAddressToOffset(&vertices[rsx->vert_idx].r, &rsx->col_offset[RSX_SHADER_STOCK_BLEND]);
-   rsx->vert_idx = end_vert_idx;
+   rsx->vert_idx               = end_vert_idx;
 
    rsxBindVertexArrayAttrib(rsx->context, rsx->pos_index[RSX_SHADER_STOCK_BLEND]->index, 0,
          rsx->pos_offset[RSX_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
@@ -1116,20 +1126,16 @@ static void rsx_update_screen(rsx_t* gcm)
    if (gcm->menu_frame_enable)
    {
       buffer             = &gcm->menuBuffers[gcm->menuBuffer];
-      gcm->menuBuffer    = (gcm->menuBuffer+1)%RSX_MAX_MENU_BUFFERS;
+      gcm->menuBuffer    = (gcm->menuBuffer + 1) % RSX_MAX_MENU_BUFFERS;
       gcm->nextBuffer    = RSX_MAX_BUFFERS + gcm->menuBuffer;
    }
    else
+#endif
    {
       buffer             = &gcm->buffers[gcm->currentBuffer];
-      gcm->currentBuffer = (gcm->currentBuffer+1)%RSX_MAX_BUFFERS;
+      gcm->currentBuffer = (gcm->currentBuffer + 1) % RSX_MAX_BUFFERS;
       gcm->nextBuffer    = gcm->currentBuffer;
    }
-#else
-   buffer                = &gcm->buffers[gcm->currentBuffer];
-   gcm->currentBuffer    = (gcm->currentBuffer+1)%RSX_MAX_BUFFERS;
-   gcm->nextBuffer       = gcm->currentBuffer;
-#endif
 
    rsx_flip(gcm->context, buffer->id);
    if (gcm->vsync)
@@ -1182,6 +1188,8 @@ static bool rsx_frame(void* data, const void* frame,
       gcm->tex_index                = ((gcm->tex_index + 1) % RSX_MAX_TEXTURES);
       rsx_load_texture_data(gcm, &gcm->texture[gcm->tex_index], frame, width, height, pitch, gcm->rgb32, false,
                             gcm->smooth ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST);
+      /* TODO/FIXME - pipeline ID being used here is RSX_SHADER_MENU, shouldn't
+       * this be RSX_SHADER_STOCK_BLEND instead? */
       rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
       rsx_draw_vertices(gcm);
       draw = true;
@@ -1193,6 +1201,8 @@ static bool rsx_frame(void* data, const void* frame,
       menu_driver_frame(menu_is_alive, video_info);
       if (gcm->menu_texture.data)
       {
+         /* TODO/FIXME - pipeline ID being used here is RSX_SHADER_STOCK_BLEND, shouldn't
+          * this be RSX_SHADER_MENU instead? */
          rsx_set_menu_texture(gcm, &gcm->menu_texture);
          rsx_draw_menu_vertices(gcm);
          draw = true;

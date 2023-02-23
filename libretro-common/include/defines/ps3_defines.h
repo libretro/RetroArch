@@ -772,6 +772,10 @@ typedef struct KbData
 #else
 #define cellGcmSetTransferImage cellGcmSetTransferImageInline
 #define celGcmSetInvalidateVertexCache cellGcmSetInvalidateVertexCacheInline
+#define rsxInit cellGcmInit
+#define rsxInvalidateTextureCache(a, b) cellGcmSetInvalidateVertexCache(a)
+#define rsxTextureControl cellGcmSetTextureControlInline
+#define rsxSetBlendEnable cellGcmSetBlendEnableInline 
 #endif
 
 /*============================================================
