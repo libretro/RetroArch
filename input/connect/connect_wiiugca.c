@@ -173,21 +173,19 @@ static void update_button_state(gca_pad_data_t *pad)
 static void update_analog_state(gca_pad_data_t *pad)
 {
    int pad_axis;
-   int16_t interpolated;
-   unsigned stick, axis;
 
    /* GameCube analog axis are 8-bit unsigned, where 128/128 is center.
     * So, we subtract 128 to get a signed, 0-based value and then mulitply
     * by 256 to get the 16-bit range RetroArch expects. */
    for (pad_axis = 0; pad_axis < 4; pad_axis++)
    {
-      axis         = (pad_axis % 2) ? 0 : 1;
-      stick        = pad_axis / 2;
-      interpolated = pad->data[3 + pad_axis];
+      unsigned axis            = (pad_axis % 2) ? 0 : 1;
+      unsigned stick           = pad_axis / 2;
+      int16_t interpolated     = pad->data[3 + pad_axis];
       /* libretro requires "up" to be negative, so we invert the y axis */
-      interpolated = (axis) ?
-         ((interpolated - 128) * 256) :
-         ((interpolated - 128) * -256);
+      interpolated             = axis
+         ? ((interpolated - 128) * 256)
+         : ((interpolated - 128) * -256);
 
       pad->analog[stick][axis] = interpolated;
    }
@@ -206,9 +204,6 @@ static void hidpad_wiiugca_pad_packet_handler(gca_pad_data_t *pad, uint8_t *pack
 static void hidpad_wiiugca_packet_handler(void *device_data, uint8_t *packet, uint16_t size)
 {
    uint32_t i;
-   int port;
-   unsigned char port_connected;
-
    gca_device_data_t *device = (gca_device_data_t *)device_data;
 
    if (!device)
@@ -218,8 +213,8 @@ static void hidpad_wiiugca_packet_handler(void *device_data, uint8_t *packet, ui
 
    for (i = 1; i < 37; i += 9)
    {
-      port           = i / 9;
-      port_connected = device->data[i];
+      int port                     = i / 9;
+      unsigned char port_connected = device->data[i];
 
       if (port_connected > GCA_PORT_POWERED)
       {
@@ -232,12 +227,7 @@ static void hidpad_wiiugca_packet_handler(void *device_data, uint8_t *packet, ui
 }
 
 static void hidpad_wiiugca_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-  (void)data;
-  (void)effect;
-  (void)strength;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { }
 
 const char *hidpad_wiiugca_get_name(void *pad_data)
 {

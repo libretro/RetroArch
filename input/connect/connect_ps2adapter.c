@@ -147,8 +147,7 @@ static void hidpad_ps2adapter_packet_handler(void *data, uint8_t *packet, uint16
    memcpy(device->data, packet, size);
 
    device->buttons = 0;
-
-   pressed_keys  = device->data[7] | (device->data[6] << 8);
+   pressed_keys    = device->data[7] | (device->data[6] << 8);
 
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)
@@ -163,17 +162,11 @@ static void hidpad_ps2adapter_packet_handler(void *data, uint8_t *packet, uint16
 }
 
 static void hidpad_ps2adapter_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-	(void)data;
-	(void)effect;
-   (void)strength;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { }
 
+/* For now we return a single static name */
 const char * hidpad_ps2adapter_get_name(void *data)
 {
-	(void)data;
-	/* For now we return a single static name */
 	return "PS2/PSX Controller Adapter";
 }
 

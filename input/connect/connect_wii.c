@@ -313,14 +313,8 @@ static void classic_ctrl_event(struct connect_wii_classic_ctrl_t* cc, uint8_t* m
  */
 static void wiimote_handle_expansion(struct connect_wii_wiimote_t* wm, uint8_t* msg)
 {
-   switch (wm->exp.type)
-   {
-      case EXP_CLASSIC:
-         classic_ctrl_event(&wm->exp.cc.classic, msg);
-         break;
-      default:
-         break;
-   }
+   if (wm->exp.type == EXP_CLASSIC)
+      classic_ctrl_event(&wm->exp.cc.classic, msg);
 }
 
 /*
@@ -608,26 +602,26 @@ static int16_t hidpad_wii_get_axis(void *data, unsigned axis)
 {
    struct connect_wii_wiimote_t* device = (struct connect_wii_wiimote_t*)data;
 
-   if (!device)
-      return 0;
-
-   switch (device->exp.type)
+   if (device)
    {
-      case EXP_CLASSIC:
-         switch (axis)
-         {
-            case 0:
-               return device->exp.cc.classic.ljs.x.value * 0x7FFF;
-            case 1:
-               return device->exp.cc.classic.ljs.y.value * 0x7FFF;
-            case 2:
-               return device->exp.cc.classic.rjs.x.value * 0x7FFF;
-            case 3:
-               return device->exp.cc.classic.rjs.y.value * 0x7FFF;
-         }
-         break;
-      default:
-         break;
+      switch (device->exp.type)
+      {
+         case EXP_CLASSIC:
+            switch (axis)
+            {
+               case 0:
+                  return device->exp.cc.classic.ljs.x.value * 0x7FFF;
+               case 1:
+                  return device->exp.cc.classic.ljs.y.value * 0x7FFF;
+               case 2:
+                  return device->exp.cc.classic.rjs.x.value * 0x7FFF;
+               case 3:
+                  return device->exp.cc.classic.rjs.y.value * 0x7FFF;
+            }
+            break;
+         default:
+            break;
+      }
    }
 
    return 0;
@@ -675,13 +669,7 @@ static void hidpad_wii_packet_handler(void *data,
 }
 
 static void hidpad_wii_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   /* TODO */
-   (void)data;
-   (void)effect;
-   (void)strength;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { }
 
 /* TODO: implement hidpad_wii_button(). */
 

@@ -84,10 +84,13 @@ static void* hidpad_wiiupro_init(void *data,
       calloc(1, sizeof(struct hidpad_wiiupro_data));
 
    if (!device)
-      goto error;
+      return NULL;
 
    if (!connection)
-      goto error;
+   {
+      free(device);
+      return NULL;
+   }
 
    device->connection        = connection;
    device->slot              = slot;
@@ -98,11 +101,6 @@ static void* hidpad_wiiupro_init(void *data,
    hidpad_wiiupro_send_control(device);
 
    return device;
-
-error:
-   if (device)
-      free(device);
-   return NULL;
 }
 
 static void hidpad_wiiupro_deinit(void *data)
@@ -189,13 +187,13 @@ static void hidpad_wiiupro_packet_handler(void *data,
    if (!device->have_led)
    {
       hidpad_wiiupro_send_control(device);
-      device->have_led = true;
+      device->have_led      = true;
    }
 #endif
 
-   packet[0x0C] ^= 0xFF;
-   packet[0x0D] ^= 0xFF;
-   packet[0x0E] ^= 0xFF;
+   packet[0x0C]            ^= 0xFF;
+   packet[0x0D]            ^= 0xFF;
+   packet[0x0E]            ^= 0xFF;
 
    memset(&device->data, 0, sizeof(struct wiiupro));
 
@@ -241,60 +239,60 @@ static void hidpad_wiiupro_packet_handler(void *data,
    }
 }
 
+/* TODO/FIXME */
 static void hidpad_wiiupro_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   /* TODO */
-}
+      enum retro_rumble_effect effect, uint16_t strength) { }
 
 static int32_t hidpad_wiiupro_button(void *data, uint16_t joykey)
 {
    struct hidpad_wiiupro_data *device = (struct hidpad_wiiupro_data*)data;
-   struct wiiupro                *rpt = device ?
-      (struct wiiupro*)&device->data : NULL;
+   struct wiiupro                *rpt = device
+      ? (struct wiiupro*)&device->data : NULL;
 
-   if (!device || !rpt)
-      return 0;
-
-   switch(joykey) {
-      case RETRO_DEVICE_ID_JOYPAD_R3:
-         return rpt->btn.r3;
-      case RETRO_DEVICE_ID_JOYPAD_L3:
-         return rpt->btn.l3;
-      case RETRO_DEVICE_ID_JOYPAD_START:
-         return rpt->btn.plus;
-      case RETRO_DEVICE_ID_JOYPAD_SELECT:
-         return rpt->btn.minus;
-      case RETRO_DEVICE_ID_JOYPAD_R2:
-         return rpt->btn.zr;
-      case RETRO_DEVICE_ID_JOYPAD_L2:
-         return rpt->btn.zl;
-      case RETRO_DEVICE_ID_JOYPAD_R:
-         return rpt->btn.r;
-      case RETRO_DEVICE_ID_JOYPAD_L:
-         return rpt->btn.l;
-      case RETRO_DEVICE_ID_JOYPAD_X:
-         return rpt->btn.x;
-      case RETRO_DEVICE_ID_JOYPAD_A:
-         return rpt->btn.a;
-      case RETRO_DEVICE_ID_JOYPAD_B:
-         return rpt->btn.b;
-      case RETRO_DEVICE_ID_JOYPAD_Y:
-         return rpt->btn.y;
-      case RETRO_DEVICE_ID_JOYPAD_LEFT:
-         return rpt->btn.left;
-      case RETRO_DEVICE_ID_JOYPAD_RIGHT:
-         return rpt->btn.right;
-      case RETRO_DEVICE_ID_JOYPAD_DOWN:
-         return rpt->btn.down;
-      case RETRO_DEVICE_ID_JOYPAD_UP:
-         return rpt->btn.up;
-      case RARCH_MENU_TOGGLE:
-         return rpt->btn.home;
-      default:
-         return 0;
+   if (device && rpt)
+   {
+      switch (joykey)
+      {
+         case RETRO_DEVICE_ID_JOYPAD_R3:
+            return rpt->btn.r3;
+         case RETRO_DEVICE_ID_JOYPAD_L3:
+            return rpt->btn.l3;
+         case RETRO_DEVICE_ID_JOYPAD_START:
+            return rpt->btn.plus;
+         case RETRO_DEVICE_ID_JOYPAD_SELECT:
+            return rpt->btn.minus;
+         case RETRO_DEVICE_ID_JOYPAD_R2:
+            return rpt->btn.zr;
+         case RETRO_DEVICE_ID_JOYPAD_L2:
+            return rpt->btn.zl;
+         case RETRO_DEVICE_ID_JOYPAD_R:
+            return rpt->btn.r;
+         case RETRO_DEVICE_ID_JOYPAD_L:
+            return rpt->btn.l;
+         case RETRO_DEVICE_ID_JOYPAD_X:
+            return rpt->btn.x;
+         case RETRO_DEVICE_ID_JOYPAD_A:
+            return rpt->btn.a;
+         case RETRO_DEVICE_ID_JOYPAD_B:
+            return rpt->btn.b;
+         case RETRO_DEVICE_ID_JOYPAD_Y:
+            return rpt->btn.y;
+         case RETRO_DEVICE_ID_JOYPAD_LEFT:
+            return rpt->btn.left;
+         case RETRO_DEVICE_ID_JOYPAD_RIGHT:
+            return rpt->btn.right;
+         case RETRO_DEVICE_ID_JOYPAD_DOWN:
+            return rpt->btn.down;
+         case RETRO_DEVICE_ID_JOYPAD_UP:
+            return rpt->btn.up;
+         case RARCH_MENU_TOGGLE:
+            return rpt->btn.home;
+         default:
+            break;
+      }
    }
 
+   return 0;
 }
 
 pad_connection_interface_t pad_connection_wiiupro = {
