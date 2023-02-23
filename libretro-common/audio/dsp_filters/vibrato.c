@@ -30,11 +30,11 @@
 
 #define sqr(a) ((a) * (a))
 
-static const float BASE_DELAY_SEC = 0.002; /* 2 ms */
-static const float VIBRATO_FREQUENCY_DEFAULT_HZ  = 2;
-static const float VIBRATO_FREQUENCY_MAX_HZ      = 14;
-static const float VIBRATO_DEPTH_DEFAULT_PERCENT = 50;
-static const int add_delay                       = 3;
+#define VIBRATO_BASE_DELAY_SEC 0.002f /* 2 ms */
+#define VIBRATO_FREQUENCY_DEFAULT_HZ 2.0f
+#define VIBRATO_FREQUENCY_MAX_HZ 14.0f
+#define VIBRATO_DEPTH_DEFAULT_PERCENT 50.0f
+#define VIBRATO_ADD_DELAY 3
 
 static float hermite_interp(float x, float *y)
 {
@@ -71,9 +71,9 @@ static void vibrato_free(void *data)
 
 static void vibratocore_init(struct vibrato_core *core,float depth,int samplerate,float freq)
 {
-	core->size       = BASE_DELAY_SEC * samplerate * 2;
-	core->buffer     = malloc((core->size + add_delay) * sizeof(float));
-	memset(core->buffer, 0, (core->size + add_delay)   * sizeof(float));
+	core->size       = VIBRATO_BASE_DELAY_SEC * samplerate * 2;
+	core->buffer     = malloc((core->size + VIBRATO_ADD_DELAY) * sizeof(float));
+	memset(core->buffer, 0, (core->size   + VIBRATO_ADD_DELAY) * sizeof(float));
 	core->samplerate = samplerate;
 	core->freq       = freq;
 	core->depth      = depth;
@@ -88,11 +88,11 @@ float vibratocore_core(struct vibrato_core *core,float in)
    float M                        = core->freq / core->samplerate;
    int maxphase                   = core->samplerate / core->freq;
    float lfo                      = sin(M * 2. * M_PI * core->phase++);
-   int maxdelay                   = BASE_DELAY_SEC * core->samplerate;
+   int maxdelay                   = VIBRATO_BASE_DELAY_SEC * core->samplerate;
    core->phase                    = core->phase % maxphase;
    lfo                            = (lfo + 1) * 1.; // transform from [-1; 1] to [0; 1]
    delay                          =  lfo * core->depth * maxdelay;
-   delay                         += add_delay;
+   delay                         += VIBRATO_ADD_DELAY;
    readindex                      = core->writeindex - 1 - delay;
    while (readindex < 0)
       readindex                  += core->size;
@@ -102,7 +102,7 @@ float vibratocore_core(struct vibrato_core *core,float in)
    fpart                          = readindex - ipart; /* fractional part of the delay */
    value                          = hermite_interp(fpart, &(core->buffer[ipart]));
    core->buffer[core->writeindex] = in;
-   if (core->writeindex < add_delay)
+   if (core->writeindex < VIBRATO_ADD_DELAY)
       core->buffer[core->size + core->writeindex] = in;
    core->writeindex++;
    if (core->writeindex == core->size)
