@@ -3864,9 +3864,6 @@ video_driver_t video_vulkan = {
 #ifdef HAVE_OVERLAY
    vulkan_get_overlay_interface,
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-   NULL,
-#endif
    vulkan_get_poke_interface,
    NULL,                         /* vulkan_wrap_type_to_enum */
 #ifdef HAVE_GFX_WIDGETS

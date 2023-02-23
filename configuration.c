@@ -1519,12 +1519,6 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("input_overlay",
          settings->paths.path_overlay, false, NULL, true);
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-   SETTING_PATH("video_layout_path",
-         settings->paths.path_video_layout, false, NULL, true);
-   SETTING_PATH("video_layout_directory",
-         settings->paths.directory_video_layout, true, NULL, true);
-#endif
    SETTING_PATH("video_record_config",
          settings->paths.path_record_config, false, NULL, true);
    SETTING_PATH("video_stream_config",
@@ -1586,10 +1580,6 @@ static struct config_path_setting *populate_settings_path(
 #ifdef HAVE_OVERLAY
    SETTING_PATH("overlay_directory",
          settings->paths.directory_overlay, true, NULL, true);
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-   SETTING_PATH("video_layout_directory",
-         settings->paths.directory_video_layout, true, NULL, true);
 #endif
    SETTING_PATH(
          "screenshot_directory",
@@ -1901,9 +1891,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_show_latency",             &settings->bools.menu_show_latency, true, DEFAULT_QUICK_MENU_SHOW_LATENCY, false);
    SETTING_BOOL("menu_show_rewind",              &settings->bools.menu_show_rewind, true, DEFAULT_QUICK_MENU_SHOW_REWIND, false);
    SETTING_BOOL("menu_show_overlays",            &settings->bools.menu_show_overlays, true, DEFAULT_QUICK_MENU_SHOW_OVERLAYS, false);
-#ifdef HAVE_VIDEO_LAYOUT
-   SETTING_BOOL("menu_show_video_layout",        &settings->bools.menu_show_video_layout, true, DEFAULT_QUICK_MENU_SHOW_VIDEO_LAYOUT, false);
-#endif
 
    SETTING_BOOL("menu_show_help",                &settings->bools.menu_show_help, true, DEFAULT_MENU_SHOW_HELP, false);
    SETTING_BOOL("menu_show_quit_retroarch",      &settings->bools.menu_show_quit_retroarch, true, DEFAULT_MENU_SHOW_QUIT, false);
@@ -1976,9 +1963,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_overlay_show_mouse_cursor", &settings->bools.input_overlay_show_mouse_cursor, true, DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR, false);
    SETTING_BOOL("input_overlay_auto_rotate",    &settings->bools.input_overlay_auto_rotate, true, DEFAULT_OVERLAY_AUTO_ROTATE, false);
    SETTING_BOOL("input_overlay_auto_scale",     &settings->bools.input_overlay_auto_scale, true, DEFAULT_INPUT_OVERLAY_AUTO_SCALE, false);
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-   SETTING_BOOL("video_layout_enable",          &settings->bools.video_layout_enable, true, true, false);
 #endif
 #ifdef HAVE_COMMAND
    SETTING_BOOL("network_cmd_enable",           &settings->bools.network_cmd_enable, true, DEFAULT_NETWORK_CMD_ENABLE, false);
@@ -2225,9 +2209,6 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
    SETTING_UINT("video_scale",                  &settings->uints.video_scale, true, DEFAULT_SCALE, false);
    SETTING_UINT("video_window_opacity",         &settings->uints.video_window_opacity, true, DEFAULT_WINDOW_OPACITY, false);
-#ifdef HAVE_VIDEO_LAYOUT
-   SETTING_UINT("video_layout_selected_view",   &settings->uints.video_layout_selected_view, true, 0, false);
-#endif
    SETTING_UINT("video_shader_delay",           &settings->uints.video_shader_delay, true, DEFAULT_SHADER_DELAY, false);
 #ifdef HAVE_COMMAND
    SETTING_UINT("network_cmd_port",             &settings->uints.network_cmd_port,    true, DEFAULT_NETWORK_CMD_PORT, false);
@@ -2812,9 +2793,6 @@ void config_set_defaults(void *data)
    *settings->paths.path_rgui_theme_preset = '\0';
    *settings->paths.path_content_database  = '\0';
    *settings->paths.path_overlay           = '\0';
-#ifdef HAVE_VIDEO_LAYOUT
-   *settings->paths.path_video_layout      = '\0';
-#endif
    *settings->paths.path_record_config     = '\0';
    *settings->paths.path_stream_config     = '\0';
    *settings->paths.path_stream_url        = '\0';
@@ -2920,14 +2898,6 @@ void config_set_defaults(void *data)
                FILE_PATH_DEFAULT_OVERLAY,
                sizeof(settings->paths.path_overlay));
 #endif
-   }
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]))
-   {
-      fill_pathname_expand_special(settings->paths.directory_video_layout,
-            g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
-            sizeof(settings->paths.directory_video_layout));
    }
 #endif
 
@@ -3804,10 +3774,6 @@ static bool config_load_file(global_t *global,
 #ifdef HAVE_OVERLAY
    if (string_is_equal(settings->paths.directory_overlay, "default"))
       *settings->paths.directory_overlay = '\0';
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-   if (string_is_equal(settings->paths.directory_video_layout, "default"))
-      *settings->paths.directory_video_layout = '\0';
 #endif
    if (string_is_equal(settings->paths.directory_system, "default"))
       *settings->paths.directory_system = '\0';

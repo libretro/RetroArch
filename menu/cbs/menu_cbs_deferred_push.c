@@ -149,9 +149,6 @@ GENERIC_DEFERRED_PUSH(deferred_push_override_file_load,             DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_record_configfile,              DISPLAYLIST_RECORD_CONFIG_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_stream_configfile,              DISPLAYLIST_STREAM_CONFIG_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_input_overlay,                  DISPLAYLIST_OVERLAYS)
-#ifdef HAVE_VIDEO_LAYOUT
-GENERIC_DEFERRED_PUSH(deferred_push_video_layout_path,              DISPLAYLIST_VIDEO_LAYOUT_PATH)
-#endif
 GENERIC_DEFERRED_PUSH(deferred_push_video_font_path,                DISPLAYLIST_VIDEO_FONTS)
 GENERIC_DEFERRED_PUSH(deferred_push_xmb_font_path,                  DISPLAYLIST_FONTS)
 GENERIC_DEFERRED_PUSH(deferred_push_content_history_path,           DISPLAYLIST_CONTENT_HISTORY)
@@ -190,9 +187,6 @@ GENERIC_DEFERRED_PUSH(deferred_push_onscreen_notifications_settings_list, DISPLA
 GENERIC_DEFERRED_PUSH(deferred_push_onscreen_notifications_views_settings_list, DISPLAYLIST_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST)
 #if defined(HAVE_OVERLAY)
 GENERIC_DEFERRED_PUSH(deferred_push_onscreen_overlay_settings_list, DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST)
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-GENERIC_DEFERRED_PUSH(deferred_push_onscreen_video_layout_settings_list, DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST)
 #endif
 GENERIC_DEFERRED_PUSH(deferred_push_menu_file_browser_settings_list,DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_menu_views_settings_list,       DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST)
@@ -713,9 +707,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #if defined(HAVE_OVERLAY)
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST, deferred_push_onscreen_overlay_settings_list},
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-      {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST, deferred_push_onscreen_video_layout_settings_list},
-#endif
       {MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST, deferred_push_menu_file_browser_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_MENU_VIEWS_SETTINGS_LIST, deferred_push_menu_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_SETTINGS_VIEWS_SETTINGS_LIST, deferred_push_settings_views_settings_list},
@@ -850,9 +841,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS, deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releasemonth},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear},
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-      {MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH, deferred_push_video_layout_path}, 
 #endif
       {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU, deferred_push_achievement_pause_menu},
       {MENU_ENUM_LABEL_ACHIEVEMENT_LIST, deferred_push_achievement_list},
@@ -1219,11 +1207,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_INPUT_OVERLAY:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
             break;
-#ifdef HAVE_VIDEO_LAYOUT
-         case MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_layout_path);
-            break;
-#endif
          case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);
             break;
@@ -1287,11 +1270,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #if defined(HAVE_OVERLAY)
          case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_overlay_settings_list);
-            break;
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-         case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_video_layout_settings_list);
             break;
 #endif
          case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:

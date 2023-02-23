@@ -429,9 +429,6 @@ video_driver_t video_switch = {
 #ifdef HAVE_OVERLAY
 	NULL, /* overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
-#endif
 	switch_get_poke_interface,
 };
 

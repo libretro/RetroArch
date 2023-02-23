@@ -396,9 +396,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], home_dir_buf, "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], home_dir_buf, "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], home_dir_buf, "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], home_dir_buf, "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], home_dir_buf, "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], home_dir_buf, "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
@@ -434,9 +431,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], application_data, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], application_data, "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], application_data, "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], application_data, "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], application_data, "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], application_data, "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], application_data, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));

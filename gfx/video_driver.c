@@ -256,9 +256,6 @@ video_driver_t video_null = {
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-   NULL,
-#endif
   NULL, /* get_poke_interface */
 };
 
@@ -1505,10 +1502,6 @@ void video_driver_free_internal(void)
 VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
 #endif
 
-#ifdef HAVE_VIDEO_LAYOUT
-   video_layout_deinit();
-#endif
-
    command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 
    if (!(video_st->flags & VIDEO_FLAG_CACHE_CONTEXT))
@@ -1689,19 +1682,6 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
             frame, rgb32, width, height, alpha);
 }
 
-
-#ifdef HAVE_VIDEO_LAYOUT
-const video_layout_render_interface_t *video_driver_layout_render_interface(void)
-{
-   video_driver_state_t *video_st = &video_driver_st;
-   if (  !video_st->current_video ||
-         !video_st->current_video->video_layout_render_interface)
-      return NULL;
-
-   return video_st->current_video->video_layout_render_interface(
-         video_st->data);
-}
-#endif
 
 void *video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch)
@@ -3554,16 +3534,6 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #ifdef HAVE_OVERLAY
    input_overlay_deinit();
    input_overlay_init();
-#endif
-
-#ifdef HAVE_VIDEO_LAYOUT
-   if (settings->bools.video_layout_enable)
-   {
-      video_layout_init(video_st->data,
-            video_driver_layout_render_interface());
-      video_layout_load(settings->paths.path_video_layout);
-      video_layout_view_select(settings->uints.video_layout_selected_view);
-   }
 #endif
 
    if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))

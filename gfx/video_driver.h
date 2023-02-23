@@ -40,10 +40,6 @@
 
 #include "video_defines.h"
 
-#ifdef HAVE_VIDEO_LAYOUT
-#include "video_layout.h"
-#endif
-
 #ifdef HAVE_CRTSWITCHRES
 #include "video_crt_switch.h"
 #endif
@@ -768,9 +764,6 @@ typedef struct video_driver
    void (*overlay_interface)(void *data,
          const video_overlay_interface_t **iface);
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-   const video_layout_render_interface_t *(*video_layout_render_interface)(void *data);
-#endif
    void (*poke_interface)(void *data, const video_poke_interface_t **iface);
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 
@@ -1004,10 +997,6 @@ void video_driver_set_texture_enable(bool enable, bool full_screen);
 
 void video_driver_set_texture_frame(const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha);
-
-#ifdef HAVE_VIDEO_LAYOUT
-const video_layout_render_interface_t *video_driver_layout_render_interface(void);
-#endif
 
 void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch);

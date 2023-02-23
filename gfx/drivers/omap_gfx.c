@@ -1151,8 +1151,5 @@ video_driver_t video_omap = {
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
-#endif
    omap_gfx_get_poke_interface
 };

@@ -1141,8 +1141,5 @@ video_driver_t video_sdl_dingux = {
 #ifdef HAVE_OVERLAY
    NULL,
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
-#endif
    sdl_dingux_get_poke_interface
 };

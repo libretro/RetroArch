@@ -86,7 +86,6 @@ else
 	HAVE_PATCH      	:= 1
 	HAVE_CHEATS     	:= 1
 	HAVE_OVERLAY		:= 1
-	HAVE_VIDEO_LAYOUT 	:= 0
 	HAVE_MATERIALUI		:= 1
 	HAVE_XMB		:= 1
 	HAVE_RGUI		:= 1

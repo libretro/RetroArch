@@ -162,11 +162,6 @@ static void fill_derived_paths(void)
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
 		       g_defaults.dirs[DEFAULT_DIR_PORT],
 		       "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
-		       g_defaults.dirs[DEFAULT_DIR_PORT],
-		       "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
 		       g_defaults.dirs[DEFAULT_DIR_PORT],
 		       "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));

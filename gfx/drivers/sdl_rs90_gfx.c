@@ -1443,8 +1443,5 @@ video_driver_t video_sdl_rs90 = {
 #ifdef HAVE_OVERLAY
    NULL,
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
-#endif
    sdl_rs90_get_poke_interface
 };

@@ -1429,9 +1429,6 @@ video_driver_t video_gcm =
 #ifdef HAVE_OVERLAY
    NULL,
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
-#endif
    rsx_get_poke_interface,
    rsx_wrap_type_to_enum,
 #ifdef HAVE_GFX_WIDGETS

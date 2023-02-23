@@ -1333,9 +1333,6 @@ static const video_driver_t video_thread = {
 #ifdef HAVE_OVERLAY
    video_thread_get_overlay_interface,
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-   NULL, /* video_layout_render_interface */
-#endif
    video_thread_get_poke_interface,
    NULL, /* wrap_type_to_enum */
 #ifdef HAVE_GFX_WIDGETS

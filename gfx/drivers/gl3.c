@@ -2249,9 +2249,6 @@ video_driver_t video_gl3 = {
 #ifdef HAVE_OVERLAY
    gl3_get_overlay_interface,
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-   NULL,
-#endif
    gl3_get_poke_interface,
    gl3_wrap_type_to_enum,
 #ifdef HAVE_GFX_WIDGETS

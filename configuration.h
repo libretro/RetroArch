@@ -236,9 +236,6 @@ typedef struct settings
       unsigned video_dingux_ipu_filter_type;
       unsigned video_dingux_refresh_rate;
       unsigned video_dingux_rs90_softfilter_type;
-#ifdef HAVE_VIDEO_LAYOUT
-      unsigned video_layout_selected_view;
-#endif
 #ifdef GEKKO
       unsigned video_overscan_correction_top;
       unsigned video_overscan_correction_bottom;
@@ -486,9 +483,6 @@ typedef struct settings
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];
-#ifdef HAVE_VIDEO_LAYOUT
-      char path_video_layout[PATH_MAX_LENGTH];
-#endif
       char path_record_config[PATH_MAX_LENGTH];
       char path_stream_config[PATH_MAX_LENGTH];
       char path_menu_wallpaper[PATH_MAX_LENGTH];
@@ -512,9 +506,6 @@ typedef struct settings
       char directory_libretro[PATH_MAX_LENGTH];
       char directory_input_remapping[PATH_MAX_LENGTH];
       char directory_overlay[PATH_MAX_LENGTH];
-#ifdef HAVE_VIDEO_LAYOUT
-      char directory_video_layout[PATH_MAX_LENGTH];
-#endif
       char directory_resampler[PATH_MAX_LENGTH];
       char directory_screenshot[PATH_MAX_LENGTH];
       char directory_system[PATH_MAX_LENGTH];
@@ -585,9 +576,6 @@ typedef struct settings
 #endif
       bool video_wiiu_prefer_drc;
       bool video_notch_write_over_enable;
-#ifdef HAVE_VIDEO_LAYOUT
-      bool video_layout_enable;
-#endif
       bool video_hdr_enable;
       bool video_hdr_expand_gamut;
 
@@ -701,9 +689,6 @@ typedef struct settings
       bool menu_show_rewind;
       bool menu_show_overlays;
       bool menu_show_legacy_thumbnail_updater;
-#ifdef HAVE_VIDEO_LAYOUT
-      bool menu_show_video_layout;
-#endif
       bool menu_materialui_icons_enable;
       bool menu_materialui_playlist_icons_enable;
       bool menu_materialui_switch_icons;

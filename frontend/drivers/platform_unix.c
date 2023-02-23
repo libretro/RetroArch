@@ -1665,11 +1665,6 @@ static void frontend_unix_get_env(int *argc,
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
                   parent_path, "cheats",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-#ifdef HAVE_VIDEO_LAYOUT
-            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
-                  parent_path, "layouts",
-                  sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
 
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
                   parent_path, "temp",
@@ -1891,10 +1886,6 @@ static void frontend_unix_get_env(int *argc,
          "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
          "overlay", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], base_path,
-         "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], base_path,
          "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], base_path,

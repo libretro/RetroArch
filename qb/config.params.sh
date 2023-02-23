@@ -43,7 +43,6 @@ HAVE_BUILTINBEARSSL=auto   # Use builtin BearSSL
 C89_BUILTINBEARSSL=no
 CXX_BUILTINBEARSSL=no
 HAVE_OVERLAY=yes           # Overlay support
-HAVE_VIDEO_LAYOUT=yes      # Layout support
 HAVE_DYNAMIC=yes           # Dynamic loading of libretro library
 HAVE_SDL=auto              # SDL support
 C89_SDL=no

@@ -802,8 +802,5 @@ video_driver_t video_oga = {
 #ifdef HAVE_OVERLAY
    NULL,
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-   NULL,
-#endif
    oga_get_poke_interface
 };

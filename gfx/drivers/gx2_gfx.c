@@ -1803,9 +1803,6 @@ video_driver_t video_wiiu =
 #ifdef HAVE_OVERLAY
    gx2_get_overlay_interface, /* overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
-#endif
    wiiu_gfx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
 #ifdef HAVE_GFX_WIDGETS

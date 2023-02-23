@@ -1339,20 +1339,6 @@ static void menu_action_setting_disp_set_label_menu_file_overlay(
          path, "(OVERLAY)", STRLEN_CONST("(OVERLAY)"), s2, len2);
 }
 
-#ifdef HAVE_VIDEO_LAYOUT
-static void menu_action_setting_disp_set_label_menu_file_video_layout(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *path,
-      char *s2, size_t len2)
-{
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
-         path, "(LAYOUT)", STRLEN_CONST("(LAYOUT)"), s2, len2);
-}
-#endif
-
 static void menu_action_setting_disp_set_label_menu_file_config(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -2185,12 +2171,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_overlay);
          break;
-#ifdef HAVE_VIDEO_LAYOUT
-      case FILE_TYPE_VIDEO_LAYOUT:
-         BIND_ACTION_GET_VALUE(cbs,
-               menu_action_setting_disp_set_label_menu_file_video_layout);
-         break;
-#endif
       case FILE_TYPE_FONT:
       case FILE_TYPE_VIDEO_FONT:
          BIND_ACTION_GET_VALUE(cbs,

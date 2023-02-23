@@ -130,10 +130,6 @@ static void frontend_psp_get_env_settings(int *argc, char *argv[],
       sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], user_path,
       "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], user_path,
-      "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], user_path,
       "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], user_path, "logs",

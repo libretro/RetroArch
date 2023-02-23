@@ -590,9 +590,6 @@ video_driver_t video_sixel = {
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
-#endif
    sixel_gfx_get_poke_interface,
    NULL /* wrap_type_to_enum */
 };

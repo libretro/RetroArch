@@ -2549,312 +2549,6 @@ static void gl2_pbo_async_readback(gl2_t *gl)
    gl2_renderchain_unbind_pbo();
 }
 
-#ifdef HAVE_VIDEO_LAYOUT
-static float video_layout_layer_tex_coord[8] = {
-   0.0f, 1.0f,
-   1.0f, 1.0f,
-   0.0f, 0.0f,
-   1.0f, 0.0f,
-};
-
-static void gl2_video_layout_fbo_init(gl2_t *gl,
-      unsigned width, unsigned height)
-{
-   glGenTextures(1, &gl->video_layout_fbo_texture);
-   glBindTexture(GL_TEXTURE_2D, gl->video_layout_fbo_texture);
-
-   gl2_load_texture_image(GL_TEXTURE_2D,
-      0, RARCH_GL_INTERNAL_FORMAT32,
-      width,
-      height,
-      0, RARCH_GL_TEXTURE_TYPE32,
-      RARCH_GL_FORMAT32, NULL);
-
-   gl2_gen_fb(1, &gl->video_layout_fbo);
-   gl2_bind_fb(gl->video_layout_fbo);
-
-   gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0,
-      GL_TEXTURE_2D, gl->video_layout_fbo_texture, 0);
-
-   if (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER) != 
-         RARCH_GL_FRAMEBUFFER_COMPLETE)
-      RARCH_ERR("[GL]: Unable to create FBO for video_layout.\n");
-
-   gl2_bind_fb(0);
-}
-
-static void gl2_video_layout_fbo_free(gl2_t *gl)
-{
-   if (gl->video_layout_fbo)
-   {
-      gl2_delete_fb(1, &gl->video_layout_fbo);
-      gl->video_layout_fbo = 0;
-   }
-
-   if (gl->video_layout_fbo_texture)
-   {
-      glDeleteTextures(1, &gl->video_layout_fbo_texture);
-      gl->video_layout_fbo_texture = 0;
-   }
-}
-
-static void gl2_video_layout_viewport(gl2_t *gl)
-{
-   if (gl->flags & GL2_FLAG_VIDEO_LAYOUT_RESIZE)
-   {
-      if (gl->video_layout_fbo)
-         gl2_video_layout_fbo_free(gl);
-
-      gl2_video_layout_fbo_init(gl, gl->video_width, gl->video_height);
-
-      video_layout_view_change();
-
-      gl->flags &= ~(GL2_FLAG_VIDEO_LAYOUT_RESIZE);
-   }
-
-   if (video_layout_view_on_change())
-   {
-      video_layout_bounds_t b;
-      b.x = 0.0f;
-      b.y = 0.0f;
-      b.w = (float)gl->video_width;
-      b.h = (float)gl->video_height;
-      video_layout_view_fit_bounds(b);
-   }
-
-   if (video_layout_screen_count())
-   {
-      const video_layout_bounds_t *bounds;
-      bounds = video_layout_screen(0);
-
-      glViewport(
-         bounds->x, gl->video_height - bounds->y - bounds->h,
-         bounds->w, bounds->h
-      );
-   }
-}
-
-static void gl2_video_layout_render(gl2_t *gl)
-{
-   int i;
-
-   if (!video_layout_valid())
-      return;
-
-   glViewport(0, 0, gl->video_width, gl->video_height);
-   glEnable(GL_BLEND);
-
-   for (i = 0; i < video_layout_layer_count(); ++i)
-      video_layout_layer_render(i);
-
-   glDisable(GL_BLEND);
-}
-
-static void gl2_video_layout_init(gl2_t *gl)
-{
-   uint32_t px;
-
-   gl->flags |= GL2_FLAG_VIDEO_LAYOUT_RESIZE;
-
-   /* white 1px texture for drawing solid colors */
-   px = 0xFFFFFFFF;
-
-   glGenTextures(1, &gl->video_layout_white_texture);
-   gl_load_texture_data(gl->video_layout_white_texture,
-      RARCH_WRAP_EDGE, TEXTURE_FILTER_NEAREST,
-      sizeof(uint32_t), 1, 1, &px, sizeof(uint32_t));
-}
-
-static void gl2_video_layout_free(gl2_t *gl)
-{
-   gl2_video_layout_fbo_free(gl);
-
-   if (gl->video_layout_white_texture)
-   {
-      glDeleteTextures(1, &gl->video_layout_white_texture);
-      gl->video_layout_white_texture = 0;
-   }
-}
-
-static void *gl2_video_layout_take_image(void *video_driver_data, struct texture_image image)
-{
-   GLuint tex          = 0;
-   unsigned alignment  = gl2_get_alignment(image.width * sizeof(uint32_t));
-
-   glGenTextures(1, &tex);
-
-   gl_load_texture_data(tex,
-      RARCH_WRAP_EDGE, TEXTURE_FILTER_MIPMAP_LINEAR,
-      alignment, image.width, image.height, image.pixels, sizeof(uint32_t));
-
-   free(image.pixels);
-
-   return (void*)(uintptr_t)tex;
-}
-
-static void gl2_video_layout_free_image(void *video_driver_data, void *image)
-{
-   GLuint tex;
-   tex = (GLuint)(uintptr_t)image;
-   glDeleteTextures(1, &tex);
-}
-
-static void gl2_video_layout_layer_begin(const video_layout_render_info_t *info)
-{
-   gl2_t *gl;
-   gl = (gl2_t*)info->video_driver_data;
-
-   gl2_bind_fb(gl->video_layout_fbo);
-
-   glClearColor(0, 0, 0, 0);
-   glClear(GL_COLOR_BUFFER_BIT);
-
-   gl->shader->use(gl, gl->shader_data,
-      VIDEO_SHADER_STOCK_BLEND, true);
-
-   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-}
-
-static void gl2_video_layout_image(
-      const video_layout_render_info_t *info,
-      void *image_handle, void *alpha_handle)
-{
-   /* TODO alpha_handle */
-   int i;
-   float coord[8];
-   float color[16];
-   gl2_t                *gl = (gl2_t*)info->video_driver_data;
-   video_layout_bounds_t b = info->bounds;
-
-   b.x /= gl->video_width;
-   b.y /= gl->video_height;
-   b.w /= gl->video_width;
-   b.h /= gl->video_height;
-
-   coord[0] = b.x;
-   coord[1] = 1.f - b.y;
-   coord[2] = b.x + b.w;
-   coord[3] = 1.f - b.y;
-   coord[4] = b.x;
-   coord[5] = 1.f - (b.y + b.h);
-   coord[6] = b.x + b.w;
-   coord[7] = 1.f - (b.y + b.h);
-
-   i = 0;
-   while (i < 16)
-   {
-      color[i++] = info->color.r;
-      color[i++] = info->color.g;
-      color[i++] = info->color.b;
-      color[i++] = info->color.a;
-   }
-
-   gl->coords.vertex    = coord;
-   gl->coords.tex_coord = tex_coords;
-   gl->coords.color     = color;
-   gl->coords.vertices  = 4;
-
-   gl->shader->set_coords(gl->shader_data, &gl->coords);
-   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
-
-   glBindTexture(GL_TEXTURE_2D, (GLuint)(uintptr_t)image_handle);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-}
-
-static void gl2_video_layout_text(const video_layout_render_info_t *info, const char *str)
-{
-   /* TODO */
-}
-
-static void gl2_video_layout_counter(const video_layout_render_info_t *info, int value)
-{
-   /* TODO */
-}
-
-static void gl2_video_layout_rect(const video_layout_render_info_t *info)
-{
-   gl2_t *gl;
-   gl = (gl2_t*)info->video_driver_data;
-
-   gl2_video_layout_image(info, (void*)(uintptr_t)gl->video_layout_white_texture, NULL);
-}
-
-static void gl2_video_layout_screen(const video_layout_render_info_t *info, int screen_index)
-{
-   gl2_video_layout_rect(info);
-}
-
-static void gl2_video_layout_ellipse(const video_layout_render_info_t *info)
-{
-   /* TODO */
-}
-
-static void gl2_video_layout_led_dot(const video_layout_render_info_t *info, int dot_count, int dot_mask)
-{
-   /* TODO */
-}
-
-static void gl2_video_layout_led_seg(const video_layout_render_info_t *info, video_layout_led_t seg_layout, int seg_mask)
-{
-   /* TODO */
-}
-
-static void gl2_video_layout_layer_end(const video_layout_render_info_t *info, video_layout_blend_t blend_type)
-{
-   gl2_t *gl;
-   gl = (gl2_t*)info->video_driver_data;
-
-   switch (blend_type)
-   {
-   case VIDEO_LAYOUT_BLEND_ALPHA:
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      break;
-   case VIDEO_LAYOUT_BLEND_ADD:
-      glBlendFunc(GL_ONE, GL_ONE);
-      break;
-   case VIDEO_LAYOUT_BLEND_MOD:
-      glBlendFunc(GL_DST_COLOR, GL_ZERO);
-      break;
-   }
-
-   gl2_bind_fb(0);
-
-   gl->coords.vertex = gl->vertex_ptr;
-   gl->coords.tex_coord = video_layout_layer_tex_coord;
-   gl->coords.color = gl->white_color_ptr;
-   gl->coords.vertices = 4;
-
-   gl->shader->set_coords(gl->shader_data, &gl->coords);
-   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
-
-   glBindTexture(GL_TEXTURE_2D, gl->video_layout_fbo_texture);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-   gl->coords.tex_coord = gl->tex_info.coord;
-}
-
-static video_layout_render_interface_t gl2_video_layout_render_interface =
-{
-   gl2_video_layout_take_image,
-   gl2_video_layout_free_image,
-   gl2_video_layout_layer_begin,
-   gl2_video_layout_screen,
-   gl2_video_layout_image,
-   gl2_video_layout_text,
-   gl2_video_layout_counter,
-   gl2_video_layout_rect,
-   gl2_video_layout_ellipse,
-   gl2_video_layout_led_dot,
-   gl2_video_layout_led_seg,
-   gl2_video_layout_layer_end
-};
-
-static const video_layout_render_interface_t *gl2_get_video_layout_render_interface(void *data)
-{
-   return &gl2_video_layout_render_interface;
-}
-#endif /* HAVE_VIDEO_LAYOUT */
-
 static bool gl2_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
@@ -2982,16 +2676,7 @@ static bool gl2_frame(void *data, const void *frame,
       }
       else
          gl2_set_viewport(gl, width, height, false, true);
-
-#ifdef HAVE_VIDEO_LAYOUT
-      gl->flags |= GL2_FLAG_VIDEO_LAYOUT_RESIZE;
-#endif
    }
-
-#ifdef HAVE_VIDEO_LAYOUT
-   if (video_layout_valid())
-      gl2_video_layout_viewport(gl);
-#endif
 
    if (frame)
       gl->tex_index = ((gl->tex_index + 1) % gl->textures);
@@ -3093,10 +2778,6 @@ static bool gl2_frame(void *data, const void *frame,
    /* Set prev textures. */
    gl2_renderchain_bind_prev_texture(gl,
          chain, &gl->tex_info);
-
-#ifdef HAVE_VIDEO_LAYOUT
-   gl2_video_layout_render(gl);
-#endif
 
 #ifdef HAVE_OVERLAY
    if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
@@ -3238,10 +2919,6 @@ static void gl2_free(void *data)
    gl2_t *gl = (gl2_t*)data;
    if (!gl)
       return;
-
-#ifdef HAVE_VIDEO_LAYOUT
-   gl2_video_layout_free(gl);
-#endif
 
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
@@ -4072,10 +3749,6 @@ static void *gl2_init(const video_info_t *video,
       goto error;
    }
 
-#ifdef HAVE_VIDEO_LAYOUT
-   gl2_video_layout_init(gl);
-#endif
-
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
@@ -4762,9 +4435,6 @@ video_driver_t video_gl2 = {
 
 #ifdef HAVE_OVERLAY
    gl2_get_overlay_interface,
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-   gl2_get_video_layout_render_interface,
 #endif
    gl2_get_poke_interface,
    gl2_wrap_type_to_enum,

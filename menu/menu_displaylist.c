@@ -3635,18 +3635,6 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
       }
 
-#ifdef HAVE_VIDEO_LAYOUT
-      if (settings->bools.menu_show_video_layout && !settings->bools.kiosk_mode_enable)
-      {
-         if (menu_entries_append(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS),
-               msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS),
-               MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0, NULL))
-            count++;
-      }
-#endif
-
       if (settings->bools.menu_show_latency && !settings->bools.kiosk_mode_enable)
       {
          if (menu_entries_append(list,
@@ -9338,43 +9326,6 @@ unsigned menu_displaylist_build_list(
          }
          break;
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-      case DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST:
-         {
-            bool video_layout_enable  = settings->bools.video_layout_enable;
-            menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE,                   PARSE_ONLY_BOOL,  true },
-               {MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH,                     PARSE_ONLY_PATH,  false},
-               {MENU_ENUM_LABEL_VIDEO_LAYOUT_SELECTED_VIEW,            PARSE_ONLY_UINT,  false},
-            };
-
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-            {
-               switch (build_list[i].enum_idx)
-               {
-                  case MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH:
-                  case MENU_ENUM_LABEL_VIDEO_LAYOUT_SELECTED_VIEW:
-                     if (video_layout_enable)
-                        build_list[i].checked = true;
-                     break;
-                  default:
-                     break;
-               }
-            }
-
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-            {
-               if (!build_list[i].checked && !include_everything)
-                  continue;
-
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        build_list[i].enum_idx,  build_list[i].parse_type,
-                        false) == 0)
-                  count++;
-            }
-         }
-         break;
-#endif
       case DISPLAYLIST_LATENCY_SETTINGS_LIST:
          {
             bool video_hard_sync          = settings->bools.video_hard_sync;
@@ -10013,9 +9964,6 @@ unsigned menu_displaylist_build_list(
 #if defined(HAVE_OVERLAY)
                {MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,       PARSE_ACTION},
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-               {MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,  PARSE_ACTION},
-#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -10143,9 +10091,6 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,       PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS,                  PARSE_ONLY_BOOL},
-#ifdef HAVE_VIDEO_LAYOUT
-               {MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO_LAYOUT,              PARSE_ONLY_BOOL},
-#endif
                {MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY,                   PARSE_ONLY_BOOL},
 #ifdef HAVE_REWIND
                {MENU_ENUM_LABEL_CONTENT_SHOW_REWIND,                    PARSE_ONLY_BOOL},
@@ -10271,9 +10216,6 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,      PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY,      PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_OVERLAY_DIRECTORY,               PARSE_ONLY_DIR},
-#ifdef HAVE_VIDEO_LAYOUT
-               {MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY,          PARSE_ONLY_DIR},
-#endif
 #ifdef HAVE_SCREENSHOTS
                {MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,            PARSE_ONLY_DIR},
 #endif
@@ -13320,9 +13262,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #if defined(HAVE_OVERLAY)
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-      case DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST:
-#endif
       case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
       case DISPLAYLIST_ACCOUNTS_LIST:
       case DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST:
@@ -14506,18 +14445,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          load_content       = false;
          use_filebrowser    = true;
          break;
-#ifdef HAVE_VIDEO_LAYOUT
-      case DISPLAYLIST_VIDEO_LAYOUT_PATH:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         filebrowser_clear_type();
-         info->type_default = FILE_TYPE_VIDEO_LAYOUT;
-         load_content       = false;
-         use_filebrowser    = true;
-         if (!string_is_empty(info->exts))
-            free(info->exts);
-         info->exts         = strldup("lay|zip", sizeof("lay|zip"));
-         break;
-#endif
       case DISPLAYLIST_CONTENT_HISTORY:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();

@@ -2436,9 +2436,6 @@ video_driver_t video_ctr =
 #ifdef HAVE_OVERLAY
    ctr_overlay_interface,
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-   NULL,
-#endif
    ctr_get_poke_interface,
    NULL,
 #ifdef HAVE_GFX_WIDGETS

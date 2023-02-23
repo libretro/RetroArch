@@ -2020,9 +2020,6 @@ video_driver_t video_d3d9_cg = {
 #ifdef HAVE_OVERLAY
    d3d9_get_overlay_interface,
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-   NULL,
-#endif
    d3d9_cg_get_poke_interface,
    NULL, /* wrap_type_to_enum */
 #ifdef HAVE_GFX_WIDGETS

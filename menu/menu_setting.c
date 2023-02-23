@@ -117,10 +117,6 @@
 #endif
 #endif
 
-#ifdef HAVE_VIDEO_LAYOUT
-#include "../gfx/video_layout.h"
-#endif
-
 #if defined(HAVE_OVERLAY)
 #include "../input/input_overlay.h"
 #endif
@@ -292,9 +288,6 @@ enum settings_list_type
    SETTINGS_LIST_FRAME_TIME_COUNTER,
    SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
    SETTINGS_LIST_OVERLAY,
-#ifdef HAVE_VIDEO_LAYOUT
-   SETTINGS_LIST_VIDEO_LAYOUT,
-#endif
    SETTINGS_LIST_MENU,
    SETTINGS_LIST_MENU_FILE_BROWSER,
    SETTINGS_LIST_MULTIMEDIA,
@@ -8886,40 +8879,6 @@ static void overlay_auto_rotate_toggle_change_handler(rarch_setting_t *setting)
 }
 #endif
 
-#ifdef HAVE_VIDEO_LAYOUT
-static void change_handler_video_layout_enable(rarch_setting_t *setting)
-{
-   if (*setting->value.target.boolean)
-   {
-      settings_t *settings = config_get_ptr();
-      void         *driver = video_driver_get_ptr();
-
-      video_layout_init(driver, video_driver_layout_render_interface());
-      video_layout_load(settings->paths.path_video_layout);
-      video_layout_view_select(settings->uints.video_layout_selected_view);
-   }
-   else
-   {
-      video_layout_deinit();
-   }
-}
-
-static void change_handler_video_layout_path(rarch_setting_t *setting)
-{
-   settings_t *settings = config_get_ptr();
-   configuration_set_uint(settings,
-         settings->uints.video_layout_selected_view, 0);
-
-   video_layout_load(setting->value.target.string);
-}
-
-static void change_handler_video_layout_selected_view(rarch_setting_t *setting)
-{
-   unsigned *v = setting->value.target.unsigned_integer;
-   *v = video_layout_view_select(*v);
-}
-#endif
-
 #ifdef HAVE_CHEEVOS
 static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
 {
@@ -10215,17 +10174,6 @@ static bool setting_append_list(
                list, list_info,
                MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
                MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-#endif
-
-#ifdef HAVE_VIDEO_LAYOUT
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
                &group_info,
                &subgroup_info,
                parent_group);
@@ -16237,64 +16185,6 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
 #endif
          break;
-#ifdef HAVE_VIDEO_LAYOUT
-      case SETTINGS_LIST_VIDEO_LAYOUT:
-         START_GROUP(list, list_info, &group_info,
-               msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS),
-               parent_group);
-
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS);
-
-         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.video_layout_enable,
-               MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE,
-               MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
-               true,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               change_handler_video_layout_enable,
-               general_read_handler,
-               SD_FLAG_NONE);
-         (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
-
-         CONFIG_PATH(
-               list, list_info,
-               settings->paths.path_video_layout,
-               sizeof(settings->paths.path_video_layout),
-               MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH,
-               MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
-               settings->paths.directory_video_layout,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               change_handler_video_layout_path,
-               general_read_handler);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.video_layout_selected_view,
-               MENU_ENUM_LABEL_VIDEO_LAYOUT_SELECTED_VIEW,
-               MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
-               0,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               change_handler_video_layout_selected_view,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, 0, 1, false, false);
-
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
-         break;
-#endif
       case SETTINGS_LIST_MENU:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS),
@@ -17488,23 +17378,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_LAKKA_ADVANCED);
-
-#ifdef HAVE_VIDEO_LAYOUT
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.menu_show_video_layout,
-                  MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO_LAYOUT,
-                  MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
-                  DEFAULT_QUICK_MENU_SHOW_VIDEO_LAYOUT,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_LAKKA_ADVANCED);
-#endif
 
             CONFIG_BOOL(
                   list, list_info,
@@ -21913,23 +21786,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 #endif
 
-#ifdef HAVE_VIDEO_LAYOUT
-         CONFIG_DIR(
-               list, list_info,
-               settings->paths.directory_video_layout,
-               sizeof(settings->paths.directory_video_layout),
-               MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-               g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
-#endif
-
          CONFIG_DIR(
                list, list_info,
                settings->paths.directory_screenshot,
@@ -22569,9 +22425,6 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_FRAME_TIME_COUNTER,
       SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
       SETTINGS_LIST_OVERLAY,
-#ifdef HAVE_VIDEO_LAYOUT
-      SETTINGS_LIST_VIDEO_LAYOUT,
-#endif
       SETTINGS_LIST_MENU,
       SETTINGS_LIST_MENU_FILE_BROWSER,
       SETTINGS_LIST_MULTIMEDIA,
