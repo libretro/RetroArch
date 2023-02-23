@@ -228,7 +228,7 @@ const char *path_get_extension(const char *path)
 char *path_get_extension_mutable(const char *path)
 {
    char *ext = NULL;
-   if (!string_is_empty(path) && ((ext = strrchr(path_basename(path), '.'))))
+   if (!string_is_empty(path) && ((ext = (char*)strrchr(path_basename(path), '.'))))
       return ext;
    return NULL;
 }
