@@ -234,7 +234,6 @@ extern int audioAddData(uint32_t portNum, float *data,
 #define KB_RMODE_INPUTCHAR CELL_KB_RMODE_INPUTCHAR
 #define KB_CODETYPE_RAW    CELL_KB_CODETYPE_RAW
 
-#define KbData cellKbData
 #define KbInfo cellKbInfo
 
 #define ioKbSetCodeType cellKbSetCodeType
@@ -361,6 +360,56 @@ extern int audioAddData(uint32_t portNum, float *data,
 #define KB_RAWKEY_YEN_106			0x89
 
 #define KB_CODETYPE_RAW CELL_KB_CODETYPE_RAW
+
+/*! \brief Keyboard Led State. */
+typedef struct KbLed
+{
+	union
+   {
+      u32 leds;
+      struct
+      {
+         u32 reserved	: 27;	/*!< \brief Reserved MSB */
+         u32 kana		: 1;	/*!< \brief LED Kana 0:OFF 1:ON Bit4 */
+         u32 compose		: 1;	/*!< \brief LED Compose 0:OFF 1:ON Bit3 */
+         u32 scroll_lock	: 1;	/*!< \brief LED Scroll Lock 0:OFF 1:ON Bit2 */
+         u32 caps_lock	: 1;	/*!< \brief LED Caps Lock 0:OFF 1:ON Bit1 */
+         u32 num_lock	: 1;	/*!< \brief LED Num Lock 0:OFF 1:ON Bit0 LSB */
+      }_KbLedS;
+   }_KbLedU;
+} KbLed;
+
+
+/*! \brief Keyboard Modifier Key State. */
+typedef struct KbMkey
+{
+	union
+   {
+		u32 mkeys;
+		struct
+      {
+         u32 reserved	: 24;	/*!< \brief Reserved MSB */
+         u32 r_win		: 1;	/*!< \brief Modifier Key Right WIN 0:OFF 1:ON Bit7 */
+         u32 r_alt		: 1;	/*!< \brief Modifier Key Right ALT 0:OFF 1:ON Bit6 */
+         u32 r_shift		: 1;	/*!< \brief Modifier Key Right SHIFT 0:OFF 1:ON Bit5 */		
+         u32 r_ctrl		: 1;	/*!< \brief Modifier Key Right CTRL 0:OFF 1:ON Bit4 */
+         u32 l_win		: 1;	/*!< \brief Modifier Key Left WIN 0:OFF 1:ON Bit3 */
+         u32 l_alt		: 1;	/*!< \brief Modifier Key Left ALT 0:OFF 1:ON Bit2 */
+         u32 l_shift		: 1;	/*!< \brief Modifier Key Left SHIFT 0:OFF 1:ON Bit1 */
+         u32 l_ctrl		: 1;	/*!< \brief Modifier Key Left CTRL 0:OFF 1:ON Bit0 LSB */
+         /* For Macintosh Keyboard ALT & WIN correspond respectively to OPTION & APPLE keys */
+      }_KbMkeyS;
+	}_KbMkeyU;
+} KbMkey;
+
+/*! \brief Keyboard input data data structure. */
+typedef struct KbData
+{
+	KbLed led;					/*!< \brief Keyboard Led State */
+	KbMkey mkey;				/*!< \brief Keyboard Modifier Key State */
+	s32 nb_keycode;				/*!< \brief Number of key codes (0 equal no data) */
+	u16 keycode[MAX_KEYCODES];	/*!< \brief Keycode values */
+} KbData;
 #endif
 
 /*============================================================
