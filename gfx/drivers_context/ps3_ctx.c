@@ -155,7 +155,7 @@ static void gfx_ctx_ps3_check_window(void *data, bool *quit,
    if (ps3_api == GFX_CTX_OPENGL_API || ps3_api == GFX_CTX_OPENGL_ES_API)
    {
       gl2_t *gl = data;
-      if (gl->should_resize)
+      if (gl->flags & GL2_FLAG_SHOULD_RESIZE)
          *resize = true;
    }
 #endif
