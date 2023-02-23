@@ -227,12 +227,8 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
-#ifdef __PSL1GHT__
    retro_main_log_file_init("/dev_hdd0/game/"
       EMULATOR_CONTENT_DIR "/USRDIR/retroarch-log.txt", false);
-#else
-   retro_main_log_file_init("/dev_hdd0/retroarch-log.txt", false);
-#endif
 #endif
 #elif defined(__PSL1GHT__)
 #ifdef HAVE_FILE_LOGGER
@@ -412,9 +408,9 @@ static bool frontend_ps3_set_fork(enum frontend_fork fork_mode)
 static int frontend_ps3_exec_exitspawn(const char *path,
       char const *argv[], char const *envp[])
 {
-   int ret;
    unsigned i;
    char spawn_data[256];
+   int ret                   = -1;
 #ifndef __PSL1GHT__
    SceNpDrmKey *license_data = NULL;
 #endif
@@ -426,8 +422,6 @@ static int frontend_ps3_exec_exitspawn(const char *path,
    ret = sceNpDrmProcessExitSpawn(license_data, path,
          (const char** const)argv, envp, (sys_addr_t)spawn_data,
          256, 1000, SYS_PROCESS_SPAWN_STACK_SIZE_1M);
-#else
-   ret = -1;
 #endif
 
    if (ret <  0)

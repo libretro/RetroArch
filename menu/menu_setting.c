@@ -12277,7 +12277,7 @@ static bool setting_append_list(
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-#if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && defined(__PS3__)
+#if defined(GEKKO) || defined(PS2) || defined(__PS3__)
             if (true)
 #else
             if (!string_is_equal(video_display_server_get_ident(), "null"))

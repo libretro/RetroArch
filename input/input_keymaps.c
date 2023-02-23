@@ -46,6 +46,7 @@
 #include <io/kb.h>
 #else
 #include <ps3_defines.h>
+#include <cell/keyboard.h>
 #endif
 #endif
 

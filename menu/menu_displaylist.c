@@ -8799,7 +8799,7 @@ unsigned menu_displaylist_build_list(
                      count++;
 #endif
 
-#if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && defined(__PS3__)
+#if defined(GEKKO) || defined(PS2) || defined(__PS3__)
             if (true)
 #else
                if (video_display_server_has_resolution_list())

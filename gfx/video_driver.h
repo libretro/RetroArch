@@ -69,7 +69,7 @@
 
 #if defined(_XBOX360)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
-#elif defined(__PSL1GHT__) || defined(HAVE_OPENGLES2) || defined(HAVE_GLSL)
+#elif defined(HAVE_OPENGLES2) || defined(HAVE_GLSL)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
 #elif defined(HAVE_CG)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_CG
