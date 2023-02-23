@@ -28,7 +28,10 @@
 #define RETRODE_TYPE_DEVICE 0x00
 #define RETRODE_TYPE_PAD    0x01
 
-typedef struct hidpad_retrode_pad_data
+typedef struct hidpad_retrode_pad_data retrode_pad_data_t;
+typedef struct hidpad_retrode_data retrode_device_data_t;
+
+struct hidpad_retrode_pad_data
 {
    uint8_t datatype;
    retrode_device_data_t *device_data;
@@ -36,16 +39,16 @@ typedef struct hidpad_retrode_pad_data
    int pad_index;
    uint32_t buttons;
    uint8_t data[64];
-} hidpad_retrode_pad_data_t;
+};
 
-typedef struct hidpad_retrode_data
+struct hidpad_retrode_data
 {
    uint8_t datatype;
    void *handle;
    hid_driver_t *driver;
    retrode_pad_data_t pad_data[RETRODE_MAX_PAD];
    uint8_t data[64];
-} hidpad_retrode_data_t;
+};
 
 static void* hidpad_retrode_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
