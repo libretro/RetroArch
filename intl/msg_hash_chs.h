@@ -72,6 +72,10 @@ MSG_HASH(
    "选择使用的模拟器核心。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "浏览一个librettro 核心实现。浏览器从何处启动取决于您的核心文件夹在哪，如果留空，它将从根目录启动。\n如果核心文件夹是一个目录，菜单将使用该文件夹作为顶级目录。 如果核心文件夹是一个完整路径，它将从文件所在的目录启动。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "加载游戏"
    )
@@ -200,6 +204,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "退出程序。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "退出 RetroArch，用 (SIGKILL 等) 终止程序将不保存任何配置而终止RetroArch等强制退出方式。另外，在类 Unix 中，用 SIGINT/SIGTERM 可以简洁地去初始化。"
    )
 
 /* Main Menu > Load Core */

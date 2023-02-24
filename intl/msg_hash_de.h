@@ -4206,7 +4206,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
-   "Überspringen von Einzelbildern je nach Vorspulgeschwindigkeit. Dies spart Energie und ermöglicht die Verwendung von Framebegrenzung von Drittanbietern. Wird bei Vulkan ignoriert, um doppeltes Überspringen von Frames zu verhindern."
+   "Einzelbilder je nach Vorspulgeschwindigkeit überspringen. Dies spart Energie und ermöglicht die Verwendung externer Frame-Begrenzung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,

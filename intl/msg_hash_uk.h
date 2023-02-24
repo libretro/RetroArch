@@ -3232,6 +3232,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
    "Частота перемотування"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "Пропускати кадри відповідно до швидкості перемотування. Це економить енергію і дозволяє використовувати сторонні обмежувачі кадрів."
+   )
 
 /* Settings > Frame Throttle > Rewind */
 
