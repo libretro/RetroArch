@@ -68,6 +68,8 @@
 
 #define CMD_BUF_SIZE           4096
 
+void command_post_state_loaded(void);
+
 #if defined(HAVE_COMMAND)
 
 /* Generic command parse utilities */
@@ -642,6 +644,41 @@ bool command_show_osd_msg(command_t *cmd, const char* arg)
           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
     return true;
 }
+
+bool command_load_state_slot(command_t *cmd, const char *arg)
+{
+   retro_ctx_size_info_t info;
+   char reply[128]              = "";
+   runloop_state_t *runloop_st  = runloop_state_get_ptr();
+   const rarch_system_info_t
+      *system                   = &runloop_st->system;
+   unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
+   char *reply_at               = reply + snprintf(reply, sizeof(reply) - 1, "LOAD_STATE_SLOT %d", slot);
+   bool savestates_enabled      = core_info_current_supports_savestate();
+   bool ret                     = false;
+   char state_path[16384];
+   state_path[0]                = '\0';
+   if (savestates_enabled)
+   {
+      runloop_get_current_savestate_path(state_path,
+            sizeof(state_path));
+
+      core_serialize_size(&info);
+      savestates_enabled = (info.size > 0);
+   }
+   if (savestates_enabled)
+   {
+      ret = content_load_state(state_path, false, false);
+      if(ret)
+         command_post_state_loaded();
+   }
+   else
+      ret = false;
+
+   cmd->replier(cmd, reply, strlen(reply));
+   return ret;
+}
+
 
 #if defined(HAVE_CHEEVOS)
 bool command_read_ram(command_t *cmd, const char *arg)
@@ -1666,6 +1703,29 @@ void command_event_remove_current_config(enum override_type type)
 }
 #endif
 
+void command_post_state_loaded(void)
+{
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+   {
+      rcheevos_pause_hardcore();
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
+#endif
+#ifdef HAVE_NETWORKING
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
+#endif
+   {
+     settings_t *settings        = config_get_ptr();
+     video_driver_state_t *video_st                 =
+       video_state_get_ptr();
+     bool frame_time_counter_reset_after_load_state =
+       settings->bools.frame_time_counter_reset_after_load_state;
+     if (frame_time_counter_reset_after_load_state)
+        video_st->frame_time_count = 0;
+   }
+}
+
 bool command_event_main_state(unsigned cmd)
 {
    retro_ctx_size_info_t info;
@@ -1733,25 +1793,8 @@ bool command_event_main_state(unsigned cmd)
 
                if (res)
                {
-#ifdef HAVE_CHEEVOS
-                  if (rcheevos_hardcore_active())
-                  {
-                     rcheevos_pause_hardcore();
-                     runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-                  }
-#endif
+                  command_post_state_loaded();
                   ret = true;
-#ifdef HAVE_NETWORKING
-                  netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
-#endif
-                  {
-                     video_driver_state_t *video_st                 = 
-                        video_state_get_ptr();
-                     bool frame_time_counter_reset_after_load_state =
-                        settings->bools.frame_time_counter_reset_after_load_state;
-                     if (frame_time_counter_reset_after_load_state)
-                        video_st->frame_time_count = 0;
-                  }
                }
             }
             push_msg = false;

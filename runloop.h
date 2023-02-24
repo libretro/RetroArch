@@ -425,6 +425,8 @@ bool runloop_get_entry_state_path(char *path, size_t len, unsigned slot);
 
 bool runloop_get_current_savestate_path(char *path, size_t len);
 
+bool runloop_get_savestate_path(char *path, size_t len, unsigned slot);
+
 void runloop_state_free(runloop_state_t *runloop_st);
 
 void runloop_path_set_redirect(settings_t *settings, const char *a, const char *b);

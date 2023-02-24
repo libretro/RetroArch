@@ -7094,9 +7094,13 @@ void runloop_task_msg_queue_push(
 
 bool runloop_get_current_savestate_path(char *path, size_t len)
 {
-   runloop_state_t *runloop_st = &runloop_state;
    settings_t *settings        = config_get_ptr();
    int state_slot              = settings ? settings->ints.state_slot : 0;
+   return runloop_get_savestate_path(path, len, state_slot);
+}
+bool runloop_get_savestate_path(char *path, size_t len, unsigned state_slot)
+{
+   runloop_state_t *runloop_st = &runloop_state;
    const char *name_savestate  = NULL;
 
    if (!path)
