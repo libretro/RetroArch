@@ -1531,6 +1531,7 @@
 					../../gfx/include,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_NO_PIE = YES;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -1667,6 +1668,7 @@
 					../../gfx/include,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_NO_PIE = YES;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -1828,6 +1830,7 @@
 					../../gfx/include,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/tvOS/modules",
@@ -1981,6 +1984,7 @@
 					../../gfx/include,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/tvOS/modules",
