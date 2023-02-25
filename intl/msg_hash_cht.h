@@ -656,7 +656,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
-   "支援 LibretroDB"
+   "支援 Libretro資料庫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
@@ -664,11 +664,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-   "支援 命令行介面 (CLI)"
+   "支援 命令列介面 (CLI)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-   "支援 網路命令行介面"
+   "支援 網路命令列介面"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
@@ -728,7 +728,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
-   "支援 Udev"
+   "支援 Linux裝置管理員 (udev)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
@@ -2212,7 +2212,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
-   "設定顯示寬高比, 當「整數縮放」開啟時畫面可能不會延伸到螢幕邊緣。"
+   "設定畫面的寬高比, 當「整數縮放」開啟時畫面可能不會延伸到螢幕邊緣。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
@@ -2515,7 +2515,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
-   "設定音訊音量增益(分貝), 設定<0>時正常音量未增益。\n可在執行時使用音量快捷鍵, 調整合適的增益效果。"
+   "設定音訊音量增益(分貝), 設定<0>時正常音量未增益。\n可在執行時使用音量快捷鍵調整合適的增益效果。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
@@ -4341,6 +4341,10 @@ MSG_HASH(
    "快轉跳幀"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "依據快轉倍速跳幀, 可節省裝置的電量, 並允許使用第三方的幀數限制應用程式。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    "慢動作倍速"
    )
@@ -5255,7 +5259,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   "執行項目關閉時結束應用程式, 設定<CLI>時僅限命令行介面執行時套用此功能。"
+   "執行項目關閉時結束應用程式, 設定<CLI>僅限命令列介面執行時套用此功能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
@@ -6674,11 +6678,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
-   "網路指令"
+   "網路命令"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
-   "網路指令連接埠"
+   "網路命令通訊埠號"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
@@ -6686,7 +6690,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
-   "遠端虛擬控制器基本連接埠"
+   "遠端虛擬控制器通訊埠號"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
@@ -6694,7 +6698,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
-   "標準指令"
+   "標準命令列介面"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
@@ -7411,7 +7415,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
-   "儲存全部核心預設的記憶存檔到此資料夾。\n包含記憶存檔(*.srm)、 操作重播檔(*.bsv)、 實時時鐘(*.rtc)等相關檔案。\n此路徑位置會被命令行介面的指令取代。"
+   "儲存全部核心預設的記憶存檔到此資料夾。\n包含記憶存檔(*.srm)、 操作重播檔(*.bsv)、 實時時鐘(*.rtc)等相關檔案。\n此路徑位置會被命令列介面的命令取代。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
@@ -12319,7 +12323,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PRIVATE_OR_SHARED_ADDRESS,
-   "建立區域網路連線主機, 具有私人或公用的IP位址, 請考慮使用代理或中繼伺服器。"
+   "建立區域網路連線主機, 具有私人或公用的IP位址, 請考慮改用代理或中繼伺服器。"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
@@ -12508,7 +12512,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONNECTION_SLOT,
-   "連接到連接埠"
+   "連接到編號"
    )
 MSG_HASH(
    MSG_FETCHING_CORE_LIST,
@@ -12676,7 +12680,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
-   "開啟命令行介面在通訊埠號"
+   "開啟命令列介面使用通訊埠號"
    )
 MSG_HASH(
    MSG_BYTES,
