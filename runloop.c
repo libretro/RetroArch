@@ -1897,6 +1897,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          bool video_allow_rotate = settings->bools.video_allow_rotate;
 
          RARCH_LOG("[Environ]: SET_ROTATION: %u\n", rotation);
+         if (system)
+            system->core_requested_rotation = rotation;
 
          if (!video_allow_rotate)
             return false;
@@ -4253,11 +4255,32 @@ unsigned runloop_get_video_swap_interval(
          swap_interval_config;
 }
 
-unsigned int retroarch_get_rotation(void)
+/*
+   Returns the user defined video rotation set in the video_rotation user setting
+*/
+unsigned int retroarch_get_video_rotation(void)
 {
    settings_t     *settings    = config_get_ptr();
    unsigned     video_rotation = settings->uints.video_rotation;
-   return video_rotation + runloop_state.system.rotation;
+   return settings->uints.video_rotation;
+}
+
+/*
+   Returns rotation requested by the core regardless of if it has been
+   applied with the final video rotation
+*/
+unsigned int retroarch_get_core_requested_rotation(void)
+{
+   return runloop_state.system.core_requested_rotation;
+}
+
+/*
+   Returns final rotation including both user chosen video rotation 
+   and core requested rotation if allowed by video_allow_rotate
+*/
+unsigned int retroarch_get_rotation(void)
+{
+   return retroarch_get_video_rotation() + runloop_state.system.rotation;
 }
 
 static void retro_run_null(void) { } /* Stub function callback impl. */

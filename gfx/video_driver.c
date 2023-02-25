@@ -2019,20 +2019,30 @@ bool video_driver_supports_read_frame_raw(void)
    return false;
 }
 
-void video_driver_set_viewport_core(void)
+/* Get aspect ratio (DAR) requested by the core */
+float video_driver_get_core_aspect(void)
 {
    video_driver_state_t *video_st       = &video_driver_st;
    struct retro_game_geometry *geom     = &video_st->av_info.geometry;
+   float out_aspect = 0;
 
    if (!geom || geom->base_width <= 0.0f || geom->base_height <= 0.0f)
-      return;
+      return out_aspect;
 
    /* Fallback to 1:1 pixel ratio if none provided */
    if (geom->aspect_ratio > 0.0f)
-      aspectratio_lut[ASPECT_RATIO_CORE].value = geom->aspect_ratio;
+      out_aspect = geom->aspect_ratio;
    else
-      aspectratio_lut[ASPECT_RATIO_CORE].value =
-         (float)geom->base_width / geom->base_height;
+      out_aspect = (float)geom->base_width / geom->base_height;
+
+   return out_aspect;
+}
+
+void video_driver_set_viewport_core(void)
+{
+   float core_aspect = video_driver_get_core_aspect();
+   if (core_aspect != 0)
+      aspectratio_lut[ASPECT_RATIO_CORE].value = core_aspect;
 }
 
 void video_driver_set_rgba(void)

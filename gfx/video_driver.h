@@ -911,6 +911,8 @@ bool video_driver_prefer_viewport_read(void);
 
 bool video_driver_supports_read_frame_raw(void);
 
+float video_driver_get_core_aspect(void);
+
 void video_driver_set_viewport_core(void);
 
 void video_driver_reset_custom_viewport(settings_t *settings);
