@@ -672,9 +672,6 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    char state_path[16384];
    retro_ctx_size_info_t info;
    char reply[128]              = "";
-   runloop_state_t *runloop_st  = runloop_state_get_ptr();
-   const rarch_system_info_t
-      *system                   = &runloop_st->system;
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    char *reply_at               = reply + snprintf(reply, sizeof(reply) - 1, "LOAD_STATE_SLOT %d", slot);
    bool savestates_enabled      = core_info_current_supports_savestate();
