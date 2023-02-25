@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 50;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -149,6 +149,7 @@
 		053FC25621433F1800D98D46 /* QtNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtNetwork.framework; path = /usr/local/opt/qt/lib/QtNetwork.framework; sourceTree = "<group>"; };
 		053FC25721433F1800D98D46 /* QtWidgets.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtWidgets.framework; path = /usr/local/opt/qt/lib/QtWidgets.framework; sourceTree = "<group>"; };
 		05422E592140C8DB00F09961 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		05422E5B2140CE3500F09961 /* VulkanConfig.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = VulkanConfig.xcconfig; sourceTree = "<group>"; };
 		05422E5C2140CFC500F09961 /* Metal.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Metal.xcconfig; sourceTree = "<group>"; };
 		0548E2B320F976E10094A083 /* dynamic.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = dynamic.c; path = ../../dynamic.c; sourceTree = "<group>"; };
 		0548E2B420F976E10094A083 /* dynamic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = dynamic.h; path = ../../dynamic.h; sourceTree = "<group>"; };
@@ -496,8 +497,6 @@
 		05F2874120F2BEEA00632D47 /* task_patch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_patch.c; sourceTree = "<group>"; };
 		072976DC296284F600D6E00C /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		074695362995C03900CCB7BD /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
-		0775553F29A900BF00D876AB /* ExportOptions.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = ExportOptions.plist; sourceTree = "<group>"; };
-		0776EF3829A005D600AF0237 /* Steam.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Steam.xcconfig; sourceTree = "<group>"; };
 		0795A8C6299A095300D5035D /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
 		07B634CF296391FF00B3D78D /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = Frameworks/MoltenVK/dylib/macOS/libMoltenVK.dylib; sourceTree = "<group>"; };
 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -1358,13 +1357,12 @@
 		29B97314FDCFA39411CA2CEA /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
-				0775553F29A900BF00D876AB /* ExportOptions.plist */,
 				686201AB24B823A800EBDD95 /* RetroArch.entitlements */,
 				05D7753120A55D2700646447 /* BaseConfig.xcconfig */,
 				05422E5C2140CFC500F09961 /* Metal.xcconfig */,
 				A90207489289602F593626D5 /* QTConfig.xcconfig */,
+				05422E5B2140CE3500F09961 /* VulkanConfig.xcconfig */,
 				9254B2E625F5516A00A1E0DA /* GitLabCI.xcconfig */,
-				0776EF3829A005D600AF0237 /* Steam.xcconfig */,
 				840222FA1A889EA2009AB261 /* Core */,
 				05A8C51920DB72C200FF7857 /* Sources */,
 				841CBB821A8A33810066E9F1 /* Assets */,
@@ -1466,7 +1464,6 @@
 				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
 				0536DF8D20A6BDAC00BBB67F /* Embed Libraries */,
-				07DF7D6729A9DC570038AFFF /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -1558,24 +1555,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "make -C ${SRCBASE} -f Makefile.apple HAVE_MENU=1 HAVE_CONFIGFILE=1 HAVE_PATCH=1 HAVE_DSP_FILTER=1 HAVE_REWIND=1 HAVE_SCREENSHOTS=1 HAVE_CHEATS=1 HAVE_CORE_INFO_CACHE=1 HAVE_GFX_WIDGETS=1 HAVE_QT=1 HAVE_SLANG=1 MOC=${QT_INSTALL}/bin/moc generate\n";
-		};
-		07DF7D6729A9DC570038AFFF /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\nif [ -d \"$MIST_PATH\" ]; then\n    cp \"$MIST_PATH\"/mist/*.txt \"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/\n\n    cp \"$MIST_PATH\"/libmist.dylib \"$TARGET_BUILD_DIR\"/\"$FRAMEWORKS_FOLDER_PATH\"/\n    install_name_tool -id @rpath/libmist.dylib \"$TARGET_BUILD_DIR\"/\"$FRAMEWORKS_FOLDER_PATH\"/libmist.dylib\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$FRAMEWORKS_FOLDER_PATH\"/libmist.dylib\n\n    mkdir \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist\n\n    # this shouldn't be here, it can't be notarized\n    if [ -n \"$STEAM_APPID\" ]; then\n        echo \"$STEAM_APPID\" > \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/steam_appid.txt\n    fi\n\n    cp \"$MIST_PATH\"/mist/libsteam_api.dylib \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/libsteam_api.dylib\n\n    cp \"$MIST_PATH\"/mist/mist \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/mist\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1720,6 +1699,7 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "$(HOME)/Applications";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST))",
 					"@executable_path/../Frameworks",
@@ -1727,6 +1707,14 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(SRCBASE)/pkg/apple/Frameworks/MoltenVK/dylib/macOS",
 					"$(PROJECT_DIR)/Frameworks/MoltenVK/dylib/macOS",
+				);
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DHAVE_MAIN",
+					"-DHAVE_COCOA_METAL",
+					"-DHAVE_OPENGL_CORE",
+					"-DHAVE_VULKAN",
+					"-DHAVE_MFI",
 				);
 				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
@@ -1751,6 +1739,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				INSTALL_PATH = "$(HOME)/Applications";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST))",
 					"@executable_path/../Frameworks",
@@ -1758,6 +1747,14 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(SRCBASE)/pkg/apple/Frameworks/MoltenVK/dylib/macOS",
 					"$(PROJECT_DIR)/Frameworks/MoltenVK/dylib/macOS",
+				);
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DHAVE_MAIN",
+					"-DHAVE_COCOA_METAL",
+					"-DHAVE_OPENGL_CORE",
+					"-DHAVE_VULKAN",
+					"-DHAVE_MFI",
 				);
 				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
@@ -1901,7 +1898,7 @@
 				05422E582140C8DB00F09961 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "RetroArch" */ = {
 			isa = XCConfigurationList;
@@ -1910,7 +1907,7 @@
 				C01FCF4C08A954540054247B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "RetroArch_Metal" */ = {
 			isa = XCConfigurationList;
@@ -1919,7 +1916,7 @@
 				C01FCF5008A954540054247B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};
