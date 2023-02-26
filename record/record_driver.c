@@ -28,6 +28,7 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../verbosity.h"
+#include "../defaults.h"
 
 #include "record_driver.h"
 
@@ -170,6 +171,9 @@ static bool record_driver_init_first(
 bool recording_deinit(void)
 {
    recording_state_t *recording_st = &recording_state;
+   settings_t *settings            = config_get_ptr();
+   bool history_list_enable        = settings->bools.history_list_enable;
+
    if (     !recording_st->data 
 		   || !recording_st->driver)
       return false;
@@ -184,6 +188,25 @@ bool recording_deinit(void)
    recording_st->driver            = NULL;
 
    video_driver_gpu_record_deinit();
+
+   /* Push recording to video history playlist */
+#ifdef HAVE_FFMPEG
+   if (     history_list_enable
+         && !string_is_empty(recording_st->path))
+   {
+      struct playlist_entry entry = {0};
+
+      /* the push function reads our entry as const, so these casts are safe */
+      entry.path                  = recording_st->path;
+      entry.core_path             = (char*)"builtin";
+      entry.core_name             = (char*)"movieplayer";
+
+      command_playlist_push_write(g_defaults.video_history, &entry);
+   }
+#endif
+
+   /* Forget cached path to create a new one next */
+   recording_st->path[0] = '\0';
 
    return true;
 }
@@ -283,6 +306,10 @@ bool recording_init(void)
                      "png", sizeof(buf));
             fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
          }
+
+         /* Cache path for playlist saving */
+         if (!string_is_empty(output))
+            strlcpy(recording_st->path, output, sizeof(recording_st->path));
       }
    }
 
