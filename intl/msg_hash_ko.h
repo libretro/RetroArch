@@ -1273,6 +1273,18 @@ MSG_HASH(
    "이미지입니다. 이미지 뷰어에서 이 파일을 열려면 이 파일을 선택합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "Libretro 코어. 설정하면 현재 코어가 게임에 연결되게 됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "Libretro 코어. RetroArch가 현재 코어를 불러오도록 파일을 선택합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "디렉토리. 현재 디렉토리를 열려면 선택하십시오."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
    "프레임 조절"
    )
@@ -4103,6 +4115,10 @@ MSG_HASH(
    "코어의 로그 수준을 설정합니다. 코어에서 발생하는 설정값 이하 수준의 로그는 무시됩니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
+   "libretro 코어의 로그 수준을 설정합니다(GET_LOG_INTERFACE). libretro 코어에서 발생하는 로그 수준이 libretro_log 설정 값보다 낮을경우 무시됩니다. 디버그 로그는 상세 모드가 활성되지 않은 한 항한 무시됩니다. (--verbose).\nDEBUG = 0\nINFO  = 1\nWARN  = 2\nERROR = 3"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
    "0 (디버그)"
    )
@@ -4207,6 +4223,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
    "프레임 스킵으로 빨리 감기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "빨리 감기 시 빨리 감기 비율에 따라 프레임을 건너뜁니다. 전력 소모를 줄이고 서드파티 프레임 리미터를 사용할 수 있게 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -7407,6 +7427,10 @@ MSG_HASH(
    "<현재 디렉토리 검색>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SCAN_THIS_DIRECTORY,
+   "선택해서 현재 디렉토리의 컨텐츠를 검색합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_FILE,
    "파일 검색"
    )
@@ -7421,6 +7445,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
    "콘텐츠 파일 이름을 기반으로 구성 가능한 스캔입니다. 데이터베이스와 일치하는 내용이 필요하지 않습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
+   "스캔"
    )
 
 /* Import Content > Scan File */
@@ -8033,6 +8061,14 @@ MSG_HASH(
    "컨텐츠 폴더 설정 삭제"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
+   "활성 옵션 파일"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
+   "현재 사용중인 옵션 파일입니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
    "옵션 초기화"
    )
@@ -8072,6 +8108,14 @@ MSG_HASH(
 
 /* Quick Menu > Controls > Manage Remap Files */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
+   "활성 입력 설정 파일"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
+   "현재 사용중인 입력 설정 파일입니다."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
    "입력설정 파일 불러오기"
@@ -8129,6 +8173,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
    "치트 검색 시작 또는 재개"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
+   "새로운 치트를 만들기위해 메모리를 스캔합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
@@ -11222,6 +11270,10 @@ MSG_HASH(
    "현재 컨텐츠의 서브시스템 설정에 접근합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   "현재 컨텐츠: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
    "넷플레이 호스트 찾지 못함."
    )
@@ -12761,6 +12813,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
    "우선 설정 파일 저장 성공."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
+   "우선 설정 파일이 성공적으로 삭제되었습니다."
    )
 MSG_HASH(
    MSG_PAUSED,
