@@ -1253,7 +1253,7 @@ static int16_t udev_input_state(
                   const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
                   const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
                   const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
-                  uint16_t port                  = joypad_info->joy_idx;
+                  uint16_t joyport                  = joypad_info->joy_idx;
                   float axis_threshold           = joypad_info->axis_threshold;
                   const uint64_t joykey          = (bind_joykey != NO_BTN)
                      ? bind_joykey  : autobind_joykey;
@@ -1267,10 +1267,10 @@ static int16_t udev_input_state(
                   if (binds[port][new_id].valid)
                   {
                      if ((uint16_t)joykey != NO_BTN && joypad->button(
-                              port, (uint16_t)joykey))
+                              joyport, (uint16_t)joykey))
                         return 1;
                      if (joyaxis != AXIS_NONE &&
-                           ((float)abs(joypad->axis(port, joyaxis))
+                           ((float)abs(joypad->axis(joyport, joyaxis))
                             / 0x8000) > axis_threshold)
                         return 1;
                      if (udev_mouse_button_pressed(udev, port,
