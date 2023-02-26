@@ -180,6 +180,7 @@ typedef struct rarch_system_info
       unsigned size;
    } ports;
    unsigned rotation;
+   unsigned core_requested_rotation;
    unsigned performance_level;
    char valid_extensions[255];
    bool load_no_content;
