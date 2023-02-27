@@ -10,12 +10,10 @@ endif
 EOPT = USE_ZLIB=1 # Emscripten specific options
 EOPTS = $(addprefix -s $(EMPTY), $(EOPT)) # Add '-s ' to each option
 
-PTHREAD = 0
 OS = Emscripten
 OBJ :=
-DEFINES := -DRARCH_INTERNAL -DHAVE_MAIN -s USE_PTHREADS=$(PTHREAD)
+DEFINES := -DRARCH_INTERNAL -DHAVE_MAIN
 DEFINES += -DHAVE_FILTERS_BUILTIN
-
 HAVE_PATCH = 1
 HAVE_DSP_FILTER = 1
 HAVE_VIDEO_FILTER = 1
@@ -59,6 +57,8 @@ ifeq ($(LIBRETRO), tyrquake)
    LTO = 0
 endif
 
+PTHREAD ?= 0
+
 MEMORY ?= 134217728
 
 PRECISE_F32 = 1
@@ -73,8 +73,10 @@ LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s TOTAL_MEMORY=$(MEMORY) -s NO_EXIT_RU
            --js-library emscripten/library_rwebaudio.js \
            --js-library emscripten/library_rwebcam.js \
            --js-library emscripten/library_errno_codes.js
+
 ifneq ($(PTHREAD), 0)
-   LDFLAGS += -s USE_PTHREADS=$(PTHREAD) -s PTHREAD_POOL_SIZE=2
+   LDFLAGS += -s WASM_MEM_MAX=1073741824 -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD)
+   CFLAGS += -pthread
 endif
 
 ifeq ($(ASYNC), 1)
@@ -115,8 +117,8 @@ else
    CFLAGS += -O3
 endif
 
-CFLAGS += -Wall -I. -Ilibretro-common/include -std=gnu99 $(LIBS) \
-          -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
+CFLAGS += -Wall -I. -Ilibretro-common/include -std=gnu99 $(LIBS) #\
+#          -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
