@@ -3504,6 +3504,34 @@ static int menu_displaylist_parse_load_content_settings(
                   MENU_SETTING_ACTION_LOADSTATE, 0, 0, NULL))
                count++;
          }
+         if (savestates_enabled &&
+             settings->bools.quick_menu_show_replay)
+         {
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_REPLAY_SLOT, PARSE_ONLY_INT, true) == 0)
+               count++;
+
+            if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORD_REPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RECORD_REPLAY),
+                  MENU_ENUM_LABEL_RECORD_REPLAY,
+                  MENU_SETTING_ACTION_RECORDREPLAY, 0, 0, NULL))
+               count++;
+
+            if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAY_REPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_PLAY_REPLAY),
+                  MENU_ENUM_LABEL_PLAY_REPLAY,
+                  MENU_SETTING_ACTION_PLAYREPLAY, 0, 0, NULL))
+               count++;
+
+            if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HALT_REPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HALT_REPLAY),
+                  MENU_ENUM_LABEL_HALT_REPLAY,
+                  MENU_SETTING_ACTION_HALTREPLAY, 0, 0, NULL))
+               count++;
+            }
       }
 
       if (settings->bools.quick_menu_show_options && !settings->bools.kiosk_mode_enable)
@@ -10081,6 +10109,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,      PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,   PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_REPLAY,                 PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,                PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,     PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,               PARSE_ONLY_BOOL},
@@ -12946,6 +12975,35 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_SETTING_ACTION_LOADSTATE, 0, 0, NULL))
                   count++;
             }
+            if (savestates_enabled &&
+                settings->bools.quick_menu_show_replay)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                     MENU_ENUM_LABEL_REPLAY_SLOT, PARSE_ONLY_INT, true) == 0)
+                  count++;
+
+               if (menu_entries_append(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORD_REPLAY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_RECORD_REPLAY),
+                     MENU_ENUM_LABEL_RECORD_REPLAY,
+                     MENU_SETTING_ACTION_RECORDREPLAY, 0, 0, NULL))
+                  count++;
+
+               if (menu_entries_append(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAY_REPLAY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_PLAY_REPLAY),
+                     MENU_ENUM_LABEL_PLAY_REPLAY,
+                     MENU_SETTING_ACTION_PLAYREPLAY, 0, 0, NULL))
+                  count++;
+
+               if (menu_entries_append(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HALT_REPLAY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_HALT_REPLAY),
+                     MENU_ENUM_LABEL_HALT_REPLAY,
+                     MENU_SETTING_ACTION_HALTREPLAY, 0, 0, NULL))
+                  count++;
+            }
+
 
             if (count == 0)
                menu_entries_append(info->list,

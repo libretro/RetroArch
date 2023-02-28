@@ -4067,6 +4067,7 @@ static bool event_init_content(
       return false;
 
    command_event_set_savestate_auto_index(settings);
+   command_event_set_replay_auto_index(settings);
 
    runloop_path_init_savefile(runloop_st);
 
@@ -4627,7 +4628,7 @@ void runloop_path_fill_names(void)
 
 #ifdef HAVE_BSV_MOVIE
    strlcpy(input_st->bsv_movie_state.movie_auto_path,
-         runloop_st->name.savefile,
+         runloop_st->name.savestate,
          sizeof(input_st->bsv_movie_state.movie_auto_path));
 #endif
 
@@ -6388,6 +6389,69 @@ static enum runloop_state_enum runloop_check_state(
       old_should_slot_increase = should_slot_increase;
       old_should_slot_decrease = should_slot_decrease;
    }
+   /* Check replay slot hotkeys */
+   {
+      static bool old_should_replay_slot_increase = false;
+      static bool old_should_replay_slot_decrease = false;
+      bool should_slot_increase            = BIT256_GET(
+            current_bits, RARCH_REPLAY_SLOT_PLUS);
+      bool should_slot_decrease            = BIT256_GET(
+            current_bits, RARCH_REPLAY_SLOT_MINUS);
+      bool check1                          = true;
+      bool check2                          = should_slot_increase && !old_should_replay_slot_increase;
+      int addition                         = 1;
+      int replay_slot                       = settings->ints.replay_slot;
+
+      if (!check2)
+      {
+         check2                            = should_slot_decrease && !old_should_replay_slot_decrease;
+         check1                            = replay_slot > -1;
+         addition                          = -1;
+
+         /* Wrap-around to 999 */
+         if (check2 && !check1 && replay_slot + addition < -1)
+         {
+            replay_slot = 1000;
+            check1     = true;
+         }
+      }
+      /* Wrap-around to -1 (Auto) */
+      else if (replay_slot + addition > 999)
+         replay_slot = -2;
+
+      if (check2)
+      {
+         size_t _len;
+         char msg[128];
+         int cur_replay_slot                = replay_slot + addition;
+
+         if (check1)
+            configuration_set_int(settings, settings->ints.replay_slot,
+                  cur_replay_slot);
+         _len = strlcpy(msg, msg_hash_to_str(MSG_REPLAY_SLOT), sizeof(msg));
+
+         snprintf(msg         + _len,
+                  sizeof(msg) - _len,
+                  ": %d",
+                  settings->ints.replay_slot);
+
+         if (cur_replay_slot < 0)
+            strlcat(msg, " (Auto)", sizeof(msg));
+
+#ifdef HAVE_GFX_WIDGETS
+         if (dispwidget_get_ptr()->active)
+            gfx_widget_set_generic_message(msg, 1000);
+         else
+#endif
+            runloop_msg_queue_push(msg, 2, 60, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+         RARCH_LOG("[Replay]: %s\n", msg);
+      }
+
+      old_should_replay_slot_increase = should_slot_increase;
+      old_should_replay_slot_decrease = should_slot_decrease;
+   }
 
    /* Check save state hotkeys */
    HOTKEY_CHECK(RARCH_SAVE_STATE_KEY, CMD_EVENT_SAVE_STATE, true, NULL);
@@ -6399,8 +6463,10 @@ static enum runloop_state_enum runloop_check_state(
    /* Check VRR runloop hotkey */
    HOTKEY_CHECK(RARCH_VRR_RUNLOOP_TOGGLE, CMD_EVENT_VRR_RUNLOOP_TOGGLE, true, NULL);
 
-   /* Check movie record hotkey */
-   HOTKEY_CHECK(RARCH_BSV_RECORD_TOGGLE, CMD_EVENT_BSV_RECORDING_TOGGLE, true, NULL);
+   /* Check bsv movie hotkeys */
+   HOTKEY_CHECK(RARCH_PLAY_REPLAY_KEY, CMD_EVENT_PLAY_REPLAY, true, NULL);
+   HOTKEY_CHECK(RARCH_RECORD_REPLAY_KEY, CMD_EVENT_RECORD_REPLAY, true, NULL);
+   HOTKEY_CHECK(RARCH_HALT_REPLAY_KEY, CMD_EVENT_HALT_REPLAY, true, NULL);
 
    /* Check Disc Control hotkeys */
    HOTKEY_CHECK3(
@@ -7133,6 +7199,32 @@ bool runloop_get_savestate_path(char *path, size_t len, unsigned state_slot)
 
    return true;
 }
+bool runloop_get_current_replay_path(char *path, size_t len)
+{
+   settings_t *settings = config_get_ptr();
+   int slot = settings ? settings->ints.replay_slot : 0;
+   return runloop_get_movie_path(path, len, slot);
+}
+bool runloop_get_replay_path(char *path, size_t len, unsigned slot)
+{
+   runloop_state_t *runloop_st = &runloop_state;
+   const char *name_replay  = NULL;
+
+   if (!path)
+      return false;
+
+   name_replay = runloop_st->name.savestate;
+   if (string_is_empty(name_savestate))
+      return false;
+
+   if (slot >= 0)
+      snprintf(path, len, "%s%d",  name_replay, slot);
+   else
+      strlcpy(path, name_replay, len);
+
+   return true;
+}
+
 
 bool runloop_get_entry_state_path(char *path, size_t len, unsigned slot)
 {

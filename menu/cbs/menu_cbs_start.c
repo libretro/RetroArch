@@ -519,6 +519,20 @@ static int action_start_state_slot(
    return 0;
 }
 
+static int action_start_replay_slot(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings      = config_get_ptr();
+
+   settings->ints.replay_slot = 0;
+
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+
+   return 0;
+}
+
 static int action_start_menu_wallpaper(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -963,6 +977,11 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION_SAVESTATE:
          case MENU_SETTING_ACTION_LOADSTATE:
             BIND_ACTION_START(cbs, action_start_state_slot);
+            break;
+         case MENU_SETTING_ACTION_PLAYREPLAY:
+         case MENU_SETTING_ACTION_RECORDREPLAY:
+         case MENU_SETTING_ACTION_HALTREPLAY:
+            BIND_ACTION_START(cbs, action_start_replay_slot);
             break;
          default:
             return -1;

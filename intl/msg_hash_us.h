@@ -3456,14 +3456,45 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Starts/stops streaming of the current session to an online video platform."
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY,
+   "Play Replay"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Record Input Replay (Toggle)"
+   MENU_ENUM_SUBLABEL_VALUE_INPUT_META_PLAY_REPLAY,
+   "Play replay file from the currently selected slot."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Switches recording of gameplay inputs in .bsv format on/off."
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY,
+   "Record Replay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_INPUT_META_RECORD_REPLAY,
+   "Record replay file to the currently selected slot."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY,
+   "Halt Record/Replay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_INPUT_META_HALT_REPLAY,
+   "Stops recording/playback of current replay."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "Next Replay Slot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "Increments the currently selected replay slot index."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "Previous Replay Slot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "Decrements the currently selected replay slot index."
    )
 
 MSG_HASH(
@@ -4148,12 +4179,28 @@ MSG_HASH(
    "Before making a save state, the save state index is automatically increased. When loading content, the index will be set to the highest existing index."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Increment Replay Index Automatically"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "Before making a replay, the replay index is automatically increased. When loading content, the index will be set to the highest existing index."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    "Maximum Auto-Increment Save States to Keep"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    "Limit the number of save states that will be created when 'Increment Save State Index Automatically' is enabled. If limit is exceeded when saving a new state, the existing state with the lowest index will be deleted. A value of '0' means unlimited states will be recorded."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Maximum Auto-Increment Replays to Keep"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Limit the number of replays that will be created when 'Increment Replay Index Automatically' is enabled. If limit is exceeded when recording a new replay, the existing replay with the lowest index will be deleted. A value of '0' means unlimited replays will be recorded."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5760,6 +5807,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
    "Show the options for saving/loading a state."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   "Show 'Replay Controls'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   "Show the options for recording/playing back replay files."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,

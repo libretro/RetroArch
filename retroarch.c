@@ -2442,6 +2442,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_LOAD_STATE:
          {
 #ifdef HAVE_BSV_MOVIE
+            // TODO: rere support
             /* Immutable - disallow savestate load when
              * we absolutely cannot change game state. */
             input_driver_state_t *input_st   = input_state_get_ptr();
@@ -2476,6 +2477,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_UNDO_LOAD_STATE:
       case CMD_EVENT_UNDO_SAVE_STATE:
       case CMD_EVENT_LOAD_STATE_FROM_RAM:
+         // TODO: rere support
          if (!command_event_main_state(cmd))
             return false;
          break;
@@ -2528,8 +2530,26 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
 #endif
          return false;
+      case CMD_EVENT_PLAY_REPLAY:
+      {
+         //movie_start_playback with path
+         return true;
+      }
+      case CMD_EVENT_RECORD_REPLAY:
+      {
+         //incr state idx
+         //movie_start_record with path
+         return true;
+      }
+      case CMD_EVENT_HALT_REPLAY:
+      {
+         input_driver_state_t *input_st = input_state_get_ptr();
+         movie_stop(input_st);
+         return true;
+      }
       case CMD_EVENT_SAVE_STATE:
       case CMD_EVENT_SAVE_STATE_TO_RAM:
+         // TODO: rere support
          {
             int state_slot            = settings->ints.state_slot;
 
@@ -2558,6 +2578,24 @@ bool command_event(enum event_command cmd, void *data)
          {
             int new_state_slot        = settings->ints.state_slot + 1;
             configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+         }
+         break;
+      case CMD_EVENT_REPLAY_DECREMENT:
+         {
+            int slot            = settings->ints.replay_slot;
+
+            /* Slot -1 is (auto) slot. */
+            if (slot >= 0)
+            {
+               int new_slot = slot - 1;
+               configuration_set_int(settings, settings->ints.replay_slot, new_slot);
+            }
+         }
+         break;
+      case CMD_EVENT_REPLAY_INCREMENT:
+         {
+            int new_slot        = settings->ints.replay_slot + 1;
+            configuration_set_int(settings, settings->ints.replay_slot, new_slot);
          }
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:

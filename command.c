@@ -1492,6 +1492,152 @@ void command_event_set_savestate_garbage_collect(
    dir_list_free(dir_list);
 }
 
+void command_event_set_replay_auto_index(settings_t *settings)
+{
+   size_t i;
+   char state_base[128];
+   char state_dir[PATH_MAX_LENGTH];
+
+   struct string_list *dir_list      = NULL;
+   unsigned max_idx                  = 0;
+   runloop_state_t *runloop_st       = runloop_state_get_ptr();
+   bool replay_auto_index         = settings->bools.replay_auto_index;
+   bool show_hidden_files            = settings->bools.show_hidden_files;
+
+   if (!replay_auto_index)
+      return;
+
+   /* Find the file in the same directory as runloop_st->savestate_name
+    * with the largest numeral suffix.
+    *
+    * E.g. /foo/path/content.state, will try to find
+    * /foo/path/content.state%d, where %d is the largest number available.
+    */
+   fill_pathname_basedir(state_dir, runloop_st->name.savestate,
+         sizeof(state_dir));
+
+   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
+         show_hidden_files);
+
+   if (!dir_list)
+      return;
+
+   fill_pathname_base(state_base, runloop_st->name.savestate,
+         sizeof(state_base));
+
+   for (i = 0; i < dir_list->size; i++)
+   {
+      unsigned idx;
+      char elem_base[128]             = {0};
+      const char *end                 = NULL;
+      const char *dir_elem            = dir_list->elems[i].data;
+
+      fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
+
+      if (strstr(elem_base, state_base) != elem_base)
+         continue;
+
+      end = dir_elem + strlen(dir_elem);
+      // Instead of stateXX, we're hunting for stateXX.bsv
+      while ((end > dir_elem) && ISDIGIT((int)end[-5]))
+         end--;
+
+      idx = (unsigned)strtoul(end, NULL, 0);
+      if (idx > max_idx)
+         max_idx = idx;
+   }
+
+   dir_list_free(dir_list);
+
+   configuration_set_int(settings, settings->ints.replay_slot, max_idx);
+
+   RARCH_LOG("[State]: %s: #%d\n",
+         msg_hash_to_str(MSG_FOUND_LAST_REPLAY_SLOT),
+         max_idx);
+}
+
+void command_event_set_replay_garbage_collect(
+      unsigned max_to_keep,
+      bool show_hidden_files
+      )
+{
+   size_t i, cnt = 0;
+   char state_dir[PATH_MAX_LENGTH];
+   char state_base[128];
+   runloop_state_t *runloop_st       = runloop_state_get_ptr();
+
+   struct string_list *dir_list      = NULL;
+   unsigned min_idx                  = UINT_MAX;
+   const char *oldest_save           = NULL;
+
+   /* Similar to command_event_set_replay_auto_index(),
+    * this will find the lowest numbered save-state */
+   fill_pathname_basedir(state_dir, runloop_st->name.savestate,
+         sizeof(state_dir));
+
+   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
+         show_hidden_files);
+
+   if (!dir_list)
+      return;
+
+   fill_pathname_base(state_base, runloop_st->name.savestate,
+         sizeof(state_base));
+
+   for (i = 0; i < dir_list->size; i++)
+   {
+      unsigned idx;
+      char elem_base[128];
+      const char *ext                 = NULL;
+      const char *end                 = NULL;
+      const char *dir_elem            = dir_list->elems[i].data;
+
+      if (string_is_empty(dir_elem))
+         continue;
+
+      fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
+
+      /* Only consider files with a '.stateXX.bsv' extension
+       * > i.e. Ignore '.state.auto', '.state.bak', etc. */
+      ext = path_get_extension(elem_base);
+      if (string_is_empty(ext) ||
+          !string_starts_with_size(ext, "bsv", STRLEN_CONST("BSV")))
+         continue;
+
+      /* Check whether this file is associated with
+       * the current content */
+      if (!string_starts_with(elem_base, state_base))
+         continue;
+
+      /* This looks like a valid save */
+      cnt++;
+
+      /* > Get index */
+      end = dir_elem + strlen(dir_elem);
+      // Instead of stateXX, we're hunting for stateXX.bsv
+      while ((end > dir_elem) && ISDIGIT((int)end[-5]))
+         end--;
+
+      idx = string_to_unsigned(end);
+
+      /* > Check if this is the lowest index so far */
+      if (idx < min_idx)
+      {
+         min_idx     = idx;
+         oldest_save = dir_elem;
+      }
+   }
+
+   /* Only delete one save state per save action
+    * > Conservative behaviour, designed to minimise
+    *   the risk of deleting multiple incorrect files
+    *   in case of accident */
+   if (!string_is_empty(oldest_save) && (cnt > max_to_keep))
+      filestream_delete(oldest_save);
+
+   dir_list_free(dir_list);
+}
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 bool command_set_shader(command_t *cmd, const char *arg)
 {
@@ -1742,6 +1888,7 @@ bool command_event_main_state(unsigned cmd)
       savestates_enabled = (info.size > 0);
    }
 
+   // TODO: replay support
    if (savestates_enabled)
    {
       switch (cmd)

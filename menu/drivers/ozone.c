@@ -1990,6 +1990,7 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_REPLAY:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SAVING];
       case MENU_ENUM_LABEL_LOGGING_SETTINGS:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_LOGGING:
@@ -2235,6 +2236,12 @@ static uintptr_t ozone_entries_icon_get_texture(
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SAVESTATE];
       case MENU_SETTING_ACTION_LOADSTATE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LOADSTATE];
+      case MENU_SETTING_ACTION_PLAYREPLAY:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_PLAYREPLAY];
+      case MENU_SETTING_ACTION_RECORDREPLAY:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RECORDREPLAY];
+      case MENU_SETTING_ACTION_HALTREPLAY:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_HALTREPLAY];
       case MENU_SETTING_ACTION_CORE_OPTIONS:
          if (string_starts_with(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS)))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_VIDEO];
@@ -2506,6 +2513,12 @@ static const char *ozone_entries_icon_texture_path(unsigned id)
          return "savestate.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_LOADSTATE:
          return "loadstate.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_RECORDREPLAY:
+         return "savestate.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_PLAYREPLAY:
+         return "loadstate.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_HALTREPLAY:
+         return "close.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_UNDO:
          return "undo.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO:
