@@ -350,6 +350,10 @@ MSG_HASH(
    "游戏下载"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "下载所选核心的免费内容。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
    "核心系统 BIOS 文件下载器"
    )
@@ -538,6 +542,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "防止修改当前安装的核心。当内容需要特定核心版本时可能会被用来避免不必要的更新 (例如街机的 ROM 集只适用于特定版本的核心)。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "从「独立核心」菜单中排除"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,

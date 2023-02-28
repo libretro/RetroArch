@@ -545,7 +545,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "防止修改目前使用的核心, 如遊戲需要此核心版本才可執行時, 可用於避免不必要的更新。"
+   "防止修改目前使用的核心, 遊戲僅限此核心版本才可執行時, 可用於避免不必要的更新。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -1214,7 +1214,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
-   "指標資料庫。"
+   "資料庫指標檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_CONFIG,
@@ -1234,7 +1234,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
-   "金手指。"
+   "金手指(作弊檔)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
@@ -1433,6 +1433,14 @@ MSG_HASH(
    "設定鍵盤、滑鼠和光線槍等輸入裝置使用的驅動程式, 此選項會依據顯示驅動程式強制變更。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   "udev輸入驅動程式。\n此驅動程式使用evdev API, 支援熱插拔和力反饋。\n讀取事件驅動程式(evdev)支援鍵盤, 還支援鍵盤回呼、滑鼠和觸控板。\n大多數發行版預設情況下, /dev/input裝置節點僅限root權限使用, 可以設定一個裝置管理員(udev)規則, 用於非root權限時使用。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
+   "linuxraw輸入驅動程式。\n需要開啟終端機(TTY)直接從終端機讀取鍵盤事件, 不支援滑鼠輸入不如裝置管理員(udev)操作方便。\n此驅動程式使用joystick API (/dev/input/js*)。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
    "輸入裝置使用的驅動程式。\n依據設定的顯示驅動程式此選項會強制變更。"
    )
@@ -1534,7 +1542,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
-   "OpenVG驅動程式。\n使用OpenVG硬體加速二維向量圖形API。"
+   "OpenVG驅動程式。\n使用OpenVG硬體加速二維向量圖形介面。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
@@ -2220,7 +2228,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "設定影像寬高比浮點數(寬度除以高度), 例如: 4:3=1.33 或 16:9=1.77。"
+   "設定影像寬高比浮點數(寬度除以高度), 例如「4:3=1.33」或「16:9=1.77」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
@@ -12081,7 +12089,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
-   "指標資料庫列表"
+   "資料庫指標列表"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
@@ -12816,7 +12824,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INDEX_FILE,
-   "編號"
+   "索引檔案"
    )
 MSG_HASH(
    MSG_DOWNLOAD_FAILED,
@@ -14410,7 +14418,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INTERNET_RELAY,
-   "網際網路(中繼)"
+   "網際網路 (中繼)"
    )
 MSG_HASH(
    MSG_INTERNET_NOT_CONNECTABLE,
