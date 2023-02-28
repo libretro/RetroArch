@@ -3456,28 +3456,29 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Starts/stops streaming of the current session to an online video platform."
+   )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY,
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
    "Play Replay"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_INPUT_META_PLAY_REPLAY,
+   MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
    "Play replay file from the currently selected slot."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY,
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
    "Record Replay"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_INPUT_META_RECORD_REPLAY,
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
    "Record replay file to the currently selected slot."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY,
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
    "Halt Record/Replay"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_INPUT_META_HALT_REPLAY,
+   MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
    "Stops recording/playback of current replay."
    )
 MSG_HASH(
@@ -3485,7 +3486,7 @@ MSG_HASH(
    "Next Replay Slot"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
    "Increments the currently selected replay slot index."
    )
 MSG_HASH(
@@ -3493,8 +3494,12 @@ MSG_HASH(
    "Previous Replay Slot"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
    "Decrements the currently selected replay slot index."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REPLAY_SLOT,
+   "Replay Slot"
    )
 
 MSG_HASH(
@@ -5813,7 +5818,7 @@ MSG_HASH(
    "Show 'Replay Controls'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
    "Show the options for recording/playing back replay files."
    )
 MSG_HASH(
@@ -13578,6 +13583,10 @@ MSG_HASH(
    "Found last state slot"
    )
 MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "Found last replay slot"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Found shader"
    )
@@ -13956,6 +13965,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_STATE_SLOT,
    "State slot"
+   )
+MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Replay slot"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,

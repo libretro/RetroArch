@@ -3293,14 +3293,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Startet/stoppt das Streaming der aktuellen Sitzung zu einer Online-Video-Plattform."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Eingaben-Aufnahme (Umschalten)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Schaltet die Aufnahme von Gameplay-Eingaben im .bsv-Format ein/aus."
-   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,

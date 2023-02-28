@@ -2172,14 +2172,6 @@ bool command_event(enum event_command cmd, void *data)
          video_shader_toggle(settings);
 #endif
          break;
-      case CMD_EVENT_BSV_RECORDING_TOGGLE:
-         {
-#ifdef HAVE_BSV_MOVIE
-            input_driver_state_t *input_st = input_state_get_ptr();
-            movie_toggle_record(input_st, settings);
-#endif
-         }
-         break;
       case CMD_EVENT_AI_SERVICE_TOGGLE:
          {
 #ifdef HAVE_TRANSLATE

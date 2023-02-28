@@ -3317,14 +3317,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Spustí/zastaví streamování aktuální relace na online video platformu."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Přehrávání Vstupního Záznamu (Přepínání)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Zapnutí/vypnutí záznamu herních vstupů ve formátu .bsv."
-   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,

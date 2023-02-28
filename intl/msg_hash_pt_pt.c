@@ -905,10 +905,6 @@ int msg_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "O fotograma avança enquanto o conteúdo está em pausa.");
          break;
-      case MENU_ENUM_LABEL_BSV_RECORD_TOGGLE:
-         snprintf(s, len,
-               "Ativa ou desativa a gravação.");
-         break;
       case MENU_ENUM_LABEL_L_X_PLUS:
       case MENU_ENUM_LABEL_L_X_MINUS:
       case MENU_ENUM_LABEL_L_Y_PLUS:

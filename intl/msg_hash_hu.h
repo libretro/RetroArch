@@ -3385,14 +3385,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "A tartalom közvetítése egy online videó platform felé."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Bemenetek rögzítése újrajátszáshoz (váltógomb)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Ki-be kapcsolja a játék bemeneteinek rögzítését .bsv formátumban."
-   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,

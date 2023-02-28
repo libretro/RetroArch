@@ -2957,14 +2957,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Aloittaa/pysäyttää nykyisen istunnon suoratoiston verkossa toimivalle videoalustalle."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Nauhoita syötteiden toistoa (päälle/pois)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Vaihtaa pelin näppäinkomentojen nauhoituksen .bsv-muotoon päälle/pois."
-   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,

@@ -3393,14 +3393,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Inicia o detiene la transmisión por streaming de la sesión actual a una plataforma de vídeo online."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Grabar repetición de entrada (alternar)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Activa o desactiva el uso del formato .bsv para guardar las grabaciones de entrada de las partidas."
-   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,

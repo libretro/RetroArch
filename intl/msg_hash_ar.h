@@ -2357,14 +2357,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "بدء/إيقاف تشغيل الجلسة الحالية إلى منصة فيديو عبر الإنترنت."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "تبديل سجل إعادة عرض الفيلم"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "تبديل تسجيل مدخلات اللعبة في تنسيق .bsv تشغيل/إيقافه."
-   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,

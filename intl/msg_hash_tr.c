@@ -213,10 +213,6 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                    " \n"
                    "Geri sarma etkin olmalı.");
              break;
-          case RARCH_BSV_RECORD_TOGGLE:
-             snprintf(s, len,
-                   "Kayıt yapmak ve yapmamak arasında geçiş yapar.");
-             break;
           default:
              if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
@@ -1784,10 +1780,6 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_FRAME_ADVANCE:
             snprintf(s, len,
                      "İçerik duraklatıldığında kare ilerlemesi.");
-            break;
-        case MENU_ENUM_LABEL_BSV_RECORD_TOGGLE:
-            snprintf(s, len,
-                     "Kayıt yapma arasında geçiş yapmak için");
             break;
         case MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC:
             snprintf(s, len,

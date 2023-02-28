@@ -7203,7 +7203,7 @@ bool runloop_get_current_replay_path(char *path, size_t len)
 {
    settings_t *settings = config_get_ptr();
    int slot = settings ? settings->ints.replay_slot : 0;
-   return runloop_get_movie_path(path, len, slot);
+   return runloop_get_replay_path(path, len, slot);
 }
 bool runloop_get_replay_path(char *path, size_t len, unsigned slot)
 {
@@ -7214,7 +7214,7 @@ bool runloop_get_replay_path(char *path, size_t len, unsigned slot)
       return false;
 
    name_replay = runloop_st->name.savestate;
-   if (string_is_empty(name_savestate))
+   if (string_is_empty(name_replay))
       return false;
 
    if (slot >= 0)
