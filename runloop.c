@@ -4256,16 +4256,6 @@ unsigned runloop_get_video_swap_interval(
 }
 
 /*
-   Returns the user defined video rotation set in the video_rotation user setting
-*/
-unsigned int retroarch_get_video_rotation(void)
-{
-   settings_t     *settings    = config_get_ptr();
-   unsigned     video_rotation = settings->uints.video_rotation;
-   return settings->uints.video_rotation;
-}
-
-/*
    Returns rotation requested by the core regardless of if it has been
    applied with the final video rotation
 */
@@ -4280,7 +4270,8 @@ unsigned int retroarch_get_core_requested_rotation(void)
 */
 unsigned int retroarch_get_rotation(void)
 {
-   return retroarch_get_video_rotation() + runloop_state.system.rotation;
+   settings_t     *settings    = config_get_ptr();
+   return settings->uints.video_rotation + runloop_state.system.rotation;
 }
 
 static void retro_run_null(void) { } /* Stub function callback impl. */

@@ -144,11 +144,6 @@ const char* config_get_audio_driver_options(void);
 /* Camera */
 
 /*
-   Returns the user defined video rotation set in the video_rotation user setting
-*/
-unsigned int retroarch_get_video_rotation(void);
-
-/*
    Returns rotation requested by the core regardless of if it has been
    applied with the final video rotation
 */

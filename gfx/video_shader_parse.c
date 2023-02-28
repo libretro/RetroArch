@@ -296,7 +296,10 @@ static void replace_wildcards(char *inout_absolute_path, const unsigned in_absol
                   "VID-USER-ROT-180",
                   "VID-USER-ROT-270"
                };
-               strlcpy(replace_text, rotation_replace_strings[retroarch_get_video_rotation()], sizeof(replace_text));
+               settings_t *settings           = config_get_ptr();
+               strlcpy(replace_text,
+			       rotation_replace_strings[settings->uints.video_rotation],
+                sizeof(replace_text));
                break;
             }
             case RARCH_WILDCARD_VIDEO_FINAL_ROTATION:
@@ -417,7 +420,7 @@ static void replace_wildcards(char *inout_absolute_path, const unsigned in_absol
 }
 
 /**
- * gather_reference_path_list:
+ * video_shader_gather_reference_path_list:
  * 
  * @param path_linked_list
  * List of paths which accrues as we move down the chain of references
@@ -428,7 +431,7 @@ static void replace_wildcards(char *inout_absolute_path, const unsigned in_absol
  *
  * @return void
  **/
-static void gather_reference_path_list(
+static void video_shader_gather_reference_path_list(
       struct path_linked_list *in_path_linked_list, 
       char *path, 
       int reference_depth)
@@ -449,7 +452,7 @@ static void gather_reference_path_list(
          fill_pathname_expanded_and_absolute(reference_preset_path, conf->path, ref_tmp->path);
          replace_wildcards(reference_preset_path, PATH_MAX_LENGTH, conf->path);
 
-         gather_reference_path_list(in_path_linked_list, reference_preset_path, reference_depth + 1);
+         video_shader_gather_reference_path_list(in_path_linked_list, reference_preset_path, reference_depth + 1);
 
          free(reference_preset_path);
          ref_tmp = ref_tmp->next;
@@ -2372,7 +2375,7 @@ bool video_shader_load_preset_into_shader(const char *path,
 
    /* Gather all the paths of all of the presets in all reference chains */
    override_paths_list = path_linked_list_new();
-   gather_reference_path_list(override_paths_list, conf->path, 0);
+   video_shader_gather_reference_path_list(override_paths_list, conf->path, 0);
 
    /* 
     * Step through the references and apply overrides for each one
