@@ -333,112 +333,81 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    CFStringRef bundle_path;
    CFURLRef resource_url;
    CFStringRef resource_path;
-#if TARGET_OS_IPHONE
-   char resolved_home_dir_buf[
-      PATH_MAX_LENGTH]                   = {0};
-   char resolved_bundle_dir_buf[
-      PATH_MAX_LENGTH]                   = {0};
-#endif
-   char temp_dir[PATH_MAX_LENGTH]        = {0};
-   char bundle_path_buf[PATH_MAX_LENGTH] = {0};
-   char resource_path_buf[PATH_MAX_LENGTH] = {0};
-   char full_resource_path_buf[PATH_MAX_LENGTH];
-   char home_dir_buf[PATH_MAX_LENGTH]    = {0};
-   CFBundleRef bundle                    = CFBundleGetMainBundle();
+   char temp_dir[PATH_MAX_LENGTH]          = {0};
+   char bundle_path_buf[PATH_MAX_LENGTH]   = {0};
+   char documents_dir_buf[PATH_MAX_LENGTH] = {0};
+   char application_data[PATH_MAX_LENGTH]  = {0};
+   CFBundleRef bundle                      = CFBundleGetMainBundle();
 
    if (!bundle)
       return;
 
    bundle_url    = CFBundleCopyBundleURL(bundle);
    bundle_path   = CFURLCopyPath(bundle_url);
-   
-   resource_url  = CFBundleCopyResourcesDirectoryURL(bundle);
-   resource_path = CFURLCopyPath(resource_url);
+   CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
+   CFRelease(bundle_path);
+   CFRelease(bundle_url);
 
-   CFRelease(resource_url);
-
-   CFStringGetCString(bundle_path,
-         bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
-   CFStringGetCString(resource_path,
-         resource_path_buf, sizeof(resource_path_buf), kCFStringEncodingUTF8);
-   CFRelease(resource_path);
-   fill_pathname_join_special(full_resource_path_buf, bundle_path_buf, resource_path_buf, sizeof(full_resource_path_buf));
-   CFSearchPathForDirectoriesInDomains(
-         home_dir_buf, sizeof(home_dir_buf));
-
+#if HAVE_STEAM
+   // for steam we're going to put everything next to the .app
+   fill_pathname_application_data(documents_dir_buf, sizeof(documents_dir_buf));
+#else
+   CFSearchPathForDirectoriesInDomains(documents_dir_buf, sizeof(documents_dir_buf));
 #if TARGET_OS_IPHONE
-   if (realpath(home_dir_buf, resolved_home_dir_buf))
-      strlcpy(home_dir_buf,
-               resolved_home_dir_buf,
-               sizeof(home_dir_buf));
+   char resolved_documents_dir_buf[PATH_MAX_LENGTH] = {0};
+   char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
+   if (realpath(documents_dir_buf, resolved_documents_dir_buf))
+      strlcpy(documents_dir_buf,
+               resolved_documents_dir_buf,
+               sizeof(documents_dir_buf));
    if (realpath(bundle_path_buf, resolved_bundle_dir_buf))
       strlcpy(bundle_path_buf,
             resolved_bundle_dir_buf,
             sizeof(bundle_path_buf));
 #endif
+   strlcat(documents_dir_buf, "/RetroArch", sizeof(documents_dir_buf));
+#endif
 
-   strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
-#ifdef HAVE_METAL
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER],
-         home_dir_buf, "shaders_slang",
-         sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
-#else
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER],
-         home_dir_buf, "shaders_glsl",
-         sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
-#endif
-#ifdef HAVE_UPDATE_CORES
-    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
-		    home_dir_buf, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-#else
-    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
-		    bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-#endif
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], home_dir_buf, "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], home_dir_buf, "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], home_dir_buf, "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], home_dir_buf, "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], home_dir_buf, "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], home_dir_buf, "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], home_dir_buf, "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], home_dir_buf, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], home_dir_buf, "cht", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], home_dir_buf, "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], home_dir_buf, "saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], home_dir_buf, "states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG], home_dir_buf, "records_config", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], home_dir_buf, "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], home_dir_buf, "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
-#if defined(IOS)
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], home_dir_buf, "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-#endif
 #if defined(OSX)
-   char application_data[PATH_MAX_LENGTH];
-
    fill_pathname_application_data(application_data, sizeof(application_data));
-
-#ifdef HAVE_CG
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], home_dir_buf, "shaders_cg", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+#else
+   // ios and tvos are going to put everything in the documents dir
+   strncpy(application_data, documents_dir_buf, sizeof(application_data));
 #endif
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], application_data, "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], application_data, "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+
+   // By the time we are here:
+   // bundle_path_buf is the full path of the .app
+   // documents_dir_buf is where user documents go (macos: ~/Documents/RetroArch)
+   // application_data is where "hidden" app data goes (macos: ~/Library/Application Support/RetroArch, ios: documents dir)
+
+   // this stuff we expect the user to find easily, possibly sync across iCloud
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], documents_dir_buf, "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], documents_dir_buf, "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], documents_dir_buf, "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG], documents_dir_buf, "records_config", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], documents_dir_buf, "saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], documents_dir_buf, "screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], documents_dir_buf, "states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], documents_dir_buf, "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], application_data, "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], application_data, "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], application_data, "cht", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], application_data, "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], application_data, "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], application_data, "screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], application_data, "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+#ifdef HAVE_UPDATE_CORES
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], application_data, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+#else
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+#endif
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], application_data, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], application_data, "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], application_data, "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], application_data, "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], application_data, "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], application_data, "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], application_data, "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], application_data, "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], application_data, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], application_data, "cht", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], application_data, "audio_filters", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], application_data, "video_filters", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
-
-#endif
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], application_data, "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], application_data, "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
 
 #if TARGET_OS_IOS
     {
@@ -455,6 +424,16 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
     fill_pathname_join_special(assets_zip_path,
           bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
 #else
+    char resource_path_buf[PATH_MAX_LENGTH] = {0};
+    resource_url  = CFBundleCopyResourcesDirectoryURL(bundle);
+    resource_path = CFURLCopyPath(resource_url);
+    CFStringGetCString(resource_path, resource_path_buf, sizeof(resource_path_buf), kCFStringEncodingUTF8);
+    CFRelease(resource_path);
+    CFRelease(resource_url);
+
+    char full_resource_path_buf[PATH_MAX_LENGTH];
+    fill_pathname_join_special(full_resource_path_buf,
+          bundle_path_buf, resource_path_buf, sizeof(full_resource_path_buf));
     fill_pathname_join_special(assets_zip_path,
           full_resource_path_buf, "assets.zip", sizeof(assets_zip_path));
 #endif
@@ -467,11 +446,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
              assets_zip_path);
        configuration_set_string(settings,
              settings->paths.bundle_assets_dst,
-#if TARGET_OS_IOS || TARGET_OS_TV
-             home_dir_buf
-#else
              application_data
-#endif
        );
        /* TODO/FIXME: Just hardcode this for now */
        configuration_set_uint(settings, settings->uints.bundle_assets_extract_version_current, 1);
@@ -491,9 +466,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 
       if (access(g_defaults.dirs[DEFAULT_DIR_SYSTEM], 0755) != 0) { }
    }
-
-   CFRelease(bundle_path);
-   CFRelease(bundle_url);
 
 #ifndef IS_SALAMANDER
    dir_check_defaults("custom.ini");
