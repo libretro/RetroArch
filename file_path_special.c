@@ -29,6 +29,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef OSX
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 #ifdef __QNX__
 #include <libgen.h>
 #endif
@@ -98,6 +102,21 @@ bool fill_pathname_application_data(char *s, size_t len)
 #endif
 
 #elif defined(OSX)
+#if HAVE_STEAM
+   CFStringRef parent_path;
+   CFURLRef bundle_url, parent_url;
+   CFBundleRef bundle = CFBundleGetMainBundle();
+   if (!bundle)
+      return false;
+   bundle_url  = CFBundleCopyBundleURL(bundle);
+   parent_url  = CFURLCreateCopyDeletingLastPathComponent(NULL, bundle_url);
+   parent_path = CFURLCopyFileSystemPath(parent_url, kCFURLPOSIXPathStyle);
+   CFStringGetCString(parent_path, s, len, kCFStringEncodingUTF8);
+   CFRelease(parent_path);
+   CFRelease(parent_url);
+   CFRelease(bundle_url);
+   return true;
+#else
    const char *appdata = getenv("HOME");
 
    if (appdata)
@@ -106,6 +125,7 @@ bool fill_pathname_application_data(char *s, size_t len)
             "Library/Application Support/RetroArch", len);
       return true;
    }
+#endif
 #elif defined(RARCH_UNIX_CWD_ENV)
    getcwd(s, len);
    return true;

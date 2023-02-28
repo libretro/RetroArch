@@ -8,8 +8,6 @@
     <string>Developer ID Application</string>
     <key>destination</key>
     <string>upload</string>
-	<key>signingStyle</key>
-	<string>automatic</string>
 	<key>teamID</key>
 	<string>UK699V5ZS8</string>
 </dict>
