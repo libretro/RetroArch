@@ -503,6 +503,12 @@ static void d3d12_update_viewport(d3d12_video_t *d3d12, bool force_full)
    d3d12->frame.viewport.MaxDepth = 0.0f;
    d3d12->frame.viewport.MaxDepth = 1.0f;
 
+   /* Needed for UWP to be happy */
+   d3d12->frame.scissorRect.top    = d3d12->vp.y;
+   d3d12->frame.scissorRect.left   = d3d12->vp.x;
+   d3d12->frame.scissorRect.right  = d3d12->vp.x + d3d12->vp.width;
+   d3d12->frame.scissorRect.bottom = d3d12->vp.y + d3d12->vp.height;
+
    if (d3d12->shader_preset
          && (  d3d12->frame.output_size.x != d3d12->vp.width
             || d3d12->frame.output_size.y != d3d12->vp.height))
