@@ -3881,10 +3881,6 @@ void runloop_event_deinit_core(void)
    else
       input_remapping_restore_global_config(true);
 
-   RARCH_LOG("[Core]: Unloading core symbols..\n");
-   uninit_libretro_symbols(&runloop_st->current_core);
-   runloop_st->current_core.flags &= ~RETRO_CORE_FLAG_SYMBOLS_INITED;
-
    /* Restore original refresh rate, if it has been changed
     * automatically in SET_SYSTEM_AV_INFO */
    if (video_st->video_refresh_rate_original)
@@ -3906,6 +3902,10 @@ void runloop_event_deinit_core(void)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    runloop_st->runtime_shader_preset_path[0] = '\0';
 #endif
+
+   RARCH_LOG("[Core]: Unloading core symbols..\n");
+   uninit_libretro_symbols(&runloop_st->current_core);
+   runloop_st->current_core.flags &= ~RETRO_CORE_FLAG_SYMBOLS_INITED;
 }
 
 static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
