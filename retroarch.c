@@ -2511,17 +2511,22 @@ bool command_event(enum event_command cmd, void *data)
          return false;
       case CMD_EVENT_PLAY_REPLAY:
       {
+#ifdef HAVE_BSV_MOVIE
          input_driver_state_t *input_st = input_state_get_ptr();
          char replay_path[PATH_MAX_LENGTH];
          if (!runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
             return false;
          return movie_start_playback(input_st, replay_path);
+#else
+         return false;
+#endif
       }
       case CMD_EVENT_RECORD_REPLAY:
       {
+         bool res = false;
+#ifdef HAVE_BSV_MOVIE
          input_driver_state_t *input_st = input_state_get_ptr();
          char replay_path[PATH_MAX_LENGTH];
-         bool res = false;
          if (!runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
             return false;
          res = movie_start_record(input_st, replay_path);
@@ -2530,12 +2535,15 @@ bool command_event(enum event_command cmd, void *data)
             int new_replay_slot = settings->ints.replay_slot + 1;
             configuration_set_int(settings, settings->ints.replay_slot, new_replay_slot);
          }
+#endif
          return res;
       }
       case CMD_EVENT_HALT_REPLAY:
       {
+#ifdef HAVE_BSV_MOVIE
          input_driver_state_t *input_st = input_state_get_ptr();
          movie_stop(input_st);
+#endif
          return true;
       }
       case CMD_EVENT_SAVE_STATE:
@@ -2571,6 +2579,7 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_REPLAY_DECREMENT:
+#ifdef HAVE_BSV_MOVIE
          {
             int slot            = settings->ints.replay_slot;
 
@@ -2581,12 +2590,15 @@ bool command_event(enum event_command cmd, void *data)
                configuration_set_int(settings, settings->ints.replay_slot, new_slot);
             }
          }
+#endif
          break;
       case CMD_EVENT_REPLAY_INCREMENT:
+#ifdef HAVE_BSV_MOVIE
          {
             int new_slot        = settings->ints.replay_slot + 1;
             configuration_set_int(settings, settings->ints.replay_slot, new_slot);
          }
+#endif
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:
 #ifdef HAVE_SCREENSHOTS

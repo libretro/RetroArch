@@ -3504,6 +3504,7 @@ static int menu_displaylist_parse_load_content_settings(
                   MENU_SETTING_ACTION_LOADSTATE, 0, 0, NULL))
                count++;
          }
+#ifdef HAVE_BSV_MOVIE
          if (savestates_enabled &&
              settings->bools.quick_menu_show_replay)
          {
@@ -3533,7 +3534,7 @@ static int menu_displaylist_parse_load_content_settings(
                count++;
             }
       }
-
+#endif
       if (settings->bools.quick_menu_show_options && !settings->bools.kiosk_mode_enable)
       {
          /* Empty 'path' string signifies top level
@@ -12975,6 +12976,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_SETTING_ACTION_LOADSTATE, 0, 0, NULL))
                   count++;
             }
+#ifdef HAVE_BSV_MOVIE
             if (savestates_enabled &&
                 settings->bools.quick_menu_show_replay)
             {
@@ -13003,7 +13005,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_SETTING_ACTION_HALTREPLAY, 0, 0, NULL))
                   count++;
             }
-
+#endif
 
             if (count == 0)
                menu_entries_append(info->list,
