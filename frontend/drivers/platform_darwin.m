@@ -343,7 +343,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
       return;
 
    bundle_url    = CFBundleCopyBundleURL(bundle);
-   bundle_path   = CFURLCopyPath(bundle_url);
+   bundle_path   = CFURLCopyFileSystemPath(bundle_url, kCFURLPOSIXPathStyle);
    CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
    CFRelease(bundle_path);
    CFRelease(bundle_url);
