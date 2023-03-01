@@ -1888,7 +1888,13 @@ bool command_event_main_state(unsigned cmd)
       savestates_enabled = (info.size > 0);
    }
 
-   // TODO: replay support
+  /* TODO: Load state should act in one of three ways:
+     - [X] Not during recording or playback: normally
+     - [-] During playback: If the state is part of this replay, go back to that state and rewind the replay (not yet implemented); otherwise halt playback and go to that state normally.
+     - [-] During recording: If the state is part of this replay, go back to that state and rewind the replay, clobbering the stuff in between then and now (not yet implemented); if the state is not part of the replay, do nothing and log a warning.
+   */
+
+
    if (savestates_enabled)
    {
       switch (cmd)
@@ -1896,6 +1902,7 @@ bool command_event_main_state(unsigned cmd)
          case CMD_EVENT_SAVE_STATE:
          case CMD_EVENT_SAVE_STATE_TO_RAM:
             {
+               /* TODO: Saving state during recording should associate the state with the replay. */
                video_driver_state_t *video_st                 = 
                   video_state_get_ptr();
                bool savestate_auto_index                      =
@@ -1928,6 +1935,19 @@ bool command_event_main_state(unsigned cmd)
          case CMD_EVENT_LOAD_STATE_FROM_RAM:
             {
                bool res = false;
+#ifdef HAVE_BSV_MOVIE
+              input_driver_state_t *input_st   = input_state_get_ptr();
+              if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
+              {
+                 RARCH_ERR("[Load] [Movie] Can't load state during movie record\n");
+                 return false;
+              }
+              if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
+                {
+                  RARCH_LOG("[Load] [Movie] Loaded state during movie playback, halting playback\n");
+                  movie_stop(input_st);
+                }
+#endif
                if (cmd == CMD_EVENT_LOAD_STATE)
                   res = content_load_state(state_path, false, false);
                else
@@ -1941,10 +1961,26 @@ bool command_event_main_state(unsigned cmd)
             }
             push_msg = false;
             break;
-         case CMD_EVENT_UNDO_LOAD_STATE:
-            command_event_undo_load_state(msg, sizeof(msg));
-            ret = true;
-            break;
+        case CMD_EVENT_UNDO_LOAD_STATE:
+           {
+              /* TODO: To support this through re-recording would take some care around moving the replay recording forward to the time when the undo happened, which would need undo support for replays. For now, forbid it during recording and halt playback. */
+#ifdef HAVE_BSV_MOVIE
+              input_driver_state_t *input_st   = input_state_get_ptr();
+              if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
+              {
+                 RARCH_ERR("[Load] [Movie] Can't undo load state during movie record\n");
+                 return false;
+              }
+              if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
+              {
+                 RARCH_LOG("[Load] [Movie] Undo load state during movie playback, halting playback\n");
+                 movie_stop(input_st);
+              }
+#endif
+              command_event_undo_load_state(msg, sizeof(msg));
+              ret = true;
+              break;
+            }
          case CMD_EVENT_UNDO_SAVE_STATE:
             command_event_undo_save_state(msg, sizeof(msg));
             ret = true;

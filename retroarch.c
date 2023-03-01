@@ -2433,18 +2433,6 @@ bool command_event(enum event_command cmd, void *data)
 #endif
       case CMD_EVENT_LOAD_STATE:
          {
-#ifdef HAVE_BSV_MOVIE
-            // TODO: rere support
-            /* Immutable - disallow savestate load when
-             * we absolutely cannot change game state. */
-            input_driver_state_t *input_st   = input_state_get_ptr();
-            if (input_st->bsv_movie_state_handle)
-              {
-                RARCH_LOG("[Load] [Movie] Can't load state during movie playback or record\n");
-               return false;
-              }
-#endif
-
 #ifdef HAVE_CHEEVOS
             if (rcheevos_hardcore_active())
             {
@@ -2469,7 +2457,6 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_UNDO_LOAD_STATE:
       case CMD_EVENT_UNDO_SAVE_STATE:
       case CMD_EVENT_LOAD_STATE_FROM_RAM:
-         // TODO: rere support
          if (!command_event_main_state(cmd))
             return false;
          break;
@@ -2524,14 +2511,26 @@ bool command_event(enum event_command cmd, void *data)
          return false;
       case CMD_EVENT_PLAY_REPLAY:
       {
-         //movie_start_playback with path
-         return true;
+         input_driver_state_t *input_st = input_state_get_ptr();
+         char replay_path[PATH_MAX_LENGTH];
+         if (!runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
+            return false;
+         return movie_start_playback(input_st, replay_path);
       }
       case CMD_EVENT_RECORD_REPLAY:
       {
-         //incr state idx
-         //movie_start_record with path
-         return true;
+         input_driver_state_t *input_st = input_state_get_ptr();
+         char replay_path[PATH_MAX_LENGTH];
+         bool res = false;
+         if (!runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
+            return false;
+         res = movie_start_record(input_st, replay_path);
+         if(res && settings->bools.replay_auto_index)
+         {
+            int new_replay_slot = settings->ints.replay_slot + 1;
+            configuration_set_int(settings, settings->ints.replay_slot, new_replay_slot);
+         }
+         return res;
       }
       case CMD_EVENT_HALT_REPLAY:
       {
@@ -2541,7 +2540,6 @@ bool command_event(enum event_command cmd, void *data)
       }
       case CMD_EVENT_SAVE_STATE:
       case CMD_EVENT_SAVE_STATE_TO_RAM:
-         // TODO: rere support
          {
             int state_slot            = settings->ints.state_slot;
 

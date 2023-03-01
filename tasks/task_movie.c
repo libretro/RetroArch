@@ -348,20 +348,6 @@ static void moviectl_start_record_cb(retro_task_t *task,
 
 /* Public functions */
 
-bool movie_toggle_record(input_driver_state_t *input_st, settings_t *settings)
-{
-   if (!input_st->bsv_movie_state_handle)
-   {
-      char path[8192];
-      configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
-      // TODO use slot number, qua runloop_get_current_savestate_path; look at something like command.c:command_event_main_state to see how that's done and how cleanup works
-      fill_str_dated_filename(path, input_st->bsv_movie_state.movie_auto_path, "bsv", sizeof(path));
-      return movie_start_record(input_st, path);
-   }
-
-   return movie_stop(input_st);
-}
-
 /* In the future this should probably be a deferred task as well */
 bool movie_stop_playback(input_driver_state_t *input_st)
 {
