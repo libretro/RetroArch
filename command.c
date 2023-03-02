@@ -1506,13 +1506,11 @@ void command_event_set_replay_auto_index(settings_t *settings)
 
    if (!replay_auto_index)
       return;
-  /* TODO: debugme */
-  RARCH_LOG("[Movie] set initial slot\n");
-   /* Find the file in the same directory as runloop_st->savestate_name
+   /* Find the file in the same directory as runloop_st->names.replay
     * with the largest numeral suffix.
     *
-    * E.g. /foo/path/content.state, will try to find
-    * /foo/path/content.state%d, where %d is the largest number available.
+    * E.g. /foo/path/content.bsv, will try to find
+    * /foo/path/content.bsv%d, where %d is the largest number available.
     */
    fill_pathname_basedir(state_dir, runloop_st->name.replay,
          sizeof(state_dir));
@@ -1525,7 +1523,6 @@ void command_event_set_replay_auto_index(settings_t *settings)
 
    fill_pathname_base(state_base, runloop_st->name.replay,
          sizeof(state_base));
-  RARCH_LOG("[Movie] set initial slot at %s\n",state_base);
 
    for (i = 0; i < dir_list->size; i++)
    {
@@ -1535,18 +1532,16 @@ void command_event_set_replay_auto_index(settings_t *settings)
       const char *dir_elem            = dir_list->elems[i].data;
 
       fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
-     RARCH_LOG("[Movie] elem at %s\n",elem_base);
 
       if (strstr(elem_base, state_base) != elem_base)
          continue;
 
       end = dir_elem + strlen(dir_elem);
-      // Instead of stateXX, we're hunting for stateXX.bsv
-      while ((end > dir_elem) && ISDIGIT((int)end[-5]))
+
+      while ((end > dir_elem) && ISDIGIT((int)end[-1]))
          end--;
 
-     idx = (unsigned)strtoul(end, NULL, 0);
-      RARCH_LOG("[Movie] found idx %d\n", idx);
+      idx = (unsigned)strtoul(end, NULL, 0);
       if (idx > max_idx)
          max_idx = idx;
    }
@@ -1555,7 +1550,7 @@ void command_event_set_replay_auto_index(settings_t *settings)
 
    configuration_set_int(settings, settings->ints.replay_slot, max_idx);
 
-   RARCH_LOG("[State]: %s: #%d\n",
+   RARCH_LOG("[Replay]: %s: #%d\n",
          msg_hash_to_str(MSG_FOUND_LAST_REPLAY_SLOT),
          max_idx);
 }
@@ -1576,7 +1571,7 @@ void command_event_set_replay_garbage_collect(
    const char *oldest_save           = NULL;
 
    /* Similar to command_event_set_replay_auto_index(),
-    * this will find the lowest numbered save-state */
+    * this will find the lowest numbered replay */
    fill_pathname_basedir(state_dir, runloop_st->name.replay,
          sizeof(state_dir));
 
@@ -1602,8 +1597,8 @@ void command_event_set_replay_garbage_collect(
 
       fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
 
-      /* Only consider files with a '.stateXX.bsv' extension
-       * > i.e. Ignore '.state.auto', '.state.bak', etc. */
+      /* Only consider files with a '.bsvXX' extension
+       * > i.e. Ignore '.bsv.auto', '.bsv.bak', etc. */
       ext = path_get_extension(elem_base);
       if (string_is_empty(ext) ||
           !string_starts_with_size(ext, "bsv", STRLEN_CONST("BSV")))
@@ -1619,8 +1614,8 @@ void command_event_set_replay_garbage_collect(
 
       /* > Get index */
       end = dir_elem + strlen(dir_elem);
-      // Instead of stateXX, we're hunting for stateXX.bsv
-      while ((end > dir_elem) && ISDIGIT((int)end[-5]))
+
+      while ((end > dir_elem) && ISDIGIT((int)end[-1]))
          end--;
 
       idx = string_to_unsigned(end);
