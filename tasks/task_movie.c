@@ -392,9 +392,9 @@ bool movie_stop(input_driver_state_t *input_st)
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
       return movie_stop_playback(input_st);
    else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
-     return movie_stop_record(input_st);
-  if(input_st->bsv_movie_state_handle)
-    RARCH_ERR("Didn't really stop!\n");
+      return movie_stop_record(input_st);
+   if(input_st->bsv_movie_state_handle)
+      RARCH_ERR("Didn't really stop movie!\n");
    return true;
 }
 

@@ -2548,10 +2548,9 @@ bool command_event(enum event_command cmd, void *data)
          /* TODO: Consider cloning and extending the current replay if we start recording during a recording */
          if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
             res = false;
-         
          if (res && input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
          {
-            res = false;                 
+            res = false;
             movie_stop(input_st);
          }
          if (res && !runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
@@ -2566,7 +2565,7 @@ bool command_event(enum event_command cmd, void *data)
          }
          if(!res)
          {
-            const char *movie_rec_fail_str        =
+             const char *movie_rec_fail_str        =
                msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
             runloop_msg_queue_push(movie_rec_fail_str,
                1, 180, true,
@@ -2580,7 +2579,6 @@ bool command_event(enum event_command cmd, void *data)
       {
 #ifdef HAVE_BSV_MOVIE
          input_driver_state_t *input_st = input_state_get_ptr();
-         RARCH_LOG("halt!\n");
          movie_stop(input_st);
 #endif
          return true;
