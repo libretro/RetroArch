@@ -3532,9 +3532,9 @@ static int menu_displaylist_parse_load_content_settings(
                   MENU_ENUM_LABEL_HALT_REPLAY,
                   MENU_SETTING_ACTION_HALTREPLAY, 0, 0, NULL))
                count++;
-            }
-      }
+         }
 #endif
+      }
       if (settings->bools.quick_menu_show_options && !settings->bools.kiosk_mode_enable)
       {
          /* Empty 'path' string signifies top level
