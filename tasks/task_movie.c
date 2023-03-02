@@ -22,6 +22,7 @@
 #include <time.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -379,6 +380,9 @@ bool movie_stop_record(input_driver_state_t *input_st)
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s\n", movie_rec_stopped_str);
    bsv_movie_deinit(input_st);
+   input_st->bsv_movie_state.flags &= ~(
+         BSV_FLAG_MOVIE_END
+         | BSV_FLAG_MOVIE_RECORDING);
    return true;
 
 }
@@ -387,8 +391,10 @@ bool movie_stop(input_driver_state_t *input_st)
 {
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
       return movie_stop_playback(input_st);
-   else if (input_st->bsv_movie_state_handle)
-      return movie_stop_record(input_st);
+   else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
+     return movie_stop_record(input_st);
+  if(input_st->bsv_movie_state_handle)
+    RARCH_ERR("Didn't really stop!\n");
    return true;
 }
 
@@ -396,7 +402,8 @@ bool movie_start_playback(input_driver_state_t *input_st, char *path)
 {
   retro_task_t       *task      = task_init();
   moviectl_task_state_t *state  = (moviectl_task_state_t *) calloc(1, sizeof(*state));
-  if (!task || !state)
+  bool file_exists = filestream_exists(path);
+  if (!task || !state || !file_exists)
     goto error;
   *state                        = input_st->bsv_movie_state;
   strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
@@ -423,7 +430,8 @@ bool movie_start_record(input_driver_state_t *input_st, char*path)
    const char *movie_rec_str     = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
    retro_task_t       *task      = task_init();
    moviectl_task_state_t *state  = (moviectl_task_state_t *) calloc(1, sizeof(*state));
-   if (!task || !state)
+   bool file_ok = path_is_valid(path);
+   if (!task || !state || !file_ok)
       goto error;
 
    *state                        = input_st->bsv_movie_state;

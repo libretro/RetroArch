@@ -2511,19 +2511,30 @@ bool command_event(enum event_command cmd, void *data)
          return false;
       case CMD_EVENT_PLAY_REPLAY:
       {
+         bool res = false;
 #ifdef HAVE_BSV_MOVIE
          input_driver_state_t *input_st = input_state_get_ptr();
          char replay_path[PATH_MAX_LENGTH];
-         RARCH_LOG("play replay!\n");
          /* TODO: Consider extending the current replay if we start recording during a playback */
          if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
-            return false;
+            res = false;
          if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
+         {
+            res = false;
             movie_stop(input_st);
+         }
          if (!runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
-            return false;
-         RARCH_LOG("really play replay!\n");
-         return movie_start_playback(input_st, replay_path);
+            res = false;
+         res = movie_start_playback(input_st, replay_path);
+         if(!res)
+         {
+            const char *movie_fail_str        =
+               msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE);
+            runloop_msg_queue_push(movie_fail_str,
+               1, 180, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_ERR("%s.\n", movie_fail_str);
+         }
 #else
          return false;
 #endif
@@ -2534,20 +2545,33 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_BSV_MOVIE
          input_driver_state_t *input_st = input_state_get_ptr();
          char replay_path[PATH_MAX_LENGTH];
-         RARCH_LOG("record replay!\n");
          /* TODO: Consider cloning and extending the current replay if we start recording during a recording */
          if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
-            return false;
-         if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
+            res = false;
+         
+         if (res && input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
+         {
+            res = false;                 
             movie_stop(input_st);
-         if (!runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
-            return false;
-         RARCH_LOG("start record!\n");
-         res = movie_start_record(input_st, replay_path);
+         }
+         if (res && !runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
+            res = false;
+         if(res)
+            res = movie_start_record(input_st, replay_path);
+
          if(res && settings->bools.replay_auto_index)
          {
             int new_replay_slot = settings->ints.replay_slot + 1;
             configuration_set_int(settings, settings->ints.replay_slot, new_replay_slot);
+         }
+         if(!res)
+         {
+            const char *movie_rec_fail_str        =
+               msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
+            runloop_msg_queue_push(movie_rec_fail_str,
+               1, 180, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_ERR("%s.\n", movie_rec_fail_str);
          }
 #endif
          return res;
