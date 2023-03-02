@@ -327,11 +327,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   "轉換核心至Play Store版本"
+   "更新核心為Play商店版本"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   "如果有可用更新, 使用Google Play Store 中最新版本的核心, 替換全部舊版和手動安裝的核心。"
+   "使用Google Play商店可用的最新版本, 替換全部舊版和手動安裝的核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
@@ -1578,7 +1578,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
-   "ALSA驅動程式。\n進階Linux聲音架構(ALSA)無依賴項進行處理。"
+   "ALSA驅動程式。\n進階Linux聲音架構(ALSA)無依賴項處理。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
@@ -2428,11 +2428,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   "準確同步執行幀率 (G-Sync, FreeSync)"
+   "準確同步執行幀率 (G-Sync/FreeSync)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
-   "同步核心請求的時間, 僅限支援可變更新率的裝置(G-Sync, FreeSync, HDMI 2.1 VRR)。"
+   "同步核心請求的時間, 僅限支援可變更新率的裝置 (G-Sync/FreeSync/HDMI 2.1 VRR)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
@@ -8778,7 +8778,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
-   "載入著色器配置檔, 自動設置著色器通道參數。"
+   "載入著色器配置檔並自動設置通道和參數。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
@@ -10083,7 +10083,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
-   "使用開關圖示"
+   "開關圖示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
@@ -10441,7 +10441,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
-   "使用開關圖示"
+   "開關圖示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
@@ -10794,7 +10794,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SWITCH_ICONS,
-   "使用開關圖示"
+   "開關圖示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
@@ -12568,7 +12568,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ALL_CORES_SWITCHED_PFD,
-   "全部支援的核心已切換到Google Play商店版本。"
+   "全部支援的核心已更新為Google Play商店版本。"
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,

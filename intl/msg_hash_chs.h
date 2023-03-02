@@ -84,6 +84,10 @@ MSG_HASH(
    "选择要加载的游戏 ROM。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "浏览内容。要加载内容，“核心”和内容文件是必备的。\n要设置主菜单浏览内容的初始目录，请设置“文件浏览器目录”。 如果未设置，默认在根目录。\n浏览器将筛选“加载核心”中最后一个核心的扩展，并在内容加载时使用该核心。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
    "加载光盘"
    )
@@ -546,6 +550,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "从「独立核心」菜单中排除"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "防止此核心显示在“独立核心”的选项卡/菜单中。只有当显示模式设置为“自定义”时才适用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -1205,6 +1213,10 @@ MSG_HASH(
    "压缩存档文件"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "写入配置文件"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
    "数据库光标文件。"
    )
@@ -1239,6 +1251,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
    "矢量字体文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   "纯文本文件"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
@@ -1423,6 +1439,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    "Udev 输入设备使用最近的 evdev 手柄 API 来驱动游戏手柄，也支持即插即用和力反馈。\n设备读取 evdev 记录支持当前键盘及按键回滚、鼠标和触摸板。\n大多数发行版默认情况下，/dev/input的节点是root专用的 (模式600) 。您可以设置一个 udev 规则，使非 root 用户可以访问它们。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   "使用的输入驱动。某些视频驱动可能需要使用特定的输入驱动才行。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
