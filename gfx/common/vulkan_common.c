@@ -3189,9 +3189,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
     * for GPU-rendered cores. */
    desired_swapchain_images    = settings->uints.video_max_swapchain_images;
 
-   /* Clamp images requested to what is supported by the implementation. */
-   if (desired_swapchain_images < surface_properties.minImageCount)
-      desired_swapchain_images = surface_properties.minImageCount;
+   /* We don't clamp the number of images requested to what is reported
+    * as supported by the implementation in surface_properties.minImageCount,
+    * because MESA always reports a minImageCount of 4, but 3 and 2 work
+    * pefectly well, even if it's out of spec. */
 
    if ((surface_properties.maxImageCount > 0)
          && (desired_swapchain_images > surface_properties.maxImageCount))
