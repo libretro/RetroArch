@@ -1013,7 +1013,6 @@ bool movie_start_playback(input_driver_state_t *input_st, char *path);
 bool movie_start_record(input_driver_state_t *input_st, char *path);
 bool movie_stop_playback(input_driver_state_t *input_st);
 bool movie_stop_record(input_driver_state_t *input_st);
-bool movie_toggle_record(input_driver_state_t *input_st, settings_t *settings);
 bool movie_stop(input_driver_state_t *input_st);
 
 #endif

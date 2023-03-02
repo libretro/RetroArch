@@ -22,6 +22,7 @@
 #include <time.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -348,19 +349,6 @@ static void moviectl_start_record_cb(retro_task_t *task,
 
 /* Public functions */
 
-bool movie_toggle_record(input_driver_state_t *input_st, settings_t *settings)
-{
-   if (!input_st->bsv_movie_state_handle)
-   {
-      char path[8192];
-      configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
-      fill_str_dated_filename(path, input_st->bsv_movie_state.movie_auto_path, "bsv", sizeof(path));
-      return movie_start_record(input_st, path);
-   }
-
-   return movie_stop(input_st);
-}
-
 /* In the future this should probably be a deferred task as well */
 bool movie_stop_playback(input_driver_state_t *input_st)
 {
@@ -392,6 +380,9 @@ bool movie_stop_record(input_driver_state_t *input_st)
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s\n", movie_rec_stopped_str);
    bsv_movie_deinit(input_st);
+   input_st->bsv_movie_state.flags &= ~(
+         BSV_FLAG_MOVIE_END
+         | BSV_FLAG_MOVIE_RECORDING);
    return true;
 
 }
@@ -400,8 +391,10 @@ bool movie_stop(input_driver_state_t *input_st)
 {
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
       return movie_stop_playback(input_st);
-   else if (input_st->bsv_movie_state_handle)
+   else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
       return movie_stop_record(input_st);
+   if(input_st->bsv_movie_state_handle)
+      RARCH_ERR("Didn't really stop movie!\n");
    return true;
 }
 
@@ -409,7 +402,8 @@ bool movie_start_playback(input_driver_state_t *input_st, char *path)
 {
   retro_task_t       *task      = task_init();
   moviectl_task_state_t *state  = (moviectl_task_state_t *) calloc(1, sizeof(*state));
-  if (!task || !state)
+  bool file_exists = filestream_exists(path);
+  if (!task || !state || !file_exists)
     goto error;
   *state                        = input_st->bsv_movie_state;
   strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));

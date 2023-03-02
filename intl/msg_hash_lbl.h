@@ -3318,6 +3318,22 @@ MSG_HASH(
    "savestate"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_RECORD_REPLAY,
+   "record_replay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REPLAY_SLOT,
+   "replay_slot"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PLAY_REPLAY,
+   "play_replay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HALT_REPLAY,
+   "halt_replay"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SAVING_SETTINGS,
    "saving_settings"
    )
@@ -4858,6 +4874,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
    "quick_menu_show_save_load_state"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_REPLAY,
+   "quick_menu_show_replay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,

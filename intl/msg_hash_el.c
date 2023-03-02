@@ -207,10 +207,6 @@ int msg_hash_get_help_el_enum(enum msg_hash_enums msg, char *s, size_t len)
                    " \n"
                    "Η επιστροφή προς τα πίσω πρέπει να είναι ενεργοποιημένη.");
              break;
-          case RARCH_BSV_RECORD_TOGGLE:
-             snprintf(s, len,
-                   "Αλλαγή ανάμεσα σε εγγραφή ή όχι.");
-             break;
           default:
              if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);

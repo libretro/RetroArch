@@ -231,6 +231,10 @@ enum
    MUI_TEXTURE_UNDO_LOAD_STATE,
    MUI_TEXTURE_UNDO_SAVE_STATE,
    MUI_TEXTURE_STATE_SLOT,
+   MUI_TEXTURE_PLAY_REPLAY,
+   MUI_TEXTURE_RECORD_REPLAY,
+   MUI_TEXTURE_HALT_REPLAY,
+   MUI_TEXTURE_REPLAY_SLOT,
    MUI_TEXTURE_TAKE_SCREENSHOT,
    MUI_TEXTURE_CONFIGURATIONS,
    MUI_TEXTURE_LOAD_CONTENT,
@@ -2122,6 +2126,12 @@ static const char *materialui_texture_path(unsigned id)
          return "load_state.png";
       case MUI_TEXTURE_SAVE_STATE:
          return "save_state.png";
+      case MUI_TEXTURE_PLAY_REPLAY:
+         return "load_state.png";
+      case MUI_TEXTURE_RECORD_REPLAY:
+         return "save_state.png";
+      case MUI_TEXTURE_HALT_REPLAY:
+         return "remove.png";
       case MUI_TEXTURE_DISK:
          return "disk.png";
       case MUI_TEXTURE_EJECT:
@@ -10621,6 +10631,21 @@ static void materialui_list_insert(
                node->icon_texture_index = MUI_TEXTURE_LOAD_STATE;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAY_REPLAY)))
+            {
+               node->icon_texture_index = MUI_TEXTURE_PLAY_REPLAY;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RECORD_REPLAY)))
+            {
+               node->icon_texture_index = MUI_TEXTURE_RECORD_REPLAY;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HALT_REPLAY)))
+            {
+               node->icon_texture_index = MUI_TEXTURE_HALT_REPLAY;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_TRAY_EJECT)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_TRAY_INSERT))
@@ -10673,6 +10698,11 @@ static void materialui_list_insert(
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT)))
             {
                node->icon_texture_index = MUI_TEXTURE_STATE_SLOT;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REPLAY_SLOT)))
+            {
+               node->icon_texture_index = MUI_TEXTURE_REPLAY_SLOT;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT)))

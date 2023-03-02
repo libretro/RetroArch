@@ -409,6 +409,12 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_key,        ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_state_slot_plus,       MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_state_slot_minus,      MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS)
 
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_play_replay_key,        MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_record_replay_key,      MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_halt_replay_key,        MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_replay_slot_plus,       MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_replay_slot_minus,      MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS)
+
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_disk_eject_toggle,     MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_disk_next,             MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_disk_prev,             MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV)
@@ -424,7 +430,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_cheat_index_minus,     ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_screenshot,            MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_recording_toggle,      MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_streaming_toggle,      MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_bsv_record_toggle,     MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE)
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_grab_mouse_toggle,     MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_game_focus_toggle,     MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE)
@@ -895,6 +900,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_state,                         
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_state,                            MENU_ENUM_SUBLABEL_SAVE_STATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_undo_load_state,                       MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_undo_save_state,                       MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_record_replay,                         MENU_ENUM_SUBLABEL_RECORD_REPLAY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_play_replay,                           MENU_ENUM_SUBLABEL_PLAY_REPLAY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_halt_replay,                           MENU_ENUM_SUBLABEL_HALT_REPLAY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_slot,                           MENU_ENUM_SUBLABEL_REPLAY_SLOT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accounts_retro_achievements,           MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accounts_list,                         MENU_ENUM_SUBLABEL_ACCOUNTS_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_rewind,                     MENU_ENUM_SUBLABEL_INPUT_META_REWIND)
@@ -998,6 +1007,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_restart_content,    
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_close_content,         MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_savestate_submenu,     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_save_load_state,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_replay,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_undo_save_load_state,  MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_add_to_favorites,      MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_start_recording,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING)
@@ -2189,6 +2199,22 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_state_slot_minus);
                return 0;
 
+            case RARCH_PLAY_REPLAY_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_play_replay_key);
+               return 0;
+            case RARCH_RECORD_REPLAY_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_record_replay_key);
+               return 0;
+            case RARCH_HALT_REPLAY_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_halt_replay_key);
+               return 0;
+            case RARCH_REPLAY_SLOT_PLUS:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_replay_slot_plus);
+               return 0;
+            case RARCH_REPLAY_SLOT_MINUS:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_replay_slot_minus);
+               return 0;
+
             case RARCH_DISK_EJECT_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_disk_eject_toggle);
                return 0;
@@ -2233,9 +2259,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
                return 0;
             case RARCH_STREAMING_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_streaming_toggle);
-               return 0;
-            case RARCH_BSV_RECORD_TOGGLE:
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_bsv_record_toggle);
                return 0;
 
             case RARCH_GRAB_MOUSE_TOGGLE:
@@ -2778,6 +2801,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_save_load_state);
             break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_REPLAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_replay);
+            break;
          case MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_undo_save_load_state);
             break;
@@ -3221,6 +3247,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_STATE_SLOT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_state_slot);
             break;
+         case MENU_ENUM_LABEL_REPLAY_SLOT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_replay_slot);
+            break;
          case MENU_ENUM_LABEL_RESUME:
          case MENU_ENUM_LABEL_RESUME_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_resume_content);
@@ -3230,6 +3259,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_LOAD_STATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_load_state);
+            break;
+         case MENU_ENUM_LABEL_HALT_REPLAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_halt_replay);
+            break;
+         case MENU_ENUM_LABEL_RECORD_REPLAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_record_replay);
+            break;
+        case MENU_ENUM_LABEL_PLAY_REPLAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_play_replay);
             break;
          case MENU_ENUM_LABEL_CLOSE_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_close_content);

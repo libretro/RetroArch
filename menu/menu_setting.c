@@ -9590,6 +9590,25 @@ static bool setting_append_list(
             &setting_get_string_representation_state_slot;
          menu_settings_list_current_add_range(list, list_info, -1, 999, 1, true, true);
 
+#ifdef HAVE_BSV_MOVIE
+         CONFIG_INT(
+               list, list_info,
+               &settings->ints.replay_slot,
+               MENU_ENUM_LABEL_REPLAY_SLOT,
+               MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+               0,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by     = -1;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_state_slot;
+         menu_settings_list_current_add_range(list, list_info, -1, 999, 1, true, true);
+#endif
+
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_START_CORE,
@@ -11108,6 +11127,40 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 999, 1, true, true);
+
+#ifdef HAVE_BSV_MOVIE
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.replay_auto_index,
+                  MENU_ENUM_LABEL_REPLAY_AUTO_INDEX,
+                  MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+                  DEFAULT_REPLAY_AUTO_INDEX,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.replay_max_keep,
+                  MENU_ENUM_LABEL_REPLAY_MAX_KEEP,
+                  MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+                  DEFAULT_REPLAY_MAX_KEEP,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0, 999, 1, true, true);
+#endif
 
             CONFIG_BOOL(
                   list, list_info,
@@ -19342,6 +19395,21 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
                MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
                DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_replay,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_REPLAY,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+               DEFAULT_QUICK_MENU_SHOW_REPLAY,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

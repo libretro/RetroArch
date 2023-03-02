@@ -290,6 +290,7 @@ struct runloop
       char *remapfile;
       char savefile[8192];
       char savestate[8192];
+      char replay[8192];
       char cheatfile[8192];
       char ups[8192];
       char bps[8192];
@@ -426,6 +427,10 @@ bool runloop_get_entry_state_path(char *path, size_t len, unsigned slot);
 bool runloop_get_current_savestate_path(char *path, size_t len);
 
 bool runloop_get_savestate_path(char *path, size_t len, unsigned slot);
+
+bool runloop_get_current_replay_path(char *path, size_t len);
+
+bool runloop_get_replay_path(char *path, size_t len, unsigned slot);
 
 void runloop_state_free(runloop_state_t *runloop_st);
 

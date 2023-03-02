@@ -963,6 +963,21 @@ static int action_right_state_slot(unsigned type, const char *label,
    return 0;
 }
 
+static int action_right_replay_slot(unsigned type, const char *label,
+      bool wraparound)
+{
+   settings_t           *settings = config_get_ptr();
+
+   settings->ints.replay_slot++;
+   if (settings->ints.replay_slot > 999)
+      settings->ints.replay_slot = -1;
+
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+
+   return 0;
+}
+
 int bind_right_generic(unsigned type, const char *label,
        bool wraparound)
 {
@@ -1091,6 +1106,11 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION_SAVESTATE:
          case MENU_SETTING_ACTION_LOADSTATE:
             BIND_ACTION_RIGHT(cbs, action_right_state_slot);
+            break;
+         case MENU_SETTING_ACTION_RECORDREPLAY:
+         case MENU_SETTING_ACTION_PLAYREPLAY:
+         case MENU_SETTING_ACTION_HALTREPLAY:
+            BIND_ACTION_RIGHT(cbs, action_right_replay_slot);
             break;
          default:
             return -1;

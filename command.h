@@ -92,6 +92,12 @@ enum event_command
    CMD_EVENT_SAVE_STATE,
    CMD_EVENT_SAVE_STATE_DECREMENT,
    CMD_EVENT_SAVE_STATE_INCREMENT,
+   /* Replay hotkeys. */
+   CMD_EVENT_PLAY_REPLAY,
+   CMD_EVENT_RECORD_REPLAY,
+   CMD_EVENT_HALT_REPLAY,
+   CMD_EVENT_REPLAY_DECREMENT,
+   CMD_EVENT_REPLAY_INCREMENT,
    /* Save state actions. */
    CMD_EVENT_SAVE_STATE_TO_RAM,
    CMD_EVENT_LOAD_STATE_FROM_RAM,
@@ -260,8 +266,6 @@ enum event_command
    CMD_EVENT_RECORDING_TOGGLE,
    /* Toggle streaming. */
    CMD_EVENT_STREAMING_TOGGLE,
-   /* Toggle BSV recording. */
-   CMD_EVENT_BSV_RECORDING_TOGGLE,
    /* Toggle Run-Ahead. */
    CMD_EVENT_RUNAHEAD_TOGGLE,
    /* Toggle Preemtive Frames. */
@@ -373,6 +377,14 @@ void command_event_set_savestate_garbage_collect(
       bool show_hidden_files
       );
 
+void command_event_set_replay_auto_index(
+      settings_t *settings);
+
+void command_event_set_replay_garbage_collect(
+      unsigned max_to_keep,
+      bool show_hidden_files
+      );
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 bool command_set_shader(command_t *cmd, const char *arg);
 #endif
@@ -428,7 +440,8 @@ static const struct cmd_action_map action_map[] = {
    { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>" },
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ..." },
 
-   {"LOAD_STATE_SLOT",command_load_state_slot, "<slot number>"}
+   { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>"},
+   /*{ "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},*/
 };
 
 static const struct cmd_map map[] = {
@@ -454,6 +467,12 @@ static const struct cmd_map map[] = {
    { "STATE_SLOT_PLUS",        RARCH_STATE_SLOT_PLUS },
    { "STATE_SLOT_MINUS",       RARCH_STATE_SLOT_MINUS },
 
+   { "PLAY_REPLAY",            RARCH_PLAY_REPLAY_KEY },
+   { "RECORD_REPLAY",          RARCH_RECORD_REPLAY_KEY },
+   { "HALT_REPLAY",            RARCH_HALT_REPLAY_KEY },
+   { "REPLAY_SLOT_PLUS",       RARCH_REPLAY_SLOT_PLUS },
+   { "REPLAY_SLOT_MINUS",      RARCH_REPLAY_SLOT_MINUS },
+
    { "DISK_EJECT_TOGGLE",      RARCH_DISK_EJECT_TOGGLE },
    { "DISK_NEXT",              RARCH_DISK_NEXT },
    { "DISK_PREV",              RARCH_DISK_PREV },
@@ -469,7 +488,6 @@ static const struct cmd_map map[] = {
    { "SCREENSHOT",             RARCH_SCREENSHOT },
    { "RECORDING_TOGGLE",       RARCH_RECORDING_TOGGLE },
    { "STREAMING_TOGGLE",       RARCH_STREAMING_TOGGLE },
-   { "BSV_RECORD_TOGGLE",      RARCH_BSV_RECORD_TOGGLE },
 
    { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
    { "GAME_FOCUS_TOGGLE",      RARCH_GAME_FOCUS_TOGGLE },

@@ -4498,6 +4498,51 @@ static int action_ok_save_state(const char *path,
    return 0;
 }
 
+static int action_ok_play_replay(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+   bool resume          = settings->bools.menu_savestate_resume;
+
+   if (generic_action_ok_command(CMD_EVENT_PLAY_REPLAY) == -1)
+      return -1;
+
+   if (resume)
+      return generic_action_ok_command(CMD_EVENT_RESUME);
+
+   return 0;
+}
+
+static int action_ok_record_replay(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+   bool resume          = settings->bools.menu_savestate_resume;
+
+   if (generic_action_ok_command(CMD_EVENT_RECORD_REPLAY) == -1)
+      return -1;
+
+   if (resume)
+      return generic_action_ok_command(CMD_EVENT_RESUME);
+
+   return 0;
+}
+
+static int action_ok_halt_replay(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+   bool resume          = settings->bools.menu_savestate_resume;
+
+   if (generic_action_ok_command(CMD_EVENT_HALT_REPLAY) == -1)
+      return -1;
+
+   if (resume)
+      return generic_action_ok_command(CMD_EVENT_RESUME);
+
+   return 0;
+}
+
 static int action_ok_close_submenu(const char* path,
    const char* label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -8251,6 +8296,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_LOAD_STATE,                          action_ok_load_state},
          {MENU_ENUM_LABEL_UNDO_LOAD_STATE,                     action_ok_undo_load_state},
          {MENU_ENUM_LABEL_UNDO_SAVE_STATE,                     action_ok_undo_save_state},
+         {MENU_ENUM_LABEL_RECORD_REPLAY,                          action_ok_record_replay},
+         {MENU_ENUM_LABEL_PLAY_REPLAY,                          action_ok_play_replay},
+         {MENU_ENUM_LABEL_HALT_REPLAY,                          action_ok_halt_replay},
          {MENU_ENUM_LABEL_RESUME_CONTENT,                      action_ok_resume_content},
          {MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST,           action_ok_add_to_favorites_playlist},
          {MENU_ENUM_LABEL_SET_CORE_ASSOCIATION,                action_ok_set_core_association},

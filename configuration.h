@@ -104,6 +104,7 @@ typedef struct settings
       int location_update_interval_ms;
       int location_update_interval_distance;
       int state_slot;
+      int replay_slot;
       int audio_wasapi_sh_buffer_length;
       int crt_switch_center_adjust;
       int crt_switch_porch_adjust;
@@ -203,6 +204,7 @@ typedef struct settings
       unsigned rewind_granularity;
       unsigned rewind_buffer_size_step;
       unsigned autosave_interval;
+      unsigned replay_max_keep;
       unsigned savestate_max_keep;
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
@@ -758,6 +760,7 @@ typedef struct settings
       bool quick_menu_show_take_screenshot;
       bool quick_menu_show_savestate_submenu;
       bool quick_menu_show_save_load_state;
+      bool quick_menu_show_replay;
       bool quick_menu_show_undo_save_load_state;
       bool quick_menu_show_add_to_favorites;
       bool quick_menu_show_start_recording;
@@ -875,6 +878,7 @@ typedef struct settings
       bool pause_nonactive;
       bool pause_on_disconnect;
       bool block_sram_overwrite;
+      bool replay_auto_index;
       bool savestate_auto_index;
       bool savestate_auto_save;
       bool savestate_auto_load;

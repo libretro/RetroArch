@@ -190,10 +190,6 @@ int msg_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   " \n"
                   "必须先启用回溯倒带功能。");
             break;
-         case RARCH_BSV_RECORD_TOGGLE:
-            snprintf(s, len,
-                  "在录制和非录制模式切换。");
-            break;
          default:
             if (string_is_empty(s))
                strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
@@ -1720,10 +1716,6 @@ int msg_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_FRAME_ADVANCE:
          snprintf(s, len,
                "游戏暂停时，运行一帧。");
-         break;
-      case MENU_ENUM_LABEL_BSV_RECORD_TOGGLE:
-         snprintf(s, len,
-               "切换是否处于录像状态。");
          break;
       case MENU_ENUM_LABEL_L_X_PLUS:
       case MENU_ENUM_LABEL_L_X_MINUS:

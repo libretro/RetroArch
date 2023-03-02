@@ -627,6 +627,7 @@
 #define DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT true
 #define DEFAULT_QUICK_MENU_SHOW_SAVESTATE_SUBMENU false
 #define DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE true
+#define DEFAULT_QUICK_MENU_SHOW_REPLAY true
 #define DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE true
 #define DEFAULT_QUICK_MENU_SHOW_ADD_TO_FAVORITES true
 #define DEFAULT_QUICK_MENU_SHOW_START_RECORDING true
@@ -1262,6 +1263,21 @@
  * > Setting value to zero disables the limit (no
  *   savestates will be deleted in this case) */
 #define DEFAULT_SAVESTATE_MAX_KEEP 0
+
+/* When recording replays, replay index is automatically
+ * incremented before recording starts.
+ * When the content is loaded, replay index will be set
+ * to the highest existing value. */
+#define DEFAULT_REPLAY_AUTO_INDEX true
+
+/* Specifies the maximum number of replays to keep
+ * when replay auto index is enabled
+ * > When limit is exceeded, replay with the lowest
+ *   index will be deleted automatically when creating
+ *   a new replay
+ * > Setting value to zero disables the limit (no
+ *   replays will be deleted in this case) */
+#define DEFAULT_REPLAY_MAX_KEEP 0
 
 /* Automatically saves a savestate at the end of RetroArch's lifetime.
  * The path is $SRAM_PATH.auto.
