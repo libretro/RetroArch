@@ -39,6 +39,33 @@
 		05A8E23C20A63CF50084ABDA /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23B20A63CF50084ABDA /* QuartzCore.framework */; };
 		05D7753520A567A400646447 /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
 		05D7753720A567A700646447 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
+		0720993E29B1258C001642BB /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
+		0720993F29B1258C001642BB /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
+		0720994029B1258C001642BB /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
+		0720994129B1258C001642BB /* MainMenu_Metal.xib in Resources */ = {isa = PBXBuildFile; fileRef = A9020F323D5F3C8E120D04AC /* MainMenu_Metal.xib */; };
+		0720994229B1258C001642BB /* connect in Resources */ = {isa = PBXBuildFile; fileRef = F0B1238F270D73A90006E60F /* connect */; };
+		0720994429B1258C001642BB /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
+		0720994529B1258C001642BB /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
+		0720994629B1258C001642BB /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
+		0720994729B1258C001642BB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
+		0720994829B1258C001642BB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; };
+		0720994929B1258C001642BB /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05A8C74E20DB72F100FF7857 /* Shaders.metal */; };
+		0720994B29B1258C001642BB /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50892228360D00113BC0 /* AudioToolbox.framework */; };
+		0720994C29B1258C001642BB /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
+		0720994D29B1258C001642BB /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
+		0720994E29B1258C001642BB /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 07B634CF296391FF00B3D78D /* libMoltenVK.dylib */; };
+		0720994F29B1258C001642BB /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50872228360000113BC0 /* AVFoundation.framework */; };
+		0720995029B1258C001642BB /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23B20A63CF50084ABDA /* QuartzCore.framework */; };
+		0720995129B1258C001642BB /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23920A63CED0084ABDA /* IOSurface.framework */; };
+		0720995229B1258C001642BB /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
+		0720995329B1258C001642BB /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23720A63CB40084ABDA /* Metal.framework */; };
+		0720995429B1258C001642BB /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05269A6120ABF20500C29F1E /* MetalKit.framework */; };
+		0720995529B1258C001642BB /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5061C8A31AE47E510080AE14 /* libz.dylib */; };
+		0720995629B1258C001642BB /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EA81A89E4BE007336C1 /* CoreAudio.framework */; };
+		0720995729B1258C001642BB /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB21A89E6C0007336C1 /* AudioUnit.framework */; };
+		0720995829B1258C001642BB /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
+		0720995929B1258C001642BB /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
+		0720995B29B1258C001642BB /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 07B634CF296391FF00B3D78D /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		072976DD296284F600D6E00C /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
 		0746953A2997393000CCB7BD /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
 		079371D0296392420059A71C /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 07B634CF296391FF00B3D78D /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -92,6 +119,17 @@
 			dstPath = "";
 			dstSubfolderSpec = 6;
 			files = (
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0720995A29B1258C001642BB /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				0720995B29B1258C001642BB /* libMoltenVK.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -494,6 +532,7 @@
 		05F2873F20F2BEEA00632D47 /* task_content.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_content.c; sourceTree = "<group>"; };
 		05F2874020F2BEEA00632D47 /* task_http.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_http.c; sourceTree = "<group>"; };
 		05F2874120F2BEEA00632D47 /* task_patch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_patch.c; sourceTree = "<group>"; };
+		0720996029B1258C001642BB /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		072976DC296284F600D6E00C /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		074695362995C03900CCB7BD /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		0776EF3829A005D600AF0237 /* Steam.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Steam.xcconfig; sourceTree = "<group>"; };
@@ -554,6 +593,28 @@
 				05422E512140C8DB00F09961 /* OpenGL.framework in Frameworks */,
 				05422E522140C8DB00F09961 /* AppKit.framework in Frameworks */,
 				05422E542140C8DB00F09961 /* IOKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0720994A29B1258C001642BB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0720994B29B1258C001642BB /* AudioToolbox.framework in Frameworks */,
+				0720994C29B1258C001642BB /* OpenGL.framework in Frameworks */,
+				0720994D29B1258C001642BB /* GameController.framework in Frameworks */,
+				0720994E29B1258C001642BB /* libMoltenVK.dylib in Frameworks */,
+				0720994F29B1258C001642BB /* AVFoundation.framework in Frameworks */,
+				0720995029B1258C001642BB /* QuartzCore.framework in Frameworks */,
+				0720995129B1258C001642BB /* IOSurface.framework in Frameworks */,
+				0720995229B1258C001642BB /* CoreHaptics.framework in Frameworks */,
+				0720995329B1258C001642BB /* Metal.framework in Frameworks */,
+				0720995429B1258C001642BB /* MetalKit.framework in Frameworks */,
+				0720995529B1258C001642BB /* libz.dylib in Frameworks */,
+				0720995629B1258C001642BB /* CoreAudio.framework in Frameworks */,
+				0720995729B1258C001642BB /* AudioUnit.framework in Frameworks */,
+				0720995829B1258C001642BB /* AppKit.framework in Frameworks */,
+				0720995929B1258C001642BB /* IOKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1350,6 +1411,7 @@
 			children = (
 				8D1107320486CEB800E47090 /* RetroArch.app */,
 				05422E592140C8DB00F09961 /* RetroArch.app */,
+				0720996029B1258C001642BB /* RetroArch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1456,16 +1518,35 @@
 			productReference = 05422E592140C8DB00F09961 /* RetroArch.app */;
 			productType = "com.apple.product-type.application";
 		};
+		0720993B29B1258C001642BB /* RetroArchSteam */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0720995D29B1258C001642BB /* Build configuration list for PBXNativeTarget "RetroArchSteam" */;
+			buildPhases = (
+				0720993C29B1258C001642BB /* ShellScript */,
+				0720993D29B1258C001642BB /* Resources */,
+				0720994329B1258C001642BB /* Sources */,
+				0720994A29B1258C001642BB /* Frameworks */,
+				0720995A29B1258C001642BB /* Embed Libraries */,
+				0720995C29B1258C001642BB /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RetroArchSteam;
+			productInstallPath = "$(HOME)/Applications";
+			productName = RetroArch;
+			productReference = 0720996029B1258C001642BB /* RetroArch.app */;
+			productType = "com.apple.product-type.application";
+		};
 		8D1107260486CEB800E47090 /* RetroArch */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "RetroArch" */;
 			buildPhases = (
-				076C6C0A29AE71EF000EC3CB /* ShellScript */,
 				8D1107290486CEB800E47090 /* Resources */,
 				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
 				0536DF8D20A6BDAC00BBB67F /* Embed Libraries */,
-				07DF7D6729A9DC570038AFFF /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -1499,6 +1580,7 @@
 			targets = (
 				8D1107260486CEB800E47090 /* RetroArch */,
 				05422E3C2140C8DB00F09961 /* RetroArchQt */,
+				0720993B29B1258C001642BB /* RetroArchSteam */,
 			);
 		};
 /* End PBXProject section */
@@ -1513,6 +1595,18 @@
 				9254B33825FA72F100A1E0DA /* assets.zip in Resources */,
 				0502387C2179713000789627 /* MainMenu_Metal.xib in Resources */,
 				F0B12391270D73A90006E60F /* connect in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0720993D29B1258C001642BB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0720993E29B1258C001642BB /* InfoPlist.strings in Resources */,
+				0720993F29B1258C001642BB /* retroarch.icns in Resources */,
+				0720994029B1258C001642BB /* assets.zip in Resources */,
+				0720994129B1258C001642BB /* MainMenu_Metal.xib in Resources */,
+				0720994229B1258C001642BB /* connect in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1558,7 +1652,7 @@
 			shellPath = /bin/sh;
 			shellScript = "make -C ${SRCBASE} -f Makefile.apple HAVE_MENU=1 HAVE_CONFIGFILE=1 HAVE_PATCH=1 HAVE_DSP_FILTER=1 HAVE_REWIND=1 HAVE_SCREENSHOTS=1 HAVE_CHEATS=1 HAVE_CORE_INFO_CACHE=1 HAVE_GFX_WIDGETS=1 HAVE_QT=1 HAVE_SLANG=1 MOC=${QT_INSTALL}/bin/moc generate\n";
 		};
-		076C6C0A29AE71EF000EC3CB /* ShellScript */ = {
+		0720993C29B1258C001642BB /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -1577,7 +1671,7 @@
 			shellScript = "if [ -d \"$MIST_PATH\" -a -f \"$MIST_PATH\"/libmist.dylib ]; then\n    install_name_tool -id @rpath/libmist.dylib \"$MIST_PATH\"/libmist.dylib\nfi\n";
 			showEnvVarsInLog = 0;
 		};
-		07DF7D6729A9DC570038AFFF /* ShellScript */ = {
+		0720995C29B1258C001642BB /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -1608,6 +1702,19 @@
 				05422E462140C8DB00F09961 /* griffin_objc.m in Sources */,
 				05422E472140C8DB00F09961 /* griffin.c in Sources */,
 				05422E482140C8DB00F09961 /* Shaders.metal in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0720994329B1258C001642BB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0720994429B1258C001642BB /* griffin_glslang.cpp in Sources */,
+				0720994529B1258C001642BB /* menu_pipeline.metal in Sources */,
+				0720994629B1258C001642BB /* griffin_cpp.cpp in Sources */,
+				0720994729B1258C001642BB /* griffin_objc.m in Sources */,
+				0720994829B1258C001642BB /* griffin.c in Sources */,
+				0720994929B1258C001642BB /* Shaders.metal in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1723,35 +1830,24 @@
 			};
 			name = Release;
 		};
+		0720995E29B1258C001642BB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0776EF3829A005D600AF0237 /* Steam.xcconfig */;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		0720995F29B1258C001642BB /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0776EF3829A005D600AF0237 /* Steam.xcconfig */;
+			buildSettings = {
+			};
+			name = Release;
+		};
 		C01FCF4B08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
-				CODE_SIGN_STYLE = Manual;
-				COMBINE_HIDPI_IMAGES = YES;
-				COPY_PHASE_STRIP = NO;
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST))",
-					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(SRCBASE)/pkg/apple/Frameworks/MoltenVK/dylib/macOS",
-					"$(PROJECT_DIR)/Frameworks/MoltenVK/dylib/macOS",
-				);
-				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
-				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
-				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "libretro.${PRODUCT_NAME:rfc1034identifier}";
-				PRODUCT_NAME = RetroArch;
-				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Debug;
 		};
@@ -1759,30 +1855,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
-				CODE_SIGN_STYLE = Manual;
-				COMBINE_HIDPI_IMAGES = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GCC_MODEL_TUNING = G5;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST))",
-					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(SRCBASE)/pkg/apple/Frameworks/MoltenVK/dylib/macOS",
-					"$(PROJECT_DIR)/Frameworks/MoltenVK/dylib/macOS",
-				);
-				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
-				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
-				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "libretro.${PRODUCT_NAME:rfc1034identifier}";
-				PRODUCT_NAME = RetroArch;
-				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Release;
 		};
@@ -1809,9 +1881,17 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEVELOPMENT_TEAM = UK699V5ZS8;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_MODEL_TUNING = G5;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -1839,10 +1919,21 @@
 					"$(DEPS_DIR)/glslang/glslang/SPIRV",
 					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
 				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST))",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(SRCBASE)/pkg/apple/Frameworks/MoltenVK/dylib/macOS",
+					"$(PROJECT_DIR)/Frameworks/MoltenVK/dylib/macOS",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
+				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
+				PRODUCT_NAME = RetroArch;
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				SDKROOT = macosx;
 			};
@@ -1871,10 +1962,19 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_MODEL_TUNING = G5;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_UNROLL_LOOPS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -1901,10 +2001,21 @@
 					"$(DEPS_DIR)/glslang/glslang/SPIRV",
 					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
 				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST))",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(SRCBASE)/pkg/apple/Frameworks/MoltenVK/dylib/macOS",
+					"$(PROJECT_DIR)/Frameworks/MoltenVK/dylib/macOS",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				MTL_IGNORE_WARNINGS = YES;
+				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
+				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
+				PRODUCT_NAME = RetroArch;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -1917,6 +2028,15 @@
 			buildConfigurations = (
 				05422E572140C8DB00F09961 /* Debug */,
 				05422E582140C8DB00F09961 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0720995D29B1258C001642BB /* Build configuration list for PBXNativeTarget "RetroArchSteam" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0720995E29B1258C001642BB /* Debug */,
+				0720995F29B1258C001642BB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
