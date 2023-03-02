@@ -4628,7 +4628,7 @@ void runloop_path_fill_names(void)
 
 #ifdef HAVE_BSV_MOVIE
    strlcpy(input_st->bsv_movie_state.movie_auto_path,
-         runloop_st->name.savestate,
+         runloop_st->name.replay,
          sizeof(input_st->bsv_movie_state.movie_auto_path));
 #endif
 
@@ -7213,7 +7213,7 @@ bool runloop_get_replay_path(char *path, size_t len, unsigned slot)
    if (!path)
       return false;
 
-   name_replay = runloop_st->name.savestate;
+   name_replay = runloop_st->name.replay;
    if (string_is_empty(name_replay))
       return false;
 
@@ -7713,6 +7713,22 @@ void runloop_path_set_names(void)
       runloop_st->name.savestate[len+6] = '\0';
    }
 
+#ifdef HAVE_BSV_MOVIE
+   if (!retroarch_override_setting_is_set(
+            RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
+   {
+      size_t len                        = strlcpy(
+            runloop_st->name.replay,
+            runloop_st->runtime_content_path_basename,
+            sizeof(runloop_st->name.replay));
+      runloop_st->name.replay[len  ] = '.';
+      runloop_st->name.replay[len+1] = 'b';
+      runloop_st->name.replay[len+2] = 's';
+      runloop_st->name.replay[len+3] = 'v';
+      runloop_st->name.replay[len+4] = '\0';
+   }
+#endif
+  
 #ifdef HAVE_CHEATS
    if (!string_is_empty(runloop_st->runtime_content_path_basename))
    {
@@ -7892,8 +7908,12 @@ void runloop_path_set_redirect(settings_t *settings,
          savefile_is_dir    = path_is_directory(runloop_st->name.savefile);
 
       if (savestate_is_dir)
+      {
          strlcpy(runloop_st->name.savestate, new_savestate_dir,
-               sizeof(runloop_st->name.savestate));
+                 sizeof(runloop_st->name.savestate));
+         strlcpy(runloop_st->name.replay, new_savestate_dir,
+                 sizeof(runloop_st->name.replay));
+      }
       else
          savestate_is_dir   = path_is_directory(runloop_st->name.savestate);
 
@@ -7918,6 +7938,12 @@ void runloop_path_set_redirect(settings_t *settings,
                : system->library_name,
                FILE_PATH_STATE_EXTENSION,
                sizeof(runloop_st->name.savestate));
+         fill_pathname_dir(runloop_st->name.replay,
+               !string_is_empty(runloop_st->runtime_content_path_basename)
+               ? runloop_st->runtime_content_path_basename
+               : system->library_name,
+               FILE_PATH_BSV_EXTENSION,
+               sizeof(runloop_st->name.replay));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
                runloop_st->name.savestate);
@@ -7987,8 +8013,12 @@ void runloop_path_set_special(char **argv, unsigned num_content)
    is_dir = path_is_directory(savestate_dir);
 
    if (is_dir)
+   {
       strlcpy(runloop_st->name.savestate, savestate_dir,
-            sizeof(runloop_st->name.savestate)); /* TODO/FIXME - why are we setting this string here but then later overwriting it later with fil_pathname_dir? */
+              sizeof(runloop_st->name.savestate)); /* TODO/FIXME - why are we setting this string here but then later overwriting it later with fil_pathname_dir? */
+      strlcpy(runloop_st->name.replay, savestate_dir,
+              sizeof(runloop_st->name.replay)); /* TODO/FIXME - as above */
+   }
    else
       is_dir   = path_is_directory(runloop_st->name.savestate);
 
@@ -7998,6 +8028,10 @@ void runloop_path_set_special(char **argv, unsigned num_content)
             str,
             ".state",
             sizeof(runloop_st->name.savestate));
+      fill_pathname_dir(runloop_st->name.replay,
+            str,
+            ".bsv",
+            sizeof(runloop_st->name.replay));
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
             runloop_st->name.savestate);

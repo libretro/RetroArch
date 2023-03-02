@@ -3856,6 +3856,12 @@ static bool config_load_file(global_t *global,
                path_get(RARCH_PATH_BASENAME),
                ".state",
                sizeof(runloop_st->name.savestate));
+         strlcpy(runloop_st->name.replay, tmp_str,
+               sizeof(runloop_st->name.replay));
+         fill_pathname_dir(runloop_st->name.replay,
+               path_get(RARCH_PATH_BASENAME),
+               ".bsv",
+               sizeof(runloop_st->name.replay));
       }
       else
          RARCH_WARN("[Config]: 'savestate_directory' is not a directory, ignoring..\n");

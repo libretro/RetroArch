@@ -290,6 +290,7 @@ struct runloop
       char *remapfile;
       char savefile[8192];
       char savestate[8192];
+      char replay[8192];
       char cheatfile[8192];
       char ups[8192];
       char bps[8192];

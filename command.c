@@ -1506,14 +1506,15 @@ void command_event_set_replay_auto_index(settings_t *settings)
 
    if (!replay_auto_index)
       return;
-
+  /* TODO: debugme */
+  RARCH_LOG("[Movie] set initial slot\n");
    /* Find the file in the same directory as runloop_st->savestate_name
     * with the largest numeral suffix.
     *
     * E.g. /foo/path/content.state, will try to find
     * /foo/path/content.state%d, where %d is the largest number available.
     */
-   fill_pathname_basedir(state_dir, runloop_st->name.savestate,
+   fill_pathname_basedir(state_dir, runloop_st->name.replay,
          sizeof(state_dir));
 
    dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
@@ -1522,8 +1523,9 @@ void command_event_set_replay_auto_index(settings_t *settings)
    if (!dir_list)
       return;
 
-   fill_pathname_base(state_base, runloop_st->name.savestate,
+   fill_pathname_base(state_base, runloop_st->name.replay,
          sizeof(state_base));
+  RARCH_LOG("[Movie] set initial slot at %s\n",state_base);
 
    for (i = 0; i < dir_list->size; i++)
    {
@@ -1533,6 +1535,7 @@ void command_event_set_replay_auto_index(settings_t *settings)
       const char *dir_elem            = dir_list->elems[i].data;
 
       fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
+     RARCH_LOG("[Movie] elem at %s\n",elem_base);
 
       if (strstr(elem_base, state_base) != elem_base)
          continue;
@@ -1542,7 +1545,8 @@ void command_event_set_replay_auto_index(settings_t *settings)
       while ((end > dir_elem) && ISDIGIT((int)end[-5]))
          end--;
 
-      idx = (unsigned)strtoul(end, NULL, 0);
+     idx = (unsigned)strtoul(end, NULL, 0);
+      RARCH_LOG("[Movie] found idx %d\n", idx);
       if (idx > max_idx)
          max_idx = idx;
    }
@@ -1561,6 +1565,7 @@ void command_event_set_replay_garbage_collect(
       bool show_hidden_files
       )
 {
+  /* TODO: debugme */
    size_t i, cnt = 0;
    char state_dir[PATH_MAX_LENGTH];
    char state_base[128];
@@ -1572,7 +1577,7 @@ void command_event_set_replay_garbage_collect(
 
    /* Similar to command_event_set_replay_auto_index(),
     * this will find the lowest numbered save-state */
-   fill_pathname_basedir(state_dir, runloop_st->name.savestate,
+   fill_pathname_basedir(state_dir, runloop_st->name.replay,
          sizeof(state_dir));
 
    dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
@@ -1581,7 +1586,7 @@ void command_event_set_replay_garbage_collect(
    if (!dir_list)
       return;
 
-   fill_pathname_base(state_base, runloop_st->name.savestate,
+   fill_pathname_base(state_base, runloop_st->name.replay,
          sizeof(state_base));
 
    for (i = 0; i < dir_list->size; i++)

@@ -430,8 +430,7 @@ bool movie_start_record(input_driver_state_t *input_st, char*path)
    const char *movie_rec_str     = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
    retro_task_t       *task      = task_init();
    moviectl_task_state_t *state  = (moviectl_task_state_t *) calloc(1, sizeof(*state));
-   bool file_ok = path_is_valid(path);
-   if (!task || !state || !file_ok)
+   if (!task || !state)
       goto error;
 
    *state                        = input_st->bsv_movie_state;

@@ -2515,17 +2515,16 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_BSV_MOVIE
          input_driver_state_t *input_st = input_state_get_ptr();
          char replay_path[PATH_MAX_LENGTH];
+         res = true;
          /* TODO: Consider extending the current replay if we start recording during a playback */
          if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
             res = false;
-         if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
-         {
-            res = false;
-            movie_stop(input_st);
-         }
+         else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
+            res = movie_stop(input_st);
          if (!runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
             res = false;
-         res = movie_start_playback(input_st, replay_path);
+         if (res)
+            res = movie_start_playback(input_st, replay_path);
          if(!res)
          {
             const char *movie_fail_str        =
@@ -2535,6 +2534,7 @@ bool command_event(enum event_command cmd, void *data)
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             RARCH_ERR("%s.\n", movie_fail_str);
          }
+         return res;
 #else
          return false;
 #endif
@@ -2545,18 +2545,19 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_BSV_MOVIE
          input_driver_state_t *input_st = input_state_get_ptr();
          char replay_path[PATH_MAX_LENGTH];
+         res = true;
          /* TODO: Consider cloning and extending the current replay if we start recording during a recording */
          if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
             res = false;
-         if (res && input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
-         {
+         else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
+            res = movie_stop(input_st);
+         RARCH_ERR("[Movie] res after stop check: %d\n",res);
+         if (!runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
             res = false;
-            movie_stop(input_st);
-         }
-         if (res && !runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
-            res = false;
+         RARCH_ERR("[Movie] res after path get: %d\n",res);
          if(res)
             res = movie_start_record(input_st, replay_path);
+         RARCH_ERR("[Movie] res after start record: %d\n",res);
 
          if(res && settings->bools.replay_auto_index)
          {
@@ -4468,6 +4469,7 @@ static void global_free(struct rarch_state *p_rarch)
    *runloop_st->name.ips                 = '\0';
    *runloop_st->name.savefile            = '\0';
    *runloop_st->name.savestate           = '\0';
+   *runloop_st->name.replay              = '\0';
    *runloop_st->name.cheatfile           = '\0';
    *runloop_st->name.label               = '\0';
 
@@ -5526,6 +5528,8 @@ static bool retroarch_parse_input_and_config(
             case 'S':
                strlcpy(runloop_st->name.savestate, optarg,
                      sizeof(runloop_st->name.savestate));
+               strlcpy(runloop_st->name.replay, optarg,
+                     sizeof(runloop_st->name.replay));
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
                break;
