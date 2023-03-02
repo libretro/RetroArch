@@ -11117,7 +11117,7 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.savestate_max_keep,
-                  MENU_ENUM_LABEL_SAVESTATE_MAX_KEEPa,
+                  MENU_ENUM_LABEL_SAVESTATE_MAX_KEEP,
                   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
                   DEFAULT_SAVESTATE_MAX_KEEP,
                   &group_info,
