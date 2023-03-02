@@ -900,6 +900,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_state,                         
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_state,                            MENU_ENUM_SUBLABEL_SAVE_STATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_undo_load_state,                       MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_undo_save_state,                       MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_record_replay,                         MENU_ENUM_SUBLABEL_RECORD_REPLAY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_play_replay,                           MENU_ENUM_SUBLABEL_PLAY_REPLAY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_halt_replay,                           MENU_ENUM_SUBLABEL_HALT_REPLAY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_slot,                           MENU_ENUM_SUBLABEL_REPLAY_SLOT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accounts_retro_achievements,           MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accounts_list,                         MENU_ENUM_SUBLABEL_ACCOUNTS_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_rewind,                     MENU_ENUM_SUBLABEL_INPUT_META_REWIND)
@@ -3243,6 +3247,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_STATE_SLOT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_state_slot);
             break;
+         case MENU_ENUM_LABEL_REPLAY_SLOT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_replay_slot);
+            break;
          case MENU_ENUM_LABEL_RESUME:
          case MENU_ENUM_LABEL_RESUME_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_resume_content);
@@ -3252,6 +3259,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_LOAD_STATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_load_state);
+            break;
+         case MENU_ENUM_LABEL_HALT_REPLAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_halt_replay);
+            break;
+         case MENU_ENUM_LABEL_RECORD_REPLAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_record_replay);
+            break;
+        case MENU_ENUM_LABEL_PLAY_REPLAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_play_replay);
             break;
          case MENU_ENUM_LABEL_CLOSE_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_close_content);

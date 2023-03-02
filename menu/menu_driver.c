@@ -8510,6 +8510,18 @@ size_t menu_update_fullscreen_thumbnail_label(
             config_get_ptr()->ints.state_slot);
       thumbnail_label = tmpstr;
    }
+   else if (is_quick_menu && (
+            string_is_equal(selected_entry.label, "replay_slot") ||
+            string_is_equal(selected_entry.label, "record_replay") ||
+            string_is_equal(selected_entry.label, "play_replay") ||
+            string_is_equal(selected_entry.label, "halt_replay")
+         ))
+   {
+      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REPLAY_SLOT),
+               config_get_ptr()->ints.replay_slot);
+      thumbnail_label = tmpstr;
+   }
    else if (string_to_unsigned(selected_entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
    {
       snprintf(tmpstr, sizeof(tmpstr), "%s %d",

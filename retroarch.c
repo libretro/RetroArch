@@ -2514,8 +2514,15 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_BSV_MOVIE
          input_driver_state_t *input_st = input_state_get_ptr();
          char replay_path[PATH_MAX_LENGTH];
+         RARCH_LOG("play replay!\n");
+         /* TODO: Consider extending the current replay if we start recording during a playback */
+         if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
+            return false;
+         if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
+            movie_stop(input_st);
          if (!runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
             return false;
+         RARCH_LOG("really play replay!\n");
          return movie_start_playback(input_st, replay_path);
 #else
          return false;
@@ -2527,8 +2534,15 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_BSV_MOVIE
          input_driver_state_t *input_st = input_state_get_ptr();
          char replay_path[PATH_MAX_LENGTH];
+         RARCH_LOG("record replay!\n");
+         /* TODO: Consider cloning and extending the current replay if we start recording during a recording */
+         if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
+            return false;
+         if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
+            movie_stop(input_st);
          if (!runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
             return false;
+         RARCH_LOG("start record!\n");
          res = movie_start_record(input_st, replay_path);
          if(res && settings->bools.replay_auto_index)
          {
@@ -2542,6 +2556,7 @@ bool command_event(enum event_command cmd, void *data)
       {
 #ifdef HAVE_BSV_MOVIE
          input_driver_state_t *input_st = input_state_get_ptr();
+         RARCH_LOG("halt!\n");
          movie_stop(input_st);
 #endif
          return true;
