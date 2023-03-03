@@ -881,6 +881,25 @@ static void win32_save_position(void)
    }
 }
 
+/* Get minimum window size for running core */
+static void win32_get_av_info_geometry(unsigned *width, unsigned *height)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+
+   /* Don't bother while fast-forwarding */
+   if (!video_st || runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
+      return;
+
+   if (video_st->av_info.geometry.aspect_ratio)
+      *width                      = roundf(
+              video_st->av_info.geometry.base_height
+            * video_st->av_info.geometry.aspect_ratio);
+   else
+      *width                      = video_st->av_info.geometry.base_width;
+
+   *height                        = video_st->av_info.geometry.base_height;
+}
 
 static LRESULT CALLBACK wnd_proc_common(
       bool *quit, HWND hwnd, UINT message,
@@ -953,27 +972,29 @@ static LRESULT CALLBACK wnd_proc_common(
          break;
       case WM_GETMINMAXINFO:
          {
-            MINMAXINFO FAR *lpMinMaxInfo = (MINMAXINFO FAR *)lparam;
-            settings_t *settings   = config_get_ptr();
-            unsigned min_width     = MIN_WIDTH;
-            unsigned min_height    = MIN_HEIGHT;
-            bool window_show_decor = settings->bools.video_window_show_decorations;
-            bool ui_menubar_enable = settings->bools.ui_menubar_enable;
+            MINMAXINFO FAR *lpMinMaxInfo   = (MINMAXINFO FAR *)lparam;
+            settings_t *settings           = config_get_ptr();
+            unsigned min_width             = MIN_WIDTH;
+            unsigned min_height            = MIN_HEIGHT;
+            bool window_show_decor         = settings ? settings->bools.video_window_show_decorations : true;
+            bool ui_menubar_enable         = settings ? settings->bools.ui_menubar_enable : true;
+
+            win32_get_av_info_geometry(&min_width, &min_height);
 
             if (window_show_decor)
             {
-               unsigned border_thickness = GetSystemMetrics(SM_CXSIZEFRAME);
-               unsigned title_bar_height = GetSystemMetrics(SM_CYCAPTION);
+               int border_thickness        = GetSystemMetrics(SM_CXSIZEFRAME);
+               int title_bar_height        = GetSystemMetrics(SM_CYCAPTION);
 
-               min_width                += border_thickness * 2;
-               min_height               += border_thickness * 2 + title_bar_height;
+               min_width                  += border_thickness * 2;
+               min_height                 += border_thickness * 2 + title_bar_height;
             }
 
             if (ui_menubar_enable)
             {
-               unsigned menu_bar_height  = GetSystemMetrics(SM_CYMENU);
+               int menu_bar_height         = GetSystemMetrics(SM_CYMENU);
 
-               min_height               += menu_bar_height;
+               min_height                 += menu_bar_height;
             }
 
             lpMinMaxInfo->ptMinTrackSize.x = min_width;
@@ -2131,6 +2152,29 @@ HWND win32_get_window(void) { return NULL; }
 #else
 bool win32_has_focus(void *data)
 {
+   settings_t *settings           = config_get_ptr();
+
+   /* Ensure window size is big enough for core geometry in 1x scale */
+   if (      settings
+         && !settings->bools.video_fullscreen
+         && !settings->bools.video_window_save_positions)
+   {
+      unsigned menu_bar_height    = 0;
+      unsigned min_width          = 0;
+      unsigned min_height         = 0;
+
+      win32_get_av_info_geometry(&min_width, &min_height);
+
+      /* Menubar without decorations requires extra bonus height */
+      if (      settings->bools.ui_menubar_enable
+            && !settings->bools.video_window_show_decorations)
+         menu_bar_height          = GetSystemMetrics(SM_CYMENU);
+
+      if (     g_win32_resize_width  < min_width
+            || g_win32_resize_height < min_height)
+         SetWindowPos(main_window.hwnd, NULL, 0, 0, min_width, min_height + menu_bar_height, SWP_NOMOVE);
+   }
+
    if (g_win32_flags & WIN32_CMN_FLAG_INITED)
       if (GetForegroundWindow() == main_window.hwnd)
          return true;
@@ -2320,16 +2364,6 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
       {
          g_win32_resize_width  = *width   = rect->right  - rect->left;
          g_win32_resize_height = *height  = rect->bottom - rect->top;
-
-         /* WM_GETMINMAXINFO isn't called without window decorations,
-          * therefore ensure size limit is still used */
-         if (!window_show_decor)
-         {
-            if (rect->right < MIN_WIDTH)
-               rect->right  = *width  = MIN_WIDTH;
-            if (rect->bottom < MIN_HEIGHT)
-               rect->bottom = *height = MIN_HEIGHT;
-         }
       }
    }
 }
