@@ -5092,9 +5092,9 @@ static void retroarch_print_help(const char *arg0)
 
 #ifdef HAVE_BSV_MOVIE
    strlcat(buf,
-         "  -P, --play-replay=FILE             "
+         "  -P, --play-replay=FILE         "
          "Playback a replay file.\n"
-         "  -R, --record-replay=FILE           "
+         "  -R, --record-replay=FILE       "
          "Start recording a replay file from the beginning.\n"
          "      --eof-exit                 "
          "Exit upon reaching the end of the replay file.\n"
