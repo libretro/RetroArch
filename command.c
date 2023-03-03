@@ -1509,8 +1509,8 @@ void command_event_set_replay_auto_index(settings_t *settings)
    /* Find the file in the same directory as runloop_st->names.replay
     * with the largest numeral suffix.
     *
-    * E.g. /foo/path/content.bsv, will try to find
-    * /foo/path/content.bsv%d, where %d is the largest number available.
+    * E.g. /foo/path/content.replay will try to find
+    * /foo/path/content.replay%d, where %d is the largest number available.
     */
    fill_pathname_basedir(state_dir, runloop_st->name.replay,
          sizeof(state_dir));
@@ -1597,11 +1597,11 @@ void command_event_set_replay_garbage_collect(
 
       fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
 
-      /* Only consider files with a '.bsvXX' extension
-       * > i.e. Ignore '.bsv.auto', '.bsv.bak', etc. */
+      /* Only consider files with a '.replayXX' extension
+       * > i.e. Ignore '.replay.auto', '.replay.bak', etc. */
       ext = path_get_extension(elem_base);
       if (string_is_empty(ext) ||
-          !string_starts_with_size(ext, "bsv", STRLEN_CONST("BSV")))
+          !string_starts_with_size(ext, "replay", STRLEN_CONST("REPLAY")))
          continue;
 
       /* Check whether this file is associated with

@@ -4805,7 +4805,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       /* read next key events, a frame happened for sure? but don't apply them yet */
       if (handle->key_event_count != 0)
       {
-         RARCH_ERR("[Movie] BSV keyboard replay reading next frame while some unused keys still in queue\n");
+         RARCH_ERR("[Replay] Keyboard replay reading next frame while some unused keys still in queue\n");
       }
       if (intfstream_read(handle->file, &(handle->key_event_count), 1) == 1)
       {
@@ -4815,13 +4815,13 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
             if (intfstream_read(handle->file, &(handle->key_events[i]), sizeof(bsv_key_data_t)) != sizeof(bsv_key_data_t))
             {
                /* Unnatural EOF */
-               RARCH_ERR("[Movie] BSV keyboard replay ran out of keyboard inputs too early\n");
+               RARCH_ERR("[Replay] Keyboard replay ran out of keyboard inputs too early\n");
             }
          }
       }
       else
       {
-         RARCH_LOG("[Movie] EOF after buttons\n",handle->key_event_count);
+         RARCH_LOG("[Replay] EOF after buttons\n",handle->key_event_count);
          /* Natural(?) EOF */
          input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
       }

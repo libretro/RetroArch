@@ -1440,7 +1440,7 @@ int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " \n"
                              "Save all save files (*.srm) to this \n"
                              "directory. This includes related files like \n"
-                             ".bsv, .rt, .psrm, etc...\n"
+                             ".rt, .psrm, etc...\n"
                              " \n"
                              "This will be overridden by explicit command line\n"
                              "options.");

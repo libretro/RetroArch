@@ -5092,12 +5092,12 @@ static void retroarch_print_help(const char *arg0)
 
 #ifdef HAVE_BSV_MOVIE
    strlcat(buf,
-         "  -P, --bsvplay=FILE             "
-         "Playback a BSV movie file.\n"
-         "  -R, --bsvrecord=FILE           "
-         "Start recording a BSV movie file from the beginning.\n"
+         "  -P, --play-replay=FILE         "
+         "Playback a replay file.\n"
+         "  -R, --record-replay=FILE       "
+         "Start recording a replay file from the beginning.\n"
          "      --eof-exit                 "
-         "Exit upon reaching the end of the BSV movie file.\n"
+         "Exit upon reaching the end of the replay file.\n"
          , sizeof(buf));
 #endif
 
@@ -5351,8 +5351,8 @@ static bool retroarch_parse_input_and_config(
       { "savestate",          1, NULL, 'S' },
       { "set-shader",         1, NULL, RA_OPT_SET_SHADER },
 #ifdef HAVE_BSV_MOVIE
-      { "bsvplay",            1, NULL, 'P' },
-      { "bsvrecord",          1, NULL, 'R' },
+      { "play-replay",        1, NULL, 'P' },
+      { "record-replay",      1, NULL, 'R' },
 #endif
       { "sram-mode",          1, NULL, 'M' },
 #ifdef HAVE_NETWORKING
@@ -5994,7 +5994,7 @@ static bool retroarch_parse_input_and_config(
      if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK)
      {
         runloop_st->entry_state_slot = 0;
-        RARCH_WARN("Trying to load entry state while BSV playback is active. Ignoring entry state.\n");
+        RARCH_WARN("Trying to load entry state while replay playback is active. Ignoring entry state.\n");
      }
    }
    #endif
