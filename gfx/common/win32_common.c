@@ -953,8 +953,7 @@ static LRESULT CALLBACK wnd_proc_common(
          break;
       case WM_GETMINMAXINFO:
          {
-            MINMAXINFO FAR *lpMinMaxInfo;
-            lpMinMaxInfo           = (MINMAXINFO FAR *)lparam;
+            MINMAXINFO FAR *lpMinMaxInfo = (MINMAXINFO FAR *)lparam;
             settings_t *settings   = config_get_ptr();
             unsigned min_width     = MIN_WIDTH;
             unsigned min_height    = MIN_HEIGHT;
