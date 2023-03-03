@@ -136,7 +136,7 @@ static bool bsv_movie_init_record(
       bsv_movie_t *handle, const char *path)
 {
    retro_ctx_size_info_t info;
-   time_t t = time(NULL);
+  time_t t = time(NULL);
    time_t time_lil = swap_if_big64(t);
    uint32_t state_size       = 0;
    uint32_t content_crc      = 0;
@@ -165,7 +165,7 @@ static bool bsv_movie_init_record(
    state_size               = (unsigned)info.size;
 
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
-   handle->identifier = (int64_t)time;
+   handle->identifier = (int64_t)t;
    header[IDENTIFIER_INDEX_LO] = (int32_t)(time_lil & 0x00000000FFFFFFFF);
    header[IDENTIFIER_INDEX_HI] = (int32_t)((time_lil & 0xFFFFFFFF00000000)>>32);
    intfstream_write(handle->file, header, 6 * sizeof(uint32_t));

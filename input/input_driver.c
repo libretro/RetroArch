@@ -4881,6 +4881,7 @@ bool replay_set_serialized_data(void* buffer)
       uint32_t *header = (uint32_t *)buffer;
       int64_t identifier = swap_if_big64((((int64_t)(header[5])) << 32) | ((int64_t)(header[4])));
       int32_t handle_idx = intfstream_tell(input_st->bsv_movie_state_handle->file);
+      RARCH_LOG("[Replay] compat? %d == %d?\n", identifier, input_st->bsv_movie_state_handle->identifier);
       bool is_compatible = identifier == input_st->bsv_movie_state_handle->identifier;
       if (playback)
       {
