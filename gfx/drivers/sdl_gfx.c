@@ -403,6 +403,12 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
 
       if (SDL_MUSTLOCK(vid->screen))
          SDL_UnlockSurface(vid->screen);
+      
+      if (msg)
+         sdl_render_msg(vid, vid->screen,
+         msg, vid->screen->w, vid->screen->h, vid->screen->format,
+         video_info->font_msg_pos_x,
+         video_info->font_msg_pos_y);
    }
 
    if (title[0])
