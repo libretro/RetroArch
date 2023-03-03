@@ -71,6 +71,7 @@
 #define RASTATE_VERSION 1
 #define RASTATE_MEM_BLOCK "MEM "
 #define RASTATE_CHEEVOS_BLOCK "ACHV"
+#define RASTATE_REPLAY_BLOCK "RPLY"
 #define RASTATE_END_BLOCK "END "
 
 struct ram_type
@@ -183,6 +184,9 @@ typedef struct rastate_size_info
    size_t coremem_size;
 #ifdef HAVE_CHEEVOS
    size_t cheevos_size;
+#endif
+#ifdef HAVE_BSV_MOVIE
+   size_t replay_size;
 #endif
 } rastate_size_info_t;
 
@@ -630,6 +634,11 @@ static size_t content_get_rastate_size(rastate_size_info_t* size)
    if ((size->cheevos_size = rcheevos_get_serialize_size()) > 0)
       size->total_size += 8 + CONTENT_ALIGN_SIZE(size->cheevos_size); 
 #endif
+#ifdef HAVE_BSV_MOVIE
+   /* 8-byte block header + content */
+   if ((size->replay_size = replay_get_serialize_size()) > 0)
+      size->total_size += 8 + CONTENT_ALIGN_SIZE(size->replay_size); 
+#endif
    return size->total_size;
 }
 
@@ -679,6 +688,18 @@ static bool content_write_serialized_state(void* buffer,
       if (rcheevos_get_serialized_data(output + 8))
          output += CONTENT_ALIGN_SIZE(size->cheevos_size) + 8;
    }
+#endif
+#ifdef HAVE_BSV_MOVIE
+    {
+       input_driver_state_t *input_st = input_state_get_ptr();
+       if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
+       {
+          content_write_block_header(output,
+             RASTATE_REPLAY_BLOCK, size->replay_size);
+          if (replay_get_serialized_data(output + 8))
+            output += CONTENT_ALIGN_SIZE(size->replay_size) + 8;
+       }
+    }
 #endif
 
    content_write_block_header(output, RASTATE_END_BLOCK, 0);
@@ -1070,6 +1091,9 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
 #ifdef HAVE_CHEEVOS
    bool seen_cheevos   = false;
 #endif
+#ifdef HAVE_BSV_MOVIE
+   bool seen_replay = false;
+#endif
 
    input += 8;
 
@@ -1098,18 +1122,32 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
             seen_cheevos = true;
       }
 #endif
+#ifdef HAVE_BSV_MOVIE
+      else if (memcmp(marker, RASTATE_REPLAY_BLOCK, 4) == 0)
+      {
+         RARCH_LOG("Replay block\n");
+         if (replay_set_serialized_data((void*)input))
+            seen_replay = true;
+      }
+#endif
       else if (memcmp(marker, RASTATE_END_BLOCK, 4) == 0)
          break;
 
       input += CONTENT_ALIGN_SIZE(block_size);
    }
 
-   if (!seen_core)
+   if (!seen_core) {
+RARCH_LOG("[State] no core\n");
       return false;
+    }
 
 #ifdef HAVE_CHEEVOS
    if (!seen_cheevos)
       rcheevos_set_serialized_data(NULL);
+#endif
+#ifdef HAVE_BSV_MOVIE
+   if (!seen_replay)
+      replay_set_serialized_data(NULL);
 #endif
 
    return true;
@@ -1129,6 +1167,9 @@ bool content_deserialize_state(
 
 #ifdef HAVE_CHEEVOS
       rcheevos_set_serialized_data(NULL);
+#endif
+#ifdef HAVE_BSV_MOVIE
+      replay_set_serialized_data(NULL);
 #endif
    }
    else
@@ -1256,7 +1297,7 @@ static void content_load_state_cb(retro_task_t *task,
    content_save_state("RAM", false, false);
 
    ret = content_deserialize_state(buf, size);
-
+    RARCH_LOG("[State]: ret is %d\n",ret);
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
    {

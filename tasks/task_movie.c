@@ -459,4 +459,26 @@ error:
 
    return false;
 }
+
+size_t replay_get_serialize_size(void)
+{
+   return 1;
+   /* if (!rcheevos_locals.loaded) */
+      /* return 0; */
+   /* return rc_runtime_progress_size(&rcheevos_locals.runtime, NULL); */
+}
+
+bool replay_get_serialized_data(void* buffer)
+{
+   ((unsigned char *)buffer)[0] = 0;
+   return true;
+   /* if (!rcheevos_locals.loaded) */
+   /*    return false; */
+   /* return (rc_runtime_serialize_progress( */
+   /*          buffer, &rcheevos_locals.runtime, NULL) == RC_OK); */
+}
+bool replay_set_serialized_data(void* buffer)
+{
+   return true;
+}
 #endif
