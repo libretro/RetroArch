@@ -7172,13 +7172,15 @@ void runloop_task_msg_queue_push(
       runloop_msg_queue_push(msg, prio, duration, flush, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
+
 bool runloop_get_current_savestate_path(char *path, size_t len)
 {
    settings_t *settings        = config_get_ptr();
    int state_slot              = settings ? settings->ints.state_slot : 0;
    return runloop_get_savestate_path(path, len, state_slot);
 }
-bool runloop_get_savestate_path(char *path, size_t len, unsigned state_slot)
+
+bool runloop_get_savestate_path(char *path, size_t len, int state_slot)
 {
    runloop_state_t *runloop_st = &runloop_state;
    const char *name_savestate  = NULL;
@@ -7199,12 +7201,15 @@ bool runloop_get_savestate_path(char *path, size_t len, unsigned state_slot)
 
    return true;
 }
+
+
 bool runloop_get_current_replay_path(char *path, size_t len)
 {
    settings_t *settings = config_get_ptr();
    int slot = settings ? settings->ints.replay_slot : 0;
    return runloop_get_replay_path(path, len, slot);
 }
+
 bool runloop_get_replay_path(char *path, size_t len, unsigned slot)
 {
    runloop_state_t *runloop_st = &runloop_state;
