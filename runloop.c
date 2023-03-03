@@ -7722,10 +7722,13 @@ void runloop_path_set_names(void)
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.replay));
       runloop_st->name.replay[len  ] = '.';
-      runloop_st->name.replay[len+1] = 'b';
-      runloop_st->name.replay[len+2] = 's';
-      runloop_st->name.replay[len+3] = 'v';
-      runloop_st->name.replay[len+4] = '\0';
+      runloop_st->name.replay[len+1] = 'r';
+      runloop_st->name.replay[len+2] = 'e';
+      runloop_st->name.replay[len+3] = 'p';
+      runloop_st->name.replay[len+4] = 'l';
+      runloop_st->name.replay[len+5] = 'a';
+      runloop_st->name.replay[len+6] = 'y';
+      runloop_st->name.replay[len+7] = '\0';
    }
 #endif
   
@@ -8030,7 +8033,7 @@ void runloop_path_set_special(char **argv, unsigned num_content)
             sizeof(runloop_st->name.savestate));
       fill_pathname_dir(runloop_st->name.replay,
             str,
-            ".bsv",
+            ".replay",
             sizeof(runloop_st->name.replay));
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),

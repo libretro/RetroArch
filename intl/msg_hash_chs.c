@@ -1367,7 +1367,7 @@ int msg_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "所有游戏存档都保存在此文件夹。 \n"
                "常见的游戏存档格式有 \n"
-               ".srm, .bsv, .rt, .psrm 等\n"
+               ".srm, .rt, .psrm 等\n"
                " \n"
                "此选项可能被特定命令行选项覆盖。");
          break;

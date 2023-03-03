@@ -7246,7 +7246,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
-   "Do tohoto adresáře uložte všechny ukládací soubory (*.srm). Patří sem i související soubory jako .bsv, .rt, .psrm atd... Toto bude potlačeno explicitními volbami příkazového řádku."
+   "Do tohoto adresáře uložte všechny ukládací soubory (*.srm). Patří sem i související soubory jako .rt, .psrm atd... Toto bude potlačeno explicitními volbami příkazového řádku."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,

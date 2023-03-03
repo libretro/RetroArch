@@ -1599,7 +1599,7 @@ int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " \n"
                              "Salvar todos os dados da memória do jogo (*.srm) \n"
                              "neste diretório. Isso inclui arquivos \n"
-                             "relacionados, como .bsv, .rt, .psrm, etc... \n"
+                             "relacionados, como .rt, .psrm, etc... \n"
                              " \n"
                              "Será substituído por opções definidas \n"
                              "explicitamente na linha de comando.");

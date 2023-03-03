@@ -3860,7 +3860,7 @@ static bool config_load_file(global_t *global,
                sizeof(runloop_st->name.replay));
          fill_pathname_dir(runloop_st->name.replay,
                path_get(RARCH_PATH_BASENAME),
-               ".bsv",
+               ".replay",
                sizeof(runloop_st->name.replay));
       }
       else

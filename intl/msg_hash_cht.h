@@ -7414,7 +7414,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
-   "儲存全部核心預設的記憶存檔到此資料夾。\n包含記憶存檔(*.srm)、 操作重播檔(*.bsv)、 實時時鐘(*.rtc)等相關檔案。\n此路徑位置會被命令列介面的命令取代。"
+   "儲存全部核心預設的記憶存檔到此資料夾。\n包含記憶存檔(*.srm)、 實時時鐘(*.rtc)等相關檔案。\n此路徑位置會被命令列介面的命令取代。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,

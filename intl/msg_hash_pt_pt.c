@@ -755,7 +755,7 @@ int msg_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Guarda todos os ficheiros de gravação (*.srm) nesta \n"
                "pasta, tais como ficheiros relacionados: \n"
-               ".bsv, .rt, .psrm, etc.\n"
+               ".rt, .psrm, etc.\n"
                " \n"
                "Pode perder prevalência em relação a opções explícitas\n"
                "passadas como parâmetros na linha de comandos.");

@@ -7322,7 +7322,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
-   "Minden mentés fájl (*.srm) mentése ebbe a könyvtárba. Ez a .bsv, .rt, .psrm stb. fájlokat is tartalmazza. Parancssori opciókkal felülbírálható."
+   "Minden mentés fájl (*.srm) mentése ebbe a könyvtárba. Ez a .rt, .psrm stb. fájlokat is tartalmazza. Parancssori opciókkal felülbírálható."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
