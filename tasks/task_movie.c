@@ -65,7 +65,7 @@ static bool bsv_movie_init_playback(
 
    if (!file)
    {
-      RARCH_ERR("Could not open BSV file for playback, path : \"%s\".\n", path);
+      RARCH_ERR("Could not open replay file for playback, path : \"%s\".\n", path);
       return false;
    }
 
@@ -139,7 +139,7 @@ static bool bsv_movie_init_record(
 
    if (!file)
    {
-      RARCH_ERR("Could not open BSV file for recording, path : \"%s\".\n", path);
+      RARCH_ERR("Could not open replay file for recording, path : \"%s\".\n", path);
       return false;
    }
 
