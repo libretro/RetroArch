@@ -3293,7 +3293,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Startet/stoppt das Streaming der aktuellen Sitzung zu einer Online-Video-Plattform."
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Mauszeiger einfangen (Umschalten)"
@@ -7845,6 +7844,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "Wenn ein Savestate überschrieben wurde, wird es auf den vorherigen Zustand zurückgesetzt."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "Den aktuell gewählten Speicherplatz ändern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,

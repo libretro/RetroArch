@@ -3385,7 +3385,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "A tartalom közvetítése egy online videó platform felé."
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Egér megragadása (váltógomb)"
@@ -8017,6 +8016,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "Ha egy játékállás mentés felülíródott, visszaállítja azt az előző elmentett állapotra."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "Az aktuális rekesz sorszáma."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,

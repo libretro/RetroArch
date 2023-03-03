@@ -529,7 +529,6 @@ MSG_HASH(
 
 
 
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
    "Switches 'Game Focus' mode on/off. When content has focus, hot-keys are disabled (full keyboard input is passed to the running core) and mouse is grabbed."

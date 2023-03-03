@@ -2761,7 +2761,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Start/stopt het streamen van de huidige sessie naar een online videoplatform."
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Grijp de Muis (Omschakelen)"

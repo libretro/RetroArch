@@ -2493,7 +2493,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
    "Streamovanie (prepnúť)"
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "Celá obrazovka (prepínanie)"

@@ -1981,7 +1981,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
    "Λήψη Στιγμιότυπου"
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "Πλήρης Οθόνη (Εναλλαγή)"

@@ -3413,7 +3413,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "현재 세션 영상을 온라인상으로 스트리밍을 시작/종료 합니다."
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "마우스 잡기 (켜기/끄기)"
@@ -8009,6 +8008,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "상태저장 파일을 덮어씌웠을 때, 이전 저장 상태로 되돌립니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "선택된 상태저장 슬롯을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,

@@ -3365,7 +3365,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Lance/arrête le streaming de la session en cours vers une plateforme vidéo en ligne."
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Capture de la souris (activer/désactiver)"
@@ -7985,6 +7984,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "Si une sauvegarde instantanée a été écrasée, elle sera restaurée à l'état de sauvegarde précédent."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "Modifier l'emplacement de sauvegarde instantanée actuellement sélectionné."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,

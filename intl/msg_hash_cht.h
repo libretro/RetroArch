@@ -387,7 +387,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   "更新螢幕覆蓋檔"
+   "更新覆蓋元件檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
@@ -660,7 +660,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   "支援 螢幕覆蓋元件"
+   "支援 覆蓋元件"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
@@ -1294,7 +1294,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   "變更錄製和直播相關的設定。"
+   "變更錄影和直播相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
@@ -1690,7 +1690,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "設定錄製音訊和視訊使用的驅動程式。"
+   "設定錄影和直播使用的驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
@@ -1830,7 +1830,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
-   "鄰近過濾"
+   "最近鄰法"
    )
 #if defined(RS90) || defined(MIYOO)
 MSG_HASH(
@@ -1839,11 +1839,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "禁用「整數比例」時指定圖像插值算法, 設定<鄰近過濾>對效能影響最小。"
+   "禁用「整數比例」時指定圖像插值算法, 設定<最近鄰法>對效能影響最小。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
-   "鄰近過濾"
+   "最近鄰法"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
@@ -2185,7 +2185,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   "限制調整「視窗縮放」時, 視窗縮放的最大寬度, 設定<0>時不限制。"
+   "限制調整「視窗縮放」時視窗縮放的最大寬度, 設定<0>時不限制。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -2193,7 +2193,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   "限制調整「視窗縮放」時, 視窗縮放的最大高度, 設定<0>時不限制。"
+   "限制調整「視窗縮放」時視窗縮放的最大高度, 設定<0>時不限制。"
    )
 
 /* Settings > Video > Scaling */
@@ -3419,7 +3419,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE,
-   "將目前執行的內容, 錄製成指定格式的開關。"
+   "將目前執行的內容錄製成指定格式的開關。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
@@ -3427,9 +3427,8 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
-   "將目前執行的內容, 直播到指定網路的開關。"
+   "將目前執行的內容直播到指定網路的開關。"
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "鎖定滑鼠 (開關)"
@@ -3514,11 +3513,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
-   "下一個螢幕覆蓋"
+   "下一個覆蓋元件"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT,
-   "切換目前載入位置的下一個螢幕覆蓋。"
+   "切換目前載入位置的下一個覆蓋元件。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
@@ -4558,7 +4557,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
-   "調整螢幕覆蓋元件相關的設定。"
+   "調整螢幕上顯示覆蓋元件相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
@@ -4566,7 +4565,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "調整螢幕佈景相關的設定, 僅限顯示驅動程式為<gl>時使用。"
+   "調整螢幕上顯示藝術佈景相關的設定, 僅限顯示驅動程式為<gl>時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
@@ -4574,7 +4573,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "調整螢幕通知相關的設定。"
+   "調整螢幕上顯示通知訊息相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
@@ -4582,7 +4581,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "設定要顯示的螢幕通知。"
+   "設定要顯示的通知訊息。"
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -4593,24 +4592,24 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-   "使用螢幕最上層圖層, 顯示邊框和虛擬控制器。"
+   "開啟螢幕上顯示覆蓋元件, 用於顯示邊框和觸控按鍵。"
    )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
-   "在選單後顯示"
+   "在選單後顯示覆蓋"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
-   "開啟時覆蓋元件顯示圖層低於選單, 僅限「在選單中隱藏」關閉時顯示。"
+   "開啟時選單顯示層級高於覆蓋元件, 僅限「在選單開啟時隱藏」關閉時顯示。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-   "在選單中隱藏"
+   "在選單開啟時隱藏"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-   "開啟時覆蓋元件在選單開啟時隱藏, 避免使用的覆蓋元件高於選單顯示。"
+   "開啟時選單開啟之後隱藏覆蓋元件, 用於避免覆蓋元件的顯示層級高於選單。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -4618,17 +4617,17 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-   "連接埠1連接控制器時, 隱藏螢幕覆蓋元件, 控制器斷開連接時再次顯示。"
+   "連接埠1連接控制器時, 隱藏使用的覆蓋元件, 當控制器斷開時自動恢復顯示。"
    )
 #if defined(ANDROID)
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
-   "連接埠1連接控制器時, 隱藏螢幕覆蓋元件, 控制器斷開時不會自動恢復。"
+   "連接埠1連接控制器時, 隱藏使用的覆蓋元件, 當控制器斷開時不會自動恢復。"
    )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
-   "顯示動態按鍵"
+   "顯示按鍵的動態"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
@@ -4648,27 +4647,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
-   "設定顯示動態按鍵效果的連接埠, 僅限「顯示動態按鍵」設定<物理(控制器)>時使用。"
+   "設定連接埠用於顯示輸入按鍵的動態效果, 僅限「顯示按鍵的動態」為<物理(控制器)>時生效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
-   "顯示滑鼠游標"
+   "滑鼠游標最上層"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
-   "使用螢幕覆蓋時滑鼠游標顯示在上層。"
+   "開啟覆蓋元件時滑鼠游標顯示在上層。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
-   "自動旋轉螢幕覆蓋"
+   "自動旋轉覆蓋元件"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
-   "載入的螢幕覆蓋元件支援時, 依據螢幕旋轉方向自動調整顯示方式。"
+   "載入的覆蓋元件支援時, 依據螢幕旋轉方向自動調整顯示方式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
-   "自動縮放螢幕覆蓋"
+   "自動縮放覆蓋元件"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
@@ -4696,23 +4695,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
-   "自動載入最佳螢幕覆蓋"
+   "自動載入最佳覆蓋元件"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
-   "螢幕覆蓋不透明度"
+   "覆蓋元件不透明度"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-   "設定螢幕覆蓋全部元件的不透明度。"
+   "設定覆蓋元件的不透明度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
-   "載入螢幕覆蓋 (預設)"
+   "載入覆蓋元件 (預設)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "設定要使用的預設螢幕覆蓋元件。"
+   "載入覆蓋元件並預設為應用程式使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
@@ -4819,15 +4818,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
-   "使用螢幕畫面佈景, 可參考MAME Artworks相關檔案。"
+   "開啟螢幕上顯示藝術佈景, 可參考MAME Artworks相關檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
-   "載入螢幕佈景 (預設)"
+   "載入藝術佈景 (預設)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "設定要使用的預設螢幕影像佈景。"
+   "載入藝術佈景並預設為應用程式使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -4846,15 +4845,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
-   "顯示螢幕通知。"
+   "開啟螢幕上顯示通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-   "螢幕通知圖標"
+   "圖標通知訊息"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
-   "螢幕通知使用裝飾動畫、提示和圖標。"
+   "使用圖標、提示和動畫裝飾通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
@@ -4870,7 +4869,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   "設定全螢幕模式下螢幕通知的縮放大小, 可用於不與選單同時縮放, 僅限「圖標自動縮放」關閉時使用。"
+   "設定全螢幕模式的通知訊息縮放大小, 可用於不與選單同時縮放, 僅限「圖標自動縮放」關閉時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
@@ -4878,7 +4877,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-   "設定視窗模式下螢幕通知的縮放大小, 可用於不與選單同時縮放, 僅限「圖標自動縮放」關閉時使用。"
+   "設定視窗模式的通知訊息縮放大小, 可用於不與選單同時縮放, 僅限「圖標自動縮放」關閉時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
@@ -4934,7 +4933,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
-   "連線遊戲時顯示目前的網路延遲(PING值), 僅限「螢幕通知圖標」開啟時使用。"
+   "連線遊戲時顯示目前的網路延遲(PING值), 僅限「圖標通知訊息」開啟時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -4942,7 +4941,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-   "執行時顯示圖示加文字標題動畫, 僅限「螢幕通知圖標」開啟時使用。"
+   "執行時顯示圖示加文字標題動畫, 僅限「圖標通知訊息」開啟時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
@@ -4954,7 +4953,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "套用金手指時顯示螢幕通知。"
+   "套用金手指時顯示通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
@@ -4962,11 +4961,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
-   "使用修正檔(ROMs)時顯示螢幕通知。"
+   "使用修正檔(ROMs)時顯示通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
-   "連接和斷開輸入裝置時顯示螢幕通知。"
+   "連接和斷開輸入裝置時顯示通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
@@ -4974,7 +4973,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
-   "載入自訂的控制器時顯示螢幕通知。"
+   "載入自訂的控制器時顯示通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
@@ -4982,7 +4981,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-   "載入自訂的專用主題時顯示螢幕通知。"
+   "載入自訂的專用主題時顯示通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
@@ -4990,7 +4989,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
-   "載入映像檔編號時顯示螢幕通知, 僅限載入M3U格式時顯示。"
+   "載入映像檔編號時顯示通知訊息, 僅限載入M3U格式時顯示。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -4998,7 +4997,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "開啟快轉模式時顯示螢幕通知。"
+   "開啟快轉模式時顯示通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -5006,7 +5005,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
-   "使用螢幕截圖時顯示螢幕通知。"
+   "使用螢幕截圖時顯示通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
@@ -5014,7 +5013,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-   "設定螢幕截圖時螢幕通知停留的時間, 僅限「螢幕通知圖標」開啟時使用。"
+   "設定螢幕截圖時通知訊息停留的時間, 僅限「圖標通知訊息」開啟時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
@@ -5038,7 +5037,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-   "設定螢幕截圖使用相機快門效果的顯示時間, 僅限「螢幕通知圖標」開啟時使用。"
+   "設定螢幕截圖使用相機快門效果的顯示時間, 僅限「圖標通知訊息」開啟時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
@@ -5054,7 +5053,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
-   "變更垂直更新率時顯示螢幕通知。"
+   "變更垂直更新率時顯示通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
@@ -5062,7 +5061,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "連線遊戲時顯示非必要的螢幕通知。"
+   "連線遊戲時顯示非必要的通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
@@ -5070,7 +5069,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
-   "僅在選單開啟時顯示螢幕通知。"
+   "僅在選單開啟時顯示通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -5078,7 +5077,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
-   "設定螢幕通知使用的字型。"
+   "設定通知訊息使用的字型。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
@@ -5086,7 +5085,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "設定螢幕通知使用的字體大小(點值)。"
+   "設定通知訊息使用的字體大小(點值)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
@@ -5094,7 +5093,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
-   "自訂顯示螢幕通知的水平位置, 設定<0>為最左方, 設定<1>為最右方。"
+   "自訂顯示通知訊息的水平位置, 設定<0>為最左方, 設定<1>為最右方。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
@@ -5102,7 +5101,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
-   "自訂顯示螢幕通知的垂直位置, 設定<0>為最下方, 設定<1>為最上方。"
+   "自訂顯示通知訊息的垂直位置, 設定<0>為最下方, 設定<1>為最上方。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
@@ -5110,7 +5109,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
-   "自訂螢幕通知字體的紅光值, 有效數值介於0到255之間。"
+   "自訂通知訊息字體的紅光值, 有效數值介於0到255之間。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
@@ -5118,7 +5117,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
-   "自訂螢幕通知字體的綠光值, 有效數值介於0到255之間。"
+   "自訂通知訊息字體的綠光值, 有效數值介於0到255之間。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
@@ -5126,7 +5125,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
-   "自訂螢幕通知字體的藍光值, 有效數值介於0到255之間。"
+   "自訂通知訊息字體的藍光值, 有效數值介於0到255之間。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
@@ -5134,7 +5133,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
-   "開啟螢幕通知的背景顏色。"
+   "開啟通知訊息的背景顏色。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
@@ -5142,7 +5141,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED,
-   "自訂螢幕通知背景的紅光值, 有效數值介於0到255之間。"
+   "自訂通知訊息背景的紅光值, 有效數值介於0到255之間。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
@@ -5150,7 +5149,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
-   "自訂螢幕通知背景的綠光值, 有效數值介於0到255之間。"
+   "自訂通知訊息背景的綠光值, 有效數值介於0到255之間。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
@@ -5158,7 +5157,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
-   "自訂螢幕通知背景的藍光值, 有效數值介於0到255之間。"
+   "自訂通知訊息背景的藍光值, 有效數值介於0到255之間。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
@@ -5166,7 +5165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-   "自訂螢幕通知背景的不透明度, 有效數值介於0.00到1.00之間。"
+   "自訂通知訊息背景的不透明度, 有效數值介於0.00到1.00之間。"
    )
 
 /* Settings > User Interface */
@@ -5299,11 +5298,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
-   "支援滑鼠瀏覽"
+   "支援滑鼠操作"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-   "允許使用滑鼠瀏覽控制選單。"
+   "允許使用滑鼠操作控制選單。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -6158,11 +6157,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
-   "切換頁面記住選項"
+   "頁面切換記住選項"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "切換選單頁面時記住選項的位置。"
+   "選單頁面切換時記住選項的位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -6332,7 +6331,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
-   "變更成就通知顯示的方式, 需要開啟「螢幕通知圖標」才能顯示選項。"
+   "變更成就通知顯示的方式, 需要開啟「圖標通知訊息」才能顯示選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR,
@@ -6372,7 +6371,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
-   "開啟時自動對齊螢幕通知的邊距, 關閉時自訂邊距位置。"
+   "開啟時自動對齊通知訊息的邊距, 關閉時自訂邊距位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
@@ -6423,7 +6422,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
-   "遊戲成就解鎖時顯示通知。"
+   "遊戲成就解鎖時顯示通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
@@ -6431,7 +6430,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
-   "全部成就解鎖時顯示通知。"
+   "全部成就解鎖時顯示通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
@@ -6439,7 +6438,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "顯示成就解鎖的提示圖標。"
+   "顯示成就解鎖的提示圖標訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -6447,7 +6446,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
-   "顯示帳號登入相關的訊息。"
+   "顯示帳號登入相關的通知訊息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
@@ -6455,7 +6454,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-   "顯示額外診斷和錯誤訊息。"
+   "顯示額外診斷和錯誤通知訊息。"
    )
 
 /* Settings > Network */
@@ -7311,19 +7310,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
-   "螢幕覆蓋"
+   "覆蓋元件"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
-   "設定螢幕覆蓋元件的儲存位置。"
+   "設定覆蓋元件的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   "螢幕佈景"
+   "藝術佈景"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
-   "設定螢幕畫面佈景的儲存位置。"
+   "設定藝術佈景的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
@@ -8109,6 +8108,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "還原成儲存即時存檔之前的存檔。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "設定即時存檔使用的編號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -9907,19 +9910,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
-   "邊框填充"
+   "內框填充"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-   "邊框填充密度"
+   "內框填充密度"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-   "開啟時減少邊框的密度。"
+   "開啟時減少選單內框的密度。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
-   "顯示選單邊框。"
+   "顯示選單內框。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
@@ -10063,7 +10066,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
-   "設定256毫秒, 低效能裝置可流暢瀏覽。"
+   "設定列表項目載入預覽縮圖的延遲時間, 低效能的裝置設定<256>毫秒以上可流暢瀏覽。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
@@ -10086,7 +10089,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
-   "鄰近過濾 (快)"
+   "最近鄰法 (快)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
@@ -10385,11 +10388,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
-   "選單頁面切換動畫"
+   "頁面切換動畫"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
-   "選單頁面切換畫面時觸發的圖示動畫。"
+   "選單頁面切換時觸發的圖示動畫。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
@@ -14094,7 +14097,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-   "設定螢幕通知的縮放大小, 可用於不與選單同時縮放, 僅限「圖標自動縮放」關閉時使用。"
+   "設定通知訊息的縮放大小, 可用於不與選單同時縮放, 僅限「圖標自動縮放」關閉時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,

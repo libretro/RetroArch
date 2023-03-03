@@ -1789,7 +1789,6 @@ MSG_HASH(
 
 
 
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "تمام‌صفحه (تغییر حالت)"

@@ -2957,7 +2957,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Aloittaa/pysäyttää nykyisen istunnon suoratoiston verkossa toimivalle videoalustalle."
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Kaappaa hiiri (päälle/pois)"
@@ -7225,6 +7224,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "Jos pelitila päällekirjoitettiin, se palautuu takaisin edelliseen pelitilatallennukseen."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "Vaihda valitun pelitilan lohkoa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,

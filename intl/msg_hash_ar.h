@@ -2357,7 +2357,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "بدء/إيقاف تشغيل الجلسة الحالية إلى منصة فيديو عبر الإنترنت."
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "تبديل الفأرة"

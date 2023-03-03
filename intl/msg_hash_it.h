@@ -7930,6 +7930,10 @@ MSG_HASH(
    "Se un salvataggio è stato sovrascritto, si ritorna allo stato del salvataggio precedente."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "Cambia lo slot di stato attualmente selezionato."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
    "Aggiungi a Preferiti"
    )

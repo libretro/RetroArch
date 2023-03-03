@@ -2849,7 +2849,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Inicia/Atura la transmissió de la sessió actual a una plataforma de vídeo en línia."
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Agafa el Ratolí (commuta)"

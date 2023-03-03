@@ -2857,7 +2857,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Запуск/зупинка трансляції поточної сесії на відеоплатформу."
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Захоплювати мишу (перемикач)"

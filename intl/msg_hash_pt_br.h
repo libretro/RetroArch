@@ -2885,7 +2885,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Inicia ou interrompe o transmissão da sessão atual para uma plataforma de vídeo online."
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Captura do mouse (alternar)"
@@ -7161,6 +7160,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "Se o jogo salvo foi sobrescrito, ele voltará ao jogo salvo anteriormente."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "Altera o compartimento do jogo salvo selecionado atualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
