@@ -4827,6 +4827,115 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       }
    }
 }
+size_t replay_get_serialize_size(void)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
+      return sizeof(int32_t)+intfstream_tell(input_st->bsv_movie_state_handle->file);
+   else
+      return 0;
+}
+
+bool replay_get_serialized_data(void* buffer)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   bsv_movie_t *handle = input_st->bsv_movie_state_handle;
+   if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
+   {
+      long file_end = intfstream_tell(handle->file);
+      long read_amt = 0;
+      long file_end_lil = swap_if_big32(file_end);
+      uint8_t *file_end_bytes = (uint8_t *)(&file_end_lil);
+      uint8_t *buf = buffer;
+      buf[0] = file_end_bytes[0];
+      buf[1] = file_end_bytes[1];
+      buf[2] = file_end_bytes[2];
+      buf[3] = file_end_bytes[3];
+      buffer += 4;
+      intfstream_rewind(handle->file);
+      read_amt = intfstream_read(handle->file, buffer, file_end);
+      if (read_amt != file_end)
+        RARCH_ERR("[Replay] Failed to write correct number of replay bytes into state file: %d / %d\n", read_amt, file_end);
+   }
+   return true;
+}
+bool replay_set_serialized_data(void* buffer)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   /* If there is no current replay, ignore this entirely.
+      Later, consider loading up the replay and allow to continue it. */
+   bool playback = input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK;
+   bool recording = input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING;
+   if(!(playback || recording))
+      return true;
+   if (buffer == NULL)
+   {
+      // TODO: set flag on state that says it wants to stop movies
+      bsv_movie_deinit(input_st);
+   }
+   else
+   {
+      int32_t loaded_len = swap_if_big32(((int32_t *)buffer)[0]);
+      buffer += sizeof(int32_t);
+      /* TODO: should factor the next two lines away, magic numbers ahoy */
+      uint32_t *header = (uint32_t *)buffer;
+      int64_t identifier = swap_if_big64((((int64_t)(header[5])) << 32) | ((int64_t)(header[4])));
+      int32_t handle_idx = intfstream_tell(input_st->bsv_movie_state_handle->file);
+      bool is_compatible = identifier == input_st->bsv_movie_state_handle->identifier;
+      if (playback)
+      {
+          /* If the state is part of this replay, go back to that state and rewind the replay (not yet implemented); otherwise halt playback and go to that state normally. */
+          if (is_compatible)
+            {
+              /* if the savestate movie is after the current replay length we can't load it properly, but if it's earlier we can rewind the replay to the savestate movie time point. */
+              /* TODO: figure out what to do about rewinding across load */
+              if (loaded_len > handle_idx)
+                {
+                  RARCH_ERR("[Replay] Loading state from the future of current movie is not allowed.\n");
+                  return false;
+                }
+              // TODO: set flag/number on state that says it wants to seek
+              intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
+            }
+          else
+            {
+              /* TODO OSD */
+              RARCH_WARN("[Replay] Loading state incompatible with current playback, halting playback.\n");
+              // TODO: set flag/number on state that says it wants to stop movies
+              movie_stop(input_st);
+            }
+      }
+      if (recording)
+      {
+          if (is_compatible)
+            {
+              /* replace the current replay with what is in the state file. if the state file is earlier, we may lose what's in the current recording, right?   */
+              if(loaded_len > handle_idx)
+                {
+                  // TODO: set flag/data on state with movie file data and request to continue recording
+                  /* TODO: Figure out whether rewind can be supported across loads */
+                  /* this state is from a later part of the current movie, replace the current movie file */
+                  intfstream_seek(input_st->bsv_movie_state_handle->file, 0, SEEK_SET);
+                  intfstream_write(input_st->bsv_movie_state_handle->file, buffer, loaded_len);
+                }
+              else
+                {
+                  // TODO: set flag/data on state with request to seek movie data and continue recording
+                  /* TODO: Figure out whether rewind can be supported across loads */
+                  /* this state is from an earlier part of the current movie, truncate the current movie */
+                  intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
+                }
+            }
+          else
+            {
+              /* TODO OSD */
+              RARCH_ERR("[Replay] Loading state incompatible with current recording.\n");
+              return false;
+            }
+      }
+   }
+   return true;
+}
 
 #endif
 

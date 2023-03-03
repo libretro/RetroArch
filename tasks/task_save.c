@@ -1128,6 +1128,8 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
          RARCH_LOG("Replay block\n");
          if (replay_set_serialized_data((void*)input))
             seen_replay = true;
+         else
+            return false;
       }
 #endif
       else if (memcmp(marker, RASTATE_END_BLOCK, 4) == 0)
@@ -1297,7 +1299,7 @@ static void content_load_state_cb(retro_task_t *task,
    content_save_state("RAM", false, false);
 
    ret = content_deserialize_state(buf, size);
-    RARCH_LOG("[State]: ret is %d\n",ret);
+
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
    {
@@ -1576,7 +1578,7 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
          /* TODO/FIXME - Use msg_hash_to_str here */
          RARCH_LOG("[State]: %s ...\n",
                msg_hash_to_str(MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER));
-
+          // TODO don't load and save if recording or playback are active, undo is confusing; or push a flag that says ignore the replay data during the load part
          task_push_load_and_save_state(path, data, serial_size, true, autosave);
       }
       else

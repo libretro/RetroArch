@@ -1935,19 +1935,6 @@ bool command_event_main_state(unsigned cmd)
          case CMD_EVENT_LOAD_STATE_FROM_RAM:
             {
                bool res = false;
-#ifdef HAVE_BSV_MOVIE
-              input_driver_state_t *input_st   = input_state_get_ptr();
-              if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
-              {
-                 RARCH_ERR("[Load] [Movie] Can't load state during movie record\n");
-                 return false;
-              }
-              if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
-                {
-                  RARCH_LOG("[Load] [Movie] Loaded state during movie playback, halting playback\n");
-                  movie_stop(input_st);
-                }
-#endif
                if (cmd == CMD_EVENT_LOAD_STATE)
                   res = content_load_state(state_path, false, false);
                else

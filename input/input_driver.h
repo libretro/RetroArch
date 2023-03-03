@@ -150,6 +150,7 @@ struct bsv_movie
    size_t frame_ptr;
    size_t min_file_pos;
    size_t state_size;
+   int64_t identifier;
 
    /* Staging variables for keyboard events */
    uint8_t key_event_count;

@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <time.h>
+#include <time/rtime.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
@@ -46,6 +47,8 @@
 #define SERIALIZER_INDEX   1
 #define CRC_INDEX          2
 #define STATE_SIZE_INDEX   3
+#define IDENTIFIER_INDEX_LO   4
+#define IDENTIFIER_INDEX_HI   5
 
 #define BSV_MAGIC          0x42535631
 
@@ -58,7 +61,8 @@ static bool bsv_movie_init_playback(
       bsv_movie_t *handle, const char *path)
 {
    uint32_t state_size       = 0;
-   uint32_t header[4]        = {0};
+   uint32_t header[6]        = {0};
+   int64_t identifier = 0;
    intfstream_t *file        = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -72,7 +76,7 @@ static bool bsv_movie_init_playback(
    handle->file              = file;
    handle->playback          = true;
 
-   intfstream_read(handle->file, header, sizeof(uint32_t) * 4);
+   intfstream_read(handle->file, header, sizeof(uint32_t) * 6);
    /* Compatibility with old implementation that
     * used incorrect documentation. */
    if (swap_if_little32(header[MAGIC_INDEX]) != BSV_MAGIC
@@ -83,6 +87,8 @@ static bool bsv_movie_init_playback(
    }
 
    state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
+   identifier = (((int64_t)header[IDENTIFIER_INDEX_HI]) << 32) | ((int64_t)header[IDENTIFIER_INDEX_LO]);
+   handle->identifier = swap_if_big64(identifier);
 
 #if 0
    RARCH_ERR("----- debug %u -----\n", header[0]);
@@ -130,11 +136,13 @@ static bool bsv_movie_init_record(
       bsv_movie_t *handle, const char *path)
 {
    retro_ctx_size_info_t info;
+   time_t t = time(NULL);
+   time_t time_lil = swap_if_big64(t);
    uint32_t state_size       = 0;
    uint32_t content_crc      = 0;
-   uint32_t header[4]        = {0};
+   uint32_t header[6]        = {0};
    intfstream_t *file        = intfstream_open_file(path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
@@ -151,13 +159,16 @@ static bool bsv_movie_init_record(
     * BSV1 in a HEX editor, big-endian. */
    header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
    header[CRC_INDEX]        = swap_if_big32(content_crc);
+
    core_serialize_size(&info);
 
    state_size               = (unsigned)info.size;
 
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
-
-   intfstream_write(handle->file, header, 4 * sizeof(uint32_t));
+   handle->identifier = (int64_t)time;
+   header[IDENTIFIER_INDEX_LO] = (int32_t)(time_lil & 0x00000000FFFFFFFF);
+   header[IDENTIFIER_INDEX_HI] = (int32_t)((time_lil & 0xFFFFFFFF00000000)>>32);
+   intfstream_write(handle->file, header, 6 * sizeof(uint32_t));
 
    handle->min_file_pos     = sizeof(header) + state_size;
    handle->state_size       = state_size;
@@ -460,25 +471,4 @@ error:
    return false;
 }
 
-size_t replay_get_serialize_size(void)
-{
-   return 1;
-   /* if (!rcheevos_locals.loaded) */
-      /* return 0; */
-   /* return rc_runtime_progress_size(&rcheevos_locals.runtime, NULL); */
-}
-
-bool replay_get_serialized_data(void* buffer)
-{
-   ((unsigned char *)buffer)[0] = 0;
-   return true;
-   /* if (!rcheevos_locals.loaded) */
-   /*    return false; */
-   /* return (rc_runtime_serialize_progress( */
-   /*          buffer, &rcheevos_locals.runtime, NULL) == RC_OK); */
-}
-bool replay_set_serialized_data(void* buffer)
-{
-   return true;
-}
 #endif
