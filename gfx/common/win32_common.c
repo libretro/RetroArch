@@ -272,6 +272,9 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 #define MAX_MONITORS 9
 #endif
 
+#define MIN_WIDTH  320
+#define MIN_HEIGHT 240
+
 #if defined(_MSC_VER) && _MSC_VER <= 1200
 #define INT_PTR_COMPAT int
 #else
@@ -948,6 +951,36 @@ static LRESULT CALLBACK wnd_proc_common(
          }
          *quit = true;
          break;
+      case WM_GETMINMAXINFO:
+         {
+            MINMAXINFO FAR *lpMinMaxInfo;
+            lpMinMaxInfo           = (MINMAXINFO FAR *)lparam;
+            settings_t *settings   = config_get_ptr();
+            unsigned min_width     = MIN_WIDTH;
+            unsigned min_height    = MIN_HEIGHT;
+            bool window_show_decor = settings->bools.video_window_show_decorations;
+            bool ui_menubar_enable = settings->bools.ui_menubar_enable;
+
+            if (window_show_decor)
+            {
+               unsigned border_thickness = GetSystemMetrics(SM_CXSIZEFRAME);
+               unsigned title_bar_height = GetSystemMetrics(SM_CYCAPTION);
+
+               min_width                += border_thickness * 2;
+               min_height               += border_thickness * 2 + title_bar_height;
+            }
+
+            if (ui_menubar_enable)
+            {
+               unsigned menu_bar_height  = GetSystemMetrics(SM_CYMENU);
+
+               min_height               += menu_bar_height;
+            }
+
+            lpMinMaxInfo->ptMinTrackSize.x = min_width;
+            lpMinMaxInfo->ptMinTrackSize.y = min_height;
+         }
+         break;
       case WM_COMMAND:
          {
             settings_t *settings     = config_get_ptr();
@@ -1036,6 +1069,7 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
       case WM_QUIT:
       case WM_MOVE:
       case WM_SIZE:
+      case WM_GETMINMAXINFO:
       case WM_COMMAND:
          ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
@@ -1115,6 +1149,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
       case WM_QUIT:
       case WM_MOVE:
       case WM_SIZE:
+      case WM_GETMINMAXINFO:
       case WM_COMMAND:
          ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
@@ -1295,6 +1330,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       case WM_QUIT:
       case WM_MOVE:
       case WM_SIZE:
+      case WM_GETMINMAXINFO:
       case WM_COMMAND:
          ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
@@ -2241,7 +2277,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
       win32_common_state_t *g_win32    = (win32_common_state_t*)&win32_st;
       bool position_set_from_config    = false;
       bool video_window_save_positions = settings->bools.video_window_save_positions;
-      bool window_show_decor = settings->bools.video_window_show_decorations;
+      bool window_show_decor           = settings->bools.video_window_show_decorations;
 
       *style          = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
       rect->right     = *width;
@@ -2285,6 +2321,16 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
       {
          g_win32_resize_width  = *width   = rect->right  - rect->left;
          g_win32_resize_height = *height  = rect->bottom - rect->top;
+
+         /* WM_GETMINMAXINFO isn't called without window decorations,
+          * therefore ensure size limit is still used */
+         if (!window_show_decor)
+         {
+            if (rect->right < MIN_WIDTH)
+               rect->right  = *width  = MIN_WIDTH;
+            if (rect->bottom < MIN_HEIGHT)
+               rect->bottom = *height = MIN_HEIGHT;
+         }
       }
    }
 }
