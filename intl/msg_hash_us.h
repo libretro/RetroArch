@@ -13622,10 +13622,6 @@ MSG_HASH(
    "Not compatible with replay"
    )
 MSG_HASH(
-   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE,
-   "State is from later in recording"
-   )
-MSG_HASH(
    MSG_FOUND_SHADER,
    "Found shader"
    )
