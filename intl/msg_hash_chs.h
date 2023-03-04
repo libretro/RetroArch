@@ -6361,10 +6361,6 @@ MSG_HASH(
    "状态存储"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "保存状态存储的文件夹。如果不设置，将尝试保存到游戏所在文件夹。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "缓存"
    )

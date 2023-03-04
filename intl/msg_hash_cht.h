@@ -664,7 +664,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-   "支援 命令列介面 (CLI)"
+   "支援 命令列介面(CLI)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
@@ -728,7 +728,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
-   "支援 Linux裝置管理員 (udev)"
+   "支援 裝置管理員(udev)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
@@ -740,7 +740,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
-   "支援 X11"
+   "支援 X視窗系統(X11)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
@@ -812,7 +812,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
-   "支援 動態連結函式庫"
+   "支援 動態連結函式庫(DLL)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
@@ -856,7 +856,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-   "支援 對等式網路 (P2P)"
+   "支援 對等式網路(P2P)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
@@ -3303,7 +3303,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "載入即時存檔, 用於練習經典硬核遊戲使用。"
+   "設定載入目前即時存檔編號的按鍵, 用於練習經典硬核遊戲使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
@@ -3311,7 +3311,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
-   "儲存即時存檔, 用於隨時儲存遊戲狀態使用。"
+   "設定儲存目前即時存檔編號的按鍵, 用於隨時儲存遊戲狀態使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
@@ -3428,6 +3428,46 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "將目前執行的內容直播到指定網路的開關。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
+   "播放操作重播"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
+   "設定播放目前操作重播編號的按鍵, 播放時可使用快轉、倒帶和慢動作。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
+   "錄製操作重播"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
+   "設定錄製目前操作重播編號的按鍵, 錄製時可使用快轉、倒帶和慢動作。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   "停止操作重播 (停止錄製/停止播放)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   "設定停止操作重播錄製或播放的按鍵。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "下一個操作重播編號"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   "切換至下一個操作重播編號。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "上一個操作重播編號"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "切換至上一個操作重播編號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -4108,7 +4148,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-   "開啟時儲存即時存檔後, 會跳至下一個編號, 載入為可載入的最大編號。"
+   "開啟時儲存即時存檔後自動跳至下一個編號, 執行項目時自動設定為現有編號的最大編號。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "自動增加操作重播編號"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "開啟時錄製操作重播後自動跳至下一個編號, 執行項目時自動設定為現有編號的最大編號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
@@ -4116,7 +4164,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "設定<0>時全部保留, 當自訂達上限, 會刪除最低編號檔案, 維持在自訂的保留數量, 加一個使用中的存檔。"
+   "設定<0>時全部保留, 當達自訂上限時會刪除最低編號檔案, 維持在保留數量加一個使用中的存檔。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "操作重播保留數量"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "設定<0>時全部保留, 當達自訂上限時會刪除最低編號檔案, 維持在保留數量加一個使用中的編號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5714,7 +5770,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "顯示「即時存檔」選項並整合即時存檔相關選項。"
+   "顯示「即時存檔」選項並整合即時存檔和操作重播相關選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
@@ -5723,6 +5779,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
    "顯示「即時存檔編號」 「儲存即時存檔」 「載入即時存檔」選項。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   "顯示「操作重播」相關選項"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
+   "顯示「操作重播」編號、錄製、播放和停止的選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
@@ -7413,16 +7477,8 @@ MSG_HASH(
    "設定核心預設記憶存檔的儲存位置, 未設定位置的情況下, 將嘗試儲存在執行檔案的資料夾中。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
-   "儲存全部核心預設的記憶存檔到此資料夾。\n包含記憶存檔(*.srm)、 實時時鐘(*.rtc)等相關檔案。\n此路徑位置會被命令列介面的命令取代。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "即時存檔"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "設定應用程式即時存檔的儲存位置, 未設定位置的情況下, 將嘗試儲存在執行檔案的資料夾中。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -8110,8 +8166,36 @@ MSG_HASH(
    "還原成儲存即時存檔之前的存檔。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   "操作重播編號"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_SLOT,
-   "設定即時存檔使用的編號。"
+   "設定操作重播使用的編號。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
+   "播放操作重播"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAY_REPLAY,
+   "播放目前編號的操作重播。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
+   "錄製操作重播"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_REPLAY,
+   "錄製目前編號的操作重播。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
+   "停止操作重播 (停止錄製/停止播放)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HALT_REPLAY,
+   "停止操作重播錄製或播放。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -10078,7 +10162,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
-   "開關圖示"
+   "使用開關圖示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
@@ -12839,7 +12923,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
-   "核心不支援VFS, 從本地複製載入失敗"
+   "核心不支援虛擬檔案系統, 從本地複製載入失敗"
    )
 MSG_HASH(
    MSG_ERROR_PARSING_ARGUMENTS,
@@ -13052,6 +13136,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FOUND_LAST_STATE_SLOT,
    "找到即時存檔最後的編號"
+   )
+MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "找到操作重播最後的編號"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -13267,15 +13355,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REDIRECTING_CHEATFILE_TO,
-   "重新定位金手指到"
+   "金手指重新導向到"
    )
 MSG_HASH(
    MSG_REDIRECTING_SAVEFILE_TO,
-   "重新定位記憶存檔到"
+   "記憶存檔重新導向到"
    )
 MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
-   "重新定位即時存檔到"
+   "即時存檔重新導向到"
    )
 MSG_HASH(
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
@@ -13432,6 +13520,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_STATE_SLOT,
    "即時存檔編號"
+   )
+MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "操作重播編號"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,

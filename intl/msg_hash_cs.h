@@ -7245,16 +7245,8 @@ MSG_HASH(
    "Do tohoto adresáře uložte všechny uložené soubory. Pokud není nastaveno, pokusí se uložit do pracovního adresáře souboru s obsahem."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
-   "Do tohoto adresáře uložte všechny ukládací soubory (*.srm). Patří sem i související soubory jako .rt, .psrm atd... Toto bude potlačeno explicitními volbami příkazového řádku."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "Uložené Pozice"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "V tomto adresáři jsou uloženy pozice. Pokud není nastaven, pokusí se je uložit do adresáře, kde je umístěn obsah."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,

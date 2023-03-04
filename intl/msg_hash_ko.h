@@ -2682,12 +2682,20 @@ MSG_HASH(
    "입력 장치를 선택합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_INPUT,
+   "입력 장치(드라이버 특정)를 설정합니다. '꺼짐'으로 설정하면 MIDI 입력이 비활성화됩니다. 장치 이름도 입력할 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    "출력"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
    "출력 장치를 선택합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
+   "출력 장치(드라이버 특정)를 설정합니다. '꺼짐'으로로 설정하면 MIDI 출력이 비활성화됩니다. 장치 이름도 입력할 수 있습니다.\nMIDI 출력이 활성화되고 코어 및 게임/앱이 MIDI 출력을 지원하는 경우 게임/앱에 따라 MIDI 장치에서 일부 또는 모든 사운드가 출력됩니다. 'null' MIDI 드라이버의 경우 소리가 들리지 않음을 의미합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
@@ -3144,6 +3152,10 @@ MSG_HASH(
    "할당된 경우, 다른 모든 핫키는 '핫키 사용' 키를 누른 채로 입력해야 합니다. 일반 입력에 영향을 끼치지 않으면서 컨트롤러 버튼을 핫키로 할당할 수 있게 합니다. '핫키 사용' 키를 컨트롤러에만 할당할 경우 키보드 핫키는 컨트롤러의 '핫키 사용' 키를 누르지 않아도 사용할 수 있으며, 컨트롤러와 키보드 모두 할당할 경우 두 장치의 '핫키 사용' 키는 두 장치 모두에서 사용[...]"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
+   "현재 핫키가 키보드나 조이스틱 버튼 또는 조이스틱에 할당된 경우 이 핫키와 동시에 누르지 않으면 다른 모든 핫키는 비활성 됩니다. \n이 기능은 키보드의 대부분의 영역을 차지하는 RETRO_KEYBOARD 구현시 유용하며, 핫키가 사용에 방해되는 경우에 유용합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
    "핫키 지연 시간 (프레임)"
    )
@@ -3412,6 +3424,46 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "현재 세션 영상을 온라인상으로 스트리밍을 시작/종료 합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
+   "리플레이 재생"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
+   "현재 선택된 슬롯에서 리플레이 파일을 재생합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
+   "리플레이 녹화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
+   "현재 선택된 슬롯에 리플레이 파일을 기록합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   "녹화/재생 중지"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   "현재 리플레이의 녹화/재생을 중지합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "다음 리플레이 슬롯"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   "선택된 리플레이 슬롯의 인덱스를 증가시킵니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "이전 리플레이 슬롯"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "선택된 리플레이 슬롯의 인덱스를 감소시킵니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -4079,12 +4131,28 @@ MSG_HASH(
    "상태저장을 생성할 때마다 자동으로 인덱스를 증가시킵니다. 불러올 때에는 가장 높은 인덱스의 상태저장을 선택합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "리플레이 인덱스 자동 증가"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "리플레이를 생성할 때마다 자동으로 인덱스를 증가시킵니다. 불러올 때에는 가장 높은 인덱스의 리플레이를 선택합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    "상태저장 인덱스 자동 증가 상한"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    "'상태저장 인덱스 자동 증가' 사용 시 활용될 상태저장의 개수 제한을 설정합니다. 상태저장이 개수 제한에 도달할 경우 가장 낮은 인덱스의 상태저장이 삭제됩니다. '0'으로 설정 시 제한을 사용하지 않습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "리플레이 인덱스 자동 증가 상한"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "'리플레이 인덱스 자동 증가' 사용 시 활용될 리플레이 개수 제한을 설정합니다. 리플레이 개수 제한에 도달할 경우 가장 낮은 인덱스의 리플레이가 삭제됩니다. '0'으로 설정 시 제한을 사용하지 않습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5415,7 +5483,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   "'구성 파일' 표시하기"
+   "'구성 파일' 표시"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
@@ -5503,7 +5571,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
-   "'히스토리' 표시하기"
+   "'히스토리' 표시"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
@@ -5669,6 +5737,14 @@ MSG_HASH(
    "상태저장/불러오기 항목을 표시합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   "'리플레이 컨트롤' 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
+   "리플레이 파일의 녹화/재생 옵션을 보입니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "'상태저장/불러오기 되돌리기' 표시"
    )
@@ -5802,7 +5878,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   "컨텐츠 실행 중이 아닐 때 '코어 연결 설정' 항목을 표시합니다."
+   "콘텐츠 실행 중이 아닐 때 '코어 연결 설정' 항목을 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
@@ -5810,7 +5886,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-   "컨텐츠 실행 중이 아닐 때 '코어 연결 초기화' 항목을 표시합니다."
+   "콘텐츠 실행 중이 아닐 때 '코어 연결 초기화' 항목을 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
@@ -5818,7 +5894,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-   "컨텐츠 실행 중이 아닐 때 '미리보기 다운로드' 항목을 표시합니다."
+   "콘텐츠 실행 중이 아닐 때 '미리보기 다운로드' 항목을 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
@@ -6895,7 +6971,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
-   "지원되는 코어가 설치되어 있지 않더라도 컨텐츠가 스캔되어 실행목록에 추가될 수 있게 합니다."
+   "지원되는 코어가 설치되어 있지 않더라도 콘텐츠가 스캔되어 실행목록에 추가될 수 있게 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
@@ -6962,7 +7038,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "실행목록에 마지막으로 수행한 '수동 검색'을 반복하여 새로운 컨텐츠를 추가하고 올바르지 않은 항목을 제거합니다."
+   "실행목록에 마지막으로 수행한 '수동 검색'을 반복하여 새로운 콘텐츠를 추가하고 올바르지 않은 항목을 제거합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
@@ -7024,7 +7100,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Discord 앱에 실행 중인 컨텐츠에 대한 정보를 표시합니다.\n네이티브 데스크탑 앱에서만 사용할 수 있습니다."
+   "Discord 앱에 실행 중인 콘텐츠에 대한 정보를 표시합니다.\n네이티브 데스크탑 앱에서만 사용할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -7314,15 +7390,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
-   "모든 세이브 파일이 저장될 디렉토리. 설정하지 않을 경우 컨텐츠 파일의 작업 디렉토리에 저장됩니다."
+   "모든 세이브 파일이 저장될 디렉토리. 설정하지 않을 경우 콘텐츠 파일의 작업 디렉토리에 저장됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "상태 저장"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "상태저장 파일이 저장되는 디렉토리입니다. 설정하지 않을 경우 컨텐츠 파일이 존재하는 디렉토리에 저장됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -7330,7 +7402,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
-   "압축된 컨텐츠를 임시로 압축 해제할 디렉토리입니다."
+   "압축된 콘텐츠를 임시로 압축 해제할 디렉토리입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_DIR,
@@ -7355,11 +7427,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
-   "고급 상태 표시 컨텐츠 형식"
+   "고급 상태 표시 콘텐츠 형식"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "실행중인 컨텐츠에 대해 어떤 정보를 공유할지 결정합니다."
+   "실행중인 콘텐츠에 대해 어떤 정보를 공유할지 결정합니다."
    )
 
 MSG_HASH(
@@ -7376,15 +7448,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM,
-   "컨텐츠 (시스템 이름)"
+   "콘텐츠 (시스템 이름)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE,
-   "컨텐츠 (코어 이름)"
+   "콘텐츠 (코어 이름)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE,
-   "컨텐츠 (시스템 이름 - 코어 이름)"
+   "콘텐츠 (시스템 이름 - 코어 이름)"
    )
 #endif
 
@@ -7503,7 +7575,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-   "디렉토리에서 데이터베이스에 일치하는 컨텐츠를 검색합니다."
+   "디렉토리에서 데이터베이스에 일치하는 콘텐츠를 검색합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
@@ -7511,7 +7583,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SCAN_THIS_DIRECTORY,
-   "선택해서 현재 디렉토리의 컨텐츠를 검색합니다."
+   "선택해서 현재 디렉토리의 콘텐츠를 검색합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_FILE,
@@ -7519,7 +7591,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_FILE,
-   "파일에서 데이터베이스에 일치하는 컨텐츠를 검색합니다."
+   "파일에서 데이터베이스에 일치하는 콘텐츠를 검색합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
@@ -7549,11 +7621,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "컨텐츠 디렉토리"
+   "콘텐츠 디렉토리"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "컨텐츠를 검색할 디렉토리입니다."
+   "콘텐츠를 검색할 디렉토리입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
@@ -7561,7 +7633,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "검색된 컨텐츠를 분류할 '시스템 이름'입니다. 생성될 실행목록의 이름과 미리보기를 찾는 데 사용됩니다."
+   "검색된 콘텐츠를 분류할 '시스템 이름'입니다. 생성될 실행목록의 이름과 미리보기를 찾는 데 사용됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
@@ -7569,7 +7641,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "검색된 컨텐츠의 '시스템 이름'을 직접 지정합니다. '시스템 이름'이 '<사용자 정의>'일 때만 사용됩니다."
+   "검색된 콘텐츠의 '시스템 이름'을 직접 지정합니다. '시스템 이름'이 '<사용자 정의>'일 때만 사용됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
@@ -7577,7 +7649,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "검색된 컨텐츠를 실행할 기본 코어를 선택합니다."
+   "검색된 콘텐츠를 실행할 기본 코어를 선택합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
@@ -7593,7 +7665,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
-   "사용시 '컨텐츠 디렉토리' 의 모든 하위 디렉토리가 검색에 포함됩니다."
+   "사용시 '콘텐츠 디렉토리' 의 모든 하위 디렉토리가 검색에 포함됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
@@ -7617,7 +7689,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "아케이드 DAT 파일 사용 시, 일치하는 DAT 파일 항목이 발견되는 컨텐츠만 실행 목록에 추가됩니다."
+   "아케이드 DAT 파일 사용 시, 일치하는 DAT 파일 항목이 발견되는 콘텐츠만 실행 목록에 추가됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -7625,7 +7697,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
-   "사용할 경우, 컨텐츠를 검색하기 전 이미 존재하는 실행목록은 삭제됩니다. 그렇지 않을 경우, 이미 존재하는 실행목록은 유지되고 실행목록에 없는 새 항목만 실행목록에 추가됩니다."
+   "사용할 경우, 콘텐츠를 검색하기 전 이미 존재하는 실행목록은 삭제됩니다. 그렇지 않을 경우, 이미 존재하는 실행목록은 유지되고 실행목록에 없는 새 항목만 실행목록에 추가됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
@@ -7633,7 +7705,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
-   "사용할 경우, 새로운 컨텐츠를 검색하기 전에 실행목록에 현재 등록된 항목들을 검증합니다. 가리키는 파일이 없거나 올바르지 않은 확장자의 파일을 가리키는 항목은 제거됩니다."
+   "사용할 경우, 새로운 콘텐츠를 검색하기 전에 실행목록에 현재 등록된 항목들을 검증합니다. 가리키는 파일이 없거나 올바르지 않은 확장자의 파일을 가리키는 항목은 제거됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
@@ -7641,7 +7713,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
-   "선택한 컨텐츠 검색을 시작합니다."
+   "선택한 콘텐츠 검색을 시작합니다."
    )
 
 /* Explore tab */
@@ -7838,7 +7910,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN,
-   "컨텐츠를 실행합니다."
+   "콘텐츠를 실행합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
@@ -7870,7 +7942,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
-   "이 컨텐츠를 실행할 코어를 설정합니다."
+   "이 콘텐츠를 실행할 코어를 설정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
@@ -7878,7 +7950,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
-   "이 컨텐츠를 실행할 코어 설정을 초기화합니다."
+   "이 콘텐츠를 실행할 코어 설정을 초기화합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
@@ -7886,7 +7958,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION,
-   "컨텐츠에 대한 자세한 정보를 확인합니다."
+   "콘텐츠에 대한 자세한 정보를 확인합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
@@ -7894,7 +7966,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "현재 컨텐츠의 스크린샷/박스아트/타이틀 화면의 미리보기 이미지를 다운로드합니다. 기존 미리보기가 있을 경우 덮어씌워집니다."
+   "현재 콘텐츠의 스크린샷/박스아트/타이틀 화면의 미리보기 이미지를 다운로드합니다. 기존 미리보기가 있을 경우 덮어씌워집니다."
    )
 
 /* Playlist Item > Set Core Association */
@@ -7943,7 +8015,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "빠른 메뉴를 종료하고 현재 실행 중인 컨텐츠를 이어합니다"
+   "빠른 메뉴를 종료하고 현재 실행 중인 콘텐츠를 이어합니다"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -7951,11 +8023,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "컨텐츠를 처음부터 다시 시작합니다."
+   "콘텐츠를 처음부터 다시 시작합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
-   "컨텐츠 종료"
+   "콘텐츠 종료"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
@@ -8010,8 +8082,36 @@ MSG_HASH(
    "상태저장 파일을 덮어씌웠을 때, 이전 저장 상태로 되돌립니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   "리플레이 슬롯"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_SLOT,
    "선택된 상태저장 슬롯을 변경합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
+   "리플레이 재생"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAY_REPLAY,
+   "현재 선택된 슬롯에서 리플레이 파일을 재생합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
+   "리플레이 녹화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_REPLAY,
+   "현재 선택된 슬롯에 리플레이 파일을 기록합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
+   "녹화/재생 중지"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HALT_REPLAY,
+   "현재 리플레이 녹화/재생 중지"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -12786,6 +12886,10 @@ MSG_HASH(
    "최근 상태저장 슬롯 발견"
    )
 MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "최근 리플레이 슬롯 발견"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "셰이더 발견"
    )
@@ -12915,15 +13019,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "동영상 파일이 올바른 BSV1 파일이 아닙니다."
+   "입력 리플레이 영상 파일이 올바른 BSV1 파일이 아닙니다."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
-   "영상 포맷이 다른 버전으로 보입니다. 실패할 가능성이 큽니다."
+   "입력 리플레이 영상 포맷이 다른 버전으로 보입니다. 실패할 가능성이 큽니다."
    )
 MSG_HASH(
    MSG_MOVIE_PLAYBACK_ENDED,
-   "영상 재생 종료됨."
+   "입력 리플레이 영상이 종료되었습니다."
    )
 MSG_HASH(
    MSG_MOVIE_RECORD_STOPPED,
@@ -13160,6 +13264,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_STATE_SLOT,
    "상태 슬롯"
+   )
+MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "리플레이 슬롯"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,

@@ -6453,10 +6453,6 @@ MSG_HASH(
    "Zapisz stany"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "Zapisywanie stanów jest przechowywane w tym katalogu. Jeśli nie jest ustawione, spróbuje zapisać je do katalogu, w którym znajduje się zawartość."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "Pamięć podręczna"
    )

@@ -7321,16 +7321,8 @@ MSG_HASH(
    "Minden mentés fájl ide kerül. Ha nincs beállítva, akkor a tartalom munkakönyvtárába próbálja meg kiírni."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
-   "Minden mentés fájl (*.srm) mentése ebbe a könyvtárba. Ez a .rt, .psrm stb. fájlokat is tartalmazza. Parancssori opciókkal felülbírálható."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "Mentett játékállások"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "Itt tárolódnak az elmentett játékállások. Ha nincs beállítva, abba a könyvtárba keletkeznek, ahol a tartalom van."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,

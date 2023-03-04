@@ -5849,10 +5849,6 @@ MSG_HASH(
    "ステートセーブファイル"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "ステートセーブはこのディレクトリに保存されます. 設定されていない場合は, コンテンツのあるディレクトリに保存されます."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "キャッシュ"
    )

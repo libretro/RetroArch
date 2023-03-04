@@ -6485,10 +6485,6 @@ MSG_HASH(
    "Arquivos de jogos salvos"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "Os arquivos de jogos salvos são armazenados neste diretório. Se não for definido, tentará salvá-los no diretório onde está localizado o conteúdo."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
    "O conteúdo arquivado será extraído temporariamente para este diretório."
    )

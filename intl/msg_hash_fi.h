@@ -6565,10 +6565,6 @@ MSG_HASH(
    "Pelitilan tallennukset"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "Pelitilan tallennukset on tallennettu tähän kansioon. Jos tätä ei ole asetettu, yritetään tallentaa ne kansioon, jossa sisältö sijaitsee."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "Välimuisti"
    )
