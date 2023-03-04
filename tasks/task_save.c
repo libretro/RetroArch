@@ -667,6 +667,21 @@ static bool content_write_serialized_state(void* buffer,
    memcpy(output, "RASTATE", 7);
    output[7] = RASTATE_VERSION;
    output   += 8;
+  /* Replay block---this has to come before the mem block since its
+     contents may prevent the state from loading (e.g., if it's
+     incompatible with the current recording). */
+#ifdef HAVE_BSV_MOVIE
+    {
+       input_driver_state_t *input_st = input_state_get_ptr();
+       if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
+       {
+          content_write_block_header(output,
+             RASTATE_REPLAY_BLOCK, size->replay_size);
+          if (replay_get_serialized_data(output + 8))
+            output += CONTENT_ALIGN_SIZE(size->replay_size) + 8;
+       }
+    }
+#endif
 
    /* important - write the unaligned size - some cores fail if they aren't passed the exact right size. */
    content_write_block_header(output, RASTATE_MEM_BLOCK, size->coremem_size);
@@ -688,18 +703,6 @@ static bool content_write_serialized_state(void* buffer,
       if (rcheevos_get_serialized_data(output + 8))
          output += CONTENT_ALIGN_SIZE(size->cheevos_size) + 8;
    }
-#endif
-#ifdef HAVE_BSV_MOVIE
-    {
-       input_driver_state_t *input_st = input_state_get_ptr();
-       if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
-       {
-          content_write_block_header(output,
-             RASTATE_REPLAY_BLOCK, size->replay_size);
-          if (replay_get_serialized_data(output + 8))
-            output += CONTENT_ALIGN_SIZE(size->replay_size) + 8;
-       }
-    }
 #endif
 
    content_write_block_header(output, RASTATE_END_BLOCK, 0);
@@ -1110,6 +1113,23 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
          retro_ctx_serialize_info_t serial_info;
          serial_info.data_const = (void*)input;
          serial_info.size       = block_size;
+#ifdef HAVE_BSV_MOVIE
+         {
+            input_driver_state_t *input_st = input_state_get_ptr();
+            if (BSV_MOVIE_IS_RECORDING() && !seen_replay)
+            {
+               /* TODO OSD message */
+               RARCH_ERR("[Replay] Can't load state without replay data during recording.");
+               return false;
+            }
+            if (BSV_MOVIE_IS_PLAYBACK_ON() && !seen_replay)
+            {
+               /* TODO OSD message */
+               RARCH_WARN("[Replay] Loading state without replay data during replay will cancel replay");
+               movie_stop(input_st);
+            }
+         }
+#endif
          if (!core_unserialize(&serial_info))
             return false;
 
