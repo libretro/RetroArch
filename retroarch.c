@@ -2551,13 +2551,10 @@ bool command_event(enum event_command cmd, void *data)
             res = false;
          else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
             res = movie_stop(input_st);
-         RARCH_ERR("[Movie] res after stop check: %d\n",res);
          if (!runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
             res = false;
-         RARCH_ERR("[Movie] res after path get: %d\n",res);
          if(res)
             res = movie_start_record(input_st, replay_path);
-         RARCH_ERR("[Movie] res after start record: %d\n",res);
 
          if(res && settings->bools.replay_auto_index)
          {

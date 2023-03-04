@@ -1119,13 +1119,13 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
             if (BSV_MOVIE_IS_RECORDING() && !seen_replay)
             {
                /* TODO OSD message */
-               RARCH_ERR("[Replay] Can't load state without replay data during recording.");
+               RARCH_ERR("[Replay] Can't load state without replay data during recording.\n");
                return false;
             }
             if (BSV_MOVIE_IS_PLAYBACK_ON() && !seen_replay)
             {
                /* TODO OSD message */
-               RARCH_WARN("[Replay] Loading state without replay data during replay will cancel replay");
+               RARCH_WARN("[Replay] Loading state without replay data during replay will cancel replay.\n");
                movie_stop(input_st);
             }
          }
@@ -1159,7 +1159,7 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
    }
 
    if (!seen_core) {
-RARCH_LOG("[State] no core\n");
+      RARCH_LOG("[State] no core\n");
       return false;
     }
 
