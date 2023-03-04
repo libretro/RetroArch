@@ -4855,82 +4855,97 @@ bool replay_get_serialized_data(void* buffer)
       intfstream_rewind(handle->file);
       read_amt = intfstream_read(handle->file, buffer, file_end);
       if (read_amt != file_end)
-        RARCH_ERR("[Replay] Failed to write correct number of replay bytes into state file: %d / %d\n", read_amt, file_end);
+         RARCH_ERR("[Replay] Failed to write correct number of replay bytes into state file: %d / %d\n", read_amt, file_end);
    }
    return true;
 }
 bool replay_set_serialized_data(void* buffer)
 {
    input_driver_state_t *input_st = input_state_get_ptr();
-   /* If there is no current replay, ignore this entirely.
-      TODO: Later, consider loading up the replay and allow the user to continue it? or would that be better done from the replay hotkeys? */
    bool playback = input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK;
    bool recording = input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING;
+   /* If there is no current replay, ignore this entirely.
+      TODO: Later, consider loading up the replay and allow the user to continue it? or would that be better done from the replay hotkeys? */
    if(!(playback || recording))
       return true;
    if (buffer == NULL)
    {
-      // TODO: set a flag that says we want to stop the movie?  or do it here?
-      bsv_movie_deinit(input_st);
+      if (recording)
+      {
+         const char *load_fail_str        =
+            msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT);
+         runloop_msg_queue_push(load_fail_str,
+            1, 180, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+         RARCH_ERR("[Replay] %s.\n", load_fail_str);
+         return false;
+      }
+      if (playback)
+      {
+         const char *load_warn_str        =
+            msg_hash_to_str(MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT);
+         runloop_msg_queue_push(load_warn_str,
+            1, 180, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         RARCH_WARN("[Replay] %s.\n", load_warn_str);
+         movie_stop(input_st);
+      }
+      return true;
    }
    else
    {
       int32_t loaded_len = swap_if_big32(((int32_t *)buffer)[0]);
       buffer += sizeof(int32_t);
-      /* TODO: should factor the next two lines away, magic numbers ahoy */
+      /* TODO: should factor the next few lines away, magic numbers ahoy */
       uint32_t *header = (uint32_t *)buffer;
-      int64_t identifier = swap_if_big64((((int64_t)(header[5])) << 32) | ((int64_t)(header[4])));
+      int64_t *identifier_spot = (int64_t *)(header+4);
+      int64_t identifier = swap_if_big64(*identifier_spot);
       int32_t handle_idx = intfstream_tell(input_st->bsv_movie_state_handle->file);
       bool is_compatible = identifier == input_st->bsv_movie_state_handle->identifier;
-      if (playback)
+      if (is_compatible)
       {
-         /* If the state is part of this replay, go back to that state and rewind the replay (not yet implemented); otherwise halt playback and go to that state normally. */
-         if (is_compatible)
+         /* If the state is part of this replay, go back to that state
+            and rewind the replay; otherwise
+            halt playback and go to that state normally. */
+         /* if the savestate movie is after the current replay
+            length we can replace the current replay data with it,
+            but if it's earlier we can rewind the replay to the
+            savestate movie time point. */
+         /* This can truncate the current recording, so beware! */
+         /* TODO: figure out what to do about rewinding across load */
+         if (loaded_len > handle_idx)
          {
-            /* if the savestate movie is after the current replay length we can't load it properly, but if it's earlier we can rewind the replay to the savestate movie time point. */
-            /* TODO: figure out what to do about rewinding across load */
-            if (loaded_len > handle_idx)
-            {
-               RARCH_ERR("[Replay] Loading state from the future of current movie is not allowed.\n");
-               return false;
-            }
-            // TODO: set flag/number on state that says it wants to seek?or do it here?
-            intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
+            /* TODO: Really, to be very careful, we should be
+               checking that the events in the loaded state are the
+               same up to handle_idx. Right? */
+            intfstream_rewind(input_st->bsv_movie_state_handle->file);
+            intfstream_write(input_st->bsv_movie_state_handle->file, buffer, loaded_len);
          }
          else
+            intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
+      }
+      else
+      {
+         if (recording)
          {
-            /* TODO OSD */
-            RARCH_WARN("[Replay] Loading state incompatible with current playback, halting playback.\n");
+            const char *load_fail_str        =
+               msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT);
+            runloop_msg_queue_push(load_fail_str,
+                                   1, 180, true,
+                                   NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+            RARCH_ERR("[Replay] %s.\n", load_fail_str);
+            return false;            
+         }
+         if (playback)
+         {
+            const char *load_warn_str        =
+               msg_hash_to_str(MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT);
+            runloop_msg_queue_push(load_warn_str,
+                                   1, 180, true,
+                                   NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+            RARCH_WARN("[Replay] %s.\n", load_warn_str);
             // TODO: set flag/number on state that says it wants to stop movies? or do it here?
             movie_stop(input_st);
-         }
-      }
-      if (recording)
-      {
-         if (is_compatible)
-         {
-            /* replace the current replay with what is in the state file. if the state file is earlier, we may lose what's in the current recording, right?   */
-            if(loaded_len > handle_idx)
-            {
-               // TODO: set flag/data on state with movie file data and request to continue recording? or do it here?
-               /* TODO: Figure out whether rewind can be supported across loads */
-               /* this state is from a later part of the current movie, replace the current movie file */
-               intfstream_seek(input_st->bsv_movie_state_handle->file, 0, SEEK_SET);
-               intfstream_write(input_st->bsv_movie_state_handle->file, buffer, loaded_len);
-            }
-            else
-            {
-               // TODO: set flag/data on state with request to seek movie data and continue recording? or do it here?
-               /* TODO: Figure out whether rewind can be supported across loads */
-               /* this state is from an earlier part of the current movie, truncate the current movie */
-               intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
-            }
-         }
-         else
-         {
-            /* TODO OSD */
-            RARCH_ERR("[Replay] Loading state incompatible with current recording.\n");
-            return false;
          }
       }
    }

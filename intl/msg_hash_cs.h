@@ -12674,8 +12674,8 @@ MSG_HASH(
    "Paměť"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "Vstupní soubor videa pro přehrávání videa není platným BSV1 souborem."
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Vstupní soubor videa pro přehrávání videa není platným REPLAY souborem."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

@@ -13018,8 +13018,8 @@ MSG_HASH(
    "메모리"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "입력 리플레이 영상 파일이 올바른 BSV1 파일이 아닙니다."
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "동영상 파일이 올바른 REPLAY 파일이 아닙니다."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
