@@ -4884,54 +4884,54 @@ bool replay_set_serialized_data(void* buffer)
       bool is_compatible = identifier == input_st->bsv_movie_state_handle->identifier;
       if (playback)
       {
-          /* If the state is part of this replay, go back to that state and rewind the replay (not yet implemented); otherwise halt playback and go to that state normally. */
-          if (is_compatible)
+         /* If the state is part of this replay, go back to that state and rewind the replay (not yet implemented); otherwise halt playback and go to that state normally. */
+         if (is_compatible)
+         {
+            /* if the savestate movie is after the current replay length we can't load it properly, but if it's earlier we can rewind the replay to the savestate movie time point. */
+            /* TODO: figure out what to do about rewinding across load */
+            if (loaded_len > handle_idx)
             {
-              /* if the savestate movie is after the current replay length we can't load it properly, but if it's earlier we can rewind the replay to the savestate movie time point. */
-              /* TODO: figure out what to do about rewinding across load */
-              if (loaded_len > handle_idx)
-                {
-                  RARCH_ERR("[Replay] Loading state from the future of current movie is not allowed.\n");
-                  return false;
-                }
-              // TODO: set flag/number on state that says it wants to seek?or do it here?
-              intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
+               RARCH_ERR("[Replay] Loading state from the future of current movie is not allowed.\n");
+               return false;
             }
-          else
-            {
-              /* TODO OSD */
-              RARCH_WARN("[Replay] Loading state incompatible with current playback, halting playback.\n");
-              // TODO: set flag/number on state that says it wants to stop movies? or do it here?
-              movie_stop(input_st);
-            }
+            // TODO: set flag/number on state that says it wants to seek?or do it here?
+            intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
+         }
+         else
+         {
+            /* TODO OSD */
+            RARCH_WARN("[Replay] Loading state incompatible with current playback, halting playback.\n");
+            // TODO: set flag/number on state that says it wants to stop movies? or do it here?
+            movie_stop(input_st);
+         }
       }
       if (recording)
       {
-          if (is_compatible)
+         if (is_compatible)
+         {
+            /* replace the current replay with what is in the state file. if the state file is earlier, we may lose what's in the current recording, right?   */
+            if(loaded_len > handle_idx)
             {
-              /* replace the current replay with what is in the state file. if the state file is earlier, we may lose what's in the current recording, right?   */
-              if(loaded_len > handle_idx)
-                {
-                  // TODO: set flag/data on state with movie file data and request to continue recording? or do it here?
-                  /* TODO: Figure out whether rewind can be supported across loads */
-                  /* this state is from a later part of the current movie, replace the current movie file */
-                  intfstream_seek(input_st->bsv_movie_state_handle->file, 0, SEEK_SET);
-                  intfstream_write(input_st->bsv_movie_state_handle->file, buffer, loaded_len);
-                }
-              else
-                {
-                  // TODO: set flag/data on state with request to seek movie data and continue recording? or do it here?
-                  /* TODO: Figure out whether rewind can be supported across loads */
-                  /* this state is from an earlier part of the current movie, truncate the current movie */
-                  intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
-                }
+               // TODO: set flag/data on state with movie file data and request to continue recording? or do it here?
+               /* TODO: Figure out whether rewind can be supported across loads */
+               /* this state is from a later part of the current movie, replace the current movie file */
+               intfstream_seek(input_st->bsv_movie_state_handle->file, 0, SEEK_SET);
+               intfstream_write(input_st->bsv_movie_state_handle->file, buffer, loaded_len);
             }
-          else
+            else
             {
-              /* TODO OSD */
-              RARCH_ERR("[Replay] Loading state incompatible with current recording.\n");
-              return false;
+               // TODO: set flag/data on state with request to seek movie data and continue recording? or do it here?
+               /* TODO: Figure out whether rewind can be supported across loads */
+               /* this state is from an earlier part of the current movie, truncate the current movie */
+               intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
             }
+         }
+         else
+         {
+            /* TODO OSD */
+            RARCH_ERR("[Replay] Loading state incompatible with current recording.\n");
+            return false;
+         }
       }
    }
    return true;
