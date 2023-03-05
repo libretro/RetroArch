@@ -3386,6 +3386,46 @@ MSG_HASH(
    "A tartalom közvetítése egy online videó platform felé."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
+   "Újrajátszás elindítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
+   "Újrajátszás betöltése az éppen kiválasztott rekeszből."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
+   "Újrajátszás rögzítése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
+   "Újrajátszás rögzítése az éppen kiválasztott rekeszbe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   "Rögzítés/újrajátszás megállítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   "A jelenlegi újrajátszás felvételének/lejátszásának megállítása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "Következő újrajátszás rekesz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   "Eggyel növeli a visszajátszás rekeszének sorszámát."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "Előző visszajátszás rekesz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "Eggyel csökkenti a visszajátszás rekeszének sorszámát."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Egér megragadása (váltógomb)"
    )
@@ -4067,12 +4107,28 @@ MSG_HASH(
    "Játékállás mentése előtt automatikusan megnöveli a sorszámot. Betöltéskor a legnagyobbat használja."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "A visszajátszás sorszámának automatikus léptetése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "Visszajátszás mentése előtt automatikusan megnöveli a sorszámot. Betöltéskor a legnagyobbat használja."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    "Legfeljebb ennyi automatikusan léptetett állást tartson meg"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    "Korlátozza a mentett játékállások számát automatikusan léptetett módban. A korlát elérésekor a legalacsonyabb sorszámú játékállás törlődik. 0-s értéknél bármennyi játékállást megőriz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Legfeljebb ennyi automatikusan léptetett újrajátszást tartson meg"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Korlátozza a mentett újrajátszások számát automatikusan léptetett módban. A korlát elérésekor a legalacsonyabb sorszámú újrajátszás törlődik. 0-s értéknél bármennyi játékállást megőriz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5647,6 +5703,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
    "A játékállás mentésének/betöltésének lehetőségei jelenjenek meg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   "\"Újrajátszás\" látható"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
+   "Az újrajátszások felvételéhez/lejátszásához tartozó lehetőségek jelenjenek meg."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
@@ -7321,8 +7385,16 @@ MSG_HASH(
    "Minden mentés fájl ide kerül. Ha nincs beállítva, akkor a tartalom munkakönyvtárába próbálja meg kiírni."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
+   "Minden mentés fájl (*.srm) mentése ebbe a könyvtárba. Ez a .rt, .psrm stb. fájlokat is tartalmazza. Parancssori opciókkal felülbírálható."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "Mentett játékállások"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+   "Itt tárolódnak az elmentett játékállások. Ha nincs beállítva, abba a könyvtárba keletkeznek, ahol a tartalom van."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -8010,8 +8082,36 @@ MSG_HASH(
    "Ha egy játékállás mentés felülíródott, visszaállítja azt az előző elmentett állapotra."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   "Újrajátszás rekesze"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_SLOT,
    "Az aktuális rekesz sorszáma."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
+   "Újrajátszás elindítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAY_REPLAY,
+   "Újrajátszás betöltése az éppen kiválasztott rekeszből."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
+   "Újrajátszás rögzítése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_REPLAY,
+   "Újrajátszás rögzítése az éppen kiválasztott rekeszbe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
+   "Rögzítés/újrajátszás megállítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HALT_REPLAY,
+   "A jelenlegi újrajátszás felvételének/lejátszásának megállítása"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -12506,6 +12606,10 @@ MSG_HASH(
    "Legutóbbi rekesz megtalálva"
    )
 MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "A legutóbbi újrajátszás rekesze"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Shader érzékelve"
    )
@@ -12872,6 +12976,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_STATE_SLOT,
    "Játékállás rekesze"
+   )
+MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Újrajátszás rekesze"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,

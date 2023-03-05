@@ -6561,6 +6561,10 @@ MSG_HASH(
    "Tallenna kaikki tallennustiedostot tähän kansioon. Jos tätä ei ole asetettu, yritetään tallentaa sisältötiedoston työhakemistoon."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
+   "Tallenna kaikki tallennustiedostot (*.srm) tähän kansioon. Tämä sisältää tallennukseen liittyvät tiedostot kuten .rt, .psrm, jne. Tämä ohitetaan yksinomaisilla komentorivivalinnoilla."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "Pelitilan tallennukset"
    )

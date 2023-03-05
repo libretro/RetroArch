@@ -3900,7 +3900,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
-   "允許變更顯示驅動程式"
+   "允許變更顯示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
@@ -3908,15 +3908,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
-   "核心關閉時載入虛擬核心"
+   "載入虛擬核心"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
-   "部分核心具有結束應用程式的功能, 載入虛擬核心能阻止應用程式直接結束。"
+   "部分核心關閉時具有結束應用程式的功能, 載入虛擬核心時能阻止應用程式直接結束。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
-   "部分核心具有結束應用程式的功能, 關閉此選項時執行項目關閉會結束應用程式。\n開啟此選項時載入虛擬核心阻止直接結束, 可繼續使用應用程式。"
+   "部分核心關閉時具有結束應用程式的功能, 關閉此選項時核心關閉觸發結束應用程式。\n開啟此選項時載入虛擬核心阻止直接結束, 可繼續使用應用程式免去重新啟動的操作。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
@@ -3924,7 +3924,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-   "載入前檢查韌體"
+   "載入檢查韌體"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
@@ -7474,11 +7474,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
-   "設定核心預設記憶存檔的儲存位置, 未設定位置的情況下, 將嘗試儲存在執行檔案的資料夾中。"
+   "設定記憶存檔和相關存檔的儲存位置, 未設定時將嘗試儲存在執行檔案的資料夾中。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
+   "儲存全部的記憶存檔和系統存檔到此資料夾。\n包含記憶存檔(*.srm)、 實時時鐘(*.rtc)、 高分排名(*.hi)等相關檔案。\n此路徑位置會被命令列介面的命令取代。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "即時存檔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+   "設定即時存檔和操作重播的儲存位置, 未設定時將嘗試儲存在執行檔案的資料夾中。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
