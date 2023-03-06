@@ -2317,7 +2317,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "設定顯示器的峰值亮度(cd/m2), 關於顯示器的峰值亮度, 請參閱 RTings。"
+   "設定顯示器的峰值亮度(cd/m2), 關於顯示器的峰值亮度可參閱RTings網站。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -5766,11 +5766,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "顯示「即時存檔」整合選項"
+   "顯示「即時選項」並整合相關選項"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "顯示「即時存檔」選項並整合即時存檔和操作重播相關選項。"
+   "顯示「即時選項」選項並整合即時存檔和操作重播相關選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
@@ -8247,11 +8247,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
-   "即時存檔"
+   "即時選項"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_LIST,
-   "即時存檔相關的選項。"
+   "使用即時存檔和操作重播相關的選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,

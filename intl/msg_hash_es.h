@@ -7389,8 +7389,16 @@ MSG_HASH(
    "En este directorio se almacenarán todos los archivos de guardado. Si no hay un directorio asignado, se intentarán guardar en el directorio del contenido."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
+   "Almacena todas las partidas guardadas (*.srm) en este directorio. Incluye los archivos relacionados, como .rt, .psrm, etcétera. Este directorio será ignorado si se utilizan explícitamente opciones por línea de comandos."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "Guardados rápidos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+   "En este directorio se guardarán los guardados rápidos y las repeticiones. Si no hay un directorio asignado, se intentarán guardar en el directorio donde se encuentre el contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
