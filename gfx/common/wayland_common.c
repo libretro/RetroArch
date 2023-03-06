@@ -436,7 +436,7 @@ static void shm_buffer_paint_checkerboard(
 static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 {
    shm_buffer_t *buffer = create_shm_buffer(wl,
-      wl->width * wl->buffer_scale,
+      wl->width  * wl->buffer_scale,
       wl->height * wl->buffer_scale,
       WL_SHM_FORMAT_XRGB8888);
 
@@ -451,7 +451,7 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
    if (wl_surface_get_version(wl->surface) >= WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION)
       wl_surface_damage_buffer(wl->surface, 0, 0,
-         wl->width * wl->buffer_scale,
+         wl->width  * wl->buffer_scale,
          wl->height * wl->buffer_scale);
    wl_surface_commit(wl->surface);
    return true;

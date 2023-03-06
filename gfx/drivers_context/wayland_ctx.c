@@ -65,10 +65,13 @@ static void xdg_toplevel_handle_configure(void *data,
    xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
 #ifdef HAVE_EGL
    if (wl->win)
-      wl_egl_window_resize(wl->win, wl->width, wl->height, 0, 0);
+      wl_egl_window_resize(wl->win,
+            wl->width  * wl->buffer_scale,
+            wl->height * wl->buffer_scale,
+            0, 0);
    else
       wl->win = wl_egl_window_create(wl->surface,
-            wl->width * wl->buffer_scale,
+            wl->width  * wl->buffer_scale,
             wl->height * wl->buffer_scale);
 #endif
 
@@ -144,7 +147,10 @@ libdecor_frame_handle_configure(struct libdecor_frame *frame,
 
 #ifdef HAVE_EGL
    if (wl->win)
-      wl_egl_window_resize(wl->win, wl->width, wl->height, 0, 0);
+      wl_egl_window_resize(wl->win,
+            wl->width  * wl->buffer_scale,
+            wl->height * wl->buffer_scale,
+            0, 0);
    else
       wl->win         = wl_egl_window_create(
             wl->surface,
