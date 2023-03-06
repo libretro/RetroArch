@@ -751,13 +751,10 @@ void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
 
    flush_wayland_fd(&wl->input);
 
-   new_width  = *width  * wl->last_buffer_scale;
-   new_height = *height * wl->last_buffer_scale;
-
    get_video_size(wl, &new_width, &new_height);
 
-   if (     new_width  != *width  * wl->last_buffer_scale
-         || new_height != *height * wl->last_buffer_scale)
+   if (     new_width  != *width
+         || new_height != *height)
    {
       *width  = new_width;
       *height = new_height;
