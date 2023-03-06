@@ -139,7 +139,7 @@ static void CFSearchPathForDirectoriesInDomains(
       CFStringGetCString(array_val, s, len, kCFStringEncodingUTF8);
 }
 
-static void CFTemporaryDirectory(char *s, size_t len)
+void CFTemporaryDirectory(char *s, size_t len)
 {
 #if __has_feature(objc_arc)
    CFStringRef path = (__bridge CFStringRef)NSTemporaryDirectory();

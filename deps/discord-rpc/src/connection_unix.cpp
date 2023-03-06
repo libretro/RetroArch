@@ -9,6 +9,10 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#if defined(OSX)
+extern "C" void CFTemporaryDirectory(char *s, size_t len);
+#endif
+
 struct BaseConnectionUnix : public BaseConnection {
     int sock{-1};
 };
@@ -23,12 +27,18 @@ static int MsgFlags = 0;
 
 static const char* GetTempPath(void)
 {
+#if defined(OSX)
+   static char temp[1024];
+   CFTemporaryDirectory(temp, 1024);
+   return temp;
+#else
    const char* temp = getenv("XDG_RUNTIME_DIR");
    temp = temp ? temp : getenv("TMPDIR");
    temp = temp ? temp : getenv("TMP");
    temp = temp ? temp : getenv("TEMP");
    temp = temp ? temp : "/tmp";
    return temp;
+#endif
 }
 
 /*static*/ BaseConnection* BaseConnection::Create()

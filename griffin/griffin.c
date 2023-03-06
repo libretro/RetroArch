@@ -1692,5 +1692,8 @@ STEAM INTEGRATION USING MIST
 #ifdef HAVE_MIST
 #include "../steam/steam.c"
 #include "../tasks/task_steam.c"
+#endif
+
+#ifdef HAVE_PRESENCE
 #include "../network/presence.c"
 #endif
