@@ -4851,16 +4851,17 @@ bool replay_get_serialized_data(void* buffer)
       buf[1] = file_end_bytes[1];
       buf[2] = file_end_bytes[2];
       buf[3] = file_end_bytes[3];
-      buffer += 4;
+      buf += 4;
       intfstream_rewind(handle->file);
-      read_amt = intfstream_read(handle->file, buffer, file_end);
+      read_amt = intfstream_read(handle->file, (void *)buf, file_end);
       if (read_amt != file_end)
          RARCH_ERR("[Replay] Failed to write correct number of replay bytes into state file: %d / %d\n", read_amt, file_end);
    }
    return true;
 }
-bool replay_set_serialized_data(void* buffer)
+bool replay_set_serialized_data(void* buf)
 {
+   uint8_t *buffer = buf;
    input_driver_state_t *input_st = input_state_get_ptr();
    bool playback = input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK;
    bool recording = input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING;
@@ -4895,9 +4896,8 @@ bool replay_set_serialized_data(void* buffer)
    else
    {
       int32_t loaded_len = swap_if_big32(((int32_t *)buffer)[0]);
-      buffer += sizeof(int32_t);
       /* TODO: should factor the next few lines away, magic numbers ahoy */
-      uint32_t *header = (uint32_t *)buffer;
+      uint32_t *header = (uint32_t *)(buffer+sizeof(int32_t));
       int64_t *identifier_spot = (int64_t *)(header+4);
       int64_t identifier = swap_if_big64(*identifier_spot);
       int32_t handle_idx = intfstream_tell(input_st->bsv_movie_state_handle->file);
@@ -4919,7 +4919,7 @@ bool replay_set_serialized_data(void* buffer)
                checking that the events in the loaded state are the
                same up to handle_idx. Right? */
             intfstream_rewind(input_st->bsv_movie_state_handle->file);
-            intfstream_write(input_st->bsv_movie_state_handle->file, buffer, loaded_len);
+            intfstream_write(input_st->bsv_movie_state_handle->file, buffer+sizeof(int32_t), loaded_len);
          }
          else
             intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
@@ -4944,7 +4944,6 @@ bool replay_set_serialized_data(void* buffer)
                                    1, 180, true,
                                    NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
             RARCH_WARN("[Replay] %s.\n", load_warn_str);
-            // TODO: set flag/number on state that says it wants to stop movies? or do it here?
             movie_stop(input_st);
          }
       }

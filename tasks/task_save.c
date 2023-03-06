@@ -1598,7 +1598,6 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
          /* TODO/FIXME - Use msg_hash_to_str here */
          RARCH_LOG("[State]: %s ...\n",
                msg_hash_to_str(MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER));
-          // TODO don't load and save if recording or playback are active, undo is confusing; or push a flag that says ignore the replay data during the load part
          task_push_load_and_save_state(path, data, serial_size, true, autosave);
       }
       else
