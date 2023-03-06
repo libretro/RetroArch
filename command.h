@@ -441,7 +441,7 @@ static const struct cmd_action_map action_map[] = {
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ..." },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>"},
-   /*{ "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},*/
+   { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},
 };
 
 static const struct cmd_map map[] = {
