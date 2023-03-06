@@ -388,7 +388,7 @@ build-retroarch-osx-opengl-x64:
 build-retroarch-ios-arm64:
   extends: .build-retroarch-macos-xcode
   variables:
-    XCPROJECT_NAME: RetroArch_iOS13
+    XCPROJECT_NAME: RetroArch_iOS11_Metal
     XCCONFIG: GitLabCI.xcconfig
     XCSCHEME: "RetroArch iOS Release"
   artifacts:
