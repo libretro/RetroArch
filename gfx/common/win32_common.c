@@ -881,13 +881,13 @@ static void win32_save_position(void)
    }
 }
 
-/* Get minimum window size for running core */
+/* Get minimum window size for running core. */
 static void win32_get_av_info_geometry(unsigned *width, unsigned *height)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
 
-   /* Don't bother while fast-forwarding */
+   /* Don't bother while fast-forwarding. */
    if (!video_st || runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
       return;
 
@@ -999,6 +999,9 @@ static LRESULT CALLBACK wnd_proc_common(
 
             lpMinMaxInfo->ptMinTrackSize.x = min_width;
             lpMinMaxInfo->ptMinTrackSize.y = min_height;
+
+            lpMinMaxInfo->ptMaxTrackSize.x = min_width  * 10;
+            lpMinMaxInfo->ptMaxTrackSize.y = min_height * 10;
          }
          break;
       case WM_COMMAND:
@@ -2154,25 +2157,42 @@ bool win32_has_focus(void *data)
 {
    settings_t *settings           = config_get_ptr();
 
-   /* Ensure window size is big enough for core geometry in 1x scale */
+   /* Ensure window size is big enough for core geometry. */
    if (      settings
          && !settings->bools.video_fullscreen
          && !settings->bools.video_window_save_positions)
    {
-      unsigned menu_bar_height    = 0;
+      unsigned video_scale        = settings->uints.video_scale;
+      unsigned extra_width        = 0;
+      unsigned extra_height       = 0;
       unsigned min_width          = 0;
       unsigned min_height         = 0;
 
       win32_get_av_info_geometry(&min_width, &min_height);
 
-      /* Menubar without decorations requires extra bonus height */
-      if (      settings->bools.ui_menubar_enable
-            && !settings->bools.video_window_show_decorations)
-         menu_bar_height          = GetSystemMetrics(SM_CYMENU);
+      min_width                  *= video_scale;
+      min_height                 *= video_scale;
 
-      if (     g_win32_resize_width  < min_width
-            || g_win32_resize_height < min_height)
-         SetWindowPos(main_window.hwnd, NULL, 0, 0, min_width, min_height + menu_bar_height, SWP_NOMOVE);
+      if (settings->bools.video_window_show_decorations)
+      {
+         int border_thickness     = GetSystemMetrics(SM_CXSIZEFRAME);
+         int title_bar_height     = GetSystemMetrics(SM_CYCAPTION);
+
+         extra_width             += border_thickness * 2;
+         extra_height            += border_thickness * 2 + title_bar_height;
+      }
+
+      if (settings->bools.ui_menubar_enable)
+         extra_height            += GetSystemMetrics(SM_CYMENU);
+
+      if (     (     g_win32_resize_width  < min_width
+                  || g_win32_resize_height < min_height)
+            && min_width  - g_win32_resize_width  < MIN_WIDTH  / 2
+            && min_height - g_win32_resize_height < MIN_HEIGHT / 2)
+         SetWindowPos(main_window.hwnd, NULL, 0, 0,
+               min_width  + extra_width,
+               min_height + extra_height,
+               SWP_NOMOVE);
    }
 
    if (g_win32_flags & WIN32_CMN_FLAG_INITED)
