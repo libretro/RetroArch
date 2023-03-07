@@ -549,11 +549,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "應用核心列表中不顯示"
+   "不顯示在應用核心列表"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "在「應用核心」列表中不顯示此核心, 僅限「設定/選單/選單內容」選項中, 顯示「應用核心」設定為<自訂>時使用。"
+   "此核心不顯示在「應用核心」列表, 僅限「設定/選單/選單內容」選項中, 顯示「應用核心」設定為<自訂>時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -577,7 +577,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
-   "從備份列表中選擇已備份的核心, 取代目前使用的核心。"
+   "還原備份並取代目前核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
@@ -585,7 +585,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
-   "從備份列表中刪除已備份的核心。"
+   "選擇要刪除的已備份核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
@@ -3000,15 +3000,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "單次模式。\n先按住需要使用連發的按鍵, 再按一下[連發鍵]開啟連發, 當連發中的按鍵放開時失效。\n[連發鍵]可在「設定/輸入/連接端#控制器」 選項中個別設定。"
+   "單次模式。\n先按住需要使用連發的按鍵, 再按一下[連發鍵]開啟連發, 當連發中的按鍵放開時失效。\n[連發鍵]可在「設定/輸入/連接埠#控制器」 選項中個別設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "單鍵開關模式。\n按一下[連發鍵]開啟連發預設單鍵, 預設的單鍵會持續連發, 直到再按一下[連發鍵]關閉。\n[連發鍵]可在「設定/輸入/連接端#控制器」 選項中個別設定。"
+   "單鍵開關模式。\n按一下[連發鍵]開啟連發預設單鍵, 預設的單鍵會持續連發, 直到再按一下[連發鍵]關閉。\n[連發鍵]可在「設定/輸入/連接埠#控制器」 選項中個別設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "單鍵按住模式。\n按住[連發鍵]時開啟連發預設單鍵, 預設的單鍵會持續連發, 直到放開[連發鍵]時關閉。\n[連發鍵]可在「設定/輸入/連接端#控制器」 選項中個別設定。\n用於模擬個人電腦時代的按住自動射擊功能, 請將連發鍵與預設單鍵設定為射擊的按鍵。"
+   "單鍵按住模式。\n按住[連發鍵]時開啟連發預設單鍵, 預設的單鍵會持續連發, 直到放開[連發鍵]時關閉。\n[連發鍵]可在「設定/輸入/連接埠#控制器」 選項中個別設定。\n用於模擬個人電腦時代的按住自動射擊功能, 請將連發鍵與預設單鍵設定為射擊的按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
@@ -6185,7 +6185,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
-   "設定預覽縮圖顯示類型, 開啟時在列表中, 支援按鍵切換預覽縮圖的類型。"
+   "設定預覽縮圖顯示類型, 開啟時列表項目支援按鍵切換顯示的類型。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
@@ -6855,7 +6855,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "限制「我的最愛」列表中的項目數量, 當達上限時無法加入新項目, 直到舊項目被刪除, 設定<-1>時無上限。\n警告: 減少數量將刪除現有的項目!"
+   "限制「我的最愛」列表的項目數量, 當達上限時無法加入新項目, 直到舊項目被刪除, 設定<-1>時無上限。\n警告: 減少數量將刪除現有的項目!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -7023,7 +7023,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "列表中搜尋與壓縮檔關聯項目時, 僅比對壓縮檔名稱, 而不是壓縮檔名稱加上檔案名稱。\n開啟時可避免載入壓縮檔後, 出現重複的歷史項目。"
+   "列表中搜尋與壓縮檔關聯項目時僅比對壓縮檔名稱, 而不是壓縮檔名稱加上檔案名稱。\n開啟時可避免載入壓縮檔後出現重複的歷史項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
@@ -7070,11 +7070,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
-   "標籤顯示模式"
+   "名稱的標籤格式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
-   "變更列表中項目標籤顯示的方式。"
+   "變更列表項目名稱的標籤顯示方式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
@@ -7466,7 +7466,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
-   "設定應用程式執行日誌的儲存位置。"
+   "設定列表項目執行日誌的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
@@ -7502,7 +7502,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_DIR,
-   "設定系統事件日誌檔的儲存位置。"
+   "設定應用程式系統日誌的儲存位置。"
    )
 
 #ifdef HAVE_MIST
@@ -10118,7 +10118,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "開啟時列表中顯示預覽縮圖, 按[開始鍵]縮圖全螢幕顯示, 按[Y鍵]可切換縮圖類型。"
+   "開啟時列表項目顯示預覽縮圖, [開始鍵]縮放預覽縮圖, [Y鍵]切換縮圖類型。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
@@ -10528,7 +10528,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
-   "開關圖示"
+   "選單開關圖示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
@@ -10774,7 +10774,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "隱藏列表連接號「-」之前的文字, 例如「Sony-PlayStation」 只顯示「PlayStation」。"
+   "隱藏列表連接號「-」之前的文字, 例如「Sony - PlayStation」 只顯示「PlayStation」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -10873,11 +10873,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "選單圖示"
+   "選項圖示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-   "顯示選單左側使用的圖示。"
+   "顯示選項左側使用的圖示。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SWITCH_ICONS,
@@ -10893,7 +10893,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
-   "顯示列表中的系統特定圖示。"
+   "顯示列表的主機系統圖示。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
@@ -10973,7 +10973,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
-   "設定主要的預覽縮圖顯示方式, 用於列表中項目顯示縮圖。"
+   "設定主要的預覽縮圖顯示方式, 用於列表項目顯示預覽縮圖。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
@@ -11750,7 +11750,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
-   "載入檔案與執行項目時儲存項目到歷史列表中, 預設的歷史列表儲存位置為復古電玩的根目錄。\n當「設定/列表」選項中「歷史儲存」關閉時, 不會儲存已執行項目並在主選單中不顯示歷史列表。"
+   "載入檔案與執行項目時儲存項目到歷史列表, 預設的歷史列表儲存位置為復古電玩根目錄。\n當「設定/列表」選項中「歷史儲存」關閉時, 不會儲存項目並在主選單中不顯示歷史列表。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
@@ -14123,11 +14123,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "無法從應用核心列表中刪除核心: "
+   "無法從應用核心列表刪除核心: "
    )
 MSG_HASH(
    MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "無法加入核心到應用核心列表中: "
+   "無法從應用核心列表加入核心: "
    )
 MSG_HASH(
    MSG_CORE_DELETE_DISABLED,
