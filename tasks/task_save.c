@@ -1145,7 +1145,6 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
 #ifdef HAVE_BSV_MOVIE
       else if (memcmp(marker, RASTATE_REPLAY_BLOCK, 4) == 0)
       {
-         RARCH_LOG("Replay block\n");
          if (replay_set_serialized_data((void*)input))
             seen_replay = true;
          else
@@ -1663,7 +1662,7 @@ static bool content_save_state_in_progress(void* data)
    task_finder_data_t find_data;
 
    find_data.func     = task_save_state_finder;
-   find_data.userdata = NULL;
+   find_data.userdata = data;
 
    return task_queue_find(&find_data);
 }
@@ -1685,7 +1684,7 @@ bool content_load_state_in_progress(void* data)
    task_finder_data_t find_data;
 
    find_data.func     = task_load_state_finder;
-   find_data.userdata = NULL;
+   find_data.userdata = data;
 
    return task_queue_find(&find_data);
 }

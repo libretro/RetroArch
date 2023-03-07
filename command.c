@@ -1335,7 +1335,7 @@ bool command_event_load_entry_state(settings_t *settings)
          );
 
    if (ret)
-   configuration_set_int(settings, settings->ints.state_slot, runloop_st->entry_state_slot);
+      configuration_set_int(settings, settings->ints.state_slot, runloop_st->entry_state_slot);
 
    return ret;
 }

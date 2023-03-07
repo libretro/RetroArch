@@ -77,6 +77,9 @@ LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s TOTAL_MEMORY=$(MEMORY) -s NO_EXIT_RU
 ifneq ($(PTHREAD), 0)
    LDFLAGS += -s WASM_MEM_MAX=1073741824 -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD)
    CFLAGS += -pthread
+   HAVE_THREADS=1
+else
+   HAVE_THREADS=0
 endif
 
 ifeq ($(ASYNC), 1)

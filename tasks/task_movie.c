@@ -340,8 +340,9 @@ static void moviectl_start_playback_cb(retro_task_t *task,
 static void task_moviectl_record_handler(retro_task_t *task)
 {
    /* Hang on until the state is loaded */
-   if (content_load_state_in_progress(NULL))
+   if (content_load_state_in_progress(NULL)) {
       return;
+   }
 
    /* trivial handler */
    task_set_finished(task, true);

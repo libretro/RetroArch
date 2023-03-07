@@ -4114,6 +4114,18 @@ static bool event_init_content(
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_RECORDING)
    {
      configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
+#ifndef HAVE_THREADS
+     /* Hack: the regular scheduler doesn't do the right thing here at
+        least in emscripten builds.  I would expect that the check in
+        task_movie.c:343 should defer recording until the movie task
+        is done, but maybe that task isn't enqueued again yet when the
+        movie-record task is checked?  Or the finder call in
+        content_load_state_in_progress is not correct?  Either way,
+        the load happens after the recording starts rather than the
+        right way around.
+     */
+     task_queue_wait(NULL,NULL);
+#endif
      movie_start_record(input_st, input_st->bsv_movie_state.movie_start_path);
    }
    else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK)
