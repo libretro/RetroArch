@@ -199,13 +199,13 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 {
    gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
 
-   if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height))
+   if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height, fullscreen))
       goto error;
 
    if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
          wl->input.dpy, wl->surface,
-         wl->width  * wl->buffer_scale,
-         wl->height * wl->buffer_scale,
+         wl->buffer_width,
+         wl->buffer_height,
          wl->swap_interval))
       goto error;
 

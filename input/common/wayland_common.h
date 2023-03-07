@@ -178,6 +178,8 @@ typedef struct gfx_ctx_wayland_data
    touch_pos_t active_touch_positions[MAX_TOUCHES]; /* int32_t alignment */
    unsigned width;
    unsigned height;
+   unsigned buffer_width;
+   unsigned buffer_height;
    unsigned floating_width;
    unsigned floating_height;
    unsigned last_buffer_scale;

@@ -84,8 +84,10 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       }
    }
 
-   wl->width  = width  > 0 ? width  : DEFAULT_WINDOWED_WIDTH;
-   wl->height = height > 0 ? height : DEFAULT_WINDOWED_HEIGHT;
+   wl->width         = width  > 0 ? width  : DEFAULT_WINDOWED_WIDTH;
+   wl->height        = height > 0 ? height : DEFAULT_WINDOWED_HEIGHT;
+   wl->buffer_width  = wl->width * wl->buffer_scale;
+   wl->buffer_height = wl->height * wl->buffer_scale;
 }
 
 void xdg_toplevel_handle_close(void *data,
@@ -100,7 +102,7 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
       struct libdecor_configuration *configuration,
       gfx_ctx_wayland_data_t *wl)
 {
-   int width, height;
+   int width = 0, height = 0;
    struct libdecor_state *state = NULL;
    enum libdecor_window_state window_state;
 #if 0
@@ -139,8 +141,10 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
    if (     width  > 0
          && height > 0)
    {
-      wl->width  = width;
-      wl->height = height;
+      wl->width         = width;
+      wl->height        = height;
+      wl->buffer_width  = width * wl->buffer_scale;
+      wl->buffer_height = height * wl->buffer_scale;
    }
 
    state = wl->libdecor_state_new(wl->width, wl->height);
@@ -188,8 +192,8 @@ void gfx_ctx_wl_get_video_size_common(gfx_ctx_wayland_data_t *wl,
    }
    else
    {
-      *width  = wl->width  * wl->buffer_scale;
-      *height = wl->height * wl->buffer_scale;
+      *width  = wl->buffer_width;
+      *height = wl->buffer_height;
    }
 }
 
@@ -243,16 +247,18 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       wl_display_disconnect(wl->input.dpy);
    }
 
-   wl->xdg_shell    = NULL;
-   wl->compositor   = NULL;
-   wl->registry     = NULL;
-   wl->input.dpy    = NULL;
-   wl->xdg_surface  = NULL;
-   wl->surface      = NULL;
-   wl->xdg_toplevel = NULL;
+   wl->xdg_shell     = NULL;
+   wl->compositor    = NULL;
+   wl->registry      = NULL;
+   wl->input.dpy     = NULL;
+   wl->xdg_surface   = NULL;
+   wl->surface       = NULL;
+   wl->xdg_toplevel  = NULL;
 
-   wl->width        = 0;
-   wl->height       = 0;
+   wl->width         = 0;
+   wl->height        = 0;
+   wl->buffer_width  = 0;
+   wl->buffer_height = 0;
 }
 
 void gfx_ctx_wl_update_title_common(gfx_ctx_wayland_data_t *wl)
@@ -436,23 +442,23 @@ static void shm_buffer_paint_checkerboard(
 static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 {
    shm_buffer_t *buffer = create_shm_buffer(wl,
-      wl->width  * wl->buffer_scale,
-      wl->height * wl->buffer_scale,
+      wl->buffer_width,
+      wl->buffer_height,
       WL_SHM_FORMAT_XRGB8888);
 
    if (!buffer)
      return false;
 
-   shm_buffer_paint_checkerboard(buffer, wl->width,
-      wl->height, wl->buffer_scale,
+   shm_buffer_paint_checkerboard(buffer, wl->buffer_width,
+      wl->buffer_height, 1,
       16, 0xffbcbcbc, 0xff8e8e8e);
 
    wl_surface_attach(wl->surface, buffer->wl_buffer, 0, 0);
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
    if (wl_surface_get_version(wl->surface) >= WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION)
       wl_surface_damage_buffer(wl->surface, 0, 0,
-         wl->width  * wl->buffer_scale,
-         wl->height * wl->buffer_scale);
+         wl->buffer_width,
+         wl->buffer_height);
    wl_surface_commit(wl->surface);
    return true;
 }
@@ -626,13 +632,21 @@ error:
 }
 
 bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
-      unsigned width, unsigned height)
+      unsigned width, unsigned height, bool fullscreen)
 {
    settings_t *settings         = config_get_ptr();
    unsigned video_monitor_index = settings->uints.video_monitor_index;
 
-   wl->width                    = width  ? width  : DEFAULT_WINDOWED_WIDTH;
-   wl->height                   = height ? height : DEFAULT_WINDOWED_HEIGHT;
+   wl->width         = width  ? width  : DEFAULT_WINDOWED_WIDTH;
+   wl->height        = height ? height : DEFAULT_WINDOWED_HEIGHT;
+   wl->buffer_width  = wl->width;
+   wl->buffer_height = wl->height;
+
+   if (!fullscreen)
+   {
+      wl->buffer_width  *= wl->buffer_scale;
+      wl->buffer_height *= wl->buffer_scale;
+   }
 
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
