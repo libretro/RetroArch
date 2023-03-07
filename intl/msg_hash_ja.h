@@ -10242,8 +10242,8 @@ MSG_HASH(
    "メモリ"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "入力リプレイムービーファイルは有効なBSV1ファイルではありません. "
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "入力リプレイムービーファイルは有効なREPLAYファイルではありません. "
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

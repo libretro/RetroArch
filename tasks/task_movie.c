@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <time.h>
+#include <time/rtime.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
@@ -43,11 +44,15 @@
 #include "../input/input_driver.h"
 
 #define MAGIC_INDEX        0
-#define SERIALIZER_INDEX   1
+#define VERSION_INDEX      1
 #define CRC_INDEX          2
 #define STATE_SIZE_INDEX   3
+/* Identifier is int64_t, so takes up two slots */
+#define IDENTIFIER_INDEX   4
+#define HEADER_LEN         6
 
-#define BSV_MAGIC          0x42535631
+#define REPLAY_FORMAT_VERSION 0
+#define REPLAY_MAGIC       0x42535632
 
 /* Forward declaration */
 bool content_load_state_in_progress(void* data);
@@ -57,9 +62,10 @@ bool content_load_state_in_progress(void* data);
 static bool bsv_movie_init_playback(
       bsv_movie_t *handle, const char *path)
 {
-   uint32_t state_size       = 0;
-   uint32_t header[4]        = {0};
-   intfstream_t *file        = intfstream_open_file(path,
+   int64_t *identifier_loc;
+   uint32_t state_size         = 0;
+   uint32_t header[HEADER_LEN] = {0};
+   intfstream_t *file          = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
@@ -72,23 +78,31 @@ static bool bsv_movie_init_playback(
    handle->file              = file;
    handle->playback          = true;
 
-   intfstream_read(handle->file, header, sizeof(uint32_t) * 4);
-   /* Compatibility with old implementation that
-    * used incorrect documentation. */
-   if (swap_if_little32(header[MAGIC_INDEX]) != BSV_MAGIC
-         && swap_if_big32(header[MAGIC_INDEX]) != BSV_MAGIC)
+   intfstream_read(handle->file, header, sizeof(uint32_t) * HEADER_LEN);
+   if (swap_if_big32(header[MAGIC_INDEX]) != REPLAY_MAGIC)
    {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE));
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
       return false;
    }
+   /*
+   if (swap_if_big32(header[VERSION_INDEX]) > REPLAY_FORMAT_VERSION)
+   {
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
+      return false;
+   }
+   */
 
    state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
+   identifier_loc = (int64_t *)(header+IDENTIFIER_INDEX);
+   handle->identifier = swap_if_big64(*identifier_loc);
 
 #if 0
    RARCH_ERR("----- debug %u -----\n", header[0]);
    RARCH_ERR("----- debug %u -----\n", header[1]);
    RARCH_ERR("----- debug %u -----\n", header[2]);
    RARCH_ERR("----- debug %u -----\n", header[3]);
+   RARCH_ERR("----- debug %u -----\n", header[4]);
+   RARCH_ERR("----- debug %u -----\n", header[5]);
 #endif
 
    if (state_size)
@@ -130,11 +144,13 @@ static bool bsv_movie_init_record(
       bsv_movie_t *handle, const char *path)
 {
    retro_ctx_size_info_t info;
-   uint32_t state_size       = 0;
-   uint32_t content_crc      = 0;
-   uint32_t header[4]        = {0};
-   intfstream_t *file        = intfstream_open_file(path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
+   time_t t                     = time(NULL);
+   time_t time_lil              = swap_if_big64(t);
+   uint32_t state_size          = 0;
+   uint32_t content_crc         = 0;
+   uint32_t header[HEADER_LEN] = {0};
+   intfstream_t *file           = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
@@ -147,17 +163,18 @@ static bool bsv_movie_init_record(
 
    content_crc              = content_get_crc();
 
-   /* This value is supposed to show up as
-    * BSV1 in a HEX editor, big-endian. */
-   header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
+   header[MAGIC_INDEX]      = swap_if_big32(REPLAY_MAGIC);
+   header[VERSION_INDEX]    = REPLAY_FORMAT_VERSION;
    header[CRC_INDEX]        = swap_if_big32(content_crc);
+
    core_serialize_size(&info);
 
    state_size               = (unsigned)info.size;
 
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
-
-   intfstream_write(handle->file, header, 4 * sizeof(uint32_t));
+   handle->identifier = (int64_t)t;
+   *((int64_t *)(header+IDENTIFIER_INDEX)) = time_lil;
+   intfstream_write(handle->file, header, HEADER_LEN * sizeof(uint32_t));
 
    handle->min_file_pos     = sizeof(header) + state_size;
    handle->state_size       = state_size;
@@ -459,4 +476,5 @@ error:
 
    return false;
 }
+
 #endif

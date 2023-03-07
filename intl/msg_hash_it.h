@@ -12806,8 +12806,8 @@ MSG_HASH(
    "Memoria"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "Il File del filmato non è un file valido di BSV1."
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Il File del filmato non è un file valido di REPLAY."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

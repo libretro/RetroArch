@@ -2006,8 +2006,8 @@ MSG_HASH(
    "Loading favourites file"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "Input replay film file is not a valid BSV1 file."
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Input replay film file is not a valid REPLAY file."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

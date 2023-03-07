@@ -11982,8 +11982,8 @@ MSG_HASH(
    "Muisti"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "Sisääntulon uudelleentoiston elokuvatiedosto ei ole kelvollinen BSV1-tiedosto."
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Sisääntulon uudelleentoiston elokuvatiedosto ei ole kelvollinen REPLAY-tiedosto."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

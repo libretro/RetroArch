@@ -679,8 +679,7 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    state_path[0]                = '\0';
    if (savestates_enabled)
    {
-      runloop_get_current_savestate_path(state_path,
-            sizeof(state_path));
+      runloop_get_savestate_path(state_path, sizeof(state_path), slot);
 
       core_serialize_size(&info);
       savestates_enabled = (info.size > 0);
@@ -695,6 +694,40 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
 
    cmd->replier(cmd, reply, strlen(reply));
    return ret;
+}
+
+bool command_play_replay_slot(command_t *cmd, const char *arg)
+{
+#ifdef HAVE_BSV_MOVIE
+   char replay_path[16384];
+   retro_ctx_size_info_t info;
+   char reply[128]              = "";
+   unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
+   char *reply_at               = reply + snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT %d", slot);
+   bool savestates_enabled      = core_info_current_supports_savestate();
+   bool ret                     = false;
+   replay_path[0]               = '\0';
+   if (savestates_enabled)
+   {
+      runloop_get_replay_path(replay_path, sizeof(replay_path), slot);
+
+      core_serialize_size(&info);
+      savestates_enabled = (info.size > 0);
+   }
+   if (savestates_enabled)
+   {
+      ret = movie_start_playback(input_state_get_ptr(), replay_path);
+      if (ret)
+         command_post_state_loaded();
+   }
+   else
+      ret = false;
+
+   cmd->replier(cmd, reply, strlen(reply));
+   return ret;
+#else
+   return false;
+#endif
 }
 
 
@@ -1302,7 +1335,7 @@ bool command_event_load_entry_state(settings_t *settings)
          );
 
    if (ret)
-   configuration_set_int(settings, settings->ints.state_slot, runloop_st->entry_state_slot);
+      configuration_set_int(settings, settings->ints.state_slot, runloop_st->entry_state_slot);
 
    return ret;
 }
@@ -1935,19 +1968,6 @@ bool command_event_main_state(unsigned cmd)
          case CMD_EVENT_LOAD_STATE_FROM_RAM:
             {
                bool res = false;
-#ifdef HAVE_BSV_MOVIE
-              input_driver_state_t *input_st   = input_state_get_ptr();
-              if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
-              {
-                 RARCH_ERR("[Load] [Movie] Can't load state during movie record\n");
-                 return false;
-              }
-              if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
-                {
-                  RARCH_LOG("[Load] [Movie] Loaded state during movie playback, halting playback\n");
-                  movie_stop(input_st);
-                }
-#endif
                if (cmd == CMD_EVENT_LOAD_STATE)
                   res = content_load_state(state_path, false, false);
                else

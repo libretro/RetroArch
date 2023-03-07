@@ -409,6 +409,7 @@ bool command_get_status(command_t *cmd, const char* arg);
 bool command_get_config_param(command_t *cmd, const char* arg);
 bool command_show_osd_msg(command_t *cmd, const char* arg);
 bool command_load_state_slot(command_t *cmd, const char* arg);
+bool command_play_replay_slot(command_t *cmd, const char* arg);
 #ifdef HAVE_CHEEVOS
 bool command_read_ram(command_t *cmd, const char *arg);
 bool command_write_ram(command_t *cmd, const char *arg);
@@ -441,7 +442,7 @@ static const struct cmd_action_map action_map[] = {
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ..." },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>"},
-   /*{ "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},*/
+   { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},
 };
 
 static const struct cmd_map map[] = {

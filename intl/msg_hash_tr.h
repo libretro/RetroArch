@@ -12254,8 +12254,8 @@ MSG_HASH(
    "Bellek"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "Giriş tekrar film dosyası geçerli bir BSV1 dosyası değil."
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Giriş tekrar film dosyası geçerli bir REPLAY dosyası değil."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

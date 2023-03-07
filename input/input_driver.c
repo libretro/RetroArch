@@ -4827,6 +4827,129 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       }
    }
 }
+size_t replay_get_serialize_size(void)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
+      return sizeof(int32_t)+intfstream_tell(input_st->bsv_movie_state_handle->file);
+   else
+      return 0;
+}
+
+bool replay_get_serialized_data(void* buffer)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   bsv_movie_t *handle = input_st->bsv_movie_state_handle;
+   if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
+   {
+      long file_end = intfstream_tell(handle->file);
+      long read_amt = 0;
+      long file_end_lil = swap_if_big32(file_end);
+      uint8_t *file_end_bytes = (uint8_t *)(&file_end_lil);
+      uint8_t *buf = buffer;
+      buf[0] = file_end_bytes[0];
+      buf[1] = file_end_bytes[1];
+      buf[2] = file_end_bytes[2];
+      buf[3] = file_end_bytes[3];
+      buf += 4;
+      intfstream_rewind(handle->file);
+      read_amt = intfstream_read(handle->file, (void *)buf, file_end);
+      if (read_amt != file_end)
+         RARCH_ERR("[Replay] Failed to write correct number of replay bytes into state file: %d / %d\n", read_amt, file_end);
+   }
+   return true;
+}
+bool replay_set_serialized_data(void* buf)
+{
+   uint8_t *buffer = buf;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   bool playback = input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK;
+   bool recording = input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING;
+   /* If there is no current replay, ignore this entirely.
+      TODO: Later, consider loading up the replay and allow the user to continue it? or would that be better done from the replay hotkeys? */
+   if(!(playback || recording))
+      return true;
+   if (buffer == NULL)
+   {
+      if (recording)
+      {
+         const char *load_fail_str        =
+            msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT);
+         runloop_msg_queue_push(load_fail_str,
+            1, 180, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+         RARCH_ERR("[Replay] %s.\n", load_fail_str);
+         return false;
+      }
+      if (playback)
+      {
+         const char *load_warn_str        =
+            msg_hash_to_str(MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT);
+         runloop_msg_queue_push(load_warn_str,
+            1, 180, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         RARCH_WARN("[Replay] %s.\n", load_warn_str);
+         movie_stop(input_st);
+      }
+      return true;
+   }
+   else
+   {
+      int32_t loaded_len = swap_if_big32(((int32_t *)buffer)[0]);
+      /* TODO: should factor the next few lines away, magic numbers ahoy */
+      uint32_t *header = (uint32_t *)(buffer+sizeof(int32_t));
+      int64_t *identifier_spot = (int64_t *)(header+4);
+      int64_t identifier = swap_if_big64(*identifier_spot);
+      int32_t handle_idx = intfstream_tell(input_st->bsv_movie_state_handle->file);
+      bool is_compatible = identifier == input_st->bsv_movie_state_handle->identifier;
+      if (is_compatible)
+      {
+         /* If the state is part of this replay, go back to that state
+            and rewind the replay; otherwise
+            halt playback and go to that state normally. */
+         /* if the savestate movie is after the current replay
+            length we can replace the current replay data with it,
+            but if it's earlier we can rewind the replay to the
+            savestate movie time point. */
+         /* This can truncate the current recording, so beware! */
+         /* TODO: figure out what to do about rewinding across load */
+         if (loaded_len > handle_idx)
+         {
+            /* TODO: Really, to be very careful, we should be
+               checking that the events in the loaded state are the
+               same up to handle_idx. Right? */
+            intfstream_rewind(input_st->bsv_movie_state_handle->file);
+            intfstream_write(input_st->bsv_movie_state_handle->file, buffer+sizeof(int32_t), loaded_len);
+         }
+         else
+            intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
+      }
+      else
+      {
+         if (recording)
+         {
+            const char *load_fail_str        =
+               msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT);
+            runloop_msg_queue_push(load_fail_str,
+                                   1, 180, true,
+                                   NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+            RARCH_ERR("[Replay] %s.\n", load_fail_str);
+            return false;            
+         }
+         if (playback)
+         {
+            const char *load_warn_str        =
+               msg_hash_to_str(MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT);
+            runloop_msg_queue_push(load_warn_str,
+                                   1, 180, true,
+                                   NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+            RARCH_WARN("[Replay] %s.\n", load_warn_str);
+            movie_stop(input_st);
+         }
+      }
+   }
+   return true;
+}
 
 #endif
 

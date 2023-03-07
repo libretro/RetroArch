@@ -13034,8 +13034,8 @@ MSG_HASH(
    "Объём памяти"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "Запись повтора не является правильным файлом BSV1."
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Запись повтора не является правильным файлом REPLAY."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
