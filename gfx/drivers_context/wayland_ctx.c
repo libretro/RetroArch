@@ -65,11 +65,14 @@ static void xdg_toplevel_handle_configure(void *data,
    xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
 #ifdef HAVE_EGL
    if (wl->win)
-      wl_egl_window_resize(wl->win, wl->width, wl->height, 0, 0);
+      wl_egl_window_resize(wl->win,
+            wl->buffer_width,
+            wl->buffer_height,
+            0, 0);
    else
       wl->win = wl_egl_window_create(wl->surface,
-            wl->width * wl->buffer_scale,
-            wl->height * wl->buffer_scale);
+            wl->buffer_width,
+            wl->buffer_height);
 #endif
 
    wl->configured = false;
@@ -144,12 +147,15 @@ libdecor_frame_handle_configure(struct libdecor_frame *frame,
 
 #ifdef HAVE_EGL
    if (wl->win)
-      wl_egl_window_resize(wl->win, wl->width, wl->height, 0, 0);
+      wl_egl_window_resize(wl->win,
+            wl->buffer_width,
+            wl->buffer_height,
+            0, 0);
    else
       wl->win         = wl_egl_window_create(
             wl->surface,
-            wl->width  * wl->buffer_scale,
-            wl->height * wl->buffer_scale);
+            wl->buffer_width,
+            wl->buffer_height);
 #endif
 
    wl->configured = false;
@@ -387,7 +393,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 {
    gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
 
-   if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height))
+   if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height, fullscreen))
       goto error;
 
 #ifdef HAVE_EGL
@@ -396,8 +402,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
          (gfx_ctx_wayland_data_t*)data, egl_attribs);
 
    wl->win = wl_egl_window_create(wl->surface,
-      wl->width  * wl->buffer_scale,
-      wl->height * wl->buffer_scale);
+      wl->buffer_width,
+      wl->buffer_height);
 
    if (!egl_create_context(&wl->egl, (attr != egl_attribs)
             ? egl_attribs : NULL))
