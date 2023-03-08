@@ -5296,14 +5296,6 @@ MSG_HASH(
    "Modyfikuj przezroczystość obrazu tła."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Nieprzezroczysty bufor klatki"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Zmodyfikuj krycie bufora klatki."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Użyj preferowanego motywu kolorystycznego systemu"
    )
@@ -11664,10 +11656,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Pamięć"
-   )
-MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
-   "Plik filmu nie jest prawidłowym plikiem REPLAY."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

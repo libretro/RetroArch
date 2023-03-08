@@ -6032,14 +6032,6 @@ MSG_HASH(
    "Modifica l'opacità dell'immagine di sfondo."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Opacità Framebuffer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Modifica l'opacità del framebuffer."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Usa la colorazione preferita di sistema"
    )
@@ -12804,10 +12796,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Memoria"
-   )
-MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
-   "Il File del filmato non è un file valido di REPLAY."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

@@ -3536,14 +3536,6 @@ MSG_HASH(
    "شفافية الخلفية"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "شفافية العازل الإطاري"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "تعديل شفافية المخزن المؤقت."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "استخدام لون النظام المفضل"
    )
@@ -8512,10 +8504,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "الذاكرة"
-   )
-MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
-   "ملف إعادة عرض فيلم الإدخال ليس ملف REPLAY صالح."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

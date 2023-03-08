@@ -4347,10 +4347,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Achtergrond doorzichtigheid"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Framebuffer Doorzichtigheid"
-   )
 
 /* Settings > AI Service */
 
@@ -5928,10 +5924,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Geheugen"
-   )
-MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
-   "Movie file is not a valid REPLAY file."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

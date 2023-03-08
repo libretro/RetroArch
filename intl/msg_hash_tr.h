@@ -5564,14 +5564,6 @@ MSG_HASH(
    "Arka plan resminin şeffaflığını değiştirin."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Kare Arabellek Saydamlığı"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Kare arabellek saydamlığını değiştir."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Tercih Edilen Sistem Renk Temasını Kullan"
    )
@@ -12252,10 +12244,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Bellek"
-   )
-MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
-   "Giriş tekrar film dosyası geçerli bir REPLAY dosyası değil."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

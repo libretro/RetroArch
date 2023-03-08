@@ -6096,14 +6096,6 @@ MSG_HASH(
    "Modifica la opacidad de la imagen de fondo."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Opacidad del framebuffer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Modifica la opacidad del framebuffer."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Usar tema de colores del sistema"
    )
@@ -12964,10 +12956,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Memoria"
-   )
-MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
-   "El archivo de la repetición de entrada no es un archivo REPLAY válido."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

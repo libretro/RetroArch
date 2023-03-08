@@ -4876,14 +4876,6 @@ MSG_HASH(
    "背景画像の透明度を変更します."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "フレームバッファの不透明度"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "フレームバッファの不透明度を変更します."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "システムの優先色テーマを使用"
    )
@@ -10240,10 +10232,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "メモリ"
-   )
-MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
-   "入力リプレイムービーファイルは有効なREPLAYファイルではありません. "
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

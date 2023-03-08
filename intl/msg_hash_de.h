@@ -5984,14 +5984,6 @@ MSG_HASH(
    "Legt die Deckkraft des Hintergrundbilds fest."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Framebuffer-Transparenz"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Modifiziere die Transparenz des Framebuffers."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Systemfarbthema verwenden"
    )
@@ -12644,10 +12636,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Speicher"
-   )
-MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
-   "Filmdatei ist keine gültige REPLAY-Datei."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

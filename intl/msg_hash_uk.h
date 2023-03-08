@@ -3904,14 +3904,6 @@ MSG_HASH(
    "Зміна непрозорості зображення тла."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Непрозорість кадрового буфера"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Зміна непрозорості фреймбуфера."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Використовувати бажану колірну тема системи"
    )

@@ -5340,14 +5340,6 @@ MSG_HASH(
    "Muokkaa taustakuvan läpinäkyvyyttä."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Kuvapuskurin läpinäkyvyys"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Muokkaa kuvapuskurin läpinäkyvyyttä."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Käytä järjestelmän ensisijaista väriteemaa"
    )
@@ -11980,10 +11972,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Muisti"
-   )
-MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
-   "Sisääntulon uudelleentoiston elokuvatiedosto ei ole kelvollinen REPLAY-tiedosto."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

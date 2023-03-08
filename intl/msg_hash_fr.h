@@ -6068,14 +6068,6 @@ MSG_HASH(
    "Modifier l'opacité de l'image d'arrière-plan."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Opacité de l'image en mémoire (Frame Buffer) "
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Modifier l'opacité de l'image en mémoire (Frame Buffer)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Utiliser le thème de couleur préféré du système"
    )
@@ -12920,10 +12912,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Mémoire"
-   )
-MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
-   "Le fichier vidéo de relecture n'est pas un fichier REPLAY valide."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
