@@ -40,6 +40,10 @@
 #define DEFAULT_WINDOWED_WIDTH 640
 #define DEFAULT_WINDOWED_HEIGHT 480
 
+// Icon is 16x15 scaled by 16
+#define SPLASH_WINDOW_WIDTH 240
+#define SPLASH_WINDOW_HEIGHT 256
+
 #ifndef MFD_CLOEXEC
 #define MFD_CLOEXEC		0x0001U
 #endif
@@ -56,11 +60,31 @@
 #define F_SEAL_SHRINK		0x0002
 #endif
 
+static const unsigned long retroarch_icon_data[] = {
+0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
+0x00000000,0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xfff2f2f2,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0xfff2f2f2,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,0x00000000,
+0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000
+};
+
 void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       void *toplevel,
       int32_t width, int32_t height, struct wl_array *states)
 {
    const uint32_t *state;
+   bool floating = true;
 
    wl->fullscreen             = false;
    wl->maximized              = false;
@@ -71,9 +95,17 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       {
          case XDG_TOPLEVEL_STATE_FULLSCREEN:
             wl->fullscreen = true;
+            floating = false;
             break;
          case XDG_TOPLEVEL_STATE_MAXIMIZED:
             wl->maximized = true;
+            floating = false;
+            break;
+         case XDG_TOPLEVEL_STATE_TILED_LEFT:
+         case XDG_TOPLEVEL_STATE_TILED_RIGHT:
+         case XDG_TOPLEVEL_STATE_TILED_TOP:
+         case XDG_TOPLEVEL_STATE_TILED_BOTTOM:
+            floating = false;
             break;
          case XDG_TOPLEVEL_STATE_RESIZING:
             wl->resize = true;
@@ -84,10 +116,27 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       }
    }
 
-   wl->width         = width  > 0 ? width  : DEFAULT_WINDOWED_WIDTH;
-   wl->height        = height > 0 ? height : DEFAULT_WINDOWED_HEIGHT;
-   wl->buffer_width  = wl->width * wl->buffer_scale;
-   wl->buffer_height = wl->height * wl->buffer_scale;
+   if (width == 0 || height == 0)
+   {
+      width  = wl->floating_width;
+      height = wl->floating_height;
+   }
+
+   if (     width  > 0
+         && height > 0)
+   {
+      wl->width  = width;
+      wl->height = height;
+      wl->buffer_width  = wl->width * wl->buffer_scale;
+      wl->buffer_height = wl->height * wl->buffer_scale;
+      wl->resize = true;
+   }
+
+   if (floating)
+   {
+      wl->floating_width  = width;
+      wl->floating_height = height;
+   }
 }
 
 void xdg_toplevel_handle_close(void *data,
@@ -145,13 +194,15 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
       wl->height        = height;
       wl->buffer_width  = width * wl->buffer_scale;
       wl->buffer_height = height * wl->buffer_scale;
+      wl->resize        = true;
    }
 
    state = wl->libdecor_state_new(wl->width, wl->height);
    wl->libdecor_frame_commit(frame, state, configuration);
    wl->libdecor_state_free(state);
 
-   if (wl->libdecor_frame_is_floating(frame)) {
+   if (wl->libdecor_frame_is_floating(frame))
+   {
       wl->floating_width  = width;
       wl->floating_height = height;
    }
@@ -410,6 +461,38 @@ static shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
    return buffer;
 }
 
+static void shm_buffer_paint_icon(
+      shm_buffer_t *buffer,
+      int width, int height, int scale,
+      size_t icon_scale)
+{
+   int y, x;
+   uint32_t *pixels = buffer->data;
+   int stride       = width * scale;
+
+   for (y = 0; y < height; y++)
+   {
+      for (x = 0; x < width; x++)
+      {
+         uint32_t color = retroarch_icon_data[16 * ((y / icon_scale) % 16) + ((x / icon_scale) % 16)];
+         int sx;
+         if (color >> 4)
+         {
+            for (sx = 0; sx < scale; sx++)
+            {
+               int sy;
+               for (sy = 0; sy < scale; sy++)
+               {
+                  size_t  off = x * scale + sx
+                        + (y * scale + sy) * stride;
+                     pixels[off] = color;
+               }
+            }
+         }
+      }
+   }
+}
+
 static void shm_buffer_paint_checkerboard(
       shm_buffer_t *buffer,
       int width, int height, int scale,
@@ -423,8 +506,8 @@ static void shm_buffer_paint_checkerboard(
    {
       for (x = 0; x < width; x++)
       {
-         int sx;
          uint32_t color = (x & chk) ^ (y & chk) ? fg : bg;
+         int sx;
          for (sx = 0; sx < scale; sx++)
          {
             int sy;
@@ -442,8 +525,8 @@ static void shm_buffer_paint_checkerboard(
 static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 {
    shm_buffer_t *buffer = create_shm_buffer(wl,
-      wl->buffer_width,
-      wl->buffer_height,
+      wl->width * wl->buffer_scale,
+      wl->height * wl->buffer_scale,
       WL_SHM_FORMAT_XRGB8888);
 
    if (!buffer)
@@ -451,7 +534,10 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 
    shm_buffer_paint_checkerboard(buffer, wl->buffer_width,
       wl->buffer_height, 1,
-      16, 0xffbcbcbc, 0xff8e8e8e);
+      8, 0xffbcbcbc, 0xff8e8e8e);
+   shm_buffer_paint_icon(buffer, wl->buffer_width,
+      wl->buffer_height, 1,
+      16);
 
    wl_surface_attach(wl->surface, buffer->wl_buffer, 0, 0);
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
@@ -490,8 +576,8 @@ bool gfx_ctx_wl_init_common(
    wl->input.dpy         = wl_display_connect(NULL);
    wl->last_buffer_scale = 1;
    wl->buffer_scale      = 1;
-   wl->floating_width    = DEFAULT_WINDOWED_WIDTH;
-   wl->floating_height   = DEFAULT_WINDOWED_HEIGHT;
+   wl->floating_width    = SPLASH_WINDOW_WIDTH;
+   wl->floating_height   = SPLASH_WINDOW_HEIGHT;
 
    if (!wl->input.dpy)
    {
@@ -542,19 +628,17 @@ bool gfx_ctx_wl_init_common(
    if (wl->libdecor)
    {
       wl->libdecor_context = wl->libdecor_new(wl->input.dpy, &libdecor_interface);
-      if (wl->libdecor_context)
-      {
-         wl->libdecor_frame = wl->libdecor_decorate(wl->libdecor_context, wl->surface, &toplevel_listener->libdecor_frame_interface, wl);
-         if (!wl->libdecor_frame)
-         {
-            RARCH_ERR("[Wayland]: Failed to crate libdecor frame\n");
-            goto error;
-         }
 
-         wl->libdecor_frame_set_app_id(wl->libdecor_frame, APP_ID);
-         wl->libdecor_frame_set_title(wl->libdecor_frame, WINDOW_TITLE);
-         wl->libdecor_frame_map(wl->libdecor_frame);
+      wl->libdecor_frame = wl->libdecor_decorate(wl->libdecor_context, wl->surface, &toplevel_listener->libdecor_frame_interface, wl);
+      if (!wl->libdecor_frame)
+      {
+         RARCH_ERR("[Wayland]: Failed to create libdecor frame\n");
+         goto error;
       }
+
+      wl->libdecor_frame_set_app_id(wl->libdecor_frame, APP_ID);
+      wl->libdecor_frame_set_title(wl->libdecor_frame, WINDOW_TITLE);
+      wl->libdecor_frame_map(wl->libdecor_frame);
 
       /* Waiting for libdecor to be configured before starting to draw */
       wl_surface_commit(wl->surface);
@@ -600,9 +684,25 @@ bool gfx_ctx_wl_init_common(
     * This shows the window which assigns us a display (wl_output)
     *  which is usefull for HiDPI and auto selecting a display for fullscreen. */
    if (!wl_draw_splash_screen(wl))
-      RARCH_ERR("[Wayland`]: Failed to draw splash screen\n");
+      RARCH_ERR("[Wayland]: Failed to draw splash screen\n");
 
-   wl_display_roundtrip(wl->input.dpy);
+   // Make sure splash screen is on screen and sized
+#ifdef HAVE_LIBDECOR_H
+   if (wl->libdecor)
+   {
+      wl->configured = true;
+      while (wl->configured)
+         if (wl->libdecor_dispatch(wl->libdecor_context, 0) < 0)
+            RARCH_ERR("[Wayland]: libdecor failed to dispatch\n");
+   }
+   else
+#endif
+   {
+      wl->configured = true;
+
+      while (wl->configured)
+         wl_display_dispatch(wl->input.dpy);
+   }
 
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
 
