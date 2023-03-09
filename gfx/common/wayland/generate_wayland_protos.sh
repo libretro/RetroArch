@@ -58,6 +58,8 @@ fi
 XDG_SHELL='stable/xdg-shell/xdg-shell.xml'
 XDG_DECORATION_UNSTABLE='unstable/xdg-decoration/xdg-decoration-unstable-v1.xml'
 IDLE_INHIBIT_UNSTABLE='unstable/idle-inhibit/idle-inhibit-unstable-v1.xml'
+POINTER_CONSTRAINTS_UNSTABLE='unstable/pointer-constraints/pointer-constraints-unstable-v1.xml'
+RELATIVE_POINTER_UNSTABLE='unstable/relative-pointer/relative-pointer-unstable-v1.xml'
 
 #Generate xdg-shell header and .c files
 "$WAYSCAN" client-header "$WAYLAND_PROTOS/$XDG_SHELL" ./xdg-shell.h
@@ -70,3 +72,11 @@ IDLE_INHIBIT_UNSTABLE='unstable/idle-inhibit/idle-inhibit-unstable-v1.xml'
 #Generate xdg-decoration header and .c files
 "$WAYSCAN" client-header "$WAYLAND_PROTOS/$XDG_DECORATION_UNSTABLE" ./xdg-decoration-unstable-v1.h
 "$WAYSCAN" $CODEGEN "$WAYLAND_PROTOS/$XDG_DECORATION_UNSTABLE" ./xdg-decoration-unstable-v1.c
+
+#Generate pointer-constraints header and .c files
+"$WAYSCAN" client-header "$WAYLAND_PROTOS/$POINTER_CONSTRAINTS_UNSTABLE" ./pointer-constraints-unstable-v1.h
+"$WAYSCAN" $CODEGEN "$WAYLAND_PROTOS/$POINTER_CONSTRAINTS_UNSTABLE" ./pointer-constraints-unstable-v1.c
+
+#Generate relative-pointer header and .c files
+"$WAYSCAN" client-header "$WAYLAND_PROTOS/$RELATIVE_POINTER_UNSTABLE" ./relative-pointer-unstable-v1.h
+"$WAYSCAN" $CODEGEN "$WAYLAND_PROTOS/$RELATIVE_POINTER_UNSTABLE" ./relative-pointer-unstable-v1.c
