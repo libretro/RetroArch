@@ -338,6 +338,10 @@ MSG_HASH(
    "autosave_interval"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "replay_checkpoint_interval"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,
    "auto_overrides_enable"
    )
@@ -3268,6 +3272,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SAVESTATE_MAX_KEEP,
    "savestate_max_keep"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REPLAY_MAX_KEEP,
+   "replay_max_keep"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SAVESTATE_DIRECTORY,

@@ -6700,6 +6700,22 @@ static void setting_get_string_representation_uint_autosave_interval(
 }
 #endif
 
+static void setting_get_string_representation_uint_replay_checkpoint_interval(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   if (*setting->value.target.unsigned_integer)
+   {
+      snprintf(s, len, "%u ", *setting->value.target.unsigned_integer);
+      strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS), len);
+   }
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+}
+
 #if defined(HAVE_NETWORKING)
 static void setting_get_string_representation_netplay_mitm_server(
       rarch_setting_t *setting,
@@ -11160,6 +11176,22 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 999, 1, true, true);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.replay_checkpoint_interval,
+                  MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL,
+                  MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+                  DEFAULT_REPLAY_CHECKPOINT_INTERVAL,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_replay_checkpoint_interval;
+            menu_settings_list_current_add_range(list, list_info, 0, 3600, 60, true, false);
 #endif
 
             CONFIG_BOOL(

@@ -4784,7 +4784,8 @@ void bsv_movie_finish_rewind(input_driver_state_t *input_st)
 }
 void bsv_movie_next_frame(input_driver_state_t *input_st)
 {
-   /* Used for rewinding while playback/record. */
+   settings_t *settings           = config_get_ptr();
+   unsigned checkpoint_interval   = settings->uints.replay_checkpoint_interval;
    bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
    if (!handle)
       return;
@@ -4799,6 +4800,32 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          intfstream_write(handle->file, &(handle->key_events[i]), sizeof(bsv_key_data_t));
       }
       bsv_movie_handle_clear_key_events(handle);
+      /* maybe record checkpoint */
+      if (checkpoint_interval != 0 && handle->frame_ptr > 0 && (handle->frame_ptr % (checkpoint_interval*60) == 0))
+      {
+         retro_ctx_size_info_t info;
+         retro_ctx_serialize_info_t serial_info;
+         uint8_t *st;
+         uint64_t size;
+         uint8_t frame_tok = REPLAY_TOKEN_CHECKPOINT_FRAME;
+         core_serialize_size(&info);
+         size = info.size;
+         st = (uint8_t*)malloc(info.size);
+         serial_info.data = st;
+         serial_info.size = info.size;
+         core_serialize(&serial_info);
+         /* "next frame is a checkpoint" */
+         intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
+         intfstream_write(handle->file, &(swap_if_big64(size)), sizeof(uint64_t));
+         intfstream_write(handle->file, st, info.size);
+         free(st);
+      }
+      else
+      {
+         uint8_t frame_tok = REPLAY_TOKEN_REGULAR_FRAME;
+         /* write "next frame is not a checkpoint" */
+         intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
+      }
    }
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
    {
@@ -4816,6 +4843,8 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
             {
                /* Unnatural EOF */
                RARCH_ERR("[Replay] Keyboard replay ran out of keyboard inputs too early\n");
+               input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+               return;
             }
          }
       }
@@ -4824,6 +4853,52 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          RARCH_LOG("[Replay] EOF after buttons\n",handle->key_event_count);
          /* Natural(?) EOF */
          input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+         return;
+      }
+      {
+        uint8_t next_frame_type=REPLAY_TOKEN_INVALID;
+        if (intfstream_read(handle->file, (uint8_t *)(&next_frame_type), sizeof(uint8_t)) != sizeof(uint8_t))
+        {
+           /* Unnatural EOF */
+           RARCH_ERR("[Replay] Replay ran out of frames\n");
+           input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+           return;
+        }
+        else if(next_frame_type == REPLAY_TOKEN_REGULAR_FRAME)
+        {
+           /* do nothing */
+        }
+        else if(next_frame_type == REPLAY_TOKEN_CHECKPOINT_FRAME)
+        {
+           uint64_t size;
+           if (intfstream_read(handle->file, &(size), sizeof(uint64_t)) != sizeof(uint64_t))
+           {
+              RARCH_ERR("[Replay] Replay ran out of frames\n");
+              input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+              return;
+           }
+           else
+           {
+              retro_ctx_serialize_info_t serial_info;
+              uint8_t *st;
+              size = swap_if_big64(size);
+              st = (uint8_t*)malloc(size);
+              if(intfstream_read(handle->file, st, size) != size)
+              {
+                 RARCH_ERR("[Replay] Replay checkpoint truncated\n");
+                 input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+                 free(st);
+                 return;
+              }
+              else
+              {
+                 serial_info.data_const = st;
+                 serial_info.size = size;
+                 core_unserialize(&serial_info);
+                 free(st);
+              }
+            }
+         }
       }
    }
 }

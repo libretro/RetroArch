@@ -1279,6 +1279,10 @@
  *   replays will be deleted in this case) */
 #define DEFAULT_REPLAY_MAX_KEEP 0
 
+/* Specifies how often checkpoints will be saved to replay files during recording.
+ * > Setting value to zero disables recording checkpoints. */
+#define DEFAULT_REPLAY_CHECKPOINT_INTERVAL 0
+
 /* Automatically saves a savestate at the end of RetroArch's lifetime.
  * The path is $SRAM_PATH.auto.
  * RetroArch will automatically load any savestate with this path on
