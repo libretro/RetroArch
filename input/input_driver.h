@@ -163,6 +163,10 @@ struct bsv_movie
 };
 
 typedef struct bsv_movie bsv_movie_t;
+
+#define REPLAY_TOKEN_INVALID          '\0'
+#define REPLAY_TOKEN_REGULAR_FRAME    'f'
+#define REPLAY_TOKEN_CHECKPOINT_FRAME 'c'
 #endif
 
 /**

@@ -9736,6 +9736,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
          {
             bool savestate_auto_index = settings->bools.savestate_auto_index;
+            bool replay_auto_index = settings->bools.replay_auto_index;
 
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE,              PARSE_ONLY_BOOL, true},
@@ -9751,6 +9752,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE,         PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_REPLAY_AUTO_INDEX,                  PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_REPLAY_MAX_KEEP,                    PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL,         PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,              PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,         PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE, PARSE_ONLY_BOOL, true},
@@ -9768,6 +9770,9 @@ unsigned menu_displaylist_build_list(
                {
                   case MENU_ENUM_LABEL_SAVESTATE_MAX_KEEP:
                      build_list[i].checked = savestate_auto_index;
+                     break;
+                  case MENU_ENUM_LABEL_REPLAY_MAX_KEEP:
+                     build_list[i].checked = replay_auto_index;
                      break;
                   default:
                      break;
