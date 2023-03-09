@@ -6032,6 +6032,14 @@ MSG_HASH(
    "Modifica l'opacità dell'immagine di sfondo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Opacità Del Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+   "Modifica l'opacità dello sfondo predefinito del menu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Usa la colorazione preferita di sistema"
    )
@@ -12670,6 +12678,14 @@ MSG_HASH(
    "Trovato ultimo slot di replay"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Non dalla registrazione corrente"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Non compatibile con il replay"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Trovato shader"
    )
@@ -12796,6 +12812,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Memoria"
+   )
+MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Il file di replay di input non è un file REPLAY valido."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

@@ -6120,6 +6120,14 @@ MSG_HASH(
    "Настройка видимости фонового изображения."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Непрозрачность меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+   "Настройка видимости стандартного фона меню."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Включить цветовую тему системы"
    )
@@ -12898,6 +12906,14 @@ MSG_HASH(
    "Достигнут последний слот повтора"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Не от текущей записи"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Несовместимо с повтором"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Обнаружен шейдер"
    )
@@ -13024,6 +13040,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Объём памяти"
+   )
+MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Файл с записью нажатий не является правильным файлом ПОВТОРА."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

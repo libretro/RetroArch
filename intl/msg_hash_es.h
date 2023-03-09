@@ -6096,6 +6096,14 @@ MSG_HASH(
    "Modifica la opacidad de la imagen de fondo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Opacidad del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+   "Modifica la opacidad del fondo predeterminado del menú."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Usar tema de colores del sistema"
    )
@@ -12830,6 +12838,14 @@ MSG_HASH(
    "Se ha localizado la última posición de repetición"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "No viene de la grabación actual"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "No es compatible con las repeticiones"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Se ha localizado un shader"
    )
@@ -12956,6 +12972,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Memoria"
+   )
+MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "El archivo de la repetición de entrada no es un archivo REPLAY válido."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

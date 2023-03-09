@@ -6088,6 +6088,14 @@ MSG_HASH(
    "A háttérkép átlátszatlansága."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Menü átlátszatlansága"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+   "Az alapértelmezett menüháttér átlátszatlansága."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "A rendszer színtémájának használata"
    )
@@ -12602,6 +12610,14 @@ MSG_HASH(
    "A legutóbbi újrajátszás rekesze"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Nem a jelenlegi felvételhez tartozik"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Nem kompatibilis az újrajátszással"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Shader érzékelve"
    )
@@ -12724,6 +12740,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Memória"
+   )
+MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "A bemenet-újrajátszás fájl nem egy érvényes REPLAY fájl."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

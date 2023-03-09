@@ -5296,6 +5296,14 @@ MSG_HASH(
    "Modyfikuj przezroczystość obrazu tła."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Przezroczystość menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+   "Modyfikuj przezroczystość tła menu domyślnego."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Użyj preferowanego motywu kolorystycznego systemu"
    )
@@ -11530,6 +11538,14 @@ MSG_HASH(
    "Znaleziono ostatni stan automatu"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Nie z bieżącego nagrania"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Niekompatybilne z powtórką"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Znaleziono shader"
    )
@@ -11656,6 +11672,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Pamięć"
+   )
+MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Wprowadzany plik filmu nie jest prawidłowym plikiem powtórki."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

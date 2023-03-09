@@ -1604,6 +1604,10 @@ MSG_HASH(
    "Opacidá del fondu"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Opacidá del menú"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Usar l'estilu de colores preferíu pol sistema"
    )

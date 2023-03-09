@@ -3904,6 +3904,14 @@ MSG_HASH(
    "Зміна непрозорості зображення тла."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Прозорість Меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+   "Змінити непрозорість тла меню за замовчуванням."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Використовувати бажану колірну тема системи"
    )
@@ -7662,6 +7670,14 @@ MSG_HASH(
    "Мітка диска знайдена"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Не з поточного запису"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Не сумісний з повтором"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Знайдено шейдер"
    )
@@ -7728,6 +7744,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Пам'ять"
+   )
+MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Вхідний файл відтворення фільму не є правильним файлом REPLAY."
    )
 MSG_HASH(
    MSG_MOVIE_RECORD_STOPPED,
