@@ -1034,7 +1034,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   "支援震動"
+   "支援震動回饋"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
@@ -2539,7 +2539,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-   "設定音訊數位訊號處理(DSP)插件, 用於音訊發送到驅動程式之前處理音訊訊號。"
+   "設定音訊使用的數位訊號處理器(DSP插件), 用於音訊發送到驅動程式之前處理音訊訊號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
@@ -2900,7 +2900,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   "開啟時禁用快捷鍵, 鍵盤輸入只傳送到執行的核心, 並鎖定滑鼠游標在視窗內, 設定<偵測>僅限核心登錄支援鍵盤時開啟。"
+   "開啟時禁用快捷鍵, 鍵盤輸入只傳送到核心, 並鎖定滑鼠游標在視窗內, 設定<偵測>僅限核心登錄支援鍵盤時開啟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
@@ -2924,19 +2924,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
-   "類比搖桿輸入十字鍵"
+   "類比輸入十字鍵"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "設定類比搖桿方向軸作用區, 僅限自訂「十字鍵使用類比搖桿」時使用。"
+   "設定類比搖桿方向軸作用區, 調整時無法移動請在此選項按[開始鍵]重置, 僅限自訂「十字鍵使用類比搖桿」時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
-   "類比搖桿死區"
+   "類比搖桿作用區"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
-   "設定類比搖桿方向軸死區, 方向軸移動低於死區時不作用。"
+   "設定類比搖桿方向軸作用區, 方向軸移動低於此設定值時不作用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
@@ -2944,7 +2944,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
-   "設定類比搖桿的靈敏度。"
+   "設定類比搖桿方向軸靈敏度, 過高或過低影響遊戲中步行和奔跑。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3369,7 +3369,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   "載入「影像著色器」根目錄中的著色器配置檔, 依照檔案名稱順序載入。"
+   "載入「著色器」根目錄中的著色器配置檔, 依照檔案名稱順序載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
@@ -3377,7 +3377,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
-   "載入「影像著色器」根目錄中的著色器配置檔, 依照檔案名稱顛倒順序載入。"
+   "載入「著色器」根目錄中的著色器配置檔, 依照檔案名稱顛倒順序載入。"
    )
 
 MSG_HASH(
@@ -3386,7 +3386,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
-   "套用目前金手指的開關。"
+   "目前金手指編號的開關。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
@@ -3634,11 +3634,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "設定十字鍵使用類比搖桿輸入, 強制模式下核心模擬類比搖桿輸入將無法使用。"
+   "設定十字鍵使用類比搖桿輸入, 強制模式下核心預設的類比搖桿輸入將無法使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
-   "設定十字鍵使用類比搖桿輸入。\n一般模式 - 當核心支援模擬類比搖桿時, 此選項設定被忽略。\n強制模式 - 當核心支援模擬類比搖桿時, 模擬類比搖桿的輸入將無法使用。"
+   "設定十字鍵使用類比搖桿輸入。\n一般模式 - 當核心支援模擬使用類比搖桿時, 變更為預設的類比搖桿輸入。\n強制模式 - 當核心支援模擬使用類比搖桿時, 類比搖桿的輸入將無法使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -4244,7 +4244,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
-   "儲存每個項目的執行時間, 儲存在列表/日誌/建立核心名稱資料夾, 依項目的執行核心儲存和載入。"
+   "儲存每個項目的執行時間, 預設儲存在列表/日誌/核心名稱資料夾, 依項目的執行核心儲存和載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
@@ -4252,7 +4252,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "儲存每個項目的執行時間, 儲存在列表資料夾中的日誌資料夾, 項目的原始檔名相同時會重複寫入。"
+   "儲存每個項目的執行時間, 預設儲存在列表資料夾中的日誌資料夾, 原始的檔名相同時會重複寫入。"
    )
 
 /* Settings > Logging */
@@ -5461,11 +5461,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
-   "顯示「載入遊戲」"
+   "顯示「載入檔案」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
-   "在主選單中顯示「載入遊戲」選項。"
+   "在主選單中顯示「載入檔案」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
@@ -5507,7 +5507,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-   "在「載入核心」選項中, 顯示「下載核心」選項, 在「線上更新」選項中, 顯示「下載核心」和「更新核心資料庫」選項。"
+   "在「載入核心」選項中, 顯示「下載核心」選項,\n在「線上更新」選項中, 顯示「下載安裝和更新核心」和「更新核心資料庫」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
@@ -7346,7 +7346,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
-   "設定音訊數位訊號處理(DSP)插件的儲存位置。"
+   "設定數位訊號處理(DSP插件)的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
@@ -7414,7 +7414,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   "列表"
+   "列表資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
@@ -7426,7 +7426,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_DIRECTORY,
-   "設定「我的最愛」列表的儲存位置。"
+   "設定「我的最愛」列表的儲存位置, 設定<預設>時儲存在應用程式「根目錄」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_DIRECTORY,
@@ -7434,7 +7434,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_DIRECTORY,
-   "設定「歷史」列表的儲存位置。"
+   "設定「歷史」列表的儲存位置, 設定<預設>時儲存在應用程式「根目錄」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_IMAGE_HISTORY_DIRECTORY,
@@ -7442,7 +7442,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_IMAGE_HISTORY_DIRECTORY,
-   "設定「圖片」列表的儲存位置。"
+   "設定「圖片」列表的儲存位置, 設定<預設>時儲存在應用程式「根目錄」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_MUSIC_HISTORY_DIRECTORY,
@@ -7450,7 +7450,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_MUSIC_HISTORY_DIRECTORY,
-   "設定「音樂」列表的儲存位置。"
+   "設定「音樂」列表的儲存位置, 設定<預設>時儲存在應用程式「根目錄」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_VIDEO_HISTORY_DIRECTORY,
@@ -7458,7 +7458,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
-   "設定「影片」列表的儲存位置。"
+   "設定「影片」列表的儲存位置, 設定<預設>時儲存在應用程式「根目錄」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
@@ -7466,7 +7466,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
-   "設定列表項目執行日誌的儲存位置。"
+   "設定列表項目執行日誌的儲存位置, 設定<預設>時儲存在「列表資料夾/日誌資料夾」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
@@ -7749,7 +7749,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
-   "未指定類型為掃描全部, 要指定時使用空格分隔副檔名。\n例如: JPG MP3 MKV。"
+   "未指定類型為掃描全部, 要指定時使用空格分隔副檔名, 例如「JPG MP3 MKV」。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
@@ -8949,7 +8949,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
-   "此通道的硬體過濾器。\n此選項設定<預設>時, 將依顯示選項中「雙線性過濾」開或關的設定, 使用過濾器為線性處理或最近處理。"
+   "此通道的硬體過濾器。\n設定<預設>時依顯示選項中「雙線性過濾」開或關, 使用過濾器為線性處理或最近處理。"
   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCALE,
@@ -8957,7 +8957,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
-   "此通道的縮放比例, 每個通道的縮放比例會累加。\n例如: 通道#0使用2倍, 通道#1使用2倍, 最後輸出為4倍。\n當最後的通道有設定縮放比例, 並且過濾器設定為<預設>時, 將依顯示選項中「雙線性過濾」開或關的設定, 使用1倍縮放或延伸至全螢幕, 具體取決於最後通道的設定。"
+   "此通道的縮放比例, 每個通道的縮放比例會累加。\n例如: 通道#0使用2倍, 通道#1使用2倍, 最後輸出為4倍。\n當最後的通道有設定縮放比例, 並且過濾器設定為<預設>時, 依顯示選項中「雙線性過濾」開或關的設定, 使用1倍縮放或填滿螢幕, 具體取決於最後通道的設定。"
    )
 
 /* Quick Menu > Shaders > Save */
@@ -9232,19 +9232,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
-   "沒有之前執行過的項目。"
+   "沒有之前執行的項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
-   "沒有之前瀏覽過的圖片。"
+   "沒有之前瀏覽的圖片。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
-   "沒有之前播放過的音樂。"
+   "沒有之前播放的音樂。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
-   "沒有之前觀看過的影片。"
+   "沒有之前觀看的影片。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
@@ -10181,7 +10181,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
-   "最近鄰法 (快)"
+   "最近鄰 (快)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
@@ -10905,7 +10905,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
-   "顯示導航欄"
+   "顯示選單導航欄"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
@@ -14674,7 +14674,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
-   "調整觸控感應區縮放大小, 適用於作業系統級別的顯示比例。"
+   "調整觸控感應區的縮放大小, 可適用於作業系統級別的顯示比例。"
    )
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
