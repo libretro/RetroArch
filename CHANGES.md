@@ -3,6 +3,8 @@
 # 1.15.0
 - AI SERVICE: Fix NVDA switching to Powershell on speak
 - ANDROID: In Android builds, add input_android_physical_keyboard configuration option and its corresponding menu entry to force a device to act as a physical keyboard. When running on Android, RetroArch considers most devices that emit dpad events as gamepads, even if they also emit other keyboard events; this is usually the right thing to do, but it has the side effect of not letting some actual keyboards (e.g.: Logitech K480) act as such inside RetroArch. This configuration option allows users to manually select a specific input device to act as a physical keyboard instead of a gamepad, which is handy when emulating computers as opposed to consoles.
+- APPLE: Add App Category to a few places it should have been
+- APPLE/MFI: Prevent crash when controller player index is unset (-1)
 - AUTOMATIC FRAME DELAY: Helped delay to decrease easier when it should and helped delay to stay put when it should when triggering pause & menu with or without pause & fast-forward & slow-motion & geometry change
 - AUTOMATIC FRAME DELAY: Recalibrate delay on video reinit (fullscreen toggle and such)
 - AUTOMATIC FRAME DELAY: Show (x effective) only in menu item and not in dropdown list items when auto is enabled
@@ -22,15 +24,22 @@
 - D3D9: Fixed display driver scissoring implementation  - can now accept 0 width/height
 - D3D10: Fixed display driver scissoring implementation - can now accept 0 width/height
 - D3D11: Fixed display driver scissoring implementation - can now accept 0 width/height
+- D3D11: Fixed build when HAVE_DXGI_HDR is not defined
+- D3D11: Moved waitable swapchain waiting to happen always even when resizing swapchain
 - D3D12: Fixed display driver scissoring implementation - can now accept 0 width/height
+- D3D12: Fixed window scaling issue, which was caused by swapchain resize function not using the same flags (waitable swapchain) as swapchain creation
+- D3D12: Fixed swapchain scissoring issue (visual + crash) after manually resizing window to smaller size
+- D3D12: Fixed eventual crashing issue on video reinit when swapchain is being freed
+- D3D12: Moved waitable swapchain waiting to happen always even when resizing swapchain
 - EMSCRIPTEN: Add HAVE_PATCH support for Emscripten
 - EMSCRIPTEN: Add BSV/Replay support for Emscripten
-- 
+- EMSCRIPTEN: Add command and stdin_cmd features to emscripten RA. update libretro.js to show how commands could be sent over emscripten stdin.
 - FRAME DELAY/MENU: Show Frame Delay without VSync
 - GENERAL: Start unpause restriction. Limit the feature using retropad start button to unpause RA to the setting it was made for; "pause on controller disconnect".
 - GENERAL: Savestate thumbnail aspect ratio fallback. Thanks to at least one certain core that announces aspect ratio as 0, we have to add the same fallback in savestate thumbnails that is happening elsewhere in normal video driver use anyway.
 - GENERAL: Add support for system subdirs per core/database. Added the trivial and graceful automatic ability to send a different system directory to cores if it exists, for keeping the system dir more sane. First by using the core/library name just like in configs and saves, and then by playlist name, like in thumbnails, and of course default to the current global system dir.
 - GENERAL: Ignore system subdir replacement if subdir has subdirs.
+- GENERAL: Restore cached video driver always on quit
 - IOS: Include 'Update Core Info Files'
 - IOS: Fix #14778 - In addition to sending logs to asl_client, add them to the logfile.
 - IOS/VULKAN/MOLTENVK: Vulkan video driver on iOS
@@ -43,6 +52,8 @@
 - LOCALIZATION/MENU/LANGUAGE: Language submenu now shows the progress of translated strings for each language.
 - LOCALIZATION: Help texts now localizable through Crowdin.
 - LIBRETRO: Enable RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME for libretro-video-processor
+- LIBRETRO/HW: Add GET_HW_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT. Works around issues in v1 interface where it was not possible to
+query what frontend would do when faces with newer interface versions. This env-call gives stronger guarantees how things have to work.
 - INPUT: Allowing keyboard hotkeys to work without hotkey modifier if modifier is only mapped to RetroPad
 - INPUT: Allowing keyboard hotkey keys for typing if hotkey modifier is set to keyboard but not pressed
 - INPUT: Allowing keyboard RetroPad keys for typing if emulated device type is "None"
@@ -54,13 +65,18 @@
 - INPUT/BSV/REPLAY: Don't trigger autoload code if there is bsv movie state
 - INPUT/BSV/REPLAY: Allow for both -e and -R to start a BSV file recording at a state
 - INPUT/BSV/REPLAY: Add keyboard recording support to BSV
-- INPUT/BSV/REPLAY: Fix BSV playback from a starting state for dosbox 
+- INPUT/BSV/REPLAY: Fix BSV playback from a starting state for DOSbox
+- INPUT/BSV/REPLAY: Associate states with replays. Now states can be saved and loaded during replay recording and playback in a way that keeps the integrity of the recording. Recordings also have a (moderately) unique identifier associated with them.
+- INPUT/BSV/REPLAY: Add checkpointing feature for replay recordings. If cores are not deterministic, or if they only have bounded determinism, we can obtain less drift if replay files also contain periodic checkpoint states.  These are configured by the new retroarch setting replay_checkpoint_interval (measured in seconds).  States are inserted into the replay file in between frames. This also fixes the settings display for the replay autoincrement max keep setting.
 - INPUT/FRAMEADVANCE: Use non-rendering pause mode when frameadvance is triggered
 - INPUT/HOTKEYS/OVERLAYS: Do not block input overlay hotkeys
 - INPUT/HOTKEYS: Hotkey blocking correction. Turned out the previous hotkey blocking changes worked properly only with winraw driver and not the rest (at least with Windows), because input_keyboard_event() could be called at the wrong moment, and thus storing keyboard menu press there broke the separation of controller Guide menu button and keyboard menu key. Also allowed the blocking to work in both directions so that controller hotkeys won't get blocked if only keyboard has "enable_hotkey" bind.
+- INPUT/LINUX/UDEV: Fix udev guns input when id_mouse is not id_joystick
 - MENU: Rename 'Standalone Cores' to 'Contentless Cores'
 - MENU: Music files should also obey builtin_mediaplayer_enable (#14967) Disabling the built in media player should be possible for music files
 as well. Without this, sound files can not be opened from file browser with cores that support them.
+- MENU: Relocated items to a more logical order
+- MENU: Corrected some title capitalizations (when/before/after are not low case, but for/the/a are)
 - MENU/AUDIO: Add dropdown menu for audio device
 - MENU/HELP: Help for turbo modes (#14919). Help text added for each of the selectable turbo modes.
 - MENU/INPUT: Add unified back action to all menu drivers. Usability boost for all menu drivers resulting in similar behavior as with Ozone currently, which is pressing back/cancel enough the selection jumps first to Main Menu and when pressed again jumps to the first item, so that when a core is running, Quick Menu is very quickly accessible from anywhere. And when core is not running, the first item would be Load Core.
@@ -71,10 +87,20 @@ as well. Without this, sound files can not be opened from file browser with core
 - MENU/SUBLABELS: All under "Configuration File" + moved "Reset to Defaults" to bottom
 - MENU/SUBLABELS: Quick Menu > Controls > Port x Controls
 - MENU/SUBLABELS: Port x Controls > Device Type
+- MENU/RGUI: Fix disabled menu item color. The effect was not working properly, since transparency meant using the core output color as background.
 - MENU/XMB: Fixed playlist manager icons to take Explore Views into account properly
 - MENU/XMB: Changed XMB Explore View title to match Ozone
 - MENU/XMB: Added "Switch Icons" option
 - MENU/XMB: Fix MENU_ACTION_CANCEL when search is active. Nasty issue discovered in XMB which broke search term cancelation.
+- MENU/XMB: Layout corrections:
+- MENU/XMB: More room for longer item labels and values
+- MENU/XMB: "Core Downloader" has extra space for item and "installed" indicator
+- MENU/XMB: Fixed "Menu Scale Factor" to not require restarting to get the actual end result
+- MENU/XMB: Adjusted scale factor to behave better with both layouts
+- MENU/XMB: Fixed savestate thumbnails and adjusted vertical fade factor in "Handheld" layout
+- MENU/XMB: Changed thumbnail shadow to outline and tightened fullscreen thumbnail margins
+- MENU/XMB: Adjusted global shadow opacity
+- MENU/XMB: Remove "Framebuffer opacity" from XMB as it does not use it. Also, rename the corresponding menu title, since "framebuffer" is not that intuitive.
 - MENU/OZONE: Fixed playlist manager icons to take Explore Views into account properly
 - MENU/OZONE: Refresh thumbnail on close content hotkey
 - MENU/OZONE: Ozone footer enhancements (#14926). Add Help button (Select) and Reset to Default (Start) to footer where applicable.
@@ -91,7 +117,10 @@ as well. Without this, sound files can not be opened from file browser with core
 - MENU/WIDGETS: Show square sized widget on volume mute. Volume widget is currently fixed size always, and thus showing a lot of empty space when muting, therefore shorten the box to icon size only when muting.
 - NETWORKING: Call ssl_socket_close for SSL sockets
 - NETWORKING/CHEEVOS: net_http - Temporary fix for cheevos crash. Don't use new timeout/poll code for cheevos HTTP requests.
-- 
+- NETWORKING/MENU: Network information cleanup:
+- NETWORKING/MENU: Remove extra space from : delimiter
+- NETWORKING/MENU: Trim useless/duplicate garbage from the end of ipv6 address. Windows shows %[adapter number], Linux shows %[adapter name], which already shows before the address
+- NETWORKING/STDIN: Add LOAD_STATE_SLOT N command to stdin/network protocol
 - OSD/STATISTICS: Add Run-Ahead data to on-screen statistics
 - OSX/MACOS: Steam platform support
 - OSX/MACOS: Set LSApplicationCategoryType to games
@@ -101,6 +130,8 @@ as well. Without this, sound files can not be opened from file browser with core
 - OSX/MACOS: Implement window opacity
 - OSX/MACOS: Enable "Show window decorations" toggle
 - OSX/MACOS: Hide "Disable composition" option (osx does not support disabling composition)
+- OSX/MACOS: Make sure to use the file system path name, not the URL name
+- OSX/MACOS/IOHIDMANAGER: Various memory access fixes to prevent crashes (#14459) (#15000). Prevent double free and null dereference when the controller is quickly reconnected. Handle error when controller device query returns null instead of crashing.
 - OSX/MACOS/METAL BUILD: Fix input events (keyboard/mouse) sometimes going lost when switching between fullscreen and windowed mode. Fixes lots of longstanding issues
 - OSX/MACOS/OPENGL: Fix for fullscreen OpenGL driver in Metal macOS build
 - OSX/MACOS/VULKAN/MOLTENVK: Default to Vulkan driver when available (for 10.13 Metal Universal build)
@@ -114,8 +145,13 @@ after the current event handler, which then did exactly the same. Fixes issue #1
 - PS3/PSL1GHT: Add perf improvements to the rsx driver
 - PS3/PSL1GHT: Add RSX video driver
 - PS3/PSL1GHT/MENU/XMB: Do XMB menu scaling for psl1ght
-* (psl1ght) update Makefile to use latest shaders and more UI menu options
+- PS3/PSL1GHT: Update Makefile to use latest shaders and more UI menu options
+- PS3/PSL1GHT: Default folders normalization
+- PS3/PSL1GHT: Fix video rotation
+- PS3/PSL1GHT: Fix HTTP download
 - QB/CONFIGURE: Add new flags - HAVE_UPDATE_CORE_INFO, ASSETS_DIR, FILTERS_DIR
+- RECORDING: Add recordings to video history playlist
+- REWIND: Don't take rewind steps while menu pause active
 - RUNLOOP: Currently when core is paused, video output will be stopped completely too, making it impossible to animate widgets while paused, therefore:
 - RUNLOOP: Added a new runloop state for pause which renders last cached frame
 - RUNLOOP: Allowed rewinding while paused so that it acts like backwards frameadvance. Also moved rewind step taking before menu iteration so that steps won't be lost while in menu when menu_pause is disabled
@@ -132,9 +168,11 @@ after the current event handler, which then did exactly the same. Fixes issue #1
 - SAVESTATES: Change the widget type to the same type as shader toggle for better back and forth action. Closes [Widgets] Save state slot switcher
 - SHADERS: Append Preset feature
 - SHADERS: Prepend Preset feature
+- SHADERS: Shader Preset - Wildcard Replacement in Paths on Load. When a simple preset loads, text wildcards which are found in paths inside the presets will be replaced with values coming from the current RetroArch context. The replacement will be executed on both texture paths and reference paths.
 - SHADERS/SLANG/SPIRVCROSS: Update to latest SPIRV-Cross, fixing Metal shader compilation issues along the way
 - STATICALLY LINKED/SALAMANDER: Fix salamander config save on fork for static platforms
 - TVOS/VULKAN/MOLTENVK: Vulkan on tvOS
+- VIDEO: Allow manual video swap interval forcing. The addition of auto swap interval effectively prevented manual forcing, which is beneficial when the rate is not reported properly. Therefore use the interval in the calculation only when using automatic interval.
 - VULKAN: Fix crash when using multiple physical devices and HW core (#14889) 
 - VULKAN: Detect if wrong PhysicalDevice is returned.
 - VULKAN: Actually query physical device before creating core device.
@@ -144,12 +182,19 @@ after the current event handler, which then did exactly the same. Fixes issue #1
 - VULKAN: Implement v2 context negotiation
 - VULKAN: Use compute shaders to upload RGB565
 - VULKAN: Fix regression with RGB565 and OriginalHistory.
-- VULKAN/LIBRETRO/HW: Add GET_HW_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT. Works around issues in v1 interface where it was not possible to
-query what frontend would do when faces with newer interface versions. This env-call gives stronger guarantees how things have to work.
+- VULKAN/WAYLAND: Don't clamp the number of requested images. Due to an unfortunate "feature", MESA always reports 4 as the Vulkan surface's minImageCount in Wayland.
+However, values of 2 and 3 work perfectly well, even if they are out of spec, providing way better latencies when using the Vulkan backend on Wayland.
+So this removes the artificial clamping that was being done to desired_swapchain_images, because it's not really necessary and was causing very noticeable input lag on Wayland+Vulkan.
 - VULKAN/MENU/RGUI: Fix RGUI on Vulkan on platforms that don't have _pack16 VkFormats
 - VULKAN/MACOS/OSX: avoid using _PACK16 pixel formats on platforms without them
+- WAYLAND: On scaled desktops the wayland backend deciding to resize based on values multiplied by the scale factor twice. Resulting in continuous attempts to rebuild the swapchain when in fullscreen.
+- WAYLAND: Wait for splash screen configuration. Before, configuration (resize) events for the initial wayland window could happen before or after set_video_mode which could result in a small or corrupted window. Now we make sure that the initial window has processed it's resize events before window size is set by set_video_mode.
+- WAYLAND: Changes the initial window to show a RetroArch logo copied from the icon of the X11 backend.
+- WAYLAND: Build pointer-constraints and relative-pointer protocols.
+- WAYLAND/GL: GL is sometimes not rescaling property (Super + Left).
 - WIN32/INPUT: Add support for mouse button swap
 - WIN32: Fix keyboard event characters. Added sending key chars to all input drivers (currently they only send scan codes), and also missing mods for raw.
+- WIN32: Fix restart if path has spaces. CreateProcess does not like to have anything executable path related in the second parameter lpCommandLine if the path has spaces. Thus strip everything from args except the actual parameters.
 
 # 1.14.0
 - AUDIO/COREAUDIO/APPLE: Allow coreaudio3 driver to work with audio devices that have 2 or more output channels
