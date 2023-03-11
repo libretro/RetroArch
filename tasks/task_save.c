@@ -1217,7 +1217,6 @@ bool content_deserialize_state(
                break;
             /* fall-through intentional */
          default:
-            RARCH_LOG("[REPLAY] fallthrough\n");
             return false;
       }
    }
