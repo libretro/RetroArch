@@ -4789,7 +4789,8 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
    bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
    if (!handle)
       return;
-   handle->frame_pos[handle->frame_ptr] = intfstream_tell(handle->file);
+   if (state_manager_frame_is_reversed())
+      return;
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
    {
       int i;
@@ -4901,6 +4902,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          }
       }
    }
+   handle->frame_pos[handle->frame_ptr] = intfstream_tell(handle->file);
 }
 size_t replay_get_serialize_size(void)
 {

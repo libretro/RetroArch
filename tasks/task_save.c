@@ -620,7 +620,7 @@ static void task_save_handler_finished(retro_task_t *task,
 /* Align to 8-byte boundary */
 #define CONTENT_ALIGN_SIZE(size) ((((size) + 7) & ~7))
 
-static size_t content_get_rastate_size(rastate_size_info_t* size)
+static size_t content_get_rastate_size(rastate_size_info_t* size, bool rewind)
 {
    retro_ctx_size_info_t info;
    core_serialize_size(&info);
@@ -632,12 +632,18 @@ static size_t content_get_rastate_size(rastate_size_info_t* size)
 #ifdef HAVE_CHEEVOS
    /* 8-byte block header + content */
    if ((size->cheevos_size = rcheevos_get_serialize_size()) > 0)
-      size->total_size += 8 + CONTENT_ALIGN_SIZE(size->cheevos_size); 
+      size->total_size += 8 + CONTENT_ALIGN_SIZE(size->cheevos_size);
 #endif
 #ifdef HAVE_BSV_MOVIE
    /* 8-byte block header + content */
-   if ((size->replay_size = replay_get_serialize_size()) > 0)
-      size->total_size += 8 + CONTENT_ALIGN_SIZE(size->replay_size); 
+   if(!rewind)
+   {
+      size->replay_size = replay_get_serialize_size();
+      if(size->replay_size > 0)
+         size->total_size += 8 + CONTENT_ALIGN_SIZE(size->replay_size);
+   }
+   else
+      size->replay_size = 0;
 #endif
    return size->total_size;
 }
@@ -645,7 +651,12 @@ static size_t content_get_rastate_size(rastate_size_info_t* size)
 size_t content_get_serialized_size(void)
 {
    rastate_size_info_t size;
-   return content_get_rastate_size(&size);
+   return content_get_rastate_size(&size, false);
+}
+size_t content_get_serialized_size_rewind(void)
+{
+   rastate_size_info_t size;
+   return content_get_rastate_size(&size, true);
 }
 
 static void content_write_block_header(unsigned char* output, const char* header, size_t size)
@@ -658,7 +669,8 @@ static void content_write_block_header(unsigned char* output, const char* header
 }
 
 static bool content_write_serialized_state(void* buffer,
-      rastate_size_info_t* size)
+                                           rastate_size_info_t* size,
+                                           bool rewind)
 {
    retro_ctx_serialize_info_t serial_info;
    unsigned char* output = (unsigned char*)buffer;
@@ -673,7 +685,7 @@ static bool content_write_serialized_state(void* buffer,
 #ifdef HAVE_BSV_MOVIE
     {
        input_driver_state_t *input_st = input_state_get_ptr();
-       if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
+       if (!rewind && input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK) && !state_manager_frame_is_reversed())
        {
           content_write_block_header(output,
              RASTATE_REPLAY_BLOCK, size->replay_size);
@@ -710,13 +722,13 @@ static bool content_write_serialized_state(void* buffer,
    return true;
 }
 
-bool content_serialize_state(void* buffer, size_t buffer_size)
+bool content_serialize_state_rewind(void* buffer, size_t buffer_size)
 {
    rastate_size_info_t size;
-   size_t len = content_get_rastate_size(&size);
+   size_t len = content_get_rastate_size(&size, true);
    if (len == 0 || len > buffer_size)
       return false;
-   return content_write_serialized_state(buffer, &size);
+   return content_write_serialized_state(buffer, &size, true);
 }
 
 static void *content_get_serialized_data(size_t* serial_size)
@@ -724,7 +736,7 @@ static void *content_get_serialized_data(size_t* serial_size)
    size_t len;
    void* data;
    rastate_size_info_t size;
-   if ((len = content_get_rastate_size(&size)) == 0)
+   if ((len = content_get_rastate_size(&size, false)) == 0)
       return NULL;
 
    /* Ensure buffer is initialised to zero
@@ -735,7 +747,7 @@ static void *content_get_serialized_data(size_t* serial_size)
    if (!(data = calloc(len, 1)))
       return NULL;
 
-   if (!content_write_serialized_state(data, &size))
+   if (!content_write_serialized_state(data, &size, false))
    {
       free(data);
       return NULL;
@@ -1116,13 +1128,13 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
 #ifdef HAVE_BSV_MOVIE
          {
             input_driver_state_t *input_st = input_state_get_ptr();
-            if (BSV_MOVIE_IS_RECORDING() && !seen_replay)
+            if (BSV_MOVIE_IS_RECORDING() && !seen_replay && !state_manager_frame_is_reversed())
             {
                /* TODO OSD message */
                RARCH_ERR("[Replay] Can't load state without replay data during recording.\n");
                return false;
             }
-            if (BSV_MOVIE_IS_PLAYBACK_ON() && !seen_replay)
+            if (BSV_MOVIE_IS_PLAYBACK_ON() && !seen_replay && !state_manager_frame_is_reversed())
             {
                /* TODO OSD message */
                RARCH_WARN("[Replay] Loading state without replay data during replay will cancel replay.\n");
@@ -1145,7 +1157,8 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
 #ifdef HAVE_BSV_MOVIE
       else if (memcmp(marker, RASTATE_REPLAY_BLOCK, 4) == 0)
       {
-         if (replay_set_serialized_data((void*)input))
+         input_driver_state_t *input_st = input_state_get_ptr();
+         if (state_manager_frame_is_reversed() || replay_set_serialized_data((void*)input))
             seen_replay = true;
          else
             return false;
@@ -1167,7 +1180,7 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
       rcheevos_set_serialized_data(NULL);
 #endif
 #ifdef HAVE_BSV_MOVIE
-   if (!seen_replay)
+   if (!seen_replay && !state_manager_frame_is_reversed())
       replay_set_serialized_data(NULL);
 #endif
 
@@ -1190,7 +1203,8 @@ bool content_deserialize_state(
       rcheevos_set_serialized_data(NULL);
 #endif
 #ifdef HAVE_BSV_MOVIE
-      replay_set_serialized_data(NULL);
+      if(!state_manager_frame_is_reversed())
+         replay_set_serialized_data(NULL);
 #endif
    }
    else
