@@ -4099,6 +4099,18 @@ MSG_HASH(
    "A nem-törlődő SRAM automatikus mentése rendszeres időközönként. Alapértelmezésben ki van kapcsolva, hacsak nincs más beállítás. Az időköz másodpercekben értendő. 0-s érték letiltja az automatikus mentést."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Újrajátszás ellenőrzőpontjainak gyakorisága"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "A játékállás automatikus eltárolásása rendszeres időközönként, újrajátszás felvétele közben (másodpercekben)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "A játékállás automatikus mentése rendszeres időközönként, újrajátszás felvétele közben. Alapértelmezésben ki van kapcsolva, hacsak nincs más beállítás. Az időköz másodpercekben értendő. 0-s érték letiltja az automatikus mentést."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "A játékállás sorszámának automatikus léptetése"
    )

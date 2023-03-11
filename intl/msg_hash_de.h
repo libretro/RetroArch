@@ -4007,6 +4007,10 @@ MSG_HASH(
    "Replay Kontrollpunkt Intervall"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "Automatische Lesezeichen des Spielstatus während Replay Aufzeichnung in einem regelmäßigen Intervall (in Sekunden)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "Speichert den Spielstatus während der Replay Aufnahme in einem regelmäßigen Intervall. Dies ist standardmäßig deaktiviert, es sei denn, es wird etwas anderes festgelegt. Das Intervall wird in Sekunden gemessen. Ein Wert von 0 deaktiviert die Aufzeichnung von Kontrollpunkten."
    )
@@ -12660,6 +12664,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Speicher"
+   )
+MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Eingegebene Replay-Filmdatei ist keine gültige REPLAY-Datei."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

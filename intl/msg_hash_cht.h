@@ -4143,6 +4143,18 @@ MSG_HASH(
    "設定秒數自動將存檔記憶體轉存成記憶存檔, 僅限支援SRM格式的核心使用。\n關閉時執行項目關閉或結束時建立, 如果應用程式意外中止將不建立記憶存檔。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "操作重播自動儲存間隔"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "設定錄製操作重播時自動儲存成檔案的時間(秒)。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "設定錄製操作重播時自動儲存成檔案的時間(秒), 預設值為<關>不使用。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "自動增加即時存檔編號"
    )
