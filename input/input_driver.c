@@ -4893,7 +4893,6 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
               }
               else
               {
-                 printf("[CHECKPOINT] hop to cp\n");
                  serial_info.data_const = st;
                  serial_info.size = size;
                  core_unserialize(&serial_info);
