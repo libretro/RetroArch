@@ -1145,7 +1145,7 @@ bool video_display_server_has_refresh_rate(float hz)
 
    if (video_list)
    {
-   video_driver_state_t *video_st    = &video_driver_st;
+      video_driver_state_t *video_st = &video_driver_st;
       unsigned video_driver_width    = video_st->width;
       unsigned video_driver_height   = video_st->height;
 
@@ -1498,8 +1498,7 @@ void video_driver_free_internal(void)
    input_driver_state_t *input_st    = input_state_get_ptr();
    video_driver_state_t *video_st    = &video_driver_st;
 #ifdef HAVE_THREADS
-   bool        is_threaded           =
-VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
+   bool        is_threaded           = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
 #endif
 
    command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
@@ -2731,6 +2730,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->monitor_index               = settings->uints.video_monitor_index;
 
    video_info->font_enable                 = settings->bools.video_font_enable;
+   video_info->font_size                   = settings->floats.video_font_size;
    video_info->font_msg_pos_x              = settings->floats.video_msg_pos_x;
    video_info->font_msg_pos_y              = settings->floats.video_msg_pos_y;
    video_info->font_msg_color_r            = settings->floats.video_msg_color_r;
@@ -3447,7 +3447,6 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video.vsync                       = settings->bools.video_vsync
          && (!(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK));
    video.force_aspect                = settings->bools.video_force_aspect;
-   video.font_enable                 = settings->bools.video_font_enable;
    video.swap_interval               = runloop_get_video_swap_interval(
          settings->uints.video_swap_interval);
    video.adaptive_vsync              = settings->bools.video_adaptive_vsync;
@@ -3458,6 +3457,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video.smooth                      = settings->bools.video_smooth;
    video.ctx_scaling                 = settings->bools.video_ctx_scaling;
    video.input_scale                 = scale;
+   video.font_enable                 = settings->bools.video_font_enable;
    video.font_size                   = settings->floats.video_font_size;
    video.path_font                   = settings->paths.path_font;
 #ifdef HAVE_VIDEO_FILTER
@@ -3990,13 +3990,31 @@ void video_driver_frame(const void *data, unsigned width,
    if (render_frame && video_info.statistics_show)
    {
       audio_statistics_t audio_stats;
-      char runahead_stats[128];
+      char latency_stats[128];
+      char tmp[128];
+      size_t len;
       double stddev                          = 0.0;
+      float scale                            = 1.0f;
+      float font_size_scale                  = video_info.font_size / 100;
       struct retro_system_av_info *av_info   = &video_st->av_info;
-      unsigned red                           = 255;
-      unsigned green                         = 255;
-      unsigned blue                          = 255;
+      unsigned red                           = 235;
+      unsigned green                         = 235;
+      unsigned blue                          = 235;
       unsigned alpha                         = 255;
+
+      scale                                  = ((float)video_info.height / 480)
+            * 0.50f * (DEFAULT_FONT_SIZE / video_info.font_size);
+      scale                                  = (scale < font_size_scale)
+            ? font_size_scale : scale;
+      scale                                  = (scale > 1.00f)
+            ? 1.00f : scale;
+
+      if (scale > font_size_scale)
+      {
+         scale *= 100;
+         scale  = ceil(scale);
+         scale /= 100;
+      }
 
       audio_stats.samples                    = 0;
       audio_stats.average_buffer_saturation  = 0.0f;
@@ -4006,62 +4024,94 @@ void video_driver_frame(const void *data, unsigned width,
 
       video_monitor_fps_statistics(NULL, &stddev, NULL);
 
-      video_info.osd_stat_params.x           = 0.010f;
-      video_info.osd_stat_params.y           = 0.950f;
-      video_info.osd_stat_params.scale       = 1.0f;
+      video_info.osd_stat_params.x           = 0.008f;
+      video_info.osd_stat_params.y           = 0.960f;
+      video_info.osd_stat_params.scale       = scale;
       video_info.osd_stat_params.full_screen = true;
-      video_info.osd_stat_params.drop_x      = -2;
-      video_info.osd_stat_params.drop_y      = -2;
-      video_info.osd_stat_params.drop_mod    = 0.3f;
-      video_info.osd_stat_params.drop_alpha  = 1.0f;
+      video_info.osd_stat_params.drop_x      = (video_info.font_size / DEFAULT_FONT_SIZE) * 3;
+      video_info.osd_stat_params.drop_y      = (video_info.font_size / DEFAULT_FONT_SIZE) * -3;
+      video_info.osd_stat_params.drop_mod    = 0.1f;
+      video_info.osd_stat_params.drop_alpha  = 0.9f;
       video_info.osd_stat_params.color       = COLOR_ABGR(
-            red, green, blue, alpha);
+            alpha, blue, green, red);
 
       audio_compute_buffer_statistics(&audio_stats);
 
-      runahead_stats[0] = '\0';
+      latency_stats[0] = '\0';
+      tmp[0]           = '\0';
+      len              = 0;
+
+      if (video_st->frame_delay_target > 0)
+         len = snprintf(tmp, sizeof(latency_stats),
+               " Frame Delay: %2u ms\n"
+               " - Target:    %2u ms\n",
+               video_st->frame_delay_effective,
+               video_st->frame_delay_target);
 
       if (video_info.runahead && !video_info.runahead_second_instance)
-         snprintf(runahead_stats, sizeof(runahead_stats),
-                  " -Run-Ahead Mode: Single Instance\n -Latency frames removed: %u\n",
-                  video_info.runahead_frames);
+         len = snprintf(tmp + len, sizeof(latency_stats),
+               " Run-Ahead:   %2u frames\n"
+               " - Single Instance\n",
+               video_info.runahead_frames);
       else if (video_info.runahead && video_info.runahead_second_instance)
-         snprintf(runahead_stats, sizeof(runahead_stats),
-                  " -Run-Ahead Mode: Second Instance\n -Latency frames removed: %u\n",
-                  video_info.runahead_frames);
+         len = snprintf(tmp + len, sizeof(latency_stats),
+               " Run-Ahead:   %2u frames\n"
+               " - Second Instance\n",
+               video_info.runahead_frames);
       else if (video_info.preemptive_frames)
-         snprintf(runahead_stats, sizeof(runahead_stats),
-                  " -Run-Ahead Mode: Preemptive Frames\n -Latency frames removed: %u\n",
-                  video_info.runahead_frames);
+         len = snprintf(tmp + len, sizeof(latency_stats),
+               " Run-Ahead:   %2u frames\n"
+               " - Preemptive Frames\n",
+               video_info.runahead_frames);
+
+      if (len)
+      {
+         strlcpy(latency_stats, "LATENCY\n", sizeof(latency_stats));
+         strlcat(latency_stats, tmp, sizeof(latency_stats));
+      }
 
       snprintf(video_info.stat_text,
             sizeof(video_info.stat_text),
-            "Video Statistics:\n -Frame rate: %6.2f fps\n -Frame time: %6.2f ms\n -Frame time deviation: %.3f %%\n"
-            " -Frame count: %" PRIu64"\n -Frame delay (target/effective): %u/%u ms\n%s -Viewport: %d x %d x %3.2f\n"
-            "Audio Statistics:\n -Average buffer saturation: %.2f %%\n -Standard deviation: %.2f %%\n -Time spent close to underrun: %.2f %%\n -Time spent close to blocking: %.2f %%\n -Sample count: %d\n"
-            "Core Geometry:\n -Size: %u x %u\n -Max Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n",
-            last_fps,
-            frame_time / 1000.0f,
-            100.0f * stddev,
-            video_st->frame_count,
-            video_st->frame_delay_target,
-            video_st->frame_delay_effective,
-            runahead_stats,
-            video_info.width,
-            video_info.height,
-            video_info.refresh_rate,
-            audio_stats.average_buffer_saturation,
-            audio_stats.std_deviation_percentage,
-            audio_stats.close_to_underrun,
-            audio_stats.close_to_blocking,
-            audio_stats.samples,
+            "CORE AV_INFO\n"
+            " Size:        %u x %u\n"
+            " Max Size:    %u x %u\n"
+            " Aspect:      %3.3f\n"
+            " FPS:         %3.2f\n"
+            " Sample Rate: %6.2f\n"
+            "VIDEO\n"
+            " Viewport:    %d x %d\n"
+            " Refresh:     %5.2f hz\n"
+            " Frame Rate:  %5.2f fps\n"
+            " Frame Time:  %5.2f ms\n"
+            " - Deviation: %5.2f %%\n"
+            " Frames:      %5" PRIu64"\n"
+            "AUDIO\n"
+            " Saturation:  %5.2f %%\n"
+            " Deviation:   %5.2f %%\n"
+            " Underrun:    %5.2f %%\n"
+            " Blocking:    %5.2f %%\n"
+            " Samples:     %5d\n"
+            "%s",
             av_info->geometry.base_width,
             av_info->geometry.base_height,
             av_info->geometry.max_width,
             av_info->geometry.max_height,
             av_info->geometry.aspect_ratio,
             av_info->timing.fps,
-            av_info->timing.sample_rate);
+            av_info->timing.sample_rate,
+            video_info.width,
+            video_info.height,
+            video_info.refresh_rate,
+            last_fps,
+            frame_time / 1000.0f,
+            100.0f * stddev,
+            video_st->frame_count,
+            audio_stats.average_buffer_saturation,
+            audio_stats.std_deviation_percentage,
+            audio_stats.close_to_underrun,
+            audio_stats.close_to_blocking,
+            audio_stats.samples,
+            latency_stats);
 
       /* TODO/FIXME - add OSD chat text here */
    }

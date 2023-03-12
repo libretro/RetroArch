@@ -232,6 +232,17 @@ static int action_scan_input_desc(const char *path,
    return 0;
 }
 
+static int action_scan_video_font_path(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   settings_t *settings       = config_get_ptr();
+
+   strlcpy(settings->paths.path_font, "null", sizeof(settings->paths.path_font));
+   command_event(CMD_EVENT_REINIT, NULL);
+
+   return 0;
+}
+
 static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
 {
@@ -279,10 +290,21 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
 
    if (cbs->setting)
    {
-      if (cbs->setting->type == ST_BIND)
+      switch (cbs->setting->type)
       {
-         BIND_ACTION_SCAN(cbs, action_scan_input_desc);
-         return 0;
+         case ST_BIND:
+            BIND_ACTION_SCAN(cbs, action_scan_input_desc);
+            return 0;
+         case ST_PATH:
+            if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FONT_PATH)))
+            {
+               BIND_ACTION_SCAN(cbs, action_scan_video_font_path);
+               return 0;
+            }
+            break;
+         default:
+         case ST_NONE:
+            break;
       }
    }
 
