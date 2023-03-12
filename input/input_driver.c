@@ -1765,14 +1765,9 @@ static void input_overlay_parse_layout(
             return;
          }
 
-         /* If Y separation is permitted and display has
-          * a *landscape* orientation, move elements
-          * vertically towards the edges of the screen
-          * > Portrait overlays typically have all elements
-          *   below the centre line, so Y separation
-          *   provides no real benefit */
-         if ((display_aspect_ratio > 1.0f) &&
-             !(ol->flags & OVERLAY_BLOCK_Y_SEPARATION))
+         /* If Y separation is permitted, move elements
+          * vertically towards the edges of the screen */
+         if (!(ol->flags & OVERLAY_BLOCK_Y_SEPARATION))
             overlay_layout->y_separation = ((1.0f / overlay_layout->y_scale) - 1.0f) * 0.5f;
       }
 
