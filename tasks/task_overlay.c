@@ -856,10 +856,10 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
       snprintf(conf_key, sizeof(conf_key),
             "overlay%u_block_y_separation", loader->pos);
-      overlay->flags    &= ~OVERLAY_BLOCK_Y_SEPARATION;
+      overlay->flags    |=  OVERLAY_BLOCK_Y_SEPARATION;
       if (config_get_bool(conf, conf_key, &tmp_bool)
-            && tmp_bool)
-         overlay->flags |=  OVERLAY_BLOCK_Y_SEPARATION;
+            && !tmp_bool)
+         overlay->flags &= ~OVERLAY_BLOCK_Y_SEPARATION;
    }
 
    return;
