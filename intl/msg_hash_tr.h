@@ -3675,6 +3675,18 @@ MSG_HASH(
    "Kalıcı olmayan SaveRAM'i düzenli aralıklarla (saniye cinsinden) otomatik olarak kaydedin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Tekrar Kontrol Noktası Aralığı"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "Tekrar kaydı sırasında düzenli aralıklarla (saniye cinsinden) oyun durumuna otomatik olarak yer işareti koyun."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "Tekrar kaydı sırasında oyun durumunu düzenli aralıklarla otomatik olarak kaydeder. Bu, aksi ayarlanmadıkça varsayılan olarak devre dışıdır. Aralık saniye cinsinden ölçülür. 0 değeri, kontrol noktası kaydını devre dışı bırakır."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "Durum Kaydı Dizini'ni Otomatik Olarak Artır"
    )

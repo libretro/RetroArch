@@ -3363,6 +3363,18 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Інтервал Контрольної Точки Повтору"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "Автоматично робити закладку до гри під час запису повтору з певним інтервалом (у секундах)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "Автоматично зберігає стан гри під час запису повтору з регулярним інтервалом. За замовчуванням вимкнено, якщо не встановлено інше. Інтервал вимірюється у секундах. Значення 0 вимикає запис контрольних точок."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Автозбереження стану"
    )

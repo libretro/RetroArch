@@ -2408,7 +2408,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   "強制圖形處理器同步"
+   "強制處理器同步"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
@@ -2416,15 +2416,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   "圖形處理器同步幀數"
+   "處理器同步幀數"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   "開啟「強制圖形處理器同步」時, 設定中央處理器提前圖形處理器的執行幀數。"
+   "開啟「強制處理器同步」時, 設定中央處理器提前圖形處理器的執行幀數。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
-   "開啟「強制圖形處理器同步」時, 設定中央處理器提前圖形處理器的執行幀數。\n最大幀數: 3。\n0 = 同步執行幀數。\n1 = 提前執行1幀。\n2 = 提前執行..."
+   "開啟「強制處理器同步」時, 設定中央處理器提前圖形處理器的執行幀數。\n最大幀數: 3。\n0 = 同步執行幀數。\n1 = 提前執行1幀。\n2 = 提前執行..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
