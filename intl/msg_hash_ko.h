@@ -4416,7 +4416,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-   "리와인드 버퍼용으로 예약할 메모리 양(MB) 입니다. 이 값을 높이면 리와인드 히스토리의 양이 늘어납니다."
+   "되감기 버퍼용으로 예약할 메모리 크기(MB) 입니다. 크기를 늘리면 되감을 수 있는 시간이 늘어납니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
@@ -5571,11 +5571,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
-   "'히스토리' 표시"
+   "'최근 실행' 표시"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "최근 히스토리 메뉴를 표시합니다. (Ozone/XMB 사용시 재시작 필요함)"
+   "최근 실행 메뉴를 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
@@ -6118,6 +6118,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
    "배경화면의 투명도를 변경합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "메뉴 투명도"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+   "기본 메뉴 배경화면의 투명도를 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
@@ -6760,14 +6768,14 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
-   "설치된 각각의 코어에 대해 자동으로 생성된 백업 수를 지정합니다. 이 제한에 도달하면 온라인 업데이트를 통해 새 백업을 만들면 가장 오래된 백업이 삭제됩니다. 수동 코어 백업은 이 설정의 영향을 받지 않습니다."
+   "설치된 각각의 코어에 대해 몇 개의 백업을 자동 생성할지 지정합니다. 지정한 크기에 도달할 경우, 온라인 업데이트로 새로운 백업이 생성되면 가장 오래된 백업이 삭제됩니다. 수동 코어 백업은 이 설정에 영향을 받지 않습니다."
    )
 
 /* Settings > Playlists */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   "히스토리"
+   "최근 실행"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
@@ -6775,7 +6783,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
-   "히스토리 크기"
+   "실행 기록 목록 크기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
@@ -6811,7 +6819,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
-   "'히스토리', '이미지', '음악' 및 '동영상' 실행목록을 제외하고 콘텐츠 실행목록을 알파벳 순서로 정렬합니다."
+   "'최근 실행', '이미지', '음악', '동영상'을 제외한 콘텐츠 실행목록을 알파벳 순서로 정렬합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
@@ -6847,11 +6855,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
-   "히스토리 및 즐겨찾기에 콘텐츠별 아이콘 표시하기"
+   "최근 실행 및 즐겨찾기에 개별 컨텐츠 전용 아이콘 표시"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
-   "각 히스토리 및 즐겨찾기 실행목록 항목에 대한 특정 아이콘을 표시합니다. 어느 정도 성능 저하가 생깁니다."
+   "최근 실행 및 즐겨찾기 실행목록의 개별 항목에 대해 전용 아이콘을 표시합니다. 어느 정도 성능 저하가 생깁니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
@@ -6955,7 +6963,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "압축 파일과 관련된 항목에 대한 실행목록을 검색할 때 [파일 이름]+[콘텐츠] 대신 아카이브 파일 이름만 일치시킵니다. 압축 파일을 불러올 때 콘텐츠 히스토리 항목이 중복되지 않도록 하려면 이 옵션을 활성화합니다."
+   "압축 파일과 연결된 실행목록 검색시 [파일명]+[콘텐츠] 대신에 파일명 기준으로만 검색합니다. 압축 파일을 불러올 때 실행 기록에 중복된 항목이 생기지 않게 해줍니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
@@ -7338,11 +7346,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_DIRECTORY,
-   "히스토리 실행목록"
+   "최근 실행 실행목록"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_DIRECTORY,
-   "히스토리 실행목록을 이 디렉터리에 저장합니다."
+   "최근 실행 실행목록을 이 디렉토리에 저장합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_IMAGE_HISTORY_DIRECTORY,
@@ -7350,7 +7358,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_IMAGE_HISTORY_DIRECTORY,
-   "이미지 히스토리 실행목록을 이 디렉터리에 저장합니다."
+   "이미지 실행목록을 이 디렉토리에 저장합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_MUSIC_HISTORY_DIRECTORY,
@@ -7387,6 +7395,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "상태 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+   "상태저장 및 리플레이 파일이 저장되는 디렉토리입니다. 설정하지 않을 경우 콘텐츠 파일이 존재하는 디렉토리에 저장됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -8023,7 +8035,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "현재 컨텐츠를 종료합니다. 저장되지 않은 내용은 사라지게 됩니다."
+   "현재 콘텐츠를 종료합니다. 저장되지 않은 내용은 사라지게 됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -8159,7 +8171,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "현재 실행중인 컨텐츠의 옵션을 변경합니다."
+   "현재 실행중인 콘텐츠의 옵션을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -8167,7 +8179,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "현재 실행중인 컨텐츠의 조작방법 설정을 변경합니다."
+   "현재 실행중인 콘텐츠의 조작방법 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -8218,7 +8230,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST,
-   "현재 컨텐츠에 대한 우선 설정 옵션을 저장 또는 삭제합니다."
+   "현재 콘텐츠에 대한 우선 설정 옵션을 저장 또는 삭제합니다."
    )
 
 /* Quick Menu > Options > Manage Core Options */
@@ -8233,11 +8245,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
-   "컨텐츠 폴더 설정 저장"
+   "콘텐츠 폴더 설정 저장"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "컨텐츠 폴더 설정 삭제"
+   "콘텐츠 폴더 설정 삭제"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
@@ -8282,7 +8294,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST,
-   "현재 컨텐츠에 대한 입력설정 파일을 저장, 불러오기, 삭제합니다."
+   "현재 콘텐츠에 대한 입력설정 파일을 저장, 불러오기, 삭제합니다."
    )
 
 /* Quick Menu > Controls > Manage Remap Files */
@@ -8309,11 +8321,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
-   "입력설정 파일을 컨텐츠 폴더에 저장"
+   "입력설정 파일을 콘텐츠 폴더에 저장"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "컨텐츠 폴더 입력설정 파일 삭제"
+   "콘텐츠 폴더 입력설정 파일 삭제"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
@@ -8726,7 +8738,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "디스크 인덱스를 변경합니다. 디스크 변경은 트레이를 연 다음 수행해야 합니다.\nRetroArch가 메뉴 표시 중 컨텐츠를 일시정지하도록 설정되어 있는 경우, 일시정지를 해제할 때까지 트레이 열기/닫기 액션이 코어에 전달되지 않을 수도 있습니다. 그런 경우 디스크를 조작할 때마다 게임을 몇 프레임간 실행하는 것을 잊지 말아주세요."
+   "디스크 인덱스를 변경합니다. 디스크 변경은 트레이를 연 다음 수행해야 합니다.\nRetroArch가 메뉴 표시 중 콘텐츠를 일시정지하도록 설정되어 있는 경우, 일시정지를 해제할 때까지 트레이 열기/닫기 액션이 코어에 전달되지 않을 수도 있습니다. 그런 경우 디스크를 조작할 때마다 게임을 몇 프레임간 실행하는 것을 잊지 말아주세요."
    )
 
 /* Quick Menu > Shaders */
@@ -8890,11 +8902,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
-   "컨텐츠 폴더 프리셋 저장"
+   "콘텐츠 폴더 프리셋 저장"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
-   "현재의 셰이더 설정을 컨텐츠가 있는 폴더의 모든 파일에 기본 설정으로 저장합니다."
+   "현재의 셰이더 설정을 콘텐츠가 있는 폴더의 모든 파일에 기본 설정으로 저장합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
@@ -8902,7 +8914,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
-   "현재 셰이더 설정을 컨텐츠의 기본 값으로 저장합니다."
+   "현재 셰이더 설정을 콘텐츠의 기본 값으로 저장합니다."
    )
 
 /* Quick Menu > Shaders > Remove */
@@ -8917,7 +8929,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
-   "모든 컨텐츠와 코어에 사용하는 통합 프리셋을 삭제합니다."
+   "모든 콘텐츠와 코어에 사용하는 통합 프리셋을 삭제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
@@ -8929,7 +8941,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-   "컨텐츠 디렉토리 프리셋 삭제"
+   "콘텐츠 디렉토리 프리셋 삭제"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
@@ -8987,7 +8999,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "컨텐츠 디렉터리 재정의 저장하기"
+   "콘텐츠 디렉터리 재정의 저장하기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -8995,7 +9007,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "컨텐츠 디렉터리 재정의 제거하기"
+   "콘텐츠 디렉터리 재정의 제거하기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -9093,7 +9105,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
-   "현재 컨텐츠의 데이터베이스 정보를 표시합니다."
+   "현재 콘텐츠의 데이터베이스 정보를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
@@ -9124,7 +9136,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
-   "사용 가능한 히스토리 없음."
+   "이용 가능한 게임 실행 내역 없음."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
@@ -9291,7 +9303,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
-   "히스토리 & 즐겨찾기"
+   "최근 실행 & 즐겨찾기"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
@@ -9303,7 +9315,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
-   "히스토리 & 즐겨찾기"
+   "최근 실행 & 즐겨찾기"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
@@ -9671,7 +9683,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
-   "<컨텐츠 디렉토리>"
+   "<콘텐츠 디렉토리>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
@@ -9818,7 +9830,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "메뉴가 항상 올바른 화면비로 표시되도록 해주비다. 해제하면 빠른 메뉴가 현재 컨텐츠에 맞춰 늘려져서 표시됩니다."
+   "메뉴가 항상 올바른 화면비로 표시되도록 해주비다. 해제하면 빠른 메뉴가 현재 콘텐츠에 맞춰 늘려져서 표시됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
@@ -10582,15 +10594,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "컨텐츠 메타데이터 패널 대신 다른 미리보기를 표시합니다."
+   "콘텐츠 메타데이터 패널 대신 다른 미리보기를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "컨텐츠 메타데이터 한 줄로 표시"
+   "콘텐츠 메타데이터 한 줄로 표시"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "사용할 경우, 오른쪽 사이드바에 표시되는 컨텐츠 메타데이터(코어, 실행 시간 등)를 항목당 한 줄씩으로 표시합니다. 사이드바 너비를 초과하는 길이의 문구는 스크롤됩니다. 사용하지 않을 경우, 컨텐츠 메타데이터는 필요한 만큼 줄 수를 늘려가며 정적으로 표시됩니다."
+   "사용할 경우, 오른쪽 사이드바에 표시되는 콘텐츠 메타데이터(코어, 실행 시간 등)를 항목당 한 줄씩으로 표시합니다. 사이드바 너비를 초과하는 길이의 문구는 스크롤됩니다. 사용하지 않을 경우, 컨텐츠 메타데이터는 필요한 만큼 줄 수를 늘려가며 정적으로 표시됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
@@ -10705,7 +10717,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
-   "실행목록의 각 항목을 나타낼 주 미리보기의 종류입니다. 컨텐츠의 아이콘으로 사용됩니다."
+   "실행목록의 각 항목을 나타낼 주 미리보기의 종류입니다. 콘텐츠의 아이콘으로 사용됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
@@ -10935,7 +10947,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
-   "마지막 컨텐츠 브라우저 탭 기억:"
+   "마지막 콘텐츠 브라우저 탭 기억:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
@@ -11474,15 +11486,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-   "히스토리"
+   "최근 실행"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
-   "최근 히스토리 실행목록에서 컨텐츠를 선택합니다."
+   "최근 실행 목록에서 콘텐츠를 선택합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
-   "콘텐츠가 불러오기되면 콘텐츠 및 libretro 코어 조합이 히스토리에 저장됩니다.\n히스토리는 RetroArch 구성 파일과 동일한 디렉터리의 파일에 저장됩니다. 시작 시 구성 파일이 불러오기되지 않은 경우, 히스토리가 저장되거나 불러오기되지 않으며, 기본 메뉴에 존재하지 않게 됩니다."
+   "콘텐츠를 불러오면 콘텐츠 및 libretro 코어 조합이 기록됩니다.\n실행 기록은 RetroArch 구성 파일과 동일한 디렉터리에 있는 파일에 저장됩니다. 시작 시 구성 파일을 불러오지 못하면 기록을 저장하거나 불러오지 못하게되며 메인 메뉴에도 표시되지 않습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
@@ -11494,11 +11506,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
-   "현재 컨텐츠의 서브시스템 설정에 접근합니다."
+   "현재 콘텐츠의 서브시스템 설정에 접근합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
-   "현재 컨텐츠: %s"
+   "현재 콘텐츠: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
@@ -11558,7 +11570,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_START_CORE,
-   "컨텐츠 없이 코어를 시작합니다."
+   "콘텐츠 없이 코어를 시작합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
@@ -11642,7 +11654,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
-   "호환되는 컨텐츠 찾는 중..."
+   "호환되는 콘텐츠 찾는 중..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
@@ -11654,11 +11666,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
-   "호환되는 컨텐츠 발견"
+   "호환되는 콘텐츠 발견"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
-   "CRC 또는 파일명이 일치하는 컨텐츠를 찾을 수 없음"
+   "CRC 또는 파일명이 일치하는 콘텐츠를 찾을 수 없음"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_START_GONG,
@@ -11757,11 +11769,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
-   "컨텐츠 시작"
+   "콘텐츠 시작"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
-   "컨텐츠 히스토리 경로"
+   "콘텐츠 실행 기록 경로"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
@@ -11789,11 +11801,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
-   "컨텐츠 불러오기"
+   "콘텐츠 불러오기"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
-   "컨텐츠 검색"
+   "콘텐츠 검색"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
@@ -11992,7 +12004,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
-   "컨텐츠"
+   "콘텐츠"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_DIR,
@@ -12062,15 +12074,15 @@ MSG_HASH(
 
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
-   "컨텐츠가 불러와지면 넷플레이가 시작됩니다."
+   "콘텐츠를 불러오면 넷플레이가 시작됩니다."
    )
 MSG_HASH(
    MSG_NETPLAY_NEED_CONTENT_LOADED,
-   "넷플레이를 시작하기 전에 컨텐츠를 불러와야 합니다."
+   "넷플레이를 시작하기 전에 콘텐츠를 불러와야 합니다."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
-   "적합한 코어 또는 컨텐츠 파일을 찾지 못했습니다. 수동으로 불러오십시오."
+   "적합한 코어 또는 콘텐츠 파일을 찾지 못했습니다. 수동으로 불러오십시오."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
@@ -12122,7 +12134,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-   "죄송합니다. 현재 컨텐츠를 요구하지 않는 코어는 넷플레이에 참여할 수 없습니다."
+   "죄송합니다. 현재 콘텐츠를 요구하지 않는 코어는 넷플레이에 참여할 수 없습니다."
    )
 MSG_HASH(
    MSG_NATIVE,
@@ -12423,7 +12435,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
-   "새로 고침 실패 - 컨텐츠 디렉토리가 올바르지 않음: "
+   "새로 고침 실패 - 콘텐츠 디렉토리가 올바르지 않음: "
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
@@ -12539,7 +12551,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
-   "컨텐츠의 CRC32가 다릅니다. 다른 게임은 사용할 수 없습니다."
+   "콘텐츠의 CRC32가 다릅니다. 다른 게임은 사용할 수 없습니다."
    )
 MSG_HASH(
    MSG_PING_TOO_HIGH,
@@ -12547,7 +12559,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
-   "컨텐츠 불러오기를 건너뛰었습니다. 자체적으로 실행하게 됩니다."
+   "콘텐츠 불러오기를 건너뛰었습니다. 자체적으로 실행하게 됩니다."
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
@@ -12591,7 +12603,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
-   "컨텐츠 파일을 읽지 못함"
+   "콘텐츠 파일을 읽지 못함"
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_MOVIE_HEADER,
@@ -12659,7 +12671,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
-   "Libretro 코어에 특별한 컨텐츠가 필요하지만 제공되지 않았습니다."
+   "Libretro 코어에 특별한 콘텐츠가 필요하지만 제공되지 않았습니다."
    )
 MSG_HASH(
    MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
@@ -12711,7 +12723,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
-   "패치된 컨텐츠의 메모리 할당 실패..."
+   "패치된 콘텐츠의 메모리 할당 실패..."
    )
 MSG_HASH(
    MSG_FAILED_TO_APPLY_SHADER,
@@ -12731,7 +12743,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
-   "압축파일에서 컨텐츠 추출 실패"
+   "압축파일에서 콘텐츠 추출 실패"
    )
 MSG_HASH(
    MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
@@ -12743,7 +12755,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
-   "컨텐츠 불러오기 실패"
+   "콘텐츠 불러오기 실패"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
@@ -12882,6 +12894,10 @@ MSG_HASH(
    "최근 리플레이 슬롯 발견"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "리플레이와 호환되지 않음"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "셰이더 발견"
    )
@@ -12895,7 +12911,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "컨텐츠 폴더 우선 설정 발견:"
+   "콘텐츠 폴더 우선 설정 발견:"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
@@ -12991,11 +13007,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING_CONTENT_FILE,
-   "컨텐츠 파일 불러오는 중"
+   "콘텐츠 파일 불러오는 중"
    )
 MSG_HASH(
    MSG_LOADING_HISTORY_FILE,
-   "히스토리 파일 불러오는 중"
+   "실행 기록 파일 불러오는 중"
    )
 MSG_HASH(
    MSG_LOADING_FAVORITES_FILE,
@@ -13008,6 +13024,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "메모리"
+   )
+MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "입력 리플레이 영상 파일이 올바른 리플레이 파일이 아닙니다."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
@@ -13031,7 +13051,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
-   "컨텐츠 없음, 더미 코어 시작."
+   "콘텐츠 없음, 더미 코어 시작."
    )
 MSG_HASH(
    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
@@ -13115,7 +13135,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
-   "임시 컨텐츠 파일 제거 중"
+   "임시 콘텐츠 파일 제거 중"
    )
 MSG_HASH(
    MSG_RESET,
@@ -13431,7 +13451,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PREPARING_FOR_CONTENT_SCAN,
-   "컨텐츠 스캔 준비중..."
+   "콘텐츠 스캔 준비중..."
    )
 MSG_HASH(
    MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
