@@ -424,13 +424,13 @@ typedef struct video_frame_info
    float menu_header_opacity;
    float menu_footer_opacity;
    float refresh_rate;
+   float font_size;
    float font_msg_pos_x;
    float font_msg_pos_y;
    float font_msg_color_r;
    float font_msg_color_g;
    float font_msg_color_b;
    float xmb_alpha_factor;
-
 
    struct
    {

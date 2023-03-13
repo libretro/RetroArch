@@ -971,7 +971,7 @@ int generic_action_ok_displaylist_push(const char *path,
 
          action_ok_get_file_browser_start_path(
                settings->paths.path_font,
-               NULL,
+               settings->paths.directory_assets,
                parent_dir, sizeof(parent_dir), true);
 
          info_path          = parent_dir;
