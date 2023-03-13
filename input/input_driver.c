@@ -4952,7 +4952,7 @@ bool replay_set_serialized_data(void* buf)
       and allow the user to continue it? 
       Or would that be better done from the replay hotkeys?
     */
-   if(!(playback || recording))
+   if (!(playback || recording))
       return true;
 
    if (!buffer)
