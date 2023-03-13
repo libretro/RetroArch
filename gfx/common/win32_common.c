@@ -979,6 +979,9 @@ static LRESULT CALLBACK wnd_proc_common(
             bool window_show_decor         = settings ? settings->bools.video_window_show_decorations : true;
             bool ui_menubar_enable         = settings ? settings->bools.ui_menubar_enable : true;
 
+            if (settings && settings->bools.video_window_save_positions)
+               break;
+
             win32_get_av_info_geometry(&min_width, &min_height);
 
             if (window_show_decor)
