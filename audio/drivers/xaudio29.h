@@ -403,21 +403,6 @@ typedef struct XAUDIO2_DEBUG_CONFIGURATION
    BOOL LogTiming;                     /* Whether to log message timestamps. */
 } XAUDIO2_DEBUG_CONFIGURATION;
 
-/* Values for the TraceMask and BreakMask bitmaps.  Only ERRORS and WARNINGS
- * are valid in BreakMask.  WARNINGS implies ERRORS, DETAIL implies INFO, and
- * FUNC_CALLS implies API_CALLS.  By default, TraceMask is ERRORS and WARNINGS
- * and all the other settings are zero. */
-#define XAUDIO2_LOG_ERRORS     0x0001   /* For handled errors with serious effects. */
-#define XAUDIO2_LOG_WARNINGS   0x0002   /* For handled errors that may be recoverable. */
-#define XAUDIO2_LOG_INFO       0x0004   /* Informational chit-chat (e.g. state changes). */
-#define XAUDIO2_LOG_DETAIL     0x0008   /* More detailed chit-chat. */
-#define XAUDIO2_LOG_API_CALLS  0x0010   /* Public API function entries and exits. */
-#define XAUDIO2_LOG_FUNC_CALLS 0x0020   /* Internal function entries and exits. */
-#define XAUDIO2_LOG_TIMING     0x0040   /* Delays detected and other timing data. */
-#define XAUDIO2_LOG_LOCKS      0x0080   /* Usage of critical sections and mutexes. */
-#define XAUDIO2_LOG_MEMORY     0x0100   /* Memory heap usage information. */
-#define XAUDIO2_LOG_STREAMING  0x1000   /* Audio streaming information. */
-
 /**************************************************************************
  *
  * IXAudio2: Top-level XAudio2 COM interface.
@@ -753,25 +738,15 @@ DECLARE_INTERFACE(IXAudio2VoiceCallback)
 
 #ifdef __cplusplus__
 
-#if (defined XAUDIO2_EXPORT)
-/* We're building xaudio2.dll */
-#define XAUDIO2_STDAPI extern "C" __declspec(dllexport) HRESULT __stdcall
-#else
 /* We're an xaudio2 client */
 #define XAUDIO2_STDAPI extern "C" __declspec(dllimport) HRESULT __stdcall
-#endif
 
 #else
 
 /* Modified for C support */
 
-#if (defined XAUDIO2_EXPORT)
-/* We're building xaudio2.dll */
-#define XAUDIO2_STDAPI __declspec(dllexport) HRESULT __stdcall
-#else
 /* We're an xaudio2 client */
 #define XAUDIO2_STDAPI __declspec(dllimport) HRESULT __stdcall
-#endif
 
 #endif
 
