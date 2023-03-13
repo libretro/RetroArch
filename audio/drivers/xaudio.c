@@ -435,6 +435,8 @@ static void xa_set_nonblock_state(void *data, bool state)
 static bool xa_start(void *data, bool is_shutdown)
 {
    xa_t *xa   = (xa_t*)data;
+   if (!xa)
+      return false;
    xa->flags &= ~(XA2_FLAG_IS_PAUSED);
    return true;
 }
@@ -462,6 +464,8 @@ static size_t xa_write_avail(void *data)
 static size_t xa_buffer_size(void *data)
 {
    xa_t *xa = (xa_t*)data;
+   if (!xa)
+      return 0;
    return xa->bufsize;
 }
 
