@@ -4056,8 +4056,10 @@ static void input_keys_pressed(
    input_driver_state_t *input_st = &input_driver_st;
    bool block_hotkey[RARCH_BIND_LIST_END];
    bool libretro_hotkey_set       =
-            binds[port][RARCH_ENABLE_HOTKEY].joykey  != NO_BTN
-         || binds[port][RARCH_ENABLE_HOTKEY].joyaxis != AXIS_NONE;
+            binds[port][RARCH_ENABLE_HOTKEY].joykey                 != NO_BTN
+         || binds[port][RARCH_ENABLE_HOTKEY].joyaxis                != AXIS_NONE
+         || input_autoconf_binds[port][RARCH_ENABLE_HOTKEY].joykey  != NO_BTN
+         || input_autoconf_binds[port][RARCH_ENABLE_HOTKEY].joyaxis != AXIS_NONE;
    bool keyboard_hotkey_set       =
          binds[port][RARCH_ENABLE_HOTKEY].key != RETROK_UNKNOWN;
 
