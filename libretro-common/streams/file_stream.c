@@ -221,7 +221,7 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
    va_list args_copy;
    const char *bufiter  = buf;
    int        ret       = 0;
-   int64_t startpos     = 0;
+   int64_t startpos     = filestream_tell(stream);
    int64_t maxlen       = filestream_read(stream, buf, sizeof(buf)-1);
 
    if (maxlen <= 0)
@@ -330,7 +330,6 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
    }
 
    va_end(args_copy);
-   startpos             = filestream_tell(stream);
    filestream_seek(stream, startpos + (bufiter - buf),
          RETRO_VFS_SEEK_POSITION_START);
 
