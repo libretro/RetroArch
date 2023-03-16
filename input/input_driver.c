@@ -1786,10 +1786,8 @@ static void input_overlay_parse_layout(
       overlay_layout->x_offset = layout_desc->x_offset_landscape;
       overlay_layout->y_offset = layout_desc->y_offset_landscape * -1.0f;
 
-      if (!(ol->flags & OVERLAY_BLOCK_X_SEPARATION))
-         overlay_layout->x_separation = layout_desc->x_separation_landscape;
-      if (!(ol->flags & OVERLAY_BLOCK_Y_SEPARATION))
-         overlay_layout->y_separation = layout_desc->y_separation_landscape;
+      overlay_layout->x_separation = layout_desc->x_separation_landscape;
+      overlay_layout->y_separation = layout_desc->y_separation_landscape;
 
       if (!(ol->flags & OVERLAY_BLOCK_SCALE))
       {
@@ -1810,10 +1808,8 @@ static void input_overlay_parse_layout(
       overlay_layout->x_offset = layout_desc->x_offset_portrait;
       overlay_layout->y_offset = layout_desc->y_offset_portrait * -1.0f;
 
-      if (!(ol->flags & OVERLAY_BLOCK_X_SEPARATION))
-         overlay_layout->x_separation = layout_desc->x_separation_portrait;
-      if (!(ol->flags & OVERLAY_BLOCK_Y_SEPARATION))
-         overlay_layout->y_separation = layout_desc->y_separation_portrait;
+      overlay_layout->x_separation = layout_desc->x_separation_portrait;
+      overlay_layout->y_separation = layout_desc->y_separation_portrait;
 
       if (!(ol->flags & OVERLAY_BLOCK_SCALE))
       {
