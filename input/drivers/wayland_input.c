@@ -404,7 +404,7 @@ static uint64_t input_wl_get_capabilities(void *data)
       | (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
-static void input_wl_grab_mouse(void *data, bool state) { }
+static void input_wl_grab_mouse(void *data, bool state)
 {
    /* This function does nothing but registering it is necessary for allowing
     * mouse-grab toggling. */
