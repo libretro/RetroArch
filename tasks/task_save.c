@@ -685,7 +685,12 @@ static bool content_write_serialized_state(void* buffer,
 #ifdef HAVE_BSV_MOVIE
     {
        input_driver_state_t *input_st = input_state_get_ptr();
-       if (!rewind && input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK) && !state_manager_frame_is_reversed())
+#ifdef HAVE_REWIND
+       bool frame_is_reversed         = state_manager_frame_is_reversed();
+#else
+       bool frame_is_reversed         = false;
+#endif
+       if (!rewind && input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK) && !frame_is_reversed)
        {
           content_write_block_header(output,
              RASTATE_REPLAY_BLOCK, size->replay_size);
@@ -1128,13 +1133,19 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
 #ifdef HAVE_BSV_MOVIE
          {
             input_driver_state_t *input_st = input_state_get_ptr();
-            if (BSV_MOVIE_IS_RECORDING() && !seen_replay && !state_manager_frame_is_reversed())
+#ifdef HAVE_REWIND
+            bool frame_is_reversed         = state_manager_frame_is_reversed();
+#else
+            bool frame_is_reversed         = false;
+#endif
+
+            if (BSV_MOVIE_IS_RECORDING() && !seen_replay && !frame_is_reversed)
             {
                /* TODO OSD message */
                RARCH_ERR("[Replay] Can't load state without replay data during recording.\n");
                return false;
             }
-            if (BSV_MOVIE_IS_PLAYBACK_ON() && !seen_replay && !state_manager_frame_is_reversed())
+            if (BSV_MOVIE_IS_PLAYBACK_ON() && !seen_replay && !frame_is_reversed)
             {
                /* TODO OSD message */
                RARCH_WARN("[Replay] Loading state without replay data during replay will cancel replay.\n");
@@ -1158,7 +1169,12 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
       else if (memcmp(marker, RASTATE_REPLAY_BLOCK, 4) == 0)
       {
          input_driver_state_t *input_st = input_state_get_ptr();
-         if (state_manager_frame_is_reversed() || replay_set_serialized_data((void*)input))
+#ifdef HAVE_REWIND
+         bool frame_is_reversed         = state_manager_frame_is_reversed();
+#else
+         bool frame_is_reversed         = false;
+#endif
+         if (frame_is_reversed || replay_set_serialized_data((void*)input))
             seen_replay = true;
          else
             return false;
@@ -1180,8 +1196,15 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
       rcheevos_set_serialized_data(NULL);
 #endif
 #ifdef HAVE_BSV_MOVIE
-   if (!seen_replay && !state_manager_frame_is_reversed())
-      replay_set_serialized_data(NULL);
+   {
+#ifdef HAVE_REWIND
+      bool frame_is_reversed = state_manager_frame_is_reversed();
+#else
+      bool frame_is_reversed = false;
+#endif
+      if (!seen_replay && !frame_is_reversed)
+         replay_set_serialized_data(NULL);
+   }
 #endif
 
    return true;
@@ -1203,8 +1226,15 @@ bool content_deserialize_state(
       rcheevos_set_serialized_data(NULL);
 #endif
 #ifdef HAVE_BSV_MOVIE
-      if(!state_manager_frame_is_reversed())
-         replay_set_serialized_data(NULL);
+      {
+#ifdef HAVE_REWIND
+         bool frame_is_reversed = state_manager_frame_is_reversed();
+#else
+         bool frame_is_reversed = false;
+#endif
+         if (!frame_is_reversed)
+            replay_set_serialized_data(NULL);
+      }
 #endif
    }
    else

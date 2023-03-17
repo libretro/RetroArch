@@ -4795,8 +4795,12 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
    unsigned checkpoint_interval   = settings->uints.replay_checkpoint_interval;
    bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
 
-   if (!handle || state_manager_frame_is_reversed())
+   if (!handle)
       return;
+#ifdef HAVE_REWIND
+   if (state_manager_frame_is_reversed())
+      return;
+#endif
 
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
    {
