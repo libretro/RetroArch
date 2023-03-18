@@ -2928,7 +2928,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "設定類比搖桿方向軸作用區, 調整時無法移動請在此選項按[開始鍵]重置, 僅限自訂「十字鍵使用類比搖桿」時使用。"
+   "僅限自訂「十字鍵使用類比搖桿」時使用, 設定類比搖桿方向軸輸入十字鍵的作用區, 調整時無法移動請在此選項按[開始鍵]重置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
@@ -3662,7 +3662,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
-   "儲存為預設檔 (建立隨插即用)"
+   "儲存為配置檔 (建立隨插即用)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
@@ -4037,11 +4037,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
-   "「關閉」時儲存變更的核心選項, 「結束復古電玩」時儲存變更的設定。"
+   "「關閉」和「結束復古電玩」時, 儲存應用程式設定變更的選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
-   "執行項目「關閉」時儲存變更的核心選項。\n「結束復古電玩」時儲存變更的設定。"
+   "「關閉」和「結束復古電玩」時, 儲存應用程式設定變更的選項,\n此選項不影響「專用主題」設定檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
@@ -12272,7 +12272,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
-   "檔案"
+   "檔案資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_DIR,
@@ -12771,11 +12771,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   "無法儲存為預設檔。"
+   "無法儲存為隨插即用配置檔。"
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "已儲存為預設檔。"
+   "已儲存為隨插即用配置檔。"
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,
