@@ -404,19 +404,23 @@ static uint64_t input_wl_get_capabilities(void *data)
 
 static void input_wl_grab_mouse(void *data, bool state)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+  input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
 
-   if (wl->pointer_constraints)
+  gfx_ctx_wayland_data_t *gfx = (gfx_ctx_wayland_data_t*)wl->gfx;
+
+   if (gfx->pointer_constraints)
+   {
       if (state)
       {
-         wl->locked_pointer = zwp_pointer_constraints_v1_lock_pointer(wl->pointer_constraints,
-            wl->surface, wl->wl_pointer, NULL, ZWP_POINTER_CONSTRAINTS_V1_LIFETIME_PERSISTENT);
+         gfx->locked_pointer = zwp_pointer_constraints_v1_lock_pointer(gfx->pointer_constraints,
+            gfx->surface, gfx->wl_pointer, NULL, ZWP_POINTER_CONSTRAINTS_V1_LIFETIME_PERSISTENT);
       }
       else
       {
-         zwp_locked_pointer_v1_destroy(wl->locked_pointer);
-         wl->locked_pointer = NULL;
+         zwp_locked_pointer_v1_destroy(gfx->locked_pointer);
+         gfx->locked_pointer = NULL;
       }
+   }
 }
 
 input_driver_t input_wayland = {
