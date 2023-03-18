@@ -45,6 +45,7 @@
 - IOS/VULKAN/MOLTENVK: Vulkan video driver on iOS
 - LATENCY/PREEMPTIVE FRAMES: Add Preemptive Frames to Latency Settings. RunAhead alternative that reruns core logic to "rewrite history" before the current frame. Frames are only rerun when the controller state changes, so it's faster overall.
 - LATENCY/PREEMPTIVE FRAMES: Call retro_run before retro_serialize (#14893). Fixes preemptive frames not starting up with a few cores
+- LIBRETRO-COMMON/VFS/FILESTREAM: Fixes filestream_vscanf regression
 - LOCALIZATION: Updates
 - LOCALIZATION: Enable localization of video rotation, orientation, and aspect ratio option values.
 - LOCALIZATION: Mixer stream localization also added
@@ -57,6 +58,7 @@ query what frontend would do when faces with newer interface versions. This env-
 - INPUT: Allowing keyboard hotkeys to work without hotkey modifier if modifier is only mapped to RetroPad
 - INPUT: Allowing keyboard hotkey keys for typing if hotkey modifier is set to keyboard but not pressed
 - INPUT: Allowing keyboard RetroPad keys for typing if emulated device type is "None"
+- INPUT/AUTOCONFIG: Check for 'enable_hotkey' also from autoconf binds
 - INPUT/BLUETOOTH: Fix a crash in for BT HID devices. (#14922) pad_connection_destroy() frees slots, no need to free it again.
 - INPUT/BSV/REPLAY: Don't start video recording when BSV recording starts
 - INPUT/BSV/REPLAY: Don't double-record inputs in BSV recording
@@ -88,6 +90,7 @@ as well. Without this, sound files can not be opened from file browser with core
 - MENU/SUBLABELS: Quick Menu > Controls > Port x Controls
 - MENU/SUBLABELS: Port x Controls > Device Type
 - MENU/RGUI: Fix disabled menu item color. The effect was not working properly, since transparency meant using the core output color as background.
+- MENU/XMB: Horizontal icon animation fix
 - MENU/XMB: Fixed playlist manager icons to take Explore Views into account properly
 - MENU/XMB: Changed XMB Explore View title to match Ozone
 - MENU/XMB: Added "Switch Icons" option
@@ -122,6 +125,13 @@ as well. Without this, sound files can not be opened from file browser with core
 - NETWORKING/MENU: Trim useless/duplicate garbage from the end of ipv6 address. Windows shows %[adapter number], Linux shows %[adapter name], which already shows before the address
 - NETWORKING/STDIN: Add LOAD_STATE_SLOT N command to stdin/network protocol
 - OSD/STATISTICS: Add Run-Ahead data to on-screen statistics
+- OSD/STATISTICS: Notification font + statistics adjustments
+- OSD/STATISTICS: Finetuned statistics layout to be more compact and aligned
+- OSD/STATISTICS: Group Run-Ahead and Frame Delay as "Latency"
+- OSD/STATISTICS: Try to scale font as small as possible/readable if stats won't fit
+- OSD/STATISTICS/FONT: Allow reseting notification font with RetroPad Y to "null", which uses the fallback pixel font
+- OSD/STATISTICS/FONT: Show "Default" instead of empty with default font
+- OSD/STATISTICS/FONT: Start browsing font from assets instead of root
 - OSX/MACOS: Steam platform support
 - OSX/MACOS: Set LSApplicationCategoryType to games
 - OSX/MACOS: Include OpenGL video driver on Metal macOS builds (10.13 and higher)
@@ -192,6 +202,7 @@ So this removes the artificial clamping that was being done to desired_swapchain
 - WAYLAND: Changes the initial window to show a RetroArch logo copied from the icon of the X11 backend.
 - WAYLAND: Build pointer-constraints and relative-pointer protocols.
 - WAYLAND/GL: GL is sometimes not rescaling property (Super + Left).
+- WIN32: Ignore window limiting with fixed position. The other resizing part already took this into account, but WM_GETMINMAXINFO did not.
 - WIN32/INPUT: Add support for mouse button swap
 - WIN32: Fix keyboard event characters. Added sending key chars to all input drivers (currently they only send scan codes), and also missing mods for raw.
 - WIN32: Fix restart if path has spaces. CreateProcess does not like to have anything executable path related in the second parameter lpCommandLine if the path has spaces. Thus strip everything from args except the actual parameters.

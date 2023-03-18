@@ -84,6 +84,14 @@
 #endif
 #endif
 
+/* Forward declarations */
+LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+LRESULT CALLBACK wnd_proc_wgl_winraw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+
 static BOOL (APIENTRY *p_swap_interval)(int);
 
 enum wgl_flags

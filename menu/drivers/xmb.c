@@ -2097,7 +2097,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
       }
 
       if (!xmb->allow_horizontal_animation)
-         continue;
+         return;
 
       /* Horizontal icon animation */
 
@@ -7397,14 +7397,14 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       xmb_context_reset_background(xmb, iconpath);
 
       /* Reset previous selection buffer */
-      xmb_free_list_nodes(&xmb->selection_buf_old, false);
-      file_list_deinitialize(&xmb->selection_buf_old);
-      xmb->selection_buf_old.list        = NULL;
-      xmb->selection_buf_old.capacity    = 0;
-      xmb->selection_buf_old.size        = 0;
-
-      /* Prevent horizontal animation on next menu toggle */
-      xmb->allow_horizontal_animation    = false;
+      if (xmb->depth > 2)
+      {
+         xmb_free_list_nodes(&xmb->selection_buf_old, false);
+         file_list_deinitialize(&xmb->selection_buf_old);
+         xmb->selection_buf_old.list        = NULL;
+         xmb->selection_buf_old.capacity    = 0;
+         xmb->selection_buf_old.size        = 0;
+      }
    }
    else
       xmb->allow_horizontal_animation    = true;

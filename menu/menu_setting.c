@@ -3121,6 +3121,19 @@ static void setting_get_string_representation_video_filter(rarch_setting_t *sett
             "", len);
 }
 
+static void setting_get_string_representation_video_font_path(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   if (string_is_empty(setting->value.target.string))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+   else
+      fill_pathname(s, path_basename(setting->value.target.string),
+            "", len);
+}
+
 static void setting_get_string_representation_state_slot(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -15280,6 +15293,7 @@ static bool setting_append_list(
          MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "ttf");
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
          (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FONT_SELECTOR;
+         (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_video_font_path;
 
          CONFIG_FLOAT(
                list, list_info,

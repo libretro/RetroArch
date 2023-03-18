@@ -173,15 +173,6 @@ LRESULT CALLBACK wnd_proc_d3d_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_wgl_winraw(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-#endif
-
 #if defined(HAVE_VULKAN)
 LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);

@@ -3435,6 +3435,18 @@ MSG_HASH(
    "Automatycznie zapisz niezmienny Zapis Ram w regularnym odstępie (w sekundach)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Odstęp czasu powtórzenia punktu kontrolnego"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "Automatycznie zakładaj stan gry podczas nagrywania w regularnych odstępach czasu (w sekundach)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "Automatycznie opuszcza stan gry podczas nagrywania w regularnych odstępach czasu. Jest to domyślnie wyłączone, chyba że ustawiono inaczej. Interwał jest mierzony w sekundach. Wartość 0 wyłącza nagrywanie punktu kontrolnego."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "Automatycznie zwiększaj indeks zapisu stanu"
    )

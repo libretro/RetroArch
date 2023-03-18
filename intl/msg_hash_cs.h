@@ -3354,6 +3354,10 @@ MSG_HASH(
    "Předchozí Slot Záznamu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "Sníží index aktuálně vybraného slotu pro záznam."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Podržení Myši (Přepínání)"
    )
@@ -4023,6 +4027,18 @@ MSG_HASH(
    "Automaticky ukládá nevolatilní paměť SRAM v pravidelných intervalech. Ve výchozím nastavení je tato funkce vypnuta, pokud není nastaveno jinak. Interval se měří v sekundách. Hodnota 0 automatické ukládání vypne."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Interval kontrolního bodu záznamu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "Automatická záložka pozice hry během nahrávání záznamu v pravidelném intervalu (v sekundách)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "Automatické ukládání pozice hry během nahrávání záznamu v pravidelných intervalech. Ve výchozím nastavení je tato funkce vypnuta, pokud není nastaveno jinak. Interval se měří v sekundách. Hodnota 0 vypne nahrávání kontrolních bodů."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "Automatické Zvyšování Indexu Uložení Pozic"
    )
@@ -4031,12 +4047,28 @@ MSG_HASH(
    "Před vytvořením uložené pozice se automaticky zvýší index uložené pozice. Při načítání obsahu se index nastaví na nejvyšší existující index."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Automatické zvyšování indexu záznamu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "Před provedením záznamu se automaticky zvýší index záznamu. Při načítání obsahu se index nastaví na nejvyšší existující index."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    "Maximální Auto-Navýšení Zachová Uložené Pozice"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    "Omezí počet uložených pozic, které budou vytvořeny, když je povolena možnost 'Automaticky zvyšovat index uložených pozic'. Pokud je limit při ukládání nové pozice překročen, stávající pozice s nejnižším indexem bude odstraněna. Hodnota '0' znamená, že bude zaznamenáno neomezené množství pozic."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Maximální počet záznamu s automatickým navýšením pro zachování"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Omezit počet záznamu, které budou vytvořeny, když je povolena možnost \"Automaticky zvyšovat index záznamu\". Pokud je limit při nahrávání nového záznamu překročen, stávající záznam s nejnižším indexem bude odstraněn. Hodnota \"0\" znamená, že bude zaznamenáno neomezené množství záznamu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -4254,6 +4286,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
    "Rychlost Posunu Vpřed Přeskočením Snímků"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "Přeskakování snímků podle rychlosti převíjení. To šetří energii a umožňuje použití omezování snímků třetích stran."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -5617,6 +5653,14 @@ MSG_HASH(
    "Zobrazení možností pro uložení/načtení pozice."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   "Zobrazit 'Ovládání záznamu'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
+   "Zobrazení možností pro nahrávání/přehrávání souborů záznamů."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Zobrazit 'Vrátit Zpět Uložení/Načtení Pozice'"
    )
@@ -5990,6 +6034,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
    "Upravte neprůhlednost obrázku na pozadí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Neprůhlednost menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+   "Úprava neprůhlednosti výchozího pozadí menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
@@ -7273,8 +7325,16 @@ MSG_HASH(
    "Do tohoto adresáře uložte všechny uložené soubory. Pokud není nastaveno, pokusí se uložit do pracovního adresáře souboru s obsahem."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
+   "Do tohoto adresáře uložte všechny ukládací soubory (*.srm). Patří sem i související soubory jako .rt, .psrm atd... Toto bude potlačeno explicitními volbami příkazového řádku."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "Uložené Pozice"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+   "Do tohoto adresáře se ukládají uložené pozice a záznamy. Pokud není nastaveno, pokusí se je uložit do adresáře, kde je umístěn obsah."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -7954,6 +8014,10 @@ MSG_HASH(
    "Pokud byl stav přepsán, vrátí se do předchozího stavu uložené pozice."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   "Slot pro záznam"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_SLOT,
    "Změna aktuálně vybraného slotu pozice."
    )
@@ -7976,6 +8040,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
    "Zastavit Nahrávání/Záznam"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HALT_REPLAY,
+   "Zastaví nahrávání/přehrávání aktuálního záznamu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -12590,6 +12658,18 @@ MSG_HASH(
    "Nalezen poslední slot pozice"
    )
 MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "Nalezen poslední slot pro záznam"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Ne z aktuálního záznamu"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Není kompatibilní se záznamem"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Nalezen Shader"
    )
@@ -12716,6 +12796,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Paměť"
+   )
+MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Vstupní soubor přehrávaného filmu není platný soubor ZÁZNAMU."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
@@ -12956,6 +13040,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_STATE_SLOT,
    "Slot pozice"
+   )
+MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Přehrát slot"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,
