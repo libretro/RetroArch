@@ -7058,7 +7058,6 @@ enum retro_language retroarch_get_language_from_iso(const char *iso639)
 
    const struct lang_pair pairs[] =
    {
-      {"en", RETRO_LANGUAGE_ENGLISH},
       {"ja", RETRO_LANGUAGE_JAPANESE},
       {"fr", RETRO_LANGUAGE_FRENCH},
       {"es", RETRO_LANGUAGE_SPANISH},
@@ -7090,9 +7089,10 @@ enum retro_language retroarch_get_language_from_iso(const char *iso639)
       {"sv", RETRO_LANGUAGE_SWEDISH},
       {"uk", RETRO_LANGUAGE_UKRAINIAN},
       {"cs", RETRO_LANGUAGE_CZECH},
-      {"ca_valencia", RETRO_LANGUAGE_CATALAN_VALENCIA},
+      {"ca_ES@valencia", RETRO_LANGUAGE_CATALAN_VALENCIA},
       {"ca", RETRO_LANGUAGE_CATALAN},
       {"en_GB", RETRO_LANGUAGE_BRITISH_ENGLISH},
+      {"en", RETRO_LANGUAGE_ENGLISH},
       {"hu", RETRO_LANGUAGE_HUNGARIAN},
    };
 
