@@ -171,7 +171,7 @@ const char *get_user_language_iso639_1(bool limit)
       case RETRO_LANGUAGE_CATALAN_VALENCIA:
          if (limit)
             return "ca";
-         return "ca_valencia";
+         return "ca_ES@valencia";
       case RETRO_LANGUAGE_CATALAN:
          return "ca";
       case RETRO_LANGUAGE_BRITISH_ENGLISH:
