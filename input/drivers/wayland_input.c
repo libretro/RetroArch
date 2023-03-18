@@ -73,8 +73,6 @@ static void input_wl_poll(void *data)
 
    flush_wayland_fd(wl);
 
-   wl->mouse.delta_x            = wl->mouse.x - wl->mouse.last_x;
-   wl->mouse.delta_y            = wl->mouse.y - wl->mouse.last_y;
    wl->mouse.last_x             = wl->mouse.x;
    wl->mouse.last_y             = wl->mouse.y;
 
@@ -406,10 +404,11 @@ static uint64_t input_wl_get_capabilities(void *data)
 
 static void input_wl_grab_mouse(void *data, bool state)
 {
-   /* This function does nothing but registering it is necessary for allowing
-    * mouse-grab toggling. */
-   (void)data;
-   (void)state;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   if (state && wl->pointer_constraints)
+      zwp_pointer_constraints_v1_lock_pointer(wl->pointer_constraints, wl->surface,
+         wl->wl_pointer, NULL, ZWP_POINTER_CONSTRAINTS_V1_LIFETIME_PERSISTENT);
 }
 
 input_driver_t input_wayland = {
