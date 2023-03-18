@@ -1060,7 +1060,6 @@ exit:
 static enum AVPixelFormat auto_hw_decoder(AVCodecContext *ctx,
                                     const enum AVPixelFormat *pix_fmts)
 {
-   int ret = 0;
    enum AVPixelFormat decoder_pix_fmt = AV_PIX_FMT_NONE;
    enum AVHWDeviceType type = AV_HWDEVICE_TYPE_NONE;
 

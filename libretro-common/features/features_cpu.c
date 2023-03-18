@@ -694,7 +694,6 @@ uint64_t cpu_features_get(void)
    int flags[4];
    int vendor_shuffle[3];
    char vendor[13];
-   uint64_t cpu_flags  = 0;
    x86_cpuid(0, flags);
    vendor_shuffle[0] = flags[1];
    vendor_shuffle[1] = flags[3];
