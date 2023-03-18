@@ -4026,6 +4026,7 @@ void video_driver_frame(const void *data, unsigned width,
 
       video_info.osd_stat_params.x           = 0.008f;
       video_info.osd_stat_params.y           = 0.960f;
+      video_info.osd_stat_params.text_align  = TEXT_ALIGN_LEFT;
       video_info.osd_stat_params.scale       = scale;
       video_info.osd_stat_params.full_screen = true;
       video_info.osd_stat_params.drop_x      = (video_info.font_size / DEFAULT_FONT_SIZE) * 3;
