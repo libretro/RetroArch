@@ -406,9 +406,17 @@ static void input_wl_grab_mouse(void *data, bool state)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   if (state && wl->pointer_constraints)
-      zwp_pointer_constraints_v1_lock_pointer(wl->pointer_constraints, wl->surface,
-         wl->wl_pointer, NULL, ZWP_POINTER_CONSTRAINTS_V1_LIFETIME_PERSISTENT);
+   if (wl->pointer_constraints)
+      if (state)
+      {
+         wl->locked_pointer = zwp_pointer_constraints_v1_lock_pointer(wl->pointer_constraints,
+            wl->surface, wl->wl_pointer, NULL, ZWP_POINTER_CONSTRAINTS_V1_LIFETIME_PERSISTENT);
+      }
+      else
+      {
+         zwp_locked_pointer_v1_destroy(wl->locked_pointer);
+         wl->locked_pointer = NULL;
+      }
 }
 
 input_driver_t input_wayland = {
