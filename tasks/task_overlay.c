@@ -860,6 +860,30 @@ static void task_overlay_deferred_load(retro_task_t *task)
       if (config_get_bool(conf, conf_key, &tmp_bool)
             && tmp_bool)
          overlay->flags |=  OVERLAY_BLOCK_Y_SEPARATION;
+
+      /* Check whether x/y separation are enabled
+       * for this overlay in auto-scale mode */
+      snprintf(conf_key, sizeof(conf_key),
+            "overlay%u_auto_x_separation", loader->pos);
+      overlay->flags    |=  OVERLAY_AUTO_X_SEPARATION;
+      if (config_get_bool(conf, conf_key, &tmp_bool))
+      {
+         if (!tmp_bool)
+            overlay->flags &= ~OVERLAY_AUTO_X_SEPARATION;
+      }
+      else
+      {
+         if (overlay->flags & OVERLAY_BLOCK_X_SEPARATION
+               || overlay->image.width != 0)
+            overlay->flags &= ~OVERLAY_AUTO_X_SEPARATION;
+      }
+
+      snprintf(conf_key, sizeof(conf_key),
+            "overlay%u_auto_y_separation", loader->pos);
+      overlay->flags    &= ~OVERLAY_AUTO_Y_SEPARATION;
+      if (config_get_bool(conf, conf_key, &tmp_bool)
+            && tmp_bool)
+         overlay->flags |=  OVERLAY_AUTO_Y_SEPARATION;
    }
 
    return;
