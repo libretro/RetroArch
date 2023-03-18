@@ -145,6 +145,7 @@ typedef struct gfx_ctx_wayland_data
    struct wl_keyboard *wl_keyboard;
    struct wl_pointer  *wl_pointer;
    struct zwp_relative_pointer_v1 *wl_relative_pointer;
+   struct zwp_locked_pointer_v1 *locked_pointer;
    struct wl_touch *wl_touch;
    struct wl_seat *seat;
    struct wl_shm *shm;
