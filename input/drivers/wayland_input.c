@@ -93,14 +93,14 @@ static void input_wl_poll(void *data)
       /* Clamp X */
       if (wl->mouse.x < 0)
          wl->mouse.x = 0;
-      if (wl->mouse.x >= wl->gfx->width)
-         wl->mouse.x = (wl->gfx->width - 1);
+      if (wl->mouse.x >= wl->gfx->buffer_width)
+         wl->mouse.x = (wl->gfx->buffer_width - 1);
 
       /* Clamp Y */
       if (wl->mouse.y < 0)
          wl->mouse.y = 0;
-      if (wl->mouse.y >= wl->gfx->height)
-         wl->mouse.y = (wl->gfx->height - 1);
+      if (wl->mouse.y >= wl->gfx->buffer_height)
+         wl->mouse.y = (wl->gfx->buffer_height - 1);
    }
 
    for (id = 0; id < MAX_TOUCHES; id++)
