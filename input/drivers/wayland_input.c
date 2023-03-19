@@ -152,6 +152,7 @@ static int16_t input_wl_state(
       unsigned id)
 {
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
+   int x, y = 0;
 
    switch (device)
    {
@@ -265,10 +266,14 @@ static int16_t input_wl_state(
                   wl->mouse.wd = false;
                   return state;
                case RETRO_DEVICE_ID_MOUSE_X:
-                  return screen ? wl->mouse.x : wl->mouse.delta_x;
-               case RETRO_DEVICE_ID_MOUSE_Y:
-                  return screen ? wl->mouse.y : wl->mouse.delta_y;
-               case RETRO_DEVICE_ID_MOUSE_LEFT:
+		  x = screen ? wl->mouse.x : wl->mouse.delta_x;
+                  wl->mouse.delta_x = 0;
+                  return x;
+	       case RETRO_DEVICE_ID_MOUSE_Y:
+		  y = screen ? wl->mouse.y : wl->mouse.delta_y;
+                  wl->mouse.delta_y = 0;
+                  return y;
+	       case RETRO_DEVICE_ID_MOUSE_LEFT:
                   return wl->mouse.left;
                case RETRO_DEVICE_ID_MOUSE_RIGHT:
                   return wl->mouse.right;
