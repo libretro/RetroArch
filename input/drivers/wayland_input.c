@@ -82,6 +82,27 @@ static void input_wl_poll(void *data)
       wl->mouse.delta_y         = 0;
    }
 
+   if (!wl->gfx->locked_pointer)
+   {
+      /* Get effective 'absolute' pointer location
+       * (last position + delta, bounded by current
+       * application window dimensions) */
+      wl->mouse.x         += wl->mouse.delta_x;
+      wl->mouse.y         += wl->mouse.delta_y;
+
+      /* Clamp X */
+      if (wl->mouse.x < 0)
+         wl->mouse.x = 0;
+      if (wl->mouse.x >= wl->gfx->width)
+         wl->mouse.x = (wl->gfx->width - 1);
+
+      /* Clamp Y */
+      if (wl->mouse.y < 0)
+         wl->mouse.y = 0;
+      if (wl->mouse.y >= wl->gfx->height)
+         wl->mouse.y = (wl->gfx->height - 1);
+   }
+
    for (id = 0; id < MAX_TOUCHES; id++)
    {
       if (wayland_context_gettouchpos(wl->gfx, id, &touch_x, &touch_y))
