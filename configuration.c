@@ -2326,11 +2326,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("netplay_share_analog",         &settings->uints.netplay_share_analog,  true, DEFAULT_NETPLAY_SHARE_ANALOG, false);
 #endif
 #ifdef HAVE_LANGEXTRA
-#ifdef VITA
    SETTING_UINT("user_language",                msg_hash_get_uint(MSG_HASH_USER_LANGUAGE), true, frontend_driver_get_user_language(), false);
-#else
-   SETTING_UINT("user_language",                msg_hash_get_uint(MSG_HASH_USER_LANGUAGE), true, DEFAULT_USER_LANGUAGE, false);
-#endif
 #endif
 #ifndef __APPLE__
    SETTING_UINT("bundle_assets_extract_version_current", &settings->uints.bundle_assets_extract_version_current, true, 0, false);
