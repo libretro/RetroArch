@@ -447,8 +447,6 @@ locked_pointer_locked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
 static void 
 locked_pointer_unlocked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   wl->locked_pointer = NULL;
 }
 
 static void wl_touch_handle_frame(void *data, struct wl_touch *wl_touch) { }
