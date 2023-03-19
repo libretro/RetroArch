@@ -662,9 +662,12 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->deco_manager = (struct zxdg_decoration_manager_v1*)wl_registry_bind(
             reg, id, &zxdg_decoration_manager_v1_interface, MIN(version, 1));
    else if (string_is_equal(interface, zwp_pointer_constraints_v1_interface.name))
+   {
       wl->pointer_constraints = (struct zwp_pointer_constraints_v1*)
          wl_registry_bind(
             reg, id, &zwp_pointer_constraints_v1_interface, MIN(version, 1));
+      wl->locked_pointer = NULL;
+   }
    else if (string_is_equal(interface, zwp_relative_pointer_manager_v1_interface.name))
       wl->relative_pointer_manager = (struct zwp_relative_pointer_manager_v1*)
          wl_registry_bind(
