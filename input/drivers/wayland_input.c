@@ -76,12 +76,6 @@ static void input_wl_poll(void *data)
    wl->mouse.last_x             = wl->mouse.x;
    wl->mouse.last_y             = wl->mouse.y;
 
-   if (wl->gfx->locked_pointer)
-   {
-      wl->mouse.x += wl->mouse.delta_x;
-      wl->mouse.y += wl->mouse.delta_y;
-   }
-
    if (!wl->mouse.focus)
    {
       wl->mouse.delta_x         = 0;
