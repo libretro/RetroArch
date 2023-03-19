@@ -417,7 +417,7 @@ static void input_wl_grab_mouse(void *data, bool state)
 	 zwp_locked_pointer_v1_add_listener(gfx->locked_pointer,
 	    &locked_pointer_listener, gfx);
       }
-      else
+      else if (gfx->locked_pointer)
       {
          zwp_locked_pointer_v1_destroy(gfx->locked_pointer);
          gfx->locked_pointer = NULL;
