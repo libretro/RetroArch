@@ -76,6 +76,12 @@ static void input_wl_poll(void *data)
    wl->mouse.last_x             = wl->mouse.x;
    wl->mouse.last_y             = wl->mouse.y;
 
+   if (wl->gfx->locked_pointer)
+   {
+      wl->mouse.x += wl->mouse.delta_x;
+      wl->mouse.y += wl->mouse.delta_y;
+   }
+
    if (!wl->mouse.focus)
    {
       wl->mouse.delta_x         = 0;
@@ -414,6 +420,8 @@ static void input_wl_grab_mouse(void *data, bool state)
       {
          gfx->locked_pointer = zwp_pointer_constraints_v1_lock_pointer(gfx->pointer_constraints,
             gfx->surface, gfx->wl_pointer, NULL, ZWP_POINTER_CONSTRAINTS_V1_LIFETIME_PERSISTENT);
+	 zwp_locked_pointer_v1_add_listener(gfx->locked_pointer,
+	    &locked_pointer_listener, gfx);
       }
       else
       {

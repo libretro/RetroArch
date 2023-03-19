@@ -433,6 +433,18 @@ static void handle_relative_motion(void *data,
     wl->input.mouse.delta_y = wl_fixed_to_int(dy);
 }
 
+static void 
+locked_pointer_locked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
+{
+}
+
+static void 
+locked_pointer_unlocked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   wl->locked_pointer = NULL;
+}
+
 static void wl_touch_handle_frame(void *data, struct wl_touch *wl_touch) { }
 
 static void wl_touch_handle_cancel(void *data, struct wl_touch *wl_touch)
@@ -978,6 +990,11 @@ const struct wl_data_offer_listener data_offer_listener = {
 
 const struct zwp_relative_pointer_v1_listener relative_pointer_listener = {
    .relative_motion = handle_relative_motion,
+};
+
+const struct zwp_locked_pointer_v1_listener locked_pointer_listener = {
+   .locked = locked_pointer_locked,
+   .unlocked = locked_pointer_unlocked,
 };
 
 void flush_wayland_fd(void *data)

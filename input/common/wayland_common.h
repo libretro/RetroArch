@@ -223,6 +223,8 @@ extern const struct wl_pointer_listener pointer_listener;
 
 extern const struct zwp_relative_pointer_v1_listener relative_pointer_listener;
 
+extern const struct zwp_locked_pointer_v1_listener locked_pointer_listener;
+
 extern const struct wl_touch_listener touch_listener;
 
 extern const struct wl_seat_listener seat_listener;
