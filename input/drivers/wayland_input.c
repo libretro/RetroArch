@@ -82,7 +82,7 @@ static void input_wl_poll(void *data)
       wl->mouse.delta_y         = 0;
    }
 
-   if (!wl->gfx->locked_pointer)
+   if (wl->gfx->locked_pointer)
    {
       /* Get effective 'absolute' pointer location
        * (last position + delta, bounded by current
