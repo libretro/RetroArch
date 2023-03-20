@@ -84,12 +84,6 @@ static void input_wl_poll(void *data)
 
    if (wl->gfx->locked_pointer)
    {
-      /* Get effective 'absolute' pointer location
-       * (last position + delta, bounded by current
-       * application window dimensions) */
-      wl->mouse.x         += wl->mouse.delta_x;
-      wl->mouse.y         += wl->mouse.delta_y;
-
       /* Clamp X */
       if (wl->mouse.x < 0)
          wl->mouse.x = 0;
@@ -287,14 +281,14 @@ static int16_t input_wl_state(
                   wl->mouse.wd = false;
                   return state;
                case RETRO_DEVICE_ID_MOUSE_X:
-		  x = screen ? wl->mouse.x : wl->mouse.delta_x;
+                  x = screen ? wl->mouse.x : wl->mouse.delta_x;
                   wl->mouse.delta_x = 0;
                   return x;
-	       case RETRO_DEVICE_ID_MOUSE_Y:
-		  y = screen ? wl->mouse.y : wl->mouse.delta_y;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  y = screen ? wl->mouse.y : wl->mouse.delta_y;
                   wl->mouse.delta_y = 0;
                   return y;
-	       case RETRO_DEVICE_ID_MOUSE_LEFT:
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
                   return wl->mouse.left;
                case RETRO_DEVICE_ID_MOUSE_RIGHT:
                   return wl->mouse.right;
@@ -311,6 +305,7 @@ static int16_t input_wl_state(
             struct video_viewport vp;
             bool screen                 =
                (device == RARCH_DEVICE_POINTER_SCREEN);
+            bool inside                 = false;
             int16_t res_x               = 0;
             int16_t res_y               = 0;
             int16_t res_screen_x        = 0;
@@ -327,26 +322,22 @@ static int16_t input_wl_state(
                         wl->mouse.x, wl->mouse.y,
                         &res_x, &res_y, &res_screen_x, &res_screen_y))
             {
+               if (screen)
+               {
+                  res_x = res_screen_x;
+                  res_y = res_screen_y;
+               }
+
+               inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
+               if (!inside)
+                  return 0;
+
                switch (id)
                {
                   case RETRO_DEVICE_ID_POINTER_X:
-                     if (screen)
-                     {
-                        res_x = res_screen_x;
-                        res_y = res_screen_y;
-                     }
-                     if ((res_x >= -0x7fff) && (res_y >= -0x7fff)) /* Inside? */
-                        return res_x;
-                     break;
+                     return res_x;
                   case RETRO_DEVICE_ID_POINTER_Y:
-                     if (screen)
-                     {
-                        res_x = res_screen_x;
-                        res_y = res_screen_y;
-                     }
-                     if ((res_x >= -0x7fff) && (res_y >= -0x7fff)) /* Inside? */
-                        return res_y;
-                     break;
+                     return res_y;
                   case RETRO_DEVICE_ID_POINTER_PRESSED:
                      return wl->mouse.left;
                   case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
@@ -430,9 +421,8 @@ static uint64_t input_wl_get_capabilities(void *data)
 
 static void input_wl_grab_mouse(void *data, bool state)
 {
-  input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
-
-  gfx_ctx_wayland_data_t *gfx = (gfx_ctx_wayland_data_t*)wl->gfx;
+   input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
+   gfx_ctx_wayland_data_t *gfx = (gfx_ctx_wayland_data_t*)wl->gfx;
 
    if (gfx->pointer_constraints)
    {
@@ -440,8 +430,8 @@ static void input_wl_grab_mouse(void *data, bool state)
       {
          gfx->locked_pointer = zwp_pointer_constraints_v1_lock_pointer(gfx->pointer_constraints,
             gfx->surface, gfx->wl_pointer, NULL, ZWP_POINTER_CONSTRAINTS_V1_LIFETIME_PERSISTENT);
-	 zwp_locked_pointer_v1_add_listener(gfx->locked_pointer,
-	    &locked_pointer_listener, gfx);
+         zwp_locked_pointer_v1_add_listener(gfx->locked_pointer,
+            &locked_pointer_listener, gfx);
       }
       else if (gfx->locked_pointer)
       {

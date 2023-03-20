@@ -130,7 +130,7 @@ static void wl_keyboard_handle_key(void *data,
       return;
 #endif
    input_keyboard_event(value,
-			input_keymaps_translate_keysym_to_rk(keysym),
+         input_keymaps_translate_keysym_to_rk(keysym),
          0, 0, RETRO_DEVICE_KEYBOARD);
 }
 
@@ -439,12 +439,12 @@ static void handle_relative_motion(void *data,
    }
 }
 
-static void 
+static void
 locked_pointer_locked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
 {
 }
 
-static void 
+static void
 locked_pointer_unlocked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
 {
 }
@@ -490,7 +490,7 @@ static void wl_seat_handle_capabilities(void *data,
       wl_pointer_add_listener(wl->wl_pointer, &pointer_listener, wl);
       wl->wl_relative_pointer =
          zwp_relative_pointer_manager_v1_get_relative_pointer(
-	    wl->relative_pointer_manager, wl->wl_pointer);
+            wl->relative_pointer_manager, wl->wl_pointer);
       zwp_relative_pointer_v1_add_listener(wl->wl_relative_pointer,
          &relative_pointer_listener, wl);
    }
@@ -724,31 +724,31 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
       bytes_read = -1;
    else
    {
-	   if ((bytes_read = read(fd, temp, sizeof(temp))) > 0)
-	   {
-		   pos                   = *total_length;
-		   *total_length        += bytes_read;
+      if ((bytes_read = read(fd, temp, sizeof(temp))) > 0)
+      {
+         pos                   = *total_length;
+         *total_length        += bytes_read;
 
-		   if (null_terminate)
-			   new_buffer_length  = *total_length + 1;
-		   else
-			   new_buffer_length = *total_length;
+         if (null_terminate)
+            new_buffer_length  = *total_length + 1;
+         else
+            new_buffer_length = *total_length;
 
-		   if (*buffer == NULL)
-			   output_buffer      = malloc(new_buffer_length);
-		   else
-			   output_buffer      = realloc(*buffer, new_buffer_length);
+         if (*buffer == NULL)
+            output_buffer      = malloc(new_buffer_length);
+         else
+            output_buffer      = realloc(*buffer, new_buffer_length);
 
-		   if (output_buffer)
-		   {
-			   memcpy((uint8_t*)output_buffer + pos, temp, bytes_read);
+         if (output_buffer)
+         {
+            memcpy((uint8_t*)output_buffer + pos, temp, bytes_read);
 
-			   if (null_terminate)
-				   memset((uint8_t*)output_buffer + (new_buffer_length - 1), 0, 1);
+            if (null_terminate)
+               memset((uint8_t*)output_buffer + (new_buffer_length - 1), 0, 1);
 
-			   *buffer = output_buffer;
-		   }
-	   }
+            *buffer = output_buffer;
+         }
+      }
    }
 
    return bytes_read;
