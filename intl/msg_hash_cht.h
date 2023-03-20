@@ -2928,7 +2928,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "僅限自訂「十字鍵使用類比搖桿」時使用, 設定類比搖桿方向軸輸入十字鍵的作用區, 調整時無法移動請在此選項按[開始鍵]重置。"
+   "僅限「十字鍵使用類比搖桿」自訂時使用, 設定類比方向軸輸入十字鍵的作用區, 調整時無法移動請按[開始鍵]重置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
@@ -7035,7 +7035,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "列表中搜尋與壓縮檔關聯項目時僅比對壓縮檔名稱, 而不是壓縮檔名稱加上檔案名稱。\n開啟時可避免載入壓縮檔後出現重複的歷史項目。"
+   "列表中搜尋與壓縮檔關聯的項目時, 僅比對壓縮檔名稱不加上內容名稱, 還可避免載入後出現重複歷史項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
