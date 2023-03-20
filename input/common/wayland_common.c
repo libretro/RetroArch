@@ -421,6 +421,34 @@ static void wl_touch_handle_motion(void *data,
    }
 }
 
+static void handle_relative_motion(void *data,
+   struct zwp_relative_pointer_v1 *zwp_relative_pointer_v1,
+   uint32_t utime_hi, uint32_t utime_lo,
+   wl_fixed_t dx, wl_fixed_t dy,
+   wl_fixed_t dx_unaccel, wl_fixed_t dy_unaccel)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   wl->input.mouse.delta_x = wl_fixed_to_int(dx);
+   wl->input.mouse.delta_y = wl_fixed_to_int(dy);
+
+   if (wl->locked_pointer)
+   {
+      wl->input.mouse.x += wl->input.mouse.delta_x;
+      wl->input.mouse.y += wl->input.mouse.delta_y;
+   }
+}
+
+static void 
+locked_pointer_locked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
+{
+}
+
+static void 
+locked_pointer_unlocked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
+{
+}
+
 static void wl_touch_handle_frame(void *data, struct wl_touch *wl_touch) { }
 
 static void wl_touch_handle_cancel(void *data, struct wl_touch *wl_touch)
@@ -460,6 +488,11 @@ static void wl_seat_handle_capabilities(void *data,
    {
       wl->wl_pointer = wl_seat_get_pointer(seat);
       wl_pointer_add_listener(wl->wl_pointer, &pointer_listener, wl);
+      wl->wl_relative_pointer =
+         zwp_relative_pointer_manager_v1_get_relative_pointer(
+	    wl->relative_pointer_manager, wl->wl_pointer);
+      zwp_relative_pointer_v1_add_listener(wl->wl_relative_pointer,
+         &relative_pointer_listener, wl);
    }
    else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && wl->wl_pointer)
    {
@@ -626,6 +659,17 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
             interface, zxdg_decoration_manager_v1_interface.name))
       wl->deco_manager = (struct zxdg_decoration_manager_v1*)wl_registry_bind(
             reg, id, &zxdg_decoration_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, zwp_pointer_constraints_v1_interface.name))
+   {
+      wl->pointer_constraints = (struct zwp_pointer_constraints_v1*)
+         wl_registry_bind(
+            reg, id, &zwp_pointer_constraints_v1_interface, MIN(version, 1));
+      wl->locked_pointer = NULL;
+   }
+   else if (string_is_equal(interface, zwp_relative_pointer_manager_v1_interface.name))
+      wl->relative_pointer_manager = (struct zwp_relative_pointer_manager_v1*)
+         wl_registry_bind(
+            reg, id, &zwp_relative_pointer_manager_v1_interface, MIN(version, 1));
 }
 
 static void wl_registry_handle_global_remove(void *data,
@@ -949,6 +993,15 @@ const struct wl_data_offer_listener data_offer_listener = {
    wl_data_offer_handle_offer,
    wl_data_offer_handle_source_actions,
    wl_data_offer_handle_action
+};
+
+const struct zwp_relative_pointer_v1_listener relative_pointer_listener = {
+   .relative_motion = handle_relative_motion,
+};
+
+const struct zwp_locked_pointer_v1_listener locked_pointer_listener = {
+   .locked = locked_pointer_locked,
+   .unlocked = locked_pointer_unlocked,
 };
 
 void flush_wayland_fd(void *data)
