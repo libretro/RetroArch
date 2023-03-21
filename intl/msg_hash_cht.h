@@ -3102,7 +3102,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-   "選單和遊戲使用相同的輸入裝置, 開啟時鍵盤的操作方式變更為控制器模式。"
+   "選單和遊戲使用相同的輸入方式, 開啟時鍵盤的操作方式變更為控制器模式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
