@@ -2793,7 +2793,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-   "開啟時選單中支援音訊通道音量。"
+   "開啟時在選單中支援播放混音串流。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
@@ -2809,7 +2809,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
-   "開啟背景音樂"
+   "開啟「背景音樂」"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
@@ -2848,7 +2848,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-   "隨插即用"
+   "控制器隨插即用"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
@@ -2857,11 +2857,11 @@ MSG_HASH(
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "禁用Windows快捷鍵 (需要重新啟動)"
+   "禁用視窗標誌鍵 (需要重新啟動)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
-   "開啟時禁用[Windows鍵]的組合快捷鍵。"
+   "開啟時禁用[Windows標誌鍵]所有的組合。"
    )
 #endif
 #ifdef ANDROID
@@ -3944,7 +3944,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
-   "快取核心資料庫"
+   "快取核心資訊"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
@@ -3952,7 +3952,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
-   "忽略即時存檔資訊"
+   "忽略其他支援"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
@@ -6689,11 +6689,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "禁用非主副模式用戶端"
+   "禁止非主副的用戶端"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "禁用非主副模式下的連接, 不推薦開啟除非裝置的效能非常低, 但網路的連線速度非常快。"
+   "禁止非主副模式下的連接, 不推薦開啟除非裝置的效能非常低, 但網路的連線速度非常快。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -6713,7 +6713,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "設定按鍵輸入延遲幀數, 用於掩蓋網路延遲, 可降低CPU使用率並減少畫面誤差, 代價是明顯的按鍵延遲。"
+   "設定按鍵輸入延遲幀數, 用於掩蓋網路延遲, 可降低CPU使用率並減少畫面誤差, 代價是很明顯的按鍵延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -6721,11 +6721,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "輸入延遲幀數範圍"
+   "輸入延遲範圍"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "設定按鍵輸入延遲幀數範圍, 用於掩蓋網路延遲, 可降低CPU使用率並減少畫面誤差, 代價是無預測的按鍵延遲。"
+   "設定輸入延遲幀數範圍, 用於掩蓋網路延遲, 可降低CPU使用率並減少畫面誤差, 代價是無預測的按鍵延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -6733,7 +6733,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
-   "主機NAT穿透"
+   "主機內網穿透"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
@@ -7753,11 +7753,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "只掃描核心支援的副檔名, 完成後設為列表的預設核心, 當自訂「指定副檔名」條件時, 此選項的掃描將被忽略。\n設定為<未指定>時使用「指定副檔名」條件掃描。"
+   "只掃描核心支援的副檔名, 完成後設為列表的預設核心, 當「指定檔案副檔名」自訂時此選項掃描條件將忽略。\n設定為<未指定>時使用「指定檔案副檔名」條件掃描。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
-   "指定副檔名"
+   "指定檔案副檔名"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
@@ -7765,7 +7765,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
-   "包含子資料夾"
+   "包含所有資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
