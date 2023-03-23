@@ -1003,8 +1003,8 @@ static LRESULT CALLBACK wnd_proc_common(
             lpMinMaxInfo->ptMinTrackSize.x = min_width;
             lpMinMaxInfo->ptMinTrackSize.y = min_height;
 
-            lpMinMaxInfo->ptMaxTrackSize.x = min_width  * 10;
-            lpMinMaxInfo->ptMaxTrackSize.y = min_height * 10;
+            lpMinMaxInfo->ptMaxTrackSize.x = min_width  * 20;
+            lpMinMaxInfo->ptMaxTrackSize.y = min_height * 20;
          }
          break;
       case WM_COMMAND:
