@@ -426,14 +426,14 @@ static void input_wl_grab_mouse(void *data, bool state)
 
    if (gfx->pointer_constraints)
    {
-      if (state)
+      if (state && !gfx->locked_pointer)
       {
          gfx->locked_pointer = zwp_pointer_constraints_v1_lock_pointer(gfx->pointer_constraints,
             gfx->surface, gfx->wl_pointer, NULL, ZWP_POINTER_CONSTRAINTS_V1_LIFETIME_PERSISTENT);
          zwp_locked_pointer_v1_add_listener(gfx->locked_pointer,
             &locked_pointer_listener, gfx);
       }
-      else if (gfx->locked_pointer)
+      else if (!state && gfx->locked_pointer)
       {
          zwp_locked_pointer_v1_destroy(gfx->locked_pointer);
          gfx->locked_pointer = NULL;
