@@ -284,6 +284,7 @@ static void stdin_command_reply(
 {
    /* Just write to stdout! */
    fwrite(data, 1, len, stdout);
+   fflush(stdout);
 }
 
 static void stdin_command_free(command_t *handle)
@@ -367,14 +368,18 @@ bool command_get_config_param(command_t *cmd, const char* arg)
 {
    size_t _len;
    char reply[8192];
-   const char      *value       = "unsupported";
-   settings_t       *settings   = config_get_ptr();
-   bool       video_fullscreen  = settings->bools.video_fullscreen;
-   const char *dir_runtime_log  = settings->paths.directory_runtime_log;
-   const char *log_dir          = settings->paths.log_dir;
-   const char *directory_cache  = settings->paths.directory_cache;
-   const char *directory_system = settings->paths.directory_system;
-   const char *path_username    = settings->paths.username;
+   #ifdef HAVE_BSV_MOVIE
+   char value_dynamic[256];
+   #endif
+   const char *value              = "unsupported";
+   settings_t *settings           = config_get_ptr();
+   bool       video_fullscreen    = settings->bools.video_fullscreen;
+   const char *dir_runtime_log    = settings->paths.directory_runtime_log;
+   const char *log_dir            = settings->paths.log_dir;
+   const char *directory_cache    = settings->paths.directory_cache;
+   const char *directory_system   = settings->paths.directory_system;
+   const char *path_username      = settings->paths.username;
+   input_driver_state_t *input_st = input_state_get_ptr();
 
    if (string_is_equal(arg, "video_fullscreen"))
    {
@@ -397,6 +402,16 @@ bool command_get_config_param(command_t *cmd, const char* arg)
       value = directory_system;
    else if (string_is_equal(arg, "netplay_nickname"))
       value = path_username;
+   #ifdef HAVE_BSV_MOVIE
+   else if (string_is_equal(arg, "active_replay")) {
+      value = value_dynamic;
+      value_dynamic[0] = '\0';
+      if(input_st->bsv_movie_state_handle)
+         snprintf(value_dynamic, sizeof(value_dynamic), "%lld %u", (long long)(input_st->bsv_movie_state_handle->identifier), input_st->bsv_movie_state.flags);
+      else
+         snprintf(value_dynamic, sizeof(value_dynamic), "0 0");
+   }
+   #endif
    /* TODO: query any string */
 
    strlcpy(reply, "GET_CONFIG_PARAM ", sizeof(reply));
@@ -673,10 +688,10 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    retro_ctx_size_info_t info;
    char reply[128]              = "";
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
-   char *reply_at               = reply + snprintf(reply, sizeof(reply) - 1, "LOAD_STATE_SLOT %d", slot);
    bool savestates_enabled      = core_info_current_supports_savestate();
    bool ret                     = false;
    state_path[0]                = '\0';
+   snprintf(reply, sizeof(reply) - 1, "LOAD_STATE_SLOT %d", slot);
    if (savestates_enabled)
    {
       runloop_get_savestate_path(state_path, sizeof(state_path), slot);
@@ -703,7 +718,6 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
    retro_ctx_size_info_t info;
    char reply[128]              = "";
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
-   char *reply_at               = reply + snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT %d", slot);
    bool savestates_enabled      = core_info_current_supports_savestate();
    bool ret                     = false;
    replay_path[0]               = '\0';
@@ -717,8 +731,15 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
    if (savestates_enabled)
    {
       ret = movie_start_playback(input_state_get_ptr(), replay_path);
-      if (ret)
+      if (ret) {
+         input_driver_state_t *input_st = input_state_get_ptr();
+         task_queue_wait(NULL,NULL);
+         if(input_st->bsv_movie_state_handle)
+            snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT %lld", (long long)(input_st->bsv_movie_state_handle->identifier));
+         else
+            snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT 0");
          command_post_state_loaded();
+      }
    }
    else
       ret = false;
