@@ -269,28 +269,44 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    if (wl->cursor.surface)
       wl_surface_destroy(wl->cursor.surface);
 
-   if (wl->seat)
-      wl_seat_destroy(wl->seat);
-   if (wl->xdg_shell)
-      xdg_wm_base_destroy(wl->xdg_shell);
-   if (wl->compositor)
-      wl_compositor_destroy(wl->compositor);
-   if (wl->registry)
-      wl_registry_destroy(wl->registry);
+   if (wl->idle_inhibitor)
+      zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
+   if (wl->deco)
+      zxdg_toplevel_decoration_v1_destroy(wl->deco);
+   if (wl->xdg_toplevel)
+      xdg_toplevel_destroy(wl->xdg_toplevel);
    if (wl->xdg_surface)
       xdg_surface_destroy(wl->xdg_surface);
    if (wl->surface)
       wl_surface_destroy(wl->surface);
-   if (wl->xdg_toplevel)
-      xdg_toplevel_destroy(wl->xdg_toplevel);
-   if (wl->idle_inhibit_manager)
-      zwp_idle_inhibit_manager_v1_destroy(wl->idle_inhibit_manager);
-   if (wl->deco)
-      zxdg_toplevel_decoration_v1_destroy(wl->deco);
+
    if (wl->deco_manager)
       zxdg_decoration_manager_v1_destroy(wl->deco_manager);
-   if (wl->idle_inhibitor)
-      zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
+   if (wl->idle_inhibit_manager)
+      zwp_idle_inhibit_manager_v1_destroy(wl->idle_inhibit_manager);
+   if (wl->pointer_constraints)
+      zwp_pointer_constraints_v1_destroy(wl->pointer_constraints);
+   if (wl->relative_pointer_manager)
+      zwp_relative_pointer_manager_v1_destroy (wl->relative_pointer_manager);
+   if (wl->seat)
+      wl_seat_destroy(wl->seat);
+   if (wl->xdg_shell)
+      xdg_wm_base_destroy(wl->xdg_shell);
+   if (wl->data_device_manager)
+      wl_data_device_manager_destroy (wl->data_device_manager);
+   while (!wl_list_empty(&wl->all_outputs)) {
+     output_info_t *oi;
+     oi = wl_container_of(wl->all_outputs.next, oi, link);
+     wl_output_destroy(oi->output);
+     wl_list_remove(&oi->link);
+     free(oi);
+   }
+   if (wl->shm)
+      wl_shm_destroy (wl->shm);
+   if (wl->compositor)
+      wl_compositor_destroy(wl->compositor);
+   if (wl->registry)
+      wl_registry_destroy(wl->registry);
 
    if (wl->input.dpy)
    {
@@ -298,13 +314,25 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       wl_display_disconnect(wl->input.dpy);
    }
 
-   wl->xdg_shell     = NULL;
-   wl->compositor    = NULL;
-   wl->registry      = NULL;
-   wl->input.dpy     = NULL;
-   wl->xdg_surface   = NULL;
-   wl->surface       = NULL;
-   wl->xdg_toplevel  = NULL;
+   wl->input.dpy                = NULL;
+   wl->registry                 = NULL;
+   wl->compositor               = NULL;
+   wl->shm                      = NULL;
+   wl->data_device_manager      = NULL;
+   wl->xdg_shell                = NULL;
+   wl->seat                     = NULL;
+   wl->relative_pointer_manager = NULL;
+   wl->pointer_constraints      = NULL;
+   wl->idle_inhibit_manager     = NULL;
+   wl->deco_manager             = NULL;
+   wl->surface                  = NULL;
+   wl->xdg_surface              = NULL;
+   wl->xdg_toplevel             = NULL;
+   wl->deco                     = NULL;
+   wl->idle_inhibitor           = NULL;
+   wl->wl_touch                 = NULL;
+   wl->wl_pointer               = NULL;
+   wl->wl_keyboard              = NULL;
 
    wl->width         = 0;
    wl->height        = 0;
