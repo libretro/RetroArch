@@ -424,7 +424,7 @@ static void input_wl_grab_mouse(void *data, bool state)
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
    gfx_ctx_wayland_data_t *gfx = (gfx_ctx_wayland_data_t*)wl->gfx;
 
-   if (gfx->pointer_constraints)
+   if (gfx->pointer_constraints && gfx->wl_pointer)
    {
       if (state && !gfx->locked_pointer)
       {
