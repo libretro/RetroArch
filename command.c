@@ -368,7 +368,9 @@ bool command_get_config_param(command_t *cmd, const char* arg)
 {
    size_t _len;
    char reply[8192];
+   #ifdef HAVE_BSV_MOVIE
    char value_dynamic[256];
+   #endif
    const char *value              = "unsupported";
    settings_t *settings           = config_get_ptr();
    bool       video_fullscreen    = settings->bools.video_fullscreen;
@@ -400,6 +402,7 @@ bool command_get_config_param(command_t *cmd, const char* arg)
       value = directory_system;
    else if (string_is_equal(arg, "netplay_nickname"))
       value = path_username;
+   #ifdef HAVE_BSV_MOVIE
    else if (string_is_equal(arg, "active_replay")) {
       value = value_dynamic;
       value_dynamic[0] = '\0';
@@ -408,6 +411,7 @@ bool command_get_config_param(command_t *cmd, const char* arg)
       else
          snprintf(value_dynamic, sizeof(value_dynamic), "0 0");
    }
+   #endif
    /* TODO: query any string */
 
    strlcpy(reply, "GET_CONFIG_PARAM ", sizeof(reply));
