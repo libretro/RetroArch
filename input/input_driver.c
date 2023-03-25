@@ -306,6 +306,9 @@ input_driver_t *input_drivers[] = {
 #ifdef HAVE_X11
    &input_x,
 #endif
+#ifdef HAVE_WAYLAND
+   &input_wayland,
+#endif
 #ifdef __WINRT__
    &input_uwp,
 #endif
