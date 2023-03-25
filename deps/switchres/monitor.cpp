@@ -35,6 +35,9 @@ int monitor_fill_range(monitor_range *range, const char *specs_line)
 {
 	monitor_range new_range;
 
+	if (strlen(specs_line) == 0)
+		return 0;
+
 	if (strcmp(specs_line, "auto")) {
 		int e = sscanf(specs_line, "%lf-%lf,%lf-%lf,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d,%d,%d,%d,%d",
 			&new_range.hfreq_min, &new_range.hfreq_max,
@@ -75,6 +78,9 @@ int monitor_fill_range(monitor_range *range, const char *specs_line)
 
 int monitor_fill_lcd_range(monitor_range *range, const char *specs_line)
 {
+	if (strlen(specs_line) == 0)
+		return 0;
+
 	if (strcmp(specs_line, "auto"))
 	{
 		if (sscanf(specs_line, "%lf-%lf", &range->vfreq_min, &range->vfreq_max) == 2)
@@ -115,7 +121,7 @@ int monitor_show_range(monitor_range *range)
 //  monitor_set_preset
 //============================================================
 
-int monitor_set_preset(char *type, monitor_range *range)
+int monitor_set_preset(const char *type, monitor_range *range)
 {
 	// PAL TV - 50 Hz/625
 	if (!strcmp(type, "pal"))

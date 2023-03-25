@@ -13,18 +13,20 @@
  **************************************************************/
 
 #include "display.h"
+#include "SDL.h"
+#include "SDL_syswm.h"
 
-class linux_display : public display_manager
+class sdl2_display : public display_manager
 {
 	public:
-		linux_display(display_settings *ds);
-		~linux_display();
-		bool init(void* = nullptr);
+		sdl2_display(display_settings *ds);
+		~sdl2_display();
+		bool init(void* pf_data);
 		bool set_mode(modeline *mode);
 
 	private:
+		SDL_Window* m_sdlwindow = NULL;
+
 		bool get_desktop_mode();
-		bool set_desktop_mode(modeline *mode, int flags);
-		bool restore_desktop_mode();
 		int get_available_video_modes();
 };

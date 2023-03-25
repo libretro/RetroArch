@@ -56,7 +56,19 @@ typedef struct videocrt_switch
    bool menu_active;
    bool hh_core;
 
+   bool rotated;
+   bool tmp_rotated;
+   bool kms_ctx;
 
+   /* Part of drmModeModeInfo struct from xf86drmMode.h */
+   uint32_t clock;
+   uint16_t hdisplay, hsync_start, hsync_end, htotal, hskew;
+   uint16_t vdisplay, vsync_start, vsync_end, vtotal, vscan;
+   uint32_t vrefresh;
+   int interlace;
+   int doublescan;
+   int hsync;
+   int vsync;
 } videocrt_switch_t;
 
 void crt_switch_res_core(
@@ -65,6 +77,7 @@ void crt_switch_res_core(
       unsigned width,
       unsigned height,
       float hz,
+      bool rotated,
       unsigned crt_mode,
       int crt_switch_center_adjust,
       int crt_switch_porch_adjust,

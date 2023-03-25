@@ -6880,6 +6880,14 @@ unsigned menu_displaylist_build_list(
                            PARSE_ACTION, false) == 0)
                      count++;
             }
+            else if (video_context_driver_get_flags(&flags))
+            {
+               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_CRT_SWITCHRES))
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
+                           PARSE_ACTION, false) == 0)
+                     count++;
+            }
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS,
