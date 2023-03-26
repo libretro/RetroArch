@@ -160,6 +160,7 @@ static bool slang_process_reflection(
             "FinalViewportSize",
             "FrameCount",
             "FrameDirection",
+            "Rotation",
          };
          int size = sizeof(names) / sizeof(*names);
          if (semantic < size)

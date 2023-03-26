@@ -532,6 +532,7 @@ class Pass
       void set_frame_count(uint64_t count) { frame_count = count; }
       void set_frame_count_period(unsigned p) { frame_count_period = p; }
       void set_frame_direction(int32_t dir) { frame_direction = dir; }
+      void set_rotation(uint32_t rot) { rotation = rot; }
       void set_name(const char *name) { pass_name = name; }
       const std::string &get_name() const { return pass_name; }
       glslang_filter_chain_filter get_source_filter() const { 
@@ -617,6 +618,7 @@ class Pass
 
       uint64_t frame_count        = 0;
       int32_t frame_direction     = 1;
+      uint32_t rotation           = 0;
       unsigned frame_count_period = 0;
       unsigned pass_number        = 0;
 
@@ -677,6 +679,7 @@ struct vulkan_filter_chain
       void set_frame_count(uint64_t count);
       void set_frame_count_period(unsigned pass, unsigned period);
       void set_frame_direction(int32_t direction);
+      void set_rotation(uint32_t rot);
       void set_pass_name(unsigned pass, const char *name);
 
       void add_static_texture(std::unique_ptr<StaticTexture> texture);
@@ -1651,6 +1654,13 @@ void vulkan_filter_chain::set_frame_direction(int32_t direction)
       passes[i]->set_frame_direction(direction);
 }
 
+void vulkan_filter_chain::set_rotation(uint32_t rot)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_rotation(rot);
+}
+
 void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
 {
    passes[pass]->set_name(name);
@@ -2483,6 +2493,9 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
                       frame_direction);
 
+   build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
+                      rotation);
+
    /* Standard inputs */
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
@@ -3244,6 +3257,13 @@ void vulkan_filter_chain_set_frame_direction(
       int32_t direction)
 {
    chain->set_frame_direction(direction);
+}
+
+void vulkan_filter_chain_set_rotation(
+      vulkan_filter_chain_t *chain,
+      uint32_t rot)
+{
+   chain->set_rotation(rot);
 }
 
 void vulkan_filter_chain_set_pass_name(

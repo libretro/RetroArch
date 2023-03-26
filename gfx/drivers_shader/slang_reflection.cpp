@@ -52,6 +52,7 @@ static const char *semantic_uniform_names[] = {
    "FinalViewportSize",
    "FrameCount",
    "FrameDirection",
+   "Rotation",
 };
 
 static slang_texture_semantic slang_name_to_texture_semantic(
@@ -245,6 +246,9 @@ static bool validate_type_for_semantic(const SPIRType &type, slang_semantic sem)
          /* int */
       case SLANG_SEMANTIC_FRAME_DIRECTION:
          return type.basetype == SPIRType::Int   && type.vecsize == 1 && type.columns == 1;
+         /* uint */
+      case SLANG_SEMANTIC_ROTATION:
+         return type.basetype == SPIRType::UInt  && type.vecsize == 1 && type.columns == 1;
          /* float */
       case SLANG_SEMANTIC_FLOAT_PARAMETER:
          return type.basetype == SPIRType::Float && type.vecsize == 1 && type.columns == 1;
