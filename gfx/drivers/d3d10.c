@@ -456,6 +456,7 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d10->frame.output_size,       /* FinalViewportSize */
             &d3d10->pass[i].frame_count,     /* FrameCount */
             &d3d10->pass[i].frame_direction, /* FrameDirection */
+            &d3d10->pass[i].rotation,        /* Rotation */
          }
       };
       /* clang-format on */
@@ -1428,6 +1429,8 @@ static bool d3d10_gfx_frame(
 #else
          d3d10->pass[i].frame_direction = 1;
 #endif
+
+         d3d10->pass[i].rotation = retroarch_get_rotation();
 
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {

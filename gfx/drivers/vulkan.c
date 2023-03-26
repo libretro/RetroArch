@@ -2391,6 +2391,8 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)vk->filter_chain,
          1);
 #endif
+   vulkan_filter_chain_set_rotation(
+         (vulkan_filter_chain_t*)vk->filter_chain, retroarch_get_rotation());
 
    /* Render offscreen filter chain passes. */
    {

@@ -1785,6 +1785,7 @@ static bool gl3_frame(void *data, const void *frame,
 #else
    gl3_filter_chain_set_frame_direction(gl->filter_chain, 1);
 #endif
+   gl3_filter_chain_set_rotation(gl->filter_chain, retroarch_get_rotation());
    gl3_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl3_filter_chain_build_offscreen_passes(gl->filter_chain,
          &gl->filter_chain_vp);

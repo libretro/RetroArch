@@ -927,7 +927,7 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu,
       int pass, float *ubo, int id,
       int size, int uniformVarCount, GX2UniformVar *uniformVars,
-      uint64_t frame_count, int32_t frame_direction)
+      uint64_t frame_count, int32_t frame_direction, uint32_t rotation)
 {
    unsigned i;
    for (i = 0; i < uniformVarCount; i++)
@@ -974,6 +974,13 @@ static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu,
       if (string_is_equal(id, "FrameDirection"))
       {
          *dst        = frame_direction;
+         *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
+         continue;
+      }
+
+      if (string_is_equal(id, "Rotation"))
+      {
+         *dst        = rotation;
          *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
          continue;
       }
@@ -1193,6 +1200,7 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
 #else
       int32_t frame_direction = 1;
 #endif
+      uint32_t rotation = retroarch_get_rotation();
 
       for (i = 0; i < wiiu->shader_preset->passes; i++)
       {
@@ -1204,7 +1212,7 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
             wiiu_gfx_update_uniform_block(wiiu, i, wiiu->pass[i].vs_ubos[j], j,
                   wiiu->pass[i].gfd->vs->uniformBlocks[j].size,
                   wiiu->pass[i].gfd->vs->uniformVarCount, wiiu->pass[i].gfd->vs->uniformVars,
-                  frame_count, frame_direction);
+                  frame_count, frame_direction, rotation);
             GX2SetVertexUniformBlock(wiiu->pass[i].gfd->vs->uniformBlocks[j].offset,
                   wiiu->pass[i].gfd->vs->uniformBlocks[j].size, wiiu->pass[i].vs_ubos[j]);
          }
@@ -1216,7 +1224,7 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
             wiiu_gfx_update_uniform_block(wiiu, i, wiiu->pass[i].ps_ubos[j], j,
                   wiiu->pass[i].gfd->ps->uniformBlocks[j].size,
                   wiiu->pass[i].gfd->ps->uniformVarCount, wiiu->pass[i].gfd->ps->uniformVars,
-                  frame_count, frame_direction);
+                  frame_count, frame_direction, rotation);
             GX2SetPixelUniformBlock(wiiu->pass[i].gfd->ps->uniformBlocks[j].offset,
                   wiiu->pass[i].gfd->ps->uniformBlocks[j].size, wiiu->pass[i].ps_ubos[j]);
          }

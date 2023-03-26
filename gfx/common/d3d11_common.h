@@ -290,6 +290,7 @@ typedef struct
       pass_semantics_t           semantics;
       uint32_t                   frame_count;
       int32_t                    frame_direction;
+      uint32_t                   rotation;
    } pass[GFX_MAX_SHADERS];
 
    struct video_shader* shader_preset;
