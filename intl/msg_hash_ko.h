@@ -3864,6 +3864,10 @@ MSG_HASH(
    "선제 프레임 실행"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
+   "컨트롤러 상태가 변경되면 최근 입력으로 코어 로직을 다시 실행합니다. 미리실행보다 빠르지만 상태 불러오기에서 코어에 발생할 수 있는 오디오 문제를 막지는 못합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    "선제 프레임 수"
    )
@@ -8780,6 +8784,10 @@ MSG_HASH(
    "셰이더 프리셋을 불러옵니다. 셰이더 파이프라인이 자동으로 설정됩니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
+   "셰이더 사전 설정을 직접 불러옵니다. 그에 따라 셰이더 메뉴가 업데이트됩니다.\n메뉴에 표시되는 배율은 사전 설정이 간단한 배율 조정 방법(예: 소스 배율 조정, X/Y에 대해 동일한 배율)을 사용하는 경우에만 신뢰할 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
    "앞에 불러오기"
    )
@@ -8818,6 +8826,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
    "셰이더 구성에 대한 변경 내용은 즉시 적용됩니다. 셰이더 패스, 필터링, FBO 스케일 등의 양을 변경한 경우 사용합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
+   "셰이더 패스의 크기, 필터링, FBO 배율과 같은 셰이더 설정을 변경한 후 이를 사용하여 변경 사항을 적용합니다.\n이러한 셰이더 설정을 변경하는 것은 다소 성능을 소모하는 작업이므로 정확히 수행해야 합니다.\n셰이더를 적용할 때 셰이더 설정은 임시 파일(retroarch.slangp/.cgp/.glslp)에 저장하고 로드합니다. 파일은 RetroArch가 종료된 후에도 지속되며 셰이더 디렉토리에 저장됩니[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -12892,6 +12904,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FOUND_LAST_REPLAY_SLOT,
    "최근 리플레이 슬롯 발견"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "현재 녹화에서 안됨"
    )
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
