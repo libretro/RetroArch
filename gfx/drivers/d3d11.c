@@ -954,6 +954,8 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
       d3d11->device                = *cached_device;
       d3d11->context               = *cached_context;
       d3d11->supportedFeatureLevel = cached_supportedFeatureLevel;
+      *cached_device               = NULL;
+      *cached_context              = NULL;
    }
    else
    {
