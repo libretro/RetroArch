@@ -72,12 +72,20 @@ MSG_HASH(
    "Wybierz, którego rdzenia użyć."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Przeglądaj podstawowe implementacje libretro. Gdy przeglądarka zaczyna się w zależności od ścieżki głównego katalogu. Jeśli puste, zacznie się w rootu.\nJeśli główny katalog jest katalogiem, menu będzie używać go jako górnego folderu. Jeśli główny katalog jest pełną ścieżką, rozpocznie się w folderze, w którym znajduje się plik."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Załaduj zawartość"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Wybierz zawartość do rozpoczęcia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "Przeglądaj zawartość. Aby załadować zawartość, potrzebujesz 'Rdze' do użycia, oraz pliku zawartości.\nAby kontrolować, gdzie menu zaczyna przeglądać zawartość, ustaw 'Katalog przeglądarki plików'. Jeśli nie jest ustawione, rozpocznie się w root.\nPrzeglądarka będzie filtrować rozszerzenia dla ostatniego rdzenia ustawionego w \"Załaduj Core\" i użyj tego rdzenia po załadowaniu treści."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -200,6 +208,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "Zamknij program."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Wyjdź z RetroArch. Zabijanie programu w jakikolwiek trudny sposób (SIGKILL, itp.) zakończy RetroArch bez zapisywania konfiguracji, itp. Na Unix-likach, SIGINT/SIGTERM pozwala na czyste deinicjalizację."
    )
 
 /* Main Menu > Load Core */
@@ -340,6 +352,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Pobieranie zawartości"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Pobierz bezpłatną zawartość dla wybranego rdzenia."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -1195,6 +1211,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
    "Plik czcionki TrueType."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "Plik obrazu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
