@@ -2308,12 +2308,10 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_WAYLAND:
 #ifdef HAVE_WAYLAND
          {
+            VkWaylandSurfaceCreateInfoKHR surf_info;
             PFN_vkCreateWaylandSurfaceKHR create;
             if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateWaylandSurfaceKHR", create))
                return false;
-            VkWaylandSurfaceCreateInfoKHR surf_info;
-
-            memset(&surf_info, 0, sizeof(surf_info));
 
             surf_info.sType   = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
             surf_info.pNext   = NULL;
@@ -2330,14 +2328,13 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_ANDROID:
 #ifdef ANDROID
          {
+            VkAndroidSurfaceCreateInfoKHR surf_info;
             PFN_vkCreateAndroidSurfaceKHR create;
             if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateAndroidSurfaceKHR", create))
                return false;
-            VkAndroidSurfaceCreateInfoKHR surf_info;
-
-            memset(&surf_info, 0, sizeof(surf_info));
 
             surf_info.sType  = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+            surf_into.pNext  = NULL;
             surf_info.flags  = 0;
             surf_info.window = (ANativeWindow*)surface;
 
@@ -2361,9 +2358,8 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateWin32SurfaceKHR", create))
                return false;
 
-            memset(&surf_info, 0, sizeof(surf_info));
-
             surf_info.sType     = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+            surf_info.pNext     = NULL;
             surf_info.flags     = 0;
             surf_info.hinstance = *(const HINSTANCE*)display;
             surf_info.hwnd      = *(const HWND*)surface;
@@ -2377,14 +2373,13 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_XLIB:
 #ifdef HAVE_XLIB
          {
+            VkXlibSurfaceCreateInfoKHR surf_info;
             PFN_vkCreateXlibSurfaceKHR create;
             if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateXlibSurfaceKHR", create))
                return false;
-            VkXlibSurfaceCreateInfoKHR surf_info;
-
-            memset(&surf_info, 0, sizeof(surf_info));
 
             surf_info.sType  = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+            surf_info.pNext  = NULL;
             surf_info.flags  = 0;
             surf_info.dpy    = (Display*)display;
             surf_info.window = *(const Window*)surface;
@@ -2400,14 +2395,13 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 #ifdef HAVE_X11
 #ifdef HAVE_XCB
          {
+            VkXcbSurfaceCreateInfoKHR surf_info;
             PFN_vkCreateXcbSurfaceKHR create;
             if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateXcbSurfaceKHR", create))
                return false;
-            VkXcbSurfaceCreateInfoKHR surf_info;
-
-            memset(&surf_info, 0, sizeof(surf_info));
 
             surf_info.sType      = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
+            surf_info.pNext      = NULL;
             surf_info.flags      = 0;
             surf_info.connection = XGetXCBConnection((Display*)display);
             surf_info.window     = *(const xcb_window_t*)surface;
@@ -2423,14 +2417,13 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_MIR:
 #ifdef HAVE_MIR
          {
+            VkMirSurfaceCreateInfoKHR surf_info;
             PFN_vkCreateMirSurfaceKHR create;
             if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateMirSurfaceKHR", create))
                return false;
-            VkMirSurfaceCreateInfoKHR surf_info;
-
-            memset(&surf_info, 0, sizeof(surf_info));
 
             surf_info.sType      = VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR;
+            surf_info.pNext      = NULL;
             surf_info.connection = display;
             surf_info.mirSurface = surface;
 
@@ -2453,12 +2446,10 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_MVK_MACOS:
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
          {
+            VkMacOSSurfaceCreateInfoMVK surf_info;
             PFN_vkCreateMacOSSurfaceMVK create;
             if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateMacOSSurfaceMVK", create))
                return false;
-            VkMacOSSurfaceCreateInfoMVK surf_info;
-
-            memset(&surf_info, 0, sizeof(surf_info));
 
             surf_info.sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
             surf_info.pNext = NULL;
@@ -2474,12 +2465,10 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_MVK_IOS:
 #ifdef HAVE_COCOATOUCH
          {
+            VkIOSSurfaceCreateInfoMVK surf_info;
             PFN_vkCreateIOSSurfaceMVK create;
             if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateIOSSurfaceMVK", create))
                return false;
-            VkIOSSurfaceCreateInfoMVK surf_info;
-
-            memset(&surf_info, 0, sizeof(surf_info));
 
             surf_info.sType = VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK;
             surf_info.pNext = NULL;
