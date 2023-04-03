@@ -56,30 +56,9 @@ typedef struct gfx_ctx_w_vk_data
 } gfx_ctx_w_vk_data_t;
 
 /* TODO/FIXME - static globals */
-static gfx_ctx_vulkan_data_t win32_vk;
-static void             *dinput_vk        = NULL;
-static int              win32_vk_interval = 0;
-
-void create_vk_context(HWND hwnd, bool *quit)
-{
-   RECT rect;
-   HINSTANCE instance;
-   unsigned width  = 0;
-   unsigned height = 0;
-
-   GetClientRect(hwnd, &rect);
-
-   instance = GetModuleHandle(NULL);
-   width    = rect.right - rect.left;
-   height   = rect.bottom - rect.top;
-
-   if (!vulkan_surface_create(&win32_vk, VULKAN_WSI_WIN32,
-            &instance, &hwnd,
-            width, height, win32_vk_interval))
-      *quit = true;
-
-   g_win32_flags |= WIN32_CMN_FLAG_INITED;
-}
+gfx_ctx_vulkan_data_t win32_vk;
+static void      *dinput_vk        = NULL;
+int              win32_vk_interval = 0;
 
 static void gfx_ctx_w_vk_swap_interval(void *data, int interval)
 {

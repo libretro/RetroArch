@@ -113,7 +113,7 @@ static void             *dinput_wgl       = NULL;
 static unsigned         win32_major       = 0;
 static unsigned         win32_minor       = 0;
 static int              win32_interval    = 0;
-static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
+enum gfx_ctx_api win32_api                = GFX_CTX_NONE;
 #ifdef HAVE_DYLIB
 static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll/libGLESv2.dll */
 #endif
@@ -170,7 +170,7 @@ static bool wgl_has_extension(const char *extension, const char *extensions)
    return false;
 }
 
-static void create_gl_context(HWND hwnd, bool *quit)
+void create_gl_context(HWND hwnd, bool *quit)
 {
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
    bool core_context                    = (win32_major * 1000 + win32_minor) >= 3001;
@@ -365,7 +365,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
 #endif
 
 #if defined(HAVE_OPENGLES) && defined(HAVE_EGL)
-static void create_gles_context(HWND hwnd, bool *quit)
+void create_gles_context(HWND hwnd, bool *quit)
 {
    EGLint n, major, minor;
    EGLint format;
@@ -416,28 +416,6 @@ error:
    return;
 }
 #endif
-
-void create_wgl_context(HWND hwnd, bool *quit)
-{
-   switch (win32_api)
-   {
-      case GFX_CTX_OPENGL_API:
-#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
-         create_gl_context(hwnd, quit);
-#endif
-         break;
-
-      case GFX_CTX_OPENGL_ES_API:
-#if defined (HAVE_OPENGLES)
-         create_gles_context(hwnd, quit);
-#endif
-         break;
-
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-}
 
 static void gfx_ctx_wgl_swap_interval(void *data, int interval)
 {

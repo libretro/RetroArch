@@ -1442,24 +1442,45 @@ LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+extern void create_gl_context(HWND hwnd, bool *quit);
+extern void create_gles_context(HWND hwnd, bool *quit);
+
+static LRESULT wnd_proc_wgl_wm_create(HWND hwnd)
+{
+   extern enum gfx_ctx_api win32_api;
+   bool is_quit = false;
+   switch (win32_api)
+   {
+      case GFX_CTX_OPENGL_API:
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
+         create_gl_context(hwnd, &is_quit);
+#endif
+         break;
+
+      case GFX_CTX_OPENGL_ES_API:
+#if defined (HAVE_OPENGLES)
+         create_gles_context(hwnd, &is_quit);
+#endif
+         break;
+
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+   if (is_quit)
+      g_win32_flags |= WIN32_CMN_FLAG_QUIT;
+   if (DragAcceptFiles_func)
+      DragAcceptFiles_func(hwnd, true);
+   g_win32_flags |= WIN32_CMN_FLAG_INITED;
+   return 0;
+}
+
 #ifdef HAVE_DINPUT
 LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_wgl_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      g_win32_flags |= WIN32_CMN_FLAG_INITED;
-      return 0;
-   }
-
+      return wnd_proc_wgl_wm_create(hwnd);
    return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
 }
 #endif
@@ -1468,20 +1489,8 @@ LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_wgl_winraw(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_wgl_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      g_win32_flags |= WIN32_CMN_FLAG_INITED;
-      return 0;
-   }
-
+      return wnd_proc_wgl_wm_create(hwnd);
    return wnd_proc_winraw_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
@@ -1489,42 +1498,48 @@ LRESULT CALLBACK wnd_proc_wgl_winraw(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_wgl_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
-
+      return wnd_proc_wgl_wm_create(hwnd);
    return wnd_proc_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
 
 #ifdef HAVE_VULKAN
+#include "vulkan_common.h"
+
+static LRESULT wnd_proc_wm_vk_create(HWND hwnd)
+{
+   extern int win32_vk_interval;
+   extern gfx_ctx_vulkan_data_t win32_vk;
+   RECT rect;
+   HINSTANCE instance;
+   unsigned width  = 0;
+   unsigned height = 0;
+
+   GetClientRect(hwnd, &rect);
+
+   instance = GetModuleHandle(NULL);
+   width    = rect.right - rect.left;
+   height   = rect.bottom - rect.top;
+
+   if (!vulkan_surface_create(&win32_vk,
+            VULKAN_WSI_WIN32,
+            &instance, &hwnd,
+            width, height, win32_vk_interval))
+      g_win32_flags |= WIN32_CMN_FLAG_QUIT;
+   g_win32_flags    |= WIN32_CMN_FLAG_INITED;
+   if (DragAcceptFiles_func)
+      DragAcceptFiles_func(hwnd, true);
+   return 0;
+}
 
 #ifdef HAVE_DINPUT
+
 LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_vk_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
-
+      return wnd_proc_wm_vk_create(hwnd);
    return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
 }
 #endif
@@ -1533,19 +1548,8 @@ LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_vk_winraw(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_vk_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
-
+      return wnd_proc_wm_vk_create(hwnd);
    return wnd_proc_winraw_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
@@ -1553,44 +1557,34 @@ LRESULT CALLBACK wnd_proc_vk_winraw(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_vk_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_vk_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
-
+      return wnd_proc_wm_vk_create(hwnd);
    return wnd_proc_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
 
 #ifdef HAVE_GDI
+static LRESULT wnd_proc_wm_gdi_create(HWND hwnd)
+{
+   extern HDC win32_gdi_hdc;
+   win32_gdi_hdc = GetDC(hwnd);
+   win32_setup_pixel_format(win32_gdi_hdc, false);
+   g_win32_flags |= WIN32_CMN_FLAG_INITED;
+   if (DragAcceptFiles_func)
+      DragAcceptFiles_func(hwnd, true);
+   return 0;
+}
 
 #ifdef HAVE_DINPUT
 LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-   
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_gdi_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
+      return wnd_proc_wm_gdi_create(hwnd);
    else if (message == WM_PAINT)
    {
-      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
+      win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+      gdi_t *gdi                    = (gdi_t*)video_driver_get_ptr();
 
       if (gdi && gdi->memDC)
       {
@@ -1628,21 +1622,12 @@ LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-   
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_gdi_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
+      return wnd_proc_wm_gdi_create(hwnd);
    else if (message == WM_PAINT)
    {
-      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
+      win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+      gdi_t *gdi                    = (gdi_t*)video_driver_get_ptr();
 
       if (gdi && gdi->memDC)
       {
@@ -1679,21 +1664,12 @@ LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-   
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_gdi_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
+      return wnd_proc_wm_gdi_create(hwnd);
    else if (message == WM_PAINT)
    {
-      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
+      win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+      gdi_t *gdi                    = (gdi_t*)video_driver_get_ptr();
 
       if (gdi && gdi->memDC)
       {
@@ -1863,10 +1839,9 @@ bool win32_get_metrics(void *data,
 
 void win32_monitor_init(void)
 {
+#if !defined(_XBOX)
    win32_common_state_t 
       *g_win32            = (win32_common_state_t*)&win32_st;
-
-#if !defined(_XBOX)
    g_win32->monitor_count = 0;
    EnumDisplayMonitors(NULL, NULL,
          win32_monitor_enum_proc, 0);
@@ -1887,8 +1862,6 @@ void win32_check_window(void *data,
       bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
-   win32_common_state_t 
-      *g_win32            = (win32_common_state_t*)&win32_st;
    bool video_is_threaded = video_driver_is_threaded();
    if (video_is_threaded)
       ui_companion_win32.application->process_events();
