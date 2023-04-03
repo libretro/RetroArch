@@ -2334,7 +2334,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
                return false;
 
             surf_info.sType  = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
-            surf_into.pNext  = NULL;
+            surf_info.pNext  = NULL;
             surf_info.flags  = 0;
             surf_info.window = (ANativeWindow*)surface;
 
