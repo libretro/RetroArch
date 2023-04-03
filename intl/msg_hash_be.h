@@ -67,8 +67,20 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
    "Заладаваць дыск"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   "Стварыць дамп дыска"
+   )
+MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
+   MENU_ENUM_SUBLABEL_DUMP_DISC,
+   "Стварыць дамп медыя дыска ва ўнутраным сховішчы. Ён будзе захаваны як файл вобразу."
+   )
 #ifdef HAVE_LAKKA
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+   "Плэйлісты"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    "Імпартаваць змесціва"
@@ -84,6 +96,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
    "Налады"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS,
+   "Наладзіць праграму."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
@@ -106,6 +122,10 @@ MSG_HASH(
    "Даведка"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_HELP_LIST,
+   "Даведацца больш аб тым, як працуе праграма."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
    "Перазапусціць RetroArch"
    )
@@ -113,15 +133,31 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
    "Перазапусціць праграму."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   "Выйсці з RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "Выйсці з праграмы."
+   )
 
 /* Main Menu > Load Core */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+   "Сцягнуць ядро"
+   )
 
 /* Main Menu > Load Content */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES,
    "Пачатковы каталог"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
+   "Спампоўкі"
    )
 
 /* Main Menu > Load Content > Playlists */
@@ -186,7 +222,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   "Звесткі аб сетцы"
+   "Звесткі аб сеціве"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   "Праглядзець сеціўныя інтэрфейсы ды асацыяваныя адрасы IP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
@@ -279,6 +319,26 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
    "Маецца, неабавязкова:"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   "Выдаліць ядро"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_DELETE,
+   "Выдаліць гэтае ядро з дыска."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   "Стварыць рэзервовую копію ядра"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   "Аднавіць з рэзервовай копіі"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
+   "Выдаліць рэзервовую копію"
+   )
 
 /* Main Menu > Information > System Information */
 
@@ -332,11 +392,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-   "Падтрымка сеткавага каманднага інтэрфейсу"
+   "Падтрымка сеціўнага каманднага інтэрфейсу"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
-   "Падтрымка сеткавага кантролера"
+   "Падтрымка сеціўнага кантролера"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
@@ -557,6 +617,26 @@ MSG_HASH(
    "Рэгіён"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   "Эксклюзіў кансолі"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   "Эксклюзіў платформы"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   "Адзнака"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
+   "Медыя"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
+   "Кіраванне"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
    "Налады"
    )
@@ -567,6 +647,62 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
    "Франшыза"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+   "Рэйтынг TGDB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+   "Рэйтынг часопіса Famitsu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+   "Агляд часопіса Edge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+   "Рэйтынг часопіса Edge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+   "Нумар часопіса Edge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "Месяц выхаду"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "Год выхаду"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+   "Рэйтынг BBFC"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+   "Рэйтынг ESRB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+   "Рэйтынг ELSPA"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   "Рэйтынг PEGI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+   "Апаратныя ўдасканаленні"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   "Рэйтынг CERO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+   "Серыйны нумар"
    )
 
 /* Main Menu > Configuration File */
@@ -648,10 +784,90 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
    "Просты файл."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "Файл вобраза."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   "Запіс"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+   "Змяніцы налады запісу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   "Карыстальніцкі інтэрфейс"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   "Змяніць налады карыстальніцкага інтэрфейса."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   "Дасягненні"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   "Змяніць налады дасягненняў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+   "Сеціва"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   "Змяніць налады сервера ды сеціва."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   "Плэйлісты"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+   "Змяніць налады плэйліста."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   "Карыстальнік"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "Змяніць налады рахунку, імя карыстальніка ды мовы."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+   "Каталог"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   "Змяніць прадвызначаныя каталогі змяшчэння файлаў."
+   )
 
 /* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "Медыя"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Прадукцыйнасць"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "Гук"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   "Сховішча"
+   )
 
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+   "Змяніць датычныя да Steam налады."
+   )
 #endif
 
 /* Settings > Drivers */
@@ -673,6 +889,38 @@ MSG_HASH(
    "Ужыты драйвер відэа."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   "Драйвер Direct3D 8 без падтрымкі шэйдараў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   "Драйвер Direct3D 9 з падтрымкай старога фармату шэйдараў Cg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   "Драйвер Direct3D 9 з падтрымкай фармату шэйдараў HLSL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "Драйвер Direct3D 10 з падтрымкай фармату шэдараў Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "Драйвер Direct3D 11 з падтрымкай HDR ды фармату шэйдараў Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "Драйвер Direct3D 12 з падтрымкай HDR ды фармату шэйдараў Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   "Драйвер Wii U. Падтрымлівае шэйдары Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   "Драйвер Switch. Падтрымлівае фармат шэйдараў GLSL."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
    "Бягучы драйвер відэа."
    )
@@ -685,6 +933,14 @@ MSG_HASH(
    "Ужыты драйвер аўдыё."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   "Устарэлы драйвер Open Sound System."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   "Прадвызначаны драйвер ALSA."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
    "Драйвер OpenAL."
    )
@@ -693,8 +949,48 @@ MSG_HASH(
    "Драйвер OpenSL."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
+   "Драйвер DirectSound. DirectSound выкарыстоўваецца пераважна з Windows 95 па Windows XP."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
+   "Драйвер Windows Audio Session API. WASAPI выкарыстоўваецца пераважна з Windows 7 і вышэй."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   "Камера"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+   "Ужыты драйвер камеры."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+   "Ужыты драйвер Bluetooth."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    "Ужыты драйвер Wi-Fi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
+   "Меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Ужыты драйвер меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   "Запіс"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+   "Ужыты драйвер запісу."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "Ужыты драйвер MIDI."
    )
 
 /* Settings > Video */
@@ -1059,7 +1355,79 @@ MSG_HASH(
 
 /* Settings > User Interface > Views > Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
+   "Паказаць 'Ядро'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,
+   "Паказаць налады 'Ядра'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
+   "Паказаць 'Канфігурацыю'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
+   "Паказаць налады 'Канфігурацыі'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+   "Паказаць 'Захоўванне'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+   "Паказаць налады 'Захоўвання'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
+   "Паказаць 'Дасягненні'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
+   "Паказаць налады 'дасягненняў'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
+   "Паказаць 'Сеціва'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
+   "Паказаць налады 'Сеціва'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
+   "Паказаць 'Плэйліст'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
+   "Паказаць налады 'Плэйліста'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
+   "Паказаць 'Карыстальніка'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
+   "Паказаць налады 'Карыстальніка'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
+   "Паказаць 'Каталог'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
+   "Паказаць налады 'Каталога'."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
+   "Паказаць 'Стрым'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
+   "Паказаць налады 'Стрыму'."
+   )
 
 /* Settings > User Interface > Appearance */
 
@@ -1074,6 +1442,10 @@ MSG_HASH(
 
 /* Settings > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   "Дасягненні"
+   )
 
 /* Settings > Achievements > Appearance */
 
@@ -1083,6 +1455,26 @@ MSG_HASH(
 
 /* Settings > Network */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
+   "Сеціўныя каманды"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
+   "Сеціўны камандны порт"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
+   "Сеціўны RetroPad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
+   "Базавы порт сеціўнага RetroPad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
+   "Сеціўны RetroPad карыстальніка %d"
+   )
 
 /* Settings > Network > Updater */
 
@@ -1133,8 +1525,16 @@ MSG_HASH(
 /* Settings > Directory */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   "Спампоўкі"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
    "Шэйдары відэа"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   "Плэйлісты"
    )
 
 #ifdef HAVE_MIST
@@ -1151,6 +1551,10 @@ MSG_HASH(
 
 /* Netplay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
+   "Вузел"
+   )
 
 /* Netplay > Host */
 
@@ -1204,6 +1608,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
    "Шэйдары"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   "Дасягненні"
    )
 
 /* Quick Menu > Options */
@@ -1272,12 +1680,20 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Памылка сеціву"
+)
 
 /* Quick Menu > Information */
 
 
 /* Miscellaneous UI Items */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
+   "Сеціва не знойдзена"
+   )
 
 /* Settings Options */
 
@@ -1362,12 +1778,20 @@ MSG_HASH(
    "Назва"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   "Плэйлісты"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE,
    "Ядро"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    "Звесткі"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
+   "Памылка сеціву"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
@@ -1379,6 +1803,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
    "Гісторыя"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER,
+   "Карыстальнік"
    )
 
 /* Unused (Only Exist in Translation Files) */
@@ -1392,12 +1820,20 @@ MSG_HASH(
    "Даведка"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
+   "Сканаваць лакальнае сеціва"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
    "Апісанне"
    )
 
 /* Unused (Needs Confirmation) */
 
+MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
+   "Спампоўкі"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
    "Звесткі"
@@ -1421,12 +1857,24 @@ MSG_HASH(
    MSG_SHADER,
    "Шэйдар"
    )
+MSG_HASH(
+   MSG_SCANNING_WIRELESS_NETWORKS,
+   "Сканаванне бяздротавых сетак..."
+   )
 
 /* Lakka */
 
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   "Злучыцца з сецівам"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
+   "Злучыцца з сецівам"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "Перазапусціць RetroArch"
