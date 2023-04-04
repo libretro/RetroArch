@@ -171,8 +171,10 @@ static bool record_driver_init_first(
 bool recording_deinit(void)
 {
    recording_state_t *recording_st = &recording_state;
+#ifdef HAVE_FFMPEG
    settings_t *settings            = config_get_ptr();
    bool history_list_enable        = settings->bools.history_list_enable;
+#endif
 
    if (     !recording_st->data 
 		   || !recording_st->driver)
