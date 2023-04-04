@@ -10,15 +10,25 @@ extern "C" {
 /**
  * A block of memory for variable length data (like strings and arrays).
  */
-typedef struct rc_api_buffer_t {
+typedef struct rc_api_buffer_chunk_t {
   /* The current location where data is being written */
   char* write;
   /* The first byte past the end of data where writing cannot occur */
   char* end;
+  /* The first byte of the data */
+  char* start;
   /* The next block in the allocated memory chain */
-  struct rc_api_buffer_t* next;
-  /* The buffer containing the data. The actual size may be larger than 256 bytes for buffers allocated in
-   * the next chain. The 256 byte size specified is for the initial allocation within the container object. */
+  struct rc_api_buffer_chunk_t* next;
+}
+rc_api_buffer_chunk_t;
+
+/**
+ * A preallocated block of memory for variable length data (like strings and arrays).
+ */
+typedef struct rc_api_buffer_t {
+  /* The chunk data (will point at the local data member) */
+  struct rc_api_buffer_chunk_t chunk;
+  /* Small chunk of memory pre-allocated for the chunk */
   char data[256];
 }
 rc_api_buffer_t;
@@ -41,7 +51,7 @@ rc_api_request_t;
  * Common attributes for all server responses.
  */
 typedef struct rc_api_response_t {
-  /* Server-provided success indicator (non-zero on failure) */
+  /* Server-provided success indicator (non-zero on success, zero on failure) */
   int succeeded;
   /* Server-provided message associated to the failure */
   const char* error_message;

@@ -42,8 +42,8 @@ void rc_parse_trigger_internal(rc_trigger_t* self, const char** memaddr, rc_pars
   *next = 0;
   *memaddr = aux;
 
-  self->measured_value = 0;
   self->measured_target = parse->measured_target;
+  self->measured_value = parse->measured_target ? RC_MEASURED_UNKNOWN : 0;
   self->measured_as_percent = parse->measured_as_percent;
   self->state = RC_TRIGGER_STATE_WAITING;
   self->has_hits = 0;
@@ -283,6 +283,9 @@ void rc_reset_trigger(rc_trigger_t* self) {
   rc_reset_trigger_hitcounts(self);
 
   self->state = RC_TRIGGER_STATE_WAITING;
-  self->measured_value = 0;
+
+  if (self->measured_target)
+    self->measured_value = RC_MEASURED_UNKNOWN;
+
   self->has_hits = 0;
 }

@@ -59,6 +59,8 @@ static int rc_parse_operand_lua(rc_operand_t* self, const char** memaddr, rc_par
     self->value.luafunc = luaL_ref(parse->L, LUA_REGISTRYINDEX);
   }
 
+#else
+  (void)parse;
 #endif /* RC_DISABLE_LUA */
 
   self->type = RC_OPERAND_LUA;

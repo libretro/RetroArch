@@ -14,6 +14,7 @@ typedef struct rc_api_url_builder_t {
   char* write;
   char* start;
   char* end;
+  /* pointer to a preallocated rc_api_buffer_t */
   rc_api_buffer_t* buffer;
   int result;
 }
@@ -22,6 +23,8 @@ rc_api_url_builder_t;
 void rc_url_builder_init(rc_api_url_builder_t* builder, rc_api_buffer_t* buffer, size_t estimated_size);
 void rc_url_builder_append(rc_api_url_builder_t* builder, const char* data, size_t len);
 const char* rc_url_builder_finalize(rc_api_url_builder_t* builder);
+
+#define RC_JSON_NEW_FIELD(n) {n,0,0,0}
 
 typedef struct rc_json_field_t {
   const char* name;

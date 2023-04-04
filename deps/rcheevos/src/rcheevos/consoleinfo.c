@@ -135,6 +135,9 @@ const char* rc_console_name(int console_id)
     case RC_CONSOLE_NINTENDO_DS:
       return "Nintendo DS";
 
+    case RC_CONSOLE_NINTENDO_DSI:
+      return "Nintendo DSi";
+
     case RC_CONSOLE_NINTENDO_3DS:
       return "Nintendo 3DS";
 
@@ -204,8 +207,14 @@ const char* rc_console_name(int console_id)
     case RC_CONSOLE_THOMSONTO8:
       return "Thomson TO8";
 
+    case RC_CONSOLE_TI83:
+      return "TI-83";
+
     case RC_CONSOLE_TIC80:
       return "TIC-80";
+
+    case RC_CONSOLE_UZEBOX:
+      return "Uzebox";
 
     case RC_CONSOLE_VECTREX:
       return "Vectrex";
@@ -441,6 +450,13 @@ static const rc_memory_region_t _rc_memory_regions_gameboy_advance[] = {
 };
 static const rc_memory_regions_t rc_memory_regions_gameboy_advance = { _rc_memory_regions_gameboy_advance, 2 };
 
+/* ===== GameCube ===== */
+/* https://wiibrew.org/wiki/Memory_map */
+static const rc_memory_region_t _rc_memory_regions_gamecube[] = {
+    { 0x00000000U, 0x017FFFFF, 0x80000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+};
+static const rc_memory_regions_t rc_memory_regions_gamecube = { _rc_memory_regions_gamecube, 1 };
+
 /* ===== Game Gear ===== */
 /* http://www.smspower.org/Development/MemoryMap */
 static const rc_memory_region_t _rc_memory_regions_game_gear[] = {
@@ -631,6 +647,13 @@ static const rc_memory_region_t _rc_memory_regions_nintendo_ds[] = {
 };
 static const rc_memory_regions_t rc_memory_regions_nintendo_ds = { _rc_memory_regions_nintendo_ds, 1 };
 
+/* ===== Nintendo DSi ===== */
+/* https://problemkaputt.de/gbatek.htm#dsiiomap */
+static const rc_memory_region_t _rc_memory_regions_nintendo_dsi[] = {
+    { 0x000000U, 0xFFFFFFU, 0x02000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+};
+static const rc_memory_regions_t rc_memory_regions_nintendo_dsi = { _rc_memory_regions_nintendo_dsi, 1 };
+
 /* ===== Oric ===== */
 static const rc_memory_region_t _rc_memory_regions_oric[] = {
     /* actual size depends on machine type - up to 64KB */
@@ -762,6 +785,13 @@ static const rc_memory_region_t _rc_memory_regions_thomson_to8[] = {
 };
 static const rc_memory_regions_t rc_memory_regions_thomson_to8 = { _rc_memory_regions_thomson_to8, 1 };
 
+/* ===== TI-83 ===== */
+/* https://tutorials.eeems.ca/ASMin28Days/lesson/day03.html#mem */
+static const rc_memory_region_t _rc_memory_regions_ti83[] = {
+    { 0x000000U, 0x007FFFU, 0x008000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+};
+static const rc_memory_regions_t rc_memory_regions_ti83 = { _rc_memory_regions_ti83, 1 };
+
 /* ===== TIC-80 ===== */
 /* https://github.com/nesbox/TIC-80/wiki/RAM */
 static const rc_memory_region_t _rc_memory_regions_tic80[] = {
@@ -777,6 +807,13 @@ static const rc_memory_region_t _rc_memory_regions_tic80[] = {
     { 0x014E04U, 0x017FFFU, 0x014E04U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM"}
 };
 static const rc_memory_regions_t rc_memory_regions_tic80 = { _rc_memory_regions_tic80, 10 };
+
+/* ===== Uzebox ===== */
+/* https://uzebox.org/index.php */
+static const rc_memory_region_t _rc_memory_regions_uzebox[] = {
+    { 0x000000U, 0x000FFFU, 0x000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+};
+static const rc_memory_regions_t rc_memory_regions_uzebox = { _rc_memory_regions_uzebox, 1 };
 
 /* ===== Vectrex ===== */
 /* https://roadsidethoughts.com/vectrex/vectrex-memory-map.htm */
@@ -811,6 +848,14 @@ static const rc_memory_region_t _rc_memory_regions_wasm4[] = {
     */
 };
 static const rc_memory_regions_t rc_memory_regions_wasm4 = { _rc_memory_regions_wasm4, 1 };
+
+/* ===== Wii ===== */
+/* https://wiibrew.org/wiki/Memory_map */
+static const rc_memory_region_t _rc_memory_regions_wii[] = {
+    { 0x00000000U, 0x017FFFFF, 0x80000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    { 0x01800000U, 0x057FFFFF, 0x90000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+};
+static const rc_memory_regions_t rc_memory_regions_wii = { _rc_memory_regions_wii, 2 };
 
 /* ===== WonderSwan ===== */
 /* http://daifukkat.su/docs/wsman/#ovr_memmap */
@@ -892,6 +937,9 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
     case RC_CONSOLE_GAMEBOY_ADVANCE:
       return &rc_memory_regions_gameboy_advance;
 
+    case RC_CONSOLE_GAMECUBE:
+      return &rc_memory_regions_gamecube;
+
     case RC_CONSOLE_GAME_GEAR:
       return &rc_memory_regions_game_gear;
 
@@ -930,6 +978,9 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
 
     case RC_CONSOLE_NINTENDO_DS:
       return &rc_memory_regions_nintendo_ds;
+
+    case RC_CONSOLE_NINTENDO_DSI:
+      return &rc_memory_regions_nintendo_dsi;
 
     case RC_CONSOLE_ORIC:
       return &rc_memory_regions_oric;
@@ -979,8 +1030,14 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
     case RC_CONSOLE_THOMSONTO8:
       return &rc_memory_regions_thomson_to8;
 
+    case RC_CONSOLE_TI83:
+      return &rc_memory_regions_ti83;
+
     case RC_CONSOLE_TIC80:
       return &rc_memory_regions_tic80;
+
+    case RC_CONSOLE_UZEBOX:
+      return &rc_memory_regions_uzebox;
 
     case RC_CONSOLE_VECTREX:
       return &rc_memory_regions_vectrex;
@@ -990,6 +1047,9 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
 
     case RC_CONSOLE_WASM4:
       return &rc_memory_regions_wasm4;
+
+    case RC_CONSOLE_WII:
+      return &rc_memory_regions_wii;
 
     case RC_CONSOLE_WONDERSWAN:
       return &rc_memory_regions_wonderswan;
