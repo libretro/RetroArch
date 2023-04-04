@@ -218,10 +218,11 @@ uint8_t* rcheevos_patch_address(unsigned address)
 static unsigned rcheevos_peek(unsigned address,
       unsigned num_bytes, void* ud)
 {
-   uint8_t* data = rc_libretro_memory_find(
-         &rcheevos_locals.memory, address);
+   unsigned avail;
+   uint8_t* data = rc_libretro_memory_find_avail(
+         &rcheevos_locals.memory, address, &avail);
 
-   if (data)
+   if (data && avail >= num_bytes)
    {
       switch (num_bytes)
       {

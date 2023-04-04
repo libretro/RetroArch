@@ -53,6 +53,7 @@ int rc_libretro_memory_init(rc_libretro_memory_regions_t* regions, const struct 
 void rc_libretro_memory_destroy(rc_libretro_memory_regions_t* regions);
 
 unsigned char* rc_libretro_memory_find(const rc_libretro_memory_regions_t* regions, unsigned address);
+unsigned char* rc_libretro_memory_find_avail(const rc_libretro_memory_regions_t* regions, unsigned address, unsigned* avail);
 
 /*****************************************************************************\
 | Disk Identification                                                         |

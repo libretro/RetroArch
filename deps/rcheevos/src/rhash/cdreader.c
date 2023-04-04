@@ -124,6 +124,8 @@ static void* cdreader_open_bin_track(const char* path, uint32_t track)
     return NULL;
 
   cdrom = (struct cdrom_t*)calloc(1, sizeof(*cdrom));
+  if (!cdrom)
+    return NULL;
   cdrom->file_handle = file_handle;
 #ifndef NDEBUG
   cdrom->track_id = track;
@@ -343,7 +345,7 @@ static void* cdreader_open_cue_track(const char* path, uint32_t track)
           ++ptr;
 
         /* convert mm:ss:ff to sector count */
-        sscanf(ptr, "%d:%d:%d", &m, &s, &f);
+        sscanf_s(ptr, "%d:%d:%d", &m, &s, &f);
         sector_offset = ((m * 60) + s) * 75 + f;
 
         if (current_track.first_sector == -1)
@@ -719,8 +721,8 @@ static void* cdreader_open_gdi_track(const char* path, uint32_t track)
           largest_track_size = track_size;
           largest_track = current_track;
           largest_track_lba = lba;
-          strcpy(largest_track_file, file);
-          strcpy(largest_track_sector_size, sector_size);
+          strcpy_s(largest_track_file, sizeof(largest_track_file), file);
+          strcpy_s(largest_track_sector_size, sizeof(largest_track_sector_size), sector_size);
         }
       }
     }
@@ -748,8 +750,8 @@ static void* cdreader_open_gdi_track(const char* path, uint32_t track)
   if (largest_track != 0 && largest_track != current_track)
   {
     current_track = largest_track;
-    strcpy(file, largest_track_file);
-    strcpy(sector_size, largest_track_sector_size);
+    strcpy_s(file, sizeof(file), largest_track_file);
+    strcpy_s(sector_size, sizeof(sector_size), largest_track_sector_size);
     lba = largest_track_lba;
   }
 
@@ -869,7 +871,7 @@ void rc_hash_get_default_cdreader(struct rc_hash_cdreader* cdreader)
   cdreader->first_track_sector = cdreader_first_track_sector;
 }
 
-void rc_hash_init_default_cdreader()
+void rc_hash_init_default_cdreader(void)
 {
   struct rc_hash_cdreader cdreader;
   rc_hash_get_default_cdreader(&cdreader);

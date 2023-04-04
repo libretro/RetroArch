@@ -1,3 +1,14 @@
+# v10.7.0
+* add hash method and memory map for Gamecube
+* add console enum, hash method, and memory map for DSi
+* add console enum, hash method, and memory map for TI-83
+* add console enum, hash method, and memory map for Uzebox
+* add constant for rcheevos version; include in start session server API call
+* fix SubSource calculations using float values
+* fix game identification for homebrew Jaguar CD games
+* fix game identification for CD with many files at root directory
+* address _CRT_SECURE_NO_WARNINGS warnings
+
 # v10.6.0
 * add RC_RUNTIME_EVENT_ACHIEVEMENT_PROGRESS_UPDATED
 * use optimized comparators for most common condition logic
