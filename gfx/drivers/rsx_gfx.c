@@ -1119,6 +1119,199 @@ static void rsx_draw_menu_vertices(rsx_t* rsx)
 }
 #endif
 
+#ifdef HAVE_OVERLAY
+static void rsx_draw_overlay_vertices(rsx_t* rsx, unsigned image)
+{
+   rsx_vertex_t *vertices = &rsx->overlay[image].vertices[0];
+
+   rsxAddressToOffset(&vertices[0].x, &rsx->pos_offset[RSX_SHADER_STOCK_BLEND]);
+   rsxAddressToOffset(&vertices[0].u, &rsx->uv_offset[RSX_SHADER_STOCK_BLEND]);
+   rsxAddressToOffset(&vertices[0].r, &rsx->col_offset[RSX_SHADER_STOCK_BLEND]);
+
+   rsxBindVertexArrayAttrib(rsx->context, rsx->pos_index[RSX_SHADER_STOCK_BLEND]->index, 0,
+         rsx->pos_offset[RSX_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+   rsxBindVertexArrayAttrib(rsx->context, rsx->uv_index[RSX_SHADER_STOCK_BLEND]->index, 0,
+         rsx->uv_offset[RSX_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 2, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+   rsxBindVertexArrayAttrib(rsx->context, rsx->col_index[RSX_SHADER_STOCK_BLEND]->index, 0,
+         rsx->col_offset[RSX_SHADER_STOCK_BLEND], sizeof(rsx_vertex_t), 4, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
+
+   rsxLoadVertexProgram(rsx->context, rsx->vpo[RSX_SHADER_STOCK_BLEND], rsx->vp_ucode[RSX_SHADER_STOCK_BLEND]);
+   rsxSetVertexProgramParameter(rsx->context, rsx->vpo[RSX_SHADER_STOCK_BLEND], rsx->proj_matrix[RSX_SHADER_STOCK_BLEND], (float *)&rsx->mvp_no_rot);
+   rsxLoadFragmentProgramLocation(rsx->context, rsx->fpo[RSX_SHADER_STOCK_BLEND], rsx->fp_offset[RSX_SHADER_STOCK_BLEND], GCM_LOCATION_RSX);
+
+   rsxSetBlendEnable(rsx->context, GCM_TRUE);
+   rsxSetBlendFunc(rsx->context, GCM_SRC_ALPHA, GCM_ONE_MINUS_SRC_ALPHA, GCM_SRC_ALPHA, GCM_ONE_MINUS_SRC_ALPHA);
+   rsxSetBlendEquation(rsx->context, GCM_FUNC_ADD, GCM_FUNC_ADD);
+
+   rsxClearSurface(rsx->context, GCM_CLEAR_Z);
+   rsxDrawVertexArray(rsx->context, GCM_TYPE_TRIANGLE_STRIP, 0, 4);
+
+   rsxSetBlendEnable(rsx->context, GCM_FALSE);
+}
+
+static void rsx_overlay_vertex_geom(void *data,
+      unsigned image,
+      float x, float y,
+      float w, float h)
+{
+   rsx_t              *rsx = (rsx_t *)data;
+   rsx_overlay_t *o = NULL;
+
+   if (rsx)
+      o = (rsx_overlay_t *)&rsx->overlay[image];
+
+   if (!o)
+      return;
+
+   /* Flipped, so we preserve top-down semantics. */
+   y                      = 1.0f - y;
+   h                      = -h;
+
+   o->vertices[0].x       = x;
+   o->vertices[0].y       = y;
+   o->vertices[1].x       = x + w;
+   o->vertices[1].y       = y;
+   o->vertices[2].x       = x;
+   o->vertices[2].y       = y + h;
+   o->vertices[3].x       = x + w;
+   o->vertices[3].y       = y + h;
+}
+
+static void rsx_overlay_tex_geom(void *data,
+      unsigned image,
+      float x, float y,
+      float w, float h)
+{
+   rsx_t              *rsx = (rsx_t *)data;
+   rsx_overlay_t *o = NULL;
+
+   if (rsx)
+      o = (rsx_overlay_t *)&rsx->overlay[image];
+
+   if (!o)
+      return;
+
+   o->vertices[0].u       = x;
+   o->vertices[0].v       = y;
+   o->vertices[1].u       = x + w;
+   o->vertices[1].v       = y;
+   o->vertices[2].u       = x;
+   o->vertices[2].v       = y + h;
+   o->vertices[3].u       = x + w;
+   o->vertices[3].v       = y + h;
+}
+
+static void rsx_free_overlay(rsx_t *rsx)
+{
+   unsigned i;
+
+   for (i = 0; i < rsx->overlays; i++)
+   {
+      if (rsx->overlay[i].texture.data)
+         rsxFree(rsx->overlay[i].texture.data);
+      if (rsx->overlay[i].vertices)
+         rsxFree(rsx->overlay[i].vertices);
+   }
+
+   free(rsx->overlay);
+   rsx->overlay = NULL;
+   rsx->overlays = 0;
+}
+
+static bool rsx_overlay_load(void *data,
+      const void *image_data, unsigned num_images)
+{
+   unsigned i, j;
+   rsx_t *rsx = (rsx_t *)data;
+   const struct texture_image *images = (const struct texture_image *)image_data;
+
+   rsx_free_overlay(rsx);
+   rsx->overlay = (rsx_overlay_t *)calloc(num_images, sizeof(rsx_overlay_t));
+
+   if (!rsx->overlay)
+      return false;
+
+   rsx->overlays = num_images;
+
+   for (i = 0; i < num_images; i++)
+   {
+      rsx_overlay_t *o = (rsx_overlay_t *)&rsx->overlay[i];
+      o->vertices = (rsx_vertex_t *)rsxMemalign(128, sizeof(rsx_vertex_t) * RSX_MAX_VERTICES);
+
+      /* Default. Stretch to whole screen. */
+      rsx_overlay_tex_geom(rsx, i, 0, 0, 1, 1);
+      rsx_overlay_vertex_geom(rsx, i, 0, 0, 1, 1);
+      for (j = 0; j < RSX_MAX_VERTICES; j++)
+      {
+         o->vertices[j].r = 1.0f;
+         o->vertices[j].g = 1.0f;
+         o->vertices[j].b = 1.0f;
+         o->vertices[j].a = 1.0f;
+      }
+      o->texture.data = NULL;
+      o->texture.height = images[i].height;
+      o->texture.width = images[i].width;
+      rsx_load_texture_data(rsx, &o->texture, images[i].pixels, images[i].width, images[i].height, images[i].width*4,
+                            true, false, TEXTURE_FILTER_LINEAR);
+   }
+
+   return true;
+}
+
+static void rsx_overlay_enable(void *data, bool state)
+{
+   rsx_t *rsx = (rsx_t *)data;
+   rsx->overlay_enable = state;
+}
+
+static void rsx_overlay_full_screen(void *data, bool enable)
+{
+   rsx_t *rsx = (rsx_t *)data;
+   rsx->overlay_full_screen = enable;
+}
+
+static void rsx_overlay_set_alpha(void *data, unsigned image, float mod)
+{
+   rsx_t *rsx = (rsx_t *)data;
+
+   if (rsx)
+   {
+      rsx->overlay[image].vertices[0].a = mod;
+      rsx->overlay[image].vertices[1].a = mod;
+      rsx->overlay[image].vertices[2].a = mod;
+      rsx->overlay[image].vertices[3].a = mod;
+   }
+}
+
+static void rsx_render_overlay(void *data)
+{
+   unsigned i;
+
+   rsx_t *rsx = (rsx_t *)data;
+
+   rsx_set_viewport(rsx, rsx->width, rsx->height, true, true);
+
+   for (i = 0; i < rsx->overlays; i++)
+   {
+      rsx_set_texture(rsx, &rsx->overlay[i].texture);
+      rsx_draw_overlay_vertices(rsx, i);
+   }
+}
+
+static const video_overlay_interface_t rsx_overlay_interface =
+{
+   rsx_overlay_enable,
+   rsx_overlay_load,
+   rsx_overlay_tex_geom,
+   rsx_overlay_vertex_geom,
+   rsx_overlay_full_screen,
+   rsx_overlay_set_alpha,
+};
+
+static void rsx_get_overlay_interface(void *data,
+      const video_overlay_interface_t **iface) {*iface = &rsx_overlay_interface;}
+#endif
+
 static void rsx_update_screen(rsx_t* gcm)
 {
    rsxBuffer *buffer     = NULL;
@@ -1214,6 +1407,11 @@ static bool rsx_frame(void* data, const void* frame,
          font_driver_render_msg(gcm,
                video_info->stat_text,
                osd_params, NULL);
+#endif
+
+#ifdef HAVE_OVERLAY
+   if (gcm->overlay_enable)
+      rsx_render_overlay(gcm);
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
@@ -1427,7 +1625,7 @@ video_driver_t video_gcm =
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-   NULL,
+   rsx_get_overlay_interface,
 #endif
    rsx_get_poke_interface,
    rsx_wrap_type_to_enum,

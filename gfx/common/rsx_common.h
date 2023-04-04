@@ -88,6 +88,14 @@ typedef struct
    u32 height;
 } rsx_texture_t;
 
+#ifdef HAVE_OVERLAY
+typedef struct
+{
+   rsx_vertex_t *vertices;
+   rsx_texture_t texture;
+} rsx_overlay_t;
+#endif
+
 typedef struct
 {
    int height;
@@ -148,6 +156,13 @@ typedef struct
    video_info_t video_info;
 
    float menu_texture_alpha;
+
+#ifdef HAVE_OVERLAY
+   rsx_overlay_t *overlay;
+   unsigned overlays;
+   bool overlay_enable;
+   bool overlay_full_screen;
+#endif
 
    unsigned rotation;
 
