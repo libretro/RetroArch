@@ -1862,6 +1862,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 05D7753120A55D2700646447 /* BaseConfig.xcconfig */;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
@@ -1944,6 +1945,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 05D7753120A55D2700646447 /* BaseConfig.xcconfig */;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;

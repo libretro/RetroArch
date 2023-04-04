@@ -1168,7 +1168,6 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
 #ifdef HAVE_BSV_MOVIE
       else if (memcmp(marker, RASTATE_REPLAY_BLOCK, 4) == 0)
       {
-         input_driver_state_t *input_st = input_state_get_ptr();
 #ifdef HAVE_REWIND
          bool frame_is_reversed         = state_manager_frame_is_reversed();
 #else

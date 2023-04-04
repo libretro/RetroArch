@@ -68,7 +68,7 @@ class HelperBarViewModel {
    func createBarButtonItems() -> [UIBarButtonItem] {
       barItemMapping.removeAll()
       return barItems.map{ [weak self] item in
-         let barButtonItem = UIBarButtonItem(image: item.image, style: .plain, target: self, action: #selector(didTapBarItem(_:)))
+         let barButtonItem = UIBarButtonItem(image: item.image, style: .plain, target: self, action: #selector(self?.didTapBarItem(_:)))
          self?.barItemMapping[barButtonItem] = item
          return barButtonItem
       }

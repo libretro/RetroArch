@@ -331,8 +331,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    char assets_zip_path[PATH_MAX_LENGTH];
    CFURLRef bundle_url;
    CFStringRef bundle_path;
-   CFURLRef resource_url;
-   CFStringRef resource_path;
    char temp_dir[PATH_MAX_LENGTH]          = {0};
    char bundle_path_buf[PATH_MAX_LENGTH]   = {0};
    char documents_dir_buf[PATH_MAX_LENGTH] = {0};
@@ -424,6 +422,8 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
     fill_pathname_join_special(assets_zip_path,
           bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
 #else
+    CFURLRef resource_url;
+    CFStringRef resource_path;
     char resource_path_buf[PATH_MAX_LENGTH] = {0};
     resource_url  = CFBundleCopyResourcesDirectoryURL(bundle);
     resource_path = CFURLCopyPath(resource_url);

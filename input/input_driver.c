@@ -4988,7 +4988,7 @@ bool replay_set_serialized_data(void* buf)
       uint32_t *header         = (uint32_t *)(buffer+sizeof(int32_t));
       int64_t *identifier_spot = (int64_t *)(header+4);
       int64_t identifier       = swap_if_big64(*identifier_spot);
-      int32_t handle_idx       = intfstream_tell(input_st->bsv_movie_state_handle->file);
+      int64_t handle_idx       = intfstream_tell(input_st->bsv_movie_state_handle->file);
       bool is_compatible       = identifier == input_st->bsv_movie_state_handle->identifier;
 
       if (is_compatible)
@@ -6136,6 +6136,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
        * Note: Keyboard input always read from
        * port 0 */
       if (     !display_kb
+            &&  current_input
             &&  current_input->input_state)
       {
          unsigned i;
