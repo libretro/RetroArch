@@ -119,7 +119,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "Exibir o Menu do Desktop"
+   "Exibir o menu da área de trabalho"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
