@@ -93,6 +93,13 @@ typedef struct rcheevos_ralboard_t
   const char* mem;
   unsigned id;
   unsigned format;
+
+#ifdef HAVE_GFX_WIDGETS
+  int value;
+  unsigned value_hash;
+  uint8_t active_tracker_id;
+#endif
+
 } rcheevos_ralboard_t;
 
 
@@ -179,11 +186,18 @@ typedef struct rcheevos_locals_t
    unsigned menuitem_count;           /* current number of items in the menuitems array */
 #endif
 
+#ifdef HAVE_GFX_WIDGETS
+   unsigned active_lboard_trackers;   /* bit mask of active leaderboard tracker ids */
+#endif
+
    rcheevos_load_info_t load_info;    /* load info */
 
    bool hardcore_active;              /* hardcore functionality is active */
    bool loaded;                       /* load task has completed */
    bool core_supports;                /* false if core explicitly disables achievements */
+#ifdef HAVE_GFX_WIDGETS
+   bool assign_new_trackers;          /* a new leaderboard was started and needs a tracker assigned */
+#endif
    bool leaderboards_enabled;         /* leaderboards are enabled */
    bool leaderboard_notifications;    /* leaderboard notifications are enabled */
    bool leaderboard_trackers;         /* leaderboard trackers are enabled */
