@@ -1473,7 +1473,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "Adiciona um leve desfoque para suavizar arestas dos píxeis. Esta opção tem um pequeno impacto no desempenho. Deve ser desativada ao usar sombreadores."
+   "Adiciona um leve desfoque para suavizar arestas dos píxeis. Esta opção tem um pequeno impacto no desempenho. Deve ser desativada ao usar shaders."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1513,11 +1513,11 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   "Atraso de sombreadores automáticos"
+   "Atraso de shaders automáticos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "Atrasa o carregamento automático dos sombreadores (em ms). Pode solucionar alguns problemas gráficos ao usar um programa de \"captura de tela\"."
+   "Atrasa o carregamento automático dos shaders (em ms). Pode solucionar alguns problemas gráficos ao usar um programa de \"captura de tela\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -5146,11 +5146,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-   "Mostrar \"Sombreadores\""
+   "Mostrar \"Shaders\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   "Mostra a opção \"Sombreadores\"."
+   "Mostra a opção \"Shaders\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
@@ -6430,7 +6430,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
-   "Sombreadores de vídeo"
+   "Shaders de vídeo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
@@ -7319,11 +7319,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
-   "Sombreadores"
+   "Shaders"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
-   "Configura os sombreadores para realçar a aparência da imagem."
+   "Configura os shaders para realçar a aparência da imagem."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
@@ -7845,7 +7845,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
-   "Sombreadores de vídeo"
+   "Shaders de vídeo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
@@ -9264,7 +9264,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "Canal de sombreadores do menu"
+   "Canal de shaders do menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
@@ -11959,7 +11959,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Sombreadores: restaurando predefinição padrão de sombreador em"
+   "Shaders: restaurando predefinição padrão de sombreador em"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
