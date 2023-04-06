@@ -135,7 +135,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   "Atualizador on-line"
+   "Atualizador online"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
@@ -10434,7 +10434,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE,
-   "On-line"
+   "Online"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
