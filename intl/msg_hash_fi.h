@@ -485,7 +485,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "Pelitilan tallennusten tuki"
+   "Tilatallennusten tuki"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
@@ -2879,27 +2879,35 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "Lataa pelitila"
+   "Lataa tila"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
+   "Lataa tallennettu tila tällä hetkellä valitusta lohkosta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   "Tallenna pelitila"
+   "Tallenna tila"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
+   "Tallenna tila tällä hetkellä valittuun lohkoon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-   "Seuraava pelitilan tallennuksen paikka"
+   "Seuraava tilatallennuksen lohko"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "Lisää valittua pelitilatallennuksen indeksiä."
+   "Nostaa valitun tilatallennuksen lohkon indeksiä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   "Edellinen pelitilan tallennuksen paikka"
+   "Edellinen tilatallennuksen lohko"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "Vähentää valittua pelitilatallennuksen indeksiä."
+   "Vähentää valitun tilatallennuksen lohkon indeksiä."
    )
 
 MSG_HASH(
@@ -3305,7 +3313,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Edelläpyöritä vähentääksesi viivettä"
+   "Edelläaja vähentääksesi viivettä"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
@@ -3321,15 +3329,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Käytä RetroArchin ytimen toista instanssia edelläpyöritykseen. Estää pelitilalatauksen aiheuttamia ääniongelmia."
+   "Käytä RetroArchin ytimen toista instanssia edelläajoon. Estää pelitilalatauksen aiheuttamia ääniongelmia."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
-   "Piilota edelläpyöritykseen liittyvät varoitukset"
+   "Piilota edelläajoon liittyvät varoitukset"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "Piilota varoitusviesti, joka ilmestyy kun edelläpyöritys on käytössä ja ydin ei tue pelitilanteiden tallentamista."
+   "Piilota varoitusviesti, joka ilmestyy kun edelläajo on käytössä ja ydin ei tue pelitilanteiden tallentamista."
    )
 
 /* Settings > Core */
@@ -3512,11 +3520,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Lajittele pelitila tallennukset kansioihin ytimen nimen mukaan"
+   "Lajittele tilatallennukset kansioihin ytimen nimen mukaan"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-   "Lajittele pelitila tallennukset kansioihin, jotka on nimetty käytetyn ytimen mukaan."
+   "Lajittele tilatallennukset kansioihin, jotka on nimetty käytetyn ytimen mukaan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -3528,19 +3536,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Lajittele pelitila tallennukset kansioihin sisällön kansion mukaan"
+   "Lajittele tilatallennukset kansioihin sisällön kansion mukaan"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Lajittele pelitila tallennukset kansioihin, jotka on nimetty kansion mukaan, jossa sisältö sijaitsee."
+   "Lajittele tilatallennukset kansioihin, jotka on nimetty kansion mukaan, jossa sisältö sijaitsee."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "Älä ylikirjoita SaveRAM:ia ladattaessa pelitilaa"
+   "Älä ylikirjoita SaveRAM:ia ladattaessa tilatallennusta"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-   "Estää SaveRAM:in ylikirjoituksen ladattaessa pelitilaa. Saattaa mahdollisesti aiheuttaa viallisia pelejä."
+   "Estää SaveRAM:in ylikirjoituksen ladattaessa tilatallennusta. Saattaa mahdollisesti aiheuttaa viallisia pelejä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -3552,43 +3560,43 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Nosta pelitilan tallennuksen indeksiä automaattisesti"
+   "Nosta tilatallennuksen indeksiä automaattisesti"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-   "Ennen pelitilan tallennuksen luomista, pelitilan tallennuksen indeksiä nostetaan. Sisällön lataamisen yhteydessä indeksi asetetaan korkeimpaan olemassa olevaan indeksiin."
+   "Ennen tilatallennuksen luomista, tallennuksen indeksiä nostetaan. Sisällön lataamisen yhteydessä indeksi asetetaan korkeimpaan olemassa olevaan indeksiin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Maksimi pelitila tallennusten automaattinen määrä"
+   "Automaattisten tilatallennusten yläraja"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Rajoita pelitila tallennuksien määrää, jotka luodaan automaattisesti, kun 'nosta pelitila tallennuksen indeksiä automaattisesti' on käytössä. Jos raja ylittyy, kun uutta tilaa tallennetaan, poistetaan olemassa oleva pelitila tallennus, jossa on alin indeksi. Arvo ’0’ tarkoittaa sitä, että pelitila tallennuksia tehdään rajattomasti."
+   "Rajoita tilatallennuksien määrää, jotka luodaan automaattisesti, kun \"Nosta tilatallennuksen indeksiä automaattisesti\" on käytössä. Jos raja ylittyy, kun uutta tilaa tallennetaan, poistetaan olemassa oleva pelitila tallennus, jossa on alin indeksi. Arvo ’0’ tarkoittaa sitä, että pelitila tallennuksia tehdään rajattomasti."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Pelitilan automaattinen tallennus"
+   "Tilan automaattinen tallennus"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Luo pelitila tallennus automaattisesti kun suljet sisällön. RetroArch lataa automaattisesti tämän pelitila tallennuksen, jos 'lataa pelitila tallennus automaattisesti' on käytössä."
+   "Luo tilatallennus automaattisesti kun suljet sisällön. RetroArch lataa automaattisesti tämän tilatallennuksen, jos \"Lataa tilatallennus automaattisesti\" on käytössä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Lataa pelitilan tallennus automaattisesti"
+   "Lataa tilatallennus automaattisesti"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-   "Automaattisesti lataa pelitila tallennuksen käynnistyksen yhteydessä."
+   "Lataa tilatallennus automaattisesti käynnistyksen yhteydessä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Pelitila tallenteiden esikatselukuvat"
+   "Tilatallenteiden esikatselukuvat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Näytä pelitila tallennusten esikatselukuvat valikossa."
+   "Näytä tilatallennusten esikatselukuvat valikossa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
@@ -3600,11 +3608,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Pelitila tallenteiden pakkaus"
+   "Tilatallenteiden pakkaus"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
-   "Tallenna pelitila tallennukset arkistoidussa tiedosto muodossa. Pienentää tiedoston kokoa dramaattisesti lisääntyneiden tallennus ja lataus aikojen kustannuksella."
+   "Tallenna tilatallennukset arkistoidussa muodossa. Pienentää tiedostojen kokoa, mutta lisää hieman tallennus ja lataus aikoja."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
@@ -3620,7 +3628,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Tallenna pelitila tallennukset sisällön kansioon"
+   "Tallenna tilatallennukset sisällön kansioon"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
@@ -3830,12 +3838,20 @@ MSG_HASH(
    "Nollaa kuva-aikalaskurin pikakelauksen jälkeen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+   "Nollaa tilan latauksen jälkeen"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Nollaa kuva-aikalaskurin pelitilalatauksen jälkeen."
+   "Nollaa kuva-aikalaskurin tilan latauksen jälkeen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+   "Nollaa tilan tallentamisen jälkeen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Nollaa kuva-aikalaskurin pelitilan tallennuksen jälkeen."
+   "Nollaa kuva-aikalaskurin tilan tallennuksen jälkeen."
    )
 
 /* Settings > Recording */
@@ -4557,8 +4573,12 @@ MSG_HASH(
    "Keskeytä käynnissä oleva sisältö, jos valikko on aktiivinen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "Jatka sisältöä tilatallennusten käyttämisen jälkeen"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "Sulje valikko automaattisesti ja jatka sisältöä pelitilan tallennuksen tai lataamisen jälkeen. Tämän ottaminen pois käytöstä voi parantaa tallentamisen suorituskykyä hyvin hitailla laitteilla."
+   "Sulje valikko automaattisesti ja jatka sisältöä tilan tallennuksen tai lataamisen jälkeen. Tämän ottaminen pois käytöstä, saattaa parantaa tallentamisen suorituskykyä hyvin hitailla laitteilla."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
@@ -5006,27 +5026,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Näytä pelitila tallennusten alavalikko"
+   "Näytä tilatallennusten alavalikko"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Näytä pelitilatallennusten valinnat omassa alavalikossaan."
+   "Näytä tilatallennusten valinnat omassa alavalikossaan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Näytä \"Tallenna/lataa pelitila\""
+   "Näytä \"Tallenna/lataa tila\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Näytä pelitilan tallentamisen/lataamisen valinnat."
+   "Näytä tilan tallentamisen/lataamisen valinnat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Näytä \"Peru pelitilan lataus/tallennus\""
+   "Näytä \"Peru tilan lataus/tallennus\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Näytä pelitilan tallentamisen/lataamisen peruutuksen valinnat."
+   "Näytä tilan tallentamisen/lataamisen peruutuksen valinnat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -6610,7 +6630,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
-   "Pelitilan tallennukset"
+   "Tilatallennukset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+   "Tilatallennukset ja uusinnat varastoidaan tähän kansioon. Jos mitään ei ole asetettu, yritetään ne varastoida kansioon, jossa sisältö sijaitsee."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -7231,47 +7255,47 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-   "Pelitilan lohko"
+   "Tilan lohko"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STATE_SLOT,
-   "Vaihda valitun pelitilan lohkoa."
+   "Vaihda tilan lohkoa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-   "Tallenna pelitila"
+   "Tallenna tila"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_STATE,
-   "Tallentaa pelitilan valittuun lohkoon."
+   "Tallentaa tilan valittuun lohkoon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-   "Lataa pelitila"
+   "Lataa tila"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
-   "Lataa pelitilan tallennuksen valitusta lohkosta."
+   "Lataa tallennetun tilan valitusta lohkosta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
-   "Kumoa pelitilan lataus"
+   "Kumoa tilan lataus"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
-   "Jos pelitila oli ladattu, sisältö menee takaisin tilaan ennen latausta."
+   "Jos tila oli ladattu, sisältö menee takaisin tilaan ennen latausta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
-   "Kumoa pelitilan tallennus"
+   "Kumoa tilan tallennus"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-   "Jos pelitila päällekirjoitettiin, se palautuu takaisin edelliseen pelitilatallennukseen."
+   "Jos tila oli päällekirjoitettu, se palautuu takaisin edelliseen tilatallennukseen."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_SLOT,
-   "Vaihda valitun pelitilan lohkoa."
+   "Vaihda tilan lohkoa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
@@ -7327,11 +7351,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
-   "Pelitilan tallennukset"
+   "Tilatallennukset"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_LIST,
-   "Avaa pelitilatallennusten valinnat."
+   "Avaa tilatallennusten valinnat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
@@ -11355,7 +11379,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Pelitilan tallennuksen lataaminen kohteesta"
+   "Tilan lataaminen kohteesta"
    )
 MSG_HASH(
    MSG_CAPABILITIES,
@@ -11535,7 +11559,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
-   "Pelitilan tallenteen automaattinen tallennus kohteeseen"
+   "Tilan tallennus kohteeseen"
    )
 MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -11551,7 +11575,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Saavutuksien hardcore tila käytössä, pelitila tallennukset ja takaisin kelaus poistettiin käytöstä."
+   "Saavutuksien hardcore tila käytössä, tilatallennukset ja takaisinkelaus poistettiin käytöstä."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -11583,7 +11607,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Ydin ei tue pelitilan tallennusta."
+   "Ydin ei tue tilatallennuksia."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
@@ -11787,7 +11811,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,
-   "Pelitilan lataaminen epäonnistui kohteesta"
+   "Tilan lataaminen epäonnistui kohteesta"
    )
 MSG_HASH(
    MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
@@ -11835,7 +11859,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
-   "Pelitilan tallennus epäonnistui kohteeseen"
+   "Tilan tallennus epäonnistui kohteeseen"
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME,
@@ -11875,11 +11899,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_UNDO_LOAD_STATE,
-   "Latauksen peruminen epäonnistui."
+   "Tilan latauksen peruminen epäonnistui."
    )
 MSG_HASH(
    MSG_FAILED_TO_UNDO_SAVE_STATE,
-   "Pelitilan tallentamisen peruminen epäonnistui."
+   "Tilan tallentamisen peruminen epäonnistui."
    )
 MSG_HASH(
    MSG_FAILED_TO_UNMUTE_AUDIO,
@@ -11895,7 +11919,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FOUND_AUTO_SAVESTATE_IN,
-   "Automaattinen pelitilan tallennus löytyi"
+   "Automaattinen tilatallennus löytyi"
    )
 MSG_HASH(
    MSG_FOUND_DISK_LABEL,
@@ -12003,11 +12027,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT,
-   "Ladattiin pelitila lohkosta #%d."
+   "Ladattiin tila lohkosta #%d."
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Ladattiin pelitila lohkosta #-1 (automaattisesti)."
+   "Ladattiin tila lohkosta #-1 (automaattisesti)."
    )
 MSG_HASH(
    MSG_LOADING,
@@ -12031,7 +12055,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING_STATE,
-   "Ladataan pelitilaa"
+   "Ladataan tilaa"
    )
 MSG_HASH(
    MSG_MEMORY,
@@ -12063,11 +12087,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
-   "Pelitilan tallennuksia ei ole vielä ylikirjoitettu."
+   "Tilatallennuksia ei ole vielä ylikirjoitettu."
    )
 MSG_HASH(
    MSG_NO_STATE_HAS_BEEN_LOADED_YET,
-   "Pelitilan tallennuksia ei ole vielä ladattu."
+   "Tilatallennuksia ei ole vielä ladattu."
    )
 MSG_HASH(
    MSG_OVERRIDES_ERROR_SAVING,
@@ -12103,7 +12127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
-   "Uudelleenohjataan pelitilan tallennus kohteeseen"
+   "Uudelleenohjataan tilan tallennus kohteeseen"
    )
 MSG_HASH(
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
@@ -12135,7 +12159,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
-   "Palautettiin vanha pelitila."
+   "Palautettiin vanha tilatallennus."
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
@@ -12147,11 +12171,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-   "Palautetaan pelitilan tallennuskansioksi"
+   "Palautetaan tilatallennuksien kansioksi"
    )
 MSG_HASH(
    MSG_REWINDING,
    "Kelataan taakse."
+   )
+MSG_HASH(
+   MSG_REWIND_UNSUPPORTED,
+   "Takaisinkelaus ei saatavilla, sillä tämä ydin ei tue tilatallennuksia."
    )
 MSG_HASH(
    MSG_REWIND_INIT,
@@ -12175,11 +12203,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
-   "Pelitila tallennettu lohkoon #%d."
+   "Tila tallennettu lohkoon #%d."
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Tallennettiin pelitila lohkoon #-1 (automaattisesti)."
+   "Tallennettiin tila lohkoon #-1 (automaattisesti)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
@@ -12191,7 +12219,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVING_STATE,
-   "Tallennetaan pelitilaa"
+   "Tallennetaan tilaa"
    )
 MSG_HASH(
    MSG_SCANNING,
@@ -12255,7 +12283,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_STATE_SLOT,
-   "Pelitilan lohko"
+   "Tilan lohko"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,
@@ -12295,11 +12323,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
-   "Peruttiin pelitilan lataus."
+   "Peruttiin tilan lataus."
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Perutaan pelitilan tallentaminen"
+   "Perutaan tilan tallentaminen"
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -12355,11 +12383,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
-   "Pelitila tallennuksen automaattinen lataus kohteesta \"%s\" epäonnistui."
+   "Tilatallennuksen automaattinen lataus kohteesta \"%s\" epäonnistui."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
-   "Pelitila tallennuksen automaattinen lataus kohteesta \"%s\" onnistui."
+   "Tilatallennuksen automaattinen lataus kohteesta \"%s\" onnistui."
    )
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT,
@@ -12479,15 +12507,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Edelläajo on poistettu käytöstä, koska tämä ydin ei tue pelitila tallennuksia."
+   "Edelläajo on poistettu käytöstä, koska tämä ydin ei tue tilatallennuksia."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Pelitilatallennuksen tallentaminen epäonnistui. Edelläajo poistettiin käytöstä."
+   "Tilatallennuksen tallentaminen epäonnistui. Edelläajo poistettiin käytöstä."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Pelitilatallennuksen lataaminen epäonnistui. Edelläajo poistettiin käytöstä."
+   "Tilatallennuksen lataaminen epäonnistui. Edelläajo poistettiin käytöstä."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
@@ -12599,11 +12627,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Sinun on keskeytettävä tai poistettava Hardcore Mode:n saavutukset käytöstä pelitila tallennusten lataamiseen."
+   "Tilatallennusten lataamiseksi, sinun on keskeytettävä tai poistettava Hardcore Mode:n saavutukset käytöstä."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-   "Pelitilatalennus ladattu. Saavutusten hardcore tila pois käytöstä nykyisessä istunnossa."
+   "Tilatalennus ladattu. Saavutusten hardcore tila pois käytöstä nykyisessä istunnossa."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
