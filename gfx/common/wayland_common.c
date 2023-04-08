@@ -580,6 +580,8 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 bool gfx_ctx_wl_init_common(
       const toplevel_listener_t *toplevel_listener, gfx_ctx_wayland_data_t **wwl)
 {
+   settings_t *settings         = config_get_ptr();
+   unsigned video_monitor_index = settings->uints.video_monitor_index;
    int i;
    *wwl = calloc(1, sizeof(gfx_ctx_wayland_data_t));
    gfx_ctx_wayland_data_t *wl = *wwl;
@@ -711,25 +713,27 @@ bool gfx_ctx_wl_init_common(
    /* Bind SHM based wl_buffer to wl_surface until the vulkan surface is ready.
     * This shows the window which assigns us a display (wl_output)
     *  which is usefull for HiDPI and auto selecting a display for fullscreen. */
-   if (!wl_draw_splash_screen(wl))
-      RARCH_ERR("[Wayland]: Failed to draw splash screen\n");
+   if (video_monitor_index == 0 && wl_list_length (&wl->all_outputs) > 1) {
+      if (!wl_draw_splash_screen(wl))
+         RARCH_ERR("[Wayland]: Failed to draw splash screen\n");
 
-   // Make sure splash screen is on screen and sized
+      // Make sure splash screen is on screen and sized
 #ifdef HAVE_LIBDECOR_H
-   if (wl->libdecor)
-   {
-      wl->configured = true;
-      while (wl->configured)
-         if (wl->libdecor_dispatch(wl->libdecor_context, 0) < 0)
-            RARCH_ERR("[Wayland]: libdecor failed to dispatch\n");
-   }
-   else
+      if (wl->libdecor)
+      {
+         wl->configured = true;
+         while (wl->configured)
+            if (wl->libdecor_dispatch(wl->libdecor_context, 0) < 0)
+               RARCH_ERR("[Wayland]: libdecor failed to dispatch\n");
+      }
+      else
 #endif
-   {
-      wl->configured = true;
+      {
+         wl->configured = true;
 
-      while (wl->configured)
-         wl_display_dispatch(wl->input.dpy);
+         while (wl->configured)
+            wl_display_dispatch(wl->input.dpy);
+      }
    }
 
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
