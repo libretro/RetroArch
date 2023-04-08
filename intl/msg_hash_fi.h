@@ -350,6 +350,10 @@ MSG_HASH(
    "Ytimen järjestelmätiedostojen lataaja"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Lataa ylimääräiset järjestelmätiedostot, joita tarvitaan oikean/optimaalisen ydintoiminnan varmistamiseksi."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
    "Päivitä ytimien tietotiedostot"
    )
@@ -2899,7 +2903,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "Nostaa valitun tilatallennuksen lohkon indeksiä."
+   "Kasvata valitun tilatallennuksen lohkon indeksiä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
@@ -2921,6 +2925,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
    "Seuraava levy"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   "Kasvata valitun levyn indeksiä. Virtuaalisen levyaseman on oltava auki."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -2962,7 +2970,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_PLUS,
-   "Lisää valittua huijauskoodin indeksiä."
+   "Kasvata valitun huijauskoodin indeksiä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
@@ -3006,8 +3014,28 @@ MSG_HASH(
    "Nauhoita uusinta"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
+   "Nauhoita uusinta tämän hetkiseen lohkoon."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
    "Pysäytä nauoitus/uusinta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "Seuraava uusinnan lohko"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   "Kasvata valitun uusinnan lohkon indeksiä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "Edellinen uusinnan lohko"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "Vähennä valitun uusinnan lohkon indeksiä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -3560,11 +3588,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Nosta tilatallennuksen indeksiä automaattisesti"
+   "Kasvata tilatallennuksen indeksiä automaattisesti"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Ennen tilatallennuksen luomista, tallennuksen indeksiä nostetaan. Sisällön lataamisen yhteydessä indeksi asetetaan korkeimpaan olemassa olevaan indeksiin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Kasvata uusinnan indeksiä automaattisesti"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
@@ -3572,7 +3604,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Rajoita tilatallennuksien määrää, jotka luodaan automaattisesti, kun \"Nosta tilatallennuksen indeksiä automaattisesti\" on käytössä. Jos raja ylittyy, kun uutta tilaa tallennetaan, poistetaan olemassa oleva pelitila tallennus, jossa on alin indeksi. Arvo ’0’ tarkoittaa sitä, että pelitila tallennuksia tehdään rajattomasti."
+   "Rajoita tilatallennuksien määrää, jotka luodaan automaattisesti, kun \"Kasvata tilatallennuksen indeksiä automaattisesti\" on käytössä. Jos raja ylittyy, kun uutta tilaa tallennetaan, poistetaan olemassa oleva pelitila tallennus, jossa on alin indeksi. Arvo ’0’ tarkoittaa sitä, että pelitila tallennuksia tehdään rajattomasti."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Automaattisten uusintojen yläraja"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Rajoita uusintojen määrää, jotka luodaan automaattisesti, kun \"Kasvata uusintojen indeksiä automaattisesti\" on käytössä. Jos raja ylittyy, kun uutta uusintaan tallennetaan, poistetaan olemassa oleva uusinta, jossa on alin indeksi. Arvo ’0’ tarkoittaa sitä, että uusintoja tehdään rajattomasti."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -3869,6 +3909,10 @@ MSG_HASH(
    "Matala"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
+   "Keskitaso"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
    "Korkea"
    )
@@ -3931,6 +3975,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
    "Matala"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
+   "Keskitaso"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
@@ -5039,6 +5087,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
    "Näytä tilan tallentamisen/lataamisen valinnat."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
+   "Näytä uusintojen nauhoituksen ja toiston asetukset."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
@@ -7294,6 +7346,10 @@ MSG_HASH(
    "Jos tila oli päällekirjoitettu, se palautuu takaisin edelliseen tilatallennukseen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   "Uusinnan lohko"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_SLOT,
    "Vaihda tilan lohkoa."
    )
@@ -7306,8 +7362,16 @@ MSG_HASH(
    "Nauhoita uusinta"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_REPLAY,
+   "Nauhoita uusinta tämän hetkiseen lohkoon."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
-   "Pysäytä nauoitus/uusinta"
+   "Pysäytä nauhoitus/uusinta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HALT_REPLAY,
+   "Pysäytä nykyisen uusinnan toisto/nauhoitus"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -11934,6 +11998,14 @@ MSG_HASH(
    "Viimeisin tallennustila löydetty"
    )
 MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "Viimeisimmän uusinnan lohko löytyi"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Ei nykyisestä nauhoitteesta"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Löydetty varjostin"
    )
@@ -12284,6 +12356,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_STATE_SLOT,
    "Tilan lohko"
+   )
+MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Uusinnan lohko"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,
