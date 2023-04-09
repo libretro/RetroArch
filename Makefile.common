@@ -1231,11 +1231,12 @@ ifeq ($(HAVE_WAYLAND), 1)
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland_common.o \
+        gfx/common/wayland/viewporter.o \
         gfx/common/wayland/xdg-shell.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o \
-	gfx/common/wayland/pointer-constraints-unstable-v1.o \
-	gfx/common/wayland/relative-pointer-unstable-v1.o
+        gfx/common/wayland/pointer-constraints-unstable-v1.o \
+        gfx/common/wayland/relative-pointer-unstable-v1.o
 
    ifeq ($(HAVE_VULKAN), 1)
       OBJ += gfx/drivers_context/wayland_vk_ctx.o

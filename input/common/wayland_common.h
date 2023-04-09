@@ -32,19 +32,12 @@
 #include "../../gfx/common/vulkan_common.h"
 #endif
 
-/* Generated from idle-inhibit-unstable-v1.xml */
+/* Generated from wayland protocol files by generate_wayland_protos.sh */
+#include "../../gfx/common/wayland/viewporter.h"
 #include "../../gfx/common/wayland/idle-inhibit-unstable-v1.h"
-
-/* Generated from xdg-shell.xml */
 #include "../../gfx/common/wayland/xdg-shell.h"
-
-/* Generated from xdg-decoration-unstable-v1.h */
 #include "../../gfx/common/wayland/xdg-decoration-unstable-v1.h"
-
-/* Generated from pointer-constraints-unstable-v1.h */
 #include "../../gfx/common/wayland/pointer-constraints-unstable-v1.h"
-
-/* Generated from relative-pointer-unstable-v1.h */
 #include "../../gfx/common/wayland/relative-pointer-unstable-v1.h"
 
 #define UDEV_KEY_MAX			     0x2ff
@@ -88,8 +81,19 @@ typedef struct output_info
    unsigned scale;
    char *make;
    char *model;
-   struct wl_list link; /* wl->all_outputs */
 } output_info_t;
+
+typedef struct display_output
+{
+   output_info_t *output;
+   struct wl_list link;
+} display_output_t;
+
+typedef struct surface_output
+{
+   output_info_t *output;
+   struct wl_list link;
+} surface_output_t;
 
 typedef struct gfx_ctx_wayland_data gfx_ctx_wayland_data_t;
 
@@ -138,8 +142,10 @@ typedef struct gfx_ctx_wayland_data
 #endif
    struct wl_registry *registry;
    struct wl_compositor *compositor;
+   struct wp_viewporter *viewporter;
    struct wl_surface *surface;
    struct xdg_surface *xdg_surface;
+   struct wp_viewport *viewport;
    struct xdg_wm_base *xdg_shell;
    struct xdg_toplevel *xdg_toplevel;
    struct wl_keyboard *wl_keyboard;
@@ -173,6 +179,7 @@ typedef struct gfx_ctx_wayland_data
 #endif
    input_ctx_wayland_data_t input; /* ptr alignment */
    struct wl_list all_outputs;
+   struct wl_list current_outputs;
 
    struct
    {
@@ -193,6 +200,7 @@ typedef struct gfx_ctx_wayland_data
    unsigned floating_width;
    unsigned floating_height;
    unsigned last_buffer_scale;
+   unsigned pending_buffer_scale;
    unsigned buffer_scale;
 
    bool core_hw_context_enable;

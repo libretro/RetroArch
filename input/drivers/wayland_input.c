@@ -44,10 +44,6 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
-/* TODO/FIXME -
- * fix game focus toggle
- */
-
 /* Forward declaration */
 
 void flush_wayland_fd(void *data);
