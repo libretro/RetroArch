@@ -481,6 +481,9 @@ static void audio_driver_flush(
       const retro_time_t flush_time = cpu_features_get_time_usec();
 
       if (audio_st->last_flush_time > 0) {
+         /* What we should see if the speed was 1.0x, converted to microsecs */
+         const double expected_flush_delta =
+            (src_data.input_frames / audio_st->input * 1000000);
          /* Exponential moving average of the last AUDIO_FF_EXP_AVG_SAMPLES
             samples. This helps make sure pitches are recognizable by avoiding
             too much variance flush-to-flush.
@@ -494,10 +497,6 @@ static void audio_driver_flush(
          const retro_time_t n = AUDIO_FF_EXP_AVG_SAMPLES;
          audio_st->avg_flush_delta = audio_st->avg_flush_delta * (n - 1) / n +
                                     (flush_time - audio_st->last_flush_time) / n;
-
-         /* What we should see if the speed was 1.0x, converted to microsecs */
-         const double expected_flush_delta =
-            (src_data.input_frames / audio_st->input * 1000000);
 
          /* How much does the avg_flush_delta deviate from the delta at 1.0x speed? */
          src_data.ratio *= audio_st->avg_flush_delta / expected_flush_delta;
