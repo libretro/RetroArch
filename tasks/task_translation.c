@@ -130,7 +130,8 @@ bool is_narrator_running(bool accessibility_enable)
  */
 static bool u8_array_equal(uint8_t *a, uint8_t *b, int size)
 {
-   for (int i = 0; i < size; i++)
+   int i = 0;
+   for (; i < size; i++)
    {
       if (a[i] != b[i])
          return false;
