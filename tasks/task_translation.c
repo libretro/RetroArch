@@ -237,7 +237,7 @@ static bool translation_hash_message(enum msg_hash_enums hash, bool error)
  * an error and it will be logged. The message will also be played by the 
  * accessibility narrator if the user enabled it.
  */
-static inline bool translation_user_error(const char *message)
+static INLINE bool translation_user_error(const char *message)
 {
    return translation_user_message(message, true);
 }
@@ -248,7 +248,7 @@ static inline bool translation_user_error(const char *message)
  * information and will only be logged if this is a debug build. The message 
  * will also be played by the accessibility narrator if the user enabled it.
  */
-static inline bool translation_user_info(const char *message)
+static INLINE bool translation_user_info(const char *message)
 {
    return translation_user_message(message, false);
 }
@@ -259,7 +259,7 @@ static inline bool translation_user_info(const char *message)
  * an error and it will be logged. The message will also be played by the 
  * accessibility narrator if the user enabled it.
  */
-static inline bool translation_hash_error(enum msg_hash_enums hash)
+static INLINE bool translation_hash_error(enum msg_hash_enums hash)
 {
    return translation_hash_message(hash, true);
 }
@@ -270,7 +270,7 @@ static inline bool translation_hash_error(enum msg_hash_enums hash)
  * information and will only be logged if this is a debug build. The message 
  * will also be played by the accessibility narrator if the user enabled it.
  */
-static inline bool translation_hash_info(enum msg_hash_enums hash)
+static INLINE bool translation_hash_info(enum msg_hash_enums hash)
 {
    return translation_hash_message(hash, false);
 }
