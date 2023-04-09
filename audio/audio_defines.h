@@ -32,6 +32,10 @@ RETRO_BEGIN_DECLS
 
 #define AUDIO_MIXER_MAX_SYSTEM_STREAMS (AUDIO_MIXER_MAX_STREAMS + 8)
 
+/* Fastforward timing calculations running average samples. Helps with a
+consistent pitch when fast-forwarding. */
+#define AUDIO_FF_EXP_AVG_SAMPLES       16
+
 /* do not define more than (MAX_SYSTEM_STREAMS - MAX_STREAMS) */
 enum audio_mixer_system_slot
 {
