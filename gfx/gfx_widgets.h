@@ -236,6 +236,8 @@ typedef struct dispgfx_widget
 #ifdef HAVE_TRANSLATE
    unsigned ai_service_overlay_width;
    unsigned ai_service_overlay_height;
+   unsigned ai_service_text_position;
+   char ai_service_text[255];
 #endif
 
    uint8_t flags;
