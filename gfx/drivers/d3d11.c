@@ -1654,8 +1654,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
       d3d11_gfx_set_shader(d3d11, type, shader_preset);
    }
 
-   if (     video_driver_get_hw_context()->context_type  == RETRO_HW_CONTEXT_DIRECT3D
-         && video_driver_get_hw_context()->version_major == 11)
+   if (video_driver_get_hw_context()->context_type  == RETRO_HW_CONTEXT_D3D11)
    {
       d3d11->flags                     |= D3D11_ST_FLAG_HW_IFACE_ENABLE;
       d3d11->hw_iface.interface_type    = RETRO_HW_RENDER_INTERFACE_D3D11;

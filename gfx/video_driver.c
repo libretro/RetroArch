@@ -449,18 +449,30 @@ video_driver_t *hw_render_context_driver(
 #else
          break;
 #endif
-      case RETRO_HW_CONTEXT_DIRECT3D:
-#if defined(HAVE_D3D9)
-#if defined(HAVE_HLSL)
-         if (major == 9)
-            return &video_d3d9_hlsl;
-#endif
-#endif
-#if defined(HAVE_D3D11)
-         if (major == 11)
-            return &video_d3d11;
-#endif
+      case RETRO_HW_CONTEXT_D3D10:
+#if defined(HAVE_D3D10)
+	 return &video_d3d10;
+#else
          break;
+#endif
+      case RETRO_HW_CONTEXT_D3D11:
+#if defined(HAVE_D3D11)
+	 return &video_d3d11;
+#else
+         break;
+#endif
+      case RETRO_HW_CONTEXT_D3D12:
+#if defined(HAVE_D3D11)
+	 return &video_d3d12;
+#else
+         break;
+#endif
+      case RETRO_HW_CONTEXT_D3D9:
+#if defined(HAVE_D3D9) && defined(HAVE_HLSL)
+	 return &video_d3d9_hlsl;
+#else
+	 break;
+#endif
       case RETRO_HW_CONTEXT_VULKAN:
 #if defined(HAVE_VULKAN)
          return &video_vulkan;
@@ -501,19 +513,21 @@ const char *hw_render_context_name(
    if (type == RETRO_HW_CONTEXT_VULKAN)
       return "vulkan";
 #endif
+#if defined(HAVE_D3D9) && defined(HAVE_HLSL)
+   if (type == RETRO_HW_CONTEXT_D3D9)
+      return "d3d9_hlsl";
+#endif
+#ifdef HAVE_D3D10
+   if (type == RETRO_HW_CONTEXT_D3D10)
+      return "d3d10";
+#endif
 #ifdef HAVE_D3D11
-   if (type == RETRO_HW_CONTEXT_DIRECT3D && major == 11)
+   if (type == RETRO_HW_CONTEXT_D3D11)
       return "d3d11";
 #endif
 #ifdef HAVE_D3D12
-   if (type == RETRO_HW_CONTEXT_DIRECT3D && major == 12)
+   if (type == RETRO_HW_CONTEXT_D3D12)
       return "d3d12";
-#endif
-#ifdef HAVE_D3D9
-#if defined(HAVE_HLSL)
-   if (type == RETRO_HW_CONTEXT_DIRECT3D && major == 9)
-      return "d3d9_hlsl";
-#endif
 #endif
    return "N/A";
 }
@@ -532,13 +546,21 @@ enum retro_hw_context_type hw_render_context_type(const char *s)
    if (string_is_equal(s, "vulkan"))
       return RETRO_HW_CONTEXT_VULKAN;
 #endif
-#ifdef HAVE_D3D11
-   if (string_is_equal(s, "d3d11"))
-      return RETRO_HW_CONTEXT_DIRECT3D;
+#if defined(HAVE_D3D9) && defined(HAVE_HLSL)
+   if (string_is_equal(s, "d3d9_hlsl"))
+      return RETRO_HW_CONTEXT_D3D9;
+#endif
+#ifdef HAVE_D3D10
+   if (string_is_equal(s, "d3d10"))
+      return RETRO_HW_CONTEXT_D3D10;
 #endif
 #ifdef HAVE_D3D11
-   if (string_is_equal(s, "d3d9_hlsl"))
-      return RETRO_HW_CONTEXT_DIRECT3D;
+   if (string_is_equal(s, "d3d11"))
+      return RETRO_HW_CONTEXT_D3D11;
+#endif
+#ifdef HAVE_D3D12
+   if (string_is_equal(s, "d3d12"))
+      return RETRO_HW_CONTEXT_D3D12;
 #endif
    return RETRO_HW_CONTEXT_NONE;
 }
@@ -2307,8 +2329,11 @@ bool video_driver_find_driver(
          {
             case RETRO_HW_CONTEXT_OPENGL_CORE:
             case RETRO_HW_CONTEXT_VULKAN:
-            case RETRO_HW_CONTEXT_DIRECT3D:
-#if defined(HAVE_VULKAN) || defined(HAVE_D3D11) || defined(HAVE_D3D9) || defined(HAVE_OPENGL_CORE)
+            case RETRO_HW_CONTEXT_D3D9:
+            case RETRO_HW_CONTEXT_D3D10:
+            case RETRO_HW_CONTEXT_D3D11:
+            case RETRO_HW_CONTEXT_D3D12:
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D9) || defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12) || defined(HAVE_OPENGL_CORE)
                RARCH_LOG("[Video]: Using HW render, %s driver forced.\n",
                      rdr_context_name);
 

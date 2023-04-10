@@ -1988,8 +1988,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
       d3d12_gfx_set_shader(d3d12, type, shader_preset);
    }
 
-   if (     video_driver_get_hw_context()->context_type  == RETRO_HW_CONTEXT_DIRECT3D
-         && video_driver_get_hw_context()->version_major == 12)
+   if (video_driver_get_hw_context()->context_type  == RETRO_HW_CONTEXT_D3D12)
    {
       d3d12->flags                     |= D3D12_ST_FLAG_HW_IFACE_ENABLE;
       d3d12->hw_iface.interface_type    = RETRO_HW_RENDER_INTERFACE_D3D12;

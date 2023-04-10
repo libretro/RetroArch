@@ -739,9 +739,16 @@ static bool dynamic_verify_hw_context(
                   !string_is_equal(video_ident, "glcore"))
                return false;
             break;
-         case RETRO_HW_CONTEXT_DIRECT3D:
-            if (!((string_is_equal(video_ident, "d3d11") && major == 11) ||
-                  (string_is_equal(video_ident, "d3d12") && major == 12)))
+         case RETRO_HW_CONTEXT_D3D10:
+            if (!string_is_equal(video_ident, "d3d10"))
+               return false;
+            break;
+         case RETRO_HW_CONTEXT_D3D11:
+            if (!string_is_equal(video_ident, "d3d11"))
+               return false;
+            break;
+         case RETRO_HW_CONTEXT_D3D12:
+            if (!string_is_equal(video_ident, "d3d12"))
                return false;
             break;
          default:
@@ -835,32 +842,26 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
          break;
 #endif
 
-#if defined(HAVE_D3D9) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
-      case RETRO_HW_CONTEXT_DIRECT3D:
-         switch (major)
-         {
-#ifdef HAVE_D3D9
-            case 9:
-               RARCH_LOG("Requesting D3D9 context.\n");
-               break;
-#endif
-#ifdef HAVE_D3D11
-            case 11:
-               RARCH_LOG("Requesting D3D11 context.\n");
-               break;
-#endif
-#ifdef HAVE_D3D12
-            case 12:
-               RARCH_LOG("Requesting D3D12 context.\n");
-               break;
-#endif
-            default:
-               RARCH_LOG("Requesting unknown context.\n");
-               return false;
-         }
+#if defined(HAVE_D3D11)
+      case RETRO_HW_CONTEXT_D3D11:
+         RARCH_LOG("Requesting D3D11 context.\n");
          break;
 #endif
-
+#ifdef HAVE_D3D10
+      case RETRO_HW_CONTEXT_D3D10:
+         RARCH_LOG("Requesting D3D10 context.\n");
+         break;
+#endif
+#ifdef HAVE_D3D12
+      case RETRO_HW_CONTEXT_D3D12:
+         RARCH_LOG("Requesting D3D12 context.\n");
+         break;
+#endif
+#if defined(HAVE_D3D9)
+      case RETRO_HW_CONTEXT_D3D9:
+         RARCH_LOG("Requesting D3D9 context.\n");
+         break;
+#endif
       default:
          RARCH_LOG("Requesting unknown context.\n");
          return false;
@@ -2251,10 +2252,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
              *cb = RETRO_HW_CONTEXT_VULKAN;
              RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_VULKAN.\n");
          }
-         else if (!strncmp(video_driver_name, "d3d", 3))
+         else if (string_is_equal(video_driver_name, "d3d11"))
          {
-             *cb = RETRO_HW_CONTEXT_DIRECT3D;
-             RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_DIRECT3D.\n");
+             *cb = RETRO_HW_CONTEXT_D3D11;
+             RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_D3D11.\n");
+         }
+         else if (string_is_equal(video_driver_name, "d3d12"))
+         {
+             *cb = RETRO_HW_CONTEXT_D3D12;
+             RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_D3D12.\n");
          }
          else
          {
@@ -3363,9 +3369,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
 #ifdef HAVE_VULKAN
             if (iface->interface_type == RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
-            {
                iface->interface_version = RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION;
-            }
             else
 #endif
             {
