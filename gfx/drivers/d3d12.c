@@ -887,7 +887,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
    }
 #endif
 
-   desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
+   desc.BlendState.RenderTarget[0] = d3d12_blend_disable_desc;
    desc.RTVFormats[0]              = DXGI_FORMAT_R8G8B8A8_UNORM;
 
    {
@@ -1738,7 +1738,7 @@ static void d3d12_init_queue(d3d12_video_t* d3d12)
    {
       static const D3D12_COMMAND_QUEUE_DESC desc = { 
          D3D12_COMMAND_LIST_TYPE_DIRECT,
-         0,
+         D3D12_COMMAND_QUEUE_PRIORITY_NORMAL,
          D3D12_COMMAND_QUEUE_FLAG_NONE,
          0
       };
@@ -1791,6 +1791,13 @@ static void d3d12_create_fullscreen_quad_vbo(
    D3D12Map(*vbo, 0, &read_range, &vertex_data_begin);
    memcpy(vertex_data_begin, vertices, sizeof(vertices));
    D3D12Unmap(*vbo, 0, NULL);
+}
+
+static void d3d12_set_hw_render_texture(void* data, ID3D12Resource* texture, DXGI_FORMAT format)
+{
+    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+    d3d12->hw_render_texture = texture;
+    d3d12->hw_render_texture_format = format;
 }
 
 static void *d3d12_gfx_init(const video_info_t* video, 
@@ -1980,6 +1987,20 @@ static void *d3d12_gfx_init(const video_info_t* video,
       const char *shader_preset   = video_shader_get_current_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
       d3d12_gfx_set_shader(d3d12, type, shader_preset);
+   }
+
+   if (     video_driver_get_hw_context()->context_type  == RETRO_HW_CONTEXT_DIRECT3D
+         && video_driver_get_hw_context()->version_major == 12)
+   {
+      d3d12->flags                     |= D3D12_ST_FLAG_HW_IFACE_ENABLE;
+      d3d12->hw_iface.interface_type    = RETRO_HW_RENDER_INTERFACE_D3D12;
+      d3d12->hw_iface.interface_version = RETRO_HW_RENDER_INTERFACE_D3D12_VERSION;
+      d3d12->hw_iface.handle            = d3d12;
+      d3d12->hw_iface.device            = d3d12->device;
+      d3d12->hw_iface.queue             = d3d12->queue.handle;
+      d3d12->hw_iface.required_state    = D3D12_RESOURCE_STATE_COPY_SOURCE;
+      d3d12->hw_iface.set_texture       = d3d12_set_hw_render_texture;
+      d3d12->hw_iface.D3DCompile        = D3DCompile;
    }
 
    return d3d12;
@@ -2332,6 +2353,20 @@ static bool d3d12_gfx_frame(
 
    if (frame && width && height)
    {
+      if (frame == RETRO_HW_FRAME_BUFFER_VALID)
+      {
+         if (d3d12->frame.texture[0].desc.Format != d3d12->hw_render_texture_format)
+         {
+             d3d12->frame.texture[0].desc.Width  = width;
+             d3d12->frame.texture[0].desc.Height = height;
+             d3d12->frame.texture[0].desc.Format = d3d12->hw_render_texture_format;
+             d3d12_release_texture(&d3d12->frame.texture[0]);
+             d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
+
+             d3d12->flags |= D3D12_ST_FLAG_INIT_HISTORY;
+         }
+      }
+
       if (d3d12->shader_preset)
       {
          if (d3d12->shader_preset->luts && d3d12->luts[0].dirty)
@@ -2387,11 +2422,51 @@ static bool d3d12_gfx_frame(
       if (d3d12->flags & D3D12_ST_FLAG_RESIZE_RTS)
          d3d12_init_render_targets(d3d12, width, height);
 
-      d3d12_update_texture(width, height, pitch, d3d12->format,
-            frame, &d3d12->frame.texture[0]);
+      if(frame == RETRO_HW_FRAME_BUFFER_VALID)
+      {
+         D3D12_BOX src_box;
+         D3D12_TEXTURE_COPY_LOCATION src, dst;
 
-      d3d12_upload_texture(d3d12->queue.cmd, &d3d12->frame.texture[0],
-            d3d12);
+         src_box.left   = 0;
+         src_box.top    = 0;
+         src_box.front  = 0;
+         src_box.right  = width;
+         src_box.bottom = height;
+         src_box.back   = 1;
+
+         src.pResource        = d3d12->hw_render_texture;
+         src.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+         src.SubresourceIndex = 0;
+
+         dst.pResource        = d3d12->frame.texture[0].handle;
+         dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+         dst.SubresourceIndex = 0;
+
+         D3D12_RESOURCE_TRANSITION(
+             d3d12->queue.cmd,
+             d3d12->frame.texture[0].handle,
+             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+             D3D12_RESOURCE_STATE_COPY_DEST);
+
+         D3D12CopyTextureRegion(d3d12->queue.cmd, &dst, 0, 0, 0, &src, &src_box);
+
+         D3D12_RESOURCE_TRANSITION(
+             d3d12->queue.cmd,
+             d3d12->frame.texture[0].handle,
+             D3D12_RESOURCE_STATE_COPY_DEST,
+             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+         d3d12->hw_render_texture = NULL;
+      }
+      else
+      {
+         d3d12_update_texture(width, height, pitch, d3d12->format,
+               frame, &d3d12->frame.texture[0]);
+
+         d3d12_upload_texture(d3d12->queue.cmd, &d3d12->frame.texture[0],
+               d3d12);
+
+      }
    }
    D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
 
@@ -3058,6 +3133,15 @@ static void d3d12_gfx_unload_texture(void* data,
    free(texture);
 }
 
+static bool d3d12_get_hw_render_interface(
+      void* data, const struct retro_hw_render_interface** iface)
+{
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+   *iface               = (const struct retro_hw_render_interface*)
+      &d3d12->hw_iface;
+   return d3d12->flags & D3D12_ST_FLAG_HW_IFACE_ENABLE;
+}
+
 #ifndef __WINRT__
 static void d3d12_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len)
@@ -3112,7 +3196,7 @@ static const video_poke_interface_t d3d12_poke_interface = {
    NULL, /* grab_mouse_toggle */
    d3d12_gfx_get_current_shader,
    NULL, /* get_current_software_framebuffer */
-   NULL, /* get_hw_render_interface */
+   d3d12_get_hw_render_interface,
 #ifdef HAVE_DXGI_HDR
    d3d12_set_hdr_max_nits,
    d3d12_set_hdr_paper_white_nits,

@@ -25,6 +25,8 @@
 #include "dxgi_common.h"
 #include <d3d12.h>
 
+#include <libretro_d3d.h>
+
 #include "../common/d3dcompiler_common.h"
 #include "../drivers_shader/slang_process.h"
 
@@ -166,7 +168,8 @@ enum d3d12_video_flags
    D3D12_ST_FLAG_HDR_ENABLE            = (1 << 11),
    D3D12_ST_FLAG_VSYNC                 = (1 << 12),
    D3D12_ST_FLAG_WAITABLE_SWAPCHAINS   = (1 << 13),
-   D3D12_ST_FLAG_WAIT_FOR_VBLANK       = (1 << 14)
+   D3D12_ST_FLAG_WAIT_FOR_VBLANK       = (1 << 14),
+   D3D12_ST_FLAG_HW_IFACE_ENABLE       = (1 << 15)
 };
 
 typedef struct
@@ -187,6 +190,10 @@ typedef struct
    D3D12DeviceRemovedExtendedDataSettings device_removed_info;
 #endif /* DEBUG */
 #endif /* DEVICE_DEBUG */
+
+   struct retro_hw_render_interface_d3d12 hw_iface;
+   D3D12Resource hw_render_texture;
+   DXGI_FORMAT hw_render_texture_format;
 
    IDXGIAdapter1 *adapters[D3D12_MAX_GPU_COUNT];
    struct string_list *gpu_list;

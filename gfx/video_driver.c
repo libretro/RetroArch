@@ -505,6 +505,10 @@ const char *hw_render_context_name(
    if (type == RETRO_HW_CONTEXT_DIRECT3D && major == 11)
       return "d3d11";
 #endif
+#ifdef HAVE_D3D12
+   if (type == RETRO_HW_CONTEXT_DIRECT3D && major == 12)
+      return "d3d12";
+#endif
 #ifdef HAVE_D3D9
 #if defined(HAVE_HLSL)
    if (type == RETRO_HW_CONTEXT_DIRECT3D && major == 9)

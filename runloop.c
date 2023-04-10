@@ -740,7 +740,8 @@ static bool dynamic_verify_hw_context(
                return false;
             break;
          case RETRO_HW_CONTEXT_DIRECT3D:
-            if (!(string_is_equal(video_ident, "d3d11") && major == 11))
+            if (!((string_is_equal(video_ident, "d3d11") && major == 11) ||
+                  (string_is_equal(video_ident, "d3d12") && major == 12)))
                return false;
             break;
          default:
@@ -834,7 +835,7 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
          break;
 #endif
 
-#if defined(HAVE_D3D9) || defined(HAVE_D3D11)
+#if defined(HAVE_D3D9) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
       case RETRO_HW_CONTEXT_DIRECT3D:
          switch (major)
          {
@@ -846,6 +847,11 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
 #ifdef HAVE_D3D11
             case 11:
                RARCH_LOG("Requesting D3D11 context.\n");
+               break;
+#endif
+#ifdef HAVE_D3D12
+            case 12:
+               RARCH_LOG("Requesting D3D12 context.\n");
                break;
 #endif
             default:

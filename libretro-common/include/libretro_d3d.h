@@ -56,4 +56,32 @@ struct retro_hw_render_interface_d3d11
 
 #endif
 
+#ifdef HAVE_D3D12
+
+#include <d3d12.h>
+#include <d3dcompiler.h>
+
+#define RETRO_HW_RENDER_INTERFACE_D3D12_VERSION 1
+
+struct retro_hw_render_interface_d3d12
+{
+  /* Must be set to RETRO_HW_RENDER_INTERFACE_D3D12. */
+  enum retro_hw_render_interface_type interface_type;
+  /* Must be set to RETRO_HW_RENDER_INTERFACE_D3D12_VERSION. */
+  unsigned interface_version;
+
+  /* Opaque handle to the d3d12 backend in the frontend
+   * which must be passed along to all function pointers
+   * in this interface.
+   */
+  void* handle;
+  ID3D12Device *device;
+  ID3D12CommandQueue *queue;
+  pD3DCompile D3DCompile;
+  D3D12_RESOURCE_STATES required_state;
+  void (*set_texture)(void* handle, ID3D12Resource* texture, DXGI_FORMAT format);
+};
+
+#endif
+
 #endif /* LIBRETRO_DIRECT3D_H__ */
