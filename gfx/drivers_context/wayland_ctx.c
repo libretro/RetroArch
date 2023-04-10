@@ -419,9 +419,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    egl_set_swap_interval(&wl->egl, wl->egl.interval);
 #endif
 
-   if (!gfx_ctx_wl_set_video_mode_common_fullscreen(wl, fullscreen))
-      goto error;
-
    return true;
 
 error:
