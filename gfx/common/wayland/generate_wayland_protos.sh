@@ -55,28 +55,19 @@ else
    CODEGEN=private-code
 fi
 
-XDG_SHELL='stable/xdg-shell/xdg-shell.xml'
-XDG_DECORATION_UNSTABLE='unstable/xdg-decoration/xdg-decoration-unstable-v1.xml'
-IDLE_INHIBIT_UNSTABLE='unstable/idle-inhibit/idle-inhibit-unstable-v1.xml'
-POINTER_CONSTRAINTS_UNSTABLE='unstable/pointer-constraints/pointer-constraints-unstable-v1.xml'
-RELATIVE_POINTER_UNSTABLE='unstable/relative-pointer/relative-pointer-unstable-v1.xml'
+generate_source () {
+   PROTO_DIR="$1"
+   PROTO_NAME="$2"
+   PROTO_FILE="$WAYLAND_PROTOS/$PROTO_DIR/$PROTO_NAME.xml"
 
-#Generate xdg-shell header and .c files
-"$WAYSCAN" client-header "$WAYLAND_PROTOS/$XDG_SHELL" ./xdg-shell.h
-"$WAYSCAN" $CODEGEN "$WAYLAND_PROTOS/$XDG_SHELL" ./xdg-shell.c
+   "$WAYSCAN" client-header "$PROTO_FILE" "./$PROTO_NAME.h"
+   "$WAYSCAN" $CODEGEN "$PROTO_FILE" "./$PROTO_NAME.c"
+}
 
-#Generate idle-inhibit header and .c files
-"$WAYSCAN" client-header "$WAYLAND_PROTOS/$IDLE_INHIBIT_UNSTABLE" ./idle-inhibit-unstable-v1.h
-"$WAYSCAN" $CODEGEN "$WAYLAND_PROTOS/$IDLE_INHIBIT_UNSTABLE" ./idle-inhibit-unstable-v1.c
+generate_source 'stable/viewporter' 'viewporter'
+generate_source 'stable/xdg-shell' 'xdg-shell'
+generate_source 'unstable/xdg-decoration' 'xdg-decoration-unstable-v1'
+generate_source 'unstable/idle-inhibit' 'idle-inhibit-unstable-v1'
+generate_source 'unstable/pointer-constraints' 'pointer-constraints-unstable-v1'
+generate_source 'unstable/relative-pointer' 'relative-pointer-unstable-v1'
 
-#Generate xdg-decoration header and .c files
-"$WAYSCAN" client-header "$WAYLAND_PROTOS/$XDG_DECORATION_UNSTABLE" ./xdg-decoration-unstable-v1.h
-"$WAYSCAN" $CODEGEN "$WAYLAND_PROTOS/$XDG_DECORATION_UNSTABLE" ./xdg-decoration-unstable-v1.c
-
-#Generate pointer-constraints header and .c files
-"$WAYSCAN" client-header "$WAYLAND_PROTOS/$POINTER_CONSTRAINTS_UNSTABLE" ./pointer-constraints-unstable-v1.h
-"$WAYSCAN" $CODEGEN "$WAYLAND_PROTOS/$POINTER_CONSTRAINTS_UNSTABLE" ./pointer-constraints-unstable-v1.c
-
-#Generate relative-pointer header and .c files
-"$WAYSCAN" client-header "$WAYLAND_PROTOS/$RELATIVE_POINTER_UNSTABLE" ./relative-pointer-unstable-v1.h
-"$WAYSCAN" $CODEGEN "$WAYLAND_PROTOS/$RELATIVE_POINTER_UNSTABLE" ./relative-pointer-unstable-v1.c

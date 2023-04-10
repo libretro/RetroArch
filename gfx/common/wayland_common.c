@@ -79,6 +79,11 @@ static const unsigned long retroarch_icon_data[] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000
 };
 
+static void update_viewport(gfx_ctx_wayland_data_t *wl)
+{
+   wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
+}
+
 void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       void *toplevel,
       int32_t width, int32_t height, struct wl_array *states)
@@ -130,6 +135,8 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       wl->buffer_width  = wl->width * wl->buffer_scale;
       wl->buffer_height = wl->height * wl->buffer_scale;
       wl->resize = true;
+      if (wl->viewport)
+         update_viewport(wl);
    }
 
    if (floating)
@@ -195,6 +202,8 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
       wl->buffer_width  = width * wl->buffer_scale;
       wl->buffer_height = height * wl->buffer_scale;
       wl->resize        = true;
+      if (wl->viewport)
+         update_viewport(wl);
    }
 
    state = wl->libdecor_state_new(wl->width, wl->height);
@@ -228,23 +237,26 @@ void gfx_ctx_wl_get_video_size_common(gfx_ctx_wayland_data_t *wl,
 {
    if (!wl->reported_display_size)
    {
-      output_info_t *tmp        = NULL;
+      display_output_t *od;
       output_info_t *oi         = wl->current_output;
 
       wl->reported_display_size = true;
 
       /* If window is not ready get any monitor */
       if (!oi)
-          wl_list_for_each_safe(oi, tmp, &wl->all_outputs, link)
-              break;
+         wl_list_for_each(od, &wl->all_outputs, link)
+         {
+            oi = od->output;
+            break;
+         };
 
       *width  = oi->width;
       *height = oi->height;
    }
    else
    {
-      *width  = wl->buffer_width;
-      *height = wl->buffer_height;
+      *width  = wl->width  * wl->pending_buffer_scale;
+      *height = wl->height * wl->pending_buffer_scale;
    }
 }
 
@@ -269,6 +281,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    if (wl->cursor.surface)
       wl_surface_destroy(wl->cursor.surface);
 
+   if (wl->viewport)
+      wp_viewport_destroy(wl->viewport);
    if (wl->idle_inhibitor)
       zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
    if (wl->deco)
@@ -294,15 +308,28 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       xdg_wm_base_destroy(wl->xdg_shell);
    if (wl->data_device_manager)
       wl_data_device_manager_destroy (wl->data_device_manager);
-   while (!wl_list_empty(&wl->all_outputs)) {
-     output_info_t *oi;
-     oi = wl_container_of(wl->all_outputs.next, oi, link);
-     wl_output_destroy(oi->output);
-     wl_list_remove(&oi->link);
-     free(oi);
+   while (!wl_list_empty(&wl->current_outputs))
+   {
+      surface_output_t *os;
+      os = wl_container_of(wl->current_outputs.next, os, link);
+      wl_list_remove(&os->link);
+      free(os);
+   }
+   while (!wl_list_empty(&wl->all_outputs))
+   {
+      display_output_t *od;
+      output_info_t *oi;
+      od = wl_container_of(wl->all_outputs.next, od, link);
+      oi = od->output;
+      wl_output_destroy(oi->output);
+      wl_list_remove(&od->link);
+      free(oi);
+      free(od);
    }
    if (wl->shm)
       wl_shm_destroy (wl->shm);
+   if (wl->viewporter)
+      wp_viewporter_destroy(wl->viewporter);
    if (wl->compositor)
       wl_compositor_destroy(wl->compositor);
    if (wl->registry)
@@ -371,12 +398,15 @@ bool gfx_ctx_wl_get_metrics_common(void *data,
       enum display_metric_types type, float *value)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   output_info_t *tmp         = NULL;
+   display_output_t *od;
    output_info_t *oi          = wl ? wl->current_output : NULL;
 
    if (!oi)
-      wl_list_for_each_safe(oi, tmp, &wl->all_outputs, link)
+      wl_list_for_each(od, &wl->all_outputs, link)
+      {
+         oi = od->output;
          break;
+      };
 
    switch (type)
    {
@@ -568,7 +598,6 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
       16);
 
    wl_surface_attach(wl->surface, buffer->wl_buffer, 0, 0);
-   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
    if (wl_surface_get_version(wl->surface) >= WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION)
       wl_surface_damage_buffer(wl->surface, 0, 0,
          wl->buffer_width,
@@ -600,14 +629,16 @@ bool gfx_ctx_wl_init_common(
 #endif
 
    wl_list_init(&wl->all_outputs);
+   wl_list_init(&wl->current_outputs);
 
    frontend_driver_destroy_signal_handler_state();
 
-   wl->input.dpy         = wl_display_connect(NULL);
-   wl->last_buffer_scale = 1;
-   wl->buffer_scale      = 1;
-   wl->floating_width    = SPLASH_WINDOW_WIDTH;
-   wl->floating_height   = SPLASH_WINDOW_HEIGHT;
+   wl->input.dpy            = wl_display_connect(NULL);
+   wl->last_buffer_scale    = 1;
+   wl->buffer_scale         = 1;
+   wl->pending_buffer_scale = 1;
+   wl->floating_width       = SPLASH_WINDOW_WIDTH;
+   wl->floating_height      = SPLASH_WINDOW_HEIGHT;
 
    if (!wl->input.dpy)
    {
@@ -650,8 +681,9 @@ bool gfx_ctx_wl_init_common(
    }
 
    wl->surface = wl_compositor_create_surface(wl->compositor);
+   if (wl->viewporter)
+      wl->viewport = wp_viewporter_get_viewport(wl->viewporter, wl->surface);
 
-   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
    wl_surface_add_listener(wl->surface, &wl_surface_listener, wl);
 
 #ifdef HAVE_LIBDECOR_H
@@ -776,16 +808,17 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
 
    if (!fullscreen)
    {
+      wl->buffer_scale  = wl->pending_buffer_scale;
       wl->buffer_width  *= wl->buffer_scale;
       wl->buffer_height *= wl->buffer_scale;
    }
-
-   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+   if (wl->viewport)
+      update_viewport(wl);
 
 #ifdef HAVE_LIBDECOR_H
    if (wl->libdecor)
    {
-     struct libdecor_state *state = wl->libdecor_state_new(width, height);
+     struct libdecor_state *state = wl->libdecor_state_new(wl->width, wl->height);
      wl->libdecor_frame_commit(wl->libdecor_frame, state, NULL);
      wl->libdecor_state_free(state);
    }
@@ -802,7 +835,8 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
 
    if (fullscreen)
    {
-      output_info_t *oi, *tmp;
+      display_output_t *od;
+      output_info_t *oi;
       struct wl_output *output = NULL;
       int output_i             = 0;
 
@@ -812,14 +846,18 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
          output = oi->output;
          RARCH_LOG("[Wayland]: Auto fullscreen on display \"%s\" \"%s\"\n", oi->make, oi->model);
       }
-      else wl_list_for_each_safe(oi, tmp, &wl->all_outputs, link)
+      else
       {
-         if (++output_i == video_monitor_index)
+         wl_list_for_each(od, &wl->all_outputs, link)
          {
-            output = oi->output;
-            RARCH_LOG("[Wayland]: Fullscreen on display %i \"%s\" \"%s\"\n", output_i, oi->make, oi->model);
-            break;
-         }
+            if (++output_i == video_monitor_index)
+            {
+               oi = od->output;
+               output = oi->output;
+               RARCH_LOG("[Wayland]: Fullscreen on display %i \"%s\" \"%s\"\n", output_i, oi->make, oi->model);
+               break;
+            }
+         };
       }
 
       if (!output)
@@ -899,14 +937,14 @@ void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
 
    get_video_size(wl, &new_width, &new_height);
 
-   if (     new_width  != *width
+   if (     wl->pending_buffer_scale != wl->buffer_scale
+         || new_width  != *width
          || new_height != *height)
    {
+      wl->buffer_scale = wl->pending_buffer_scale;
       *width  = new_width;
       *height = new_height;
       *resize = true;
-
-      wl->last_buffer_scale = wl->buffer_scale;
    }
 
    *quit = (bool)frontend_driver_get_signal_handler_state();
