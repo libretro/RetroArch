@@ -886,7 +886,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
    }
 #endif
 
-   desc.BlendState.RenderTarget[0] = d3d12_blend_disable_desc;
+   desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
    desc.RTVFormats[0]              = DXGI_FORMAT_R8G8B8A8_UNORM;
 
    {
@@ -915,6 +915,12 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       d3d12_init_pipeline(
                d3d12->device, vs_code, ps_code, NULL, &desc,
                &d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+
+      desc.BlendState.RenderTarget[0].BlendEnable = false;
+      d3d12_init_pipeline(
+               d3d12->device, vs_code, ps_code, NULL, &desc,
+               &d3d12->pipes[VIDEO_SHADER_STOCK_NOBLEND]);
+
 
       Release(vs_code);
       Release(ps_code);
@@ -2663,7 +2669,7 @@ static bool d3d12_gfx_frame(
    if (texture)
    {
       D3D12SetPipelineState(d3d12->queue.cmd,
-            d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+            d3d12->pipes[VIDEO_SHADER_STOCK_NOBLEND]);
       D3D12SetGraphicsRootSignature(d3d12->queue.cmd,
             d3d12->desc.rootSignature);
       D3D12SetGraphicsRootDescriptorTable(d3d12->queue.cmd,
