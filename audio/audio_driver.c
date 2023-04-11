@@ -499,7 +499,10 @@ static void audio_driver_flush(
                                     (flush_time - audio_st->last_flush_time) / n;
 
          /* How much does the avg_flush_delta deviate from the delta at 1.0x speed? */
-         src_data.ratio *= audio_st->avg_flush_delta / expected_flush_delta;
+         src_data.ratio *=
+            MAX(AUDIO_MIN_RATIO,
+               MIN(AUDIO_MAX_RATIO,
+                  audio_st->avg_flush_delta / expected_flush_delta));
       }
 
       audio_st->last_flush_time = flush_time;

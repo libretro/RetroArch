@@ -27,6 +27,7 @@ RETRO_BEGIN_DECLS
 #define AUDIO_CHUNK_SIZE_NONBLOCKING   2048
 
 #define AUDIO_MAX_RATIO                16
+#define AUDIO_MIN_RATIO                0.0625
 
 #define AUDIO_MIXER_MAX_STREAMS        16
 
