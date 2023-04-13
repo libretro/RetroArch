@@ -1115,9 +1115,9 @@
 
 #ifdef HAVE_WASAPI
 /* WASAPI defaults */
-#define DEFAULT_WASAPI_EXCLUSIVE_MODE true
+#define DEFAULT_WASAPI_EXCLUSIVE_MODE false
 #define DEFAULT_WASAPI_FLOAT_FORMAT false
-/* auto */
+/* Automatic shared mode buffer */
 #define DEFAULT_WASAPI_SH_BUFFER_LENGTH -16
 #endif
 
@@ -1554,8 +1554,12 @@
 #endif
 
 /* MIDI */
-#define DEFAULT_MIDI_INPUT  "OFF"
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#define DEFAULT_MIDI_OUTPUT "Microsoft GS Wavetable Synth"
+#else
 #define DEFAULT_MIDI_OUTPUT "OFF"
+#endif
+#define DEFAULT_MIDI_INPUT  "OFF"
 #define DEFAULT_MIDI_VOLUME 100
 
 #ifdef HAVE_MIST
