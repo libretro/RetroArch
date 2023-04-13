@@ -609,6 +609,8 @@ bool audio_driver_init_internal(
       audio_driver_st.flags     &= ~AUDIO_FLAG_ACTIVE;
       return false;
    }
+   else
+      audio_driver_st.flags     |= AUDIO_FLAG_ACTIVE;
 
    if (!(audio_driver_find_driver(settings,
          "audio driver", verbosity_enabled)))
