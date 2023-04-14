@@ -285,6 +285,9 @@ void translation_release(bool inform)
    access_state_t *access_st  = access_state_get_ptr();
    unsigned service_auto_prev = access_st->ai_service_auto;
    access_st->ai_service_auto = 0;
+#ifdef HAVE_GFX_WIDGETS
+   dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
+#endif
    
 #ifdef DEBUG
    RARCH_LOG("[Translate]: AI Service is now stopping.\n");
@@ -309,6 +312,11 @@ void translation_release(bool inform)
 #ifdef HAVE_THREADS
       slock_unlock(access_st->image_lock);
    }
+#endif
+
+#ifdef HAVE_GFX_WIDGETS
+   if (p_dispwidget->ai_service_overlay_state != 0)
+      gfx_widgets_ai_service_overlay_unload();
 #endif
 
    if (inform && service_auto_prev != 0)
@@ -600,12 +608,12 @@ static access_response_t* parse_response_json(http_transfer_data_t *data)
          switch (key)
          {
             case 0: /* image */
-               response->image = (char*)unbase64(
+               response->image = (length == 0) ? NULL : (char*)unbase64(
                      string, (int)length, &response->image_size);
                break;
 #ifdef HAVE_AUDIOMIXER
             case 1: /* sound */
-               response->sound = (void*)unbase64(
+               response->sound = (length == 0) ? NULL : (void*)unbase64(
                      string, (int)length, &response->sound_size);
                break;
 #endif
@@ -1122,6 +1130,11 @@ static void translation_response_cb(
    if (     !string_is_equal(response->recall, "continue") 
          || (auto_mode_prev == 0 && access_st->ai_service_auto == 1))
    {
+#ifdef HAVE_GFX_WIDGETS
+      dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
+      if (p_dispwidget->ai_service_overlay_state != 0)
+         gfx_widgets_ai_service_overlay_unload();
+#endif
       translation_response_text(response);
       translation_response_sound(response);
       translation_response_input(response);
