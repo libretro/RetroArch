@@ -92,6 +92,7 @@
 #include "../file_path_special.h"
 #include "../defaults.h"
 #include "../verbosity.h"
+#include "../version.h"
 #ifdef HAVE_CHEATS
 #include "../cheat_manager.h"
 #endif
@@ -1666,19 +1667,22 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    const char *menu_driver               = menu_driver_ident();
-   size_t _len                           = strlcpy(tmp,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE),
-         sizeof(tmp));
-   tmp[_len  ]                           = ':';
-   tmp[_len+1]                           = ' ';
-   tmp[_len+2]                           = '\0';
-   strlcat(tmp, __DATE__, sizeof(tmp));
-
-   if (menu_entries_append(list, tmp, "",
-         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-      count++;
 
    (void)tmp_string;
+
+   {
+      size_t len = strlcpy(tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION),
+            sizeof(tmp));
+      tmp[len  ] = ':';
+      tmp[len+1] = ' ';
+      tmp[len+2] = '\0';
+      strlcat(tmp, PACKAGE_VERSION, sizeof(tmp));
+
+      if (menu_entries_append(list, tmp, "",
+               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+         count++;
+   }
 
 #ifdef HAVE_GIT_VERSION
    {
@@ -1689,11 +1693,26 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       tmp[len+1] = ' ';
       tmp[len+2] = '\0';
       strlcat(tmp, retroarch_git_version, sizeof(tmp));
+
       if (menu_entries_append(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
          count++;
    }
 #endif
+
+   {
+      size_t len = strlcpy(tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE),
+            sizeof(tmp));
+      tmp[len  ] = ':';
+      tmp[len+1] = ' ';
+      tmp[len+2] = '\0';
+      strlcat(tmp, __DATE__, sizeof(tmp));
+
+      if (menu_entries_append(list, tmp, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+         count++;
+   }
 
    retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, tmp, sizeof(tmp), 0);
    if (menu_entries_append(list, tmp, "",
@@ -4012,6 +4031,13 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
    }
 #endif
 
+   if (menu_entries_append(info_list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION),
+         msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION),
+         MENU_ENUM_LABEL_SYSTEM_INFORMATION,
+         MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
 #if defined(HAVE_NETWORKING) && defined(HAVE_IFINFO)
    if (menu_entries_append(info_list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION),
@@ -4020,13 +4046,6 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
          MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
 #endif
-
-   if (menu_entries_append(info_list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION),
-         msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION),
-         MENU_ENUM_LABEL_SYSTEM_INFORMATION,
-         MENU_SETTING_ACTION, 0, 0, NULL))
-      count++;
 
 #ifdef HAVE_LIBRETRODB
    if (menu_entries_append(info_list,
