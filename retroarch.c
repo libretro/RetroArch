@@ -4906,17 +4906,17 @@ static void retroarch_print_version(void)
 
    frontend_driver_attach_console();
 
-   fprintf(stdout, "%s: %s -- v%s",
+   fprintf(stdout, "%s - %s\n",
          msg_hash_to_str(MSG_PROGRAM),
-         msg_hash_to_str(MSG_LIBRETRO_FRONTEND),
-         PACKAGE_VERSION);
+         msg_hash_to_str(MSG_LIBRETRO_FRONTEND));
+
+   fprintf(stdout, "Version: %s", PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
-   printf(" -- %s --\n", retroarch_git_version);
-#else
-   printf("\n");
+   fprintf(stdout, " (Git %s)", retroarch_git_version);
 #endif
+   fprintf(stdout, " " __DATE__ "\n");
+
    retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str), 0);
-   strlcat(str, " Built: " __DATE__, sizeof(str));
    fprintf(stdout, "%s\n", str);
 }
 
@@ -6144,6 +6144,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
          RARCH_LOG_OUTPUT("%s", str_output);
       }
+
       {
          char str_output[256];
          char str[128];
@@ -6151,14 +6152,21 @@ bool retroarch_main_init(int argc, char *argv[])
 
 #ifdef HAVE_GIT_VERSION
          snprintf(str_output, sizeof(str_output),
-               "%s: %s" "\n" FILE_PATH_LOG_INFO " Built: " __DATE__ "\n" FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n" FILE_PATH_LOG_INFO " Git: %s" "\n" FILE_PATH_LOG_INFO " =================================================\n",
+               "%s: %s" "\n"
+               FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n"
+               FILE_PATH_LOG_INFO " Git: %s" "\n"
+               FILE_PATH_LOG_INFO " Built: " __DATE__ "\n"
+               FILE_PATH_LOG_INFO " =================================================\n",
                msg_hash_to_str(MSG_CAPABILITIES),
                str,
                retroarch_git_version
                );
 #else
          snprintf(str_output, sizeof(str_output),
-               "%s: %s" "\n" FILE_PATH_LOG_INFO " Built: " __DATE__ "\n" FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n" FILE_PATH_LOG_INFO " =================================================\n",
+               "%s: %s" "\n"
+               FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n"
+               FILE_PATH_LOG_INFO " Built: " __DATE__ "\n"
+               FILE_PATH_LOG_INFO " =================================================\n",
                msg_hash_to_str(MSG_CAPABILITIES),
                str);
 #endif
