@@ -282,12 +282,12 @@ static INLINE bool translation_hash_info(enum msg_hash_enums hash)
  */
 void translation_release(bool inform)
 {
-   access_state_t *access_st  = access_state_get_ptr();
-   unsigned service_auto_prev = access_st->ai_service_auto;
-   access_st->ai_service_auto = 0;
 #ifdef HAVE_GFX_WIDGETS
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
 #endif
+   access_state_t *access_st      = access_state_get_ptr();
+   unsigned service_auto_prev     = access_st->ai_service_auto;
+   access_st->ai_service_auto     = 0;
    
 #ifdef DEBUG
    RARCH_LOG("[Translate]: AI Service is now stopping.\n");
