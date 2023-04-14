@@ -4109,14 +4109,14 @@ void video_driver_frame(const void *data, unsigned width,
             " Aspect:      %3.3f\n"
             " FPS:         %3.2f\n"
             " Sample Rate: %6.2f\n"
-            "VIDEO\n"
+            "VIDEO: %s\n"
             " Viewport:    %d x %d\n"
             " Refresh:     %5.2f hz\n"
             " Frame Rate:  %5.2f fps\n"
             " Frame Time:  %5.2f ms\n"
             " - Deviation: %5.2f %%\n"
             " Frames:      %5" PRIu64"\n"
-            "AUDIO\n"
+            "AUDIO: %s\n"
             " Saturation:  %5.2f %%\n"
             " Deviation:   %5.2f %%\n"
             " Underrun:    %5.2f %%\n"
@@ -4130,6 +4130,7 @@ void video_driver_frame(const void *data, unsigned width,
             av_info->geometry.aspect_ratio,
             av_info->timing.fps,
             av_info->timing.sample_rate,
+            video_st->current_video->ident,
             video_info.width,
             video_info.height,
             video_info.refresh_rate,
@@ -4137,6 +4138,7 @@ void video_driver_frame(const void *data, unsigned width,
             frame_time / 1000.0f,
             100.0f * stddev,
             video_st->frame_count,
+            audio_state_get_ptr()->current_audio->ident,
             audio_stats.average_buffer_saturation,
             audio_stats.std_deviation_percentage,
             audio_stats.close_to_underrun,
