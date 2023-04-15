@@ -829,6 +829,10 @@ typedef struct settings
       bool cheevos_visibility_unlock;
       bool cheevos_visibility_mastery;
       bool cheevos_visibility_account;
+      bool cheevos_visibility_lboard_start;
+      bool cheevos_visibility_lboard_submit;
+      bool cheevos_visibility_lboard_cancel;
+      bool cheevos_visibility_lboard_trackers;
 
       /* Camera */
       bool camera_allow;

@@ -524,10 +524,6 @@ MSG_HASH(
    "cheevos_hardcore_mode_enable"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "cheevos_leaderboards_enable"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_RICHPRESENCE_ENABLE,
    "cheevos_richpresence_enable"
    )
@@ -610,6 +606,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_ACCOUNT,
    "cheevos_visibility_account"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "cheevos_visibility_lboard_start"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "cheevos_visibility_lboard_submit"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "cheevos_visibility_lboard_cancel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "cheevos_visibility_lboard_trackers"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CLOSE_CONTENT,
