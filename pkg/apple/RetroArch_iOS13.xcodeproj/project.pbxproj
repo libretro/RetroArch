@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0714E7142983A5AC00E6B45B /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */; };
 		0714E7152983A5E500E6B45B /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		07B7872D29E8FE8F0088B74F /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07B7872C29E8FE8F0088B74F /* filters */; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		9204BE101D319EF300BD49DB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
@@ -156,6 +157,8 @@
 
 /* Begin PBXFileReference section */
 		0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = tvOS/modules/libMoltenVK.dylib; sourceTree = "<group>"; };
+		07B7872429E8D13F0088B74F /* .empty */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .empty; sourceTree = "<group>"; };
+		07B7872C29E8FE8F0088B74F /* filters */ = {isa = PBXFileReference; lastKnownFileType = folder; path = filters; sourceTree = "<group>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -491,10 +494,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		07B7872329E8D13F0088B74F /* filters */ = {
+			isa = PBXGroup;
+			children = (
+				07B7872429E8D13F0088B74F /* .empty */,
+			);
+			name = filters;
+			path = iOS/filters;
+			sourceTree = SOURCE_ROOT;
+		};
 		83D632D719ECFCC4009E3161 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
 				9222F20A2315DD3D0097C0FD /* retroarch_logo.png */,
+				07B7872329E8D13F0088B74F /* filters */,
 				83EB675F19EEAF050096F441 /* iOS/modules */,
 				69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */,
 			);
@@ -505,6 +518,7 @@
 		926C77D821FD1E6500103EDE /* tvOS */ = {
 			isa = PBXGroup;
 			children = (
+				07B7872C29E8FE8F0088B74F /* filters */,
 				92E5DCD3231A5786006491BF /* modules */,
 				926C77E221FD1E6700103EDE /* Assets.xcassets */,
 				926C77E421FD1E6700103EDE /* Info.plist */,
@@ -1344,6 +1358,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07B7872D29E8FE8F0088B74F /* filters in Resources */,
 				92CC05BD21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
 				92E5DCD4231A5786006491BF /* modules in Resources */,
 				9222F2002314BA7C0097C0FD /* assets.zip in Resources */,
@@ -1374,10 +1389,11 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "./code-sign-cores.sh\n";
+			shellScript = "./code-sign-cores.sh\n\nmkdir -p ${SRCROOT}/iOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/iOS/filters/audio/\nmkdir -p ${SRCROOT}/iOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/iOS/filters/video/\n";
 		};
 		92CC057521FE2D4900FF79F0 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -1391,7 +1407,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "./code-sign-cores.sh tvos\n";
+			shellScript = "./code-sign-cores.sh\n\nmkdir -p ${SRCROOT}/tvOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/tvOS/filters/audio/\nmkdir -p ${SRCROOT}/tvOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/tvOS/filters/video/\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1560,6 +1576,7 @@
 					"-DHAVE_COCOA_METAL",
 					"-DHAVE_CONFIGFILE",
 					"-DHAVE_COREAUDIO",
+					"-DHAVE_DSP_FILTER",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_GFX_WIDGETS",
@@ -1610,6 +1627,7 @@
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_UPDATE_CORE_INFO",
+					"-DHAVE_VIDEO_FILTER",
 					"-DHAVE_VULKAN",
 					"-DHAVE_XMB",
 					"-DHAVE_ZLIB",
@@ -1699,6 +1717,7 @@
 					"-DHAVE_COCOA_METAL",
 					"-DHAVE_CONFIGFILE",
 					"-DHAVE_COREAUDIO",
+					"-DHAVE_DSP_FILTER",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_GFX_WIDGETS",
@@ -1749,6 +1768,7 @@
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_UPDATE_CORE_INFO",
+					"-DHAVE_VIDEO_FILTER",
 					"-DHAVE_VULKAN",
 					"-DHAVE_XMB",
 					"-DHAVE_ZLIB",
@@ -1866,6 +1886,7 @@
 					"-DHAVE_COCOA_METAL",
 					"-DHAVE_CONFIGFILE",
 					"-DHAVE_COREAUDIO",
+					"-DHAVE_DSP_FILTER",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_GFX_WIDGETS",
@@ -1911,6 +1932,7 @@
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_UPDATE_CORE_INFO",
+					"-DHAVE_VIDEO_FILTER",
 					"-DHAVE_VULKAN",
 					"-DHAVE_XMB",
 					"-DHAVE_ZLIB",
@@ -2023,6 +2045,7 @@
 					"-DHAVE_COCOA_METAL",
 					"-DHAVE_CONFIGFILE",
 					"-DHAVE_COREAUDIO",
+					"-DHAVE_DSP_FILTER",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_GFX_WIDGETS",
@@ -2068,6 +2091,7 @@
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_UPDATE_CORE_INFO",
+					"-DHAVE_VIDEO_FILTER",
 					"-DHAVE_VULKAN",
 					"-DHAVE_XMB",
 					"-DHAVE_ZLIB",
