@@ -1010,6 +1010,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.type          = type;
          info.directory_ptr = idx;
          info_label         = label;
+         info_path          = new_path;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_DIR;
          break;
       case ACTION_OK_DL_PUSH_DEFAULT:
@@ -6334,13 +6335,21 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
+   char current_value[PATH_MAX_LENGTH];
+
+   current_value[0] = '\0';
 
    if (!menu)
       return -1;
 
+   /* Start browsing from current directory */
+   get_current_menu_value(menu_state_get_ptr(), current_value, sizeof(current_value));
+   if (!path_is_directory(current_value))
+      current_value[0] = '\0';
+
    filebrowser_set_type(FILEBROWSER_SELECT_DIR);
    strlcpy(menu->filebrowser_label, label, sizeof(menu->filebrowser_label));
-   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
+   return generic_action_ok_displaylist_push(path, current_value, label, type, idx,
          entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
 
