@@ -6558,7 +6558,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
-   "Shows a message with the value being submitted for a leaderboard."
+   "Shows a message with the value being submitted when a leaderboard attempt is completed."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
@@ -14060,6 +14060,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Achievement Unlocked"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Leaderboard attempt started"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Leaderboard attempt failed"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "Submitted %s for %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,

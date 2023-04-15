@@ -524,7 +524,8 @@ static void rcheevos_lboard_submit(rcheevos_locals_t* locals,
    /* Show the on-screen message. */
    if (settings->bools.cheevos_visibility_lboard_submit)
    {
-      snprintf(buffer, sizeof(buffer), "Submitted %s for %s", formatted_value, lboard->title);
+      snprintf(buffer, sizeof(buffer), msg_hash_to_str(MSG_LEADERBOARD_SUBMISSION),
+            formatted_value, lboard->title);
       runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
@@ -551,8 +552,8 @@ static void rcheevos_lboard_canceled(rcheevos_ralboard_t * lboard,
 
    if (settings->bools.cheevos_visibility_lboard_cancel)
    {
-      snprintf(buffer, sizeof(buffer), "Leaderboard attempt failed: %s",
-               lboard->title);
+      snprintf(buffer, sizeof(buffer), "%s: %s",
+            msg_hash_to_str(MSG_LEADERBOARD_FAILED), lboard->title);
       runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
@@ -587,9 +588,11 @@ static void rcheevos_lboard_started(
    if (settings->bools.cheevos_visibility_lboard_start)
    {
       if (lboard->description && *lboard->description)
-         snprintf(buffer, sizeof(buffer), "Leaderboard attempt started: %s - %s", lboard->title, lboard->description);
+         snprintf(buffer, sizeof(buffer), "%s: %s - %s",
+               msg_hash_to_str(MSG_LEADERBOARD_STARTED), lboard->title, lboard->description);
       else
-         snprintf(buffer, sizeof(buffer), "Leaderboard attempt started: %s", lboard->title);
+         snprintf(buffer, sizeof(buffer), "%s: %s",
+               msg_hash_to_str(MSG_LEADERBOARD_STARTED), lboard->title);
 
       runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
