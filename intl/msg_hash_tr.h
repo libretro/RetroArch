@@ -591,6 +591,10 @@ MSG_HASH(
    "Oluşturulma Tarihi"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "RetroArch Versiyonu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Git Sürümü"
    )
