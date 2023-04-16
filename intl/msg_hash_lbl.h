@@ -286,6 +286,10 @@ MSG_HASH(
    "audio_fastforward_mute"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "audio_fastforward_speedup"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
    "audio_output_rate"
    )

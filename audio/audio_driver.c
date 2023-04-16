@@ -477,7 +477,7 @@ static void audio_driver_flush(
    if (is_slowmotion)
       src_data.ratio       *= slowmotion_ratio;
 
-   if (is_fastforward) {
+   if (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup) {
       const retro_time_t flush_time = cpu_features_get_time_usec();
 
       if (audio_st->last_flush_time > 0) {

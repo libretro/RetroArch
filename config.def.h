@@ -1124,6 +1124,9 @@
 /* Automatically mute audio when fast forward
  * is enabled */
 #define DEFAULT_AUDIO_FASTFORWARD_MUTE false
+/* Speed up audio to match fast-forward speed up.
+ * Avoids crackling */
+#define DEFAULT_AUDIO_FASTFORWARD_SPEEDUP false
 
 /* MISC */
 
