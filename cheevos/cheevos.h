@@ -45,7 +45,7 @@ bool rcheevos_hardcore_active(void);
 
 void rcheevos_validate_config_settings(void);
 
-void rcheevos_leaderboards_enabled_changed(void);
+void rcheevos_leaderboard_trackers_visibility_changed(void);
 
 void rcheevos_set_support_cheevos(bool state);
 bool rcheevos_get_support_cheevos(void);

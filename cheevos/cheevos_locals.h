@@ -194,13 +194,10 @@ typedef struct rcheevos_locals_t
 
    bool hardcore_active;              /* hardcore functionality is active */
    bool loaded;                       /* load task has completed */
-   bool core_supports;                /* false if core explicitly disables achievements */
 #ifdef HAVE_GFX_WIDGETS
    bool assign_new_trackers;          /* a new leaderboard was started and needs a tracker assigned */
 #endif
-   bool leaderboards_enabled;         /* leaderboards are enabled */
-   bool leaderboard_notifications;    /* leaderboard notifications are enabled */
-   bool leaderboard_trackers;         /* leaderboard trackers are enabled */
+   bool core_supports;                /* false if core explicitly disables achievements */
 } rcheevos_locals_t;
 
 rcheevos_locals_t* get_rcheevos_locals(void);

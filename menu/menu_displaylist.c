@@ -8587,6 +8587,10 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_UNLOCK,                             PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_MASTERY,                            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_CHEEVOS_CHALLENGE_INDICATORS,                          PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_START,                       PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,                    PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_ACCOUNT,                            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE,                                PARSE_ONLY_BOOL,   true},
             };

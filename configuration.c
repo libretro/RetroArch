@@ -1435,7 +1435,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("cheevos_username",         settings->arrays.cheevos_username, false, NULL, true);
    SETTING_ARRAY("cheevos_password",         settings->arrays.cheevos_password, false, NULL, true);
    SETTING_ARRAY("cheevos_token",            settings->arrays.cheevos_token, false, NULL, true);
-   SETTING_ARRAY("cheevos_leaderboards_enable", settings->arrays.cheevos_leaderboards_enable, true, "true", true);
+   SETTING_ARRAY("cheevos_leaderboards_enable", settings->arrays.cheevos_leaderboards_enable, true, "", true); /* deprecated */
 #endif
    SETTING_ARRAY("video_context_driver",     settings->arrays.video_context_driver,   false, NULL, true);
    SETTING_ARRAY("audio_driver",             settings->arrays.audio_driver,           false, NULL, true);
@@ -1959,6 +1959,10 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("cheevos_visibility_unlock",    &settings->bools.cheevos_visibility_unlock, true, DEFAULT_CHEEVOS_VISIBILITY_UNLOCK, false);
    SETTING_BOOL("cheevos_visibility_mastery",   &settings->bools.cheevos_visibility_mastery, true, DEFAULT_CHEEVOS_VISIBILITY_MASTERY, false);
    SETTING_BOOL("cheevos_visibility_account",   &settings->bools.cheevos_visibility_account, true, DEFAULT_CHEEVOS_VISIBILITY_ACCOUNT, false);
+   SETTING_BOOL("cheevos_visibility_lboard_start", &settings->bools.cheevos_visibility_lboard_start, true, DEFAULT_CHEEVOS_VISIBILITY_LBOARD_START, false);
+   SETTING_BOOL("cheevos_visibility_lboard_submit", &settings->bools.cheevos_visibility_lboard_submit, true, DEFAULT_CHEEVOS_VISIBILITY_LBOARD_SUBMIT, false);
+   SETTING_BOOL("cheevos_visibility_lboard_cancel", &settings->bools.cheevos_visibility_lboard_cancel, true, DEFAULT_CHEEVOS_VISIBILITY_LBOARD_CANCEL, false);
+   SETTING_BOOL("cheevos_visibility_lboard_trackers", &settings->bools.cheevos_visibility_lboard_trackers, true, DEFAULT_CHEEVOS_VISIBILITY_LBOARD_TRACKERS, false);
 #endif
 #ifdef HAVE_OVERLAY
    SETTING_BOOL("input_overlay_enable",         &settings->bools.input_overlay_enable, true, config_overlay_enable_default(), false);
@@ -2651,12 +2655,6 @@ void config_set_defaults(void *data)
    configuration_set_string(settings,
          settings->arrays.ai_service_url,
          DEFAULT_AI_SERVICE_URL);
-
-#ifdef HAVE_CHEEVOS
-   configuration_set_string(settings,
-         settings->arrays.cheevos_leaderboards_enable,
-         "true");
-#endif
 
 #ifdef HAVE_MATERIALUI
    if (g_defaults.menu_materialui_menu_color_theme_enable)
@@ -3807,6 +3805,41 @@ static bool config_load_file(global_t *global,
     * and up (with 0 being skipped) */
    if (settings->floats.fastforward_ratio < 0.0f)
       configuration_set_float(settings, settings->floats.fastforward_ratio, 0.0f);
+
+#ifdef HAVE_CHEEVOS
+   if (!string_is_empty(settings->arrays.cheevos_leaderboards_enable))
+   {
+      if (string_is_equal(settings->arrays.cheevos_leaderboards_enable, "true"))
+      {
+         settings->bools.cheevos_visibility_lboard_start = true;
+         settings->bools.cheevos_visibility_lboard_submit = true;
+         settings->bools.cheevos_visibility_lboard_cancel = true;
+         settings->bools.cheevos_visibility_lboard_trackers = true;
+      }
+      else if (string_is_equal(settings->arrays.cheevos_leaderboards_enable, "trackers"))
+      {
+         settings->bools.cheevos_visibility_lboard_start = false;
+         settings->bools.cheevos_visibility_lboard_submit = true;
+         settings->bools.cheevos_visibility_lboard_cancel = false;
+         settings->bools.cheevos_visibility_lboard_trackers = true;
+      }
+      else if (string_is_equal(settings->arrays.cheevos_leaderboards_enable, "notifications"))
+      {
+         settings->bools.cheevos_visibility_lboard_start = true;
+         settings->bools.cheevos_visibility_lboard_submit = true;
+         settings->bools.cheevos_visibility_lboard_cancel = true;
+         settings->bools.cheevos_visibility_lboard_trackers = false;
+      }
+      else
+      {
+         settings->bools.cheevos_visibility_lboard_start = false;
+         settings->bools.cheevos_visibility_lboard_submit = false;
+         settings->bools.cheevos_visibility_lboard_cancel = false;
+         settings->bools.cheevos_visibility_lboard_trackers = false;
+      }
+      settings->arrays.cheevos_leaderboards_enable[0] = '\0';
+   }
+#endif
 
 #ifdef HAVE_LAKKA
    configuration_set_bool(settings,
