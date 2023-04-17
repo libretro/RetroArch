@@ -6275,10 +6275,6 @@ MSG_HASH(
    "Ranglisták"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Játékspecifikus ranglisták. Csak Hardcore módban van hatása."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
    "Állapotüzenetek"
    )

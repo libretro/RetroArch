@@ -4559,10 +4559,6 @@ MSG_HASH(
    "Taules de classificació"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Taules de classificació específiques del joc. No té efecte si el «mode expert» està desactivat."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
    "Presència rica"
    )

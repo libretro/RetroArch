@@ -6351,10 +6351,6 @@ MSG_HASH(
    "排名資訊"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "遊戲特別排行榜, 開啟「硬核模式」時此選項被忽略。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
    "發送資訊"
    )

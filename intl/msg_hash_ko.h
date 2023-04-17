@@ -6295,10 +6295,6 @@ MSG_HASH(
    "리더보드"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "게임별 리더보드를 사용합니다. '도전과제 하드코어 모드'를 비활성화한 경우 작동하지 않습니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
    "세부 내역"
    )
