@@ -11078,13 +11078,11 @@ static unsigned menu_displaylist_netplay_kick(file_list_t *list)
    {
       size_t i;
       char client_id[4];
-      netplay_client_info_t *client;
       net_driver_state_t *net_st = networking_state_get_ptr();
 
       for (i = 0; i < net_st->client_info_count; i++)
       {
-         client = &net_st->client_info[i];
-
+         netplay_client_info_t *client = &net_st->client_info[i];
          snprintf(client_id, sizeof(client_id), "%d", client->id);
          if (menu_entries_append(list, client->name, client_id,
                MENU_ENUM_LABEL_NETPLAY_KICK_CLIENT,
@@ -11319,7 +11317,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
 
             {
-               unsigned retro_id, j;
+               unsigned j;
                unsigned device  = settings->uints.input_libretro_device[mapped_port];
                device          &= RETRO_DEVICE_MASK;
 
@@ -11331,16 +11329,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      char desc_label[400];
                      char descriptor[300];
-                     const struct retro_keybind *keybind;
-                     const struct retro_keybind *auto_bind;
-
-                     retro_id                              =
+                     unsigned retro_id                     =
                         (j < RARCH_ANALOG_BIND_LIST_END)
                         ? input_config_bind_order[j]
                         : j;
-                     keybind                               =
+                     const struct retro_keybind *keybind   =
                         &input_config_binds[port][retro_id];
-                     auto_bind                             =
+                     const struct retro_keybind *auto_bind =
                         (const struct retro_keybind*)
                         input_config_get_bind_auto(port, retro_id);
 
@@ -11386,16 +11381,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      char desc_label[400];
                      char descriptor[300];
-                     const struct retro_keybind *keybind;
-                     const struct retro_keybind *auto_bind;
-
-                     retro_id                              =
+                     unsigned retro_id                     =
                         (j < RARCH_ANALOG_BIND_LIST_END)
                         ? input_config_bind_order[j]
                         : j;
-                     keybind                               =
+                     const struct retro_keybind *keybind   =
                         &input_config_binds[port][retro_id];
-                     auto_bind                             =
+                     const struct retro_keybind *auto_bind =
                         (const struct retro_keybind*)
                         input_config_get_bind_auto(port, retro_id);
 
@@ -11445,11 +11437,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_CDROM
       case DISPLAYLIST_CDROM_DETAIL_INFO:
       {
-         media_detect_cd_info_t cd_info = {{0}};
-         char file_path[PATH_MAX_LENGTH] = {0};
          RFILE *file;
-         char drive = info->path[0];
-         bool atip = false;
+         media_detect_cd_info_t cd_info  = {{0}};
+         char file_path[PATH_MAX_LENGTH] = {0};
+         char drive                      = info->path[0];
+         bool atip                       = false;
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = 0;
@@ -11991,17 +11983,26 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             char lbl_remove[128];
             char lbl_stop[128];
             char lbl_volume[128];
-            unsigned id               = info->type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN;
+            char mixer_stream_str[128];
+            unsigned id                 = info->type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN;
 
             lbl_remove[0] = lbl_stop[0] = lbl_play[0] = lbl_play_looped[0] = '\0';
-            lbl_volume[0] = lbl_play_sequential[0] = '\0';
+            lbl_volume[0] = lbl_play_sequential[0]                         = '\0';
+            mixer_stream_str[0]         = '\0';
 
-            snprintf(lbl_volume, sizeof(lbl_volume), "mixer_stream_%d_action_volume", id);
-            snprintf(lbl_stop, sizeof(lbl_stop), "mixer_stream_%d_action_stop", id);
-            snprintf(lbl_remove, sizeof(lbl_remove), "mixer_stream_%d_action_remove", id);
-            snprintf(lbl_play, sizeof(lbl_play), "mixer_stream_%d_action_play", id);
-            snprintf(lbl_play_looped, sizeof(lbl_play_looped), "mixer_stream_%d_action_play_looped", id);
-            snprintf(lbl_play_sequential, sizeof(lbl_play_sequential), "mixer_stream_%d_action_play_sequential", id);
+            snprintf(mixer_stream_str, sizeof(mixer_stream_str), "mixer_stream_%d", id);
+            strlcpy(lbl_volume,          mixer_stream_str,         sizeof(lbl_volume));
+            strlcpy(lbl_stop,            mixer_stream_str,         sizeof(lbl_stop));
+            strlcpy(lbl_remove,          mixer_stream_str,         sizeof(lbl_remove));
+            strlcpy(lbl_play,            mixer_stream_str,         sizeof(lbl_play));
+            strlcpy(lbl_play_looped,     mixer_stream_str,         sizeof(lbl_play_looped));
+            strlcpy(lbl_play_sequential, mixer_stream_str,         sizeof(lbl_play_sequential));
+            strlcat(lbl_volume,          "_action_volume",         sizeof(lbl_volume));
+            strlcat(lbl_stop,            "_action_stop",           sizeof(lbl_stop));
+            strlcat(lbl_remove,          "_action_remove",         sizeof(lbl_remove));
+            strlcat(lbl_play,            "_action_play",           sizeof(lbl_play));
+            strlcat(lbl_play_looped,     "_action_play_looped",    sizeof(lbl_play_looped));
+            strlcat(lbl_play_sequential, "_action_play_sequential",sizeof(lbl_play_sequential));
 
             if (menu_entries_append(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY),
@@ -12060,8 +12061,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                             | MD_FLAG_NEED_CLEAR;
          break;
       case DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST:
-         /* TODO/FIXME ? */
-         break;
       case DISPLAYLIST_OPTIONS_MANAGEMENT:
          /* TODO/FIXME ? */
          break;
@@ -14376,15 +14375,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
       case DISPLAYLIST_PLAYLIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         {
-            menu_displaylist_parse_playlist_generic(menu, info,
-                  settings,
-                  path_basename_nocompression(info->path),
-                  info->path,
-                  true, /* Is a collection */
-                  true, /* Enable sorting (if allowed by user config) */
-                  &ret);
-         }
+         menu_displaylist_parse_playlist_generic(menu, info,
+               settings,
+               path_basename_nocompression(info->path),
+               info->path,
+               true, /* Is a collection */
+               true, /* Enable sorting (if allowed by user config) */
+               &ret);
          ret = 0; /* Why do we do this...? */
 
          if (ret == 0)
@@ -14588,12 +14585,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
                   MENU_ENUM_LABEL_NO_ITEMS,
                   MENU_SETTING_NO_ITEM, 0, 0, NULL);
-
-         info->flags    |= MD_FLAG_NEED_REFRESH
-                         | MD_FLAG_NEED_PUSH;
          if (string_is_equal(info->label,
                   msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
             info->flags |= MD_FLAG_PUSH_BUILTIN_CORES;
+         info->flags    |= MD_FLAG_NEED_REFRESH
+                         | MD_FLAG_NEED_PUSH;
          break;
       case DISPLAYLIST_DEFAULT:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
