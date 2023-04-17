@@ -1287,15 +1287,16 @@ static unsigned menu_displaylist_parse_core_option_override_list(
                MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE, 0, 0, NULL))
             count++;
    }
-
-   /* Remove core option overrides */
-   if (game_options_active)
+   else
+   {
+      /* Remove core option overrides */
       if (menu_entries_append(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE),
-            msg_hash_to_str(MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE),
-            MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-            MENU_SETTING_ACTION_GAME_SPECIFIC_CORE_OPTIONS_REMOVE, 0, 0, NULL))
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE),
+               msg_hash_to_str(MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE),
+               MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+               MENU_SETTING_ACTION_GAME_SPECIFIC_CORE_OPTIONS_REMOVE, 0, 0, NULL))
          count++;
+   }
 
    if (folder_options_active)
       if (menu_entries_append(info->list,
@@ -1371,25 +1372,27 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(
          MENU_SETTING_ACTION_REMAP_FILE_LOAD, 0, 0, NULL))
       count++;
 
-   /* Save remap files */
-   if (has_content &&
-       !game_remap_active &&
-       menu_entries_append(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME),
-            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME),
-            MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
-            MENU_SETTING_ACTION_REMAP_FILE_SAVE_GAME, 0, 0, NULL))
-      count++;
+   if (has_content)
+   {
+      /* Save remap files */
+      if (!game_remap_active)
+      {
+         if (menu_entries_append(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME),
+                  msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME),
+                  MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
+                  MENU_SETTING_ACTION_REMAP_FILE_SAVE_GAME, 0, 0, NULL))
+            count++;
+         if (!content_dir_remap_active &&
+               menu_entries_append(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR),
+                  msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR),
+                  MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+                  MENU_SETTING_ACTION_REMAP_FILE_SAVE_CONTENT_DIR, 0, 0, NULL))
+            count++;
+      }
+   }
 
-   if (has_content &&
-       !game_remap_active &&
-       !content_dir_remap_active &&
-       menu_entries_append(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR),
-            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR),
-            MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,
-            MENU_SETTING_ACTION_REMAP_FILE_SAVE_CONTENT_DIR, 0, 0, NULL))
-      count++;
 
    if (!game_remap_active &&
        !content_dir_remap_active &&
@@ -1402,23 +1405,24 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(
       count++;
 
    /* Remove remap files */
-   if (has_content &&
-       game_remap_active &&
-       menu_entries_append(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
-            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
-            MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
-            MENU_SETTING_ACTION_REMAP_FILE_REMOVE_GAME, 0, 0, NULL))
-      count++;
+   if (has_content)
+   {
+      if (game_remap_active &&
+            menu_entries_append(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
+               msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
+               MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
+               MENU_SETTING_ACTION_REMAP_FILE_REMOVE_GAME, 0, 0, NULL))
+         count++;
 
-   if (has_content &&
-       content_dir_remap_active &&
-       menu_entries_append(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR),
-            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR),
-            MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
-            MENU_SETTING_ACTION_REMAP_FILE_REMOVE_CONTENT_DIR, 0, 0, NULL))
-      count++;
+      if (content_dir_remap_active &&
+            menu_entries_append(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR),
+               msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR),
+               MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+               MENU_SETTING_ACTION_REMAP_FILE_REMOVE_CONTENT_DIR, 0, 0, NULL))
+         count++;
+   }
 
    if (core_remap_active &&
        menu_entries_append(info->list,
@@ -1667,52 +1671,43 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    const char *menu_driver               = menu_driver_ident();
+   size_t len                            = strlcpy(tmp,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION),
+         sizeof(tmp));
+   tmp[len  ]                            = ':';
+   tmp[len+1]                            = ' ';
+   tmp[len+2]                            = '\0';
+   strlcat(tmp, PACKAGE_VERSION, sizeof(tmp));
 
-   (void)tmp_string;
-
-   {
-      size_t len = strlcpy(tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION),
-            sizeof(tmp));
-      tmp[len  ] = ':';
-      tmp[len+1] = ' ';
-      tmp[len+2] = '\0';
-      strlcat(tmp, PACKAGE_VERSION, sizeof(tmp));
-
-      if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-         count++;
-   }
+   if (menu_entries_append(list, tmp, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+      count++;
 
 #ifdef HAVE_GIT_VERSION
-   {
-      size_t len = strlcpy(tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION),
-            sizeof(tmp));
-      tmp[len  ] = ':';
-      tmp[len+1] = ' ';
-      tmp[len+2] = '\0';
-      strlcat(tmp, retroarch_git_version, sizeof(tmp));
+   len                                   = strlcpy(tmp,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION),
+         sizeof(tmp));
+   tmp[len  ]                            = ':';
+   tmp[len+1]                            = ' ';
+   tmp[len+2]                            = '\0';
+   strlcat(tmp, retroarch_git_version, sizeof(tmp));
 
-      if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-         count++;
-   }
+   if (menu_entries_append(list, tmp, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+      count++;
 #endif
 
-   {
-      size_t len = strlcpy(tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE),
-            sizeof(tmp));
-      tmp[len  ] = ':';
-      tmp[len+1] = ' ';
-      tmp[len+2] = '\0';
-      strlcat(tmp, __DATE__, sizeof(tmp));
+   len                                   = strlcpy(tmp,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE),
+         sizeof(tmp));
+   tmp[len  ]                            = ':';
+   tmp[len+1]                            = ' ';
+   tmp[len+2]                            = '\0';
+   strlcat(tmp, __DATE__, sizeof(tmp));
 
-      if (menu_entries_append(list, tmp, "",
+   if (menu_entries_append(list, tmp, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-         count++;
-   }
+      count++;
 
    retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, tmp, sizeof(tmp), 0);
    if (menu_entries_append(list, tmp, "",
@@ -1733,12 +1728,12 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    {
       char cpu_str[NAME_MAX_LENGTH];
       const char *model = frontend_driver_get_cpu_model_name();
-      size_t len        = strlcpy(cpu_str,
+      len               = strlcpy(cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL),
             sizeof(cpu_str));
-      cpu_str[len  ] = ':';
-      cpu_str[len+1] = ' ';
-      cpu_str[len+2] = '\0';
+      cpu_str[len  ]    = ':';
+      cpu_str[len+1]    = ' ';
+      cpu_str[len+2]    = '\0';
 
       if (string_is_empty(model))
          strlcat(cpu_str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), sizeof(cpu_str));
@@ -1752,7 +1747,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
    {
       char cpu_str[128];
-      size_t len     = strlcpy(cpu_str,
+      len            = strlcpy(cpu_str,
             msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES),
             sizeof(cpu_str));
@@ -1768,7 +1763,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    }
 
    {
-      size_t len;
       char cpu_str[256];
       char cpu_arch_str[64];
       char cpu_text_str[128];
@@ -1795,11 +1789,11 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    {
       char cpu_str[64];
       unsigned amount_cores = cpu_features_get_core_amount();
-      size_t _len           = strlcpy(cpu_str,
+      len                   = strlcpy(cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_CORES),
             sizeof(cpu_str));
-      snprintf(cpu_str      + _len,
-            sizeof(cpu_str) - _len,
+      snprintf(cpu_str      + len,
+            sizeof(cpu_str) - len,
             ": %d\n", amount_cores);
       if (menu_entries_append(list, cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_CPU_CORES),
@@ -1860,7 +1854,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
    if (frontend)
    {
-      size_t len;
       char tmp2[128];
       int major  = 0;
       int minor  = 0;
@@ -1882,7 +1875,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       if (frontend->get_lakka_version)
       {
-         size_t len;
          frontend->get_lakka_version(tmp2, sizeof(tmp2));
 
          len        = strlcpy(tmp,
@@ -1901,7 +1893,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       if (frontend->get_name)
       {
-         size_t len;
          frontend->get_name(tmp2, sizeof(tmp2));
 
          len        = strlcpy(tmp,
@@ -1967,7 +1958,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       if (frontend->get_powerstate)
       {
-         size_t _len;
          int seconds    = 0, percent = 0;
          char tmp2[128];
          enum frontend_powerstate state =
@@ -2019,13 +2009,13 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                break;
          }
 
-         _len        = strlcpy(tmp,
+         len         = strlcpy(tmp,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE),
                sizeof(tmp));
-         tmp[_len  ] = ':';
-         tmp[_len+1] = ' ';
-         tmp[_len+2] = '\0';
+         tmp[len  ]  = ':';
+         tmp[len+1]  = ' ';
+         tmp[len+2]  = '\0';
          strlcat(tmp, tmp2, sizeof(tmp));
          if (menu_entries_append(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
@@ -2039,13 +2029,13 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    tmp_string = ident_info.ident;
 
    {
-	   size_t _len = strlcpy(tmp,
+	   len         = strlcpy(tmp,
 			   msg_hash_to_str(
 				   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER),
 			   sizeof(tmp));
-      tmp[_len  ] = ':';
-      tmp[_len+1] = ' ';
-      tmp[_len+2] = '\0';
+      tmp[len  ]  = ':';
+      tmp[len+1]  = ' ';
+      tmp[len+2]  = '\0';
 	   strlcat(tmp,
 			   tmp_string ? tmp_string
 			   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -2058,19 +2048,19 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
    {
       gfx_ctx_metrics_t metrics;
-      float val = 0.0f;
+      float val     = 0.0f;
 
       metrics.type  = DISPLAY_METRIC_MM_WIDTH;
       metrics.value = &val;
 
       if (video_context_driver_get_metrics(&metrics))
       {
-         size_t _len = strlcpy(tmp,
+         len = strlcpy(tmp,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH),
                sizeof(tmp));
-         snprintf(tmp      + _len,
-               sizeof(tmp) - _len,
+         snprintf(tmp      + len,
+               sizeof(tmp) - len,
                ": %.2f", val);
          if (menu_entries_append(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
@@ -2177,7 +2167,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       for (i = 0; i < ARRAY_SIZE(info_list); i++)
       {
-         size_t len      = strlcpy(feat_str,
+         len             = strlcpy(feat_str,
                msg_hash_to_str(
                   info_list[i].msg),
                sizeof(feat_str));
@@ -2210,12 +2200,15 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    menu_search_terms_t *search_terms = menu_entries_search_get_terms();
    unsigned pl_show_inline_core_name = settings->uints.playlist_show_inline_core_name;
    bool pl_show_sublabels            = settings->bools.playlist_show_sublabels;
-   void (*sanitization)(char*);
+   void (*sanitization)(char*)       = NULL;
 
    info->count     = 0;
 
    if (list_size == 0)
-      goto error;
+   {
+      info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
+      return 0;
+   }
 
    /* Check whether core name should be added to playlist entries */
    if (!string_is_equal(menu_driver, "ozone") &&
@@ -2287,7 +2280,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
          sanitization = &label_keep_region_and_disc;
          break;
       default :
-         sanitization = NULL;
+         break;
    }
 
    for (i = 0; i < list_size; i++)
@@ -2374,12 +2367,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    }
 
    if (info->count < 1)
-      goto error;
+      info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
 
-   return 0;
-
-error:
-   info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
    return 0;
 }
 
