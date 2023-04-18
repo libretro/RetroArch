@@ -6417,6 +6417,38 @@ MSG_HASH(
    "Affiche des indicateurs à l'écran lorsque certains succès peuvent être remportés."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Messages de démarrage du tableau de classement"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Affiche une description du tableau de classement lorsqu'il devient actif."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Messages de soumission au tableau de classement"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Affiche un message avec la valeur en cours de soumission au tableau de classement lorsqu'une tentative est terminée."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Messages d'échec d'entrée au tableau de classement"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Affiche un message quand une tentative d'entrée au tableau de classement échoue."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Trackers du tableau de classement"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Affiche les trackers sur l'écran avec la valeur actuelle des tableaux de classement actifs."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
    "Messages de connexion"
    )
@@ -13200,6 +13232,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Succès débloqué"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Tentative d'entrée au tableau de classement démarrée"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Échec de la tentative d'entrée au tableau de classement"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "Soumis %s pour %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,

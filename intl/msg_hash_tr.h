@@ -592,7 +592,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
-   "RetroArch Versiyonu"
+   "RetroArch Sürümü"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
@@ -5856,6 +5856,30 @@ MSG_HASH(
 
 /* Settings > Achievements > Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Skor Tablosu Başlangıç ​​Mesajları"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Aktif hale geldiğinde skor tablosunun açıklamasını gösterir."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Skor tablosu denemesi tamamlandığında gönderilen değerle birlikte bir mesaj gösterir."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Skor tablosu denemesi başarısız olduğunda bir mesaj gösterir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Skor Tablosu Takipçileri"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "İzleyicileri ekranda aktif skor tablolarının mevcut değeri ile gösterir."
+   )
 
 /* Settings > Network */
 
@@ -12488,6 +12512,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Başarım Kilidi Açıldı"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Skor tablosu denemesi başladı"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Skor tablosu denemesi başarısız oldu"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "%s için %s gönderildi" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,

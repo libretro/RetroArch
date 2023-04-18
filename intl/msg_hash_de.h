@@ -6329,6 +6329,38 @@ MSG_HASH(
    "Zeigt Indikatoren auf dem Bildschirm, während bestimmte Errungenschaften erzielt werden können."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Startnachrichten einer Rangliste"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Zeigt eine Beschreibung einer Rangliste, wenn sie aktiv wird."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Einreichungsnachrichten einer Rangliste"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Zeigt eine Nachricht mit dem eingereichten Wert an, wenn der Versuch einer Rangliste abgeschlossen ist."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Fehlschlagnachrichten einer Rangliste"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Zeigt eine Nachricht an, wenn ein Ranglistenversuch fehlschlägt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Ranglisten-Tracker"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Zeigt Tracker auf dem Bildschirm mit dem aktuellen Wert der aktiven Rangliste."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
    "Login-Meldungen"
    )
@@ -12924,6 +12956,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Errungenschaft freigeschaltet"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Ranglistenversuch gestartet"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Ranglistenversuch fehlgeschlagen"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "%s für %s eingereicht" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,

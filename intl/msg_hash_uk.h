@@ -4024,6 +4024,38 @@ MSG_HASH(
 
 /* Settings > Achievements > Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Стартове Повідомлення лідерської дошки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Показує опис лідерської дошки, коли вона стає активною."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Надіслані Повідомлення лідерської дошки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Показує повідомлення зі значенням, яке буде надіслано після завершення спроби потрапити до лідерської дошки."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Невдалі Повідомлення лідерської дошки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Показує повідомлення, коли спроба потрапити до лідерської дошки закінчується невдачею."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Відстежувачі лідерської дошки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Показує на екрані відстежувачів з поточним значенням активної лідерської дошки."
+   )
 
 /* Settings > Network */
 
@@ -7844,6 +7876,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCREENSHOT_SAVED,
    "Знімок екрана збережено"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Розпочалася спроба потрапити до лідерської дошки"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Невдала спроба потрапити до лідерської дошки"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "Надіслано %s для %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_TOGGLE_CONTENT_METADATA,
