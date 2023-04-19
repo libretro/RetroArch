@@ -12171,7 +12171,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
-   "Jogo salvo no compartimento #%d."
+   "Salvo no compartimento #%d."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

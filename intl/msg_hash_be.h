@@ -57,15 +57,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   "Заладаваць ядро"
+   "Загрузіць ядро"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   "Заладаваць змесціва"
+   "Загрузіць змесціва"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "Заладаваць дыск"
+   "Загрузіць дыск"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
@@ -294,6 +294,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
    "Патрэбныя графічныя API"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   "Падтрымка захавання стану"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
@@ -713,11 +717,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   "Заладаваць канфігурацыю"
+   "Загрузіць канфігурацыю"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS,
-   "Заладаваць існуючую канфігурацыю ды замяніць бягучыя значэнні."
+   "Загрузіць існуючую канфігурацыю ды замяніць бягучыя значэнні."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
@@ -1177,12 +1181,20 @@ MSG_HASH(
    "Гучнасць"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "Стан: н/д"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    "Стан: спынена"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
    "Стан: прайграецца"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   "Стан: прайграецца (зацыклена)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
@@ -1249,6 +1261,38 @@ MSG_HASH(
    "Паменшыць гучнасць"
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
+   "Загрузіць стан"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
+   "Загрузіць захаваны стан з абранага на дадзены момант слота."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
+   "Захаваць стан"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
+   "Захоўвае стан у абраны на дадзены момант слот."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
+   "Наступны слот захавання стану"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
+   "Павялічвае бягучы індэкс слота захавання стану."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
+   "Папярэдні слот захавання стану"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
+   "Паніжае бягучы індэкс слота захавання стану."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
@@ -1354,6 +1398,34 @@ MSG_HASH(
 
 /* Settings > Saving */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
+   "Рассартоўваць захоўванні станаў па тэчкам назваў ядзер"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Рассартоўваць захоўванні станаў па тэчкам каталога змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
+   "Аўтаматычнае павялічванне індэкса захавання стану"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
+   "Аўтаматычнае захаванне стану"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+   "Аўтаматычнае загрузка стану"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
+   "Аўтаматычна загружаць стан аўтаматычнага захавання пры запуску."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   "Сцісканне захавання стану"
+   )
 
 /* Settings > Logging */
 
@@ -1373,12 +1445,60 @@ MSG_HASH(
 /* Settings > Recording */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+   "Якасць запісу"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
+   "Дапасаваная"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
+   "Нізкая"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
+   "Сярэдняя"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
+   "Высокая"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
+   "Без стратаў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST,
+   "WebM найхутчэйшы"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY,
+   "WebM найлепшы"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
+   "Дапасаваная канфігурацыя запісу"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
    "Рэжым стрымінгу"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
+   "Лакальны"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
+   "Дапасаваны"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
    "Якасць стрымінгу"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   "Дапасаваная"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
@@ -1393,12 +1513,20 @@ MSG_HASH(
    "Высокая"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+   "Дапасаваная канфігурацыя стрымінгу"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
    "Назва стрыму"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_URL,
    "URL стрыму"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+   "UDP-порт стрыму"
    )
 
 /* Settings > On-Screen Display */
@@ -1415,6 +1543,86 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+   "Адлюстроўваць статыстыку"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+   "Адлюстроўваць выкарыстанне памяці"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MEMORY_SHOW,
+   "Адлюстроўваць ужыты ды агульны аб'ём памяці ў сістэме."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "Працягласць апавяшчэння здымку экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   "Вызначыць працягласць адлюстравання паведамлення здымку экрана."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
+   "Звычайная"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
+   "Хуткая"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
+   "Вельмі хуткая"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
+   "Імгненная"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
+   "Шрыфт апавяшчэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
+   "Выбраць шрыфт для апавяшчэнняў на экране."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
+   "Памер апавяшчэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
+   "Колер апавяшчэнняў (чырвоны)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
+   "Колер апавяшчэнняў (зялёны)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
+   "Колер апавяшчэнняў (сіні)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+   "Фон апавяшчэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
+   "Колер фону апавяшчэнняў (чырвоны)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
+   "Колер фону апавяшчэнняў (зялёны)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
+   "Колер фону апавяшчэнняў (сіні)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+   "Непразрыстасць фону апавяшчэнняў"
+   )
 
 /* Settings > User Interface */
 
@@ -1636,6 +1844,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "Плэйлісты"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
+   "Захаванні станаў"
+   )
 
 #ifdef HAVE_MIST
 /* Settings > Steam */
@@ -1698,6 +1910,22 @@ MSG_HASH(
 /* Quick Menu */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   "Слот стану"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STATE_SLOT,
+   "Змяніць бягучы слот захавання стану."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_STATE,
+   "Захаваць стан"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "Змяніць бягучы слот захавання стану."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
    "Пачаць стрымінг"
    )
@@ -1708,6 +1936,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
    "Завершыць стрым."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
+   "Захаванні станаў"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
@@ -1879,7 +2111,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   "Заладаваць ядро"
+   "Загрузіць ядро"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_NAME,
