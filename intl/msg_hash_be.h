@@ -1376,6 +1376,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
    "Кнопка X (уверсе)"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
+   "Кнопка L2 (трыгер)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
+   "Кнопка R2 (трыгер)"
+   )
 
 /* Settings > Latency */
 
