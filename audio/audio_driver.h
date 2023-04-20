@@ -228,6 +228,12 @@ typedef struct
 #ifdef HAVE_AUDIOMIXER
    bool mixer_mute_enable;
 #endif
+
+   /* Sample the flush delta-time when fast forwarding to find the correct
+   ressample ratio. */
+   retro_time_t last_flush_time;
+   /* Exponential moving average */
+   retro_time_t avg_flush_delta;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);

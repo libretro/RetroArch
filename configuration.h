@@ -598,6 +598,7 @@ typedef struct settings
       bool audio_wasapi_exclusive_mode;
       bool audio_wasapi_float_format;
       bool audio_fastforward_mute;
+      bool audio_fastforward_speedup;
 
       /* Input */
       bool input_remap_binds_enable;

@@ -397,11 +397,11 @@ static void audio_driver_flush(
       float slowmotion_ratio,
       bool audio_fastforward_mute,
       const int16_t *data, size_t samples,
-      bool is_slowmotion, bool is_fastmotion)
+      bool is_slowmotion, bool is_fastforward)
 {
    struct resampler_data src_data;
    float audio_volume_gain           = (audio_st->mute_enable ||
-         (audio_fastforward_mute && is_fastmotion))
+         (audio_fastforward_mute && is_fastforward))
                ? 0.0f 
                : audio_st->volume_gain;
 
@@ -477,23 +477,37 @@ static void audio_driver_flush(
    if (is_slowmotion)
       src_data.ratio       *= slowmotion_ratio;
 
-   /* Note: Ideally we would divide by the user-configured
-    * 'fastforward_ratio' when fast forward is enabled,
-    * but in practice this doesn't work:
-    * - 'fastforward_ratio' is only a limit. If the host
-    *   cannot push frames fast enough, the actual ratio
-    *   will be lower - and crackling will ensue
-    * - Most of the time 'fastforward_ratio' will be
-    *   zero (unlimited)
-    * So what we would need to do is measure the time since
-    * the last audio flush operation, and calculate a 'real'
-    * fast-forward ratio - but this doesn't work either.
-    * The measurement is inaccurate and the frame-by-frame
-    * fluctuations are too large, so crackling is unavoidable.
-    * Since it's going to crackle anyway, there's no point
-    * trying to do anything. Just leave the ratio as-is,
-    * and hope for the best... */
+   if (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup) {
+      const retro_time_t flush_time = cpu_features_get_time_usec();
 
+      if (audio_st->last_flush_time > 0) {
+         /* What we should see if the speed was 1.0x, converted to microsecs */
+         const double expected_flush_delta =
+            (src_data.input_frames / audio_st->input * 1000000);
+         /* Exponential moving average of the last AUDIO_FF_EXP_AVG_SAMPLES
+            samples. This helps make sure pitches are recognizable by avoiding
+            too much variance flush-to-flush.
+
+            It's not needed to avoid crackling (the generated waves are going to
+            be continuous either way), but it's important to avoid time
+            compression and decompression every single frame, which would make
+            sounds irrecognizable.
+
+            https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average */
+         const retro_time_t n = AUDIO_FF_EXP_AVG_SAMPLES;
+         audio_st->avg_flush_delta = audio_st->avg_flush_delta * (n - 1) / n +
+                                    (flush_time - audio_st->last_flush_time) / n;
+
+         /* How much does the avg_flush_delta deviate from the delta at 1.0x speed? */
+         src_data.ratio *=
+            MAX(AUDIO_MIN_RATIO,
+               MIN(AUDIO_MAX_RATIO,
+                  audio_st->avg_flush_delta / expected_flush_delta));
+      }
+
+      audio_st->last_flush_time = flush_time;
+   }
+ 
    audio_st->resampler->process(
          audio_st->resampler_data, &src_data);
 
