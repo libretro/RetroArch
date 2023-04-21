@@ -2446,6 +2446,14 @@ MSG_HASH(
    "Disattiva automaticamente l'audio quando si utilizza l'avanzamento rapido."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Accelerazione In Rapida Inoltro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Accelera l'audio quando si inoltra veloce. Previene crackling ma sposta il passo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Livello del volume audio (dB)"
    )

@@ -1485,6 +1485,58 @@ MSG_HASH(
    "Eski Cg gölgelendirici biçimini destekleyen Direct3D 9 sürücüsü."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   "HLSL gölgelendirici biçimini destekleyen Direct3D 9 sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "Slang gölgelendirici biçimini destekleyen Direct3D 10 sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "HDR ve Argo gölgelendirici biçimini destekleyen Direct3D 11 sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "HDR ve Slang gölgelendirici biçimini destekleyen Direct3D 12 sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "DispmanX sürücüsü. Raspberry Pi 0..3'teki Videocore IV GPU için DispmanX API kullanır. Kaplama veya gölgelendirici desteği yok."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
+   "LibCACA sürücüsü. Grafik yerine karakter çıktısı üretir. Pratik kullanım için tavsiye edilmez."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   "Blit işlemleri için Samsung Exynos SoC'deki G2D bloğunu kullanan düşük seviyeli bir Exynos video sürücüsü. Yazılım tarafından oluşturulan çekirdekler için performans en uygun olmalıdır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   "Düz DRM video sürücüsü. GPU bindirmeleri kullanarak donanım ölçeklendirmesi için libdrm kullanan düşük seviyeli bir video sürücüsüdür."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
+   "Allwinner SoC'lerde G2D bloğunu kullanan düşük seviyeli bir Sunxi video sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   "Wii U sürücüsü. Argo gölgelendiricileri destekler."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   "Switch sürücü. GLSL gölgelendirici destekler."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   "OpenVG sürücüsü. OpenVG donanım hızlandırmalı 2B vektör grafik API kullanır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "GDI sürücüsü. Eski bir Windows arayüzü kullanır. Tavsiye edilmez."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
    "Mevcut video sürücüsü."
    )
@@ -1497,8 +1549,28 @@ MSG_HASH(
    "Kullanılacak ses sürücüsü."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
+   "Ağa bağlı ses sistemleri için RSound sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   "Eski Open Sound System sürücüsü."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
    "Varsayılan ALSA sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
+   "İş parçacığı desteği ile ALSA sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
+   "ALSA sürücüsü bağımlılıklar olmadan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
+   "RoarAudio ses sistemi sürücüsü."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
@@ -1509,12 +1581,40 @@ MSG_HASH(
    "OpenSL sürücüsü."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
+   "Direct Sound sürücüsü. DirectSound, esas olarak Windows 95'ten Windows XP'ye kadar kullanılır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
+   "Windows Audio Session API sürücüsü. WASAPI, çoğunlukla Windows 7 ve üzeri sürümlerde kullanılır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
+   "PulseAudio sürücüsü. Sistem PulseAudio kullanıyorsa, örn. ALSA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
+   "Jak Ses Bağlantı Kiti sürücüsü."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Ses Yeniden Örnekleyici"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    "Kullanılacak yeniden ses örnekleyici."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
+   "Pencereli Sinc uygulaması."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   "Kıvrımlı Kosinüs uygulaması."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
+   "En yakın yeniden örnekleme uygulaması. Bu yeniden örnekleyici, kalite ayarını yok sayar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
@@ -2382,12 +2482,24 @@ MSG_HASH(
    "Hızlı ileri sarma kullanırken sesi otomatik olarak sessize alır."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Hızlı İleri Sarmada Sesi Hızlandır"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Hızlı ileri sarma sırasında sesi hızlandırın. Cızırtıyı önler, ancak perdeyi değiştirir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Ses Artışı (dB)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    "Ses seviyesi (dB cinsinden). 0 dB normal hacimdir ve kazanç uygulanmaz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
+   "Db cinsinden ifade edilen ses seviyesi. 0 dB, kazancın uygulanmadığı normal ses seviyesidir. Kazanç, Giriş Sesi Arttırma / Giriş Sesi Azaltma ile çalışma zamanında kontrol edilebilir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
@@ -2461,6 +2573,22 @@ MSG_HASH(
    "Ses sürücüsünün kullandığı varsayılan ses cihazını özelleştir. Bu işlem sürücüye bağlıdır."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
+   "ALSA sürücüsü için özel PCM aygıt değeri."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
+   "OSS sürücüsü için özel yol değeri (ör. /dev/dsp)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   "JACK sürücüsü için özel bağlantı noktası adı değeri (ör. system:playback1,system:playback_2)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   "RSound sürücüsü için bir RSound sunucusunun özel IP adresi."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Ses Gecikmesi (ms)"
    )
@@ -2507,12 +2635,20 @@ MSG_HASH(
    "Ses giriş hızındaki azami değişiklik. Bunun artırılması, yanlış bir ses perdesi pahasına zamanlamada çok büyük değişiklikler yapılmasını sağlar (örneğin, NTSC ekranlarında PAL çekirdeği çalıştırma)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
+   "Azami ses zamanlaması kayması.\nGiriş hızındaki azami değişikliği tanımlar. Zamanlamada çok büyük değişiklikleri etkinleştirmek için bunu artırmak isteyebilirsiniz, örneğin yanlış ses perdesi pahasına NTSC ekranlarında PAL çekirdeklerini çalıştırmak.\nGiriş hızı şu şekilde tanımlanır:\ngiriş hızı * (1,0 +/- (azami zamanlama) çarpık))"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    "Dinamik Ses Hızı Kontrolü"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    "Ses ve video eşitlemesi yaparken zamanlamadaki kusurların giderilmesine yardımcı olur. Devre dışı bırakılırsa, uygun eşitlemenin elde edilmesinin neredeyse imkansız olduğunu unutmayın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
+   "Bunu 0 olarak ayarlamak hız kontrolünü devre dışı bırakır. Diğer tüm değerler, ses hızı kontrol deltasını kontrol eder.\nGiriş hızının dinamik olarak ne kadar ayarlanabileceğini tanımlar. Giriş hızı şu şekilde tanımlanır:\\giriş hızı * (1,0 +/- (oran kontrol deltası))"
    )
 
 /* Settings > Audio > MIDI */
@@ -2526,12 +2662,20 @@ MSG_HASH(
    "Giriş cihazı seç."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_INPUT,
+   "Giriş cihazını ayarlar (sürücüye özel). 'Kapalı' olarak ayarlandığında, MIDI girişi devre dışı bırakılır. Cihaz adı da yazılabilir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    "Çıkış"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
    "Çıkış cihazı seç."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
+   "Çıkış cihazını ayarlar (sürücüye özel). 'Kapalı' olarak ayarlandığında, MIDI çıkışı devre dışı bırakılır. Cihaz adı da yazılabilir.\nMIDI çıkışı etkinleştirildiğinde ve çekirdek ve oyun/uygulama MIDI çıkışını desteklediğinde, seslerin bir kısmı veya tamamı (oyuna/uygulamaya bağlıdır) MIDI cihazı tarafından üretilecektir. 'Boş' MIDI sürücüsü olması durumunda bu, bu seslerin duyulmayacağı anlamına gelir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
@@ -2833,6 +2977,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
    "Klasik mod, iki düğmeli işlem. Basın-bırakın dizisini etkinleştirmek için bir düğmeyi basılı tutun ve Turbo düğmesine dokunun.\nTurbo düğmesi Ayarlar/Giriş/Port 1 Kontrollerinde atanabilir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "Geçiş kipi. Seçilen varsayılan düğme için basma-bırakma sırasını etkinleştirmek için Turbo düğmesine bir kez basın, kapatmak için bir kez daha basın.\nTurbo düğmesi Ayarlar/Giriş/Port 1 Kontrollerinde atanabilir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Tutma kipi. Seçilen varsayılan düğme için basma-bırakma dizisi, Turbo düğmesi basılı tutulduğu sürece etkindir.\nTurbo düğmesi Ayarlar/Giriş/Port 1 Kontrollerinde atanabilir.\nEv bilgisayarı çağının otomatik ateşleme işlevini taklit etmek için Turbo'yu ayarlayın ve varsayılan düğmeler, joystick ateşleme düğmesiyle aynı olacaktır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
@@ -3268,6 +3420,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
    "Tekrar kaydını mevcut seçili yuvaya kaydedin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   "Kaydet/Tekrar Oynat Durdur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   "Mevcut tekrarın kaydını/oynatılmasını durdurur."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "Sonraki Tekrar Oynatma Yuvası"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   "Seçili olan tekrar oynatma aralığı sayısını artırır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "Önceki Tekrar Oynatma Yuvası"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "Seçili olan tekrar oynatma aralığı sayısını azaltır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -3935,6 +4111,10 @@ MSG_HASH(
    "Kalıcı olmayan SaveRAM'i düzenli aralıklarla (saniye cinsinden) otomatik olarak kaydedin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
+   "Kalıcı SRAM üstüne düzenli aralıklarla otomatik olarak kaydeder. Aksi ayarlanmadıkça varsayılan olarak devre dışıdır. Aralık saniye cinsinden ölçülür. 0 değeri, otomatik kaydetmeyi devre dışı bırakır."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
    "Tekrar Kontrol Noktası Aralığı"
    )
@@ -3955,12 +4135,28 @@ MSG_HASH(
    "Bir durum kaydı yapmadan önce, durum kaydı dizini otomatik olarak artar. İçerik yüklerken, dizin mevcut en yüksek dizine ayarlanır."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Tekrar Oynatma Sayısını Otomatik Olarak Artır"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "Bir tekrar oynatma yapmadan önce, tekrar sayısı otomatik olarak artırılır. İçerik yüklenirken, dizin mevcut en yüksek dizine ayarlanacaktır."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    "Saklanacak Azami Otomatik Artımlı Durum Kayıtları"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    "'Durum Kaydı Dizinini Otomatik Olarak Artır' etkinleştirildiğinde oluşturulacak kaydetme durumlarının sayısını sınırlar. Yeni bir durum kaydedilirken sınır aşılırsa, en düşük indekse sahip mevcut durum silinecektir. '0' değeri, sınırsız durumların kaydedileceği anlamına gelir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Azami Otomatik Saklanacak Tekrar Oynatma Artışı"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "'Tekrar Dizinini Otomatik Olarak Artır' etkinleştirildiğinde oluşturulacak tekrar sayısını sınırlayın. Yeni bir tekrar kaydederken limit aşılırsa, en düşük indekse sahip mevcut tekrar silinir. '0' değeri, sınırsız tekrarın kaydedileceği anlamına gelir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -4068,6 +4264,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
    "Çekirdekler için günlük seviyesini ayarlar. Çekirdek tarafından verilen günlük seviyesi bu değerin altındaysa, dikkate alınmaz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
+   "Libretro çekirdekleri için günlük seviyesini ayarlar (GET_LOG_INTERFACE). Bir libretro çekirdeği tarafından yayınlanan bir günlük düzeyi libretro_log düzeyinin altındaysa yok sayılır. Ayrıntılı mod etkinleştirilmedikçe (--verbose) DEBUG günlükleri her zaman göz ardı edilir.\nDEBUG = 0\nINFO = 1\nWARN = 2\nERROR = 3"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
@@ -6217,6 +6417,10 @@ MSG_HASH(
    "Görünürlülük"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
+   "Hangi mesajların ve ekran öğelerinin gösterileceğini değiştirin. İşlevselliği devre dışı bırakmaz."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
    "Başlangıç Özeti"
    )
@@ -6251,6 +6455,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
    "Aktif Meydan Okuma Göstergeleri"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
+   "Belirli başarılar kazanılırken ekranda bildirimler gösterir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
@@ -6484,12 +6692,20 @@ MSG_HASH(
    "Ağ gecikmesini gizlemek için ve netplay için kullanılacak giriş gecikmesi karelerinin sayısı. Belirgin giriş gecikmesi pahasına titreşimi azaltır ve netplay'i daha az CPU kullanımına yoğunlaştırır."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "Netplay ağ gecikmesini gizlemek için kullanacağı giriş gecikmesi kare sayısı.\nNetplay üstündeyken bu seçenek yerel girişi geciktirir, böylece çalıştırılan kare ağdan alınan karelere daha yakın olur. Bu titreşimi azaltır ve netplay daha az CPU kullanır. Fark edilebilir giriş gecikmesi olabilir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    "Giriş Gecikme Kareleri Aralığı"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    "Ağ gecikmesini gizlemek için ve netplay için kullanılacak giriş gecikmesi karelerinin oranı. Belirgin giriş gecikmesi pahasına titreşimi azaltır ve netplay'i daha az CPU kullanımına yoğunlaştırır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "Ağ gecikmesini gizlemek için netplay tarafından kullanılabilecek giriş gecikmeli kare aralığı.\nAyarlanırsa netplay, CPU zamanı, giriş gecikmesi ve ağ gecikmesini dengelemek için giriş gecikmeli kare sayısını dinamik olarak ayarlar. Bu, titreşimi azaltır ve netplay daha az CPU kullanır, ancak bunun bedeli öngörülemeyen giriş gecikmesidir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -8842,6 +9058,10 @@ MSG_HASH(
    "Çekirdek Özelleştirmelerini Kaldır"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "Bu çekirdeğe yüklenen tüm içerik için geçerli olacak özelleştirilmiş yapılandırma dosyasını silin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    "İçerik Dizini Özelleştirmelerini Kaydet"
    )
@@ -8854,6 +9074,10 @@ MSG_HASH(
    "İçerik Dizini Özelleştirmelerini Kaldır"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "Mevcut dosyayla aynı dizinden yüklenen tüm içerik için geçerli olacak özelleştirilmiş yapılandırma dosyasını silin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
    "Oyun Özelleştirmelerini Kaydet"
    )
@@ -8864,6 +9088,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
    "Oyun Özelleştirmelerini Kaldır"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "Yalnızca mevcut içerik için geçerli olacak özelleştirilmiş yapılandırma dosyasını silin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
@@ -11369,6 +11597,10 @@ MSG_HASH(
    "Geçmiş oynatma listesinden son içeriği seç."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
+   "İçerik yüklendiğinde, içerik ve libretro çekirdek kombinasyonları geçmişe kaydedilir.\nGeçmiş, RetroArch yapılandırma dosyasıyla aynı dizindeki bir dosyaya kaydedilir. Başlangıçta herhangi bir yapılandırma dosyası yüklenmemişse, geçmiş kaydedilmeyecek veya yüklenmeyecek ve ana menüde yer almayacaktır."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
    "Çoklu Ortam"
    )
@@ -11463,6 +11695,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "Video sürücüsüne belirli bir arabelleğe alım kipini açıkça kullanmasını söyler."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Azami takas zinciri görüntüsü miktarı. Bu, video sürücüsüne belirli bir video ara belleğe alma kipini kullanmasını söyleyebilir.\nTekli arabelleğe alma - 1\nÇift arabelleğe alma - 2\nÜçlü arabelleğe alma - 3\nDoğru arabelleğe alma kipinin ayarlanmasının gecikme üzerinde büyük etkisi olabilir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
@@ -12746,6 +12982,18 @@ MSG_HASH(
    "Son durum yuvası bulundu"
    )
 MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "Son tekrar oynatma yuvası bulundu"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Mevcut kayıt uyumlu değil"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Tekrar oynatmayla uyumlu değil"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Gölgelendirici bulundu"
    )
@@ -12842,6 +13090,10 @@ MSG_HASH(
    "Yuva #%d üstünden durum yüklendi."
    )
 MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Yuva #-1 üstünden yüklenmiş durum (Otomatik)."
+   )
+MSG_HASH(
    MSG_LOADING,
    "Yükleniyor"
    )
@@ -12868,6 +13120,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MEMORY,
    "Bellek"
+   )
+MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Giriş tekrar oynatma dosyası geçerli bir TEKRAR OYNATMA dosyası değil."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
@@ -13032,6 +13288,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Yuvaya kaydedilmiş durum #%d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Durum #-1 yuvasına kaydedildi (Otomatik)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

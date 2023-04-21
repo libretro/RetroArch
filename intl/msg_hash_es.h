@@ -2486,6 +2486,14 @@ MSG_HASH(
    "Silencia automáticamente el audio al utilizar la función de avance rápido."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Acelerar al usar el avance rápido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Acelera el audio al usar el avance rápido. Evitará los chasquidos en el audio, pero cambiará su tono."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Ganancia de volumen (dB)"
    )

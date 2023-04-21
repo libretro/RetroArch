@@ -3403,8 +3403,16 @@ MSG_HASH(
    "Käynnistä ydin automaattisesti"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
+   "Tarkista puuttuva laiteohjelmisto ennen lataamista"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Tarkista, onko kaikki tarvittava laiteohjelmisto läsnä, ennen kuin sisältöä yritetään ladata."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
+   "Jotkin ytimet saattavat tarvita järjestelmä- tai BIOS-tiedostoja. Jos tämä asetus on käytössä, RetroArch ei salli ytimen käynnistystä, jos pakollisia laiteohjelmistoja puuttuu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,

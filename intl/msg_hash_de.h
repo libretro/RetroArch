@@ -2398,6 +2398,14 @@ MSG_HASH(
    "Audio automatisch stummschalten, wenn vorgespult wird."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Beim Vorspulen beschleunigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Audio beim schnellen Vorlauf beschleunigen. Verhindert Knackgeräusche, verändert aber die Tonhöhe."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Lautstärkeanpassung (dB)"
    )

@@ -41,6 +41,10 @@ MSG_HASH(
    "Ontdekken"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   "Inhoudloze Cores"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importeer content"
    )
@@ -64,12 +68,20 @@ MSG_HASH(
    "Selecteer welke core te gebruiken."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Bladeren naar een libretro core implementatie. Waar de browser begint hangt af van uw Core Directory pad. Indien leeg, zal het beginnen in root.\nAls Core Directory een map is, zal het menu die gebruiken als bovenste map. Als Core Directory een volledig pad is, zal het starten in de map waar het bestand zich bevindt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Laad content"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Selecteer welke content te starten."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "Blader naar de inhoud. Om inhoud te laden heb je een 'Core' nodig om te gebruiken en een inhoudsbestand.\nOm te bepalen waar het menu begint te bladeren voor inhoud, stel 'Bestandsbrowserdirectory' in. Als dit niet is ingesteld, zal het starten in hoofdbestand.\nDe browser zal extensies filteren voor de laatste core die is ingesteld in 'Load Core', en die core gebruiken wanneer de inhoud wordt geladen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -189,6 +201,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "Sluit het programma af."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "RetroArch afsluiten. Het programma op een harde manier afsluiten (SIGKILL, etc.) zal RetroArch beëindigen zonder de configuratie op te slaan etc. Op Unix-likes kan SIGINT/SIGTERM een schone de-initialisatie toestaan."
+   )
 
 /* Main Menu > Load Core */
 
@@ -273,6 +289,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Bekijk alle inhoud die overeenkomt met de database via een gecategoriseerde zoekinterface."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   "Inhoudloze Cores"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -504,6 +524,14 @@ MSG_HASH(
    "Voorkom wijziging van de huidige geïnstalleerde core. Kan worden gebruikt om ongewenste updates te voorkomen wanneer inhoud een specifieke core-versie vereist (bijv. Arcade ROM-sets)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "Uitsluiten van 'inhoudloze Cores' menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "Voorkomen dat deze kern wordt weergegeven in het menu 'Inhoudloze Cores'. Alleen toepasbaar als de weergavemodus is ingesteld op 'Aangepast'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
    "Verwijder core"
    )
@@ -541,6 +569,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
    "Build datum"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "RetroArch versie"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
@@ -956,16 +988,32 @@ MSG_HASH(
    "Configuratie Laden"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   "Bestaande configuratie laden en huidige waarden vervangen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "Huidige Configuratie Opslaan"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   "Overschrijf het huidige configuratiebestand."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "Nieuwe configuratie opslaan"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   "Huidige configuratie opslaan in apart bestand."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Fabrieksinstellingen resetten"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "Huidige configuratie terugzetten naar standaardwaarden."
    )
 
 /* Main Menu > Help */
@@ -1075,6 +1123,86 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    "Wijzig instellingen van bestandsbrowser."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   "Configuratie bestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   "Gecomprimeerd archief bestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "Configuratiebestand opnemen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   "Database cursor bestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   "Configuratie bestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   "Shader voorinstelling bestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   "Shader bestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
+   "Remap besturingsbestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
+   "Cheat bestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   "Overlay bestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   "Database bestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   "TrueType lettertype bestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   "Gewoon bestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   "Video. Selecteer het om dit bestand te openen met de videospeler."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   "Muziek. Selecteer het om dit bestand te openen met de muziekspeler."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "Afbeelding bestand."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
+   "Afbeelding. Selecteer het om dit bestand te openen met de afbeeldingsviewer."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "Libretro core. Door dit te selecteren wordt deze core geassocieerd met het spel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "Libretro core. Selecteer dit bestand om RetroArch deze kern te laden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "Map. Selecteer het om deze map te openen."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
@@ -1209,12 +1337,28 @@ MSG_HASH(
    "Invoersstuurprogramma om te gebruiken. Sommige videostuurprogramma's dwingen een ander ingangsstuurprogramma af."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   "De udev input driver gebruikt de recente evdev joypad API voor joystick ondersteuning. Het ondersteunt hotplugging en force feedback.\nThe driver leest evdev events voor toetsenbord ondersteuning. Het ondersteunt ook toetsenbord callback, muizen en touchpads.\nStandaard in de meeste distro's, zijn /dev/input nodes root-only (mode 600). Je kunt een udev regel instellen die deze toegankelijk maakt voor niet-root."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
+   "De linuxraw input driver vereist een actieve TTY. Toetsenbord gebeurtenissen worden direct van de TTY gelezen wat het eenvoudiger maakt, maar niet zo flexibel als udev. Muizen, enz. worden helemaal niet ondersteund. Deze driver gebruikt de oudere joystick API (/dev/input/js*)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   "Invoerstuurprogramma. Het videostuurprogramma kan een ander invoerstuurprogramma afdwingen."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Controllerstuurprogramma om te gebruiken."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Videostuurprogramma om te gebruiken."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   "OpenGL 1.x stuurprogramma. Minimale versie vereist: OpenGL 1.1. Ondersteunt geen shaders. Gebruik nieuwere OpenGL stuurprogramma's, indien mogelijk."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
