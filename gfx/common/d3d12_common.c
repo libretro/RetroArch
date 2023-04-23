@@ -204,10 +204,9 @@ D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descriptor_he
          heap->map[i] = true;
          handle.ptr   = heap->cpu.ptr + i * heap->stride;
          heap->start  = i + 1;
-         return handle;
+         break;
       }
    }
-   /* if you get here try increasing NumDescriptors for this heap */
    return handle;
 }
 
