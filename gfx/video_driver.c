@@ -995,7 +995,8 @@ void recording_dump_frame(
       vp.full_width               = 0;
       vp.full_height              = 0;
 
-      video_driver_get_viewport_info(&vp);
+      if (video_st->current_video && video_st->current_video->viewport_info)
+         video_st->current_video->viewport_info(video_st->data, &vp);
 
       if (!vp.width || !vp.height)
       {
@@ -3560,7 +3561,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       custom_vp->width = width;
       custom_vp->height = height;
 
-      video_driver_get_viewport_info(custom_vp);
+      video_st->current_video->viewport_info(video_st->data, custom_vp);
    }
 
    video_driver_set_rotation(retroarch_get_rotation() % 4);
