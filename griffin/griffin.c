@@ -1233,17 +1233,8 @@ RETROARCH
 
 #include "../msg_hash.c"
 #ifdef HAVE_LANGEXTRA
-#include "../intl/msg_hash_ca.c"
 #include "../intl/msg_hash_chs.c"
-#include "../intl/msg_hash_el.c"
-#include "../intl/msg_hash_ja.c"
-#include "../intl/msg_hash_ko.c"
 #include "../intl/msg_hash_pt_br.c"
-#include "../intl/msg_hash_pt_pt.c"
-#include "../intl/msg_hash_ru.c"
-#include "../intl/msg_hash_tr.c"
-#include "../intl/msg_hash_val.c"
-#include "../intl/msg_hash_vn.c"
 #endif
 
 #include "../intl/msg_hash_us.c"

@@ -3984,40 +3984,14 @@ enum msg_hash_enums
 
 const char *msg_hash_to_str(enum msg_hash_enums msg);
 
-const char *msg_hash_to_str_ru(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_jp(enum msg_hash_enums msg);
-int msg_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_ko(enum msg_hash_enums msg);
-int msg_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len);
-
 const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg);
 int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_pt_pt(enum msg_hash_enums msg);
-int msg_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_vn(enum msg_hash_enums msg);
-int msg_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_chs(enum msg_hash_enums msg);
 int msg_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len);
 
-int msg_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len);
-
 const char *msg_hash_to_str_us(enum msg_hash_enums msg);
 int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_el(enum msg_hash_enums msg);
-int msg_hash_get_help_el_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_tr(enum msg_hash_enums msg);
-int msg_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_val(enum msg_hash_enums msg);
-
-const char *msg_hash_to_str_ca(enum msg_hash_enums msg);
 
 int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);
 
@@ -4054,8 +4028,6 @@ void msg_hash_set_uint(enum msg_hash_action type, unsigned val);
  *   rendering implementation */
 const char *msg_hash_get_wideglyph_str(void);
 const char *msg_hash_get_wideglyph_str_chs(void);
-const char *msg_hash_get_wideglyph_str_jp(void);
-const char *msg_hash_get_wideglyph_str_ko(void);
 
 uint32_t msg_hash_calculate(const char *s);
 

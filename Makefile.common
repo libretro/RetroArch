@@ -447,17 +447,8 @@ ifeq ($(HAVE_LANGEXTRA), 1)
    DEFINES += -DHAVE_LANGEXTRA
    DEF_FLAGS += -finput-charset=UTF-8
 
-   OBJ += intl/msg_hash_ca.o \
-          intl/msg_hash_chs.o \
-          intl/msg_hash_el.o \
-          intl/msg_hash_ja.o \
-          intl/msg_hash_ko.o \
-          intl/msg_hash_pt_br.o \
-          intl/msg_hash_pt_pt.o \
-          intl/msg_hash_ru.o \
-          intl/msg_hash_tr.o \
-          intl/msg_hash_val.o \
-          intl/msg_hash_vn.o
+   OBJ += intl/msg_hash_chs.o \
+          intl/msg_hash_pt_br.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
