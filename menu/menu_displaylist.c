@@ -982,10 +982,9 @@ static unsigned menu_displaylist_parse_core_manager_list(
 
    if (core_info_list)
    {
-      menu_search_terms_t *search_terms= menu_entries_search_get_terms();
-      core_info_t *core_info           = NULL;
-      size_t menu_index                = 0;
       size_t i;
+      size_t menu_index                = 0;
+      menu_search_terms_t *search_terms= menu_entries_search_get_terms();
 
       /* Sort cores alphabetically */
       core_info_qsort(core_info_list, CORE_INFO_LIST_SORT_DISPLAY_NAME);
@@ -993,8 +992,7 @@ static unsigned menu_displaylist_parse_core_manager_list(
       /* Loop through cores */
       for (i = 0; i < core_info_list->count; i++)
       {
-         core_info = NULL;
-         core_info = core_info_get(core_info_list, i);
+         core_info_t *core_info = core_info_get(core_info_list, i);
 
          if (core_info)
          {
@@ -1056,14 +1054,17 @@ static unsigned menu_displaylist_parse_core_manager_steam_list(
       menu_displaylist_info_t *info,
       settings_t *settings)
 {
-   MistResult result;
+   size_t i;
    steam_core_dlc_list_t *dlc_list;
    steam_core_dlc_t *dlc_info;
-   size_t i;
-   unsigned count = 0;
-
-   result = steam_get_core_dlcs(&dlc_list, false);
-   if (MIST_IS_ERROR(result)) goto error;
+   unsigned count    = 0;
+   MistResult result = steam_get_core_dlcs(&dlc_list, false);
+   if (MIST_IS_ERROR(result))
+   {
+      /* TODO/FIXME: Send error notification */
+      RARCH_ERR("[Steam] Error enumerating core dlcs for core manager (%d-%d)\n", MIST_UNPACK_RESULT(result));
+      return 0;
+   }
 
    for (i = 0; i < dlc_list->count; i++)
    {
@@ -1079,19 +1080,14 @@ static unsigned menu_displaylist_parse_core_manager_steam_list(
    }
 
    return count;
-
-error:
-   /* TODO/FIXME: Send error notification */
-   RARCH_ERR("[Steam] Error enumerating core dlcs for core manager (%d-%d)\n", MIST_UNPACK_RESULT(result));
-   return count;
 }
 
 static unsigned menu_displaylist_parse_core_information_steam(
       menu_displaylist_info_t *info,
       settings_t *settings)
 {
-   unsigned count = 0;
    steam_core_dlc_list_t *dlc_list;
+   unsigned count             = 0;
    steam_core_dlc_t *core_dlc = NULL;
    bool installed             = false;
    MistResult result          = steam_get_core_dlcs(&dlc_list, false);
@@ -1100,7 +1096,7 @@ static unsigned menu_displaylist_parse_core_information_steam(
 
    /* Get the core dlc information */
    if (!(core_dlc = steam_get_core_dlc_by_name(dlc_list, info->path)))
-	   return count;
+	   return 0;
 
    /* Check if installed */
    result = mist_steam_apps_is_dlc_installed(core_dlc->app_id, &installed);
@@ -1183,8 +1179,7 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    option = (struct core_option*)&coreopts->opts[option_index];
    val    = core_option_manager_get_val(coreopts, option_index);
 
-   if (!option ||
-       string_is_empty(val))
+   if (!option || string_is_empty(val))
    {
       string_list_deinitialize(&tmp_str_list);
       return 0;
@@ -1372,10 +1367,10 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(
          MENU_SETTING_ACTION_REMAP_FILE_LOAD, 0, 0, NULL))
       count++;
 
-   if (has_content)
+   if (!game_remap_active)
    {
       /* Save remap files */
-      if (!game_remap_active)
+      if (has_content)
       {
          if (menu_entries_append(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME),
@@ -1391,18 +1386,17 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(
                   MENU_SETTING_ACTION_REMAP_FILE_SAVE_CONTENT_DIR, 0, 0, NULL))
             count++;
       }
+
+      if (
+            !content_dir_remap_active &&
+            !core_remap_active &&
+            menu_entries_append(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE),
+               msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE),
+               MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
+               MENU_SETTING_ACTION_REMAP_FILE_SAVE_CORE, 0, 0, NULL))
+         count++;
    }
-
-
-   if (!game_remap_active &&
-       !content_dir_remap_active &&
-       !core_remap_active &&
-       menu_entries_append(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE),
-            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE),
-            MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
-            MENU_SETTING_ACTION_REMAP_FILE_SAVE_CORE, 0, 0, NULL))
-      count++;
 
    /* Remove remap files */
    if (has_content)
@@ -4187,9 +4181,9 @@ static unsigned menu_displaylist_parse_playlists(
       for (i = 0; i < list_size; i++)
       {
          char label[512];
-         const char *path = str_list.elems[i].data;
+         const char *path  = str_list.elems[i].data;
          const char *fname = path_basename(path);
-         const char *fext = path_get_extension(fname);
+         const char *fext  = path_get_extension(fname);
          if (!string_is_equal_noncase(fext, "lvw"))
             continue;
 
