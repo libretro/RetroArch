@@ -10988,8 +10988,6 @@ static unsigned print_buf_lines(file_list_t *list, char *buf,
    for (i = 0; i < buf_size; i++)
    {
       size_t ln;
-      const char *core_date        = NULL;
-      const char *core_crc         = NULL;
       const char *core_pathname    = NULL;
       struct string_list str_list  = {0};
 
@@ -11001,11 +10999,8 @@ static unsigned print_buf_lines(file_list_t *list, char *buf,
          continue;
 
       /* Found a line ending, print the line and compute new line_start */
-
-      /* Save the next char  */
-      c = *(buf + i + 1);
-      /* replace with \0 */
-      *(buf + i + 1) = '\0';
+      c              = *(buf + i + 1); /* Save the next character  */
+      *(buf + i + 1) = '\0';           /* Replace with \0          */
 
       /* We need to strip the newline. */
       ln = strlen(line_start) - 1;
@@ -11015,15 +11010,8 @@ static unsigned print_buf_lines(file_list_t *list, char *buf,
       string_list_initialize(&str_list);
       string_split_noalloc(&str_list, line_start, " ");
 
-      if (str_list.elems[0].data)
-         core_date     = str_list.elems[0].data;
-      if (str_list.elems[1].data)
-         core_crc      = str_list.elems[1].data;
       if (str_list.elems[2].data)
          core_pathname = str_list.elems[2].data;
-
-      (void)core_date;
-      (void)core_crc;
 
       if (extended)
       {
@@ -11058,7 +11046,7 @@ static unsigned print_buf_lines(file_list_t *list, char *buf,
 
       string_list_deinitialize(&str_list);
 
-      /* Restore the saved char */
+      /* Restore the saved character */
       *(buf + i + 1) = c;
       line_start     = buf + i + 1;
    }
@@ -12770,8 +12758,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
              * > Display lists generated from playlists
              *   must never be sorted */
             info->flags    &= ~MD_FLAG_NEED_SORT;
-            info->flags    |= MD_FLAG_NEED_REFRESH
-                            | MD_FLAG_NEED_PUSH;
+            info->flags    |=  MD_FLAG_NEED_REFRESH
+                            |  MD_FLAG_NEED_PUSH;
 #if (defined(HAVE_FFMPEG) || defined(HAVE_MPV))
             if (history_needs_navigation_clear(menu, g_defaults.video_history))
                info->flags |=  MD_FLAG_NEED_NAVIGATION_CLEAR;
@@ -14383,17 +14371,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                true, /* Is a collection */
                true, /* Enable sorting (if allowed by user config) */
                &ret);
-         ret = 0; /* Why do we do this...? */
+         ret                = 0; /* Why do we do this...? */
 
-         if (ret == 0)
-         {
-            /* Playlists themselves are sorted
-             * > Display lists generated from playlists
-             *   must never be sorted */
-            info->flags       &= ~MD_FLAG_NEED_SORT;
-            info->flags       |=  MD_FLAG_NEED_REFRESH
-                               |  MD_FLAG_NEED_PUSH;
-         }
+         /* Playlists themselves are sorted
+          * > Display lists generated from playlists
+          *   must never be sorted */
+         info->flags       &= ~MD_FLAG_NEED_SORT;
+         info->flags       |=  MD_FLAG_NEED_REFRESH
+                            |  MD_FLAG_NEED_PUSH;
          break;
       case DISPLAYLIST_IMAGES_HISTORY:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -14424,7 +14409,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   MENU_ENUM_LABEL_NO_IMAGES_AVAILABLE,
                   MENU_INFO_MESSAGE, 0, 0, NULL);
             info->flags             &= ~MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
-            ret                      = 0;
          }
 
          ret                         = 0;
