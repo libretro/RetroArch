@@ -2462,6 +2462,14 @@ MSG_HASH(
    "Couper automatiquement le son lors de l'avance rapide."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Accélération lors de l'avance rapide"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Accélérer l'audio lors de l'avance rapide. Empêche les crépitents audio mais réhausse le pitch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Gain de volume (dB)"
    )
