@@ -1796,23 +1796,6 @@ void handle_dbscan_finished(retro_task_t *task,
       void *task_data, void *user_data, const char *err);
 #endif
 
-static void content_add_to_playlist(const char *path)
-{
-#if 0
-#ifdef HAVE_LIBRETRODB
-   settings_t *settings = config_get_ptr();
-   if (!settings || !settings->bools.automatically_add_content_to_playlist)
-      return;
-   task_push_dbscan(
-         settings->paths.directory_playlist,
-         settings->paths.path_content_database,
-         path, false,
-         settings->bools.show_hidden_files,
-         handle_dbscan_finished);
-#endif
-#endif
-}
-
 static int file_load_with_detect_core_wrapper(
       enum msg_hash_enums enum_label_idx,
       size_t idx, size_t entry_idx,
@@ -1889,7 +1872,6 @@ static int file_load_with_detect_core_wrapper(
                         NULL, NULL))
                   return -1;
 
-               content_add_to_playlist(def_info.s);
                menu_driver_set_last_start_content(def_info.s);
 
                ret = 0;
@@ -2286,7 +2268,6 @@ static int default_action_ok_load_content_with_core_from_menu(const char *_path,
             _path, &content_info,
             (enum rarch_core_type)_type, NULL, NULL))
       return -1;
-   content_add_to_playlist(_path);
    menu_driver_set_last_start_content(_path);
    return 0;
 }
@@ -3961,7 +3942,6 @@ static int action_ok_load_core_deferred(const char *path,
             CORE_TYPE_PLAIN,
             NULL, NULL))
       return -1;
-   content_add_to_playlist(path);
    menu_driver_set_last_start_content(path);
 
    return 0;
@@ -4463,7 +4443,6 @@ static int action_ok_file_load_detect_core(const char *path,
             CORE_TYPE_PLAIN,
             NULL, NULL))
       return -1;
-   content_add_to_playlist(menu->detect_content_path);
    menu_driver_set_last_start_content(menu->detect_content_path);
 
    return 0;
@@ -6676,38 +6655,33 @@ static int action_ok_push_dropdown_item_playlist_default_core(
    }
    else
    {
-      core_info_t *core_info = NULL;
-      bool found             = false;
       size_t i;
 
       /* Loop through cores until we find a match */
       for (i = 0; i < core_info_list->count; i++)
       {
-         core_info = NULL;
-         core_info = core_info_get(core_info_list, i);
+         core_info_t *core_info = core_info_get(core_info_list, i);
 
          if (core_info)
          {
-            if (string_is_equal(core_name, core_info->display_name))
+            const char *core_info_display_name   = core_info->display_name;
+            const char *core_info_path           = core_info->path;
+            if (string_is_equal(core_name, core_info_display_name))
             {
                /* Update playlist */
-               playlist_set_default_core_path(playlist, core_info->path);
-               playlist_set_default_core_name(playlist, core_info->display_name);
-
-               found = true;
-               break;
+               playlist_set_default_core_path(playlist, core_info_path);
+               playlist_set_default_core_name(playlist, core_info_display_name);
+               goto end;
             }
          }
       }
 
-      /* Fallback... */
-      if (!found)
-      {
-         playlist_set_default_core_path(playlist, FILE_PATH_DETECT);
-         playlist_set_default_core_name(playlist, FILE_PATH_DETECT);
-      }
+      /* if we couldn't find a match, add this fallback... */
+      playlist_set_default_core_path(playlist, FILE_PATH_DETECT);
+      playlist_set_default_core_name(playlist, FILE_PATH_DETECT);
    }
 
+end:
    /* In all cases, update file on disk */
    playlist_write_file(playlist);
 
@@ -6857,13 +6831,13 @@ static int action_ok_push_dropdown_item_audio_device(const char *path,
 static int action_ok_push_dropdown_item_input_device_type(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   rarch_setting_t *setting;
+   enum msg_hash_enums enum_idx;
    retro_ctx_controller_info_t pad;
    unsigned port                = 0;
    unsigned device              = 0;
 
    const char *menu_path        = NULL;
-   enum msg_hash_enums enum_idx;
-   rarch_setting_t     *setting;
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
    enum_idx = (enum msg_hash_enums)atoi(menu_path);
    setting  = menu_setting_find_enum(enum_idx);
@@ -6886,13 +6860,16 @@ static int action_ok_push_dropdown_item_input_device_type(const char *path,
 
 #ifdef ANDROID
 static int action_ok_push_dropdown_item_input_select_physical_keyboard(const char *path,
-                                                           const char *label, unsigned type, size_t idx, size_t entry_idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-    settings_t *settings         = config_get_ptr();
-
-    const char *menu_path        = NULL;
+    char* keyboard;
+    const char *no_keyboard;
+    const char *keyboard_name;
     enum msg_hash_enums enum_idx;
-    rarch_setting_t     *setting;
+    rarch_setting_t *setting     = NULL;
+    bool refresh                 = false;
+    settings_t *settings         = config_get_ptr();
+    const char *menu_path        = NULL;
     menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
     enum_idx = (enum msg_hash_enums)atoi(menu_path);
     setting  = menu_setting_find_enum(enum_idx);
@@ -6900,39 +6877,38 @@ static int action_ok_push_dropdown_item_input_select_physical_keyboard(const cha
     if (!setting)
         return -1;
 
-    char* keyboard;
-    const char* keyboard_name = path;
-    const char* no_keyboard = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+    keyboard_name = path;
+    no_keyboard   = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
     if (string_is_equal(keyboard_name, no_keyboard))
         settings->arrays.input_android_physical_keyboard[0] = '\0';
     else
     {
-        for (int i = 0; i < MAX_INPUT_DEVICES; i++)
-        {
-            const char* device_name = input_config_get_device_name(i);
-            if (string_is_equal(device_name, keyboard_name))
-            {
-                uint16_t vendor_id = input_config_get_device_vid(i);
-                uint16_t product_id = input_config_get_device_pid(i);
-                snprintf(settings->arrays.input_android_physical_keyboard,
-                         sizeof(settings->arrays.input_android_physical_keyboard),
-                         "%04x:%04x %s",
-                         vendor_id, product_id, keyboard_name);
-                break;
-            }
-        }
-        /*
-         * if we did not find the selected device, do nothing, the user has chosen to keep
-         * the previous configuration, which is to use a device that is either not plugged right
-         * now or already working as the physical keyboard.
-         */
+       int i;
+       for (i = 0; i < MAX_INPUT_DEVICES; i++)
+       {
+          const char* device_name = input_config_get_device_name(i);
+          if (string_is_equal(device_name, keyboard_name))
+          {
+             uint16_t vendor_id = input_config_get_device_vid(i);
+             uint16_t product_id = input_config_get_device_pid(i);
+             snprintf(settings->arrays.input_android_physical_keyboard,
+                   sizeof(settings->arrays.input_android_physical_keyboard),
+                   "%04x:%04x %s",
+                   vendor_id, product_id, keyboard_name);
+             break;
+          }
+       }
+       /*
+        * if we did not find the selected device, do nothing, the user has chosen to keep
+        * the previous configuration, which is to use a device that is either not plugged right
+        * now or already working as the physical keyboard.
+        */
     }
     settings->modified = true;
 
     command_event(CMD_EVENT_REINIT, NULL);
 
     /* Refresh menu */
-    bool refresh = false;
     menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
     menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
@@ -7224,7 +7200,7 @@ static int action_ok_video_resolution(const char *path,
 #if defined(GEKKO) || defined(PS2) || defined(__PS3__)
    unsigned width   = 0;
    unsigned  height = 0;
-   char desc[64] = {0};
+   char desc[64]    = {0};
 
    if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
    {
