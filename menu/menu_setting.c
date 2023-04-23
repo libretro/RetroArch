@@ -2527,51 +2527,6 @@ static void config_string_options(
    SETTINGS_DATA_LIST_CURRENT_ADD_FREE_FLAGS(list, list_info, SD_FREE_FLAG_VALUES);
 }
 
-#if 0
-static void config_hex(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned int *target,
-      enum msg_hash_enums name_enum_idx,
-      enum msg_hash_enums SHORT_enum_idx,
-      unsigned int default_value,
-      rarch_setting_group_info_t *group_info,
-      rarch_setting_group_info_t *subgroup_info,
-      const char *parent_group,
-      change_handler_t change_handler, change_handler_t read_handler)
-{
-   (*list)[list_info->index++] = setting_hex_setting(
-         msg_hash_to_str(name_enum_idx),
-         msg_hash_to_str(SHORT_enum_idx),
-         target, default_value,
-         group_info->name, subgroup_info->name, parent_group,
-         change_handler, read_handler, false);
-
-   MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, name_enum_idx);
-   MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_VALUE_IDX(list, list_info, SHORT_enum_idx);
-}
-
-/* Please strdup() NAME and SHORT */
-static void config_bind(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      struct retro_keybind *target,
-      uint32_t player, uint32_t player_offset,
-      const char *name, const char *SHORT,
-      const struct retro_keybind *default_value,
-      rarch_setting_group_info_t *group_info,
-      rarch_setting_group_info_t *subgroup_info,
-      const char *parent_group)
-{
-   (*list)[list_info->index++] = setting_bind_setting(name, SHORT, target,
-         player, player_offset, default_value,
-         group_info->name, subgroup_info->name, parent_group,
-         false);
-   /* Request name and short description to be freed later */
-   SETTINGS_DATA_LIST_CURRENT_ADD_FREE_FLAGS(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
-}
-#endif
-
 /* Please strdup() NAME and SHORT */
 static void config_bind_alt(
       rarch_setting_t **list,
@@ -2630,9 +2585,8 @@ static void START_GROUP(rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *name, const char *parent_group)
 {
    group_info->name = name;
-   if (!SETTINGS_LIST_APPEND(list, list_info))
-      return;
-   (*list)[list_info->index++] = setting_group_setting (ST_GROUP, name, parent_group);
+   if (SETTINGS_LIST_APPEND(list, list_info))
+      (*list)[list_info->index++] = setting_group_setting (ST_GROUP, name, parent_group);
 }
 
 static void end_group(rarch_setting_t **list,
@@ -2670,7 +2624,6 @@ static void end_sub_group(
 static int setting_action_ok_bind_all(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   (void)wraparound;
    if (!menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_ALL, setting))
       return -1;
    return 0;
@@ -2684,8 +2637,6 @@ static int setting_action_ok_bind_all_save_autoconfig(
    unsigned map              = 0;
    const char *name          = NULL;
    settings_t      *settings = config_get_ptr();
-
-   (void)wraparound;
 
    if (!setting)
       return -1;
@@ -2715,8 +2666,6 @@ static int setting_action_ok_bind_defaults(
    menu_input_ctx_bind_limits_t lim;
    struct retro_keybind *target          = NULL;
    const struct retro_keybind *def_binds = NULL;
-
-   (void)wraparound;
 
    if (!setting)
       return -1;
@@ -2749,9 +2698,6 @@ static int setting_action_ok_video_refresh_rate_auto(
    double deviation          = 0.0;
    unsigned sample_points    = 0;
 
-   if (!setting)
-      return -1;
-
    if (video_monitor_fps_statistics(&video_refresh_rate,
             &deviation, &sample_points))
    {
@@ -2772,9 +2718,6 @@ static int setting_action_ok_video_refresh_rate_polled(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    float refresh_rate = 0.0;
-
-   if (!setting)
-     return -1;
 
    if ((refresh_rate = video_driver_get_refresh_rate()) == 0.0)
       return -1;
@@ -2930,82 +2873,6 @@ static int setting_string_action_start_audio_device(rarch_setting_t *setting)
 }
 #endif
 
-static int setting_string_action_left_string_options(
-   rarch_setting_t* setting, size_t idx, bool wraparound)
-{
-   struct string_list tmp_str_list = { 0 };
-   size_t i;
-
-   if (!setting)
-      return -1;
-
-   string_list_initialize(&tmp_str_list);
-   string_split_noalloc(&tmp_str_list,
-      setting->values, "|");
-
-   for (i = 0; i < tmp_str_list.size; ++i)
-   {
-      if (string_is_equal(tmp_str_list.elems[i].data, setting->value.target.string))
-      {
-         i = (i + tmp_str_list.size - 1) % tmp_str_list.size;
-         strlcpy(setting->value.target.string,
-            tmp_str_list.elems[i].data, setting->size);
-
-         if (setting->change_handler)
-            setting->change_handler(setting);
-
-         string_list_deinitialize(&tmp_str_list);
-         return 0;
-      }
-   }
-
-   string_list_deinitialize(&tmp_str_list);
-   return -1;
-}
-
-static int setting_string_action_right_string_options(
-   rarch_setting_t* setting, size_t idx, bool wraparound)
-{
-   struct string_list tmp_str_list = { 0 };
-   size_t i;
-
-   if (!setting)
-      return -1;
-
-   string_list_initialize(&tmp_str_list);
-   string_split_noalloc(&tmp_str_list,
-      setting->values, "|");
-
-   for (i = 0; i < tmp_str_list.size; ++i)
-   {
-      if (string_is_equal(tmp_str_list.elems[i].data, setting->value.target.string))
-      {
-         i = (i + 1) % tmp_str_list.size;
-         strlcpy(setting->value.target.string,
-            tmp_str_list.elems[i].data, setting->size);
-
-         if (setting->change_handler)
-            setting->change_handler(setting);
-
-         string_list_deinitialize(&tmp_str_list);
-         return 0;
-      }
-   }
-
-   string_list_deinitialize(&tmp_str_list);
-   return -1;
-}
-
-#if defined(HAVE_GFX_WIDGETS)
-static int setting_action_ok_mapped_string(
-   rarch_setting_t* setting, size_t idx, bool wraparound)
-{
-   /* this is functionally the same as setting_action_ok_uint.
-    * the mapping happens in menu_displaylist_ctl */
-   return setting_action_ok_uint(setting, idx, wraparound);
-}
-#endif
-
 static void setting_get_string_representation_streaming_mode(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -3148,10 +3015,8 @@ static void setting_get_string_representation_state_slot(rarch_setting_t *settin
 static void setting_get_string_representation_percentage(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   snprintf(s, len, "%d%%", *setting->value.target.integer);
+   if (setting)
+      snprintf(s, len, "%d%%", *setting->value.target.integer);
 }
 
 static void setting_get_string_representation_float_video_msg_color(rarch_setting_t *setting,
@@ -8946,27 +8811,6 @@ static void setting_get_string_representation_uint_cheevos_visibility_summary(
          len);
       break;
    }
-}
-
-static void achievement_leaderboards_get_string_representation(rarch_setting_t* setting, char* s, size_t len)
-{
-   const char* value = setting->value.target.string;
-#if defined(HAVE_GFX_WIDGETS)
-   if (string_is_equal(value, "true"))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ENABLED), len);
-   else if (string_is_equal(value, "trackers"))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY), len);
-   else if (string_is_equal(value, "notifications"))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_NOTIFICATIONS_ONLY), len);
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
-#else
-   /* using these enum strings makes the widget behave like a boolean toggle */
-   if (string_is_equal(value, "true"))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-#endif
 }
 
 #ifdef HAVE_GFX_WIDGETS
@@ -21415,7 +21259,7 @@ static bool setting_append_list(
                   general_read_handler,
                   general_write_handler);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_IS_DRIVER);
-            (*list)[list_info->index - 1].action_ok      = setting_action_ok_mapped_string;
+            (*list)[list_info->index - 1].action_ok      = setting_action_ok_uint;
             (*list)[list_info->index - 1].change_handler = timezone_change_handler;
 
             END_SUB_GROUP(list, list_info, parent_group);
