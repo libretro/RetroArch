@@ -930,14 +930,6 @@ void video_driver_unset_hdr_support(void);
 
 bool video_driver_supports_hdr(void);
 
-unsigned video_driver_get_hdr_color(unsigned color);
-
-float video_driver_get_hdr_luminance(float nits);
-
-unsigned video_driver_get_hdr_paper_white(void);
-
-float* video_driver_get_hdr_paper_white_float(void);
-
 bool video_driver_get_next_video_out(void);
 
 bool video_driver_get_prev_video_out(void);
@@ -1005,11 +997,6 @@ void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch);
 
 void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling);
-
-void video_driver_set_hdr_max_nits(float max_nits);
-void video_driver_set_hdr_paper_white_nits(float paper_white_nits);
-void video_driver_set_hdr_contrast(float contrast);
-void video_driver_set_hdr_expand_gamut(bool expand_gamut);
 
 const char *video_driver_get_ident(void);
 

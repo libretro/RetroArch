@@ -8106,37 +8106,46 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS:
          {
             settings_t *settings                = config_get_ptr();
+            video_driver_state_t *video_st      = video_state_get_ptr();
             settings->modified                  = true;
             settings->floats.video_hdr_max_nits = roundf(*setting->value.target.fraction);
 
-            video_driver_set_hdr_max_nits(settings->floats.video_hdr_max_nits);
+            if (video_st && video_st->poke && video_st->poke->set_hdr_max_nits)
+               video_st->poke->set_hdr_max_nits(video_st->data, settings->floats.video_hdr_max_nits);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS:
          {
             settings_t *settings                         = config_get_ptr();
+            video_driver_state_t *video_st               = video_state_get_ptr();
             settings->modified                           = true;
             settings->floats.video_hdr_paper_white_nits  = roundf(*setting->value.target.fraction);
 
-            video_driver_set_hdr_paper_white_nits(settings->floats.video_hdr_paper_white_nits);
+
+            if (video_st && video_st->poke && video_st->poke->set_hdr_paper_white_nits)
+               video_st->poke->set_hdr_paper_white_nits(video_st->data, settings->floats.video_hdr_paper_white_nits);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST:
          {
             settings_t *settings                = config_get_ptr();
+            video_driver_state_t *video_st      = video_state_get_ptr();
             settings->modified                  = true;
             settings->floats.video_hdr_display_contrast = *setting->value.target.fraction;
 
-            video_driver_set_hdr_contrast(settings->floats.video_hdr_display_contrast);
+            if (video_st && video_st->poke && video_st->poke->set_hdr_contrast)
+               video_st->poke->set_hdr_contrast(video_st->data, VIDEO_HDR_MAX_CONTRAST - settings->floats.video_hdr_display_contrast);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT:
          {
             settings_t *settings                   = config_get_ptr();
+            video_driver_state_t *video_st         = video_state_get_ptr();
             settings->modified                     = true;
             settings->bools.video_hdr_expand_gamut = *setting->value.target.boolean;
 
-            video_driver_set_hdr_expand_gamut(settings->bools.video_hdr_expand_gamut);
+            if (video_st && video_st->poke && video_st->poke->set_hdr_expand_gamut)
+               video_st->poke->set_hdr_expand_gamut(video_st->data, settings->bools.video_hdr_expand_gamut);
          }
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
