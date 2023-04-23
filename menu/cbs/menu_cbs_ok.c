@@ -1771,13 +1771,7 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
    {
       core_info_get_current_core((core_info_t**)&info);
       if (info)
-      {
-#if 0
-         RARCH_LOG("[lobby] use the current core (%s) to load this content...\n",
-               info->path);
-#endif
          supported = 1;
-      }
    }
 
    /* There are multiple deferred cores and a
@@ -4661,38 +4655,6 @@ static void cb_net_generic_subdir(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
    http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
-#if 0
-   char subdir_path[PATH_MAX_LENGTH];
-   file_transfer_t *state       = (file_transfer_t*)user_data;
-   subdir_path[0]               = '\0';
-#endif
-
-   if (!data || err)
-      goto finish;
-
-#if 0
-   if (!string_is_empty(data->data))
-      memcpy(subdir_path, data->data, data->len * sizeof(char));
-   subdir_path[data->len] = '\0';
-#endif
-
-finish:
-   /* TODO/FIXME - unimplemented/unfinished code */
-#if 0
-   if (!err && !string_ends_with_size(subdir_path,
-            FILE_PATH_INDEX_DIRS_URL,
-            strlen(subdir_path),
-            STRLEN_CONST(FILE_PATH_INDEX_DIRS_URL)
-            ))
-   {
-      char parent_dir[PATH_MAX_LENGTH];
-      fill_pathname_parent_dir(parent_dir,
-            state->path, sizeof(parent_dir));
-      /*generic_action_ok_displaylist_push(parent_dir, NULL,
-            subdir_path, 0, 0, 0, ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST);*/
-   }
-#endif
-
    if (user_data)
       free(user_data);
 }
@@ -6491,14 +6453,6 @@ static int action_ok_push_dropdown_setting(const char *path,
 static int action_ok_push_dropdown_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#if 0
-   RARCH_LOG("dropdown: \n");
-   RARCH_LOG("path: %s \n", path);
-   RARCH_LOG("label: %s \n", label);
-   RARCH_LOG("type: %d \n", type);
-   RARCH_LOG("idx: %d \n", idx);
-   RARCH_LOG("entry_idx: %d \n", entry_idx);
-#endif
    return 0;
 }
 

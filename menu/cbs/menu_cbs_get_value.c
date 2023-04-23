@@ -2255,9 +2255,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_entry);
          break;
       default:
-#if 0
-         RARCH_LOG("type: %d\n", type);
-#endif
          BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
          break;
    }

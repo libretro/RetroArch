@@ -4005,22 +4005,11 @@ static void* ui_window_qt_init(void)
 static void ui_window_qt_destroy(void *data)
 {
    /* TODO/FIXME - implement? */
-#if 0
-   ui_window_qt_t *window = (ui_window_qt_t*)data;
-
-   delete window->qtWindow;
-#endif
 }
 
 static void ui_window_qt_set_focused(void *data)
 {
    /* TODO/FIXME - implement */
-#if 0
-   ui_window_qt_t *window = (ui_window_qt_t*)data;
-
-   window->qtWindow->raise();
-   window->qtWindow->activateWindow();
-#endif
 }
 
 static void ui_window_qt_set_visible(void *data,
@@ -4032,32 +4021,17 @@ static void ui_window_qt_set_visible(void *data,
 static void ui_window_qt_set_title(void *data, char *buf)
 {
    /* TODO/FIXME - implement? */
-#if 0
-   ui_window_qt_t *window = (ui_window_qt_t*)data;
-
-   window->qtWindow->setWindowTitle(QString::fromUtf8(buf));
-#endif
 }
 
 static void ui_window_qt_set_droppable(void *data, bool droppable)
 {
    /* TODO/FIXME - implement */
-#if 0
-   ui_window_qt_t *window = (ui_window_qt_t*)data;
-
-   window->qtWindow->setAcceptDrops(droppable);
-#endif
 }
 
 static bool ui_window_qt_focused(void *data)
 {
    /* TODO/FIXME - implement? */
-#if 0
-   ui_window_qt_t *window = (ui_window_qt_t*)data;
-   return window->qtWindow->isActiveWindow() && !window->qtWindow->isMinimized();
-#else
    return true;
-#endif
 }
 
 static ui_window_t ui_window_qt = {

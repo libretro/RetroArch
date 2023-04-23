@@ -6407,17 +6407,6 @@ error:
    return false;
 }
 
-#if 0
-static bool retroarch_is_on_main_thread(shtread_tls_t *tls)
-{
-#ifdef HAVE_THREAD_STORAGE
-   return sthread_tls_get(tls) == MAGIC_POINTER;
-#else
-   return true;
-#endif
-}
-#endif
-
 void retroarch_init_task_queue(void)
 {
 #ifdef HAVE_THREADS

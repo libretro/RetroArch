@@ -3979,32 +3979,9 @@ static int xmb_draw_item(
          xmb->entry_idx_enabled &&
          !string_is_empty(xmb->entry_index_str))
    {
-      float entry_idx_margin = 12 * xmb->last_scale_factor;
-
-#if 0
-      /* Disabled due to overlap with arrow image
-       * and previous selection icon when enough items */
-
-      /* Calculate position depending on the current
-       * list and if Thumbnail Vertical Disposition
-       * is enabled (branchless version) */
-      float x_position         = (
-            video_width - entry_idx_margin) *
-         !menu_xmb_vertical_thumbnails +
-         (node->x + xmb->margins_screen_left +
-          xmb->icon_spacing_horizontal -
-          xmb->margins_label_left) *
-         menu_xmb_vertical_thumbnails;
-      float y_position         = (
-            video_height - entry_idx_margin) *
-         !menu_xmb_vertical_thumbnails +
-         (xmb->margins_screen_top + xmb->margins_label_top +
-          xmb->icon_spacing_vertical * xmb->active_item_factor) *
-         menu_xmb_vertical_thumbnails;
-#else
+      float entry_idx_margin   = 12 * xmb->last_scale_factor;
       float x_position         = video_width - entry_idx_margin;
       float y_position         = video_height - entry_idx_margin;
-#endif
 
       xmb_draw_text(xmb_shadows_enable, xmb, settings,
             xmb->entry_index_str, x_position, y_position,
@@ -5734,26 +5711,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Configure shadow effect */
    if (xmb_shadows_enable)
    {
-#if 0
-      /* Drop shadow for thumbnails needs to be larger
-       * than for text/icons, and also needs to scale
-       * with screen dimensions */
-      float shadow_offset            =   xmb->shadow_offset * 1.5f 
-                                       * xmb->last_scale_factor;
-      if (shadow_offset <= xmb->shadow_offset)
-         shadow_offset               = xmb->shadow_offset;
-
-      thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_DROP;
-      thumbnail_shadow.alpha         = GFX_SHADOW_ALPHA;
-      thumbnail_shadow.drop.x_offset = shadow_offset;
-      thumbnail_shadow.drop.y_offset = shadow_offset;
-#else
       thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_OUTLINE;
       thumbnail_shadow.alpha         = 0.50f;
       thumbnail_shadow.outline.width = 2 * xmb->last_scale_factor;
       if (thumbnail_shadow.outline.width < 1)
          thumbnail_shadow.outline.width = 1;
-#endif
    }
    else
       thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_NONE;

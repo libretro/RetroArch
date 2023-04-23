@@ -84,16 +84,16 @@ static bool bsv_movie_init_playback(
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
       return false;
    }
-   /*
+#if 0
    if (swap_if_big32(header[VERSION_INDEX]) > REPLAY_FORMAT_VERSION)
    {
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
       return false;
    }
-   */
+#endif
 
-   state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
-   identifier_loc = (int64_t *)(header+IDENTIFIER_INDEX);
+   state_size         = swap_if_big32(header[STATE_SIZE_INDEX]);
+   identifier_loc     = (int64_t *)(header+IDENTIFIER_INDEX);
    handle->identifier = swap_if_big64(*identifier_loc);
 
 #if 0

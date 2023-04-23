@@ -754,19 +754,7 @@ static int database_info_list_iterate_found_match(
        (hash = strchr(entry_path_str, '#')))
        *hash = '\0';
 
-#if defined(RARCH_INTERNAL)
-#if 0
-   RARCH_LOG("Found match in database !\n");
-
-   RARCH_LOG("Path: %s\n", db_path);
-   RARCH_LOG("CRC : %s\n", db_crc);
-   RARCH_LOG("Playlist Path: %s\n", db_playlist_path);
-   RARCH_LOG("Entry Path: %s\n", entry_path);
-   RARCH_LOG("Playlist not NULL: %d\n", playlist != NULL);
-   RARCH_LOG("ZIP entry: %s\n", archive_name);
-   RARCH_LOG("entry path str: %s\n", entry_path_str);
-#endif
-#else
+#if !defined(RARCH_INTERNAL)
    fprintf(stderr, "Found match in database !\n");
 
    fprintf(stderr, "Path: %s\n", db_path);
@@ -915,10 +903,6 @@ static int task_database_iterate_crc_lookup(
 
       if (db_info_entry && db_info_entry->crc32)
       {
-#if 0
-         RARCH_LOG("CRC32: 0x%08X , entry CRC32: 0x%08X (%s).\n",
-               db_state->crc, db_info_entry->crc32, db_info_entry->name);
-#endif
          if (db_state->archive_crc == db_info_entry->crc32)
             return database_info_list_iterate_found_match(
                   _db,
@@ -1051,11 +1035,6 @@ static int task_database_iterate_serial_lookup(
 
       if (db_info_entry && db_info_entry->serial)
       {
-#if 0
-         RARCH_LOG("serial: %s , entry serial: %s (%s).\n",
-                   db_state->serial, db_info_entry->serial,
-                   db_info_entry->name);
-#endif
          if (string_is_equal(db_state->serial, db_info_entry->serial))
             return database_info_list_iterate_found_match(_db,
                   db_state, db, NULL);

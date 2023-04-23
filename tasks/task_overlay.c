@@ -592,9 +592,7 @@ static void task_overlay_deferred_loading(retro_task_t *task)
       case OVERLAY_IMAGE_TRANSFER_NONE:
       case OVERLAY_IMAGE_TRANSFER_BUSY:
          loader->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
-#if 0
-         break;
-#endif
+	 /* fall-through */
       case OVERLAY_IMAGE_TRANSFER_DONE:
          task_overlay_image_done(&loader->overlays[loader->pos]);
          loader->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_IMAGE_ITERATE;

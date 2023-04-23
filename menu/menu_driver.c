@@ -2385,18 +2385,6 @@ static bool menu_driver_displaylist_push_internal(
 
       menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-#if 0
-#ifdef HAVE_SCREENSHOTS
-      if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-         menu_entries_append(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
-               msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
-               MENU_ENUM_LABEL_TAKE_SCREENSHOT,
-               MENU_SETTING_ACTION_SCREENSHOT, 0, 0, NULL);
-      else
-         info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
-#endif
-#endif
       menu_displaylist_ctl(DISPLAYLIST_IMAGES_HISTORY, info, settings);
       return true;
    }
@@ -3589,14 +3577,6 @@ bool rarch_menu_init(
       configuration_set_int(settings,
             settings->uints.bundle_assets_extract_last_version, 1);
    }
-#endif
-
-#if 0
-   /* TODO: No reason to do this here since shaders need
-    * content, and this is called in content_load() */
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   menu_shader_manager_init();
-#endif
 #endif
 
    return true;
