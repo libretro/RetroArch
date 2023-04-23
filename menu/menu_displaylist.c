@@ -6453,22 +6453,23 @@ unsigned menu_displaylist_build_list(
             /* All other binds come last */
             for (i = 0; i < RARCH_BIND_LIST_END; i++)
             {
+               uint8_t key = input_config_bind_map_get_retro_key(i);
                /* Skip "Hotkey Enable" */
                if (i == RARCH_FIRST_META_KEY)
                   continue;
                /* Hidden items */
-               else if (input_config_bind_map_get_retro_key(i) == RARCH_OVERLAY_NEXT
-                     || input_config_bind_map_get_retro_key(i) == RARCH_OSK)
+               else if ((key == RARCH_OVERLAY_NEXT)
+                     || (key == RARCH_OSK))
                   continue;
                /* Show combo entries before normal binds */
-               else if (input_config_bind_map_get_retro_key(i) == RARCH_MENU_TOGGLE)
+               else if (key == RARCH_MENU_TOGGLE)
                {
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
                            PARSE_ONLY_UINT, false) == 0)
                      count++;
                }
-               else if (input_config_bind_map_get_retro_key(i) == RARCH_QUIT_KEY)
+               else if (key == RARCH_QUIT_KEY)
                {
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO,
@@ -6554,18 +6555,22 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
-            if (has_content && menu_entries_append(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
-            if (has_content && menu_entries_append(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
+
+            if (has_content)
+            {
+               if (menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+               if (menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+            }
 #endif
          }
          break;
@@ -6784,52 +6789,51 @@ unsigned menu_displaylist_build_list(
             count++;
          break;
       case DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_ENABLE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_DRIVER,
-                  PARSE_ONLY_STRING_OPTIONS, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_DEVICE,
-                  PARSE_ONLY_STRING, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_LATENCY,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-                  PARSE_ONLY_INT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
+         {
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_AUDIO_ENABLE,                    PARSE_ONLY_BOOL,            true  },
+               {MENU_ENUM_LABEL_AUDIO_DRIVER,                    PARSE_ONLY_STRING_OPTIONS,  true  },
+               {MENU_ENUM_LABEL_AUDIO_DEVICE,                    PARSE_ONLY_STRING,          true  },
+               {MENU_ENUM_LABEL_AUDIO_LATENCY,                   PARSE_ONLY_UINT,            true  },
+#ifdef _WIN32
+               {MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,     PARSE_ONLY_BOOL,            true  },
+               {MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,       PARSE_ONLY_BOOL,            true  },
+               {MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,   PARSE_ONLY_INT,             true  },
+#endif
+               {MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,              PARSE_ONLY_UINT,            true  },
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
          break;
       case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_SYNC,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
+         {
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_AUDIO_SYNC,                      PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,           PARSE_ONLY_FLOAT,    true  },
+               {MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,        PARSE_ONLY_FLOAT,    true  },
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
          break;
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
       {
@@ -7156,172 +7160,88 @@ unsigned menu_displaylist_build_list(
 #endif
          break;
       case DISPLAYLIST_INPUT_MENU_SETTINGS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MENU_INPUT_SWAP_SCROLL,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MENU_SCROLL_FAST,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MENU_SCROLL_DELAY,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_DISABLE_INFO_BUTTON,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_DISABLE_SEARCH_BUTTON,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
+         {
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS,       PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL,         PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_MENU_INPUT_SWAP_SCROLL,            PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU,      PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_MENU_SCROLL_FAST,                  PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_MENU_SCROLL_DELAY,                 PARSE_ONLY_UINT,     true  },
+               {MENU_ENUM_LABEL_INPUT_DISABLE_INFO_BUTTON,         PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_INPUT_DISABLE_SEARCH_BUTTON,       PARSE_ONLY_BOOL,     true  },
+            };
 
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
          break;
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_MAX_USERS,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_SMALL_KEYBOARD_ENABLE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_PAUSE_ON_DISCONNECT,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
+         {
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_INPUT_MAX_USERS,                                                   PARSE_ONLY_UINT,  true  },
+               {MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,                                          PARSE_ONLY_UINT,  true  },
+               {MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,                                                PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_SMALL_KEYBOARD_ENABLE,                                       PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,                               PARSE_ONLY_UINT,  true  },
+               {MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE,                                                PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH,                                          PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,                                          PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,                                           PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_PAUSE_ON_DISCONNECT,                                               PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW,                                       PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND,                                     PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,                                       PARSE_ONLY_FLOAT, true  },
+               {MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,                                             PARSE_ONLY_FLOAT, true  },
+               {MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,                                          PARSE_ONLY_FLOAT, true  },
 #if defined(GEKKO)
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_MOUSE_SCALE,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
+               {MENU_ENUM_LABEL_INPUT_MOUSE_SCALE,                                                 PARSE_ONLY_UINT,  true  },
 #endif
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_TOUCH_SCALE,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_BIND_HOLD,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_BIND_MODE,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
+               {MENU_ENUM_LABEL_INPUT_TOUCH_SCALE,                                                 PARSE_ONLY_UINT,  true  },
+               {MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,                                                PARSE_ONLY_UINT,  true  },
+               {MENU_ENUM_LABEL_INPUT_BIND_HOLD,                                                   PARSE_ONLY_UINT,  true  },
+               {MENU_ENUM_LABEL_INPUT_BIND_MODE,                                                   PARSE_ONLY_UINT,  true  },
+               {MENU_ENUM_LABEL_QUIT_PRESS_TWICE,                                                  PARSE_ONLY_BOOL,  true  },
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_NOWINKEY_ENABLE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
+               {MENU_ENUM_LABEL_INPUT_NOWINKEY_ENABLE,                                             PARSE_ONLY_BOOL,  true  },
 #endif
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
+               {MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,                                             PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS,                                             PARSE_ONLY_UINT,  true  },
+               {MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,                                              PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,                                    PARSE_ACTION,     true  },
+               {MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,                                               PARSE_ACTION,     true  },
+               {MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,                                                PARSE_ACTION,     true  },
+               {MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS,                                         PARSE_ACTION,     true  },
 #ifdef ANDROID
-	 if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
+               {MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,                               PARSE_ONLY_BOOL,  true  },
+#endif
+            };
 
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+#ifdef ANDROID
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                 MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
                 PARSE_ACTION, true) == 0)
                 count++;
 #endif
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-                  PARSE_ACTION, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,
-                  PARSE_ACTION, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,
-                  PARSE_ACTION, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS,
-                  PARSE_ACTION, false) == 0)
-            count++;
 
 #ifdef HAVE_LIBNX
          {
@@ -8810,28 +8730,28 @@ unsigned menu_displaylist_build_list(
          }
          break;
       case DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_VIDEO_FULLSCREEN,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_VIDEO_FULLSCREEN_Y,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
+         {
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_VIDEO_FULLSCREEN,                  PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,         PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,                PARSE_ONLY_UINT,     true  },
+               {MENU_ENUM_LABEL_VIDEO_FULLSCREEN_Y,                PARSE_ONLY_UINT,     true  },
 #ifdef __WINRT__
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_VIDEO_FORCE_RESOLUTION,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
+               {MENU_ENUM_LABEL_VIDEO_FORCE_RESOLUTION,            PARSE_ONLY_BOOL,     true  },
 #endif
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
          break;
       case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
          {
@@ -9761,8 +9681,8 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_CAMERA_ALLOW, PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_DISCORD_ALLOW,  PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CAMERA_ALLOW,    PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_DISCORD_ALLOW,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_LOCATION_ALLOW,  PARSE_ONLY_BOOL},
             };
 
