@@ -55,18 +55,19 @@
 /* (C) libtransistor */
 static int pdep(uint32_t mask, uint32_t value)
 {
-    uint32_t out = 0;
-    for (int shift = 0; shift < 32; shift++)
-    {
-        uint32_t bit = 1u << shift;
-        if (mask & bit)
-        {
-            if (value & 1)
-                out |= bit;
-            value >>= 1;
-        }
-    }
-    return out;
+   int shift;
+   uint32_t out = 0;
+   for (shift = 0; shift < 32; shift++)
+   {
+      uint32_t bit = 1u << shift;
+      if (mask & bit)
+      {
+         if (value & 1)
+            out |= bit;
+         value >>= 1;
+      }
+   }
+   return out;
 }
 
 static uint32_t swizzle_x(uint32_t v) { return pdep(~0x7B4u, v); }

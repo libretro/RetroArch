@@ -949,18 +949,19 @@ static bool is_configured_as_physical_keyboard(int vendor_id, int product_id, co
 
     if (is_keyboard)
     {
+       int i;
         /*
          * Check that there is not already a similar physical keyboard attached
          * attached to the system
          */
-        for (int i = 0; i < kbd_num; i++)
+        for (i = 0; i < kbd_num; i++)
         {
             char kbd_device_name[256] = { 0 };
-            int kbd_vendor_id                 = 0;
-            int kbd_product_id                = 0;
+            int kbd_vendor_id         = 0;
+            int kbd_product_id        = 0;
 
             if (!engine_lookup_name(kbd_device_name, &kbd_vendor_id,
-                                    &kbd_product_id, sizeof(kbd_device_name), kbd_id[i]))
+                     &kbd_product_id, sizeof(kbd_device_name), kbd_id[i]))
                 return false;
 
             if (compare_by_id && vendor_id == kbd_vendor_id && product_id == kbd_product_id)

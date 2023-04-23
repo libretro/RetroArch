@@ -1081,7 +1081,7 @@ static unsigned menu_displaylist_parse_core_manager_steam_list(
    return count;
 
 error:
-   /* TODO: Send error notification */
+   /* TODO/FIXME: Send error notification */
    RARCH_ERR("[Steam] Error enumerating core dlcs for core manager (%d-%d)\n", MIST_UNPACK_RESULT(result));
    return count;
 }
@@ -1091,21 +1091,21 @@ static unsigned menu_displaylist_parse_core_information_steam(
       settings_t *settings)
 {
    unsigned count = 0;
-   MistResult result;
    steam_core_dlc_list_t *dlc_list;
    steam_core_dlc_t *core_dlc = NULL;
-   bool installed = false;
-
-   result = steam_get_core_dlcs(&dlc_list, false);
-   if (MIST_IS_ERROR(result)) goto error;
+   bool installed             = false;
+   MistResult result          = steam_get_core_dlcs(&dlc_list, false);
+   if (MIST_IS_ERROR(result))
+	   goto error;
 
    /* Get the core dlc information */
-   core_dlc = steam_get_core_dlc_by_name(dlc_list, info->path);
-   if (core_dlc == NULL) return count;
+   if (!(core_dlc = steam_get_core_dlc_by_name(dlc_list, info->path)))
+	   return count;
 
    /* Check if installed */
    result = mist_steam_apps_is_dlc_installed(core_dlc->app_id, &installed);
-   if (MIST_IS_ERROR(result)) goto error;
+   if (MIST_IS_ERROR(result))
+      goto error;
 
    if (installed)
    {
@@ -1139,6 +1139,7 @@ error:
 static unsigned menu_displaylist_parse_core_option_dropdown_list(
       menu_displaylist_info_t *info)
 {
+   int j;
    char val_d[8];
    unsigned count                  = 0;
    struct string_list tmp_str_list = {0};
@@ -1152,7 +1153,6 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    const char *lbl_disabled        = NULL;
    const char *val_on_str          = NULL;
    const char *val_off_str         = NULL;
-   unsigned j;
 
    /* Fetch options */
    retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
