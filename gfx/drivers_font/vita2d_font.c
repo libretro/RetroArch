@@ -78,7 +78,7 @@ static void *vita2d_font_init(void *data,
 
    for (j = 0; j < atlas->height; j++)
       for (k = 0; k < atlas->width; k++)
-         tex32[k + j*stride] = frame32[k + j*pitch];
+         tex32[k + j * stride] = frame32[k + j*pitch];
 
    font->atlas->dirty = false;
 
@@ -165,11 +165,9 @@ static void vita2d_font_render_line(
 
    for (i = 0; i < msg_len; i++)
    {
+      int j, k;
       int off_x, off_y, tex_x, tex_y, width, height;
-      unsigned int stride, pitch, j, k;
       const struct font_glyph *glyph = NULL;
-      const uint8_t         *frame32 = NULL;
-      uint8_t                 *tex32 = NULL;
       const char *msg_tmp            = &msg[i];
       unsigned code                  = utf8_walk(&msg_tmp);
       unsigned skip                  = msg_tmp - &msg[i];
@@ -191,14 +189,14 @@ static void vita2d_font_render_line(
 
       if (font->atlas->dirty)
       {
-        stride  = vita2d_texture_get_stride(font->texture);
-        tex32   = vita2d_texture_get_datap(font->texture);
-        frame32 = font->atlas->buffer;
-        pitch   = font->atlas->width;
+        unsigned int stride    = vita2d_texture_get_stride(font->texture);
+        uint8_t *tex32         = vita2d_texture_get_datap(font->texture);
+        const uint8_t *frame32 = font->atlas->buffer;
+        unsigned int pitch     = font->atlas->width;
 
         for (j = 0; j < font->atlas->height; j++)
            for (k = 0; k < font->atlas->width; k++)
-              tex32[k + j*stride] = frame32[k + j*pitch];
+              tex32[k + j*stride] = frame32[k + j * pitch];
 
          font->atlas->dirty = false;
       }
@@ -264,35 +262,35 @@ static void vita2d_font_render_msg(
       const char *msg,
       const struct font_params *params)
 {
-   float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y;
-   enum text_alignment text_align;
    unsigned color, r, g, b, alpha;
-   bool full_screen                 = false ;
-   vita_video_t             *vita   = (vita_video_t *)userdata;
-   vita_font_t                *font = (vita_font_t *)data;
-   unsigned width                   = vita->video_width;
-   unsigned height                  = vita->video_height;
+   enum text_alignment text_align;
+   float x, y, scale, drop_mod, drop_alpha;
+   bool full_screen           = false;
+   vita_video_t *vita         = (vita_video_t *)userdata;
+   vita_font_t *font          = (vita_font_t *)data;
+   unsigned width             = vita->video_width;
+   unsigned height            = vita->video_height;
 
    if (!font || !msg || !*msg)
       return;
 
    if (params)
    {
-      x              = params->x;
-      y              = params->y;
-      scale          = params->scale;
-      full_screen    = params->full_screen;
-      text_align     = params->text_align;
-      drop_x         = params->drop_x;
-      drop_y         = params->drop_y;
-      drop_mod       = params->drop_mod;
-      drop_alpha     = params->drop_alpha;
-      r    				= FONT_COLOR_GET_RED(params->color);
-      g    				= FONT_COLOR_GET_GREEN(params->color);
-      b    				= FONT_COLOR_GET_BLUE(params->color);
-      alpha    		= FONT_COLOR_GET_ALPHA(params->color);
-      color    		= RGBA8(r,g,b,alpha);
+      x                       = params->x;
+      y                       = params->y;
+      scale                   = params->scale;
+      full_screen             = params->full_screen;
+      text_align              = params->text_align;
+      drop_x                  = params->drop_x;
+      drop_y                  = params->drop_y;
+      drop_mod                = params->drop_mod;
+      drop_alpha              = params->drop_alpha;
+      r    				         = FONT_COLOR_GET_RED(params->color);
+      g    				         = FONT_COLOR_GET_GREEN(params->color);
+      b    				         = FONT_COLOR_GET_BLUE(params->color);
+      alpha    		         = FONT_COLOR_GET_ALPHA(params->color);
+      color    		         = RGBA8(r,g,b,alpha);
    }
    else
    {

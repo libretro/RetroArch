@@ -297,30 +297,30 @@ static void wiiu_font_render_msg(
    int drop_x, drop_y;
    enum text_alignment text_align;
    unsigned color, r, g, b, alpha;
-   wiiu_video_t              *wiiu  = (wiiu_video_t*)userdata;
-   wiiu_font_t                *font = (wiiu_font_t*)data;
-   unsigned width                   = wiiu->vp.full_width;
-   unsigned height                  = wiiu->vp.full_height;
+   wiiu_video_t *wiiu         = (wiiu_video_t*)userdata;
+   wiiu_font_t *font          = (wiiu_font_t*)data;
+   unsigned width             = wiiu->vp.full_width;
+   unsigned height            = wiiu->vp.full_height;
 
    if (!font || !msg || !*msg)
       return;
 
    if (params)
    {
-      x              = params->x;
-      y              = params->y;
-      scale          = params->scale;
-      text_align     = params->text_align;
-      drop_x         = params->drop_x;
-      drop_y         = params->drop_y;
-      drop_mod       = params->drop_mod;
-      drop_alpha     = params->drop_alpha;
+      x                       = params->x;
+      y                       = params->y;
+      scale                   = params->scale;
+      text_align              = params->text_align;
+      drop_x                  = params->drop_x;
+      drop_y                  = params->drop_y;
+      drop_mod                = params->drop_mod;
+      drop_alpha              = params->drop_alpha;
 
-      r              = FONT_COLOR_GET_RED(params->color);
-      g              = FONT_COLOR_GET_GREEN(params->color);
-      b              = FONT_COLOR_GET_BLUE(params->color);
-      alpha          = FONT_COLOR_GET_ALPHA(params->color);
-      color          = params->color;
+      r                       = FONT_COLOR_GET_RED(params->color);
+      g                       = FONT_COLOR_GET_GREEN(params->color);
+      b                       = FONT_COLOR_GET_BLUE(params->color);
+      alpha                   = FONT_COLOR_GET_ALPHA(params->color);
+      color                   = params->color;
    }
    else
    {

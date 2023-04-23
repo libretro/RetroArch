@@ -129,9 +129,9 @@ static void d3d10_font_render_line(
       unsigned            height,
       unsigned            text_align)
 {
+   d3d10_sprite_t *v;
    unsigned                 i, count;
    void *                   mapped_vbo;
-   d3d10_sprite_t *         v;
    const struct font_glyph* glyph_q = NULL;
    int x                            = roundf(pos_x * width);
    int y                            = roundf((1.0 - pos_y) * height);
@@ -285,35 +285,35 @@ static void d3d10_font_render_msg(
       const char* msg,
       const struct font_params *params)
 {
-   float                     x, y, scale, drop_mod, drop_alpha;
-   int                       drop_x, drop_y;
-   enum text_alignment       text_align;
-   unsigned                  color, r, g, b, alpha;
-   d3d10_font_t*             font   = (d3d10_font_t*)data;
-   d3d10_video_t*           d3d10   = (d3d10_video_t*)userdata;
-   unsigned                  width  = d3d10->vp.full_width;
-   unsigned                  height = d3d10->vp.full_height;
+   int drop_x, drop_y;
+   enum text_alignment text_align;
+   unsigned color, r, g, b, alpha;
+   float x, y, scale, drop_mod, drop_alpha;
+   d3d10_font_t *font          = (d3d10_font_t*)data;
+   d3d10_video_t *d3d10        = (d3d10_video_t*)userdata;
+   unsigned width              = d3d10->vp.full_width;
+   unsigned height             = d3d10->vp.full_height;
 
    if (!font || !msg || !*msg)
       return;
 
    if (params)
    {
-      x          = params->x;
-      y          = params->y;
-      scale      = params->scale;
-      text_align = params->text_align;
-      drop_x     = params->drop_x;
-      drop_y     = params->drop_y;
-      drop_mod   = params->drop_mod;
-      drop_alpha = params->drop_alpha;
+      x                        = params->x;
+      y                        = params->y;
+      scale                    = params->scale;
+      text_align               = params->text_align;
+      drop_x                   = params->drop_x;
+      drop_y                   = params->drop_y;
+      drop_mod                 = params->drop_mod;
+      drop_alpha               = params->drop_alpha;
 
-      r          = FONT_COLOR_GET_RED(params->color);
-      g          = FONT_COLOR_GET_GREEN(params->color);
-      b          = FONT_COLOR_GET_BLUE(params->color);
-      alpha      = FONT_COLOR_GET_ALPHA(params->color);
+      r                        = FONT_COLOR_GET_RED(params->color);
+      g                        = FONT_COLOR_GET_GREEN(params->color);
+      b                        = FONT_COLOR_GET_BLUE(params->color);
+      alpha                    = FONT_COLOR_GET_ALPHA(params->color);
 
-      color      = DXGI_COLOR_RGBA(r, g, b, alpha);
+      color                    = DXGI_COLOR_RGBA(r, g, b, alpha);
    }
    else
    {

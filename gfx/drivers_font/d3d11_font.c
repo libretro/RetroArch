@@ -289,35 +289,35 @@ static void d3d11_font_render_msg(
       const char* msg,
       const struct font_params *params)
 {
-   float                     x, y, scale, drop_mod, drop_alpha;
-   int                       drop_x, drop_y;
-   enum text_alignment       text_align;
-   unsigned                  color, r, g, b, alpha;
-   d3d11_font_t*             font   = (d3d11_font_t*)data;
-   d3d11_video_t           * d3d11  = (d3d11_video_t*)userdata;
-   unsigned                  width  = d3d11->vp.full_width;
-   unsigned                  height = d3d11->vp.full_height;
+   int drop_x, drop_y;
+   enum text_alignment text_align;
+   unsigned color, r, g, b, alpha;
+   float x, y, scale, drop_mod, drop_alpha;
+   d3d11_font_t *font         = (d3d11_font_t*)data;
+   d3d11_video_t *d3d11       = (d3d11_video_t*)userdata;
+   unsigned width             = d3d11->vp.full_width;
+   unsigned height            = d3d11->vp.full_height;
 
    if (!font || !msg || !*msg)
       return;
 
    if (params)
    {
-      x          = params->x;
-      y          = params->y;
-      scale      = params->scale;
-      text_align = params->text_align;
-      drop_x     = params->drop_x;
-      drop_y     = params->drop_y;
-      drop_mod   = params->drop_mod;
-      drop_alpha = params->drop_alpha;
+      x                       = params->x;
+      y                       = params->y;
+      scale                   = params->scale;
+      text_align              = params->text_align;
+      drop_x                  = params->drop_x;
+      drop_y                  = params->drop_y;
+      drop_mod                = params->drop_mod;
+      drop_alpha              = params->drop_alpha;
 
-      r          = FONT_COLOR_GET_RED(params->color);
-      g          = FONT_COLOR_GET_GREEN(params->color);
-      b          = FONT_COLOR_GET_BLUE(params->color);
-      alpha      = FONT_COLOR_GET_ALPHA(params->color);
+      r                       = FONT_COLOR_GET_RED(params->color);
+      g                       = FONT_COLOR_GET_GREEN(params->color);
+      b                       = FONT_COLOR_GET_BLUE(params->color);
+      alpha                   = FONT_COLOR_GET_ALPHA(params->color);
 
-      color      = DXGI_COLOR_RGBA(r, g, b, alpha);
+      color                   = DXGI_COLOR_RGBA(r, g, b, alpha);
    }
    else
    {
@@ -346,11 +346,11 @@ static void d3d11_font_render_msg(
 
    if (drop_x || drop_y)
    {
-      unsigned r_dark     = r * drop_mod;
-      unsigned g_dark     = g * drop_mod;
-      unsigned b_dark     = b * drop_mod;
-      unsigned alpha_dark = alpha * drop_alpha;
-      unsigned color_dark = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
+      unsigned r_dark         = r * drop_mod;
+      unsigned g_dark         = g * drop_mod;
+      unsigned b_dark         = b * drop_mod;
+      unsigned alpha_dark     = alpha * drop_alpha;
+      unsigned color_dark     = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
 
       d3d11_font_render_message(d3d11,
             font, msg, scale, color_dark,

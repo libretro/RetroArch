@@ -305,9 +305,9 @@ static void ctr_font_render_message(
       const unsigned int color, float pos_x, float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
+   float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   float line_height;
 
    if (!msg || !*msg)
       return;
@@ -328,7 +328,7 @@ static void ctr_font_render_message(
    for (;;)
    {
       const char* delim = strchr(msg, '\n');
-      size_t msg_len  = delim ?
+      size_t msg_len    = delim ?
          (delim - msg) : strlen(msg);
 
       /* Draw the line */
@@ -348,15 +348,15 @@ static void ctr_font_render_msg(
       void* data, const char* msg,
       const struct font_params *params)
 {
-   float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y;
-   enum text_alignment text_align;
    unsigned color, r, g, b, alpha;
-   ctr_font_t                * font = (ctr_font_t*)data;
-   ctr_video_t                *ctr  = (ctr_video_t*)userdata;
-   unsigned width                   = ctr->render_font_bottom ?
+   enum text_alignment text_align;
+   float x, y, scale, drop_mod, drop_alpha;
+   ctr_font_t *font           = (ctr_font_t*)data;
+   ctr_video_t *ctr           = (ctr_video_t*)userdata;
+   unsigned width             = ctr->render_font_bottom ?
       CTR_BOTTOM_FRAMEBUFFER_WIDTH : CTR_TOP_FRAMEBUFFER_WIDTH;
-   unsigned height                  = ctr->render_font_bottom ?
+   unsigned height            = ctr->render_font_bottom ?
       CTR_BOTTOM_FRAMEBUFFER_HEIGHT : CTR_TOP_FRAMEBUFFER_HEIGHT;
 
    if (!font || !msg || !*msg)
@@ -364,21 +364,21 @@ static void ctr_font_render_msg(
 
    if (params)
    {
-      x                    = params->x;
-      y                    = params->y;
-      scale                = params->scale;
-      text_align           = params->text_align;
-      drop_x               = params->drop_x;
-      drop_y               = params->drop_y;
-      drop_mod             = params->drop_mod;
-      drop_alpha           = params->drop_alpha;
+      x                       = params->x;
+      y                       = params->y;
+      scale                   = params->scale;
+      text_align              = params->text_align;
+      drop_x                  = params->drop_x;
+      drop_y                  = params->drop_y;
+      drop_mod                = params->drop_mod;
+      drop_alpha              = params->drop_alpha;
 
-      r                    = FONT_COLOR_GET_RED(params->color);
-      g                    = FONT_COLOR_GET_GREEN(params->color);
-      b                    = FONT_COLOR_GET_BLUE(params->color);
-      alpha                = FONT_COLOR_GET_ALPHA(params->color);
+      r                       = FONT_COLOR_GET_RED(params->color);
+      g                       = FONT_COLOR_GET_GREEN(params->color);
+      b                       = FONT_COLOR_GET_BLUE(params->color);
+      alpha                   = FONT_COLOR_GET_ALPHA(params->color);
 
-      color                = COLOR_ABGR(r, g, b, alpha);
+      color                   = COLOR_ABGR(r, g, b, alpha);
    }
    else
    {

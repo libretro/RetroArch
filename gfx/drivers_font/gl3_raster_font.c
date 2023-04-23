@@ -73,7 +73,7 @@ static void gl3_raster_font_free(void *data,
    free(font);
 }
 
-static bool gl3_raster_font_upload_atlas(gl3_raster_t *font)
+static void gl3_raster_font_upload_atlas(gl3_raster_t *font)
 {
    if (font->tex)
       glDeleteTextures(1, &font->tex);
@@ -91,8 +91,6 @@ static bool gl3_raster_font_upload_atlas(gl3_raster_t *font)
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    glBindTexture(GL_TEXTURE_2D, 0);
-
-   return true;
 }
 
 static void *gl3_raster_font_init(void *data,
@@ -123,15 +121,10 @@ static void *gl3_raster_font_init(void *data,
 
    font->atlas      = font->font_driver->get_atlas(font->font_data);
 
-   if (!gl3_raster_font_upload_atlas(font))
-      goto error;
+   gl3_raster_font_upload_atlas(font);
 
    font->atlas->dirty = false;
    return font;
-
-error:
-   gl3_raster_font_free(font, is_threaded);
-   return NULL;
 }
 
 static int gl3_raster_font_get_message_width(void *data, const char *msg,

@@ -141,20 +141,20 @@ static void gdi_font_render_msg(
    switch (align)
    {
       case TEXT_ALIGN_LEFT:
-         new_x      = x * width * scale;
-         new_drop_x = drop_x * width * scale;
+         new_x        = x * width * scale;
+         new_drop_x   = drop_x * width * scale;
          break;
       case TEXT_ALIGN_RIGHT:
-         new_x      = (x * width * scale) - text_size.cx;
-         new_drop_x = (drop_x * width * scale) - text_size.cx;
+         new_x        = (x * width * scale) - text_size.cx;
+         new_drop_x   = (drop_x * width * scale) - text_size.cx;
          break;
       case TEXT_ALIGN_CENTER:
-         new_x      = (x * width * scale) - (text_size.cx / 2);
-         new_drop_x = (drop_x * width * scale) - (text_size.cx / 2);
+         new_x        = (x * width * scale) - (text_size.cx / 2);
+         new_drop_x   = (drop_x * width * scale) - (text_size.cx / 2);
          break;
       default:
-         new_x      = 0;
-         new_drop_x = 0;
+         new_x        = 0;
+         new_drop_x   = 0;
          break;
    }
 

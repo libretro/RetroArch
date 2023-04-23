@@ -82,7 +82,7 @@ static void gl2_raster_font_free(void *data,
    free(font);
 }
 
-static bool gl2_raster_font_upload_atlas(gl2_raster_t *font)
+static void gl2_raster_font_upload_atlas(gl2_raster_t *font)
 {
    int i, j;
    GLint  gl_internal          = GL_LUMINANCE_ALPHA;
@@ -121,8 +121,6 @@ static bool gl2_raster_font_upload_atlas(gl2_raster_t *font)
          0, gl_format, GL_UNSIGNED_BYTE, tmp);
 
    free(tmp);
-
-   return true;
 }
 
 static void *gl2_raster_font_init(void *data,
@@ -159,8 +157,7 @@ static void *gl2_raster_font_init(void *data,
    font->tex_width  = next_pow2(font->atlas->width);
    font->tex_height = next_pow2(font->atlas->height);
 
-   if (!gl2_raster_font_upload_atlas(font))
-      goto error;
+   gl2_raster_font_upload_atlas(font);
 
    font->atlas->dirty = false;
 
@@ -168,12 +165,6 @@ static void *gl2_raster_font_init(void *data,
       glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
 
    return font;
-
-error:
-   gl2_raster_font_free(font, is_threaded);
-   font = NULL;
-
-   return NULL;
 }
 
 static int gl2_raster_font_get_message_width(void *data, const char *msg,
