@@ -163,9 +163,9 @@ d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffe
    resource_desc.SampleDesc.Count      = 1;
    resource_desc.Layout                = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-   D3D12CreateCommittedResource(
+   device->lpVtbl->CreateCommittedResource(
          device, (D3D12_HEAP_PROPERTIES*)&heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc,
-         D3D12_RESOURCE_STATE_GENERIC_READ, NULL, buffer);
+         D3D12_RESOURCE_STATE_GENERIC_READ, NULL, uuidof(ID3D12Resource), (void**)buffer);
 
    return D3D12GetGPUVirtualAddress(*buffer);
 }
@@ -221,7 +221,7 @@ static DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DAT
    while (*format != DXGI_FORMAT_UNKNOWN)
    {
       D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support = { *format };
-      if (SUCCEEDED(D3D12CheckFeatureSupport(
+      if (SUCCEEDED(device->lpVtbl->CheckFeatureSupport(
                 device, D3D12_FEATURE_FORMAT_SUPPORT, &format_support, sizeof(format_support))) &&
           ((format_support.Support1 & desired->Support1) == desired->Support1) &&
           ((format_support.Support2 & desired->Support2) == desired->Support2))
@@ -274,9 +274,9 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
       texture->desc.SampleDesc.Count = 1;
       texture->desc.Format           = d3d12_get_closest_match(device, &format_support);
 
-      D3D12CreateCommittedResource(
+      device->lpVtbl->CreateCommittedResource(
             device, &heap_props, D3D12_HEAP_FLAG_NONE, &texture->desc,
-            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, NULL, &texture->handle);
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, NULL, uuidof(ID3D12Resource), (void**)&texture->handle);
    }
 
    {
@@ -287,7 +287,7 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
       desc.Texture2D.MipLevels       = texture->desc.MipLevels;
 
       texture->cpu_descriptor[0]     = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
-      D3D12CreateShaderResourceView(device, texture->handle, &desc, texture->cpu_descriptor[0]);
+      device->lpVtbl->CreateShaderResourceView(device, texture->handle, &desc, texture->cpu_descriptor[0]);
       texture->gpu_descriptor[0].ptr = texture->cpu_descriptor[0].ptr - texture->srv_heap->cpu.ptr +
                                        texture->srv_heap->gpu.ptr;
    }
@@ -300,23 +300,21 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
       desc.Texture2D.MipSlice        = i;
 
       texture->cpu_descriptor[i]     = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
-      D3D12CreateUnorderedAccessView(
-            device, texture->handle, NULL, &desc, texture->cpu_descriptor[i]);
+      device->lpVtbl->CreateUnorderedAccessView(
+            device, (ID3D12Resource*)texture->handle, NULL, &desc, texture->cpu_descriptor[i]);
       texture->gpu_descriptor[i].ptr = texture->cpu_descriptor[i].ptr - texture->srv_heap->cpu.ptr +
                                        texture->srv_heap->gpu.ptr;
    }
 
    if (texture->desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
-   {
-      D3D12CreateRenderTargetView(device, texture->handle, NULL, texture->rt_view);
-   }
+      device->lpVtbl->CreateRenderTargetView(device, (ID3D12Resource*)texture->handle, NULL, texture->rt_view);
    else
    {
       D3D12_HEAP_PROPERTIES heap_props  = { D3D12_HEAP_TYPE_UPLOAD, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
                                            D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
       D3D12_RESOURCE_DESC   buffer_desc = { D3D12_RESOURCE_DIMENSION_BUFFER };
 
-      D3D12GetCopyableFootprints(
+      device->lpVtbl->GetCopyableFootprints(
             device, &texture->desc, 0, 1, 0, &texture->layout, &texture->num_rows,
             &texture->row_size_in_bytes, &texture->total_bytes);
 
@@ -327,9 +325,9 @@ void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
       buffer_desc.SampleDesc.Count = 1;
       buffer_desc.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-      D3D12CreateCommittedResource(
+      device->lpVtbl->CreateCommittedResource(
             device, &heap_props, D3D12_HEAP_FLAG_NONE, &buffer_desc,
-            D3D12_RESOURCE_STATE_GENERIC_READ, NULL, &texture->upload_buffer);
+            D3D12_RESOURCE_STATE_GENERIC_READ, NULL, uuidof(ID3D12Resource), (void**)&texture->upload_buffer);
    }
 
    texture->size_data.x = texture->desc.Width;
@@ -385,7 +383,7 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
          D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
          D3D12_RESOURCE_STATE_COPY_DEST);
 
-   D3D12CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
 
    D3D12_RESOURCE_TRANSITION(
          cmd,
@@ -398,9 +396,9 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
       unsigned       i;
       d3d12_video_t* d3d12 = (d3d12_video_t*)userdata;
 
-      D3D12SetComputeRootSignature(cmd, d3d12->desc.cs_rootSignature);
-      D3D12SetPipelineState(cmd, d3d12->mipmapgen_pipe);
-      D3D12SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_TEXTURE_T, texture->gpu_descriptor[0]);
+      cmd->lpVtbl->SetComputeRootSignature(cmd, d3d12->desc.cs_rootSignature);
+      cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->mipmapgen_pipe);
+      cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_TEXTURE_T, texture->gpu_descriptor[0]);
 
       for (i = 1; i < texture->desc.MipLevels; i++)
       {
@@ -418,18 +416,22 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
             barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
             barrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
             barrier.Transition.Subresource = i;
-            D3D12ResourceBarrier(cmd, 1, &barrier);
+            cmd->lpVtbl->ResourceBarrier(cmd, 1, &barrier);
          }
 
-         D3D12SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_UAV_T, texture->gpu_descriptor[i]);
-         D3D12SetComputeRoot32BitConstants(
-               cmd, CS_ROOT_ID_CONSTANTS, sizeof(cbuffer) / sizeof(uint32_t), &cbuffer, 0);
-         D3D12Dispatch(cmd, (width + 0x7) >> 3, (height + 0x7) >> 3, 1);
+         {
+            UINT thread_group_count_x      = (width  + 0x7) >> 3;
+            UINT thread_group_count_y      = (height + 0x7) >> 3;
+            cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_UAV_T, texture->gpu_descriptor[i]);
+            cmd->lpVtbl->SetComputeRoot32BitConstants(
+                  cmd, CS_ROOT_ID_CONSTANTS, sizeof(cbuffer) / sizeof(uint32_t), &cbuffer, 0);
+            cmd->lpVtbl->Dispatch(cmd, thread_group_count_x, thread_group_count_y, 1);
+         }
 
          {
             D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_UAV };
             barrier.UAV.pResource          = texture->handle;
-            D3D12ResourceBarrier(cmd, 1, &barrier);
+            cmd->lpVtbl->ResourceBarrier(cmd, 1, &barrier);
          }
 
          {
@@ -438,7 +440,7 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
             barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
             barrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
             barrier.Transition.Subresource = i;
-            D3D12ResourceBarrier(cmd, 1, &barrier);
+            cmd->lpVtbl->ResourceBarrier(cmd, 1, &barrier);
          }
       }
    }
