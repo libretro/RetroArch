@@ -182,6 +182,10 @@ MSG_HASH(
 
 /* Main Menu > Information > System Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "RetroArch versio"
+   )
 
 /* Main Menu > Information > Database Manager */
 
