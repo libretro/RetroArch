@@ -14,6 +14,7 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <encodings/utf.h>
 #include "gfx_display.h"
 
 #include "video_coord_array.h"
@@ -1012,22 +1013,30 @@ void gfx_display_draw_cursor(
       dispctx->blend_end(userdata);
 }
 
+static struct gfx_osk_state osk_state = {0,};
+struct gfx_osk_state * gfx_state_get_ptr(void)
+{
+   return &osk_state;
+}
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height)
 {
    unsigned i;
-   int ptr_width  = width / 11;
+   int ptr_width  = width / OSK_CHARS_PER_LINE;
    int ptr_height = height / 10;
 
    if (ptr_width > ptr_height)
       ptr_width = ptr_height;
+   osk_state.mouse_x   = x;
+   osk_state.mouse_y   = y;
+   if( y > osk_state.bottom) return -1;
 
-   for (i = 0; i < 44; i++)
+   for (i = 0; i<OSK_CHARS_MAX; i++)
    {
-      int line_y    = (i / 11)*height/10.0;
-      int ptr_x     = width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width;
-      int ptr_y     = height/2.0 + ptr_height*1.5 + line_y - ptr_height;
+      int line_y    = (i/OSK_CHARS_PER_LINE)*height/10.0;
+      int ptr_x     = width/2.0 - (OSK_CHARS_PER_LINE*ptr_width)/2.0 + (i%OSK_CHARS_PER_LINE) * ptr_width;
+      int ptr_y     = height/2.0 + line_y;
 
       if (x > ptr_x && x < ptr_x + ptr_width
        && y > ptr_y && y < ptr_y + ptr_height)
@@ -1067,6 +1076,167 @@ void gfx_display_set_framebuffer_pitch(size_t pitch)
    p_disp->framebuf_pitch = pitch;
 }
 
+static float c_red[16]   = COLOR_HEX_TO_FLOAT(0x905060, 1.0f);
+static float c_dark[16]  = COLOR_HEX_TO_FLOAT(0x303030, 0.5f);
+static float c_white[16] = COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.0f);
+static float c_blue[16]  = COLOR_HEX_TO_FLOAT(0x0000FF, 0.5f);
+#define MAX_EDIT_LINE  10
+void  gfx_display_draw_edit(
+      gfx_display_t *p_disp,
+      void *userdata,
+      unsigned vw,  unsigned vh,
+      const font_data_t *font,
+      unsigned text_color, 
+      const char *src, 
+      const char *mark, 
+      int ptr,
+      float scale   )
+{
+   int    i;
+   int    margin    = (8.0f*scale>1.0f) ? (8.0f*scale) : 1;
+   int    padding   = (8.0f*scale>1.0f) ? (8.0f*scale) : 1;
+   float  font_size = (font->size+0.6f)*scale>2.0f ? (font->size+0.5f)*scale : 2.0f;
+   int    px1       = (scale*1 > 1) ? (scale*1) : 1;
+   int    px2       = (scale*2 > 2) ? (scale*2) : 2;
+   int    gap       = font_size*2+1; 
+   int    button    = gap + padding*2 - px1;
+   int    base_x    = margin + (button + px2 ) + px2 + px1 + padding;
+   int    base_y    = vh - margin - padding - px2;
+   int    line      = 0;
+   char*  ptxt   [MAX_EDIT_LINE]={0,};
+   int    pmouse [MAX_EDIT_LINE]={0,};
+   int    pcursor[MAX_EDIT_LINE]={0,};
+   int    len       = strlen(src);
+   char*  txt       = (char*) malloc(len+MAX_EDIT_LINE);	 
+   int    cursor_x  = 0;
+   int    cursor_line = 0;
+   int    mouse_line  = (base_y - osk_state.mouse_y) / gap;
+   if( !src ) return ;
+   memset( txt,0x00,len+MAX_EDIT_LINE);  
+   osk_state.ptr = 0;
+   memset(osk_state.dir,0,sizeof(osk_state.dir));
+   {
+      int   x     = 0;
+      char* sta   = (char*)txt;
+      char* prv   = (char*)src;
+      int   ulen  = utf8len(src);
+      int   width = vw - margin*2  - px2 - padding*2 - (button+px2+px1)*2;
+      char* cur   = sta;
+      for( i = 0; i<ulen; i++)
+      {
+          char* nxt  = prv;
+          int   size = 0;
+          uint64_t ch= utf8_get(&nxt,&size);
+          int   add  = font_driver_get_message_width( (void*)font, (char*)&ch, strlen((char*)&ch), 1.0f);
+          int   left,mid,right;
+          if( x+add >= width)
+          {
+              *cur = 0;
+              cur++;
+              ptxt[line] = sta;
+              sta = cur;
+              line++;
+              x = 0;
+              if( line>=MAX_EDIT_LINE) break;
+          }
+          left = x+base_x;
+          mid  = x+base_x+add/2;
+          right= x+base_x+add;
+          if( i==ulen-1) right =  vw - margin*2 - px2 - button;
+          if( osk_state.mouse_x>=left  && osk_state.mouse_x<mid    ) pmouse[line]  = 1+(cur-txt)-line;     else
+          if( osk_state.mouse_x>=mid   && osk_state.mouse_x<right  ) pmouse[line]  = 1+(cur-txt)+size-line;   
+          if( osk_state.cursor_x>=left && osk_state.cursor_x<mid   ) pcursor[line] = 1+(cur-txt)-line;     else
+          if( osk_state.cursor_x>=mid  && osk_state.cursor_x<right ) pcursor[line] = 1+(cur-txt)+size-line;   
+          if( ptr == prv-src ) osk_state.dir[1] = (nxt-src)+1;
+          x=x+add;
+          if( ptr == nxt-src )
+          {
+              cursor_line = line;
+              cursor_x = x;
+              osk_state.dir[0] = (prv-src)+1;
+          }
+          memcpy(cur, prv, size);
+          cur +=size;
+          *(cur) = 0;
+          prv = nxt;
+          if( i>=ulen-1)  ptxt[line] = sta;
+      }
+      line++;
+   }
+   base_y -= gap*line;
+   osk_state.cursor_x = base_x + cursor_x;
+   osk_state.cursor_y = base_y + cursor_line * gap;
+   if( mouse_line>=0  && mouse_line<line)    osk_state.ptr   = pmouse[line-mouse_line-1];
+   if( cursor_line>=1 && cursor_line<line)   osk_state.dir[2]= pcursor[cursor_line-1];
+   if( cursor_line>=0 && cursor_line<line-1) osk_state.dir[3]= pcursor[cursor_line+1];
+   /* show_border */
+   {
+        static const char* kbd  = "KB";
+        int  x = base_x - padding - px1;
+        int  y = base_y - padding - px1;
+        int  w = vw     - margin*2 - px2 - (button+px2+px2)*2;
+        int  h = gap*line + padding*2 -px1;
+        int  font_y = base_y + gap*(line-1) + gap/2 + (font_size+0.5)/3 + px2+ px1; 
+        int  font_x = 0;
+        osk_state.bottom = y;
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x,y,       w+px2, px1, vw, vh, c_red, NULL);
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x,y+h+px1, w+px2, px1, vw, vh, c_red, NULL);
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x,y,       px1, h+px2, vw, vh, c_red, NULL);
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x+w+px1,y, px1, h+px2, vw, vh, c_red, NULL);
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x+px1, y+px1,  w, h,   vw, vh, c_dark,   NULL);
+        /* right button */
+        x = vw - margin - button - px2;
+        w = button;
+        h = button;
+        y = y + (line-1)*gap;
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x,y,       w+px2, px1, vw, vh, c_blue, NULL);
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x,y+h+px1, w+px2, px1, vw, vh, c_blue, NULL);
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x,y,       px1, h+px2, vw, vh, c_blue, NULL);
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x+w+px1,y, px1, h+px2, vw, vh, c_blue, NULL);
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x+px1, y+px1,  w, h,   vw, vh, c_dark, NULL);
+        font_x = x + (button - font_driver_get_message_width((void*)font,(char*)kbd,strlen((char*)kbd),1.0f) + 1)/2;
+        gfx_display_draw_text( font, kbd, font_x, font_y, vw, vh, 0xffffffff, TEXT_ALIGN_LEFT, 1.0f, false, 1.0f, false);  
+        if( osk_state.mouse_x>x && osk_state.mouse_x<=x+w && osk_state.mouse_y>y && osk_state.mouse_y<=y+h )
+           osk_state.ptr = -1;
+        /* left button */
+        x = margin;
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x,y,       w+px2, px1, vw, vh, c_red, NULL);
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x,y+h+px1, w+px2, px1, vw, vh, c_red, NULL);
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x,y,       px1, h+px2, vw, vh, c_red, NULL);
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x+w+px1,y, px1, h+px2, vw, vh, c_red, NULL);
+        gfx_display_draw_quad( p_disp, userdata, vw, vh, x+px1, y+px1,  w, h,   vw, vh, c_blue,NULL);
+        font_x = x + (button - font_driver_get_message_width((void*)font,(char*)mark,strlen((char*)mark),1.0f) + 1)/2;
+        gfx_display_draw_text( font, mark, font_x, font_y, vw, vh, 0xffffffff, TEXT_ALIGN_LEFT, 1.0f, false, 1.0f, false);
+        if( osk_state.mouse_x>x && osk_state.mouse_x<=x+w && osk_state.mouse_y>y && osk_state.mouse_y<=y+h )
+            osk_state.ptr = -2;
+   }
+   /* show_edit_text */
+   for (i = 0; i<line; i++)
+   {
+       const char *msg =  ptxt[i];
+       int x = base_x ;
+       int y = base_y + i*gap + gap/2 + (font_size+0.5)/3  + px2; 
+       gfx_display_draw_text( font, msg, x, y, vw, vh, text_color, TEXT_ALIGN_LEFT, 1.0f, false, 1.0f, false);
+   }
+   /* show_cursor */
+   {
+        static int show     = 0;
+        static int last_ptr = 0;
+        static retro_time_t last_time = 0;
+        retro_time_t        cur_time  = cpu_features_get_time_usec();
+        int   h  = gap + px2 - padding;
+        if( ptr != last_ptr || (cur_time - last_time >= 0.5f*1000000) )
+        {
+            show = !show;
+            if( ptr != last_ptr )	show = 1;
+            last_ptr   = ptr;
+            last_time  = cur_time;
+        }
+        if( show ) gfx_display_draw_quad( p_disp, userdata, vw, vh, osk_state.cursor_x, osk_state.cursor_y, px2, h, vw, vh, c_white, NULL);
+   }
+   return;
+}
+
 void gfx_display_draw_keyboard(
       gfx_display_t *p_disp,
       void *userdata,
@@ -1081,18 +1251,9 @@ void gfx_display_draw_keyboard(
    int ptr_width, ptr_height;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
-   static float white[16] =  {
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-   };
-   static float osk_dark[16] =  {
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-   };
+
+   if( grid==NULL ) return;
+   if( osk_state.hide_keyboard )    return;
 
 #ifdef HAVE_MIST
    if (steam_has_osk_open())
@@ -1110,18 +1271,18 @@ void gfx_display_draw_keyboard(
          video_height / 2.0,
          video_width,
          video_height,
-         &osk_dark[0],
+         c_dark,
          NULL);
 
-   ptr_width  = video_width  / 11;
+   ptr_width  = video_width  / OSK_CHARS_PER_LINE;
    ptr_height = video_height / 10;
 
    if (ptr_width > ptr_height)
       ptr_width = ptr_height;
 
-   for (i = 0; i < 44; i++)
+   for (i = 0; i < OSK_CHARS_MAX; i++)
    {
-      int line_y     = (i / 11) * video_height / 10.0;
+      int line_y     = (i/OSK_CHARS_PER_LINE) * video_height / 10.0;
       unsigned color = 0xffffffff;
 
       if (i == id)
@@ -1134,12 +1295,12 @@ void gfx_display_draw_keyboard(
            userdata,
            video_width,
            video_height,
-           video_width / 2.0 - (11 * ptr_width) / 2.0 + (i % 11) * ptr_width,
-           video_height / 2.0 + ptr_height * 1.5 + line_y - ptr_height,
+           video_width / 2.0 - (OSK_CHARS_PER_LINE*ptr_width) / 2.0 + (i%OSK_CHARS_PER_LINE) * ptr_width,
+           video_height / 2.0 + line_y,
            ptr_width, ptr_height,
            video_width,
            video_height,
-           &white[0],
+           &c_white[0],
            &hover_texture);
 
          if (dispctx && dispctx->blend_end)
@@ -1149,9 +1310,9 @@ void gfx_display_draw_keyboard(
       }
 
       gfx_display_draw_text(font, grid[i],
-            video_width/2.0 - (11*ptr_width)/2.0 + (i % 11)
+            video_width/2.0 - (OSK_CHARS_PER_LINE*ptr_width)/2.0 + (i%OSK_CHARS_PER_LINE)
             * ptr_width + ptr_width/2.0,
-            video_height / 2.0 + ptr_height + line_y + font->size / 3,
+            video_height / 2.0  + line_y + font->size / 3 + (ptr_height/2),
             video_width,
             video_height,
             color,

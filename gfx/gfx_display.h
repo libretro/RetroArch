@@ -212,6 +212,19 @@ struct gfx_display
    uint8_t flags;
 };
 
+typedef struct gfx_osk_state
+{
+   int ptr;
+   int dir[4];        /* modified cursor ptr, by keyboard arrow. 0:left, 1:right, 2:up, 3:down */
+   int mouse_x,mouse_y;
+   int cursor_x,cursor_y;
+   int bottom;
+   int hide_keyboard;
+   const char *lang;
+} gfx_osk_state_t;
+
+gfx_osk_state_t* gfx_state_get_ptr(void);
+
 void gfx_display_free(void);
 
 void gfx_display_init(void);
@@ -251,6 +264,18 @@ bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
 
 gfx_display_t *disp_get_ptr(void);
+
+void gfx_display_draw_edit(
+      gfx_display_t *p_disp,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      const font_data_t *font,
+      unsigned text_color,
+      const char *text,	
+      const char *mark,	
+      int ptr,
+      float scale_factor);
 
 void gfx_display_draw_keyboard(
       gfx_display_t *p_disp,

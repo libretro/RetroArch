@@ -28,40 +28,33 @@
 #include "../../config.h"
 #endif
 
-#define OSK_CHARS_PER_LINE 11
+#define OSK_CHARS_PER_LINE 12
+#define OSK_COMPOSITION    0x40000000 
+#define OSK_CHARS_MAX      (OSK_CHARS_PER_LINE*4)
+#define OSK_PER_LANG       8
 
 RETRO_BEGIN_DECLS
 
 enum osk_type
 {
-   OSK_TYPE_UNKNOWN    = 0U,
-   OSK_LOWERCASE_LATIN,
+   /* zero base enum.(compatible with keyboard.json)*/
+   OSK_LOWERCASE_LATIN = 0U,
    OSK_UPPERCASE_LATIN,
    OSK_SYMBOLS_PAGE1,
-#ifdef HAVE_LANGEXTRA
-   OSK_HIRAGANA_PAGE1,
-   OSK_HIRAGANA_PAGE2,
-   OSK_KATAKANA_PAGE1,
-   OSK_KATAKANA_PAGE2,
-   OSK_KOREAN_PAGE1,
-#endif
-   OSK_TYPE_LAST
+   /* HAVE_LANGEXTRA use keyboard.json */
+     OSK_TYPE_LAST
 };
 
 void input_event_osk_append(
       input_keyboard_line_t *keyboard_line,
       enum osk_type *osk_idx,
-      unsigned *osk_last_codepoint,
-      unsigned *osk_last_codepoint_len,
       int ptr,
-      bool show_symbol_pages,
       const char *word,
       size_t word_len);
 
-void osk_update_last_codepoint(
-      unsigned *last_codepoint,
-      unsigned *last_codepoint_len,
-      const char *word);
+void input_osk_next(
+      enum osk_type *osk_idx,
+      int delta );
 
 RETRO_END_DECLS
 

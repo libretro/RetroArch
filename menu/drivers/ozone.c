@@ -6568,44 +6568,6 @@ static void ozone_draw_thumbnail_bar(
    }
 }
 
-static void ozone_draw_backdrop(
-      void *userdata,
-      void *disp_data,
-      unsigned video_width,
-      unsigned video_height,
-      float alpha)
-{
-   static float ozone_backdrop[16] = {
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-   };
-   static float last_alpha         = 0.0f;
-
-   /* TODO: Replace this backdrop by a blur shader 
-    * on the whole screen if available */
-   if (alpha != last_alpha)
-   {
-      gfx_display_set_alpha(ozone_backdrop, alpha);
-      last_alpha = alpha;
-   }
-
-   gfx_display_draw_quad(
-         (gfx_display_t*)disp_data,
-         userdata,
-         video_width,
-         video_height,
-         0,
-         0,
-         video_width,
-         video_height,
-         video_width,
-         video_height,
-         ozone_backdrop,
-         NULL);
-}
-
 static void ozone_draw_osk(
       ozone_handle_t *ozone,
       void *userdata,
@@ -6614,186 +6576,13 @@ static void ozone_draw_osk(
       unsigned video_height,
       const char *label, const char *str)
 {
-   unsigned i;
-   char message[2048];
    gfx_display_t *p_disp               = (gfx_display_t*)disp_userdata;
-   const char *text                    = str;
-   unsigned text_color                 = 0xffffffff;
-   static float ozone_osk_backdrop[16] = {
-      0.00, 0.00, 0.00, 0.15,
-      0.00, 0.00, 0.00, 0.15,
-      0.00, 0.00, 0.00, 0.15,
-      0.00, 0.00, 0.00, 0.15,
-   };
-   static retro_time_t last_time  = 0;
-   struct string_list list        = {0};
    float scale_factor             = ozone->last_scale_factor;
-   unsigned margin                = 75 * scale_factor;
-   unsigned padding               = 10 * scale_factor;
-   unsigned bottom_end            = video_height / 2;
-   unsigned y_offset              = 0;
    bool draw_placeholder          = string_is_empty(str);
-   retro_time_t current_time      = menu_driver_get_current_time();
-
-   if (current_time - last_time >= INTERVAL_OSK_CURSOR)
-   {
-      if (ozone->flags & OZONE_FLAG_OSK_CURSOR)
-         ozone->flags            &= ~OZONE_FLAG_OSK_CURSOR;
-      else
-         ozone->flags            |=  OZONE_FLAG_OSK_CURSOR;
-      last_time                   = current_time;
-   }
-
-   /* Border */
-   /* Top */
-   gfx_display_draw_quad(
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         margin,
-         margin,
-         video_width - (margin * 2),
-         ozone->dimensions.spacer_1px,
-         video_width,
-         video_height,
-         ozone->theme->entries_border,
-         NULL);
-
-   /* Bottom */
-   gfx_display_draw_quad(
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         margin,
-         bottom_end - margin,
-         video_width - (margin * 2),
-         ozone->dimensions.spacer_1px,
-         video_width,
-         video_height,
-         ozone->theme->entries_border,
-         NULL);
-
-   /* Left */
-   gfx_display_draw_quad(
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         margin,
-         margin,
-         ozone->dimensions.spacer_1px,
-         bottom_end - (margin * 2),
-         video_width,
-         video_height,
-         ozone->theme->entries_border,
-         NULL);
-
-   /* Right */
-   gfx_display_draw_quad(
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         video_width - margin,
-         margin,
-         ozone->dimensions.spacer_1px,
-         bottom_end - (margin * 2),
-         video_width,
-         video_height,
-         ozone->theme->entries_border,
-         NULL);
-
-   /* Backdrop */
-   /* TODO: Remove the backdrop if blur shader is available */
-   gfx_display_draw_quad(
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         margin + ozone->dimensions.spacer_1px,
-         margin + ozone->dimensions.spacer_1px,
-         video_width - (margin * 2) - ozone->dimensions.spacer_2px,
-         bottom_end - (margin * 2) - ozone->dimensions.spacer_2px,
-         video_width,
-         video_height,
-         ozone_osk_backdrop,
-         NULL);
-
-   /* Placeholder & text*/
-   if (draw_placeholder)
-   {
-      text        = label;
-      text_color  = ozone_theme_light.text_sublabel_rgba;
-   }
-
-   (ozone->word_wrap)(message,
-         sizeof(message),
-         text,
-         strlen(text),
-         (video_width - (margin * 2) - (padding * 2)) / ozone->fonts.entries_label.glyph_width,
-         ozone->fonts.entries_label.wideglyph_width,
-         0);
-
-   string_list_initialize(&list);
-   string_split_noalloc(&list, message, "\n");
-
-   for (i = 0; i < list.size; i++)
-   {
-      const char *msg = list.elems[i].data;
-
-      gfx_display_draw_text(
-            ozone->fonts.entries_label.font,
-            msg,
-            margin + (padding * 2),
-            margin + padding + ozone->fonts.entries_label.line_height + y_offset,
-            video_width,
-            video_height,
-            text_color,
-            TEXT_ALIGN_LEFT,
-            1.0f,
-            false,
-            1.0f,
-            false);
-
-      /* Cursor */
-      if (i == list.size - 1)
-      {
-         if (ozone->flags & OZONE_FLAG_OSK_CURSOR)
-         {
-            unsigned cursor_x = draw_placeholder
-                  ? 0
-                  : font_driver_get_message_width(ozone->fonts.entries_label.font, msg, strlen(msg), 1.0f);
-            gfx_display_draw_quad(
-                  p_disp,
-                  userdata,
-                  video_width,
-                  video_height,
-                  margin
-                        + (padding * 2)
-                        + cursor_x,
-                  margin
-                        + padding
-                        + y_offset
-                        + ozone->fonts.entries_label.line_height
-                        - ozone->fonts.entries_label.line_ascender
-                        + ozone->dimensions.spacer_3px,
-                  ozone->dimensions.spacer_1px,
-                  ozone->fonts.entries_label.line_ascender,
-                  video_width,
-                  video_height,
-                  ozone->pure_white,
-                  NULL);
-         }
-      }
-      else
-         y_offset += 25 * scale_factor;
-   }
-
    /* Keyboard */
    {
       input_driver_state_t *input_st = input_state_get_ptr();
+      if( !input_st->osk ) return;
       gfx_display_draw_keyboard(
             p_disp,
             userdata,
@@ -6803,12 +6592,16 @@ static void ozone_draw_osk(
                   ? ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC]
                   : ozone->textures[OZONE_TEXTURE_CURSOR_BORDER],
             ozone->fonts.entries_label.font,
-            input_st->osk_grid,
+            input_st->osk->grid,
             input_st->osk_ptr,
             ozone->theme->text_rgba);
+      gfx_display_draw_edit( p_disp, userdata,  video_width, video_height, ozone->fonts.entries_label.font,
+            draw_placeholder ? ozone_theme_light.text_sublabel_rgba : 0xffffffff,
+            draw_placeholder ? label : str,
+            input_st->osk->mark,
+            input_st->keyboard_line.ptr,
+            scale_factor );
    }
-
-   string_list_deinitialize(&list);
 }
 
 static void ozone_draw_messagebox(
@@ -11342,12 +11135,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          gfx_animation_push(&entry);
       }
 
-      ozone_draw_backdrop(userdata,
-            video_info->disp_userdata,
-            video_width,
-            video_height,
-            float_min(ozone->animations.messagebox_alpha, 0.75f));
-
+   /*draw full screen drak in osk mode -> remove */
       if (draw_osk)
       {
          const char *label = menu_input_dialog_get_label_buffer();

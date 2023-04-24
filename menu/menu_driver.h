@@ -800,7 +800,7 @@ bool menu_input_key_bind_poll_find_trigger(
       struct retro_keybind * output);
 
 void input_event_osk_iterate(
-      void *osk_grid,
+      osk_keyboard_t** osk,
       enum osk_type osk_idx);
 
 void menu_input_get_mouse_hw_state(
@@ -851,8 +851,6 @@ bool menu_list_pop_stack(
       size_t idx,
       size_t *directory_ptr);
 
-bool input_event_osk_show_symbol_pages(
-      menu_handle_t *menu);
 
 float menu_input_get_dpi(
       menu_handle_t *menu,
