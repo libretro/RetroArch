@@ -13,5 +13,6 @@
 
 static bool jb_has_debugger_attached(void);
 bool jb_enable_ptrace_hack(void);
+void jb_start_altkit(void);
 
 #endif /* JITSupport_h */
