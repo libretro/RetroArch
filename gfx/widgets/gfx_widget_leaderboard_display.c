@@ -38,6 +38,8 @@ struct challenge_display_info
    uintptr_t image;
 };
 
+#define CHEEVO_LBOARD_FIRST_FIXED_CHAR 0x2D /* -./0123456789: */
+#define CHEEVO_LBOARD_LAST_FIXED_CHAR 0x3A
 struct gfx_widget_leaderboard_display_state
 {
 #ifdef HAVE_THREADS
@@ -48,6 +50,8 @@ struct gfx_widget_leaderboard_display_state
    struct challenge_display_info challenge_info[CHEEVO_CHALLENGE_ARRAY_SIZE];
    unsigned tracker_count;
    unsigned challenge_count;
+   uint16_t char_width[CHEEVO_LBOARD_LAST_FIXED_CHAR - CHEEVO_LBOARD_FIRST_FIXED_CHAR + 1];
+   uint16_t fixed_char_width;
 };
 
 typedef struct gfx_widget_leaderboard_display_state gfx_widget_leaderboard_display_state_t;
@@ -116,6 +120,9 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       const unsigned spacing                 = MIN(video_width, video_height) / 64;
       const unsigned widget_height           = p_dispwidget->gfx_widget_fonts.regular.line_height + (CHEEVO_LBOARD_DISPLAY_PADDING - 1) * 2;
       unsigned y                             = video_height;
+      char buffer[2] = "0";
+      const char* ptr;
+      float char_x, char_y;
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
       gfx_display_set_alpha(pure_white, 1.0f);
@@ -137,15 +144,36 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                NULL);
 
          /* Text */
-         gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
-               state->tracker_info[i].display,
-               (float)(x + CHEEVO_LBOARD_DISPLAY_PADDING),
-               (float)(y + widget_height - (CHEEVO_LBOARD_DISPLAY_PADDING - 1)
-                     - p_dispwidget->gfx_widget_fonts.regular.line_descender),
-               video_width, video_height,
-               TEXT_COLOR_INFO,
-               TEXT_ALIGN_LEFT,
-               true);
+         char_x = (float)(x + CHEEVO_LBOARD_DISPLAY_PADDING);
+         char_y = (float)(y + widget_height - (CHEEVO_LBOARD_DISPLAY_PADDING - 1)
+               - p_dispwidget->gfx_widget_fonts.regular.line_descender);
+
+         ptr = state->tracker_info[i].display;
+         while (*ptr) {
+            float next_char_x = char_x + state->fixed_char_width;
+            const char c = *ptr++;
+            if (c >= CHEEVO_LBOARD_FIRST_FIXED_CHAR && c <= CHEEVO_LBOARD_LAST_FIXED_CHAR)
+            {
+               unsigned char_width = state->char_width[c - CHEEVO_LBOARD_FIRST_FIXED_CHAR];
+               if (c >= '0' && c <= '9')
+               {
+                  float padding = (float)(state->fixed_char_width - char_width) / 2.0;
+                  char_x += padding;
+               }
+               else
+               {
+                  next_char_x = char_x + char_width;
+               }
+            }
+
+            buffer[0] = c;
+            gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
+                  buffer, char_x, char_y,
+                  video_width, video_height,
+                  TEXT_COLOR_INFO, TEXT_ALIGN_LEFT, true);
+
+            char_x = next_char_x;
+         }
       }
 
       if (state->challenge_count)
@@ -248,15 +276,44 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
       }
       else
       {
+         /* calculate fixed width spacing */
+         if (state->fixed_char_width == 0)
+         {
+            char buffer[2] = "0";
+            int j = 0;
+            for (j = 0; j < ARRAY_SIZE(state->char_width); ++j)
+            {
+               buffer[0] = (char)(j + CHEEVO_LBOARD_FIRST_FIXED_CHAR);
+               state->char_width[j] = (uint16_t)font_driver_get_message_width(
+                     state->dispwidget_ptr->gfx_widget_fonts.regular.font,
+                     buffer, 0, 1);
+               if (state->char_width[j] > state->fixed_char_width)
+                  state->fixed_char_width = state->char_width[j];
+            }
+         }
+
          /* show or update display */
          if (i == state->tracker_count)
             state->tracker_info[state->tracker_count++].id = id;
 
          strncpy(state->tracker_info[i].display, value, sizeof(state->tracker_info[i].display));
-         state->tracker_info[i].width = font_driver_get_message_width(
-               state->dispwidget_ptr->gfx_widget_fonts.regular.font,
-               state->tracker_info[i].display, 0, 1);
-         state->tracker_info[i].width += CHEEVO_LBOARD_DISPLAY_PADDING * 2;
+
+         {
+            unsigned width = CHEEVO_LBOARD_DISPLAY_PADDING * 2;
+            const char* ptr = state->tracker_info[i].display;
+            while (*ptr)
+            {
+               const char c = *ptr++;
+               if (c >= '0' && c <= '9')
+                  width += state->fixed_char_width;
+               else if (c >= CHEEVO_LBOARD_FIRST_FIXED_CHAR && c <= CHEEVO_LBOARD_LAST_FIXED_CHAR)
+                  width += state->char_width[c - CHEEVO_LBOARD_FIRST_FIXED_CHAR];
+               else
+                  width += state->fixed_char_width;
+            }
+
+            state->tracker_info[i].width = width;
+         }
       }
    }
 
