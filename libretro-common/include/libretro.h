@@ -1793,6 +1793,12 @@ enum retro_mod
                                              * this environment call to query support.
                                              */
 
+#define RETRO_ENVIRONMENT_GET_JIT_CAPABLE 74
+                                           /* bool * --
+                                            * Result is set to true if the frontend has already verified JIT can be
+                                            * used, mainly for use iOS/tvOS. On other platforms the result is true.
+                                            */
+
 
 /* VFS functionality */
 

@@ -38,7 +38,7 @@ static void *exception_handler(void *argument) {
     return NULL;
 }
 
-static bool jb_has_debugger_attached(void) {
+bool jb_has_debugger_attached(void) {
     int flags;
     return !csops(getpid(), CS_OPS_STATUS, &flags, sizeof(flags)) && flags & CS_DEBUGGED;
 }
