@@ -10,6 +10,7 @@
 		0714E7142983A5AC00E6B45B /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */; };
 		0714E7152983A5E500E6B45B /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		07B7872D29E8FE8F0088B74F /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07B7872C29E8FE8F0088B74F /* filters */; };
+		07EB0FA429F761B800D87936 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 07EB0FA329F761B800D87936 /* AltKit */; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		9204BE101D319EF300BD49DB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
@@ -466,6 +467,7 @@
 				9204BE1B1D319EF300BD49DB /* CoreAudio.framework in Frameworks */,
 				9204BE1C1D319EF300BD49DB /* UIKit.framework in Frameworks */,
 				9204BE1D1D319EF300BD49DB /* Foundation.framework in Frameworks */,
+				07EB0FA429F761B800D87936 /* AltKit in Frameworks */,
 				9204BE1E1D319EF300BD49DB /* CoreGraphics.framework in Frameworks */,
 				9204BE1F1D319EF300BD49DB /* GLKit.framework in Frameworks */,
 				9204BE201D319EF300BD49DB /* OpenGLES.framework in Frameworks */,
@@ -1251,6 +1253,9 @@
 				9292D6F028F549D200E47A75 /* PBXTargetDependency */,
 			);
 			name = RetroArchiOS;
+			packageProductDependencies = (
+				07EB0FA329F761B800D87936 /* AltKit */,
+			);
 			productName = RetroArch;
 			productReference = 9204BE2B1D319EF300BD49DB /* RetroArch.app */;
 			productType = "com.apple.product-type.application";
@@ -1328,6 +1333,9 @@
 				Base,
 			);
 			mainGroup = 96AFAE1A16C1D4EA009DE44C;
+			packageReferences = (
+				07EB0FA229F761B800D87936 /* XCRemoteSwiftPackageReference "AltKit" */,
+			);
 			productRefGroup = 96AFAE2616C1D4EA009DE44C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1565,6 +1573,7 @@
 					"-DGLES_SILENCE_DEPRECATION",
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DHAVE_7ZIP",
+					"-DHAVE_ALTKIT",
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_BUILTINGLSLANG",
@@ -1706,6 +1715,7 @@
 					"-DGLES_SILENCE_DEPRECATION",
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DHAVE_7ZIP",
+					"-DHAVE_ALTKIT",
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_BUILTINGLSLANG",
@@ -2471,6 +2481,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		07EB0FA229F761B800D87936 /* XCRemoteSwiftPackageReference "AltKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/rileytestut/AltKit.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.0.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		07EB0FA329F761B800D87936 /* AltKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 07EB0FA229F761B800D87936 /* XCRemoteSwiftPackageReference "AltKit" */;
+			productName = AltKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 96AFAE1C16C1D4EA009DE44C /* Project object */;
 }

@@ -44,6 +44,14 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_altserver._tcp</string>
+	</array>
+   <key>NSLocalNetworkUsageDescription</key>
+   <string>RetroArch uses the local network to find and communicate with AltServer to enable JIT.</string>
+   <key>ALTDeviceID</key>
+   <string></string>
 	<key>NSCameraUsageDescription</key>
 	<string>YES</string>
 	<key>UIApplicationExitsOnSuspend</key>

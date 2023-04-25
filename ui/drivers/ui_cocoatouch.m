@@ -436,6 +436,10 @@ enum
    [self refreshSystemConfig];
    [self showGameView];
 
+#if TARGET_OS_IOS
+   jb_start_altkit();
+#endif
+
    rarch_main(argc, argv, NULL);
 
    rarch_start_draw_observer();

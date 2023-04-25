@@ -241,6 +241,10 @@
 #include "lakka.h"
 #endif
 
+#if defined(HAVE_COCOATOUCH) && TARGET_OS_IOS
+#include "JITSupport.h"
+#endif
+
 #define SHADER_FILE_WATCH_DELAY_MSEC 500
 
 #define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
@@ -3375,6 +3379,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             {
                iface->interface_version = 0;
             }
+         }
+         break;
+
+      case RETRO_ENVIRONMENT_GET_JIT_CAPABLE:
+         {
+#if defined(HAVE_COCOATOUCH) && TARGET_OS_IOS
+            *(bool*)data             = jb_has_debugger_attached();
+#else
+            *(bool*)data             = true;
+#endif
          }
          break;
 
