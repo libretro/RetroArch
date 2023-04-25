@@ -610,11 +610,19 @@ bool input_driver_button_combo(
          break;
       case INPUT_COMBO_HOLD_START:
          {
-            rarch_timer_t *timer = &input_driver_st.combo_timers[INPUT_COMBO_HOLD_START];
+            rarch_timer_t *timer        = &input_driver_st.combo_timers[INPUT_COMBO_HOLD_START];
+            runloop_state_t *runloop_st = runloop_state_get_ptr();
 
-            if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
+            /* Allow using the same button for 'enable_hotkey' if set,
+             * and stop timer if holding fast-forward or slow-motion */
+            if (     !BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START)
+                  && !( BIT256_GET_PTR(p_input, RARCH_ENABLE_HOTKEY)
+                     && !(input_driver_st.flags & INP_FLAG_BLOCK_HOTKEY)
+                     && !(runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
+                     && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+               )
             {
-               /* timer only runs while start is held down */
+               /* Timer only runs while start is held down */
                timer->timer_end   = true;
                timer->timer_begin = false;
                timer->timeout_end = 0;
@@ -637,30 +645,37 @@ bool input_driver_button_combo(
 
             if (!timer->timer_end && (timer->timeout_us <= 0))
             {
-               /* start has been held down long enough,
+               /* Start has been held down long enough,
                 * stop timer and enter menu */
                timer->timer_end   = true;
                timer->timer_begin = false;
                timer->timeout_end = 0;
                return true;
             }
-
          }
          break;
       case INPUT_COMBO_HOLD_SELECT:
          {
-            rarch_timer_t *timer = &input_driver_st.combo_timers[INPUT_COMBO_HOLD_SELECT];
+            rarch_timer_t *timer        = &input_driver_st.combo_timers[INPUT_COMBO_HOLD_SELECT];
+            runloop_state_t *runloop_st = runloop_state_get_ptr();
 
-            if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+            /* Allow using the same button for 'enable_hotkey' if set,
+             * and stop timer if holding fast-forward or slow-motion */
+            if (     !BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT)
+                  && !( BIT256_GET_PTR(p_input, RARCH_ENABLE_HOTKEY)
+                     && !(input_driver_st.flags & INP_FLAG_BLOCK_HOTKEY)
+                     && !(runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
+                     && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+               )
             {
-               /* timer only runs while select is held down */
+               /* Timer only runs while select is held down */
                timer->timer_end   = true;
                timer->timer_begin = false;
                timer->timeout_end = 0;
                return false;
             }
 
-            /* user started holding down the select button, start the timer */
+            /* User started holding down the select button, start the timer */
             if (!timer->timer_begin)
             {
                uint64_t current_usec = cpu_features_get_time_usec();
@@ -676,7 +691,7 @@ bool input_driver_button_combo(
 
             if (!timer->timer_end && (timer->timeout_us <= 0))
             {
-               /* select has been held down long enough,
+               /* Select has been held down long enough,
                 * stop timer and enter menu */
                timer->timer_end   = true;
                timer->timer_begin = false;
