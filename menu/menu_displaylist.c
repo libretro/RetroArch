@@ -2157,7 +2157,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    return count;
 }
 
-static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
+static void menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       playlist_t *playlist,
       settings_t *settings,
       const char *path_playlist, bool is_collection)
@@ -2177,7 +2177,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    if (list_size == 0)
    {
       info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
-      return 0;
+      return;
    }
 
    /* Check whether core name should be added to playlist entries */
@@ -2338,8 +2338,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
    if (info->count < 1)
       info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
-
-   return 0;
 }
 
 #ifdef HAVE_LIBRETRODB
@@ -3319,7 +3317,6 @@ static int menu_displaylist_parse_horizontal_list(
 {
    menu_ctx_list_t list_info;
    menu_ctx_list_t list_horiz_info;
-   playlist_t *playlist                = NULL;
    struct item_file *item              = NULL;
 
    menu_driver_list_get_selection(&list_info);
@@ -3333,44 +3330,40 @@ static int menu_displaylist_parse_horizontal_list(
 
    menu_driver_list_get_entry(&list_horiz_info);
 
-   item = (struct item_file*)list_horiz_info.entry;
-
-   if (!item)
+   if (!(item = (struct item_file*)list_horiz_info.entry))
       return -1;
 
+   /* When opening a saved view the explore menu will handle the list */
    if (item->type == MENU_EXPLORE_TAB)
-   {
-      /* when opening a saved view the explore menu will handle the list */
       menu_displaylist_ctl(DISPLAYLIST_EXPLORE, info, settings);
-      return 0;
-   }
-
-   if (!string_is_empty(item->path))
+   else
    {
-      char lpl_basename[256];
-      char path_playlist[PATH_MAX_LENGTH];
-      const char *dir_playlist  = settings->paths.directory_playlist;
+      playlist_t *playlist         = NULL;
+      if (!string_is_empty(item->path))
+      {
+         char lpl_basename[256];
+         char path_playlist[PATH_MAX_LENGTH];
+         const char *dir_playlist  = settings->paths.directory_playlist;
 
-      fill_pathname_join_special(path_playlist, dir_playlist, item->path,
-            sizeof(path_playlist));
+         fill_pathname_join_special(path_playlist, dir_playlist, item->path,
+               sizeof(path_playlist));
 
-      /* Horizontal lists are always 'collections'
-       * > Enable sorting (if allowed by user config) */
-      menu_displaylist_set_new_playlist(menu, settings, path_playlist, true);
+         /* Horizontal lists are always 'collections'
+          * > Enable sorting (if allowed by user config) */
+         menu_displaylist_set_new_playlist(menu, settings, path_playlist, true);
 
-      /* Thumbnail system must be set *after* playlist
-       * is loaded/cached */
-      fill_pathname_base(lpl_basename, item->path, sizeof(lpl_basename));
-      path_remove_extension(lpl_basename);
-      menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
+         /* Thumbnail system must be set *after* playlist
+          * is loaded/cached */
+         fill_pathname_base(lpl_basename, item->path, sizeof(lpl_basename));
+         path_remove_extension(lpl_basename);
+         menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
+      }
+
+      if ((playlist = playlist_get_cached()))
+         menu_displaylist_parse_playlist(info,
+               playlist, settings,
+               msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION), true);
    }
-
-   playlist = playlist_get_cached();
-
-   if (playlist)
-      menu_displaylist_parse_playlist(info,
-            playlist, settings,
-            msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION), true);
 
    return 0;
 }
@@ -5676,8 +5669,11 @@ static void menu_displaylist_parse_playlist_generic(
          playlist_path, sort_enabled);
 
    if ((playlist = playlist_get_cached()))
-      *ret = menu_displaylist_parse_playlist(info,
+   {
+      menu_displaylist_parse_playlist(info,
             playlist, settings, playlist_name, is_collection);
+      *ret = 0;
+   }
 }
 
 #ifdef HAVE_BLUETOOTH
@@ -12627,8 +12623,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                playlist = playlist_get_cached();
 
                if (playlist)
-                  ret = menu_displaylist_parse_playlist(info,
+               {
+                  menu_displaylist_parse_playlist(info,
                         playlist, settings, path_playlist, true);
+                  ret = 0;
+               }
 
                if (ret == 0)
                {
