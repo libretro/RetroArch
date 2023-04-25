@@ -6282,6 +6282,156 @@ unsigned menu_displaylist_build_list(
 
    switch (type)
    {
+      case DISPLAYLIST_OPTIONS_OVERRIDES:
+         {
+            runloop_state_t *runloop_st      = runloop_state_get_ptr();
+            rarch_system_info_t *system      = &runloop_st->system;
+
+            const char *rarch_path_basename  = path_get(RARCH_PATH_BASENAME);
+            const char *core_name            = system ? system->info.library_name : NULL;
+            char config_directory[PATH_MAX_LENGTH];
+            char content_dir_name[PATH_MAX_LENGTH];
+            char override_path[PATH_MAX_LENGTH];
+            bool has_content                 = !string_is_empty(path_get(RARCH_PATH_CONTENT));
+            bool core_override_remove        = false;
+            bool content_dir_override_remove = false;
+            bool game_override_remove        = false;
+
+            config_directory[0]              = '\0';
+            content_dir_name[0]              = '\0';
+            override_path[0]                 = '\0';
+
+            fill_pathname_application_special(config_directory,
+                  sizeof(config_directory),
+                  APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+
+            if (has_content)
+            {
+               /* Game-specific path */
+               fill_pathname_join_special_ext(override_path,
+                     config_directory, core_name,
+                     path_basename_nocompression(rarch_path_basename),
+                     FILE_PATH_CONFIG_EXTENSION,
+                     sizeof(override_path));
+
+               game_override_remove = path_is_valid(override_path);
+               override_path[0]     = '\0';
+
+               /* Contentdir-specific path */
+               fill_pathname_parent_dir_name(content_dir_name,
+                     rarch_path_basename, sizeof(content_dir_name));
+               fill_pathname_join_special_ext(override_path,
+                     config_directory, core_name,
+                     content_dir_name,
+                     FILE_PATH_CONFIG_EXTENSION,
+                     sizeof(override_path));
+
+               content_dir_override_remove = path_is_valid(override_path);
+               override_path[0]            = '\0';
+            }
+
+            {
+               /* Core-specific path */
+               fill_pathname_join_special_ext(override_path,
+                     config_directory, core_name,
+                     core_name,
+                     FILE_PATH_CONFIG_EXTENSION,
+                     sizeof(override_path));
+
+               core_override_remove = path_is_valid(override_path);
+               override_path[0]     = '\0';
+            }
+
+            /* Show currently 'active' override file */
+            if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO),
+                  msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_FILE_INFO),
+                  MENU_ENUM_LABEL_OVERRIDE_FILE_INFO,
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+               count++;
+
+            /* Load override file */
+            if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD),
+                  msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD),
+                  MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,
+                  MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+
+            if (     has_content
+                  &&  settings->bools.quick_menu_show_save_game_overrides
+                  && !settings->bools.kiosk_mode_enable)
+            {
+               if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
+                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
+                     MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+
+               if (game_override_remove)
+               {
+                  if (menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME),
+                        msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME),
+                        MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                     count++;
+               }
+            }
+
+            if (     has_content
+                  &&  settings->bools.quick_menu_show_save_content_dir_overrides
+                  && !settings->bools.kiosk_mode_enable)
+            {
+               if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
+                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
+                     MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+
+               if (content_dir_override_remove)
+               {
+                  if (menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
+                        msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
+                        MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                     count++;
+               }
+            }
+
+            if (      settings->bools.quick_menu_show_save_core_overrides
+                  && !settings->bools.kiosk_mode_enable)
+            {
+               if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
+                     MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+
+               if (core_override_remove)
+               {
+                  if (menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE),
+                        msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE),
+                        MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                     count++;
+               }
+            }
+
+            /* Unload overrides */
+            if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD),
+                  msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_UNLOAD),
+                  MENU_ENUM_LABEL_OVERRIDE_UNLOAD,
+                  MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+         }
+         break;
       case DISPLAYLIST_ARCHIVE_ACTION:
          {
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -13338,6 +13488,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_STEAM_SETTINGS_LIST:
 #endif
       case DISPLAYLIST_ARCHIVE_ACTION:
+      case DISPLAYLIST_OPTIONS_OVERRIDES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, settings, type, false);
 
@@ -13673,166 +13824,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          ret                = 0;
          info->flags       |=  MD_FLAG_NEED_PUSH;
          break;
-      case DISPLAYLIST_OPTIONS_OVERRIDES:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         {
-            runloop_state_t *runloop_st      = runloop_state_get_ptr();
-            rarch_system_info_t *system      = &runloop_st->system;
-
-            const char *rarch_path_basename  = path_get(RARCH_PATH_BASENAME);
-            const char *core_name            = system ? system->info.library_name : NULL;
-            char config_directory[PATH_MAX_LENGTH];
-            char content_dir_name[PATH_MAX_LENGTH];
-            char override_path[PATH_MAX_LENGTH];
-            bool has_content                 = !string_is_empty(path_get(RARCH_PATH_CONTENT));
-            bool core_override_remove        = false;
-            bool content_dir_override_remove = false;
-            bool game_override_remove        = false;
-
-            config_directory[0]              = '\0';
-            content_dir_name[0]              = '\0';
-            override_path[0]                 = '\0';
-
-            fill_pathname_application_special(config_directory,
-                  sizeof(config_directory),
-                  APPLICATION_SPECIAL_DIRECTORY_CONFIG);
-
-            if (has_content)
-            {
-               /* Game-specific path */
-               fill_pathname_join_special_ext(override_path,
-                     config_directory, core_name,
-                     path_basename_nocompression(rarch_path_basename),
-                     FILE_PATH_CONFIG_EXTENSION,
-                     sizeof(override_path));
-
-               game_override_remove = path_is_valid(override_path);
-               override_path[0]     = '\0';
-
-               /* Contentdir-specific path */
-               fill_pathname_parent_dir_name(content_dir_name,
-                     rarch_path_basename, sizeof(content_dir_name));
-               fill_pathname_join_special_ext(override_path,
-                     config_directory, core_name,
-                     content_dir_name,
-                     FILE_PATH_CONFIG_EXTENSION,
-                     sizeof(override_path));
-
-               content_dir_override_remove = path_is_valid(override_path);
-               override_path[0]            = '\0';
-            }
-
-            {
-               /* Core-specific path */
-               fill_pathname_join_special_ext(override_path,
-                     config_directory, core_name,
-                     core_name,
-                     FILE_PATH_CONFIG_EXTENSION,
-                     sizeof(override_path));
-
-               core_override_remove = path_is_valid(override_path);
-               override_path[0]     = '\0';
-            }
-
-            /* Show currently 'active' override file */
-            if (menu_entries_append(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO),
-                  msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_FILE_INFO),
-                  MENU_ENUM_LABEL_OVERRIDE_FILE_INFO,
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-               count++;
-
-            /* Load override file */
-            if (menu_entries_append(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD),
-                  msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD),
-                  MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,
-                  MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
-
-            if (     has_content
-                  &&  settings->bools.quick_menu_show_save_game_overrides
-                  && !settings->bools.kiosk_mode_enable)
-            {
-               if (menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
-                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
-                     MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-               if (game_override_remove)
-               {
-                  if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME),
-                        msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME),
-                        MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-               }
-            }
-
-            if (     has_content
-                  &&  settings->bools.quick_menu_show_save_content_dir_overrides
-                  && !settings->bools.kiosk_mode_enable)
-            {
-               if (menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
-                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
-                     MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-               if (content_dir_override_remove)
-               {
-                  if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
-                        msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR),
-                        MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-               }
-            }
-
-            if (      settings->bools.quick_menu_show_save_core_overrides
-                  && !settings->bools.kiosk_mode_enable)
-            {
-               if (menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
-                     MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-               if (core_override_remove)
-               {
-                  if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE),
-                        msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE),
-                        MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-               }
-            }
-
-            /* Unload overrides */
-            if (menu_entries_append(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD),
-                  msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_UNLOAD),
-                  MENU_ENUM_LABEL_OVERRIDE_UNLOAD,
-                  MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
-         }
-
-         if (count == 0)
-            menu_entries_append(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
-                  0, 0, 0, NULL);
-
-         info->flags    |=  MD_FLAG_NEED_PUSH;
-         break;
       case DISPLAYLIST_SHADER_PARAMETERS:
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -14118,9 +14109,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->type_default = FILE_TYPE_RDB;
             info->exts         = strldup(".rdb", sizeof(".rdb"));
             info->enum_idx     = MENU_ENUM_LABEL_PLAYLISTS_TAB;
+            info->path         = strdup(settings->paths.path_content_database);
             load_content       = false;
             use_filebrowser    = true;
-            info->path         = strdup(settings->paths.path_content_database);
          }
          break;
       case DISPLAYLIST_SHADER_PASS:
@@ -14175,38 +14166,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
          break;
       case DISPLAYLIST_SHADER_PRESET_PREPEND:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         {
-            struct string_list str_list = {0};
-            char new_exts[PATH_MAX_LENGTH];
-            union string_list_elem_attr attr;
-
-            attr.i = 0;
-
-            new_exts[0] = '\0';
-
-            string_list_initialize(&str_list);
-
-            filebrowser_clear_type();
-
-            info->type_default = FILE_TYPE_SHADER_PRESET;
-            if (video_shader_is_supported(RARCH_SHADER_CG))
-               string_list_append(&str_list, "cgp", attr);
-            if (video_shader_is_supported(RARCH_SHADER_GLSL))
-               string_list_append(&str_list, "glslp", attr);
-            if (video_shader_is_supported(RARCH_SHADER_SLANG))
-               string_list_append(&str_list, "slangp", attr);
-
-            string_list_join_concat(new_exts, sizeof(new_exts), &str_list, "|");
-            if (!string_is_empty(info->exts))
-               free(info->exts);
-            info->exts = strdup(new_exts);
-            string_list_deinitialize(&str_list);
-            use_filebrowser    = true;
-         }
-#endif
-      break;
       case DISPLAYLIST_SHADER_PRESET_APPEND:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -14214,15 +14173,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             struct string_list str_list = {0};
             char new_exts[PATH_MAX_LENGTH];
             union string_list_elem_attr attr;
-
             attr.i = 0;
-
             new_exts[0] = '\0';
-
             string_list_initialize(&str_list);
-
             filebrowser_clear_type();
-
             info->type_default = FILE_TYPE_SHADER_PRESET;
             if (video_shader_is_supported(RARCH_SHADER_CG))
                string_list_append(&str_list, "cgp", attr);
@@ -14230,7 +14184,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                string_list_append(&str_list, "glslp", attr);
             if (video_shader_is_supported(RARCH_SHADER_SLANG))
                string_list_append(&str_list, "slangp", attr);
-
             string_list_join_concat(new_exts, sizeof(new_exts), &str_list, "|");
             if (!string_is_empty(info->exts))
                free(info->exts);
@@ -14239,7 +14192,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             use_filebrowser    = true;
          }
 #endif
-      break;
+         break;
       case DISPLAYLIST_IMAGES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          if (     (filebrowser_get_type() != FILEBROWSER_SELECT_FILE)
@@ -14250,12 +14203,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             char new_exts[PATH_MAX_LENGTH];
             union string_list_elem_attr attr;
             struct string_list *str_list     = string_list_new();
-
             attr.i = 0;
             new_exts[0] = '\0';
-
-            (void)attr;
-
 #ifdef HAVE_RBMP
             string_list_append(str_list, "bmp", attr);
 #endif
