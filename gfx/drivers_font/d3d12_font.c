@@ -135,6 +135,7 @@ static void d3d12_font_render_line(
    void*           mapped_vbo       = NULL;
    d3d12_sprite_t* v                = NULL;
    d3d12_sprite_t* vbo_start        = NULL;
+   D3D12GraphicsCommandList cmd     = d3d12->queue.cmd;
    int x                            = roundf(pos_x * width);
    int y                            = roundf((1.0 - pos_y) * height);
 
@@ -217,17 +218,16 @@ static void d3d12_font_render_line(
    }
 
    if (font->texture.dirty)
-      d3d12_upload_texture(d3d12->queue.cmd, &font->texture,
-            d3d12);
+      d3d12_upload_texture(cmd, &font->texture, d3d12);
 
-   d3d12->queue.cmd->lpVtbl->SetPipelineState(d3d12->queue.cmd, (D3D12PipelineState)d3d12->sprites.pipe_font);
-   d3d12->queue.cmd->lpVtbl->SetGraphicsRootDescriptorTable(d3d12->queue.cmd,
-         ROOT_ID_TEXTURE_T, font->texture.gpu_descriptor[0]);
-   d3d12->queue.cmd->lpVtbl->SetGraphicsRootDescriptorTable(d3d12->queue.cmd,
-         ROOT_ID_SAMPLER_T, font->texture.sampler);
-   d3d12->queue.cmd->lpVtbl->DrawInstanced(d3d12->queue.cmd, count, 1, d3d12->sprites.offset, 0);
+   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe_font);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
+         font->texture.gpu_descriptor[0]);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
+         font->texture.sampler);
+   cmd->lpVtbl->DrawInstanced(cmd, count, 1, d3d12->sprites.offset, 0);
 
-   d3d12->queue.cmd->lpVtbl->SetPipelineState(d3d12->queue.cmd, (D3D12PipelineState)d3d12->sprites.pipe);
+   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
 
    d3d12->sprites.offset += count;
 }
