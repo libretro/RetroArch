@@ -2157,7 +2157,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    return count;
 }
 
-static void menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
+static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       playlist_t *playlist,
       settings_t *settings,
       const char *path_playlist, bool is_collection)
@@ -2171,13 +2171,12 @@ static void menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    unsigned pl_show_inline_core_name = settings->uints.playlist_show_inline_core_name;
    bool pl_show_sublabels            = settings->bools.playlist_show_sublabels;
    void (*sanitization)(char*)       = NULL;
-
-   info->count     = 0;
+   unsigned count                    = 0;
 
    if (list_size == 0)
    {
       info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
-      return;
+      return 0;
    }
 
    /* Check whether core name should be added to playlist entries */
@@ -2333,11 +2332,12 @@ static void menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       if (entry_valid && menu_entries_append(info->list,
             menu_entry_label, entry_path,
             MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i, NULL))
-         info->count++;
+         count++;
    }
 
-   if (info->count < 1)
+   if (count < 1)
       info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
+   return count;
 }
 
 #ifdef HAVE_LIBRETRODB
@@ -5653,7 +5653,7 @@ end:
    return count;
 }
 
-static void menu_displaylist_parse_playlist_generic(
+static int menu_displaylist_parse_playlist_generic(
       menu_handle_t *menu,
       menu_displaylist_info_t *info,
       settings_t *settings,
@@ -5663,6 +5663,7 @@ static void menu_displaylist_parse_playlist_generic(
       bool sort_enabled,
       int *ret)
 {
+	unsigned count       = 0;
    playlist_t *playlist = NULL;
 
    menu_displaylist_set_new_playlist(menu, settings,
@@ -5670,10 +5671,11 @@ static void menu_displaylist_parse_playlist_generic(
 
    if ((playlist = playlist_get_cached()))
    {
-      menu_displaylist_parse_playlist(info,
+      count = menu_displaylist_parse_playlist(info,
             playlist, settings, playlist_name, is_collection);
-      *ret = 0;
+      *ret  = 0;
    }
+   return count;
 }
 
 #ifdef HAVE_BLUETOOTH
@@ -12647,7 +12649,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
                if (history_list_enable)
-                  menu_displaylist_parse_playlist_generic(
+                  count = menu_displaylist_parse_playlist_generic(
                         menu, info,
                         settings,
                         "history",
@@ -12655,12 +12657,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         false, /* Not a collection */
                         false, /* Do not sort */
                         &ret);
-               else
-                  menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE),
-                        msg_hash_to_str(MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE),
-                        MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE,
-                        MENU_INFO_MESSAGE, 0, 0, NULL);
+
+               if (count == 0)
+                  if (menu_entries_append(info->list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE),
+                           msg_hash_to_str(MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE),
+                           MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE,
+                           MENU_INFO_MESSAGE, 0, 0, NULL))
+                     count++;
             }
 
             ret                         = 0;
@@ -12677,10 +12681,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                const char *path_content_favorites = settings->paths.path_content_favorites;
 
-               info->count                   = 0;
-
                menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-               menu_displaylist_parse_playlist_generic(menu, info,
+               count = menu_displaylist_parse_playlist_generic(menu, info,
                      settings,
                      "favorites",
                      path_content_favorites,
@@ -12688,13 +12690,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      true,  /* Enable sorting (if allowed by user config) */
                      &ret);
 
-               if (info->count == 0)
+               if (count == 0)
                {
-                  menu_entries_append(info->list,
+                  if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE),
                         msg_hash_to_str(MENU_ENUM_LABEL_NO_FAVORITES_AVAILABLE),
                         MENU_ENUM_LABEL_NO_FAVORITES_AVAILABLE,
-                        MENU_INFO_MESSAGE, 0, 0, NULL);
+                        MENU_INFO_MESSAGE, 0, 0, NULL))
+                     count++;
                   info->flags       &= ~MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
                }
 
@@ -12712,10 +12715,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                const char *
                   path_content_music_history = settings->paths.path_content_music_history;
-               info->count                   = 0;
 
                if (settings->bools.history_list_enable)
-                  menu_displaylist_parse_playlist_generic(menu, info,
+                  count = menu_displaylist_parse_playlist_generic(menu, info,
                         settings,
                         "music_history",
                         path_content_music_history,
@@ -12723,14 +12725,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         false, /* Do not sort */
                         &ret);
 
-               if (info->count == 0)
+               if (count == 0)
                {
-                  menu_entries_append(info->list,
+                  if (menu_entries_append(info->list,
                         msg_hash_to_str(
                            MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE),
                         msg_hash_to_str(MENU_ENUM_LABEL_NO_MUSIC_AVAILABLE),
                         MENU_ENUM_LABEL_NO_MUSIC_AVAILABLE,
-                        MENU_INFO_MESSAGE, 0, 0, NULL);
+                        MENU_INFO_MESSAGE, 0, 0, NULL))
+                     count++;
                   info->flags &=  ~MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
                   ret          = 0;
                }
@@ -12750,35 +12753,32 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             break;
          case DISPLAYLIST_VIDEO_HISTORY:
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-            info->count           = 0;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             {
                bool history_list_enable      = settings->bools.history_list_enable;
                const char *
                   path_content_video_history = settings->paths.path_content_video_history;
                if (history_list_enable)
-               {
-                  menu_displaylist_parse_playlist_generic(menu, info,
+                  count = menu_displaylist_parse_playlist_generic(menu, info,
                         settings,
                         "video_history",
                         path_content_video_history,
                         false, /* Not a collection */
                         false, /* Do not sort */
                         &ret);
-                  count++;
-               }
                else
                   ret = 0;
             }
 #endif
 
-            if (info->count == 0)
+            if (count == 0)
             {
-               menu_entries_append(info->list,
+               if (menu_entries_append(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE),
                      msg_hash_to_str(MENU_ENUM_LABEL_NO_VIDEOS_AVAILABLE),
                      MENU_ENUM_LABEL_NO_VIDEOS_AVAILABLE,
-                     MENU_INFO_MESSAGE, 0, 0, NULL);
+                     MENU_INFO_MESSAGE, 0, 0, NULL))
+                  count++;
                info->flags    &= ~MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
                ret             =  0;
             }
@@ -14204,7 +14204,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             break;
          case DISPLAYLIST_PLAYLIST:
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-            menu_displaylist_parse_playlist_generic(menu, info,
+            count = menu_displaylist_parse_playlist_generic(menu, info,
                   settings,
                   path_basename_nocompression(info->path),
                   info->path,
@@ -14222,32 +14222,29 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             break;
          case DISPLAYLIST_IMAGES_HISTORY:
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-            info->count           = 0;
 #ifdef HAVE_IMAGEVIEWER
             {
                bool history_list_enable  = settings->bools.history_list_enable;
                const char *path_content_image_history = settings->paths.path_content_image_history;
 
                if (history_list_enable)
-               {
-                  menu_displaylist_parse_playlist_generic(menu, info,
+                  count = menu_displaylist_parse_playlist_generic(menu, info,
                         settings,
                         "images_history",
                         path_content_image_history,
                         false, /* Not a collection */
                         false, /* Do not sort */
                         &ret);
-                  count++;
-               }
             }
 #endif
-            if (info->count == 0)
+            if (count == 0)
             {
-               menu_entries_append(info->list,
+               if (menu_entries_append(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE),
                      msg_hash_to_str(MENU_ENUM_LABEL_NO_IMAGES_AVAILABLE),
                      MENU_ENUM_LABEL_NO_IMAGES_AVAILABLE,
-                     MENU_INFO_MESSAGE, 0, 0, NULL);
+                     MENU_INFO_MESSAGE, 0, 0, NULL))
+                  count++;
                info->flags             &= ~MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
             }
 

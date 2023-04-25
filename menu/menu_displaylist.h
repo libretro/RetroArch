@@ -328,7 +328,6 @@ typedef struct menu_displaylist_info
    size_t directory_ptr;
 
    uint32_t flags;
-   unsigned count;
 
    unsigned type;
    unsigned type_default;
