@@ -322,7 +322,6 @@ typedef struct menu_displaylist_info
    char *exts;
    char *label;
    file_list_t *list;
-   file_list_t *menu_list;
    rarch_setting_t *setting;
 
    size_t directory_ptr;

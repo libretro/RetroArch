@@ -1090,8 +1090,6 @@ static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
       break;
    }
 }
-static void ui_companion_cocoa_notify_list_pushed(void *data, file_list_t *a, file_list_t *b) { }
-
 static void *ui_companion_cocoa_get_main_window(void *data)
 {
     return (BRIDGE void *)((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
@@ -1103,7 +1101,6 @@ ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_toggle,
    ui_companion_cocoa_event_command,
    ui_companion_cocoa_notify_content_loaded,
-   ui_companion_cocoa_notify_list_pushed,
    NULL, /* notify_refresh */
    NULL, /* msg_queue_push */
    NULL, /* render_messagebox */

@@ -2482,7 +2482,6 @@ bool menu_driver_displaylist_push(
       enum_idx    = cbs->enum_idx;
 
    info.list      = entry_list;
-   info.menu_list = entry_stack;
    info.type      = type;
    info.enum_idx  = enum_idx;
 

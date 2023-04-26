@@ -316,8 +316,6 @@ static void ui_companion_win32_notify_content_loaded(void *data) { }
 static void ui_companion_win32_toggle(void *data, bool force) { }
 static void ui_companion_win32_event_command(
       void *data, enum event_command cmd) { }
-static void ui_companion_win32_notify_list_pushed(void *data,
-        file_list_t *list, file_list_t *menu_list) { }
 
 ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_init,
@@ -325,7 +323,6 @@ ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_toggle,
    ui_companion_win32_event_command,
    ui_companion_win32_notify_content_loaded,
-   ui_companion_win32_notify_list_pushed,
    NULL,
    NULL,
    NULL,

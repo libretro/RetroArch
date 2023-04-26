@@ -5810,7 +5810,6 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                MENU_INFO_MESSAGE, 0, 0, NULL);
 
       menu_driver_populate_entries(info);
-      ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
    }
    return true;
 }
@@ -5852,7 +5851,6 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info)
    info->path_c                   = NULL;
    info->exts                     = NULL;
    info->list                     = NULL;
-   info->menu_list                = NULL;
    info->setting                  = NULL;
 }
 

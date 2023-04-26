@@ -4887,9 +4887,6 @@ static void ui_companion_qt_event_command(void *data, enum event_command cmd)
    }
 }
 
-static void ui_companion_qt_notify_list_pushed(void *data, file_list_t *list,
-   file_list_t *menu_list) { }
-
 static void ui_companion_qt_notify_refresh(void *data)
 {
    ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
@@ -4929,7 +4926,6 @@ ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_toggle,
    ui_companion_qt_event_command,
    ui_companion_qt_notify_content_loaded,
-   ui_companion_qt_notify_list_pushed,
    ui_companion_qt_notify_refresh,
    ui_companion_qt_msg_queue_push,
    NULL,

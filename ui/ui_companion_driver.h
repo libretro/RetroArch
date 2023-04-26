@@ -119,7 +119,6 @@ typedef struct ui_companion_driver
    void (*toggle)(void *data, bool force);
    void (*event_command)(void *data, enum event_command action);
    void (*notify_content_loaded)(void *data);
-   void (*notify_list_loaded)(void *data, file_list_t *list, file_list_t *menu_list);
    void (*notify_refresh)(void *data);
    void (*msg_queue_push)(void *data, const char *msg, unsigned priority, unsigned duration, bool flush);
    void (*render_messagebox)(const char *msg);
@@ -150,7 +149,6 @@ typedef struct
 } uico_driver_state_t;
 
 extern ui_companion_driver_t ui_companion_cocoa;
-extern ui_companion_driver_t ui_companion_cocoatouch;
 extern ui_companion_driver_t ui_companion_qt;
 extern ui_companion_driver_t ui_companion_win32;
 
@@ -161,8 +159,6 @@ uint8_t ui_companion_get_flags(void);
 void ui_companion_event_command(enum event_command action);
 
 void ui_companion_driver_notify_refresh(void);
-
-void ui_companion_driver_notify_list_loaded(file_list_t *list, file_list_t *menu_list);
 
 void ui_companion_driver_notify_content_loaded(void);
 
