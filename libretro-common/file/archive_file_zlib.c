@@ -184,7 +184,7 @@ static int zlib_stream_decompress_data_to_file_iterate(
       {
          /* Simply copy the data to the output buffer */
          memcpy(zip_context->decompressed_data,
-                zip_context->state->archive_mmap_data,
+                zip_context->state->archive_mmap_data + (size_t)zip_context->fdoffset,
                 zip_context->usize);
       }
       else
