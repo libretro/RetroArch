@@ -118,7 +118,6 @@ typedef struct ui_companion_driver
    void (*deinit)(void *data);
    void (*toggle)(void *data, bool force);
    void (*event_command)(void *data, enum event_command action);
-   void (*notify_content_loaded)(void *data);
    void (*notify_refresh)(void *data);
    void (*msg_queue_push)(void *data, const char *msg, unsigned priority, unsigned duration, bool flush);
    void (*render_messagebox)(const char *msg);
@@ -159,8 +158,6 @@ uint8_t ui_companion_get_flags(void);
 void ui_companion_event_command(enum event_command action);
 
 void ui_companion_driver_notify_refresh(void);
-
-void ui_companion_driver_notify_content_loaded(void);
 
 const ui_msg_window_t *ui_companion_driver_get_msg_window_ptr(void);
 

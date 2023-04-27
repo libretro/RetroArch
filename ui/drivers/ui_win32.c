@@ -312,7 +312,6 @@ static ui_browser_window_t ui_browser_window_win32 = {
 
 static void ui_companion_win32_deinit(void *data) { } 
 static void *ui_companion_win32_init(void) { return (void*)-1; }
-static void ui_companion_win32_notify_content_loaded(void *data) { }
 static void ui_companion_win32_toggle(void *data, bool force) { }
 static void ui_companion_win32_event_command(
       void *data, enum event_command cmd) { }
@@ -322,7 +321,6 @@ ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_deinit,
    ui_companion_win32_toggle,
    ui_companion_win32_event_command,
-   ui_companion_win32_notify_content_loaded,
    NULL,
    NULL,
    NULL,

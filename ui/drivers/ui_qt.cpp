@@ -4821,8 +4821,6 @@ static void* ui_companion_qt_init(void)
    return handle;
 }
 
-static void ui_companion_qt_notify_content_loaded(void *data) { }
-
 static void ui_companion_qt_toggle(void *data, bool force)
 {
    static bool already_started = false;
@@ -4925,7 +4923,6 @@ ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_deinit,
    ui_companion_qt_toggle,
    ui_companion_qt_event_command,
-   ui_companion_qt_notify_content_loaded,
    ui_companion_qt_notify_refresh,
    ui_companion_qt_msg_queue_push,
    NULL,

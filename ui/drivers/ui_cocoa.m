@@ -1073,7 +1073,6 @@ static void ui_companion_cocoa_deinit(void *data)
 }
 
 static void *ui_companion_cocoa_init(void) { return (void*)-1; }
-static void ui_companion_cocoa_notify_content_loaded(void *data) { }
 static void ui_companion_cocoa_toggle(void *data, bool force) { }
 static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
 {
@@ -1100,7 +1099,6 @@ ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_deinit,
    ui_companion_cocoa_toggle,
    ui_companion_cocoa_event_command,
-   ui_companion_cocoa_notify_content_loaded,
    NULL, /* notify_refresh */
    NULL, /* msg_queue_push */
    NULL, /* render_messagebox */

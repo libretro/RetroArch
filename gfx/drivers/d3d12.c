@@ -3127,21 +3127,24 @@ static uintptr_t d3d12_gfx_load_texture(
 static void d3d12_gfx_unload_texture(void* data, 
       bool threaded, uintptr_t handle)
 {
-   D3D12Fence fence;
    d3d12_texture_t* texture = (d3d12_texture_t*)handle;
    d3d12_video_t* d3d12     = (d3d12_video_t*)data;
 
    if (!texture)
       return;
 
-   fence                    = d3d12->queue.fence;
-
-   if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+   if (d3d12)
    {
-      fence->lpVtbl->SetEventOnCompletion(
-            fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-      WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      D3D12Fence fence      = d3d12->queue.fence;
+
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(
+               fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
    }
+
    d3d12_release_texture(texture);
    free(texture);
 }

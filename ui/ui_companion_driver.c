@@ -32,7 +32,6 @@ static ui_companion_driver_t ui_companion_null = {
    NULL, /* deinit */
    NULL, /* toggle */
    NULL, /* event_command */
-   NULL, /* notify_content_loaded */
    NULL, /* notify_refresh */
    NULL, /* msg_queue_push */
    NULL, /* render_messagebox */
@@ -175,14 +174,6 @@ void ui_companion_driver_notify_refresh(void)
       if (ui_companion_qt.notify_refresh && (uico_st->flags & UICO_ST_FLAG_QT_IS_INITED))
          ui_companion_qt.notify_refresh(uico_st->qt_data);
 #endif
-}
-
-void ui_companion_driver_notify_content_loaded(void)
-{
-   uico_driver_state_t *uico_st    = &uico_driver_st;
-   const ui_companion_driver_t *ui = uico_st->drv;
-   if (ui && ui->notify_content_loaded)
-      ui->notify_content_loaded(uico_st->data);
 }
 
 const ui_msg_window_t *ui_companion_driver_get_msg_window_ptr(void)

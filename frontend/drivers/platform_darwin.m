@@ -482,11 +482,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 #endif
 }
 
-static void frontend_darwin_content_loaded(void)
-{
-   ui_companion_driver_notify_content_loaded();
-}
-
 static int frontend_darwin_get_rating(void)
 {
    char model[PATH_MAX_LENGTH] = {0};
@@ -953,7 +948,7 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_name,        /* get_name */
    frontend_darwin_get_os,          /* get_os               */
    frontend_darwin_get_rating,      /* get_rating           */
-   frontend_darwin_content_loaded,  /* content_loaded       */
+   NULL,                            /* content_loaded       */
    frontend_darwin_get_arch,        /* get_architecture     */
    frontend_darwin_get_powerstate,  /* get_powerstate       */
    frontend_darwin_parse_drive_list,/* parse_drive_list     */
