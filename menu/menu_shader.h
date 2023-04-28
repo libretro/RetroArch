@@ -161,15 +161,6 @@ bool menu_shader_manager_auto_preset_exists(
       const char *dir_video_shader,
       const char *dir_menu_config);
 
-bool menu_shader_manager_save_preset_internal(
-      bool save_reference,
-      const struct video_shader *shader,
-      const char *basename,
-      const char *dir_video_shader,
-      bool apply,
-      const char **target_dirs,
-      size_t num_target_dirs);
-
 bool menu_shader_manager_operate_auto_preset(
       struct retro_system_info *system,
       bool video_shader_preset_save_reference_enable,

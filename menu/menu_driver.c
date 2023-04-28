@@ -2985,6 +2985,91 @@ void menu_shader_manager_apply_changes(
    menu_shader_manager_set_preset(NULL, type, NULL, true);
 }
 
+static bool menu_shader_manager_save_preset_internal(
+      bool save_reference,
+      const struct video_shader *shader,
+      const char *basename,
+      const char *dir_video_shader,
+      bool apply,
+      const char **target_dirs,
+      size_t num_target_dirs)
+{
+   char fullname[PATH_MAX_LENGTH];
+   char buffer[PATH_MAX_LENGTH];
+   const char *preset_ext         = NULL;
+   bool ret                       = false;
+   enum rarch_shader_type type    = RARCH_SHADER_NONE;
+   char *preset_path              = NULL;
+   size_t i                       = 0;
+   if (!shader || !shader->passes)
+      return false;
+   if ((type = menu_shader_manager_get_type(shader)) == RARCH_SHADER_NONE)
+      return false;
+
+   preset_ext = video_shader_get_preset_extension(type);
+
+   if (!string_is_empty(basename))
+      strlcpy(fullname, basename, sizeof(fullname));
+   else
+      strlcpy(fullname, "retroarch", sizeof(fullname));
+   strlcat(fullname, preset_ext, sizeof(fullname));
+
+   if (path_is_absolute(fullname))
+   {
+      preset_path = fullname;
+      if ((ret    = video_shader_write_preset(preset_path, shader, save_reference)))
+         RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
+      else
+         RARCH_ERR("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
+   }
+   else
+   {
+      char basedir[PATH_MAX_LENGTH];
+
+      for (i = 0; i < num_target_dirs; i++)
+      {
+         if (string_is_empty(target_dirs[i]))
+            continue;
+
+         fill_pathname_join(buffer, target_dirs[i],
+               fullname, sizeof(buffer));
+
+         strlcpy(basedir, buffer, sizeof(basedir));
+         path_basedir(basedir);
+
+         if (!path_is_directory(basedir))
+         {
+            if (!(ret = path_mkdir(basedir)))
+            {
+               RARCH_WARN("[Shaders]: Failed to create preset directory \"%s\".\n", basedir);
+               continue;
+            }
+         }
+
+         preset_path = buffer;
+
+         if ((ret = video_shader_write_preset(preset_path,
+               shader, save_reference)))
+         {
+            RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
+            break;
+         }
+         else
+            RARCH_WARN("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
+      }
+
+      if (!ret)
+         RARCH_ERR("[Shaders]: Failed to write shader preset. Make sure shader directory "
+               "and/or config directory are writable.\n");
+   }
+
+   if (ret && apply)
+      menu_shader_manager_set_preset(NULL, type, preset_path, true);
+
+   return ret;
+}
+
+
 /**
  * menu_shader_manager_save_preset:
  * @shader                   : shader to save
@@ -3865,90 +3950,6 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-bool menu_shader_manager_save_preset_internal(
-      bool save_reference,
-      const struct video_shader *shader,
-      const char *basename,
-      const char *dir_video_shader,
-      bool apply,
-      const char **target_dirs,
-      size_t num_target_dirs)
-{
-   char fullname[PATH_MAX_LENGTH];
-   char buffer[PATH_MAX_LENGTH];
-   const char *preset_ext         = NULL;
-   bool ret                       = false;
-   enum rarch_shader_type type    = RARCH_SHADER_NONE;
-   char *preset_path              = NULL;
-   size_t i                       = 0;
-   if (!shader || !shader->passes)
-      return false;
-   if ((type = menu_shader_manager_get_type(shader)) == RARCH_SHADER_NONE)
-      return false;
-
-   preset_ext = video_shader_get_preset_extension(type);
-
-   if (!string_is_empty(basename))
-      strlcpy(fullname, basename, sizeof(fullname));
-   else
-      strlcpy(fullname, "retroarch", sizeof(fullname));
-   strlcat(fullname, preset_ext, sizeof(fullname));
-
-   if (path_is_absolute(fullname))
-   {
-      preset_path = fullname;
-      if ((ret    = video_shader_write_preset(preset_path, shader, save_reference)))
-         RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
-      else
-         RARCH_ERR("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
-   }
-   else
-   {
-      char basedir[PATH_MAX_LENGTH];
-
-      for (i = 0; i < num_target_dirs; i++)
-      {
-         if (string_is_empty(target_dirs[i]))
-            continue;
-
-         fill_pathname_join(buffer, target_dirs[i],
-               fullname, sizeof(buffer));
-
-         strlcpy(basedir, buffer, sizeof(basedir));
-         path_basedir(basedir);
-
-         if (!path_is_directory(basedir))
-         {
-            if (!(ret = path_mkdir(basedir)))
-            {
-               RARCH_WARN("[Shaders]: Failed to create preset directory \"%s\".\n", basedir);
-               continue;
-            }
-         }
-
-         preset_path = buffer;
-
-         if ((ret = video_shader_write_preset(preset_path,
-               shader, save_reference)))
-         {
-            RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
-            break;
-         }
-         else
-            RARCH_WARN("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
-      }
-
-      if (!ret)
-         RARCH_ERR("[Shaders]: Failed to write shader preset. Make sure shader directory "
-               "and/or config directory are writable.\n");
-   }
-
-   if (ret && apply)
-      menu_shader_manager_set_preset(NULL, type, preset_path, true);
-
-   return ret;
-}
-
 bool menu_shader_manager_operate_auto_preset(
       struct retro_system_info *system,
       bool video_shader_preset_save_reference_enable,
