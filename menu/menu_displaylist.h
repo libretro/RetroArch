@@ -351,10 +351,6 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info);
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info, settings_t *settings);
 
-#ifdef HAVE_NETWORKING
-unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list);
-#endif
-
 bool menu_displaylist_has_subsystems(void);
 
 #if defined(HAVE_LIBRETRODB)
