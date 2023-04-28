@@ -295,16 +295,6 @@ bool menu_input_dialog_get_display_kb(void);
 
 void menu_input_dialog_end(void);
 
-bool menu_input_key_bind_poll_find_hold(
-      unsigned max_users,
-      struct menu_bind_state *new_state,
-      struct retro_keybind * output);
-
-void menu_input_set_pointer_visibility(
-      menu_input_pointer_hw_state_t *pointer_hw_state,
-      menu_input_t *menu_input,
-      retro_time_t current_time);
-
 RETRO_END_DECLS
 
 #endif

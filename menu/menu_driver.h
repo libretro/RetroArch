@@ -768,30 +768,6 @@ int menu_dialog_iterate(
 
 void menu_entries_settings_deinit(struct menu_state *menu_st);
 
-void menu_input_key_bind_poll_bind_get_rested_axes(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      struct menu_bind_state *state);
-
-#ifdef ANDROID
-bool menu_input_key_bind_poll_find_hold_pad(
-      struct menu_bind_state *new_state,
-      struct retro_keybind * output,
-      unsigned p);
-#endif
-
-bool menu_input_key_bind_poll_find_trigger_pad(
-      struct menu_bind_state *state,
-      struct menu_bind_state *new_state,
-      struct retro_keybind * output,
-      unsigned p);
-
-bool menu_input_key_bind_poll_find_trigger(
-      unsigned max_users,
-      struct menu_bind_state *state,
-      struct menu_bind_state *new_state,
-      struct retro_keybind * output);
-
 void input_event_osk_iterate(
       void *osk_grid,
       enum osk_type osk_idx);
@@ -855,15 +831,6 @@ float menu_input_get_dpi(
 
 void menu_input_pointer_close_messagebox(struct menu_state *menu_st);
 
-void menu_input_key_bind_poll_bind_state(
-      input_driver_state_t *input_driver_st,
-      const retro_keybind_set *binds,
-      float input_axis_threshold,
-      unsigned joy_idx,
-      struct menu_bind_state *state,
-      bool timed_out,
-      bool keyboard_mapping_blocked);
-
 enum action_iterate_type action_iterate_type(const char *label);
 
 void menu_cbs_init(
@@ -882,13 +849,6 @@ bool menu_driver_displaylist_push(
 
 int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-void menu_driver_get_last_shader_path_int(
-      settings_t *settings, enum rarch_shader_type type,
-      const char *shader_dir, const char *shader_file_name,
-      const char **dir_out, const char **file_name_out);
-#endif
-
 int menu_entries_elem_get_first_char(
       file_list_t *list, unsigned offset);
 
@@ -897,10 +857,6 @@ void menu_entries_build_scroll_indices(
       file_list_t *list);
 
 void get_current_menu_value(struct menu_state *menu_st,
-      char *s, size_t len);
-void get_current_menu_label(struct menu_state *menu_st,
-      char *s, size_t len);
-void get_current_menu_sublabel(struct menu_state *menu_st,
       char *s, size_t len);
 
 void menu_display_common_image_upload(

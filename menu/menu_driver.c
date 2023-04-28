@@ -1597,7 +1597,7 @@ static int menu_input_key_bind_set_mode_common(
 }
 
 #ifdef ANDROID
-bool menu_input_key_bind_poll_find_hold_pad(
+static bool menu_input_key_bind_poll_find_hold_pad(
       struct menu_bind_state *new_state,
       struct retro_keybind * output,
       unsigned p)
@@ -1682,7 +1682,7 @@ bool menu_input_key_bind_poll_find_hold_pad(
    return false;
 }
 
-bool menu_input_key_bind_poll_find_hold(
+static bool menu_input_key_bind_poll_find_hold(
       unsigned max_users,
       struct menu_bind_state *new_state,
       struct retro_keybind * output)
@@ -1702,7 +1702,7 @@ bool menu_input_key_bind_poll_find_hold(
 }
 #endif
 
-bool menu_input_key_bind_poll_find_trigger_pad(
+static bool menu_input_key_bind_poll_find_trigger_pad(
       struct menu_bind_state *state,
       struct menu_bind_state *new_state,
       struct retro_keybind * output,
@@ -1803,7 +1803,7 @@ bool menu_input_key_bind_poll_find_trigger_pad(
    return false;
 }
 
-bool menu_input_key_bind_poll_find_trigger(
+static bool menu_input_key_bind_poll_find_trigger(
       unsigned max_users,
       struct menu_bind_state *state,
       struct menu_bind_state *new_state,
@@ -1825,13 +1825,13 @@ bool menu_input_key_bind_poll_find_trigger(
 }
 
 
-void menu_input_key_bind_poll_bind_get_rested_axes(
+static void menu_input_key_bind_poll_bind_get_rested_axes(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       struct menu_bind_state *state)
 {
    unsigned a;
-   unsigned port                           = state->port;
+   unsigned port          = state->port;
 
    if (joypad)
    {
@@ -1861,9 +1861,7 @@ void menu_input_key_bind_poll_bind_get_rested_axes(
    }
 }
 
-void input_event_osk_iterate(
-      void *osk_grid,
-      enum osk_type osk_idx)
+void input_event_osk_iterate(void *osk_grid, enum osk_type osk_idx)
 {
 #ifndef HAVE_LANGEXTRA
    /* If HAVE_LANGEXTRA is not defined, define some ASCII-friendly pages. */
@@ -2656,6 +2654,51 @@ void menu_cbs_init(
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+static void menu_driver_set_last_shader_path_int(
+      const char *shader_path,
+      enum rarch_shader_type *type,
+      char *shader_dir, size_t dir_len,
+      char *shader_file, size_t file_len)
+{
+   const char *file_name = NULL;
+
+   if (!type ||
+       !shader_dir ||
+       (dir_len < 1) ||
+       !shader_file ||
+       (file_len < 1))
+      return;
+
+   /* Reset existing cache */
+   *type          = RARCH_SHADER_NONE;
+   shader_dir[0]  = '\0';
+   shader_file[0] = '\0';
+
+   /* If path is empty, do nothing */
+   if (string_is_empty(shader_path))
+      return;
+
+   /* Get shader type */
+   /* If type is invalid, do nothing */
+   if ((*type = video_shader_parse_type(shader_path)) == RARCH_SHADER_NONE)
+      return;
+
+   /* Cache parent directory */
+   fill_pathname_parent_dir(shader_dir, shader_path, dir_len);
+
+   /* If parent directory is empty, then file name
+    * is only valid if 'shader_path' refers to an
+    * existing file in the root of the file system */
+   if (string_is_empty(shader_dir) &&
+       !path_is_valid(shader_path))
+      return;
+
+   /* Cache file name */
+   file_name = path_basename_nocompression(shader_path);
+   if (!string_is_empty(file_name))
+      strlcpy(shader_file, file_name, file_len);
+}
+
 void menu_driver_set_last_shader_preset_path(const char *path)
 {
    menu_handle_t *menu         = menu_driver_state.driver_data;
@@ -2698,6 +2741,47 @@ enum rarch_shader_type menu_driver_get_last_shader_pass_type(void)
    return menu->last_shader_selection.pass_type;
 }
 
+static void menu_driver_get_last_shader_path_int(
+      settings_t *settings, enum rarch_shader_type type,
+      const char *shader_dir, const char *shader_file_name,
+      const char **dir_out, const char **file_name_out)
+{
+   bool remember_last_dir       = settings->bools.video_shader_remember_last_dir;
+   const char *video_shader_dir = settings->paths.directory_video_shader;
+
+   /* File name is NULL by default */
+   if (file_name_out)
+      *file_name_out = NULL;
+
+   /* If any of the following are true:
+    * - Directory caching is disabled
+    * - No directory has been cached
+    * - Cached directory is invalid
+    * - Last selected shader is incompatible with
+    *   the current video driver
+    * ...use default settings */
+   if (!remember_last_dir ||
+       (type == RARCH_SHADER_NONE) ||
+       string_is_empty(shader_dir) ||
+       !path_is_directory(shader_dir) ||
+       !video_shader_is_supported(type))
+   {
+      if (dir_out)
+         *dir_out = video_shader_dir;
+      return;
+   }
+
+   /* Assign last set directory */
+   if (dir_out)
+      *dir_out = shader_dir;
+
+   /* Assign file name */
+   if (file_name_out &&
+       !string_is_empty(shader_file_name))
+      *file_name_out = shader_file_name;
+}
+
+
 void menu_driver_get_last_shader_preset_path(
       const char **directory, const char **file_name)
 {
@@ -2738,45 +2822,6 @@ void menu_driver_get_last_shader_pass_path(
    menu_driver_get_last_shader_path_int(settings, type,
          shader_dir, shader_file_name,
          directory, file_name);
-}
-void menu_driver_get_last_shader_path_int(
-      settings_t *settings, enum rarch_shader_type type,
-      const char *shader_dir, const char *shader_file_name,
-      const char **dir_out, const char **file_name_out)
-{
-   bool remember_last_dir       = settings->bools.video_shader_remember_last_dir;
-   const char *video_shader_dir = settings->paths.directory_video_shader;
-
-   /* File name is NULL by default */
-   if (file_name_out)
-      *file_name_out = NULL;
-
-   /* If any of the following are true:
-    * - Directory caching is disabled
-    * - No directory has been cached
-    * - Cached directory is invalid
-    * - Last selected shader is incompatible with
-    *   the current video driver
-    * ...use default settings */
-   if (!remember_last_dir ||
-       (type == RARCH_SHADER_NONE) ||
-       string_is_empty(shader_dir) ||
-       !path_is_directory(shader_dir) ||
-       !video_shader_is_supported(type))
-   {
-      if (dir_out)
-         *dir_out = video_shader_dir;
-      return;
-   }
-
-   /* Assign last set directory */
-   if (dir_out)
-      *dir_out = shader_dir;
-
-   /* Assign file name */
-   if (file_name_out &&
-       !string_is_empty(shader_file_name))
-      *file_name_out = shader_file_name;
 }
 
 int menu_shader_manager_clear_num_passes(struct video_shader *shader)
@@ -2872,39 +2917,39 @@ void menu_shader_manager_clear_pass_path(struct video_shader *shader,
 enum rarch_shader_type menu_shader_manager_get_type(
       const struct video_shader *shader)
 {
-   enum rarch_shader_type type       = RARCH_SHADER_NONE;
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
    /* All shader types must be the same, or we cannot use it. */
-   size_t i                         = 0;
 
    if (!shader)
       return RARCH_SHADER_NONE;
 
    type = video_shader_parse_type(shader->path);
 
-   if (!shader->passes)
-      return type;
-
-   if (type == RARCH_SHADER_NONE)
+   if (shader->passes)
    {
-      type = video_shader_parse_type(shader->pass[0].source.path);
-      i    = 1;
-   }
-
-   for (; i < shader->passes; i++)
-   {
-      enum rarch_shader_type pass_type =
-         video_shader_parse_type(shader->pass[i].source.path);
-
-      switch (pass_type)
+      size_t i                 = 0;
+      if (type == RARCH_SHADER_NONE)
       {
-         case RARCH_SHADER_CG:
-         case RARCH_SHADER_GLSL:
-         case RARCH_SHADER_SLANG:
-            if (type != pass_type)
-               return RARCH_SHADER_NONE;
-            break;
-         default:
-            break;
+         type = video_shader_parse_type(shader->pass[0].source.path);
+         i    = 1;
+      }
+
+      for (; i < shader->passes; i++)
+      {
+         enum rarch_shader_type pass_type =
+            video_shader_parse_type(shader->pass[i].source.path);
+
+         switch (pass_type)
+         {
+            case RARCH_SHADER_CG:
+            case RARCH_SHADER_GLSL:
+            case RARCH_SHADER_SLANG:
+               if (type != pass_type)
+                  return RARCH_SHADER_NONE;
+               break;
+            default:
+               break;
+         }
       }
    }
 
@@ -3127,7 +3172,7 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
    return filter_enabled;
 }
 
-void menu_input_key_bind_poll_bind_state(
+static void menu_input_key_bind_poll_bind_state(
       input_driver_state_t *input_st,
       const retro_keybind_set *binds,
       float input_axis_threshold,
@@ -3575,7 +3620,7 @@ bool rarch_menu_init(
    return true;
 }
 
-void menu_input_set_pointer_visibility(
+static void menu_input_set_pointer_visibility(
       menu_input_pointer_hw_state_t *pointer_hw_state,
       menu_input_t *menu_input,
       retro_time_t current_time)
@@ -4077,51 +4122,6 @@ bool menu_shader_manager_operate_auto_preset(
 
    return false;
 }
-
-void menu_driver_set_last_shader_path_int(
-      const char *shader_path,
-      enum rarch_shader_type *type,
-      char *shader_dir, size_t dir_len,
-      char *shader_file, size_t file_len)
-{
-   const char *file_name = NULL;
-
-   if (!type ||
-       !shader_dir ||
-       (dir_len < 1) ||
-       !shader_file ||
-       (file_len < 1))
-      return;
-
-   /* Reset existing cache */
-   *type          = RARCH_SHADER_NONE;
-   shader_dir[0]  = '\0';
-   shader_file[0] = '\0';
-
-   /* If path is empty, do nothing */
-   if (string_is_empty(shader_path))
-      return;
-
-   /* Get shader type */
-   /* If type is invalid, do nothing */
-   if ((*type = video_shader_parse_type(shader_path)) == RARCH_SHADER_NONE)
-      return;
-
-   /* Cache parent directory */
-   fill_pathname_parent_dir(shader_dir, shader_path, dir_len);
-
-   /* If parent directory is empty, then file name
-    * is only valid if 'shader_path' refers to an
-    * existing file in the root of the file system */
-   if (string_is_empty(shader_dir) &&
-       !path_is_valid(shader_path))
-      return;
-
-   /* Cache file name */
-   file_name = path_basename_nocompression(shader_path);
-   if (!string_is_empty(file_name))
-      strlcpy(shader_file, file_name, file_len);
-}
 #endif
 
 void get_current_menu_value(struct menu_state *menu_st,
@@ -4142,7 +4142,7 @@ void get_current_menu_value(struct menu_state *menu_st,
    strlcpy(s, entry_label, len);
 }
 
-void get_current_menu_label(struct menu_state *menu_st,
+static void menu_driver_get_current_menu_label(struct menu_state *menu_st,
       char *s, size_t len)
 {
    menu_entry_t     entry;
@@ -4164,7 +4164,8 @@ void get_current_menu_label(struct menu_state *menu_st,
    strlcpy(s, entry_label, len);
 }
 
-void get_current_menu_sublabel(struct menu_state *menu_st,
+static void menu_driver_get_current_menu_sublabel(
+      struct menu_state *menu_st,
       char *s, size_t len)
 {
    menu_entry_t     entry;
@@ -7310,13 +7311,13 @@ bool menu_shader_manager_init(void)
    if (shader_info.data)
       /* Use the path of the originally loaded preset because it could
        * have been a preset with a #reference in it to another preset */
-      path_shader = shader_info.data->loaded_preset_path;
+      path_shader                 = shader_info.data->loaded_preset_path;
    else
-      path_shader = video_shader_get_current_shader_preset();
+      path_shader                 = video_shader_get_current_shader_preset();
 
    menu_shader_manager_free();
 
-   menu_shader          = (struct video_shader*)
+   menu_shader                    = (struct video_shader*)
       calloc(1, sizeof(*menu_shader));
 
    if (!menu_shader)
@@ -7369,9 +7370,7 @@ end:
  * Sets shader preset.
  **/
 bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
-                                    enum rarch_shader_type type, 
-                                    const char *preset_path, 
-                                    bool apply)
+      enum rarch_shader_type type, const char *preset_path, bool apply)
 {
    bool refresh                  = false;
    bool ret                      = false;
@@ -7425,14 +7424,13 @@ clear:
  * combine current shader with a shader preset on disk
  **/
 bool menu_shader_manager_append_preset(struct video_shader *shader, 
-                                       const char* preset_path,
-                                       const bool prepend)
+      const char* preset_path, const bool prepend)
 {
-   bool refresh = false;
-   bool ret = false;
-   settings_t* settings = config_get_ptr();
+   bool refresh                  = false;
+   bool ret                      = false;
+   settings_t* settings          = config_get_ptr();
    const char *dir_video_shader  = settings->paths.directory_video_shader;
-   enum rarch_shader_type type = menu_shader_manager_get_type(shader);
+   enum rarch_shader_type type   = menu_shader_manager_get_type(shader);
 
    if (string_is_empty(preset_path))
    {
@@ -7441,12 +7439,7 @@ bool menu_shader_manager_append_preset(struct video_shader *shader,
    }
 
     if (!video_shader_combine_preset_and_apply(settings,
-                                 type,
-                                 shader,
-                                 preset_path,
-                                 dir_video_shader,
-                                 prepend,
-                                 true))
+             type, shader, preset_path, dir_video_shader, prepend, true))
       goto clear;
 
    RARCH_LOG("[Shaders]: Menu shader set to: \"%s\".\n", preset_path);
@@ -7644,7 +7637,7 @@ static int generic_menu_iterate(
                      if (string_is_equal(menu->menu_state_msg,
                               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
                      {
-                        get_current_menu_sublabel(
+                        menu_driver_get_current_menu_sublabel(
                               menu_st,
                               menu->menu_state_msg, sizeof(menu->menu_state_msg));
                         if (string_is_equal(menu->menu_state_msg, ""))
@@ -7666,7 +7659,7 @@ static int generic_menu_iterate(
                               MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
                   {
                      char current_sublabel[255];
-                     get_current_menu_sublabel(
+                     menu_driver_get_current_menu_sublabel(
                            menu_st,
                            current_sublabel, sizeof(current_sublabel));
                      if (string_is_equal(current_sublabel, ""))
@@ -7758,7 +7751,7 @@ static int generic_menu_iterate(
                         || type == MENU_SETTINGS_INPUT_LIBRETRO_DEVICE
                         || type == MENU_SETTINGS_INPUT_INPUT_REMAP_PORT)
                   {
-                     get_current_menu_sublabel(
+                     menu_driver_get_current_menu_sublabel(
                            menu_st,
                            menu->menu_state_msg, sizeof(menu->menu_state_msg));
 
@@ -8190,7 +8183,7 @@ int generic_menu_entry_action(
          case MENU_ACTION_RIGHT:
          case MENU_ACTION_CANCEL:
             menu_entries_get_title(title_name, sizeof(title_name));
-            get_current_menu_label(menu_st, current_label, sizeof(current_label));
+            menu_driver_get_current_menu_label(menu_st, current_label, sizeof(current_label));
             break;
          case MENU_ACTION_UP:
          case MENU_ACTION_DOWN:
@@ -8199,7 +8192,7 @@ int generic_menu_entry_action(
          case MENU_ACTION_SELECT:
          case MENU_ACTION_SEARCH:
          case MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL:
-            get_current_menu_label(menu_st, current_label, sizeof(current_label));
+            menu_driver_get_current_menu_label(menu_st, current_label, sizeof(current_label));
             break;
          case MENU_ACTION_SCAN:
          case MENU_ACTION_INFO:
