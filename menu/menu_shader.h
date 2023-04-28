@@ -161,15 +161,6 @@ bool menu_shader_manager_auto_preset_exists(
       const char *dir_video_shader,
       const char *dir_menu_config);
 
-bool menu_shader_manager_operate_auto_preset(
-      struct retro_system_info *system,
-      bool video_shader_preset_save_reference_enable,
-      enum auto_shader_operation op,
-      const struct video_shader *shader,
-      const char *dir_video_shader,
-      const char *dir_menu_config,
-      enum auto_shader_type type, bool apply);
-
 RETRO_END_DECLS
 
 #endif
