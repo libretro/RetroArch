@@ -671,7 +671,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
    for (i = 0; i < loader->pos_increment; i++, loader->pos++)
    {
-      char conf_key_base[8];
+      char conf_key_base[10];
       char conf_key[32];
       char overlay_full_screen_key[32];
       char tmp_str[PATH_MAX_LENGTH];
