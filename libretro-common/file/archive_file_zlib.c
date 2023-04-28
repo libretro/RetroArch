@@ -230,9 +230,9 @@ static int zlib_stream_decompress_data_to_file_iterate(
          dptr = zip_context->tmpbuf;
       }
 
-      zip_context->boffset += rd;
+      zip_context->boffset           += rd;
       zip_context->zstream->next_in   = dptr;
-      zip_context->zstream->avail_in  = rd;
+      zip_context->zstream->avail_in  = (uInt)rd;
 
       if (inflate(zip_context->zstream, 0) < 0)
          return -1;

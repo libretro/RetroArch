@@ -4654,7 +4654,6 @@ static int action_ok_core_updater_list(const char *path,
 static void cb_net_generic_subdir(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
-   http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
    if (user_data)
       free(user_data);
 }
