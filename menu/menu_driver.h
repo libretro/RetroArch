@@ -768,13 +768,6 @@ int menu_dialog_iterate(
 
 void menu_entries_settings_deinit(struct menu_state *menu_st);
 
-int menu_input_key_bind_set_mode_common(
-      struct menu_state *menu_st,
-      struct menu_bind_state *binds,
-      enum menu_input_binds_ctl_state state,
-      rarch_setting_t  *setting,
-      settings_t *settings);
-
 void menu_input_key_bind_poll_bind_get_rested_axes(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,

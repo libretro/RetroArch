@@ -210,8 +210,6 @@ menu_search_terms_t *menu_entries_search_get_terms(void);
  * search terms to specified string */
 void menu_entries_search_append_terms_string(char *s, size_t len);
 
-menu_search_terms_t *menu_entries_search_get_terms_internal(void);
-
 /* Searches current menu list for specified 'needle'
  * string. If string is found, returns true and sets
  * 'idx' to the matching list entry index. */

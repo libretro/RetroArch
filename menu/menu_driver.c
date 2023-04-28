@@ -563,22 +563,17 @@ size_t menu_entries_get_size(void)
    return MENU_LIST_GET_SELECTION(menu_list, 0)->size;
 }
 
-menu_search_terms_t *menu_entries_search_get_terms_internal(void)
+static menu_search_terms_t *menu_entries_search_get_terms_internal(void)
 {
-   struct menu_state *menu_st  = &menu_driver_state;
-   file_list_t *list           = MENU_LIST_GET(menu_st->entries.list, 0);
-   menu_file_list_cbs_t *cbs   = NULL;
-
-   if (!list ||
-       (list->size < 1))
-      return NULL;
-
-   cbs = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
-
-   if (!cbs)
-      return NULL;
-
-   return &cbs->search;
+   struct menu_state *menu_st   = &menu_driver_state;
+   file_list_t *list            = MENU_LIST_GET(menu_st->entries.list, 0);
+   if (list && (list->size >= 1))
+   {
+      menu_file_list_cbs_t *cbs = NULL;
+      if ((cbs = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata))
+         return &cbs->search;
+   }
+   return NULL;
 }
 
 /* Searches current menu list for specified 'needle'
@@ -1536,8 +1531,7 @@ error:
    return NULL;
 }
 
-
-int menu_input_key_bind_set_mode_common(
+static int menu_input_key_bind_set_mode_common(
       struct menu_state *menu_st,
       struct menu_bind_state *binds,
       enum menu_input_binds_ctl_state state,
@@ -3739,14 +3733,14 @@ const char *config_get_menu_driver_options(void)
 bool menu_entries_search_push(const char *search_term)
 {
    size_t i;
-   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
    char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
 
    /* Sanity check + verify whether we have reached
     * the maximum number of allowed search terms */
-   if (!search ||
-       string_is_empty(search_term) ||
-       (search->size >= MENU_SEARCH_FILTER_MAX_TERMS))
+   if (  !search
+       || string_is_empty(search_term)
+       || (search->size >= MENU_SEARCH_FILTER_MAX_TERMS))
       return false;
 
    /* Check whether search term already exists
@@ -3776,8 +3770,8 @@ bool menu_entries_search_pop(void)
    menu_search_terms_t *search = menu_entries_search_get_terms_internal();
 
    /* Do nothing if list of search terms is empty */
-   if (!search ||
-       (search->size == 0))
+   if (   !search
+       || (search->size == 0))
       return false;
 
    /* Remove last item from the list */
@@ -3791,8 +3785,8 @@ menu_search_terms_t *menu_entries_search_get_terms(void)
 {
    menu_search_terms_t *search = menu_entries_search_get_terms_internal();
 
-   if (!search ||
-       (search->size == 0))
+   if (   !search
+       || (search->size == 0))
       return NULL;
 
    return search;
@@ -3802,9 +3796,9 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
 {
    menu_search_terms_t *search = menu_entries_search_get_terms_internal();
 
-   if (search &&
-       (search->size > 0) &&
-       s)
+   if (    search
+       && (search->size > 0)
+       && s)
    {
       size_t current_len = strlen_size(s, len);
       size_t i;
