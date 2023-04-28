@@ -403,6 +403,16 @@ runtime_log_t *runtime_log_init(
    return runtime_log;
 }
 
+/* Convert from hours, minutes, seconds to microseconds */
+static retro_time_t runtime_log_convert_hms2usec(unsigned hours,
+      unsigned minutes, unsigned seconds)
+{
+   return ( (retro_time_t)hours   * 60 * 60 * 1000000) +
+           ((retro_time_t)minutes * 60      * 1000000) +
+           ((retro_time_t)seconds           * 1000000);
+}
+
+
 /* Setters */
 
 /* Set runtime to specified hours, minutes, seconds value */
@@ -419,7 +429,7 @@ void runtime_log_set_runtime_hms(runtime_log_t *runtime_log,
     * kind of broken input without issue - i.e. user can enter
     * minutes and seconds values > 59, and everything still
     * works correctly */
-   runtime_log_convert_hms2usec(hours, minutes, seconds, &usec);
+   usec = runtime_log_convert_hms2usec(hours, minutes, seconds);
 
    runtime_log_convert_usec2hms(usec,
          &runtime_log->runtime.hours,
@@ -453,13 +463,11 @@ void runtime_log_add_runtime_hms(
    if (!runtime_log)
       return;
 
-   runtime_log_convert_hms2usec(
+   usec_old = runtime_log_convert_hms2usec(
          runtime_log->runtime.hours,
          runtime_log->runtime.minutes,
-         runtime_log->runtime.seconds,
-         &usec_old);
-
-   runtime_log_convert_hms2usec(hours, minutes, seconds, &usec_new);
+         runtime_log->runtime.seconds);
+   usec_new = runtime_log_convert_hms2usec(hours, minutes, seconds);
 
    runtime_log_convert_usec2hms(usec_old + usec_new,
          &runtime_log->runtime.hours,
@@ -476,11 +484,10 @@ void runtime_log_add_runtime_usec(
    if (!runtime_log)
       return;
 
-   runtime_log_convert_hms2usec(
+   usec_old = runtime_log_convert_hms2usec(
          runtime_log->runtime.hours,
          runtime_log->runtime.minutes,
-         runtime_log->runtime.seconds,
-         &usec_old);
+         runtime_log->runtime.seconds);
 
    runtime_log_convert_usec2hms(usec_old + usec,
          &runtime_log->runtime.hours,
@@ -566,9 +573,8 @@ void runtime_log_get_runtime_usec(
       runtime_log_t *runtime_log, retro_time_t *usec)
 {
    if (runtime_log)
-      runtime_log_convert_hms2usec( runtime_log->runtime.hours,
-            runtime_log->runtime.minutes, runtime_log->runtime.seconds,
-            usec);
+      *usec = runtime_log_convert_hms2usec( runtime_log->runtime.hours,
+            runtime_log->runtime.minutes, runtime_log->runtime.seconds);
 }
 
 /* Gets runtime as a pre-formatted string */
@@ -1320,15 +1326,6 @@ end:
 }
 
 /* Utility functions */
-
-/* Convert from hours, minutes, seconds to microseconds */
-void runtime_log_convert_hms2usec(unsigned hours,
-      unsigned minutes, unsigned seconds, retro_time_t *usec)
-{
-   *usec = ((retro_time_t)hours   * 60 * 60 * 1000000) +
-           ((retro_time_t)minutes * 60      * 1000000) +
-           ((retro_time_t)seconds           * 1000000);
-}
 
 /* Convert from microseconds to hours, minutes, seconds */
 void runtime_log_convert_usec2hms(retro_time_t usec,

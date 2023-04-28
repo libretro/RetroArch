@@ -143,9 +143,6 @@ void runtime_log_save(runtime_log_t *runtime_log);
 
 /* Utility functions */
 
-/* Convert from hours, minutes, seconds to microseconds */
-void runtime_log_convert_hms2usec(unsigned hours, unsigned minutes, unsigned seconds, retro_time_t *usec);
-
 /* Convert from microseconds to hours, minutes, seconds */
 void runtime_log_convert_usec2hms(retro_time_t usec, unsigned *hours, unsigned *minutes, unsigned *seconds);
 
