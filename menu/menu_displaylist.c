@@ -3103,7 +3103,6 @@ int menu_displaylist_parse_settings_enum(
       ST_STRING,                 /* PARSE_ONLY_STRING         */
       ST_PATH,                   /* PARSE_ONLY_PATH           */
       ST_STRING_OPTIONS,         /* PARSE_ONLY_STRING_OPTIONS */
-      ST_HEX,                    /* PARSE_ONLY_HEX            */
       ST_DIR,                    /* PARSE_ONLY_DIR            */
       ST_NONE,                   /* PARSE_SUB_GROUP           */
       ST_SIZE,                   /* PARSE_ONLY_SIZE           */
@@ -3166,7 +3165,6 @@ int menu_displaylist_parse_settings_enum(
          case PARSE_ONLY_BIND:
          case PARSE_ONLY_BOOL:
          case PARSE_ONLY_FLOAT:
-         case PARSE_ONLY_HEX:
          case PARSE_ONLY_STRING:
          case PARSE_ONLY_PATH:
          case PARSE_ONLY_DIR:
@@ -3229,7 +3227,6 @@ loop:
             break;
          case PARSE_ONLY_BIND:
          case PARSE_ONLY_FLOAT:
-         case PARSE_ONLY_HEX:
          case PARSE_ONLY_BOOL:
          case PARSE_ONLY_INT:
          case PARSE_ONLY_UINT:

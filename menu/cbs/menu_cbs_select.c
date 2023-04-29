@@ -66,7 +66,6 @@ static int action_select_default(
          case ST_DIR:
          case ST_ACTION:
          case ST_STRING:
-         case ST_HEX:
          case ST_BIND:
             action        = MENU_ACTION_OK;
             break;

@@ -408,59 +408,6 @@ static void menu_input_st_int_cb(void *userdata, const char *str)
    menu_input_dialog_end();
 }
 
-/* TODO/FIXME - get rid of this eventually */
-static void *setting_get_ptr(rarch_setting_t *setting)
-{
-   if (!setting)
-      return NULL;
-
-   switch (setting->type)
-   {
-      case ST_BOOL:
-         return setting->value.target.boolean;
-      case ST_INT:
-         return setting->value.target.integer;
-      case ST_UINT:
-         return setting->value.target.unsigned_integer;
-      case ST_SIZE:
-         return setting->value.target.sizet;
-      case ST_FLOAT:
-         return setting->value.target.fraction;
-      case ST_BIND:
-         return setting->value.target.keybind;
-      case ST_STRING:
-      case ST_STRING_OPTIONS:
-      case ST_PATH:
-      case ST_DIR:
-         return setting->value.target.string;
-      default:
-         break;
-   }
-
-   return NULL;
-}
-
-
-static void menu_input_st_hex_cb(void *userdata, const char *str)
-{
-   if (str && *str)
-   {
-      const char        *label = menu_input_dialog_get_label_setting_buffer();
-      rarch_setting_t *setting = menu_setting_find(label);
-
-      if (setting)
-      {
-         unsigned *ptr = (unsigned*)setting_get_ptr(setting);
-         if (str[0] == '#')
-            str++;
-         if (ptr)
-            *ptr = (unsigned)strtoul(str, NULL, 16);
-      }
-   }
-
-   menu_input_dialog_end();
-}
-
 static void menu_input_st_float_cb(void *userdata, const char *str)
 {
    if (str && *str)
@@ -525,9 +472,6 @@ static int setting_generic_action_ok_linefeed(
       case ST_INT:
          cb = menu_input_st_int_cb;
          break;
-      case ST_HEX:
-         cb = menu_input_st_hex_cb;
-         break;
       case ST_FLOAT:
          cb = menu_input_st_float_cb;
          break;
@@ -569,9 +513,6 @@ static void setting_add_special_callbacks(
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_INT:
-            (*list)[idx].action_cancel = NULL;
-            break;
-         case ST_HEX:
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_FLOAT:
@@ -1689,83 +1630,6 @@ static rarch_setting_t setting_size_setting(const char* name,
 
    return result;
 }
-
-/**
- * setting_hex_setting:
- * @name               : name of setting.
- * @short_description  : Short description of setting.
- * @target             : Target of unsigned integer setting.
- * @default_value      : Default value (in unsigned integer format).
- * @group              : Group that the setting belongs to.
- * @subgroup           : Subgroup that the setting belongs to.
- * @change_handler     : Function callback for change handler function pointer.
- * @read_handler       : Function callback for read handler function pointer.
- *
- * Initializes a setting of type ST_HEX.
- *
- * Returns: setting of type ST_HEX.
- **/
-#if 0
-static rarch_setting_t setting_hex_setting(const char* name,
-      const char* short_description, unsigned int* target,
-      unsigned int default_value,
-      const char *group, const char *subgroup, const char *parent_group,
-      change_handler_t change_handler, change_handler_t read_handler,
-      bool dont_use_enum_idx)
-{
-   rarch_setting_t result;
-
-   result.enum_idx                  = MSG_UNKNOWN;
-   result.type                      = ST_HEX;
-
-   result.size                      = sizeof(unsigned int);
-
-   result.name                      = name;
-   result.short_description         = short_description;
-   result.group                     = group;
-   result.subgroup                  = subgroup;
-   result.parent_group              = parent_group;
-   result.values                    = NULL;
-
-   result.index                     = 0;
-   result.index_offset              = 0;
-   result.offset_by                 = 0;
-
-   result.min                       = 0.0;
-   result.max                       = 0.0;
-
-   result.flags                     = 0;
-   result.free_flags                = 0;
-
-   result.change_handler            = change_handler;
-   result.read_handler              = read_handler;
-   result.action_start              = setting_generic_action_start_default;
-   result.action_left               = NULL;
-   result.action_right              = NULL;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
-   result.action_ok                 = setting_generic_action_ok_default;
-   result.action_select             = setting_generic_action_ok_default;
-   result.get_string_representation = &setting_get_string_representation_hex;
-
-   result.bind_type                 = 0;
-   result.browser_selection_type    = ST_NONE;
-   result.step                      = 0.0f;
-   result.rounding_fraction         = NULL;
-
-   result.value.target.unsigned_integer   = target;
-   result.original_value.unsigned_integer = *target;
-   result.default_value.unsigned_integer  = default_value;
-
-   result.cmd_trigger_idx                  = CMD_EVENT_NONE;
-
-   if (dont_use_enum_idx)
-      result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
-
-   return result;
-}
-#endif
 
 /**
  * setting_bind_setting:
@@ -7192,7 +7056,6 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_INT:
       case ST_UINT:
       case ST_SIZE:
-      case ST_HEX:
       case ST_FLOAT:
       case ST_STRING:
       case ST_STRING_OPTIONS:
