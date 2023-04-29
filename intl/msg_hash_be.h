@@ -56,12 +56,24 @@ MSG_HASH(
    "Хуткае меню"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   "Хуткі доступ да ўсіх адпаведных налад у гульні."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
    "Загрузіць ядро"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST,
+   "Выбраць ядро для выкарыстання."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Загрузіць змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   "Выбраць змесціва для запуску."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -76,6 +88,14 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
    "Стварыць дамп медыя дыска ва ўнутраным сховішчы. Ён будзе захаваны як файл вобразу."
    )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "Выняць дыск"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Вымае дыск з фізічнага CD/DVD-прывада."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -147,6 +167,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    "Сцягнуць ядро"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   "Усталяваць або аднавіць ядро"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   "Усталяваць або аднавіць ядро з каталога 'Спампоўкі'."
    )
 
 /* Main Menu > Load Content */
