@@ -2522,19 +2522,19 @@ void input_config_get_bind_string_joykey(
          switch (GET_HAT_DIR(bind->joykey))
          {
             case HAT_UP_MASK:
-               snprintf(buf + len, size - len, "up (%s)",   na_str);
+               snprintf(buf + len, size - len, "up (%s)",    na_str);
                break;
             case HAT_DOWN_MASK:
-               snprintf(buf + len, size - len, "down (%s)", na_str);
+               snprintf(buf + len, size - len, "down (%s)",  na_str);
                break;
             case HAT_LEFT_MASK:
-               snprintf(buf + len, size - len, "left (%s)", na_str);
+               snprintf(buf + len, size - len, "left (%s)",  na_str);
                break;
             case HAT_RIGHT_MASK:
-               snprintf(buf + len, size - len, "right (%s)",na_str);
+               snprintf(buf + len, size - len, "right (%s)", na_str);
                break;
             default:
-               snprintf(buf + len, size - len, "? (%s)",    na_str);
+               snprintf(buf + len, size - len, "? (%s)",     na_str);
                break;
          }
       }
@@ -2583,17 +2583,17 @@ void input_config_get_bind_string_joyaxis(
    }
    else
    {
-      const char *na_str   =
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
       if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
       {
          unsigned axis = AXIS_NEG_GET(bind->joyaxis);
-         snprintf(buf, size, "%s-%u (%s)", prefix, axis, na_str);
+         snprintf(buf, size, "%s-%u (%s)", prefix, axis,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
       }
       else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
       {
          unsigned axis = AXIS_POS_GET(bind->joyaxis);
-         snprintf(buf, size, "%s+%u (%s)", prefix, axis, na_str);
+         snprintf(buf, size, "%s+%u (%s)", prefix, axis,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
       }
    }
 }

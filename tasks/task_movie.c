@@ -247,9 +247,10 @@ error:
 
 static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
 {
+   size_t _len;
    char msg[8192];
    bsv_movie_t *state                       = NULL;
-   const char *movie_rec_str                = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
+   const char *movie_rec_str                = NULL;
 
    /* this should trigger a start recording task which on failure or
       success prints a message and on success sets the
@@ -267,10 +268,9 @@ static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
 
    input_st->bsv_movie_state_handle         = state;
    input_st->bsv_movie_state.flags         |= BSV_FLAG_MOVIE_RECORDING;
-   snprintf(msg, sizeof(msg),
-            "%s \"%s\".", movie_rec_str,
-            path);
-
+   movie_rec_str                            = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
+   _len = strlcpy(msg, movie_rec_str, sizeof(msg));
+   snprintf(msg + _len, sizeof(msg) - _len, " \"%s\".", path);
    runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s \"%s\".\n", movie_rec_str, path);
 
@@ -418,10 +418,12 @@ bool movie_stop(input_driver_state_t *input_st)
 bool movie_start_playback(input_driver_state_t *input_st, char *path)
 {
   retro_task_t       *task      = task_init();
-  moviectl_task_state_t *state  = (moviectl_task_state_t *) calloc(1, sizeof(*state));
-  bool file_exists = filestream_exists(path);
+  moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));
+  bool file_exists              = filestream_exists(path);
+
   if (!task || !state || !file_exists)
     goto error;
+
   *state                        = input_st->bsv_movie_state;
   strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
   task->type                    = TASK_TYPE_NONE;
@@ -441,20 +443,23 @@ error:
 
    return false;
 }
+
 bool movie_start_record(input_driver_state_t *input_st, char*path)
 {
+   size_t _len;
    char msg[8192];
    const char *movie_rec_str     = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
    retro_task_t       *task      = task_init();
-   moviectl_task_state_t *state  = (moviectl_task_state_t *) calloc(1, sizeof(*state));
+   moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));
+
    if (!task || !state)
       goto error;
 
    *state                        = input_st->bsv_movie_state;
    strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
 
-   msg[0]                        = '\0';
-   snprintf(msg, sizeof(msg), "%s \"%s\".", movie_rec_str, path);
+   _len                          = strlcpy(msg, movie_rec_str, sizeof(msg));
+   snprintf(msg + _len, sizeof(msg) - _len, " \"%s\".", path);
 
    task->type                    = TASK_TYPE_NONE;
    task->state                   = state;
@@ -476,5 +481,4 @@ error:
 
    return false;
 }
-
 #endif

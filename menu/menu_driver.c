@@ -5401,6 +5401,7 @@ bool menu_input_key_bind_iterate(
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
 
+   /* TODO/FIXME - localize */
    snprintf(bind->s, bind->len,
          "[%s]\nPress keyboard, mouse or joypad\n(Timeout %d %s)",
          input_config_bind_map_get_desc(
@@ -5490,6 +5491,7 @@ bool menu_input_key_bind_iterate(
          new_binds.timer_hold.timeout_us = 
             new_binds.timer_hold.timeout_end - current_time;
 
+	 /* TODO/FIXME - localize */
          snprintf(bind->s, bind->len,
                "[%s]\nPress keyboard, mouse or joypad\nand hold ...",
                input_config_bind_map_get_desc(

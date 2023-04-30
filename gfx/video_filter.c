@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 
+#include <compat/strl.h>
 #include <file/file_path.h>
 #include <file/config_file_userdata.h>
 #include <lists/dir_list.h>
@@ -138,12 +139,8 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    unsigned input_fmts, input_fmt, output_fmts, i = 0;
    struct config_file_userdata userdata;
    char key[64], name[64];
-
-   (void)i;
-
-   key[0] = name[0] = '\0';
-
-   snprintf(key, sizeof(key), "filter");
+   name[0] = '\0';
+   strlcpy(key, "filter", sizeof(key));
 
    if (!config_get_array(filt->conf, key, name, sizeof(name)))
    {
@@ -157,21 +154,20 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       return false;
    }
 
-   filt->impl = softfilter_find_implementation(filt, name);
-   if (!filt->impl)
+   if (!(filt->impl = softfilter_find_implementation(filt, name)))
    {
       RARCH_ERR("Could not find implementation.\n");
       return false;
    }
 
-   userdata.conf = filt->conf;
+   userdata.conf      = filt->conf;
    /* Index-specific configs take priority over ident-specific. */
    userdata.prefix[0] = key;
    userdata.prefix[1] = filt->impl->short_ident;
 
    /* Simple assumptions. */
-   filt->pix_fmt = in_pixel_format;
-   input_fmts = filt->impl->query_input_formats();
+   filt->pix_fmt      = in_pixel_format;
+   input_fmts         = filt->impl->query_input_formats();
 
    switch (in_pixel_format)
    {
@@ -331,12 +327,8 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
    unsigned i;
    softfilter_simd_mask_t mask = (softfilter_simd_mask_t)cpu_features_get();
 
-   (void)list;
-
-   filt->plugs = (struct rarch_soft_plug*)
-      calloc(ARRAY_SIZE(soft_plugs_builtin), sizeof(*filt->plugs));
-
-   if (!filt->plugs)
+   if (!(filt->plugs = (struct rarch_soft_plug*)
+      calloc(ARRAY_SIZE(soft_plugs_builtin), sizeof(*filt->plugs))))
       return false;
 
    filt->num_plugs = ARRAY_SIZE(soft_plugs_builtin);
