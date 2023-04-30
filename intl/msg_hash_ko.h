@@ -13507,7 +13507,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT_NR,
-   "%u 포트에 %s 구성됨"
+   "%s가 포트 %u에 구성됨"
    )
 MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,

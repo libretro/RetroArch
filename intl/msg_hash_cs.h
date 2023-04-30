@@ -591,6 +591,10 @@ MSG_HASH(
    "Datum Vytvoření"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "Verze RetroArch"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Verze Gitu"
    )
@@ -2416,6 +2420,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Automatické ztlumení zvuku při použití rychlého převíjení vpřed."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Zrychlení při rychlém přeposílání"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Zrychlení zvuku při rychlém převíjení vpřed. Zabraňuje praskání, ale mění výšku tónu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -6367,6 +6379,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
    "Během získávání určitých úspěchů se na obrazovce zobrazují indikátory."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Úvodní zprávy žebříčku"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Zobrazí popis žebříčku, když se stane aktivním."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Žebříček Odesílání zpráv"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Po dokončení pokusu o sestavení žebříčku se zobrazí zpráva s odeslanou hodnotou."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Neúspěšné zprávy v žebříčku"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Zobrazí zprávu, když se pokus o sestavení žebříčku nezdaří."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Sledování žebříčku"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Zobrazí na obrazovce trackery s aktuální hodnotou aktivních žebříčků."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -13052,6 +13096,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Úspěch odemknut"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Pokus o sestavení žebříčku zahájen"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Pokus o sestavení žebříčku selhal"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "Odesláno %s pro %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,

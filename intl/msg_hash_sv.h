@@ -2322,6 +2322,10 @@ MSG_HASH(
 
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+   "Ta skärmdump"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
    "Spela repris"
    )
@@ -2415,9 +2419,21 @@ MSG_HASH(
    )
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
+   "Installera kärnan"
+)
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
+   "Avinstallera kärna"
+)
 
 
-
+MSG_HASH(
+   MSG_CORE_STEAM_INSTALLING,
+   "Installerar kärna: "
+)
 
 
 #endif
@@ -2429,6 +2445,14 @@ MSG_HASH(
 
 /* Settings > Logging */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
+   "2 (Varning)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_ERROR,
+   "3 (Fel)"
+   )
 
 /* Settings > File Browser */
 
@@ -2580,6 +2604,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    "Visa 'Hjälp'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+   "Visa 'Avsluta RetroArch'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
