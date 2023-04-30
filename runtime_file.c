@@ -731,16 +731,15 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
       enum playlist_sublabel_last_played_style_type timedate_style,
       enum playlist_sublabel_last_played_date_separator_type date_separator)
 {
-   char tmp[64];
-   bool has_am_pm         = false;
    const char *format_str = "";
    size_t _len            = strlcpy(str, msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
 
-   tmp[0]                 = '\0';
-
    if (runtime_log)
    {
+      char tmp[64];
+      bool has_am_pm      = false;
+      tmp[0]              = '\0';
       /* Handle 12-hour clock options
        * > These require extra work, due to AM/PM localisation */
       switch (timedate_style)
