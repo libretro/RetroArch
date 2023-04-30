@@ -781,6 +781,7 @@ static bool content_file_extract_from_archive(
    tmp_path[0]  = '\0';
    msg[0]       = '\0';
 
+   /* TODO/FIXME - localize */
    RARCH_LOG("[Content]: Core requires uncompressed content - "
          "extracting archive to temporary directory.\n");
 
@@ -808,6 +809,7 @@ static bool content_file_extract_from_archive(
    /* Update content path pointer */
    *content_path = tmp_path_ptr;
 
+   /* TODO/FIXME - localize */
    RARCH_LOG("[Content]: Content successfully extracted to: \"%s\".\n",
          tmp_path);
 
@@ -1071,7 +1073,7 @@ static bool content_file_load(
                    * (This disclaimer is out dated but I don't want to remove it)*/
                   if (!CopyFileFromAppW(wcontent_path, wnew_path, false))
                   {
-                     int err = GetLastError();
+                     /* TODO/FIXME - localize */
                      snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read or write)\n",
                         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                         content_path);
@@ -1175,6 +1177,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
 
    if (!special)
    {
+      /* TODO/FIXME - localize */
       snprintf(msg, sizeof(msg),
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
             path_get(RARCH_PATH_SUBSYSTEM));
@@ -1192,6 +1195,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
 
       if (special->num_roms != subsystem->size)
       {
+         /* TODO/FIXME - localize */
          snprintf(msg, sizeof(msg),
                "Libretro core requires %u content files for "
                "subsystem \"%s\", but %u content files were provided.\n",
@@ -1203,6 +1207,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
    }
    else if (subsystem && subsystem->size)
    {
+      /* TODO/FIXME - localize */
       snprintf(msg, sizeof(msg),
             "Libretro core takes no content for subsystem \"%s\", "
             "but %u content files were provided.\n",

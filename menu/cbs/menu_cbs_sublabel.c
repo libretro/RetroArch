@@ -1282,10 +1282,16 @@ static int action_bind_sublabel_systeminfo_controller_entry(
       }
    }
 
-   snprintf(tmp, sizeof(tmp), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO),
-      input_config_get_device_display_name(controller) ? input_config_get_device_display_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-      input_config_get_device_display_name(controller) ? input_config_get_device_config_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-      input_config_get_device_vid(controller), input_config_get_device_pid(controller));
+   snprintf(tmp, sizeof(tmp),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO),
+           input_config_get_device_display_name(controller) 
+         ? input_config_get_device_display_name(controller) 
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+           input_config_get_device_display_name(controller) 
+         ? input_config_get_device_config_name(controller) 
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+           input_config_get_device_vid(controller),
+           input_config_get_device_pid(controller));
    strlcpy(s, tmp, len);
 
    return 0;
@@ -1316,8 +1322,9 @@ static int action_bind_sublabel_cpu_policy_entry_list(
    int idx = atoi(path);
    if (drivers)
    {
-      snprintf(s, len, "%s | Freq: %u MHz\n", drivers[idx]->scaling_governor,
-         drivers[idx]->current_frequency / 1000);
+      size_t _len = strlcpy(s, drivers[idx]->scaling_governor, len);
+      snprintf(s + _len, len - _len, " | Freq: %u MHz\n", 
+            drivers[idx]->current_frequency / 1000);
       return 0;
    }
 
@@ -1370,10 +1377,11 @@ static int action_bind_sublabel_subsystem_add(
    if (subsystem && runloop_st->subsystem_current_count > 0)
    {
       if (content_get_subsystem_rom_id() < subsystem->num_roms)
-         snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO),
-            content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD
-            ? subsystem->roms[content_get_subsystem_rom_id()].desc
-            : subsystem->roms[0].desc);
+         snprintf(s, len,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO),
+               (content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD)
+             ? subsystem->roms[content_get_subsystem_rom_id()].desc
+             : subsystem->roms[0].desc);
    }
 
    return 0;
@@ -1431,13 +1439,12 @@ static int action_bind_sublabel_remap_kbd_sublabel(
    unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
    size_t _len       = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
          len);
-   snprintf(s + _len, len - _len, " %u: %s",
-         user_idx + 1,
-         input_config_get_device_display_name(user_idx) ?
-         input_config_get_device_display_name(user_idx) :
-         (input_config_get_device_name(user_idx) ?
-          input_config_get_device_name(user_idx) :
-          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+   snprintf(s + _len, len - _len, " %u: %s", user_idx + 1,
+           input_config_get_device_display_name(user_idx)
+         ? input_config_get_device_display_name(user_idx)
+         : (input_config_get_device_name(user_idx)
+         ? input_config_get_device_name(user_idx)
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
    return 0;
 }
 
@@ -1448,6 +1455,7 @@ static int action_bind_sublabel_audio_mixer_stream(
       const char *label, const char *path,
       char *s, size_t len)
 {
+   size_t _len;
    char msg[64];
    unsigned              offset = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN);
    audio_mixer_stream_t *stream = audio_driver_mixer_get_stream(offset);
@@ -1484,7 +1492,8 @@ static int action_bind_sublabel_audio_mixer_stream(
          break;
    }
 
-   snprintf(s, len, "%s | %s: %.2f dB", msg,
+   _len = strlcpy(s, msg, len);
+   snprintf(s + _len, len - _len, " | %s: %.2f dB",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME),
          stream->volume);
    return 0;
@@ -1511,16 +1520,15 @@ static int action_bind_sublabel_remap_sublabel(
     * the port to which the corresponding
     * controller is connected... */
    port = settings->uints.input_joypad_index[port];
-
    _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), len);
 
    snprintf(s + _len, len - _len, " %u: %s",
          port + 1,
-         input_config_get_device_display_name(port) ?
-         input_config_get_device_display_name(port) :
-         (input_config_get_device_name(port) ?
-          input_config_get_device_name(port) :
-          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+           input_config_get_device_display_name(port)
+         ? input_config_get_device_display_name(port)
+         : (input_config_get_device_name(port)
+         ? input_config_get_device_name(port)
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
    return 0;
 }
 
@@ -1587,6 +1595,7 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
       const char *label, const char *path,
       char *s, size_t len)
 {
+   size_t _len;
    char buf[512];
    struct netplay_room *room;
    net_driver_state_t *net_st = networking_state_get_ptr();
@@ -1596,12 +1605,12 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
       return -1;
 
    room = &net_st->room_list[room_index];
+   _len = strlcpy(s, msg_hash_to_str(MSG_PROGRAM), len);
 
-   snprintf(s, len,
-      "%s: %s (%s)\n"
+   snprintf(s + _len, len - _len,
+      ": %s (%s)\n"
       "%s: %s (%s)\n"
       "%s: %s ",
-      msg_hash_to_str(MSG_PROGRAM),
       !string_is_empty(room->retroarch_version) ? room->retroarch_version :
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
       (!string_is_empty(room->frontend) &&
@@ -1616,13 +1625,12 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
             room->gamename :
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 
-   if (string_is_empty(room->subsystem_name) ||
-         string_is_equal_case_insensitive(room->subsystem_name, "N/A"))
+   if (     string_is_empty(room->subsystem_name)
+         || string_is_equal_case_insensitive(room->subsystem_name, "N/A"))
       snprintf(buf, sizeof(buf), "(%08lX)",
          (unsigned long)(unsigned)room->gamecrc);
    else
    {
-      size_t _len;
       buf[0 ]     = '(';
       buf[1 ]     = '\0';
       _len        = strlcat(buf, room->subsystem_name, sizeof(buf));
@@ -5234,17 +5242,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
                strlen(label), STRLEN_CONST("_analog_dpad_mode")))
       {
          unsigned i;
+         char key_input_adc_type[64];
+         size_t _len = strlcpy(key_input_adc_type, "input_player", sizeof(key_input_adc_type));
          for (i = 0; i < MAX_USERS; i++)
          {
-            char key_input_adc_type[64];
-            key_input_adc_type[0] = '\0';
-
-            snprintf(key_input_adc_type, sizeof(key_input_adc_type),
-                  "input_player%u_analog_dpad_mode", i + 1);
-
+            snprintf(key_input_adc_type + _len,
+                  sizeof(key_input_adc_type) - _len, "%u", i + 1);
+            strlcat(key_input_adc_type, "_analog_dpad_mode", sizeof(key_input_adc_type));
             if (!string_is_equal(label, key_input_adc_type))
                continue;
-
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_adc_type);
             return 0;
          }

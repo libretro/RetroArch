@@ -3462,16 +3462,17 @@ static bool config_load_file(global_t *global,
    }
 
 #ifdef HAVE_NETWORKGAMEPAD
-   for (i = 0; i < MAX_USERS; i++)
    {
       char tmp[64];
-      bool tmp_bool = false;
-      size_t _len   = strlcpy(tmp, "network_remote_enable_user_p", sizeof(tmp));
-      snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
-
-      if (config_get_bool(conf, tmp, &tmp_bool))
-         configuration_set_bool(settings,
-               settings->bools.network_remote_enable_user[i], tmp_bool);
+      size_t _len = strlcpy(tmp, "network_remote_enable_user_p", sizeof(tmp));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         bool tmp_bool = false;
+         snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
+         if (config_get_bool(conf, tmp, &tmp_bool))
+            configuration_set_bool(settings,
+                  settings->bools.network_remote_enable_user[i], tmp_bool);
+      }
    }
 #endif
 
@@ -3509,26 +3510,27 @@ static bool config_load_file(global_t *global,
             *size_settings[i].ptr  = *size_settings[i].ptr * 1024 * 1024;
    }
 
-   for (i = 0; i < MAX_USERS; i++)
    {
-      char buf[64];
       char prefix[24];
-      size_t _len;
-      buf[0]    = '\0';
-      _len      = strlcpy(prefix, "input_player", sizeof(prefix));
-      snprintf(prefix + _len, sizeof(prefix) - _len, "%u", i + 1);
+      size_t _len = strlcpy(prefix, "input_player", sizeof(prefix));
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         char buf[64];
+         buf[0]    = '\0';
+         snprintf(prefix + _len, sizeof(prefix) - _len, "%u", i + 1);
 
-      strlcpy(buf, prefix, sizeof(buf));
-      strlcat(buf, "_analog_dpad_mode", sizeof(buf));
-      CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], buf);
+         strlcpy(buf, prefix, sizeof(buf));
+         strlcat(buf, "_analog_dpad_mode", sizeof(buf));
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], buf);
 
-      strlcpy(buf, prefix, sizeof(buf));
-      strlcat(buf, "_joypad_index", sizeof(buf));
-      CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], buf);
+         strlcpy(buf, prefix, sizeof(buf));
+         strlcat(buf, "_joypad_index", sizeof(buf));
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], buf);
 
-      strlcpy(buf, prefix, sizeof(buf));
-      strlcat(buf, "_mouse_index", sizeof(buf));
-      CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], buf);
+         strlcpy(buf, prefix, sizeof(buf));
+         strlcat(buf, "_mouse_index", sizeof(buf));
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], buf);
+      }
    }
 
    /* LED map for use by the led driver */

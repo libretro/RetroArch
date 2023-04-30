@@ -3958,6 +3958,7 @@ void video_driver_frame(const void *data, unsigned width,
       tmp[0]           = '\0';
       len              = 0;
 
+      /* TODO/FIXME - localize */
       if (video_st->frame_delay_target > 0)
          len = snprintf(tmp, sizeof(latency_stats),
                " Frame Delay: %2u ms\n"
@@ -3983,10 +3984,12 @@ void video_driver_frame(const void *data, unsigned width,
 
       if (len)
       {
-         strlcpy(latency_stats, "LATENCY\n", sizeof(latency_stats));
-         strlcat(latency_stats, tmp, sizeof(latency_stats));
+	      /* TODO/FIXME - localize */
+	      strlcpy(latency_stats, "LATENCY\n", sizeof(latency_stats));
+	      strlcat(latency_stats, tmp, sizeof(latency_stats));
       }
 
+      /* TODO/FIXME - localize */
       snprintf(video_info.stat_text,
             sizeof(video_info.stat_text),
             "CORE AV_INFO\n"

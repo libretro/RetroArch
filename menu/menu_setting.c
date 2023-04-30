@@ -625,16 +625,6 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    return 0;
 }
 
-#if 0
-static void setting_get_string_representation_hex(rarch_setting_t *setting,
-      char *s, size_t len)
-{
-   if (setting)
-      snprintf(s, len, "%08x",
-            *setting->value.target.unsigned_integer);
-}
-#endif
-
 void setting_get_string_representation_hex_and_uint(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -6198,12 +6188,9 @@ static void setting_get_string_representation_video_frame_delay(rarch_setting_t 
 
       if (*setting->value.target.unsigned_integer == 0)
       {
-         if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
-            snprintf(s, len, "%s",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC));
-         else
-            snprintf(s, len, "%s (%u %s)",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC),
+	      size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC), len);
+         if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
+            snprintf(s + _len, len - _len, " (%u %s)",
                   video_st->frame_delay_effective,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
       }
@@ -6694,8 +6681,6 @@ static void setting_get_string_representation_uint_user_language(
 {
    const char *modes[RETRO_LANGUAGE_LAST];
    uint32_t translated[RETRO_LANGUAGE_LAST];
-   const char *rating;
-
 #define LANG_DATA(STR) \
    modes[RETRO_LANGUAGE_##STR]      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_##STR); \
    translated[RETRO_LANGUAGE_##STR] = LANGUAGE_PROGRESS_##STR##_TRANSLATED; \
@@ -6745,18 +6730,17 @@ static void setting_get_string_representation_uint_user_language(
    LANG_DATA(HUNGARIAN)
 
    if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_ENGLISH)
+      snprintf(s, len, "%s", modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)]);
+   else
    {
-      snprintf(s, len, "%s",
-         modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)]);
-   } else {
-      rating = msg_hash_to_str(
-         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 95 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_95_PLUS :
-         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 74 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_75_PLUS :
-         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 49 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_50_PLUS :
-         translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 24 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_25_PLUS :
-         MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_25_MINUS);
+      const char *rating = msg_hash_to_str(
+            translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 95 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_95_PLUS :
+            translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 74 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_75_PLUS :
+            translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 49 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_50_PLUS :
+            translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 24 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_25_PLUS :
+            MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_25_MINUS);
       snprintf(s, len, "%s [%s]",
-         modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], rating);
+            modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], rating);
    }
 }
 #endif
@@ -7598,15 +7582,11 @@ static void get_string_representation_input_device_index(
       if (!string_is_empty(device_name))
       {
          unsigned idx = input_config_get_device_name_index(map);
+         size_t _len  = strlcpy(s, device_name, len);
 
          /* If idx is non-zero, it's part of a set */
          if (idx > 0)
-            snprintf(s, len,
-                  "%s (%u)",
-                  device_name,
-                  idx);
-         else
-            strlcpy(s, device_name, len);
+            snprintf(s + _len, len - _len, " (%u)", idx);
       }
       else
          snprintf(s, len,

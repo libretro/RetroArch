@@ -2252,39 +2252,29 @@ bool command_event(enum event_command cmd, void *data)
             settings->bools.run_ahead_enabled =
                !(settings->bools.run_ahead_enabled);
 
-            if (!settings->bools.run_ahead_enabled)
-            {
-               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_DISABLED),
-                     1, 100, false,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            }
-            else
+            if (settings->bools.run_ahead_enabled)
             {
                char msg[256];
-
-               if (!settings->bools.run_ahead_secondary_instance)
-               {
-                  snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED),
+               if (settings->bools.run_ahead_secondary_instance)
+                  snprintf(msg, sizeof(msg),
+                        msg_hash_to_str(MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE),
                         settings->uints.run_ahead_frames);
-
-                  runloop_msg_queue_push(
-                        msg, 1, 100, false,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               }
                else
-               {
-                  snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE),
+                  snprintf(msg, sizeof(msg),
+                        msg_hash_to_str(MSG_RUNAHEAD_ENABLED),
                         settings->uints.run_ahead_frames);
-
-                  runloop_msg_queue_push(
-                        msg, 1, 100, false,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               }
+               runloop_msg_queue_push(msg, 1, 100, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+                     MESSAGE_QUEUE_CATEGORY_INFO);
 
                /* Disable preemptive frames */
                settings->bools.preemptive_frames_enable = false;
                preempt_deinit(runloop_st);
             }
+            else
+               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_DISABLED),
+                     1, 100, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
 #endif
          break;
@@ -2303,11 +2293,9 @@ bool command_event(enum event_command cmd, void *data)
             settings->bools.preemptive_frames_hide_warnings = old_warn;
 
             if (old_inited && !runloop_st->preempt_data)
-            {
                runloop_msg_queue_push(msg_hash_to_str(MSG_PREEMPT_DISABLED),
                      1, 100, false,
                      NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            }
             else if (runloop_st->preempt_data)
             {
                char msg[256];

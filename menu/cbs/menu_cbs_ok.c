@@ -2121,13 +2121,13 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_REMAPPING_FILE:
 #ifdef HAVE_CONFIGFILE
          {
+            char conf_key[64];
             config_file_t     *conf = config_file_new_from_path_to_string(
                   action_path);
             retro_ctx_controller_info_t pad;
             unsigned current_device = 0;
             unsigned port           = 0;
             int conf_val            = 0;
-            char conf_key[64];
             flush_char              = msg_hash_to_str(flush_id);
 
             conf_key[0]             = '\0';
@@ -2136,16 +2136,17 @@ static int generic_action_ok(const char *path,
             {
                if (input_remapping_load_file(conf, action_path))
                {
+                  size_t _len = strlcpy(conf_key, "input_libretro_device_p", sizeof(conf_key));
                   for (port = 0; port < MAX_USERS; port++)
                   {
-                     snprintf(conf_key, sizeof(conf_key), "input_libretro_device_p%u", port + 1);
+                     snprintf(conf_key + _len, sizeof(conf_key) - _len, "%u", port + 1);
                      if (!config_get_int(conf, conf_key, &conf_val))
                         continue;
 
                      current_device = input_config_get_device(port);
                      input_config_set_device(port, current_device);
-                     pad.port   = port;
-                     pad.device = current_device;
+                     pad.port       = port;
+                     pad.device     = current_device;
                      core_set_controller_port_device(&pad);
                   }
                }
@@ -3693,20 +3694,20 @@ static int action_ok_remap_file_flush(const char *path,
    /* Log result */
    if (success)
    {
+      /* TODO/FIXME - localize */
       RARCH_LOG(
             "[Remaps]: Saved input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");
-
       snprintf(msg, sizeof(msg), "%s \"%s\"",
             msg_hash_to_str(MSG_REMAP_FILE_FLUSHED),
             remapfile);
    }
    else
    {
+      /* TODO/FIXME - localize */
       RARCH_LOG(
             "[Remaps]: Failed to save input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");
-
       snprintf(msg, sizeof(msg), "%s \"%s\"",
             msg_hash_to_str(MSG_REMAP_FILE_FLUSH_FAILED),
             remapfile);
@@ -3857,10 +3858,10 @@ static int action_ok_set_switch_cpu_profile(const char *path,
    char command[PATH_MAX_LENGTH] = {0};
 #ifdef HAVE_LAKKA_SWITCH
    char* profile_name            = SWITCH_CPU_PROFILES[entry_idx];
-
+   /* TODO/FIXME - localize */
    snprintf(command, sizeof(command), "cpu-profile set '%s'", profile_name);
-
    system(command);
+   /* TODO/FIXME - localize */
    snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
 #else
    unsigned profile_clock          = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
@@ -3877,6 +3878,7 @@ static int action_ok_set_switch_cpu_profile(const char *path,
       clkrstSetClockRate(&session, profile_clock);
       clkrstCloseSession(&session);
    }
+   /* TODO/FIXME - localize */
    snprintf(command, sizeof(command),
          "Current Clock set to %i", profile_clock);
 #endif
@@ -3894,23 +3896,15 @@ static int action_ok_set_switch_gpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char command[PATH_MAX_LENGTH];
-   char            *profile_name  = SWITCH_GPU_PROFILES[entry_idx];
-
-   command[0]                     = '\0';
-
-   snprintf(command, sizeof(command),
-         "gpu-profile set '%s'",
-         profile_name);
-
+   char *profile_name  = SWITCH_GPU_PROFILES[entry_idx];
+   size_t _len         = strlcpy(command, "gpu-profile set ", sizeof(command));
+   snprintf(command + _len, sizeof(command) - _len, "'%s'", profile_name);
    system(command);
-
-   snprintf(command, sizeof(command),
-         "Current profile set to %s",
-         profile_name);
-
+   /* TODO/FIXME - localize */
+   strlcpy(command, "Current profile set to ", sizeof(command));
+   strlcat(command, profile_name, sizeof(command));
    runloop_msg_queue_push(command, 1, 90, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
    return -1;
 }
 
@@ -4049,7 +4043,6 @@ int action_ok_core_option_dropdown_list(const char *path,
    return 0;
 
 push_dropdown_list:
-
    /* If this option is not a boolean toggle,
     * push drop-down list */
    snprintf(option_path_str, sizeof(option_path_str),
@@ -7167,16 +7160,19 @@ static int action_ok_video_resolution(const char *path,
       video_driver_set_video_mode(width, height, true);
 #ifdef GEKKO
       if (width == 0 || height == 0)
-         snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT));
+         snprintf(msg, sizeof(msg),
+               msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT));
       else
 #endif
       {
          if (!string_is_empty(desc))
-            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DESC), 
-               width, height, desc);
+            snprintf(msg, sizeof(msg),
+                  msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DESC), 
+                  width, height, desc);
          else
-            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC), 
-               width, height);
+            snprintf(msg, sizeof(msg),
+                  msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC), 
+                  width, height);
       }
       runloop_msg_queue_push(msg, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
