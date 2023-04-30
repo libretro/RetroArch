@@ -4846,6 +4846,7 @@ static void setting_get_string_representation_int_audio_wasapi_sh_buffer_length(
 }
 #endif
 
+#if !defined(RARCH_CONSOLE)
 static void setting_get_string_representation_string_audio_device(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -4857,6 +4858,7 @@ static void setting_get_string_representation_string_audio_device(rarch_setting_
    else
       strlcpy(s, setting->value.target.string, len);
 }
+#endif
 
 static void setting_get_string_representation_crt_switch_resolution_super(
       rarch_setting_t *setting,
@@ -6428,6 +6430,7 @@ static void setting_get_string_representation_uint_autosave_interval(
 }
 #endif
 
+#ifdef HAVE_BSV_MOVIE
 static void setting_get_string_representation_uint_replay_checkpoint_interval(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -6443,6 +6446,7 @@ static void setting_get_string_representation_uint_replay_checkpoint_interval(
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
 }
+#endif
 
 #if defined(HAVE_NETWORKING)
 static void setting_get_string_representation_netplay_mitm_server(

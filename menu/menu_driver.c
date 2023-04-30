@@ -4141,6 +4141,7 @@ void get_current_menu_value(struct menu_state *menu_st,
    strlcpy(s, entry_label, len);
 }
 
+#ifdef HAVE_ACCESSIBILITY
 static void menu_driver_get_current_menu_label(struct menu_state *menu_st,
       char *s, size_t len)
 {
@@ -4162,6 +4163,7 @@ static void menu_driver_get_current_menu_label(struct menu_state *menu_st,
 
    strlcpy(s, entry_label, len);
 }
+#endif
 
 static void menu_driver_get_current_menu_sublabel(
       struct menu_state *menu_st,

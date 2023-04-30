@@ -2499,11 +2499,10 @@ bool command_event(enum event_command cmd, void *data)
          return false;
       case CMD_EVENT_PLAY_REPLAY:
       {
-         bool res = false;
 #ifdef HAVE_BSV_MOVIE
          input_driver_state_t *input_st = input_state_get_ptr();
          char replay_path[PATH_MAX_LENGTH];
-         res = true;
+         bool res = true;
          /* TODO: Consider extending the current replay if we start recording during a playback */
          if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
             res = false;
@@ -2513,7 +2512,7 @@ bool command_event(enum event_command cmd, void *data)
             res = false;
          if (res)
             res = movie_start_playback(input_st, replay_path);
-         if(!res)
+         if (!res)
          {
             const char *movie_fail_str        =
                msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE);
@@ -2529,14 +2528,13 @@ bool command_event(enum event_command cmd, void *data)
       }
       case CMD_EVENT_RECORD_REPLAY:
       {
-         bool res = false;
 #ifdef HAVE_BSV_MOVIE
-         input_driver_state_t *input_st = input_state_get_ptr();
-         int replay_slot = settings->ints.replay_slot;
          char replay_path[PATH_MAX_LENGTH];
+         bool res                       = true;
+         input_driver_state_t *input_st = input_state_get_ptr();
+         int replay_slot                = settings->ints.replay_slot;
          if (settings->bools.replay_auto_index)
             replay_slot += 1;
-         res = true;
          /* TODO: Consider cloning and extending the current replay if we start recording during a recording */
          if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
             res = false;
@@ -2544,14 +2542,12 @@ bool command_event(enum event_command cmd, void *data)
             res = movie_stop(input_st);
          if (!runloop_get_replay_path(replay_path, sizeof(replay_path), replay_slot))
             res = false;
-         if(res)
+         if (res)
             res = movie_start_record(input_st, replay_path);
 
-         if(res && settings->bools.replay_auto_index)
-         {
+         if (res && settings->bools.replay_auto_index)
             configuration_set_int(settings, settings->ints.replay_slot, replay_slot);
-         }
-         if(!res)
+         if (!res)
          {
              const char *movie_rec_fail_str        =
                msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);

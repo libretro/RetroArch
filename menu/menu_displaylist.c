@@ -1637,13 +1637,13 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    int controller;
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
    gfx_ctx_ident_t ident_info;
+   const char *tmp_string                = NULL;
 #endif
    char tmp[8192];
 #ifdef ANDROID
    bool perms                            = false;
 #endif
    unsigned count                        = 0;
-   const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    const char *menu_driver               = menu_driver_ident();
    size_t len                            = strlcpy(tmp,
