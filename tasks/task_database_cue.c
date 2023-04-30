@@ -254,7 +254,7 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
          string_remove_all_whitespace(s, raw_game_id);
          cue_append_multi_disc_suffix(s, filename);
-         return true;
+         return false;
       }
    }
 
