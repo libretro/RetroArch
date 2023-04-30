@@ -2544,7 +2544,6 @@ bool command_event(enum event_command cmd, void *data)
             res = false;
          if (res)
             res = movie_start_record(input_st, replay_path);
-
          if (res && settings->bools.replay_auto_index)
             configuration_set_int(settings, settings->ints.replay_slot, replay_slot);
          if (!res)
@@ -2556,17 +2555,17 @@ bool command_event(enum event_command cmd, void *data)
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             RARCH_ERR("%s.\n", movie_rec_fail_str);
          }
-#endif
          return res;
+#else
+         break;
+#endif
       }
       case CMD_EVENT_HALT_REPLAY:
-      {
 #ifdef HAVE_BSV_MOVIE
          input_driver_state_t *input_st = input_state_get_ptr();
          movie_stop(input_st);
 #endif
-         return true;
-      }
+         break;
       case CMD_EVENT_SAVE_STATE:
       case CMD_EVENT_SAVE_STATE_TO_RAM:
          {
