@@ -2562,8 +2562,7 @@ bool command_event(enum event_command cmd, void *data)
       }
       case CMD_EVENT_HALT_REPLAY:
 #ifdef HAVE_BSV_MOVIE
-         input_driver_state_t *input_st = input_state_get_ptr();
-         movie_stop(input_st);
+         movie_stop(input_state_get_ptr());
 #endif
          break;
       case CMD_EVENT_SAVE_STATE:
