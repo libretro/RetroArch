@@ -104,7 +104,8 @@ static void menu_action_setting_audio_mixer_stream_volume(
    if (offset >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
-   snprintf(s, len, "%.2f dB", audio_driver_mixer_get_stream_volume(offset));
+   snprintf(s, len, "%.2f", audio_driver_mixer_get_stream_volume(offset));
+   strlcat(s, " dB", len);
 }
 #endif
 
@@ -653,9 +654,9 @@ static void menu_action_setting_disp_set_label_cpu_policy(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned policyid = atoi(path);
+   unsigned policyid              = atoi(path);
    cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
-   cpu_scaling_driver_t *d = drivers[policyid];
+   cpu_scaling_driver_t *d        = drivers[policyid];
 
    *s = '\0';
    *w = 0;
@@ -970,6 +971,7 @@ static void menu_action_setting_disp_set_label_cheat_match(
    unsigned int curr_val     = 0;
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_VIEW, cheat_manager_state.match_idx, &address, &address_mask, &prev_val, &curr_val);
 
+   /* TODO/FIXME - localize */
    snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val);
    *w = 19;
    strlcpy(s2, path, len2);
@@ -986,6 +988,7 @@ static void menu_action_setting_disp_set_label_perf_counters_common(
    if (!counters[offset]->call_cnt)
       return;
 
+   /* TODO/FIXME - localize */
    snprintf(s, len,
          "%" PRIu64 " ticks, %" PRIu64 " runs.",
          ((uint64_t)counters[offset]->total /
