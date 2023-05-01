@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <locale.h>
 
 #include <sys/stat.h>
 
@@ -67,6 +68,31 @@
 #endif
 
 #endif
+
+/* Time format strings with AM-PM designation require special
+ * handling due to platform dependence */
+void strftime_am_pm(char *s, size_t len, const char* format,
+      const void *ptr)
+{
+   char *local = NULL;
+   const struct tm *timeptr = (const struct tm*)ptr;
+
+   /* Ensure correct locale is set
+    * > Required for localised AM/PM strings */
+   setlocale(LC_TIME, "");
+
+   strftime(s, len, format, timeptr);
+#if !(defined(__linux__) && !defined(ANDROID))
+   if ((local = local_to_utf8_string_alloc(s)))
+   {
+	   if (!string_is_empty(local))
+		   strlcpy(s, local, len);
+
+      free(local);
+      local = NULL;
+   }
+#endif
+}
 
 /**
  * Create a new linked list with one node in it
