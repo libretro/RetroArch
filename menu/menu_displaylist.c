@@ -1920,9 +1920,10 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
          if (memory_used != 0 && memory_total != 0)
          {
-            snprintf(tmp, sizeof(tmp),
-                  "%s: %" PRIu64 "/%" PRIu64 " MB",
-                  msg_hash_to_str(MSG_MEMORY),
+            size_t _len = strlcpy(tmp, msg_hash_to_str(MSG_MEMORY),
+                  sizeof(tmp));
+            snprintf(tmp + _len, sizeof(tmp) - _len,
+                  ": %" PRIu64 "/%" PRIu64 " MB",
                   BYTES_TO_MB(memory_used),
                   BYTES_TO_MB(memory_total)
                   );
@@ -6287,18 +6288,27 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       {
          if (!show_passworded)
             continue;
-         snprintf(passworded, sizeof(passworded), "[%s] ", msg_room_pwd);
+         strlcpy(passworded, "[",  sizeof(passworded));
+         strlcat(passworded, msg_room_pwd, sizeof(passworded));
+         strlcat(passworded, "] ", sizeof(passworded));
       }
       else
          *passworded = '\0';
 
+      strlcpy(buf, passworded,     sizeof(buf));
+      strlcat(buf, room_type,      sizeof(buf));
+      strlcat(buf, ": ",           sizeof(buf));
+      strlcat(buf, room->nickname, sizeof(buf));
+
       if (!room->lan && !string_is_empty(room->country))
-         snprintf(country, sizeof(country), " (%s)", room->country);
+      {
+         strlcpy(country, " (",          sizeof(country));
+         strlcat(country, room->country, sizeof(country));
+         strlcat(country, ")",           sizeof(country));
+	 strlcat(buf, country,           sizeof(buf));
+      }
       else
          *country = '\0';
-
-      snprintf(buf, sizeof(buf), "%s%s: %s%s",
-         passworded, room_type, room->nickname, country);
 
       if (menu_entries_append(list, buf,
             cnc_netplay_room,
@@ -11307,8 +11317,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               && (max_users > 1)
                               && !settings->bools.menu_show_sublabels)
                         {
-                           snprintf(desc_label, sizeof(desc_label),
-                                 "%s [%s %u]", descriptor, msg_val_port, port+1);
+                           snprintf(desc_label, sizeof(desc_label), "%s [%s %u]", 
+                                 descriptor, msg_val_port, port + 1);
                            strlcpy(descriptor, desc_label, sizeof(descriptor));
                         }
 
@@ -11455,11 +11465,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         if (!string_is_empty(cd_info.serial))
                         {
                            char serial[256];
-                           snprintf(serial, sizeof(serial),
-                                 "%s#: %s",
+                           strlcpy(serial, 
                                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL),
-                                 cd_info.serial
-                                 );
+                                 sizeof(serial));
+                           strlcat(serial, "#: ", sizeof(serial));
+                           strlcat(serial, cd_info.serial, sizeof(serial));
 
                            if (menu_entries_append(info->list,
                                     serial,
@@ -11488,8 +11498,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         {
                            char release_date[256];
                            /* TODO/FIXME - Localize */
-                           snprintf(release_date, sizeof(release_date),
-                                 "Release Date: %s", cd_info.release_date);
+                           strlcpy(release_date, "Release Date: ",
+                                 sizeof(release_date));
+                           strlcat(release_date, cd_info.release_date,
+                                 sizeof(release_date));
 
                            if (menu_entries_append(info->list,
                                     release_date,
@@ -11770,20 +11782,24 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                fgets(current_profile, PATH_MAX_LENGTH, profile);
                pclose(profile);
                /* TODO/FIXME - localize */
-               snprintf(text, sizeof(text), "Current profile: %s",
-                     current_profile);
+               strlcpy(text, "Current profile: ", sizeof(text));
+               strlcat(text, current_profile, sizeof(text));
 #else
-               u32 currentClock = 0;
-               if (hosversionBefore(8, 0, 0))
-                  pcvGetClockRate(PcvModule_CpuBus, &currentClock);
-               else
                {
-                  ClkrstSession session = {0};
-                  clkrstOpenSession(&session, PcvModuleId_CpuBus, 3);
-                  clkrstGetClockRate(&session, &currentClock);
-                  clkrstCloseSession(&session);
+                  size_t _len;
+                  u32 currentClock = 0;
+                  if (hosversionBefore(8, 0, 0))
+                     pcvGetClockRate(PcvModule_CpuBus, &currentClock);
+                  else
+                  {
+                     ClkrstSession session = {0};
+                     clkrstOpenSession(&session, PcvModuleId_CpuBus, 3);
+                     clkrstGetClockRate(&session, &currentClock);
+                     clkrstCloseSession(&session);
+                  }
+                  _len = strlcpy(text, "Current clock: ", sizeof(text));
+                  snprintf(text + _len, sizeof(text) - _len, "%i", currentClock);
                }
-               snprintf(text, sizeof(text), "Current Clock: %i", currentClock);
 #endif
                if (menu_entries_append(info->list,
                         text, "", 0, MENU_INFO_MESSAGE,
