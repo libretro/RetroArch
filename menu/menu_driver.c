@@ -3975,7 +3975,7 @@ void menu_entries_build_scroll_indices(
       if (type == FILE_TYPE_DIRECTORY)
          is_dir = true;
 
-      if ((current_is_dir && !is_dir) || (first > current))
+      if ((current_is_dir && !is_dir) || (first != current))
       {
          /* Add scroll index */
          menu_st->scroll.index_list[menu_st->scroll.index_size]   = i;
