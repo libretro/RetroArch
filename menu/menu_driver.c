@@ -8425,11 +8425,9 @@ size_t menu_update_fullscreen_thumbnail_label(
       char *s, size_t len,
       bool is_quick_menu, const char *title)
 {
+   char tmpstr[64];
    menu_entry_t selected_entry;
    const char *thumbnail_label     = NULL;
-
-   char tmpstr[64];
-   tmpstr[0]                       = '\0';
 
    /* > Get menu entry */
    MENU_ENTRY_INITIALIZE(selected_entry);
@@ -8442,32 +8440,35 @@ size_t menu_update_fullscreen_thumbnail_label(
       thumbnail_label = selected_entry.rich_label;
    /* > State slot label */
    else if (is_quick_menu && (
-            string_is_equal(selected_entry.label, "state_slot") ||
-            string_is_equal(selected_entry.label, "loadstate") ||
-            string_is_equal(selected_entry.label, "savestate")
+               string_is_equal(selected_entry.label, "state_slot")
+            || string_is_equal(selected_entry.label, "loadstate")
+            || string_is_equal(selected_entry.label, "savestate")
          ))
    {
-      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+      size_t _len = strlcpy(tmpstr, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+            sizeof(tmpstr));
+      snprintf(tmpstr + _len, sizeof(tmpstr) - _len, " %d",
             config_get_ptr()->ints.state_slot);
       thumbnail_label = tmpstr;
    }
    else if (is_quick_menu && (
-            string_is_equal(selected_entry.label, "replay_slot") ||
-            string_is_equal(selected_entry.label, "record_replay") ||
-            string_is_equal(selected_entry.label, "play_replay") ||
-            string_is_equal(selected_entry.label, "halt_replay")
+               string_is_equal(selected_entry.label, "replay_slot")
+            || string_is_equal(selected_entry.label, "record_replay")
+            || string_is_equal(selected_entry.label, "play_replay")
+            || string_is_equal(selected_entry.label, "halt_replay")
          ))
    {
-      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REPLAY_SLOT),
+      size_t _len = strlcpy(tmpstr, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REPLAY_SLOT),
+            sizeof(tmpstr));
+      snprintf(tmpstr + _len, sizeof(tmpstr) - _len, " %d",
                config_get_ptr()->ints.replay_slot);
       thumbnail_label = tmpstr;
    }
    else if (string_to_unsigned(selected_entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
    {
-      snprintf(tmpstr, sizeof(tmpstr), "%s %d",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+      size_t _len = strlcpy(tmpstr, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+            sizeof(tmpstr));
+      snprintf(tmpstr + _len, sizeof(tmpstr) - _len, " %d",
             string_to_unsigned(selected_entry.path));
       thumbnail_label = tmpstr;
    }
@@ -8492,8 +8493,8 @@ bool menu_is_running_quick_menu(void)
                 | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
    menu_entry_get(&entry, 0, 0, NULL, true);
 
-   return string_is_equal(entry.label, "resume_content") ||
-          string_is_equal(entry.label, "state_slot");
+   return    string_is_equal(entry.label, "resume_content")
+          || string_is_equal(entry.label, "state_slot");
 }
 
 bool menu_is_nonrunning_quick_menu(void)
