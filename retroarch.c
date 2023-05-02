@@ -286,6 +286,7 @@ enum
    RA_OPT_MAX_FRAMES_SCREENSHOT,
    RA_OPT_MAX_FRAMES_SCREENSHOT_PATH,
    RA_OPT_SET_SHADER,
+   RA_OPT_DATABASE_SCAN,
    RA_OPT_ACCESSIBILITY,
    RA_OPT_LOAD_MENU_ON_ERROR
 };
@@ -4932,8 +4933,7 @@ static void retroarch_print_help(const char *arg0)
          "Show version.\n"
          "      --features                 "
          "Print available features compiled into program.\n"
-         ,
-         sizeof(buf));
+         , sizeof(buf));
 #ifdef HAVE_MENU
    strlcat(buf,
          "      --menu                     "
@@ -4942,8 +4942,7 @@ static void retroarch_print_help(const char *arg0)
          "  starts directly in menu. If no arguments are passed to\n"
          "                                 "
          "  the program, it is equivalent to using --menu as only argument.\n"
-         ,
-         sizeof(buf));
+         , sizeof(buf));
 #endif
 
 #ifdef HAVE_CONFIGFILE
@@ -5011,14 +5010,24 @@ static void retroarch_print_help(const char *arg0)
          "  files are loaded as multiple arguments. If a content\n"
          "                                 "
          "  file is skipped, use a blank (\"\") command line argument.\n"
+         , sizeof(buf));
+   strlcat(buf,
          "                                 "
          "  Content must be loaded in an order which depends on the\n"
          "                                 "
          "  particular subsystem used. See verbose log output to learn\n"
          "                                 "
-         , sizeof(buf));
-   strlcat(buf,
          "  how a particular subsystem wants content to be loaded.\n"
+         , sizeof(buf));
+
+#ifdef HAVE_LIBRETRODB
+   strlcat(buf,
+         "      --scan=PATH|FILE           "
+         "Import content from path.\n"
+         , sizeof(buf));
+#endif
+
+   strlcat(buf,
          "  -f, --fullscreen               "
          "Start the program in fullscreen regardless of config setting.\n"
          "      --set-shader=PATH          "
@@ -5063,7 +5072,8 @@ static void retroarch_print_help(const char *arg0)
          "Check frames when using netplay.\n"
          , sizeof(buf));
 #ifdef HAVE_NETWORK_CMD
-   strlcat(buf, "      --command                  "
+   strlcat(buf,
+         "      --command                  "
          "Sends a command over UDP to an already running program process.\n"
          "                                 "
          "  Available commands are listed if command is invalid.\n"
@@ -5082,23 +5092,26 @@ static void retroarch_print_help(const char *arg0)
          , sizeof(buf));
 #endif
 
-   strlcat(buf, "  -r, --record=FILE              "
+   strlcat(buf,
+         "  -r, --record=FILE              "
          "Path to record video file. Using mkv extension is recommended.\n"
          "      --recordconfig             "
          "Path to settings used during recording.\n"
          "      --size=WIDTHxHEIGHT        "
          "Overrides output video size when recording.\n"
-         ,
-         sizeof(buf));
+         , sizeof(buf));
 
    fputs(buf, stdout);
    buf[0] = '\0';
 
-   strlcat(buf, "  -D, --detach                   "
+   strlcat(buf,
+         "  -D, --detach                   "
          "Detach program from the running console. Not relevant for all platforms.\n"
          "      --max-frames=NUMBER        "
          "Runs for the specified number of frames, then exits.\n"
          , sizeof(buf));
+
+
 
 #ifdef HAVE_PATCH
    strlcat(buf,
@@ -5123,8 +5136,10 @@ static void retroarch_print_help(const char *arg0)
 #endif
 
 #ifdef HAVE_ACCESSIBILITY
-   strlcat(buf, "      --accessibility            "
-         "Enables accessibilty for blind users using text-to-speech.\n", sizeof(buf));
+   strlcat(buf,
+         "      --accessibility            "
+         "Enables accessibilty for blind users using text-to-speech.\n"
+         , sizeof(buf));
 #endif
 
    strlcat(buf,
@@ -5136,8 +5151,7 @@ static void retroarch_print_help(const char *arg0)
          "Path for save files (*.srm). (DEPRECATED, use --appendconfig and savefile_directory)\n"
          "  -S, --savestate=PATH           "
          "Path for the save state files (*.state). (DEPRECATED, use --appendconfig and savestate_directory)\n"
-         ,
-         sizeof(buf));
+         , sizeof(buf));
 
    fputs(buf, stdout);
 }
@@ -5280,6 +5294,11 @@ end:
 }
 #endif
 
+#ifdef HAVE_LIBRETRODB
+void handle_dbscan_finished(retro_task_t *task,
+      void *task_data, void *user_data, const char *err);
+#endif
+
 /**
  * retroarch_parse_input_and_config:
  * @argc                 : Count of (commandline) arguments.
@@ -5308,6 +5327,10 @@ static bool retroarch_parse_input_and_config(
    settings_t          *settings   = config_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    access_state_t *access_st       = access_state_get_ptr();
+#endif
+#ifdef HAVE_LIBRETRODB
+   retro_task_callback_t cb_task_dbscan
+                                   = NULL;
 #endif
 
    const struct option opts[]      = {
@@ -5364,6 +5387,9 @@ static bool retroarch_parse_input_and_config(
       { "accessibility",      0, NULL, RA_OPT_ACCESSIBILITY},
       { "load-menu-on-error", 0, NULL, RA_OPT_LOAD_MENU_ON_ERROR },
       { "entryslot",          1, NULL, 'e' },
+#ifdef HAVE_LIBRETRODB
+      { "scan",               1, NULL, RA_OPT_DATABASE_SCAN },
+#endif
       { NULL, 0, NULL, 0 }
    };
 
@@ -5530,6 +5556,15 @@ static bool retroarch_parse_input_and_config(
 
                /* Cache log file path override */
                rarch_log_file_set_override(optarg);
+               break;
+
+            case RA_OPT_MENU:
+               explicit_menu = true;
+               break;
+            case RA_OPT_DATABASE_SCAN:
+#ifdef HAVE_LIBRETRODB
+               verbosity_enable();
+#endif
                break;
 
             /* Must handle '?' otherwise you get an infinite loop */
@@ -5914,6 +5949,38 @@ static bool retroarch_parse_input_and_config(
                      RARCH_WARN("--entryslot argument \"%s\" is not a valid "
                         "entry state slot index. Ignoring.\n", optarg);
                }
+               break;
+            case RA_OPT_DATABASE_SCAN:
+#ifdef HAVE_LIBRETRODB
+               {
+                  settings_t *settings           = config_get_ptr();
+                  bool show_hidden_files         = settings->bools.show_hidden_files;
+                  const char *directory_playlist = settings->paths.directory_playlist;
+                  const char *path_content_db    = settings->paths.path_content_database;
+                  int reinit_flags               = DRIVERS_CMD_ALL &
+                        ~(DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK | DRIVER_INPUT_MASK | DRIVER_MIDI_MASK);
+
+                  drivers_init(settings, reinit_flags, false);
+                  retroarch_init_task_queue();
+
+                  if (explicit_menu)
+                     cb_task_dbscan = handle_dbscan_finished;
+
+                  task_push_dbscan(
+                        directory_playlist,
+                        path_content_db,
+                        optarg, path_is_directory(optarg),
+                        show_hidden_files,
+                        cb_task_dbscan);
+
+                  if (!explicit_menu)
+                  {
+                     task_queue_wait(NULL, NULL);
+                     driver_uninit(DRIVERS_CMD_ALL);
+                     exit(0);
+                  }
+               }
+#endif
                break;
             default:
                RARCH_ERR("%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
