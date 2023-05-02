@@ -3293,20 +3293,42 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
                }
             }
 
-            /* Determine nominal window size based on
-             * core geometry */
-            if (settings->bools.video_force_aspect)
+            /* rotated games send unrotated width/height and
+             * require special handling here because of it */
+            if ((retroarch_get_rotation() % 2))
             {
-               /* Do rounding here to simplify integer
-                * scale correctness. */
-               unsigned base_width = roundf(geom->base_height *
-                  video_st->aspect_ratio);
-               width = base_width * video_scale;
+                /* Determine nominal window size based on
+                 * core geometry */
+                if (settings->bools.video_force_aspect)
+                {
+                   /* Do rounding here to simplify integer
+                    * scale correctness. */
+                   unsigned base_height = roundf(geom->base_height *
+                      (1/video_st->aspect_ratio));
+                   height = base_height * video_scale;
+                }
+                else
+                   height = geom->base_width * video_scale;
+
+                width = geom->base_height * video_scale;
             }
             else
-               width = geom->base_width * video_scale;
+            {
+                /* Determine nominal window size based on
+                 * core geometry */
+                if (settings->bools.video_force_aspect)
+                {
+                   /* Do rounding here to simplify integer
+                    * scale correctness. */
+                   unsigned base_width = roundf(geom->base_height *
+                      video_st->aspect_ratio);
+                   width = base_width * video_scale;
+                }
+                else
+                   width = geom->base_width * video_scale;
 
-            height = geom->base_height * video_scale;
+                height = geom->base_height * video_scale;
+            }
 
             /* Cap window size to maximum allowed values */
             if ((width > max_win_width) || (height > max_win_height))
