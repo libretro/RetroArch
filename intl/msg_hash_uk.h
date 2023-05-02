@@ -98,7 +98,7 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   "Вийняти диск"
+   "Вийняти Диск"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
