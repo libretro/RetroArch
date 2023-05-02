@@ -8464,8 +8464,7 @@ unsigned menu_displaylist_build_list(
 
                setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION);
                if (setting )
-                  setting->max =
-(cheat_manager_state.working_cheat.memory_search_size < 3) ? 255 : 0 ;
+                  setting->max = (cheat_manager_state.working_cheat.memory_search_size < 3) ? 255 : 0 ;
 
                setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY);
                if (setting )
