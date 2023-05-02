@@ -3303,14 +3303,14 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
                 {
                    /* Do rounding here to simplify integer
                     * scale correctness. */
-                   unsigned base_height = roundf(geom->base_height *
-                      (1/video_st->aspect_ratio));
-                   height = base_height * video_scale;
+                   unsigned base_width = roundf(geom->base_width *
+                      video_st->aspect_ratio);
+                   width = base_width * video_scale;
                 }
                 else
-                   height = geom->base_width * video_scale;
+                   width = geom->base_height * video_scale;
 
-                width = geom->base_height * video_scale;
+                height = geom->base_width * video_scale;
             }
             else
             {
