@@ -85,8 +85,8 @@ void strftime_am_pm(char *s, size_t len, const char* format,
 #if !(defined(__linux__) && !defined(ANDROID))
    if ((local = local_to_utf8_string_alloc(s)))
    {
-	   if (!string_is_empty(local))
-		   strlcpy(s, local, len);
+      if (!string_is_empty(local))
+         strlcpy(s, local, len);
 
       free(local);
       local = NULL;
