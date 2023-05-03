@@ -6081,6 +6081,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "Gdy jest włączone i wybrany został katalog „Przeglądarki plików” to bieżąca wartość parametru „Przeglądarki plików” jest zapisywana na playliście. Gdy playlista jest ładowana w innym systemie, w którym ta sama opcja jest włączona, wartość parametru „Przeglądarka plików” jest porównywana z wartością playlisty, jeśli są różne to ścieżki wpisów listy odtwarzania są automatycznie ustalane."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "Zarządzaj"
+   )
 
 /* Settings > Playlists > Playlist Management */
 

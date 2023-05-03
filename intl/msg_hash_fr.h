@@ -6993,6 +6993,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "Lorsque cette option est activée et que le dossier par défaut du 'Navigateur de fichiers' est également défini, cet emplacement est enregistré dans la liste de lecture. Lorsque la liste de lecture est chargée sur un autre système où cette même option est activée, la valeur du dossier défini par défaut est comparée à la valeur dans la liste de lecture; si celle-ci diffère, l'emplacement des entrées de la liste de lecture est automatiquement corrigé."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "Gérer"
+   )
 
 /* Settings > Playlists > Playlist Management */
 

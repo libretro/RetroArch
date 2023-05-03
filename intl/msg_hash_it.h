@@ -6961,6 +6961,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "Se abilitata, e la cartella 'File Browser' è anche selezionata, il valore corrente del parametro 'File Browser' viene salvato nella playlist. Quando la scaletta è caricata su un altro sistema in cui è abilitata la stessa opzione, il valore del parametro 'File Browser' viene confrontato con il valore della scaletta; se diverso, i percorsi delle voci della playlist sono automaticamente corretti."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "Gestisci"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
