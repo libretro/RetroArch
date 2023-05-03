@@ -178,7 +178,8 @@ enum rarch_state_flags
    RARCH_FLAGS_UPS_PREF                     = (1 << 10),
    RARCH_FLAGS_BPS_PREF                     = (1 << 11),
    RARCH_FLAGS_IPS_PREF                     = (1 << 12),
-   RARCH_FLAGS_BLOCK_CONFIG_READ            = (1 << 13)
+   RARCH_FLAGS_BLOCK_CONFIG_READ            = (1 << 13),
+   RARCH_FLAGS_CLI_DATABASE_SCAN            = (1 << 14)
 };
 
 /**
