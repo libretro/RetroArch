@@ -4306,6 +4306,9 @@ void retroarch_override_setting_set(
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
          p_rarch->flags |= RARCH_FLAGS_HAS_SET_LOG_TO_FILE;
          break;
+      case RARCH_OVERRIDE_SETTING_DATABASE_SCAN:
+         p_rarch->flags |= RARCH_FLAGS_CLI_DATABASE_SCAN;
+         break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
@@ -4379,6 +4382,9 @@ void retroarch_override_setting_unset(
          break;
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
          p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_LOG_TO_FILE;
+         break;
+      case RARCH_OVERRIDE_SETTING_DATABASE_SCAN:
+         p_rarch->flags &= ~RARCH_FLAGS_CLI_DATABASE_SCAN;
          break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
@@ -5564,6 +5570,7 @@ static bool retroarch_parse_input_and_config(
             case RA_OPT_DATABASE_SCAN:
 #ifdef HAVE_LIBRETRODB
                verbosity_enable();
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
 #endif
                break;
 
@@ -6754,6 +6761,8 @@ bool retroarch_override_setting_is_set(
 #endif
       case RARCH_OVERRIDE_SETTING_LOG_TO_FILE:
          return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_LOG_TO_FILE) > 0);
+      case RARCH_OVERRIDE_SETTING_DATABASE_SCAN:
+         return ((p_rarch->flags & RARCH_FLAGS_CLI_DATABASE_SCAN) > 0);
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;

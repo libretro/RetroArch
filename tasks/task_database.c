@@ -40,6 +40,7 @@
 #include "../ui/ui_companion_driver.h"
 #include "../gfx/video_display_server.h"
 #endif
+#include "../retroarch.h"
 #include "../verbosity.h"
 #include "task_database_cue.h"
 
@@ -132,7 +133,7 @@ static int task_database_iterate_start(retro_task_t *task,
                roundf((float)db->list_ptr /
                   ((float)db->list->size / 100.0f)));
       RARCH_LOG("[Scanner]: %s", msg);
-      if (verbosity_is_enabled())
+      if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
          printf("%s", msg);
 #else
       fprintf(stderr, "msg: %s\n", msg);
@@ -804,7 +805,7 @@ static int database_info_list_iterate_found_match(
 
       playlist_push(playlist, &entry);
       RARCH_LOG("[Scanner]: Add \"%s\"\n", entry_label);
-      if (verbosity_is_enabled())
+      if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
          printf("Add \"%s\"\n", entry.label);
    }
 
@@ -1170,7 +1171,7 @@ static void task_database_handler(retro_task_t *task)
                      false, false);
 
             RARCH_LOG("[Scanner]: %s\"%s\"..\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), db->fullpath);
-            if (verbosity_is_enabled())
+            if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
                printf("%s\"%s\"..\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), db->fullpath);
 
             /* If the scan path matches a database path exactly then
@@ -1264,7 +1265,7 @@ static void task_database_handler(retro_task_t *task)
             task_set_progress(task, 100);
             ui_companion_driver_notify_refresh();
             RARCH_LOG("[Scanner]: %s\n", msg);
-            if (verbosity_is_enabled())
+            if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
                printf("%s\n", msg);
 #else
             fprintf(stderr, "msg: %s\n", msg);
