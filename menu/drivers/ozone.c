@@ -653,6 +653,7 @@ struct ozone_handle
    bool show_thumbnail_bar;
    bool is_quick_menu;
    bool sidebar_collapsed;
+   bool pending_cursor_in_sidebar;
 
    struct
    {
@@ -8009,6 +8010,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             ozone->flags &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR;
             ozone->flags &= ~OZONE_FLAG_WANT_THUMBNAIL_BAR;
+            ozone->pending_cursor_in_sidebar = true;
 
             ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, ozone->last_height);
             if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
@@ -8304,6 +8306,13 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             ozone_go_to_sidebar(ozone, ozone_collapse_sidebar, tag);
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+         }
+
+         /* Return from manage playlist quick access back to sidebar */
+         if (ozone->pending_cursor_in_sidebar && ozone->depth == 2)
+         {
+            ozone->pending_cursor_in_sidebar = false;
+            ozone->flags |= OZONE_FLAG_CURSOR_IN_SIDEBAR;
          }
          break;
 
