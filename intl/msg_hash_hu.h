@@ -2474,6 +2474,14 @@ MSG_HASH(
    "A hang automatikus elnémítása gyorsításkor."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Hang gyorsított lejátszása gyorsításkor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "A hang gyorsított lejátszása gyorsításkor. Megakadályozza a recsegést, de megemeli a hangmagasságot."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Hangerő (dB)"
    )
