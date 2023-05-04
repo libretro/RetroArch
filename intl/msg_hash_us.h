@@ -10602,7 +10602,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Enable display of inline downscaled thumbnails while viewing playlists. When disabled, 'Top Thumbnail' may still be toggled fullscreen by pressing RetroPad Y."
+   "Enable display of inline downscaled thumbnails while viewing playlists. Toggleable with RetroPad Select. When disabled, thumbnails can still be toggled fullscreen with RetroPad Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
@@ -10610,7 +10610,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Type of thumbnail to display at the top right of playlists. This thumbnail may be toggled fullscreen by pressing RetroPad Y."
+   "Type of thumbnail to display at the top right of playlists. This thumbnail type can be cycled by pressing RetroPad Y."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,

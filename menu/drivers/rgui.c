@@ -2584,39 +2584,31 @@ static bool rgui_load_image(
          {
             struct texture_image *image             = (struct texture_image*)data;
             settings_t *settings                    = config_get_ptr();
-            bool menu_rgui_inline_thumbnails        =
-                  settings->bools.menu_rgui_inline_thumbnails;
             unsigned menu_rgui_thumbnail_downscaler =
                   settings->uints.menu_rgui_thumbnail_downscaler;
-            
+
             if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
                rgui_process_thumbnail(rgui, &rgui->fs_thumbnail, &rgui->thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
                      image);
-            else if (menu_rgui_inline_thumbnails)
+            else
                rgui_process_thumbnail(rgui, &rgui->mini_thumbnail, &rgui->thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
                      image);
-            else
-            {
-               /* If user toggles settings rapidly on very slow systems,
-                * it is possible for a thumbnail to be requested without
-                * it ever being processed. In this case, we still have to
-                * decrement the thumbnail queue (otherwise image updates
-                * will get 'stuck') */
-               if (rgui->thumbnail_queue_size > 0)
-                  rgui->thumbnail_queue_size--;
-            }
+
+            /* If user toggles settings rapidly on very slow systems,
+             * it is possible for a thumbnail to be requested without
+             * it ever being processed. In this case, we still have to
+             * decrement the thumbnail queue (otherwise image updates
+             * will get 'stuck') */
+            if (rgui->thumbnail_queue_size > 0)
+               rgui->thumbnail_queue_size--;
          }
          break;
       case MENU_IMAGE_LEFT_THUMBNAIL:
          {
             struct texture_image *image             = (struct texture_image*)data;
             settings_t *settings                    = config_get_ptr();
-            bool menu_rgui_inline_thumbnails        =
-                  settings->bools.menu_rgui_inline_thumbnails;
-            bool savestate_thumbnail_enable         =
-                  settings->bools.savestate_thumbnail_enable;
             unsigned menu_rgui_thumbnail_downscaler =
                   settings->uints.menu_rgui_thumbnail_downscaler;
 
@@ -2626,17 +2618,15 @@ static bool rgui_load_image(
                      &rgui->left_thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
                      image);
-            else if (menu_rgui_inline_thumbnails || savestate_thumbnail_enable)
+            else
                rgui_process_thumbnail(rgui,
                      &rgui->mini_left_thumbnail,
                      &rgui->left_thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
                      image);
-            else
-            {
-               if (rgui->left_thumbnail_queue_size > 0)
-                  rgui->left_thumbnail_queue_size--;
-            }
+
+            if (rgui->left_thumbnail_queue_size > 0)
+               rgui->left_thumbnail_queue_size--;
          }
          break;
       default:
@@ -4949,7 +4939,7 @@ static void rgui_render(
    rgui_t *rgui                   = (rgui_t*)data;
    enum gfx_animation_ticker_type
          menu_ticker_type         = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-   bool rgui_inline_thumbnails    = settings->bools.menu_rgui_inline_thumbnails;
+   bool rgui_inline_thumbnails    = settings->bools.menu_rgui_inline_thumbnails || rgui->is_quick_menu;
    bool menu_battery_level_enable = settings->bools.menu_battery_level_enable;
    bool use_smooth_ticker         = settings->bools.menu_ticker_smooth;
    bool rgui_swap_thumbnails      = settings->bools.menu_rgui_swap_thumbnails;
@@ -6907,7 +6897,6 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
 {
    bool has_thumbnail                = false;
    settings_t *settings              = config_get_ptr();
-   bool menu_rgui_inline_thumbnails  = settings->bools.menu_rgui_inline_thumbnails;
    unsigned menu_rgui_thumbnail_delay= settings->uints.menu_rgui_thumbnail_delay;
    bool network_on_demand_thumbnails = settings->bools.network_on_demand_thumbnails;
    rgui->flags                      &= ~(RGUI_FLAG_THUMBNAIL_LOAD_PENDING
@@ -6916,10 +6905,9 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
                                         );
 
    /* Update thumbnail content/path */
-   if (((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) || menu_rgui_inline_thumbnails)
-         && (  (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
-            || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
-            || (rgui->is_quick_menu)))
+   if (     (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
+         || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
+         || (rgui->is_quick_menu))
    {
       size_t selection      = menu_navigation_get_selection();
       size_t list_size      = menu_entries_get_size();
@@ -6975,7 +6963,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
       if (gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
          has_thumbnail = gfx_thumbnail_update_path(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT);
 
-      if (menu_rgui_inline_thumbnails && gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+      if (gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
          has_thumbnail = gfx_thumbnail_update_path(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT) || has_thumbnail;
    }
 
@@ -7065,7 +7053,8 @@ static void rgui_refresh_thumbnail_image(void *userdata, unsigned i)
    bool rgui_inline_thumbnails = false;
    if (!rgui || !settings)
       return;
-   rgui_inline_thumbnails      = settings->bools.menu_rgui_inline_thumbnails;
+   rgui_inline_thumbnails      = settings->bools.menu_rgui_inline_thumbnails
+         || rgui->is_quick_menu;
 
    /* Only refresh thumbnails if thumbnails are enabled */
    if (     ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) || rgui_inline_thumbnails)
@@ -7989,6 +7978,19 @@ static enum menu_action rgui_parse_menu_entry_action(
             }
 
             rgui_refresh_thumbnail_image(rgui, 0);
+         }
+         break;
+      case MENU_ACTION_INFO:
+         if (     (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
+               || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST))
+         {
+            settings_t *settings = config_get_ptr();
+            configuration_set_uint(settings,
+               settings->bools.menu_rgui_inline_thumbnails,
+               !settings->bools.menu_rgui_inline_thumbnails);
+
+            rgui_refresh_thumbnail_image(rgui, 0);
+            new_action = MENU_ACTION_NOOP;
          }
          break;
       case MENU_ACTION_UP:
