@@ -733,6 +733,8 @@ static int menu_displaylist_parse_core_info(
                MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
             count++;
 
+         len        = strlcpy(tmp, "(!) ", sizeof(tmp));
+
          /* FIXME: This looks hacky and probably
           * needs to be improved for good translation support. */
 
@@ -741,7 +743,7 @@ static int menu_displaylist_parse_core_info(
             if (!core_info->firmware[i].desc)
                continue;
 
-            snprintf(tmp, sizeof(tmp), "(!) %s %s",
+            snprintf(tmp + len, sizeof(tmp) - len, "%s %s",
                   core_info->firmware[i].missing   ?
                   (
                     core_info->firmware[i].optional
@@ -1794,6 +1796,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_RGUI
          if (string_is_equal(menu_driver, "rgui"))
          {
+            /* TODO/FIXME - Localize */
             strlcpy(tmp, "- Device Display Name: ", sizeof(tmp));
             strlcat(tmp,
                input_config_get_device_display_name(controller) ?
@@ -1804,6 +1807,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
                count++;
+            /* TODO/FIXME - Localize */
             strlcpy(tmp, "- Device Config Name: ", sizeof(tmp));
             strlcat(tmp,
                input_config_get_device_config_name(controller) ?
@@ -11537,7 +11541,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            /* TODO/FIXME - Localize */
                            char tracks_string[32] = {"Number of tracks: "};
 
-                           snprintf(tracks_string + strlen(tracks_string), sizeof(tracks_string) - strlen(tracks_string), "%d", toc->num_tracks);
+                           snprintf(tracks_string + strlen(tracks_string),
+                                 sizeof(tracks_string) - strlen(tracks_string),
+                                 "%d", toc->num_tracks);
 
                            if (menu_entries_append(info->list,
                                     tracks_string,
@@ -11557,7 +11563,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               char size_string[32]   = {" - Size: "};
                               char length_string[32] = {" - Length: "};
 
-                              snprintf(track_string + strlen(track_string), sizeof(track_string) - strlen(track_string), "%d:", i + 1);
+                              snprintf(track_string + strlen(track_string),
+                                    sizeof(track_string) - strlen(track_string),
+                                    "%d:", i + 1);
 
                               if (menu_entries_append(info->list,
                                        track_string,
@@ -11566,10 +11574,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                        FILE_TYPE_NONE, 0, 0, NULL))
                                  count++;
 
+                              /* TODO/FIXME - localize */
                               if (toc->track[i].audio)
-                                 snprintf(mode_string + strlen(mode_string), sizeof(mode_string) - strlen(mode_string), "Audio");
+                                 snprintf(mode_string + strlen(mode_string),
+                                       sizeof(mode_string) - strlen(mode_string),
+                                       "Audio");
                               else
-                                 snprintf(mode_string + strlen(mode_string), sizeof(mode_string) - strlen(mode_string), "Mode %d", toc->track[i].mode);
+                                 snprintf(mode_string + strlen(mode_string),
+                                       sizeof(mode_string) - strlen(mode_string),
+                                       "Mode %d", toc->track[i].mode);
 
                               if (menu_entries_append(info->list,
                                        mode_string,
@@ -11578,7 +11591,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                        FILE_TYPE_NONE, 0, 0, NULL))
                                  count++;
 
-                              snprintf(size_string + strlen(size_string), sizeof(size_string) - strlen(size_string), "%.1f MB", toc->track[i].track_bytes / 1000.0 / 1000.0);
+                              snprintf(size_string + strlen(size_string),
+                                    sizeof(size_string) - strlen(size_string),
+                                    "%.1f MB",
+                                    toc->track[i].track_bytes / 1000.0 / 1000.0);
 
                               if (menu_entries_append(info->list,
                                        size_string,
@@ -11796,6 +11812,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      clkrstGetClockRate(&session, &currentClock);
                      clkrstCloseSession(&session);
                   }
+                  /* TODO/FIXME - localize */
                   _len = strlcpy(text, "Current clock: ", sizeof(text));
                   snprintf(text + _len, sizeof(text) - _len, "%i", currentClock);
                }
@@ -11940,12 +11957,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                char lbl_volume[128];
                char mixer_stream_str[128];
                unsigned id                 = info->type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN;
+               size_t _len                 = strlcpy(mixer_stream_str, "mixer_stream_", sizeof(mixer_stream_str));
 
                lbl_remove[0] = lbl_stop[0] = lbl_play[0] = lbl_play_looped[0] = '\0';
                lbl_volume[0] = lbl_play_sequential[0]                         = '\0';
-               mixer_stream_str[0]         = '\0';
 
-               snprintf(mixer_stream_str, sizeof(mixer_stream_str), "mixer_stream_%d", id);
+               snprintf(mixer_stream_str + _len, sizeof(mixer_stream_str) - _len, "%d", id);
                strlcpy(lbl_volume,          mixer_stream_str,         sizeof(lbl_volume));
                strlcpy(lbl_stop,            mixer_stream_str,         sizeof(lbl_stop));
                strlcpy(lbl_remove,          mixer_stream_str,         sizeof(lbl_remove));
