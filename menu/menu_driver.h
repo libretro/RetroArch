@@ -737,7 +737,6 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type);
 void menu_driver_set_last_shader_preset_path(const char *path);
 void menu_driver_set_last_shader_pass_path(const char *path);
 enum rarch_shader_type menu_driver_get_last_shader_preset_type(void);
-enum rarch_shader_type menu_driver_get_last_shader_pass_type(void);
 void menu_driver_get_last_shader_preset_path(
       const char **directory, const char **file_name);
 void menu_driver_get_last_shader_pass_path(
@@ -747,7 +746,6 @@ void menu_driver_get_last_shader_pass_path(
 const char *menu_driver_get_last_start_directory(void);
 const char *menu_driver_get_last_start_file_name(void);
 void menu_driver_set_last_start_content(const char *start_content_path);
-const char *menu_driver_get_pending_selection(void);
 void menu_driver_set_pending_selection(const char *pending_selection);
 
 struct menu_state *menu_state_get_ptr(void);
@@ -760,79 +758,6 @@ enum action_iterate_type
    ITERATE_TYPE_BIND
 };
 
-int menu_dialog_iterate(
-      menu_dialog_t *p_dialog,
-      settings_t *settings,
-      char *s, size_t len,
-      retro_time_t current_time);
-
-void menu_entries_settings_deinit(struct menu_state *menu_st);
-
-void input_event_osk_iterate(
-      void *osk_grid,
-      enum osk_type osk_idx);
-
-void menu_input_get_mouse_hw_state(
-      gfx_display_t *p_disp,
-      menu_handle_t *menu,
-      input_driver_state_t *input_driver_st,
-      input_driver_t *current_input,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      bool keyboard_mapping_blocked,
-      bool menu_mouse_enable,
-      bool input_overlay_enable,
-      bool overlay_active,
-      menu_input_pointer_hw_state_t *hw_state);
-
-void menu_input_get_touchscreen_hw_state(
-      gfx_display_t *p_disp,
-      menu_handle_t *menu,
-      input_driver_state_t *input_driver_st,
-      input_driver_t *current_input,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      bool keyboard_mapping_blocked,
-      bool overlay_active,
-      bool pointer_enabled,
-      unsigned input_touch_scale,
-      menu_input_pointer_hw_state_t *hw_state);
-
-bool menu_entries_init(
-      struct menu_state *menu_st,
-      const menu_ctx_driver_t *menu_driver_ctx);
-
-void menu_entries_list_deinit(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      struct menu_state *menu_st);
-
-void menu_list_flush_stack(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      void *menu_userdata,
-      struct menu_state *menu_st,
-      menu_list_t *list,
-      size_t idx, const char *needle, unsigned final_type);
-
-bool menu_list_pop_stack(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      void *menu_userdata,
-      menu_list_t *list,
-      size_t idx,
-      size_t *directory_ptr);
-
-bool input_event_osk_show_symbol_pages(
-      menu_handle_t *menu);
-
-float menu_input_get_dpi(
-      menu_handle_t *menu,
-      gfx_display_t *p_disp,
-      unsigned video_width,
-      unsigned video_height);
-
-void menu_input_pointer_close_messagebox(struct menu_state *menu_st);
-
-enum action_iterate_type action_iterate_type(const char *label);
-
 void menu_cbs_init(
       struct menu_state *menu_st,
       const menu_ctx_driver_t *menu_driver_ctx,
@@ -840,12 +765,6 @@ void menu_cbs_init(
       menu_file_list_cbs_t *cbs,
       const char *path, const char *label,
       unsigned type, size_t idx);
-
-bool menu_driver_displaylist_push(
-      struct menu_state *menu_st,
-      settings_t *settings,
-      file_list_t *entry_list,
-      file_list_t *entry_stack);
 
 int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
 
@@ -858,16 +777,6 @@ void menu_entries_build_scroll_indices(
 
 void get_current_menu_value(struct menu_state *menu_st,
       char *s, size_t len);
-
-void menu_display_common_image_upload(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      void *menu_userdata,
-      struct texture_image *img,
-      void *user_data,
-      unsigned type);
-
-enum menu_driver_id_type menu_driver_set_id(
-      const char *driver_name);
 
 /**
  * config_get_menu_driver_options:
@@ -903,9 +812,6 @@ extern menu_ctx_driver_t menu_ctx_mui;
 extern menu_ctx_driver_t menu_ctx_xmb;
 extern menu_ctx_driver_t menu_ctx_stripes;
 
-void menu_input_search_cb(void *userdata, const char *str);
-bool menu_input_key_bind_custom_bind_keyboard_cb(
-      void *data, unsigned code);
 /* This callback gets triggered by the keyboard whenever
  * we press or release a keyboard key. When a keyboard
  * key is being pressed down, 'down' will be true. If it
@@ -948,12 +854,6 @@ unsigned menu_event(
       input_bits_t *p_input,
       input_bits_t *p_trigger_input,
       bool display_kb);
-
-int menu_input_post_iterate(
-      gfx_display_t *p_disp,
-      struct menu_state *menu_st,
-      unsigned action,
-      retro_time_t current_time);
 
 /* Gets called when we want to toggle the menu.
  * If the menu is already running, it will be turned off.

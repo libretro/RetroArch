@@ -15087,7 +15087,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          }
          else
          {
-            const char *pending_selection              = menu_driver_get_pending_selection();
+            const char *pending_selection              = menu_state_get_ptr()->pending_selection;
             bool show_hidden_files                     = settings->bools.show_hidden_files;
             bool multimedia_builtin_mediaplayer_enable = settings->bools.multimedia_builtin_mediaplayer_enable;
             bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;

@@ -111,17 +111,6 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
       bool apply);
 
 /**
- * menu_shader_manager_get_type:
- * @shader                   : shader handle
- *
- * Gets type of shader.
- *
- * Returns: type of shader.
- **/
-enum rarch_shader_type menu_shader_manager_get_type(
-      const struct video_shader *shader);
-
-/**
  * menu_shader_manager_apply_changes:
  *
  * Apply shader state changes.

@@ -591,7 +591,7 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
    if (   !list
        || string_is_empty(needle)
        || !idx)
-      return match_found;
+      return false;
 
    /* Check if we are searching for a single
     * Latin alphabet character */
@@ -1147,20 +1147,6 @@ int menu_entries_get_title(char *s, size_t len)
    return 0;
 }
 
-/* Get current menu label */
-int menu_entries_get_label(char *s, size_t len)
-{
-   struct menu_state   *menu_st = &menu_driver_state;
-   const file_list_t *list      = MENU_LIST_GET(menu_st->entries.list, 0);
-
-   if (list && list->size)
-   {
-      strlcpy(s, list->list[list->size - 1].label, len);
-      return 1;
-   }
-   return 0;
-}
-
 /* Used to close an active message box (help or info)
  * TODO/FIXME: The way that message boxes are handled
  * is complete garbage. generic_menu_iterate() and
@@ -1168,7 +1154,7 @@ int menu_entries_get_label(char *s, size_t len)
  * I consider this current 'close_messagebox' a hack,
  * but at least it prevents undefined/dangerous
  * behaviour... */
-void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
+static void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
 {
    const char *label            = NULL;
    const file_list_t *list      = MENU_LIST_GET(menu_st->entries.list, 0);
@@ -1201,8 +1187,7 @@ void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
    }
 }
 
-
-float menu_input_get_dpi(
+static float menu_input_get_dpi(
       menu_handle_t *menu,
       gfx_display_t *p_disp,
       unsigned video_width,
@@ -1265,7 +1250,7 @@ float menu_input_get_dpi(
    return dpi;
 }
 
-bool input_event_osk_show_symbol_pages(
+static bool input_event_osk_show_symbol_pages(
       menu_handle_t *menu)
 {
 #if defined(HAVE_LANGEXTRA)
@@ -1323,7 +1308,7 @@ static void menu_list_free_list(
    file_list_free(list);
 }
 
-bool menu_list_pop_stack(
+static bool menu_list_pop_stack(
       const menu_ctx_driver_t *menu_driver_ctx,
       void *menu_userdata,
       menu_list_t *list,
@@ -1361,7 +1346,7 @@ static int menu_list_flush_stack_type(const char *needle, const char *label,
    return needle ? !string_is_equal(needle, label) : (type != final_type);
 }
 
-void menu_list_flush_stack(
+static void menu_list_flush_stack(
       const menu_ctx_driver_t *menu_driver_ctx,
       void *menu_userdata,
       struct menu_state *menu_st,
@@ -1834,7 +1819,7 @@ static void menu_input_key_bind_poll_bind_get_rested_axes(
    }
 }
 
-void input_event_osk_iterate(void *osk_grid, enum osk_type osk_idx)
+static void input_event_osk_iterate(void *osk_grid, enum osk_type osk_idx)
 {
 #ifndef HAVE_LANGEXTRA
    /* If HAVE_LANGEXTRA is not defined, define some ASCII-friendly pages. */
@@ -1902,7 +1887,7 @@ void input_event_osk_iterate(void *osk_grid, enum osk_type osk_idx)
    }
 }
 
-void menu_input_get_mouse_hw_state(
+static void menu_input_get_mouse_hw_state(
       gfx_display_t *p_disp,
       menu_handle_t *menu,
       input_driver_state_t *input_st,
@@ -2107,7 +2092,7 @@ void menu_input_get_mouse_hw_state(
    last_cancel_pressed             = hw_state->cancel_pressed;
 }
 
-void menu_input_get_touchscreen_hw_state(
+static void menu_input_get_touchscreen_hw_state(
       gfx_display_t *p_disp,
       menu_handle_t *menu,
       input_driver_state_t *input_st,
@@ -2263,7 +2248,7 @@ void menu_input_get_touchscreen_hw_state(
    last_cancel_pressed = hw_state->cancel_pressed;
 }
 
-void menu_entries_settings_deinit(struct menu_state *menu_st)
+static void menu_entries_settings_deinit(struct menu_state *menu_st)
 {
    menu_setting_free(menu_st->entries.list_settings);
    if (menu_st->entries.list_settings)
@@ -2418,7 +2403,7 @@ static bool menu_driver_displaylist_push_internal(
    return false;
 }
 
-bool menu_driver_displaylist_push(
+static bool menu_driver_displaylist_push(
       struct menu_state *menu_st,
       settings_t *settings,
       file_list_t *entry_list,
@@ -2706,14 +2691,6 @@ enum rarch_shader_type menu_driver_get_last_shader_preset_type(void)
    return menu->last_shader_selection.preset_type;
 }
 
-enum rarch_shader_type menu_driver_get_last_shader_pass_type(void)
-{
-   menu_handle_t *menu         = menu_driver_state.driver_data;
-   if (!menu)
-      return RARCH_SHADER_NONE;
-   return menu->last_shader_selection.pass_type;
-}
-
 static void menu_driver_get_last_shader_path_int(
       settings_t *settings, enum rarch_shader_type type,
       const char *shader_dir, const char *shader_file_name,
@@ -2887,7 +2864,7 @@ void menu_shader_manager_clear_pass_path(struct video_shader *shader,
  *
  * Returns: type of shader.
  **/
-enum rarch_shader_type menu_shader_manager_get_type(
+static enum rarch_shader_type menu_shader_manager_get_type(
       const struct video_shader *shader)
 {
    enum rarch_shader_type type = RARCH_SHADER_NONE;
@@ -3333,7 +3310,7 @@ bool menu_shader_manager_save_auto_preset(
 }
 #endif
 
-enum action_iterate_type action_iterate_type(const char *label)
+static enum action_iterate_type action_iterate_type(const char *label)
 {
    if (string_is_equal(label, "info_screen"))
       return ITERATE_TYPE_INFO;
@@ -3492,7 +3469,7 @@ static void menu_input_key_bind_poll_bind_state(
    }
 }
 
-int menu_dialog_iterate(
+static int menu_dialog_iterate(
       menu_dialog_t *p_dialog,
       settings_t *settings,
       char *s, size_t len,
@@ -3694,16 +3671,7 @@ int menu_dialog_iterate(
    return 0;
 }
 
-void menu_entries_list_deinit(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      struct menu_state *menu_st)
-{
-   if (menu_st->entries.list)
-      menu_list_free(menu_driver_ctx, menu_st->entries.list);
-   menu_st->entries.list          = NULL;
-}
-
-bool menu_entries_init(
+static bool menu_entries_init(
       struct menu_state *menu_st,
       const menu_ctx_driver_t *menu_driver_ctx)
 {
@@ -3805,7 +3773,9 @@ bool rarch_menu_init(
    if (!menu_entries_init(menu_st, menu_driver_ctx))
    {
       menu_entries_settings_deinit(menu_st);
-      menu_entries_list_deinit(menu_driver_ctx, menu_st);
+      if (menu_st->entries.list)
+         menu_list_free(menu_driver_ctx, menu_st->entries.list);
+      menu_st->entries.list          = NULL;
       return false;
    }
 
@@ -3966,7 +3936,7 @@ void menu_entries_build_scroll_indices(
       menu_st->scroll.index_size++;
 }
 
-void menu_display_common_image_upload(
+static void menu_display_common_image_upload(
       const menu_ctx_driver_t *menu_driver_ctx,
       void *menu_userdata,
       struct texture_image *img,
@@ -3983,7 +3953,7 @@ void menu_display_common_image_upload(
    free(user_data);
 }
 
-enum menu_driver_id_type menu_driver_set_id(
+static enum menu_driver_id_type menu_driver_set_id(
       const char *driver_name)
 {
    if (!string_is_empty(driver_name))
@@ -4007,7 +3977,7 @@ const char *config_get_menu_driver_options(void)
    return char_list_new_special(STRING_LIST_MENU_DRIVERS, NULL);
 }
 
-bool menu_entries_search_push(const char *search_term)
+static bool menu_entries_search_push(const char *search_term)
 {
    size_t i;
    char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
@@ -4215,12 +4185,6 @@ retro_time_t menu_driver_get_current_time(void)
    return menu_st->current_time_us;
 }
 
-const char *menu_driver_get_pending_selection(void)
-{
-   struct menu_state   *menu_st  = &menu_driver_state;
-   return menu_st->pending_selection;
-}
-
 void menu_driver_set_pending_selection(const char *pending_selection)
 {
    struct menu_state *menu_st  = &menu_driver_state;
@@ -4233,7 +4197,7 @@ void menu_driver_set_pending_selection(const char *pending_selection)
             sizeof(menu_st->pending_selection));
 }
 
-void menu_input_search_cb(void *userdata, const char *str)
+static void menu_input_search_cb(void *userdata, const char *str)
 {
    const char *label           = NULL;
    unsigned type               = MENU_SETTINGS_NONE;
@@ -5247,7 +5211,7 @@ const menu_ctx_driver_t *menu_driver_find_driver(
    return (const menu_ctx_driver_t*)menu_ctx_drivers[0];
 }
 
-bool menu_input_key_bind_custom_bind_keyboard_cb(
+static bool menu_input_key_bind_custom_bind_keyboard_cb(
       void *data, unsigned code)
 {
    uint64_t current_usec;
@@ -5464,7 +5428,7 @@ bool menu_input_key_bind_iterate(
          new_binds.timer_hold.timeout_us = 
             new_binds.timer_hold.timeout_end - current_time;
 
-	 /* TODO/FIXME - localize */
+         /* TODO/FIXME - localize */
          snprintf(bind->s, bind->len,
                "[%s]\nPress keyboard, mouse or joypad\nand hold ...",
                input_config_bind_map_get_desc(
@@ -6637,7 +6601,7 @@ static int menu_input_pointer_post_iterate(
    return ret;
 }
 
-int menu_input_post_iterate(
+static int menu_input_post_iterate(
       gfx_display_t *p_disp,
       struct menu_state *menu_st,
       unsigned action,
@@ -7065,7 +7029,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             gfx_display_free();
 
             menu_entries_settings_deinit(menu_st);
-            menu_entries_list_deinit(menu_st->driver_ctx, menu_st);
+            if (menu_st->entries.list)
+               menu_list_free(menu_st->driver_ctx, menu_st->entries.list);
+            menu_st->entries.list          = NULL;
 
             if (menu_st->driver_data->core_buf)
                free(menu_st->driver_data->core_buf);
@@ -7369,6 +7335,7 @@ bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
          !(video_shader_load_preset_into_shader(preset_path, menu_shader)))
       goto end;
 
+   /* TODO/FIXME - localize */
    RARCH_LOG("[Shaders]: Menu shader set to: \"%s\".\n", preset_path);
 
    ret = true;
@@ -7414,10 +7381,11 @@ bool menu_shader_manager_append_preset(struct video_shader *shader,
       goto clear;
    }
 
-    if (!video_shader_combine_preset_and_apply(settings,
-             type, shader, preset_path, dir_video_shader, prepend, true))
+   if (!video_shader_combine_preset_and_apply(settings,
+            type, shader, preset_path, dir_video_shader, prepend, true))
       goto clear;
 
+   /* TODO/FIXME - localize */
    RARCH_LOG("[Shaders]: Menu shader set to: \"%s\".\n", preset_path);
 
    ret = true;
@@ -7510,17 +7478,11 @@ static int generic_menu_iterate(
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
 
-         {
-            bool pop_stack = false;
-            if (  ret == 1 ||
-                  action == MENU_ACTION_OK ||
-                  action == MENU_ACTION_CANCEL
-               )
-               pop_stack   = true;
-
-            if (pop_stack)
-               BIT64_SET(menu->state, MENU_STATE_POP_STACK);
-         }
+         if (     (ret    == 1)
+               || (action == MENU_ACTION_OK)
+               || (action == MENU_ACTION_CANCEL)
+            )
+            BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          break;
       case ITERATE_TYPE_BIND:
          {
@@ -7737,10 +7699,8 @@ static int generic_menu_iterate(
                    * is the first item in global input settings */
                   else if (type == MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE
                         || type == MENU_SETTINGS_INPUT_BEGIN)
-                  {
                      ret = msg_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
                            menu->menu_state_msg, sizeof(menu->menu_state_msg));
-                  }
                   else
                   {
                      strlcpy(menu->menu_state_msg,
@@ -7757,9 +7717,7 @@ static int generic_menu_iterate(
          if (     action == MENU_ACTION_OK
                || action == MENU_ACTION_CANCEL
                || action == MENU_ACTION_INFO)
-         {
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
-         }
          break;
       case ITERATE_TYPE_DEFAULT:
          {
