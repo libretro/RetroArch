@@ -7858,9 +7858,18 @@ static enum menu_action rgui_parse_menu_entry_action(
       case MENU_ACTION_CANCEL:
          if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
          {
-            rgui_thumbnail_cycle_dupe(rgui);
-            rgui_toggle_fs_thumbnail(rgui, config_get_ptr()->bools.menu_rgui_inline_thumbnails);
+            if (     ((rgui->flags & RGUI_FLAG_IS_STATE_SLOT) || (rgui->is_quick_menu))
+                  && !string_is_empty(rgui->savestate_thumbnail_file_path))
+            {
+               rgui_toggle_fs_thumbnail(rgui, true);
+            }
+            else
+            {
+               rgui_thumbnail_cycle_dupe(rgui);
+               rgui_toggle_fs_thumbnail(rgui, config_get_ptr()->bools.menu_rgui_inline_thumbnails);
+            }
             new_action = MENU_ACTION_NOOP;
+            break;
          }
 
          if (string_is_equal(rgui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU)))
