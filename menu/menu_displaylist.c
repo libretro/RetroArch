@@ -3430,92 +3430,59 @@ static int menu_displaylist_parse_load_content_settings(
                0, 0, NULL))
             count++;
 
-      if (settings->bools.quick_menu_show_savestate_submenu)
+      if (     savestates_enabled
+            && settings->bools.quick_menu_show_savestate_submenu)
       {
-         if (savestates_enabled)
-            if (menu_entries_append(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST),
-                  msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST),
-                  MENU_ENUM_LABEL_SAVESTATE_LIST,
-                  MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
+         if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST),
+               MENU_ENUM_LABEL_SAVESTATE_LIST,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+            count++;
       }
-      else
+      else if (savestates_enabled)
       {
-         if (savestates_enabled)
+         if (settings->bools.quick_menu_show_save_load_state)
          {
-            if (settings->bools.quick_menu_show_save_load_state)
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true) == 0)
+               count++;
+
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_STATE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE),
+                     MENU_ENUM_LABEL_SAVE_STATE,
+                     MENU_SETTING_ACTION_SAVESTATE, 0, 0, NULL))
+               count++;
+
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
+                     MENU_ENUM_LABEL_LOAD_STATE,
+                     MENU_SETTING_ACTION_LOADSTATE, 0, 0, NULL))
+               count++;
+
+            if (settings->bools.quick_menu_show_undo_save_load_state)
             {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true) == 0)
-                  count++;
-
-               if (menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_STATE),
-                        msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE),
-                        MENU_ENUM_LABEL_SAVE_STATE,
-                        MENU_SETTING_ACTION_SAVESTATE, 0, 0, NULL))
-                  count++;
-
-               if (menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
-                        msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
-                        MENU_ENUM_LABEL_LOAD_STATE,
-                        MENU_SETTING_ACTION_LOADSTATE, 0, 0, NULL))
-                  count++;
-
-               if (settings->bools.quick_menu_show_undo_save_load_state)
-               {
 #ifdef HAVE_CHEEVOS
-                  if (!rcheevos_hardcore_active())
+               if (!rcheevos_hardcore_active())
 #endif
-                  {
-                     if (menu_entries_append(list,
-                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
-                              msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
-                              MENU_ENUM_LABEL_UNDO_LOAD_STATE,
-                              MENU_SETTING_ACTION_LOADSTATE, 0, 0, NULL))
-                        count++;
-                  }
-
+               {
                   if (menu_entries_append(list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
-                           msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
-                           MENU_ENUM_LABEL_UNDO_SAVE_STATE,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
+                           msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
+                           MENU_ENUM_LABEL_UNDO_LOAD_STATE,
                            MENU_SETTING_ACTION_LOADSTATE, 0, 0, NULL))
                      count++;
                }
-            }
-
-#ifdef HAVE_BSV_MOVIE
-            if (settings->bools.quick_menu_show_replay)
-            {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_REPLAY_SLOT, PARSE_ONLY_INT, true) == 0)
-                  count++;
 
                if (menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORD_REPLAY),
-                        msg_hash_to_str(MENU_ENUM_LABEL_RECORD_REPLAY),
-                        MENU_ENUM_LABEL_RECORD_REPLAY,
-                        MENU_SETTING_ACTION_RECORDREPLAY, 0, 0, NULL))
-                  count++;
-
-               if (menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAY_REPLAY),
-                        msg_hash_to_str(MENU_ENUM_LABEL_PLAY_REPLAY),
-                        MENU_ENUM_LABEL_PLAY_REPLAY,
-                        MENU_SETTING_ACTION_PLAYREPLAY, 0, 0, NULL))
-                  count++;
-
-               if (menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HALT_REPLAY),
-                        msg_hash_to_str(MENU_ENUM_LABEL_HALT_REPLAY),
-                        MENU_ENUM_LABEL_HALT_REPLAY,
-                        MENU_SETTING_ACTION_HALTREPLAY, 0, 0, NULL))
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
+                        msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
+                        MENU_ENUM_LABEL_UNDO_SAVE_STATE,
+                        MENU_SETTING_ACTION_LOADSTATE, 0, 0, NULL))
                   count++;
             }
-#endif
          }
       }
 
@@ -3612,6 +3579,38 @@ static int menu_displaylist_parse_load_content_settings(
             }
          }
       }
+
+#ifdef HAVE_BSV_MOVIE
+      if (     savestates_enabled
+            && !settings->bools.quick_menu_show_savestate_submenu
+            && settings->bools.quick_menu_show_replay)
+      {
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_REPLAY_SLOT, PARSE_ONLY_INT, true) == 0)
+            count++;
+
+         if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORD_REPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RECORD_REPLAY),
+                  MENU_ENUM_LABEL_RECORD_REPLAY,
+                  MENU_SETTING_ACTION_RECORDREPLAY, 0, 0, NULL))
+            count++;
+
+         if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAY_REPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_PLAY_REPLAY),
+                  MENU_ENUM_LABEL_PLAY_REPLAY,
+                  MENU_SETTING_ACTION_PLAYREPLAY, 0, 0, NULL))
+            count++;
+
+         if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HALT_REPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HALT_REPLAY),
+                  MENU_ENUM_LABEL_HALT_REPLAY,
+                  MENU_SETTING_ACTION_HALTREPLAY, 0, 0, NULL))
+            count++;
+      }
+#endif
 
       if (
                settings->bools.quick_menu_show_add_to_favorites
