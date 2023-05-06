@@ -5551,7 +5551,8 @@ unsigned menu_event(
 
       /* Read mouse */
 #ifdef HAVE_IOS_TOUCHMOUSE
-       if (menu_mouse_enable) {
+       if (menu_mouse_enable)
+       {
          settings->bools.menu_pointer_enable=true;
          menu_pointer_enable=true;
        }

@@ -508,18 +508,13 @@ static void setting_add_special_callbacks(
 
       switch ((*list)[idx].type)
       {
-         case ST_SIZE:
-         case ST_UINT:
-            (*list)[idx].action_cancel = NULL;
-            break;
-         case ST_INT:
-            (*list)[idx].action_cancel = NULL;
-            break;
-         case ST_FLOAT:
-            (*list)[idx].action_cancel = NULL;
-            break;
          case ST_STRING:
             (*list)[idx].action_start  = setting_string_action_start_generic;
+            /* fall-through */
+         case ST_SIZE:
+         case ST_UINT:
+         case ST_INT:
+         case ST_FLOAT:
             (*list)[idx].action_cancel = NULL;
             break;
          default:
@@ -554,8 +549,6 @@ unsigned setting_get_bind_type(rarch_setting_t *setting)
 static int setting_bind_action_ok(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   (void)wraparound; /* TODO/FIXME - handle this */
-
    if (!menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_SINGLE, setting))
       return -1;
    return 0;
@@ -564,20 +557,15 @@ static int setting_bind_action_ok(
 static int setting_int_action_right_default(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   float max = 0.0f;
-
    if (!setting)
       return -1;
-
-   max = setting->max;
-
-   (void)wraparound; /* TODO/FIXME - handle this */
 
    *setting->value.target.integer =
       *setting->value.target.integer + setting->step;
 
    if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
    {
+      float max = setting->max;
       if (*setting->value.target.integer > max)
       {
          settings_t *settings = config_get_ptr();
