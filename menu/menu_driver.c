@@ -342,18 +342,6 @@ static bool menu_should_pop_stack(const char *label)
    return false;
 }
 
-size_t menu_navigation_get_selection(void)
-{
-   struct menu_state *menu_st  = &menu_driver_state;
-   return menu_st->selection_ptr;
-}
-
-void menu_navigation_set_selection(size_t val)
-{
-   struct menu_state *menu_st  = &menu_driver_state;
-   menu_st->selection_ptr      = val;
-}
-
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation)
 {
@@ -515,17 +503,6 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    }
 }
 
-menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
-{
-   struct menu_state *menu_st  = &menu_driver_state;
-   if (menu_st->entries.list)
-   {
-      const file_list_t *list  = MENU_LIST_GET(menu_st->entries.list, 0);
-      return (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
-   }
-   return NULL;
-}
-
 file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
 {
    struct menu_state   *menu_st   = &menu_driver_state;
@@ -619,10 +596,10 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
        * of the list (e.g. 'Parent Directory'). These
        * have no bearing on the actual content of the
        * list, and should be excluded from the search */
-      if ((entry.type == FILE_TYPE_SCAN_DIRECTORY) ||
-          (entry.type == FILE_TYPE_MANUAL_SCAN_DIRECTORY) ||
-          (entry.type == FILE_TYPE_USE_DIRECTORY) ||
-          (entry.type == FILE_TYPE_PARENT_DIRECTORY))
+      if (   (entry.type == FILE_TYPE_SCAN_DIRECTORY)
+          || (entry.type == FILE_TYPE_MANUAL_SCAN_DIRECTORY)
+          || (entry.type == FILE_TYPE_USE_DIRECTORY)
+          || (entry.type == FILE_TYPE_PARENT_DIRECTORY))
          continue;
 
       /* Get displayed entry label */
@@ -1259,11 +1236,11 @@ static bool input_event_osk_show_symbol_pages(
          menu->driver_ctx &&
          menu->driver_ctx->set_texture);
    unsigned language     = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
-   return !menu_has_fb ||
-         ((language == RETRO_LANGUAGE_JAPANESE) ||
-          (language == RETRO_LANGUAGE_KOREAN) ||
-          (language == RETRO_LANGUAGE_CHINESE_SIMPLIFIED) ||
-          (language == RETRO_LANGUAGE_CHINESE_TRADITIONAL));
+   return    (!menu_has_fb)
+          || ((language == RETRO_LANGUAGE_JAPANESE)
+          ||  (language == RETRO_LANGUAGE_KOREAN)
+          ||  (language == RETRO_LANGUAGE_CHINESE_SIMPLIFIED)
+          ||  (language == RETRO_LANGUAGE_CHINESE_TRADITIONAL));
 #else  /* HAVE_RGUI */
    return true;
 #endif /* HAVE_RGUI */
@@ -2620,11 +2597,11 @@ static void menu_driver_set_last_shader_path_int(
 {
    const char *file_name = NULL;
 
-   if (!type ||
-       !shader_dir ||
-       (dir_len < 1) ||
-       !shader_file ||
-       (file_len < 1))
+   if (   !type
+       || !shader_dir
+       || (dir_len < 1)
+       || !shader_file
+       || (file_len < 1))
       return;
 
    /* Reset existing cache */
@@ -4212,11 +4189,10 @@ static void menu_input_search_cb(void *userdata, const char *str)
       if (menu_entries_search_push(str))
       {
          bool refresh = false;
-
          /* Reset navigation pointer */
          menu_st->selection_ptr = 0;
-         menu_driver_navigation_set(false);
-
+         if (menu_st->driver_ctx->navigation_set)
+            menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
          /* Refresh menu */
          menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
          menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -4231,7 +4207,8 @@ static void menu_input_search_cb(void *userdata, const char *str)
       if (menu_entries_list_search(str, &idx))
       {
          menu_st->selection_ptr = idx;
-         menu_driver_navigation_set(true);
+         if (menu_st->driver_ctx->navigation_set)
+            menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
       }
    }
 
@@ -4248,10 +4225,10 @@ const char *menu_driver_get_last_start_directory(void)
 
    /* Return default directory if there is no
     * last directory or it's invalid */
-   if (!menu ||
-       !use_last ||
-       string_is_empty(menu->last_start_content.directory) ||
-       !path_is_directory(menu->last_start_content.directory))
+   if (   !menu
+       || !use_last
+       || string_is_empty(menu->last_start_content.directory)
+       || !path_is_directory(menu->last_start_content.directory))
       return default_directory;
 
    return menu->last_start_content.directory;
@@ -4625,8 +4602,8 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
                {
                   size_t idx                = list_size - 1;
                   menu_st->selection_ptr    = idx;
-
-                  menu_driver_navigation_set(true);
+                  if (menu_st->driver_ctx->navigation_set)
+                     menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
                }
             }
             else
@@ -4753,22 +4730,6 @@ bool menu_driver_list_cache(menu_ctx_list_t *list)
    menu_st->driver_ctx->list_cache(menu_st->userdata,
          list->type, list->action);
    return true;
-}
-
-void menu_driver_navigation_set(bool scroll)
-{
-   struct menu_state       *menu_st  = &menu_driver_state;
-   if (menu_st->driver_ctx->navigation_set)
-      menu_st->driver_ctx->navigation_set(menu_st->userdata, scroll);
-}
-
-void menu_driver_populate_entries(menu_displaylist_info_t *info)
-{
-   struct menu_state       *menu_st  = &menu_driver_state;
-   if (menu_st->driver_ctx && menu_st->driver_ctx->populate_entries)
-      menu_st->driver_ctx->populate_entries(
-            menu_st->userdata, info->path,
-            info->label, info->type);
 }
 
 bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list)
@@ -6120,8 +6081,8 @@ static int menu_input_pointer_post_iterate(
                uint16_t dx_start_abs       = dx_start < 0 ? dx_start * -1 : dx_start;
                uint16_t dy_start_abs       = dy_start < 0 ? dy_start * -1 : dy_start;
 
-               if ((dx_start_abs > dpi_threshold_drag) ||
-                   (dy_start_abs > dpi_threshold_drag))
+               if (   (dx_start_abs > dpi_threshold_drag)
+                   || (dy_start_abs > dpi_threshold_drag))
                {
                   uint16_t dpi_threshold_press_direction_min     =
                         (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_MIN) + 0.5f);
@@ -6263,9 +6224,9 @@ static int menu_input_pointer_post_iterate(
                    * NOTE: Of course, we must also 'reset' y acceleration
                    * whenever the onscreen keyboard or a message box is
                    * shown */
-                  if ((!menu_input->pointer.dragged &&
-                        (menu_input->pointer.press_duration > MENU_INPUT_Y_ACCEL_RESET_DELAY)) ||
-                      (osk_active || messagebox_active))
+                  if (  (!menu_input->pointer.dragged
+                      && (menu_input->pointer.press_duration > MENU_INPUT_Y_ACCEL_RESET_DELAY))
+                      || (osk_active || messagebox_active))
                   {
                      menu_input->pointer.y_accel = 0.0f;
                      accel0                      = 0.0f;
@@ -6886,9 +6847,9 @@ void retroarch_menu_running_finished(bool quit)
             (enum input_auto_game_focus_type)settings->uints.input_auto_game_focus :
             AUTO_GAME_FOCUS_OFF;
 
-         if ((auto_game_focus_type == AUTO_GAME_FOCUS_ON) ||
-               ((auto_game_focus_type == AUTO_GAME_FOCUS_DETECT) &&
-                input_st->game_focus_state.core_requested))
+         if (      (auto_game_focus_type == AUTO_GAME_FOCUS_ON)
+               || ((auto_game_focus_type == AUTO_GAME_FOCUS_DETECT)
+               && input_st->game_focus_state.core_requested))
          {
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_ON;
             command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
@@ -7150,14 +7111,13 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             /* Always set current selection to first entry */
             menu_st->selection_ptr = 0;
 
-            /* menu_driver_navigation_set() will be called
-             * at the next 'push'.
+            /* navigation_set() will be called at the next 'push'.
              * If a push is *not* pending, have to do it here
              * instead */
             if (!(*pending_push))
             {
-               menu_driver_navigation_set(true);
-
+               if (menu_st->driver_ctx->navigation_set)
+                  menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
                if (menu_st->driver_ctx->navigation_clear)
                   menu_st->driver_ctx->navigation_clear(
                         menu_st->userdata, *pending_push);
@@ -7851,7 +7811,8 @@ int generic_menu_entry_action(
                }
 
                menu_st->selection_ptr = idx;
-               menu_driver_navigation_set(true);
+               if (menu_st->driver_ctx->navigation_set)
+                  menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
 
                if (menu_driver_ctx->navigation_decrement)
                   menu_driver_ctx->navigation_decrement(menu_userdata);
@@ -7871,10 +7832,10 @@ int generic_menu_entry_action(
             {
                if ((menu_st->selection_ptr + scroll_speed) < selection_buf_size)
                {
-                  size_t idx  = menu_st->selection_ptr + scroll_speed;
-
+                  size_t idx             = menu_st->selection_ptr + scroll_speed;
                   menu_st->selection_ptr = idx;
-                  menu_driver_navigation_set(true);
+                  if (menu_st->driver_ctx->navigation_set)
+                     menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
                }
                else
                {
@@ -7910,12 +7871,11 @@ int generic_menu_entry_action(
                {
                   size_t idx             = 0;
                   if (menu_st->selection_ptr >= scroll_speed)
-                     idx = menu_st->selection_ptr - scroll_speed;
-                  else
-                     idx = 0;
+                     idx                 = menu_st->selection_ptr - scroll_speed;
 
                   menu_st->selection_ptr = idx;
-                  menu_driver_navigation_set(true);
+                  if (menu_st->driver_ctx->navigation_set)
+                     menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
 
                   if (menu_driver_ctx->navigation_decrement)
                      menu_driver_ctx->navigation_decrement(menu_userdata);
@@ -7967,10 +7927,10 @@ int generic_menu_entry_action(
                {
                   if ((menu_st->selection_ptr + scroll_speed) < selection_buf_size)
                   {
-                     size_t idx  = menu_st->selection_ptr + scroll_speed;
-
+                     size_t idx             = menu_st->selection_ptr + scroll_speed;
                      menu_st->selection_ptr = idx;
-                     menu_driver_navigation_set(true);
+                     if (menu_st->driver_ctx->navigation_set)
+                        menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
                   }
                   else
                      menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
@@ -8191,9 +8151,9 @@ int generic_menu_entry_action(
          }
          /* If core was launched via 'Contentless Cores' menu,
           * flush to 'Contentless Cores' menu */
-         else if (string_is_equal(parent_label,
-                        msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
-                  string_is_equal(parent_label,
+         else if (   string_is_equal(parent_label,
+                        msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB))
+                  || string_is_equal(parent_label,
                         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))
          {
             flush_target     = parent_label;

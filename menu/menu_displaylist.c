@@ -1223,13 +1223,14 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
 
    if (checked_found)
    {
-      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      struct menu_state *menu_st = menu_state_get_ptr();
+      menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)
             info_list->list[checked].actiondata;
 
       if (cbs)
          cbs->checked = true;
 
-      menu_navigation_set_selection(checked);
+      menu_st->selection_ptr = checked;
    }
 
    return count;
@@ -5076,10 +5077,11 @@ static int menu_displaylist_parse_audio_device_list(
           * mapped to this entry */
          if (audio_device_index == i)
          {
-            menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
             if (cbs)
                cbs->checked = true;
-            menu_navigation_set_selection(menu_index);
+            menu_st->selection_ptr = menu_index;
          }
 
          count++;
@@ -5106,10 +5108,11 @@ static int menu_displaylist_parse_audio_device_list(
           * mapped to this entry */
          if (audio_device_index == i)
          {
-            menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
             if (cbs)
-               cbs->checked = true;
-            menu_navigation_set_selection(menu_index);
+               cbs->checked            = true;
+            menu_st->selection_ptr     = menu_index;
          }
 
          count++;
@@ -5205,10 +5208,11 @@ static int menu_displaylist_parse_input_device_type_list(
           * mapped to this entry */
          if (current_device == devices[i])
          {
-            menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
             if (cbs)
-               cbs->checked = true;
-            menu_navigation_set_selection(menu_index);
+               cbs->checked            = true;
+            menu_st->selection_ptr     = menu_index;
          }
 
          count++;
@@ -5309,9 +5313,9 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
                 {
                     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
                     if (cbs)
-                        cbs->checked = true;
-                    menu_navigation_set_selection(menu_index);
-                    keyboard_added = true;
+                        cbs->checked          = true;
+                    menu_st->selection_ptr    = menu_index;
+                    keyboard_added            = true;
                 }
                 count++;
                 menu_index++;
@@ -5324,8 +5328,8 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
     {
         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info_list->list[0].actiondata;
         if (cbs)
-            cbs->checked = true;
-        menu_navigation_set_selection(0);
+            cbs->checked          = true;
+        menu_st->selection_ptr    = 0;
     }
 
     return count;
@@ -5425,11 +5429,12 @@ static int menu_displaylist_parse_input_description_list(
              * mapped to this entry */
             if (current_remap_idx == i)
             {
-               menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+               struct menu_state *menu_st = menu_state_get_ptr();
+               menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
                if (cbs)
-                  cbs->checked = true;
-               menu_navigation_set_selection(menu_index);
-               current_input_mapped = true;
+                  cbs->checked            = true;
+               menu_st->selection_ptr     = menu_index;
+               current_input_mapped       = true;
             }
 
             count++;
@@ -5449,10 +5454,11 @@ static int menu_displaylist_parse_input_description_list(
       /* Add checkmark if input is currently unmapped */
       if (!current_input_mapped)
       {
-         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+         struct menu_state *menu_st = menu_state_get_ptr();
+         menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
          if (cbs)
-            cbs->checked = true;
-         menu_navigation_set_selection(menu_index);
+            cbs->checked            = true;
+         menu_st->selection_ptr     = menu_index;
       }
 
       count++;
@@ -5482,13 +5488,12 @@ static unsigned menu_displaylist_parse_netplay_mitm_server_list(
       {
          if (string_is_equal(server->name, netplay_mitm_server))
          {
-            menu_file_list_cbs_t *cbs =
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_file_list_cbs_t *cbs  =
                (menu_file_list_cbs_t*)info_list->list[count].actiondata;
-
             if (cbs)
-               cbs->checked = true;
-
-            menu_navigation_set_selection(count);
+               cbs->checked            = true;
+            menu_st->selection_ptr     = count;
          }
 
          count++;
@@ -5572,10 +5577,11 @@ static int menu_displaylist_parse_input_description_kbd_list(
           * mapped to this entry */
          if (current_key_id == key_id)
          {
-            menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
             if (cbs)
-               cbs->checked = true;
-            menu_navigation_set_selection(menu_index);
+               cbs->checked            = true;
+            menu_st->selection_ptr     = menu_index;
          }
 
          count++;
@@ -5666,10 +5672,11 @@ static void wifi_scan_callback(retro_task_t *task,
 bool menu_displaylist_process(menu_displaylist_info_t *info)
 {
 #ifdef HAVE_NETWORKING
-   settings_t *settings   = config_get_ptr();
+   settings_t *settings       = config_get_ptr();
 #endif
-   uint32_t info_flags    = info->flags;
-   file_list_t *info_list = info->list;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   uint32_t info_flags        = info->flags;
+   file_list_t *info_list     = info->list;
 
    if (info_flags & MD_FLAG_NEED_NAVIGATION_CLEAR)
    {
@@ -5730,7 +5737,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
       menu_entries_ctl(MENU_ENTRIES_CTL_REFRESH, info_list);
 
    if (info_flags & MD_FLAG_NEED_CLEAR)
-      menu_navigation_set_selection(0);
+      menu_st->selection_ptr = 0;
 
    if (info_flags & MD_FLAG_NEED_PUSH)
    {
@@ -5743,7 +5750,10 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
                MENU_INFO_MESSAGE, 0, 0, NULL);
 
-      menu_driver_populate_entries(info);
+      if (menu_st->driver_ctx && menu_st->driver_ctx->populate_entries)
+         menu_st->driver_ctx->populate_entries(
+               menu_st->userdata, info->path,
+               info->label, info->type);
    }
    return true;
 }
@@ -5857,10 +5867,11 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
          /* Add checkmark if item is currently selected */
          if (current_thumbnail_mode == thumbnail_mode)
          {
-            menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
             if (cbs)
-               cbs->checked = true;
-            menu_navigation_set_selection(i);
+               cbs->checked            = true;
+            menu_st->selection_ptr     = i;
          }
       }
    }
@@ -7811,10 +7822,11 @@ unsigned menu_displaylist_build_list(
 
                   if (video_list[i].current)
                   {
-                     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     struct menu_state *menu_st = menu_state_get_ptr();
+                     menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
                      if (cbs)
-                        cbs->checked = true;
-                     menu_navigation_set_selection(i);
+                        cbs->checked            = true;
+                     menu_st->selection_ptr     = i;
                   }
                }
 
@@ -7833,9 +7845,10 @@ unsigned menu_displaylist_build_list(
 
             if (core_info_list && playlist)
             {
+               size_t i;
+               struct menu_state *menu_st    = menu_state_get_ptr();
                const char *current_core_name = playlist_get_default_core_name(playlist);
                core_info_t *core_info        = NULL;
-               size_t i;
 
                /* Sort cores alphabetically */
                core_info_qsort(core_info_list, CORE_INFO_LIST_SORT_DISPLAY_NAME);
@@ -7852,19 +7865,16 @@ unsigned menu_displaylist_build_list(
                if (string_is_empty(current_core_name) ||
                      string_is_equal(current_core_name, "DETECT"))
                {
-                  menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[0].actiondata;
+                  menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[0].actiondata;
                   if (cbs)
-                     cbs->checked = true;
-                  menu_navigation_set_selection(0);
+                     cbs->checked            = true;
+                  menu_st->selection_ptr     = 0;
                }
 
                /* Loop through cores */
                for (i = 0; i < core_info_list->count; i++)
                {
-                  core_info = NULL;
-                  core_info = core_info_get(core_info_list, i);
-
-                  if (core_info)
+                  if ((core_info = core_info_get(core_info_list, i)))
                   {
                      if (menu_entries_append(list,
                               core_info->display_name,
@@ -7878,8 +7888,8 @@ unsigned menu_displaylist_build_list(
                      {
                         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i + 1].actiondata;
                         if (cbs)
-                           cbs->checked = true;
-                        menu_navigation_set_selection(i + 1);
+                           cbs->checked           = true;
+                        menu_st->selection_ptr    = (i + 1);
                      }
                   }
                }
@@ -7939,10 +7949,11 @@ unsigned menu_displaylist_build_list(
 
                   if (current_display_mode == display_mode)
                   {
-                     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     struct menu_state *menu_st = menu_state_get_ptr();
+                     menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
                      if (cbs)
-                        cbs->checked = true;
-                     menu_navigation_set_selection(i);
+                        cbs->checked            = true;
+                     menu_st->selection_ptr     = i;
                   }
                }
             }
@@ -8002,10 +8013,11 @@ unsigned menu_displaylist_build_list(
                   /* Check whether current entry is checked */
                   if (current_sort_mode == sort_mode)
                   {
-                     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     struct menu_state *menu_st = menu_state_get_ptr();
+                     menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
                      if (cbs)
-                        cbs->checked = true;
-                     menu_navigation_set_selection(i);
+                        cbs->checked            = true;
+                     menu_st->selection_ptr     = i;
                   }
                }
             }
@@ -8055,10 +8067,11 @@ unsigned menu_displaylist_build_list(
                   /* Check whether current entry is checked */
                   if (string_is_equal(current_system_name, system_name))
                   {
-                     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     struct menu_state *menu_st = menu_state_get_ptr();
+                     menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
                      if (cbs)
-                        cbs->checked = true;
-                     menu_navigation_set_selection(i);
+                        cbs->checked            = true;
+                     menu_st->selection_ptr     = i;
                   }
                }
 
@@ -8101,10 +8114,11 @@ unsigned menu_displaylist_build_list(
                   /* Check whether current entry is checked */
                   if (string_is_equal(current_core_name, core_name))
                   {
-                     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     struct menu_state *menu_st = menu_state_get_ptr();
+                     menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
                      if (cbs)
-                        cbs->checked = true;
-                     menu_navigation_set_selection(i);
+                        cbs->checked            = true;
+                     menu_st->selection_ptr     = i;
                   }
                }
 
@@ -8185,10 +8199,11 @@ unsigned menu_displaylist_build_list(
                      /* Check whether current disk is selected */
                      if (i == current_image)
                      {
-                        menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                        struct menu_state *menu_st = menu_state_get_ptr();
+                        menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
                         if (cbs)
-                           cbs->checked = true;
-                        menu_navigation_set_selection(i);
+                           cbs->checked            = true;
+                        menu_st->selection_ptr     = i;
                      }
                   }
                }
@@ -10935,10 +10950,11 @@ static unsigned menu_displaylist_build_shader_parameter(
 
    if (checked_found)
    {
-      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[checked].actiondata;
+      struct menu_state *menu_st = menu_state_get_ptr();
+      menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[checked].actiondata;
       if (cbs)
-         cbs->checked = true;
-      menu_navigation_set_selection(checked);
+         cbs->checked            = true;
+      menu_st->selection_ptr     = checked;
    }
 
    return count;
@@ -11238,12 +11254,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_OPTIONS_REMAPPINGS_PORT:
             {
                unsigned max_users          = settings->uints.input_max_users;
+               struct menu_state *menu_st  = menu_state_get_ptr();
                const char *menu_driver     = menu_driver_ident();
                bool is_rgui                = string_is_equal(menu_driver, "rgui");
                file_list_t *list           = info->list;
                unsigned port               = string_to_unsigned(info->path);
                unsigned mapped_port        = settings->uints.input_remap_ports[port];
-               size_t selection            = menu_navigation_get_selection();
+               size_t selection            = menu_st->selection_ptr;
 
                menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
@@ -12398,8 +12415,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                core_updater_list_t *core_list   = core_updater_list_get_cached();
                menu_search_terms_t *search_terms= menu_entries_search_get_terms();
+               struct menu_state *menu_st       = menu_state_get_ptr();
                bool show_experimental_cores     = settings->bools.network_buildbot_show_experimental_cores;
-               size_t selection                 = menu_navigation_get_selection();
+               size_t selection                 = menu_st->selection_ptr;
 
                if (core_list)
                {
@@ -12798,7 +12816,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                 * current selection index is less than the current
                 * number of menu entries - if not, we reset the
                 * navigation pointer */
-               size_t selection = menu_navigation_get_selection();
+               struct menu_state *menu_st = menu_state_get_ptr();
+               size_t selection           = menu_st->selection_ptr;
 
                menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
                count = menu_displaylist_parse_core_info(info->list, info->type,
@@ -12832,8 +12851,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                 * have to cache the last set menu size, and reset
                 * the navigation pointer if the current size is
                 * different */
-               static size_t prev_count = 0;
-               size_t selection         = menu_navigation_get_selection();
+               static size_t prev_count   = 0;
+               struct menu_state *menu_st = menu_state_get_ptr();
+               size_t selection           = menu_st->selection_ptr;
                menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
                count                    = menu_displaylist_parse_core_manager_list
                   (info->list, settings);
@@ -12895,8 +12915,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
          case DISPLAYLIST_CONTENTLESS_CORES:
             {
-               size_t contentless_core_ptr =
-                  menu_state_get_ptr()->contentless_core_ptr;
+               struct menu_state *menu_st  = menu_state_get_ptr();
+               size_t contentless_core_ptr = menu_st->contentless_core_ptr;
 
                menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
                count = menu_displaylist_contentless_cores(info->list, settings);
@@ -12911,7 +12931,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                 * menu index is lost. We therefore have to apply
                 * a cached index value after rebuilding the list... */
                if (contentless_core_ptr < count)
-                  menu_navigation_set_selection(contentless_core_ptr);
+                  menu_st->selection_ptr = contentless_core_ptr;
 
                info->flags    &= ~MD_FLAG_NEED_SORT;
                info->flags    |=  MD_FLAG_NEED_PUSH;
@@ -13021,7 +13041,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                 * we therefore have to check that the current selection
                 * index is less than the current number of menu entries
                 * - if not, we reset the navigation pointer */
-               size_t selection             = menu_navigation_get_selection();
+               struct menu_state *menu_st   = menu_state_get_ptr();
+               size_t selection             = menu_st->selection_ptr;
                runloop_state_t *runloop_st  = runloop_state_get_ptr();
 
                menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -13133,7 +13154,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                 * current selection index is less than the current
                 * number of menu entries - if not, we reset the
                 * navigation pointer */
-               size_t selection = menu_navigation_get_selection();
+               struct menu_state *menu_st   = menu_state_get_ptr();
+               size_t selection             = menu_st->selection_ptr;
 
                menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
                count = menu_displaylist_parse_core_option_override_list(info->list, settings);
@@ -13164,7 +13186,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                 * current selection index is less than the current
                 * number of menu entries - if not, we reset the
                 * navigation pointer */
-               size_t selection = menu_navigation_get_selection();
+               struct menu_state *menu_st   = menu_state_get_ptr();
+               size_t selection             = menu_st->selection_ptr;
 
                menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
                count = menu_displaylist_parse_remap_file_manager_list(info->list, settings);
@@ -14492,10 +14515,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                                  if (checked_found)
                                  {
-                                    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                                    struct menu_state *menu_st = menu_state_get_ptr();
+                                    menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                                     if (cbs)
-                                       cbs->checked = true;
-                                    menu_navigation_set_selection(checked);
+                                       cbs->checked            = true;
+                                    menu_st->selection_ptr     = checked;
                                  }
                               }
 
@@ -14571,10 +14595,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (checked_found)
                               {
-                                 menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                                 struct menu_state *menu_st = menu_state_get_ptr();
+                                 menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                                  if (cbs)
-                                    cbs->checked = true;
-                                 menu_navigation_set_selection(checked);
+                                    cbs->checked            = true;
+                                 menu_st->selection_ptr     = checked;
                               }
                            }
                            break;
@@ -14646,10 +14671,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (checked_found)
                               {
-                                 menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                                 struct menu_state *menu_st = menu_state_get_ptr();
+                                 menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                                  if (cbs)
-                                    cbs->checked = true;
-                                 menu_navigation_set_selection(checked);
+                                    cbs->checked            = true;
+                                 menu_st->selection_ptr     = checked;
                               }
                            }
                            break;
@@ -14721,10 +14747,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (checked_found)
                               {
-                                 menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                                 struct menu_state *menu_st = menu_state_get_ptr();
+                                 menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                                  if (cbs)
-                                    cbs->checked = true;
-                                 menu_navigation_set_selection(checked);
+                                    cbs->checked            = true;
+                                 menu_st->selection_ptr     = checked;
                               }
                            }
                            break;
@@ -14761,10 +14788,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                   if (i == pass_count)
                   {
-                     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[i].actiondata;
+                     struct menu_state *menu_st = menu_state_get_ptr();
+                     menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[i].actiondata;
                      if (cbs)
-                        cbs->checked = true;
-                     menu_navigation_set_selection(i);
+                        cbs->checked            = true;
+                     menu_st->selection_ptr     = i;
                   }
                }
 
@@ -14825,10 +14853,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (checked_found)
                               {
-                                 menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                                 struct menu_state *menu_st = menu_state_get_ptr();
+                                 menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                                  if (cbs)
-                                    cbs->checked = true;
-                                 menu_navigation_set_selection(checked);
+                                    cbs->checked            = true;
+                                 menu_st->selection_ptr     = checked;
                               }
                            }
 
@@ -14903,10 +14932,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            if (checked_found)
                            {
-                              menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                              struct menu_state *menu_st = menu_state_get_ptr();
+                              menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                               if (cbs)
-                                 cbs->checked = true;
-                              menu_navigation_set_selection(checked);
+                                 cbs->checked            = true;
+                              menu_st->selection_ptr     = checked;
                            }
                         }
                         break;
@@ -14977,10 +15007,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            if (checked_found)
                            {
-                              menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                              struct menu_state *menu_st = menu_state_get_ptr();
+                              menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                               if (cbs)
-                                 cbs->checked = true;
-                              menu_navigation_set_selection(checked);
+                                 cbs->checked            = true;
+                              menu_st->selection_ptr     = checked;
                            }
                         }
                         break;
@@ -15052,10 +15083,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            if (checked_found)
                            {
-                              menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                              struct menu_state *menu_st = menu_state_get_ptr();
+                              menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                               if (cbs)
-                                 cbs->checked = true;
-                              menu_navigation_set_selection(checked);
+                                 cbs->checked            = true;
+                              menu_st->selection_ptr     = checked;
                            }
                         }
                         break;
@@ -15106,8 +15138,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                if (menu_entries_list_search(pending_selection, &selection_idx))
                {
-                  menu_navigation_set_selection(selection_idx);
-                  menu_driver_navigation_set(true);
+                  struct menu_state *menu_st = menu_state_get_ptr();
+                  menu_st->selection_ptr     = selection_idx;
+                  if (menu_st->driver_ctx->navigation_set)
+                     menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
                }
 
                menu_driver_set_pending_selection(NULL);

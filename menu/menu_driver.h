@@ -631,10 +631,6 @@ int menu_driver_deferred_push_content_list(file_list_t *list);
 
 bool menu_driver_list_cache(menu_ctx_list_t *list);
 
-void menu_driver_navigation_set(bool scroll);
-
-void menu_driver_populate_entries(menu_displaylist_info_t *info);
-
 bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list);
 
 bool menu_driver_init(bool video_is_threaded);
@@ -654,10 +650,6 @@ bool menu_driver_list_get_size(menu_ctx_list_t *list);
 bool menu_driver_screensaver_supported(void);
 
 retro_time_t menu_driver_get_current_time(void);
-
-size_t menu_navigation_get_selection(void);
-
-void menu_navigation_set_selection(size_t val);
 
 void menu_display_handle_thumbnail_upload(retro_task_t *task,
       void *task_data,

@@ -4936,6 +4936,7 @@ static void rgui_render(
    settings_t *settings           = config_get_ptr();
    gfx_animation_t *p_anim        = anim_get_ptr();
    gfx_display_t *p_disp          = disp_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
    enum gfx_animation_ticker_type
          menu_ticker_type         = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
@@ -5168,11 +5169,12 @@ static void rgui_render(
        * this is better than switching back to the text playlist
        * view, which causes ugly flickering when scrolling quickly
        * through a list...) */
-      const char *thumbnail_title = NULL;
       char thumbnail_title_buf[255];
       unsigned title_x, title_width;
-      bool is_state_slot     = !string_is_empty(rgui->savestate_thumbnail_file_path);
-      thumbnail_title_buf[0] = '\0';
+      const char *thumbnail_title = NULL;
+      struct menu_state *menu_st  = menu_state_get_ptr();
+      bool is_state_slot          = !string_is_empty(rgui->savestate_thumbnail_file_path);
+      thumbnail_title_buf[0]      = '\0';
 
       /* Draw thumbnail */
       rgui_render_fs_thumbnail(rgui, fb_width, fb_height, fb_pitch);
@@ -5200,7 +5202,7 @@ static void rgui_render(
                snprintf(thumbnail_title_buf      + _len,
                      sizeof(thumbnail_title_buf) - _len,
                      " %d",
-                     (int)menu_navigation_get_selection() - 1);
+                     (int)menu_st->selection_ptr - 1);
                thumbnail_title = thumbnail_title_buf;
             }
          }
@@ -5250,7 +5252,7 @@ static void rgui_render(
    else
    {
       /* Render usual text */
-      size_t selection               = menu_navigation_get_selection();
+      size_t selection               = menu_st->selection_ptr;
       char title_buf[255];
       size_t title_max_len;
       size_t title_len;
@@ -6760,9 +6762,10 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
    /* On demand thumbnail downloads */
    if (thumbnails_missing && download_missing)
    {
-      const char *system   = NULL;
-      playlist_t *playlist = playlist_get_cached();
-      size_t selection     = menu_navigation_get_selection();
+      const char *system         = NULL;
+      playlist_t *playlist       = playlist_get_cached();
+      struct menu_state *menu_st = menu_state_get_ptr();
+      size_t selection           = menu_st->selection_ptr;
 
       /* Explore list needs cached selection index */
       if (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
@@ -6909,19 +6912,20 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
          || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
          || (rgui->is_quick_menu))
    {
-      size_t selection      = menu_navigation_get_selection();
-      size_t list_size      = menu_entries_get_size();
-      file_list_t *list     = menu_entries_get_selection_buf_ptr(0);
-      bool playlist_valid   = false;
-      size_t playlist_index = selection;
+      struct menu_state *menu_st = menu_state_get_ptr();
+      size_t selection           = menu_st->selection_ptr;
+      size_t list_size           = menu_entries_get_size();
+      file_list_t *list          = menu_entries_get_selection_buf_ptr(0);
+      bool playlist_valid        = false;
+      size_t playlist_index      = selection;
 
       if (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
       {
          /* Get playlist index corresponding
           * to the selected entry */
-         if (list &&
-             (selection < list_size) &&
-             (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+         if (   (list)
+             && (selection < list_size)
+             && (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
          {
             playlist_valid       = true;
             playlist_index       = list->list[selection].entry_idx;
@@ -6971,8 +6975,9 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    if (     (rgui->is_quick_menu)
          || (rgui->flags & RGUI_FLAG_IS_STATE_SLOT))
    {
-      size_t selection = menu_navigation_get_selection();
-      size_t list_size = menu_entries_get_size();
+      struct menu_state *menu_st = menu_state_get_ptr();
+      size_t selection           = menu_st->selection_ptr;
+      size_t list_size           = menu_entries_get_size();
 
       if (selection < list_size)
       {
@@ -7132,8 +7137,9 @@ static void rgui_navigation_set(void *data, bool scroll)
 {
    size_t start                   = 0;
    bool menu_show_sublabels       = false;
+   struct menu_state *menu_st     = menu_state_get_ptr();
    size_t end                     = menu_entries_get_size();
-   size_t selection               = menu_navigation_get_selection();
+   size_t selection               = menu_st->selection_ptr;
    rgui_t *rgui                   = (rgui_t*)data;
 
    if (!rgui)
@@ -7359,8 +7365,9 @@ static int rgui_pointer_up(
       menu_entry_t *entry,
       unsigned action)
 {
-   rgui_t *rgui           = (rgui_t*)data;
-   size_t selection       = menu_navigation_get_selection();
+   rgui_t *rgui               = (rgui_t*)data;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t selection           = menu_st->selection_ptr;
 
    if (!rgui)
       return -1;
@@ -7394,6 +7401,7 @@ static int rgui_pointer_up(
                   return rgui_menu_entry_action(rgui, entry, selection, MENU_ACTION_CANCEL);
                else if (ptr <= (menu_entries_get_size() - 1))
                {
+                  struct menu_state *menu_st = menu_state_get_ptr();
                   /* If currently selected item matches 'pointer' value,
                    * perform a MENU_ACTION_SELECT on it */
                   if (ptr == selection)
@@ -7401,7 +7409,7 @@ static int rgui_pointer_up(
 
                   /* Otherwise, just move the current selection to the
                    * 'pointer' value */
-                  menu_navigation_set_selection(ptr);
+                  menu_st->selection_ptr = ptr;
                   rgui_navigation_set(rgui, false);
                }
             }
@@ -7874,9 +7882,10 @@ static enum menu_action rgui_parse_menu_entry_action(
 
          if (string_is_equal(rgui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU)))
          {
+            struct menu_state *menu_st = menu_state_get_ptr();
             /* Jump to first item on Main Menu */
-            menu_navigation_set_selection(0);
-            new_action = MENU_ACTION_NOOP;
+            menu_st->selection_ptr     = 0;
+            new_action                 = MENU_ACTION_NOOP;
          }
          break;
       case MENU_ACTION_START:

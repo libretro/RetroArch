@@ -1366,7 +1366,9 @@ static void xmb_unload_thumbnail_textures(void *data)
 
 static void xmb_set_thumbnail_content(void *data, const char *s)
 {
-   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   xmb_handle_t *xmb          = (xmb_handle_t*)data;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t selection           = menu_st->selection_ptr;
    if (!xmb)
       return;
 
@@ -1383,8 +1385,6 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       /* Playlist content */
       if (string_is_empty(s))
       {
-         size_t selection             = menu_navigation_get_selection();
-         struct menu_state *menu_st   = menu_state_get_ptr();
          menu_list_t *menu_list       = menu_st->entries.list;
          size_t list_size             = (unsigned)MENU_LIST_GET_SELECTION(menu_list, 0)->size;
          file_list_t *list            = MENU_LIST_GET_SELECTION(menu_list, 0);
@@ -1412,8 +1412,6 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       if (string_is_empty(s))
       {
          menu_entry_t entry;
-         size_t selection         = menu_navigation_get_selection();
-
          MENU_ENTRY_INITIALIZE(entry);
          entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
          menu_entry_get(&entry, 0, selection, NULL, true);
@@ -1435,7 +1433,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
          menu_entry_t entry;
          MENU_ENTRY_INITIALIZE(entry);
          entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
-         menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+         menu_entry_get(&entry, 0, selection, NULL, true);
 
          xmb->fullscreen_thumbnails_available =
                (menu_explore_set_playlist_thumbnail(entry.type, xmb->thumbnail_path_data) >= 0);
@@ -1446,9 +1444,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
    {
       /* Filebrowser image updates */
       menu_entry_t entry;
-      struct menu_state *menu_st = menu_state_get_ptr();
       menu_list_t *menu_list     = menu_st->entries.list;
-      size_t selection           = menu_navigation_get_selection();
       file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
       xmb_node_t *node           = (xmb_node_t*)selection_buf->list[selection].userdata;
 
@@ -2146,10 +2142,11 @@ static void xmb_tab_set_selection(void *data)
 
    if (xmb)
    {
-      size_t tab_selection = xmb->tab_selection[xmb->categories_selection_ptr];
+      size_t tab_selection          = xmb->tab_selection[xmb->categories_selection_ptr];
       if (tab_selection)
       {
-         menu_navigation_set_selection(tab_selection);
+         struct menu_state *menu_st = menu_state_get_ptr();
+         menu_st->selection_ptr     = tab_selection;
          xmb_selection_pointer_changed(xmb, false);
       }
    }
@@ -2623,7 +2620,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
-   size_t selection           = menu_navigation_get_selection();
+   size_t selection           = menu_st->selection_ptr;
 
    xmb->depth                 = (int)
       xmb_list_get_size(xmb, MENU_LIST_PLAIN);
@@ -2805,7 +2802,7 @@ static void xmb_populate_entries(void *data,
          !xmb->is_quick_menu &&
          (xmb->is_playlist || xmb->is_explore_list)))
    {
-      size_t entry_idx_selection = menu_navigation_get_selection() + 1;
+      size_t entry_idx_selection = menu_st->selection_ptr + 1;
       size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
       unsigned entry_idx_offset  = 0;
 
@@ -4531,7 +4528,8 @@ static int xmb_menu_entry_action(
 static enum menu_action xmb_parse_menu_entry_action(
       xmb_handle_t *xmb, enum menu_action action)
 {
-   enum menu_action new_action = action;
+   struct menu_state   *menu_st = menu_state_get_ptr();
+   enum menu_action new_action  = action;
 
    /* Scan user inputs */
    switch (action)
@@ -4597,7 +4595,7 @@ static enum menu_action xmb_parse_menu_entry_action(
                !xmb->show_fullscreen_thumbnails)
          {
             xmb_hide_fullscreen_thumbnails(xmb, false);
-            xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
+            xmb_show_fullscreen_thumbnails(xmb, menu_st->selection_ptr);
             xmb->want_fullscreen_thumbnails = true;
             xmb_set_thumbnail_delay(false);
             new_action = MENU_ACTION_NOOP;
@@ -4616,7 +4614,7 @@ static enum menu_action xmb_parse_menu_entry_action(
                 (xmb->is_quick_menu && !string_is_empty(xmb->savestate_thumbnail_file_path))))
          {
             xmb_hide_fullscreen_thumbnails(xmb, false);
-            xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
+            xmb_show_fullscreen_thumbnails(xmb, menu_st->selection_ptr);
             xmb->want_fullscreen_thumbnails = true;
             new_action = MENU_ACTION_NOOP;
          }
@@ -4646,7 +4644,7 @@ static enum menu_action xmb_parse_menu_entry_action(
             if (xmb->show_fullscreen_thumbnails)
                xmb_hide_fullscreen_thumbnails(xmb, true);
             else
-               xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
+               xmb_show_fullscreen_thumbnails(xmb, menu_st->selection_ptr);
             return MENU_ACTION_NOOP;
          }
 
@@ -4679,7 +4677,7 @@ static enum menu_action xmb_parse_menu_entry_action(
                   (unsigned)xmb->categories_selection_ptr) == XMB_SYSTEM_TAB_MAIN)
             {
                /* Jump to first item on Main Menu */
-               menu_navigation_set_selection(0);
+               menu_st->selection_ptr = 0;
                xmb_selection_pointer_changed(xmb, true);
             }
             else
@@ -4690,7 +4688,7 @@ static enum menu_action xmb_parse_menu_entry_action(
 
                menu_entry_t entry;
                MENU_ENTRY_INITIALIZE(entry);
-               menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+               menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
 
                /* Icon animations get stuck if they happen too fast,
                   therefore allow it only on the last action */
@@ -4701,7 +4699,7 @@ static enum menu_action xmb_parse_menu_entry_action(
                      xmb->allow_horizontal_animation    = true;
 
                   xmb_menu_entry_action(xmb,
-                        &entry, menu_navigation_get_selection(), MENU_ACTION_LEFT);
+                        &entry, menu_st->selection_ptr, MENU_ACTION_LEFT);
                }
             }
             return MENU_ACTION_NOOP;
@@ -4809,7 +4807,7 @@ static void xmb_render(void *data,
 
    if (xmb->pointer.type != MENU_POINTER_DISABLED)
    {
-      size_t selection     = menu_navigation_get_selection();
+      size_t selection     = menu_st->selection_ptr;
       int16_t margin_top   = (int16_t)xmb->margins_screen_top;
       int16_t margin_left  = (int16_t)xmb->margins_screen_left;
       int16_t margin_right = (int16_t)((float)width - xmb->margins_screen_left);
@@ -4945,7 +4943,7 @@ static void xmb_render(void *data,
    /* Handle any pending thumbnail load requests */
    if (xmb->thumbnails.pending != XMB_PENDING_THUMBNAIL_NONE)
    {
-      size_t selection                         = menu_navigation_get_selection();
+      size_t selection                         = menu_st->selection_ptr;
       playlist_t *playlist                     = playlist_get_cached();
       unsigned gfx_thumbnail_upscale_threshold = settings->uints.gfx_thumbnail_upscale_threshold;
       bool network_on_demand_thumbnails        = settings->bools.network_on_demand_thumbnails;
@@ -5765,7 +5763,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb_coord_black,
             xmb_coord_white);
 
-   selection = menu_navigation_get_selection();
+   selection = menu_st->selection_ptr;
 
    /* Use alternative title if available */
    strlcpy(title_truncated,
@@ -5827,24 +5825,24 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Allow browsing playlist in fullscreen thumbnail mode */
-   if ((xmb->is_playlist || xmb->is_state_slot) &&
-         xmb->show_fullscreen_thumbnails &&
-         xmb->fullscreen_thumbnails_available &&
-         menu_navigation_get_selection() != xmb->fullscreen_thumbnail_selection)
-      xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
-   else if (!xmb->show_fullscreen_thumbnails &&
-         xmb->fullscreen_thumbnails_available &&
-         xmb->want_fullscreen_thumbnails)
-      xmb_show_fullscreen_thumbnails(xmb, menu_navigation_get_selection());
+   if (    (xmb->is_playlist || xmb->is_state_slot)
+         && xmb->show_fullscreen_thumbnails
+         && xmb->fullscreen_thumbnails_available
+         && (menu_st->selection_ptr != xmb->fullscreen_thumbnail_selection))
+      xmb_show_fullscreen_thumbnails(xmb, menu_st->selection_ptr);
+   else if (!xmb->show_fullscreen_thumbnails
+         &&  xmb->fullscreen_thumbnails_available 
+         &&  xmb->want_fullscreen_thumbnails)
+      xmb_show_fullscreen_thumbnails(xmb, menu_st->selection_ptr);
 
    /* Note: This is incredibly ugly, but there are
     * so many combinations here that we would go insane
     * trying to rationalise this any further... */
 
    /* Save state thumbnail, right side in PS3 layout, left in PSP layout */
-   if ((xmb->is_quick_menu || xmb->is_state_slot) &&
-         ((xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE) ||
-          (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING)))
+   if (       (xmb->is_quick_menu || xmb->is_state_slot)
+          && ((xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+          ||  (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING)))
    {
       float thumb_width         = right_thumbnail_margin_width;
       float thumb_height        = thumbnail_margin_height_full;
@@ -7463,11 +7461,12 @@ static void xmb_list_insert(void *userdata,
       size_t list_size,
       unsigned entry_type)
 {
-   int current            = 0;
-   int i                  = (int)list_size;
-   xmb_node_t *node       = NULL;
-   xmb_handle_t *xmb      = (xmb_handle_t*)userdata;
-   size_t selection       = menu_navigation_get_selection();
+   int current                = 0;
+   int i                      = (int)list_size;
+   xmb_node_t *node           = NULL;
+   xmb_handle_t *xmb          = (xmb_handle_t*)userdata;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t selection           = menu_st->selection_ptr;
 
    if (!xmb || !list)
       return;
@@ -7568,7 +7567,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *menu_stack        = MENU_LIST_GET(menu_list, 0);
    file_list_t *selection_buf     = MENU_LIST_GET_SELECTION(menu_list, 0);
-   size_t selection               = menu_navigation_get_selection();
+   size_t selection               = menu_st->selection_ptr;
    settings_t *settings           = config_get_ptr();
    bool menu_horizontal_animation = settings->bools.menu_horizontal_animation;
 
@@ -8199,8 +8198,8 @@ static int xmb_pointer_up(void *userdata,
    int16_t margin_left;
    int16_t margin_right;
    xmb_handle_t *xmb            = (xmb_handle_t*)userdata;
-   size_t selection             = menu_navigation_get_selection();
    struct menu_state *menu_st   = menu_state_get_ptr();
+   size_t selection             = menu_st->selection_ptr;
    menu_list_t *menu_list       = menu_st->entries.list;
    unsigned end                 = (unsigned)MENU_LIST_GET_SELECTION(menu_list, 0)->size;
 
@@ -8249,7 +8248,7 @@ static int xmb_pointer_up(void *userdata,
                      entry, selection, MENU_ACTION_SELECT);
 
             /* ...otherwise navigate to the current pointer item */
-            menu_navigation_set_selection(ptr);
+            menu_st->selection_ptr = ptr;
             xmb_navigation_set(xmb, false);
          }
          break;
@@ -8297,7 +8296,7 @@ static int xmb_pointer_up(void *userdata,
 
             if (last < end)
             {
-               menu_navigation_set_selection((size_t)last);
+               menu_st->selection_ptr = (size_t)last;
                xmb_navigation_set(xmb, true);
             }
             else
@@ -8347,7 +8346,7 @@ static int xmb_pointer_up(void *userdata,
 
             if (new_idx > 0)
             {
-               menu_navigation_set_selection(new_idx);
+               menu_st->selection_ptr = new_idx;
                xmb_navigation_set(xmb, true);
             }
             else

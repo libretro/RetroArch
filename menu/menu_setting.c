@@ -7002,9 +7002,10 @@ int menu_action_handle_setting(rarch_setting_t *setting,
          {
             menu_displaylist_info_t  info;
             settings_t *settings          = config_get_ptr();
+            struct menu_state *menu_st    = menu_state_get_ptr();
             file_list_t *menu_stack       = menu_entries_get_menu_stack_ptr(0);
             const char *name              = setting->name;
-            size_t selection              = menu_navigation_get_selection();
+            size_t selection              = menu_st->selection_ptr;
 
             menu_displaylist_info_init(&info);
 
@@ -7052,7 +7053,8 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_ACTION:
          {
             int ret                       = -1;
-            size_t selection              = menu_navigation_get_selection();
+            struct menu_state *menu_st    = menu_state_get_ptr();
+            size_t selection              = menu_st->selection_ptr;
             switch (action)
             {
                case MENU_ACTION_UP:
@@ -7194,8 +7196,9 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
 int menu_setting_set(unsigned type, unsigned action, bool wraparound)
 {
    int ret                    = 0;
+   struct menu_state *menu_st = menu_state_get_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   size_t selection           = menu_navigation_get_selection();
+   size_t selection           = menu_st->selection_ptr;
    menu_file_list_cbs_t *cbs  = selection_buf ?
       (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
 

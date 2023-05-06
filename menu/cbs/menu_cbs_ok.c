@@ -584,10 +584,12 @@ int generic_action_ok_displaylist_push(const char *path,
    const char          *content_path       = NULL;
    const char          *info_label         = NULL;
    const char          *info_path          = NULL;
-   menu_handle_t *menu                     = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st              = menu_state_get_ptr();
+   menu_handle_t *menu                     = menu_st->driver_data;
+   menu_list_t *menu_list                  = menu_st->entries.list;
    settings_t            *settings         = config_get_ptr();
    const char *menu_ident                  = menu_driver_ident();
-   file_list_t           *menu_stack       = menu_entries_get_menu_stack_ptr(0);
+   file_list_t           *menu_stack       = MENU_LIST_GET(menu_list, 0);
 #ifdef HAVE_AUDIOMIXER
    bool audio_enable_menu                  = settings->bools.audio_enable_menu;
    bool audio_enable_menu_ok               = settings->bools.audio_enable_menu_ok;
@@ -2312,14 +2314,16 @@ static int action_ok_file_load(const char *path,
    const char *menu_label              = NULL;
    const char *menu_path               = NULL;
    rarch_setting_t *setting            = NULL;
-   file_list_t  *menu_stack            = menu_entries_get_menu_stack_ptr(0);
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   menu_handle_t *menu                 = menu_st->driver_data;
+   menu_list_t *menu_list              = menu_st->entries.list;
+   file_list_t *menu_stack             = MENU_LIST_GET(menu_list, 0);
 
    if (filebrowser_get_type() == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
    {
       /* TODO/FIXME - this path is triggered when we try to load a
        * file from an archive while inside the load subsystem
        * action */
-      menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
       if (!menu)
          return -1;
 
@@ -2367,10 +2371,8 @@ static int action_ok_file_load(const char *path,
                msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN))
          )
       {
-         menu_handle_t *menu = menu_state_get_ptr()->driver_data;
          if (!menu)
             return -1;
-
          fill_pathname_join_special(menu_path_new,
                menu->scratch2_buf, menu->scratch_buf,
                sizeof(menu_path_new));
@@ -2399,7 +2401,7 @@ static bool playlist_entry_path_is_valid(const char *entry_path)
    char *file_path     = NULL;
 
    if (string_is_empty(entry_path))
-      goto error;
+      return false;
 
    file_path = strdup(entry_path);
 
@@ -2432,11 +2434,8 @@ static bool playlist_entry_path_is_valid(const char *entry_path)
    return true;
 
 error:
-   if (file_path)
-   {
-      free(file_path);
-      file_path = NULL;
-   }
+   free(file_path);
+   file_path = NULL;
 
    return false;
 }
@@ -3801,13 +3800,14 @@ static int action_ok_path_manual_scan_directory(const char *path,
 static int action_ok_core_deferred_set(const char *new_core_path,
       const char *content_label, unsigned type, size_t idx, size_t entry_idx)
 {
-   size_t selection              = menu_navigation_get_selection();
+   char msg[PATH_MAX_LENGTH];
+   char resolved_core_path[PATH_MAX_LENGTH];
+   struct menu_state *menu_st    = menu_state_get_ptr();
    struct playlist_entry entry   = {0};
-   menu_handle_t *menu           = menu_state_get_ptr()->driver_data;
+   size_t selection              = menu_st->selection_ptr;
+   menu_handle_t *menu           = menu_st->driver_data;
    core_info_t *core_info        = NULL;
    const char *core_display_name = NULL;
-   char resolved_core_path[PATH_MAX_LENGTH];
-   char msg[PATH_MAX_LENGTH];
 
    if (  !menu
        || string_is_empty(new_core_path))
@@ -3840,7 +3840,7 @@ static int action_ok_core_deferred_set(const char *new_core_path,
    runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    menu_entries_pop_stack(&selection, 0, 1);
-   menu_navigation_set_selection(selection);
+   menu_st->selection_ptr = selection;
 
    return 0;
 }
@@ -3944,10 +3944,13 @@ static int action_ok_file_load_ffmpeg(const char *path,
 {
    char new_path[PATH_MAX_LENGTH];
    const char *menu_path           = NULL;
-   file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   menu_handle_t *menu             = menu_st->driver_data;
+   menu_list_t *menu_list          = menu_st->entries.list;
+   file_list_t *menu_stack         = MENU_LIST_GET(menu_list, 0);
 
    if (menu_stack && menu_stack->size)
-      menu_path  = menu_stack->list[menu_stack->size - 1].path;
+      menu_path = menu_stack->list[menu_stack->size - 1].path;
 
    if (string_is_empty(menu_path))
 	   return -1;
@@ -4336,8 +4339,9 @@ static int action_ok_cheat_delete(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char msg[256];
-   size_t new_selection_ptr = 0;
-   unsigned int new_size    = cheat_manager_get_size() - 1;
+   size_t new_selection_ptr   = 0;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned int new_size      = cheat_manager_get_size() - 1;
 
    if (new_size >0)
    {
@@ -4368,9 +4372,9 @@ static int action_ok_cheat_delete(const char *path,
 
    runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-   new_selection_ptr = menu_navigation_get_selection();
+   new_selection_ptr      = menu_st->selection_ptr;
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
-   menu_navigation_set_selection(new_selection_ptr);
+   menu_st->selection_ptr = new_selection_ptr;
 
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
@@ -4384,7 +4388,10 @@ static int action_ok_file_load_imageviewer(const char *path,
 {
    char fullpath[PATH_MAX_LENGTH];
    const char *menu_path           = NULL;
-   file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   menu_handle_t *menu             = menu_st->driver_data;
+   menu_list_t *menu_list          = menu_st->entries.list;
+   file_list_t *menu_stack         = MENU_LIST_GET(menu_list, 0);
 
    if (menu_stack && menu_stack->size)
       menu_path = menu_stack->list[menu_stack->size - 1].path;
@@ -5336,12 +5343,12 @@ static int action_ok_core_options_flush(const char *path,
 int action_ok_close_content(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int ret;
-
+   struct menu_state   *menu_st = menu_state_get_ptr();
    /* Reset navigation pointer
     * > If we are returning to the quick menu, want
     *   the active entry to be 'Run' (first item in
     *   menu list) */
-   menu_navigation_set_selection(0);
+   menu_st->selection_ptr       = 0;
 
    /* Unload core */
    ret = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
@@ -5353,19 +5360,17 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
     * navigation) */
    if (type == MENU_SETTING_ACTION_CLOSE)
    {
-      const char *flush_target   = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
       const char *parent_label   = NULL;
-      struct menu_state *menu_st = menu_state_get_ptr();
+      const char *flush_target   = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
       file_list_t *list          = NULL;
-
       if (menu_st->entries.list)
          list  = MENU_LIST_GET(menu_st->entries.list, 0);
       if (list && (list->size > 1))
       {
          parent_label = list->list[list->size - 2].label;
 
-         if (string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)) ||
-             string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))
+         if (   string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB))
+             || string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))
             flush_target = parent_label;
       }
 
@@ -5679,18 +5684,19 @@ static int action_ok_delete_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t new_selection_ptr;
-   char *conf_path              = NULL;
-   char *def_conf_path          = NULL;
-   char *def_conf_music_path    = NULL;
+   char *conf_path           = NULL;
+   char *def_conf_path       = NULL;
+   char *def_conf_music_path = NULL;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-   char *def_conf_video_path    = NULL;
+   char *def_conf_video_path = NULL;
 #endif
 #ifdef HAVE_IMAGEVIEWER
-   char *def_conf_img_path      = NULL;
+   char *def_conf_img_path   = NULL;
 #endif
-   char *def_conf_fav_path      = NULL;
-   playlist_t *playlist         = playlist_get_cached();
-   menu_handle_t *menu          = menu_state_get_ptr()->driver_data;
+   char *def_conf_fav_path   = NULL;
+   playlist_t *playlist      = playlist_get_cached();
+   struct menu_state *menu_st= menu_state_get_ptr();
+   menu_handle_t *menu       = menu_st->driver_data;
 
    if (!menu)
       return -1;
@@ -5707,19 +5713,19 @@ static int action_ok_delete_entry(const char *path,
    def_conf_fav_path         = playlist_get_conf_path(g_defaults.content_favorites);
 
    if (string_is_equal(conf_path, def_conf_path))
-      playlist = g_defaults.content_history;
+      playlist               = g_defaults.content_history;
    else if (string_is_equal(conf_path, def_conf_music_path))
-      playlist = g_defaults.music_history;
+      playlist               = g_defaults.music_history;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    else if (string_is_equal(conf_path, def_conf_video_path))
-      playlist = g_defaults.video_history;
+      playlist               = g_defaults.video_history;
 #endif
 #ifdef HAVE_IMAGEVIEWER
    else if (string_is_equal(conf_path, def_conf_img_path))
-      playlist = g_defaults.image_history;
+      playlist               = g_defaults.image_history;
 #endif
    else if (string_is_equal(conf_path, def_conf_fav_path))
-      playlist = g_defaults.content_favorites;
+      playlist               = g_defaults.content_favorites;
 
    if (playlist)
    {
@@ -5727,9 +5733,9 @@ static int action_ok_delete_entry(const char *path,
       playlist_write_file(playlist);
    }
 
-   new_selection_ptr = menu_navigation_get_selection();
+   new_selection_ptr      = menu_st->selection_ptr;
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
-   menu_navigation_set_selection(new_selection_ptr);
+   menu_st->selection_ptr = new_selection_ptr;
 
    return 0;
 }
@@ -6267,8 +6273,9 @@ static int action_ok_push_downloads_dir(const char *path,
 int action_ok_push_filebrowser_list_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
    char current_value[PATH_MAX_LENGTH];
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_handle_t *menu        = menu_st->driver_data;
 
    current_value[0] = '\0';
 
@@ -6276,7 +6283,7 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
       return -1;
 
    /* Start browsing from current directory */
-   get_current_menu_value(menu_state_get_ptr(), current_value, sizeof(current_value));
+   get_current_menu_value(menu_st, current_value, sizeof(current_value));
    if (!path_is_directory(current_value))
       current_value[0] = '\0';
 
@@ -6741,7 +6748,8 @@ static int action_ok_push_dropdown_item_manual_content_scan_core_name(
 static int action_ok_push_dropdown_item_disk_index(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   unsigned disk_index = (unsigned)idx;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned disk_index        = (unsigned)idx;
 
    command_event(CMD_EVENT_DISK_INDEX, &disk_index);
 
@@ -6749,7 +6757,7 @@ static int action_ok_push_dropdown_item_disk_index(const char *path,
     * automatically be reset to the 'insert disk'
     * option */
    menu_entries_pop_stack(NULL, 0, 1);
-   menu_navigation_set_selection(0);
+   menu_st->selection_ptr = 0;
 
    return 0;
 }
@@ -6981,7 +6989,8 @@ static int action_ok_start_core(const char *path,
 static int action_ok_contentless_core_run(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *core_path = path;
+   const char *core_path      = path;
+   struct menu_state *menu_st = menu_state_get_ptr();
    /* TODO/FIXME: If this function succeeds, the
     * quick menu will be pushed on the subsequent
     * frame via the RARCH_MENU_CTL_SET_PENDING_QUICK_MENU
@@ -6991,8 +7000,8 @@ static int action_ok_contentless_core_run(const char *path,
     * menu index is lost. We therefore have to cache
     * the current selection here, and reapply it manually
     * when building the contentless cores list... */
-   size_t selection      = menu_navigation_get_selection();
-   uint32_t flags        = runloop_get_flags();
+   size_t selection           = menu_st->selection_ptr;
+   uint32_t flags             = runloop_get_flags();
 
    if (string_is_empty(core_path))
       return -1;
@@ -7001,10 +7010,10 @@ static int action_ok_contentless_core_run(const char *path,
    if (   retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path)
        && (flags & RUNLOOP_FLAG_CORE_RUNNING))
    {
-      bool flush_menu = false;
+      bool flush_menu               = false;
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, &flush_menu);
-      menu_state_get_ptr()->contentless_core_ptr = selection;
-      menu_navigation_set_selection(0);
+      menu_st->contentless_core_ptr = selection;
+      menu_st->selection_ptr        = 0;
       return 0;
    }
 
@@ -7013,7 +7022,7 @@ static int action_ok_contentless_core_run(const char *path,
     * navigation (i.e. running a core will in general
     * cause a redraw of the menu, so must record current
     * position even if the operation fails) */
-   menu_state_get_ptr()->contentless_core_ptr = selection;
+   menu_st->contentless_core_ptr    = selection;
 
    /* Load and start core */
    path_clear(RARCH_PATH_BASENAME);
@@ -7032,7 +7041,8 @@ static int action_ok_load_archive(const char *path,
 {
    const char *menu_path           = NULL;
    const char *content_path        = NULL;
-   menu_handle_t *menu             = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   menu_handle_t *menu             = menu_st->driver_data;
 
    if (!menu)
       return -1;
@@ -7060,7 +7070,8 @@ static int action_ok_load_archive_detect_core(const char *path,
    core_info_list_t *list              = NULL;
    const char *menu_path               = NULL;
    const char *content_path            = NULL;
-   menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   menu_handle_t *menu                 = menu_st->driver_data;
 
    if (!menu)
       return -1;
@@ -7111,7 +7122,7 @@ static int action_ok_load_archive_detect_core(const char *path,
          }
          break;
       case 0:
-         idx = menu_navigation_get_selection();
+         idx = menu_st->selection_ptr;
          ret = generic_action_ok_displaylist_push(path, NULL,
                label, type,
                idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
@@ -7296,6 +7307,7 @@ static int action_ok_disk_cycle_tray_status(const char *path,
 {
    bool disk_ejected              = false;
    bool print_log                 = false;
+   struct menu_state *menu_st     = menu_state_get_ptr();
    rarch_system_info_t *sys_info  = &runloop_state_get_ptr()->system;
    settings_t *settings           = config_get_ptr();
 #ifdef HAVE_AUDIOMIXER
@@ -7334,7 +7346,7 @@ static int action_ok_disk_cycle_tray_status(const char *path,
     * automatically increment to the 'current disk
     * index' option */
    if (disk_ejected)
-      menu_navigation_set_selection(1);
+      menu_st->selection_ptr = 1;
 
    /* If disk is now inserted and user has enabled
     * 'menu_insert_disk_resume', resume running content */
@@ -7349,7 +7361,8 @@ static int action_ok_disk_image_append(const char *path,
 {
    char image_path[PATH_MAX_LENGTH];
    rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
-   menu_handle_t *menu           = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st    = menu_state_get_ptr();
+   menu_handle_t *menu           = menu_st->driver_data;
    const char *menu_path         = NULL;
    settings_t *settings          = config_get_ptr();
 #ifdef HAVE_AUDIOMIXER
@@ -7392,7 +7405,7 @@ static int action_ok_disk_image_append(const char *path,
     * > If disk try is closed and user has enabled
     *   'menu_insert_disk_resume', resume running content */
    if (sys_info && disk_control_get_eject_state(&sys_info->disk_control))
-      menu_navigation_set_selection(0);
+      menu_st->selection_ptr = 0;
    else if (menu_insert_disk_resume)
       generic_action_ok_command(CMD_EVENT_RESUME);
 

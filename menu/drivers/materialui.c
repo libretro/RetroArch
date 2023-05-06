@@ -3101,15 +3101,16 @@ static void (*materialui_compute_entries_box)(
 static float materialui_get_scroll(materialui_handle_t *mui,
       gfx_display_t *p_disp)
 {
-   file_list_t *list       = menu_entries_get_selection_buf_ptr(0);
-   materialui_node_t *node = NULL;
-   size_t selection        = menu_navigation_get_selection();
-   unsigned header_height  = p_disp->header_height;
-   unsigned width          = 0;
-   unsigned height         = 0;
-   float view_centre       = 0.0f;
-   float selection_centre  = 0.0f;
    size_t i;
+   materialui_node_t *node    = NULL;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *list          = menu_entries_get_selection_buf_ptr(0);
+   size_t selection           = menu_st->selection_ptr;
+   unsigned header_height     = p_disp->header_height;
+   unsigned width             = 0;
+   unsigned height            = 0;
+   float view_centre          = 0.0f;
+   float selection_centre     = 0.0f;
 
    if (!mui || !list)
       return 0;
@@ -3177,7 +3178,8 @@ static size_t materialui_auto_select_onscreen_entry(
       materialui_handle_t *mui,
       enum materialui_onscreen_entry_position_type target_entry)
 {
-   size_t selection = menu_navigation_get_selection();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t selection           = menu_st->selection_ptr;
 
    /* Check whether selected item is already on screen */
    if (materialui_entry_onscreen(mui, selection))
@@ -3207,7 +3209,7 @@ static size_t materialui_auto_select_onscreen_entry(
    }
 
    /* Apply new selection */
-   menu_navigation_set_selection(selection);
+   menu_st->selection_ptr = selection;
 
    return selection;
 }
@@ -3579,19 +3581,20 @@ static void materialui_render(void *data,
     * disables optimisations and removes excess precision
     * (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323#c87) */
    volatile float scale_factor;
-   settings_t *settings     = config_get_ptr();
-   materialui_handle_t *mui = (materialui_handle_t*)data;
-   gfx_display_t *p_disp    = disp_get_ptr();
-   size_t entries_end       = menu_entries_get_size();
-   size_t selection         = menu_navigation_get_selection();
-   file_list_t *list        = menu_entries_get_selection_buf_ptr(0);
-   unsigned header_height   = p_disp->header_height;
-   bool first_entry_found   = false;
-   bool last_entry_found    = false;
+   settings_t *settings       = config_get_ptr();
+   materialui_handle_t *mui   = (materialui_handle_t*)data;
+   gfx_display_t *p_disp      = disp_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t entries_end         = menu_entries_get_size();
+   size_t selection           = menu_st->selection_ptr;
+   file_list_t *list          = menu_entries_get_selection_buf_ptr(0);
+   unsigned header_height     = p_disp->header_height;
+   bool first_entry_found     = false;
+   bool last_entry_found      = false;
    unsigned landscape_layout_optimization
-                            = settings->uints.menu_materialui_landscape_layout_optimization;
-   bool show_nav_bar        = settings->bools.menu_materialui_show_nav_bar;
-   bool auto_rotate_nav_bar = settings->bools.menu_materialui_auto_rotate_nav_bar;
+                              = settings->uints.menu_materialui_landscape_layout_optimization;
+   bool show_nav_bar          = settings->bools.menu_materialui_show_nav_bar;
+   bool auto_rotate_nav_bar   = settings->bools.menu_materialui_auto_rotate_nav_bar;
    unsigned thumbnail_upscale_threshold = 
       settings->uints.gfx_thumbnail_upscale_threshold;
    bool network_on_demand_thumbnails    = 
@@ -3822,8 +3825,8 @@ static void materialui_render(void *data,
                       * select current entry */
                      if (mui->pointer.press_duration >= MENU_INPUT_PRESS_TIME_SHORT)
                      {
-                        menu_navigation_set_selection(i);
-                        selection = i;
+                        menu_st->selection_ptr = i;
+                        selection              = i;
 
                         /* Once an entry has been auto selected, disable
                          * touch feedback selection updates until the next
@@ -6994,7 +6997,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    materialui_handle_t *mui       = (materialui_handle_t*)data;
    settings_t *settings           = config_get_ptr();
    gfx_display_t *p_disp          = disp_get_ptr();
-   size_t selection               = menu_navigation_get_selection();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   size_t selection               = menu_st->selection_ptr;
    unsigned header_height         = p_disp->header_height;
    enum gfx_animation_ticker_type
       menu_ticker_type            = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
@@ -8341,7 +8345,8 @@ static void materialui_animate_scroll(
       materialui_handle_t *mui, float scroll_pos, float duration)
 {
    gfx_animation_ctx_entry_t animation_entry;
-   uintptr_t animation_tag = (uintptr_t)&mui->scroll_y;
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   uintptr_t animation_tag         = (uintptr_t)&mui->scroll_y;
 
    /* Kill any existing scroll animation */
    gfx_animation_kill_by_tag(&animation_tag);
@@ -8352,8 +8357,8 @@ static void materialui_animate_scroll(
    menu_input_set_pointer_y_accel(0.0f);
 
    /* Set 'animation active' flag */
-   mui->flags                     |=  MUI_FLAG_SCROLL_ANIMATION_ACTIVE;
-   mui->scroll_animation_selection = menu_navigation_get_selection();
+   mui->flags                     |= MUI_FLAG_SCROLL_ANIMATION_ACTIVE;
+   mui->scroll_animation_selection = menu_st->selection_ptr;
 
    /* Configure animation */
    animation_entry.easing_enum     = EASING_IN_OUT_QUAD;
@@ -9108,6 +9113,7 @@ static enum menu_action materialui_parse_menu_entry_action(
       materialui_handle_t *mui, enum menu_action action)
 {
    enum menu_action new_action = action;
+   struct menu_state *menu_st  = menu_state_get_ptr();
 
    /* If fullscreen thumbnail view is active, any
     * valid menu action will disable it... */
@@ -9197,7 +9203,8 @@ static enum menu_action materialui_parse_menu_entry_action(
                materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
             else
             {
-               size_t selection = menu_navigation_get_selection();
+               struct menu_state *menu_st = menu_state_get_ptr();
+               size_t selection           = menu_st->selection_ptr;
 
                /* In all other cases, if current selection is off
                 * screen, have to disable input - otherwise user can
@@ -9247,7 +9254,8 @@ static enum menu_action materialui_parse_menu_entry_action(
           *   'scan' action *if* current selection is
           *   on screen */
          {
-            size_t selection = menu_navigation_get_selection();
+            struct menu_state *menu_st = menu_state_get_ptr();
+            size_t selection           = menu_st->selection_ptr;
 
             if (mui->flags & MUI_FLAG_IS_PLAYLIST)
             {
@@ -9267,7 +9275,8 @@ static enum menu_action materialui_parse_menu_entry_action(
           *   'start' action *if* current selection is
           *   on screen */
          {
-            size_t selection = menu_navigation_get_selection();
+            struct menu_state *menu_st = menu_state_get_ptr();
+            size_t selection           = menu_st->selection_ptr;
 
             if (mui->flags & MUI_FLAG_IS_PLAYLIST)
             {
@@ -9306,7 +9315,8 @@ static enum menu_action materialui_parse_menu_entry_action(
           * In addition, an 'info' action is only valid in general
           * if the currently selected entry is on screen */
          {
-            size_t selection = menu_navigation_get_selection();
+            struct menu_state *menu_st = menu_state_get_ptr();
+            size_t selection           = menu_st->selection_ptr;
 
             if (   (mui->flags & MUI_FLAG_IS_PLAYLIST)
                 || !materialui_entry_onscreen(mui, selection))
@@ -9321,7 +9331,8 @@ static enum menu_action materialui_parse_menu_entry_action(
           *   selected item is on screen. If it
           *   is off screen, must disable input */
          {
-            size_t selection = menu_navigation_get_selection();
+            struct menu_state *menu_st = menu_state_get_ptr();
+            size_t selection           = menu_st->selection_ptr;
 
             if (!materialui_entry_onscreen(mui, selection))
                new_action = MENU_ACTION_NOOP;
@@ -9366,14 +9377,14 @@ static enum menu_action materialui_parse_menu_entry_action(
             else if (main_menu_tab_index == mui->nav_bar.active_menu_tab_index)
             {
                /* Jump to first item on Main Menu */
-               menu_navigation_set_selection(0);
+               menu_st->selection_ptr = 0;
                materialui_navigation_set(mui, true);
             }
          }
          else if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
          {
             /* Jump to first item on current menu */
-            menu_navigation_set_selection(0);
+            menu_st->selection_ptr = 0;
             materialui_navigation_set(mui, true);
          }
          break;
@@ -9393,10 +9404,11 @@ static int materialui_menu_entry_action(
       void *userdata, menu_entry_t *entry,
       size_t i, enum menu_action action)
 {
-   materialui_handle_t *mui = (materialui_handle_t*)userdata;
-   menu_entry_t *entry_ptr  = entry;
-   size_t selection         = i;
    size_t new_selection;
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   materialui_handle_t *mui    = (materialui_handle_t*)userdata;
+   menu_entry_t *entry_ptr     = entry;
+   size_t selection            = i;
    /* Process input action */
    enum menu_action new_action = materialui_parse_menu_entry_action(
          mui, action);
@@ -9411,9 +9423,9 @@ static int materialui_menu_entry_action(
 
    /* Check whether current selection has changed
     * (due to automatic on screen entry selection...) */
-   new_selection = menu_navigation_get_selection();
+   new_selection = menu_st->selection_ptr;
 
-   if (new_selection != selection)
+   if (new_selection != selection) /* Changed? */
    {
       static menu_entry_t new_entry;
 
@@ -9854,8 +9866,9 @@ static int materialui_pointer_up_swipe_horz_default(
 {
    if ((ptr < entries_end) && (ptr == selection))
    {
-      size_t new_selection = menu_navigation_get_selection();
-      int ret              = materialui_menu_entry_action(
+      struct menu_state *menu_st = menu_state_get_ptr();
+      size_t new_selection       = menu_st->selection_ptr;
+      int ret                    = materialui_menu_entry_action(
             mui, entry, selection, action);
 
       /* If we are changing a settings value, want to scroll
@@ -9972,11 +9985,12 @@ static int materialui_pointer_up(void *userdata,
 {
    unsigned width;
    unsigned height;
-   gfx_display_t *p_disp    = disp_get_ptr();
-   unsigned header_height   = p_disp->header_height;
-   size_t selection         = menu_navigation_get_selection();
-   size_t entries_end       = menu_entries_get_size();
-   materialui_handle_t *mui = (materialui_handle_t*)userdata;
+   gfx_display_t *p_disp      = disp_get_ptr();
+   unsigned header_height     = p_disp->header_height;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t selection           = menu_st->selection_ptr;
+   size_t entries_end         = menu_entries_get_size();
+   materialui_handle_t *mui   = (materialui_handle_t*)userdata;
 
    if (!mui)
       return -1;
@@ -10113,7 +10127,7 @@ static int materialui_pointer_up(void *userdata,
                   /* If current 'pointer' item is not active,
                    * activate it immediately */
                   if (ptr != selection)
-                     menu_navigation_set_selection(ptr);
+                     menu_st->selection_ptr = ptr;
 
                   /* Perform a MENU_ACTION_SELECT on currently
                    * active item
@@ -10135,7 +10149,7 @@ static int materialui_pointer_up(void *userdata,
                 * - but menu_navigation_set_selection() just sets a
                 * variable, so there's no real point in performing
                 * a (selection != ptr) check here */
-               menu_navigation_set_selection(ptr);
+               menu_st->selection_ptr = ptr;
                menu_input_set_pointer_y_accel(0.0f);
             }
          }
@@ -11027,7 +11041,8 @@ static void materialui_get_thumbnail_system(void *userdata, char *s, size_t len)
 static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
 {
    materialui_handle_t *mui           = (materialui_handle_t*)userdata;
-   size_t selection                   = menu_navigation_get_selection();
+   struct menu_state *menu_st         = menu_state_get_ptr();
+   size_t selection                   = menu_st->selection_ptr;
    bool refresh_enabled               = false;
 
    if (!mui)

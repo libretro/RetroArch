@@ -33,8 +33,9 @@
 static int action_info_default(unsigned type, const char *label)
 {
    menu_displaylist_info_t info;
+   struct menu_state *menu_st    = menu_state_get_ptr();
    file_list_t *menu_stack       = menu_entries_get_menu_stack_ptr(0);
-   size_t selection              = menu_navigation_get_selection();
+   size_t selection              = menu_st->selection_ptr;
    settings_t *settings          = config_get_ptr();
 #ifdef HAVE_AUDIOMIXER
    bool        audio_enable_menu = settings->bools.audio_enable_menu;
@@ -89,19 +90,19 @@ static int action_info_cheevos(unsigned type, const char *label)
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
-   if (!cbs)
-      return -1;
-
-#ifdef HAVE_CHEEVOS
-   if ((type >= MENU_SETTINGS_CHEEVOS_START) &&
-      (type < MENU_SETTINGS_NETPLAY_ROOMS_START))
+   if (cbs)
    {
-      BIND_ACTION_INFO(cbs, action_info_cheevos);
-      return 0;
-   }
+#ifdef HAVE_CHEEVOS
+      if ((type >= MENU_SETTINGS_CHEEVOS_START) &&
+            (type < MENU_SETTINGS_NETPLAY_ROOMS_START))
+      {
+         BIND_ACTION_INFO(cbs, action_info_cheevos);
+         return 0;
+      }
 #endif
 
-   BIND_ACTION_INFO(cbs, action_info_default);
+      BIND_ACTION_INFO(cbs, action_info_default);
+   }
 
    return -1;
 }

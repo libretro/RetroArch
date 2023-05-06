@@ -2717,6 +2717,9 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    const char *contentLabel     = NULL;
    const char *contentDbName    = NULL;
    const char *contentCrc32     = NULL;
+#ifdef HAVE_MENU
+   struct menu_state *menu_st   = menu_state_get_ptr();
+#endif
    QVariantMap coreMap          = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
    core_selection coreSelection = static_cast<core_selection>(coreMap.value("core_selection").toInt());
    core_info_t *coreInfo        = NULL;
@@ -2851,7 +2854,7 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    content_info.environ_get            = NULL;
 
 #ifdef HAVE_MENU
-   menu_navigation_set_selection(0);
+   menu_st->selection_ptr              = 0;
 #endif
 
    command_event(CMD_EVENT_UNLOAD_CORE, NULL);
@@ -3581,7 +3584,8 @@ void MainWindow::onTimeout()
 void MainWindow::onStopClicked()
 {
 #ifdef HAVE_MENU
-   menu_navigation_set_selection(0);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_st->selection_ptr     = 0;
 #endif
    command_event(CMD_EVENT_UNLOAD_CORE, NULL);
    setCurrentCoreLabel();
@@ -3669,10 +3673,10 @@ void MainWindow::onCoreLoaded()
 
 void MainWindow::onUnloadCoreMenuAction()
 {
-   QAction *action = qobject_cast<QAction*>(sender());
-
+   QAction *action            = qobject_cast<QAction*>(sender());
 #ifdef HAVE_MENU
-   menu_navigation_set_selection(0);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_st->selection_ptr     = 0;
 #endif
 
    /* TODO */
