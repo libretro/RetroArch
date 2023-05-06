@@ -4544,31 +4544,26 @@ static enum menu_action xmb_parse_menu_entry_action(
          if (xmb->depth == 1)
          {
             retro_time_t current_time = menu_driver_get_current_time();
-            size_t scroll_accel       = 0;
-
             /* Determine whether input repeat is
              * currently active
              * > This is always true when scroll
              *   acceleration is greater than zero */
-            menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
-                  &scroll_accel);
-
+            size_t scroll_accel       = menu_st->scroll.acceleration;
 #ifdef HAVE_AUDIOMIXER
-            {
-               settings_t *settings = config_get_ptr();
-               size_t category      = xmb->categories_selection_ptr;
-               size_t list_size     = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + xmb->system_tab_end;
-               /* We only want the scrolling sound to play if any of the following are true:
-                  * 1. Wraparound is enabled (since the category is guaranteed to change) 
-                  * 2. We're scrolling right, but we aren't on the last category
-                  * 3. We're scrolling left, but we aren't on the first category */
-               bool fail_condition  = ((action == MENU_ACTION_RIGHT) ? (category == list_size) 
-                  : (category == 0)) && !(settings->bools.menu_navigation_wraparound_enable);
-            
-               if (((current_time - xmb->last_tab_switch_time) >= XMB_TAB_SWITCH_REPEAT_DELAY || 
-                     scroll_accel <= 0) && !fail_condition)
-                  audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_RIGHT);
-            }
+	    settings_t *settings      = config_get_ptr();
+	    size_t category           = xmb->categories_selection_ptr;
+	    size_t list_size          = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + xmb->system_tab_end;
+	    /* We only want the scrolling sound to play if any of the following are true:
+	     * 1. Wraparound is enabled (since the category is guaranteed to change) 
+	     * 2. We're scrolling right, but we aren't on the last category
+	     * 3. We're scrolling left, but we aren't on the first category */
+	    bool fail_condition       = ((action == MENU_ACTION_RIGHT) 
+			    ? (category == list_size) 
+			    : (category == 0)) && !(settings->bools.menu_navigation_wraparound_enable);
+
+	    if (((current_time - xmb->last_tab_switch_time) >= XMB_TAB_SWITCH_REPEAT_DELAY || 
+				    scroll_accel <= 0) && !fail_condition)
+		    audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_RIGHT);
 #endif
             if (scroll_accel > 0)
             {
@@ -8300,7 +8295,15 @@ static int xmb_pointer_up(void *userdata,
                xmb_navigation_set(xmb, true);
             }
             else
-               menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST, NULL);
+            {
+               size_t menu_list_size     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+               size_t new_selection      = menu_list_size - 1;
+
+               menu_st->selection_ptr    = new_selection;
+
+               if (menu_st->driver_ctx->navigation_set_last)
+                  menu_st->driver_ctx->navigation_set_last(menu_st->userdata);
+            }
          }
          break;
       case MENU_INPUT_GESTURE_SWIPE_DOWN:

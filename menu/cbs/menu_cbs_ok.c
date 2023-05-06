@@ -7802,22 +7802,19 @@ static int action_ok_core_delete(const char *path,
 static int action_ok_delete_playlist(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   playlist_t *playlist = playlist_get_cached();
-   menu_ctx_environment_t menu_environ;
+   playlist_t       *playlist = playlist_get_cached();
+   struct menu_state *menu_st = menu_state_get_ptr();
 
    if (!playlist)
       return -1;
-
-   menu_environ.type = MENU_ENVIRON_NONE;
-   menu_environ.data = NULL;
 
    path = playlist_get_conf_path(playlist);
 
    filestream_delete(path);
 
-   menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
-
-   menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+   if (menu_st->driver_ctx->environ_cb)
+      menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
+               NULL, menu_st->userdata);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }

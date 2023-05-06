@@ -255,7 +255,8 @@ static int explore_qsort_func_entries(const void *a_, const void *b_)
    const char *a = ((const explore_entry_t*)a_)->playlist_entry->label;
    const char *b = ((const explore_entry_t*)b_)->playlist_entry->label;
    int a0 = TOLOWER(a[0]), b0 = TOLOWER(b[0]);
-   if (a0 != b0) return a0 - b0;
+   if (a0 != b0)
+      return a0 - b0;
    return strcasecmp(a, b);
 }
 
@@ -1020,11 +1021,10 @@ static const char* explore_get_view_path(void)
 
 static void explore_on_edit_views(enum msg_hash_enums msg)
 {
-   menu_ctx_environment_t menu_environ;
-   menu_environ.type = MENU_ENVIRON_NONE;
-   menu_environ.data = NULL;
-   menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
-   menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   if (menu_st->driver_ctx->environ_cb)
+      menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
+               NULL, menu_st->userdata);
 
    runloop_msg_queue_push(msg_hash_to_str(msg),
          1, 180, true, NULL,
@@ -1056,7 +1056,8 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
    explore_state_t *state = explore_state;
 
    menu_input_dialog_end();
-   if (!name || !*name) return;
+   if (!name || !*name)
+      return;
 
    fill_pathname_join_special(lvwpath,
          config_get_ptr()->paths.directory_playlist, name, sizeof(lvwpath));
@@ -1098,14 +1099,16 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
       unsigned i, n;
       for (i = n = 0; i != state->view_levels; i++)
       {
-         uint8_t vop = state->view_op[i];
-         unsigned vcat = state->view_cats[i];
+         uint8_t vop           = state->view_op[i];
+         unsigned vcat         = state->view_cats[i];
          explore_string_t **by = state->by[vcat];
          if (vop != op && (vop != EXPLORE_OP_RANGE || op == EXPLORE_OP_EQUAL))
             continue;
+
          if (n++ == 0)
          {
-            if (count++) rjsonwriter_add_comma(w);
+            if (count++)
+               rjsonwriter_add_comma(w);
             rjsonwriter_add_newline(w);
             rjsonwriter_add_tabs(w, 1);
             rjsonwriter_add_string(w,
@@ -1116,7 +1119,8 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
             rjsonwriter_add_space(w);
             rjsonwriter_add_start_object(w);
          }
-         if (n > 1) rjsonwriter_add_comma(w);
+         if (n > 1)
+            rjsonwriter_add_comma(w);
          rjsonwriter_add_newline(w);
          rjsonwriter_add_tabs(w, 2);
          rjsonwriter_add_string(w, explore_by_info[vcat].rdbkey);

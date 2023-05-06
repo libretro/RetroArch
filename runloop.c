@@ -5706,13 +5706,12 @@ static enum runloop_state_enum runloop_check_state(
             && (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_SUPPORTED)
             && (!(menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE))
             && ((menu_st->current_time_us - menu_st->input_last_time_us)
-                  > ((retro_time_t)screensaver_timeout * 1000000)))
+             > ((retro_time_t)screensaver_timeout * 1000000)))
       {
-         menu_ctx_environment_t menu_environ;
-         menu_environ.type           = MENU_ENVIRON_ENABLE_SCREENSAVER;
-         menu_environ.data           = NULL;
          menu_st->flags             |= MENU_ST_FLAG_SCREENSAVER_ACTIVE;
-         menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+         if (menu_st->driver_ctx->environ_cb)
+            menu_st->driver_ctx->environ_cb(MENU_ENVIRON_ENABLE_SCREENSAVER,
+                     NULL, menu_st->userdata);
       }
 
       /* Iterate the menu driver for one frame. */

@@ -3788,9 +3788,10 @@ static void menu_input_set_pointer_visibility(
       menu_input_t *menu_input,
       retro_time_t current_time)
 {
-   static bool cursor_shown                        = false;
-   static bool cursor_hidden                       = false;
-   static retro_time_t end_time                    = 0;
+   static bool cursor_shown          = false;
+   static bool cursor_hidden         = false;
+   static retro_time_t end_time      = 0;
+   struct menu_state       *menu_st  = &menu_driver_state;
 
    /* Ensure that mouse cursor is hidden when not in use */
    if ((menu_input->pointer.type == MENU_POINTER_MOUSE)
@@ -3799,11 +3800,9 @@ static void menu_input_set_pointer_visibility(
       /* Show cursor */
       if ((current_time > end_time) && !cursor_shown)
       {
-         menu_ctx_environment_t menu_environ;
-         menu_environ.type = MENU_ENVIRON_ENABLE_MOUSE_CURSOR;
-         menu_environ.data = NULL;
-
-         menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+         if (menu_st->driver_ctx->environ_cb)
+            menu_st->driver_ctx->environ_cb(MENU_ENVIRON_ENABLE_MOUSE_CURSOR,
+                     NULL, menu_st->userdata);
          cursor_shown  = true;
          cursor_hidden = false;
       }
@@ -3815,11 +3814,9 @@ static void menu_input_set_pointer_visibility(
       /* Hide cursor */
       if ((current_time > end_time) && !cursor_hidden)
       {
-         menu_ctx_environment_t menu_environ;
-         menu_environ.type = MENU_ENVIRON_DISABLE_MOUSE_CURSOR;
-         menu_environ.data = NULL;
-
-         menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+         if (menu_st->driver_ctx->environ_cb)
+            menu_st->driver_ctx->environ_cb(MENU_ENVIRON_DISABLE_MOUSE_CURSOR,
+                  NULL, menu_st->userdata);
          cursor_shown  = false;
          cursor_hidden = true;
       }
@@ -4974,7 +4971,6 @@ static bool menu_driver_init_internal(
       settings_t *settings,
       bool video_is_threaded)
 {
-   menu_ctx_environment_t menu_environ;
    struct menu_state *menu_st  = &menu_driver_state;;
 
    if (menu_st->driver_ctx)
@@ -5023,11 +5019,11 @@ static bool menu_driver_init_internal(
       generic_menu_init_list(menu_st, settings);
 
    /* Initialise menu screensaver */
-   menu_environ.type              = MENU_ENVIRON_DISABLE_SCREENSAVER;
-   menu_environ.data              = NULL;
    menu_st->input_last_time_us    = cpu_features_get_time_usec();
-   menu_st->flags    &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
-   if (menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ))
+   menu_st->flags                &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
+   if (     menu_st->driver_ctx->environ_cb
+         && (menu_st->driver_ctx->environ_cb(MENU_ENVIRON_DISABLE_SCREENSAVER,
+               NULL, menu_st->userdata) == 0))
       menu_st->flags |=  MENU_ST_FLAG_SCREENSAVER_SUPPORTED;
    else
       menu_st->flags &= ~MENU_ST_FLAG_SCREENSAVER_SUPPORTED;
@@ -5655,12 +5651,11 @@ unsigned menu_event(
       /* Disable screensaver if required */
       if (input_active)
       {
-         menu_ctx_environment_t menu_environ;
-         menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
-         menu_environ.data           = NULL;
          menu_st->flags             &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
          menu_st->input_last_time_us = menu_st->current_time_us;
-         menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+         if (menu_st->driver_ctx->environ_cb)
+            menu_st->driver_ctx->environ_cb(MENU_ENVIRON_DISABLE_SCREENSAVER,
+                     NULL, menu_st->userdata);
       }
 
       /* Annul received input */
@@ -6726,11 +6721,10 @@ void retroarch_menu_running(void)
     * first switching to the menu */
    if (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE)
    {
-      menu_ctx_environment_t menu_environ;
-      menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
-      menu_environ.data           = NULL;
       menu_st->flags             &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
-      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+      if (menu_st->driver_ctx->environ_cb)
+         menu_st->driver_ctx->environ_cb(MENU_ENVIRON_DISABLE_SCREENSAVER,
+                  NULL, menu_st->userdata);
    }
    menu_st->input_last_time_us = cpu_features_get_time_usec();
 
@@ -6815,11 +6809,10 @@ void retroarch_menu_running_finished(bool quit)
     * switching off the menu */
    if (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE)
    {
-      menu_ctx_environment_t menu_environ;
-      menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
-      menu_environ.data           = NULL;
       menu_st->flags             &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
-      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+      if (menu_st->driver_ctx->environ_cb)
+         menu_st->driver_ctx->environ_cb(MENU_ENVIRON_DISABLE_SCREENSAVER,
+                  NULL, menu_st->userdata);
    }
    video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY
@@ -6944,19 +6937,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          }
          menu_st->driver_data = NULL;
          break;
-      case RARCH_MENU_CTL_ENVIRONMENT:
-         {
-            menu_ctx_environment_t *menu_environ =
-               (menu_ctx_environment_t*)data;
-
-            if (menu_st->driver_ctx->environ_cb)
-            {
-               if (menu_st->driver_ctx->environ_cb(menu_environ->type,
-                        menu_environ->data, menu_st->userdata) == 0)
-                  return true;
-            }
-         }
-         return false;
       case RARCH_MENU_CTL_POINTER_DOWN:
          {
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
@@ -7015,13 +6995,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   menu_st->userdata, (unsigned)selection, 'R');
          }
          break;
-      case RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE:
-         {
-            if (!menu_st->driver_ctx || !menu_st->driver_ctx->update_thumbnail_image)
-               return false;
-            menu_st->driver_ctx->update_thumbnail_image(menu_st->userdata);
-         }
-         break;
       case RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE:
          {
             unsigned *i = (unsigned*)data;
@@ -7071,25 +7044,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
          }
          break;
-      case MENU_NAVIGATION_CTL_SET_LAST:
-         {
-            size_t menu_list_size     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
-            size_t new_selection      = menu_list_size - 1;
-
-            menu_st->selection_ptr    = new_selection;
-
-            if (menu_st->driver_ctx->navigation_set_last)
-               menu_st->driver_ctx->navigation_set_last(menu_st->userdata);
-         }
-         break;
-      case MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL:
-         {
-            size_t *sel = (size_t*)data;
-            if (!sel)
-               return false;
-            *sel = menu_st->scroll.acceleration;
-         }
-         break;
       default:
       case RARCH_MENU_CTL_NONE:
          break;
@@ -7125,19 +7079,17 @@ void menu_shader_manager_free(void)
  **/
 bool menu_shader_manager_init(void)
 {
-   video_driver_state_t 
-      *video_st                     = video_state_get_ptr();
+   video_driver_state_t *video_st   = video_state_get_ptr();
    enum rarch_shader_type type      = RARCH_SHADER_NONE;
    bool ret                         = true;
    bool is_preset                   = false;
    const char *path_shader          = NULL;
    struct video_shader *menu_shader = NULL;
-
    /* We get the shader preset directly from the video driver, so that
     * we are in sync with it (it could fail loading an auto-shader)
     * If we can't (e.g. get_current_shader is not implemented),
     * we'll load video_shader_get_current_shader_preset() like always */
-   video_shader_ctx_t shader_info = {0};
+   video_shader_ctx_t shader_info   = {0};
 
    video_shader_driver_get_current_shader(&shader_info);
 
@@ -7222,8 +7174,8 @@ bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
     * Used when a preset is directly loaded.
     * No point in updating when the Preset was
     * created from the menu itself. */
-   if (  !menu_shader ||
-         !(video_shader_load_preset_into_shader(preset_path, menu_shader)))
+   if (     !menu_shader
+         || !(video_shader_load_preset_into_shader(preset_path, menu_shader)))
       goto end;
 
    /* TODO/FIXME - localize */
@@ -7792,7 +7744,15 @@ int generic_menu_entry_action(
                      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
                   }
                   else
-                     menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
+		  {
+			  size_t menu_list_size     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+			  size_t new_selection      = menu_list_size - 1;
+
+			  menu_st->selection_ptr    = new_selection;
+
+			  if (menu_st->driver_ctx->navigation_set_last)
+				  menu_st->driver_ctx->navigation_set_last(menu_st->userdata);
+		  }
                }
 
                if (menu_driver_ctx->navigation_increment)
@@ -7880,7 +7840,15 @@ int generic_menu_entry_action(
                         menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
                   }
                   else
-                     menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
+		  {
+			  size_t menu_list_size     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+			  size_t new_selection      = menu_list_size - 1;
+
+			  menu_st->selection_ptr    = new_selection;
+
+			  if (menu_st->driver_ctx->navigation_set_last)
+				  menu_st->driver_ctx->navigation_set_last(menu_st->userdata);
+		  }
 
                   if (menu_driver_ctx->navigation_increment)
                      menu_driver_ctx->navigation_increment(menu_userdata);

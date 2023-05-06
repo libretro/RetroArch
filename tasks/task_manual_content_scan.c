@@ -119,7 +119,7 @@ static void cb_task_manual_content_scan(
    manual_scan_handle_t *manual_scan = NULL;
    playlist_t *cached_playlist       = playlist_get_cached();
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
-   menu_ctx_environment_t menu_environ;
+   struct menu_state *menu_st        = menu_state_get_ptr();
    if (!task)
       goto end;
 #else
@@ -127,9 +127,7 @@ static void cb_task_manual_content_scan(
       return;
 #endif
 
-   manual_scan = (manual_scan_handle_t*)task->state;
-
-   if (!manual_scan)
+   if (!(manual_scan = (manual_scan_handle_t*)task->state))
    {
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
       goto end;
@@ -169,10 +167,9 @@ static void cb_task_manual_content_scan(
 end:
    /* When creating playlists, the playlist tabs of
     * any active menu driver must be refreshed */
-   menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
-   menu_environ.data = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+   if (menu_st->driver_ctx->environ_cb)
+      menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
+            NULL, menu_st->userdata);
 #endif
 }
 

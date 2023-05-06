@@ -1000,14 +1000,13 @@ static const QPixmap getInvader(void)
 static void scan_finished_handler(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
-   bool dont_ask     = false;
-   bool answer       = false;
+   bool dont_ask              = false;
+   bool answer                = false;
 #ifdef HAVE_MENU
-   menu_ctx_environment_t menu_environ;
-   menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
-   menu_environ.data = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   if (menu_st->driver_ctx->environ_cb)
+      menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
+            NULL, menu_st->userdata);
 #endif
    if (!ui_window.qtWindow->settings()->value(
             "scan_finish_confirm", true).toBool())
@@ -1023,14 +1022,14 @@ static void scan_finished_handler(retro_task_t *task,
 #endif
 
 /* https://stackoverflow.com/questions/7246622/how-to-create-a-slider-with-a-non-linear-scale */
-static double exp_scale(double inputValue, double midValue, double maxValue)
+static double exp_scale(double input_val, double mid_val, double max_val)
 {
-   double           M = maxValue / midValue;
-   double        base = M - 1;
-   double           C = log(base * base);
-   double           B = maxValue / (exp(C) - 1);
-   double           A = -1 * B;
-   double         ret = A + B * exp(C * inputValue);
+   double    M = max_val / mid_val;
+   double base = M - 1;
+   double    C = log(base * base);
+   double    B = max_val / (exp(C) - 1);
+   double    A = -1 * B;
+   double  ret = A + B * exp(C * input_val);
    return ret;
 }
 

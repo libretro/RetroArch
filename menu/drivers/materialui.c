@@ -9161,14 +9161,11 @@ static enum menu_action materialui_parse_menu_entry_action(
              (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1))
          {
             retro_time_t current_time = menu_driver_get_current_time();
-            size_t scroll_accel       = 0;
             /* Determine whether in put repeat is
              * currently active
              * > This is always true when scroll
              *   acceleration is greater than zero */
-            menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
-                  &scroll_accel);
-
+            size_t scroll_accel       = menu_st->scroll.acceleration;
 #ifdef HAVE_AUDIOMIXER
             if ((current_time - mui->last_tab_switch_time) >= MUI_TAB_SWITCH_REPEAT_DELAY || 
                   scroll_accel <= 0)

@@ -227,32 +227,28 @@ static int action_left_input_desc_kbd(unsigned type, const char *label,
 static int action_left_scroll(unsigned type, const char *label,
       bool wraparound)
 {
-   size_t scroll_accel          = 0;
-   struct menu_state *menu_st   = menu_state_get_ptr();
-   size_t selection             = menu_st->selection_ptr;
+   struct menu_state *menu_st    = menu_state_get_ptr();
+   size_t selection              = menu_st->selection_ptr;
+   size_t scroll_accel           = menu_st->scroll.acceleration;
+   unsigned scroll_speed         = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
+   unsigned fast_scroll_speed    = 10 * scroll_speed;
 
-   if (menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
+   if (selection > fast_scroll_speed)
    {
-      unsigned scroll_speed      = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
-      unsigned fast_scroll_speed = 10 * scroll_speed;
-
-      if (selection > fast_scroll_speed)
-      {
-         size_t idx             = selection - fast_scroll_speed;
-         menu_st->selection_ptr = idx;
-         if (menu_st->driver_ctx->navigation_set)
-            menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
-      }
-      else
-      {
-         bool pending_push = false;
-         menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-      }
-#ifdef HAVE_AUDIOMIXER
-      if (selection != menu_st->selection_ptr) /* Changed? */
-         audio_driver_mixer_play_scroll_sound(true);
-#endif
+      size_t idx                 = selection - fast_scroll_speed;
+      menu_st->selection_ptr     = idx;
+      if (menu_st->driver_ctx->navigation_set)
+         menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
    }
+   else
+   {
+      bool pending_push          = false;
+      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+   }
+#ifdef HAVE_AUDIOMIXER
+   if (selection != menu_st->selection_ptr) /* Changed? */
+      audio_driver_mixer_play_scroll_sound(true);
+#endif
    return 0;
 }
 
