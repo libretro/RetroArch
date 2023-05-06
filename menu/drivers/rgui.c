@@ -2304,6 +2304,28 @@ static void rgui_process_wallpaper(
                         | RGUI_FLAG_SHOW_WALLPAPER;
 }
 
+static void rgui_handle_thumbnail_upload(
+      retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   menu_display_common_image_upload(
+         (struct texture_image*)task_data,
+         user_data,
+         MENU_IMAGE_THUMBNAIL);
+}
+
+static void rgui_handle_left_thumbnail_upload(
+      retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   menu_display_common_image_upload(
+         (struct texture_image*)task_data,
+         user_data,
+         MENU_IMAGE_LEFT_THUMBNAIL);
+}
+
 static bool rgui_request_thumbnail(
       thumbnail_t *thumbnail,
       enum gfx_thumbnail_id thumbnail_id,
@@ -2334,8 +2356,8 @@ static bool rgui_request_thumbnail(
                video_driver_supports_rgba(),
                0,
                (thumbnail_id == GFX_THUMBNAIL_LEFT)
-                     ? menu_display_handle_left_thumbnail_upload
-                     : menu_display_handle_thumbnail_upload,
+                     ? rgui_handle_left_thumbnail_upload
+                     : rgui_handle_thumbnail_upload,
                NULL))
          {
             *queue_size = *queue_size + 1;

@@ -651,18 +651,6 @@ bool menu_driver_screensaver_supported(void);
 
 retro_time_t menu_driver_get_current_time(void);
 
-void menu_display_handle_thumbnail_upload(retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *err);
-
-void menu_display_handle_left_thumbnail_upload(retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *err);
-
-void menu_display_handle_savestate_thumbnail_upload(retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *err);
-
 void menu_display_timedate(gfx_display_ctx_datetime_t *datetime);
 
 void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
@@ -846,6 +834,9 @@ bool menu_driver_iterate(
       settings_t *settings,
       enum menu_action action,
       retro_time_t current_time);
+
+void menu_display_common_image_upload(void *data,
+      void *user_data, unsigned type);
 
 size_t menu_update_fullscreen_thumbnail_label(
       char *s, size_t len,

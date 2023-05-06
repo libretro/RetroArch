@@ -1285,7 +1285,7 @@ static void menu_list_free_list(
    file_list_free(list);
 }
 
-static bool menu_list_pop_stack(
+static void menu_list_pop_stack(
       const menu_ctx_driver_t *menu_driver_ctx,
       void *menu_userdata,
       menu_list_t *list,
@@ -1294,27 +1294,25 @@ static bool menu_list_pop_stack(
 {
    file_list_t *menu_list = MENU_LIST_GET(list, (unsigned)idx);
 
-   if (!menu_list)
-      return false;
-
-   if (menu_list->size != 0)
+   if (menu_list)
    {
-      menu_ctx_list_t list_info;
+      if (menu_list->size != 0)
+      {
+         menu_ctx_list_t list_info;
 
-      list_info.list      = menu_list;
-      list_info.idx       = menu_list->size - 1;
-      list_info.list_size = menu_list->size - 1;
+         list_info.list      = menu_list;
+         list_info.idx       = menu_list->size - 1;
+         list_info.list_size = menu_list->size - 1;
 
-      menu_driver_list_free(menu_driver_ctx, &list_info);
+         menu_driver_list_free(menu_driver_ctx, &list_info);
+      }
+
+      file_list_pop(menu_list, directory_ptr);
+      if (  menu_driver_ctx &&
+            menu_driver_ctx->list_set_selection)
+         menu_driver_ctx->list_set_selection(menu_userdata,
+               menu_list);
    }
-
-   file_list_pop(menu_list, directory_ptr);
-   if (  menu_driver_ctx &&
-         menu_driver_ctx->list_set_selection)
-      menu_driver_ctx->list_set_selection(menu_userdata,
-            menu_list);
-
-   return true;
 }
 
 static int menu_list_flush_stack_type(const char *needle, const char *label,
@@ -3899,13 +3897,12 @@ void menu_entries_build_scroll_indices(
       menu_st->scroll.index_size++;
 }
 
-static void menu_display_common_image_upload(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      void *menu_userdata,
-      struct texture_image *img,
-      void *user_data,
-      unsigned type)
+void menu_display_common_image_upload(void *data, void *user_data, unsigned type)
 {
+   struct texture_image                *img = (struct texture_image*)data;
+   struct menu_state               *menu_st = &menu_driver_state;
+   const menu_ctx_driver_t *menu_driver_ctx = menu_st->driver_ctx;
+   void                      *menu_userdata = menu_st->userdata;
    if (     menu_driver_ctx
          && menu_driver_ctx->load_image)
       menu_driver_ctx->load_image(menu_userdata,
@@ -4650,53 +4647,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
    return true;
 }
 
-/* TODO/FIXME - seems only RGUI uses this - can this be
- * refactored away or we can have one common function used
- * across all menu drivers? */
-#ifdef HAVE_RGUI
-void menu_display_handle_thumbnail_upload(
-      retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *err)
-{
-   struct menu_state    *menu_st = &menu_driver_state;
-   menu_display_common_image_upload(
-         menu_st->driver_ctx,
-         menu_st->userdata,
-         (struct texture_image*)task_data,
-         user_data,
-         MENU_IMAGE_THUMBNAIL);
-}
-
-void menu_display_handle_left_thumbnail_upload(
-      retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *err)
-{
-   struct menu_state    *menu_st = &menu_driver_state;
-   menu_display_common_image_upload(
-         menu_st->driver_ctx,
-         menu_st->userdata,
-         (struct texture_image*)task_data,
-         user_data,
-         MENU_IMAGE_LEFT_THUMBNAIL);
-}
-#endif
-
-void menu_display_handle_savestate_thumbnail_upload(
-      retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *err)
-{
-   struct menu_state    *menu_st = &menu_driver_state;
-   menu_display_common_image_upload(
-         menu_st->driver_ctx,
-         menu_st->userdata,
-         (struct texture_image*)task_data,
-         user_data,
-         MENU_IMAGE_SAVESTATE_THUMBNAIL);
-}
-
 /* Function that gets called when we want to load in a
  * new menu wallpaper.
  */
@@ -4705,10 +4655,7 @@ void menu_display_handle_wallpaper_upload(
       void *task_data,
       void *user_data, const char *err)
 {
-   struct menu_state    *menu_st = &menu_driver_state;
    menu_display_common_image_upload(
-         menu_st->driver_ctx,
-         menu_st->userdata,
          (struct texture_image*)task_data,
          user_data,
          MENU_IMAGE_WALLPAPER);
@@ -5034,7 +4981,7 @@ static bool menu_driver_init_internal(
    {
       const char *ident = menu_st->driver_ctx->ident;
       /* ID must be set first, since it is required for
-       * the proper determination of pixel/dpi scaling
+       * the proper determination of pixel/DPI scaling
        * parameters (and some menu drivers fetch the
        * current pixel/dpi scale during 'menu_driver_ctx->init()') */
       if (ident)

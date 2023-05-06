@@ -156,9 +156,9 @@ typedef struct menu_entry
    enum msg_hash_enums enum_idx;
    uint8_t setting_type;
    uint8_t flags;
+   char sublabel[MENU_SUBLABEL_MAX_LENGTH];
    char path[255];
    char label[255];
-   char sublabel[MENU_SUBLABEL_MAX_LENGTH];
    char rich_label[255];
    char value[255];
    char password_value[255];

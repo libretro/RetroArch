@@ -218,14 +218,6 @@ typedef struct menu_input
    bool cancel_inhibit;
 } menu_input_t;
 
-typedef struct menu_input_ctx_hitbox
-{
-   int32_t x1;
-   int32_t x2;
-   int32_t y1;
-   int32_t y2;
-} menu_input_ctx_hitbox_t;
-
 typedef struct key_desc
 {
    /* libretro key id */
