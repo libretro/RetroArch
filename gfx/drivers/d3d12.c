@@ -1539,12 +1539,6 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
 #endif /* DEVICE_DEBUG */
 }
 
-static inline void d3d12_release_descriptor_heap(d3d12_descriptor_heap_t* heap)
-{
-   free(heap->map);
-   Release(heap->handle);
-}
-
 static void d3d12_init_descriptor_heap(D3D12Device device, d3d12_descriptor_heap_t* out)
 {
    device->lpVtbl->CreateDescriptorHeap(device, &out->desc, uuidof(ID3D12DescriptorHeap), (void**)&out->handle);
