@@ -4034,7 +4034,9 @@ static void linebreak_after_colon(char (*str)[255])
 static void ozone_update_content_metadata(ozone_handle_t *ozone)
 {
    const char *core_name             = NULL;
-   size_t selection                  = menu_navigation_get_selection();
+   struct menu_state *menu_st        = menu_state_get_ptr();
+   menu_list_t *menu_list            = menu_st->entries.list;
+   size_t selection                  = menu_st->selection_ptr;
    playlist_t *playlist              = playlist_get_cached();
    settings_t *settings              = config_get_ptr();
    bool scroll_content_metadata      = settings->bools.ozone_scroll_content_metadata;
@@ -4081,8 +4083,8 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       const char *core_label             = NULL;
       const struct playlist_entry *entry = NULL;
       ssize_t playlist_index             = selection;
-      size_t list_size                   = menu_entries_get_size();
-      file_list_t *list                  = menu_entries_get_selection_buf_ptr(0);
+      size_t list_size                   = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+      file_list_t *list                  = MENU_LIST_GET_SELECTION(menu_list, 0);
       bool content_runtime_log           = settings->bools.content_runtime_log;
       bool content_runtime_log_aggr      = settings->bools.content_runtime_log_aggregate;
 
@@ -4263,7 +4265,8 @@ static void ozone_tab_set_selection(void *data)
       size_t tab_selection = ozone->tab_selection[ozone->categories_selection_ptr];
       if (tab_selection)
       {
-         menu_navigation_set_selection(tab_selection);
+         struct menu_state *menu_st = menu_state_get_ptr();
+         menu_st->selection_ptr     = tab_selection;
          ozone_selection_changed(ozone, false);
       }
    }
@@ -4422,6 +4425,8 @@ static void ozone_list_cache(
    float scale_factor;
    unsigned first             = 0;
    unsigned last              = 0;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *selection_buf = NULL;
    ozone_handle_t *ozone      = (ozone_handle_t*)data;
 
@@ -4440,8 +4445,8 @@ static void ozone_list_cache(
    /* Deep copy visible elements */
    video_driver_get_size(NULL, &video_info_height);
    y                          = ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical;
-   entries_end                = menu_entries_get_size();
-   selection_buf              = menu_entries_get_selection_buf_ptr(0);
+   entries_end                = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+   selection_buf              = MENU_LIST_GET_SELECTION(menu_list, 0);
    bottom_boundary            = video_info_height - ozone->dimensions.header_height - ozone->dimensions.footer_height;
 
    for (i = 0; i < entries_end; i++)
@@ -4479,8 +4484,10 @@ static void ozone_change_tab(
       enum msg_hash_enums tab,
       enum menu_settings_type type)
 {
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *menu_stack    = MENU_LIST_GET(menu_list, 0);
+   file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t stack_size          = menu_stack->size;
 
    if (menu_stack->list[stack_size - 1].label)
@@ -5258,8 +5265,10 @@ static void ozone_update_scroll(
    gfx_animation_ctx_entry_t entry;
    float new_scroll = 0, entries_middle;
    float bottom_boundary, current_selection_middle_onscreen;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   uintptr_t tag              = (uintptr_t) selection_buf;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
+   uintptr_t tag              = (uintptr_t)selection_buf;
 
    video_driver_get_size(NULL, &video_info_height);
 
@@ -5332,10 +5341,12 @@ static void ozone_compute_entries_position(
       bool menu_show_sublabels,
       size_t entries_end)
 {
+   size_t i;
    /* Compute entries height and adjust scrolling if needed */
    unsigned video_info_height;
    unsigned video_info_width;
-   size_t i;
+   struct menu_state *menu_st    = menu_state_get_ptr();
+   menu_list_t *menu_list        = menu_st->entries.list;
    file_list_t *selection_buf    = NULL;
    int entry_padding             = ozone_get_entries_padding(ozone);
    float scale_factor            = ozone->last_scale_factor;
@@ -5354,7 +5365,7 @@ static void ozone_compute_entries_position(
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
-   selection_buf                 = menu_entries_get_selection_buf_ptr(0);
+   selection_buf                 = MENU_LIST_GET_SELECTION(menu_list, 0);
 
    video_driver_get_size(&video_info_width, &video_info_height);
 
@@ -7023,7 +7034,9 @@ static void ozone_hide_fullscreen_thumbnails(ozone_handle_t *ozone, bool animate
 static void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
 {
    gfx_animation_ctx_entry_t animation_entry;
-   file_list_t *selection_buf         = menu_entries_get_selection_buf_ptr(0);
+   struct menu_state *menu_st         = menu_state_get_ptr();
+   menu_list_t *menu_list             = menu_st->entries.list;
+   file_list_t *selection_buf         = MENU_LIST_GET_SELECTION(menu_list, 0);
    uintptr_t alpha_tag                = (uintptr_t)&ozone->animations.fullscreen_thumbnail_alpha;
    uintptr_t scroll_tag               = (uintptr_t)selection_buf;
 
@@ -7462,6 +7475,8 @@ error:
 static void ozone_set_thumbnail_content(void *data, const char *s)
 {
    ozone_handle_t *ozone      = (ozone_handle_t*)data;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
 
    if (!ozone)
       return;
@@ -7471,9 +7486,9 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
       /* Playlist content */
       if (string_is_empty(s))
       {
-         size_t selection      = menu_navigation_get_selection();
-         size_t list_size      = menu_entries_get_size();
-         file_list_t *list     = menu_entries_get_selection_buf_ptr(0);
+         size_t selection      = menu_st->selection_ptr;
+         size_t list_size      = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+         file_list_t *list     = MENU_LIST_GET_SELECTION(menu_list, 0);
 
          /* Get playlist index corresponding
           * to the selected entry */
@@ -7513,7 +7528,7 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
 
          MENU_ENTRY_INITIALIZE(entry);
          entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
-         menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+         menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
 
          if (!string_is_empty(entry.path))
             gfx_thumbnail_set_content(ozone->thumbnail_path_data, entry.path);
@@ -7530,7 +7545,7 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
 
          MENU_ENTRY_INITIALIZE(entry);
          entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
-         menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+         menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
 
          if (menu_explore_set_playlist_thumbnail(entry.type, ozone->thumbnail_path_data) >= 0)
             ozone->flags |=  OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE;
@@ -7547,8 +7562,8 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
    else if (string_is_equal(s, "imageviewer"))
    {
       /* Filebrowser image updates */
-      size_t selection           = menu_navigation_get_selection();
-      file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+      size_t selection           = menu_st->selection_ptr;
+      file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
       ozone_node_t *node         = (ozone_node_t*)selection_buf->list[selection].userdata;
 
       if (node)
@@ -7583,8 +7598,8 @@ static bool INLINE ozone_category_onscreen(
       ozone_handle_t *ozone,
       size_t idx)
 {
-   return (idx >= ozone->first_onscreen_category) &&
-          (idx <= ozone->last_onscreen_category);
+   return    (idx >= ozone->first_onscreen_category)
+          && (idx <= ozone->last_onscreen_category);
 }
 
 /* If current category is on screen, returns its
@@ -7609,25 +7624,21 @@ static void ozone_auto_select_onscreen_entry(
       ozone_handle_t *ozone,
       enum ozone_onscreen_entry_position_type target_entry)
 {
-   size_t selection = 0;
-
+   struct menu_state *menu_st = menu_state_get_ptr();
    /* Update selection index */
    switch (target_entry)
    {
       case OZONE_ONSCREEN_ENTRY_FIRST:
-         selection = ozone->first_onscreen_entry;
+         menu_st->selection_ptr = ozone->first_onscreen_entry;
          break;
       case OZONE_ONSCREEN_ENTRY_LAST:
-         selection = ozone->last_onscreen_entry;
+         menu_st->selection_ptr = ozone->last_onscreen_entry;
          break;
       case OZONE_ONSCREEN_ENTRY_CENTRE:
       default:
-         selection = (ozone->first_onscreen_entry >> 1) + (ozone->last_onscreen_entry >> 1);
+         menu_st->selection_ptr = (ozone->first_onscreen_entry >> 1) + (ozone->last_onscreen_entry >> 1);
          break;
    }
-
-   /* Apply new selection */
-   menu_navigation_set_selection(selection);
 }
 
 static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone, settings_t *settings)
@@ -7643,8 +7654,8 @@ static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone, sett
     * only OZONE_FLAG_IS_PLAYLIST will be evaluated,
     * so this isn't too much of a performance hog... */
    return (
-            (ozone->flags   & OZONE_FLAG_IS_PLAYLIST) ||
-            (ozone->flags   & OZONE_FLAG_IS_EXPLORE_LIST)
+               (ozone->flags   & OZONE_FLAG_IS_PLAYLIST)
+            || (ozone->flags   & OZONE_FLAG_IS_EXPLORE_LIST)
          )
          && (ozone->show_thumbnail_bar)
          && (settings->uints.menu_left_thumbnails)
@@ -7930,22 +7941,24 @@ static enum menu_action ozone_parse_menu_entry_action(
       bool ozone_collapse_sidebar,
       enum menu_action action)
 {
-   settings_t *settings          = config_get_ptr();
    uintptr_t tag;
    int new_selection;
-   enum menu_action new_action   = action;
-   file_list_t *selection_buf    = NULL;
-   unsigned horizontal_list_size = 0;
-   bool is_current_entry_settings;
    size_t selection;
    size_t selection_total;
+   bool is_current_entry_settings = false;
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_list_t *menu_list         = menu_st->entries.list;
+   settings_t *settings           = config_get_ptr();
+   enum menu_action new_action    = action;
+   file_list_t *selection_buf     = NULL;
+   unsigned horizontal_list_size  = 0;
 
    /* We have to override the thumbnail stream
     * delay when opening the thumbnail sidebar;
     * ensure that the proper value is restored
     * whenever the user performs regular navigation */
-   if ((action != MENU_ACTION_NOOP) &&
-       (ozone->thumbnails.stream_delay != OZONE_THUMBNAIL_STREAM_DELAY))
+   if (   (action != MENU_ACTION_NOOP)
+       && (ozone->thumbnails.stream_delay != OZONE_THUMBNAIL_STREAM_DELAY))
    {
       ozone->thumbnails.stream_delay = OZONE_THUMBNAIL_STREAM_DELAY;
       gfx_thumbnail_set_stream_delay(ozone->thumbnails.stream_delay);
@@ -7957,10 +7970,10 @@ static enum menu_action ozone_parse_menu_entry_action(
       ozone->flags           |=  OZONE_FLAG_MSGBOX_STATE;
    else
       ozone->flags           &= ~OZONE_FLAG_MSGBOX_STATE;
-   selection_buf              = menu_entries_get_selection_buf_ptr(0);
+   selection_buf              = MENU_LIST_GET_SELECTION(menu_list, 0);
    tag                        = (uintptr_t)selection_buf;
-   selection                  = menu_navigation_get_selection();
-   selection_total            = menu_entries_get_size();
+   selection                  = menu_st->selection_ptr;
+   selection_total            = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
 
    /* Don't wiggle left or right if the current entry is a setting. This is
       partially wrong because some settings don't use left and right to change their value, such as
@@ -8016,7 +8029,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
                ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag);
 
-            menu_navigation_set_selection(0);
+            menu_st->selection_ptr = 0;
             ozone_selection_changed(ozone, false);
             break;
          }
@@ -8149,7 +8162,8 @@ static enum menu_action ozone_parse_menu_entry_action(
           * is off screen, auto select *centre* item */
          if (ozone->flags & OZONE_FLAG_CURSOR_MODE)
             if (!OZONE_ENTRY_ONSCREEN(ozone, selection))
-               ozone_auto_select_onscreen_entry(ozone, OZONE_ONSCREEN_ENTRY_CENTRE);
+               ozone_auto_select_onscreen_entry(ozone,
+                     OZONE_ONSCREEN_ENTRY_CENTRE);
          ozone->flags &= ~OZONE_FLAG_CURSOR_MODE;
          break;
       case MENU_ACTION_LEFT:
@@ -8202,9 +8216,9 @@ static enum menu_action ozone_parse_menu_entry_action(
                   && !is_current_entry_settings)
                ozone_start_cursor_wiggle(ozone, MENU_ACTION_DOWN);
 
-            if (     (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
-                  && (  (ozone->flags & OZONE_FLAG_IS_PLAYLIST) ||
-                        (ozone->is_quick_menu && !menu_is_running_quick_menu())))
+            if (         (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+                  && (   (ozone->flags  & OZONE_FLAG_IS_PLAYLIST)
+                      || (ozone->is_quick_menu && !menu_is_running_quick_menu())))
                return MENU_ACTION_NOOP;
 
             break;
@@ -8284,7 +8298,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             {
                /* Jump to first item on Main Menu */
                ozone->tab_selection[ozone->categories_selection_ptr] = 0;
-               menu_navigation_set_selection(0);
+               menu_st->selection_ptr = 0;
             }
 
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
@@ -8373,7 +8387,8 @@ static enum menu_action ozone_parse_menu_entry_action(
           * is off screen, auto select *last* item */
          if (ozone->flags & OZONE_FLAG_CURSOR_MODE)
             if (!OZONE_ENTRY_ONSCREEN(ozone, selection))
-               ozone_auto_select_onscreen_entry(ozone, OZONE_ONSCREEN_ENTRY_LAST);
+               ozone_auto_select_onscreen_entry(ozone,
+                     OZONE_ONSCREEN_ENTRY_LAST);
          ozone->flags &= ~OZONE_FLAG_CURSOR_MODE;
          break;
       case MENU_ACTION_SCROLL_DOWN:
@@ -8435,7 +8450,8 @@ static enum menu_action ozone_parse_menu_entry_action(
           * is off screen, auto select *first* item */
          if (ozone->flags & OZONE_FLAG_CURSOR_MODE)
             if (!OZONE_ENTRY_ONSCREEN(ozone, selection))
-               ozone_auto_select_onscreen_entry(ozone, OZONE_ONSCREEN_ENTRY_FIRST);
+               ozone_auto_select_onscreen_entry(ozone,
+                     OZONE_ONSCREEN_ENTRY_FIRST);
          ozone->flags &= ~OZONE_FLAG_CURSOR_MODE;
          break;
 
@@ -9673,7 +9689,9 @@ static void ozone_render(void *data,
     * (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323#c87) */
    volatile float scale_factor;
    volatile float thumbnail_scale_factor;
-   unsigned entries_end               = (unsigned)menu_entries_get_size();
+   struct menu_state *menu_st         = menu_state_get_ptr();
+   menu_list_t *menu_list             = menu_st->entries.list;
+   unsigned entries_end               = (unsigned)MENU_LIST_GET_SELECTION(menu_list, 0)->size;
    bool pointer_enabled               = false;
    unsigned language                  = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
    ozone_handle_t *ozone              = (ozone_handle_t*)data;
@@ -9791,7 +9809,7 @@ static void ozone_render(void *data,
    if (pointer_enabled)
    {
       bool pointer_in_sidebar, last_pointer_in_sidebar;
-      file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
+      file_list_t *selection_buf    = MENU_LIST_GET_SELECTION(menu_list, 0);
       uintptr_t     animation_tag   = (uintptr_t)selection_buf;
 
       int entry_padding             = (ozone->depth == 1)
@@ -9995,7 +10013,7 @@ static void ozone_render(void *data,
                         && (ozone->pointer.y_accel < ozone->last_scale_factor)
                         && (ozone->pointer.y_accel > -ozone->last_scale_factor))
                   {
-                     menu_navigation_set_selection(i);
+                     menu_st->selection_ptr = i;
 
                      /* If this is a playlist, must update thumbnails */
                      if (    ((ozone->flags & OZONE_FLAG_IS_PLAYLIST) && (ozone->depth == 1 || ozone->depth == 4))
@@ -10024,7 +10042,7 @@ static void ozone_render(void *data,
                      && (ozone->pointer.press_duration >= MENU_INPUT_PRESS_TIME_SHORT)
                      && (i != ozone->selection))
                {
-                  menu_navigation_set_selection(i);
+                  menu_st->selection_ptr = i;
 
                   /* If we are currently in the sidebar, leave it */
                   if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
@@ -11114,8 +11132,10 @@ static void ozone_get_thumbnail_system(void *data, char *s, size_t len)
 
 static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 {
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   size_t new_selection       = menu_navigation_get_selection();
+	struct menu_state *menu_st = menu_state_get_ptr();
+	menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
+   size_t new_selection       = menu_st->selection_ptr;
    ozone_node_t *node         = (ozone_node_t*)selection_buf->list[new_selection].userdata;
 
    if (!node)
@@ -11126,7 +11146,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
       menu_entry_t entry;
       unsigned entry_type;
       uintptr_t tag                = (uintptr_t)selection_buf;
-      size_t selection             = menu_navigation_get_selection();
+      size_t selection             = new_selection;
 
       MENU_ENTRY_INITIALIZE(entry);
       menu_entry_get(&entry, 0, selection, NULL, true);
@@ -11769,6 +11789,8 @@ static void ozone_populate_entries(
    bool want_thumbnail_bar              = false;
    bool fullscreen_thumbnails_available = false;
    bool animate                         = false;
+   struct menu_state *menu_st           = menu_state_get_ptr();
+   menu_list_t *menu_list               = menu_st->entries.list;
    settings_t *settings                 = NULL;
    ozone_handle_t *ozone                = (ozone_handle_t*) data;
 
@@ -11811,7 +11833,7 @@ static void ozone_populate_entries(
              * playlist, return to the sidebar */
             if (!(ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR))
             {
-               file_list_t *list       = menu_entries_get_selection_buf_ptr(0);
+               file_list_t *list       = MENU_LIST_GET_SELECTION(menu_list, 0);
                uintptr_t animation_tag = (uintptr_t)&ozone->animations.cursor_alpha;
                bool goto_sidebar       = false;
 
@@ -12079,8 +12101,10 @@ static bool ozone_menu_init_list(void *data)
    menu_displaylist_info_t info;
 
    settings_t *settings         = config_get_ptr();
-   file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
+   struct menu_state *menu_st   = menu_state_get_ptr();
+   menu_list_t *menu_list       = menu_st->entries.list;
+   file_list_t *menu_stack      = MENU_LIST_GET(menu_list, 0);
+   file_list_t *selection_buf   = MENU_LIST_GET_SELECTION(menu_list, 0);
 
    menu_displaylist_info_init(&info);
 
@@ -12251,10 +12275,12 @@ static int ozone_pointer_up(void *userdata,
 {
    unsigned width, height;
    ozone_handle_t *ozone             = (ozone_handle_t*)userdata;
-   file_list_t *selection_buf        = menu_entries_get_selection_buf_ptr(0);
+   struct menu_state *menu_st        = menu_state_get_ptr();
+   menu_list_t *menu_list            = menu_st->entries.list;
+   file_list_t *selection_buf        = MENU_LIST_GET_SELECTION(menu_list, 0);
    uintptr_t sidebar_tag             = (uintptr_t)selection_buf;
-   size_t selection                  = menu_navigation_get_selection();
-   size_t entries_end                = menu_entries_get_size();
+   size_t selection                  = menu_st->selection_ptr;
+   size_t entries_end                = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
    settings_t *settings              = config_get_ptr();
    bool ozone_collapse_sidebar       = settings->bools.ozone_collapse_sidebar;
 
@@ -12298,7 +12324,7 @@ static int ozone_pointer_up(void *userdata,
                /* If current 'pointer' item is not active,
                 * activate it immediately */
                if (ptr != selection)
-                  menu_navigation_set_selection(ptr);
+                  menu_st->selection_ptr = ptr;
 
                /* If we are not currently in the sidebar,
                 * perform a MENU_ACTION_SELECT on currently
@@ -12326,7 +12352,7 @@ static int ozone_pointer_up(void *userdata,
                menu_input_set_pointer_y_accel(0.0f);
 
                if (ptr != selection)
-                  menu_navigation_set_selection(ptr);
+                  menu_st->selection_ptr = ptr;
 
                /* If we are currently in the sidebar, leave it */
                if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)

@@ -5039,7 +5039,7 @@ static const char * msvc_vercode_to_str(const unsigned vercode)
 
 /* Sets 's' to the name of the current core
  * (shown at the top of the UI). */
-int menu_entries_get_core_title(char *s, size_t len)
+void menu_entries_get_core_title(char *s, size_t len)
 {
    struct retro_system_info *system  = &runloop_state_get_ptr()->system.info;
    const char *core_name             = 
@@ -5059,8 +5059,6 @@ int menu_entries_get_core_title(char *s, size_t len)
       snprintf(s + _len, len - _len, " - %s (%s)", core_name, core_version);
    else
       snprintf(s + _len, len - _len, " - %s", core_name);
-
-   return 0;
 }
 
 static bool menu_driver_init_internal(
@@ -8371,13 +8369,14 @@ size_t menu_update_fullscreen_thumbnail_label(
 {
    char tmpstr[64];
    menu_entry_t selected_entry;
+   struct menu_state *menu_st      = &menu_driver_state;
    const char *thumbnail_label     = NULL;
 
    /* > Get menu entry */
    MENU_ENTRY_INITIALIZE(selected_entry);
    selected_entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
                          | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
-   menu_entry_get(&selected_entry, 0, menu_navigation_get_selection(), NULL, true);
+   menu_entry_get(&selected_entry, 0, menu_st->selection_ptr, NULL, true);
 
    /* > Get entry label */
    if (!string_is_empty(selected_entry.rich_label))

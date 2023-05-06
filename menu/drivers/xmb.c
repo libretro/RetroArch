@@ -847,8 +847,10 @@ static void *xmb_list_get_entry(void *data,
    {
       case MENU_LIST_PLAIN:
          {
-            file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
-            list_size  = menu_entries_get_stack_size(0);
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_list_t *menu_list     = menu_st->entries.list;
+            file_list_t *menu_stack    = MENU_LIST_GET_SELECTION(menu_list,  0);
+            list_size                  = MENU_LIST_GET_STACK_SIZE(menu_list, 0);
             if (i < list_size)
                return (void*)&menu_stack->list[i];
          }
@@ -1381,11 +1383,13 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       /* Playlist content */
       if (string_is_empty(s))
       {
-         size_t selection      = menu_navigation_get_selection();
-         size_t list_size      = menu_entries_get_size();
-         file_list_t *list     = menu_entries_get_selection_buf_ptr(0);
-         bool playlist_valid   = false;
-         size_t playlist_index = selection;
+         size_t selection             = menu_navigation_get_selection();
+         struct menu_state *menu_st   = menu_state_get_ptr();
+         menu_list_t *menu_list       = menu_st->entries.list;
+         size_t list_size             = (unsigned)MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+         file_list_t *list            = MENU_LIST_GET_SELECTION(menu_list, 0);
+         bool playlist_valid          = false;
+         size_t playlist_index        = selection;
 
          /* Get playlist index corresponding
           * to the selected entry */
@@ -1442,8 +1446,10 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
    {
       /* Filebrowser image updates */
       menu_entry_t entry;
+      struct menu_state *menu_st = menu_state_get_ptr();
+      menu_list_t *menu_list     = menu_st->entries.list;
       size_t selection           = menu_navigation_get_selection();
-      file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+      file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
       xmb_node_t *node           = (xmb_node_t*)selection_buf->list[selection].userdata;
 
       if (node)
@@ -1514,14 +1520,16 @@ static void xmb_selection_pointer_changed(
    uintptr_t tag;
    size_t num                 = 0;
    int threshold              = 0;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   size_t selection           = menu_navigation_get_selection();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
+   size_t selection           = menu_st->selection_ptr;
 
    if (!xmb)
       return;
 
-   end       = (unsigned)menu_entries_get_size();
-   threshold = xmb->icon_size * 10;
+   end                        = (unsigned)MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+   threshold                  = xmb->icon_size * 10;
 
    video_driver_get_size(NULL, &height);
 
@@ -2150,8 +2158,10 @@ static void xmb_tab_set_selection(void *data)
 static void xmb_list_switch(xmb_handle_t *xmb)
 {
    gfx_animation_ctx_entry_t anim_entry;
+   struct menu_state *menu_st       = menu_state_get_ptr();
+   menu_list_t *menu_list           = menu_st->entries.list;
    int dir                          = -1;
-   file_list_t *selection_buf       = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *selection_buf       = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t selection                 = 0;
    settings_t       *settings       = config_get_ptr();
    bool xmb_main_tab_selected       = false;
@@ -2175,7 +2185,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
       xmb_tab_set_selection(xmb);
 
    /* Selection needs to be taken after tab restore */
-   selection               = menu_navigation_get_selection();
+   selection               = menu_st->selection_ptr;
 
    xmb_list_switch_horizontal_list(xmb);
 
@@ -2610,7 +2620,9 @@ static void xmb_list_open(xmb_handle_t *xmb)
       menu_xmb_animation_opening_main_menu =
       settings->uints.menu_xmb_animation_opening_main_menu;
    int                    dir = 0;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t selection           = menu_navigation_get_selection();
 
    xmb->depth                 = (int)
@@ -2679,13 +2691,15 @@ static void xmb_populate_entries(void *data,
       const char *label, unsigned k)
 {
    unsigned xmb_system_tab, xmb_horizontal_type;
-   xmb_handle_t *xmb    = (xmb_handle_t*)data;
-   settings_t *settings = config_get_ptr();
+   xmb_handle_t *xmb                  = (xmb_handle_t*)data;
+   settings_t *settings               = config_get_ptr();
+   struct menu_state   *menu_st       = menu_state_get_ptr();
+   menu_list_t *menu_list             = menu_st->entries.list;
    bool menu_dynamic_wallpaper_enable =
       settings ? settings->bools.menu_dynamic_wallpaper_enable : false;
-   bool show_entry_idx  = settings ? settings->bools.playlist_show_entry_idx : false;
-   bool was_db_manager_list    = false;
-   unsigned    depth    = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+   bool show_entry_idx                = settings ? settings->bools.playlist_show_entry_idx : false;
+   bool was_db_manager_list           = false;
+   unsigned    depth                  = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
    if (!xmb)
       return;
    xmb_system_tab       = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
@@ -2792,7 +2806,7 @@ static void xmb_populate_entries(void *data,
          (xmb->is_playlist || xmb->is_explore_list)))
    {
       size_t entry_idx_selection = menu_navigation_get_selection() + 1;
-      size_t list_size           = menu_entries_get_size();
+      size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
       unsigned entry_idx_offset  = 0;
 
       if (xmb->is_explore_list)
@@ -4738,11 +4752,13 @@ static void xmb_render(void *data,
     * disables optimisations and removes excess precision
     * (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323#c87) */
    volatile float scale_factor;
-   xmb_handle_t *xmb          = (xmb_handle_t*)data;
-   settings_t *settings       = config_get_ptr();
-   size_t      end            = menu_entries_get_size();
-   gfx_display_t *p_disp      = disp_get_ptr();
-   gfx_animation_t *p_anim    = anim_get_ptr();
+   xmb_handle_t *xmb              = (xmb_handle_t*)data;
+   settings_t *settings           = config_get_ptr();
+   struct menu_state   *menu_st   = menu_state_get_ptr();
+   menu_list_t *menu_list         = menu_st->entries.list;
+   size_t      end                = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+   gfx_display_t *p_disp          = disp_get_ptr();
+   gfx_animation_t *p_anim        = anim_get_ptr();
 
    if (!xmb)
       return;
@@ -5675,6 +5691,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    gfx_display_t            *p_disp        = (gfx_display_t*)video_info->disp_userdata;
    gfx_animation_t          *p_anim        = anim_get_ptr();
    gfx_display_ctx_driver_t *dispctx       = p_disp->dispctx;
+   struct menu_state   *menu_st            = menu_state_get_ptr();
+   menu_list_t *menu_list                  = menu_st->entries.list;
    bool input_dialog_display_kb            = menu_input_dialog_get_display_kb();
 
    if (!xmb)
@@ -6297,7 +6315,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          video_height,
          &mymat);
 
-   selection_buf = menu_entries_get_selection_buf_ptr(0);
+   selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
 
    /* List icons */
    xmb_draw_items(
@@ -6527,10 +6545,12 @@ static void xmb_init_scale_mod(void)
 static void xmb_layout(xmb_handle_t *xmb)
 {
    unsigned width, height, i;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   size_t selection           = menu_navigation_get_selection();
-   unsigned current           = (unsigned)selection;
-   unsigned end               = (unsigned)menu_entries_get_size();
+   struct menu_state   *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list       = menu_st->entries.list;
+   file_list_t *selection_buf   = MENU_LIST_GET_SELECTION(menu_list, 0);
+   size_t selection             = menu_st->selection_ptr;
+   unsigned current             = (unsigned)selection;
+   unsigned end                 = (unsigned)MENU_LIST_GET_SELECTION(menu_list, 0)->size;
 
    video_driver_get_size(&width, &height);
    xmb_init_scale_mod();
@@ -7544,8 +7564,10 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
 {
    size_t stack_size, list_size;
    xmb_handle_t      *xmb         = (xmb_handle_t*)data;
-   file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf     = menu_entries_get_selection_buf_ptr(0);
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_list_t *menu_list         = menu_st->entries.list;
+   file_list_t *menu_stack        = MENU_LIST_GET(menu_list, 0);
+   file_list_t *selection_buf     = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t selection               = menu_navigation_get_selection();
    settings_t *settings           = config_get_ptr();
    bool menu_horizontal_animation = settings->bools.menu_horizontal_animation;
@@ -8129,8 +8151,10 @@ static bool xmb_menu_init_list(void *data)
    menu_displaylist_info_t info;
 
    settings_t *settings         = config_get_ptr();
-   file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
+   struct menu_state *menu_st   = menu_state_get_ptr();
+   menu_list_t *menu_list       = menu_st->entries.list;
+   file_list_t *menu_stack      = MENU_LIST_GET(menu_list, 0);
+   file_list_t *selection_buf   = MENU_LIST_GET_SELECTION(menu_list, 0);
 
    menu_displaylist_info_init(&info);
 
@@ -8174,9 +8198,11 @@ static int xmb_pointer_up(void *userdata,
    int16_t margin_top;
    int16_t margin_left;
    int16_t margin_right;
-   xmb_handle_t *xmb      = (xmb_handle_t*)userdata;
-   size_t selection       = menu_navigation_get_selection();
-   unsigned end           = (unsigned)menu_entries_get_size();
+   xmb_handle_t *xmb            = (xmb_handle_t*)userdata;
+   size_t selection             = menu_navigation_get_selection();
+   struct menu_state *menu_st   = menu_state_get_ptr();
+   menu_list_t *menu_list       = menu_st->entries.list;
+   unsigned end                 = (unsigned)MENU_LIST_GET_SELECTION(menu_list, 0)->size;
 
    if (!xmb)
       return -1;

@@ -238,24 +238,27 @@ static int action_right_scroll(unsigned type, const char *label,
 
    if (menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
    {
-      size_t selection           = menu_navigation_get_selection();
+      struct menu_state *menu_st = menu_state_get_ptr();
+      menu_list_t *menu_list     = menu_st->entries.list;
+      size_t selection           = menu_st->selection_ptr;
       unsigned scroll_speed      = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
       unsigned fast_scroll_speed = 10 * scroll_speed;
+      size_t entries_end         = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
 
-      if (selection + fast_scroll_speed < (menu_entries_get_size()))
+      if (selection + fast_scroll_speed < entries_end)
       {
-         size_t idx  = selection + fast_scroll_speed;
-
-         menu_navigation_set_selection(idx);
-         menu_driver_navigation_set(true);
+         size_t idx             = selection + fast_scroll_speed;
+         menu_st->selection_ptr = idx;
+         if (menu_st->driver_ctx->navigation_set)
+            menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
       }
       else
       {
-         if ((menu_entries_get_size() > 0))
+         if (entries_end > 0)
             menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST, NULL);
       }
 #ifdef HAVE_AUDIOMIXER
-      if (selection != menu_navigation_get_selection()) 
+      if (selection != menu_st->selection_ptr) 
          audio_driver_mixer_play_scroll_sound(false);
 #endif
    }

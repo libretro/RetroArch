@@ -1763,12 +1763,14 @@ static int action_bind_sublabel_playlist_entry(
       char *s, size_t len)
 {
    size_t _len;
-   size_t list_size                          = menu_entries_get_size();
+   struct menu_state    *menu_st             = menu_state_get_ptr();
+   menu_list_t *menu_list                    = menu_st->entries.list;
+   size_t list_size                          = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
    playlist_t *playlist                      = NULL;
    const struct playlist_entry *entry        = NULL;
    size_t playlist_index                     = i;
 #ifdef HAVE_OZONE
-   const char *menu_ident                    = menu_driver_ident();
+   const char *menu_ident                    = (menu_st->driver_ctx && menu_st->driver_ctx->ident) ? menu_st->driver_ctx->ident : NULL;
 #endif
    settings_t *settings                      = config_get_ptr();
    bool playlist_show_sublabels              = settings->bools.playlist_show_sublabels;
