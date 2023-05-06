@@ -758,14 +758,6 @@ enum action_iterate_type
    ITERATE_TYPE_BIND
 };
 
-void menu_cbs_init(
-      struct menu_state *menu_st,
-      const menu_ctx_driver_t *menu_driver_ctx,
-      file_list_t *list,
-      menu_file_list_cbs_t *cbs,
-      const char *path, const char *label,
-      unsigned type, size_t idx);
-
 int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
 
 int menu_entries_elem_get_first_char(
@@ -789,21 +781,9 @@ void get_current_menu_value(struct menu_state *menu_st,
  **/
 const char *config_get_menu_driver_options(void);
 
-bool generic_menu_init_list(struct menu_state *menu_st,
-      settings_t *settings);
-
 /* Teardown function for the menu driver. */
 void menu_driver_destroy(
       struct menu_state *menu_st);
-
-bool rarch_menu_init(
-      struct menu_state *menu_st,
-      menu_dialog_t        *p_dialog,
-      const menu_ctx_driver_t *menu_driver_ctx,
-      menu_input_t *menu_input,
-      menu_input_pointer_hw_state_t *pointer_hw_state,
-      settings_t *settings
-      );
 
 extern menu_ctx_driver_t menu_ctx_ozone;
 extern menu_ctx_driver_t menu_ctx_xui;
@@ -824,11 +804,6 @@ const menu_ctx_driver_t *menu_driver_find_driver(
       settings_t *settings,
       const char *prefix,
       bool verbosity_enabled);
-
-bool menu_input_key_bind_iterate(
-      settings_t *settings,
-      menu_input_ctx_bind_t *bind,
-      retro_time_t current_time);
 
 /*
  * This function gets called in order to process all input events

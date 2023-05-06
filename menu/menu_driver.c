@@ -2521,7 +2521,7 @@ static void menu_input_key_bind_poll_bind_state_internal(
  * Sublabel: each entry has a sublabel, which consists of one or more lines of additional information.
  * This function callback lets us render that text.
  */
-void menu_cbs_init(
+static void menu_cbs_init(
       struct menu_state *menu_st,
       const menu_ctx_driver_t *menu_driver_ctx,
       file_list_t *list,
@@ -2710,11 +2710,11 @@ static void menu_driver_get_last_shader_path_int(
     * - Last selected shader is incompatible with
     *   the current video driver
     * ...use default settings */
-   if (!remember_last_dir ||
-       (type == RARCH_SHADER_NONE) ||
-       string_is_empty(shader_dir) ||
-       !path_is_directory(shader_dir) ||
-       !video_shader_is_supported(type))
+   if (   (!remember_last_dir)
+       || (type == RARCH_SHADER_NONE)
+       || string_is_empty(shader_dir)
+       || !path_is_directory(shader_dir)
+       || !video_shader_is_supported(type))
    {
       if (dir_out)
          *dir_out = video_shader_dir;
@@ -2726,8 +2726,8 @@ static void menu_driver_get_last_shader_path_int(
       *dir_out = shader_dir;
 
    /* Assign file name */
-   if (file_name_out &&
-       !string_is_empty(shader_file_name))
+   if (    file_name_out
+       && !string_is_empty(shader_file_name))
       *file_name_out = shader_file_name;
 }
 
@@ -2776,18 +2776,14 @@ void menu_driver_get_last_shader_pass_path(
 
 int menu_shader_manager_clear_num_passes(struct video_shader *shader)
 {
-   bool refresh                = false;
-
-   if (!shader)
-      return 0;
-
-   shader->passes = 0;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-
-   video_shader_resolve_parameters(shader);
-
-   shader->flags |= SHDR_FLAG_MODIFIED;
+   if (shader)
+   {
+      bool refresh   = false;
+      shader->passes = 0;
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      video_shader_resolve_parameters(shader);
+      shader->flags |= SHDR_FLAG_MODIFIED;
+   }
 
    return 0;
 }
@@ -2798,14 +2794,14 @@ int menu_shader_manager_clear_parameter(struct video_shader *shader,
    struct video_shader_parameter *param = shader ?
       &shader->parameters[i] : NULL;
 
-   if (!param)
-      return 0;
+   if (param)
+   {
+      param->current = param->initial;
+      param->current = MIN(MAX(param->minimum,
+               param->current), param->maximum);
 
-   param->current = param->initial;
-   param->current = MIN(MAX(param->minimum,
-            param->current), param->maximum);
-
-   shader->flags |= SHDR_FLAG_MODIFIED;
+      shader->flags |= SHDR_FLAG_MODIFIED;
+   }
 
    return 0;
 }
@@ -2870,35 +2866,35 @@ static enum rarch_shader_type menu_shader_manager_get_type(
    enum rarch_shader_type type = RARCH_SHADER_NONE;
    /* All shader types must be the same, or we cannot use it. */
 
-   if (!shader)
-      return RARCH_SHADER_NONE;
-
-   type = video_shader_parse_type(shader->path);
-
-   if (shader->passes)
+   if (shader)
    {
-      size_t i                 = 0;
-      if (type == RARCH_SHADER_NONE)
-      {
-         type = video_shader_parse_type(shader->pass[0].source.path);
-         i    = 1;
-      }
+      type = video_shader_parse_type(shader->path);
 
-      for (; i < shader->passes; i++)
+      if (shader->passes)
       {
-         enum rarch_shader_type pass_type =
-            video_shader_parse_type(shader->pass[i].source.path);
-
-         switch (pass_type)
+         size_t i                 = 0;
+         if (type == RARCH_SHADER_NONE)
          {
-            case RARCH_SHADER_CG:
-            case RARCH_SHADER_GLSL:
-            case RARCH_SHADER_SLANG:
-               if (type != pass_type)
-                  return RARCH_SHADER_NONE;
-               break;
-            default:
-               break;
+            type = video_shader_parse_type(shader->pass[0].source.path);
+            i    = 1;
+         }
+
+         for (; i < shader->passes; i++)
+         {
+            enum rarch_shader_type pass_type =
+               video_shader_parse_type(shader->pass[i].source.path);
+
+            switch (pass_type)
+            {
+               case RARCH_SHADER_CG:
+               case RARCH_SHADER_GLSL:
+               case RARCH_SHADER_SLANG:
+                  if (type != pass_type)
+                     return RARCH_SHADER_NONE;
+                  break;
+               default:
+                  break;
+            }
          }
       }
    }
@@ -3063,8 +3059,6 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
 }
 
 static bool menu_shader_manager_operate_auto_preset(
-      struct retro_system_info *system,
-      bool video_shader_preset_save_reference_enable,
       enum auto_shader_operation op,
       const struct video_shader *shader,
       const char *dir_video_shader,
@@ -3075,7 +3069,10 @@ static bool menu_shader_manager_operate_auto_preset(
    char config_directory[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
-   static enum rarch_shader_type shader_types[] =
+   settings_t *settings                           = config_get_ptr();
+   bool video_shader_preset_save_reference_enable = settings->bools.video_shader_preset_save_reference_enable;
+   struct retro_system_info *system               = &runloop_state_get_ptr()->system.info;
+   static enum rarch_shader_type shader_types[]   =
    {
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
    };
@@ -3089,9 +3086,9 @@ static bool menu_shader_manager_operate_auto_preset(
    if (type != SHADER_PRESET_GLOBAL && string_is_empty(core_name))
       return false;
 
-   if (!has_content &&
-       ((type == SHADER_PRESET_GAME) ||
-            (type == SHADER_PRESET_PARENT)))
+   if (    !has_content
+       && ((type == SHADER_PRESET_GAME)
+       ||  (type == SHADER_PRESET_PARENT)))
       return false;
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
@@ -3247,10 +3244,7 @@ bool menu_shader_manager_remove_auto_preset(
       const char *dir_video_shader,
       const char *dir_menu_config)
 {
-   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-   settings_t *settings             = config_get_ptr();
    return menu_shader_manager_operate_auto_preset(
-         system, settings->bools.video_shader_preset_save_reference_enable,
          AUTO_SHADER_OP_REMOVE, NULL,
          dir_video_shader,
          dir_menu_config,
@@ -3268,10 +3262,7 @@ bool menu_shader_manager_auto_preset_exists(
       const char *dir_video_shader,
       const char *dir_menu_config)
 {
-   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-   settings_t *settings             = config_get_ptr();
    return menu_shader_manager_operate_auto_preset(
-         system, settings->bools.video_shader_preset_save_reference_enable,
          AUTO_SHADER_OP_EXISTS, NULL,
          dir_video_shader,
          dir_menu_config,
@@ -3299,10 +3290,7 @@ bool menu_shader_manager_save_auto_preset(
       const char *dir_menu_config,
       bool apply)
 {
-   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-   settings_t *settings             = config_get_ptr();
    return menu_shader_manager_operate_auto_preset(
-         system, settings->bools.video_shader_preset_save_reference_enable,
          AUTO_SHADER_OP_SAVE, shader,
          dir_video_shader,
          dir_menu_config,
@@ -3682,7 +3670,7 @@ static bool menu_entries_init(
    return true;
 }
 
-bool generic_menu_init_list(struct menu_state *menu_st,
+static void generic_menu_init_list(struct menu_state *menu_st,
       settings_t *settings)
 {
    menu_displaylist_info_t info;
@@ -3714,8 +3702,6 @@ bool generic_menu_init_list(struct menu_state *menu_st,
       menu_displaylist_process(&info);
 
    menu_displaylist_info_free(&info);
-
-   return true;
 }
 
 /* This function gets called at first startup on Android/iOS
@@ -3751,7 +3737,7 @@ static void bundle_decompressed(retro_task_t *task,
    command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 }
 
-bool rarch_menu_init(
+static bool rarch_menu_init(
       struct menu_state *menu_st,
       menu_dialog_t        *p_dialog,
       const menu_ctx_driver_t *menu_driver_ctx,
@@ -5325,7 +5311,7 @@ bool menu_input_key_bind_set_mode(
    return true;
 }
 
-bool menu_input_key_bind_iterate(
+static bool menu_input_key_bind_iterate(
       settings_t *settings,
       menu_input_ctx_bind_t *bind,
       retro_time_t current_time)
@@ -5518,7 +5504,7 @@ bool menu_input_dialog_get_display_kb(void)
     * result to RetroArch with repeated calls to input_keyboard_event
     * This prevents input_keyboard_event from calling back
     * menu_input_dialog_get_display_kb, looping indefinintely */
-   static bool typing = false;
+   static bool typing             = false;
 
    if (typing)
       return false;
