@@ -5232,6 +5232,7 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
     const char *val_disabled      = NULL;
     rarch_system_info_t *system   = &runloop_state_get_ptr()->system;
     enum msg_hash_enums enum_idx  = (enum msg_hash_enums)atoi(info_path);
+    struct menu_state *menu_st    = menu_state_get_ptr();
     rarch_setting_t     *setting  = menu_setting_find_enum(enum_idx);
     size_t menu_index             = 0;
     unsigned count                = 0;
