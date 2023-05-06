@@ -2507,23 +2507,22 @@ static int setting_action_ok_bind_defaults(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    unsigned i;
-   menu_input_ctx_bind_limits_t lim;
+   struct menu_state    *menu_st         = menu_state_get_ptr();
+   struct menu_bind_state *binds         = &menu_st->input_binds;
    struct retro_keybind *target          = NULL;
    const struct retro_keybind *def_binds = NULL;
 
    if (!setting)
       return -1;
 
-   target    =  &input_config_binds[setting->index_offset][0];
-   def_binds =  (setting->index_offset) ?
-      retro_keybinds_rest : retro_keybinds_1;
+   target                         =  &input_config_binds[setting->index_offset][0];
+   def_binds                      =  (setting->index_offset) 
+                                    ? retro_keybinds_rest
+                                    : retro_keybinds_1;
+   binds->begin                   = MENU_SETTINGS_BIND_BEGIN;
+   binds->last                    = MENU_SETTINGS_BIND_LAST;
 
-   lim.min   = MENU_SETTINGS_BIND_BEGIN;
-   lim.max   = MENU_SETTINGS_BIND_LAST;
-
-   menu_input_key_bind_set_min_max(&lim);
-
-   for (i = MENU_SETTINGS_BIND_BEGIN;
+   for ( i  = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
    {
       target->key     = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;

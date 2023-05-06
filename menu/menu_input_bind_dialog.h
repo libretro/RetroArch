@@ -41,16 +41,8 @@ typedef struct menu_input_ctx_bind
    size_t len;
 } menu_input_ctx_bind_t;
 
-typedef struct menu_input_ctx_bind_limits
-{
-   unsigned min;
-   unsigned max;
-} menu_input_ctx_bind_limits_t;
-
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data);
-
-bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim);
 
 RETRO_END_DECLS
 
