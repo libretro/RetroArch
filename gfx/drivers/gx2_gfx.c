@@ -1732,9 +1732,8 @@ static void wiiu_gfx_set_texture_enable(void *data, bool state, bool full_screen
 
 }
 
-static void wiiu_gfx_set_osd_msg(void *data,
-      const char *msg,
-      const void *params, void *font)
+static void wiiu_gfx_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font)
 {
    wiiu_video_t *wiiu = (wiiu_video_t *)data;
    if (wiiu && wiiu->render_msg_enabled)

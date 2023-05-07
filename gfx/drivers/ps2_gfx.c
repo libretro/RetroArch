@@ -702,9 +702,8 @@ static void ps2_set_texture_enable(void *data, bool enable, bool fullscreen)
    ps2->menuVisible = enable;
 }
 
-static void ps2_set_osd_msg(void *data,
-                            const char *msg,
-                            const void *params, void *font)
+static void ps2_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font)
 {
    ps2_video_t *ps2 = (ps2_video_t *)data;
 

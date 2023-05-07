@@ -1559,7 +1559,7 @@ static void rsx_viewport_info(void* data, struct video_viewport* vp)
 static void rsx_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
-      const void *params, void *font)
+      const struct font_params *params, void *font)
 {
    rsx_t* gcm = (rsx_t*)data;
    if (gcm && gcm->msg_rendering_enabled)

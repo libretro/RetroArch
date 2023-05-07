@@ -1078,17 +1078,14 @@ void d3d9_apply_state_changes(void *data)
 
 void d3d9_set_osd_msg(void *data,
       const char *msg,
-      const void *params, void *font)
+      const struct font_params *params, void *font)
 {
    d3d9_video_t          *d3d = (d3d9_video_t*)data;
    LPDIRECT3DDEVICE9     dev  = d3d->dev;
-   const struct font_params *d3d_font_params = (const
-         struct font_params*)params;
 
-   d3d9_set_font_rect(d3d, d3d_font_params);
+   d3d9_set_font_rect(d3d, params);
    IDirect3DDevice9_BeginScene(dev);
-   font_driver_render_msg(d3d,
-         msg, d3d_font_params, font);
+   font_driver_render_msg(d3d, msg, params, font);
    IDirect3DDevice9_EndScene(dev);
 }
 

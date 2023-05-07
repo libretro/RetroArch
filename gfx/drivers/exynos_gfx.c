@@ -1462,18 +1462,8 @@ static void exynos_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void exynos_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params)
-{
-   (void)data;
-   (void)msg;
-   (void)params;
-}
-
-static void exynos_show_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
+      const struct font_params *params) { }
+static void exynos_show_mouse(void *data, bool state) { }
 
 static const video_poke_interface_t exynos_poke_interface = {
    NULL, /* get_flags */

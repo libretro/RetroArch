@@ -28,70 +28,6 @@
 
 RETRO_BEGIN_DECLS
 
-/* All coordinates and offsets are top-left oriented.
- *
- * This is a texture-atlas approach which allows text to
- * be drawn in a single draw call.
- *
- * It is up to the code using this interface to actually
- * generate proper vertex buffers and upload the atlas texture to GPU. */
-
-struct font_glyph
-{
-   unsigned width;
-   unsigned height;
-
-   /* Texel coordinate offset for top-left pixel of this glyph. */
-   unsigned atlas_offset_x;
-   unsigned atlas_offset_y;
-
-   /* When drawing this glyph, apply an offset to
-    * current X/Y draw coordinate. */
-   int draw_offset_x;
-   int draw_offset_y;
-
-   /* Advance X/Y draw coordinates after drawing this glyph. */
-   int advance_x;
-   int advance_y;
-};
-
-struct font_atlas
-{
-   uint8_t *buffer; /* Alpha channel. */
-   unsigned width;
-   unsigned height;
-   bool dirty;
-};
-
-struct font_params
-{
-   /* Drop shadow offset.
-    * If both are 0, no drop shadow will be rendered. */
-   int drop_x, drop_y;
-
-   /* ABGR. Use the macros. */
-   uint32_t color;
-
-   float x;
-   float y;
-   float scale;
-   /* Drop shadow color multiplier. */
-   float drop_mod;
-   /* Drop shadow alpha */
-   float drop_alpha;
-
-   enum text_alignment text_align;
-
-   bool full_screen;
-};
-
-struct font_line_metrics
-{
-   float height;
-   float ascender;
-   float descender;
-};
-
 typedef struct font_renderer
 {
    void *(*init)(void *data, const char *font_path,
@@ -142,7 +78,7 @@ int font_renderer_create_default(
       const char *font_path, unsigned font_size);
 
 void font_driver_render_msg(void *data,
-      const char *msg, const void *params, void *font_data);
+      const char *msg, const struct font_params *params, void *font_data);
 
 void font_driver_bind_block(void *font_data, void *block);
 
@@ -150,7 +86,7 @@ int font_driver_get_message_width(void *font_data, const char *msg, size_t len, 
 
 void font_driver_flush(unsigned width, unsigned height, void *font_data);
 
-void font_driver_free(void *font_data);
+void font_driver_free(font_data_t *font);
 
 font_data_t *font_driver_init_first(
       void *video_data,

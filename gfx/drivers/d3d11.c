@@ -2600,17 +2600,13 @@ static void d3d11_gfx_apply_state_changes(void* data)
 }
 
 static void d3d11_gfx_set_osd_msg(
-      void* data,
-      const char* msg,
-      const void* params,
-      void* font)
+      void* data, const char *msg,
+      const struct font_params *params, void *font)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
    if (d3d11 && (d3d11->flags & D3D11_ST_FLAG_SPRITES_ENABLE))
-      font_driver_render_msg(d3d11,
-            msg,
-            (const struct font_params*)params, font);
+      font_driver_render_msg(d3d11, msg, params, font);
 }
 
 static uintptr_t d3d11_gfx_load_texture(

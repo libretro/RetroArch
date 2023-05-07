@@ -262,7 +262,7 @@ uintptr_t d3d9_load_texture(void *video_data, void *data,
 
 void d3d9_set_osd_msg(void *data,
       const char *msg,
-      const void *params, void *font);
+      const struct font_params *params, void *font);
 
 void d3d9_unload_texture(void *data, 
       bool threaded, uintptr_t id);

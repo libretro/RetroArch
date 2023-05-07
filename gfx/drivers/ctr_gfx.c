@@ -2357,9 +2357,8 @@ void ctr_overlay_interface(void *data, const video_overlay_interface_t **iface)
 }
 #endif
 
-static void ctr_set_osd_msg(void *data,
-      const char *msg,
-      const void *params, void *font)
+static void ctr_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 
