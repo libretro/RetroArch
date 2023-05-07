@@ -276,7 +276,6 @@ static bool gdi_font_init_first(
 #endif
 
 #ifdef HAVE_VULKAN
-
 static bool vulkan_font_init_first(
       const void **font_driver, void **font_handle,
       void *video_data, const char *font_path,
@@ -1018,70 +1017,58 @@ int font_driver_get_message_width(void *font_data,
    return -1;
 }
 
-int font_driver_get_line_height(void *font_data, float scale)
+int font_driver_get_line_height(font_data_t *font, float scale)
 {
    struct font_line_metrics *metrics = NULL;
-   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
-
    /* First try the line metrics implementation */
    if (font && font->renderer && font->renderer->get_line_metrics)
       if ((font->renderer->get_line_metrics(
                   font->renderer_data, &metrics)))
          return (int)roundf(metrics->height * scale);
-
    /* Else return an approximation
     * (uses a fudge of standard font metrics - mostly garbage...)
     * > font_size = (width of 'a') / 0.6
     * > line_height = font_size * 1.7f */
-   return (int)roundf(1.7f * (float)font_driver_get_message_width(font_data, "a", 1, scale) / 0.6f);
+   return (int)roundf(1.7f * (float)font_driver_get_message_width(font, "a", 1, scale) / 0.6f);
 }
 
-int font_driver_get_line_ascender(void *font_data, float scale)
+int font_driver_get_line_ascender(font_data_t *font, float scale)
 {
    struct font_line_metrics *metrics = NULL;
-   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
-
    /* First try the line metrics implementation */
    if (font && font->renderer && font->renderer->get_line_metrics)
       if ((font->renderer->get_line_metrics(font->renderer_data, &metrics)))
          return (int)roundf(metrics->ascender * scale);
-
    /* Else return an approximation
     * (uses a fudge of standard font metrics - mostly garbage...)
     * > font_size = (width of 'a') / 0.6
     * > ascender = 1.58 * font_size * 0.75 */
-   return (int)roundf(1.58f * 0.75f * (float)font_driver_get_message_width(font_data, "a", 1, scale) / 0.6f);
+   return (int)roundf(1.58f * 0.75f * (float)font_driver_get_message_width(font, "a", 1, scale) / 0.6f);
 }
 
-int font_driver_get_line_descender(void *font_data, float scale)
+int font_driver_get_line_descender(font_data_t *font, float scale)
 {
    struct font_line_metrics *metrics = NULL;
-   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
-
    /* First try the line metrics implementation */
    if (font && font->renderer && font->renderer->get_line_metrics)
       if ((font->renderer->get_line_metrics(font->renderer_data, &metrics)))
          return (int)roundf(metrics->descender * scale);
-
    /* Else return an approximation
     * (uses a fudge of standard font metrics - mostly garbage...)
     * > font_size = (width of 'a') / 0.6
     * > descender = 1.58 * font_size * 0.25 */
-   return (int)roundf(1.58f * 0.25f * (float)font_driver_get_message_width(font_data, "a", 1, scale) / 0.6f);
+   return (int)roundf(1.58f * 0.25f * (float)font_driver_get_message_width(font, "a", 1, scale) / 0.6f);
 }
 
-int font_driver_get_line_centre_offset(void *font_data, float scale)
+int font_driver_get_line_centre_offset(font_data_t *font, float scale)
 {
    struct font_line_metrics *metrics = NULL;
-   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
-
    /* First try the line metrics implementation */
    if (font && font->renderer && font->renderer->get_line_metrics)
       if ((font->renderer->get_line_metrics(font->renderer_data, &metrics)))
          return (int)roundf((metrics->ascender - metrics->descender) * 0.5f * scale);
-
    /* Else return an approximation... */
-   return (int)roundf((1.58f * 0.5f * (float)font_driver_get_message_width(font_data, "a", 1, scale) / 0.6f) / 2.0f);
+   return (int)roundf((1.58f * 0.5f * (float)font_driver_get_message_width(font, "a", 1, scale) / 0.6f) / 2.0f);
 }
 
 void font_driver_free(void *font_data)

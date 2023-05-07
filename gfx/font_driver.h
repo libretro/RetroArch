@@ -169,10 +169,10 @@ void font_driver_init_osd(
 
 void font_driver_free_osd(void);
 
-int font_driver_get_line_height(void *font_data, float scale);
-int font_driver_get_line_ascender(void *font_data, float scale);
-int font_driver_get_line_descender(void *font_data, float scale);
-int font_driver_get_line_centre_offset(void *font_data, float scale);
+int font_driver_get_line_height(font_data_t *font, float scale);
+int font_driver_get_line_ascender(font_data_t *font, float scale);
+int font_driver_get_line_descender(font_data_t *font, float scale);
+int font_driver_get_line_centre_offset(font_data_t *font, float scale);
 
 extern font_renderer_t gl2_raster_font;
 extern font_renderer_t gl3_raster_font;
