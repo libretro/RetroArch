@@ -424,8 +424,8 @@ static void gfx_widgets_move_end(void *userdata)
 
       gfx_animation_push(&entry);
 
-      unfold->flags               |= DISPWIDG_FLAG_UNFOLDED;
-      unfold->flags               |= DISPWIDG_FLAG_UNFOLDING;
+      unfold->flags               |= DISPWIDG_FLAG_UNFOLDED
+                                   | DISPWIDG_FLAG_UNFOLDING;
    }
    else
       p_dispwidget->flags         &= ~DISPGFX_WIDGET_FLAG_MOVING;
@@ -1185,7 +1185,7 @@ static void gfx_widgets_draw_task_msg(
 
    if (msg->flags & DISPWIDG_FLAG_TASK_FINISHED)
    {
-      if (msg->flags & DISPWIDG_FLAG_TASK_ERROR)
+      if (msg->flags & DISPWIDG_FLAG_TASK_ERROR) /* TODO/FIXME - localize */
          strlcpy(task_percentage, "Task failed", sizeof(task_percentage));
       else
       {
@@ -1266,11 +1266,7 @@ static void gfx_widgets_draw_task_msg(
       float cosine  = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
       float sine    = 0.0f; /* sine(rad) = sine(0) = 0.0f */
       if (!(msg->flags & DISPWIDG_FLAG_TASK_FINISHED))
-      {
          radians    = msg->hourglass_rotation;
-         cosine     = cosf(radians);
-         sine       = sinf(radians);
-      }
       gfx_widgets_draw_icon(
             userdata,
             p_disp,

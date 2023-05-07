@@ -192,9 +192,9 @@ float gfx_display_get_dpi_scale_internal(
    static bool scale_cached    = false;
    gfx_ctx_metrics_t metrics;
 
-   if (scale_cached &&
-       (width == last_width) &&
-       (height == last_height))
+   if (    scale_cached
+       && (width  == last_width)
+       && (height == last_height))
       return scale;
 
    /* Determine the diagonal 'size' of the display
@@ -367,13 +367,12 @@ float gfx_display_get_dpi_scale(
           * > If we are not using a widget scale factor override,
           *   just set menu_scale_factor to 1.0 */
          if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
-            menu_scale_factor                             = 1.0f;
+            menu_scale_factor        = 1.0f;
          else
 #endif
          {
-            float _menu_scale_factor                      = 
-               settings->floats.menu_scale_factor;
-            menu_scale_factor                             = _menu_scale_factor;
+            float _menu_scale_factor = settings->floats.menu_scale_factor;
+            menu_scale_factor        = _menu_scale_factor;
          }
       }
    }
@@ -383,9 +382,9 @@ float gfx_display_get_dpi_scale(
     * hardware property. To minimise performance overheads
     * we therefore only call video_context_driver_get_metrics()
     * on first run, or when the current video resolution changes */
-   if (!scale_cached ||
-       (width  != last_width) ||
-       (height != last_height))
+   if (   !scale_cached
+       || (width  != last_width)
+       || (height != last_height))
    {
       scale         = gfx_display_get_dpi_scale_internal(width, height);
       scale_cached  = true;
@@ -396,9 +395,9 @@ float gfx_display_get_dpi_scale(
 
    /* Adjusted scale calculation may also be slow, so
     * only update if something changes */
-   if (scale_updated ||
-       (menu_scale_factor != last_menu_scale_factor) ||
-       (p_disp->menu_driver_id != last_menu_driver_id))
+   if (    scale_updated
+       || (menu_scale_factor != last_menu_scale_factor)
+       || (p_disp->menu_driver_id != last_menu_driver_id))
    {
       adjusted_scale         = gfx_display_get_adjusted_scale(
             p_disp,
@@ -496,9 +495,9 @@ void gfx_display_draw_text(
       return;
 
    /* Don't draw outside of the screen */
-   if (!draw_outside &&
-           ((x < -64 || x > width  + 64)
-         || (y < -64 || y > height + 64))
+   if ( !draw_outside
+         && ((x < -64 || x > width  + 64)
+         ||  (y < -64 || y > height + 64))
       )
       return;
 
@@ -1081,7 +1080,7 @@ void gfx_display_draw_keyboard(
    int ptr_width, ptr_height;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
-   static float white[16] =  {
+   static float white[16]    =  {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
