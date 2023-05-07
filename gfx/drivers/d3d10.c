@@ -1538,7 +1538,7 @@ static bool d3d10_gfx_frame(
    if (    (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE) 
          && d3d10->menu.texture.handle)
    {
-      UINT offset = 0, stride = 0;
+      UINT offset = 0, stride = sizeof(d3d10_vertex_t);
       if (d3d10->flags & D3D10_ST_FLAG_MENU_FULLSCREEN)
          context->lpVtbl->RSSetViewports(context, 1, &d3d10->viewport);
 
