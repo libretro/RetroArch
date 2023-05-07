@@ -6846,7 +6846,7 @@ static void setting_get_string_representation_uint_menu_screensaver_animation(
 }
 #endif
 
-#if defined(HAVE_XMB) || defined(HAVE_OZONE)
+#if defined(HAVE_XMB) || defined(HAVE_OZONE) || defined(HAVE_RGUI)
 static void setting_get_string_representation_uint_menu_remember_selection(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -16188,9 +16188,10 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0.1, 10.0, 0.1, true, true);
          }
 #endif
-#if defined(HAVE_XMB) || defined(HAVE_OZONE)
-         if (string_is_equal(settings->arrays.menu_driver, "xmb")  ||
-             string_is_equal(settings->arrays.menu_driver, "ozone"))
+#if defined(HAVE_XMB) || defined(HAVE_OZONE) || defined(HAVE_RGUI)
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
+             string_is_equal(settings->arrays.menu_driver, "ozone") ||
+             string_is_equal(settings->arrays.menu_driver, "rgui"))
          {
             CONFIG_UINT(
                   list, list_info,
