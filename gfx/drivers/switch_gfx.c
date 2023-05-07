@@ -236,14 +236,6 @@ static bool switch_frame(void *data, const void *frame,
    }
 #endif
 
-#if 0
-   if (frame_count > 6000)
-   {
-      display_finalize();
-      exit(0);
-   }
-#endif
-
    r = surface_dequeue_buffer(&sw->surface, &out_buffer);
    if (r != RESULT_OK)
       return true; /* just skip the frame */

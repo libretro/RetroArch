@@ -1771,10 +1771,6 @@ MSG_HASH(
    "遍历选项调整孔径设置以调整图像尺寸。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "使用高分辨率菜单"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "当没有加载任何内容时，切换到高分辨率模式以便与高分辨率菜单一起使用。"
    )

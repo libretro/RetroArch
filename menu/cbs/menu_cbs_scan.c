@@ -101,6 +101,7 @@ int action_switch_thumbnail(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
+   size_t selection           = menu_st->selection_ptr;
    const char *menu_ident     = menu_driver_ident();
    settings_t *settings       = config_get_ptr();
    bool switch_enabled        = true;
@@ -163,9 +164,18 @@ int action_switch_thumbnail(const char *path,
                   settings->uints.gfx_thumbnails + 1);
       }
 
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
-      if (menu_st->driver_ctx && menu_st->driver_ctx->update_thumbnail_image)
-         menu_st->driver_ctx->update_thumbnail_image(menu_st->userdata);
+      if (menu_st->driver_ctx)
+      {
+         if (menu_st->driver_ctx->update_thumbnail_path)
+         {
+            menu_st->driver_ctx->update_thumbnail_path(
+                  menu_st->userdata, (unsigned)selection, 'L');
+            menu_st->driver_ctx->update_thumbnail_path(
+                  menu_st->userdata, (unsigned)selection, 'R');
+         }
+         if (menu_st->driver_ctx->update_thumbnail_image)
+            menu_st->driver_ctx->update_thumbnail_image(menu_st->userdata);
+      }
    }
 
    return 0;

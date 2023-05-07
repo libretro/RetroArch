@@ -462,7 +462,7 @@ video_driver_t *hw_render_context_driver(
          break;
 #endif
       case RETRO_HW_CONTEXT_D3D12:
-#if defined(HAVE_D3D11)
+#if defined(HAVE_D3D12)
 	 return &video_d3d12;
 #else
          break;
@@ -686,21 +686,22 @@ void video_monitor_compute_fps_statistics(uint64_t
 
 void video_monitor_set_refresh_rate(float hz)
 {
-   char msg[128];
+   char msg[256];
+   char rate[8];
    settings_t        *settings = config_get_ptr();
-   /* TODO/FIXME - localize */
-   size_t _len = strlcpy(msg, "Setting refresh rate to", sizeof(msg));
-   msg[_len  ] = ':';
-   msg[++_len] = ' ';
-   msg[++_len] = '\0';
-   _len       += snprintf(msg + _len, sizeof(msg) - _len, "%.3f", hz);
-   msg[_len  ] = ' ';
-   msg[_len+1] = 'H';
-   msg[_len+2] = 'z';
-   msg[_len+3] = '.';
-   msg[_len+4] = '\0';
+
+   /* Avoid message spamming if there is no change. */
+   if (settings->floats.video_refresh_rate == hz)
+      return;
+   
+   snprintf(rate, sizeof(rate), "%.3f", hz);
+   snprintf(msg, sizeof(msg),
+      msg_hash_to_str(MSG_VIDEO_REFRESH_RATE_CHANGED), rate);
+
+   /* Message is visible for twice the usual duration */
+   /* as modeswitch will cause monitors to go blank for a while */
    if (settings->bools.notification_show_refresh_rate)
-      runloop_msg_queue_push(msg, 1, 180, false, NULL,
+      runloop_msg_queue_push(msg, 1, 360, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("[Video]: %s\n", msg);
 
@@ -1066,6 +1067,11 @@ void* video_display_server_init(enum rarch_display_type type)
          current_display_server = &dispserv_x11;
 #endif
          break;
+      case RARCH_DISPLAY_KMS:
+#if defined(HAVE_KMS)
+         current_display_server = &dispserv_kms;
+#endif
+         break;
       default:
 #if defined(ANDROID)
          current_display_server = &dispserv_android;
@@ -1140,6 +1146,7 @@ bool video_display_server_set_resolution(unsigned width, unsigned height,
       int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
+   RARCH_DBG("[Video]: Display server set resolution, hz: %f\n",hz);
    if (current_display_server && current_display_server->set_resolution)
       return current_display_server->set_resolution(
             video_st->current_display_server_data, width, height, int_hz,
@@ -1210,10 +1217,12 @@ void video_switch_refresh_rate_maybe(
    bool all_fullscreen                = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
 
    /* Roundings to PAL & NTSC standards */
-   if (refresh_rate > 54 && refresh_rate < 60)
-      refresh_rate = 59.94f;
-   else if (refresh_rate > 49 && refresh_rate < 55)
+   if      (refresh_rate > 49.00 && refresh_rate < 54.50)
       refresh_rate = 50.00f;
+   else if (refresh_rate > 54.00 && refresh_rate < 60.00)
+      refresh_rate = 59.94f;
+   else if (refresh_rate > 60.00 && refresh_rate < 61.00)
+      refresh_rate = 60.00f;
 
    /* Black frame insertion + swap interval multiplier */
    refresh_rate    = (refresh_rate * (video_bfi + 1.0f) * video_swap_interval);
@@ -1222,13 +1231,8 @@ void video_switch_refresh_rate_maybe(
    if (!video_display_server_has_refresh_rate(refresh_rate) || refresh_rate < 50)
       refresh_rate       = video_refresh_rate;
 
+   /* Replace target rate */
    *refresh_rate_suggest = refresh_rate;
-
-   /* Store original refresh rate on automatic change, and
-    * restore it in deinit_core and main_quit, because not all
-    * cores announce refresh rate via SET_SYSTEM_AV_INFO */
-   if (!video_st->video_refresh_rate_original)
-      video_st->video_refresh_rate_original = video_refresh_rate;
 
    /* Try to switch display rate for the desired screen mode(s) when:
     * - Not already at correct rate
@@ -1244,12 +1248,20 @@ void video_switch_refresh_rate_maybe(
           ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN) && exclusive_fullscreen) ||
           ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN) && windowed_fullscreen)   ||
           ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN) && all_fullscreen));
+
+      /* Store original refresh rate on automatic change, and
+       * restore it in deinit_core and main_quit, because not all
+       * cores announce refresh rate via SET_SYSTEM_AV_INFO */
+      if (     *video_switch_refresh_rate
+            && !video_st->video_refresh_rate_original)
+         video_st->video_refresh_rate_original = video_refresh_rate;
     }
 }
 
 bool video_display_server_set_refresh_rate(float hz)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
+   RARCH_DBG("[Video]: Display server set refresh rate %f\n", hz);
    if (current_display_server && current_display_server->set_resolution)
       return current_display_server->set_resolution(
             video_st->current_display_server_data, 0, 0, (int)hz,
@@ -1266,7 +1278,7 @@ void video_display_server_restore_refresh_rate(void)
 
    if (!refresh_rate_original || refresh_rate_current == refresh_rate_original)
       return;
-
+   RARCH_DBG("[Video]: Display server restore refresh rate %f\n", refresh_rate_original);
    video_monitor_set_refresh_rate(refresh_rate_original);
    video_display_server_set_refresh_rate(refresh_rate_original);
 }

@@ -50,7 +50,6 @@
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu_shader.h"
 #endif
-#include "../menu_dialog.h"
 #include "../menu_input_bind_dialog.h"
 #include "../menu_input.h"
 
@@ -570,6 +569,40 @@ static void action_ok_get_file_browser_start_path(
       menu_driver_set_pending_selection(pending_selection);
 }
 
+static const char *menu_driver_get_last_start_file_name(void)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   menu_handle_t *menu         = menu_st->driver_data;
+   settings_t *settings        = config_get_ptr();
+   bool use_last               = settings->bools.use_last_start_directory;
+   /* Return NULL if there is no last 'file name' */
+   if (   !menu 
+       || !use_last
+       || string_is_empty(menu->last_start_content.file_name))
+      return NULL;
+   return menu->last_start_content.file_name;
+}
+
+static const char *menu_driver_get_last_start_directory(void)
+{
+   struct menu_state *menu_st    = menu_state_get_ptr();
+   menu_handle_t *menu           = menu_st->driver_data;
+   settings_t *settings          = config_get_ptr();
+   bool use_last                 = settings->bools.use_last_start_directory;
+   const char *default_directory = settings->paths.directory_menu_content;
+
+   /* Return default directory if there is no
+    * last directory or it's invalid */
+   if (   !menu
+       || !use_last
+       || string_is_empty(menu->last_start_content.directory)
+       || !path_is_directory(menu->last_start_content.directory))
+      return default_directory;
+
+   return menu->last_start_content.directory;
+}
+
+
 int generic_action_ok_displaylist_push(const char *path,
       const char *new_path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -585,10 +618,11 @@ int generic_action_ok_displaylist_push(const char *path,
    const char          *info_label         = NULL;
    const char          *info_path          = NULL;
    struct menu_state *menu_st              = menu_state_get_ptr();
+   menu_dialog_t        *p_dialog          = &menu_st->dialog_st;
    menu_handle_t *menu                     = menu_st->driver_data;
    menu_list_t *menu_list                  = menu_st->entries.list;
    settings_t            *settings         = config_get_ptr();
-   const char *menu_ident                  = menu_driver_ident();
+   const char *menu_ident                  = (menu_st->driver_ctx && menu_st->driver_ctx->ident) ? menu_st->driver_ctx->ident : NULL;
    file_list_t           *menu_stack       = MENU_LIST_GET(menu_list, 0);
 #ifdef HAVE_AUDIOMIXER
    bool audio_enable_menu                  = settings->bools.audio_enable_menu;
@@ -912,7 +946,8 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_HELP:
          info_label             = label;
          dl_type                = DISPLAYLIST_HELP;
-         menu_dialog_push_pending((enum menu_dialog_type)type);
+         p_dialog->current_type = (enum menu_dialog_type)type;
+         p_dialog->pending_push = true;
          break;
       case ACTION_OK_DL_RPL_ENTRY:
          strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
@@ -1099,9 +1134,9 @@ int generic_action_ok_displaylist_push(const char *path,
              settings->bools.use_last_start_directory)
          {
             info_path       = menu_driver_get_last_start_directory();
-            menu_driver_set_pending_selection(menu_driver_get_last_start_file_name());
+            menu_driver_set_pending_selection(
+                  menu_driver_get_last_start_file_name());
          }
-
          break;
       case ACTION_OK_DL_SCAN_DIR_LIST:
          filebrowser_set_type(FILEBROWSER_SCAN_DIR);
@@ -1304,12 +1339,6 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_SAVESTATE_LIST:
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = path;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_GENERIC;
-         break;
       case ACTION_OK_DL_CORE_OPTIONS_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -1416,6 +1445,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
          {
             char lpl_basename[PATH_MAX_LENGTH];
+            struct menu_state *menu_st = menu_state_get_ptr(); 
             filebrowser_clear_type();
             fill_pathname_join_special(tmp,
                   settings->paths.path_content_database,
@@ -1423,7 +1453,10 @@ int generic_action_ok_displaylist_push(const char *path,
 
             fill_pathname_base(lpl_basename, path, sizeof(lpl_basename));
             path_remove_extension(lpl_basename);
-            menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
+            if (     menu_st->driver_ctx
+                  && menu_st->driver_ctx->set_thumbnail_system)
+               menu_st->driver_ctx->set_thumbnail_system(
+                     menu_st->userdata, lpl_basename, sizeof(lpl_basename));
 
             info.directory_ptr = idx;
             info_path          = tmp;
@@ -1687,7 +1720,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path          = label;
          break;
       case ACTION_OK_DL_CONTENT_SETTINGS:
-         info.list          = menu_entries_get_selection_buf_ptr(0);
+         info.list          = MENU_LIST_GET_SELECTION(menu_list, 0);
          info_path          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS);
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS);
          info.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
@@ -1792,6 +1825,56 @@ void handle_dbscan_finished(retro_task_t *task,
       void *task_data, void *user_data, const char *err);
 #endif
 
+static void menu_driver_set_last_start_content(struct menu_state *menu_st, const char *start_content_path)
+{
+   char archive_path[PATH_MAX_LENGTH];
+   menu_handle_t *menu         = menu_st->driver_data;
+   settings_t *settings        = config_get_ptr();
+   bool use_last               = settings->bools.use_last_start_directory;
+   const char *archive_delim   = NULL;
+   const char *file_name       = NULL;
+
+   if (!menu)
+      return;
+
+   /* Reset existing cache */
+   menu->last_start_content.directory[0] = '\0';
+   menu->last_start_content.file_name[0] = '\0';
+
+   /* If 'use_last_start_directory' is disabled or
+    * path is empty, do nothing */
+   if (!use_last ||
+       string_is_empty(start_content_path))
+      return;
+
+   /* Cache directory */
+   fill_pathname_parent_dir(menu->last_start_content.directory,
+         start_content_path, sizeof(menu->last_start_content.directory));
+
+   /* Cache file name */
+   if ((archive_delim = path_get_archive_delim(start_content_path)))
+   {
+      /* If path references a file inside an
+       * archive, must extract the string segment
+       * before the archive delimiter (i.e. path of
+       * 'parent' archive file) */
+      size_t len      = (size_t)(1 + archive_delim - start_content_path);
+      if (len >= PATH_MAX_LENGTH)
+         len          = PATH_MAX_LENGTH;
+
+      strlcpy(archive_path, start_content_path, len * sizeof(char));
+
+      file_name       = path_basename(archive_path);
+   }
+   else
+      file_name       = path_basename_nocompression(start_content_path);
+
+   if (!string_is_empty(file_name))
+      strlcpy(menu->last_start_content.file_name, file_name,
+            sizeof(menu->last_start_content.file_name));
+}
+
+
 static int file_load_with_detect_core_wrapper(
       enum msg_hash_enums enum_label_idx,
       size_t idx, size_t entry_idx,
@@ -1799,7 +1882,8 @@ static int file_load_with_detect_core_wrapper(
       unsigned type, bool is_carchive)
 {
    int ret                             = 0;
-   menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   menu_handle_t *menu                 = menu_st->driver_data;
 
    if (!menu)
       return -1;
@@ -1868,7 +1952,7 @@ static int file_load_with_detect_core_wrapper(
                         NULL, NULL))
                   return -1;
 
-               menu_driver_set_last_start_content(def_info.s);
+               menu_driver_set_last_start_content(menu_st, def_info.s);
 
                ret = 0;
                break;
@@ -1971,12 +2055,12 @@ static int generic_action_ok(const char *path,
    const char             *menu_path = NULL;
    const char            *menu_label = NULL;
    const char *flush_char            = NULL;
-   menu_handle_t *menu               = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st        = menu_state_get_ptr();
+   menu_handle_t *menu               = menu_st->driver_data;
+   settings_t *settings              = config_get_ptr();
 #ifdef HAVE_AUDIOMIXER
-   settings_t              *settings = config_get_ptr();
    bool audio_enable_menu            = settings->bools.audio_enable_menu;
    bool audio_enable_menu_ok         = settings->bools.audio_enable_menu_ok;
-
    if (audio_enable_menu && audio_enable_menu_ok)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 #endif
@@ -1999,8 +2083,6 @@ static int generic_action_ok(const char *path,
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST);
          if (filestream_exists(action_path))
          {
-            settings_t            *settings = config_get_ptr();
-
             configuration_set_string(settings,
                   settings->paths.path_menu_wallpaper,
                   action_path);
@@ -2036,7 +2118,6 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_CONFIG_FILE:
 #ifdef HAVE_CONFIGFILE
          {
-            settings_t            *settings = config_get_ptr();
             bool config_save_on_exit        = settings->bools.config_save_on_exit;
             flush_type                      = MENU_SETTINGS;
 
@@ -2097,27 +2178,19 @@ static int generic_action_ok(const char *path,
 #endif
          break;
       case ACTION_OK_LOAD_STREAM_CONFIGFILE:
+         flush_char       = msg_hash_to_str(flush_id);
+         if (settings)
          {
-            settings_t *settings = config_get_ptr();
-            flush_char       = msg_hash_to_str(flush_id);
-
-            if (settings)
-            {
-               configuration_set_string(settings,
-                     settings->paths.path_stream_config, action_path);
-            }
+            configuration_set_string(settings,
+                  settings->paths.path_stream_config, action_path);
          }
          break;
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
+         flush_char           = msg_hash_to_str(flush_id);
+         if (settings)
          {
-            settings_t *settings = config_get_ptr();
-            flush_char           = msg_hash_to_str(flush_id);
-
-            if (settings)
-            {
-               configuration_set_string(settings,
-                     settings->paths.path_record_config, action_path);
-            }
+            configuration_set_string(settings,
+                  settings->paths.path_record_config, action_path);
          }
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
@@ -2185,15 +2258,11 @@ static int generic_action_ok(const char *path,
 #endif
          break;
       case ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET:
+         flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST);
+         if (settings)
          {
-            settings_t *settings = config_get_ptr();
-            flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST);
-
-            if (settings)
-            {
-               configuration_set_string(settings,
-                     settings->paths.path_rgui_theme_preset, action_path);
-            }
+            configuration_set_string(settings,
+                  settings->paths.path_rgui_theme_preset, action_path);
          }
          break;
       case ACTION_OK_SUBSYSTEM_ADD:
@@ -2257,6 +2326,7 @@ static int generic_action_ok(const char *path,
 static int default_action_ok_load_content_with_core_from_menu(const char *_path, unsigned _type)
 {
    content_ctx_info_t content_info;
+	struct menu_state *menu_st          = menu_state_get_ptr();
    content_info.argc                   = 0;
    content_info.argv                   = NULL;
    content_info.args                   = NULL;
@@ -2265,7 +2335,7 @@ static int default_action_ok_load_content_with_core_from_menu(const char *_path,
             _path, &content_info,
             (enum rarch_core_type)_type, NULL, NULL))
       return -1;
-   menu_driver_set_last_start_content(_path);
+   menu_driver_set_last_start_content(menu_st, _path);
    return 0;
 }
 
@@ -2676,40 +2746,20 @@ error:
 static int action_ok_mixer_stream_action_play(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN;
+   unsigned stream_id           = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN;
    enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
-
-   switch (state)
-   {
-      case AUDIO_STREAM_STATE_STOPPED:
-         audio_driver_mixer_play_stream(stream_id);
-         break;
-      case AUDIO_STREAM_STATE_PLAYING:
-      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
-      case AUDIO_STREAM_STATE_NONE:
-         break;
-   }
+   if (state == AUDIO_STREAM_STATE_STOPPED)
+      audio_driver_mixer_play_stream(stream_id);
    return 0;
 }
 
 static int action_ok_mixer_stream_action_play_looped(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN;
+   unsigned stream_id           = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN;
    enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
-
-   switch (state)
-   {
-      case AUDIO_STREAM_STATE_STOPPED:
-         audio_driver_mixer_play_stream_looped(stream_id);
-         break;
-      case AUDIO_STREAM_STATE_PLAYING:
-      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
-      case AUDIO_STREAM_STATE_NONE:
-         break;
-   }
+   if (state == AUDIO_STREAM_STATE_STOPPED)
+      audio_driver_mixer_play_stream_looped(stream_id);
    return 0;
 }
 
@@ -2718,18 +2768,8 @@ static int action_ok_mixer_stream_action_play_sequential(const char *path,
 {
    unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN;
    enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
-
-   switch (state)
-   {
-      case AUDIO_STREAM_STATE_STOPPED:
-         audio_driver_mixer_play_stream_sequential(stream_id);
-         break;
-      case AUDIO_STREAM_STATE_PLAYING:
-      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
-      case AUDIO_STREAM_STATE_NONE:
-         break;
-   }
+   if (state == AUDIO_STREAM_STATE_STOPPED)
+      audio_driver_mixer_play_stream_sequential(stream_id);
    return 0;
 }
 
@@ -2738,7 +2778,6 @@ static int action_ok_mixer_stream_action_remove(const char *path,
 {
    unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN;
    enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
-
    switch (state)
    {
       case AUDIO_STREAM_STATE_PLAYING:
@@ -2756,7 +2795,7 @@ static int action_ok_mixer_stream_action_remove(const char *path,
 static int action_ok_mixer_stream_action_stop(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN;
+   unsigned stream_id           = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN;
    enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
 
    switch (state)
@@ -3020,7 +3059,8 @@ static int action_ok_bluetooth(const char *path, const char *label,
 #ifdef HAVE_WIFI
 static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 {
-   unsigned idx                 = menu_input_dialog_get_kb_idx();
+   struct menu_state *menu_st   = menu_state_get_ptr();
+   unsigned idx                 = menu_st->input_dialog_kb_idx;
    wifi_network_scan_t *scan    = driver_wifi_get_ssids();
    wifi_network_info_t *netinfo = &scan->net_list[idx];
 
@@ -3072,14 +3112,13 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
       if (!string_is_empty(label))
       {
          struct playlist_entry entry = {0};
+         struct menu_state *menu_st   = menu_state_get_ptr();
+         unsigned idx                 = menu_st->input_dialog_kb_idx;
 
          /* the update function reads our entry as const,
           * so these casts are safe */
-         entry.label = (char*)label;
-
-         command_playlist_update_write(NULL,
-               menu_input_dialog_get_kb_idx(),
-               &entry);
+         entry.label                  = (char*)label;
+         command_playlist_update_write(NULL, idx, &entry);
       }
    }
 
@@ -3165,7 +3204,8 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
    {
       rarch_setting_t *setting     = NULL;
       bool                 ret     = false;
-      const char        *label     = menu_input_dialog_get_label_buffer();
+      struct menu_state *menu_st   = menu_state_get_ptr(); 
+      const char *label            = menu_st->input_dialog_kb_label;
       settings_t *settings         = config_get_ptr();
       const char *dir_video_shader = settings->paths.directory_video_shader;
       const char *dir_menu_config  = settings->paths.directory_menu_config;
@@ -3252,14 +3292,12 @@ static int generic_action_ok_shader_preset_remove(const char *path,
    if (menu_shader_manager_remove_auto_preset(preset_type,
          dir_video_shader, dir_menu_config))
    {
-      bool refresh = false;
-
+      struct menu_state *menu_st = menu_state_get_ptr();
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY),
             1, 100, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    }
    else
       runloop_msg_queue_push(
@@ -3379,46 +3417,40 @@ static int action_ok_shader_preset_remove_game(const char *path,
 static int action_ok_video_filter_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings = config_get_ptr();
-
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
    if (!settings)
       return -1;
-
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
    {
-      bool refresh = false;
-
       /* Unload video filter */
       settings->paths.path_softfilter_plugin[0] = '\0';
       command_event(CMD_EVENT_REINIT, NULL);
-
       /* Refresh menu */
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+      menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                      |  MENU_ST_FLAG_PREVENT_POPULATE;
    }
-
    return 0;
 }
 
 static int action_ok_audio_dsp_plugin_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
 
    if (!settings)
       return -1;
 
    if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
    {
-      bool refresh = false;
-
-      /* Unload dsp plugin filter */
+      /* Unload DSP plugin filter */
       settings->paths.path_audio_dsp_plugin[0] = '\0';
       command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
 
       /* Refresh menu */
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+      menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                      |  MENU_ST_FLAG_PREVENT_POPULATE;
    }
 
    return 0;
@@ -3431,7 +3463,8 @@ static void menu_input_st_string_cb_cheat_file_save_as(
    if (str && *str)
    {
       rarch_setting_t *setting        = NULL;
-      const char        *label        = menu_input_dialog_get_label_buffer();
+      struct menu_state *menu_st      = menu_state_get_ptr(); 
+      const char *label               = menu_st->input_dialog_kb_label;
       settings_t *settings            = config_get_ptr();
       const char *path_cheat_database = settings->paths.path_cheat_database;
 
@@ -3479,13 +3512,13 @@ static int generic_action_ok_remap_file_operation(const char *path,
 #ifdef HAVE_CONFIGFILE
    char content_dir_name[PATH_MAX_LENGTH];
    char remap_file_path[PATH_MAX_LENGTH];
+   struct menu_state *menu_st            = menu_state_get_ptr();
    rarch_system_info_t *system           = &runloop_state_get_ptr()->system;
    const char *core_name                 = system ? system->info.library_name : NULL;
    const char *rarch_path_basename       = path_get(RARCH_PATH_BASENAME);
    bool has_content                      = !string_is_empty(rarch_path_basename);
    settings_t *settings                  = config_get_ptr();
    const char *directory_input_remapping = settings->paths.directory_input_remapping;
-   bool refresh                          = false;
 
    content_dir_name[0] = '\0';
    remap_file_path[0]  = '\0';
@@ -3561,32 +3594,23 @@ static int generic_action_ok_remap_file_operation(const char *path,
    }
    else
    {
-      if (!string_is_empty(remap_file_path) &&
-          (filestream_delete(remap_file_path) == 0))
+      if (   !string_is_empty(remap_file_path)
+          && (filestream_delete(remap_file_path) == 0))
       {
          uint32_t flags = runloop_get_flags();
          switch (action_type)
          {
             case ACTION_OK_REMAP_FILE_REMOVE_CORE:
                if (flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE)
-               {
                   input_remapping_deinit(false);
-                  input_remapping_set_defaults(false);
-               }
                break;
             case ACTION_OK_REMAP_FILE_REMOVE_GAME:
                if (flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE)
-               {
                   input_remapping_deinit(false);
-                  input_remapping_set_defaults(false);
-               }
                break;
             case ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR:
                if (flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE)
-               {
                   input_remapping_deinit(false);
-                  input_remapping_set_defaults(false);
-               }
                break;
          }
 
@@ -3608,8 +3632,8 @@ static int generic_action_ok_remap_file_operation(const char *path,
    }
 
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
    return 0;
 }
@@ -3723,12 +3747,11 @@ static int action_ok_override_unload(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_CONFIGFILE
-   if (!config_unload_override())
-      return 0;
-   runloop_msg_queue_push(
-         msg_hash_to_str(MSG_OVERRIDES_UNLOADED_SUCCESSFULLY),
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   if (config_unload_override())
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_OVERRIDES_UNLOADED_SUCCESSFULLY),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #endif
    return 0;
 }
@@ -3914,7 +3937,8 @@ static int action_ok_load_core_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    content_ctx_info_t content_info;
-   menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   menu_handle_t *menu                 = menu_st->driver_data;
 
    content_info.argc                   = 0;
    content_info.argv                   = NULL;
@@ -3930,7 +3954,7 @@ static int action_ok_load_core_deferred(const char *path,
             CORE_TYPE_PLAIN,
             NULL, NULL))
       return -1;
-   menu_driver_set_last_start_content(path);
+   menu_driver_set_last_start_content(menu_st, path);
 
    return 0;
 }
@@ -4068,7 +4092,7 @@ push_dropdown_list:
 static int action_ok_cheat_reload_cheats(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool                    refresh = false;
+   struct menu_state *menu_st      = menu_state_get_ptr();
    settings_t           *settings  = config_get_ptr();
    const char *path_cheat_database = settings->paths.path_cheat_database;
 
@@ -4077,8 +4101,8 @@ static int action_ok_cheat_reload_cheats(const char *path,
    cheat_manager_load_game_specific_cheats(
          path_cheat_database);
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
 #endif
@@ -4118,13 +4142,13 @@ static int action_ok_cheat_add_top(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
-   struct item_cheat tmp;
    char msg[256];
-   bool          refresh = false;
-   unsigned int new_size = cheat_manager_get_size() + 1;
+   struct item_cheat tmp;
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   unsigned int new_size           = cheat_manager_get_size() + 1;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
    memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1],
@@ -4153,11 +4177,11 @@ static int action_ok_cheat_add_bottom(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char msg[256];
-   bool          refresh = false;
-   unsigned int new_size = cheat_manager_get_size() + 1;
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   unsigned int new_size           = cheat_manager_get_size() + 1;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
    strlcpy(msg,
@@ -4174,15 +4198,15 @@ static int action_ok_cheat_delete_all(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char msg[256];
-   bool refresh = false;
+   struct menu_state *menu_st       = menu_state_get_ptr();
 
    cheat_manager_state.delete_state = 0;
    cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 
-   strlcpy(msg,
-         msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS), sizeof(msg));
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS),
+          sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
    runloop_msg_queue_push(msg, 1, 180, true, NULL,
@@ -4197,8 +4221,8 @@ static int action_ok_cheat_add_new_after(const char *path,
    int i;
    char msg[256];
    struct item_cheat tmp;
-   bool          refresh = false;
-   unsigned int new_size = cheat_manager_get_size() + 1;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned int new_size      = cheat_manager_get_size() + 1;
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
@@ -4214,8 +4238,8 @@ static int action_ok_cheat_add_new_after(const char *path,
 
    memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat));
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_AFTER_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
@@ -4231,8 +4255,8 @@ static int action_ok_cheat_add_new_before(const char *path,
    int i;
    char msg[256];
    struct item_cheat tmp;
-   bool          refresh = false;
-   unsigned int new_size = cheat_manager_get_size() + 1;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned int new_size      = cheat_manager_get_size() + 1;
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
@@ -4250,8 +4274,8 @@ static int action_ok_cheat_add_new_before(const char *path,
    memcpy(&cheat_manager_state.working_cheat,
          &tmp, sizeof(struct item_cheat));
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_BEFORE_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
@@ -4267,8 +4291,8 @@ static int action_ok_cheat_copy_before(const char *path,
    int i;
    struct item_cheat tmp;
    char msg[256];
-   bool          refresh = false;
-   unsigned int new_size = cheat_manager_get_size() + 1;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned int new_size      = cheat_manager_get_size() + 1;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
    memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat));
@@ -4287,8 +4311,8 @@ static int action_ok_cheat_copy_before(const char *path,
    memcpy(&cheat_manager_state.cheats[tmp.idx], &tmp, sizeof(struct item_cheat));
    memcpy(&cheat_manager_state.working_cheat, &tmp, sizeof(struct item_cheat));
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_BEFORE_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
@@ -4304,8 +4328,8 @@ static int action_ok_cheat_copy_after(const char *path,
    int i;
    struct item_cheat tmp;
    char msg[256];
-   bool          refresh = false;
-   unsigned int new_size = cheat_manager_get_size() + 1;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned int new_size      = cheat_manager_get_size() + 1;
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
@@ -4324,8 +4348,8 @@ static int action_ok_cheat_copy_after(const char *path,
 
    memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat ));
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_AFTER_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
@@ -4341,6 +4365,7 @@ static int action_ok_cheat_delete(const char *path,
    char msg[256];
    size_t new_selection_ptr   = 0;
    struct menu_state *menu_st = menu_state_get_ptr();
+   size_t selection           = menu_st->selection_ptr;
    unsigned int new_size      = cheat_manager_get_size() - 1;
 
    if (new_size >0)
@@ -4376,8 +4401,14 @@ static int action_ok_cheat_delete(const char *path,
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
    menu_st->selection_ptr = new_selection_ptr;
 
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+   if (menu_st->driver_ctx)
+   {
+      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
+         menu_st->driver_ctx->update_savestate_thumbnail_path(
+               menu_st->userdata, (unsigned)selection);
+      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
+         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
+   }
 
    return 0;
 }
@@ -4389,7 +4420,6 @@ static int action_ok_file_load_imageviewer(const char *path,
    char fullpath[PATH_MAX_LENGTH];
    const char *menu_path           = NULL;
    struct menu_state *menu_st      = menu_state_get_ptr();
-   menu_handle_t *menu             = menu_st->driver_data;
    menu_list_t *menu_list          = menu_st->entries.list;
    file_list_t *menu_stack         = MENU_LIST_GET(menu_list, 0);
 
@@ -4421,7 +4451,8 @@ static int action_ok_file_load_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    content_ctx_info_t content_info;
-   menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   menu_handle_t *menu                 = menu_st->driver_data;
 
    if (!menu)
       return -1;
@@ -4437,7 +4468,7 @@ static int action_ok_file_load_detect_core(const char *path,
             CORE_TYPE_PLAIN,
             NULL, NULL))
       return -1;
-   menu_driver_set_last_start_content(menu->detect_content_path);
+   menu_driver_set_last_start_content(menu_st, menu->detect_content_path);
 
    return 0;
 }
@@ -4593,9 +4624,7 @@ static int action_ok_core_updater_list(const char *path,
    if (!core_list)
    {
       core_updater_list_init_cached();
-      core_list = core_updater_list_get_cached();
-
-      if (!core_list)
+      if (!(core_list = core_updater_list_get_cached()))
          return -1;
    }
 
@@ -4636,10 +4665,9 @@ static int action_ok_core_updater_list(const char *path,
    else
 #endif
    {
-      bool refresh = true;
-
       /* Initial setup... */
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      struct menu_state *menu_st = menu_state_get_ptr();
+      menu_st->flags            |=  MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
       generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
 
       /* Push core list update task */
@@ -4661,10 +4689,10 @@ static void cb_net_generic_subdir(retro_task_t *task,
 static void cb_net_generic(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
-   bool refresh                   = false;
    http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
    file_transfer_t *state         = (file_transfer_t*)user_data;
-   menu_handle_t *menu            = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_handle_t *menu            = menu_st->driver_data;
 
    if (!menu)
       goto finish;
@@ -4689,8 +4717,7 @@ static void cb_net_generic(retro_task_t *task,
    menu->core_len            = data->len;
 
 finish:
-   refresh = true;
-   menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
+   menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
 
    if (!err && 
          !string_ends_with_size(state->path,
@@ -4735,9 +4762,9 @@ static int generic_action_ok_network(const char *path,
    file_transfer_t *transf                 = NULL;
    const char *url_label                   = NULL;
    retro_task_callback_t callback          = NULL;
-   bool refresh                            = true;
    bool suppress_msg                       = false;
    settings_t *settings                    = config_get_ptr();
+   struct menu_state *menu_st              = menu_state_get_ptr();
    const char *network_buildbot_assets_url =
       settings->paths.network_buildbot_assets_url;
 
@@ -4806,7 +4833,7 @@ static int generic_action_ok_network(const char *path,
          break;
    }
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
 
    generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
 
@@ -4830,7 +4857,7 @@ static void cb_generic_dir_download(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err)
 {
-   file_transfer_t     *transf      = (file_transfer_t*)user_data;
+   file_transfer_t *transf = (file_transfer_t*)user_data;
    if (transf)
    {
       generic_action_ok_network(transf->path, transf->path, 0, 0, 0,
@@ -5273,56 +5300,44 @@ DEFAULT_ACTION_OK_DOWNLOAD(action_ok_update_autoconfig_profiles, MENU_ENUM_LABEL
 static int action_ok_game_specific_core_options_create(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool refresh = false;
-
+   struct menu_state *menu_st       = menu_state_get_ptr();
    core_options_create_override(true);
-
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
 
 static int action_ok_folder_specific_core_options_create(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool refresh = false;
-
+   struct menu_state *menu_st       = menu_state_get_ptr();
    core_options_create_override(false);
-
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
 
 static int action_ok_game_specific_core_options_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool refresh = false;
-
+   struct menu_state *menu_st       = menu_state_get_ptr();
    core_options_remove_override(true);
-
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
 
 static int action_ok_folder_specific_core_options_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool refresh = false;
-
+   struct menu_state *menu_st       = menu_state_get_ptr();
    core_options_remove_override(false);
-
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
 
@@ -5364,7 +5379,7 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
       const char *flush_target   = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
       file_list_t *list          = NULL;
       if (menu_st->entries.list)
-         list  = MENU_LIST_GET(menu_st->entries.list, 0);
+         list                    = MENU_LIST_GET(menu_st->entries.list, 0);
       if (list && (list->size > 1))
       {
          parent_label = list->list[list->size - 2].label;
@@ -5375,12 +5390,12 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
       }
 
       menu_entries_flush_stack(flush_target, 0);
-      /* An annoyance - some menu drivers (Ozone...) call
-       * RARCH_MENU_CTL_SET_PREVENT_POPULATE in awkward
-       * places, which can cause breakage here when flushing
-       * the menu stack. We therefore have to force a
-       * RARCH_MENU_CTL_UNSET_PREVENT_POPULATE */
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+      /* An annoyance - some menu drivers (Ozone...) set
+       * MENU_ST_FLAG_PREVENT_POPULATE in awkward places,
+       * which can cause breakage here when flushing
+       * the menu stack. We therefore have to unset
+       * MENU_ST_FLAG_PREVENT_POPULATE */
+      menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
    }
 
    return ret;
@@ -5992,9 +6007,8 @@ static void wifi_menu_refresh_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
-   bool refresh = false;
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 }
 
 static int action_ok_wifi_disconnect(const char *path,
@@ -6038,9 +6052,9 @@ static void netplay_refresh_rooms_cb(retro_task_t *task, void *task_data,
    const char *label            = NULL;
    unsigned menu_type           = 0;
    enum msg_hash_enums enum_idx = MSG_UNKNOWN;
-   bool refresh                 = false;
    http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
    net_driver_state_t *net_st   = networking_state_get_ptr();
+   struct menu_state *menu_st   = menu_state_get_ptr();
 
    free(net_st->room_list);
    net_st->room_list  = NULL;
@@ -6097,8 +6111,8 @@ static void netplay_refresh_rooms_cb(retro_task_t *task, void *task_data,
    free(room_data);
 
 done:
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 }
 
 static int action_ok_push_netplay_refresh_rooms(const char *path,
@@ -6118,10 +6132,10 @@ static void netplay_refresh_lan_cb(const void *data)
    const char *label                     = NULL;
    unsigned menu_type                    = 0;
    enum msg_hash_enums enum_idx          = MSG_UNKNOWN;
-   bool refresh                          = false;
    const struct netplay_host_list *hosts =
       (const struct netplay_host_list*)data;
    net_driver_state_t *net_st            = networking_state_get_ptr();
+   struct menu_state *menu_st            = menu_state_get_ptr();
 
    free(net_st->room_list);
    net_st->room_list  = NULL;
@@ -6172,8 +6186,8 @@ static void netplay_refresh_lan_cb(const void *data)
    }
 
 done:
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 }
 
 static int action_ok_push_netplay_refresh_lan(const char *path,
@@ -6821,9 +6835,9 @@ static int action_ok_push_dropdown_item_input_select_physical_keyboard(const cha
     const char *keyboard_name;
     enum msg_hash_enums enum_idx;
     rarch_setting_t *setting     = NULL;
-    bool refresh                 = false;
     settings_t *settings         = config_get_ptr();
     const char *menu_path        = NULL;
+    struct menu_state *menu_st   = menu_state_get_ptr();
     menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
     enum_idx = (enum msg_hash_enums)atoi(menu_path);
     setting  = menu_setting_find_enum(enum_idx);
@@ -6863,8 +6877,8 @@ static int action_ok_push_dropdown_item_input_select_physical_keyboard(const cha
     command_event(CMD_EVENT_REINIT, NULL);
 
     /* Refresh menu */
-    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                     | MENU_ST_FLAG_PREVENT_POPULATE;
 
     return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -6965,7 +6979,7 @@ static int action_ok_start_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    content_ctx_info_t content_info;
-   menu_ctx_list_t list_info;
+   struct menu_state *menu_st          = menu_state_get_ptr();
 
    content_info.argc                   = 0;
    content_info.argv                   = NULL;
@@ -6975,9 +6989,9 @@ static int action_ok_start_core(const char *path,
    /* We are going to push a new menu; ensure
     * that the current one is cached for animation
     * purposes */
-   list_info.type   = MENU_LIST_PLAIN;
-   list_info.action = 0;
-   menu_driver_list_cache(&list_info);
+   if (menu_st->driver_ctx && menu_st->driver_ctx->list_cache)
+      menu_st->driver_ctx->list_cache(menu_st->userdata,
+            MENU_LIST_PLAIN, MENU_ACTION_NOOP);
 
    path_clear(RARCH_PATH_BASENAME);
    if (!task_push_start_current_core(&content_info))
@@ -7118,7 +7132,7 @@ static int action_ok_load_archive_detect_core(const char *path,
                      NULL, NULL))
                ret = -1;
             else
-               menu_driver_set_last_start_content(def_info.s);
+               menu_driver_set_last_start_content(menu_st, def_info.s);
          }
          break;
       case 0:
@@ -7559,20 +7573,16 @@ static int action_ok_core_restore_backup(const char *path,
 static int action_ok_core_delete_backup(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *backup_path = label;
-   bool refresh            = false;
-
+   struct menu_state *menu_st       = menu_state_get_ptr();
+   const char *backup_path          = label;
    if (string_is_empty(backup_path))
       return -1;
-
    /* Delete backup file (if it exists) */
    if (path_is_valid(backup_path))
       filestream_delete(backup_path);
-
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
 
@@ -7581,10 +7591,10 @@ static int action_ok_core_delete_backup(const char *path,
 int action_ok_core_lock(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *core_path = path;
-   bool lock             = false;
-   bool refresh          = false;
-   int ret               = 0;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   const char *core_path      = path;
+   bool lock                  = false;
+   int ret                    = 0;
 
    if (string_is_empty(core_path))
       return -1;
@@ -7635,8 +7645,8 @@ int action_ok_core_lock(const char *path,
     * refreshed - do this even in the event of an error,
     * since we don't want to leave the menu in an
     * undefined state */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 
    return ret;
 }
@@ -7857,18 +7867,19 @@ static int action_ok_pl_entry_content_thumbnails(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char system[PATH_MAX_LENGTH];
-   playlist_t *playlist = playlist_get_cached();
-   menu_handle_t *menu  = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   playlist_t *playlist        = playlist_get_cached();
+   menu_handle_t *menu         = menu_st->driver_data;
 
    system[0] = '\0';
 
-   if (!playlist)
+   if (!playlist || !menu)
       return -1;
 
-   if (!menu)
-      return -1;
-
-   menu_driver_get_thumbnail_system(system, sizeof(system));
+   if (     menu_st->driver_ctx
+         && menu_st->driver_ctx->get_thumbnail_system)
+      menu_st->driver_ctx->get_thumbnail_system(
+            menu_st->userdata, system, sizeof(system));
 
    task_push_pl_entry_thumbnail_download(system,
          playlist, menu->rpl_entry_selection_ptr,

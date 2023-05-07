@@ -527,7 +527,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    char scale_type[64];
    char scale_type_x[64];
    char scale_type_y[64];
-   char formatted_num[8];
+   char formatted_num[12];
    char tmp_path[PATH_MAX_LENGTH];
    struct gfx_fbo_scale *scale      = NULL;
    bool tmp_bool                    = false;
@@ -3114,18 +3114,17 @@ const char *video_shader_get_current_shader_preset(void)
 
 void video_shader_toggle(settings_t *settings)
 {
-   bool toggle                 = !settings->bools.video_shader_enable;
-   bool refresh                = false;
-   struct video_shader *shader = menu_shader_get();
-
-   shader->flags              |=  SHDR_FLAG_MODIFIED;
+   bool toggle                     = !settings->bools.video_shader_enable;
+   bool refresh                    = false;
+   struct video_shader *shader     = menu_shader_get();
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   shader->flags                  |=  SHDR_FLAG_MODIFIED;
    if (toggle)
-      shader->flags           &= ~SHDR_FLAG_DISABLED;
+      shader->flags               &= ~SHDR_FLAG_DISABLED;
    else
-      shader->flags           |=  SHDR_FLAG_DISABLED;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+      shader->flags               |=  SHDR_FLAG_DISABLED;
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
 
    command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
 

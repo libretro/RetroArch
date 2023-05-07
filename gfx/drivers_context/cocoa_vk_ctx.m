@@ -86,7 +86,10 @@ static void cocoa_vk_gfx_ctx_destroy(void *data)
 
 static enum gfx_ctx_api cocoa_vk_gfx_ctx_get_api(void *data) { return GFX_CTX_VULKAN_API; }
 
-static bool cocoa_vk_gfx_ctx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool cocoa_vk_gfx_ctx_suppress_screensaver(void *data, bool disable)
+{
+    return [apple_platform setDisableDisplaySleep:disable];
+}
 
 static void cocoa_vk_gfx_ctx_input_driver(void *data,
       const char *name,

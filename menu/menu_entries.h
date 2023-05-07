@@ -35,22 +35,6 @@ RETRO_BEGIN_DECLS
 #define MENU_SEARCH_FILTER_MAX_TERMS  8
 #define MENU_SEARCH_FILTER_MAX_LENGTH 64
 
-enum menu_entries_ctl_state
-{
-   MENU_ENTRIES_CTL_NONE = 0,
-   MENU_ENTRIES_CTL_SETTINGS_GET,
-   MENU_ENTRIES_CTL_SET_REFRESH,
-   MENU_ENTRIES_CTL_UNSET_REFRESH,
-   MENU_ENTRIES_CTL_NEEDS_REFRESH,
-   /* Sets the starting index of the menu entry list. */
-   MENU_ENTRIES_CTL_SET_START,
-   /* Returns the starting index of the menu entry list. */
-   MENU_ENTRIES_CTL_START_GET,
-   MENU_ENTRIES_CTL_REFRESH,
-   MENU_ENTRIES_CTL_CLEAR,
-   MENU_ENTRIES_CTL_SHOW_BACK
-};
-
 enum menu_list_type
 {
    MENU_LIST_PLAIN = 0,
@@ -83,8 +67,6 @@ typedef struct menu_ctx_list
    file_list_t *list;
    void        *entry;
    size_t idx;
-   size_t selection;
-   size_t size;
    size_t list_size;
    unsigned entry_type;
    unsigned action;
@@ -168,20 +150,12 @@ int menu_entries_get_title(char *title, size_t title_len);
 
 void menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
-file_list_t *menu_entries_get_selection_buf_ptr(size_t idx);
-
-file_list_t *menu_entries_get_menu_stack_ptr(size_t idx);
-
 void menu_entries_get_last_stack(const char **path, const char **label,
       unsigned *file_type, enum msg_hash_enums *enum_idx, size_t *entry_idx);
 
 void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate);
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type);
-
-size_t menu_entries_get_stack_size(size_t idx);
-
-size_t menu_entries_get_size(void);
 
 void menu_entries_prepend(file_list_t *list,
       const char *path, const char *label,
@@ -194,7 +168,7 @@ bool menu_entries_append(file_list_t *list,
       unsigned type, size_t directory_ptr, size_t entry_idx,
       rarch_setting_t *setting);
 
-bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
+bool menu_entries_clear(file_list_t *list);
 
 bool menu_entries_search_pop(void);
 

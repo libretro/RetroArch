@@ -33,8 +33,10 @@ extern int ptrace(int request, pid_t pid, caddr_t addr, int data);
 #define PT_SIGEXC       12      /* signals as exceptions for current_proc */
 
 static void *exception_handler(void *argument) {
+#if !TARGET_OS_TV
     mach_port_t port = *(mach_port_t *)argument;
     mach_msg_server(exc_server, 2048, port, 0);
+#endif
     return NULL;
 }
 
@@ -44,6 +46,7 @@ bool jb_has_debugger_attached(void) {
 }
 
 bool jb_enable_ptrace_hack(void) {
+#if !TARGET_OS_TV
     bool debugged = jb_has_debugger_attached();
     
     // Thanks to this comment: https://news.ycombinator.com/item?id=18431524
@@ -83,12 +86,17 @@ bool jb_enable_ptrace_hack(void) {
         // also hides actual crashes from the debugger.
         task_set_exception_ports(mach_task_self(), EXC_MASK_BAD_ACCESS, MACH_PORT_NULL, EXCEPTION_DEFAULT, THREAD_STATE_NONE);
     }
+#endif
     
     return true;
 }
 
 void jb_start_altkit(void) {
 #if HAVE_ALTKIT
+   // asking AltKit/AltServer to debug us when we're already debugged is bad, very bad
+   if (jb_has_debugger_attached())
+      return;
+
    [[ALTServerManager sharedManager] autoconnectWithCompletionHandler:^(ALTServerConnection *connection, NSError *error) {
       if (error)
          return;

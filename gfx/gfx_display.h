@@ -80,9 +80,7 @@ enum menu_driver_id_type
    MENU_DRIVER_ID_RGUI,
    MENU_DRIVER_ID_OZONE,
    MENU_DRIVER_ID_GLUI,
-   MENU_DRIVER_ID_XMB,
-   MENU_DRIVER_ID_XUI,
-   MENU_DRIVER_ID_STRIPES
+   MENU_DRIVER_ID_XMB
 };
 
 
@@ -241,12 +239,6 @@ void gfx_display_scissor_begin(
 
 void gfx_display_font_free(font_data_t *font);
 
-void gfx_display_set_width(unsigned width);
-void gfx_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
-      size_t *fb_pitch);
-void gfx_display_set_height(unsigned height);
-void gfx_display_set_framebuffer_pitch(size_t pitch);
-
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
 
@@ -319,8 +311,6 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
 float gfx_display_get_adjusted_scale(
       gfx_display_t *p_disp,
       float base_scale, float scale_factor, unsigned width);
-
-float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height);
 
 float gfx_display_get_dpi_scale(
       gfx_display_t *p_disp,

@@ -149,7 +149,6 @@
 #include "menu/menu_cbs.h"
 #include "menu/menu_driver.h"
 #include "menu/menu_input.h"
-#include "menu/menu_dialog.h"
 #include "menu/menu_input_bind_dialog.h"
 #endif
 
@@ -3913,8 +3912,13 @@ void runloop_event_deinit_core(void)
    /* Restore original refresh rate, if it has been changed
     * automatically in SET_SYSTEM_AV_INFO */
    if (video_st->video_refresh_rate_original)
+   {
+      /* Set the av_info fps also to the original refresh rate */
+      /* to avoid re-initialization problems */
+      struct retro_system_av_info *av_info = &video_st->av_info;
+      av_info->timing.fps = video_st->video_refresh_rate_original;
       video_display_server_restore_refresh_rate();
-
+   }
    /* Recalibrate frame delay target */
    if (settings->bools.video_frame_delay_auto)
       video_st->frame_delay_target = 0;
@@ -5721,14 +5725,12 @@ static enum runloop_state_enum runloop_check_state(
        * and exit the function to go to the next frame. */
       if (menu_st->flags & MENU_ST_FLAG_PENDING_QUICK_MENU)
       {
-         menu_ctx_list_t list_info;
-
          /* We are going to push a new menu; ensure
           * that the current one is cached for animation
           * purposes */
-         list_info.type   = MENU_LIST_PLAIN;
-         list_info.action = 0;
-         menu_driver_list_cache(&list_info);
+         if (menu_st->driver_ctx && menu_st->driver_ctx->list_cache)
+            menu_st->driver_ctx->list_cache(menu_st->userdata,
+                  MENU_LIST_PLAIN, MENU_ACTION_NOOP);
 
          p_disp->flags   |= GFX_DISP_FLAG_MSG_FORCE;
 

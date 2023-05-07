@@ -24,8 +24,6 @@
 
 #include <retro_common_api.h>
 
-#include "menu_input.h"
-
 RETRO_BEGIN_DECLS
 
 enum menu_input_binds_ctl_state

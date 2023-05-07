@@ -852,8 +852,8 @@ static int explore_action_sublabel_spacer(
       file_list_t *list, unsigned type, unsigned i,
       const char *label, const char *path, char *s, size_t len)
 {
+#ifdef HAVE_OZONE
    const char *menu_driver = menu_driver_ident();
-
    /* Only add a blank 'spacer' sublabel when
     * using Ozone
     * > In XMB/GLUI it upsets the vertical layout
@@ -865,7 +865,7 @@ static int explore_action_sublabel_spacer(
       s[0] = ' ';
       s[1] = '\0';
    }
-
+#endif
    return 1; /* 1 means it'll never change and can be cached */
 }
 
@@ -875,9 +875,11 @@ static int explore_action_ok(const char *path, const char *label,
    const char* explore_tab = msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB);
    if (type >= EXPLORE_TYPE_FIRSTITEM || type == EXPLORE_TYPE_FILTERNULL)
    {
-      file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
-      unsigned prev_type      = menu_stack->list[menu_stack->size - 1].type;
-      unsigned cat            = (prev_type - EXPLORE_TYPE_FIRSTCATEGORY);
+      struct menu_state   *menu_st  = menu_state_get_ptr();
+      menu_list_t *menu_list        = menu_st->entries.list;
+      file_list_t *menu_stack       = MENU_LIST_GET(menu_list, 0);
+      unsigned prev_type            = menu_stack->list[menu_stack->size - 1].type;
+      unsigned cat                  = (prev_type - EXPLORE_TYPE_FIRSTCATEGORY);
       if (cat < EXPLORE_CAT_COUNT)
       {
          explore_state_t *state = explore_state;
@@ -914,8 +916,10 @@ static int explore_action_ok(const char *path, const char *label,
 static int explore_cancel(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
-   unsigned closed_type = menu_stack->list[menu_stack->size - 1].type;
+   struct menu_state   *menu_st  = menu_state_get_ptr();
+   menu_list_t *menu_list        = menu_st->entries.list;
+   file_list_t *menu_stack       = MENU_LIST_GET(menu_list, 0);
+   unsigned closed_type          = menu_stack->list[menu_stack->size - 1].type;
    if (closed_type >= EXPLORE_TYPE_FIRSTITEM ||
        closed_type == EXPLORE_TYPE_FILTERNULL)
    {
@@ -958,12 +962,6 @@ void explore_menu_entry(file_list_t *list, explore_state_t *state,
    cbs->action_cancel = explore_cancel;
 }
 
-static void explore_menu_add_spacer(file_list_t *list)
-{
-   if (list->size)
-      ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
-}
-
 static void explore_action_find_complete(void *userdata, const char *line)
 {
    menu_input_dialog_end();
@@ -987,34 +985,34 @@ static int explore_action_ok_find(const char *path, const char *label, unsigned 
    return 0;
 }
 
-static const char* explore_get_view_path(void)
+static const char* explore_get_view_path(struct menu_state *menu_st, menu_list_t *menu_list,
+      file_list_t *menu_stack)
 {
-   file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
    struct item_file *cur = (struct item_file *)&menu_stack->list[menu_stack->size - 1];
 
    /* check if we are opening a saved view from the horizontal/tabs menu */
    if (cur->type == MENU_SETTING_HORIZONTAL_MENU)
    {
-      menu_ctx_list_t tabs, horizontal;
-      tabs.type = MENU_LIST_TABS;
-      if (menu_driver_list_get_selection(&tabs) && menu_driver_list_get_size(&tabs))
+      size_t selection = menu_driver_list_get_selection();
+      size_t size      = menu_driver_list_get_size(MENU_LIST_TABS);
+      if (selection > 0 && size > 0)
       {
+         menu_ctx_list_t horizontal;
          horizontal.type = MENU_LIST_HORIZONTAL;
-         horizontal.idx = tabs.selection - (tabs.size + 1);
+         horizontal.idx  = selection - (size + 1);
+         /* Label contains the path and path contains the label */
          if (menu_driver_list_get_entry(&horizontal))
-         {
-            /* label contains the path and path contains the label */
             return ((struct item_file*)horizontal.entry)->label;
-         }
       }
    }
 
    /* check if we are opening a saved view via Content > Playlists */
-   if (cur->type == MENU_EXPLORE_TAB && cur->path && !string_is_equal(cur->path,
-               msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE)))
-   {
+   if (    (cur->type == MENU_EXPLORE_TAB)
+         && cur->path 
+         && !string_is_equal(cur->path, 
+            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE))
+      )
       return cur->path;
-   }
 
    return NULL;
 }
@@ -1033,16 +1031,17 @@ static void explore_on_edit_views(enum msg_hash_enums msg)
 
 static int explore_action_ok_deleteview(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   filestream_delete(explore_get_view_path());
+   struct menu_state *menu_st    = menu_state_get_ptr();
+   menu_list_t *menu_list        = menu_st->entries.list;
+   file_list_t *menu_stack       = MENU_LIST_GET(menu_list, 0);
+
+   filestream_delete(explore_get_view_path(menu_st, menu_list, menu_stack));
    explore_on_edit_views(MENU_ENUM_LABEL_EXPLORE_VIEW_DELETED);
 
-   if (menu_entries_get_menu_stack_ptr(0)->size == 1)
-   {
-      /* if we're at the top of the menu we can't cancel so just refresh
-         what becomes selected after MENU_ENVIRON_RESET_HORIZONTAL_LIST. */
-      bool refresh_nonblocking = false;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh_nonblocking);
-   }
+   /* if we're at the top of the menu we can't cancel so just refresh
+      what becomes selected after MENU_ENVIRON_RESET_HORIZONTAL_LIST. */
+   if (menu_stack->size == 1)
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
    return explore_cancel(path, label, type, idx);
 }
@@ -1295,7 +1294,10 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
    unsigned i;
    char tmp[512];
    struct explore_state *state  = explore_state;
-   struct file_list *menu_stack = menu_entries_get_menu_stack_ptr(0);
+   struct menu_state   *menu_st = menu_state_get_ptr();
+   menu_handle_t *menu          = menu_st->driver_data;
+   menu_list_t *menu_list       = menu_st->entries.list;
+   file_list_t *menu_stack      = MENU_LIST_GET(menu_list, 0);
    struct item_file *stack_top  = menu_stack->list;
    size_t depth                 = menu_stack->size;
    unsigned current_type        = (depth > 0 ? stack_top[depth - 1].type : 0);
@@ -1329,7 +1331,7 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
    /* check if we are opening a saved view */
    if (current_type == MENU_SETTING_HORIZONTAL_MENU || current_type == MENU_EXPLORE_TAB)
    {
-      const char* view_path = explore_get_view_path();
+      const char* view_path = explore_get_view_path(menu_st, menu_list, menu_stack);
       if (view_path)
       {
          explore_load_view(state, view_path);
@@ -1412,7 +1414,8 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                list, state,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME),
                EXPLORE_TYPE_SEARCH, explore_action_ok_find);
-         explore_menu_add_spacer(list);
+         if (list->size)
+            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
       }
 
       for (cat = 0; cat < EXPLORE_CAT_COUNT; cat++)
@@ -1462,7 +1465,8 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
 
       if (is_top)
       {
-         explore_menu_add_spacer(list);
+         if (list->size)
+            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
          explore_menu_entry(list, state,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL),
                EXPLORE_TYPE_SHOWALL, explore_action_ok);
@@ -1480,7 +1484,8 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
 
       if (state->has_unknown[current_cat])
       {
-         explore_menu_add_spacer(list);
+         if (list->size)
+            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
          explore_menu_entry(list, state,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN),
                EXPLORE_TYPE_FILTERNULL, explore_action_ok);
@@ -1538,7 +1543,8 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
          explore_menu_entry(list, state,
                msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW),
                EXPLORE_TYPE_VIEW, explore_action_ok_deleteview);
-         explore_menu_add_spacer(list);
+         if (list->size)
+            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
       }
       else
       {
@@ -1550,7 +1556,8 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
          explore_menu_entry(list, state,
                msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW),
                EXPLORE_TYPE_VIEW, explore_action_ok_saveview);
-         explore_menu_add_spacer(list);
+         if (list->size)
+            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
       }
 
       first_list_entry = list->size;
@@ -1628,7 +1635,8 @@ SKIP_ENTRY:;
 
       if (is_filtered_category && filtered_category_have_unknown)
       {
-         explore_menu_add_spacer(list);
+         if (list->size)
+            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
          explore_menu_entry(list, state,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN),
                EXPLORE_TYPE_FILTERNULL, explore_action_ok);
@@ -1642,7 +1650,6 @@ SKIP_ENTRY:;
       int pl_idx;
       const struct playlist_entry *pl_entry = 
          state->entries[current_type - EXPLORE_TYPE_FIRSTITEM].playlist_entry;
-      menu_handle_t                   *menu = menu_state_get_ptr()->driver_data;
 
       strlcpy(state->title,
             pl_entry->label, sizeof(state->title));
@@ -1775,25 +1782,24 @@ ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
 
 bool menu_explore_is_content_list(void)
 {
+   struct menu_state *menu_st    = menu_state_get_ptr();
+   menu_list_t *menu_list        = menu_st->entries.list;
+   file_list_t *menu_stack       = MENU_LIST_GET(menu_list, 0);
    if (explore_state)
       return (explore_state->show_icons == EXPLORE_ICONS_CONTENT);
-   return explore_get_view_path() != NULL;
+   return explore_get_view_path(menu_st, menu_list, menu_stack) != NULL;
 }
 
 void menu_explore_context_init(void)
 {
-   if (!explore_state)
-      return;
-
-   explore_load_icons(explore_state);
+   if (explore_state)
+      explore_load_icons(explore_state);
 }
 
 void menu_explore_context_deinit(void)
 {
-   if (!explore_state)
-      return;
-
-   explore_unload_icons(explore_state);
+   if (explore_state)
+      explore_unload_icons(explore_state);
 }
 
 void menu_explore_free_state(explore_state_t *state)

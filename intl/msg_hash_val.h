@@ -1563,10 +1563,6 @@ MSG_HASH(
    "Modifica esta opció si els pòrtics no estan ben ajustats i canviar la mida de la imatge."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Usar menú en alta resolució"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Canvia els menús a línia de mode (modeline) en alta resolució quan no s'haja carregat cap contingut."
    )

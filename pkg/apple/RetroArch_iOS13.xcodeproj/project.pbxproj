@@ -9,8 +9,10 @@
 /* Begin PBXBuildFile section */
 		0714E7142983A5AC00E6B45B /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */; };
 		0714E7152983A5E500E6B45B /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		073734A42A093A5700BF7397 /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 92A1F81727006CAE00DEAD2A /* JITSupport.m */; };
+		073734A62A093ACA00BF7397 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 073734A52A093ACA00BF7397 /* AltKit */; };
+		0789FC302A07847E00D042B7 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0789FC2F2A07847E00D042B7 /* AltKit */; };
 		07B7872D29E8FE8F0088B74F /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07B7872C29E8FE8F0088B74F /* filters */; };
-		07EB0FA429F761B800D87936 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 07EB0FA329F761B800D87936 /* AltKit */; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		9204BE101D319EF300BD49DB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
@@ -158,6 +160,7 @@
 
 /* Begin PBXFileReference section */
 		0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = tvOS/modules/libMoltenVK.dylib; sourceTree = "<group>"; };
+		0789FC2E2A07845300D042B7 /* AltKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AltKit; path = Frameworks/AltKit; sourceTree = "<group>"; };
 		07B7872429E8D13F0088B74F /* .empty */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .empty; sourceTree = "<group>"; };
 		07B7872C29E8FE8F0088B74F /* filters */ = {isa = PBXFileReference; lastKnownFileType = folder; path = filters; sourceTree = "<group>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
@@ -467,7 +470,7 @@
 				9204BE1B1D319EF300BD49DB /* CoreAudio.framework in Frameworks */,
 				9204BE1C1D319EF300BD49DB /* UIKit.framework in Frameworks */,
 				9204BE1D1D319EF300BD49DB /* Foundation.framework in Frameworks */,
-				07EB0FA429F761B800D87936 /* AltKit in Frameworks */,
+				0789FC302A07847E00D042B7 /* AltKit in Frameworks */,
 				9204BE1E1D319EF300BD49DB /* CoreGraphics.framework in Frameworks */,
 				9204BE1F1D319EF300BD49DB /* GLKit.framework in Frameworks */,
 				9204BE201D319EF300BD49DB /* OpenGLES.framework in Frameworks */,
@@ -481,6 +484,7 @@
 				0714E7142983A5AC00E6B45B /* libMoltenVK.dylib in Frameworks */,
 				926C77F121FD26E800103EDE /* GameController.framework in Frameworks */,
 				926C77EF21FD263800103EDE /* AudioToolbox.framework in Frameworks */,
+				073734A62A093ACA00BF7397 /* AltKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -496,6 +500,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0789FC2D2A07845300D042B7 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				0789FC2E2A07845300D042B7 /* AltKit */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
 		07B7872329E8D13F0088B74F /* filters */ = {
 			isa = PBXGroup;
 			children = (
@@ -1144,6 +1156,7 @@
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
+				0789FC2D2A07845300D042B7 /* Packages */,
 				96AFAE9C16C1D976009DE44C /* Main Entry Core */,
 				92B9EAE024E04F8800E6CFB2 /* Sources */,
 				9222F2082315DAD50097C0FD /* Launch Screen.storyboard */,
@@ -1254,7 +1267,7 @@
 			);
 			name = RetroArchiOS;
 			packageProductDependencies = (
-				07EB0FA329F761B800D87936 /* AltKit */,
+				0789FC2F2A07847E00D042B7 /* AltKit */,
 			);
 			productName = RetroArch;
 			productReference = 9204BE2B1D319EF300BD49DB /* RetroArch.app */;
@@ -1275,6 +1288,9 @@
 			dependencies = (
 			);
 			name = RetroArchTV;
+			packageProductDependencies = (
+				073734A52A093ACA00BF7397 /* AltKit */,
+			);
 			productName = RetroArchTV;
 			productReference = 926C77D721FD1E6500103EDE /* RetroArchTV.app */;
 			productType = "com.apple.product-type.application";
@@ -1334,7 +1350,6 @@
 			);
 			mainGroup = 96AFAE1A16C1D4EA009DE44C;
 			packageReferences = (
-				07EB0FA229F761B800D87936 /* XCRemoteSwiftPackageReference "AltKit" */,
 			);
 			productRefGroup = 96AFAE2616C1D4EA009DE44C /* Products */;
 			projectDirPath = "";
@@ -1486,6 +1501,7 @@
 				92CC05BB21FE3C1700FF79F0 /* GCDWebServerFileRequest.m in Sources */,
 				92CC05AF21FE3C1700FF79F0 /* GCDWebServerFileResponse.m in Sources */,
 				9210C2F724B3A32D00E6FE7C /* griffin_cpp.cpp in Sources */,
+				073734A42A093A5700BF7397 /* JITSupport.m in Sources */,
 				92CC05B321FE3C1700FF79F0 /* GCDWebServerStreamedResponse.m in Sources */,
 				92CC05A321FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */,
 			);
@@ -1885,6 +1901,7 @@
 					"-DGLES_SILENCE_DEPRECATION",
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DHAVE_7ZIP",
+					"-DHAVE_ALTKIT",
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_BUILTINGLSLANG",
@@ -1962,7 +1979,7 @@
 				SDKROOT = appletvos;
 				SRCBASE = "$(SRCROOT)/../..";
 				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 12.1;
+				TVOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Debug;
 		};
@@ -2044,6 +2061,7 @@
 					"-DGLES_SILENCE_DEPRECATION",
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DHAVE_7ZIP",
+					"-DHAVE_ALTKIT",
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_BUILTINGLSLANG",
@@ -2123,7 +2141,7 @@
 				SDKROOT = appletvos;
 				SRCBASE = "$(SRCROOT)/../..";
 				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 12.1;
+				TVOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Release;
 		};
@@ -2482,21 +2500,13 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		07EB0FA229F761B800D87936 /* XCRemoteSwiftPackageReference "AltKit" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/rileytestut/AltKit.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.0.1;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
 /* Begin XCSwiftPackageProductDependency section */
-		07EB0FA329F761B800D87936 /* AltKit */ = {
+		073734A52A093ACA00BF7397 /* AltKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 07EB0FA229F761B800D87936 /* XCRemoteSwiftPackageReference "AltKit" */;
+			productName = AltKit;
+		};
+		0789FC2F2A07847E00D042B7 /* AltKit */ = {
+			isa = XCSwiftPackageProductDependency;
 			productName = AltKit;
 		};
 /* End XCSwiftPackageProductDependency section */

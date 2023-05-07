@@ -542,9 +542,12 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 
    new_fb_pitch = new_fb_width * 2;
 
-   gfx_display_set_width(new_fb_width);
-   gfx_display_set_height(new_fb_height);
-   gfx_display_set_framebuffer_pitch(new_fb_pitch);
+   {
+      gfx_display_t *p_disp   = disp_get_ptr();
+      p_disp->framebuf_width  = new_fb_width;
+      p_disp->framebuf_height = new_fb_height;
+      p_disp->framebuf_pitch  = new_fb_pitch;
+   }
 
    GX_SetViewportJitter(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1, 1);
    GX_SetDispCopySrc(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
@@ -661,8 +664,12 @@ static void init_texture(gx_video_t *gx, unsigned width, unsigned height,
    width               &= ~3;
    height              &= ~3;
 
-   gfx_display_get_fb_size(&fb_width, &fb_height,
-         &fb_pitch);
+   {
+      gfx_display_t *p_disp   = disp_get_ptr();
+      fb_width                = p_disp->framebuf_width;
+      fb_height               = p_disp->framebuf_height;
+      fb_pitch                = p_disp->framebuf_pitch;
+   }
 
    GX_InitTexObj(fb_ptr, g_tex.data, width, height,
          (gx->rgb32) ? GX_TF_RGBA8 : gx->menu_texture_enable ?
@@ -1686,11 +1693,10 @@ static bool gx_frame(void *data, const void *frame,
 
    if (gx->menu_texture_enable && gx->menu_data)
    {
-      size_t fb_pitch;
-      unsigned fb_width, fb_height;
-
-      gfx_display_get_fb_size(&fb_width, &fb_height,
-            &fb_pitch);
+      gfx_display_t *p_disp   = disp_get_ptr();
+      unsigned fb_width       = p_disp->framebuf_width;
+      unsigned fb_height      = p_disp->framebuf_height;
+      unsigned fb_pitch       = p_disp->framebuf_pitch;
 
       convert_texture16(
             gx->menu_data,

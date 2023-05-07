@@ -42,9 +42,7 @@
 #import <AVFoundation/AVFoundation.h>
 
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
-#if TARGET_OS_IOS
 #import "JITSupport.h"
-#endif
 id<ApplePlatform> apple_platform;
 #else
 static id apple_platform;
@@ -111,6 +109,7 @@ void get_ios_version(int *major, int *minor)
 /* Input helpers: This is kept here because it needs ObjC */
 static void handle_touch_event(NSArray* touches)
 {
+#if !TARGET_OS_TV
    unsigned i;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)
       input_state_get_ptr()->current_data;
@@ -131,6 +130,7 @@ static void handle_touch_event(NSArray* touches)
          apple->touches[apple->touch_count ++].screen_y = coord.y * scale;
       }
    }
+#endif
 }
 
 #ifndef HAVE_APPLE_STORE
@@ -294,7 +294,7 @@ enum
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
-    if (@available(iOS 13.4, *)) {
+    if (@available(iOS 13.4, tvOS 13.4, *)) {
         if (event.type == UIEventTypeHover)
             return;
     }
@@ -336,7 +336,10 @@ enum
 
 #pragma mark - ApplePlatform
 -(id)renderView { return _renderView; }
--(bool)hasFocus { return YES; }
+-(bool)hasFocus
+{
+    return [[UIApplication sharedApplication] applicationState] == UIApplicationStateActive;
+}
 
 - (void)setViewType:(apple_view_type_t)vt
 {
@@ -400,7 +403,15 @@ enum
 }
 
 - (void)setCursorVisible:(bool)v { /* no-op for iOS */ }
-- (bool)setDisableDisplaySleep:(bool)disable { /* no-op for iOS */ return NO; }
+- (bool)setDisableDisplaySleep:(bool)disable
+{
+#if TARGET_OS_TV
+   [[UIApplication sharedApplication] setIdleTimerDisabled:disable];
+   return YES;
+#else
+   return NO;
+#endif
+}
 + (RetroArch_iOS*)get { return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate]; }
 
 -(NSString*)documentsDirectory
@@ -436,9 +447,7 @@ enum
    [self refreshSystemConfig];
    [self showGameView];
 
-#if TARGET_OS_IOS
    jb_start_altkit();
-#endif
 
    rarch_main(argc, argv, NULL);
 
@@ -502,9 +511,9 @@ enum
 #if TARGET_OS_IOS
    [self setToolbarHidden:true animated:NO];
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
+   [[UIApplication sharedApplication] setIdleTimerDisabled:true];
 #endif
 
-   [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[CocoaView get]];
 
    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{

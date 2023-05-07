@@ -628,6 +628,10 @@ MSG_HASH(
    "cheevos_visibility_lboard_trackers"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "cheevos_visibility_progress_tracker"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CLOSE_CONTENT,
    "unload_core"
    )

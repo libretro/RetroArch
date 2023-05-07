@@ -1076,9 +1076,8 @@ static void d3d8_apply_state_changes(void *data)
       d3d->should_resize = true;
 }
 
-static void d3d8_set_osd_msg(void *data,
-      const char *msg,
-      const void *params, void *font)
+static void d3d8_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font)
 {
    d3d8_video_t          *d3d = (d3d8_video_t*)data;
 

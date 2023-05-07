@@ -100,6 +100,8 @@ static rcheevos_locals_t rcheevos_locals =
 #endif
 #ifdef HAVE_GFX_WIDGETS
    0,    /* active_lboard_trackers */
+   NULL, /* tracker_achievement */
+   0.0,  /* tracker_progress */
 #endif
    {RCHEEVOS_LOAD_STATE_NONE, 0, 0 },  /* load_info */
    false,/* hardcore_active */
@@ -641,6 +643,30 @@ static void rcheevos_challenge_ended(
       gfx_widgets_set_challenge_display(cheevo->id, NULL);
 }
 
+static void rcheevos_progress_updated(rcheevos_locals_t* locals,
+      rcheevos_racheevo_t* cheevo, int value,
+      bool widgets_ready)
+{
+   settings_t* settings = config_get_ptr();
+
+   if (     cheevo
+         && widgets_ready
+         && settings->bools.cheevos_visibility_progress_tracker
+         && rcheevos_is_player_active())
+   {
+      unsigned measured_value, measured_target;
+      if (rc_runtime_get_achievement_measured(&locals->runtime, cheevo->id, &measured_value, &measured_target))
+      {
+         const float progress = ((float)measured_value / (float)measured_target);
+         if (progress > locals->tracker_progress)
+         {
+            locals->tracker_progress = progress;
+            locals->tracker_achievement = cheevo;
+         }
+      }
+   }
+}
+
 #endif
 
 int rcheevos_get_richpresence(char *s, size_t len)
@@ -705,6 +731,8 @@ void rcheevos_reset_game(bool widgets_ready)
       for (i = 0; i < rcheevos_locals.game.achievement_count;
             ++i, ++cheevo)
          gfx_widgets_set_challenge_display(cheevo->id, NULL);
+
+      gfx_widget_set_achievement_progress(NULL, NULL);
    }
 #endif
 
@@ -1206,6 +1234,12 @@ static void rcheevos_runtime_event_handler(
                rcheevos_find_cheevo(runtime_event->id),
                runtime_event->value, widgets_ready);
          break;
+
+      case RC_RUNTIME_EVENT_ACHIEVEMENT_PROGRESS_UPDATED:
+         rcheevos_progress_updated(&rcheevos_locals,
+               rcheevos_find_cheevo(runtime_event->id),
+               runtime_event->value, widgets_ready);
+         break;
 #endif
 
       case RC_RUNTIME_EVENT_ACHIEVEMENT_TRIGGERED:
@@ -1336,6 +1370,19 @@ void rcheevos_test(void)
 
       rcheevos_locals.assign_new_trackers = false;
    }
+
+   if (rcheevos_locals.tracker_achievement != NULL)
+   {
+      char buffer[32] = "";
+      if (rc_runtime_format_achievement_measured(&rcheevos_locals.runtime,
+            rcheevos_locals.tracker_achievement->id, buffer, sizeof(buffer)))
+      {
+         gfx_widget_set_achievement_progress(rcheevos_locals.tracker_achievement->badge, buffer);
+      }
+
+      rcheevos_locals.tracker_achievement = NULL;
+      rcheevos_locals.tracker_progress = 0.0;
+   }
 #endif
 }
 
@@ -1390,6 +1437,9 @@ bool rcheevos_set_serialized_data(void* buffer)
                }
             }
          }
+
+         if (settings->bools.cheevos_visibility_progress_tracker)
+            gfx_widget_set_achievement_progress(NULL, NULL);
       }
 #endif
 
@@ -2162,6 +2212,9 @@ bool rcheevos_load(const void *data)
    rcheevos_locals.game.mastery_placard_shown = false;
 #ifdef HAVE_THREADS
    rcheevos_locals.queued_command     = CMD_EVENT_NONE;
+#endif
+#ifdef HAVE_GFX_WIDGETS
+   rcheevos_locals.tracker_progress   = 0.0;
 #endif
    rc_runtime_init(&rcheevos_locals.runtime);
 

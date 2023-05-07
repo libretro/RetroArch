@@ -254,40 +254,36 @@ static int action_left_scroll(unsigned type, const char *label,
 
 static int action_left_goto_tab(void)
 {
-   menu_ctx_list_t list_info;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
 
-   list_info.type             = MENU_LIST_HORIZONTAL;
-   list_info.action           = MENU_ACTION_LEFT;
-
-   menu_driver_list_cache(&list_info);
-
+   if (menu_st->driver_ctx && menu_st->driver_ctx->list_cache)
+      menu_st->driver_ctx->list_cache(menu_st->userdata,
+            MENU_LIST_HORIZONTAL, MENU_ACTION_LEFT);
    return menu_driver_deferred_push_content_list(selection_buf);
 }
 
 static int action_left_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
-   menu_ctx_list_t list_info;
    settings_t            *settings = config_get_ptr();
    bool menu_nav_wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
    const char *menu_ident          = menu_driver_ident();
+   size_t selection                = menu_driver_list_get_selection();
+   size_t size                     = menu_driver_list_get_size(MENU_LIST_PLAIN);
 
-   menu_driver_list_get_selection(&list_info);
-
-   list_info.type = MENU_LIST_PLAIN;
-
-   menu_driver_list_get_size(&list_info);
-
+#ifdef HAVE_XMB
    /* Tab switching functionality only applies
     * to XMB */
-   if (  (list_info.size == 1)
+   if (  (size == 1)
        && string_is_equal(menu_ident, "xmb"))
    {
-      if ((list_info.selection != 0) || menu_nav_wraparound_enable)
+      if ((selection != 0) || menu_nav_wraparound_enable)
          return action_left_goto_tab();
    }
    else
+#endif
       action_left_scroll(0, "", false);
 
    return 0;
@@ -356,13 +352,14 @@ static int action_left_shader_filter_default(unsigned type, const char *label,
 static int action_left_cheat_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh      = false;
-   unsigned new_size = 0;
+   unsigned new_size          = 0;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned cheat_size        = cheat_manager_get_size();
 
-   if (cheat_manager_get_size())
-      new_size = cheat_manager_get_size() - 1;
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   if (cheat_size)
+      new_size         = cheat_size - 1;
+   menu_st->flags     |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                       | MENU_ST_FLAG_PREVENT_POPULATE;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
    return 0;
@@ -373,7 +370,7 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
 static int action_left_shader_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh      = false;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    struct video_shader *shader = menu_shader_get();
    unsigned pass_count         = shader ? shader->passes : 0;
 
@@ -383,8 +380,8 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
    if (pass_count > 0)
       shader->passes--;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags     |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                       | MENU_ST_FLAG_PREVENT_POPULATE;
    video_shader_resolve_parameters(shader);
 
    shader->flags                        |= SHDR_FLAG_MODIFIED;
@@ -688,12 +685,12 @@ static int manual_content_scan_core_name_left(unsigned type, const char *label,
 static int cpu_policy_mode_change(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh = false;
+   struct menu_state *menu_st = menu_state_get_ptr();
    enum cpu_scaling_mode mode = get_cpu_scaling_mode(NULL);
    if (mode != CPUSCALING_MANAGED_PERFORMANCE)
       mode--;
    set_cpu_scaling_mode(mode, NULL);
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -956,28 +953,44 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
 static int action_left_state_slot(unsigned type, const char *label,
       bool wraparound)
 {
+   struct menu_state *menu_st     = menu_state_get_ptr();
    settings_t           *settings = config_get_ptr();
 
    settings->ints.state_slot--;
    if (settings->ints.state_slot < -1)
       settings->ints.state_slot = 999;
 
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+   if (menu_st->driver_ctx)
+   {
+      size_t selection            = menu_st->selection_ptr;
+      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
+         menu_st->driver_ctx->update_savestate_thumbnail_path(
+               menu_st->userdata, (unsigned)selection);
+      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
+         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
+   }
 
    return 0;
 }
 static int action_left_replay_slot(unsigned type, const char *label,
       bool wraparound)
 {
+   struct menu_state *menu_st     = menu_state_get_ptr();
    settings_t           *settings = config_get_ptr();
 
    settings->ints.replay_slot--;
    if (settings->ints.replay_slot < -1)
       settings->ints.replay_slot = 999;
 
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+   if (menu_st->driver_ctx)
+   {
+      size_t selection            = menu_st->selection_ptr;
+      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
+         menu_st->driver_ctx->update_savestate_thumbnail_path(
+               menu_st->userdata, (unsigned)selection);
+      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
+         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
+   }
 
    return 0;
 }

@@ -180,7 +180,7 @@ static bool gfx_display_check_compatibility(
    return false;
 }
 
-float gfx_display_get_dpi_scale_internal(
+static float gfx_display_get_dpi_scale_internal(
       unsigned width, unsigned height)
 {
    float dpi;
@@ -192,9 +192,9 @@ float gfx_display_get_dpi_scale_internal(
    static bool scale_cached    = false;
    gfx_ctx_metrics_t metrics;
 
-   if (scale_cached &&
-       (width == last_width) &&
-       (height == last_height))
+   if (    scale_cached
+       && (width  == last_width)
+       && (height == last_height))
       return scale;
 
    /* Determine the diagonal 'size' of the display
@@ -367,13 +367,12 @@ float gfx_display_get_dpi_scale(
           * > If we are not using a widget scale factor override,
           *   just set menu_scale_factor to 1.0 */
          if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
-            menu_scale_factor                             = 1.0f;
+            menu_scale_factor        = 1.0f;
          else
 #endif
          {
-            float _menu_scale_factor                      = 
-               settings->floats.menu_scale_factor;
-            menu_scale_factor                             = _menu_scale_factor;
+            float _menu_scale_factor = settings->floats.menu_scale_factor;
+            menu_scale_factor        = _menu_scale_factor;
          }
       }
    }
@@ -383,9 +382,9 @@ float gfx_display_get_dpi_scale(
     * hardware property. To minimise performance overheads
     * we therefore only call video_context_driver_get_metrics()
     * on first run, or when the current video resolution changes */
-   if (!scale_cached ||
-       (width  != last_width) ||
-       (height != last_height))
+   if (   !scale_cached
+       || (width  != last_width)
+       || (height != last_height))
    {
       scale         = gfx_display_get_dpi_scale_internal(width, height);
       scale_cached  = true;
@@ -396,9 +395,9 @@ float gfx_display_get_dpi_scale(
 
    /* Adjusted scale calculation may also be slow, so
     * only update if something changes */
-   if (scale_updated ||
-       (menu_scale_factor != last_menu_scale_factor) ||
-       (p_disp->menu_driver_id != last_menu_driver_id))
+   if (    scale_updated
+       || (menu_scale_factor != last_menu_scale_factor)
+       || (p_disp->menu_driver_id != last_menu_driver_id))
    {
       adjusted_scale         = gfx_display_get_adjusted_scale(
             p_disp,
@@ -496,9 +495,9 @@ void gfx_display_draw_text(
       return;
 
    /* Don't draw outside of the screen */
-   if (!draw_outside &&
-           ((x < -64 || x > width  + 64)
-         || (y < -64 || y > height + 64))
+   if ( !draw_outside
+         && ((x < -64 || x > width  + 64)
+         ||  (y < -64 || y > height + 64))
       )
       return;
 
@@ -653,7 +652,7 @@ void gfx_display_draw_texture_slice(
     *   [SIDE NOTE: this causes additional issues if the transparent
     *    pixels have the wrong colour - i.e. if they are black,
     *    every edge gets a nasty dark border...]
-    * > This burring is a problem because (by design) the corners
+    * > This blurring is a problem because (by design) the corners
     *   of the sliced texture are drawn at native resolution,
     *   whereas the middle segments are stretched to fit the
     *   requested dimensions. Consequently, the corners are sharp
@@ -678,7 +677,7 @@ void gfx_display_draw_texture_slice(
          (scale_factor < max_scale_h) ? scale_factor : max_scale_h :
          (max_scale_w  < max_scale_h) ? max_scale_w  : max_scale_h;
 
-   /* need space for the coordinates of two triangles in a strip,
+   /* Need space for the coordinates of two triangles in a strip,
     * so 8 vertices */
    float tex_coord[8];
    float vert_coord[8];
@@ -713,8 +712,13 @@ void gfx_display_draw_texture_slice(
    if (!dispctx || !dispctx->draw)
       return;
 
-   /* the four vertices of the top-left corner of the image,
-    * used as a starting point for all the other sections */
+   /* The four vertices of the top-left corner of the image,
+    * used as a starting point for all the other sections
+    * BL - Bottom Left
+    * BR - Bottom Right
+    * TL - Top Left
+    * TR - Top Right
+    */
    V_BL[0] = norm_x;
    V_BL[1] = norm_y;
    V_BR[0] = norm_x + vert_woff;
@@ -754,7 +758,7 @@ void gfx_display_draw_texture_slice(
    /* If someone wants to change this to not draw several times, the
     * coordinates will need to be modified because of the triangle strip usage. */
 
-   /* top-left corner */
+   /* Top Left corner */
    vert_coord[0] = V_BL[0];
    vert_coord[1] = V_BL[1];
    vert_coord[2] = V_BR[0];
@@ -775,7 +779,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* top-middle section */
+   /* Top Middle section */
    vert_coord[0] = V_BL[0] + vert_woff;
    vert_coord[1] = V_BL[1];
    vert_coord[2] = V_BR[0] + vert_scaled_mid_width;
@@ -796,7 +800,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* top-right corner */
+   /* Top Right corner */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
    vert_coord[1] = V_BL[1];
    vert_coord[2] = V_BR[0] + vert_scaled_mid_width + vert_woff;
@@ -817,7 +821,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* middle-left section */
+   /* Middle Left section */
    vert_coord[0] = V_BL[0];
    vert_coord[1] = V_BL[1] - vert_scaled_mid_height;
    vert_coord[2] = V_BR[0];
@@ -859,7 +863,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* middle-right section */
+   /* Middle Right section */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
    vert_coord[1] = V_BL[1] - vert_scaled_mid_height;
    vert_coord[2] = V_BR[0] + vert_woff + vert_scaled_mid_width;
@@ -880,7 +884,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* bottom-left corner */
+   /* Bottom Left corner */
    vert_coord[0] = V_BL[0];
    vert_coord[1] = V_BL[1] - vert_hoff - vert_scaled_mid_height;
    vert_coord[2] = V_BR[0];
@@ -901,7 +905,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* bottom-middle section */
+   /* Bottom Middle section */
    vert_coord[0] = V_BL[0] + vert_woff;
    vert_coord[1] = V_BL[1] - vert_hoff - vert_scaled_mid_height;
    vert_coord[2] = V_BR[0] + vert_scaled_mid_width;
@@ -922,7 +926,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* bottom-right corner */
+   /* Bottom Right corner */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
    vert_coord[1] = V_BL[1] - vert_hoff - vert_scaled_mid_height;
    vert_coord[2] = V_BR[0] + vert_scaled_mid_width + vert_woff;
@@ -1037,36 +1041,6 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
    return -1;
 }
 
-/* Get the display framebuffer's size dimensions. */
-void gfx_display_get_fb_size(unsigned *fb_width,
-      unsigned *fb_height, size_t *fb_pitch)
-{
-   gfx_display_t *p_disp = &dispgfx_st;
-   *fb_width             = p_disp->framebuf_width;
-   *fb_height            = p_disp->framebuf_height;
-   *fb_pitch             = p_disp->framebuf_pitch;
-}
-
-/* Set the display framebuffer's width. */
-void gfx_display_set_width(unsigned width)
-{
-   gfx_display_t *p_disp  = &dispgfx_st;
-   p_disp->framebuf_width = width;
-}
-
-/* Set the display framebuffer's height. */
-void gfx_display_set_height(unsigned height)
-{
-   gfx_display_t *p_disp   = &dispgfx_st;
-   p_disp->framebuf_height = height;
-}
-
-void gfx_display_set_framebuffer_pitch(size_t pitch)
-{
-   gfx_display_t *p_disp  = &dispgfx_st;
-   p_disp->framebuf_pitch = pitch;
-}
-
 void gfx_display_draw_keyboard(
       gfx_display_t *p_disp,
       void *userdata,
@@ -1081,7 +1055,7 @@ void gfx_display_draw_keyboard(
    int ptr_width, ptr_height;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
-   static float white[16] =  {
+   static float white[16]    =  {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,

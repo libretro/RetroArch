@@ -331,6 +331,7 @@ static bool playlist_path_equal(const char *real_path,
 
    /* Get entry 'real' path */
    strlcpy(entry_real_path, entry_path, sizeof(entry_real_path));
+   playlist_resolve_path(PLAYLIST_LOAD, false, entry_real_path, sizeof(entry_real_path));
    path_resolve_realpath(entry_real_path, sizeof(entry_real_path), true);
 
    if (string_is_empty(entry_real_path))
@@ -3038,7 +3039,7 @@ bool playlist_index_is_valid(playlist_t *playlist, size_t idx,
    if (idx >= RBUF_LEN(playlist->entries))
       return false;
 
-   return string_is_equal(playlist->entries[idx].path, path) &&
+   return playlist_path_equal(path, playlist->entries[idx].path, &playlist->config) &&
           string_is_equal(path_basename_nocompression(playlist->entries[idx].core_path), path_basename_nocompression(core_path));
 }
 

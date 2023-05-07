@@ -130,17 +130,13 @@ int action_right_cheat(unsigned type, const char *label,
 static int action_right_cheat_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh      = false;
-   unsigned new_size = 0;
-
-   new_size = cheat_manager_get_size() + 1;
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned new_size          = cheat_manager_get_size() + 1;
+   menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
+                              |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
-
    return 0;
 }
-
 #endif
 
 static int action_right_input_desc_kbd(unsigned type, const char *label,
@@ -287,50 +283,39 @@ static int audio_mixer_stream_volume_right(unsigned type, const char *label,
 
 static int action_right_goto_tab(void)
 {
-   menu_ctx_list_t list_info;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-   list_info.type             = MENU_LIST_HORIZONTAL;
-   list_info.action           = MENU_ACTION_RIGHT;
-
-   menu_driver_list_cache(&list_info);
-
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   if (menu_st->driver_ctx && menu_st->driver_ctx->list_cache)
+      menu_st->driver_ctx->list_cache(menu_st->userdata,
+            MENU_LIST_HORIZONTAL, MENU_ACTION_RIGHT);
    return menu_driver_deferred_push_content_list(selection_buf);
 }
 
 static int action_right_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
-   menu_ctx_list_t list_info;
    settings_t            *settings = config_get_ptr();
    bool menu_nav_wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
    const char *menu_ident          = menu_driver_ident();
+   size_t selection                = menu_driver_list_get_selection();
+   size_t size                     = menu_driver_list_get_size(MENU_LIST_PLAIN);
 
-   menu_driver_list_get_selection(&list_info);
-
-   list_info.type = MENU_LIST_PLAIN;
-
-   menu_driver_list_get_size(&list_info);
-
+#ifdef HAVE_XMB
    /* Tab switching functionality only applies
     * to XMB */
-   if ((list_info.size == 1) &&
-       string_is_equal(menu_ident, "xmb"))
+   if (  (size == 1)
+       && string_is_equal(menu_ident, "xmb"))
    {
-      menu_ctx_list_t list_horiz_info;
-      menu_ctx_list_t list_tabs_info;
+      size_t horiz_size         = menu_driver_list_get_size(MENU_LIST_HORIZONTAL);
+      size_t tabs_size          = menu_driver_list_get_size(MENU_LIST_TABS);
 
-      list_horiz_info.type      = MENU_LIST_HORIZONTAL;
-      list_tabs_info.type       = MENU_LIST_TABS;
-
-      menu_driver_list_get_size(&list_horiz_info);
-      menu_driver_list_get_size(&list_tabs_info);
-
-      if ((list_info.selection != (list_horiz_info.size + list_tabs_info.size))
+      if ( (selection != (horiz_size + tabs_size))
          || menu_nav_wraparound_enable)
          return action_right_goto_tab();
    }
    else
+#endif
       action_right_scroll(0, "", false);
 
    return 0;
@@ -397,7 +382,7 @@ static int action_right_shader_filter_default(unsigned type, const char *label,
 static int action_right_shader_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh                = false;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    struct video_shader *shader = menu_shader_get();
    unsigned pass_count         = shader ? shader->passes : 0;
 
@@ -407,8 +392,8 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
    if (pass_count < GFX_MAX_SHADERS)
       shader->passes++;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
+                              |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    video_shader_resolve_parameters(shader);
 
    shader->flags           |= SHDR_FLAG_MODIFIED;
@@ -807,19 +792,18 @@ static int manual_content_scan_core_name_right(unsigned type, const char *label,
 static int cpu_policy_mode_change(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh = false;
+   struct menu_state *menu_st = menu_state_get_ptr();
    enum cpu_scaling_mode mode = get_cpu_scaling_mode(NULL);
    if (mode != CPUSCALING_MANUAL)
       mode++;
    set_cpu_scaling_mode(mode, NULL);
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
 static int cpu_policy_freq_managed_tweak(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh = false;
    cpu_scaling_opts_t opts;
    enum cpu_scaling_mode mode = get_cpu_scaling_mode(&opts);
 
@@ -958,14 +942,22 @@ static int disk_options_disk_idx_right(unsigned type, const char *label,
 static int action_right_state_slot(unsigned type, const char *label,
       bool wraparound)
 {
-   settings_t           *settings = config_get_ptr();
+   settings_t       *settings = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
 
    settings->ints.state_slot++;
    if (settings->ints.state_slot > 999)
       settings->ints.state_slot = -1;
 
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+   if (menu_st->driver_ctx)
+   {
+      size_t selection = menu_st->selection_ptr;
+      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
+         menu_st->driver_ctx->update_savestate_thumbnail_path(
+               menu_st->userdata, (unsigned)selection);
+      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
+         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
+   }
 
    return 0;
 }
@@ -973,14 +965,22 @@ static int action_right_state_slot(unsigned type, const char *label,
 static int action_right_replay_slot(unsigned type, const char *label,
       bool wraparound)
 {
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   size_t selection               = menu_st->selection_ptr;
    settings_t           *settings = config_get_ptr();
 
    settings->ints.replay_slot++;
    if (settings->ints.replay_slot > 999)
       settings->ints.replay_slot = -1;
 
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+   if (menu_st->driver_ctx)
+   {
+      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
+         menu_st->driver_ctx->update_savestate_thumbnail_path(
+               menu_st->userdata, (unsigned)selection);
+      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
+         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
+   }
 
    return 0;
 }

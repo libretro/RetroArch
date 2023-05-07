@@ -938,16 +938,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       if (video_info->statistics_show)
       {
          if (osd_params)
-         {
             font_driver_render_msg(gl1, video_info->stat_text,
                   osd_params, NULL);
-#if 0
-            osd_params->y               = 0.350f;
-            osd_params->scale           = 0.75f;
-            font_driver_render_msg(gl1, video_info->chat_text,
-                  (const struct font_params*)&video_info->osd_stat_params, NULL);
-#endif
-         }
       }
 
 #ifdef HAVE_GFX_WIDGETS

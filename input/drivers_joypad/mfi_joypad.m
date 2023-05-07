@@ -96,7 +96,7 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
         *buttons             |= gp.leftTrigger.pressed     ? (1 << RETRO_DEVICE_ID_JOYPAD_L2)    : 0;
         *buttons             |= gp.rightTrigger.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_R2)    : 0;
 #if OSX || __IPHONE_OS_VERSION_MAX_ALLOWED >= 120100 || __TV_OS_VERSION_MAX_ALLOWED >= 120100
-        if (@available(iOS 12.1, macOS 10.15, *))
+        if (@available(iOS 12.1, macOS 10.15, tvOS 12.1, *))
         {
             *buttons         |= gp.leftThumbstickButton.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
             *buttons         |= gp.rightThumbstickButton.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
@@ -136,6 +136,9 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
         mfi_axes[slot][2]         = gp.rightThumbstick.xAxis.value * 32767.0f;
         mfi_axes[slot][3]         = gp.rightThumbstick.yAxis.value * 32767.0f;
 
+    }
+    else if (controller.microGamepad)
+    {
     }
 
     /* GCGamepad is deprecated */
@@ -255,9 +258,9 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
 #pragma clang diagnostic pop
 }
 
-static void mfi_joypad_autodetect_add(unsigned autoconf_pad)
+static void mfi_joypad_autodetect_add(unsigned autoconf_pad, const char *display_name)
 {
-    input_autoconfigure_connect("mFi Controller", NULL, mfi_joypad.ident, autoconf_pad, 0, 0);
+    input_autoconfigure_connect("mFi Controller", display_name, mfi_joypad.ident, autoconf_pad, 0, 0);
 }
 
 #define MFI_RUMBLE_AVAIL API_AVAILABLE(macos(11.0), ios(14.0), tvos(14.0))
@@ -455,9 +458,12 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
               gc.playerIndex = newPlayerIndex++;
         }
 
+        if (controller.microGamepad && !controller.extendedGamepad)
+            return;
+
         apple_gamecontroller_joypad_register(controller);
         apple_gamecontroller_joypad_setup_haptics(controller);
-        mfi_joypad_autodetect_add((unsigned)controller.playerIndex);
+        mfi_joypad_autodetect_add((unsigned)controller.playerIndex, [controller.vendorName cStringUsingEncoding:NSUTF8StringEncoding]);
     }
 }
 

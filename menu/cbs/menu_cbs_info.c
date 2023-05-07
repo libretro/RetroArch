@@ -17,7 +17,6 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
-#include "../menu_dialog.h"
 
 #include "../../configuration.h"
 #include "../../audio/audio_driver.h"
@@ -34,7 +33,8 @@ static int action_info_default(unsigned type, const char *label)
 {
    menu_displaylist_info_t info;
    struct menu_state *menu_st    = menu_state_get_ptr();
-   file_list_t *menu_stack       = menu_entries_get_menu_stack_ptr(0);
+   menu_list_t *menu_list        = menu_st->entries.list;
+   file_list_t *menu_stack       = MENU_LIST_GET(menu_list, 0);
    size_t selection              = menu_st->selection_ptr;
    settings_t *settings          = config_get_ptr();
 #ifdef HAVE_AUDIOMIXER
@@ -77,9 +77,11 @@ int  generic_action_ok_help(const char *path,
 
 static int action_info_cheevos(unsigned type, const char *label)
 {
-   unsigned new_id        = type - MENU_SETTINGS_CHEEVOS_START;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   menu_dialog_t        *p_dialog = &menu_st->dialog_st;
+   unsigned new_id                = type - MENU_SETTINGS_CHEEVOS_START;
 
-   menu_dialog_set_current_id(new_id);
+   p_dialog->current_id           = new_id;
 
    return generic_action_ok_help(NULL, label, new_id, 0, 0,
       MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,

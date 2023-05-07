@@ -791,11 +791,13 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
 {
    unsigned i;
    retro_ctx_memory_info_t meminfo;
-   bool refresh                           = false;
    bool is_search_initialization          = (setting != NULL);
    rarch_system_info_t *system            = &runloop_state_get_ptr()->system;
    unsigned offset                        = 0;
    cheat_manager_t              *cheat_st = &cheat_manager_state;
+#ifdef HAVE_MENU
+   struct menu_state *menu_st             = menu_state_get_ptr();
+#endif
 
    cheat_st->num_memory_buffers           = 0;
    cheat_st->total_memory_size            = 0;
@@ -940,10 +942,8 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
 
 #ifdef HAVE_MENU
    if (!wraparound)
-   {
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-   }
+      menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                      |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
 
    return 0;
@@ -1024,7 +1024,9 @@ static int cheat_manager_search(enum cheat_search_type search_type)
    unsigned int bits           = 8;
    unsigned int offset         = 0;
    unsigned int i              = 0;
-   bool refresh                = false;
+#ifdef HAVE_MENU
+   struct menu_state *menu_st  = menu_state_get_ptr();
+#endif
 
    if (cheat_st->num_memory_buffers == 0)
    {
@@ -1139,8 +1141,8 @@ static int cheat_manager_search(enum cheat_search_type search_type)
    runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_MENU
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
    return 0;
 }
@@ -1218,7 +1220,6 @@ int cheat_manager_add_matches(const char *path,
       const char *label, unsigned type, size_t menuidx, size_t entry_idx)
 {
    char msg[100];
-   bool                refresh = false;
    unsigned          byte_part = 0;
    unsigned            int idx = 0;
    unsigned           int mask = 0;
@@ -1229,6 +1230,9 @@ int cheat_manager_add_matches(const char *path,
    unsigned         int offset = 0;
    cheat_manager_t   *cheat_st = &cheat_manager_state;
    unsigned char         *curr = cheat_st->curr_memory_buf;
+#ifdef HAVE_MENU
+   struct menu_state *menu_st  = menu_state_get_ptr();
+#endif
 
    if (cheat_st->num_matches + cheat_st->size > 100)
    {
@@ -1300,10 +1304,9 @@ int cheat_manager_add_matches(const char *path,
    runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_MENU
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
-
    return 0;
 }
 
@@ -1761,14 +1764,15 @@ int cheat_manager_copy_match(rarch_setting_t *setting, size_t idx, bool wraparou
 
 int cheat_manager_delete_match(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   bool              refresh = false;
-   cheat_manager_t *cheat_st = &cheat_manager_state;
-
+   cheat_manager_t *cheat_st  = &cheat_manager_state;
+#ifdef HAVE_MENU
+   struct menu_state *menu_st = menu_state_get_ptr();
+#endif
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_DELETE,
          cheat_st->match_idx, NULL, NULL, NULL, NULL);
 #ifdef HAVE_MENU
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
    return 0;
 }
