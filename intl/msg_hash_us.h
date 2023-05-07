@@ -6277,7 +6277,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "Remember the position of the cursor in the menu when switching to a different tab."
+   "Remember previous cursor position in tabs. RGUI does not have tabs, but Playlists and Settings behave as such."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,

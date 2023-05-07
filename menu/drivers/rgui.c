@@ -272,7 +272,8 @@ enum rgui_flags
    RGUI_FLAG_ASPECT_UPDATE_PENDING     = (1 << 20),
    RGUI_FLAG_ENTRY_HAS_THUMBNAIL       = (1 << 21),
    RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL  = (1 << 22),
-   RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL = (1 << 23)
+   RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL = (1 << 23),
+   RGUI_FLAG_IS_PLAYLISTS_TAB          = (1 << 24)
 };
 
 typedef struct
@@ -335,6 +336,9 @@ typedef struct
    rgui_particle_t particles[RGUI_NUM_PARTICLES]; /* float alignment */
 
    ssize_t playlist_index;
+   uint8_t settings_selection_ptr;
+   size_t playlist_selection_ptr;
+   size_t playlist_selection[255];
    int16_t scroll_y;
    rgui_colors_t colors;   /* int16_t alignment */
 
@@ -6521,6 +6525,11 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    /* Ensure that we start with fullscreen thumbnails disabled */
    rgui->flags                      &= ~RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL;
 
+   rgui->playlist_index              = 0;
+   rgui->settings_selection_ptr      = 0;
+   rgui->playlist_selection_ptr      = 0;
+   memset(rgui->playlist_selection, 0, sizeof(rgui->playlist_selection));
+
    rgui->savestate_thumbnail_file_path[0]      = '\0';
    rgui->prev_savestate_thumbnail_file_path[0] = '\0';
 
@@ -6896,7 +6905,7 @@ static void rgui_update_savestate_thumbnail_image(void *data)
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
-   if (!(  ((rgui->is_quick_menu) && menu_is_running_quick_menu())
+   if (!(   (rgui->is_quick_menu && menu_is_running_quick_menu())
          || (rgui->flags & RGUI_FLAG_IS_STATE_SLOT)))
       return;
 
@@ -7169,6 +7178,13 @@ static void rgui_navigation_set(void *data, bool scroll)
 
    menu_show_sublabels            = config_get_ptr()->bools.menu_show_sublabels;
 
+   if (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
+      rgui->playlist_selection[rgui->playlist_selection_ptr] = selection;
+   else if (rgui->flags & RGUI_FLAG_IS_PLAYLISTS_TAB)
+      rgui->playlist_selection_ptr = selection;
+   else if (string_is_equal(rgui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS)))
+      rgui->settings_selection_ptr = selection;
+
    rgui_scan_selected_entry_thumbnail(rgui, false);
 
    rgui->menu_sublabel[0]         = '\0';
@@ -7220,6 +7236,7 @@ static void rgui_populate_entries(
    unsigned aspect_ratio_lock    = settings->uints.menu_rgui_aspect_ratio_lock;
 #endif
    const char *dynamic_theme_dir = settings->paths.directory_dynamic_wallpapers;
+   uint8_t remember_selection    = settings->uints.menu_remember_selection;
 #ifdef HAVE_LANGEXTRA
    gfx_display_t *p_disp         = disp_get_ptr();
 #endif
@@ -7252,9 +7269,14 @@ static void rgui_populate_entries(
    if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)))
-      rgui->flags |= RGUI_FLAG_IS_PLAYLIST;
+      rgui->flags |=  RGUI_FLAG_IS_PLAYLIST;
    else
       rgui->flags &= ~RGUI_FLAG_IS_PLAYLIST;
+
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
+      rgui->flags |=  RGUI_FLAG_IS_PLAYLISTS_TAB;
+   else
+      rgui->flags &= ~RGUI_FLAG_IS_PLAYLISTS_TAB;
 
    if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
@@ -7292,6 +7314,26 @@ static void rgui_populate_entries(
    
    /* Cancel any pending thumbnail load operations */
    rgui->flags &= ~RGUI_FLAG_THUMBNAIL_LOAD_PENDING;
+
+   if (     rgui->flags & RGUI_FLAG_IS_PLAYLIST
+         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
+   {
+      if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
+            || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
+         menu_state_get_ptr()->selection_ptr = rgui->playlist_selection[rgui->playlist_selection_ptr];
+   }
+   else if (rgui->flags & RGUI_FLAG_IS_PLAYLISTS_TAB)
+   {
+      if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
+            || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
+         menu_state_get_ptr()->selection_ptr = rgui->playlist_selection_ptr;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS)))
+   {
+      if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
+            || remember_selection == MENU_REMEMBER_SELECTION_MAIN)
+         menu_state_get_ptr()->selection_ptr = rgui->settings_selection_ptr;
+   }
    
    rgui_navigation_set(data, true);
    
