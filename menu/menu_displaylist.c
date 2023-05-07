@@ -7117,6 +7117,31 @@ unsigned menu_displaylist_build_list(
          {
             gfx_ctx_flags_t flags;
 
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS,
+                     PARSE_ACTION, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS,
+                     PARSE_ACTION, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+                     PARSE_ACTION, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+                     PARSE_ACTION, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+                     PARSE_ACTION, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS,
+                     PARSE_ACTION, false) == 0)
+               count++;
+
             if (video_display_server_get_flags(&flags))
             {
                if (BIT32_GET(flags.flags, DISPSERV_CTX_CRT_SWITCHRES))
@@ -7135,42 +7160,12 @@ unsigned menu_displaylist_build_list(
             }
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-               count++;
-
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
-
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_BRIGHTNESS_CONTROL,
                      PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_THREADED,
-                     PARSE_ONLY_BOOL, false) == 0)
                count++;
 #ifdef HAVE_SCREENSHOTS
             if (video_driver_supports_viewport_read())
@@ -7179,10 +7174,6 @@ unsigned menu_displaylist_build_list(
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
 #endif
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_SMOOTH,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_CTX_SCALING,
                      PARSE_ONLY_BOOL, false) == 0)
@@ -8970,17 +8961,18 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_DRIVER,
                      PARSE_ONLY_STRING_OPTIONS, false) == 0)
                count++;
-
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_THREADED,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
                      PARSE_ONLY_INT, false) == 0)
                count++;
-
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
-
 #if defined(WIIU)
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_WIIU_PREFER_DRC,
@@ -9004,7 +8996,6 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X,
                      PARSE_ONLY_INT, false) == 0)
                count++;
-
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_Y,
                      PARSE_ONLY_INT, false) == 0)
@@ -9014,7 +9005,6 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_PAL60_ENABLE,
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
-
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_GAMMA,
                      PARSE_ONLY_UINT, false) == 0)
@@ -9050,11 +9040,11 @@ unsigned menu_displaylist_build_list(
                         PARSE_ONLY_FLOAT, false) == 0)
                   count++;
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
+                        MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED,
                         PARSE_ONLY_FLOAT, false) == 0)
                   count++;
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED,
+                        MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
                         PARSE_ONLY_FLOAT, false) == 0)
                   count++;
             }
@@ -9249,6 +9239,10 @@ unsigned menu_displaylist_build_list(
                count++;
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_VFILTER,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_SMOOTH,
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
