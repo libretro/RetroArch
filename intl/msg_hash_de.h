@@ -9793,16 +9793,12 @@ MSG_HASH(
    "Wiedergabelisten-Vorschaubilder anzeigen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Die Anzeige von verkleinerten Inline-Vorschaubildern beim Betrachten von Wiedergabelisten aktivieren. Wenn diese Option deaktiviert ist, kann 'Oberes Vorschaubild' durch Drücken von RetroPad Y weiterhin im Vollbild angezeigt werden."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
    "Oberes Vorschaubild"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Art des Vorschaubilds, das oben rechts in den Wiedergabelisten angezeigt werden soll. Dieses Vorschaubild kann durch Drücken von RetroPad Y im Vollbild angezeigt werden."
+   "Art der Miniaturansicht, die oben rechts in der Wiedergabeliste angezeigt wird. Dieser Typ von Miniaturansicht kann durch Drücken von RetroPad Y gewechselt werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,

@@ -8785,16 +8785,8 @@ MSG_HASH(
    "Pokaż miniatury playlisty"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Włącz wyświetlanie miniatur przeskalowanych w dół podczas przeglądania list odtwarzania. Gdy wyłączone, 'Wierzchnia miniatura' może nadal być przełączona na pełny ekran przez naciśnięcie RetroPad Y."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
    "Wierzchnia miniatura"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Typ miniatury wyświetlanej w prawym górnym rogu playlisty. Ta miniaturka może być przełączona na pełny ekran, naciskając RetroPad Y."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,

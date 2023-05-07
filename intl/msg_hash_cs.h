@@ -9885,16 +9885,8 @@ MSG_HASH(
    "Zobrazit Miniatury Playlistu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Povolení zobrazení zmenšených miniatur na řádku při prohlížení seznamů skladeb. Pokud je tato funkce vypnuta, lze funkci 'Top Thumbnail' stále přepínat na celou obrazovku stisknutím tlačítka RetroPad Y."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
    "Horní Miniatura"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Typ miniatury, která se má zobrazovat v pravém horním rohu seznamů skladeb. Tuto miniaturu lze přepnout na celou obrazovku stisknutím tlačítka RetroPad Y."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,

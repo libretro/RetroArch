@@ -10002,7 +10002,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "실행목록을 볼 때 목록에 축소된 미리보기를 표시할 수 있습니다. 사용 안할 시 '상단 미리보기'를 패드 Y버튼을 눌러 전체화면으로 표시할 수 있습니다."
+   "실행목록을 볼 때 목록에 축소된 미리보기를 표시합니다. RetroPad 선택 버튼으로 켜고 끌 수 있습니다. 비활성화하더라도, 미리보기의 전체화면 표시는 RetroPad 시작 버튼을 눌러 켜고 끌 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
@@ -10010,7 +10010,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "오른쪽 상단에 표시할 미리보기의 종류입니다. Y 버튼을 누르면 이 미리보기가 전체화면으로 표시됩니다."
+   "오른쪽 상단에 표시될 미리보기의 종류입니다. RetroPad Y 버튼을 누르면 미리보기 종류를 전환할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,

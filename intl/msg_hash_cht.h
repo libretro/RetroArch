@@ -10169,16 +10169,8 @@ MSG_HASH(
    "顯示預覽縮圖"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "開啟時列表項目顯示預覽縮圖, [開始鍵]縮放預覽縮圖, [Y鍵]切換縮圖類型。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
    "頂部預覽縮圖"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "設定列表右上角顯示的預覽縮圖類型。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,

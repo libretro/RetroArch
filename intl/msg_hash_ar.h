@@ -5889,16 +5889,8 @@ MSG_HASH(
    "إظهار الصور المصغرة لقائمة التشغيل"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "تمكين عرض الصور المصغرة المضمنة عند عرض قوائم التشغيل. عند التعطيل، قد يظل 'الصورة المصغرة العليا' يتم تبديل ملء الشاشة بالضغط على RetroPad Y."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
    "صورة مصغرة أعلى"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "نوع الصورة المصغرة للعرض في أعلى يمين قوائم التشغيل. قد يتم تبديل هذه الصورة المصغرة ملء الشاشة عن طريق الضغط على RetroPad Y."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
