@@ -5850,6 +5850,10 @@ unsigned menu_event(
          menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_PAGE : MENU_SCROLL_START_LETTER;
          ret = MENU_ACTION_SCROLL_DOWN;
       }
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L3))
+         ret = MENU_ACTION_SCROLL_HOME;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R3))
+         ret = MENU_ACTION_SCROLL_END;
       else if (ok_trigger)
          ret = MENU_ACTION_OK;
       else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
@@ -7874,6 +7878,36 @@ int generic_menu_entry_action(
             }
          }
          break;
+      case MENU_ACTION_SCROLL_HOME:
+      {
+#ifdef HAVE_AUDIOMIXER
+         size_t selection_old = menu_st->selection_ptr;
+#endif
+         menu_st->selection_ptr = 0;
+         if (menu_st->driver_ctx->navigation_set)
+            menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
+
+#ifdef HAVE_AUDIOMIXER
+         if (menu_st->selection_ptr != selection_old)
+            audio_driver_mixer_play_scroll_sound(true);
+#endif
+         break;
+      }
+      case MENU_ACTION_SCROLL_END:
+      {
+#ifdef HAVE_AUDIOMIXER
+         size_t selection_old = menu_st->selection_ptr;
+#endif
+         menu_st->selection_ptr = (menu_entries_get_size()) ? menu_entries_get_size() - 1 : 0;
+         if (menu_st->driver_ctx->navigation_set)
+            menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
+
+#ifdef HAVE_AUDIOMIXER
+         if (menu_st->selection_ptr != selection_old)
+            audio_driver_mixer_play_scroll_sound(false);
+#endif
+         break;
+      }
       case MENU_ACTION_CANCEL:
          if (cbs && cbs->action_cancel)
             ret = cbs->action_cancel(entry->path,
