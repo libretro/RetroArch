@@ -898,6 +898,26 @@ finish:
  */
 static void translation_response_image_hndl(retro_task_t *task)
 {
+   /* 
+    * TODO/FIXME: Moved processing to the callback to fix an issue with
+    * texture loading off the main thread in OpenGL. I'm leaving the original
+    * structure here so we can move back to the handler if it becomes possible
+    * in the future.
+    */
+   task_set_finished(task, true);
+}
+
+/**
+ * Callback invoked once the image data received from the server has been
+ * processed and eventually displayed. This is necessary to ensure that the
+ * next automatic request will be invoked once the task is finished.
+ */
+static void translation_response_image_cb(
+      retro_task_t *task, void *task_data, void *user_data, const char *error)
+{
+   settings_t* settings          = config_get_ptr();
+   access_state_t *access_st     = access_state_get_ptr();
+   
    enum image_type_enum image_type;
    access_response_t *response      = (access_response_t*)task->user_data;
    video_driver_state_t *video_st   = video_state_get_ptr();
@@ -933,22 +953,8 @@ static void translation_response_image_hndl(retro_task_t *task)
             response->image, response->image_size, &image_type);
    
 finish:
-   task_set_finished(task, true);
-   
    free(response->image);
    free(response);
-}
-
-/**
- * Callback invoked once the image data received from the server has been
- * processed and eventually displayed. This is necessary to ensure that the
- * next automatic request will be invoked once the task is finished.
- */
-static void translation_response_image_cb(
-      retro_task_t *task, void *task_data, void *user_data, const char *error)
-{
-   settings_t* settings          = config_get_ptr();
-   access_state_t *access_st     = access_state_get_ptr();
 
    if (access_st->ai_service_auto != 0)
       call_auto_translate_task(settings);
