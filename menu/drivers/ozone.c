@@ -8716,8 +8716,11 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
-   gfx_display_set_width(width);
-   gfx_display_set_height(height);
+   /* TODO/FIXME - we don't use framebuffer at all
+    * for Ozone, we should refactor this dependency
+    * away. */
+   p_disp->framebuf_width  = width;
+   p_disp->framebuf_height = height;
 
    gfx_display_init_white_texture();
 

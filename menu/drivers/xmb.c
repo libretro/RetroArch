@@ -6664,6 +6664,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb_handle_t *xmb          = NULL;
    settings_t *settings       = config_get_ptr();
    gfx_animation_t *p_anim    = anim_get_ptr();
+   gfx_display_t *p_disp      = disp_get_ptr();
    menu_handle_t *menu        = (menu_handle_t*)calloc(1, sizeof(*menu));
    if (!menu)
       return NULL;
@@ -6740,9 +6741,8 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    /* TODO/FIXME - we don't use framebuffer at all
     * for XMB, we should refactor this dependency
     * away. */
-
-   gfx_display_set_width(width);
-   gfx_display_set_height(height);
+   p_disp->framebuf_width  = width;
+   p_disp->framebuf_height = height;
 
    gfx_display_init_white_texture();
 

@@ -241,12 +241,6 @@ void gfx_display_scissor_begin(
 
 void gfx_display_font_free(font_data_t *font);
 
-void gfx_display_set_width(unsigned width);
-void gfx_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
-      size_t *fb_pitch);
-void gfx_display_set_height(unsigned height);
-void gfx_display_set_framebuffer_pitch(size_t pitch);
-
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
 
