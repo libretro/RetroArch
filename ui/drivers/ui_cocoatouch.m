@@ -42,9 +42,7 @@
 #import <AVFoundation/AVFoundation.h>
 
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
-#if TARGET_OS_IOS
 #import "JITSupport.h"
-#endif
 id<ApplePlatform> apple_platform;
 #else
 static id apple_platform;
@@ -436,9 +434,7 @@ enum
    [self refreshSystemConfig];
    [self showGameView];
 
-#if TARGET_OS_IOS
    jb_start_altkit();
-#endif
 
    rarch_main(argc, argv, NULL);
 
