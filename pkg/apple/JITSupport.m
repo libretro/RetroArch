@@ -89,6 +89,10 @@ bool jb_enable_ptrace_hack(void) {
 
 void jb_start_altkit(void) {
 #if HAVE_ALTKIT
+   // asking AltKit/AltServer to debug us when we're already debugged is bad, very bad
+   if (jb_has_debugger_attached())
+      return;
+
    [[ALTServerManager sharedManager] autoconnectWithCompletionHandler:^(ALTServerConnection *connection, NSError *error) {
       if (error)
          return;
