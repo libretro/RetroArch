@@ -1515,10 +1515,6 @@ MSG_HASH(
    "دورة من خلال هذه الخيارات لضبط إعدادات الجزء لتغيير حجم الصورة."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "إستخدام قائمةٍ عالية الدقة"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "تقوم بالتبديل إلى نموذج عالي الدقة للإستخدام مع قوائم عالية الدقة عند عدم تحميل أي محتوى."
    )

@@ -899,8 +899,16 @@ MSG_HASH(
    "Гук"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   "Характарыстыкі"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
    "Сховішча"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "Сістэма"
    )
 
 #ifdef HAVE_MIST

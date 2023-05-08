@@ -6069,7 +6069,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "Beim Wechseln zu einem anderen Tab die Position des Cursors im Menü merken."
+   "Vorherige Cursorposition in Tabs merken. RGUI hat keine Tabs, aber Wiedergabelisten und Einstellungen verhalten sich als solche."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -9791,6 +9791,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
    "Wiedergabelisten-Vorschaubilder anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
+   "Aktiviert die Anzeige von herunterskalierten Vorschaubildern während dem Betrachten von Wiedergabelisten. Umschaltbar mit RetroPad Select. Wenn deaktiviert, können Vorschaubilder immer noch mit RetroPad Start zum Vollbild gewechselt werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,

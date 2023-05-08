@@ -6185,7 +6185,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "Farklı bir sekmeye geçerken menüdeki imlecin konumunu hatırlayın."
+   "Sekmelerdeki önceki imleç konumunu hatırla. RGUI üstünde sekmeler yoktur, ancak Oynatma Listeleri ve Ayarlar bu şekilde davranır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,

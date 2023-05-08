@@ -1611,10 +1611,6 @@ MSG_HASH(
    "これらのオプションを循環させて, ポーチの設定を調整し, 画像サイズを変更します."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "高解像度メニューを使用"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "コンテンツが読み込まれていない場合は、高解像度メニューで使用するための高解像度モデルに切り替えます。"
    )

@@ -1519,10 +1519,6 @@ MSG_HASH(
    "Bla gjennom disse valgene for å justere \"porch\" innstillingene for å endre bildestørrelsen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Bruk høyoppløsings meny"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Bytt til modeline med høy oppløsning for bruk med høyoppløselige menyer når ikke noe innhold er lastet inn."
    )

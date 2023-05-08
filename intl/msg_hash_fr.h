@@ -1883,10 +1883,6 @@ MSG_HASH(
    "Parcourez ces options pour ajuster les paramètres d'égalisation du balayage afin de modifier la taille de l'image."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Utiliser le menu haute résolution"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Passer à une \"modeline\" haute résolution pour utiliser des menus en haute résolution quand aucun contenu n'est chargé."
    )
@@ -6150,10 +6146,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
    "Se rappeler de la sélection lors du changement d'onglets"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "Se souvenir de la position du curseur dans le menu lors du passage à un autre onglet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
