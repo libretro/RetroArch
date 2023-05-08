@@ -6157,37 +6157,39 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          unsigned i;
          unsigned ids[][2] =
          {
-            {RETROK_SPACE,     RETRO_DEVICE_ID_JOYPAD_START   },
-            {RETROK_SLASH,     RETRO_DEVICE_ID_JOYPAD_X       },
-            {RETROK_RSHIFT,    RETRO_DEVICE_ID_JOYPAD_SELECT  },
-            {RETROK_RIGHT,     RETRO_DEVICE_ID_JOYPAD_RIGHT   },
-            {RETROK_LEFT,      RETRO_DEVICE_ID_JOYPAD_LEFT    },
-            {RETROK_DOWN,      RETRO_DEVICE_ID_JOYPAD_DOWN    },
-            {RETROK_UP,        RETRO_DEVICE_ID_JOYPAD_UP      },
-            {RETROK_PAGEUP,    RETRO_DEVICE_ID_JOYPAD_L       },
-            {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R       },
-            {0,                RARCH_QUIT_KEY                 },
-            {0,                RARCH_FULLSCREEN_TOGGLE_KEY    },
-            {RETROK_BACKSPACE, RETRO_DEVICE_ID_JOYPAD_B      },
             {RETROK_RETURN,    RETRO_DEVICE_ID_JOYPAD_A      },
+            {RETROK_BACKSPACE, RETRO_DEVICE_ID_JOYPAD_B      },
             {RETROK_DELETE,    RETRO_DEVICE_ID_JOYPAD_Y      },
+            {RETROK_SLASH,     RETRO_DEVICE_ID_JOYPAD_X      },
+            {RETROK_SPACE,     RETRO_DEVICE_ID_JOYPAD_START  },
+            {RETROK_RSHIFT,    RETRO_DEVICE_ID_JOYPAD_SELECT },
+            {RETROK_UP,        RETRO_DEVICE_ID_JOYPAD_UP     },
+            {RETROK_DOWN,      RETRO_DEVICE_ID_JOYPAD_DOWN   },
+            {RETROK_LEFT,      RETRO_DEVICE_ID_JOYPAD_LEFT   },
+            {RETROK_RIGHT,     RETRO_DEVICE_ID_JOYPAD_RIGHT  },
+            {RETROK_PAGEUP,    RETRO_DEVICE_ID_JOYPAD_L      },
+            {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R      },
+            {RETROK_HOME,      RETRO_DEVICE_ID_JOYPAD_L3     },
+            {RETROK_END,       RETRO_DEVICE_ID_JOYPAD_R3     },
+            {0,                RARCH_QUIT_KEY                }, /* 14 */
+            {0,                RARCH_FULLSCREEN_TOGGLE_KEY   },
             {0,                RARCH_UI_COMPANION_TOGGLE     },
             {0,                RARCH_FPS_TOGGLE              },
             {0,                RARCH_NETPLAY_HOST_TOGGLE     },
             {0,                RARCH_MENU_TOGGLE             },
          };
 
-         ids[9][0]  = input_config_binds[0][RARCH_QUIT_KEY].key;
-         ids[10][0] = input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key;
-         ids[14][0] = input_config_binds[0][RARCH_UI_COMPANION_TOGGLE].key;
-         ids[15][0] = input_config_binds[0][RARCH_FPS_TOGGLE].key;
-         ids[16][0] = input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE].key;
-         ids[17][0] = input_config_binds[0][RARCH_MENU_TOGGLE].key;
+         ids[14][0] = input_config_binds[0][RARCH_QUIT_KEY].key;
+         ids[15][0] = input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key;
+         ids[16][0] = input_config_binds[0][RARCH_UI_COMPANION_TOGGLE].key;
+         ids[17][0] = input_config_binds[0][RARCH_FPS_TOGGLE].key;
+         ids[18][0] = input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE].key;
+         ids[19][0] = input_config_binds[0][RARCH_MENU_TOGGLE].key;
 
          if (settings->bools.input_menu_swap_ok_cancel_buttons)
          {
-            ids[11][1] = RETRO_DEVICE_ID_JOYPAD_A;
-            ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
+            ids[0][1] = RETRO_DEVICE_ID_JOYPAD_B;
+            ids[1][1] = RETRO_DEVICE_ID_JOYPAD_A;
          }
 
          for (i = 0; i < ARRAY_SIZE(ids); i++)
