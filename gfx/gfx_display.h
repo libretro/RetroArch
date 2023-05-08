@@ -314,8 +314,6 @@ float gfx_display_get_adjusted_scale(
       gfx_display_t *p_disp,
       float base_scale, float scale_factor, unsigned width);
 
-float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height);
-
 float gfx_display_get_dpi_scale(
       gfx_display_t *p_disp,
       void *settings_data,

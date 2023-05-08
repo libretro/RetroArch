@@ -180,7 +180,7 @@ static bool gfx_display_check_compatibility(
    return false;
 }
 
-float gfx_display_get_dpi_scale_internal(
+static float gfx_display_get_dpi_scale_internal(
       unsigned width, unsigned height)
 {
    float dpi;
