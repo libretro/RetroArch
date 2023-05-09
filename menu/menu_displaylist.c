@@ -2182,6 +2182,7 @@ static int menu_displaylist_parse_playlist(file_list_t *info_list,
    char label_spacer[PL_LABEL_SPACER_MAXLEN];
    size_t           list_size        = playlist_size(playlist);
    bool show_inline_core_name        = false;
+   struct menu_state *menu_st        = menu_state_get_ptr();
    const char *menu_driver           = menu_driver_ident();
    menu_search_terms_t *search_terms = menu_entries_search_get_terms();
    unsigned pl_show_inline_core_name = settings->uints.playlist_show_inline_core_name;
@@ -2211,32 +2212,37 @@ static int menu_displaylist_parse_playlist(file_list_t *info_list,
          strlcpy(label_spacer, PL_LABEL_SPACER_DEFAULT, sizeof(label_spacer));
    }
 
-   /* Inform menu driver of current system name
-    * > Note: history, favorites and images_history
-    *   require special treatment here, since info_path
-    *   is nonsensical in these cases (and we *do* need
-    *   to call set_thumbnail_system() in these cases,
-    *   since all three playlist types have thumbnail
-    *   support)
-    * EDIT: For correct operation of the quick menu
-    * 'download thumbnails' option, we must also extend
-    * this to music_history and video_history */
-   if (
+   if (menu_st->driver_ctx && menu_st->driver_ctx->set_thumbnail_system)
+   {
+      /* Inform menu driver of current system name
+       * > Note: history, favorites and images_history
+       *   require special treatment here, since info_path
+       *   is nonsensical in these cases (and we *do* need
+       *   to call set_thumbnail_system() in these cases,
+       *   since all three playlist types have thumbnail
+       *   support)
+       * EDIT: For correct operation of the quick menu
+       * 'download thumbnails' option, we must also extend
+       * this to music_history and video_history */
+      if (
             string_is_equal(path_playlist, "history")
-         || string_is_equal(path_playlist, "favorites")
-         || string_ends_with_size(path_playlist, "_history",
-            strlen(path_playlist), STRLEN_CONST("_history")))
-   {
-      char system_name[15];
-      strlcpy(system_name, path_playlist, sizeof(system_name));
-      menu_driver_set_thumbnail_system(system_name, sizeof(system_name));
-   }
-   else if (!string_is_empty(info_path))
-   {
-      char lpl_basename[256];
-      fill_pathname_base(lpl_basename, info_path, sizeof(lpl_basename));
-      path_remove_extension(lpl_basename);
-      menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
+            || string_is_equal(path_playlist, "favorites")
+            || string_ends_with_size(path_playlist, "_history",
+               strlen(path_playlist), STRLEN_CONST("_history")))
+      {
+         char system_name[15];
+         strlcpy(system_name, path_playlist, sizeof(system_name));
+         menu_st->driver_ctx->set_thumbnail_system(
+               menu_st->userdata, system_name, sizeof(system_name));
+      }
+      else if (!string_is_empty(info_path))
+      {
+         char lpl_basename[256];
+         fill_pathname_base(lpl_basename, info_path, sizeof(lpl_basename));
+         path_remove_extension(lpl_basename);
+         menu_st->driver_ctx->set_thumbnail_system(
+               menu_st->userdata, lpl_basename, sizeof(lpl_basename));
+      }
    }
 
    /* Preallocate the file list */
@@ -2483,6 +2489,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    playlist_config_t playlist_config;
    playlist_t *playlist                = NULL;
    database_info_list_t *db_info       = NULL;
+   struct menu_state *menu_st          = menu_state_get_ptr();
    bool show_advanced_settings         = settings->bools.menu_show_advanced_settings;
    const char *dir_playlist            = settings->paths.directory_playlist;
 
@@ -2505,7 +2512,10 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
          sizeof(path_base));
    path_remove_extension(path_base);
 
-   menu_driver_set_thumbnail_system(path_base, sizeof(path_base));
+   if (     menu_st->driver_ctx
+         && menu_st->driver_ctx->set_thumbnail_system)
+      menu_st->driver_ctx->set_thumbnail_system(
+            menu_st->userdata, path_base, sizeof(path_base));
 
    strlcat(path_base, ".lpl", sizeof(path_base));
 
@@ -3348,6 +3358,7 @@ static int menu_displaylist_parse_horizontal_list(
       menu_displaylist_ctl(DISPLAYLIST_EXPLORE, info, settings);
    else
    {
+      struct menu_state *menu_st   = menu_state_get_ptr();
       playlist_t *playlist         = NULL;
       if (!string_is_empty(item->path))
       {
@@ -3366,7 +3377,10 @@ static int menu_displaylist_parse_horizontal_list(
           * is loaded/cached */
          fill_pathname_base(lpl_basename, item->path, sizeof(lpl_basename));
          path_remove_extension(lpl_basename);
-         menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
+         if (     menu_st->driver_ctx
+               && menu_st->driver_ctx->set_thumbnail_system)
+            menu_st->driver_ctx->set_thumbnail_system(
+                  menu_st->userdata, lpl_basename, sizeof(lpl_basename));
       }
 
       if ((playlist = playlist_get_cached()))
@@ -3832,9 +3846,13 @@ static int menu_displaylist_parse_horizontal_content_actions(
             case PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV:
                {
                   char system[PATH_MAX_LENGTH];
+                  struct menu_state *menu_st  = menu_state_get_ptr();
                   system[0] = '\0';
 
-                  menu_driver_get_thumbnail_system(system, sizeof(system));
+                  if (     menu_st->driver_ctx
+                        && menu_st->driver_ctx->get_thumbnail_system)
+                     menu_st->driver_ctx->get_thumbnail_system(
+                           menu_st->userdata, system, sizeof(system));
 
                   if (!string_is_empty(system))
                      remove_entry_enabled =
@@ -3905,12 +3923,15 @@ static int menu_displaylist_parse_horizontal_content_actions(
             if (download_enabled)
             {
                char system[PATH_MAX_LENGTH];
-
+               struct menu_state *menu_st  = menu_state_get_ptr();
                system[0] = '\0';
 
                /* Only show 'Download Thumbnails' on supported playlists */
                download_enabled = false;
-               menu_driver_get_thumbnail_system(system, sizeof(system));
+               if (     menu_st->driver_ctx
+                     && menu_st->driver_ctx->get_thumbnail_system)
+                  menu_st->driver_ctx->get_thumbnail_system(
+                        menu_st->userdata, system, sizeof(system));
 
                if (!string_is_empty(system))
                   download_enabled = !string_ends_with_size(
@@ -8753,14 +8774,16 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
          {
-            bool kiosk_mode_enable                                  = settings->bools.kiosk_mode_enable;
+            bool kiosk_mode_enable   = settings->bools.kiosk_mode_enable;
 #if defined(HAVE_QT) || defined(HAVE_COCOA)
-            bool desktop_menu_enable                                = settings->bools.desktop_menu_enable;
+            bool desktop_menu_enable = settings->bools.desktop_menu_enable;
 #endif
-            bool menu_screensaver_supported                         = menu_driver_screensaver_supported();
+            struct menu_state    *menu_st   = menu_state_get_ptr();
+            bool menu_screensaver_supported = ((menu_st->flags & MENU_ST_FLAG_SCREENSAVER_SUPPORTED) > 0);
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
             enum menu_screensaver_effect menu_screensaver_animation =
-                  (enum menu_screensaver_effect)settings->uints.menu_screensaver_animation;
+                  (enum menu_screensaver_effect)
+                  settings->uints.menu_screensaver_animation;
 #endif
 
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -11110,15 +11133,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info,
       settings_t *settings)
 {
-   menu_ctx_displaylist_t disp_list;
+   struct menu_state   *menu_st  = menu_state_get_ptr();
    static bool core_selected     = false;
+   bool push_list                = (menu_st->driver_ctx->list_push
+         && menu_st->driver_ctx->list_push(menu_st->driver_data,
+            menu_st->userdata, info, type) == 0);
 
-   disp_list.info                = info;
-   disp_list.type                = type;
-
-   if (!menu_driver_push_list(&disp_list))
+   if (!push_list)
    {
-      menu_handle_t *menu        = menu_state_get_ptr()->driver_data;
+      menu_handle_t *menu        = menu_st->driver_data;
       bool load_content          = true;
       bool use_filebrowser       = false;
       unsigned count             = 0;

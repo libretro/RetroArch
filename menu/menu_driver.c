@@ -4130,12 +4130,6 @@ int menu_driver_deferred_push_content_list(file_list_t *list)
    return 0;
 }
 
-bool menu_driver_screensaver_supported(void)
-{
-   struct menu_state    *menu_st  = &menu_driver_state;
-   return ((menu_st->flags & MENU_ST_FLAG_SCREENSAVER_SUPPORTED) > 0);
-}
-
 retro_time_t menu_driver_get_current_time(void)
 {
    struct menu_state    *menu_st  = &menu_driver_state;
@@ -4208,39 +4202,6 @@ static void menu_input_search_cb(void *userdata, const char *str)
 
 end:
    menu_input_dialog_end();
-}
-
-const char *menu_driver_get_last_start_directory(void)
-{
-   menu_handle_t *menu           = menu_driver_state.driver_data;
-   settings_t *settings          = config_get_ptr();
-   bool use_last                 = settings->bools.use_last_start_directory;
-   const char *default_directory = settings->paths.directory_menu_content;
-
-   /* Return default directory if there is no
-    * last directory or it's invalid */
-   if (   !menu
-       || !use_last
-       || string_is_empty(menu->last_start_content.directory)
-       || !path_is_directory(menu->last_start_content.directory))
-      return default_directory;
-
-   return menu->last_start_content.directory;
-}
-
-const char *menu_driver_get_last_start_file_name(void)
-{
-   menu_handle_t *menu         = menu_driver_state.driver_data;
-   settings_t *settings        = config_get_ptr();
-   bool use_last               = settings->bools.use_last_start_directory;
-
-   /* Return NULL if there is no last 'file name' */
-   if (!menu ||
-       !use_last ||
-       string_is_empty(menu->last_start_content.file_name))
-      return NULL;
-
-   return menu->last_start_content.file_name;
 }
 
 void menu_driver_set_last_start_content(const char *start_content_path)
@@ -4566,7 +4527,7 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          {
             size_t *idx = (size_t*)data;
             if (!idx)
-               return 0;
+               return false;
 
             *idx = menu_st->entries.begin;
          }
@@ -4674,45 +4635,6 @@ bool menu_driver_list_cache(menu_ctx_list_t *list)
    menu_st->driver_ctx->list_cache(menu_st->userdata,
          list->type, list->action);
    return true;
-}
-
-bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list)
-{
-   struct menu_state       *menu_st  = &menu_driver_state;
-   if (menu_st->driver_ctx->list_push)
-      if (menu_st->driver_ctx->list_push(
-               menu_st->driver_data,
-               menu_st->userdata,
-               disp_list->info, disp_list->type) == 0)
-         return true;
-   return false;
-}
-
-void menu_driver_set_thumbnail_system(char *s, size_t len)
-{
-   struct menu_state       *menu_st  = &menu_driver_state;
-   if (     menu_st->driver_ctx
-         && menu_st->driver_ctx->set_thumbnail_system)
-      menu_st->driver_ctx->set_thumbnail_system(
-            menu_st->userdata, s, len);
-}
-
-void menu_driver_get_thumbnail_system(char *s, size_t len)
-{
-   struct menu_state       *menu_st  = &menu_driver_state;
-   if (     menu_st->driver_ctx
-         && menu_st->driver_ctx->get_thumbnail_system)
-      menu_st->driver_ctx->get_thumbnail_system(
-            menu_st->userdata, s, len);
-}
-
-void menu_driver_set_thumbnail_content(char *s, size_t len)
-{
-   struct menu_state       *menu_st  = &menu_driver_state;
-   if (     menu_st->driver_ctx
-         && menu_st->driver_ctx->set_thumbnail_content)
-      menu_st->driver_ctx->set_thumbnail_content(
-            menu_st->userdata, s);
 }
 
 /* Teardown function for the menu driver. */
@@ -4954,12 +4876,11 @@ void menu_entries_get_core_title(char *s, size_t len)
 }
 
 static bool menu_driver_init_internal(
+      struct menu_state *menu_st,
       gfx_display_t *p_disp,
       settings_t *settings,
       bool video_is_threaded)
 {
-   struct menu_state *menu_st  = &menu_driver_state;;
-
    if (menu_st->driver_ctx)
    {
       const char *ident = menu_st->driver_ctx->ident;
@@ -4968,9 +4889,9 @@ static bool menu_driver_init_internal(
        * parameters (and some menu drivers fetch the
        * current pixel/dpi scale during 'menu_driver_ctx->init()') */
       if (ident)
-         p_disp->menu_driver_id                  = menu_driver_set_id(ident);
+         p_disp->menu_driver_id             = menu_driver_set_id(ident);
       else
-         p_disp->menu_driver_id                  = MENU_DRIVER_ID_UNKNOWN;
+         p_disp->menu_driver_id             = MENU_DRIVER_ID_UNKNOWN;
 
       if (menu_st->driver_ctx->init)
       {
@@ -5027,10 +4948,9 @@ bool menu_driver_init(bool video_is_threaded)
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
    command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
 
-   if (  menu_st->driver_data ||
-         menu_driver_init_internal(
-            p_disp,
-            settings,
+   if (     menu_st->driver_data
+         || menu_driver_init_internal(
+            menu_st, p_disp, settings,
             video_is_threaded))
    {
       if (menu_st->driver_ctx && menu_st->driver_ctx->context_reset)
@@ -5256,7 +5176,7 @@ static bool menu_input_key_bind_iterate(
       /* Inhibits input for 2 frames
        * > Required, since input is ignored for 1 frame
        *   after certain events - e.g. closing the OSK */
-      menu_st->input_driver_flushing_input = 2;
+      menu_st->input_driver_flushing_input  = 2;
 
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)

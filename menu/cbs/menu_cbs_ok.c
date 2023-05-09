@@ -570,6 +570,40 @@ static void action_ok_get_file_browser_start_path(
       menu_driver_set_pending_selection(pending_selection);
 }
 
+static const char *menu_driver_get_last_start_file_name(void)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   menu_handle_t *menu         = menu_st->driver_data;
+   settings_t *settings        = config_get_ptr();
+   bool use_last               = settings->bools.use_last_start_directory;
+   /* Return NULL if there is no last 'file name' */
+   if (   !menu 
+       || !use_last
+       || string_is_empty(menu->last_start_content.file_name))
+      return NULL;
+   return menu->last_start_content.file_name;
+}
+
+static const char *menu_driver_get_last_start_directory(void)
+{
+   struct menu_state *menu_st    = menu_state_get_ptr();
+   menu_handle_t *menu           = menu_st->driver_data;
+   settings_t *settings          = config_get_ptr();
+   bool use_last                 = settings->bools.use_last_start_directory;
+   const char *default_directory = settings->paths.directory_menu_content;
+
+   /* Return default directory if there is no
+    * last directory or it's invalid */
+   if (   !menu
+       || !use_last
+       || string_is_empty(menu->last_start_content.directory)
+       || !path_is_directory(menu->last_start_content.directory))
+      return default_directory;
+
+   return menu->last_start_content.directory;
+}
+
+
 int generic_action_ok_displaylist_push(const char *path,
       const char *new_path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -588,7 +622,7 @@ int generic_action_ok_displaylist_push(const char *path,
    menu_handle_t *menu                     = menu_st->driver_data;
    menu_list_t *menu_list                  = menu_st->entries.list;
    settings_t            *settings         = config_get_ptr();
-   const char *menu_ident                  = menu_driver_ident();
+   const char *menu_ident                  = (menu_st->driver_ctx && menu_st->driver_ctx->ident) ? menu_st->driver_ctx->ident : NULL;
    file_list_t           *menu_stack       = MENU_LIST_GET(menu_list, 0);
 #ifdef HAVE_AUDIOMIXER
    bool audio_enable_menu                  = settings->bools.audio_enable_menu;
@@ -1099,9 +1133,9 @@ int generic_action_ok_displaylist_push(const char *path,
              settings->bools.use_last_start_directory)
          {
             info_path       = menu_driver_get_last_start_directory();
-            menu_driver_set_pending_selection(menu_driver_get_last_start_file_name());
+            menu_driver_set_pending_selection(
+                  menu_driver_get_last_start_file_name());
          }
-
          break;
       case ACTION_OK_DL_SCAN_DIR_LIST:
          filebrowser_set_type(FILEBROWSER_SCAN_DIR);
@@ -1416,6 +1450,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
          {
             char lpl_basename[PATH_MAX_LENGTH];
+            struct menu_state *menu_st = menu_state_get_ptr(); 
             filebrowser_clear_type();
             fill_pathname_join_special(tmp,
                   settings->paths.path_content_database,
@@ -1423,7 +1458,10 @@ int generic_action_ok_displaylist_push(const char *path,
 
             fill_pathname_base(lpl_basename, path, sizeof(lpl_basename));
             path_remove_extension(lpl_basename);
-            menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
+            if (     menu_st->driver_ctx
+                  && menu_st->driver_ctx->set_thumbnail_system)
+               menu_st->driver_ctx->set_thumbnail_system(
+                     menu_st->userdata, lpl_basename, sizeof(lpl_basename));
 
             info.directory_ptr = idx;
             info_path          = tmp;
@@ -7857,18 +7895,19 @@ static int action_ok_pl_entry_content_thumbnails(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char system[PATH_MAX_LENGTH];
-   playlist_t *playlist = playlist_get_cached();
-   menu_handle_t *menu  = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   playlist_t *playlist        = playlist_get_cached();
+   menu_handle_t *menu         = menu_st->driver_data;
 
    system[0] = '\0';
 
-   if (!playlist)
+   if (!playlist || !menu)
       return -1;
 
-   if (!menu)
-      return -1;
-
-   menu_driver_get_thumbnail_system(system, sizeof(system));
+   if (     menu_st->driver_ctx
+         && menu_st->driver_ctx->get_thumbnail_system)
+      menu_st->driver_ctx->get_thumbnail_system(
+            menu_st->userdata, system, sizeof(system));
 
    task_push_pl_entry_thumbnail_download(system,
          playlist, menu->rpl_entry_selection_ptr,

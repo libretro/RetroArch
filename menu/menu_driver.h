@@ -631,23 +631,13 @@ int menu_driver_deferred_push_content_list(file_list_t *list);
 
 bool menu_driver_list_cache(menu_ctx_list_t *list);
 
-bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list);
-
 bool menu_driver_init(bool video_is_threaded);
-
-void menu_driver_set_thumbnail_system(char *s, size_t len);
-
-void menu_driver_get_thumbnail_system(char *s, size_t len);
-
-void menu_driver_set_thumbnail_content(char *s, size_t len);
 
 bool menu_driver_list_get_selection(menu_ctx_list_t *list);
 
 bool menu_driver_list_get_entry(menu_ctx_list_t *list);
 
 bool menu_driver_list_get_size(menu_ctx_list_t *list);
-
-bool menu_driver_screensaver_supported(void);
 
 retro_time_t menu_driver_get_current_time(void);
 
@@ -723,8 +713,6 @@ void menu_driver_get_last_shader_pass_path(
       const char **directory, const char **file_name);
 #endif
 
-const char *menu_driver_get_last_start_directory(void);
-const char *menu_driver_get_last_start_file_name(void);
 void menu_driver_set_last_start_content(const char *start_content_path);
 void menu_driver_set_pending_selection(const char *pending_selection);
 
