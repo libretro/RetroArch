@@ -2060,12 +2060,12 @@ static int generic_action_ok(const char *path,
    const char             *menu_path = NULL;
    const char            *menu_label = NULL;
    const char *flush_char            = NULL;
-   menu_handle_t *menu               = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st        = menu_state_get_ptr();
+   menu_handle_t *menu               = menu_st->driver_data;
+   settings_t *settings              = config_get_ptr();
 #ifdef HAVE_AUDIOMIXER
-   settings_t              *settings = config_get_ptr();
    bool audio_enable_menu            = settings->bools.audio_enable_menu;
    bool audio_enable_menu_ok         = settings->bools.audio_enable_menu_ok;
-
    if (audio_enable_menu && audio_enable_menu_ok)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 #endif
@@ -2088,8 +2088,6 @@ static int generic_action_ok(const char *path,
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST);
          if (filestream_exists(action_path))
          {
-            settings_t            *settings = config_get_ptr();
-
             configuration_set_string(settings,
                   settings->paths.path_menu_wallpaper,
                   action_path);
@@ -2125,7 +2123,6 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_CONFIG_FILE:
 #ifdef HAVE_CONFIGFILE
          {
-            settings_t            *settings = config_get_ptr();
             bool config_save_on_exit        = settings->bools.config_save_on_exit;
             flush_type                      = MENU_SETTINGS;
 
@@ -2186,27 +2183,19 @@ static int generic_action_ok(const char *path,
 #endif
          break;
       case ACTION_OK_LOAD_STREAM_CONFIGFILE:
+         flush_char       = msg_hash_to_str(flush_id);
+         if (settings)
          {
-            settings_t *settings = config_get_ptr();
-            flush_char       = msg_hash_to_str(flush_id);
-
-            if (settings)
-            {
-               configuration_set_string(settings,
-                     settings->paths.path_stream_config, action_path);
-            }
+            configuration_set_string(settings,
+                  settings->paths.path_stream_config, action_path);
          }
          break;
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
+         flush_char           = msg_hash_to_str(flush_id);
+         if (settings)
          {
-            settings_t *settings = config_get_ptr();
-            flush_char           = msg_hash_to_str(flush_id);
-
-            if (settings)
-            {
-               configuration_set_string(settings,
-                     settings->paths.path_record_config, action_path);
-            }
+            configuration_set_string(settings,
+                  settings->paths.path_record_config, action_path);
          }
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
@@ -2274,15 +2263,11 @@ static int generic_action_ok(const char *path,
 #endif
          break;
       case ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET:
+         flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST);
+         if (settings)
          {
-            settings_t *settings = config_get_ptr();
-            flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST);
-
-            if (settings)
-            {
-               configuration_set_string(settings,
-                     settings->paths.path_rgui_theme_preset, action_path);
-            }
+            configuration_set_string(settings,
+                  settings->paths.path_rgui_theme_preset, action_path);
          }
          break;
       case ACTION_OK_SUBSYSTEM_ADD:
@@ -2766,40 +2751,20 @@ error:
 static int action_ok_mixer_stream_action_play(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN;
+   unsigned stream_id           = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN;
    enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
-
-   switch (state)
-   {
-      case AUDIO_STREAM_STATE_STOPPED:
-         audio_driver_mixer_play_stream(stream_id);
-         break;
-      case AUDIO_STREAM_STATE_PLAYING:
-      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
-      case AUDIO_STREAM_STATE_NONE:
-         break;
-   }
+   if (state == AUDIO_STREAM_STATE_STOPPED)
+      audio_driver_mixer_play_stream(stream_id);
    return 0;
 }
 
 static int action_ok_mixer_stream_action_play_looped(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN;
+   unsigned stream_id           = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN;
    enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
-
-   switch (state)
-   {
-      case AUDIO_STREAM_STATE_STOPPED:
-         audio_driver_mixer_play_stream_looped(stream_id);
-         break;
-      case AUDIO_STREAM_STATE_PLAYING:
-      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
-      case AUDIO_STREAM_STATE_NONE:
-         break;
-   }
+   if (state == AUDIO_STREAM_STATE_STOPPED)
+      audio_driver_mixer_play_stream_looped(stream_id);
    return 0;
 }
 
@@ -2808,18 +2773,8 @@ static int action_ok_mixer_stream_action_play_sequential(const char *path,
 {
    unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN;
    enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
-
-   switch (state)
-   {
-      case AUDIO_STREAM_STATE_STOPPED:
-         audio_driver_mixer_play_stream_sequential(stream_id);
-         break;
-      case AUDIO_STREAM_STATE_PLAYING:
-      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
-      case AUDIO_STREAM_STATE_NONE:
-         break;
-   }
+   if (state == AUDIO_STREAM_STATE_STOPPED)
+      audio_driver_mixer_play_stream_sequential(stream_id);
    return 0;
 }
 
@@ -2828,7 +2783,6 @@ static int action_ok_mixer_stream_action_remove(const char *path,
 {
    unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN;
    enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
-
    switch (state)
    {
       case AUDIO_STREAM_STATE_PLAYING:
@@ -2846,7 +2800,7 @@ static int action_ok_mixer_stream_action_remove(const char *path,
 static int action_ok_mixer_stream_action_stop(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   unsigned stream_id = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN;
+   unsigned stream_id           = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN;
    enum audio_mixer_state state = audio_driver_mixer_get_stream_state(stream_id);
 
    switch (state)
@@ -3651,8 +3605,8 @@ static int generic_action_ok_remap_file_operation(const char *path,
    }
    else
    {
-      if (!string_is_empty(remap_file_path) &&
-          (filestream_delete(remap_file_path) == 0))
+      if (   !string_is_empty(remap_file_path)
+          && (filestream_delete(remap_file_path) == 0))
       {
          uint32_t flags = runloop_get_flags();
          switch (action_type)
@@ -3813,12 +3767,11 @@ static int action_ok_override_unload(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_CONFIGFILE
-   if (!config_unload_override())
-      return 0;
-   runloop_msg_queue_push(
-         msg_hash_to_str(MSG_OVERRIDES_UNLOADED_SUCCESSFULLY),
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   if (config_unload_override())
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_OVERRIDES_UNLOADED_SUCCESSFULLY),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #endif
    return 0;
 }
