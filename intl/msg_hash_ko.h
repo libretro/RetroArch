@@ -1923,6 +1923,10 @@ MSG_HASH(
    "이미지 크기를 변경하려면 옵션을 통해 포치 설정 값을 조정하십시오."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "고해상도 메뉴 사용"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "불러온 콘텐츠가 없을 때 고해상도 메뉴를 사용할 수 있도록 고해상도 모드라인으로 전환합니다."
    )
@@ -6218,6 +6222,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
    "탭 전환 시 선택된 항목 기억하기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
+   "탭 사이를 전환할 때 커서의 마지막 위치를 기억해둡니다. RGUI에는 탭은 없지만, 실행목록과 설정 메뉴가 탭인 것으로 간주됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,

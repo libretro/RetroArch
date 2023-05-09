@@ -1563,6 +1563,10 @@ MSG_HASH(
    "Cykla genom dessa alternativ för att justera porch-inställningarna för att ändra bildstorleken."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Använd högupplöst meny"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Växla till högupplöst läge för användning med högupplösta menyer när inget innehåll har laddats."
    )
