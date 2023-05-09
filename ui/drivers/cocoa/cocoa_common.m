@@ -97,8 +97,166 @@ void *glkitview_init(void);
     video_driver_display_userdata_set((uintptr_t)self);
 #endif
 
+#if TARGET_OS_TV
+   /* This causes all inputs to be handled by both mfi and uikit.
+    *
+    * For "extended gamepads" the only button we want to handle is 'cancel'
+    * (buttonB), and only when the cancel button wouldn't do anything.
+    */
+   self.controllerUserInteractionEnabled = YES;
+#endif
+
    return self;
 }
+
+#if TARGET_OS_TV
+- (bool)menuIsAtTop
+{
+    struct menu_state *menu_st = menu_state_get_ptr();
+    if (!(menu_st->flags & MENU_ST_FLAG_ALIVE)) // content
+        return false;
+    if (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY) // search
+        return false;
+    if (menu_st->selection_ptr != 0) // not the first item
+        return false;
+    if (menu_st->entries.list->menu_stack[0]->size != 1) // submenu
+        return false;
+    if (!string_is_equal(menu_st->entries.list->menu_stack[0]->list->label, // not on the main menu
+                         msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)))
+        return false;
+    return true;
+}
+
+- (bool)didMicroGamepadPress:(UIPressType)type
+{
+    if (type != UIPressTypeMenu &&
+        type != UIPressTypeSelect &&
+        type != UIPressTypePlayPause)
+        return false;
+
+    NSArray<GCController*>* controllers = [GCController controllers];
+    if ([controllers count] == 1)
+        return !controllers[0].extendedGamepad;
+
+    bool microPress = false;
+    bool extendedPress = false;
+    for (GCController *controller in [GCController controllers]) {
+        // the microGamepad does not always know if Menu has been pressed,
+        // so we have to check all the extended gamepads as well
+        if (controller.extendedGamepad)
+        {
+            if (type == UIPressTypeMenu)
+                extendedPress |= controller.extendedGamepad.buttonB.pressed;
+            else if (type == UIPressTypeSelect)
+                extendedPress |= controller.extendedGamepad.buttonA.pressed;
+            else if (type == UIPressTypePlayPause)
+                extendedPress |= controller.extendedGamepad.buttonX.pressed;
+        }
+        else
+        {
+            if (type == UIPressTypeSelect)
+                extendedPress |= controller.extendedGamepad.buttonA.pressed;
+            else if (type == UIPressTypePlayPause)
+                extendedPress |= controller.extendedGamepad.buttonX.pressed;
+            else if (@available(tvOS 13, *)) {
+                if (type == UIPressTypeMenu)
+                    extendedPress |= controller.microGamepad.buttonMenu.pressed ||
+                    controller.microGamepad.buttonMenu.isPressed;
+            }
+        }
+    }
+
+    return microPress || !extendedPress;
+}
+
+- (void)pressesBegan:(NSSet<UIPress *> *)presses
+           withEvent:(UIPressesEvent *)event
+{
+    for (UIPress *press in presses) {
+        switch (press.type)
+        {
+            case UIPressTypePlayPause:
+                if ([self didMicroGamepadPress:press.type])
+                    apple_direct_input_keyboard_event(true, RETROK_s, 's', 0, RETRO_DEVICE_KEYBOARD);
+                break;
+            case UIPressTypeSelect:
+                if ([self didMicroGamepadPress:press.type])
+                    apple_direct_input_keyboard_event(true, RETROK_z, 'z', 0, RETRO_DEVICE_KEYBOARD);
+                break;
+            case UIPressTypeMenu:
+                if ([self menuIsAtTop])
+                {
+                    // if we're at the top it doesn't matter who pressed it, we want to leave
+                    [super pressesBegan:presses withEvent:event];
+                }
+                else if ([self didMicroGamepadPress:press.type])
+                    apple_direct_input_keyboard_event(true, RETROK_x, 0, 0, RETRO_DEVICE_KEYBOARD);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+-(void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+    for (UIPress *press in presses) {
+        switch (press.type)
+        {
+            case UIPressTypePlayPause:
+                apple_direct_input_keyboard_event(false, RETROK_s, 's', 0, RETRO_DEVICE_KEYBOARD);
+                break;
+            case UIPressTypeSelect:
+                apple_direct_input_keyboard_event(false, RETROK_z, 'z', 0, RETRO_DEVICE_KEYBOARD);
+                break;
+            case UIPressTypeMenu:
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+                    apple_direct_input_keyboard_event(false, RETROK_x, 0, 0, RETRO_DEVICE_KEYBOARD);
+                });
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+-(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+}
+
+-(void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+}
+
+-(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+}
+
+-(void)touchesEstimatedPropertiesUpdated:(NSSet<UITouch *> *)touches
+{
+}
+
+-(void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+}
+
+-(void)handleSiriSwipe:(id)sender
+{
+   UISwipeGestureRecognizer *gestureRecognizer = (UISwipeGestureRecognizer*)sender;
+   unsigned code;
+   switch (gestureRecognizer.direction)
+   {
+      case UISwipeGestureRecognizerDirectionUp:    code = RETROK_UP;    break;
+      case UISwipeGestureRecognizerDirectionDown:  code = RETROK_DOWN;  break;
+      case UISwipeGestureRecognizerDirectionLeft:  code = RETROK_LEFT;  break;
+      case UISwipeGestureRecognizerDirectionRight: code = RETROK_RIGHT; break;
+   }
+   apple_direct_input_keyboard_event(true,  code, 0, 0, RETRO_DEVICE_KEYBOARD);
+   dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+      apple_direct_input_keyboard_event(false, code, 0, 0, RETRO_DEVICE_KEYBOARD);
+   });
+}
+#endif
 
 #if defined(OSX)
 - (void)setFrame:(NSRect)frameRect
@@ -314,6 +472,23 @@ void *glkitview_init(void);
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
     [self setupHelperBar];
 #endif
+#elif TARGET_OS_TV
+    UISwipeGestureRecognizer *siriSwipeUp    = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];
+    siriSwipeUp.direction                    = UISwipeGestureRecognizerDirectionUp;
+    siriSwipeUp.delegate                     = self;
+    [self.view addGestureRecognizer:siriSwipeUp];
+    UISwipeGestureRecognizer *siriSwipeDown  = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];
+    siriSwipeDown.direction                  = UISwipeGestureRecognizerDirectionDown;
+    siriSwipeDown.delegate                   = self;
+    [self.view addGestureRecognizer:siriSwipeDown];
+    UISwipeGestureRecognizer *siriSwipeLeft  = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];
+    siriSwipeLeft.direction                  = UISwipeGestureRecognizerDirectionLeft;
+    siriSwipeLeft.delegate                   = self;
+    [self.view addGestureRecognizer:siriSwipeLeft];
+    UISwipeGestureRecognizer *siriSwipeRight = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];
+    siriSwipeRight.direction                 = UISwipeGestureRecognizerDirectionRight;
+    siriSwipeRight.delegate                  = self;
+    [self.view addGestureRecognizer:siriSwipeRight];
 #endif
 }
 

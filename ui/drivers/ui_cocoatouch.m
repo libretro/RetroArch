@@ -109,6 +109,7 @@ void get_ios_version(int *major, int *minor)
 /* Input helpers: This is kept here because it needs ObjC */
 static void handle_touch_event(NSArray* touches)
 {
+#if !TARGET_OS_TV
    unsigned i;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)
       input_state_get_ptr()->current_data;
@@ -129,6 +130,7 @@ static void handle_touch_event(NSArray* touches)
          apple->touches[apple->touch_count ++].screen_y = coord.y * scale;
       }
    }
+#endif
 }
 
 #ifndef HAVE_APPLE_STORE
