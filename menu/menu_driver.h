@@ -610,17 +610,6 @@ typedef struct menu_ctx_bind
    unsigned type;
 } menu_ctx_bind_t;
 
-/**
- * config_get_menu_driver_options:
- *
- * Get an enumerated list of all menu driver names,
- * separated by '|'.
- *
- * Returns: string listing of all menu driver names,
- * separated by '|'.
- **/
-const char* config_get_menu_driver_options(void);
-
 const char *menu_driver_ident(void);
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
@@ -713,7 +702,6 @@ void menu_driver_get_last_shader_pass_path(
       const char **directory, const char **file_name);
 #endif
 
-void menu_driver_set_last_start_content(const char *start_content_path);
 void menu_driver_set_pending_selection(const char *pending_selection);
 
 struct menu_state *menu_state_get_ptr(void);
@@ -738,17 +726,6 @@ void menu_entries_build_scroll_indices(
 void get_current_menu_value(struct menu_state *menu_st,
       char *s, size_t len);
 
-/**
- * config_get_menu_driver_options:
- *
- * Get an enumerated list of all menu driver names,
- * separated by '|'.
- *
- * Returns: string listing of all menu driver names,
- * separated by '|'.
- **/
-const char *config_get_menu_driver_options(void);
-
 /* Teardown function for the menu driver. */
 void menu_driver_destroy(
       struct menu_state *menu_st);
@@ -759,14 +736,6 @@ extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
 extern menu_ctx_driver_t menu_ctx_xmb;
 extern menu_ctx_driver_t menu_ctx_stripes;
-
-/* This callback gets triggered by the keyboard whenever
- * we press or release a keyboard key. When a keyboard
- * key is being pressed down, 'down' will be true. If it
- * is being released, 'down' will be false.
- */
-void menu_input_key_event(bool down, unsigned keycode,
-      uint32_t character, uint16_t mod);
 
 const menu_ctx_driver_t *menu_driver_find_driver(
       settings_t *settings,

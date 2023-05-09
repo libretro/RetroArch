@@ -1830,6 +1830,56 @@ void handle_dbscan_finished(retro_task_t *task,
       void *task_data, void *user_data, const char *err);
 #endif
 
+static void menu_driver_set_last_start_content(struct menu_state *menu_st, const char *start_content_path)
+{
+   char archive_path[PATH_MAX_LENGTH];
+   menu_handle_t *menu         = menu_st->driver_data;
+   settings_t *settings        = config_get_ptr();
+   bool use_last               = settings->bools.use_last_start_directory;
+   const char *archive_delim   = NULL;
+   const char *file_name       = NULL;
+
+   if (!menu)
+      return;
+
+   /* Reset existing cache */
+   menu->last_start_content.directory[0] = '\0';
+   menu->last_start_content.file_name[0] = '\0';
+
+   /* If 'use_last_start_directory' is disabled or
+    * path is empty, do nothing */
+   if (!use_last ||
+       string_is_empty(start_content_path))
+      return;
+
+   /* Cache directory */
+   fill_pathname_parent_dir(menu->last_start_content.directory,
+         start_content_path, sizeof(menu->last_start_content.directory));
+
+   /* Cache file name */
+   if ((archive_delim = path_get_archive_delim(start_content_path)))
+   {
+      /* If path references a file inside an
+       * archive, must extract the string segment
+       * before the archive delimiter (i.e. path of
+       * 'parent' archive file) */
+      size_t len      = (size_t)(1 + archive_delim - start_content_path);
+      if (len >= PATH_MAX_LENGTH)
+         len          = PATH_MAX_LENGTH;
+
+      strlcpy(archive_path, start_content_path, len * sizeof(char));
+
+      file_name       = path_basename(archive_path);
+   }
+   else
+      file_name       = path_basename_nocompression(start_content_path);
+
+   if (!string_is_empty(file_name))
+      strlcpy(menu->last_start_content.file_name, file_name,
+            sizeof(menu->last_start_content.file_name));
+}
+
+
 static int file_load_with_detect_core_wrapper(
       enum msg_hash_enums enum_label_idx,
       size_t idx, size_t entry_idx,
@@ -1837,7 +1887,8 @@ static int file_load_with_detect_core_wrapper(
       unsigned type, bool is_carchive)
 {
    int ret                             = 0;
-   menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   menu_handle_t *menu                 = menu_st->driver_data;
 
    if (!menu)
       return -1;
@@ -1906,7 +1957,7 @@ static int file_load_with_detect_core_wrapper(
                         NULL, NULL))
                   return -1;
 
-               menu_driver_set_last_start_content(def_info.s);
+               menu_driver_set_last_start_content(menu_st, def_info.s);
 
                ret = 0;
                break;
@@ -2295,6 +2346,7 @@ static int generic_action_ok(const char *path,
 static int default_action_ok_load_content_with_core_from_menu(const char *_path, unsigned _type)
 {
    content_ctx_info_t content_info;
+	struct menu_state *menu_st          = menu_state_get_ptr();
    content_info.argc                   = 0;
    content_info.argv                   = NULL;
    content_info.args                   = NULL;
@@ -2303,7 +2355,7 @@ static int default_action_ok_load_content_with_core_from_menu(const char *_path,
             _path, &content_info,
             (enum rarch_core_type)_type, NULL, NULL))
       return -1;
-   menu_driver_set_last_start_content(_path);
+   menu_driver_set_last_start_content(menu_st, _path);
    return 0;
 }
 
@@ -3952,7 +4004,8 @@ static int action_ok_load_core_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    content_ctx_info_t content_info;
-   menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   menu_handle_t *menu                 = menu_st->driver_data;
 
    content_info.argc                   = 0;
    content_info.argv                   = NULL;
@@ -3968,7 +4021,7 @@ static int action_ok_load_core_deferred(const char *path,
             CORE_TYPE_PLAIN,
             NULL, NULL))
       return -1;
-   menu_driver_set_last_start_content(path);
+   menu_driver_set_last_start_content(menu_st, path);
 
    return 0;
 }
@@ -4459,7 +4512,8 @@ static int action_ok_file_load_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    content_ctx_info_t content_info;
-   menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   menu_handle_t *menu                 = menu_st->driver_data;
 
    if (!menu)
       return -1;
@@ -4475,7 +4529,7 @@ static int action_ok_file_load_detect_core(const char *path,
             CORE_TYPE_PLAIN,
             NULL, NULL))
       return -1;
-   menu_driver_set_last_start_content(menu->detect_content_path);
+   menu_driver_set_last_start_content(menu_st, menu->detect_content_path);
 
    return 0;
 }
@@ -7156,7 +7210,7 @@ static int action_ok_load_archive_detect_core(const char *path,
                      NULL, NULL))
                ret = -1;
             else
-               menu_driver_set_last_start_content(def_info.s);
+               menu_driver_set_last_start_content(menu_st, def_info.s);
          }
          break;
       case 0:

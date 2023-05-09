@@ -3929,11 +3929,6 @@ static enum menu_driver_id_type menu_driver_set_id(
    return MENU_DRIVER_ID_UNKNOWN;
 }
 
-const char *config_get_menu_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_MENU_DRIVERS, NULL);
-}
-
 static bool menu_entries_search_push(const char *search_term)
 {
    size_t i;
@@ -4204,57 +4199,7 @@ end:
    menu_input_dialog_end();
 }
 
-void menu_driver_set_last_start_content(const char *start_content_path)
-{
-   char archive_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu         = menu_driver_state.driver_data;
-   settings_t *settings        = config_get_ptr();
-   bool use_last               = settings->bools.use_last_start_directory;
-   const char *archive_delim   = NULL;
-   const char *file_name       = NULL;
-
-   if (!menu)
-      return;
-
-   /* Reset existing cache */
-   menu->last_start_content.directory[0] = '\0';
-   menu->last_start_content.file_name[0] = '\0';
-
-   /* If 'use_last_start_directory' is disabled or
-    * path is empty, do nothing */
-   if (!use_last ||
-       string_is_empty(start_content_path))
-      return;
-
-   /* Cache directory */
-   fill_pathname_parent_dir(menu->last_start_content.directory,
-         start_content_path, sizeof(menu->last_start_content.directory));
-
-   /* Cache file name */
-   if ((archive_delim = path_get_archive_delim(start_content_path)))
-   {
-      /* If path references a file inside an
-       * archive, must extract the string segment
-       * before the archive delimiter (i.e. path of
-       * 'parent' archive file) */
-      size_t len      = (size_t)(1 + archive_delim - start_content_path);
-      if (len >= PATH_MAX_LENGTH)
-         len          = PATH_MAX_LENGTH;
-
-      strlcpy(archive_path, start_content_path, len * sizeof(char));
-
-      file_name       = path_basename(archive_path);
-   }
-   else
-      file_name       = path_basename_nocompression(start_content_path);
-
-   if (!string_is_empty(file_name))
-      strlcpy(menu->last_start_content.file_name, file_name,
-            sizeof(menu->last_start_content.file_name));
-}
-
-int menu_entry_action(
-      menu_entry_t *entry, size_t i, enum menu_action action)
+int menu_entry_action(menu_entry_t *entry, size_t i, enum menu_action action)
 {
    struct menu_state *menu_st     = &menu_driver_state;
    if (     menu_st->driver_ctx
@@ -4739,7 +4684,12 @@ const char *menu_input_dialog_get_buffer(void)
    return *menu_st->input_dialog_keyboard_buffer;
 }
 
-void menu_input_key_event(bool down, unsigned keycode,
+/* This callback gets triggered by the keyboard whenever
+ * we press or release a keyboard key. When a keyboard
+ * key is being pressed down, 'down' will be true. If it
+ * is being released, 'down' will be false.
+ */
+static void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
    struct menu_state *menu_st  = &menu_driver_state;

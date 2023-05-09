@@ -9255,6 +9255,21 @@ static int directory_action_start_generic(rarch_setting_t *setting)
    return 0;
 }
 
+/**
+ * config_get_menu_driver_options:
+ *
+ * Get an enumerated list of all menu driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all menu driver names,
+ * separated by '|'.
+ **/
+static const char *config_get_menu_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_MENU_DRIVERS, NULL);
+}
+
+
 static bool setting_append_list(
       settings_t *settings,
       global_t *global,
