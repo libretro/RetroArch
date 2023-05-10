@@ -658,8 +658,6 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
 void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
 {
    struct menu_state *menu_st  = &menu_driver_state;
-   if (!datetime)
-      return;
 
    /* Trigger an update, if required */
    if (menu_st->current_time_us - menu_st->datetime_last_time_us >=
@@ -1034,9 +1032,6 @@ void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
    int percent                    = 0;
    struct menu_state    *menu_st  = &menu_driver_state;
    enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
-
-   if (!powerstate)
-      return;
 
    /* Trigger an update, if required */
    if (menu_st->current_time_us - menu_st->powerstate_last_time_us >=
@@ -1690,15 +1685,15 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
       int rested_distance = abs(n->axes[a] -
             new_state->axis_state[p].rested_axes[a]);
 
-      if (abs(n->axes[a]) >= 20000 &&
-            locked_distance >= 20000 &&
-            rested_distance >= 20000)
+      if (     (abs(n->axes[a]) >= 20000)
+            && (locked_distance >= 20000)
+            && (rested_distance >= 20000))
       {
          /* Take care of case where axis rests on +/- 0x7fff
           * (e.g. 360 controller on Linux) */
-         output->joyaxis = n->axes[a] > 0
+         output->joyaxis = (n->axes[a] > 0)
             ? AXIS_POS(a) : AXIS_NEG(a);
-         output->joykey = NO_BTN;
+         output->joykey  = NO_BTN;
 
          /* Lock the current axis */
          new_state->axis_state[p].locked_axes[a] =
@@ -5752,12 +5747,13 @@ unsigned menu_event(
    return ret;
 }
 
-static int menu_input_pointer_post_iterate(
+static int menu_input_post_iterate(
       gfx_display_t *p_disp,
-      retro_time_t current_time,
-      menu_file_list_cbs_t *cbs,
-      menu_entry_t *entry, unsigned action)
+      struct menu_state *menu_st,
+      unsigned action,
+      retro_time_t current_time)
 {
+   menu_entry_t entry;
    static retro_time_t start_time                  = 0;
    static int16_t start_x                          = 0;
    static int16_t start_y                          = 0;
@@ -5778,12 +5774,22 @@ static int menu_input_pointer_post_iterate(
    bool osk_active                                 = menu_input_dialog_get_display_kb();
    bool messagebox_active                          = false;
    int ret                                         = 0;
-   struct menu_state *menu_st                      = &menu_driver_state;
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
    menu_input_t *menu_input                        = &menu_st->input_state;
    menu_handle_t *menu                             = menu_st->driver_data;
    video_driver_state_t *video_st                  = video_state_get_ptr();
    input_driver_state_t *input_st                  = input_state_get_ptr();
+   menu_list_t *menu_list                          = menu_st->entries.list;
+   file_list_t *selection_buf                      = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
+   size_t selection                                = menu_st->selection_ptr;
+   menu_file_list_cbs_t *cbs                       = selection_buf
+      ? (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
+      : NULL;
+
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                | MENU_ENTRY_FLAG_LABEL_ENABLED;
+   menu_entry_get(&entry, 0, selection, NULL, false);
 
    /* Check whether a message box is currently
     * being shown
@@ -5857,7 +5863,7 @@ static int menu_input_pointer_post_iterate(
                 * using a touchscreen... */
                point.ptr     = menu_input->ptr;
                point.cbs     = cbs;
-               point.entry   = entry;
+               point.entry   = &entry;
                point.action  = action;
                point.gesture = MENU_INPUT_GESTURE_NONE;
 
@@ -6087,7 +6093,7 @@ static int menu_input_pointer_post_iterate(
          point.y       = y;
          point.ptr     = menu_input->ptr;
          point.cbs     = cbs;
-         point.entry   = entry;
+         point.entry   = &entry;
          point.action  = action;
          point.gesture = MENU_INPUT_GESTURE_NONE;
 
@@ -6267,7 +6273,7 @@ static int menu_input_pointer_post_iterate(
       else
       {
          size_t selection = menu_st->selection_ptr;
-         ret = menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+         ret = menu_entry_action(&entry, selection, MENU_ACTION_CANCEL);
       }
    }
 
@@ -6290,7 +6296,7 @@ static int menu_input_pointer_post_iterate(
       {
          size_t selection = menu_st->selection_ptr;
          ret              = menu_entry_action(
-               entry, selection, MENU_ACTION_UP);
+               &entry, selection, MENU_ACTION_UP);
       }
 
       /* > Down */
@@ -6298,7 +6304,7 @@ static int menu_input_pointer_post_iterate(
       {
          size_t selection = menu_st->selection_ptr;
          ret              = menu_entry_action(
-               entry, selection, MENU_ACTION_DOWN);
+               &entry, selection, MENU_ACTION_DOWN);
       }
 
       /* Left/Right
@@ -6322,7 +6328,7 @@ static int menu_input_pointer_post_iterate(
             size_t selection      = menu_st->selection_ptr;
             last_left_action_time = current_time;
             ret                   = menu_entry_action(
-                  entry, selection, MENU_ACTION_LEFT);
+                  &entry, selection, MENU_ACTION_LEFT);
          }
       }
 
@@ -6337,7 +6343,7 @@ static int menu_input_pointer_post_iterate(
             size_t selection       = menu_st->selection_ptr;
             last_right_action_time = current_time;
             ret                    = menu_entry_action(
-                  entry, selection, MENU_ACTION_RIGHT);
+                  &entry, selection, MENU_ACTION_RIGHT);
          }
       }
    }
@@ -6348,31 +6354,6 @@ static int menu_input_pointer_post_iterate(
    last_right_pressed  = pointer_hw_state->right_pressed;
 
    return ret;
-}
-
-static int menu_input_post_iterate(
-      gfx_display_t *p_disp,
-      struct menu_state *menu_st,
-      unsigned action,
-      retro_time_t current_time)
-{
-   menu_entry_t entry;
-   menu_list_t *menu_list        = menu_st->entries.list;
-   file_list_t *selection_buf    = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
-   size_t selection              = menu_st->selection_ptr;
-   menu_file_list_cbs_t *cbs     = selection_buf ?
-      (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
-      : NULL;
-
-   MENU_ENTRY_INITIALIZE(entry);
-   /* Note: If menu_input_pointer_post_iterate() is
-    * modified, will have to verify that these
-    * parameters remain unused... */
-   entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
-                | MENU_ENTRY_FLAG_LABEL_ENABLED;
-   menu_entry_get(&entry, 0, selection, NULL, false);
-   return menu_input_pointer_post_iterate(p_disp,
-         current_time, cbs, &entry, action);
 }
 
 void menu_driver_toggle(
