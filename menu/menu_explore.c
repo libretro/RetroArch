@@ -1001,26 +1001,24 @@ static const char* explore_get_view_path(void)
    /* check if we are opening a saved view from the horizontal/tabs menu */
    if (cur->type == MENU_SETTING_HORIZONTAL_MENU)
    {
-      menu_ctx_list_t tabs, horizontal;
-      tabs.type = MENU_LIST_TABS;
-      if (menu_driver_list_get_selection(&tabs) && menu_driver_list_get_size(&tabs))
+      size_t selection, size;
+      selection = menu_driver_list_get_selection();
+      size      = menu_driver_list_get_size(MENU_LIST_TABS);
+      if (selection > 0 && size > 0)
       {
+         menu_ctx_list_t horizontal;
          horizontal.type = MENU_LIST_HORIZONTAL;
-         horizontal.idx = tabs.selection - (tabs.size + 1);
+         horizontal.idx  = selection - (size + 1);
+         /* Label contains the path and path contains the label */
          if (menu_driver_list_get_entry(&horizontal))
-         {
-            /* label contains the path and path contains the label */
             return ((struct item_file*)horizontal.entry)->label;
-         }
       }
    }
 
    /* check if we are opening a saved view via Content > Playlists */
    if (cur->type == MENU_EXPLORE_TAB && cur->path && !string_is_equal(cur->path,
                msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE)))
-   {
       return cur->path;
-   }
 
    return NULL;
 }

@@ -270,26 +270,23 @@ static int action_left_goto_tab(void)
 static int action_left_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
-   menu_ctx_list_t list_info;
    settings_t            *settings = config_get_ptr();
    bool menu_nav_wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
    const char *menu_ident          = menu_driver_ident();
+   size_t selection                = menu_driver_list_get_selection();
+   size_t size                     = menu_driver_list_get_size(MENU_LIST_PLAIN);
 
-   menu_driver_list_get_selection(&list_info);
-
-   list_info.type = MENU_LIST_PLAIN;
-
-   menu_driver_list_get_size(&list_info);
-
+#ifdef HAVE_XMB
    /* Tab switching functionality only applies
     * to XMB */
-   if (  (list_info.size == 1)
+   if (  (size == 1)
        && string_is_equal(menu_ident, "xmb"))
    {
-      if ((list_info.selection != 0) || menu_nav_wraparound_enable)
+      if ((selection != 0) || menu_nav_wraparound_enable)
          return action_left_goto_tab();
    }
    else
+#endif
       action_left_scroll(0, "", false);
 
    return 0;
@@ -358,11 +355,12 @@ static int action_left_shader_filter_default(unsigned type, const char *label,
 static int action_left_cheat_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh      = false;
-   unsigned new_size = 0;
+   bool refresh        = false;
+   unsigned new_size   = 0;
+   unsigned cheat_size = cheat_manager_get_size();
 
-   if (cheat_manager_get_size())
-      new_size = cheat_manager_get_size() - 1;
+   if (cheat_size)
+      new_size         = cheat_size - 1;
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);

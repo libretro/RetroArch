@@ -82,8 +82,6 @@ typedef struct menu_ctx_list
    file_list_t *list;
    void        *entry;
    size_t idx;
-   size_t selection;
-   size_t size;
    size_t list_size;
    unsigned entry_type;
    unsigned action;

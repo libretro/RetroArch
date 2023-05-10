@@ -303,36 +303,27 @@ static int action_right_goto_tab(void)
 static int action_right_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
-   menu_ctx_list_t list_info;
    settings_t            *settings = config_get_ptr();
    bool menu_nav_wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
    const char *menu_ident          = menu_driver_ident();
+   size_t selection                = menu_driver_list_get_selection();
+   size_t size                     = menu_driver_list_get_size(MENU_LIST_PLAIN);
 
-   menu_driver_list_get_selection(&list_info);
-
-   list_info.type = MENU_LIST_PLAIN;
-
-   menu_driver_list_get_size(&list_info);
-
+#ifdef HAVE_XMB
    /* Tab switching functionality only applies
     * to XMB */
-   if ((list_info.size == 1) &&
-       string_is_equal(menu_ident, "xmb"))
+   if (  (size == 1)
+       && string_is_equal(menu_ident, "xmb"))
    {
-      menu_ctx_list_t list_horiz_info;
-      menu_ctx_list_t list_tabs_info;
+      size_t horiz_size         = menu_driver_list_get_size(MENU_LIST_HORIZONTAL);
+      size_t tabs_size          = menu_driver_list_get_size(MENU_LIST_TABS);
 
-      list_horiz_info.type      = MENU_LIST_HORIZONTAL;
-      list_tabs_info.type       = MENU_LIST_TABS;
-
-      menu_driver_list_get_size(&list_horiz_info);
-      menu_driver_list_get_size(&list_tabs_info);
-
-      if ((list_info.selection != (list_horiz_info.size + list_tabs_info.size))
+      if ( (selection != (horiz_size + tabs_size))
          || menu_nav_wraparound_enable)
          return action_right_goto_tab();
    }
    else
+#endif
       action_right_scroll(0, "", false);
 
    return 0;

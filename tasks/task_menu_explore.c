@@ -93,12 +93,13 @@ static void cb_task_menu_explore_init(
    /* check if we are opening a saved view from the horizontal/tabs menu */
    if (menu_type == MENU_SETTING_HORIZONTAL_MENU)
    {
-      menu_ctx_list_t tabs, horizontal;
-      tabs.type = MENU_LIST_TABS;
-      if (menu_driver_list_get_selection(&tabs) && menu_driver_list_get_size(&tabs))
+      size_t selection = menu_driver_list_get_selection();
+      size_t size      = menu_driver_list_get_size(MENU_LIST_TABS);
+      if (selection > 0 && size > 0)
       {
+         menu_ctx_list_t horizontal;
          horizontal.type = MENU_LIST_HORIZONTAL;
-         horizontal.idx = tabs.selection - (tabs.size + 1);
+         horizontal.idx  = selection - (size + 1);
          if (menu_driver_list_get_entry(&horizontal))
             menu_type = ((struct item_file*)horizontal.entry)->type;
       }

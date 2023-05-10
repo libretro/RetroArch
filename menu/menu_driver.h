@@ -622,11 +622,11 @@ bool menu_driver_list_cache(menu_ctx_list_t *list);
 
 bool menu_driver_init(bool video_is_threaded);
 
-bool menu_driver_list_get_selection(menu_ctx_list_t *list);
+size_t menu_driver_list_get_selection(void);
+
+size_t menu_driver_list_get_size(enum menu_list_type type);
 
 bool menu_driver_list_get_entry(menu_ctx_list_t *list);
-
-bool menu_driver_list_get_size(menu_ctx_list_t *list);
 
 retro_time_t menu_driver_get_current_time(void);
 

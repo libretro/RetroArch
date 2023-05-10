@@ -3331,22 +3331,16 @@ static void menu_displaylist_set_new_playlist(
 }
 
 static int menu_displaylist_parse_horizontal_list(
-      menu_handle_t *menu,
-      settings_t *settings,
+      menu_handle_t *menu, settings_t *settings,
       menu_displaylist_info_t *info)
 {
-   menu_ctx_list_t list_info;
    menu_ctx_list_t list_horiz_info;
-   struct item_file *item              = NULL;
+   struct item_file *item  = NULL;
+   size_t selection        = menu_driver_list_get_selection();
+   size_t size             = menu_driver_list_get_size(MENU_LIST_TABS);
 
-   menu_driver_list_get_selection(&list_info);
-
-   list_info.type       = MENU_LIST_TABS;
-
-   menu_driver_list_get_size(&list_info);
-
-   list_horiz_info.type = MENU_LIST_HORIZONTAL;
-   list_horiz_info.idx  = list_info.selection - (list_info.size +1);
+   list_horiz_info.type    = MENU_LIST_HORIZONTAL;
+   list_horiz_info.idx     = selection - (size +1);
 
    menu_driver_list_get_entry(&list_horiz_info);
 
