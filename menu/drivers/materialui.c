@@ -8864,9 +8864,11 @@ static int materialui_environ(enum menu_environ_cb type,
 static bool materialui_preswitch_tabs(
       materialui_handle_t *mui, materialui_nav_bar_menu_tab_t *target_tab)
 {
-   size_t stack_size       = 0;
-   file_list_t *menu_stack = NULL;
-   bool stack_flushed      = false;
+   size_t stack_size              = 0;
+   file_list_t *menu_stack        = NULL;
+   bool stack_flushed             = false;
+   struct menu_state   *menu_st   = menu_state_get_ptr();
+   menu_list_t *menu_list         = menu_st->entries.list;
 
    /* Pressing a navigation menu tab always returns us to
     * one of the top level menus. There are two ways to
@@ -8897,7 +8899,7 @@ static bool materialui_preswitch_tabs(
    /* Get current stack
     * (stack size should be zero here, but account
     * for unknown errors)  */
-   menu_stack = menu_entries_get_menu_stack_ptr(0);
+   menu_stack = MENU_LIST_GET(menu_list, 0);
    stack_size = menu_stack->size;
 
    /* Sanity check

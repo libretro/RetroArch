@@ -9401,23 +9401,26 @@ static void ozone_context_destroy(void *data)
 static void *ozone_list_get_entry(void *data,
       enum menu_list_type type, unsigned i)
 {
-   size_t list_size        = 0;
    ozone_handle_t* ozone   = (ozone_handle_t*) data;
 
    switch (type)
    {
       case MENU_LIST_PLAIN:
          {
-            file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
-            list_size  = menu_entries_get_stack_size(0);
+            struct menu_state   *menu_st = menu_state_get_ptr();
+            menu_list_t *menu_list       = menu_st->entries.list;
+            file_list_t *menu_stack      = MENU_LIST_GET(menu_list, 0);
+            size_t list_size             = MENU_LIST_GET_STACK_SIZE(menu_list, 0);
             if (i < list_size)
                return (void*)&menu_stack->list[i];
          }
          break;
       case MENU_LIST_HORIZONTAL:
-         list_size = ozone->horizontal_list.size;
-         if (i < list_size)
-            return (void*)&ozone->horizontal_list.list[i];
+         {
+            size_t list_size = ozone->horizontal_list.size;
+            if (i < list_size)
+               return (void*)&ozone->horizontal_list.list[i];
+         }
          break;
       default:
          break;

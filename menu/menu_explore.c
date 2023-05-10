@@ -875,9 +875,11 @@ static int explore_action_ok(const char *path, const char *label,
    const char* explore_tab = msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB);
    if (type >= EXPLORE_TYPE_FIRSTITEM || type == EXPLORE_TYPE_FILTERNULL)
    {
-      file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
-      unsigned prev_type      = menu_stack->list[menu_stack->size - 1].type;
-      unsigned cat            = (prev_type - EXPLORE_TYPE_FIRSTCATEGORY);
+      struct menu_state   *menu_st  = menu_state_get_ptr();
+      menu_list_t *menu_list        = menu_st->entries.list;
+      file_list_t *menu_stack       = MENU_LIST_GET(menu_list, 0);
+      unsigned prev_type            = menu_stack->list[menu_stack->size - 1].type;
+      unsigned cat                  = (prev_type - EXPLORE_TYPE_FIRSTCATEGORY);
       if (cat < EXPLORE_CAT_COUNT)
       {
          explore_state_t *state = explore_state;
@@ -914,8 +916,10 @@ static int explore_action_ok(const char *path, const char *label,
 static int explore_cancel(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
-   unsigned closed_type = menu_stack->list[menu_stack->size - 1].type;
+   struct menu_state   *menu_st  = menu_state_get_ptr();
+   menu_list_t *menu_list        = menu_st->entries.list;
+   file_list_t *menu_stack       = MENU_LIST_GET(menu_list, 0);
+   unsigned closed_type          = menu_stack->list[menu_stack->size - 1].type;
    if (closed_type >= EXPLORE_TYPE_FIRSTITEM ||
        closed_type == EXPLORE_TYPE_FILTERNULL)
    {
@@ -989,8 +993,10 @@ static int explore_action_ok_find(const char *path, const char *label, unsigned 
 
 static const char* explore_get_view_path(void)
 {
-   file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
-   struct item_file *cur = (struct item_file *)&menu_stack->list[menu_stack->size - 1];
+   struct menu_state   *menu_st  = menu_state_get_ptr();
+   menu_list_t *menu_list        = menu_st->entries.list;
+   file_list_t *menu_stack       = MENU_LIST_GET(menu_list, 0);
+   struct item_file *cur         = (struct item_file *)&menu_stack->list[menu_stack->size - 1];
 
    /* check if we are opening a saved view from the horizontal/tabs menu */
    if (cur->type == MENU_SETTING_HORIZONTAL_MENU)
@@ -1033,10 +1039,14 @@ static void explore_on_edit_views(enum msg_hash_enums msg)
 
 static int explore_action_ok_deleteview(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   struct menu_state   *menu_st  = menu_state_get_ptr();
+   menu_list_t *menu_list        = menu_st->entries.list;
+   file_list_t *menu_stack       = MENU_LIST_GET(menu_list, 0);
+
    filestream_delete(explore_get_view_path());
    explore_on_edit_views(MENU_ENUM_LABEL_EXPLORE_VIEW_DELETED);
 
-   if (menu_entries_get_menu_stack_ptr(0)->size == 1)
+   if (menu_stack->size == 1)
    {
       /* if we're at the top of the menu we can't cancel so just refresh
          what becomes selected after MENU_ENVIRON_RESET_HORIZONTAL_LIST. */
@@ -1295,7 +1305,9 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
    unsigned i;
    char tmp[512];
    struct explore_state *state  = explore_state;
-   struct file_list *menu_stack = menu_entries_get_menu_stack_ptr(0);
+   struct menu_state   *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list       = menu_st->entries.list;
+   file_list_t *menu_stack      = MENU_LIST_GET(menu_list, 0);
    struct item_file *stack_top  = menu_stack->list;
    size_t depth                 = menu_stack->size;
    unsigned current_type        = (depth > 0 ? stack_top[depth - 1].type : 0);

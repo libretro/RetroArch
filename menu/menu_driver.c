@@ -503,15 +503,6 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    }
 }
 
-file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
-{
-   struct menu_state   *menu_st   = &menu_driver_state;
-   menu_list_t *menu_list         = menu_st->entries.list;
-   if (!menu_list)
-      return NULL;
-   return MENU_LIST_GET(menu_list, (unsigned)idx);
-}
-
 file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
 {
    struct menu_state   *menu_st   = &menu_driver_state;

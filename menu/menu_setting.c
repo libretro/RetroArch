@@ -6980,7 +6980,8 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             menu_displaylist_info_t  info;
             settings_t *settings          = config_get_ptr();
             struct menu_state *menu_st    = menu_state_get_ptr();
-            file_list_t *menu_stack       = menu_entries_get_menu_stack_ptr(0);
+            menu_list_t *menu_list        = menu_st->entries.list;
+            file_list_t *menu_stack       = MENU_LIST_GET(menu_list, 0);
             const char *name              = setting->name;
             size_t selection              = menu_st->selection_ptr;
 
@@ -7825,7 +7826,9 @@ static void general_write_handler(rarch_setting_t *setting)
          {
             menu_displaylist_info_t info;
             settings_t *settings         = config_get_ptr();
-            file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
+            struct menu_state *menu_st   = menu_state_get_ptr();
+            menu_list_t *menu_list       = menu_st->entries.list;
+            file_list_t *menu_stack      = MENU_LIST_GET(menu_list, 0);
 
             menu_displaylist_info_init(&info);
 
