@@ -7742,7 +7742,7 @@ unsigned menu_displaylist_build_list(
             {
                const char *cheat_description = cheat_manager_get_desc(i);
 
-               snprintf(cheat_label + _len, sizeof(cheat_label) + _len, " #%u: ", i);
+               snprintf(cheat_label + _len, sizeof(cheat_label) - _len, " #%u: ", i);
                if (!string_is_empty(cheat_description))
                   strlcat(cheat_label, cheat_description, sizeof(cheat_label));
 
@@ -11863,9 +11863,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   char* speed                 = SWITCH_CPU_SPEEDS[i];
                   size_t _len                 = strlcpy(title, profile, sizeof(title));
                   snprintf(title + _len, sizeof(title) - _len, " (%s)", speed);
-                  if (menu_entries_append(info->list,
-                           title, "", 0, MENU_SET_SWITCH_CPU_PROFILE, 0,
-                           i, NULL))
+                  if (menu_entries_append(info->list, title, "", 0, 
+                           MENU_SET_SWITCH_CPU_PROFILE, 0, i, NULL))
                      count++;
                }
 
@@ -11905,9 +11904,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   char* profile               = SWITCH_GPU_PROFILES[i];
                   char* speed                 = SWITCH_GPU_SPEEDS[i];
                   size_t _len                 = strlcpy(title, profile, sizeof(title));
-                  snprintf(title + _len, sizeof(title)i - _len, " (%s)", speed);
-
-                  if (menu_entries_append(info->list, title, "", 0, MENU_SET_SWITCH_GPU_PROFILE, 0, i, NULL))
+                  snprintf(title + _len, sizeof(title) - _len, " (%s)", speed);
+                  if (menu_entries_append(info->list, title, "", 0,
+                           MENU_SET_SWITCH_GPU_PROFILE, 0, i, NULL))
                      count++;
                }
 
