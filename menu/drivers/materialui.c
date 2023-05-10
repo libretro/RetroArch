@@ -3225,12 +3225,13 @@ static size_t materialui_auto_select_onscreen_entry(
 /* Kills any existing scroll animation and
  * resets scroll acceleration */
 static INLINE void materialui_kill_scroll_animation(
-      materialui_handle_t *mui)
+      materialui_handle_t *mui, struct menu_state *menu_st)
 {
-   uintptr_t scroll_tag = (uintptr_t)&mui->scroll_y;
+   uintptr_t scroll_tag            = (uintptr_t)&mui->scroll_y;
+   menu_input_t    *menu_input     = &menu_st->input_state;
 
    gfx_animation_kill_by_tag(&scroll_tag);
-   menu_input_set_pointer_y_accel(0.0f);
+   menu_input->pointer.y_accel     = 0.0f;
 
    mui->flags                     &= ~MUI_FLAG_SCROLL_ANIMATION_ACTIVE;
    mui->scroll_animation_selection = 0;
@@ -3673,7 +3674,7 @@ static void materialui_render(void *data,
 
       /* Kill any existing scroll animation
        * and reset scroll acceleration */
-      materialui_kill_scroll_animation(mui);
+      materialui_kill_scroll_animation(mui, menu_st);
 
       /* Get new scroll position */
       mui->scroll_y     =  materialui_get_scroll(mui, p_disp);
@@ -6449,7 +6450,8 @@ static void materialui_hide_fullscreen_thumbnails(
 /* Enables (and triggers a fade in of) the fullscreen
  * thumbnail view */
 static void materialui_show_fullscreen_thumbnails(
-      materialui_handle_t *mui, size_t selection)
+      materialui_handle_t *mui, struct menu_state *menu_st,
+      size_t selection)
 {
    menu_entry_t selected_entry;
    gfx_animation_ctx_entry_t animation_entry;
@@ -6494,7 +6496,7 @@ static void materialui_show_fullscreen_thumbnails(
     * thumbnails are shown
     * > Kill any existing scroll animation
     *   and reset scroll acceleration */
-   materialui_kill_scroll_animation(mui);
+   materialui_kill_scroll_animation(mui, menu_st);
 
    /* Cache selected entry label
     * (used as menu title when fullscreen thumbnails
@@ -7178,8 +7180,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    {
       size_t _len;
       char msg[255];
-      const char *str   = menu_input_dialog_get_buffer();
-      const char *label = menu_input_dialog_get_label_buffer();
+      struct menu_state *menu_st  = menu_state_get_ptr();
+      const char *str             = menu_input_dialog_get_buffer();
+      const char *label           = menu_st->input_dialog_kb_label;
 
       /* Darken screen */
       gfx_display_set_alpha(
@@ -8366,6 +8369,7 @@ static void materialui_animate_scroll(
 {
    gfx_animation_ctx_entry_t animation_entry;
    struct menu_state *menu_st      = menu_state_get_ptr();
+   menu_input_t    *menu_input     = &menu_st->input_state;
    uintptr_t animation_tag         = (uintptr_t)&mui->scroll_y;
 
    /* Kill any existing scroll animation */
@@ -8374,7 +8378,7 @@ static void materialui_animate_scroll(
    /* mui->scroll_y will be modified by the animation
     * > Set scroll acceleration to zero to minimise
     *   potential conflicts */
-   menu_input_set_pointer_y_accel(0.0f);
+   menu_input->pointer.y_accel     = 0.0f;
 
    /* Set 'animation active' flag */
    mui->flags                     |= MUI_FLAG_SCROLL_ANIMATION_ACTIVE;
@@ -9303,7 +9307,7 @@ static enum menu_action materialui_parse_menu_entry_action(
 
             if (mui->flags & MUI_FLAG_IS_PLAYLIST)
             {
-               materialui_show_fullscreen_thumbnails(mui, selection);
+               materialui_show_fullscreen_thumbnails(mui, menu_st, selection);
                new_action = MENU_ACTION_NOOP;
             }
             else if (!materialui_entry_onscreen(mui, selection))
@@ -9753,7 +9757,8 @@ static int materialui_pointer_down(void *userdata,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   materialui_handle_t *mui = (materialui_handle_t*)userdata;
+   materialui_handle_t *mui    = (materialui_handle_t*)userdata;
+   struct menu_state *menu_st  = menu_state_get_ptr();
 
    if (!mui)
       return -1;
@@ -9838,7 +9843,7 @@ static int materialui_pointer_down(void *userdata,
 
       /* > Kill any existing scroll animation
        *   and reset scroll acceleration */
-      materialui_kill_scroll_animation(mui);
+      materialui_kill_scroll_animation(mui, menu_st);
 
       /* > Enable dragging */
       mui->scrollbar.dragged = true;
@@ -10011,6 +10016,7 @@ static int materialui_pointer_up(void *userdata,
    gfx_display_t *p_disp      = disp_get_ptr();
    unsigned header_height     = p_disp->header_height;
    struct menu_state *menu_st = menu_state_get_ptr();
+   menu_input_t *menu_input   = &menu_st->input_state;
    size_t selection           = menu_st->selection_ptr;
    menu_list_t *menu_list     = menu_st->entries.list;
    size_t entries_end         = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0)->size : 0;
@@ -10025,12 +10031,12 @@ static int materialui_pointer_up(void *userdata,
    {
       /* Must reset scroll acceleration, otherwise
        * list will continue to 'drift' in drag direction */
-      menu_input_set_pointer_y_accel(0.0f);
+      menu_input->pointer.y_accel = 0.0f;
 
       /* Reset thumbnail stream delay */
       gfx_thumbnail_set_stream_delay(mui->thumbnail_stream_delay);
 
-      mui->scrollbar.dragged = false;
+      mui->scrollbar.dragged      = false;
       return 0;
    }
 
@@ -10043,7 +10049,7 @@ static int materialui_pointer_up(void *userdata,
        * user performed a swipe (don't want menu
        * list to 'drift' after hiding fullscreen
        * thumbnails...) */
-      menu_input_set_pointer_y_accel(0.0f);
+      menu_input->pointer.y_accel = 0.0f;
 
       materialui_hide_fullscreen_thumbnails(mui, true);
       return 0;
@@ -10121,7 +10127,7 @@ static int materialui_pointer_up(void *userdata,
                if ((mui->list_view_type == MUI_LIST_VIEW_PLAYLIST_THUMB_DESKTOP) &&
                    (x < mui->landscape_optimization.border_width + mui->thumbnail_width_max + (mui->margin * 2)))
                {
-                  materialui_show_fullscreen_thumbnails(mui, selection);
+                  materialui_show_fullscreen_thumbnails(mui, menu_st, selection);
                   break;
                }
 
@@ -10176,8 +10182,8 @@ static int materialui_pointer_up(void *userdata,
                 * - but menu_navigation_set_selection() just sets a
                 * variable, so there's no real point in performing
                 * a (selection != ptr) check here */
-               menu_st->selection_ptr = ptr;
-               menu_input_set_pointer_y_accel(0.0f);
+               menu_st->selection_ptr      = ptr;
+               menu_input->pointer.y_accel = 0.0f;
             }
          }
          break;

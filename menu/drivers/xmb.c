@@ -6358,13 +6358,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (input_dialog_display_kb)
    {
-      const char *str   = menu_input_dialog_get_buffer();
-      const char *label = menu_input_dialog_get_label_buffer();
-      size_t _len       = strlcpy(msg, label, sizeof(msg));
-      msg[_len  ]       = '\n';
-      msg[_len+1]       = '\0';
+      const char *str             = menu_input_dialog_get_buffer();
+      const char *label           = menu_st->input_dialog_kb_label;
+      size_t _len                 = strlcpy(msg, label, sizeof(msg));
+      msg[_len  ]                 = '\n';
+      msg[_len+1]                 = '\0';
       strlcat(msg, str, sizeof(msg));
-      render_background = true;
+      render_background           = true;
    }
 
    if (!string_is_empty(xmb->box_message))

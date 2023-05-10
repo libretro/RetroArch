@@ -4603,13 +4603,11 @@ void menu_input_get_pointer_state(menu_input_pointer_t *copy_target)
    struct menu_state    *menu_st  = &menu_driver_state;
    menu_input_t       *menu_input = &menu_st->input_state;
 
-   if (!copy_target)
-      return;
-
    /* Copy parameters from global menu_input_state
     * (i.e. don't pass by reference)
     * This is a fast operation */
-   memcpy(copy_target, &menu_input->pointer, sizeof(menu_input_pointer_t));
+   if (copy_target)
+      memcpy(copy_target, &menu_input->pointer, sizeof(menu_input_pointer_t));
 }
 
 unsigned menu_input_get_pointer_selection(void)
@@ -4625,14 +4623,6 @@ void menu_input_set_pointer_selection(unsigned selection)
    menu_input_t       *menu_input = &menu_st->input_state;
 
    menu_input->ptr                = selection;
-}
-
-void menu_input_set_pointer_y_accel(float y_accel)
-{
-   struct menu_state    *menu_st  = &menu_driver_state;
-   menu_input_t    *menu_input    = &menu_st->input_state;
-
-   menu_input->pointer.y_accel    = y_accel;
 }
 
 const char *menu_input_dialog_get_buffer(void)
@@ -4667,24 +4657,6 @@ static void menu_input_key_event(bool down, unsigned keycode,
          ((menu_st->kb_key_state[key] & 1) << 1) | down;
 }
 
-const char *menu_input_dialog_get_label_setting_buffer(void)
-{
-   struct menu_state *menu_st  = &menu_driver_state;
-   return menu_st->input_dialog_kb_label_setting;
-}
-
-const char *menu_input_dialog_get_label_buffer(void)
-{
-   struct menu_state *menu_st  = &menu_driver_state;
-   return menu_st->input_dialog_kb_label;
-}
-
-unsigned menu_input_dialog_get_kb_idx(void)
-{
-   struct menu_state *menu_st  = &menu_driver_state;
-   return menu_st->input_dialog_kb_idx;
-}
-
 void menu_input_dialog_end(void)
 {
    struct menu_state *menu_st                 = &menu_driver_state;
@@ -4699,30 +4671,6 @@ void menu_input_dialog_end(void)
     * > Required, since input is ignored for 1 frame
     *   after certain events - e.g. closing the OSK */
    menu_st->input_driver_flushing_input       = 2;
-}
-
-void menu_dialog_unset_pending_push(void)
-{
-   struct menu_state    *menu_st  = &menu_driver_state;
-   menu_dialog_t        *p_dialog = &menu_st->dialog_st;
-
-   p_dialog->pending_push  = false;
-}
-
-void menu_dialog_push_pending(enum menu_dialog_type type)
-{
-   struct menu_state    *menu_st  = &menu_driver_state;
-   menu_dialog_t        *p_dialog = &menu_st->dialog_st;
-   p_dialog->current_type         = type;
-   p_dialog->pending_push         = true;
-}
-
-void menu_dialog_set_current_id(unsigned id)
-{
-   struct menu_state    *menu_st  = &menu_driver_state;
-   menu_dialog_t        *p_dialog = &menu_st->dialog_st;
-
-   p_dialog->current_id    = id;
 }
 
 #if defined(_MSC_VER)

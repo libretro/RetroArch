@@ -375,9 +375,9 @@ static void menu_input_st_uint_cb(void *userdata, const char *str)
 
       if ((ret == 1) && !str[chars_read])
       {
-         const char        *label = 
-            menu_input_dialog_get_label_setting_buffer();
-         rarch_setting_t *setting = menu_setting_find(label);
+         struct menu_state *menu_st  = menu_state_get_ptr();
+         const char *label           = menu_st->input_dialog_kb_label_setting;
+         rarch_setting_t *setting    = menu_setting_find(label);
          setting_set_with_string_representation(setting, str);
       }
    }
@@ -397,10 +397,9 @@ static void menu_input_st_int_cb(void *userdata, const char *str)
 
       if ((ret == 1) && !str[chars_read])
       {
-         const char *label = 
-            menu_input_dialog_get_label_setting_buffer();
-         rarch_setting_t 
-            *setting       = menu_setting_find(label);
+         struct menu_state *menu_st  = menu_state_get_ptr();
+         const char *label           = menu_st->input_dialog_kb_label_setting;
+         rarch_setting_t  *setting   = menu_setting_find(label);
          setting_set_with_string_representation(setting, str);
       }
    }
@@ -420,9 +419,9 @@ static void menu_input_st_float_cb(void *userdata, const char *str)
 
       if ((ret == 1) && !str[chars_read])
       {
-         const char        *label = 
-            menu_input_dialog_get_label_setting_buffer();
-         rarch_setting_t *setting = menu_setting_find(label);
+         struct menu_state *menu_st  = menu_state_get_ptr();
+         const char *label           = menu_st->input_dialog_kb_label_setting;
+         rarch_setting_t  *setting   = menu_setting_find(label);
          setting_set_with_string_representation(setting, str);
       }
    }
@@ -434,7 +433,8 @@ static void menu_input_st_string_cb(void *userdata, const char *str)
 {
    if (str && *str)
    {
-      const char *label = menu_input_dialog_get_label_setting_buffer();
+      struct menu_state *menu_st  = menu_state_get_ptr();
+      const char *label           = menu_st->input_dialog_kb_label_setting;
 
       if (!string_is_empty(label))
       {
@@ -2600,8 +2600,9 @@ static void setting_action_ok_color_rgb_cb(void *userdata, const char *line)
 {
    if (!string_is_empty(line))
    {
-      rarch_setting_t *setting =
-         menu_setting_find(menu_input_dialog_get_label_setting_buffer());
+      struct menu_state *menu_st  = menu_state_get_ptr();
+      const char *label           = menu_st->input_dialog_kb_label_setting;
+      rarch_setting_t *setting    = menu_setting_find(label);
 
       if (setting)
       {

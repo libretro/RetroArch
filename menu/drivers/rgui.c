@@ -4622,12 +4622,12 @@ static void rgui_render_osk(
    unsigned osk_width, osk_height;
    unsigned osk_x, osk_y;
    
-   input_driver_state_t 
-         *input_st          = input_state_get_ptr();
-   int osk_ptr              = input_st->osk_ptr;
-   char **osk_grid          = input_st->osk_grid;
-   const char *input_str    = menu_input_dialog_get_buffer();
-   const char *input_label  = menu_input_dialog_get_label_buffer();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   int osk_ptr                    = input_st->osk_ptr;
+   char **osk_grid                = input_st->osk_grid;
+   const char *input_str          = menu_input_dialog_get_buffer();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   const char *input_label        = menu_st->input_dialog_kb_label;
 
    /* Sanity check 1 */
    if (osk_ptr < 0 || osk_ptr >= 44 || !osk_grid[0])

@@ -4486,6 +4486,7 @@ static void ozone_change_tab(
 {
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list     = menu_st->entries.list;
+   menu_input_t *menu_input   = &menu_st->input_state;
    file_list_t *menu_stack    = MENU_LIST_GET(menu_list, 0);
    file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t stack_size          = menu_stack->size;
@@ -4552,6 +4553,8 @@ static void ozone_sidebar_goto(
    unsigned video_info_height;
    struct gfx_animation_ctx_entry entry;
    uintptr_t tag = (uintptr_t)ozone;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_input_t *menu_input   = &menu_st->input_state;
 
    video_driver_get_size(NULL, &video_info_height);
 
@@ -4571,7 +4574,7 @@ static void ozone_sidebar_goto(
    /* ozone->animations.scroll_y_sidebar will be modified
     * > Set scroll acceleration to zero to minimise
     *   potential conflicts */
-   menu_input_set_pointer_y_accel(0.0f);
+   menu_input->pointer.y_accel    = 0.0f;
 
    /* Cursor animation */
    ozone->animations.cursor_alpha = 0.0f;
@@ -5272,6 +5275,7 @@ static void ozone_update_scroll(
    float new_scroll = 0, entries_middle;
    float bottom_boundary, current_selection_middle_onscreen;
    struct menu_state *menu_st = menu_state_get_ptr();
+   menu_input_t *menu_input   = &menu_st->input_state;
    menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
    uintptr_t tag              = (uintptr_t)selection_buf;
@@ -5307,7 +5311,7 @@ static void ozone_update_scroll(
    /* ozone->animations.scroll_y will be modified
     * > Set scroll acceleration to zero to minimise
     *   potential conflicts */
-   menu_input_set_pointer_y_accel(0.0f);
+   menu_input->pointer.y_accel    = 0.0f;
 
    if (allow_animation)
    {
@@ -7041,6 +7045,7 @@ static void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
 {
    gfx_animation_ctx_entry_t animation_entry;
    struct menu_state *menu_st         = menu_state_get_ptr();
+   menu_input_t *menu_input           = &menu_st->input_state;
    menu_list_t *menu_list             = menu_st->entries.list;
    file_list_t *selection_buf         = MENU_LIST_GET_SELECTION(menu_list, 0);
    uintptr_t alpha_tag                = (uintptr_t)&ozone->animations.fullscreen_thumbnail_alpha;
@@ -7093,7 +7098,7 @@ static void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
     * > Kill any existing scroll animations and
     *   reset scroll acceleration */
    gfx_animation_kill_by_tag(&scroll_tag);
-   menu_input_set_pointer_y_accel(0.0f);
+   menu_input->pointer.y_accel    = 0.0f;
 
    /* Cache selected entry label
     * (used as title when fullscreen thumbnails
@@ -9759,6 +9764,7 @@ static void ozone_render(void *data,
    volatile float scale_factor;
    volatile float thumbnail_scale_factor;
    struct menu_state *menu_st         = menu_state_get_ptr();
+   menu_input_t *menu_input           = &menu_st->input_state;
    menu_list_t *menu_list             = menu_st->entries.list;
    unsigned entries_end               = (unsigned)MENU_LIST_GET_SELECTION(menu_list, 0)->size;
    bool pointer_enabled               = false;
@@ -9940,8 +9946,8 @@ static void ozone_render(void *data,
       if (     (     pointer_in_sidebar)
             != (last_pointer_in_sidebar))
       {
-         menu_input_set_pointer_y_accel(0.0f);
-         ozone->pointer.y_accel = 0.0f;
+         menu_input->pointer.y_accel = 0.0f;
+         ozone->pointer.y_accel      = 0.0f;
       }
 
       /* If pointer is a mouse, then automatically follow
@@ -11681,8 +11687,9 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
       if (draw_osk)
       {
-         const char *label = menu_input_dialog_get_label_buffer();
-         const char *str   = menu_input_dialog_get_buffer();
+         struct menu_state *menu_st  = menu_state_get_ptr();
+         const char *label           = menu_st->input_dialog_kb_label;
+         const char *str             = menu_input_dialog_get_buffer();
 
          ozone_draw_osk(ozone,
                userdata,
@@ -12346,6 +12353,7 @@ static int ozone_pointer_up(void *userdata,
    unsigned width, height;
    ozone_handle_t *ozone             = (ozone_handle_t*)userdata;
    struct menu_state *menu_st        = menu_state_get_ptr();
+   menu_input_t *menu_input          = &menu_st->input_state;
    menu_list_t *menu_list            = menu_st->entries.list;
    file_list_t *selection_buf        = MENU_LIST_GET_SELECTION(menu_list, 0);
    uintptr_t sidebar_tag             = (uintptr_t)selection_buf;
@@ -12366,7 +12374,7 @@ static int ozone_pointer_up(void *userdata,
        * user performed a swipe (don't want menu
        * list to 'drift' after hiding fullscreen
        * thumbnails...) */
-      menu_input_set_pointer_y_accel(0.0f);
+      menu_input->pointer.y_accel    = 0.0f;
 
       ozone_hide_fullscreen_thumbnails(ozone, true);
       return 0;
@@ -12419,7 +12427,7 @@ static int ozone_pointer_up(void *userdata,
                /* A 'short' press is used only to activate (highlight)
                 * an item - it does not invoke a MENU_ACTION_SELECT
                 * action */
-               menu_input_set_pointer_y_accel(0.0f);
+               menu_input->pointer.y_accel    = 0.0f;
 
                if (ptr != selection)
                   menu_st->selection_ptr = ptr;

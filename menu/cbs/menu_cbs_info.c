@@ -78,9 +78,11 @@ int  generic_action_ok_help(const char *path,
 
 static int action_info_cheevos(unsigned type, const char *label)
 {
-   unsigned new_id        = type - MENU_SETTINGS_CHEEVOS_START;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   menu_dialog_t        *p_dialog = &menu_st->dialog_st;
+   unsigned new_id                = type - MENU_SETTINGS_CHEEVOS_START;
 
-   menu_dialog_set_current_id(new_id);
+   p_dialog->current_id           = new_id;
 
    return generic_action_ok_help(NULL, label, new_id, 0, 0,
       MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,

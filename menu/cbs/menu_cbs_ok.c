@@ -619,6 +619,7 @@ int generic_action_ok_displaylist_push(const char *path,
    const char          *info_label         = NULL;
    const char          *info_path          = NULL;
    struct menu_state *menu_st              = menu_state_get_ptr();
+   menu_dialog_t        *p_dialog          = &menu_st->dialog_st;
    menu_handle_t *menu                     = menu_st->driver_data;
    menu_list_t *menu_list                  = menu_st->entries.list;
    settings_t            *settings         = config_get_ptr();
@@ -946,7 +947,8 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_HELP:
          info_label             = label;
          dl_type                = DISPLAYLIST_HELP;
-         menu_dialog_push_pending((enum menu_dialog_type)type);
+         p_dialog->current_type = (enum menu_dialog_type)type;
+         p_dialog->pending_push = true;
          break;
       case ACTION_OK_DL_RPL_ENTRY:
          strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
@@ -3064,7 +3066,8 @@ static int action_ok_bluetooth(const char *path, const char *label,
 #ifdef HAVE_WIFI
 static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 {
-   unsigned idx                 = menu_input_dialog_get_kb_idx();
+   struct menu_state *menu_st   = menu_state_get_ptr();
+   unsigned idx                 = menu_st->input_dialog_kb_idx;
    wifi_network_scan_t *scan    = driver_wifi_get_ssids();
    wifi_network_info_t *netinfo = &scan->net_list[idx];
 
@@ -3116,14 +3119,13 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
       if (!string_is_empty(label))
       {
          struct playlist_entry entry = {0};
+         struct menu_state *menu_st   = menu_state_get_ptr();
+         unsigned idx                 = menu_st->input_dialog_kb_idx;
 
          /* the update function reads our entry as const,
           * so these casts are safe */
-         entry.label = (char*)label;
-
-         command_playlist_update_write(NULL,
-               menu_input_dialog_get_kb_idx(),
-               &entry);
+         entry.label                  = (char*)label;
+         command_playlist_update_write(NULL, idx, &entry);
       }
    }
 
@@ -3209,7 +3211,8 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
    {
       rarch_setting_t *setting     = NULL;
       bool                 ret     = false;
-      const char        *label     = menu_input_dialog_get_label_buffer();
+      struct menu_state *menu_st   = menu_state_get_ptr(); 
+      const char *label            = menu_st->input_dialog_kb_label;
       settings_t *settings         = config_get_ptr();
       const char *dir_video_shader = settings->paths.directory_video_shader;
       const char *dir_menu_config  = settings->paths.directory_menu_config;
@@ -3475,7 +3478,8 @@ static void menu_input_st_string_cb_cheat_file_save_as(
    if (str && *str)
    {
       rarch_setting_t *setting        = NULL;
-      const char        *label        = menu_input_dialog_get_label_buffer();
+      struct menu_state *menu_st      = menu_state_get_ptr(); 
+      const char *label               = menu_st->input_dialog_kb_label;
       settings_t *settings            = config_get_ptr();
       const char *path_cheat_database = settings->paths.path_cheat_database;
 

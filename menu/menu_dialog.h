@@ -56,14 +56,4 @@ struct menu_dialog
 
 typedef struct menu_dialog menu_dialog_t;
 
-RETRO_BEGIN_DECLS
-
-void menu_dialog_push_pending(enum menu_dialog_type type);
-
-void menu_dialog_unset_pending_push(void);
-
-void menu_dialog_set_current_id(unsigned id);
-
-RETRO_END_DECLS
-
 #endif

@@ -11134,19 +11134,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info,
       settings_t *settings)
 {
-   struct menu_state   *menu_st  = menu_state_get_ptr();
-   static bool core_selected     = false;
-   bool push_list                = (menu_st->driver_ctx->list_push
+   struct menu_state   *menu_st   = menu_state_get_ptr();
+   menu_dialog_t        *p_dialog = &menu_st->dialog_st;
+   static bool core_selected      = false;
+   bool push_list                 = (menu_st->driver_ctx->list_push
          && menu_st->driver_ctx->list_push(menu_st->driver_data,
             menu_st->userdata, info, type) == 0);
 
    if (!push_list)
    {
-      menu_handle_t *menu        = menu_st->driver_data;
-      bool load_content          = true;
-      bool use_filebrowser       = false;
-      unsigned count             = 0;
-      int ret                    = 0;
+      menu_handle_t *menu         = menu_st->driver_data;
+      bool load_content           = true;
+      bool use_filebrowser        = false;
+      unsigned count              = 0;
+      int ret                     = 0;
       switch (type)
       {
          case DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST:
@@ -14053,7 +14054,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0,
                      NULL))
                count++;
-            menu_dialog_unset_pending_push();
+            p_dialog->pending_push  = false;
             break;
          case DISPLAYLIST_INFO:
             if (menu_entries_append(info->list, info->path,
