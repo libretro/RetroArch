@@ -4486,7 +4486,6 @@ static void ozone_change_tab(
 {
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list     = menu_st->entries.list;
-   menu_input_t *menu_input   = &menu_st->input_state;
    file_list_t *menu_stack    = MENU_LIST_GET(menu_list, 0);
    file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t stack_size          = menu_stack->size;
@@ -8481,8 +8480,6 @@ static enum menu_action ozone_parse_menu_entry_action(
       case MENU_ACTION_SCROLL_HOME:
          if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
-
             /* If cursor is active, ensure we target
              * an on screen category */
             size_t tab_selection       = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
@@ -8510,8 +8507,6 @@ static enum menu_action ozone_parse_menu_entry_action(
       case MENU_ACTION_SCROLL_END:
          if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
-
             /* If cursor is active, ensure we target
              * an on screen category */
             size_t tab_selection       = (ozone->flags & OZONE_FLAG_CURSOR_MODE)

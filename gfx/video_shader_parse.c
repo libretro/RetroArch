@@ -527,7 +527,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    char scale_type[64];
    char scale_type_x[64];
    char scale_type_y[64];
-   char formatted_num[8];
+   char formatted_num[12];
    char tmp_path[PATH_MAX_LENGTH];
    struct gfx_fbo_scale *scale      = NULL;
    bool tmp_bool                    = false;

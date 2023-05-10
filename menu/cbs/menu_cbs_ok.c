@@ -4431,7 +4431,6 @@ static int action_ok_file_load_imageviewer(const char *path,
    char fullpath[PATH_MAX_LENGTH];
    const char *menu_path           = NULL;
    struct menu_state *menu_st      = menu_state_get_ptr();
-   menu_handle_t *menu             = menu_st->driver_data;
    menu_list_t *menu_list          = menu_st->entries.list;
    file_list_t *menu_stack         = MENU_LIST_GET(menu_list, 0);
 
@@ -6852,6 +6851,7 @@ static int action_ok_push_dropdown_item_input_select_physical_keyboard(const cha
     rarch_setting_t *setting     = NULL;
     settings_t *settings         = config_get_ptr();
     const char *menu_path        = NULL;
+    struct menu_state *menu_st   = menu_state_get_ptr();
     menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
     enum_idx = (enum msg_hash_enums)atoi(menu_path);
     setting  = menu_setting_find_enum(enum_idx);
