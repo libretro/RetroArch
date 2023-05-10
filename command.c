@@ -1871,10 +1871,9 @@ void command_event_save_current_config(enum override_type type)
 
 #ifdef HAVE_MENU
             {
-               bool refresh = false;
-
-               menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-               menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+               struct menu_state *menu_st      = menu_state_get_ptr();
+               menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                               |  MENU_ST_FLAG_PREVENT_POPULATE;
             }
 #endif
          }
@@ -1909,10 +1908,9 @@ void command_event_remove_current_config(enum override_type type)
 
 #ifdef HAVE_MENU
             {
-               bool refresh = false;
-
-               menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-               menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+               struct menu_state *menu_st      = menu_state_get_ptr();
+               menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                               |  MENU_ST_FLAG_PREVENT_POPULATE;
             }
 #endif
          }

@@ -56,17 +56,13 @@ int action_cancel_pop_default(const char *path,
        && menu_driver_search_filter_enabled(menu_label, menu_type)
        && menu_entries_search_pop())
    {
-      bool refresh                = false;
-
       /* Reset navigation pointer */
       menu_st->selection_ptr      = 0;
       if (menu_st->driver_ctx->navigation_set)
          menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
-
       /* Refresh menu */
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH 
+                      | MENU_ST_FLAG_PREVENT_POPULATE;
       return 0;
    }
 
@@ -128,17 +124,13 @@ static int action_cancel_core_content(const char *path,
           && menu_entries_search_pop())
       {
          struct menu_state *menu_st  = menu_state_get_ptr();
-         bool refresh                = false;
-
          /* Reset navigation pointer */
          menu_st->selection_ptr      = 0;
          if (menu_st->driver_ctx->navigation_set)
             menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
-
          /* Refresh menu */
-         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-         menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH 
+                         | MENU_ST_FLAG_PREVENT_POPULATE;
          return 0;
       }
 

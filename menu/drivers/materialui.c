@@ -8638,8 +8638,9 @@ static void materialui_populate_entries(
       void *data, const char *path,
       const char *label, unsigned i)
 {
-   materialui_handle_t *mui = (materialui_handle_t*)data;
-   settings_t *settings     = config_get_ptr();
+   materialui_handle_t *mui    = (materialui_handle_t*)data;
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   settings_t *settings        = config_get_ptr();
 
    if (!mui || !settings)
       return;
@@ -8793,8 +8794,8 @@ static void materialui_populate_entries(
     *   (i.e. if we *did* reset the entry indices, the
     *   selection pointer would incorrectly 'jump' from
     *   the current selection to the top of the list) */
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+   if ((menu_st->flags & MENU_ST_FLAG_PREVENT_POPULATE) > 0)
+      menu_st->flags           &=  ~MENU_ST_FLAG_PREVENT_POPULATE;
    else
    {
       mui->first_onscreen_entry = 0;
@@ -8854,7 +8855,8 @@ static int materialui_environ(enum menu_environ_cb type,
          break;
       case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
          {
-            settings_t *settings          = config_get_ptr();
+            settings_t *settings        = config_get_ptr();
+            struct menu_state *menu_st  = menu_state_get_ptr();
             /* Reset playlist icon list */
             materialui_context_destroy_playlist_icons(mui);
             materialui_refresh_playlist_icon_list(mui,
@@ -8868,11 +8870,8 @@ static int materialui_environ(enum menu_environ_cb type,
              * the menu must be refreshed (since icon indices
              * may have changed) */
             if (mui->flags & MUI_FLAG_IS_PLAYLIST_TAB)
-            {
-               bool refresh = false;
-               menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-               menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-            }
+               menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
+                                          |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
          }
          break;
       case MENU_ENVIRON_ENABLE_SCREENSAVER:

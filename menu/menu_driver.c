@@ -4101,20 +4101,19 @@ static void menu_input_search_cb(void *userdata, const char *str)
    /* Do not apply search filter if string
     * consists of a single Latin alphabet
     * character */
-   if (((str[1] != '\0') || (!ISALPHA(str[0]))) &&
-       menu_driver_search_filter_enabled(label, type))
+   if ( ((str[1] != '\0') || (!ISALPHA(str[0])))
+       && menu_driver_search_filter_enabled(label, type))
    {
       /* Add search term */
       if (menu_entries_search_push(str))
       {
-         bool refresh = false;
          /* Reset navigation pointer */
-         menu_st->selection_ptr = 0;
+         menu_st->selection_ptr     = 0;
          if (menu_st->driver_ctx->navigation_set)
             menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
          /* Refresh menu */
-         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-         menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+         menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
+                                    |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
       }
    }
    /* Perform a regular search: jump to the
@@ -6539,14 +6538,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_st->flags |= MENU_ST_FLAG_PENDING_QUICK_MENU;
          }
          break;
-      case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
-         menu_st->flags |=  MENU_ST_FLAG_PREVENT_POPULATE;
-         break;
-      case RARCH_MENU_CTL_UNSET_PREVENT_POPULATE:
-         menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
-         break;
-      case RARCH_MENU_CTL_IS_PREVENT_POPULATE:
-         return ((menu_st->flags & MENU_ST_FLAG_PREVENT_POPULATE) > 0);
       case RARCH_MENU_CTL_DEINIT:
          if (     menu_st->driver_ctx
                && menu_st->driver_ctx->context_destroy)
@@ -6753,11 +6744,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 struct video_shader *menu_shader_get(void)
 {
-   video_driver_state_t 
-      *video_st                = video_state_get_ptr();
    if (video_shader_any_supported())
+   {
+      video_driver_state_t *video_st = video_state_get_ptr();
       if (video_st)
          return video_st->menu_driver_shader;
+   }
    return NULL;
 }
 
@@ -7812,12 +7804,12 @@ int generic_menu_entry_action(
          command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
       menu_entries_flush_stack(flush_target, 0);
-      /* An annoyance - some menu drivers (Ozone...) call
-       * RARCH_MENU_CTL_SET_PREVENT_POPULATE in awkward
+      /* An annoyance - some menu drivers (Ozone...) set
+       * MENU_ST_FLAG_PREVENT_POPULATE in awkward
        * places, which can cause breakage here when flushing
-       * the menu stack. We therefore have to force a
-       * RARCH_MENU_CTL_UNSET_PREVENT_POPULATE */
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+       * the menu stack. We therefore have to unset
+       * MENU_ST_FLAG_PREVENT_POPULATE */
+      menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
 
       /* Ozone requires thumbnail refreshing */
       menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, &i);

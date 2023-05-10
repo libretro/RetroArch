@@ -5013,10 +5013,8 @@ static void rgui_render(
    /* Refresh current menu, if required */
    if (rgui->flags & RGUI_FLAG_FORCE_MENU_REFRESH)
    {
-      bool refresh = false;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+      menu_st->flags          |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                               |  MENU_ST_FLAG_PREVENT_POPULATE;
       /* Menu entries may change as a result of the
        * refresh; skip rendering of the 'obsolete'
        * menu this frame, and force a redraw of the

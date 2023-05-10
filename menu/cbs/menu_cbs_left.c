@@ -355,14 +355,14 @@ static int action_left_shader_filter_default(unsigned type, const char *label,
 static int action_left_cheat_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh        = false;
-   unsigned new_size   = 0;
-   unsigned cheat_size = cheat_manager_get_size();
+   unsigned new_size          = 0;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned cheat_size        = cheat_manager_get_size();
 
    if (cheat_size)
       new_size         = cheat_size - 1;
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags     |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                       | MENU_ST_FLAG_PREVENT_POPULATE;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
    return 0;
@@ -373,7 +373,7 @@ static int action_left_cheat_num_passes(unsigned type, const char *label,
 static int action_left_shader_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh      = false;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    struct video_shader *shader = menu_shader_get();
    unsigned pass_count         = shader ? shader->passes : 0;
 
@@ -383,8 +383,8 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
    if (pass_count > 0)
       shader->passes--;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags     |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                       | MENU_ST_FLAG_PREVENT_POPULATE;
    video_shader_resolve_parameters(shader);
 
    shader->flags                        |= SHDR_FLAG_MODIFIED;

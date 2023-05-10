@@ -130,17 +130,13 @@ int action_right_cheat(unsigned type, const char *label,
 static int action_right_cheat_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh      = false;
-   unsigned new_size = 0;
-
-   new_size = cheat_manager_get_size() + 1;
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned new_size          = cheat_manager_get_size() + 1;
+   menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
+                              |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
-
    return 0;
 }
-
 #endif
 
 static int action_right_input_desc_kbd(unsigned type, const char *label,
@@ -390,7 +386,7 @@ static int action_right_shader_filter_default(unsigned type, const char *label,
 static int action_right_shader_num_passes(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh                = false;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    struct video_shader *shader = menu_shader_get();
    unsigned pass_count         = shader ? shader->passes : 0;
 
@@ -400,8 +396,8 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
    if (pass_count < GFX_MAX_SHADERS)
       shader->passes++;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
+                              |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    video_shader_resolve_parameters(shader);
 
    shader->flags           |= SHDR_FLAG_MODIFIED;
@@ -800,19 +796,18 @@ static int manual_content_scan_core_name_right(unsigned type, const char *label,
 static int cpu_policy_mode_change(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh = false;
+   struct menu_state *menu_st = menu_state_get_ptr();
    enum cpu_scaling_mode mode = get_cpu_scaling_mode(NULL);
    if (mode != CPUSCALING_MANUAL)
       mode++;
    set_cpu_scaling_mode(mode, NULL);
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
 static int cpu_policy_freq_managed_tweak(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh = false;
    cpu_scaling_opts_t opts;
    enum cpu_scaling_mode mode = get_cpu_scaling_mode(&opts);
 

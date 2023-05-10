@@ -761,14 +761,11 @@ int setting_uint_action_right_default(
 int setting_bool_action_right_with_refresh(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   bool refresh      = false;
-
+   struct menu_state *menu_st = menu_state_get_ptr();
    setting_set_with_string_representation(setting,
          *setting->value.target.boolean ? "false" : "true");
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+   menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
+                              |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -7435,9 +7432,9 @@ static int setting_action_right_libretro_device_type(
 static int setting_action_right_input_remap_port(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   bool refresh         = false;
-   unsigned port        = 0;
-   settings_t *settings = config_get_ptr();
+   unsigned port              = 0;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
 
    if (!setting)
       return -1;
@@ -7458,8 +7455,8 @@ static int setting_action_right_input_remap_port(
     * ports are set to 'RETRO_DEVICE_NONE' */
    command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
+                              |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 

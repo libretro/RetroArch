@@ -107,9 +107,9 @@ static void cb_task_menu_explore_init(
 
    if (menu_type == MENU_EXPLORE_TAB)
    {
-      bool refresh_nonblocking = false;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh_nonblocking);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+      struct menu_state *menu_st = menu_state_get_ptr();
+      menu_st->flags            |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                 |  MENU_ST_FLAG_PREVENT_POPULATE;
    }
 }
 

@@ -5680,9 +5680,9 @@ static void wifi_scan_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
-   bool refresh = false;
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
+                              |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 }
 #endif
 

@@ -86,19 +86,19 @@ static int action_start_remap_file_info(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
+   struct menu_state *menu_st            = menu_state_get_ptr();
    settings_t *settings                  = config_get_ptr();
    const char *directory_input_remapping = settings ?
          settings->paths.directory_input_remapping : NULL;
    rarch_system_info_t *system           = &runloop_state_get_ptr()->system;
-   bool refresh                          = false;
 
    input_remapping_deinit(false);
    input_remapping_set_defaults(false);
    config_load_remap(directory_input_remapping, system);
 
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
 
    return 0;
 }
@@ -107,15 +107,12 @@ static int action_start_override_file_info(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   rarch_system_info_t *system           = &runloop_state_get_ptr()->system;
-   bool refresh                          = false;
-
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   rarch_system_info_t *system     = &runloop_state_get_ptr()->system;
    config_load_override(system);
-
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
 
@@ -124,13 +121,11 @@ static int action_start_shader_preset(
       unsigned type, size_t idx, size_t entry_idx)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   bool refresh                = false;
-   struct video_shader *shader = menu_shader_get();
-
-   shader->passes = 0;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   struct video_shader *shader     = menu_shader_get();
+   shader->passes                  = 0;
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
    command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
 #endif
    return 0;
@@ -141,13 +136,11 @@ static int action_start_shader_preset_prepend(
    unsigned type, size_t idx, size_t entry_idx)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   bool refresh = false;
-   struct video_shader* shader = menu_shader_get();
-
-   shader->passes = 0;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   struct video_shader* shader     = menu_shader_get();
+   shader->passes                  = 0;
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
    command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
 #endif
    return 0;
@@ -158,13 +151,11 @@ static int action_start_shader_preset_append(
    unsigned type, size_t idx, size_t entry_idx)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   bool refresh = false;
-   struct video_shader* shader = menu_shader_get();
-
-   shader->passes = 0;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   struct video_shader* shader     = menu_shader_get();
+   shader->passes                  = 0;
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
    command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
 #endif
    return 0;
@@ -181,15 +172,14 @@ static int action_start_video_filter_file_load(
 
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
    {
-      bool refresh = false;
-
+      struct menu_state *menu_st      = menu_state_get_ptr();
       /* Unload video filter */
       settings->paths.path_softfilter_plugin[0] = '\0';
       command_event(CMD_EVENT_REINIT, NULL);
 
       /* Refresh menu */
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+      menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                      |  MENU_ST_FLAG_PREVENT_POPULATE;
    }
 
    return 0;
@@ -206,15 +196,14 @@ static int action_start_audio_dsp_plugin_file_load(
 
    if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
    {
-      bool refresh = false;
-
-      /* Unload dsp plugin filter */
+      struct menu_state *menu_st      = menu_state_get_ptr();
+      /* Unload DSP plugin filter */
       settings->paths.path_audio_dsp_plugin[0] = '\0';
       command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
 
       /* Refresh menu */
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+      menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                      |  MENU_ST_FLAG_PREVENT_POPULATE;
    }
 
    return 0;
@@ -642,12 +631,11 @@ static int action_start_load_core(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
+   struct menu_state *menu_st  = menu_state_get_ptr();
    int ret                     = generic_action_ok_command(
          CMD_EVENT_UNLOAD_CORE);
-   bool refresh                = false;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                               |  MENU_ST_FLAG_PREVENT_POPULATE;
    return ret;
 }
 
@@ -687,9 +675,9 @@ static int action_start_core_lock(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *core_path = path;
-   bool refresh          = false;
-   int ret               = 0;
+   const char *core_path      = path;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   int ret                    = 0;
 
    if (string_is_empty(core_path))
       return -1;
@@ -737,8 +725,8 @@ static int action_start_core_lock(
     * refreshed - do this even in the event of an error,
     * since we don't want to leave the menu in an
     * undefined state */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                               |  MENU_ST_FLAG_PREVENT_POPULATE;
 
    return ret;
 }

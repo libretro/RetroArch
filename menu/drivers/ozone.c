@@ -5028,12 +5028,14 @@ static void ozone_refresh_horizontal_list(
       ozone_handle_t *ozone,
       settings_t *settings)
 {
+   struct menu_state *menu_st = menu_state_get_ptr();
+
    ozone_context_destroy_horizontal_list(ozone);
    ozone_free_list_nodes(&ozone->horizontal_list, false);
    file_list_deinitialize(&ozone->horizontal_list);
    RHMAP_FREE(ozone->playlist_db_node_map);
 
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_PREVENT_POPULATE;
 
    ozone->horizontal_list.list     = NULL;
    ozone->horizontal_list.capacity = 0;
@@ -8629,6 +8631,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    settings_t *settings                = config_get_ptr();
    gfx_animation_t *p_anim             = anim_get_ptr();
    gfx_display_t *p_disp               = disp_get_ptr();
+   struct menu_state *menu_st          = menu_state_get_ptr();
    menu_handle_t *menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
    const char *directory_assets        = settings->paths.directory_assets;
 
@@ -8735,7 +8738,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    for (i = 0; i < OZONE_TAB_MAX_LENGTH; i++)
       ozone->tab_selection[i]                   = 0;
 
-   menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 &=  ~MENU_ST_FLAG_PREVENT_POPULATE;
 
    /* TODO/FIXME - we don't use framebuffer at all
     * for Ozone, we should refactor this dependency
@@ -11887,9 +11890,9 @@ static void ozone_populate_entries(
    settings                             = config_get_ptr();
    ozone_collapse_sidebar               = settings->bools.ozone_collapse_sidebar;
 
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
+   if ((menu_st->flags & MENU_ST_FLAG_PREVENT_POPULATE) > 0)
    {
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+      menu_st->flags                 &=  ~MENU_ST_FLAG_PREVENT_POPULATE;
       ozone_selection_changed(ozone, false);
 
       /* Refresh title for search terms */
@@ -12149,6 +12152,7 @@ static void ozone_populate_entries(
 static void ozone_toggle(void *userdata, bool menu_on)
 {
    settings_t *settings       = NULL;
+   struct menu_state *menu_st = menu_state_get_ptr();
    ozone_handle_t *ozone      = (ozone_handle_t*) userdata;
 
    if (!ozone)
@@ -12159,7 +12163,6 @@ static void ozone_toggle(void *userdata, bool menu_on)
     * 'save state' option */
    if (ozone->is_quick_menu)
    {
-      struct menu_state *menu_st = menu_state_get_ptr();
       ozone->flags              &= ~(OZONE_FLAG_WANT_THUMBNAIL_BAR
                                    | OZONE_FLAG_SKIP_THUMBNAIL_RESET);
       gfx_thumbnail_reset(&ozone->thumbnails.savestate);
@@ -12167,11 +12170,11 @@ static void ozone_toggle(void *userdata, bool menu_on)
       ozone_update_savestate_thumbnail_image(ozone);
    }
 
-   settings              = config_get_ptr();
+   settings                           = config_get_ptr();
    if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL))
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+      menu_st->flags                 &=  ~MENU_ST_FLAG_PREVENT_POPULATE;
    else
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+      menu_st->flags                 |=   MENU_ST_FLAG_PREVENT_POPULATE;
 
    if (ozone->depth == 1)
    {

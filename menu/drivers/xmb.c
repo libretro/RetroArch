@@ -2570,13 +2570,15 @@ static void xmb_context_reset_horizontal_list(
 
 static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 {
+   struct menu_state *menu_st = menu_state_get_ptr();
+
    xmb_context_destroy_horizontal_list(xmb);
 
    xmb_free_list_nodes(&xmb->horizontal_list, false);
    file_list_deinitialize(&xmb->horizontal_list);
    RHMAP_FREE(xmb->playlist_db_node_map);
 
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags |=  MENU_ST_FLAG_PREVENT_POPULATE;
 
    xmb_init_horizontal_list(xmb);
 
@@ -2780,10 +2782,10 @@ static void xmb_populate_entries(void *data,
    }
 #endif
 
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
+   if ((menu_st->flags & MENU_ST_FLAG_PREVENT_POPULATE) > 0)
    {
       xmb_selection_pointer_changed(xmb, false);
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+      menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
 
       /* Refresh title for search terms */
       xmb_set_title(xmb);
@@ -6667,6 +6669,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    gfx_animation_t *p_anim    = anim_get_ptr();
    gfx_display_t *p_disp      = disp_get_ptr();
    menu_handle_t *menu        = (menu_handle_t*)calloc(1, sizeof(*menu));
+   struct menu_state *menu_st = menu_state_get_ptr();
    if (!menu)
       return NULL;
 
@@ -6737,7 +6740,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_EXPLORE;
 #endif
 
-   menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+   menu_st->flags         &= ~MENU_ST_FLAG_PREVENT_POPULATE;
 
    /* TODO/FIXME - we don't use framebuffer at all
     * for XMB, we should refactor this dependency
@@ -7755,13 +7758,14 @@ static void xmb_context_destroy(void *data)
 static void xmb_toggle(void *userdata, bool menu_on)
 {
    gfx_animation_ctx_entry_t entry;
-   bool tmp             = false;
-   xmb_handle_t *xmb    = (xmb_handle_t*)userdata;
+   bool tmp                   = false;
+   xmb_handle_t *xmb          = (xmb_handle_t*)userdata;
+   struct menu_state *menu_st = menu_state_get_ptr();
 
    if (!xmb)
       return;
 
-   xmb->depth         = (int)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+   xmb->depth                 = (int)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
    if (!menu_on)
    {
@@ -7793,9 +7797,9 @@ static void xmb_toggle(void *userdata, bool menu_on)
    tmp = !menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL);
 
    if (tmp)
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+      menu_st->flags |=  MENU_ST_FLAG_PREVENT_POPULATE;
    else
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+      menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
 
    xmb_toggle_horizontal_list(xmb);
 }

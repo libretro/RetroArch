@@ -3803,7 +3803,7 @@ bool command_event(enum event_command cmd, void *data)
             if (disk_control_enabled(&sys_info->disk_control))
             {
 #if defined(HAVE_MENU)
-               bool refresh               = false;
+               struct menu_state *menu_st = menu_state_get_ptr();
                /* Get initial disk eject state */
                bool initial_disk_ejected  = disk_control_get_eject_state(&sys_info->disk_control);
 #endif
@@ -3817,10 +3817,8 @@ bool command_event(enum event_command cmd, void *data)
                 * must refresh the disk options menu */
                if (initial_disk_ejected != disk_control_get_eject_state(
                      &sys_info->disk_control))
-               {
-                  menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-                  menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-               }
+                  menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                                  |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
                return success;
             }
@@ -3840,13 +3838,16 @@ bool command_event(enum event_command cmd, void *data)
 
             if (disk_control_enabled(&sys_info->disk_control))
             {
-               bool *show_msg = (bool*)data;
-               bool eject     = !disk_control_get_eject_state(&sys_info->disk_control);
-               bool verbose   = true;
-               bool refresh   = false;
+               bool *show_msg                  = (bool*)data;
+               bool eject                      = !disk_control_get_eject_state(
+                                                  &sys_info->disk_control);
+               bool verbose                    = true;
+#if defined(HAVE_MENU)
+               struct menu_state *menu_st      = menu_state_get_ptr();
+#endif
 
                if (show_msg)
-                  verbose     = *show_msg;
+                  verbose                      = *show_msg;
 
                disk_control_set_eject_state(
                      &sys_info->disk_control, eject, verbose);
@@ -3854,8 +3855,8 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(HAVE_MENU)
                /* It is necessary to refresh the disk options
                 * menu when toggling the tray state */
-               menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-               menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+               menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                               |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
             }
             else

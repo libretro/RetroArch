@@ -3426,46 +3426,40 @@ static int action_ok_shader_preset_remove_game(const char *path,
 static int action_ok_video_filter_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings = config_get_ptr();
-
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
    if (!settings)
       return -1;
-
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
    {
-      bool refresh = false;
-
       /* Unload video filter */
       settings->paths.path_softfilter_plugin[0] = '\0';
       command_event(CMD_EVENT_REINIT, NULL);
-
       /* Refresh menu */
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+      menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                      |  MENU_ST_FLAG_PREVENT_POPULATE;
    }
-
    return 0;
 }
 
 static int action_ok_audio_dsp_plugin_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
 
    if (!settings)
       return -1;
 
    if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
    {
-      bool refresh = false;
-
-      /* Unload dsp plugin filter */
+      /* Unload DSP plugin filter */
       settings->paths.path_audio_dsp_plugin[0] = '\0';
       command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
 
       /* Refresh menu */
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+      menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                      |  MENU_ST_FLAG_PREVENT_POPULATE;
    }
 
    return 0;
@@ -3527,13 +3521,13 @@ static int generic_action_ok_remap_file_operation(const char *path,
 #ifdef HAVE_CONFIGFILE
    char content_dir_name[PATH_MAX_LENGTH];
    char remap_file_path[PATH_MAX_LENGTH];
+   struct menu_state *menu_st            = menu_state_get_ptr();
    rarch_system_info_t *system           = &runloop_state_get_ptr()->system;
    const char *core_name                 = system ? system->info.library_name : NULL;
    const char *rarch_path_basename       = path_get(RARCH_PATH_BASENAME);
    bool has_content                      = !string_is_empty(rarch_path_basename);
    settings_t *settings                  = config_get_ptr();
    const char *directory_input_remapping = settings->paths.directory_input_remapping;
-   bool refresh                          = false;
 
    content_dir_name[0] = '\0';
    remap_file_path[0]  = '\0';
@@ -3656,8 +3650,8 @@ static int generic_action_ok_remap_file_operation(const char *path,
    }
 
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
    return 0;
 }
@@ -4116,7 +4110,7 @@ push_dropdown_list:
 static int action_ok_cheat_reload_cheats(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool                    refresh = false;
+   struct menu_state *menu_st      = menu_state_get_ptr();
    settings_t           *settings  = config_get_ptr();
    const char *path_cheat_database = settings->paths.path_cheat_database;
 
@@ -4125,8 +4119,8 @@ static int action_ok_cheat_reload_cheats(const char *path,
    cheat_manager_load_game_specific_cheats(
          path_cheat_database);
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
 #endif
@@ -4166,13 +4160,13 @@ static int action_ok_cheat_add_top(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
-   struct item_cheat tmp;
    char msg[256];
-   bool          refresh = false;
-   unsigned int new_size = cheat_manager_get_size() + 1;
+   struct item_cheat tmp;
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   unsigned int new_size           = cheat_manager_get_size() + 1;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
    memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.size-1],
@@ -4201,11 +4195,11 @@ static int action_ok_cheat_add_bottom(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char msg[256];
-   bool          refresh = false;
-   unsigned int new_size = cheat_manager_get_size() + 1;
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   unsigned int new_size           = cheat_manager_get_size() + 1;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
    strlcpy(msg,
@@ -4222,15 +4216,15 @@ static int action_ok_cheat_delete_all(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char msg[256];
-   bool refresh = false;
+   struct menu_state *menu_st       = menu_state_get_ptr();
 
    cheat_manager_state.delete_state = 0;
    cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 
-   strlcpy(msg,
-         msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS), sizeof(msg));
+   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS),
+          sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
 
    runloop_msg_queue_push(msg, 1, 180, true, NULL,
@@ -4245,8 +4239,8 @@ static int action_ok_cheat_add_new_after(const char *path,
    int i;
    char msg[256];
    struct item_cheat tmp;
-   bool          refresh = false;
-   unsigned int new_size = cheat_manager_get_size() + 1;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned int new_size      = cheat_manager_get_size() + 1;
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
@@ -4262,8 +4256,8 @@ static int action_ok_cheat_add_new_after(const char *path,
 
    memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat));
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_AFTER_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
@@ -4279,8 +4273,8 @@ static int action_ok_cheat_add_new_before(const char *path,
    int i;
    char msg[256];
    struct item_cheat tmp;
-   bool          refresh = false;
-   unsigned int new_size = cheat_manager_get_size() + 1;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned int new_size      = cheat_manager_get_size() + 1;
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
@@ -4298,8 +4292,8 @@ static int action_ok_cheat_add_new_before(const char *path,
    memcpy(&cheat_manager_state.working_cheat,
          &tmp, sizeof(struct item_cheat));
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_BEFORE_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
@@ -4315,8 +4309,8 @@ static int action_ok_cheat_copy_before(const char *path,
    int i;
    struct item_cheat tmp;
    char msg[256];
-   bool          refresh = false;
-   unsigned int new_size = cheat_manager_get_size() + 1;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned int new_size      = cheat_manager_get_size() + 1;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
    memcpy(&tmp, &cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx], sizeof(struct item_cheat));
@@ -4335,8 +4329,8 @@ static int action_ok_cheat_copy_before(const char *path,
    memcpy(&cheat_manager_state.cheats[tmp.idx], &tmp, sizeof(struct item_cheat));
    memcpy(&cheat_manager_state.working_cheat, &tmp, sizeof(struct item_cheat));
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_BEFORE_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
@@ -4352,8 +4346,8 @@ static int action_ok_cheat_copy_after(const char *path,
    int i;
    struct item_cheat tmp;
    char msg[256];
-   bool          refresh = false;
-   unsigned int new_size = cheat_manager_get_size() + 1;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned int new_size      = cheat_manager_get_size() + 1;
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
@@ -4372,8 +4366,8 @@ static int action_ok_cheat_copy_after(const char *path,
 
    memcpy(&cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx+1], &tmp, sizeof(struct item_cheat ));
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 
    strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_AFTER_SUCCESS), sizeof(msg));
    msg[sizeof(msg) - 1] = 0;
@@ -4685,10 +4679,9 @@ static int action_ok_core_updater_list(const char *path,
    else
 #endif
    {
-      bool refresh = true;
-
       /* Initial setup... */
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      struct menu_state *menu_st = menu_state_get_ptr();
+      menu_st->flags            |=  MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
       generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
 
       /* Push core list update task */
@@ -5322,56 +5315,44 @@ DEFAULT_ACTION_OK_DOWNLOAD(action_ok_update_autoconfig_profiles, MENU_ENUM_LABEL
 static int action_ok_game_specific_core_options_create(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool refresh = false;
-
+   struct menu_state *menu_st       = menu_state_get_ptr();
    core_options_create_override(true);
-
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
 
 static int action_ok_folder_specific_core_options_create(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool refresh = false;
-
+   struct menu_state *menu_st       = menu_state_get_ptr();
    core_options_create_override(false);
-
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
 
 static int action_ok_game_specific_core_options_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool refresh = false;
-
+   struct menu_state *menu_st       = menu_state_get_ptr();
    core_options_remove_override(true);
-
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
 
 static int action_ok_folder_specific_core_options_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool refresh = false;
-
+   struct menu_state *menu_st       = menu_state_get_ptr();
    core_options_remove_override(false);
-
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
 
@@ -5413,7 +5394,7 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
       const char *flush_target   = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
       file_list_t *list          = NULL;
       if (menu_st->entries.list)
-         list  = MENU_LIST_GET(menu_st->entries.list, 0);
+         list                    = MENU_LIST_GET(menu_st->entries.list, 0);
       if (list && (list->size > 1))
       {
          parent_label = list->list[list->size - 2].label;
@@ -5424,12 +5405,12 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
       }
 
       menu_entries_flush_stack(flush_target, 0);
-      /* An annoyance - some menu drivers (Ozone...) call
-       * RARCH_MENU_CTL_SET_PREVENT_POPULATE in awkward
-       * places, which can cause breakage here when flushing
-       * the menu stack. We therefore have to force a
-       * RARCH_MENU_CTL_UNSET_PREVENT_POPULATE */
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+      /* An annoyance - some menu drivers (Ozone...) set
+       * MENU_ST_FLAG_PREVENT_POPULATE in awkward places,
+       * which can cause breakage here when flushing
+       * the menu stack. We therefore have to unset
+       * MENU_ST_FLAG_PREVENT_POPULATE */
+      menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
    }
 
    return ret;
@@ -6041,9 +6022,8 @@ static void wifi_menu_refresh_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
-   bool refresh = false;
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 }
 
 static int action_ok_wifi_disconnect(const char *path,
@@ -6087,9 +6067,9 @@ static void netplay_refresh_rooms_cb(retro_task_t *task, void *task_data,
    const char *label            = NULL;
    unsigned menu_type           = 0;
    enum msg_hash_enums enum_idx = MSG_UNKNOWN;
-   bool refresh                 = false;
    http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
    net_driver_state_t *net_st   = networking_state_get_ptr();
+   struct menu_state *menu_st   = menu_state_get_ptr();
 
    free(net_st->room_list);
    net_st->room_list  = NULL;
@@ -6146,8 +6126,8 @@ static void netplay_refresh_rooms_cb(retro_task_t *task, void *task_data,
    free(room_data);
 
 done:
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 }
 
 static int action_ok_push_netplay_refresh_rooms(const char *path,
@@ -6167,10 +6147,10 @@ static void netplay_refresh_lan_cb(const void *data)
    const char *label                     = NULL;
    unsigned menu_type                    = 0;
    enum msg_hash_enums enum_idx          = MSG_UNKNOWN;
-   bool refresh                          = false;
    const struct netplay_host_list *hosts =
       (const struct netplay_host_list*)data;
    net_driver_state_t *net_st            = networking_state_get_ptr();
+   struct menu_state *menu_st            = menu_state_get_ptr();
 
    free(net_st->room_list);
    net_st->room_list  = NULL;
@@ -6221,8 +6201,8 @@ static void netplay_refresh_lan_cb(const void *data)
    }
 
 done:
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 }
 
 static int action_ok_push_netplay_refresh_lan(const char *path,
@@ -6870,7 +6850,6 @@ static int action_ok_push_dropdown_item_input_select_physical_keyboard(const cha
     const char *keyboard_name;
     enum msg_hash_enums enum_idx;
     rarch_setting_t *setting     = NULL;
-    bool refresh                 = false;
     settings_t *settings         = config_get_ptr();
     const char *menu_path        = NULL;
     menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
@@ -6912,8 +6891,8 @@ static int action_ok_push_dropdown_item_input_select_physical_keyboard(const cha
     command_event(CMD_EVENT_REINIT, NULL);
 
     /* Refresh menu */
-    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                     | MENU_ST_FLAG_PREVENT_POPULATE;
 
     return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -7608,20 +7587,16 @@ static int action_ok_core_restore_backup(const char *path,
 static int action_ok_core_delete_backup(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *backup_path = label;
-   bool refresh            = false;
-
+   struct menu_state *menu_st       = menu_state_get_ptr();
+   const char *backup_path          = label;
    if (string_is_empty(backup_path))
       return -1;
-
    /* Delete backup file (if it exists) */
    if (path_is_valid(backup_path))
       filestream_delete(backup_path);
-
    /* Refresh menu */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
 
@@ -7630,10 +7605,10 @@ static int action_ok_core_delete_backup(const char *path,
 int action_ok_core_lock(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *core_path = path;
-   bool lock             = false;
-   bool refresh          = false;
-   int ret               = 0;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   const char *core_path      = path;
+   bool lock                  = false;
+   int ret                    = 0;
 
    if (string_is_empty(core_path))
       return -1;
@@ -7684,8 +7659,8 @@ int action_ok_core_lock(const char *path,
     * refreshed - do this even in the event of an error,
     * since we don't want to leave the menu in an
     * undefined state */
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
 
    return ret;
 }
