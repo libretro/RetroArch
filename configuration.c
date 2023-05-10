@@ -5267,7 +5267,7 @@ int8_t config_save_overrides(enum override_type type, void *data, bool remove)
             config_set_string(conf, array_overrides[i].ident,
                   array_overrides[i].ptr);
             RARCH_DBG("[Overrides]: %s = \"%s\"\n",
-                  array_overrides[i].ident, *array_overrides[i].ptr);
+                  array_overrides[i].ident, array_overrides[i].ptr);
          }
       }
 
@@ -5278,7 +5278,7 @@ int8_t config_save_overrides(enum override_type type, void *data, bool remove)
             config_set_path(conf, path_overrides[i].ident,
                   path_overrides[i].ptr);
             RARCH_DBG("[Overrides]: %s = \"%s\"\n",
-                  path_overrides[i].ident, *path_overrides[i].ptr);
+                  path_overrides[i].ident, path_overrides[i].ptr);
          }
       }
 
