@@ -4756,6 +4756,7 @@ static void xmb_render(void *data,
    xmb_handle_t *xmb              = (xmb_handle_t*)data;
    settings_t *settings           = config_get_ptr();
    struct menu_state   *menu_st   = menu_state_get_ptr();
+   menu_input_t *menu_input       = &menu_st->input_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    size_t      end                = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
    gfx_display_t *p_disp          = disp_get_ptr();
@@ -4842,7 +4843,7 @@ static void xmb_render(void *data,
             if (     (pointer_y > y1) 
                   && (pointer_y < y2))
             {
-               menu_input_set_pointer_selection((unsigned)i);
+               menu_input->ptr = (unsigned)i;
                break;
             }
          }

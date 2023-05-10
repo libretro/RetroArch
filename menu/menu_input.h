@@ -242,21 +242,6 @@ extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
  **/
 void menu_input_get_pointer_state(menu_input_pointer_t *copy_target);
 
-/**
- * Get the menu item index currently selected or hovered over by the pointer.
- * 
- * @return the selected menu index
- **/
-unsigned menu_input_get_pointer_selection(void);
-
-/**
- * Set the menu item index that is currently selected or hovered over by the
- * pointer. Note: Each menu driver is responsible for setting this.
- *
- * @param selection  the selected menu index
- **/
-void menu_input_set_pointer_selection(unsigned selection);
-
 typedef struct menu_input_ctx_line
 {
    const char *label;

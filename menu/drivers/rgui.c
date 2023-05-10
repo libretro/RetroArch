@@ -4963,6 +4963,7 @@ static void rgui_render(
    gfx_animation_t *p_anim        = anim_get_ptr();
    gfx_display_t *p_disp          = disp_get_ptr();
    struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_input_t *menu_input       = &menu_st->input_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    rgui_t *rgui                   = (rgui_t*)data;
    enum gfx_animation_ticker_type
@@ -5108,14 +5109,10 @@ static void rgui_render(
       /* Update currently 'highlighted' item */
       if (rgui->pointer.y > rgui->term_layout.start_y)
       {
-         unsigned new_ptr;
          menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
-
          /* NOTE: It's okay for this to go out of range
           * (limits are checked in rgui_pointer_up()) */
-         new_ptr = (unsigned)((rgui->pointer.y - rgui->term_layout.start_y) / rgui->font_height_stride) + old_start;
-
-         menu_input_set_pointer_selection(new_ptr);
+         menu_input->ptr = (unsigned)((rgui->pointer.y - rgui->term_layout.start_y) / rgui->font_height_stride) + old_start;
       }
 
       /* Allow drag-scrolling if items are currently off-screen */

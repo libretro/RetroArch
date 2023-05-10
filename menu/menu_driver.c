@@ -3984,13 +3984,13 @@ void get_current_menu_value(struct menu_state *menu_st,
    const char*      entry_label;
 
    MENU_ENTRY_INITIALIZE(entry);
-   entry.flags |= MENU_ENTRY_FLAG_VALUE_ENABLED;
+   entry.flags    |= MENU_ENTRY_FLAG_VALUE_ENABLED;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
 
    if (entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
-      entry_label              = entry.password_value;
+      entry_label  = entry.password_value;
    else
-      entry_label              = entry.value;
+      entry_label  = entry.value;
 
    strlcpy(s, entry_label, len);
 }
@@ -4591,21 +4591,6 @@ void menu_input_get_pointer_state(menu_input_pointer_t *copy_target)
       memcpy(copy_target, &menu_input->pointer, sizeof(menu_input_pointer_t));
 }
 
-unsigned menu_input_get_pointer_selection(void)
-{
-   struct menu_state    *menu_st  = &menu_driver_state;
-   menu_input_t       *menu_input = &menu_st->input_state;
-   return menu_input->ptr;
-}
-
-void menu_input_set_pointer_selection(unsigned selection)
-{
-   struct menu_state    *menu_st  = &menu_driver_state;
-   menu_input_t       *menu_input = &menu_st->input_state;
-
-   menu_input->ptr                = selection;
-}
-
 const char *menu_input_dialog_get_buffer(void)
 {
    struct menu_state    *menu_st  = &menu_driver_state;
@@ -4643,7 +4628,7 @@ void menu_input_dialog_end(void)
    struct menu_state *menu_st                 = &menu_driver_state;
    menu_st->input_dialog_kb_type              = 0;
    menu_st->input_dialog_kb_idx               = 0;
-   menu_st->flags &= ~MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
+   menu_st->flags                            &= ~MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
    menu_st->input_dialog_kb_label[0]          = '\0';
    menu_st->input_dialog_kb_label_setting[0]  = '\0';
 
@@ -4848,31 +4833,31 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
       void *data, unsigned code)
 {
    uint64_t current_usec;
-   input_driver_state_t *input_st = input_state_get_ptr();
-   struct menu_state *menu_st     = &menu_driver_state;
-   settings_t     *settings       = config_get_ptr();
-   struct menu_bind_state *binds  = &menu_st->input_binds;
-   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    * 1000000;
-   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
+   input_driver_state_t *input_st   = input_state_get_ptr();
+   struct menu_state *menu_st       = &menu_driver_state;
+   settings_t     *settings         = config_get_ptr();
+   struct menu_bind_state *binds    = &menu_st->input_binds;
+   uint64_t input_bind_hold_us      = settings->uints.input_bind_hold    * 1000000;
+   uint64_t input_bind_timeout_us   = settings->uints.input_bind_timeout * 1000000;
 
    /* Clear old mapping bit */
    BIT512_CLEAR_PTR(&input_st->keyboard_mapping_bits, binds->buffer.key);
 
    /* store key in bind */
-   binds->buffer.key = (enum retro_key)code;
+   binds->buffer.key                = (enum retro_key)code;
 
    /* Store new mapping bit */
    BIT512_SET_PTR(&input_st->keyboard_mapping_bits, binds->buffer.key);
 
    /* write out the bind */
-   *(binds->output)  = binds->buffer;
+   *(binds->output)                 = binds->buffer;
 
    /* next bind */
    binds->begin++;
    binds->output++;
-   binds->buffer    =* (binds->output);
+   binds->buffer                    =* (binds->output);
 
-   current_usec     = cpu_features_get_time_usec();
+   current_usec                     = cpu_features_get_time_usec();
 
    binds->timer_hold.timeout_us     = input_bind_hold_us;
    binds->timer_hold.current        = current_usec;
@@ -5081,8 +5066,8 @@ static bool menu_input_key_bind_iterate(
          new_binds.timer_hold   .timeout_end    = current_usec + input_bind_hold_us;
       }
 #else
-      if ((new_binds.skip && !_binds->skip) ||
-            menu_input_key_bind_poll_find_trigger(
+      if (     (new_binds.skip && !_binds->skip)
+            || menu_input_key_bind_poll_find_trigger(
                settings->uints.input_max_users,
                _binds, &new_binds, &(new_binds.buffer)))
          complete = true;
@@ -7743,8 +7728,7 @@ int generic_menu_entry_action(
          case MENU_ACTION_RIGHT:
          case MENU_ACTION_CANCEL:
             menu_entries_get_title(title_name, sizeof(title_name));
-            menu_driver_get_current_menu_label(menu_st, current_label, sizeof(current_label));
-            break;
+            /* fall-through */
          case MENU_ACTION_UP:
          case MENU_ACTION_DOWN:
          case MENU_ACTION_SCROLL_UP:
@@ -7822,11 +7806,12 @@ int generic_menu_entry_action(
 
          /* If core was launched via a playlist, flush
           * to playlist entry menu */
-         if (string_is_equal(parent_label,
-                  msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) &&
-             (!string_is_empty(deferred_path) &&
-              !string_is_empty(content_path) &&
-              string_is_equal(deferred_path, content_path)))
+         if (    string_is_equal(parent_label,
+                 msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS))
+              && (!string_is_empty(deferred_path)
+              && !string_is_empty(content_path)
+              && string_is_equal(deferred_path, content_path))
+             )
          {
             flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
             break;
@@ -7880,8 +7865,8 @@ bool menu_driver_iterate(
       enum menu_action action,
       retro_time_t current_time)
 {
-   return (menu_st->driver_data &&
-         generic_menu_iterate(
+   return ( menu_st->driver_data
+         && generic_menu_iterate(
             menu_st,
             p_disp,
             p_anim,
@@ -7893,16 +7878,15 @@ bool menu_driver_iterate(
 
 bool menu_input_dialog_start_search(void)
 {
-   input_driver_state_t
-      *input_st                = input_state_get_ptr();
+   input_driver_state_t *input_st          = input_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
-   settings_t *settings        = config_get_ptr();
-   bool accessibility_enable   = settings->bools.accessibility_enable;
+   settings_t *settings                    = config_get_ptr();
+   bool accessibility_enable               = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
-   access_state_t *access_st   = access_state_get_ptr();
+   access_state_t *access_st               = access_state_get_ptr();
 #endif
-   struct menu_state *menu_st  = &menu_driver_state;
-   menu_handle_t         *menu = menu_st->driver_data;
+   struct menu_state *menu_st              = &menu_driver_state;
+   menu_handle_t         *menu             = menu_st->driver_data;
 
    if (!menu)
       return false;
@@ -7910,19 +7894,19 @@ bool menu_input_dialog_start_search(void)
 #ifdef HAVE_MIST
    steam_open_osk();
 #endif
-   menu_st->flags |= MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
+   menu_st->flags                         |= MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
    strlcpy(menu_st->input_dialog_kb_label,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(menu_st->input_dialog_kb_label));
 
    if (input_st->keyboard_line.buffer)
       free(input_st->keyboard_line.buffer);
-   input_st->keyboard_line.buffer                    = NULL;
-   input_st->keyboard_line.ptr                       = 0;
-   input_st->keyboard_line.size                      = 0;
-   input_st->keyboard_line.cb                        = NULL;
-   input_st->keyboard_line.userdata                  = NULL;
-   input_st->keyboard_line.enabled                   = false;
+   input_st->keyboard_line.buffer          = NULL;
+   input_st->keyboard_line.ptr             = 0;
+   input_st->keyboard_line.size            = 0;
+   input_st->keyboard_line.cb              = NULL;
+   input_st->keyboard_line.userdata        = NULL;
+   input_st->keyboard_line.enabled         = false;
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
@@ -7939,7 +7923,7 @@ bool menu_input_dialog_start_search(void)
             &input_st->keyboard_line,
             menu_input_search_cb);
    /* While reading keyboard line input, we have to block all hotkeys. */
-   input_st->flags |= INP_FLAG_KB_MAPPING_BLOCKED;
+   input_st->flags                        |= INP_FLAG_KB_MAPPING_BLOCKED;
 
    return true;
 }
@@ -8024,11 +8008,13 @@ size_t menu_update_fullscreen_thumbnail_label(
    if (!string_is_empty(selected_entry.rich_label))
       thumbnail_label = selected_entry.rich_label;
    /* > State slot label */
-   else if (is_quick_menu && (
+   else if (   is_quick_menu
+            && (
                string_is_equal(selected_entry.label, "state_slot")
             || string_is_equal(selected_entry.label, "loadstate")
             || string_is_equal(selected_entry.label, "savestate")
-         ))
+               )
+           )
    {
       size_t _len = strlcpy(tmpstr, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
             sizeof(tmpstr));
@@ -8036,7 +8022,8 @@ size_t menu_update_fullscreen_thumbnail_label(
             config_get_ptr()->ints.state_slot);
       thumbnail_label = tmpstr;
    }
-   else if (is_quick_menu && (
+   else if (   is_quick_menu
+            && (
                string_is_equal(selected_entry.label, "replay_slot")
             || string_is_equal(selected_entry.label, "record_replay")
             || string_is_equal(selected_entry.label, "play_replay")

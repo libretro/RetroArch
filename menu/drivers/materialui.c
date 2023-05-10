@@ -3595,6 +3595,7 @@ static void materialui_render(void *data,
    gfx_display_t *p_disp      = disp_get_ptr();
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list     = menu_st->entries.list;
+   menu_input_t *menu_input   = &menu_st->input_state;
    file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
    size_t entries_end         = list ? list->size : 0;
    size_t selection           = menu_st->selection_ptr;
@@ -3818,7 +3819,7 @@ static void materialui_render(void *data,
                 (pointer_y < (entry_y + node->entry_height)))
             {
                /* Pointer selection is always updated */
-               menu_input_set_pointer_selection((unsigned)i);
+               menu_input->ptr = (unsigned)i;
 
                /* If pointer is pressed and stationary... */
                if (mui->pointer.pressed && !mui->pointer.dragged)
@@ -5239,6 +5240,7 @@ static void materialui_render_menu_list(
    size_t last_entry;
    struct menu_state *menu_st  = menu_state_get_ptr();
    menu_list_t *menu_list      = menu_st->entries.list;
+   menu_input_t *menu_input    = &menu_st->input_state;
    file_list_t *list           = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
    size_t entries_end          = list ? list->size : 0;
    unsigned header_height      = p_disp->header_height; 
@@ -5246,7 +5248,7 @@ static void materialui_render_menu_list(
             (!mui->scrollbar.dragged)
          && (!(mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS))
          && (mui->touch_feedback_alpha >= 0.5f)
-         && (mui->touch_feedback_selection == menu_input_get_pointer_selection());
+         && (mui->touch_feedback_selection == menu_input->ptr);
    bool entry_value_enabled    = (mui->list_view_type == MUI_LIST_VIEW_DEFAULT);
    bool entry_sublabel_enabled =
          (mui->list_view_type != MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON) &&
@@ -5562,6 +5564,7 @@ static void materialui_render_entry_touch_feedback(
       materialui_handle_t *mui,
       gfx_display_t *p_disp,
       void *userdata,
+      menu_input_t *menu_input,
       unsigned video_width, unsigned video_height,
       unsigned header_height, int x_offset,
       size_t current_selection)
@@ -5580,11 +5583,11 @@ static void materialui_render_entry_touch_feedback(
     * or pointer may no longer be held above the entry
     * currently selected for feedback animations */
    if (pointer_active)
-      pointer_active = (mui->touch_feedback_selection == menu_input_get_pointer_selection()) &&
-                       (mui->pointer.x >  mui->landscape_optimization.border_width) &&
-                       (mui->pointer.x <  video_width - mui->landscape_optimization.border_width - mui->nav_bar_layout_width) &&
-                       (mui->pointer.y >= header_height) &&
-                       (mui->pointer.y <= video_height - mui->nav_bar_layout_height - mui->status_bar.height);
+      pointer_active =    (mui->touch_feedback_selection == menu_input->ptr)
+                       && (mui->pointer.x >  mui->landscape_optimization.border_width)
+                       && (mui->pointer.x <  video_width - mui->landscape_optimization.border_width - mui->nav_bar_layout_width)
+                       && (mui->pointer.y >= header_height)
+                       && (mui->pointer.y <= video_height - mui->nav_bar_layout_height - mui->status_bar.height);
 
    /* Touch feedback highlight fades in when pointer
     * is held stationary on a menu entry */
@@ -7018,6 +7021,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    settings_t *settings           = config_get_ptr();
    gfx_display_t *p_disp          = disp_get_ptr();
    struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_input_t *menu_input       = &menu_st->input_state;
    size_t selection               = menu_st->selection_ptr;
    unsigned header_height         = p_disp->header_height;
    enum gfx_animation_ticker_type
@@ -7122,7 +7126,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    /* Draw 'short press' touch feedback highlight */
    materialui_render_entry_touch_feedback(
-         mui, p_disp, userdata, video_width, video_height,
+         mui, p_disp, userdata, menu_input, video_width, video_height,
          header_height, list_x_offset, selection);
 
    /* Draw 'highlighted entry' selection box */
