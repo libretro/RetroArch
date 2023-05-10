@@ -5318,7 +5318,13 @@ static size_t materialui_list_get_size(void *data, enum menu_list_type type)
    switch (type)
    {
       case MENU_LIST_PLAIN:
-         return menu_entries_get_stack_size(0);
+         {
+            struct menu_state   *menu_st   = menu_state_get_ptr();
+            menu_list_t *menu_list         = menu_st->entries.list;
+            if (menu_list)
+               return MENU_LIST_GET_STACK_SIZE(menu_list, 0);
+         }
+         break;
       case MENU_LIST_TABS:
          if (mui)
             return mui->nav_bar.num_menu_tabs;

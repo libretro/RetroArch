@@ -512,15 +512,6 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
    return MENU_LIST_GET_SELECTION(menu_list, (unsigned)idx);
 }
 
-size_t menu_entries_get_stack_size(size_t idx)
-{
-   struct menu_state   *menu_st   = &menu_driver_state;
-   menu_list_t *menu_list         = menu_st->entries.list;
-   if (!menu_list)
-      return 0;
-   return MENU_LIST_GET_STACK_SIZE(menu_list, idx);
-}
-
 size_t menu_entries_get_size(void)
 {
    struct menu_state   *menu_st   = &menu_driver_state;

@@ -177,8 +177,6 @@ void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate);
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type);
 
-size_t menu_entries_get_stack_size(size_t idx);
-
 size_t menu_entries_get_size(void);
 
 void menu_entries_prepend(file_list_t *list,

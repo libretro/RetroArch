@@ -4720,17 +4720,23 @@ static size_t ozone_list_get_size(void *data, enum menu_list_type type)
 {
    ozone_handle_t *ozone = (ozone_handle_t*) data;
 
-   if (!ozone)
-      return 0;
-
-   switch (type)
+   if (ozone)
    {
-      case MENU_LIST_PLAIN:
-         return menu_entries_get_stack_size(0);
-      case MENU_LIST_HORIZONTAL:
-         return ozone->horizontal_list.size;
-      case MENU_LIST_TABS:
-         return ozone->system_tab_end;
+      switch (type)
+      {
+         case MENU_LIST_PLAIN:
+            {
+               struct menu_state   *menu_st   = menu_state_get_ptr();
+               menu_list_t *menu_list         = menu_st->entries.list;
+               if (menu_list)
+                  return MENU_LIST_GET_STACK_SIZE(menu_list, 0);
+            }
+            break;
+         case MENU_LIST_HORIZONTAL:
+            return ozone->horizontal_list.size;
+         case MENU_LIST_TABS:
+            return ozone->system_tab_end;
+      }
    }
 
    return 0;
@@ -7948,6 +7954,7 @@ static enum menu_action ozone_parse_menu_entry_action(
    bool is_current_entry_settings = false;
    struct menu_state *menu_st     = menu_state_get_ptr();
    menu_list_t *menu_list         = menu_st->entries.list;
+   size_t menu_stack_size         = MENU_LIST_GET_STACK_SIZE(menu_list, 0);
    settings_t *settings           = config_get_ptr();
    enum menu_action new_action    = action;
    file_list_t *selection_buf     = NULL;
@@ -8316,7 +8323,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             break;
          }
 
-         if (menu_entries_get_stack_size(0) == 1)
+         if (menu_stack_size == 1)
          {
             ozone_go_to_sidebar(ozone, ozone_collapse_sidebar, tag);
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;

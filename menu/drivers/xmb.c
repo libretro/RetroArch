@@ -827,7 +827,13 @@ static size_t xmb_list_get_size(void *data, enum menu_list_type type)
    switch (type)
    {
       case MENU_LIST_PLAIN:
-         return menu_entries_get_stack_size(0);
+         {
+            struct menu_state   *menu_st   = menu_state_get_ptr();
+            menu_list_t *menu_list         = menu_st->entries.list;
+            if (menu_list)
+               return MENU_LIST_GET_STACK_SIZE(menu_list, 0);
+         }
+         break;
       case MENU_LIST_HORIZONTAL:
          return xmb->horizontal_list.size;
       case MENU_LIST_TABS:
@@ -4528,8 +4534,9 @@ static int xmb_menu_entry_action(
 static enum menu_action xmb_parse_menu_entry_action(
       xmb_handle_t *xmb, enum menu_action action)
 {
-   struct menu_state   *menu_st = menu_state_get_ptr();
    enum menu_action new_action  = action;
+   struct menu_state   *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list       = menu_st->entries.list;
 
    /* Scan user inputs */
    switch (action)
@@ -4666,7 +4673,7 @@ static enum menu_action xmb_parse_menu_entry_action(
 
          /* Back up to Main Menu and first item */
          if (     !menu_entries_search_get_terms()
-               &&  menu_entries_get_stack_size(0) == 1)
+               &&  MENU_LIST_GET_STACK_SIZE(menu_list, 0) == 1)
          {
             if (xmb_get_system_tab(xmb,
                   (unsigned)xmb->categories_selection_ptr) == XMB_SYSTEM_TAB_MAIN)
