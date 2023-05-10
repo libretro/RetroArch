@@ -5015,14 +5015,6 @@ static void xmb_render(void *data,
    GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 }
 
-static bool xmb_shader_pipeline_active(unsigned menu_shader_pipeline)
-{
-   if (string_is_equal(menu_driver_ident(), "xmb"))
-      if (menu_shader_pipeline != XMB_SHADER_PIPELINE_WALLPAPER)
-         return true;
-   return false;
-}
-
 static void xmb_draw_bg(
       void *userdata,
       gfx_display_t *p_disp,
@@ -5051,7 +5043,7 @@ static void xmb_draw_bg(
    draw.vertex_count         = 4;
    draw.prim_type            = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id          = 0;
-   draw.pipeline_active      = xmb_shader_pipeline_active(menu_shader_pipeline);
+   draw.pipeline_active      = (menu_shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER) ? false : true;
 
    if (dispctx->blend_begin)
       dispctx->blend_begin(userdata);
