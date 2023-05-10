@@ -4702,10 +4702,10 @@ static void cb_net_generic_subdir(retro_task_t *task,
 static void cb_net_generic(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
-   bool refresh                   = false;
    http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
    file_transfer_t *state         = (file_transfer_t*)user_data;
-   menu_handle_t *menu            = menu_state_get_ptr()->driver_data;
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_handle_t *menu            = menu_st->driver_data;
 
    if (!menu)
       goto finish;
@@ -4730,8 +4730,7 @@ static void cb_net_generic(retro_task_t *task,
    menu->core_len            = data->len;
 
 finish:
-   refresh = true;
-   menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
+   menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
 
    if (!err && 
          !string_ends_with_size(state->path,
@@ -4776,9 +4775,9 @@ static int generic_action_ok_network(const char *path,
    file_transfer_t *transf                 = NULL;
    const char *url_label                   = NULL;
    retro_task_callback_t callback          = NULL;
-   bool refresh                            = true;
    bool suppress_msg                       = false;
    settings_t *settings                    = config_get_ptr();
+   struct menu_state *menu_st              = menu_state_get_ptr();
    const char *network_buildbot_assets_url =
       settings->paths.network_buildbot_assets_url;
 
@@ -4847,7 +4846,7 @@ static int generic_action_ok_network(const char *path,
          break;
    }
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
 
    generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
 

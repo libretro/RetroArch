@@ -12166,7 +12166,7 @@ static void ozone_toggle(void *userdata, bool menu_on)
    }
 
    settings                           = config_get_ptr();
-   if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL))
+   if (MENU_ENTRIES_NEEDS_REFRESH(menu_st))
       menu_st->flags                 &=  ~MENU_ST_FLAG_PREVENT_POPULATE;
    else
       menu_st->flags                 |=   MENU_ST_FLAG_PREVENT_POPULATE;

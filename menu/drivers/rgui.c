@@ -5030,8 +5030,7 @@ static void rgui_render(
    {
       msg_force = p_disp->flags & GFX_DISP_FLAG_MSG_FORCE;
 
-      if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
-            && !msg_force)
+      if (MENU_ENTRIES_NEEDS_REFRESH(menu_st) && !msg_force)
          return;
 
       if (  !display_kb && 

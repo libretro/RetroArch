@@ -402,9 +402,13 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             /* Enable menu refresh, if required */
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
             if (list_handle->refresh_menu)
-               menu_entries_ctl(
-                     MENU_ENTRIES_CTL_UNSET_REFRESH,
-                     &list_handle->refresh_menu);
+            {
+               struct menu_state *menu_st = menu_state_get_ptr();
+               if (list_handle->refresh_menu)
+                  menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
+               else
+                  menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+            }
 #endif
          }
          /* fall-through */

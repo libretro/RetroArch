@@ -4367,8 +4367,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 
    switch (state)
    {
-      case MENU_ENTRIES_CTL_NEEDS_REFRESH:
-         return MENU_ENTRIES_NEEDS_REFRESH(menu_st);
       case MENU_ENTRIES_CTL_SET_REFRESH:
          {
             bool *nonblocking = (bool*)data;
@@ -4377,16 +4375,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
                menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
             else
                menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
-         }
-         break;
-      case MENU_ENTRIES_CTL_UNSET_REFRESH:
-         {
-            bool *nonblocking = (bool*)data;
-
-            if (*nonblocking)
-               menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
-            else
-               menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
          }
          break;
       case MENU_ENTRIES_CTL_SET_START:
@@ -7653,13 +7641,12 @@ int generic_menu_entry_action(
 
    if (MENU_ENTRIES_NEEDS_REFRESH(menu_st))
    {
-      bool refresh            = false;
       menu_driver_displaylist_push(
             menu_st,
             settings,
             selection_buf,
             menu_stack);
-      menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
+      menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    }
 
 #ifdef HAVE_ACCESSIBILITY

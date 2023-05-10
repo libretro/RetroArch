@@ -7794,7 +7794,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
 
    gfx_animation_push(&entry);
 
-   tmp = !menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL);
+   tmp = !MENU_ENTRIES_NEEDS_REFRESH(menu_st);
 
    if (tmp)
       menu_st->flags |=  MENU_ST_FLAG_PREVENT_POPULATE;
