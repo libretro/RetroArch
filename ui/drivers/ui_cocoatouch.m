@@ -336,7 +336,10 @@ enum
 
 #pragma mark - ApplePlatform
 -(id)renderView { return _renderView; }
--(bool)hasFocus { return YES; }
+-(bool)hasFocus
+{
+    return [[UIApplication sharedApplication] applicationState] == UIApplicationStateActive;
+}
 
 - (void)setViewType:(apple_view_type_t)vt
 {
@@ -400,7 +403,15 @@ enum
 }
 
 - (void)setCursorVisible:(bool)v { /* no-op for iOS */ }
-- (bool)setDisableDisplaySleep:(bool)disable { /* no-op for iOS */ return NO; }
+- (bool)setDisableDisplaySleep:(bool)disable
+{
+#if TARGET_OS_TV
+   [[UIApplication sharedApplication] setIdleTimerDisabled:disable];
+   return YES;
+#else
+   return NO;
+#endif
+}
 + (RetroArch_iOS*)get { return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate]; }
 
 -(NSString*)documentsDirectory
@@ -500,9 +511,9 @@ enum
 #if TARGET_OS_IOS
    [self setToolbarHidden:true animated:NO];
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
+   [[UIApplication sharedApplication] setIdleTimerDisabled:true];
 #endif
 
-   [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[CocoaView get]];
 
    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
