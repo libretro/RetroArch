@@ -774,16 +774,36 @@ MSG_HASH(
 /* Main Menu > Help > Basic Menu Controls */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   "Пракрутка ўгару"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   "Пракрутка ўніз"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-   "Пацвердзіць"
+   "Пацвярджэнне"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
    "Звесткі"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
+   "Старт"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   "Выклік меню"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
    "Выхад"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+   "Выклік клавіятуры"
    )
 
 /* Settings */
@@ -793,8 +813,20 @@ MSG_HASH(
    "Драйверы"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
+   "Відэа"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   "Аўдыё"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    "Ядро"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+   "Змяніць налады ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
@@ -1177,6 +1209,10 @@ MSG_HASH(
 /* Settings > Audio > Output */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+   "Аўдыё"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    "Прылада"
    )
@@ -1194,8 +1230,28 @@ MSG_HASH(
 /* Settings > Audio > MIDI */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+   "Увод"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_INPUT,
+   "Выбраць прыладу ўводу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   "Вывад"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+   "Выбраць прыладу вываду."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
    "Гучнасць"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+   "Задаць узровень гучнасці (%)."
    )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
@@ -1269,6 +1325,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
    "Класічны"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+   "Пацвярджэнне выхаду"
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -1477,6 +1537,22 @@ MSG_HASH(
 
 /* Settings > Logging */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
+   "0 (Адладка)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_INFO,
+   "1 (Звесткі)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
+   "2 (Папярэджанні)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_ERROR,
+   "3 (Памылкі)"
+   )
 
 /* Settings > File Browser */
 
@@ -1698,12 +1774,164 @@ MSG_HASH(
    "Паказваць 'пампавальнік ядзер'"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
+   "Паказваць 'Даведка'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
+   "Паказваць опцыю 'Даведка' у галоўным меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
+   "Паказваць 'Налады'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
+   "Паказваць меню 'Налады' (патрабуецца перазапуск на Ozone/XMB)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
+   "Паказваць 'Абранае'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
+   "Паказваць меню 'Абранае' (патрабуецца перазапуск на Ozone/XMB)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
+   "Паказваць 'Выявы'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
+   "Паказваць меню 'Выявы' (патрабуецца перазапуск на Ozone/XMB)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
+   "Паказваць 'Музыка'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
+   "Паказваць меню 'Музыка' (патрабуецца перазапуск на Ozone/XMB)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
+   "Паказваць 'Відэа'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
+   "Паказваць меню 'Відэа' (патрабуецца перазапуск на Ozone/XMB)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
+   "Паказваць 'Гісторыя'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
+   "Паказваць меню нядаўняй гісторыі (патрабуецца перазапуск на Ozone/XMB)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "Галоўнае меню"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
+   "Меню плэйлістоў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
+   "Паказваць 'Плэйлісты'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
+   "Усе"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
+   "Адзінкавыя"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   "Дапасаваныя"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
+   "Паказваць дату і час"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
+   "Паказваць у меню бягучую дату ды/або час."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+   "Фармат даты і часу"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
+   "Раздзяляльнік даты"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR,
+   "Задаць сімвал для ўжывання ў якасці раздзяляльніка паміж складнікамі год/месяц/дзень, калі бягучая дата паказваецца ў меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
+   "Паказваць узровень акумулятара"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
+   "Паказваць у меню бягучы ўзровень акумулятара."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
+   "Паказваць назву ядра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_ENABLE,
+   "Паказваць у меню назву бягучага ядра."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   "Паказваць тлумачэнні да меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   "Паказваць дадатковыя звесткі па пунктах меню."
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   "Адлюстроўваць застаўку"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+   "Паказваць застаўку пры запуску. Гэтая ўласцівасць прадвызначаецца адключанай пры запуску ўпершыню."
    )
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+   "Паказваць 'Працягнуць'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
+   "Паказваць опцыю працягвання змесціва."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "Паказваць 'Перазапусціць'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "Паказваць опцыю перазапуску змесціва."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   "Паказваць 'Закрыць змесціва'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   "Паказваць опцыю 'Закрыць змесціва'."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
    "Паказаць 'Шэйдары'"
@@ -1711,6 +1939,30 @@ MSG_HASH(
 
 /* Settings > User Interface > Views > Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
+   "Паказваць 'Драйверы'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
+   "Паказваць налады 'Драйверы'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
+   "Паказваць 'Відэа'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
+   "Паказаць налады 'Відэа'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
+   "Паказваць 'Аўдыё'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,
+   "Паказаць налады 'Аўдыё'."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
    "Паказаць 'Ядро'"
@@ -1761,11 +2013,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
-   "Паказаць 'Карыстальніка'"
+   "Паказаць 'Карыстальнік'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
-   "Паказаць налады 'Карыстальніка'."
+   "Паказаць налады 'Карыстальнік'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
@@ -2204,6 +2456,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Карыстальнік"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   "Старт"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
@@ -2237,6 +2493,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
    "Выхад"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
+   "Пракрутка ўгару"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
+   "Выклік клавіятуры"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
+   "Выклік меню"
    )
 
 /* Discord Status */
