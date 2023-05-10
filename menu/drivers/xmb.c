@@ -4641,7 +4641,8 @@ static enum menu_action xmb_parse_menu_entry_action(
             to prevent accidental imageviewer core launch */
          if (     xmb->libretro_running
                && xmb->is_file_list
-               && xmb_fullscreen_thumbnails_available(xmb))
+               && xmb_fullscreen_thumbnails_available(xmb)
+               && xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr) == XMB_SYSTEM_TAB_MAIN)
          {
             if (xmb->show_fullscreen_thumbnails)
                xmb_hide_fullscreen_thumbnails(xmb, true);
