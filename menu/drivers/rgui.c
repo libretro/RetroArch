@@ -4963,6 +4963,7 @@ static void rgui_render(
    gfx_animation_t *p_anim        = anim_get_ptr();
    gfx_display_t *p_disp          = disp_get_ptr();
    struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_list_t *menu_list         = menu_st->entries.list;
    rgui_t *rgui                   = (rgui_t*)data;
    enum gfx_animation_ticker_type
          menu_ticker_type         = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
@@ -5084,7 +5085,7 @@ static void rgui_render(
 
    rgui->flags              &= ~RGUI_FLAG_FORCE_REDRAW;
 
-   entries_end               = menu_entries_get_size();
+   entries_end               = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0)->size : 0;
 
    /* Get offset of bottommost entry */
    bottom                    = (int)(entries_end - rgui->term_layout.height);
@@ -6931,6 +6932,11 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
 {
    bool has_thumbnail                = false;
    settings_t *settings              = config_get_ptr();
+   struct menu_state *menu_st        = menu_state_get_ptr();
+   menu_list_t *menu_list            = menu_st->entries.list;
+   size_t selection                  = menu_st->selection_ptr;
+   file_list_t *list                 = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   size_t list_size                  = list ? list->size : 0;
    unsigned menu_rgui_thumbnail_delay= settings->uints.menu_rgui_thumbnail_delay;
    bool network_on_demand_thumbnails = settings->bools.network_on_demand_thumbnails;
    rgui->flags                      &= ~(RGUI_FLAG_THUMBNAIL_LOAD_PENDING
@@ -6943,10 +6949,6 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
          || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
          || (rgui->is_quick_menu))
    {
-      struct menu_state *menu_st = menu_state_get_ptr();
-      size_t selection           = menu_st->selection_ptr;
-      size_t list_size           = menu_entries_get_size();
-      file_list_t *list          = menu_entries_get_selection_buf_ptr(0);
       bool playlist_valid        = false;
       size_t playlist_index      = selection;
 
@@ -7006,10 +7008,6 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    if (     (rgui->is_quick_menu)
          || (rgui->flags & RGUI_FLAG_IS_STATE_SLOT))
    {
-      struct menu_state *menu_st = menu_state_get_ptr();
-      size_t selection           = menu_st->selection_ptr;
-      size_t list_size           = menu_entries_get_size();
-
       if (selection < list_size)
       {
          rgui_update_savestate_thumbnail_path(rgui, (unsigned)selection);
@@ -7169,7 +7167,8 @@ static void rgui_navigation_set(void *data, bool scroll)
    size_t start                   = 0;
    bool menu_show_sublabels       = false;
    struct menu_state *menu_st     = menu_state_get_ptr();
-   size_t end                     = menu_entries_get_size();
+   menu_list_t *menu_list         = menu_st->entries.list;
+   size_t end                     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0)->size : 0;
    size_t selection               = menu_st->selection_ptr;
    rgui_t *rgui                   = (rgui_t*)data;
 
@@ -7431,7 +7430,9 @@ static int rgui_pointer_up(
 {
    rgui_t *rgui               = (rgui_t*)data;
    struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
    size_t selection           = menu_st->selection_ptr;
+   size_t end                 = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0)->size : 0;
 
    if (!rgui)
       return -1;
@@ -7463,7 +7464,7 @@ static int rgui_pointer_up(
             {
                if (y < header_height)
                   return rgui_menu_entry_action(rgui, entry, selection, MENU_ACTION_CANCEL);
-               else if (ptr <= (menu_entries_get_size() - 1))
+               else if (ptr <= (end - 1))
                {
                   struct menu_state *menu_st = menu_state_get_ptr();
                   /* If currently selected item matches 'pointer' value,
@@ -7481,7 +7482,7 @@ static int rgui_pointer_up(
          break;
       case MENU_INPUT_GESTURE_LONG_PRESS:
          /* 'Reset to default' action */
-         if ((ptr <= (menu_entries_get_size() - 1)) &&
+         if ((ptr <= (end - 1)) &&
              (ptr == selection))
             return rgui_menu_entry_action(rgui, entry, selection, MENU_ACTION_START);
          break;

@@ -2350,10 +2350,9 @@ static void materialui_refresh_playlist_icon_list(
          continue;
 
       /* > Ignore history/favourites playlists */
-      if (string_ends_with_size(playlist_file, "_history.lpl",
-            strlen(playlist_file), STRLEN_CONST("_history.lpl")) ||
-          string_is_equal(playlist_file,
-               FILE_PATH_CONTENT_FAVORITES))
+      if (   string_ends_with_size(playlist_file, "_history.lpl",
+             strlen(playlist_file), STRLEN_CONST("_history.lpl"))
+          || string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
          continue;
 
       /* Playlist is valid - generate image file name */
@@ -2637,9 +2636,9 @@ static void materialui_render_messagebox(
    wrapped_message[0] = '\0';
 
    /* Sanity check */
-   if (string_is_empty(message) ||
-       !mui ||
-       !mui->font_data.list.font)
+   if (    string_is_empty(message)
+       || !mui
+       || !mui->font_data.list.font)
       return;
 
    if ((usable_width = (int)video_width - (mui->margin * 4.0)) < 1)
@@ -2737,8 +2736,8 @@ static void materialui_scrollbar_init(
    /* If current window is too small to show any content
     * (unlikely) or all entries currently fit on a single
     * screen, scrollbar is disabled - can return immediately */
-   if ((view_height <= 0) ||
-       (mui->content_height <= (float)view_height))
+   if (   (view_height <= 0)
+       || (mui->content_height <= (float)view_height))
       return;
 
    /* If we pass the above check, scrollbar is enabled */
@@ -2824,16 +2823,18 @@ static void materialui_compute_entries_box_default(
       unsigned width, unsigned height, unsigned header_height)
 {
    size_t i;
-   file_list_t *list      = menu_entries_get_selection_buf_ptr(0);
-   float node_entry_width = (float)width -
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   float node_entry_width     = (float)width -
          (float)(mui->landscape_optimization.border_width * 2) -
          (float)mui->nav_bar_layout_width;
-   float node_x           = (float)mui->landscape_optimization.border_width;
-   int usable_width       = node_entry_width -
+   float node_x               = (float)mui->landscape_optimization.border_width;
+   int usable_width           = node_entry_width -
          (int)(mui->margin * 2) -
          (int)(mui->landscape_optimization.entry_margin * 2);
-   float sum              = 0;
-   size_t entries_end     = menu_entries_get_size();
+   float sum                  = 0;
+   size_t entries_end         = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0)->size : 0;
 
    if (!list)
       return;
@@ -2899,14 +2900,16 @@ static void materialui_compute_entries_box_playlist_list(
       unsigned width, unsigned height, unsigned header_height)
 {
    size_t i;
-   file_list_t *list      = menu_entries_get_selection_buf_ptr(0);
-   float node_entry_width = (float)width -
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   size_t entries_end         = list ? list->size : 0;
+   float node_entry_width     = (float)width -
          (float)(mui->landscape_optimization.border_width * 2) -
          (float)mui->nav_bar_layout_width;
-   float node_x           = (float)mui->landscape_optimization.border_width;
-   int usable_width       = node_entry_width - (int)(mui->margin * 2);
-   float sum              = 0;
-   size_t entries_end     = menu_entries_get_size();
+   float node_x               = (float)mui->landscape_optimization.border_width;
+   int usable_width           = node_entry_width - (int)(mui->margin * 2);
+   float sum                  = 0;
 
    if (!list)
       return;
@@ -2984,20 +2987,22 @@ static void materialui_compute_entries_box_playlist_dual_icon(
       unsigned width, unsigned height, unsigned header_height)
 {
    size_t i;
-   file_list_t *list       = menu_entries_get_selection_buf_ptr(0);
-   float node_entry_width  = (float)width -
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   size_t entries_end         = list ? list->size : 0;
+   float node_entry_width     = (float)width -
          (float)(mui->landscape_optimization.border_width * 2) -
          (float)mui->nav_bar_layout_width;
-   float node_x            = (float)mui->landscape_optimization.border_width;
+   float node_x               = (float)mui->landscape_optimization.border_width;
    /* Entry height is constant:
     * > One line of list text */
-   float node_text_height  = (float)mui->font_data.list.line_height;
+   float node_text_height     = (float)mui->font_data.list.line_height;
    /* > List text + thumbnail height + padding */
-   float node_entry_height = node_text_height +
+   float node_entry_height    = node_text_height +
          (float)mui->thumbnail_height_max +
          ((float)mui->dip_base_unit_size / 5.0f);
-   float sum               = 0;
-   size_t entries_end      = menu_entries_get_size();
+   float sum                  = 0;
 
    if (!list)
       return;
@@ -3030,7 +3035,10 @@ static void materialui_compute_entries_box_playlist_desktop(
       unsigned width, unsigned height, unsigned header_height)
 {
    size_t i;
-   file_list_t *list       = menu_entries_get_selection_buf_ptr(0);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   size_t entries_end         = list ? list->size : 0;
    /* Entry width is available screen width minus
     * thumbnail sidebar
     * > Note: If landscape optimisations are enabled,
@@ -3063,7 +3071,6 @@ static void materialui_compute_entries_box_playlist_desktop(
    float node_entry_height = node_text_height +
          ((float)mui->dip_base_unit_size / 7.0f);
    float sum               = 0;
-   size_t entries_end      = menu_entries_get_size();
 
    if (!list)
       return;
@@ -3104,7 +3111,8 @@ static float materialui_get_scroll(materialui_handle_t *mui,
    size_t i;
    materialui_node_t *node    = NULL;
    struct menu_state *menu_st = menu_state_get_ptr();
-   file_list_t *list          = menu_entries_get_selection_buf_ptr(0);
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *list          = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t selection           = menu_st->selection_ptr;
    unsigned header_height     = p_disp->header_height;
    unsigned width             = 0;
@@ -3456,8 +3464,8 @@ static bool materialui_render_process_entry_playlist_desktop(
             }
 
             /* Get core name */
-            if (string_is_empty(entry->core_name) ||
-                string_is_equal(entry->core_name, FILE_PATH_DETECT))
+            if (   string_is_empty(entry->core_name)
+                || string_is_equal(entry->core_name, FILE_PATH_DETECT))
                core_name = msg_hash_to_str(MSG_AUTODETECT);
             else
                core_name = entry->core_name;
@@ -3585,9 +3593,10 @@ static void materialui_render(void *data,
    materialui_handle_t *mui   = (materialui_handle_t*)data;
    gfx_display_t *p_disp      = disp_get_ptr();
    struct menu_state *menu_st = menu_state_get_ptr();
-   size_t entries_end         = menu_entries_get_size();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   size_t entries_end         = list ? list->size : 0;
    size_t selection           = menu_st->selection_ptr;
-   file_list_t *list          = menu_entries_get_selection_buf_ptr(0);
    unsigned header_height     = p_disp->header_height;
    bool first_entry_found     = false;
    bool last_entry_found      = false;
@@ -3878,8 +3887,8 @@ static enum materialui_entry_value_type materialui_get_entry_value_type(
       /* Toggle switch off */
       if (menu_switch_icons && entry_setting_type == ST_BOOL)
       {
-         if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-             string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+         if (   string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED))
+             || string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
          {
             if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
                value_type = MUI_ENTRY_VALUE_SWITCH_OFF;
@@ -3887,8 +3896,8 @@ static enum materialui_entry_value_type materialui_get_entry_value_type(
                value_type = MUI_ENTRY_VALUE_TEXT;
          }
          /* Toggle switch on */
-         else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-                  string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
+         else if (   string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED))
+                  || string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
          {
             if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
                value_type = MUI_ENTRY_VALUE_SWITCH_ON;
@@ -4979,8 +4988,8 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
    settings_t *settings       = config_get_ptr();
 
    /* Sanity check */
-   if ((background_width <= 0) ||
-       (background_height <= 0))
+   if (   (background_width  <= 0)
+       || (background_height <= 0))
       return;
 
    if (!p_disp->dispctx->handles_transform)
@@ -5227,8 +5236,10 @@ static void materialui_render_menu_list(
    size_t i;
    size_t first_entry;
    size_t last_entry;
-   file_list_t *list           = NULL;
-   size_t entries_end          = menu_entries_get_size();
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   menu_list_t *menu_list      = menu_st->entries.list;
+   file_list_t *list           = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   size_t entries_end          = list ? list->size : 0;
    unsigned header_height      = p_disp->header_height; 
    bool touch_feedback_enabled =
             (!mui->scrollbar.dragged)
@@ -5239,8 +5250,6 @@ static void materialui_render_menu_list(
    bool entry_sublabel_enabled =
          (mui->list_view_type != MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON) &&
          (mui->list_view_type != MUI_LIST_VIEW_PLAYLIST_THUMB_DESKTOP);
-
-   list                        = menu_entries_get_selection_buf_ptr(0);
    if (!list)
       return;
 
@@ -5477,13 +5486,14 @@ static void materialui_render_selection_highlight(
       int highlight_y;
       int highlight_width;
       int highlight_height;
-      materialui_node_t *node  = NULL;
-      file_list_t *list        = menu_entries_get_selection_buf_ptr(0);
+      materialui_node_t *node    = NULL;
+      struct menu_state *menu_st = menu_state_get_ptr();
+      menu_list_t *menu_list     = menu_st->entries.list;
+      file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
       if (!list)
          return;
 
-      node = (materialui_node_t*)list->list[selection].userdata;
-      if (!node)
+      if (!(node = (materialui_node_t*)list->list[selection].userdata))
          return;
 
       /* Now we have a valid node, can determine
@@ -6370,8 +6380,10 @@ static bool materialui_get_selected_thumbnails(
       gfx_thumbnail_t **primary_thumbnail,
       gfx_thumbnail_t **secondary_thumbnail)
 {
-   file_list_t *list       = NULL;
-   materialui_node_t *node = NULL;
+   file_list_t *list            = NULL;
+   materialui_node_t *node      = NULL;
+   struct menu_state   *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list       = menu_st->entries.list;
 
    /* Ensure selection is on screen
     * > Special case: When viewing 'desktop'-layout
@@ -6384,7 +6396,7 @@ static bool materialui_get_selected_thumbnails(
       return false;
 
    /* Get currently selected node */
-   list = menu_entries_get_selection_buf_ptr(0);
+   list = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
    if (!list)
       return false;
 
@@ -6454,8 +6466,8 @@ static void materialui_show_fullscreen_thumbnails(
 
    /* Sanity check: Return immediately if this is a view
     * mode without thumbnails */
-   if ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT) ||
-       (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST))
+   if (   (mui->list_view_type == MUI_LIST_VIEW_DEFAULT)
+       || (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST))
       return;
 
    /* Get thumbnails */
@@ -8265,7 +8277,9 @@ static void materialui_context_bg_destroy(materialui_handle_t *mui)
 static void materialui_reset_thumbnails(void)
 {
    int i;
-   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
 
    if (!list)
       return;
@@ -8650,9 +8664,9 @@ static void materialui_populate_entries(
                            | MUI_FLAG_IS_FILE_LIST
                            | MUI_FLAG_IS_DROPDOWN_LIST);
 
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)) ||
-         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) ||
-         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)))
+   if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)))
       mui->flags |= MUI_FLAG_IS_PLAYLIST;
    else
    {
@@ -8660,38 +8674,38 @@ static void materialui_populate_entries(
        *   Note: MENU_ENUM_LABEL_FAVORITES is always set
        *   as the 'label' when navigating directories after
        *   selecting load content */
-      if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_OVERLAY)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST)))
+      if (        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_OVERLAY))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST)))
          mui->flags |= MUI_FLAG_IS_FILE_LIST;
       else
       {
-         if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PARAMETER)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PRESET_PARAMETER)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION)) ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD)))
+         if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PARAMETER))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PRESET_PARAMETER))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION))
+               || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD)))
             mui->flags |=  MUI_FLAG_IS_DROPDOWN_LIST;
          else
             mui->flags &= ~MUI_FLAG_IS_DROPDOWN_LIST;
@@ -8706,8 +8720,10 @@ static void materialui_populate_entries(
    mui->playlist = NULL;
    if (mui->flags & MUI_FLAG_IS_PLAYLIST)
    {
-      file_list_t *list = menu_entries_get_selection_buf_ptr(0);
-      size_t list_size  = menu_entries_get_size();
+      struct menu_state *menu_st = menu_state_get_ptr();
+      menu_list_t *menu_list     = menu_st->entries.list;
+      file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+      size_t list_size           = list ? list->size : 0;
 
       if (   (list)
           && (list_size > 0)
@@ -9002,9 +9018,11 @@ static int materialui_switch_tabs(
    /* Cannot switch to a tab that is already active */
    if (!target_tab->active)
    {
-      file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-      bool stack_flushed         = false;
-      int ret                    = 0;
+      struct menu_state   *menu_st = menu_state_get_ptr();
+      menu_list_t *menu_list       = menu_st->entries.list;
+      file_list_t *selection_buf   = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+      bool stack_flushed           = false;
+      int ret                      = 0;
 
       /* Sanity check */
       if (!selection_buf)
@@ -9774,8 +9792,8 @@ static int materialui_pointer_down(void *userdata,
 
       /* Check whether pointer down event is within
        * vertical list region */
-      if ((y < header_height) ||
-          (y > height - mui->nav_bar_layout_height - mui->status_bar.height))
+      if (   (y < header_height)
+          || (y > height - mui->nav_bar_layout_height - mui->status_bar.height))
          return 0;
 
       /* Determine horizontal width of scrollbar
@@ -9913,9 +9931,9 @@ static int materialui_pointer_up_swipe_horz_default(
                entry_type, entry_file_type, entry->setting_type);
 
          /* If entry has a 'settings' type, reset scroll position */
-         if ((entry_value_type == MUI_ENTRY_VALUE_TEXT) ||
-             (entry_value_type == MUI_ENTRY_VALUE_SWITCH_ON) ||
-             (entry_value_type == MUI_ENTRY_VALUE_SWITCH_OFF))
+         if (   (entry_value_type == MUI_ENTRY_VALUE_TEXT)
+             || (entry_value_type == MUI_ENTRY_VALUE_SWITCH_ON)
+             || (entry_value_type == MUI_ENTRY_VALUE_SWITCH_OFF))
             materialui_animate_scroll(
                   mui,
                   mui->pointer_start_scroll_y,
@@ -9994,7 +10012,8 @@ static int materialui_pointer_up(void *userdata,
    unsigned header_height     = p_disp->header_height;
    struct menu_state *menu_st = menu_state_get_ptr();
    size_t selection           = menu_st->selection_ptr;
-   size_t entries_end         = menu_entries_get_size();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   size_t entries_end         = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0)->size : 0;
    materialui_handle_t *mui   = (materialui_handle_t*)userdata;
 
    if (!mui)
@@ -10038,8 +10057,8 @@ static int materialui_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_SHORT_PRESS:
          {
             /* Tap/press navigation bar: perform tab-specific action */
-            if ((y > height - mui->nav_bar_layout_height) ||
-                (x > width  - mui->nav_bar_layout_width))
+            if (   (y > height - mui->nav_bar_layout_height)
+                || (x > width  - mui->nav_bar_layout_width))
                return materialui_pointer_up_nav_bar(
                      mui, x, y, width, height, selection, cbs, entry, action);
             /* Tap/press header: Menu back/cancel, or search/switch view */
@@ -10089,10 +10108,12 @@ static int materialui_pointer_up(void *userdata,
                      (x   > mui->landscape_optimization.border_width) &&
                      (x   < width - mui->landscape_optimization.border_width - mui->nav_bar_layout_width))
             {
-               file_list_t *list       = NULL;
-               materialui_node_t *node = NULL;
                int entry_x;
                int entry_y;
+               struct menu_state   *menu_st = menu_state_get_ptr();
+               menu_list_t *menu_list       = menu_st->entries.list;
+               file_list_t *list            = NULL;
+               materialui_node_t *node      = NULL;
 
                /* Special case: If we are currently viewing
                 * a 'desktop'-layout playlist, pressing the
@@ -10106,7 +10127,8 @@ static int materialui_pointer_up(void *userdata,
 
                /* Get node (entry) associated with current
                 * pointer item */
-               if (!(list = menu_entries_get_selection_buf_ptr(0)))
+               list = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+               if (!list)
                   break;
 
                if (!(node = (materialui_node_t*)list->list[ptr].userdata))
@@ -10505,32 +10527,32 @@ static void materialui_list_insert(
             else
 #endif
             if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION_LIST))              ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION))            ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS))                      ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE))     ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION))                   ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND))             ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_PRESETS_FOUND))              ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_NETPLAY_CLIENTS_FOUND))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION_LIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_PRESETS_FOUND))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_NETPLAY_CLIENTS_FOUND))
                )
             {
                node->icon_texture_index = MUI_TEXTURE_INFO;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_DATABASE;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_IMAGE;
@@ -10542,9 +10564,9 @@ static void materialui_list_insert(
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_VIDEO;
@@ -10595,8 +10617,8 @@ static void materialui_list_insert(
                node->icon_texture_index = MUI_TEXTURE_SHADERS;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)) ||
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION)))
+            else if (   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION)))
             {
                node->icon_texture_index = MUI_TEXTURE_CORES;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
@@ -10607,45 +10629,45 @@ static void materialui_list_insert(
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_ADD_TO_FAVORITES;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY)) ||
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION)) ||
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES)) ||
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST)) ||
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SHADER_APPLY_CHANGES))
+            else if (   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SHADER_APPLY_CHANGES))
                      )
             {
                node->icon_texture_index = MUI_TEXTURE_RENAME;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_ADD_TO_MIXER;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN_MUSIC)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN_MUSIC))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_START_CORE;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE)) ||
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD)))
+            else if (   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD)))
             {
                node->icon_texture_index = MUI_TEXTURE_LOAD_STATE;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
@@ -10666,36 +10688,36 @@ static void materialui_list_insert(
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_TRAY_EJECT)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_TRAY_INSERT))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_TRAY_EJECT))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_TRAY_INSERT))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_EJECT;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_DISC)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DUMP_DISC)) ||
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_DISC))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DUMP_DISC))
 #ifdef HAVE_LAKKA
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EJECT_DISC)) ||
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EJECT_DISC))
 #endif
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_DISK;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_SAVE_STATE;
@@ -10707,8 +10729,8 @@ static void materialui_list_insert(
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_UNLOAD))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_UNLOAD))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_UNDO_SAVE_STATE;
@@ -10730,41 +10752,41 @@ static void materialui_list_insert(
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS_LIST))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS_LIST))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_CONFIGURATIONS;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_LOAD_CONTENT;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DELETE_PLAYLIST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DELETE_PLAYLIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_REMOVE;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_NETPLAY;
@@ -10776,34 +10798,34 @@ static void materialui_list_insert(
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_ASSETS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CHEATS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_DATABASES)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_OVERLAYS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CG_SHADERS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_ASSETS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CHEATS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_DATABASES))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_OVERLAYS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CG_SHADERS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST))
                   )
                   {
                      node->icon_texture_index = MUI_TEXTURE_UPDATER;
                      node->icon_type          = MUI_ICON_TYPE_INTERNAL;
                   }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) ||
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)) ||
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST)) ||
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST))
+            else if (   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_ADD;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUIT_RETROARCH)) ||
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESTART_RETROARCH))
+            else if (   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUIT_RETROARCH))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESTART_RETROARCH))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_QUIT;
@@ -10812,117 +10834,117 @@ static void materialui_list_insert(
             /* TODO/FIXME - all this should go away and be refactored so that we don't have to do
              * all this manually inside this menu driver */
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DRIVER_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_SOUNDS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MENU_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LATENCY_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATION_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOGGING_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RECORDING_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AI_SERVICE_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_TWITCH)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_BLUETOOTH_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_WIFI_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LAKKA_SERVICES)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_USER_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DIRECTORY_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PRIVACY_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MIDI_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_LIST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REWIND_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATER_SETTINGS))        ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SET_CORE_ASSOCIATION)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SHADER_APPLY_CHANGES)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_KICK)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_BAN)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_META_CHEAT_SEARCH)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_START_OR_CONT)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_META_CHEAT_SEARCH)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_MATERIALUI)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LEFT_THUMBNAILS_MATERIALUI)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_ALL)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_AFTER)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_BEFORE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_MANAGER_LIST)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DRIVER_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_SOUNDS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MENU_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LATENCY_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATION_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOGGING_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RECORDING_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AI_SERVICE_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_TWITCH))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_BLUETOOTH_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_WIFI_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LAKKA_SERVICES))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_USER_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DIRECTORY_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PRIVACY_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MIDI_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_LIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REWIND_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATER_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SET_CORE_ASSOCIATION))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SHADER_APPLY_CHANGES))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_KICK))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_BAN))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_META_CHEAT_SEARCH))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_START_OR_CONT))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_META_CHEAT_SEARCH))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_MATERIALUI))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LEFT_THUMBNAILS_MATERIALUI))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_ALL))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_AFTER))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_BEFORE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_MANAGER_LIST))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS))
                   )
                   {
                      node->icon_texture_index = MUI_TEXTURE_SETTINGS;
@@ -10935,8 +10957,8 @@ static void materialui_list_insert(
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_FOLDER;
@@ -11047,6 +11069,7 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
 {
    materialui_handle_t *mui           = (materialui_handle_t*)userdata;
    struct menu_state *menu_st         = menu_state_get_ptr();
+   menu_list_t *menu_list             = menu_st->entries.list;
    size_t selection                   = menu_st->selection_ptr;
    bool refresh_enabled               = false;
 
@@ -11070,8 +11093,8 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
 
    if (refresh_enabled)
    {
-      file_list_t *list       = menu_entries_get_selection_buf_ptr(0);
       materialui_node_t *node = NULL;
+      file_list_t *list       = MENU_LIST_GET_SELECTION(menu_list, 0);
       float stream_delay      = gfx_thumb_get_ptr()->stream_delay;
 
       if (!list)

@@ -7175,7 +7175,8 @@ int menu_setting_set(unsigned type, unsigned action, bool wraparound)
 {
    int ret                    = 0;
    struct menu_state *menu_st = menu_state_get_ptr();
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
    size_t selection           = menu_st->selection_ptr;
    menu_file_list_cbs_t *cbs  = selection_buf ?
       (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;

@@ -503,24 +503,6 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    }
 }
 
-file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
-{
-   struct menu_state   *menu_st   = &menu_driver_state;
-   menu_list_t *menu_list         = menu_st->entries.list;
-   if (!menu_list)
-      return NULL;
-   return MENU_LIST_GET_SELECTION(menu_list, (unsigned)idx);
-}
-
-size_t menu_entries_get_size(void)
-{
-   struct menu_state   *menu_st   = &menu_driver_state;
-   menu_list_t *menu_list         = menu_st->entries.list;
-   if (!menu_list)
-      return 0;
-   return MENU_LIST_GET_SELECTION(menu_list, 0)->size;
-}
-
 static menu_search_terms_t *menu_entries_search_get_terms_internal(void)
 {
    struct menu_state *menu_st   = &menu_driver_state;
@@ -7507,6 +7489,7 @@ int generic_menu_entry_action(
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *selection_buf     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
    file_list_t *menu_stack        = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
+   size_t entries_size            = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0)->size : 0;
    size_t selection_buf_size      = selection_buf ? selection_buf->size : 0;
    menu_file_list_cbs_t *cbs      = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
@@ -7541,7 +7524,7 @@ int generic_menu_entry_action(
                if (menu_driver_ctx->navigation_decrement)
                   menu_driver_ctx->navigation_decrement(menu_userdata);
 #ifdef HAVE_AUDIOMIXER
-               if (menu_entries_get_size() != 1)
+               if (entries_size != 1)
                   audio_driver_mixer_play_scroll_sound(true);
 #endif
             }
@@ -7583,7 +7566,7 @@ int generic_menu_entry_action(
                if (menu_driver_ctx->navigation_increment)
                   menu_driver_ctx->navigation_increment(menu_userdata);
 #ifdef HAVE_AUDIOMIXER
-               if (menu_entries_get_size() != 1)
+               if (entries_size != 1)
                   audio_driver_mixer_play_scroll_sound(false);
 #endif
             }
@@ -7651,7 +7634,7 @@ int generic_menu_entry_action(
             {
                unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 10);
 #ifdef HAVE_AUDIOMIXER
-               if (menu_st->selection_ptr != menu_entries_get_size() - 1)
+               if (menu_st->selection_ptr != entries_size - 1)
                   audio_driver_mixer_play_scroll_sound(false);
 #endif
                if (!(menu_st->selection_ptr >= selection_buf_size - 1
@@ -7729,9 +7712,9 @@ int generic_menu_entry_action(
       case MENU_ACTION_SCROLL_END:
       {
 #ifdef HAVE_AUDIOMIXER
-         size_t selection_old = menu_st->selection_ptr;
+         size_t selection_old   = menu_st->selection_ptr;
 #endif
-         menu_st->selection_ptr = (menu_entries_get_size()) ? menu_entries_get_size() - 1 : 0;
+         menu_st->selection_ptr = entries_size ? entries_size - 1 : 0;
          if (menu_st->driver_ctx->navigation_set)
             menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
 

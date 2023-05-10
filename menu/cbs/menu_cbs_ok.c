@@ -1725,7 +1725,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path          = label;
          break;
       case ACTION_OK_DL_CONTENT_SETTINGS:
-         info.list          = menu_entries_get_selection_buf_ptr(0);
+         info.list          = MENU_LIST_GET_SELECTION(menu_list, 0);
          info_path          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS);
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS);
          info.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;

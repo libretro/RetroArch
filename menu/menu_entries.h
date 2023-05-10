@@ -168,16 +168,12 @@ int menu_entries_get_title(char *title, size_t title_len);
 
 void menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
-file_list_t *menu_entries_get_selection_buf_ptr(size_t idx);
-
 void menu_entries_get_last_stack(const char **path, const char **label,
       unsigned *file_type, enum msg_hash_enums *enum_idx, size_t *entry_idx);
 
 void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate);
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type);
-
-size_t menu_entries_get_size(void);
 
 void menu_entries_prepend(file_list_t *list,
       const char *path, const char *label,

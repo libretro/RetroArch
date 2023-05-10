@@ -5645,13 +5645,15 @@ static void bluetooth_scan_callback(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
    unsigned i;
-   file_list_t *file_list            = NULL;
    struct string_list *device_list   = NULL;
    const char *msg_connect_bluetooth =
       msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_BLUETOOTH);
    const char *path                  = NULL;
    const char *label                 = NULL;
    unsigned menu_type                = 0;
+   struct menu_state *menu_st        = menu_state_get_ptr();
+   menu_list_t *menu_list            = menu_st->entries.list;
+   file_list_t *selection_buf        = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
 
    menu_entries_get_last_stack(&path, &label, &menu_type, NULL, NULL);
 
@@ -5660,8 +5662,7 @@ static void bluetooth_scan_callback(retro_task_t *task,
          msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST)))
       return;
 
-   file_list = menu_entries_get_selection_buf_ptr(0);
-   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
+   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, selection_buf);
 
    device_list = string_list_new();
 
@@ -5670,7 +5671,7 @@ static void bluetooth_scan_callback(retro_task_t *task,
    for (i = 0; i < device_list->size; i++)
    {
       const char *device = device_list->elems[i].data;
-      menu_entries_append(file_list,
+      menu_entries_append(selection_buf,
             device, msg_connect_bluetooth,
             MENU_ENUM_LABEL_CONNECT_BLUETOOTH,
             MENU_BLUETOOTH, 0, 0, NULL);
