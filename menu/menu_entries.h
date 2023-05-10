@@ -38,7 +38,6 @@ RETRO_BEGIN_DECLS
 enum menu_entries_ctl_state
 {
    MENU_ENTRIES_CTL_NONE = 0,
-   MENU_ENTRIES_CTL_SET_REFRESH,
    /* Sets the starting index of the menu entry list. */
    MENU_ENTRIES_CTL_SET_START,
    /* Returns the starting index of the menu entry list. */

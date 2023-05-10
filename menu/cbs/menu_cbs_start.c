@@ -407,8 +407,8 @@ static int action_start_cheat_num_passes(
 {
    if (cheat_manager_get_size())
    {
-      bool refresh                = false;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      struct menu_state *menu_st  = menu_state_get_ptr();
+      menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
       cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
    }
 

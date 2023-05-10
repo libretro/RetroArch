@@ -1283,12 +1283,11 @@ static void menu_list_flush_stack(
       menu_list_t *list,
       size_t idx, const char *needle, unsigned final_type)
 {
-   bool refresh                = false;
    const char *label           = NULL;
    unsigned type               = 0;
    file_list_t *menu_list      = MENU_LIST_GET(list, (unsigned)idx);
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    menu_contentless_cores_flush_runtime();
 
    if (menu_list && menu_list->size)
@@ -1300,7 +1299,6 @@ static void menu_list_flush_stack(
    while (menu_list_flush_stack_type(
             needle, label, type, final_type) != 0)
    {
-      bool refresh             = false;
       size_t new_selection_ptr = menu_st->selection_ptr;
       bool wont_pop_stack      = (MENU_LIST_GET_STACK_SIZE(list, idx) <= 1);
       if (wont_pop_stack)
@@ -1314,7 +1312,7 @@ static void menu_list_flush_stack(
             menu_userdata,
             list, idx, &new_selection_ptr);
 
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      menu_st->flags          |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
       menu_st->selection_ptr   = new_selection_ptr;
       menu_list                = MENU_LIST_GET(list, (unsigned)idx);
@@ -2708,11 +2706,11 @@ int menu_shader_manager_clear_num_passes(struct video_shader *shader)
 {
    if (shader)
    {
-      bool refresh   = false;
-      shader->passes = 0;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      struct menu_state *menu_st  = &menu_driver_state;
+      shader->passes              = 0;
+      menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
       video_shader_resolve_parameters(shader);
-      shader->flags |= SHDR_FLAG_MODIFIED;
+      shader->flags              |= SHDR_FLAG_MODIFIED;
    }
 
    return 0;
@@ -4346,7 +4344,6 @@ void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
 
    if (MENU_LIST_GET_STACK_SIZE(menu_list, idx) > 1)
    {
-      bool refresh             = false;
       if (animate)
       {
          if (menu_driver_ctx->list_cache)
@@ -4357,7 +4354,7 @@ void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
             menu_st->userdata, menu_list, idx, ptr);
 
       if (animate)
-         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    }
 }
 
@@ -4367,22 +4364,13 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 
    switch (state)
    {
-      case MENU_ENTRIES_CTL_SET_REFRESH:
-         {
-            bool *nonblocking = (bool*)data;
-
-            if (*nonblocking)
-               menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
-            else
-               menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
-         }
-         break;
       case MENU_ENTRIES_CTL_SET_START:
          {
             size_t *idx = (size_t*)data;
             if (idx)
                menu_st->entries.begin = *idx;
          }
+         break;
       case MENU_ENTRIES_CTL_START_GET:
          {
             size_t *idx = (size_t*)data;
@@ -6219,6 +6207,7 @@ void menu_driver_toggle(
    bool pause_libretro                = false;
    bool audio_enable_menu             = false;
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
+   struct menu_state *menu_st         = &menu_driver_state;
    bool runloop_shutdown_initiated    = runloop_st->flags &
       RUNLOOP_FLAG_SHUTDOWN_INITIATED;
 #ifdef HAVE_OVERLAY
@@ -6285,19 +6274,16 @@ void menu_driver_toggle(
 
    if (menu_driver_alive)
    {
-      bool refresh                    = false;
-
 #ifdef WIIU
       /* Enable burn-in protection menu is running */
       IMEnableDim();
 #endif
 
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
       /* Menu should always run with vsync on and
        * a video swap interval of 1 */
       if (current_video->set_nonblock_state)
-      {
          current_video->set_nonblock_state(
                video_driver_data,
                false,
@@ -6305,7 +6291,6 @@ void menu_driver_toggle(
                video_adaptive_vsync,
                1
                );
-      }
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
@@ -6835,8 +6820,8 @@ end:
 bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
       enum rarch_shader_type type, const char *preset_path, bool apply)
 {
-   bool refresh                  = false;
    bool ret                      = false;
+   struct menu_state *menu_st    = &menu_driver_state;
    settings_t *settings          = config_get_ptr();
 
    if (apply && !video_shader_apply_shader(settings, type, preset_path, true))
@@ -6862,7 +6847,7 @@ bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
    ret = true;
 
 end:
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 
@@ -6890,11 +6875,11 @@ clear:
 bool menu_shader_manager_append_preset(struct video_shader *shader, 
       const char* preset_path, const bool prepend)
 {
-   bool refresh                  = false;
    bool ret                      = false;
    settings_t* settings          = config_get_ptr();
    const char *dir_video_shader  = settings->paths.directory_video_shader;
    enum rarch_shader_type type   = menu_shader_manager_get_type(shader);
+   struct menu_state *menu_st    = &menu_driver_state;
 
    if (string_is_empty(preset_path))
    {
@@ -6909,9 +6894,9 @@ bool menu_shader_manager_append_preset(struct video_shader *shader,
    /* TODO/FIXME - localize */
    RARCH_LOG("[Shaders]: Menu shader set to: \"%s\".\n", preset_path);
 
-   ret = true;
+   ret             = true;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 

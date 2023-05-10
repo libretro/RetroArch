@@ -688,12 +688,12 @@ static int manual_content_scan_core_name_left(unsigned type, const char *label,
 static int cpu_policy_mode_change(unsigned type, const char *label,
       bool wraparound)
 {
-   bool refresh = false;
+   struct menu_state *menu_st = menu_state_get_ptr();
    enum cpu_scaling_mode mode = get_cpu_scaling_mode(NULL);
    if (mode != CPUSCALING_MANAGED_PERFORMANCE)
       mode--;
    set_cpu_scaling_mode(mode, NULL);
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 

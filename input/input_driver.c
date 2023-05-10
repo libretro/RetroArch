@@ -3842,31 +3842,30 @@ static void input_overlay_loaded(retro_task_t *task,
    {
 #ifdef HAVE_MENU
       struct menu_state *menu_st = menu_state_get_ptr();
-      bool refresh               = false;
 
       /* Update menu entries */
       if (menu_st->overlay_types != data->overlay_types)
       {
-         menu_st->overlay_types = data->overlay_types;
-         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+         menu_st->overlay_types  = data->overlay_types;
+         menu_st->flags         |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
       }
 
       /* We can't display when the menu is up */
-      if (  (data->flags & OVERLAY_LOADER_HIDE_IN_MENU) &&
-            (menu_st->flags & MENU_ST_FLAG_ALIVE))
+      if (   (data->flags & OVERLAY_LOADER_HIDE_IN_MENU)
+          && (menu_st->flags & MENU_ST_FLAG_ALIVE))
          goto abort_load;
 #endif
 
       /* If 'hide_when_gamepad_connected' is enabled,
        * we can't display when a gamepad is connected */
-      if (  (data->flags & OVERLAY_LOADER_HIDE_WHEN_GAMEPAD_CONNECTED) &&
-            (input_config_get_device_name(0) != NULL))
+      if (   (data->flags & OVERLAY_LOADER_HIDE_WHEN_GAMEPAD_CONNECTED)
+          && (input_config_get_device_name(0) != NULL))
          goto abort_load;
    }
 
-   if (  !(data->flags & OVERLAY_LOADER_ENABLE)  ||
-         !video_driver_overlay_interface(&iface) ||
-         !iface)
+   if (     !(data->flags & OVERLAY_LOADER_ENABLE)
+         || !video_driver_overlay_interface(&iface)
+         || !iface)
    {
       RARCH_ERR("Overlay interface is not present in video driver,"
             " or not enabled.\n");

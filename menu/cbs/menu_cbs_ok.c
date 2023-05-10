@@ -3299,14 +3299,12 @@ static int generic_action_ok_shader_preset_remove(const char *path,
    if (menu_shader_manager_remove_auto_preset(preset_type,
          dir_video_shader, dir_menu_config))
    {
-      bool refresh = false;
-
+      struct menu_state *menu_st = menu_state_get_ptr();
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY),
             1, 100, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    }
    else
       runloop_msg_queue_push(

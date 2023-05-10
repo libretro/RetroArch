@@ -5702,10 +5702,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
    }
 
    if (info_flags & MD_FLAG_NEED_ENTRIES_REFRESH)
-   {
-      bool refresh = false;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   }
+      menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
    if (info_flags & MD_FLAG_NEED_SORT)
       file_list_sort_on_alt(info_list);

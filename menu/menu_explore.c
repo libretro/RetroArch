@@ -1031,20 +1031,17 @@ static void explore_on_edit_views(enum msg_hash_enums msg)
 
 static int explore_action_ok_deleteview(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   struct menu_state   *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st    = menu_state_get_ptr();
    menu_list_t *menu_list        = menu_st->entries.list;
    file_list_t *menu_stack       = MENU_LIST_GET(menu_list, 0);
 
    filestream_delete(explore_get_view_path(menu_st, menu_list, menu_stack));
    explore_on_edit_views(MENU_ENUM_LABEL_EXPLORE_VIEW_DELETED);
 
+   /* if we're at the top of the menu we can't cancel so just refresh
+      what becomes selected after MENU_ENVIRON_RESET_HORIZONTAL_LIST. */
    if (menu_stack->size == 1)
-   {
-      /* if we're at the top of the menu we can't cancel so just refresh
-         what becomes selected after MENU_ENVIRON_RESET_HORIZONTAL_LIST. */
-      bool refresh_nonblocking = false;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh_nonblocking);
-   }
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
    return explore_cancel(path, label, type, idx);
 }

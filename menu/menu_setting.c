@@ -8470,9 +8470,9 @@ static void frontend_log_level_change_handler(rarch_setting_t *setting)
 static void runahead_change_handler(rarch_setting_t *setting)
 {
    settings_t *settings              = config_get_ptr();
+   struct menu_state *menu_st        = menu_state_get_ptr();
    bool run_ahead_enabled            = settings->bools.run_ahead_enabled;
    bool preempt_enabled              = settings->bools.preemptive_frames_enable;
-   bool refresh                      = false;
 #if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
    unsigned run_ahead_frames         = settings->uints.run_ahead_frames;
    bool run_ahead_secondary_instance = settings->bools.run_ahead_secondary_instance;
@@ -8493,7 +8493,7 @@ static void runahead_change_handler(rarch_setting_t *setting)
                   msg_hash_to_str(MSG_PREEMPT_DISABLED), 1, 100, false,
                   NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
-         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+         menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
          /* fall-through */
       case MENU_ENUM_LABEL_RUN_AHEAD_FRAMES:
 #if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
@@ -8519,17 +8519,15 @@ static void runahead_change_handler(rarch_setting_t *setting)
 
 static void preempt_change_handler(rarch_setting_t *setting)
 {
-   settings_t *settings   = config_get_ptr();
-   bool preempt_enabled   = settings->bools.preemptive_frames_enable;
-   bool run_ahead_enabled = settings->bools.run_ahead_enabled;
-   preempt_t *preempt     = runloop_state_get_ptr()->preempt_data;
-   bool refresh           = false;
-   bool netplay_enabled;
-
+   settings_t *settings       = config_get_ptr();
+   bool preempt_enabled       = settings->bools.preemptive_frames_enable;
+   bool run_ahead_enabled     = settings->bools.run_ahead_enabled;
+   preempt_t *preempt         = runloop_state_get_ptr()->preempt_data;
+   struct menu_state *menu_st = menu_state_get_ptr();
 #ifdef HAVE_NETWORKING
-   netplay_enabled = netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
+   bool netplay_enabled       = netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
 #else
-   netplay_enabled = false;
+   bool netplay_enabled       = false;
 #endif
 
    if (!setting)
@@ -8550,7 +8548,7 @@ static void preempt_change_handler(rarch_setting_t *setting)
          if ((preempt_enabled != !!preempt) && !netplay_enabled)
             command_event(CMD_EVENT_PREEMPT_UPDATE, NULL);
 
-         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+         menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
          break;
       case MENU_ENUM_LABEL_PREEMPT_FRAMES:
          if (     preempt
