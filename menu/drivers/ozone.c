@@ -4609,14 +4609,23 @@ static void ozone_sidebar_goto(
 static void ozone_sidebar_entries_build_scroll_indices(ozone_handle_t *ozone)
 {
    size_t i                     = 0;
-   int current                  = menu_entries_elem_get_first_char(&ozone->horizontal_list, 0);
+   const char *path             = ozone->horizontal_list.list[0].alt
+                                ? ozone->horizontal_list.list[0].alt
+                                : ozone->horizontal_list.list[0].path;
+   int ret                      = path ? TOLOWER((int)*path) : 0;
+   int current                  = ELEM_GET_FIRST_CHAR(ret);
 
    ozone->sidebar_index_list[0] = 0;
    ozone->sidebar_index_size    = 1;
 
    for (i = 1; i < ozone->horizontal_list.size; i++)
    {
-      int first = menu_entries_elem_get_first_char(&ozone->horizontal_list, (unsigned)i);
+      int first;
+      path    = ozone->horizontal_list.list[i].alt
+              ? ozone->horizontal_list.list[i].alt
+              : ozone->horizontal_list.list[i].path;
+      ret     = path ? TOLOWER((int)*path) : 0;
+      first   = ELEM_GET_FIRST_CHAR(ret);
 
       if (first != current)
       {
@@ -4626,7 +4635,7 @@ static void ozone_sidebar_entries_build_scroll_indices(ozone_handle_t *ozone)
             ozone->sidebar_index_size++;
       }
 
-      current   = first;
+      current = first;
    }
 
    /* Add scroll index */

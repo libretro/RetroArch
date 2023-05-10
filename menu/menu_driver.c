@@ -1031,7 +1031,8 @@ int menu_entries_get_title(char *s, size_t len)
    unsigned menu_type            = 0;
    const char *path              = NULL;
    const char *label             = NULL;
-   struct menu_state   *menu_st  = &menu_driver_state;
+   struct menu_state *menu_st    = &menu_driver_state;
+   menu_handle_t *menu           = menu_st->driver_data;
    const file_list_t *list       = menu_st->entries.list ?
       MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
    menu_file_list_cbs_t *cbs     = list
@@ -1060,13 +1061,11 @@ int menu_entries_get_title(char *s, size_t len)
       /* Show playlist entry instead of "Quick Menu" */
       if (string_is_equal(label, "deferred_rpl_entry_actions"))
       {
-         const struct playlist_entry *entry = NULL;
-         playlist_t *playlist               = playlist_get_cached();
+         playlist_t *playlist                  = playlist_get_cached();
          if (playlist)
          {
-            menu_handle_t *menu = menu_state_get_ptr()->driver_data;
+            const struct playlist_entry *entry = NULL;
             playlist_get_index(playlist, menu->rpl_entry_selection_ptr, &entry);
-
             if (entry)
                strlcpy(s,
                      !string_is_empty(entry->label) ? entry->label : entry->path,
@@ -1092,34 +1091,31 @@ int menu_entries_get_title(char *s, size_t len)
  * behaviour... */
 static void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
 {
-   const char *label            = NULL;
-   const file_list_t *list      = MENU_LIST_GET(menu_st->entries.list, 0);
+   const file_list_t *list          = MENU_LIST_GET(menu_st->entries.list, 0);
+   const char *label                = list->list[list->size - 1].label;
 
+#ifdef HAVE_AUDIOMIXER
    /* Determine whether this is a help or info
     * message box */
    if (list && list->size)
    {
-      label = list->list[list->size - 1].label;
       /* Play sound for closing the info box */
-#ifdef HAVE_AUDIOMIXER
-      {
-         settings_t *settings          = config_get_ptr();
-         bool        audio_enable_menu = settings->bools.audio_enable_menu;
-         bool audio_enable_menu_notice = settings->bools.audio_enable_menu_notice;
-         if (audio_enable_menu && audio_enable_menu_notice)
-            audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_NOTICE_BACK);
-      }
-#endif
+      settings_t *settings          = config_get_ptr();
+      bool        audio_enable_menu = settings->bools.audio_enable_menu;
+      bool audio_enable_menu_notice = settings->bools.audio_enable_menu_notice;
+      if (audio_enable_menu && audio_enable_menu_notice)
+         audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_NOTICE_BACK);
    }
+#endif
 
    /* Pop stack, if required */
    if (menu_should_pop_stack(label))
    {
-      size_t selection            = menu_st->selection_ptr;
-      size_t new_selection        = selection;
+      size_t selection              = menu_st->selection_ptr;
+      size_t new_selection          = selection;
 
       menu_entries_pop_stack(&new_selection, 0, 0);
-      menu_st->selection_ptr      = selection;
+      menu_st->selection_ptr        = selection;
    }
 }
 
@@ -3782,40 +3778,17 @@ static void menu_input_set_pointer_visibility(
    }
 }
 
-/**
- * menu_entries_elem_get_first_char:
- * @list                     : File list handle.
- * @offset                   : Offset index of element.
- *
- * Gets the first character of an element in the
- * file list.
- *
- * Returns: first character of element in file list.
- **/
-int menu_entries_elem_get_first_char(
-      file_list_t *list, unsigned offset)
-{
-   const char *path =   list->list[offset].alt
-                      ? list->list[offset].alt
-                      : list->list[offset].path;
-   int ret          = path ? TOLOWER((int)*path) : 0;
-
-   /* "Normalize" non-alphabetical entries so they
-    * are lumped together for purposes of jumping. */
-   if (ret < 'a')
-      return ('a' - 1);
-   else if (ret > 'z')
-      return ('z' + 1);
-   return ret;
-}
-
 void menu_entries_build_scroll_indices(
       struct menu_state *menu_st,
       file_list_t *list)
 {
    bool current_is_dir             = false;
    size_t i                        = 0;
-   int current                     = menu_entries_elem_get_first_char(list, 0);
+   const char *path                = list->list[0].alt
+                                   ? list->list[0].alt
+                                   : list->list[0].path;
+   int ret                         = path ? TOLOWER((int)*path) : 0;
+   int current                     = ELEM_GET_FIRST_CHAR(ret);
    unsigned type                   = list->list[0].type;
 
    menu_st->scroll.index_list[0]   = 0;
@@ -3826,14 +3799,18 @@ void menu_entries_build_scroll_indices(
 
    for (i = 1; i < list->size; i++)
    {
-      int first    = menu_entries_elem_get_first_char(list, (unsigned)i);
+      int first;
       bool is_dir  = false;
       unsigned idx = (unsigned)i;
-
+      path         = list->list[i].alt
+                   ? list->list[i].alt
+                   : list->list[i].path;
+      ret          = path ? TOLOWER((int)*path) : 0;
+      first        = ELEM_GET_FIRST_CHAR(ret);
       type         = list->list[idx].type;
 
       if (type == FILE_TYPE_DIRECTORY)
-         is_dir = true;
+         is_dir    = true;
 
       if ((current_is_dir && !is_dir) || (first != current))
       {

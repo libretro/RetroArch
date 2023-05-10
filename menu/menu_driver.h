@@ -716,8 +716,9 @@ enum action_iterate_type
 
 int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
 
-int menu_entries_elem_get_first_char(
-      file_list_t *list, unsigned offset);
+/* "Normalize" non-alphabetical entries so they
+ * are lumped together for purposes of jumping. */
+#define ELEM_GET_FIRST_CHAR(ret) ((ret < 'a') ? ('a' - 1) : (ret > 'z') ? ('z' + 1) : ret)
 
 void menu_entries_build_scroll_indices(
       struct menu_state *menu_st,
