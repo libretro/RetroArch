@@ -7108,13 +7108,15 @@ int menu_action_handle_setting(rarch_setting_t *setting,
  **/
 rarch_setting_t *menu_setting_find(const char *label)
 {
-   rarch_setting_t *setting = NULL;
-   rarch_setting_t **list   = &setting;
+   rarch_setting_t *setting   = NULL;
+   rarch_setting_t **list     = &setting;
+   struct menu_state *menu_st;
 
    if (!label)
       return NULL;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
+   menu_st                    = menu_state_get_ptr();
+   setting                    = menu_st->entries.list_settings;
 
    if (!setting)
       return NULL;
@@ -7143,13 +7145,15 @@ rarch_setting_t *menu_setting_find(const char *label)
 
 rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
 {
-   rarch_setting_t *setting = NULL;
-   rarch_setting_t **list   = &setting;
+   rarch_setting_t *setting   = NULL;
+   rarch_setting_t **list     = &setting;
+   struct menu_state *menu_st = NULL;
 
    if (enum_idx == 0)
       return NULL;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
+   menu_st                    = menu_state_get_ptr();
+   setting                    = menu_st->entries.list_settings;
 
    if (!setting)
       return NULL;

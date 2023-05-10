@@ -4393,14 +4393,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
    {
       case MENU_ENTRIES_CTL_NEEDS_REFRESH:
          return MENU_ENTRIES_NEEDS_REFRESH(menu_st);
-      case MENU_ENTRIES_CTL_SETTINGS_GET:
-         {
-            rarch_setting_t **settings  = (rarch_setting_t**)data;
-            if (!settings)
-               return false;
-            *settings = menu_st->entries.list_settings;
-         }
-         break;
       case MENU_ENTRIES_CTL_SET_REFRESH:
          {
             bool *nonblocking = (bool*)data;
