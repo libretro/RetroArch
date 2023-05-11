@@ -946,14 +946,22 @@ static int disk_options_disk_idx_right(unsigned type, const char *label,
 static int action_right_state_slot(unsigned type, const char *label,
       bool wraparound)
 {
-   settings_t           *settings = config_get_ptr();
+   settings_t       *settings = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
 
    settings->ints.state_slot++;
    if (settings->ints.state_slot > 999)
       settings->ints.state_slot = -1;
 
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+   if (menu_st->driver_ctx)
+   {
+      size_t selection = menu_st->selection_ptr;
+      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
+         menu_st->driver_ctx->update_savestate_thumbnail_path(
+               menu_st->userdata, (unsigned)selection);
+      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
+         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
+   }
 
    return 0;
 }
@@ -961,14 +969,22 @@ static int action_right_state_slot(unsigned type, const char *label,
 static int action_right_replay_slot(unsigned type, const char *label,
       bool wraparound)
 {
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   size_t selection               = menu_st->selection_ptr;
    settings_t           *settings = config_get_ptr();
 
    settings->ints.replay_slot++;
    if (settings->ints.replay_slot > 999)
       settings->ints.replay_slot = -1;
 
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+   if (menu_st->driver_ctx)
+   {
+      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
+         menu_st->driver_ctx->update_savestate_thumbnail_path(
+               menu_st->userdata, (unsigned)selection);
+      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
+         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
+   }
 
    return 0;
 }

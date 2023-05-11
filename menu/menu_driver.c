@@ -5555,14 +5555,14 @@ static int menu_input_post_iterate(
     *   and must be handled separately... */
    if (menu)
       messagebox_active = BIT64_GET(
-            menu->state, MENU_STATE_RENDER_MESSAGEBOX) &&
-            !string_is_empty(menu->menu_state_msg);
+            menu->state, MENU_STATE_RENDER_MESSAGEBOX)
+            && !string_is_empty(menu->menu_state_msg);
 
    /* If onscreen keyboard is shown and we currently have
     * active mouse input, highlight key under mouse cursor */
-   if (osk_active &&
-       (menu_input->pointer.type == MENU_POINTER_MOUSE) &&
-       pointer_hw_state->active)
+   if (    osk_active
+       && (menu_input->pointer.type == MENU_POINTER_MOUSE)
+       && pointer_hw_state->active)
    {
       menu_ctx_pointer_t point;
 
@@ -5665,7 +5665,7 @@ static int menu_input_post_iterate(
 
                   /* Pointer has moved a sufficient distance to
                    * trigger a 'dragged' state */
-                  menu_input->pointer.dragged = true;
+                  menu_input->pointer.dragged                    = true;
 
                   /* Here we diverge:
                    * > If onscreen keyboard or a message box is
@@ -5686,23 +5686,23 @@ static int menu_input_post_iterate(
                   else
                   {
                      /* Assign current deltas */
-                     menu_input->pointer.dx = x - last_x;
-                     menu_input->pointer.dy = y - last_y;
+                     menu_input->pointer.dx              = x - last_x;
+                     menu_input->pointer.dy              = y - last_y;
 
                      /* Update maximum start->current deltas */
                      if (dx_start > 0)
-                        dx_start_right_max = (dx_start_abs > dx_start_right_max) ?
-                              dx_start_abs : dx_start_right_max;
+                        dx_start_right_max = (dx_start_abs > dx_start_right_max)
+                              ? dx_start_abs : dx_start_right_max;
                      else
-                        dx_start_left_max = (dx_start_abs > dx_start_left_max) ?
-                              dx_start_abs : dx_start_left_max;
+                        dx_start_left_max = (dx_start_abs > dx_start_left_max)
+                              ? dx_start_abs : dx_start_left_max;
 
                      if (dy_start > 0)
-                        dy_start_down_max = (dy_start_abs > dy_start_down_max) ?
-                              dy_start_abs : dy_start_down_max;
+                        dy_start_down_max = (dy_start_abs > dy_start_down_max)
+                              ? dy_start_abs : dy_start_down_max;
                      else
-                        dy_start_up_max = (dy_start_abs > dy_start_up_max) ?
-                              dy_start_abs : dy_start_up_max;
+                        dy_start_up_max = (dy_start_abs > dy_start_up_max)
+                              ? dy_start_abs : dy_start_up_max;
 
                      /* Magic numbers... */
                      menu_input->pointer.y_accel = (accel0 + accel1 + (float)menu_input->pointer.dy) / 3.0f;
@@ -5712,7 +5712,7 @@ static int menu_input_post_iterate(
                      /* Acceleration decays over time - but if the value
                       * has been set on this frame, attenuation should
                       * be skipped */
-                     attenuate_y_accel = false;
+                     attenuate_y_accel           = false;
 
                      /* Check if pointer is being held in a particular
                       * direction */
@@ -5730,8 +5730,9 @@ static int menu_input_post_iterate(
                      if ((dx_start_abs >= dpi_threshold_press_direction_min) &&
                          (dy_start_abs <  dpi_threshold_press_direction_tangent))
                      {
-                        press_direction = (dx_start > 0) ?
-                              MENU_INPUT_PRESS_DIRECTION_RIGHT : MENU_INPUT_PRESS_DIRECTION_LEFT;
+                        press_direction = (dx_start > 0)
+                              ? MENU_INPUT_PRESS_DIRECTION_RIGHT 
+                              : MENU_INPUT_PRESS_DIRECTION_LEFT;
 
                         /* Get effective amplitude of press direction offset */
                         press_direction_amplitude =
@@ -5739,11 +5740,12 @@ static int menu_input_post_iterate(
                               (float)(dpi_threshold_press_direction_max - dpi_threshold_press_direction_min);
                      }
                      /* > Vertical */
-                     else if ((dy_start_abs >= dpi_threshold_press_direction_min) &&
-                              (dx_start_abs <  dpi_threshold_press_direction_tangent))
+                     else if (   (dy_start_abs >= dpi_threshold_press_direction_min)
+                              && (dx_start_abs <  dpi_threshold_press_direction_tangent))
                      {
-                        press_direction = (dy_start > 0) ?
-                              MENU_INPUT_PRESS_DIRECTION_DOWN : MENU_INPUT_PRESS_DIRECTION_UP;
+                        press_direction = (dy_start > 0)
+                              ? MENU_INPUT_PRESS_DIRECTION_DOWN 
+                              : MENU_INPUT_PRESS_DIRECTION_UP;
 
                         /* Get effective amplitude of press direction offset */
                         press_direction_amplitude =
@@ -5835,15 +5837,15 @@ static int menu_input_post_iterate(
              * current hardware x/y values. Instead, use
              * previous position from last time that a
              * press was active */
-            x = last_x;
-            y = last_y;
+            x          = last_x;
+            y          = last_y;
          }
          else
          {
             /* Pointer is considered stationary,
              * so use start position */
-            x = start_x;
-            y = start_y;
+            x          = start_x;
+            y          = start_y;
          }
 
          point.x       = x;
@@ -5915,9 +5917,8 @@ static int menu_input_post_iterate(
                float dpi = menu ? menu_input_get_dpi(menu, p_disp,
                      video_st->width, video_st->height) : 0.0f;
 
-               if ((dpi > 0.0f)
-                     &&
-                     (menu_input->pointer.press_duration <
+               if (     (dpi > 0.0f)
+                     && (menu_input->pointer.press_duration <
                       MENU_INPUT_SWIPE_TIMEOUT))
                {
                   uint16_t dpi_threshold_swipe         =
@@ -5936,14 +5937,12 @@ static int menu_input_post_iterate(
                   if (dx_start > 0)
                      dx_start_right_final              = (uint16_t)dx_start;
                   else
-                     dx_start_left_final               = (uint16_t)
-                        (dx_start * -1);
+                     dx_start_left_final               = (uint16_t)(dx_start * -1);
 
                   if (dy_start > 0)
                      dy_start_down_final               = (uint16_t)dy_start;
                   else
-                     dy_start_up_final                 = (uint16_t)
-                        (dy_start * -1);
+                     dy_start_up_final                 = (uint16_t)(dy_start * -1);
 
                   /* Swipe right */
                   if (     (dx_start_right_final > dpi_threshold_swipe)
@@ -6178,8 +6177,8 @@ void menu_driver_toggle(
          {
             /* Inhibits pointer 'select' and 'cancel' actions
              * (until the next time 'select'/'cancel' are released) */
-            menu_input->select_inhibit= true;
-            menu_input->cancel_inhibit= true;
+            menu_input->select_inhibit = true;
+            menu_input->cancel_inhibit = true;
          }
       }
 #endif
@@ -6252,7 +6251,7 @@ void menu_driver_toggle(
 
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)
-         *key_event                   = *frontend_key_event;
+         *key_event = *frontend_key_event;
    }
 }
 
@@ -6286,8 +6285,8 @@ void retroarch_menu_running(void)
             settings,
             menu_st->flags & MENU_ST_FLAG_ALIVE,
 #ifdef HAVE_OVERLAY
-            input_st->overlay_ptr &&
-            (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
+                input_st->overlay_ptr
+            && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
 #else
             false,
 #endif
@@ -6318,7 +6317,7 @@ void retroarch_menu_running(void)
     * first switching to the menu */
    if (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE)
    {
-      menu_st->flags             &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
+      menu_st->flags &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
       if (menu_st->driver_ctx->environ_cb)
          menu_st->driver_ctx->environ_cb(MENU_ENVIRON_DISABLE_SCREENSAVER,
                   NULL, menu_st->userdata);
@@ -6354,8 +6353,8 @@ void retroarch_menu_running_finished(bool quit)
             settings,
             menu_st->flags & MENU_ST_FLAG_ALIVE,
 #ifdef HAVE_OVERLAY
-            input_st->overlay_ptr &&
-            (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
+                input_st->overlay_ptr
+            && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
 #else
             false,
 #endif
@@ -6371,9 +6370,9 @@ void retroarch_menu_running_finished(bool quit)
    {
 #ifdef HAVE_AUDIOMIXER
       /* Stop menu background music before we exit the menu */
-      if (  settings &&
-            settings->bools.audio_enable_menu &&
-            settings->bools.audio_enable_menu_bgm
+      if (     settings
+            && settings->bools.audio_enable_menu
+            && settings->bools.audio_enable_menu_bgm
          )
          audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
@@ -6381,9 +6380,9 @@ void retroarch_menu_running_finished(bool quit)
       /* Enable game focus mode, if required */
       if (runloop_st->current_core_type != CORE_TYPE_DUMMY)
       {
-         enum input_auto_game_focus_type auto_game_focus_type = settings ?
-            (enum input_auto_game_focus_type)settings->uints.input_auto_game_focus :
-            AUTO_GAME_FOCUS_OFF;
+         enum input_auto_game_focus_type auto_game_focus_type = settings
+            ? (enum input_auto_game_focus_type)settings->uints.input_auto_game_focus
+            : AUTO_GAME_FOCUS_OFF;
 
          if (      (auto_game_focus_type == AUTO_GAME_FOCUS_ON)
                || ((auto_game_focus_type == AUTO_GAME_FOCUS_DETECT)
@@ -6406,7 +6405,7 @@ void retroarch_menu_running_finished(bool quit)
     * switching off the menu */
    if (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE)
    {
-      menu_st->flags             &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
+      menu_st->flags &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
       if (menu_st->driver_ctx->environ_cb)
          menu_st->driver_ctx->environ_cb(MENU_ENVIRON_DISABLE_SCREENSAVER,
                   NULL, menu_st->userdata);
@@ -6425,7 +6424,6 @@ void retroarch_menu_running_finished(bool quit)
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
-   gfx_display_t         *p_disp  = disp_get_ptr();
    struct menu_state    *menu_st  = &menu_driver_state;
 
    switch (state)
@@ -6467,6 +6465,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (menu_st->driver_data)
          {
             unsigned i;
+            gfx_display_t *p_disp         = disp_get_ptr();
 
             menu_st->scroll.acceleration  = 0;
             menu_st->selection_ptr        = 0;
@@ -6572,47 +6571,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   point->x, point->y, width, height);
          }
          break;
-      case RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH:
-         {
-            size_t selection = menu_st->selection_ptr;
-
-            if (!menu_st->driver_ctx || !menu_st->driver_ctx->update_thumbnail_path)
-               return false;
-            menu_st->driver_ctx->update_thumbnail_path(
-                  menu_st->userdata, (unsigned)selection, 'L');
-            menu_st->driver_ctx->update_thumbnail_path(
-                  menu_st->userdata, (unsigned)selection, 'R');
-         }
-         break;
-      case RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE:
-         {
-            unsigned *i = (unsigned*)data;
-
-            if (!i || !menu_st->driver_ctx ||
-                  !menu_st->driver_ctx->refresh_thumbnail_image)
-               return false;
-            menu_st->driver_ctx->refresh_thumbnail_image(
-                  menu_st->userdata, *i);
-         }
-         break;
-      case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH:
-         {
-            size_t selection = menu_st->selection_ptr;
-
-            if (  !menu_st->driver_ctx ||
-                  !menu_st->driver_ctx->update_savestate_thumbnail_path)
-               return false;
-            menu_st->driver_ctx->update_savestate_thumbnail_path(
-                  menu_st->userdata, (unsigned)selection);
-         }
-         break;
-      case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE:
-         if (  !menu_st->driver_ctx ||
-               !menu_st->driver_ctx->update_savestate_thumbnail_image)
-            return false;
-         menu_st->driver_ctx->update_savestate_thumbnail_image(
-               menu_st->userdata);
-         break;
       case MENU_NAVIGATION_CTL_CLEAR:
          {
             bool *pending_push     = (bool*)data;
@@ -6655,8 +6613,7 @@ struct video_shader *menu_shader_get(void)
 
 void menu_shader_manager_free(void)
 {
-   video_driver_state_t 
-      *video_st                = video_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
    if (video_st->menu_driver_shader)
       free(video_st->menu_driver_shader);
    video_st->menu_driver_shader = NULL;
@@ -7711,7 +7668,9 @@ int generic_menu_entry_action(
       menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
 
       /* Ozone requires thumbnail refreshing */
-      menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, &i);
+      if (menu_st->driver_ctx && menu_st->driver_ctx->refresh_thumbnail_image)
+         menu_st->driver_ctx->refresh_thumbnail_image(
+               menu_st->userdata, i);
 
       if (reset_navigation)
          menu_st->selection_ptr = 0;

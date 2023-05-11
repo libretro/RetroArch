@@ -7045,24 +7045,30 @@ int menu_action_handle_setting(rarch_setting_t *setting,
                   if (setting->action_left)
                   {
                      ret = setting->action_left(setting, selection, false);
-                     menu_driver_ctl(
-                           RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH,
-                           NULL);
-                     menu_driver_ctl(
-                           RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE,
-                           NULL);
+                     if (menu_st->driver_ctx)
+                     {
+                        if (menu_st->driver_ctx->update_savestate_thumbnail_path)
+                           menu_st->driver_ctx->update_savestate_thumbnail_path(
+                                 menu_st->userdata, (unsigned)selection);
+                        if (menu_st->driver_ctx->update_savestate_thumbnail_image)
+                           menu_st->driver_ctx->update_savestate_thumbnail_image(
+                                 menu_st->userdata);
+                     }
                   }
                   break;
                case MENU_ACTION_RIGHT:
                   if (setting->action_right)
                   {
                      ret = setting->action_right(setting, selection, false);
-                     menu_driver_ctl(
-                           RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH,
-                           NULL);
-                     menu_driver_ctl(
-                           RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE,
-                           NULL);
+                     if (menu_st->driver_ctx)
+                     {
+                        if (menu_st->driver_ctx->update_savestate_thumbnail_path)
+                           menu_st->driver_ctx->update_savestate_thumbnail_path(
+                                 menu_st->userdata, (unsigned)selection);
+                        if (menu_st->driver_ctx->update_savestate_thumbnail_image)
+                           menu_st->driver_ctx->update_savestate_thumbnail_image(
+                                 menu_st->userdata);
+                     }
                   }
                   break;
                case MENU_ACTION_SELECT:

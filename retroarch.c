@@ -3353,6 +3353,9 @@ bool command_event(enum event_command cmd, void *data)
             size_t *playlist_index         = (size_t*)data;
             struct playlist_entry entry    = {0};
             unsigned i                     = 0;
+#ifdef HAVE_MENU
+            struct menu_state *menu_st     = menu_state_get_ptr();
+#endif
 
             /* the update function reads our entry as const,
              * so these casts are safe */
@@ -3364,7 +3367,10 @@ bool command_event(enum event_command cmd, void *data)
 
 #ifdef HAVE_MENU
             /* Update playlist metadata */
-            menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, &i);
+            if (     menu_st->driver_ctx 
+                  && menu_st->driver_ctx->refresh_thumbnail_image)
+               menu_st->driver_ctx->refresh_thumbnail_image(
+                     menu_st->userdata, i);
 #endif
 
             runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

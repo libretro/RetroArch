@@ -35,6 +35,7 @@ int action_cancel_pop_default(const char *path,
 {
    size_t new_selection_ptr;
    struct menu_state *menu_st             = menu_state_get_ptr();
+   size_t selection                       = menu_st->selection_ptr;
    const char *menu_label                 = NULL;
    unsigned menu_type                     = MENU_SETTINGS_NONE;
    menu_search_terms_t *menu_search_terms = menu_entries_search_get_terms();
@@ -83,8 +84,14 @@ int action_cancel_pop_default(const char *path,
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
    menu_st->selection_ptr = new_selection_ptr;
 
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
+   if (menu_st->driver_ctx)
+   {
+      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
+         menu_st->driver_ctx->update_savestate_thumbnail_path(
+               menu_st->userdata, (unsigned)selection);
+      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
+         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
+   }
 
    return 0;
 }
