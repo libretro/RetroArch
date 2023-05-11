@@ -1979,7 +1979,7 @@
 				SDKROOT = appletvos;
 				SRCBASE = "$(SRCROOT)/../..";
 				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 12.1;
+				TVOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Debug;
 		};
@@ -2141,7 +2141,7 @@
 				SDKROOT = appletvos;
 				SRCBASE = "$(SRCROOT)/../..";
 				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 12.1;
+				TVOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Release;
 		};
