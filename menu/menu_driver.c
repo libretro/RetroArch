@@ -4380,42 +4380,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             *idx = menu_st->entries.begin;
          }
          break;
-      case MENU_ENTRIES_CTL_REFRESH:
-         /**
-          * Before a refresh, we could have deleted a
-          * file on disk, causing selection_ptr to
-          * suddendly be out of range.
-          *
-          * Ensure it doesn't overflow.
-          **/
-         {
-            size_t list_size                = 0;
-            file_list_t *list               = (file_list_t*)data;
-            if (!list)
-               return false;
-            if (list->size)
-               menu_entries_build_scroll_indices(menu_st, list);
-            if (menu_st->entries.list)
-               list_size                    = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size;
-
-            if (list_size)
-            {
-               size_t          selection    = menu_st->selection_ptr;
-               if (selection >= list_size)
-               {
-                  size_t idx                = list_size - 1;
-                  menu_st->selection_ptr    = idx;
-                  if (menu_st->driver_ctx->navigation_set)
-                     menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
-               }
-            }
-            else
-            {
-               bool pending_push = true;
-               menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-            }
-         }
-         break;
       case MENU_ENTRIES_CTL_CLEAR:
          {
             unsigned i;

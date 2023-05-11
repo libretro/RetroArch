@@ -42,7 +42,6 @@ enum menu_entries_ctl_state
    MENU_ENTRIES_CTL_SET_START,
    /* Returns the starting index of the menu entry list. */
    MENU_ENTRIES_CTL_START_GET,
-   MENU_ENTRIES_CTL_REFRESH,
    MENU_ENTRIES_CTL_CLEAR,
    MENU_ENTRIES_CTL_SHOW_BACK
 };
