@@ -2225,7 +2225,7 @@ static bool menu_driver_displaylist_push_internal(
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
-      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+      menu_entries_clear(info->list);
       menu_displaylist_ctl(DISPLAYLIST_MUSIC_HISTORY, info, settings);
       return true;
    }
@@ -2243,7 +2243,7 @@ static bool menu_driver_displaylist_push_internal(
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
-      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+      menu_entries_clear(info->list);
       menu_displaylist_ctl(DISPLAYLIST_VIDEO_HISTORY, info, settings);
       return true;
    }
@@ -2261,8 +2261,7 @@ static bool menu_driver_displaylist_push_internal(
       info->label = strdup(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
-      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
+      menu_entries_clear(info->list);
       menu_displaylist_ctl(DISPLAYLIST_IMAGES_HISTORY, info, settings);
       return true;
    }
@@ -2284,7 +2283,7 @@ static bool menu_driver_displaylist_push_internal(
 
       if (string_is_empty(dir_playlist))
       {
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         menu_entries_clear(info->list);
          info->flags |= MD_FLAG_NEED_REFRESH
                       | MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES
                       | MD_FLAG_NEED_PUSH;
@@ -4358,62 +4357,26 @@ void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
    }
 }
 
-bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
+bool menu_entries_clear(file_list_t *list)
 {
+   size_t i;
    struct menu_state    *menu_st  = &menu_driver_state;
 
-   switch (state)
+   if (!list)
+      return false;
+
+   /* Clear all the menu lists. */
+   if (menu_st->driver_ctx->list_clear)
+      menu_st->driver_ctx->list_clear(list);
+
+   for (i = 0; i < list->size; i++)
    {
-      case MENU_ENTRIES_CTL_SET_START:
-         {
-            size_t *idx = (size_t*)data;
-            if (idx)
-               menu_st->entries.begin = *idx;
-         }
-         break;
-      case MENU_ENTRIES_CTL_START_GET:
-         {
-            size_t *idx = (size_t*)data;
-            if (!idx)
-               return false;
-
-            *idx = menu_st->entries.begin;
-         }
-         break;
-      case MENU_ENTRIES_CTL_CLEAR:
-         {
-            unsigned i;
-            file_list_t              *list = (file_list_t*)data;
-
-            if (!list)
-               return false;
-
-            /* Clear all the menu lists. */
-            if (menu_st->driver_ctx->list_clear)
-               menu_st->driver_ctx->list_clear(list);
-
-            for (i = 0; i < list->size; i++)
-            {
-               if (list->list[i].actiondata)
-                  free(list->list[i].actiondata);
-               list->list[i].actiondata = NULL;
-            }
-
-            file_list_clear(list);
-         }
-         break;
-      case MENU_ENTRIES_CTL_SHOW_BACK:
-         /* Returns true if a Back button should be shown
-          * (i.e. we are at least
-          * one level deep in the menu hierarchy). */
-         if (!menu_st->entries.list)
-            return false;
-         return (MENU_LIST_GET_STACK_SIZE(menu_st->entries.list, 0) > 1);
-      case MENU_ENTRIES_CTL_NONE:
-      default:
-         break;
+      if (list->list[i].actiondata)
+         free(list->list[i].actiondata);
+      list->list[i].actiondata = NULL;
    }
 
+   file_list_clear(list);
    return true;
 }
 

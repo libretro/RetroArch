@@ -1340,12 +1340,6 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_SAVESTATE_LIST:
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = path;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_GENERIC;
-         break;
       case ACTION_OK_DL_CORE_OPTIONS_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -4633,9 +4627,7 @@ static int action_ok_core_updater_list(const char *path,
    if (!core_list)
    {
       core_updater_list_init_cached();
-      core_list = core_updater_list_get_cached();
-
-      if (!core_list)
+      if (!(core_list = core_updater_list_get_cached()))
          return -1;
    }
 
@@ -4868,7 +4860,7 @@ static void cb_generic_dir_download(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err)
 {
-   file_transfer_t     *transf      = (file_transfer_t*)user_data;
+   file_transfer_t *transf = (file_transfer_t*)user_data;
    if (transf)
    {
       generic_action_ok_network(transf->path, transf->path, 0, 0, 0,

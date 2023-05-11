@@ -5087,16 +5087,10 @@ static void rgui_render(
 
    /* Get offset of bottommost entry */
    bottom                    = (int)(entries_end - rgui->term_layout.height);
-   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
+   old_start                 = menu_st->entries.begin;
 
    if (old_start > (unsigned)bottom)
-   {
-      /* MENU_ENTRIES_CTL_SET_START requires a pointer of
-       * type size_t, so have to create a copy of 'bottom'
-       * here to avoid memory errors... */
-      size_t bottom_cpy = (size_t)bottom;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &bottom_cpy);
-   }
+      menu_st->entries.begin = (size_t)bottom;
 
    /* Handle pointer input
     * Note: This is ignored when showing a fullscreen thumbnail */
@@ -5106,7 +5100,7 @@ static void rgui_render(
       /* Update currently 'highlighted' item */
       if (rgui->pointer.y > rgui->term_layout.start_y)
       {
-         menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
+         old_start       = menu_st->entries.begin;
          /* NOTE: It's okay for this to go out of range
           * (limits are checked in rgui_pointer_up()) */
          menu_input->ptr = (unsigned)((rgui->pointer.y - rgui->term_layout.start_y) / rgui->font_height_stride) + old_start;
@@ -5115,32 +5109,27 @@ static void rgui_render(
       /* Allow drag-scrolling if items are currently off-screen */
       if (rgui->pointer.dragged && (bottom > 0))
       {
-         size_t start;
-         int16_t scroll_y_max = bottom * rgui->font_height_stride;
-
-         rgui->scroll_y      += -1 * rgui->pointer.dy;
+         int16_t scroll_y_max   = bottom * rgui->font_height_stride;
+         rgui->scroll_y        += -1 * rgui->pointer.dy;
          if (rgui->scroll_y < 0)
-            rgui->scroll_y    = 0;
+            rgui->scroll_y      = 0;
          if (rgui->scroll_y > scroll_y_max)
-            rgui->scroll_y    = scroll_y_max;
+            rgui->scroll_y      = scroll_y_max;
 
-         start                = rgui->scroll_y / rgui->font_height_stride;
-         menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
+         menu_st->entries.begin = rgui->scroll_y / rgui->font_height_stride;
       }
    }
 
    /* Start position may have changed - get current
     * value and determine index of last displayed entry */
-   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
-   end = ((old_start + rgui->term_layout.height) <= entries_end) ?
-         old_start + rgui->term_layout.height : entries_end;
+   old_start = menu_st->entries.begin;
+   end       = ((old_start + rgui->term_layout.height) <= entries_end)
+         ? old_start + rgui->term_layout.height 
+         : entries_end;
 
    /* Do not scroll if all items are visible. */
    if (entries_end <= rgui->term_layout.height)
-   {
-      size_t start = 0;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
-   }
+      menu_st->entries.begin = 0;
 
    /* Render background */
    rgui_render_background(rgui, fb_width, fb_height, fb_pitch);
@@ -5437,10 +5426,9 @@ static void rgui_render(
             title_buf, rgui->colors.title_color, rgui->colors.shadow_color);
 
       /* Print menu entries */
-      x = rgui->term_layout.start_x;
-      y = rgui->term_layout.start_y;
-
-      menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &new_start);
+      x         = rgui->term_layout.start_x;
+      y         = rgui->term_layout.start_y;
+      new_start = menu_st->entries.begin;
 
       for (i = new_start; i < end; i++, y += rgui->font_height_stride)
       {
@@ -6406,6 +6394,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    unsigned rgui_color_theme     = settings->uints.menu_rgui_color_theme;
    const char *dynamic_theme_dir = settings->paths.directory_dynamic_wallpapers;
    menu_handle_t *menu           = (menu_handle_t*)calloc(1, sizeof(*menu));
+   struct menu_state *menu_st    = menu_state_get_ptr();
 
    if (!menu)
       return NULL;
@@ -6477,7 +6466,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
          settings->uints.menu_rgui_aspect_ratio
          );
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
+   menu_st->entries.begin      = start;
    rgui->scroll_y              = 0;
 
    if (settings->bools.menu_rgui_background_filler_thickness_enable)
@@ -6692,13 +6681,14 @@ static void rgui_set_texture(void *data)
 
 static void rgui_navigation_clear(void *data, bool pending_push)
 {
-   size_t start           = 0;
-   rgui_t           *rgui = (rgui_t*)data;
+   size_t start               = 0;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   rgui_t           *rgui     = (rgui_t*)data;
    if (!rgui)
       return;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
-   rgui->scroll_y = 0;
+   menu_st->entries.begin     = start;
+   rgui->scroll_y             = 0;
 }
 
 static void rgui_set_thumbnail_system(void *userdata, char *s, size_t len)
@@ -7190,14 +7180,14 @@ static void rgui_navigation_set(void *data, bool scroll)
    if      (selection < rgui->term_layout.height / 2) { }
    else if (selection >= (rgui->term_layout.height / 2)
          && selection < (end - rgui->term_layout.height / 2))
-      start        = selection - rgui->term_layout.height / 2;
+      start               = selection - rgui->term_layout.height / 2;
    else if (selection >= (end - rgui->term_layout.height / 2))
-      start        = end - rgui->term_layout.height;
+      start               = end - rgui->term_layout.height;
    else
       return;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
-   rgui->scroll_y = start * rgui->font_height_stride;
+   menu_st->entries.begin = start;
+   rgui->scroll_y         = start * rgui->font_height_stride;
 }
 
 static void rgui_navigation_set_last(void *data)

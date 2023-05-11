@@ -35,17 +35,6 @@ RETRO_BEGIN_DECLS
 #define MENU_SEARCH_FILTER_MAX_TERMS  8
 #define MENU_SEARCH_FILTER_MAX_LENGTH 64
 
-enum menu_entries_ctl_state
-{
-   MENU_ENTRIES_CTL_NONE = 0,
-   /* Sets the starting index of the menu entry list. */
-   MENU_ENTRIES_CTL_SET_START,
-   /* Returns the starting index of the menu entry list. */
-   MENU_ENTRIES_CTL_START_GET,
-   MENU_ENTRIES_CTL_CLEAR,
-   MENU_ENTRIES_CTL_SHOW_BACK
-};
-
 enum menu_list_type
 {
    MENU_LIST_PLAIN = 0,
@@ -179,7 +168,7 @@ bool menu_entries_append(file_list_t *list,
       unsigned type, size_t directory_ptr, size_t entry_idx,
       rarch_setting_t *setting);
 
-bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
+bool menu_entries_clear(file_list_t *list);
 
 bool menu_entries_search_pop(void);
 

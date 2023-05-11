@@ -1535,10 +1535,9 @@ static void xmb_selection_pointer_changed(
 
    video_driver_get_size(NULL, &height);
 
-   tag       = (uintptr_t)selection_buf;
-
+   tag                    = (uintptr_t)selection_buf;
    gfx_animation_kill_by_tag(&tag);
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &num);
+   menu_st->entries.begin = num;
 
    for (i = 0; i < end; i++)
    {
@@ -1763,13 +1762,15 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i, height;
-   unsigned xmb_system_tab = 0;
-   size_t skip             = 0;
-   int        threshold    = xmb->icon_size * 10;
-   size_t end              = list ? list->size : 0;
-   settings_t *settings    = config_get_ptr();
-   bool savestate_thumbnail_enable
-                           = settings ? settings->bools.savestate_thumbnail_enable : false;
+   unsigned xmb_system_tab         = 0;
+   size_t skip                     = 0;
+   int threshold                   = xmb->icon_size * 10;
+   size_t end                      = list ? list->size : 0;
+   settings_t *settings            = config_get_ptr();
+   struct menu_state *menu_st      = menu_state_get_ptr();
+   bool savestate_thumbnail_enable = settings
+                           ? settings->bools.savestate_thumbnail_enable 
+                           : false;
 
    video_driver_get_size(NULL, &height);
 
@@ -1837,9 +1838,8 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       }
    }
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &skip);
-
-   xmb_system_tab = xmb_get_system_tab(xmb,
+   menu_st->entries.begin = skip;
+   xmb_system_tab         = xmb_get_system_tab(xmb,
          (unsigned)xmb->categories_selection_ptr);
 
    if (xmb_system_tab <= XMB_SYSTEM_TAB_SETTINGS && xmb->depth > xmb->old_depth)
@@ -4247,6 +4247,7 @@ static void xmb_draw_items(
       gfx_display_t *p_disp,
       gfx_display_ctx_driver_t *dispctx,
       gfx_animation_t *p_anim,
+      struct menu_state *menu_st,
       settings_t *settings,
       unsigned video_width,
       unsigned video_height,
@@ -4269,9 +4270,8 @@ static void xmb_draw_items(
       core_node = xmb_get_userdata_from_horizontal_list(
             xmb, (unsigned)(cat_selection_ptr - (xmb->system_tab_end + 1)));
 
-   end                               = list->size;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
+   end  = list->size;
+   i    = menu_st->entries.begin;
 
    if (list == &xmb->selection_buf_old)
    {
@@ -4743,8 +4743,6 @@ static int xmb_menu_entry_action(
 static void xmb_render(void *data,
       unsigned width, unsigned height, bool is_idle)
 {
-   /* 'i' must be of 'size_t', since it is passed
-    * by reference to menu_entries_ctl() */
    size_t i;
    /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
     * On some platforms (e.g. 32-bit x86 without SSE),
@@ -5006,13 +5004,10 @@ static void xmb_render(void *data,
       }
    }
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
+   i = menu_st->entries.begin;
 
    if (i >= end)
-   {
-      i = 0;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
-   }
+      menu_st->entries.begin = 0;
 
    GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 }
@@ -6296,6 +6291,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          p_disp,
          dispctx,
          p_anim,
+         menu_st,
          settings,
          video_width,
          video_height,
@@ -6319,6 +6315,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          p_disp,
          dispctx,
          p_anim,
+         menu_st,
          settings,
          video_width,
          video_height,
@@ -7881,8 +7878,7 @@ static int xmb_list_push(void *data, void *userdata,
    switch (type)
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
+         menu_entries_clear(info->list);
          menu_entries_append(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
                msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
@@ -7924,7 +7920,8 @@ static int xmb_list_push(void *data, void *userdata,
          {
             rarch_system_info_t *system = &runloop_state_get_ptr()->system;
             uint32_t flags              = runloop_get_flags();
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+            menu_entries_clear(info->list);
 
             if (flags & RUNLOOP_FLAG_CORE_RUNNING)
             {

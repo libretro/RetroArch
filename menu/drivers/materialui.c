@@ -3861,7 +3861,7 @@ static void materialui_render(void *data,
          break;
    }
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &mui->first_onscreen_entry);
+   menu_st->entries.begin = mui->first_onscreen_entry;
 }
 
 /* ==============================
@@ -5665,6 +5665,8 @@ static void materialui_render_entry_touch_feedback(
 
 static void materialui_render_header(
       materialui_handle_t *mui,
+      struct menu_state *menu_st,
+      menu_list_t *menu_list,
       settings_t *settings,
       gfx_display_t *p_disp,
       void *userdata,
@@ -5679,7 +5681,7 @@ static void materialui_render_header(
    size_t sys_bar_clock_width            = 0;
    int sys_bar_text_y                    = (int)(((float)mui->sys_bar_height / 2.0f) + (float)mui->font_data.hint.line_centre_offset);
    int title_x                           = 0;
-   bool show_back_icon                   = menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL);
+   bool show_back_icon                   = menu_list ? (MENU_LIST_GET_STACK_SIZE(menu_st->entries.list, 0) > 1) : false;
    bool show_search_icon                 = 
          (mui->flags & MUI_FLAG_IS_PLAYLIST)
       || (mui->flags & MUI_FLAG_IS_FILE_LIST)
@@ -7021,6 +7023,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    settings_t *settings           = config_get_ptr();
    gfx_display_t *p_disp          = disp_get_ptr();
    struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_list_t *menu_list         = menu_st->entries.list;
    menu_input_t *menu_input       = &menu_st->input_state;
    size_t selection               = menu_st->selection_ptr;
    unsigned header_height         = p_disp->header_height;
@@ -7165,7 +7168,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          video_width, video_height, header_height, selection);
 
    /* Draw title + system bar */
-   materialui_render_header(mui, settings, p_disp, userdata,
+   materialui_render_header(mui, menu_st, menu_list,
+         settings, p_disp, userdata,
          video_width, video_height, &mymat);
 
    /* Draw navigation bar */
@@ -8429,12 +8433,13 @@ static void materialui_list_set_selection(void *data, file_list_t *list)
 /* The navigation pointer is set back to zero */
 static void materialui_navigation_clear(void *data, bool pending_push)
 {
-   size_t i                 = 0;
-   materialui_handle_t *mui = (materialui_handle_t*)data;
+   size_t i                   = 0;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   materialui_handle_t *mui   = (materialui_handle_t*)data;
    if (!mui)
       return;
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
+   menu_st->entries.begin     = i;
 
    materialui_animate_scroll(
          mui,
@@ -8453,23 +8458,27 @@ static void materialui_navigation_alphabet(void *data, size_t *unused)
 }
 
 static void materialui_populate_nav_bar(
-      materialui_handle_t *mui, const char *label, settings_t *settings)
+      materialui_handle_t *mui,
+      struct menu_state *menu_st,
+      const char *label,
+      settings_t *settings)
 {
-   size_t menu_tab_index            = 0;
-   bool menu_content_show_playlists = 
+   size_t menu_tab_index                   = 0;
+   bool menu_content_show_playlists        = 
       settings->bools.menu_content_show_playlists;
-
    /* Cache last active menu tab index */
    mui->nav_bar.last_active_menu_tab_index = mui->nav_bar.active_menu_tab_index;
 
    /* Back tab */
-   mui->nav_bar.back_tab.enabled = menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL);
+   mui->nav_bar.back_tab.enabled           = menu_st->entries.list 
+      ? (MENU_LIST_GET_STACK_SIZE(menu_st->entries.list, 0) > 1) 
+      : false;
 
    /* Resume tab
     * > Menu driver must be alive at this point, and retroarch
     *   must be initialised, so all we have to do (or can do)
     *   is check whether a non-dummy core is loaded) */
-   mui->nav_bar.resume_tab.enabled = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL);
+   mui->nav_bar.resume_tab.enabled         = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL);
 
    /* Menu tabs */
 
@@ -8746,7 +8755,7 @@ static void materialui_populate_entries(
     *   Since the visibility may change at any
     *   point, we must always keep track of the
     *   current navigation bar status */
-   materialui_populate_nav_bar(mui, label, settings);
+   materialui_populate_nav_bar(mui, menu_st, label, settings);
 
    /* Update list view/thumbnail parameters */
    materialui_update_list_view(mui, settings);
@@ -9491,40 +9500,37 @@ static int materialui_list_push(void *data, void *userdata,
    switch (type)
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
+         menu_entries_clear(info->list);
+         menu_entries_append(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
+               msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+               MENU_ENUM_LABEL_FAVORITES,
+               MENU_SETTING_ACTION_FAVORITES_DIR, 0, 0, NULL);
+
+         core_info_get_list(&list);
+         if (list->info_count > 0)
          {
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
             menu_entries_append(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
-                  msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
-                  MENU_ENUM_LABEL_FAVORITES,
-                  MENU_SETTING_ACTION_FAVORITES_DIR, 0, 0, NULL);
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                  MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
+                  MENU_SETTING_ACTION, 0, 0, NULL);
+         }
 
-            core_info_get_list(&list);
-            if (list->info_count > 0)
-            {
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                     MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
-                     MENU_SETTING_ACTION, 0, 0, NULL);
-            }
-
-            if (frontend_driver_parse_drive_list(info->list, true) != 0)
-               menu_entries_append(info->list, "/",
-                     msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-                     MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-                     MENU_SETTING_ACTION, 0, 0, NULL);
-
-            menu_entries_append(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
-                  MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
+         if (frontend_driver_parse_drive_list(info->list, true) != 0)
+            menu_entries_append(info->list, "/",
+                  msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
                   MENU_SETTING_ACTION, 0, 0, NULL);
 
-            info->flags |= MD_FLAG_NEED_PUSH | MD_FLAG_NEED_REFRESH;
-            ret          = 0;
-         }
+         menu_entries_append(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
+               MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
+               MENU_SETTING_ACTION, 0, 0, NULL);
+
+         info->flags |= MD_FLAG_NEED_PUSH | MD_FLAG_NEED_REFRESH;
+         ret          = 0;
          break;
       case DISPLAYLIST_MAIN_MENU:
          {
@@ -9537,7 +9543,7 @@ static int materialui_list_push(void *data, void *userdata,
             if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_HIDDEN)
                return ret;
 
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            menu_entries_clear(info->list);
 
             if (flags & RUNLOOP_FLAG_CORE_RUNNING)
             {

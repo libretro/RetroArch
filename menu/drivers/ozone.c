@@ -5383,8 +5383,7 @@ static void ozone_compute_entries_position(
    if (ozone->show_thumbnail_bar)
       ozone_update_content_metadata(ozone);
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
-
+   i                             = menu_st->entries.begin;
    selection_buf                 = MENU_LIST_GET_SELECTION(menu_list, 0);
 
    video_driver_get_size(&video_info_width, &video_info_height);
@@ -9462,8 +9461,7 @@ static int ozone_list_push(void *data, void *userdata,
             bool menu_content_show_playlists = settings->bools.menu_content_show_playlists;
             bool kiosk_mode_enable           = settings->bools.kiosk_mode_enable;
 
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
+            menu_entries_clear(info->list);
             menu_entries_append(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
                   msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
@@ -9512,7 +9510,7 @@ static int ozone_list_push(void *data, void *userdata,
             rarch_system_info_t *system = &runloop_state_get_ptr()->system;
             uint32_t flags              = runloop_get_flags();
 
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            menu_entries_clear(info->list);
 
             if (flags & RUNLOOP_FLAG_CORE_RUNNING)
             {
@@ -10270,13 +10268,10 @@ static void ozone_render(void *data,
          ozone->thumbnails_right_status_prev = ozone->thumbnails.right.status;
    }
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
+   i = menu_st->entries.begin;
 
    if (i >= entries_end)
-   {
-      i = 0;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
-   }
+      menu_st->entries.begin = 0;
 
    GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 }
