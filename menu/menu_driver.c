@@ -4399,17 +4399,6 @@ void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)
       menu_st->driver_ctx->frame(menu_st->userdata, video_info);
 }
 
-bool menu_driver_list_cache(menu_ctx_list_t *list)
-{
-   struct menu_state    *menu_st = &menu_driver_state;
-   if (!list || !menu_st->driver_ctx || !menu_st->driver_ctx->list_cache)
-      return false;
-
-   menu_st->driver_ctx->list_cache(menu_st->userdata,
-         list->type, list->action);
-   return true;
-}
-
 /* Teardown function for the menu driver. */
 void menu_driver_destroy(
       struct menu_state *menu_st)

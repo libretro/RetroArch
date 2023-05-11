@@ -14092,21 +14092,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->flags         |=  MD_FLAG_NEED_NAVIGATION_CLEAR;
             /* fall-through */
          case DISPLAYLIST_PENDING_CLEAR:
-            {
-               menu_ctx_list_t list_info;
+            if (menu_st->driver_ctx && menu_st->driver_ctx->list_cache)
+               menu_st->driver_ctx->list_cache(menu_st->userdata,
+                     MENU_LIST_PLAIN, MENU_ACTION_NOOP);
 
-               list_info.type    = MENU_LIST_PLAIN;
-               list_info.action  = 0;
+            if (menu_entries_append(info->list, info->path,
+                     info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0,
+                     NULL))
+               count++;
 
-               menu_driver_list_cache(&list_info);
-
-               if (menu_entries_append(info->list, info->path,
-                        info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0,
-                        NULL))
-                  count++;
-
-               info->flags      |=  MD_FLAG_NEED_ENTRIES_REFRESH;
-            }
+            info->flags      |=  MD_FLAG_NEED_ENTRIES_REFRESH;
             break;
          case DISPLAYLIST_USER_BINDS_LIST:
             menu_entries_clear(info->list);

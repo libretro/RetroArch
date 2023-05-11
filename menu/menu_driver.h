@@ -617,8 +617,6 @@ void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info);
 
 int menu_driver_deferred_push_content_list(file_list_t *list);
 
-bool menu_driver_list_cache(menu_ctx_list_t *list);
-
 bool menu_driver_init(bool video_is_threaded);
 
 size_t menu_driver_list_get_selection(void);

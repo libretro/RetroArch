@@ -6988,7 +6988,7 @@ static int action_ok_start_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    content_ctx_info_t content_info;
-   menu_ctx_list_t list_info;
+   struct menu_state *menu_st          = menu_state_get_ptr();
 
    content_info.argc                   = 0;
    content_info.argv                   = NULL;
@@ -6998,9 +6998,9 @@ static int action_ok_start_core(const char *path,
    /* We are going to push a new menu; ensure
     * that the current one is cached for animation
     * purposes */
-   list_info.type   = MENU_LIST_PLAIN;
-   list_info.action = 0;
-   menu_driver_list_cache(&list_info);
+   if (menu_st->driver_ctx && menu_st->driver_ctx->list_cache)
+      menu_st->driver_ctx->list_cache(menu_st->userdata,
+            MENU_LIST_PLAIN, MENU_ACTION_NOOP);
 
    path_clear(RARCH_PATH_BASENAME);
    if (!task_push_start_current_core(&content_info))

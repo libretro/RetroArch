@@ -5720,14 +5720,12 @@ static enum runloop_state_enum runloop_check_state(
        * and exit the function to go to the next frame. */
       if (menu_st->flags & MENU_ST_FLAG_PENDING_QUICK_MENU)
       {
-         menu_ctx_list_t list_info;
-
          /* We are going to push a new menu; ensure
           * that the current one is cached for animation
           * purposes */
-         list_info.type   = MENU_LIST_PLAIN;
-         list_info.action = 0;
-         menu_driver_list_cache(&list_info);
+         if (menu_st->driver_ctx && menu_st->driver_ctx->list_cache)
+            menu_st->driver_ctx->list_cache(menu_st->userdata,
+                  MENU_LIST_PLAIN, MENU_ACTION_NOOP);
 
          p_disp->flags   |= GFX_DISP_FLAG_MSG_FORCE;
 

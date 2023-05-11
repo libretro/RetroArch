@@ -283,16 +283,12 @@ static int audio_mixer_stream_volume_right(unsigned type, const char *label,
 
 static int action_right_goto_tab(void)
 {
-   menu_ctx_list_t list_info;
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
-
-   list_info.type             = MENU_LIST_HORIZONTAL;
-   list_info.action           = MENU_ACTION_RIGHT;
-
-   menu_driver_list_cache(&list_info);
-
+   if (menu_st->driver_ctx && menu_st->driver_ctx->list_cache)
+      menu_st->driver_ctx->list_cache(menu_st->userdata,
+            MENU_LIST_HORIZONTAL, MENU_ACTION_RIGHT);
    return menu_driver_deferred_push_content_list(selection_buf);
 }
 
