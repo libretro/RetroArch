@@ -294,7 +294,7 @@ enum
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
-    if (@available(iOS 13.4, *)) {
+    if (@available(iOS 13.4, tvOS 13.4, *)) {
         if (event.type == UIEventTypeHover)
             return;
     }
