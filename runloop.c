@@ -149,7 +149,6 @@
 #include "menu/menu_cbs.h"
 #include "menu/menu_driver.h"
 #include "menu/menu_input.h"
-#include "menu/menu_dialog.h"
 #include "menu/menu_input_bind_dialog.h"
 #endif
 

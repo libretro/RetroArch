@@ -17,7 +17,6 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
-#include "../menu_dialog.h"
 
 #include "../../configuration.h"
 #include "../../audio/audio_driver.h"

@@ -3856,8 +3856,6 @@ static enum menu_driver_id_type menu_driver_set_id(
          return MENU_DRIVER_ID_GLUI;
       else if (string_is_equal(driver_name, "xmb"))
          return MENU_DRIVER_ID_XMB;
-      else if (string_is_equal(driver_name, "stripes"))
-         return MENU_DRIVER_ID_STRIPES;
    }
    return MENU_DRIVER_ID_UNKNOWN;
 }

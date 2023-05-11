@@ -465,6 +465,34 @@ enum menu_screensaver_effect
    MENU_SCREENSAVER_LAST
 };
 
+enum menu_dialog_type
+{
+   MENU_DIALOG_NONE = 0,
+   MENU_DIALOG_WELCOME,
+   MENU_DIALOG_HELP_EXTRACT,
+   MENU_DIALOG_HELP_CONTROLS,
+   MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION,
+   MENU_DIALOG_HELP_LOADING_CONTENT,
+   MENU_DIALOG_HELP_WHAT_IS_A_CORE,
+   MENU_DIALOG_HELP_CHANGE_VIRTUAL_GAMEPAD,
+   MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
+   MENU_DIALOG_HELP_SCANNING_CONTENT,
+   MENU_DIALOG_QUIT_CONFIRM,
+   MENU_DIALOG_INFORMATION,
+   MENU_DIALOG_QUESTION,
+   MENU_DIALOG_WARNING,
+   MENU_DIALOG_ERROR,
+   MENU_DIALOG_LAST
+};
+
+struct menu_dialog
+{
+   unsigned              current_id;
+   enum menu_dialog_type current_type;
+   bool                  pending_push;
+};
+
+typedef struct menu_dialog menu_dialog_t;
 
 RETRO_END_DECLS
 

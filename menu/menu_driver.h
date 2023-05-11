@@ -34,7 +34,6 @@
 #endif
 
 #include "menu_defines.h"
-#include "menu_dialog.h"
 #include "menu_input.h"
 #include "../input/input_osk.h"
 #include "menu_input_bind_dialog.h"
