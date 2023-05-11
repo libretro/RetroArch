@@ -89,7 +89,16 @@ static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_disable_desc = {
    D3D12_COLOR_WRITE_ENABLE_ALL,
 };
 
-
+#define D3D12_GFX_SYNC() \
+{ \
+   D3D12Fence fence = d3d12->queue.fence; \
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue); \
+   if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue) \
+   { \
+      fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent); \
+      WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE); \
+   } \
+}
 
 /* Temporary workaround for d3d12 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d12_fake_context;
@@ -186,17 +195,6 @@ static void d3d12_overlay_set_alpha(void* data, unsigned index, float mod)
    range.Begin              = index * sizeof(*sprites);
    range.End                = range.Begin + sizeof(*sprites);
    D3D12Unmap(d3d12->overlays.vbo, 0, &range);
-}
-
-#define D3D12_GFX_SYNC() \
-{ \
-   D3D12Fence fence = d3d12->queue.fence; \
-   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue); \
-   if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue) \
-   { \
-      fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent); \
-      WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE); \
-   } \
 }
 
 static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_images)
