@@ -462,7 +462,7 @@ video_driver_t *hw_render_context_driver(
          break;
 #endif
       case RETRO_HW_CONTEXT_D3D12:
-#if defined(HAVE_D3D11)
+#if defined(HAVE_D3D12)
 	 return &video_d3d12;
 #else
          break;
