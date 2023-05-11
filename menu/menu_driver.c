@@ -6420,6 +6420,16 @@ void retroarch_menu_running_finished(bool quit)
       video_st->frame_delay_pause = true;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+static void menu_shader_manager_free(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   if (video_st->menu_driver_shader)
+      free(video_st->menu_driver_shader);
+   video_st->menu_driver_shader = NULL;
+}
+#endif
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    struct menu_state    *menu_st  = &menu_driver_state;
@@ -6607,14 +6617,6 @@ struct video_shader *menu_shader_get(void)
          return video_st->menu_driver_shader;
    }
    return NULL;
-}
-
-void menu_shader_manager_free(void)
-{
-   video_driver_state_t *video_st = video_state_get_ptr();
-   if (video_st->menu_driver_shader)
-      free(video_st->menu_driver_shader);
-   video_st->menu_driver_shader = NULL;
 }
 
 /**
