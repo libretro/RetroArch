@@ -1,6 +1,14 @@
 #ifndef COCOA_APPLE_PLATFORM_H
 #define COCOA_APPLE_PLATFORM_H
 
+#if TARGET_OS_TV
+#include "config_file.h"
+extern config_file_t *open_userdefaults_config_file(void);
+extern void write_userdefaults_config_file(void);
+#endif
+
+#ifdef __OBJC__
+
 #ifdef HAVE_METAL
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
@@ -92,6 +100,8 @@ UINavigationControllerDelegate> {
 @property(nonatomic, retain) NSWindow IBOutlet *window;
 
 @end
+#endif
+
 #endif
 
 #endif

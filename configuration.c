@@ -65,6 +65,10 @@
 #include "switch_performance_profiles.h"
 #endif
 
+#if TARGET_OS_TV
+#include "ui/drivers/cocoa/apple_platform.h"
+#endif
+
 enum video_driver_enum
 {
    VIDEO_GL                 = 0,
@@ -3355,6 +3359,16 @@ static bool config_load_file(global_t *global,
 
    conf = (path) ? config_file_new_from_path_to_string(path) : open_default_config_file();
 
+#if TARGET_OS_TV
+   if (!conf && path && string_is_equal(path, path_get(RARCH_PATH_CONFIG)))
+   {
+      /* Sometimes the OS decides it needs to reclaim disk space
+       * by emptying the cache, which is the only disk space we
+       * have access to, other than NSUserDefaults. */
+      conf = open_userdefaults_config_file();
+   }
+#endif
+
    if (!conf)
    {
       first_load = false;
@@ -5073,6 +5087,11 @@ bool config_save_file(const char *path)
 
    ret = config_file_write(conf, path, true);
    config_file_free(conf);
+
+#if TARGET_OS_TV
+   if (ret && string_is_equal(path, path_get(RARCH_PATH_CONFIG)))
+       write_userdefaults_config_file();
+#endif
 
    return ret;
 }
