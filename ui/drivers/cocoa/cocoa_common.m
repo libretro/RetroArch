@@ -130,35 +130,41 @@ void *glkitview_init(void);
 
 - (bool)didMicroGamepadPress:(UIPressType)type
 {
-    if (type != UIPressTypeMenu &&
-        type != UIPressTypeSelect &&
-        type != UIPressTypePlayPause)
-        return false;
-
     NSArray<GCController*>* controllers = [GCController controllers];
     if ([controllers count] == 1)
         return !controllers[0].extendedGamepad;
 
+    // are these presses that controllers send?
+    if (type == UIPressTypePageUp || type == UIPressTypePageDown)
+        return true;
+
     bool microPress = false;
     bool extendedPress = false;
     for (GCController *controller in [GCController controllers]) {
-        // the microGamepad does not always know if Menu has been pressed,
-        // so we have to check all the extended gamepads as well
         if (controller.extendedGamepad)
         {
-            if (type == UIPressTypeMenu)
-                extendedPress |= controller.extendedGamepad.buttonB.pressed;
+            if (type == UIPressTypeUpArrow)
+                extendedPress |= controller.extendedGamepad.dpad.up.pressed;
+            else if (type == UIPressTypeDownArrow)
+                extendedPress |= controller.extendedGamepad.dpad.down.pressed;
+            else if (type == UIPressTypeLeftArrow)
+                extendedPress |= controller.extendedGamepad.dpad.left.pressed;
+            else if (type == UIPressTypeRightArrow)
+                extendedPress |= controller.extendedGamepad.dpad.right.pressed;
             else if (type == UIPressTypeSelect)
                 extendedPress |= controller.extendedGamepad.buttonA.pressed;
+            else if (type == UIPressTypeMenu)
+                extendedPress |= controller.extendedGamepad.buttonB.pressed;
             else if (type == UIPressTypePlayPause)
                 extendedPress |= controller.extendedGamepad.buttonX.pressed;
+
         }
-        else
+        else if (controller.microGamepad)
         {
             if (type == UIPressTypeSelect)
-                extendedPress |= controller.extendedGamepad.buttonA.pressed;
+                microPress |= controller.microGamepad.buttonA.pressed;
             else if (type == UIPressTypePlayPause)
-                extendedPress |= controller.extendedGamepad.buttonX.pressed;
+                microPress |= controller.microGamepad.buttonX.pressed;
             else if (@available(tvOS 13, *)) {
                 if (type == UIPressTypeMenu)
                     extendedPress |= controller.microGamepad.buttonMenu.pressed ||
@@ -170,54 +176,54 @@ void *glkitview_init(void);
     return microPress || !extendedPress;
 }
 
+- (void)sendKeyForPress:(UIPressType)type down:(bool)down
+{
+    static NSDictionary<NSNumber *,NSArray<NSNumber*>*> *map;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        map = @{
+            @(UIPressTypeUpArrow):    @[ @(RETROK_UP),       @( 0 ) ],
+            @(UIPressTypeDownArrow):  @[ @(RETROK_DOWN),     @( 0 ) ],
+            @(UIPressTypeLeftArrow):  @[ @(RETROK_LEFT),     @( 0 ) ],
+            @(UIPressTypeRightArrow): @[ @(RETROK_RIGHT),    @( 0 ) ],
+
+            @(UIPressTypeSelect):     @[ @(RETROK_z),        @('z') ],
+            @(UIPressTypeMenu)     :  @[ @(RETROK_x),        @('x') ],
+            @(UIPressTypePlayPause):  @[ @(RETROK_s),        @('s') ],
+
+            @(UIPressTypePageUp):     @[ @(RETROK_PAGEUP),   @( 0 ) ],
+            @(UIPressTypePageDown):   @[ @(RETROK_PAGEDOWN), @( 0 ) ],
+        };
+    });
+    NSArray<NSNumber*>* keyvals = map[@(type)];
+    if (!keyvals)
+        return;
+    apple_direct_input_keyboard_event(down, keyvals[0].intValue,
+                                      keyvals[1].intValue, 0, RETRO_DEVICE_KEYBOARD);
+}
+
 - (void)pressesBegan:(NSSet<UIPress *> *)presses
            withEvent:(UIPressesEvent *)event
 {
-    for (UIPress *press in presses) {
-        switch (press.type)
-        {
-            case UIPressTypePlayPause:
-                if ([self didMicroGamepadPress:press.type])
-                    apple_direct_input_keyboard_event(true, RETROK_s, 's', 0, RETRO_DEVICE_KEYBOARD);
-                break;
-            case UIPressTypeSelect:
-                if ([self didMicroGamepadPress:press.type])
-                    apple_direct_input_keyboard_event(true, RETROK_z, 'z', 0, RETRO_DEVICE_KEYBOARD);
-                break;
-            case UIPressTypeMenu:
-                if ([self menuIsAtTop])
-                {
-                    // if we're at the top it doesn't matter who pressed it, we want to leave
-                    [super pressesBegan:presses withEvent:event];
-                }
-                else if ([self didMicroGamepadPress:press.type])
-                    apple_direct_input_keyboard_event(true, RETROK_x, 0, 0, RETRO_DEVICE_KEYBOARD);
-                break;
-            default:
-                break;
-        }
+    for (UIPress *press in presses)
+    {
+        // if we're at the top it doesn't matter who pressed it, we want to leave
+        if (press.type == UIPressTypeMenu && [self menuIsAtTop])
+            [super pressesBegan:presses withEvent:event];
+        else if ([self didMicroGamepadPress:press.type])
+            [self sendKeyForPress:press.type down:true];
     }
 }
 
 -(void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
 {
     for (UIPress *press in presses) {
-        switch (press.type)
-        {
-            case UIPressTypePlayPause:
-                apple_direct_input_keyboard_event(false, RETROK_s, 's', 0, RETRO_DEVICE_KEYBOARD);
-                break;
-            case UIPressTypeSelect:
-                apple_direct_input_keyboard_event(false, RETROK_z, 'z', 0, RETRO_DEVICE_KEYBOARD);
-                break;
-            case UIPressTypeMenu:
-                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-                    apple_direct_input_keyboard_event(false, RETROK_x, 0, 0, RETRO_DEVICE_KEYBOARD);
-                });
-                break;
-            default:
-                break;
-        }
+        if (press.type == UIPressTypeSelect || press.type == UIPressTypePlayPause)
+            [self sendKeyForPress:press.type down:false];
+        else
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+                [[CocoaView get] sendKeyForPress:press.type down:false];
+            });
     }
 }
 
