@@ -4339,8 +4339,6 @@ bool config_load_remap(const char *directory_input_remapping,
          FILE_PATH_REMAP_EXTENSION,
          sizeof(core_path));
 
-   input_remapping_set_defaults(false);
-
    /* If a game remap file exists, load it. */
    if (has_content && (new_conf = config_file_new_from_path_to_string(game_path)))
    {
@@ -5522,10 +5520,9 @@ bool input_remapping_load_file(void *data, const char *path)
       return false;
 
    if (!string_is_empty(runloop_st->name.remapfile))
-   {
       input_remapping_deinit(false);
-      input_remapping_set_defaults(false);
-   }
+
+   input_remapping_set_defaults(false);
    runloop_st->name.remapfile = strdup(path);
 
    for (i = 0; i < MAX_USERS; i++)
