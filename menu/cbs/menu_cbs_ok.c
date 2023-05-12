@@ -3602,24 +3602,15 @@ static int generic_action_ok_remap_file_operation(const char *path,
          {
             case ACTION_OK_REMAP_FILE_REMOVE_CORE:
                if (flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE)
-               {
                   input_remapping_deinit(false);
-                  input_remapping_set_defaults(false);
-               }
                break;
             case ACTION_OK_REMAP_FILE_REMOVE_GAME:
                if (flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE)
-               {
                   input_remapping_deinit(false);
-                  input_remapping_set_defaults(false);
-               }
                break;
             case ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR:
                if (flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE)
-               {
                   input_remapping_deinit(false);
-                  input_remapping_set_defaults(false);
-               }
                break;
          }
 
