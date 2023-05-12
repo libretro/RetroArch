@@ -30,6 +30,7 @@
 #endif
 
 #include "../../../configuration.h"
+#include "../../../paths.h"
 #include "../../../retroarch.h"
 #include "../../../verbosity.h"
 
@@ -836,3 +837,21 @@ bool cocoa_get_metrics(
    return true;
 }
 #endif
+
+config_file_t *open_userdefaults_config_file()
+{
+   config_file_t *conf = NULL;
+   NSString *backup = [NSUserDefaults.standardUserDefaults stringForKey:@FILE_PATH_MAIN_CONFIG];
+   if ([backup length] >= 0)
+      conf = config_file_new_from_string([backup cStringUsingEncoding:NSUTF8StringEncoding], path_get(RARCH_PATH_CONFIG));
+   return conf;
+}
+
+void write_userdefaults_config_file()
+{
+   NSString *conf = [NSString stringWithContentsOfFile:[NSString stringWithUTF8String:path_get(RARCH_PATH_CONFIG)]
+                                              encoding:NSUTF8StringEncoding
+                                                 error:nil];
+   if (conf)
+      [NSUserDefaults.standardUserDefaults setObject:conf forKey:@FILE_PATH_MAIN_CONFIG];
+}
