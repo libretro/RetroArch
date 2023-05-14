@@ -6553,6 +6553,14 @@ MSG_HASH(
    "Shows on-screen indicators while certain achievements can be earned."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Progress Indicator"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Shows an on-screen indicator when progress is made towards certain achievements."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
    "Leaderboard Start Messages"
    )

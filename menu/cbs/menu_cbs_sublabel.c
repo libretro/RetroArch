@@ -319,6 +319,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_visibility_lboard_start, MEN
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_visibility_lboard_submit, MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_visibility_lboard_cancel, MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_visibility_lboard_trackers, MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_visibility_progress_tracker, MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER)
 
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_views_settings_list,      MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS)
@@ -4433,6 +4434,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_ACCOUNT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_visibility_account);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_visibility_progress_tracker);
             break;
          case MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_START:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_visibility_lboard_start);

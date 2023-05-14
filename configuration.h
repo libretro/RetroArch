@@ -834,6 +834,7 @@ typedef struct settings
       bool cheevos_visibility_lboard_submit;
       bool cheevos_visibility_lboard_cancel;
       bool cheevos_visibility_lboard_trackers;
+      bool cheevos_visibility_progress_tracker;
 
       /* Camera */
       bool camera_allow;

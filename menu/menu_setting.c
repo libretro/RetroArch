@@ -20201,6 +20201,22 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
             list, list_info,
+            &settings->bools.cheevos_visibility_progress_tracker,
+            MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+            DEFAULT_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+            MENU_ENUM_LABEL_VALUE_OFF,
+            MENU_ENUM_LABEL_VALUE_ON,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler,
+            SD_FLAG_NONE
+         );
+
+         CONFIG_BOOL(
+            list, list_info,
             &settings->bools.cheevos_visibility_lboard_start,
             MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_START,
             MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
