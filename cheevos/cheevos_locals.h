@@ -188,6 +188,8 @@ typedef struct rcheevos_locals_t
 
 #ifdef HAVE_GFX_WIDGETS
    unsigned active_lboard_trackers;   /* bit mask of active leaderboard tracker ids */
+   rcheevos_racheevo_t* tracker_achievement;
+   float tracker_progress;
 #endif
 
    rcheevos_load_info_t load_info;    /* load info */
