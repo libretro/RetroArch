@@ -122,7 +122,7 @@ INCDIRS += -I. -Idefines -Ideps -Ideps/7zip -Ideps/libz -Ilibretro-common/includ
 
 ARCHFLAGS += --target=x86_64-scei-ps4 -DORBIS -D__ORBIS__ -D__PS4__ -D_BSD_SOURCE
 DEFINES += -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_FILTERS_BUILTIN \
-					 -DHAVE_XMB -DHAVE_RGUI -DHAVE_OZONE \
+					 -DHAVE_XMB -DHAVE_RGUI -DHAVE_OZONE -DHAVE_CHEEVOS \
 					 -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_CORES -DHAVE_UPDATE_CORE_INFO -DHAVE_UPDATE_ASSETS \
 
 # Compiling with -Werror and disabling some warnings
