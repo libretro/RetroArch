@@ -78,7 +78,7 @@ else
 	HAVE_THREAD_ATTR			:= 1
 	HAVE_LIBRETRODB				:= 1
 	HAVE_CC_RESAMPLER			:= 1
-	HAVE_CHEEVOS					:= 1
+	HAVE_CHEEVOS					:= 0
 	HAVE_RUNAHEAD					:= 1
 	RARCH_CONSOLE					:= 1
 	HAVE_MAIN 						:= 1
@@ -122,7 +122,7 @@ INCDIRS += -I. -Idefines -Ideps -Ideps/7zip -Ideps/libz -Ilibretro-common/includ
 
 ARCHFLAGS += --target=x86_64-scei-ps4 -DORBIS -D__ORBIS__ -D__PS4__ -D_BSD_SOURCE
 DEFINES += -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_FILTERS_BUILTIN \
-					 -DHAVE_XMB -DHAVE_RGUI -DHAVE_OZONE -DHAVE_CHEEVOS \
+					 -DHAVE_XMB -DHAVE_RGUI -DHAVE_OZONE \
 					 -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_CORES -DHAVE_UPDATE_CORE_INFO -DHAVE_UPDATE_ASSETS \
 
 # Compiling with -Werror and disabling some warnings
