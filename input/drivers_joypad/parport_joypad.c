@@ -249,7 +249,7 @@ static void *parport_joypad_init(void *data)
       pad->fd    = -1;
       pad->ident = input_config_get_device_name_ptr(i);
 
-      snprintf(path + _len, sizeof(path) - _len, "%u", i);
+      snprintf(path + _len, sizeof(path) - _len, "%u", (uint32_t)i);
 
       if (parport_joypad_init_pad(path, pad))
       {
