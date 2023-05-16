@@ -234,7 +234,7 @@ static void *linuxraw_joypad_init(void *data)
       pad->fd                     = -1;
       pad->ident                  = input_config_get_device_name_ptr(i);
 
-      snprintf(path + _len, sizeof(path) - _len, "%u", i);
+      snprintf(path + _len, sizeof(path) - _len, "%u", (uint32_t)i);
 
       input_autoconfigure_connect(pad->ident, NULL, "linuxraw",
             i, 0, 0);
@@ -366,12 +366,12 @@ static int16_t linuxraw_joypad_state(
          ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-      if ((uint16_t)joykey != NO_BTN && 
+      if ((uint16_t)joykey != NO_BTN &&
             (joykey < NUM_BUTTONS)   &&
             (BIT32_GET(pad->buttons, joykey)))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(linuxraw_joypad_axis_state(pad, port_idx, joyaxis)) 
+            ((float)abs(linuxraw_joypad_axis_state(pad, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
