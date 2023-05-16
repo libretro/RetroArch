@@ -6461,6 +6461,14 @@ MSG_HASH(
    "Belirli başarılar kazanılırken ekranda bildirimler gösterir."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "İlerleme Göstergesi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Belirli başarılara doğru ilerleme kaydedildiğinde ekranda bir gösterge belirir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
    "Skor Tablosu Başlangıç ​​Mesajları"
    )

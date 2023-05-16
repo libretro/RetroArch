@@ -6425,6 +6425,14 @@ MSG_HASH(
    "Affiche des indicateurs à l'écran lorsque certains succès peuvent être remportés."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Indicateur de progression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Affiche un indicateur à l'écran lorsque des progrès sont réalisés envers certains succès."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
    "Messages de démarrage du tableau de classement"
    )

@@ -6465,6 +6465,14 @@ MSG_HASH(
    "Показывать на экране индикаторы, когда есть возможность открыть определённые достижения."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Индикатор прогресса"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Показывает на экране индикатор при прогрессе в получении достижения."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
    "Уведомления об авторизации"
    )

@@ -3704,6 +3704,14 @@ MSG_HASH(
 
 /* Settings > Achievements > Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "مؤشر التقدم"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "يعرض مؤشرا على الشاشة عند إحراز تقدم نحو تحقيق بعض الإنجازات."
+   )
 
 /* Settings > Network */
 

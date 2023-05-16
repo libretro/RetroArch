@@ -5805,6 +5805,14 @@ MSG_HASH(
    "Aktiivisen haasteen ilmaisimet"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Edistymisen ilmaisin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Näyttää ilmaisimen kun edistymistä tapahtuu tiettyjä saavutuksia varten."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
    "Kirjautumisviestit"
    )

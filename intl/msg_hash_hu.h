@@ -1887,6 +1887,10 @@ MSG_HASH(
    "A szinkronvállak különféle beállítása változtathat a képméreten."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Nagy felbontású menü használata"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Váltson nagy felbontásra a nagy felbontású menük használatához, amikor nincs tartalom betöltve."
    )
@@ -6168,6 +6172,10 @@ MSG_HASH(
    "Kiválasztott elem megjegyzése fülek közt váltáskor"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
+   "A korábbi kiválasztás megjegyzése a füleken. RGUI esetén nincsenek fülek, de a Játéklisták és Beállítások e szerint viselkedik."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
    "Mindig"
    )
@@ -6439,6 +6447,46 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
    "Képernyőn megjelenő jelzés, amikor bizonyos trófeák begyűjthetők."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Haladásjelző"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Jelzés megjelenítése a képernyőn, amikor előrelépés történt bizonyos trófeák irányába."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Eredménytábla indítási üzenetei"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Az eredménytábla leírásának megjelenítése, amikor az aktiválódik."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Eredménytábla beküldési üzenetei"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Üzenet megjelenítése a beküldött értékkel, amikor az eredménytáblára beküldendő kísérlet befejeződött."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Eredménytábla sikertelenségi üzenetei"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Üzenet megjelenítése, amikor az eredménytáblára beküldendő kísérlet nem sikeres."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Eredménytábla állapotjelző"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Az aktív eredménytáblák aktuális értékeinek megjelenítése a képernyőn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -6984,6 +7032,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "Bekapcsolt állapotban, ha a fájlböngésző könyvtára is ki van választva, ennek értékét eltárolja a játéklistába. Ha más rendszeren töltik be a játéklistát, ahol ez a lehetőség ugyancsak engedélyezve van, a játéklista elérési útjait automatikusan hozzáigazítja a fájlböngésző könyvtárához, ha nem ugyanaz az értéke."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "Kezelés"
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -9977,8 +10029,16 @@ MSG_HASH(
    "Bélyegképek a játéklistában"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
+   "Beágyazott, lekicsinyített bélyegképek megjelenítése játéklistákhoz. A RetroPad Select gombjával ki-be kapcsolható. Kikapcsolt állapotban a teljes képernyős bélyegképek továbbra is megnézhetők a RetroPad Start gombjával."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
    "Felső bélyegkép"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   "A játéklista jobb felső sarkában megjelenő bélyegkép típusa. A típus a RetroPad Y gombjával váltható."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -13004,6 +13064,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Trófea feloldva"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Eredménytábla kísérlet elindítva"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Eredménytábla kísérlet sikertelen"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "%s beküldve ehhez: %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
