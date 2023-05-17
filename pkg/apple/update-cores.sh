@@ -45,12 +45,16 @@ NC='\033[0m'
 function update_dylib() {
     dylib=$1
     printf "Updating ${YELLOW}$dylib${NC}... "
-    mv "$dylib" "$dylib".bak
+    if [ -f "$dylib" ] ; then
+        mv "$dylib" "$dylib".bak
+    fi
     debug curl $CURL_DEBUG -o "$dylib".zip "$URL_BASE"/"$dylib".zip
     curl $CURL_DEBUG -o "$dylib".zip "$URL_BASE"/"$dylib".zip
     if [ ! -f "$dylib".zip ] ; then
         printf "${RED}Download failed${NC}\n"
-        mv "$dylib".bak "$dylib"
+        if [ -f "$dylib".bak ] ; then
+            mv "$dylib".bak "$dylib"
+        fi
     else
         debug unzip $UNZIP_DEBUG "$dylib".zip
         unzip $UNZIP_DEBUG "$dylib".zip
@@ -59,7 +63,7 @@ function update_dylib() {
             mv "$dylib".bak "$dylib"
         else
             printf "${GREEN}Success!${NC}\n"
-            [ -n "$NO_RM" ] || rm "$dylib".zip "$dylib".bak
+            [ -n "$NO_RM" ] || rm -f "$dylib".zip "$dylib".bak
         fi
     fi
 }
@@ -67,27 +71,30 @@ function update_dylib() {
 allcores=
 function get_all_cores() {
     if [ -z "$allcores"] ; then
-        allcores=($(curl $CURL_DEBUG $URL_BASE/ | sed -e 's/></\n/g' | grep '>[^<]\+\.dylib.zip<' | sed -e 's/.*>\(.*\)<.*/\1/'))
+        allcores=($(curl $CURL_DEBUG $URL_BASE/ | sed -e 's/></\n/g' | grep '>[^<]\+\.dylib.zip<' | sed -e 's/.*>\(.*\)\.zip<.*/\1/'))
     fi
 }
 
+dylibs=()
 if [ -n "$1" ]; then
-    dylibs=()
     get_all_cores
     while [ -n "$1" ] ; do
-        if [[ "${allcores[*]}" =~ "${1}_libretro_${PLATFORM}.dylib.zip" ]] ; then
-            dylibs+=("${1}_libretro_${PLATFORM}.dylib.zip")
-        elif [[ "${allcores[*]}" =~ "${1}_libretro.dylib.zip" ]] ; then
-            dylibs+=("${1}_libretro.dylib.zip")
+        if [[ "${allcores[*]}" =~ "${1}_libretro_${PLATFORM}.dylib" ]] ; then
+            dylibs+=("${1}_libretro_${PLATFORM}.dylib")
+        elif [[ "${allcores[*]}" =~ "${1}_libretro.dylib" ]] ; then
+            dylibs+=("${1}_libretro.dylib")
+        elif [[ "${allcores[*]}" =~ "${1}" ]] ; then
+            dylibs+=("${1}")
         fi
         shift
     done
-else
+elif find . -iname \*_libretro\*.dylib | grep -q ^. ; then
     dylibs=( *_libretro*.dylib )
 fi
 
 if [[ -z "${dylibs[*]}" ]] ; then
     echo Available cores:
+    get_all_cores
     for i in "${allcores[@]}" ; do
         echo $i
     done
