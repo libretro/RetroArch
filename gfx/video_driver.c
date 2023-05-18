@@ -1210,10 +1210,12 @@ void video_switch_refresh_rate_maybe(
    bool all_fullscreen                = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
 
    /* Roundings to PAL & NTSC standards */
-   if (refresh_rate > 54 && refresh_rate < 60)
-      refresh_rate = 59.94f;
-   else if (refresh_rate > 49 && refresh_rate < 55)
+   if      (refresh_rate > 49.00 && refresh_rate < 54.50)
       refresh_rate = 50.00f;
+   else if (refresh_rate > 54.00 && refresh_rate < 60.00)
+      refresh_rate = 59.94f;
+   else if (refresh_rate > 60.00 && refresh_rate < 61.00)
+      refresh_rate = 60.00f;
 
    /* Black frame insertion + swap interval multiplier */
    refresh_rate    = (refresh_rate * (video_bfi + 1.0f) * video_swap_interval);
@@ -1222,13 +1224,8 @@ void video_switch_refresh_rate_maybe(
    if (!video_display_server_has_refresh_rate(refresh_rate) || refresh_rate < 50)
       refresh_rate       = video_refresh_rate;
 
+   /* Replace target rate */
    *refresh_rate_suggest = refresh_rate;
-
-   /* Store original refresh rate on automatic change, and
-    * restore it in deinit_core and main_quit, because not all
-    * cores announce refresh rate via SET_SYSTEM_AV_INFO */
-   if (!video_st->video_refresh_rate_original)
-      video_st->video_refresh_rate_original = video_refresh_rate;
 
    /* Try to switch display rate for the desired screen mode(s) when:
     * - Not already at correct rate
@@ -1244,6 +1241,13 @@ void video_switch_refresh_rate_maybe(
           ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN) && exclusive_fullscreen) ||
           ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN) && windowed_fullscreen)   ||
           ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN) && all_fullscreen));
+
+      /* Store original refresh rate on automatic change, and
+       * restore it in deinit_core and main_quit, because not all
+       * cores announce refresh rate via SET_SYSTEM_AV_INFO */
+      if (     *video_switch_refresh_rate
+            && !video_st->video_refresh_rate_original)
+         video_st->video_refresh_rate_original = video_refresh_rate;
     }
 }
 
