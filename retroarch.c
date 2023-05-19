@@ -802,6 +802,7 @@ void drivers_init(
       bool windowed_fullscreen             = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
       bool all_fullscreen                  = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
    
+      /* Making a switch from PC standard 60 Hz to NTSC 59.94 is excluded by the last condition. */
       if (  refresh_rate > 0.0
             && !settings->uints.crt_switch_resolution
             && !settings->bools.vrr_runloop_enable
@@ -7013,6 +7014,7 @@ bool retroarch_main_quit(void)
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    bool config_save_on_exit      = settings->bools.config_save_on_exit;
+   struct retro_system_av_info *av_info = &video_st->av_info;
 
    /* Restore video driver before saving */
    video_driver_restore_cached(settings);
@@ -7052,9 +7054,15 @@ bool retroarch_main_quit(void)
 
    /* Restore original refresh rate, if it has been changed
     * automatically in SET_SYSTEM_AV_INFO */
-   if (video_st->video_refresh_rate_original)
-      video_display_server_restore_refresh_rate();
+   if (video_st->video_refresh_rate_original) 
+   {
+      RARCH_DBG("[Video]: Restoring original refresh rate: %f Hz\n", video_st->video_refresh_rate_original);
+      /* Set the av_info fps also to the original refresh rate */
+      /* to avoid re-initialization problems */
+      av_info->timing.fps = video_st->video_refresh_rate_original;
 
+      video_display_server_restore_refresh_rate();
+   }
    if (!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
    {
       /* Save configs before quitting

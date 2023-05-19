@@ -686,21 +686,22 @@ void video_monitor_compute_fps_statistics(uint64_t
 
 void video_monitor_set_refresh_rate(float hz)
 {
-   char msg[128];
+   char msg[256];
+   char rate[8];
    settings_t        *settings = config_get_ptr();
-   /* TODO/FIXME - localize */
-   size_t _len = strlcpy(msg, "Setting refresh rate to", sizeof(msg));
-   msg[_len  ] = ':';
-   msg[++_len] = ' ';
-   msg[++_len] = '\0';
-   _len       += snprintf(msg + _len, sizeof(msg) - _len, "%.3f", hz);
-   msg[_len  ] = ' ';
-   msg[_len+1] = 'H';
-   msg[_len+2] = 'z';
-   msg[_len+3] = '.';
-   msg[_len+4] = '\0';
+
+   /* Avoid message spamming if there is no change. */
+   if (settings->floats.video_refresh_rate == hz)
+      return;
+   
+   snprintf(rate, sizeof(rate), "%.3f", hz);
+   snprintf(msg, sizeof(msg),
+      msg_hash_to_str(MSG_VIDEO_REFRESH_RATE_CHANGED), rate);
+
+   /* Message is visible for twice the usual duration */
+   /* as modeswitch will cause monitors to go blank for a while */
    if (settings->bools.notification_show_refresh_rate)
-      runloop_msg_queue_push(msg, 1, 180, false, NULL,
+      runloop_msg_queue_push(msg, 1, 360, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("[Video]: %s\n", msg);
 
@@ -1066,6 +1067,11 @@ void* video_display_server_init(enum rarch_display_type type)
          current_display_server = &dispserv_x11;
 #endif
          break;
+      case RARCH_DISPLAY_KMS:
+#if defined(HAVE_KMS)
+         current_display_server = &dispserv_kms;
+#endif
+         break;
       default:
 #if defined(ANDROID)
          current_display_server = &dispserv_android;
@@ -1140,6 +1146,7 @@ bool video_display_server_set_resolution(unsigned width, unsigned height,
       int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
+   RARCH_DBG("[Video]: Display server set resolution, hz: %f\n",hz);
    if (current_display_server && current_display_server->set_resolution)
       return current_display_server->set_resolution(
             video_st->current_display_server_data, width, height, int_hz,
@@ -1254,6 +1261,7 @@ void video_switch_refresh_rate_maybe(
 bool video_display_server_set_refresh_rate(float hz)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
+   RARCH_DBG("[Video]: Display server set refresh rate %f\n", hz);
    if (current_display_server && current_display_server->set_resolution)
       return current_display_server->set_resolution(
             video_st->current_display_server_data, 0, 0, (int)hz,
@@ -1270,7 +1278,7 @@ void video_display_server_restore_refresh_rate(void)
 
    if (!refresh_rate_original || refresh_rate_current == refresh_rate_original)
       return;
-
+   RARCH_DBG("[Video]: Display server restore refresh rate %f\n", refresh_rate_original);
    video_monitor_set_refresh_rate(refresh_rate_original);
    video_display_server_set_refresh_rate(refresh_rate_original);
 }

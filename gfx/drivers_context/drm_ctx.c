@@ -634,6 +634,19 @@ static void gfx_ctx_drm_get_video_size(void *data,
    *height = drm->fb_height;
 }
 
+static void gfx_ctx_drm_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+{
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+
+   if (!drm)
+      return;
+
+   *width  = drm->fb_width;
+   *height = drm->fb_height;
+
+}
+
 static void free_drm_resources(gfx_ctx_drm_data_t *drm)
 {
    if (!drm)
@@ -783,6 +796,8 @@ nextgpu:
 
    g_drm_fd                       = fd;
 
+   video_driver_display_type_set(RARCH_DISPLAY_KMS);
+   
    return drm;
 
 error:
@@ -831,7 +846,10 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       return true;
    }
    if ((width == 0 && height == 0) || !fullscreen)
+   {
       g_drm_mode                   = &g_drm_connector->modes[0];
+      RARCH_WARN("[KMS]: Falling back to mode 0 (default)\n");
+   }
    else
    {
       /* check if custom HDMI timings were asked */
@@ -916,6 +934,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
 error:
    gfx_ctx_drm_destroy_resources(drm);
+   RARCH_ERR("[KMS]: Error when switching mode.\n");
 
    if (drm)
       free(drm);
@@ -1074,7 +1093,7 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_set_video_mode,
    gfx_ctx_drm_get_video_size,
    drm_get_refresh_rate,
-   NULL, /* get_video_output_size */
+   gfx_ctx_drm_get_video_output_size,
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
