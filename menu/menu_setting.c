@@ -8060,11 +8060,11 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          {
             video_viewport_t vp;
-	    rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
+            rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
             struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-            video_viewport_t            *custom  = video_viewport_get_custom();
+            video_viewport_t             *custom = video_viewport_get_custom();
             struct retro_game_geometry     *geom = (struct retro_game_geometry*)
-               &av_info->geometry;
+                  &av_info->geometry;
 
             if (system)
             {
@@ -8078,6 +8078,7 @@ static void general_write_handler(rarch_setting_t *setting)
                video_driver_get_viewport_info(&vp);
                custom->x      = 0;
                custom->y      = 0;
+
                /* Round down when rotation is "horizontal", round up when rotation is "vertical"
                   to avoid expanding viewport each time user rotates */
                if (rotation % 2)
@@ -8090,8 +8091,7 @@ static void general_write_handler(rarch_setting_t *setting)
                   custom->width  = ((custom->width + geom->base_width   - 1) / geom->base_width)  * geom->base_width;
                   custom->height = ((custom->height + geom->base_height - 1) / geom->base_height) * geom->base_height;
                }
-               aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-                  (float)custom->width / custom->height;
+               aspectratio_lut[ASPECT_RATIO_CUSTOM].value = (float)custom->width / custom->height;
 
                /* Update Aspect Ratio (only useful for 1:1 PAR) */
                video_driver_set_aspect_ratio();

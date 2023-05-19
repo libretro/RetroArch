@@ -1951,6 +1951,10 @@ float video_driver_get_core_aspect(void)
    else
       out_aspect = (float)geom->base_width / geom->base_height;
 
+   /* Flip rotated aspect */
+   if ((retroarch_get_rotation() + retroarch_get_core_requested_rotation()) % 2)
+      out_aspect = 1.0f / out_aspect;
+
    return out_aspect;
 }
 
