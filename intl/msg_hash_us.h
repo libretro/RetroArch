@@ -14713,6 +14713,10 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Sync to exact content framerate disabled."
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Video refresh rate changed to %s Hz."
+   )
 
 /* Lakka */
 
@@ -14797,7 +14801,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Select display mode."
+   "Select display mode (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
