@@ -6007,6 +6007,8 @@ static void wifi_menu_refresh_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
+   struct menu_state *menu_st       = menu_state_get_ptr();
+
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
 }
