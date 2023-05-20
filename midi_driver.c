@@ -126,10 +126,10 @@ bool midi_driver_set_all_sounds_off(void)
     * work with WASAPI unless MIDI output is active, even when
     * MIDI is not used. Frame Delay also breaks if MIDI sounds
     * are "set off", which happens on menu toggle, therefore
-    * skip this if WASAPI is used and Frame Delay is effective.. */
+    * skip this if WASAPI is used and Frame Delay is active.. */
    if (string_is_equal(audio_state_get_ptr()->current_audio->ident, "wasapi"))
    {
-      if (video_state_get_ptr()->frame_delay_effective > 0)
+      if (video_state_get_ptr()->frame_delay_target > 0)
          return false;
    }
 #endif
