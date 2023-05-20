@@ -6501,6 +6501,14 @@ MSG_HASH(
    "특정 도전 과제를 달성할 수 있을 때 화면에 지표를 표시합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "진행률 지표"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "특정 도전과제를 향한 진행률을 보여주는 온스크린 지표를 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
    "리더보드 시작 메시지"
    )
@@ -14033,6 +14041,10 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "정확한 프레임 동기화가 비활성화되었습니다."
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "비디오 주사율이 %s Hz로 변경되었습니다."
+   )
 
 /* Lakka */
 
@@ -14109,7 +14121,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "디스플레이 모드를 선택합니다."
+   "디스플레이 모드를 선택합니다 (재시작 필요)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,

@@ -13885,6 +13885,10 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Synchronisation à la fréquence d'affichage exacte du contenu désactivée."
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Fréquence de rafraîchissement vidéo changée à %s Hz."
+   )
 
 /* Lakka */
 
@@ -13961,7 +13965,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Sélectionner le mode d'affichage."
+   "Sélectionner le mode d'affichage (Redémarrage requis)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,

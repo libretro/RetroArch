@@ -13925,6 +13925,10 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Sincronización de FPS según el contenido desactivada."
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Frecuencia de actualización de vídeo cambiada a %s Hz."
+   )
 
 /* Lakka */
 
@@ -14009,7 +14013,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Selecciona el modo de vídeo."
+   "Selecciona el modo de vídeo (es necesario reiniciar)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,

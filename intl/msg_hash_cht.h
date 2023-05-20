@@ -14320,10 +14320,6 @@ MSG_HASH(
    "正在重置為: %dx%d - %s"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "設定螢幕使用的解析度。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    "關機"
    )

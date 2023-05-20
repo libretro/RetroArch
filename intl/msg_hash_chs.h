@@ -12244,10 +12244,6 @@ MSG_HASH(
    "正在重置为：%dx%d - %s"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "选择显示模式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    "关机"
    )

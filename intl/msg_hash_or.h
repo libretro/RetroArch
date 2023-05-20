@@ -817,12 +817,20 @@ MSG_HASH(
 /* Notifications */
 
 
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "ଵିଡ଼ିଓ ସତେଜ ହାର %s Hzକୁ ବଦାଳାଇ ଦିଆଗଲା।"
+   )
 
 /* Lakka */
 
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "ପ୍ରଦର୍ଶନ ମୋଡ୍ ଚୟନ କରନ୍ତୁ (ପୁନଃଆରମ୍ଭ ଦରକାର ପଡ଼ିବ)"
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
 #endif

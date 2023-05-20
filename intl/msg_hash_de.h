@@ -13680,10 +13680,6 @@ MSG_HASH(
    "Wiederhergestellt: %dx%d - %s"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Anzeigemodus wählen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    "Beenden"
    )

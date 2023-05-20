@@ -13697,6 +13697,10 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Pontos igazítás a tartalom képfrissítéséhez kikapcsolva."
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "A képfrissítési gyakoriság %s Hz-re változott."
+   )
 
 /* Lakka */
 
@@ -13773,7 +13777,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Megjelenítési mód kiválasztása."
+   "Megjelenítési mód kiválasztása (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,

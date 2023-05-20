@@ -14025,6 +14025,10 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Tam içerik kare hızına eşitleme devre dışı bırakıldı."
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Video yenileme hızı %s Hz olarak değiştirildi."
+   )
 
 /* Lakka */
 
@@ -14097,7 +14101,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Görüntüleme kipini seçin."
+   "Ekran kipini seç (Yeniden başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,

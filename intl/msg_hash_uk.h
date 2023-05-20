@@ -8096,10 +8096,6 @@ MSG_HASH(
    "Роздільна здатність екрану"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Виберіть режим відображення."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    "Вимкнути"
    )
