@@ -4908,7 +4908,7 @@ static unsigned menu_displaylist_parse_content_information(
       strlcat(tmp, core_name, sizeof(tmp));
       if (menu_entries_append(info_list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_CORE_NAME),
-            MENU_ENUM_LABEL_CONTENT_INFO_CORE_NAME,
+            MENU_ENUM_LABEL_CORE_INFORMATION, /* Shortcut to core info */
             0, 0, 0, NULL))
          count++;
    }
