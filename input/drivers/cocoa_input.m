@@ -32,6 +32,14 @@
 
 #include "../drivers_keyboard/keyboard_event_apple.h"
 
+#ifdef HAVE_COREMOTION
+#import <CoreMotion/CoreMotion.h>
+static CMMotionManager *motionManager;
+#endif
+#ifdef HAVE_MFI
+#import <GameController/GameController.h>
+#endif
+
 /* TODO/FIXME -
  * fix game focus toggle */
 
@@ -340,6 +348,12 @@ void apple_input_keyboard_event(bool down,
 
 static void *cocoa_input_init(const char *joypad_driver)
 {
+#ifdef HAVE_COREMOTION
+   if (@available(macOS 10.15, *))
+      if (!motionManager)
+         motionManager = [[CMMotionManager alloc] init];
+#endif
+
    cocoa_input_data_t *apple = (cocoa_input_data_t*)calloc(1, sizeof(*apple));
    if (!apple)
       return NULL;
@@ -602,13 +616,125 @@ static uint64_t cocoa_input_get_capabilities(void *data)
       | (1 << RETRO_DEVICE_ANALOG);
 }
 
+static bool cocoa_input_set_sensor_state(void *data, unsigned port,
+                                         enum retro_sensor_action action, unsigned rate)
+{
+   if (action != RETRO_SENSOR_ACCELEROMETER_ENABLE &&
+       action != RETRO_SENSOR_ACCELEROMETER_DISABLE &&
+       action != RETRO_SENSOR_GYROSCOPE_ENABLE &&
+       action != RETRO_SENSOR_GYROSCOPE_DISABLE)
+      return false;
+
+#ifdef HAVE_MFI
+   if (@available(iOS 14.0, macOS 11.0, *)) {
+      for (GCController *controller in [GCController controllers])
+      {
+         if (!controller || controller.playerIndex != port)
+            continue;
+         if (!controller.motion)
+            break;
+         if (controller.motion.sensorsRequireManualActivation)
+         {
+            // this is a bug, we assume if you turn on/off either you want both on/off
+            if (action == RETRO_SENSOR_ACCELEROMETER_ENABLE || action == RETRO_SENSOR_GYROSCOPE_ENABLE)
+               controller.motion.sensorsActive = YES;
+            else
+               controller.motion.sensorsActive = NO;
+         }
+         // no such thing as update interval for GCController?
+         return true;
+      }
+   }
+#endif
+
+#ifdef HAVE_COREMOTION
+   if (port != 0)
+      return false;
+
+   if (!motionManager || !motionManager.deviceMotionAvailable)
+      return false;
+
+   if (action == RETRO_SENSOR_ACCELEROMETER_ENABLE || action == RETRO_SENSOR_GYROSCOPE_ENABLE)
+   {
+      if (!motionManager.deviceMotionActive)
+         [motionManager startDeviceMotionUpdates];
+      motionManager.deviceMotionUpdateInterval = 1.0f / (float)rate;
+   }
+   else
+   {
+      if (motionManager.deviceMotionActive)
+         [motionManager stopDeviceMotionUpdates];
+   }
+
+   return true;
+#else
+   return false;
+#endif
+}
+
+static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id)
+{
+#ifdef HAVE_MFI
+   if (@available(iOS 14.0, *)) {
+      for (GCController *controller in [GCController controllers])
+      {
+         if (!controller || controller.playerIndex != port)
+            continue;
+         if (!controller.motion)
+            break;
+         switch (id)
+         {
+            case RETRO_SENSOR_ACCELEROMETER_X:
+               return controller.motion.userAcceleration.x;
+            case RETRO_SENSOR_ACCELEROMETER_Y:
+               return controller.motion.userAcceleration.y;
+            case RETRO_SENSOR_ACCELEROMETER_Z:
+               return controller.motion.userAcceleration.z;
+            case RETRO_SENSOR_GYROSCOPE_X:
+               return controller.motion.rotationRate.x;
+            case RETRO_SENSOR_GYROSCOPE_Y:
+               return controller.motion.rotationRate.y;
+            case RETRO_SENSOR_GYROSCOPE_Z:
+               return controller.motion.rotationRate.z;
+         }
+      }
+   }
+#endif
+
+#ifdef HAVE_COREMOTION
+   if (port != 0)
+      return 0.0f;
+
+   if (!motionManager || !motionManager.deviceMotionActive)
+      return 0.0f;
+
+   switch (id)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_X:
+         return motionManager.deviceMotion.userAcceleration.x;
+      case RETRO_SENSOR_ACCELEROMETER_Y:
+         return motionManager.deviceMotion.userAcceleration.y;
+      case RETRO_SENSOR_ACCELEROMETER_Z:
+         return motionManager.deviceMotion.userAcceleration.z;
+      case RETRO_SENSOR_GYROSCOPE_X:
+         return motionManager.deviceMotion.rotationRate.x;
+      case RETRO_SENSOR_GYROSCOPE_Y:
+         return motionManager.deviceMotion.rotationRate.y;
+      case RETRO_SENSOR_GYROSCOPE_Z:
+         return motionManager.deviceMotion.rotationRate.z;
+   }
+#endif
+
+   return 0.0f;
+}
+
 input_driver_t input_cocoa = {
    cocoa_input_init,
    cocoa_input_poll,
    cocoa_input_state,
    cocoa_input_free,
-   NULL,
-   NULL,
+   cocoa_input_set_sensor_state,
+   cocoa_input_get_sensor_input,
    cocoa_input_get_capabilities,
    "cocoa",
    NULL,                         /* grab_mouse */
