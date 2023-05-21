@@ -135,8 +135,9 @@ void *glkitview_init(void);
         return !controllers[0].extendedGamepad;
 
     // are these presses that controllers send?
-    if (type == UIPressTypePageUp || type == UIPressTypePageDown)
-        return true;
+    if (@available(tvOS 14.3, *))
+        if (type == UIPressTypePageUp || type == UIPressTypePageDown)
+            return true;
 
     bool microPress = false;
     bool extendedPress = false;
@@ -844,16 +845,20 @@ bool cocoa_get_metrics(
 }
 #endif
 
-config_file_t *open_userdefaults_config_file()
+config_file_t *open_userdefaults_config_file(void)
 {
    config_file_t *conf = NULL;
    NSString *backup = [NSUserDefaults.standardUserDefaults stringForKey:@FILE_PATH_MAIN_CONFIG];
    if ([backup length] >= 0)
-      conf = config_file_new_from_string([backup cStringUsingEncoding:NSUTF8StringEncoding], path_get(RARCH_PATH_CONFIG));
+   {
+      char *str = strdup(backup.UTF8String);
+      conf = config_file_new_from_string(str, path_get(RARCH_PATH_CONFIG));
+      free(str);
+   }
    return conf;
 }
 
-void write_userdefaults_config_file()
+void write_userdefaults_config_file(void)
 {
    NSString *conf = [NSString stringWithContentsOfFile:[NSString stringWithUTF8String:path_get(RARCH_PATH_CONFIG)]
                                               encoding:NSUTF8StringEncoding

@@ -43,6 +43,8 @@
 #include "../ui/drivers/ui_cocoatouch.m"
 #endif
 
+#include "../input/drivers/cocoa_input.m"
+
 #endif
 
 #ifdef HAVE_MFI

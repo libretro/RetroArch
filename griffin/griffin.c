@@ -710,8 +710,6 @@ INPUT
 #elif defined(ORBIS)
 #include "../input/drivers/ps4_input.c"
 #include "../input/drivers_joypad/ps4_joypad.c"
-#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
-#include "../input/drivers/cocoa_input.c"
 #elif defined(_3DS)
 #include "../input/drivers/ctr_input.c"
 #include "../input/drivers_joypad/ctr_joypad.c"
