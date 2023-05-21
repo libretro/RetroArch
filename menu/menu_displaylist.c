@@ -12356,8 +12356,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
 #ifdef HAVE_NETWORKING
             count = print_buf_lines(info->list, menu->core_buf, "",
-                  (int)menu->core_len,
-                  FILE_TYPE_DOWNLOAD_CORE_CONTENT, true, false);
+                  (int)menu->core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT,
+                  true, false);
 
             if (count == 0)
                menu_entries_append(info->list,
@@ -12432,8 +12432,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
             break;
          case DISPLAYLIST_CORE_SYSTEM_FILES:
-#ifdef HAVE_NETWORKING
             menu_entries_clear(info->list);
+#ifdef HAVE_NETWORKING
             count = print_buf_lines(info->list, menu->core_buf, "",
                   (int)menu->core_len, FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES,
                   true, false);
@@ -12535,8 +12535,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                | MD_FLAG_NEED_PUSH;
             break;
          case DISPLAYLIST_THUMBNAILS_UPDATER:
-#ifdef HAVE_NETWORKING
             menu_entries_clear(info->list);
+#ifdef HAVE_NETWORKING
             count = print_buf_lines(info->list, menu->core_buf, "",
                   (int)menu->core_len, FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT,
                   true, false);
@@ -12554,8 +12554,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
             break;
          case DISPLAYLIST_PL_THUMBNAILS_UPDATER:
-#ifdef HAVE_NETWORKING
             menu_entries_clear(info->list);
+#ifdef HAVE_NETWORKING
             count = menu_displaylist_parse_pl_thumbnail_download_list(info->list,
                   settings);
 
