@@ -110,6 +110,10 @@ MSG_HASH(
    "Паказаць меню стальніцы"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   "Анлайнавы абнаўляльнік"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
    "Сеткавая гульня"
    )
@@ -826,6 +830,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "Захаваць новую канфігурацыю"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   "Захаваць бягучую канфігурацыю ў асобны файл."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Скід да прадвызначэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "Скінуць бягучую канфігурацыю да прадвызначаных значэнняў."
    )
 
 /* Main Menu > Help */
@@ -1800,6 +1816,14 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "Шэйдары (пераключальнік)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
+   "Уключае/выключае бягучы абраны шэйдар."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
    "Наступны шэйдар"
    )
@@ -1813,10 +1837,34 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
    "Зрабіць здымак экрана"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
+   "Запіс (пераключальнік)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
+   "Стрымінг (пераключальнік)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   "Поўнаэкранны (пераключальнік)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   "Пераключае паміж поўнаэкранным і аконным рэжымамі дысплея."
+   )
 
 
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
+   "Адпраўка адладачных звестак"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
+   "Адпраўляе дыягнастычныя звесткі аб вашай прыладзе ды канфігурацыі RetroArch на нашы серверы для аналізу."
+   )
 
 /* Settings > Input > Port # Controls */
 
@@ -1893,6 +1941,10 @@ MSG_HASH(
 #ifndef HAVE_DYNAMIC
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
+   "Дазвол павароту"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
    "Кіраванне ядрамі"
    )
@@ -1903,9 +1955,25 @@ MSG_HASH(
    )
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
+   "Усталяваць ядро"
+)
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
+   "Выдаліць ядро"
+)
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
+   "Паказваць 'Кіраванне ядрамі'"
+)
 
+MSG_HASH(
+   MSG_CORE_STEAM_INSTALLING,
+   "Усталяванне ядра: "
+)
 
 
 #endif
@@ -2064,6 +2132,14 @@ MSG_HASH(
 /* Settings > On-Screen Display */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   "Экранныя апавяшчэнні"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   "Рэгуляваць экранныя апавяшчэнні."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "Бачнасць апавяшчэнняў"
    )
@@ -2079,6 +2155,10 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
+   "Экранныя апавяшчэнні"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
    "Адлюстроўваць статыстыку"
@@ -2165,8 +2245,32 @@ MSG_HASH(
 #ifdef _3DS
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
+   "Паказаць пашыраныя налады"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
+   "Рэжым кіёска"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "Снег"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
+   "Зорнае поле"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
+   "Вір"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "Падтрымка мышы"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
+   "Падтрымка дотыкаў"
    )
 
 /* Settings > User Interface > Menu Item Visibility */
@@ -2179,11 +2283,67 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "Налады"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
+   "Паказваць 'Загрузіць ядро'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
+   "Паказваць опцыю 'Загрузіць ядро' у галоўным меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
+   "Паказваць 'Загрузіць змесціва'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
+   "Паказваць опцыю 'Загрузіць змесціва' у галоўным меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
+   "Паказваць 'Загрузіць дыск'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
+   "Паказваць опцыю 'Загрузіць дыск' у галоўным меню."
+   )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+   "Паказваць 'Выняць дыск'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+   "Паказваць опцыю 'Выняць дыск' у галоўным меню."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   "Паказваць 'Анлайнавы абнаўляльнік'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   "Паказваць опцыю 'Анлайн абнаўляльнік' у галоўным меню."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
    "Паказваць 'пампавальнік ядзер'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
+   "Паказваць 'Звесткі'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
+   "Паказваць опцыю 'Звесткі' у галоўным меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
+   "Паказваць 'Файл канфігурацыі'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+   "Паказваць опцыю 'Файл канфігурацыі' у галоўным меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
@@ -2192,6 +2352,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    "Паказваць опцыю 'Даведка' у галоўным меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+   "Паказваць 'Выйсці з RetroArchArch'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+   "Паказваць опцыю 'Выйсці з RetroArch' у галоўным меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
+   "Паказваць 'Перазапусціць RetroArch'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
+   "Паказваць опцыю 'Перазапусціць RetroArch' у галоўным меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
@@ -2240,6 +2416,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
    "Паказваць меню нядаўняй гісторыі (патрабуецца перазапуск на Ozone/XMB)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
+   "Паказваць 'Імпартаваць змесціва'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
+   "Паказваць меню 'Імпартаваць змесціва' (патрабуецца перазапуск на Ozone/XMB)"
+   )
+MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
+   "Паказваць 'Імпартаваць змесціва'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -2348,6 +2536,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
    "Паказаць 'Шэйдары'"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
+   "Паказваць 'Звесткі'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+   "Паказваць опцыю 'Звесткі'."
+   )
 
 /* Settings > User Interface > Views > Settings */
 
@@ -2376,6 +2572,14 @@ MSG_HASH(
    "Паказаць налады 'Аўдыё'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
+   "Паказваць 'Увод'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
+   "Паказваць налады 'Увод'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
    "Паказаць 'Ядро'"
    )
@@ -2398,6 +2602,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
    "Паказаць налады 'Захоўвання'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FILE_BROWSER,
+   "Паказваць 'Файлавы браўзер'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FILE_BROWSER,
+   "Паказваць налады 'Файлавы браўзер'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
+   "Паказваць 'Запіс'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
+   "Паказаць налады 'Запіс'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
+   "Паказваць 'Карыстальніцкі інтэрфейс'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,
+   "Паказваць налады 'Карыстальніцкі інтэрфейс'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
+   "Паказваць 'Кіраванне сілкаваннем''"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
+   "Паказваць налады 'Кіраванне сілкаваннем''."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
@@ -2451,6 +2687,22 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
+   "Фонавы відарыс"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
+   "Непразрыстасць фону"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Непразрыстасць меню"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
+   "Мініяцюры"
+   )
 
 /* Settings > AI Service */
 
@@ -2519,6 +2771,10 @@ MSG_HASH(
 
 /* Settings > User */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_LANGUAGE,
+   "Задаць мову карыстальніцкага інтэрфейса."
+   )
 
 /* Settings > User > Privacy */
 
@@ -2556,6 +2812,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
    "Спампоўкі"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
+   "Мініяцюры"
+   )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Файлавы браўзер"
@@ -2563,6 +2823,22 @@ MSG_HASH( /* FIXME Not RGUI specific */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
    "Шэйдары відэа"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
+   "Запісы"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
+   "Запісы захоўваюцца ў гэтым каталозе."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
+   "Канфігурацыі запісу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
+   "Канфігурацыі запісу захоўваюцца ў гэтым каталозе."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -2650,6 +2926,22 @@ MSG_HASH(
    "Змяніць бягучы слот захавання стану."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
+   "Пачаць запіс"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
+   "Пачаць запіс відэа."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
+   "Спыніць запіс"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
+   "Спыніць запіс відэа."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
    "Пачаць стрымінг"
    )
@@ -2712,6 +3004,10 @@ MSG_HASH(
 
 /* Quick Menu > Disc Control */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Выняць дыск"
+   )
 
 /* Quick Menu > Shaders */
 
@@ -2904,6 +3200,10 @@ MSG_HASH(
    "Даведка"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
+   "Адпраўка адладачных звестак"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
    "Сканаваць лакальнае сеціва"
    )
@@ -2949,6 +3249,10 @@ MSG_HASH(
    "Прылады"
    )
 
+MSG_HASH(
+   MSG_FAILED_TO_START_RECORDING,
+   "Не атрымалася пачаць запіс."
+   )
 MSG_HASH(
    MSG_SHADER,
    "Шэйдар"
