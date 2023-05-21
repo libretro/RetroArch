@@ -4833,7 +4833,7 @@ static int generic_action_ok_network(const char *path,
          break;
    }
 
-   menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
 
    generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
 
