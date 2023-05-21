@@ -933,12 +933,12 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
          offset += cheat_st->memory_size_list[i];
       }
 
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_SUCCESS), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
       cheat_st->memory_search_initialized = true;
    }
 
    cheat_st->memory_initialized = true;
-
-   runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_SUCCESS), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_MENU
    if (!wraparound)
@@ -1028,7 +1028,7 @@ static int cheat_manager_search(enum cheat_search_type search_type)
    struct menu_state *menu_st  = menu_state_get_ptr();
 #endif
 
-   if (cheat_st->num_memory_buffers == 0)
+   if (cheat_st->num_memory_buffers == 0 || prev == NULL || cheat_st->matches == NULL)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_NOT_INITIALIZED), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return 0;

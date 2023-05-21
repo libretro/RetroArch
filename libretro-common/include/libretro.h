@@ -928,8 +928,6 @@ enum retro_mod
                                             * anything else.
                                             * It is recommended to expose all relevant pointers through
                                             * retro_get_memory_* as well.
-                                            *
-                                            * Can be called from retro_init and retro_load_game.
                                             */
 #define RETRO_ENVIRONMENT_SET_GEOMETRY 37
                                            /* const struct retro_game_geometry * --

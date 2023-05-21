@@ -2832,6 +2832,17 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
 
+#ifdef HAVE_CHEEVOS
+            rcheevos_refresh_memory();
+#endif
+#ifdef HAVE_CHEATS
+            if (cheat_manager_state.memory_initialized)
+            {
+               cheat_manager_initialize_memory(NULL, 0, true);
+               cheat_manager_apply_retro_cheats();
+            }
+#endif
+
             if (log_level != RETRO_LOG_DEBUG)
                break;
 
