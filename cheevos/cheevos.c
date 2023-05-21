@@ -744,6 +744,11 @@ void rcheevos_reset_game(bool widgets_ready)
       rcheevos_init_memory(&rcheevos_locals);
 }
 
+void rcheevos_refresh_memory()
+{
+   rcheevos_init_memory(&rcheevos_locals);
+}
+
 bool rcheevos_hardcore_active(void)
 {
    return rcheevos_locals.hardcore_active;

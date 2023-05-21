@@ -37,6 +37,7 @@ bool rcheevos_unload(void);
 void rcheevos_test(void);
 
 void rcheevos_reset_game(bool widgets_ready);
+void rcheevos_refresh_memory();
 
 void rcheevos_pause_hardcore(void);
 void rcheevos_hardcore_enabled_changed(void);
