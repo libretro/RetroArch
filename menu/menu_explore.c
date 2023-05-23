@@ -1440,12 +1440,12 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                      && !explore_by_info[cat].is_boolean
                      && RBUF_LEN(state->by[cat]) > 1))
             {
-               size_t tmplen = strlcpy(tmp,
-                     msg_hash_to_str(explore_by_info[cat].by_enum), sizeof(tmp));
+               strlcpy(tmp, msg_hash_to_str(explore_by_info[cat].by_enum), 
+                     sizeof(tmp));
 
                if (is_top)
                {
-                  strlcat(tmp, " (", sizeof(tmp));
+                  size_t tmplen = strlcat(tmp, " (", sizeof(tmp));
                   if (explore_by_info[cat].is_numeric)
                   {
                      strlcat(tmp, entries[0]->str, sizeof(tmp));
