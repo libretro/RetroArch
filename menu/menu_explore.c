@@ -1160,13 +1160,13 @@ static int explore_action_ok_saveview(const char *path, const char *label, unsig
 
 static void explore_load_view(explore_state_t *state, const char* path)
 {
-   intfstream_t *file;
-   rjson_t* json;
-   uint8_t op = ((uint8_t)-1);
    unsigned cat;
+   rjson_t *json;
+   intfstream_t *file;
    enum rjson_type type;
+   uint8_t op            = ((uint8_t)-1);
 
-   state->view_levels = 0;
+   state->view_levels    = 0;
    state->view_search[0] = '\0';
 
    if (!(file = intfstream_open_file(path,
@@ -1185,18 +1185,19 @@ static void explore_load_view(explore_state_t *state, const char* path)
       if (depth == 1 && type == RJSON_STRING)
       {
          const char* key = rjson_get_string(json, NULL);
-         if (string_is_equal(key, "filter_name") &&
-               rjson_next(json) == RJSON_STRING)
+         if (string_is_equal(key, "filter_name")
+               && rjson_next(json) == RJSON_STRING)
             strlcpy(state->view_search,
-                  rjson_get_string(json, NULL), sizeof(state->view_search));
-         else if (string_is_equal(key, "filter_equal") &&
-               rjson_next(json) == RJSON_OBJECT)
+                  rjson_get_string(json, NULL),
+                  sizeof(state->view_search));
+         else if (string_is_equal(key, "filter_equal")
+               && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_EQUAL;
-         else if (string_is_equal(key, "filter_min") &&
-               rjson_next(json) == RJSON_OBJECT)
+         else if (string_is_equal(key, "filter_min")
+               && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_MIN;
-         else if (string_is_equal(key, "filter_max") &&
-               rjson_next(json) == RJSON_OBJECT)
+         else if (string_is_equal(key, "filter_max")
+               && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_MAX;
       }
       else if (depth == 2 && type == RJSON_STRING && op != ((uint8_t)-1))
@@ -1210,11 +1211,11 @@ static void explore_load_view(explore_state_t *state, const char* path)
          else
          {
             explore_string_t **entries = state->by[cat];
-            const char* value = NULL;
-            unsigned lvl, lvl_max = state->view_levels;
-            uint8_t valid_op = ((uint8_t)-1);
+            const char *value          = NULL;
+            unsigned lvl, lvl_max      = state->view_levels;
+            uint8_t valid_op           = ((uint8_t)-1);
 
-            type = rjson_next(json);
+            type                       = rjson_next(json);
             if (type == RJSON_STRING || type == RJSON_NUMBER)
                value = rjson_get_string(json, NULL);
             if (value && !*value)
@@ -1227,15 +1228,15 @@ static void explore_load_view(explore_state_t *state, const char* path)
             if (!value && state->has_unknown[cat] && op == EXPLORE_OP_EQUAL)
             {
                state->view_match[lvl] = NULL;
-               valid_op = EXPLORE_OP_EQUAL;
+               valid_op               = EXPLORE_OP_EQUAL;
             }
             else if (value && entries)
             {
-               /* use existing qsort function for binary search */
+               int cmp;
+               /* Use existing qsort function for binary search */
                explore_string_t *evalue = (explore_string_t *)
                      (value - offsetof(explore_string_t, str));
                uint32_t i, ifrom, ito, imax = (uint32_t)RBUF_LEN(entries);
-               int cmp;
                int (*compare_func)(const void *, const void *) =
                      (explore_by_info[cat].is_numeric
                         ? explore_qsort_func_nums
@@ -1255,19 +1256,21 @@ static void explore_load_view(explore_state_t *state, const char* path)
                if (op == EXPLORE_OP_EQUAL && !cmp)
                {
                   state->view_match[lvl] = entries[i];
-                  valid_op = EXPLORE_OP_EQUAL;
+                  valid_op               = EXPLORE_OP_EQUAL;
                }
                else if (op == EXPLORE_OP_MIN)
                {
                   state->view_idx_min[lvl] = (cmp ? i + 1 : i);
-                  valid_op = ((lvl != lvl_max && state->view_op[lvl] == EXPLORE_OP_MAX)
-                                 ? EXPLORE_OP_RANGE : EXPLORE_OP_MIN);
+                  valid_op                 = ((lvl != lvl_max && state->view_op[lvl] == EXPLORE_OP_MAX)
+                                 ? EXPLORE_OP_RANGE 
+                                 : EXPLORE_OP_MIN);
                }
                else if (op == EXPLORE_OP_MAX)
                {
                   state->view_idx_max[lvl] = i;
-                  valid_op = ((lvl != lvl_max && state->view_op[lvl] == EXPLORE_OP_MIN)
-                                 ? EXPLORE_OP_RANGE : EXPLORE_OP_MAX);
+                  valid_op                 = ((lvl != lvl_max && state->view_op[lvl] == EXPLORE_OP_MIN)
+                                 ? EXPLORE_OP_RANGE 
+                                 : EXPLORE_OP_MAX);
                }
             }
             if (valid_op != ((uint8_t)-1))
@@ -1275,14 +1278,13 @@ static void explore_load_view(explore_state_t *state, const char* path)
                state->view_op       [lvl] = valid_op;
                state->view_cats     [lvl] = cat;
                state->view_use_split[lvl] = explore_by_info[cat].use_split;
-               if (lvl == lvl_max) state->view_levels++; 
+               if (lvl == lvl_max)
+                  state->view_levels++; 
             }
          }
       }
       else if (depth == 1 && type == RJSON_OBJECT_END)
-      {
          op = ((uint8_t)-1);
-      }
    }
    rjson_free(json);
    intfstream_close(file);
@@ -1300,16 +1302,20 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
    file_list_t *menu_stack      = MENU_LIST_GET(menu_list, 0);
    struct item_file *stack_top  = menu_stack->list;
    size_t depth                 = menu_stack->size;
-   unsigned current_type        = (depth > 0 ? stack_top[depth - 1].type : 0);
-   unsigned previous_type       = (depth > 1 ? stack_top[depth - 2].type : 0);
-   unsigned current_cat         = current_type - EXPLORE_TYPE_FIRSTCATEGORY;
+   unsigned current_type        = 0;
+   unsigned previous_type       = 0;
 
-   if (depth > 1)
+   if (depth > 0)
    {
-      /* overwrite the menu title function with our custom one */
-      /* depth 1 is never popped so we can only do this on sub menus */
-      ((menu_file_list_cbs_t*)stack_top[depth - 1].actiondata)
-         ->action_get_title = explore_action_get_title;
+      current_type              = stack_top[depth - 1].type;
+      /* Overwrite the menu title function with our custom one */
+      /* Depth 1 is never popped so we can only do this on sub menus */
+      if (depth > 1)
+      {
+         previous_type          = stack_top[depth - 2].type;
+         ((menu_file_list_cbs_t*)stack_top[depth - 1].actiondata)
+            ->action_get_title  = explore_action_get_title;
+      }
    }
 
    if (!state)
@@ -1324,360 +1330,357 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
             msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST),
             MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST,
             FILE_TYPE_NONE, 0, 0, NULL);
-
-      return (unsigned)list->size;
-   }
-
-   /* check if we are opening a saved view */
-   if (current_type == MENU_SETTING_HORIZONTAL_MENU || current_type == MENU_EXPLORE_TAB)
-   {
-      const char* view_path = explore_get_view_path(menu_st, menu_list, menu_stack);
-      if (view_path)
-      {
-         explore_load_view(state, view_path);
-         current_type = EXPLORE_TYPE_VIEW;
-      }
-   }
-
-   /* clear any filter remaining from showing a view on the horizontal menu */
-   if (current_type == MENU_EXPLORE_TAB)
-   {
-      state->view_levels = 0;
-      state->view_search[0] = '\0';
-   }
-
-   /* clear title string */
-   state->title[0] = '\0';
-
-   /* append filtered categories to title */
-   for (i = 0; i != state->view_levels; i++)
-   {
-      unsigned cat = state->view_cats[i];
-      explore_string_t **entries = state->by[cat];
-      explore_string_t* match = state->view_match[i];
-      explore_append_title(state, "%s%s: ", (i ? " / " : ""),
-            msg_hash_to_str(explore_by_info[cat].name_enum));
-      switch (state->view_op[i])
-      {
-         case EXPLORE_OP_EQUAL:
-            explore_append_title(state, "%s", (match ? match->str
-                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)));
-            break;
-         case EXPLORE_OP_MIN:
-            explore_append_title(state, "%s - %s",
-                  entries[state->view_idx_min[i]]->str,
-                  entries[RBUF_LEN(entries)-1]->str);
-            break;
-         case EXPLORE_OP_MAX:
-            explore_append_title(state, "%s - %s",
-                  entries[0]->str,
-                  entries[state->view_idx_max[i]]->str);
-            break;
-         case EXPLORE_OP_RANGE:
-            explore_append_title(state, "%s - %s",
-                  entries[state->view_idx_min[i]]->str,
-                  entries[state->view_idx_max[i]]->str);
-            break;
-      }
-   }
-
-   /* append string search to title */
-   if (*state->view_search)
-      explore_append_title(state, "%s%s: '%s'",
-            (state->view_levels ? " / " : ""),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
-            state->view_search);
-
-   state->show_icons = (current_cat == EXPLORE_BY_SYSTEM)
-         ? EXPLORE_ICONS_SYSTEM_CATEGORY
-         : (current_type >= EXPLORE_TYPE_FIRSTITEM)
-               ? EXPLORE_ICONS_CONTENT
-               : EXPLORE_ICONS_OFF;
-
-   if (     current_type == MENU_EXPLORE_TAB 
-         || current_type == EXPLORE_TYPE_ADDITIONALFILTER)
-   {
-      /* Explore top or selecting an additional filter category */
-      unsigned cat;
-      bool is_top = (current_type == MENU_EXPLORE_TAB);
-      if (is_top)
-         strlcpy(state->title,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_TAB),
-               sizeof(state->title));
-      else
-         explore_append_title(state, " / %s",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER));
-
-      if (!*state->view_search)
-      {
-         explore_menu_entry(
-               list, state,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME),
-               EXPLORE_TYPE_SEARCH, explore_action_ok_find);
-         if (list->size)
-            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
-      }
-
-      for (cat = 0; cat < EXPLORE_CAT_COUNT; cat++)
-      {
-         explore_string_t **entries = state->by[cat];
-         if (!RBUF_LEN(entries))
-            continue;
-
-         /* don't list already filtered categories unless it can be filtered by range */
-         for (i = 0; i != state->view_levels; i++)
-            if (state->view_cats[i] == cat)
-               break;
-
-         if (i == state->view_levels || (i == state->view_levels - 1
-                  && state->view_op[i] == EXPLORE_OP_EQUAL
-                  && !explore_by_info[cat].is_boolean
-                  && RBUF_LEN(state->by[cat]) > 1))
-         {
-            size_t tmplen = strlcpy(tmp,
-                  msg_hash_to_str(explore_by_info[cat].by_enum), sizeof(tmp));
-
-            if (is_top)
-            {
-               if (explore_by_info[cat].is_numeric)
-                  snprintf(tmp + tmplen, sizeof(tmp) - tmplen, " (%s - %s)",
-                        entries[0]->str, entries[RBUF_LEN(entries) - 1]->str);
-               else if (!explore_by_info[cat].is_boolean)
-               {
-                  strlcat(tmp, " (", sizeof(tmp));
-                  snprintf(tmp + tmplen + 2, sizeof(tmp) - tmplen - 2,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT),
-                        (unsigned)RBUF_LEN(entries));
-                  strlcat(tmp, ")", sizeof(tmp));
-               }
-            }
-            else if (i != state->view_levels)
-            {
-               strlcat(tmp, " (", sizeof(tmp));
-               strlcat(tmp, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER), sizeof(tmp));
-               strlcat(tmp, ")", sizeof(tmp));
-            }
-
-            explore_menu_entry(list, state,
-                  tmp, cat + EXPLORE_TYPE_FIRSTCATEGORY, explore_action_ok);
-         }
-      }
-
-      if (is_top)
-      {
-         if (list->size)
-            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
-         explore_menu_entry(list, state,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL),
-               EXPLORE_TYPE_SHOWALL, explore_action_ok);
-      }
-   }
-   else if ((!state->view_levels && !*state->view_search
-         && current_cat < EXPLORE_CAT_COUNT))
-   {
-      /* Unfiltered list of all items in a selected explore by category */
-      explore_string_t **entries = state->by[current_cat];
-      size_t i_last              = RBUF_LEN(entries) - 1;
-      for (i = 0; i <= i_last; i++)
-         explore_menu_entry(list, state,
-               entries[i]->str, EXPLORE_TYPE_FIRSTITEM + i, explore_action_ok);
-
-      if (state->has_unknown[current_cat])
-      {
-         if (list->size)
-            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
-         explore_menu_entry(list, state,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN),
-               EXPLORE_TYPE_FILTERNULL, explore_action_ok);
-      }
-
-      explore_append_title(state, "%s",
-            msg_hash_to_str(explore_by_info[current_cat].by_enum));
-   }
-   else if (current_type < EXPLORE_TYPE_FIRSTITEM
-         || (previous_type >= EXPLORE_TYPE_FIRSTCATEGORY
-            && previous_type < EXPLORE_TYPE_FIRSTITEM))
-   {
-      unsigned           view_levels      = state->view_levels;
-      char*              view_search      = state->view_search;
-      uint8_t*           view_op          = state->view_op;
-      bool*              view_use_split   = state->view_use_split;
-      unsigned*          view_cats        = state->view_cats;
-      explore_string_t** view_match       = state->view_match;
-      uint32_t*          view_idx_min     = state->view_idx_min;
-      uint32_t*          view_idx_max     = state->view_idx_max;
-      explore_entry_t*   entries          = state->entries, *e, *eend;
-      bool* map_filtered_category         = NULL;
-      bool has_search                     = !!*view_search;
-      bool is_show_all                    = (!view_levels && !has_search);
-      bool is_filtered_category           = (current_cat < EXPLORE_CAT_COUNT);
-      bool filtered_category_have_unknown = false;
-      size_t first_list_entry;
-
-      if (is_show_all)
-      {
-         explore_append_title(state,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ALL));
-      }
-
-      if (is_filtered_category)
-      {
-         /* List filtered items in a selected explore by category */
-         if (!view_levels || view_cats[view_levels - 1] != current_cat)
-         {
-            explore_append_title(state, " / %s",
-                  msg_hash_to_str(explore_by_info[current_cat].by_enum));
-         }
-         else
-         {
-            /* List all items again when setting a range filter */
-            explore_append_title(state, " (%s)",
-                  msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER));
-            view_levels--;
-         }
-      }
-      else if (current_type == EXPLORE_TYPE_VIEW)
-      {
-         /* Show a saved view */
-         state->show_icons = EXPLORE_ICONS_CONTENT;
-         explore_menu_entry(list, state,
-               msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW),
-               EXPLORE_TYPE_VIEW, explore_action_ok_deleteview);
-         if (list->size)
-            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
-      }
-      else
-      {
-         /* Game list */
-         state->show_icons = EXPLORE_ICONS_CONTENT;
-         explore_menu_entry(list, state,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER),
-               EXPLORE_TYPE_ADDITIONALFILTER, explore_action_ok);
-         explore_menu_entry(list, state,
-               msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW),
-               EXPLORE_TYPE_VIEW, explore_action_ok_saveview);
-         if (list->size)
-            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
-      }
-
-      first_list_entry = list->size;
-      for (e = entries, eend = RBUF_END(entries); e != eend; e++)
-      {
-         for (i = 0; i != view_levels; i++)
-         {
-            explore_string_t* eby = e->by[view_cats[i]];
-            switch (view_op[i])
-            {
-               case EXPLORE_OP_EQUAL:
-                  if (view_match[i] == eby)
-                     continue;
-                  if (view_use_split[i] && e->split)
-                  {
-                     explore_string_t** split = e->split;
-                     do
-                     {
-                        if (*split == view_match[i]) 
-                           break;
-                     } while (*(++split));
-                     if (*split)
-                        continue;
-                  }
-                  goto SKIP_ENTRY;
-               case EXPLORE_OP_MIN:
-                  if (eby && eby->idx >= view_idx_min[i])
-                     continue;
-                  goto SKIP_ENTRY;
-               case EXPLORE_OP_MAX:
-                  if (eby && eby->idx <= view_idx_max[i])
-                     continue;
-                  goto SKIP_ENTRY;
-               case EXPLORE_OP_RANGE:
-                  if (eby && eby->idx >= view_idx_min[i]
-                          && eby->idx <= view_idx_max[i])
-                     continue;
-                  goto SKIP_ENTRY;
-            }
-         }
-
-         if (has_search && !strcasestr(e->playlist_entry->label, view_search))
-            goto SKIP_ENTRY;
-
-         if (is_filtered_category)
-         {
-            explore_string_t* str = e->by[current_cat];
-            if (!str)
-            {
-               filtered_category_have_unknown = true;
-               continue;
-            }
-            if (RHMAP_HAS(map_filtered_category, str->idx + 1))
-               continue;
-            RHMAP_SET(map_filtered_category, str->idx + 1, true);
-            explore_menu_entry(list, state, str->str,
-                  EXPLORE_TYPE_FIRSTITEM + str->idx, explore_action_ok);
-         }
-#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
-         else if (e->original_title)
-            explore_menu_entry(list, state, e->original_title,
-                  EXPLORE_TYPE_FIRSTITEM + (e - entries), explore_action_ok);
-#endif
-         else
-            explore_menu_entry(list, state, e->playlist_entry->label,
-                  EXPLORE_TYPE_FIRSTITEM + (e - entries), explore_action_ok);
-SKIP_ENTRY:;
-      }
-
-      if (is_filtered_category)
-         qsort(list->list, list->size, sizeof(*list->list), explore_qsort_func_menulist);
-
-      explore_append_title(state,
-            " (%u)", (unsigned)(list->size - first_list_entry));
-
-      if (is_filtered_category && filtered_category_have_unknown)
-      {
-         if (list->size)
-            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
-         explore_menu_entry(list, state,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN),
-               EXPLORE_TYPE_FILTERNULL, explore_action_ok);
-      }
-
-      RHMAP_FREE(map_filtered_category);
    }
    else
    {
-      /* Content page of selected game */
-      int pl_idx;
-      const struct playlist_entry *pl_entry = 
-         state->entries[current_type - EXPLORE_TYPE_FIRSTITEM].playlist_entry;
-
-      strlcpy(state->title,
-            pl_entry->label, sizeof(state->title));
-
-      for (pl_idx = 0; pl_idx != RBUF_LEN(state->playlists); pl_idx++)
+      unsigned current_cat   = current_type - EXPLORE_TYPE_FIRSTCATEGORY;
+      /* check if we are opening a saved view */
+      if (current_type == MENU_SETTING_HORIZONTAL_MENU || current_type == MENU_EXPLORE_TAB)
       {
-         menu_displaylist_info_t          info;
-         const struct playlist_entry* pl_first = NULL;
-         playlist_t                       *pl  = 
-            state->playlists[pl_idx];
+         const char* view_path = explore_get_view_path(menu_st, menu_list, menu_stack);
+         if (view_path)
+         {
+            explore_load_view(state, view_path);
+            current_type = EXPLORE_TYPE_VIEW;
+         }
+      }
 
-         playlist_get_index(pl, 0, &pl_first);
+      /* clear any filter remaining from showing a view on the horizontal menu */
+      if (current_type == MENU_EXPLORE_TAB)
+      {
+         state->view_levels = 0;
+         state->view_search[0] = '\0';
+      }
 
-         if (  pl_entry <  pl_first || 
-               pl_entry >= pl_first + playlist_size(pl))
-            continue;
+      /* clear title string */
+      state->title[0] = '\0';
 
-         /* Fake all the state so the content screen 
-          * and information screen think we're viewing via playlist */
-         menu_displaylist_info_init(&info);
-         playlist_set_cached_external(pl);
-         menu->rpl_entry_selection_ptr = (unsigned)(pl_entry - pl_first);
-         strlcpy(menu->deferred_path,
-               pl_entry->path, sizeof(menu->deferred_path));
-         info.list                     = list;
-         menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, &info,
-               settings);
-         break;
+      /* append filtered categories to title */
+      for (i = 0; i != state->view_levels; i++)
+      {
+         unsigned cat = state->view_cats[i];
+         explore_string_t **entries = state->by[cat];
+         explore_string_t* match = state->view_match[i];
+         explore_append_title(state, "%s%s: ", (i ? " / " : ""),
+               msg_hash_to_str(explore_by_info[cat].name_enum));
+         switch (state->view_op[i])
+         {
+            case EXPLORE_OP_EQUAL:
+               explore_append_title(state, "%s", (match ? match->str
+                        : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)));
+               break;
+            case EXPLORE_OP_MIN:
+               explore_append_title(state, "%s - %s",
+                     entries[state->view_idx_min[i]]->str,
+                     entries[RBUF_LEN(entries)-1]->str);
+               break;
+            case EXPLORE_OP_MAX:
+               explore_append_title(state, "%s - %s",
+                     entries[0]->str,
+                     entries[state->view_idx_max[i]]->str);
+               break;
+            case EXPLORE_OP_RANGE:
+               explore_append_title(state, "%s - %s",
+                     entries[state->view_idx_min[i]]->str,
+                     entries[state->view_idx_max[i]]->str);
+               break;
+         }
+      }
+
+      /* append string search to title */
+      if (*state->view_search)
+         explore_append_title(state, "%s%s: '%s'",
+               (state->view_levels ? " / " : ""),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
+               state->view_search);
+
+      state->show_icons = (current_cat == EXPLORE_BY_SYSTEM)
+         ? EXPLORE_ICONS_SYSTEM_CATEGORY
+         : (current_type >= EXPLORE_TYPE_FIRSTITEM)
+         ? EXPLORE_ICONS_CONTENT
+         : EXPLORE_ICONS_OFF;
+
+      if (     current_type == MENU_EXPLORE_TAB 
+            || current_type == EXPLORE_TYPE_ADDITIONALFILTER)
+      {
+         /* Explore top or selecting an additional filter category */
+         unsigned cat;
+         bool is_top = (current_type == MENU_EXPLORE_TAB);
+         if (is_top)
+            strlcpy(state->title,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_TAB),
+                  sizeof(state->title));
+         else
+            explore_append_title(state, " / %s",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER));
+
+         if (!*state->view_search)
+         {
+            explore_menu_entry(
+                  list, state,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME),
+                  EXPLORE_TYPE_SEARCH, explore_action_ok_find);
+            if (list->size)
+               ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
+         }
+
+         for (cat = 0; cat < EXPLORE_CAT_COUNT; cat++)
+         {
+            explore_string_t **entries = state->by[cat];
+            if (!RBUF_LEN(entries))
+               continue;
+
+            /* don't list already filtered categories unless it can be filtered by range */
+            for (i = 0; i != state->view_levels; i++)
+               if (state->view_cats[i] == cat)
+                  break;
+
+            if (i == state->view_levels || (i == state->view_levels - 1
+                     && state->view_op[i] == EXPLORE_OP_EQUAL
+                     && !explore_by_info[cat].is_boolean
+                     && RBUF_LEN(state->by[cat]) > 1))
+            {
+               size_t tmplen = strlcpy(tmp,
+                     msg_hash_to_str(explore_by_info[cat].by_enum), sizeof(tmp));
+
+               if (is_top)
+               {
+                  strlcat(tmp, " (", sizeof(tmp));
+                  if (explore_by_info[cat].is_numeric)
+                  {
+                     strlcat(tmp, entries[0]->str, sizeof(tmp));
+                     strlcat(tmp, " - ", sizeof(tmp));
+                     strlcat(tmp, entries[RBUF_LEN(entries) - 1]->str, sizeof(tmp));
+                  }
+                  else if (!explore_by_info[cat].is_boolean)
+                     snprintf(tmp + tmplen + 2, sizeof(tmp) - tmplen - 2,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT),
+                           (unsigned)RBUF_LEN(entries));
+                  strlcat(tmp, ")", sizeof(tmp));
+               }
+               else if (i != state->view_levels)
+               {
+                  strlcat(tmp, " (", sizeof(tmp));
+                  strlcat(tmp, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER), sizeof(tmp));
+                  strlcat(tmp, ")", sizeof(tmp));
+               }
+
+               explore_menu_entry(list, state,
+                     tmp, cat + EXPLORE_TYPE_FIRSTCATEGORY, explore_action_ok);
+            }
+         }
+
+         if (is_top)
+         {
+            if (list->size)
+               ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
+            explore_menu_entry(list, state,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL),
+                  EXPLORE_TYPE_SHOWALL, explore_action_ok);
+         }
+      }
+      else if ((!state->view_levels && !*state->view_search
+               && current_cat < EXPLORE_CAT_COUNT))
+      {
+         /* Unfiltered list of all items in a selected explore by category */
+         explore_string_t **entries = state->by[current_cat];
+         size_t i_last              = RBUF_LEN(entries) - 1;
+         for (i = 0; i <= i_last; i++)
+            explore_menu_entry(list, state,
+                  entries[i]->str, EXPLORE_TYPE_FIRSTITEM + i, explore_action_ok);
+
+         if (state->has_unknown[current_cat])
+         {
+            if (list->size)
+               ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
+            explore_menu_entry(list, state,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN),
+                  EXPLORE_TYPE_FILTERNULL, explore_action_ok);
+         }
+
+         explore_append_title(state, "%s",
+               msg_hash_to_str(explore_by_info[current_cat].by_enum));
+      }
+      else if (current_type < EXPLORE_TYPE_FIRSTITEM
+            || (previous_type >= EXPLORE_TYPE_FIRSTCATEGORY
+               && previous_type < EXPLORE_TYPE_FIRSTITEM))
+      {
+         unsigned           view_levels      = state->view_levels;
+         char*              view_search      = state->view_search;
+         uint8_t*           view_op          = state->view_op;
+         bool*              view_use_split   = state->view_use_split;
+         unsigned*          view_cats        = state->view_cats;
+         explore_string_t** view_match       = state->view_match;
+         uint32_t*          view_idx_min     = state->view_idx_min;
+         uint32_t*          view_idx_max     = state->view_idx_max;
+         explore_entry_t*   entries          = state->entries, *e, *eend;
+         bool* map_filtered_category         = NULL;
+         bool has_search                     = !!*view_search;
+         bool is_show_all                    = (!view_levels && !has_search);
+         bool is_filtered_category           = (current_cat < EXPLORE_CAT_COUNT);
+         bool filtered_category_have_unknown = false;
+         size_t first_list_entry;
+
+         if (is_show_all)
+            explore_append_title(state,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ALL));
+
+         if (is_filtered_category)
+         {
+            /* List filtered items in a selected explore by category */
+            if (!view_levels || view_cats[view_levels - 1] != current_cat)
+               explore_append_title(state, " / %s",
+                     msg_hash_to_str(explore_by_info[current_cat].by_enum));
+            else
+            {
+               /* List all items again when setting a range filter */
+               explore_append_title(state, " (%s)",
+                     msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER));
+               view_levels--;
+            }
+         }
+         else if (current_type == EXPLORE_TYPE_VIEW)
+         {
+            /* Show a saved view */
+            state->show_icons = EXPLORE_ICONS_CONTENT;
+            explore_menu_entry(list, state,
+                  msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW),
+                  EXPLORE_TYPE_VIEW, explore_action_ok_deleteview);
+            if (list->size)
+               ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
+         }
+         else
+         {
+            /* Game list */
+            state->show_icons = EXPLORE_ICONS_CONTENT;
+            explore_menu_entry(list, state,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER),
+                  EXPLORE_TYPE_ADDITIONALFILTER, explore_action_ok);
+            explore_menu_entry(list, state,
+                  msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW),
+                  EXPLORE_TYPE_VIEW, explore_action_ok_saveview);
+            if (list->size)
+               ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
+         }
+
+         first_list_entry = list->size;
+         for (e = entries, eend = RBUF_END(entries); e != eend; e++)
+         {
+            for (i = 0; i != view_levels; i++)
+            {
+               explore_string_t* eby = e->by[view_cats[i]];
+               switch (view_op[i])
+               {
+                  case EXPLORE_OP_EQUAL:
+                     if (view_match[i] == eby)
+                        continue;
+                     if (view_use_split[i] && e->split)
+                     {
+                        explore_string_t** split = e->split;
+                        do
+                        {
+                           if (*split == view_match[i]) 
+                              break;
+                        } while (*(++split));
+                        if (*split)
+                           continue;
+                     }
+                     goto SKIP_ENTRY;
+                  case EXPLORE_OP_MIN:
+                     if (eby && eby->idx >= view_idx_min[i])
+                        continue;
+                     goto SKIP_ENTRY;
+                  case EXPLORE_OP_MAX:
+                     if (eby && eby->idx <= view_idx_max[i])
+                        continue;
+                     goto SKIP_ENTRY;
+                  case EXPLORE_OP_RANGE:
+                     if (eby && eby->idx >= view_idx_min[i]
+                           && eby->idx <= view_idx_max[i])
+                        continue;
+                     goto SKIP_ENTRY;
+               }
+            }
+
+            if (has_search && !strcasestr(e->playlist_entry->label, view_search))
+               goto SKIP_ENTRY;
+
+            if (is_filtered_category)
+            {
+               explore_string_t* str = e->by[current_cat];
+               if (!str)
+               {
+                  filtered_category_have_unknown = true;
+                  continue;
+               }
+               if (RHMAP_HAS(map_filtered_category, str->idx + 1))
+                  continue;
+               RHMAP_SET(map_filtered_category, str->idx + 1, true);
+               explore_menu_entry(list, state, str->str,
+                     EXPLORE_TYPE_FIRSTITEM + str->idx, explore_action_ok);
+            }
+#ifdef EXPLORE_SHOW_ORIGINAL_TITLE
+            else if (e->original_title)
+               explore_menu_entry(list, state, e->original_title,
+                     EXPLORE_TYPE_FIRSTITEM + (e - entries), explore_action_ok);
+#endif
+            else
+               explore_menu_entry(list, state, e->playlist_entry->label,
+                     EXPLORE_TYPE_FIRSTITEM + (e - entries), explore_action_ok);
+SKIP_ENTRY:;
+         }
+
+         if (is_filtered_category)
+            qsort(list->list, list->size, sizeof(*list->list), explore_qsort_func_menulist);
+
+         explore_append_title(state,
+               " (%u)", (unsigned)(list->size - first_list_entry));
+
+         if (is_filtered_category && filtered_category_have_unknown)
+         {
+            if (list->size)
+               ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
+            explore_menu_entry(list, state,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN),
+                  EXPLORE_TYPE_FILTERNULL, explore_action_ok);
+         }
+
+         RHMAP_FREE(map_filtered_category);
+      }
+      else
+      {
+         /* Content page of selected game */
+         int pl_idx;
+         const struct playlist_entry *pl_entry = 
+            state->entries[current_type - EXPLORE_TYPE_FIRSTITEM].playlist_entry;
+
+         strlcpy(state->title,
+               pl_entry->label, sizeof(state->title));
+
+         for (pl_idx = 0; pl_idx != RBUF_LEN(state->playlists); pl_idx++)
+         {
+            menu_displaylist_info_t info;
+            const struct playlist_entry *pl_first = NULL;
+            playlist_t                       *pl  = state->playlists[pl_idx];
+
+            playlist_get_index(pl, 0, &pl_first);
+
+            if (     (pl_entry <  pl_first)
+                  || (pl_entry >= pl_first + playlist_size(pl)))
+               continue;
+
+            /* Fake all the state so the content screen 
+             * and information screen think we're viewing via playlist */
+            menu_displaylist_info_init(&info);
+            playlist_set_cached_external(pl);
+            menu->rpl_entry_selection_ptr = (unsigned)(pl_entry - pl_first);
+            strlcpy(menu->deferred_path,
+                  pl_entry->path, sizeof(menu->deferred_path));
+            info.list                     = list;
+            menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, &info,
+                  settings);
+            break;
+         }
       }
    }
 
@@ -1687,22 +1690,27 @@ SKIP_ENTRY:;
 uintptr_t menu_explore_get_entry_icon(unsigned type)
 {
    unsigned i;
-   if (!explore_state || !explore_state->show_icons
+   explore_entry_t *e;
+   if (     !explore_state 
+         || !explore_state->show_icons
          || type < EXPLORE_TYPE_FIRSTITEM)
       return 0;
 
    i = (type - EXPLORE_TYPE_FIRSTITEM);
-   if (explore_state->show_icons == EXPLORE_ICONS_CONTENT)
+
+   switch (explore_state->show_icons)
    {
-      explore_entry_t* e = &explore_state->entries[i];
-      if (e < RBUF_END(explore_state->entries))
-         return explore_state->icons[e->by[EXPLORE_BY_SYSTEM]->idx];
+      case EXPLORE_ICONS_CONTENT:
+         e = &explore_state->entries[i];
+         if (e < RBUF_END(explore_state->entries))
+            return explore_state->icons[e->by[EXPLORE_BY_SYSTEM]->idx];
+         break;
+      case EXPLORE_ICONS_SYSTEM_CATEGORY:
+         if (i < RBUF_LEN(explore_state->icons))
+            return explore_state->icons[i];
+         break;
    }
-   else if (explore_state->show_icons == EXPLORE_ICONS_SYSTEM_CATEGORY)
-   {
-      if (i < RBUF_LEN(explore_state->icons))
-         return explore_state->icons[i];
-   }
+
    return 0;
 }
 
