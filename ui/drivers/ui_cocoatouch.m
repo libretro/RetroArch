@@ -28,6 +28,7 @@
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
 #include "../ui_companion_driver.h"
+#include "../../audio/audio_driver.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
 #include "../../input/drivers/cocoa_input.h"
@@ -428,6 +429,24 @@ enum
    return _documentsDirectory;
 }
 
+- (void)handleAudioSessionInterruption:(NSNotification *)notification
+{
+   NSNumber *type = notification.userInfo[AVAudioSessionInterruptionTypeKey];
+   if (![type isKindOfClass:[NSNumber class]])
+      return;
+
+   if ([type unsignedIntegerValue] == AVAudioSessionInterruptionTypeBegan)
+   {
+      RARCH_LOG("AudioSession Interruption Began\n");
+      audio_driver_stop();
+   }
+   else if ([type unsignedIntegerValue] == AVAudioSessionInterruptionTypeEnded)
+   {
+      RARCH_LOG("AudioSession Interruption Ended\n");
+      audio_driver_start(false);
+   }
+}
+
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    NSError *error;
@@ -443,6 +462,7 @@ enum
    [self.window makeKeyAndVisible];
 
    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
+   [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruption:) name:AVAudioSessionInterruptionNotification object:[AVAudioSession sharedInstance]];
 
    [self refreshSystemConfig];
    [self showGameView];
