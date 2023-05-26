@@ -534,6 +534,11 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
          {
             delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
             y      = (int)roundf(viewport_height * (0.5f - delta));
+#if defined(RARCH_MOBILE)
+            /* In portrait mode, we want viewport to gravitate to top of screen. */
+            if (device_aspect < 1.0f)
+                y *= 2;
+#endif
             viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
          }
       }
@@ -549,12 +554,6 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
       gl1->vp.width  = viewport_width;
       gl1->vp.height = viewport_height;
    }
-
-#if defined(RARCH_MOBILE)
-   /* In portrait mode, we want viewport to gravitate to top of screen. */
-   if (device_aspect < 1.0f)
-      gl1->vp.y *= 2;
-#endif
 
    glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
    gl1_set_projection(gl1, &gl1_default_ortho, allow_rotate);

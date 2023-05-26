@@ -2162,17 +2162,17 @@ void video_driver_update_viewport(
             vp->width  = vp->full_width;
             delta      = (device_aspect / desired_aspect - 1.0f)
                / 2.0f + 0.5f;
+#if defined(RARCH_MOBILE)
+            /* In portrait mode, we want viewport to gravitate to top of screen. */
+            if (device_aspect < 1.0f)
+                vp->y = 0;
+            else
+#endif
             vp->y      = (int)roundf(vp->full_height * (0.5f - delta));
             vp->height = (unsigned)roundf(2.0f * vp->full_height * delta);
          }
       }
    }
-
-#if defined(RARCH_MOBILE)
-   /* In portrait mode, we want viewport to gravitate to top of screen. */
-   if (device_aspect < 1.0f)
-      vp->y = 0;
-#endif
 }
 
 void video_driver_show_mouse(void)
