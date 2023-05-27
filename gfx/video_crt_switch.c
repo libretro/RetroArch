@@ -144,7 +144,7 @@ static bool is_kms_driver_context()
    gfx_ctx_ident_t gfxctx;
    video_context_driver_get_ident(&gfxctx);
    RARCH_LOG("[CRT] Video context is: %s\n", gfxctx.ident);
-   if (strncmp(gfxctx.ident, "kms",3) == 0)
+   if (gfxctx.ident !=NULL && strncmp(gfxctx.ident, "kms",3) == 0)
       return true;
    return false;
 }
