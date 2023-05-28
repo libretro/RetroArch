@@ -6491,9 +6491,6 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
-      case RARCH_CTL_HAS_SET_SUBSYSTEMS:
-         return ((runloop_st->current_core.flags &
-               RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS) > 0);
 #ifdef HAVE_BSV_MOVIE
       case RARCH_CTL_BSV_MOVIE_IS_INITED:
          return (input_state_get_ptr()->bsv_movie_state_handle != NULL);
