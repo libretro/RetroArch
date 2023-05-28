@@ -8957,7 +8957,7 @@ static bool ozone_init_font(
    /* Free existing */
    if (font_data->font)
    {
-      gfx_display_font_free(font_data->font);
+      font_driver_free(font_data->font);
       font_data->font            = NULL;
    }
 
@@ -9367,7 +9367,7 @@ static void ozone_unload_thumbnail_textures(void *data)
 static void INLINE ozone_font_free(ozone_font_data_t *font_data)
 {
    if (font_data->font)
-      gfx_display_font_free(font_data->font);
+      font_driver_free(font_data->font);
 
    font_data->font = NULL;
 }

@@ -7885,6 +7885,7 @@ static void materialui_init_font(
    const char *str_latin
    )
 {
+   char s1[PATH_MAX_LENGTH];
    char fontpath[PATH_MAX_LENGTH];
    const char *wideglyph_str = msg_hash_get_wideglyph_str();
    settings_t *settings      = config_get_ptr();
@@ -7896,40 +7897,37 @@ static void materialui_init_font(
 
    if (font_data->font)
    {
-      gfx_display_font_free(font_data->font);
+      font_driver_free(font_data->font);
       font_data->font = NULL;
    }
-   {
-      char s1[PATH_MAX_LENGTH];
 
-      switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
-      {
-         case RETRO_LANGUAGE_ARABIC:
-         case RETRO_LANGUAGE_PERSIAN:
-            fill_pathname_join_special(s1,
-                  settings->paths.directory_assets, "pkg", sizeof(s1));
-            fill_pathname_join_special(fontpath, s1, "fallback-font.ttf",
-                  sizeof(fontpath));
-            break;
-         case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
-         case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-            fill_pathname_join_special(s1,
-                  settings->paths.directory_assets, "pkg", sizeof(s1));
-            fill_pathname_join_special(fontpath, s1, "chinese-fallback-font.ttf",
-                  sizeof(fontpath));
-            break;
-         case RETRO_LANGUAGE_KOREAN:
-            fill_pathname_join_special(s1,
-                  settings->paths.directory_assets, "pkg", sizeof(s1));
-            fill_pathname_join_special(fontpath, s1, "korean-fallback-font.ttf",
-                  sizeof(fontpath));
-            break;
-         default:
-            fill_pathname_join_special(s1, dir_assets, "glui", sizeof(s1));
-            fill_pathname_join_special(fontpath, s1, FILE_PATH_TTF_FONT,
-                  sizeof(fontpath));
-            break;
-      }
+   switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
+   {
+      case RETRO_LANGUAGE_ARABIC:
+      case RETRO_LANGUAGE_PERSIAN:
+         fill_pathname_join_special(s1,
+               settings->paths.directory_assets, "pkg", sizeof(s1));
+         fill_pathname_join_special(fontpath, s1, "fallback-font.ttf",
+               sizeof(fontpath));
+         break;
+      case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+         fill_pathname_join_special(s1,
+               settings->paths.directory_assets, "pkg", sizeof(s1));
+         fill_pathname_join_special(fontpath, s1, "chinese-fallback-font.ttf",
+               sizeof(fontpath));
+         break;
+      case RETRO_LANGUAGE_KOREAN:
+         fill_pathname_join_special(s1,
+               settings->paths.directory_assets, "pkg", sizeof(s1));
+         fill_pathname_join_special(fontpath, s1, "korean-fallback-font.ttf",
+               sizeof(fontpath));
+         break;
+      default:
+         fill_pathname_join_special(s1, dir_assets, "glui", sizeof(s1));
+         fill_pathname_join_special(fontpath, s1, FILE_PATH_TTF_FONT,
+               sizeof(fontpath));
+         break;
    }
 
    font_data->font = gfx_display_font_file(p_disp,
@@ -8325,15 +8323,15 @@ static void materialui_context_destroy(void *data)
 
    /* Free fonts */
    if (mui->font_data.title.font)
-      gfx_display_font_free(mui->font_data.title.font);
+      font_driver_free(mui->font_data.title.font);
    mui->font_data.title.font = NULL;
 
    if (mui->font_data.list.font)
-      gfx_display_font_free(mui->font_data.list.font);
+      font_driver_free(mui->font_data.list.font);
    mui->font_data.list.font = NULL;
 
    if (mui->font_data.hint.font)
-      gfx_display_font_free(mui->font_data.hint.font);
+      font_driver_free(mui->font_data.hint.font);
    mui->font_data.hint.font = NULL;
 
    /* Free node thumbnails */

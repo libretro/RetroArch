@@ -64,7 +64,7 @@ static dispgfx_widget_t dispwidget_st = {0}; /* uint64_t alignment */
 static void INLINE gfx_widgets_font_free(gfx_widget_font_data_t *font_data)
 {
    if (font_data->font)
-      gfx_display_font_free(font_data->font);
+      font_driver_free(font_data->font);
 
    font_data->font        = NULL;
    font_data->usage_count = 0;
@@ -746,7 +746,7 @@ static void gfx_widgets_font_init(
    /* Free existing font */
    if (font_data->font)
    {
-      gfx_display_font_free(font_data->font);
+      font_driver_free(font_data->font);
       font_data->font = NULL;
    }
 

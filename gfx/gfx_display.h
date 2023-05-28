@@ -237,8 +237,6 @@ void gfx_display_scissor_begin(
       unsigned video_height,
       int x, int y, unsigned width, unsigned height);
 
-void gfx_display_font_free(font_data_t *font);
-
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
 

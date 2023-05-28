@@ -7335,12 +7335,12 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
    xmb_layout(xmb);
    if (xmb->font)
    {
-      gfx_display_font_free(xmb->font);
+      font_driver_free(xmb->font);
       xmb->font = NULL;
    }
    if (xmb->font2)
    {
-      gfx_display_font_free(xmb->font2);
+      font_driver_free(xmb->font2);
       xmb->font2 = NULL;
    }
    fill_pathname_application_special(
@@ -7743,10 +7743,9 @@ static void xmb_context_destroy(void *data)
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);
 
-   gfx_display_font_free(xmb->font);
-   gfx_display_font_free(xmb->font2);
-
-   xmb->font = NULL;
+   font_driver_free(xmb->font);
+   xmb->font  = NULL;
+   font_driver_free(xmb->font2);
    xmb->font2 = NULL;
 
    menu_screensaver_context_destroy(xmb->screensaver);

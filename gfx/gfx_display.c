@@ -1186,13 +1186,6 @@ bool gfx_display_reset_textures_list(
    return true;
 }
 
-/* Teardown; deinitializes and frees all
- * fonts associated to the display driver */
-void gfx_display_font_free(font_data_t *font)
-{
-   font_driver_free(font);
-}
-
 void gfx_display_deinit_white_texture(void)
 {
    if (gfx_white_texture)

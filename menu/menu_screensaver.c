@@ -228,7 +228,7 @@ void menu_screensaver_free(menu_screensaver_t *screensaver)
    /* Free font */
    if (screensaver->font_data.font)
    {
-      gfx_display_font_free(screensaver->font_data.font);
+      font_driver_free(screensaver->font_data.font);
       video_coord_array_free(&screensaver->font_data.raster_block.carr);
       screensaver->font_data.font = NULL;
 
@@ -260,7 +260,7 @@ void menu_screensaver_context_destroy(menu_screensaver_t *screensaver)
     * call of menu_screensaver_iterate()) */
    if (screensaver->font_data.font)
    {
-      gfx_display_font_free(screensaver->font_data.font);
+      font_driver_free(screensaver->font_data.font);
       video_coord_array_free(&screensaver->font_data.raster_block.carr);
       screensaver->font_data.font = NULL;
    }
@@ -428,7 +428,7 @@ static bool menu_screensaver_update_state(
       /* Free any existing font */
       if (screensaver->font_data.font)
       {
-         gfx_display_font_free(screensaver->font_data.font);
+         font_driver_free(screensaver->font_data.font);
          video_coord_array_free(&screensaver->font_data.raster_block.carr);
          screensaver->font_data.font = NULL;
       }
