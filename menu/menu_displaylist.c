@@ -7662,7 +7662,8 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_OPTIONS_CHEATS:
 #ifdef HAVE_CHEATS
-         if (cheat_manager_alloc_if_empty())
+         cheat_manager_alloc_if_empty();
+
          {
             unsigned i;
             size_t _len;

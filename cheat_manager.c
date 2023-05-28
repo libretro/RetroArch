@@ -622,10 +622,13 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
    if (!handle || !handle->cheats || handle->size == 0)
       return;
 
+   /* TODO/FIXME - localize */
    snprintf(msg, sizeof(msg),
          "Cheat: #%u [%s]: %s",
          handle_idx,
-         handle->cheats[handle_idx].state ? "ON" : "OFF",
+         handle->cheats[handle_idx].state 
+         ? msg_hash_to_str(MENU_ENUM_LABEL_ON) 
+         : msg_hash_to_str(MENU_ENUM_LABEL_OFF),
          handle->cheats[handle_idx].desc 
          ? (handle->cheats[handle_idx].desc) 
          : (handle->cheats[handle_idx].code)
@@ -724,9 +727,9 @@ static bool cheat_manager_get_game_specific_filename(
    core_name = system_info.library_name;
    game_name = path_basename_nocompression(runloop_st->name.cheatfile);
 
-   if (string_is_empty(path_cheat_database) ||
-         string_is_empty(core_name) ||
-         string_is_empty(game_name))
+   if (     string_is_empty(path_cheat_database)
+         || string_is_empty(core_name)
+         || string_is_empty(game_name))
       return false;
 
    fill_pathname_join_special(s1,
@@ -778,13 +781,11 @@ void cheat_manager_state_free(void)
    cheat_manager_free();
 }
 
-bool cheat_manager_alloc_if_empty(void)
+void cheat_manager_alloc_if_empty(void)
 {
    cheat_manager_t *cheat_st = &cheat_manager_state;
    if (!cheat_st->cheats)
       cheat_manager_new(0);
-
-   return true;
 }
 
 int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool wraparound)
@@ -1028,9 +1029,11 @@ static int cheat_manager_search(enum cheat_search_type search_type)
    struct menu_state *menu_st  = menu_state_get_ptr();
 #endif
 
-   if (cheat_st->num_memory_buffers == 0 || prev == NULL || cheat_st->matches == NULL)
+   if (cheat_st->num_memory_buffers == 0 || !prev || !cheat_st->matches)
    {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_NOT_INITIALIZED), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_NOT_INITIALIZED),
+            1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return 0;
    }
 
