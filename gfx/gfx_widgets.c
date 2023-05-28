@@ -139,9 +139,9 @@ static float gfx_display_get_widget_pixel_scale(
     * to optimise). We therefore cache the pixel scale,
     * and only update on first run or when the video
     * size changes */
-   if (!scale_cached ||
-       (width  != last_width) ||
-       (height != last_height))
+   if (   !scale_cached
+       || (width  != last_width)
+       || (height != last_height))
    {
       /* Baseline reference is a 1080p display */
       scale = (float)(
@@ -156,13 +156,12 @@ static float gfx_display_get_widget_pixel_scale(
 
    /* Adjusted scale calculation may also be slow, so
     * only update if something changes */
-   if (scale_updated ||
-       (menu_scale_factor != last_menu_scale_factor) ||
-       (p_disp->menu_driver_id != last_menu_driver_id))
+   if (    scale_updated
+       || (menu_scale_factor != last_menu_scale_factor)
+       || (p_disp->menu_driver_id != last_menu_driver_id))
    {
-      adjusted_scale         = gfx_display_get_adjusted_scale(
-            p_disp,
-            scale, menu_scale_factor, width);
+      adjusted_scale         = scale * menu_scale_factor;
+      adjusted_scale         = (adjusted_scale > 0.0001f) ? adjusted_scale : 1.0f;
       last_menu_scale_factor = menu_scale_factor;
       last_menu_driver_id    = p_disp->menu_driver_id;
    }

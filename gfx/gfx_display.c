@@ -123,7 +123,7 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    NULL,
 };
 
-float gfx_display_get_adjusted_scale(
+static float gfx_display_get_adjusted_scale(
       gfx_display_t *p_disp,
       float base_scale, float scale_factor, unsigned width)
 {

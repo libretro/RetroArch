@@ -308,10 +308,6 @@ bool gfx_display_reset_textures_list_buffer(
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height);
 
-float gfx_display_get_adjusted_scale(
-      gfx_display_t *p_disp,
-      float base_scale, float scale_factor, unsigned width);
-
 float gfx_display_get_dpi_scale(
       gfx_display_t *p_disp,
       void *settings_data,
