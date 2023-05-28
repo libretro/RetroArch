@@ -2078,6 +2078,7 @@ static bool vulkan_update_display_mode(
 {
    unsigned visible_width  = mode->parameters.visibleRegion.width;
    unsigned visible_height = mode->parameters.visibleRegion.height;
+   unsigned visible_rate   = mode->parameters.refreshRate;
 
    if (!info->width || !info->height)
    {
@@ -2095,13 +2096,14 @@ static bool vulkan_update_display_mode(
       /* For particular resolutions, find the closest. */
       int delta_x     = (int)info->width - (int)visible_width;
       int delta_y     = (int)info->height - (int)visible_height;
+      int delta_rate  = abs(info->refresh_rate_x1000 - visible_rate);
       int old_delta_x = (int)info->width - (int)*width;
       int old_delta_y = (int)info->height - (int)*height;
 
       int dist        = delta_x * delta_x + delta_y * delta_y;
       int old_dist    = old_delta_x * old_delta_x + old_delta_y * old_delta_y;
 
-      if (dist < old_dist)
+      if (dist < old_dist && delta_rate < 1000)
       {
          *width       = visible_width;
          *height      = visible_height;
