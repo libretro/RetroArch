@@ -203,14 +203,12 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
    data->func               = thread_func;
    data->userdata           = userdata;
 
-#ifdef USE_WIN32_THREADS
    thread->id               = 0;
+#ifdef USE_WIN32_THREADS
    thread->thread           = CreateThread(NULL, 0, thread_wrap,
          data, 0, &thread->id);
    thread_created           = !!thread->thread;
 #else
-   thread->id               = 0;
-
 #ifdef HAVE_THREAD_ATTR
    pthread_attr_init(&thread_attr);
 
