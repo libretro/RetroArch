@@ -4422,39 +4422,6 @@ void menu_driver_destroy(
    menu_st->input_driver_flushing_input = 0;
 }
 
-bool menu_driver_list_get_entry(menu_ctx_list_t *list)
-{
-   struct menu_state       *menu_st  = &menu_driver_state;
-   if (  !menu_st->driver_ctx ||
-         !menu_st->driver_ctx->list_get_entry)
-   {
-      list->entry = NULL;
-      return false;
-   }
-   list->entry = menu_st->driver_ctx->list_get_entry(
-         menu_st->userdata,
-         list->type, (unsigned int)list->idx);
-   return true;
-}
-
-size_t menu_driver_list_get_selection(void)
-{
-   struct menu_state *menu_st  = &menu_driver_state;
-   if (  !menu_st->driver_ctx ||
-         !menu_st->driver_ctx->list_get_selection)
-      return 0;
-   return menu_st->driver_ctx->list_get_selection(menu_st->userdata);
-}
-
-size_t menu_driver_list_get_size(enum menu_list_type type)
-{
-   struct menu_state *menu_st  = &menu_driver_state;
-   if (     !menu_st->driver_ctx
-         || !menu_st->driver_ctx->list_get_size)
-      return 0;
-   return menu_st->driver_ctx->list_get_size(menu_st->userdata, type);
-}
-
 void menu_input_get_pointer_state(menu_input_pointer_t *copy_target)
 {
    struct menu_state    *menu_st  = &menu_driver_state;

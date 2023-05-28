@@ -619,12 +619,6 @@ int menu_driver_deferred_push_content_list(file_list_t *list);
 
 bool menu_driver_init(bool video_is_threaded);
 
-size_t menu_driver_list_get_selection(void);
-
-size_t menu_driver_list_get_size(enum menu_list_type type);
-
-bool menu_driver_list_get_entry(menu_ctx_list_t *list);
-
 retro_time_t menu_driver_get_current_time(void);
 
 void menu_display_timedate(gfx_display_ctx_datetime_t *datetime);

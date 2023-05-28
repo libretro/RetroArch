@@ -295,11 +295,10 @@ static int action_right_goto_tab(void)
 static int action_right_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
-   settings_t            *settings = config_get_ptr();
-   bool menu_nav_wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
-   const char *menu_ident          = menu_driver_ident();
-   size_t selection                = menu_driver_list_get_selection();
-   size_t size                     = menu_driver_list_get_size(MENU_LIST_PLAIN);
+   struct menu_state    *menu_st       = menu_state_get_ptr();
+   const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
+   const char *menu_ident              = (driver_ctx && driver_ctx->ident) ? driver_ctx->ident : NULL;
+   size_t size                         = (driver_ctx && driver_ctx->list_get_size) ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN) : 0;
 
 #ifdef HAVE_XMB
    /* Tab switching functionality only applies
@@ -307,8 +306,18 @@ static int action_right_mainmenu(unsigned type, const char *label,
    if (  (size == 1)
        && string_is_equal(menu_ident, "xmb"))
    {
-      size_t horiz_size         = menu_driver_list_get_size(MENU_LIST_HORIZONTAL);
-      size_t tabs_size          = menu_driver_list_get_size(MENU_LIST_TABS);
+      size_t horiz_size = 0, tabs_size = 0, selection = 0;
+      settings_t            *settings  = config_get_ptr();
+      bool menu_nav_wraparound_enable  = settings->bools.menu_navigation_wraparound_enable;
+      if (driver_ctx)
+      {
+         selection          = (driver_ctx->list_get_selection) ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
+         if (driver_ctx->list_get_size)
+         {
+            horiz_size      = driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_HORIZONTAL);
+            tabs_size       = driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS);
+         }
+      }
 
       if ( (selection != (horiz_size + tabs_size))
          || menu_nav_wraparound_enable)

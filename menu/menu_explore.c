@@ -993,16 +993,19 @@ static const char* explore_get_view_path(struct menu_state *menu_st, menu_list_t
    /* check if we are opening a saved view from the horizontal/tabs menu */
    if (cur->type == MENU_SETTING_HORIZONTAL_MENU)
    {
-      size_t selection = menu_driver_list_get_selection();
-      size_t size      = menu_driver_list_get_size(MENU_LIST_TABS);
-      if (selection > 0 && size > 0)
+      const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
+      if (driver_ctx->list_get_entry)
       {
-         menu_ctx_list_t horizontal;
-         horizontal.type = MENU_LIST_HORIZONTAL;
-         horizontal.idx  = selection - (size + 1);
-         /* Label contains the path and path contains the label */
-         if (menu_driver_list_get_entry(&horizontal))
-            return ((struct item_file*)horizontal.entry)->label;
+         size_t selection                 = driver_ctx->list_get_selection ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
+         size_t size                      = driver_ctx->list_get_size      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS) : 0;
+         if (selection > 0 && size > 0)
+         {
+            struct item_file *item        = NULL;
+            /* Label contains the path and path contains the label */
+            if ((item = (struct item_file*)driver_ctx->list_get_entry(menu_st->userdata, MENU_LIST_HORIZONTAL,
+                        (unsigned)(selection - (size +1)))))
+               return item->label;
+         }
       }
    }
 

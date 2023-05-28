@@ -3330,20 +3330,20 @@ static void menu_displaylist_set_new_playlist(
 }
 
 static int menu_displaylist_parse_horizontal_list(
-      menu_handle_t *menu, settings_t *settings,
+      menu_handle_t *menu, struct menu_state *menu_st,
+      settings_t *settings,
       menu_displaylist_info_t *info)
 {
-   menu_ctx_list_t list_horiz_info;
-   struct item_file *item  = NULL;
-   size_t selection        = menu_driver_list_get_selection();
-   size_t size             = menu_driver_list_get_size(MENU_LIST_TABS);
+   struct item_file *item              = NULL;
+   const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
+   size_t selection                    = driver_ctx->list_get_selection ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
+   size_t size                         = driver_ctx->list_get_size      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS) : 0;
 
-   list_horiz_info.type    = MENU_LIST_HORIZONTAL;
-   list_horiz_info.idx     = selection - (size +1);
+   if (!driver_ctx->list_get_entry)
+      return -1;
 
-   menu_driver_list_get_entry(&list_horiz_info);
-
-   if (!(item = (struct item_file*)list_horiz_info.entry))
+   if (!(item = (struct item_file*)driver_ctx->list_get_entry(menu_st->userdata, MENU_LIST_HORIZONTAL,
+               (unsigned)(selection - (size +1)))))
       return -1;
 
    /* When opening a saved view the explore menu will handle the list */
@@ -5617,7 +5617,7 @@ static int menu_displaylist_parse_playlist_generic(
       bool sort_enabled,
       int *ret)
 {
-	unsigned count       = 0;
+   unsigned count       = 0;
    playlist_t *playlist = NULL;
 
    menu_displaylist_set_new_playlist(menu, settings,
@@ -13608,7 +13608,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             break;
          case DISPLAYLIST_HORIZONTAL:
             menu_entries_clear(info->list);
-            ret = menu_displaylist_parse_horizontal_list(menu, settings, info);
+            ret = menu_displaylist_parse_horizontal_list(menu, menu_st, settings, info);
 
             /* Playlists themselves are sorted
              * > Display lists generated from playlists
