@@ -13741,6 +13741,10 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Synchronizace s přesnou snímkovou frekvencí obsahu zakázána."
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Obnovovací frekvence videa změněna na %s Hz."
+   )
 
 /* Lakka */
 
@@ -13814,6 +13818,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DESC,
    "Resetování do: %dx%d - %s"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Výběr režimu zobrazení (nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,

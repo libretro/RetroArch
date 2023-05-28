@@ -231,7 +231,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Пампавальнік ядзер"
+   "Пампавальнік ядраў"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
@@ -432,7 +432,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Ядзер ЦП"
+   "Ядраў ЦП"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
@@ -1988,7 +1988,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Рассартоўваць захоўванні станаў па тэчкам назваў ядзер"
+   "Рассартоўваць захоўванні станаў па тэчкам назваў ядраў"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
@@ -2335,7 +2335,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   "Паказваць 'пампавальнік ядзер'"
+   "Паказваць 'пампавальнік ядраў'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
@@ -4250,6 +4250,46 @@ MSG_HASH(
    "ГГ:ХХ"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS_AMPM,
+   "ГГГГ-ММ-ДД ГГ:ХХ:СС (AM/PM)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM_AMPM,
+   "ГГГГ-ММ-ДД ГГ:ХХ (AM/PM)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS_AMPM,
+   "ММ-ДД-ГГГГ ГГ:ХХ:СС (AM/PM)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
+   "ММ-ДД-ГГГГ ГГ:ХХ (AM/PM)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
+   "ММ-ДД ГГ:ХХ (AM/PM)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS_AMPM,
+   "ДД-ММ-ГГГГ ГГ:ХХ:СС (AM/PM)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM_AMPM,
+   "ДД-ММ-ГГГГ ГГ:ХХ (AM/PM)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM_AMPM,
+   "ДД-ММ ГГ:ХХ (AM/PM)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS_AMPM,
+   "ГГ:ХХ:СС (AM/PM)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_HM_AMPM,
+   "ГГ:ХХ (AM/PM)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
    "Таму"
    )
@@ -5163,6 +5203,30 @@ MSG_HASH(
 /* Unused (Needs Confirmation) */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
+   "База даных - фільтр: рэйтынг BBFC"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
+   "База даных - фільтр: максімум карыстальнікаў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
+   "База даных - фільтр: па месяцу выхаду"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
+   "База даных - фільтр: па году выхаду"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
+   "База даных - фільтр: нумар часопіса Edge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
+   "База даных - фільтр: рэйтынг часопіса Edge"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
    "Звесткі з базы даных"
    )
@@ -5177,6 +5241,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
    "Змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
+   "Запытваць"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
@@ -5202,6 +5270,14 @@ MSG_HASH(
 /* Discord Status */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
+   "У меню"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
+   "У гульні"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    "Прыпынена"
    )
@@ -5217,8 +5293,24 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Няўдалае ўсталяванне ядра"
    )
 MSG_HASH(
+   MSG_FAILED_TO_SAVE_DEBUG_INFO,
+   "Не атрымалася захаваць адладачныя звесткі."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_DEBUG_INFO,
+   "Не атрымалася адаслаць адладачныя звесткі на сервер."
+   )
+MSG_HASH(
+   MSG_SENDING_DEBUG_INFO,
+   "Адпраўка адладачных звестак..."
+   )
+MSG_HASH(
    MSG_NATIVE,
    "Родная"
+   )
+MSG_HASH(
+   MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
+   "Файл ужо існуе. Захаванне ў рэзервовы буфер"
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM,
@@ -5229,10 +5321,74 @@ MSG_HASH(
    "Атрымана злучэнне з: \"%s (%s)\""
    )
 MSG_HASH(
+   MSG_WAITING_FOR_CLIENT,
+   "Чаканне кліента..."
+   )
+MSG_HASH(
+   MSG_NETPLAY_INCORRECT_PASSWORD,
+   "Няправільны пароль"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SERVER_NAMED_HANGUP,
+   "\"%s\" адлучыўся"
+   )
+MSG_HASH(
    MSG_NETPLAY_CLIENT_DEVICES,
    "Прылады"
    )
 
+MSG_HASH(
+   MSG_AUTODETECT,
+   "Аўтавызначэнне"
+   )
+MSG_HASH(
+   MSG_CAPABILITIES,
+   "Здольнасці"
+   )
+MSG_HASH(
+   MSG_FETCHING_CORE_LIST,
+   "Набыванне спіса ядраў..."
+   )
+MSG_HASH(
+   MSG_CORE_LIST_FAILED,
+   "Не атрымалася набыць спіс ядраў!"
+   )
+MSG_HASH(
+   MSG_LATEST_CORE_INSTALLED,
+   "Ужо ўсталявана апошняя версія: "
+   )
+MSG_HASH(
+   MSG_UPDATING_CORE,
+   "Абнаўленне ядра: "
+   )
+MSG_HASH(
+   MSG_DOWNLOADING_CORE,
+   "Сцягванне ядра: "
+   )
+MSG_HASH(
+   MSG_EXTRACTING_CORE,
+   "Выманне ядра: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLED,
+   "Усталявана ядро: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "Не атрымалася ўсталяваць ядро: "
+   )
+MSG_HASH(
+   MSG_SCANNING_CORES,
+   "Сканаванне ядраў..."
+   )
+MSG_HASH(
+   MSG_CHECKING_CORE,
+   "Праверка ядра: "
+   )
+MSG_HASH(
+   MSG_ALL_CORES_UPDATED,
+   "Усе ўсталяваныя ядры апошніх версій"
+   )
 MSG_HASH(
    MSG_ERROR,
    "Памылка"
