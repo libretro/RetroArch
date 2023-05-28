@@ -513,6 +513,13 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_sync,                    MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_mouse_scale,             MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_scale,             MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE)
+#ifdef UDEV_TOUCH_SUPPORT
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_vmouse_pointer,    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_vmouse_mouse,      MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_vmouse_touchpad,   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_vmouse_trackball,  MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_vmouse_gesture,    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_button_axis_threshold,         MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_analog_deadzone,               MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_analog_sensitivity,            MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY)
@@ -4274,6 +4281,23 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_TOUCH_SCALE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_touch_scale);
             break;
+#ifdef UDEV_TOUCH_SUPPORT
+         case MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_POINTER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_touch_vmouse_pointer);
+            break;
+         case MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_MOUSE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_touch_vmouse_mouse);
+            break;
+         case MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_touch_vmouse_touchpad);
+            break;
+         case MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TRACKBALL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_touch_vmouse_trackball);
+            break;
+         case MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_GESTURE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_touch_vmouse_gesture);
+            break;
+#endif
          case MENU_ENUM_LABEL_AUDIO_SYNC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_sync);
             break;

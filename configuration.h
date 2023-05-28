@@ -625,6 +625,13 @@ typedef struct settings
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
       bool input_nowinkey_enable;
 #endif
+#ifdef UDEV_TOUCH_SUPPORT
+      bool input_touch_vmouse_pointer;
+      bool input_touch_vmouse_mouse;
+      bool input_touch_vmouse_touchpad;
+      bool input_touch_vmouse_trackball;
+      bool input_touch_vmouse_gesture;
+#endif
 
       /* Frame time counter */
       bool frame_time_counter_reset_after_fastforwarding;

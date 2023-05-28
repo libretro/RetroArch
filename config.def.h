@@ -578,6 +578,14 @@
 #define DEFAULT_INPUT_OVERLAY_AUTO_SCALE false
 #endif
 
+#ifdef UDEV_TOUCH_SUPPORT
+#define DEFAULT_INPUT_TOUCH_VMOUSE_POINTER true
+#define DEFAULT_INPUT_TOUCH_VMOUSE_MOUSE true
+#define DEFAULT_INPUT_TOUCH_VMOUSE_TOUCHPAD true
+#define DEFAULT_INPUT_TOUCH_VMOUSE_TRACKBALL false
+#define DEFAULT_INPUT_TOUCH_VMOUSE_GESTURE true
+#endif
+
 #include "runtime_file_defines.h"
 #ifdef HAVE_MENU
 #include "menu/menu_defines.h"

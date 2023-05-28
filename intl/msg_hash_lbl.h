@@ -1793,6 +1793,28 @@ MSG_HASH(
    MENU_ENUM_LABEL_INPUT_TOUCH_SCALE,
    "input_touch_scale"
    )
+#ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "input_touch_vmouse_pointer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "input_touch_vmouse_mouse"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "input_touch_vmouse_touchpad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "input_touch_vmouse_trackball"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "input_touch_vmouse_gesture"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_BIND_MODE,
    "input_bind_mode"

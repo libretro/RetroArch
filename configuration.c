@@ -1975,6 +1975,13 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_overlay_auto_rotate",    &settings->bools.input_overlay_auto_rotate, true, DEFAULT_OVERLAY_AUTO_ROTATE, false);
    SETTING_BOOL("input_overlay_auto_scale",     &settings->bools.input_overlay_auto_scale, true, DEFAULT_INPUT_OVERLAY_AUTO_SCALE, false);
 #endif
+#ifdef UDEV_TOUCH_SUPPORT
+   SETTING_BOOL("input_touch_vmouse_pointer",   &settings->bools.input_touch_vmouse_pointer, true, DEFAULT_INPUT_TOUCH_VMOUSE_POINTER, false);
+   SETTING_BOOL("input_touch_vmouse_mouse",     &settings->bools.input_touch_vmouse_mouse, true, DEFAULT_INPUT_TOUCH_VMOUSE_MOUSE, false);
+   SETTING_BOOL("input_touch_vmouse_touchpad",  &settings->bools.input_touch_vmouse_touchpad, true, DEFAULT_INPUT_TOUCH_VMOUSE_TOUCHPAD, false);
+   SETTING_BOOL("input_touch_vmouse_trackball", &settings->bools.input_touch_vmouse_trackball, true, DEFAULT_INPUT_TOUCH_VMOUSE_TRACKBALL, false);
+   SETTING_BOOL("input_touch_vmouse_gesture",   &settings->bools.input_touch_vmouse_gesture, true, DEFAULT_INPUT_TOUCH_VMOUSE_GESTURE, false);
+#endif
 #ifdef HAVE_COMMAND
    SETTING_BOOL("network_cmd_enable",           &settings->bools.network_cmd_enable, true, DEFAULT_NETWORK_CMD_ENABLE, false);
    SETTING_BOOL("stdin_cmd_enable",             &settings->bools.stdin_cmd_enable, true, DEFAULT_STDIN_CMD_ENABLE, false);

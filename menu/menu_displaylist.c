@@ -7387,6 +7387,13 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_MOUSE_SCALE,                                                 PARSE_ONLY_UINT,  true  },
 #endif
                {MENU_ENUM_LABEL_INPUT_TOUCH_SCALE,                                                 PARSE_ONLY_UINT,  true  },
+#ifdef UDEV_TOUCH_SUPPORT
+               {MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_POINTER,                                        PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_MOUSE,                                          PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,                                       PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,                                      PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_GESTURE,                                        PARSE_ONLY_BOOL,  true  },
+#endif
                {MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,                                                PARSE_ONLY_UINT,  true  },
                {MENU_ENUM_LABEL_INPUT_BIND_HOLD,                                                   PARSE_ONLY_UINT,  true  },
                {MENU_ENUM_LABEL_INPUT_BIND_MODE,                                                   PARSE_ONLY_UINT,  true  },

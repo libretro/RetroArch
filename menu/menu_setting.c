@@ -13821,6 +13821,84 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].offset_by = 1;
             menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
 
+#ifdef UDEV_TOUCH_SUPPORT
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_touch_vmouse_pointer,
+                  MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_POINTER,
+                  MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+                  DEFAULT_INPUT_TOUCH_VMOUSE_POINTER,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler, 
+                  SD_FLAG_NONE
+                  );
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_touch_vmouse_mouse,
+                  MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+                  DEFAULT_INPUT_TOUCH_VMOUSE_MOUSE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler, 
+                  SD_FLAG_NONE
+                  );
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_touch_vmouse_touchpad,
+                  MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+                  MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+                  DEFAULT_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler, 
+                  SD_FLAG_NONE
+                  );
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_touch_vmouse_trackball,
+                  MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+                  MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+                  DEFAULT_INPUT_TOUCH_VMOUSE_TRACKBALL,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler, 
+                  SD_FLAG_NONE
+                  );
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_touch_vmouse_gesture,
+                  MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+                  DEFAULT_INPUT_TOUCH_VMOUSE_GESTURE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler, 
+                  SD_FLAG_NONE
+                  );
+#endif
+
 #ifdef VITA
             CONFIG_BOOL(
                   list, list_info,
