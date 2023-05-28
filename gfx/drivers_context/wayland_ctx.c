@@ -43,6 +43,7 @@
 
 #ifdef HAVE_EGL
 #include <wayland-egl.h>
+#include <poll.h>
 #include "../common/egl_common.h"
 #endif
 
@@ -506,11 +507,68 @@ static bool gfx_ctx_wl_bind_api(void *data,
    return false;
 }
 
+static void wl_surface_frame_done(void *data, struct wl_callback *cb, uint32_t time)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   wl->swap_complete = true;
+
+   /* Destroy this callback */
+   wl_callback_destroy(cb);
+}
+
+static const struct wl_callback_listener wl_surface_frame_listener = { 
+   .done = wl_surface_frame_done,
+};
+
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   settings_t *settings           = config_get_ptr();
+   unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
+
+   struct wl_callback *cb = wl_surface_frame(wl->surface);
+
+   if (max_swapchain_images <= 2) {
+      /* Set Wayland frame callback. */
+      wl_callback_add_listener(cb, &wl_surface_frame_listener, wl);
+   }
+
    egl_swap_buffers(&wl->egl);
+
+   if (max_swapchain_images <= 2) {
+      /* Wait for the frame callback we set earlier. */
+      struct pollfd pollfd = {.fd = wl->input.fd, .events = POLLIN};
+      uint64_t deadline = cpu_features_get_time_usec() + 50000;
+      wl->swap_complete = false;
+
+      while (!wl->swap_complete) {
+         uint64_t current_time = cpu_features_get_time_usec();
+         if (current_time >= deadline) {
+            /* Deadline met. */
+            wl_callback_destroy(cb);
+            return;
+         }
+         uint64_t remaining_time = deadline - current_time;
+         int ret = (wl_display_dispatch_pending(wl->input.dpy));
+         if (ret == 0) {
+            ret = wl_display_prepare_read(wl->input.dpy);
+            if (ret == -1)
+               continue; /* Retry dispatch_pending. */
+
+            ret = poll(&pollfd, 1, remaining_time / 1000);
+            if (ret <= 0) {
+               /* Timeout met, or polling error. */
+               wl_display_cancel_read(wl->input.dpy);
+               wl_callback_destroy(cb);
+               return;
+            }
+            wl_display_read_events(wl->input.dpy);
+         }
+      }
+   }
 #endif
 }
 

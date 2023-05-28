@@ -211,6 +211,7 @@ typedef struct gfx_ctx_wayland_data
    bool configured;
    bool activated;
    bool reported_display_size;
+   bool swap_complete;
 } gfx_ctx_wayland_data_t;
 
 #ifdef HAVE_XKBCOMMON
