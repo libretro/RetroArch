@@ -123,28 +123,6 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    NULL,
 };
 
-static float gfx_display_get_adjusted_scale(
-      gfx_display_t *p_disp,
-      float base_scale, float scale_factor, unsigned width)
-{
-   /* Apply user-set scaling factor */
-   float adjusted_scale   = base_scale * scale_factor;
-#ifdef HAVE_OZONE
-   /* Ozone has a capped scale factor */
-   if (p_disp->menu_driver_id == MENU_DRIVER_ID_OZONE)
-   {
-      float new_width    = (float)width * 0.3333333f;
-      if (((float)OZONE_SIDEBAR_WIDTH * adjusted_scale)
-            > new_width)
-         adjusted_scale  = (new_width / (float)OZONE_SIDEBAR_WIDTH);
-   }
-#endif
-   /* Ensure final scale is 'sane' */
-   if (adjusted_scale > 0.0001f)
-      return adjusted_scale;
-   return 1.0f;
-}
-
 /* Check if the current menu driver is compatible
  * with your video driver. */
 static bool gfx_display_check_compatibility(
@@ -370,10 +348,7 @@ float gfx_display_get_dpi_scale(
             menu_scale_factor        = 1.0f;
          else
 #endif
-         {
-            float _menu_scale_factor = settings->floats.menu_scale_factor;
-            menu_scale_factor        = _menu_scale_factor;
-         }
+            menu_scale_factor        = settings->floats.menu_scale_factor;
       }
    }
 #endif
@@ -396,14 +371,23 @@ float gfx_display_get_dpi_scale(
    /* Adjusted scale calculation may also be slow, so
     * only update if something changes */
    if (    scale_updated
-       || (menu_scale_factor != last_menu_scale_factor)
+       || (menu_scale_factor      != last_menu_scale_factor)
        || (p_disp->menu_driver_id != last_menu_driver_id))
    {
-      adjusted_scale         = gfx_display_get_adjusted_scale(
-            p_disp,
-            scale, menu_scale_factor, width);
-      last_menu_scale_factor = menu_scale_factor;
-      last_menu_driver_id    = p_disp->menu_driver_id;
+      adjusted_scale            = scale * menu_scale_factor;
+#ifdef HAVE_OZONE
+      if (p_disp->menu_driver_id == MENU_DRIVER_ID_OZONE)
+      {
+         /* Ozone has a capped scale factor */
+         float new_width        = (float)width * 0.3333333f;
+         if (((float)OZONE_SIDEBAR_WIDTH * adjusted_scale)
+               > new_width)
+            adjusted_scale      = (new_width / (float)OZONE_SIDEBAR_WIDTH);
+      }
+#endif
+      adjusted_scale            = (adjusted_scale > 0.0001f) ? adjusted_scale : 1.0f;
+      last_menu_scale_factor    = menu_scale_factor;
+      last_menu_driver_id       = p_disp->menu_driver_id;
    }
 
    return adjusted_scale;
@@ -1143,25 +1127,27 @@ bool gfx_display_reset_textures_list_buffer(
 {
    struct texture_image ti;
 
-   ti.width                      = 0;
-   ti.height                     = 0;
-   ti.pixels                     = NULL;
-   ti.supports_rgba              = video_driver_supports_rgba();
+   ti.width         = 0;
+   ti.height        = 0;
+   ti.pixels        = NULL;
+   ti.supports_rgba = video_driver_supports_rgba();
 
-   if (!image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
-      return false;
+   if (image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
+   {
+      if (width)
+         *width     = ti.width;
 
-   if (width)
-      *width = ti.width;
+      if (height)
+         *height    = ti.height;
 
-   if (height)
-      *height = ti.height;
-
-   /* if the poke interface doesn't support texture load then return false */  
-   if (!video_driver_texture_load(&ti, filter_type, item))
-       return false;
-   image_texture_free(&ti);
-   return true;
+      /* if the poke interface doesn't support texture load then return false */  
+      if (video_driver_texture_load(&ti, filter_type, item))
+      {
+         image_texture_free(&ti);
+         return true;
+      }
+   }
+   return false;
 }
 
 /* NOTE: Reads image from file */
