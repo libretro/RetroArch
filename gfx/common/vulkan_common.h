@@ -216,6 +216,7 @@ struct vulkan_display_surface_info
    unsigned width;
    unsigned height;
    unsigned monitor_index;
+   unsigned refresh_rate_x1000;
 };
 
 struct vk_color
