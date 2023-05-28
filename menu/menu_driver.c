@@ -1042,7 +1042,7 @@ int menu_entries_get_title(char *s, size_t len)
    if (!cbs)
       return -1;
 
-   if (cbs && cbs->action_get_title)
+   if (cbs->action_get_title)
    {
       int ret = 0;
       if (!string_is_empty(cbs->action_title_cache))
@@ -1051,7 +1051,7 @@ int menu_entries_get_title(char *s, size_t len)
          return 0;
       }
   
-      if (list && list->size)
+      if (list->size)
       {
          path      = list->list[list->size - 1].path;
          label     = list->list[list->size - 1].label;
@@ -1424,60 +1424,70 @@ static int menu_input_key_bind_set_mode_common(
       rarch_setting_t  *setting,
       settings_t *settings)
 {
-   menu_displaylist_info_t info;
-   unsigned bind_type             = 0;
-   struct retro_keybind *keybind  = NULL;
-   unsigned         index_offset  = setting->index_offset;
-   menu_list_t *menu_list         = menu_st->entries.list;
-   file_list_t *menu_stack        = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
-   size_t selection               = menu_st->selection_ptr;
-
-   menu_displaylist_info_init(&info);
-
    switch (state)
    {
       case MENU_INPUT_BINDS_CTL_BIND_SINGLE:
-         keybind                  = (struct retro_keybind*)setting->value.target.keybind;
+         {
+            unsigned bind_type;
+            menu_displaylist_info_t info;
+            struct retro_keybind *keybind = (struct retro_keybind*)setting->value.target.keybind;
+            menu_list_t *menu_list   = menu_st->entries.list;
+            file_list_t *menu_stack  = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
+            size_t selection         = menu_st->selection_ptr;
 
-         if (!keybind)
-            return -1;
+            if (!keybind)
+               return -1;
 
-         bind_type                = setting_get_bind_type(setting);
+            menu_displaylist_info_init(&info);
 
-         binds->begin             = bind_type;
-         binds->last              = bind_type;
-         binds->output            = keybind;
-         binds->buffer            = *(binds->output);
-         binds->user              = index_offset;
+            bind_type                = setting_get_bind_type(setting);
 
-         info.list                = menu_stack;
-         info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
-         info.directory_ptr       = selection;
-         info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND;
-         info.label               = strdup(
-               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND));
+            binds->begin             = bind_type;
+            binds->last              = bind_type;
+            binds->output            = keybind;
+            binds->buffer            = *(binds->output);
+            binds->user              = setting->index_offset;
+
+            info.list                = menu_stack;
+            info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
+            info.directory_ptr       = selection;
+            info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND;
+            info.label               = strdup(
+                  msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND));
+            if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info, settings))
+               menu_displaylist_process(&info);
+            menu_displaylist_info_free(&info);
+         }
          break;
       case MENU_INPUT_BINDS_CTL_BIND_ALL:
-         binds->output            = &input_config_binds[index_offset][0];
-         binds->buffer            = *(binds->output);
-         binds->begin             = MENU_SETTINGS_BIND_BEGIN;
-         binds->last              = MENU_SETTINGS_BIND_LAST;
+         {
+            menu_displaylist_info_t info;
+            menu_list_t *menu_list   = menu_st->entries.list;
+            file_list_t *menu_stack  = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
+            size_t selection         = menu_st->selection_ptr;
 
-         info.list                = menu_stack;
-         info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
-         info.directory_ptr       = selection;
-         info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND_ALL;
-         info.label               = strdup(
-               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND_ALL));
+            menu_displaylist_info_init(&info);
+
+            binds->begin             = MENU_SETTINGS_BIND_BEGIN;
+            binds->last              = MENU_SETTINGS_BIND_LAST;
+            binds->output            = &input_config_binds[setting->index_offset][0];
+            binds->buffer            = *(binds->output);
+
+            info.list                = menu_stack;
+            info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
+            info.directory_ptr       = selection;
+            info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND_ALL;
+            info.label               = strdup(
+                  msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND_ALL));
+            if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info, settings))
+               menu_displaylist_process(&info);
+            menu_displaylist_info_free(&info);
+         }
          break;
       default:
       case MENU_INPUT_BINDS_CTL_BIND_NONE:
-         return 0;
+         break;
    }
-
-   if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info, settings))
-      menu_displaylist_process(&info);
-   menu_displaylist_info_free(&info);
 
    return 0;
 }
