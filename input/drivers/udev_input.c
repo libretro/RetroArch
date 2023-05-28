@@ -29,9 +29,6 @@
 #endif
 
 
-#define UDEV_TOUCH_SUPPORT
-
-
 #include <stdint.h>
 #include <string.h>
 
@@ -146,13 +143,15 @@ void RARCH_DDBG(const char *fmt, ...) { }
 /* Conversion factor from microseconds to nanoseconds */
 #define UDEV_INPUT_TOUCH_US_TO_NS 1000
 /* Default state of pointer simulation. */
-#define UDEV_INPUT_TOUCH_POINTER_EN true
+#define UDEV_INPUT_TOUCH_POINTER_EN settings->bools.input_touch_vmouse_pointer
 /* Default state of mouse simulation. */
-#define UDEV_INPUT_TOUCH_MOUSE_EN true
+#define UDEV_INPUT_TOUCH_MOUSE_EN settings->bools.input_touch_vmouse_mouse
 /* Default state of touchpad simulation. */
-#define UDEV_INPUT_TOUCH_TOUCHPAD_EN true
+#define UDEV_INPUT_TOUCH_TOUCHPAD_EN settings->bools.input_touch_vmouse_touchpad
+/* Default state of trackball simulation. */
+#define UDEV_INPUT_TOUCH_TRACKBALL_EN settings->bools.input_touch_vmouse_trackball
 /* Default state of gesture simulation. */
-#define UDEV_INPUT_TOUCH_GEST_EN true
+#define UDEV_INPUT_TOUCH_GEST_EN settings->bools.input_touch_vmouse_gesture
 /* Default value of tap time in us. */
 #define UDEV_INPUT_TOUCH_MAX_TAP_TIME 250000
 /* Default value of tap distance - squared distance in 0x7fff space. */
@@ -169,6 +168,16 @@ void RARCH_DDBG(const char *fmt, ...) { }
 #define UDEV_INPUT_TOUCH_GEST_SCROLL_STEP 0x10
 /* Default value of panel percentage considered corner */
 #define UDEV_INPUT_TOUCH_GEST_CORNER 5
+/* Default friction of the trackball x-axis rotation, used as a multiplier */
+#define UDEV_INPUT_TOUCH_TRACKBALL_FRICT_X 0.9
+/* Default friction of the trackball y-axis rotation, used as a multiplier */
+#define UDEV_INPUT_TOUCH_TRACKBALL_FRICT_Y 0.9
+/* Default sensitivity of the trackball to original movement */
+#define UDEV_INPUT_TOUCH_TRACKBALL_SENSITIVITY_X 10
+/* Default sensitivity of the trackball to original movement */
+#define UDEV_INPUT_TOUCH_TRACKBALL_SENSITIVITY_Y 10
+/* Default squared cutoff velocity when trackball ceases all movement */
+#define UDEV_INPUT_TOUCH_TRACKBALL_SQ_VEL_CUTOFF 10
 
 typedef enum udev_dragging_type
 {
@@ -396,8 +405,10 @@ typedef struct
    udev_slot_state_t *current;
    uint16_t current_active;
 
-   /* Flag used to run the state gesture update. */
-   bool run_gesture_state;
+   /* Flag used to run the state update. */
+   bool run_state_update;
+   /* Timestamp of when the last touch state update ocurred */
+   udev_touch_ts_t last_state_update;
 
    /* Simulated pointer / touchscreen */
    /* Enable pointer simulation? */
@@ -457,6 +468,26 @@ typedef struct
    /* High resolution touchpad pointer position mapped onto the primary screen. */
    float touchpad_pos_x;
    float touchpad_pos_y;
+
+   /* Mouse trackball simulation */
+   /* Enable the trackball mode? Switches between immediate stop and trackball-style */
+   bool trackball_enabled;
+   /* Is the trackball free to rotate under its own inertia? */
+   bool trackball_inertial;
+   /* Current high resolution position of the trackball */
+   float trackball_pos_x;
+   float trackball_pos_y;
+   /* Sensitivity of the trackball to movement */
+   float trackball_sensitivity_x;
+   float trackball_sensitivity_y;
+   /* Current velocity of the trackball */
+   float trackball_vel_x;
+   float trackball_vel_y;
+   /* Friction of the trackball */
+   float trackball_frict_x;
+   float trackball_frict_y;
+   /* Squared cutoff velocity of when the trackball ceases all movement */
+   int16_t trackball_sq_vel_cutoff;
 
    /* Gestures and multi-touch tracking */
    /* Enable the gestures? */
@@ -935,7 +966,7 @@ static void udev_touch_event_ts_copy(const struct input_event *event, udev_touch
  * @param first The source timestamp.
  * @param second Destination timestamp.
  */
-static void udev_touch_ts_copy(udev_touch_ts_t *first, udev_touch_ts_t *second)
+static void udev_touch_ts_copy(const udev_touch_ts_t *first, udev_touch_ts_t *second)
 {
    second->s = first->s;
    second->us = first->us;
@@ -1401,8 +1432,10 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    struct input_absinfo abs_info;
    int iii, ret;
    unsigned long xreq, yreq;
+   settings_t *settings;
 
    touch = &dev->touch;
+   settings = config_get_ptr();
 
    RARCH_DBG("[udev] Initializing touch device \"%s\"\n", dev->ident);
 
@@ -1541,7 +1574,8 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    /* Initialize touch device */
    touch->current_slot = UDEV_INPUT_TOUCH_SLOT_ID_NONE;
    touch->is_touch_device = true;
-   touch->run_gesture_state = false;
+   touch->run_state_update = false;
+   udev_touch_ts_now(&touch->last_state_update);
 
    /* Initialize pointer simulation */
    touch->pointer_enabled = UDEV_INPUT_TOUCH_POINTER_EN;
@@ -1580,6 +1614,19 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    touch->touchpad_sensitivity = UDEV_INPUT_TOUCH_PAD_SENSITIVITY;
    touch->touchpad_pos_x = 0.0f;
    touch->touchpad_pos_y = 0.0f;
+
+   /* Initialize trackball simulation */
+   touch->trackball_enabled = UDEV_INPUT_TOUCH_TRACKBALL_EN;
+   touch->trackball_inertial = false;
+   touch->trackball_pos_x = 0.0f;
+   touch->trackball_pos_y = 0.0f;
+   touch->trackball_sensitivity_x = UDEV_INPUT_TOUCH_TRACKBALL_SENSITIVITY_X;
+   touch->trackball_sensitivity_y = UDEV_INPUT_TOUCH_TRACKBALL_SENSITIVITY_Y;
+   touch->trackball_vel_x = 0.0f;
+   touch->trackball_vel_y = 0.0f;
+   touch->trackball_frict_x = UDEV_INPUT_TOUCH_TRACKBALL_FRICT_X;
+   touch->trackball_frict_y = UDEV_INPUT_TOUCH_TRACKBALL_FRICT_Y;
+   touch->trackball_sq_vel_cutoff = UDEV_INPUT_TOUCH_TRACKBALL_SQ_VEL_CUTOFF;
 
    /* Initialize gestures */
    touch->gest_enabled = UDEV_INPUT_TOUCH_GEST_EN;
@@ -1881,7 +1928,7 @@ static void udev_input_touch_gest_reset_scroll(void *touch, void *none)
  * * Top Left corner -> Enable/Disable mouse.
  * * Top Right corner -> Enable/Disable touchpad.
  * * Bottom Left corner -> Enable/Disable pointer.
- * * Bottom Right corner -> Enable/Disable gestures.
+ * * Bottom Right corner -> Enable/Disable trackball.
  */
 static bool udev_input_touch_tgest_special(udev_input_touch_t *touch, 
         const udev_touch_ts_t *now, int32_t pos_x, int32_t pos_y)
@@ -1922,9 +1969,8 @@ static bool udev_input_touch_tgest_special(udev_input_touch_t *touch,
    }
    else if (ptg_y > ptg_corner_pos && ptg_x > ptg_corner_pos)
    { /* Bottom Right corner */
-      /* TODO - This is dangerous, since there is now way to re-enable it. */
-      /*touch->gest_enabled = !touch->gest_enabled; */
-      RARCH_DBG("[udev] TGesture: SF/TT -> Bottom Right: Gestures %s\n", 
+      touch->trackball_enabled = !touch->trackball_enabled;
+      RARCH_DBG("[udev] TGesture: SF/TT -> Bottom Right: Trackball %s\n", 
               touch->gest_enabled ? "enabled" : "disabled");
       serviced = true;
    }
@@ -2281,9 +2327,18 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
             { /* Simulated mouse */
                if (touch->touchpad_enabled)
                { /* Touchpad mode -> Touchpad virtual mouse. */
+                  /* Initialize touchpad position to the current mouse position */
+                  touch->touchpad_pos_x = (float) touch->mouse_pos_x;
+                  touch->touchpad_pos_y = (float) touch->mouse_pos_y;
                }
                else
                { /* Direct mode -> Direct virtual mouse. */
+               }
+
+               if (touch->trackball_enabled)
+               { /* Trackball mode */
+                  /* The trackball is anchored */
+                  touch->trackball_inertial = false;
                }
             }
 
@@ -2339,6 +2394,15 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                else
                { /* Direct mode -> Direct virtual mouse. */
                   /* Mouse buttons are governed by gestures. */
+               }
+
+               if (touch->trackball_enabled)
+               { /* Trackball mode */
+                  /* Update trackball position */
+                  touch->trackball_pos_x = (float) touch->mouse_pos_x;
+                  touch->trackball_pos_y = (float) touch->mouse_pos_y;
+                  /* The trackball is free to move */
+                  touch->trackball_inertial = true;
                }
             }
 
@@ -2452,6 +2516,8 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                else
                { /* Direct mode -> Direct virtual mouse. */
                   /* Set mouse cursor position directly from the pointer. */
+                  last_mouse_pos_x = touch->mouse_pos_x;
+                  last_mouse_pos_y = touch->mouse_pos_y;
                   touch->mouse_rel_x += touch->pointer_ma_pos_x - touch->mouse_pos_x;
                   touch->mouse_rel_y += touch->pointer_ma_pos_y - touch->mouse_pos_y;
                   touch->mouse_pos_x = touch->pointer_ma_pos_x;
@@ -2460,6 +2526,22 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   touch->mouse_scr_pos_y = touch->pointer_scr_pos_y;
                   touch->mouse_vp_pos_x = touch->pointer_vp_pos_x;
                   touch->mouse_vp_pos_y = touch->pointer_vp_pos_y;
+               }
+
+               if (touch->trackball_enabled)
+               { /* Trackball mode */
+                  /* Update trackball position */
+                  touch->trackball_pos_x = (float) touch->mouse_pos_x;
+                  touch->trackball_pos_y = (float) touch->mouse_pos_y;
+                  /* Accumulate trackball velocity */
+                  touch->trackball_vel_x = \
+                     touch->trackball_frict_x * touch->trackball_vel_x + \
+                     touch->trackball_sensitivity_x * \
+                     (touch->mouse_pos_x - last_mouse_pos_x);
+                  touch->trackball_vel_y = \
+                     touch->trackball_frict_y * touch->trackball_vel_y + \
+                     touch->trackball_sensitivity_y * \
+                     (touch->mouse_pos_y - last_mouse_pos_y);
                }
             }
 
@@ -2538,9 +2620,6 @@ static void udev_handle_touch(void *data,
    /* EV_KEY: BTN_TOUCH -> Signal for any touch - 1 down and 0 up */
    /* EV_ABS: ABS_X/Y -> Absolute position of the touch */
    /* SYN_REPORT -> End of packet */
-   
-   /* Schedule gesture state update. */
-   touch->run_gesture_state = true;
    
    switch (event->type)
    {
@@ -2693,6 +2772,72 @@ static void udev_handle_touch(void *data,
 }
 
 /**
+ * Periodic update of trackball state.
+ *
+ * @param touch Target touch state.
+ * @param now Current time.
+ */
+static void udev_input_touch_state_trackball(
+        udev_input_touch_t *touch, 
+        const udev_touch_ts_t *now)
+{
+   video_viewport_t vp;
+   float delta_x;
+   float delta_y;
+   float delta_t;
+
+   /* Let's perform these only once per state polling loop */
+   if (!touch->run_state_update)
+   { return; }
+
+   /* Update trackball mouse position */
+   if (touch->trackball_enabled)
+   { /* Trackball is moving */
+      if (touch->trackball_inertial)
+      {
+         /* Calculate time delta */
+         delta_t = (float) udev_touch_ts_diff(&touch->last_state_update, now) / \
+            UDEV_INPUT_TOUCH_S_TO_US;
+         /* Calculate position delta */
+         delta_x = touch->trackball_vel_x * delta_t;
+         delta_y = touch->trackball_vel_y * delta_t;
+         /* Update the high-resolution mouse position */
+         touch->trackball_pos_x += delta_x;
+         touch->trackball_pos_y += delta_y;
+         /* Update the real mouse position */
+         touch->mouse_pos_x = (int16_t) touch->trackball_pos_x;
+         touch->mouse_pos_y = (int16_t) touch->trackball_pos_y;
+
+         /* Get current viewport information */
+         video_driver_get_viewport_info(&vp);
+         /* Translate the raw coordinates into normalized coordinates. */
+         video_driver_translate_coord_viewport(
+            &vp, touch->mouse_pos_x, touch->mouse_pos_y, 
+            &touch->mouse_vp_pos_x, &touch->mouse_vp_pos_y, 
+            &touch->mouse_scr_pos_x, &touch->mouse_scr_pos_y
+         );
+
+         /* Add the movement to mouse delta */
+         touch->mouse_rel_x += delta_x;
+         touch->mouse_rel_y += delta_y;
+      }
+
+      /* Attenuate the velocity */
+      touch->trackball_vel_x *= touch->trackball_frict_x;
+      touch->trackball_vel_y *= touch->trackball_frict_y;
+      /* Automatically cut off the inertia when the velocity is low enough */
+      if ((touch->trackball_vel_x * touch->trackball_vel_x) + 
+          (touch->trackball_vel_y * touch->trackball_vel_y) <= 
+          touch->trackball_sq_vel_cutoff)
+      {
+          touch->trackball_vel_x = 0.0f;
+          touch->trackball_vel_y = 0.0f;
+          touch->trackball_inertial = false;
+      }
+   }
+}
+
+/**
  * Gesture time-dependant processing.
  * TODO - Current implementation may result in cancelling a button 
  * state before it gets reported at least once. However, this is 
@@ -2704,7 +2849,7 @@ static void udev_handle_touch(void *data,
  */
 static void udev_input_touch_state_gest(
         udev_input_touch_t *touch, 
-        udev_touch_ts_t *now)
+        const udev_touch_ts_t *now)
 {
    int iii;
 
@@ -2733,9 +2878,8 @@ static void udev_input_touch_state_gest(
    }
 
    /* Let's perform these only once per state polling loop */
-   if (!touch->run_gesture_state)
+   if (!touch->run_state_update)
    { return; }
-   touch->run_gesture_state = false;
 
    /* Tap-based gesture processing */
    /* TODO - Currently none */
@@ -2830,6 +2974,15 @@ static int16_t udev_input_touch_state(
    /* TODO - Process timed gestures before or after getting state? */
    /* Process timed gestures. */
    udev_input_touch_state_gest(touch, &now);
+   /* Process trackball. */
+   udev_input_touch_state_trackball(touch, &now);
+
+   if (touch->run_state_update)
+   { /* Perform state update only once */
+       touch->run_state_update = false;
+       /* Update last update timestamp */
+       udev_touch_ts_copy(&now, &touch->last_state_update);
+   }
 
    switch (device)
    {
@@ -3324,6 +3477,11 @@ static void udev_input_poll(void *data)
       mouse->wd    = false;
       mouse->whu   = false;
       mouse->whd   = false;
+   
+#ifdef UDEV_TOUCH_SUPPORT
+      /* Schedule touch state update. */
+      udev->devices[i]->touch.run_state_update = true;
+#endif
    }
 
    while (udev->monitor && udev_input_poll_hotplug_available(udev->monitor))
