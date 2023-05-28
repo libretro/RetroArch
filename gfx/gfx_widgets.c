@@ -110,28 +110,14 @@ static float gfx_display_get_widget_pixel_scale(
 #else
    float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
    float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
-   float menu_widget_scale_factor                      = fullscreen ?
-         menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
+   float menu_widget_scale_factor                      = fullscreen
+         ? menu_widget_scale_factor_fullscreen 
+         : menu_widget_scale_factor_windowed;
 #endif
    float menu_scale_factor                             = menu_widget_scale_factor;
 
    if (gfx_widget_scale_auto)
-   {
-#ifdef HAVE_RGUI
-      /* When using RGUI, _menu_scale_factor
-       * is ignored
-       * > If we are not using a widget scale factor override,
-       *   just set menu_scale_factor to 1.0 */
-      if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
-         menu_scale_factor                             = 1.0f;
-      else
-#endif
-      {
-         float _menu_scale_factor                      = 
-            settings->floats.menu_scale_factor;
-         menu_scale_factor                             = _menu_scale_factor;
-      }
-   }
+      menu_scale_factor                                = settings->floats.menu_scale_factor;
 
    /* We need to perform a square root here, which
     * can be slow on some platforms (not *slow*, but
@@ -157,7 +143,7 @@ static float gfx_display_get_widget_pixel_scale(
    /* Adjusted scale calculation may also be slow, so
     * only update if something changes */
    if (    scale_updated
-       || (menu_scale_factor != last_menu_scale_factor)
+       || (menu_scale_factor      != last_menu_scale_factor)
        || (p_disp->menu_driver_id != last_menu_driver_id))
    {
       adjusted_scale         = scale * menu_scale_factor;
