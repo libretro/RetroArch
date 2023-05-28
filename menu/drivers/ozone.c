@@ -5386,7 +5386,6 @@ static void ozone_compute_entries_position(
    if (ozone->show_thumbnail_bar)
       ozone_update_content_metadata(ozone);
 
-   i                             = menu_st->entries.begin;
    selection_buf                 = MENU_LIST_GET_SELECTION(menu_list, 0);
 
    video_driver_get_size(&video_info_width, &video_info_height);

@@ -57,9 +57,9 @@ static bool core_backup_get_backup_dir(
 
    /* Extract core file 'ID' (name without extension + suffix)
     * from core path */
-   if (string_is_empty(dir_libretro) ||
-       string_is_empty(core_filename) ||
-       (len < 1))
+   if (   string_is_empty(dir_libretro)
+       || string_is_empty(core_filename)
+       || (len < 1))
       return false;
 
    strlcpy(core_file_id, core_filename, sizeof(core_file_id));
@@ -424,10 +424,10 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
    unsigned long crc               = 0;
    unsigned backup_mode            = 0;
 
-   if (!backup_list ||
-       string_is_empty(core_filename) ||
-       string_is_empty(backup_path) ||
-       (backup_list->size >= backup_list->capacity))
+   if (  !backup_list
+       || string_is_empty(core_filename)
+       || string_is_empty(backup_path)
+       || (backup_list->size >= backup_list->capacity))
       goto error;
 
    backup_filename = strdup(path_basename(backup_path));
@@ -636,9 +636,8 @@ size_t core_backup_list_get_num_backups(
    for (i = 0; i < backup_list->size; i++)
    {
       core_backup_list_entry_t *current_entry = &backup_list->entries[i];
-
-      if (current_entry &&
-          (current_entry->backup_mode == backup_mode))
+      if (    current_entry
+          && (current_entry->backup_mode == backup_mode))
          num_backups++;
    }
 
@@ -687,9 +686,9 @@ bool core_backup_list_get_crc(
    {
       core_backup_list_entry_t *current_entry = &backup_list->entries[i];
 
-      if (current_entry &&
-          (current_entry->crc == crc) &&
-          (current_entry->backup_mode == backup_mode))
+      if (   (current_entry)
+          && (current_entry->crc == crc)
+          && (current_entry->backup_mode == backup_mode))
       {
          *entry = current_entry;
          return true;
@@ -707,24 +706,16 @@ bool core_backup_list_get_entry_timestamp_str(
       enum core_backup_date_separator_type date_separator,
       char *timestamp, size_t len)
 {
-   const char *format_str = "";
+   const char *format_str = "%04u-%02u-%02u %02u:%02u:%02u";
 
    if (!entry || (len < 20))
       return false;
 
    /* Get time format string */
-   switch (date_separator)
-   {
-      case CORE_BACKUP_DATE_SEPARATOR_SLASH:
-         format_str = "%04u/%02u/%02u %02u:%02u:%02u";
-         break;
-      case CORE_BACKUP_DATE_SEPARATOR_PERIOD:
-         format_str = "%04u.%02u.%02u %02u:%02u:%02u";
-         break;
-      default:
-         format_str = "%04u-%02u-%02u %02u:%02u:%02u";
-         break;
-   }
+   if      (date_separator == CORE_BACKUP_DATE_SEPARATOR_SLASH)
+      format_str = "%04u/%02u/%02u %02u:%02u:%02u";
+   else if (date_separator == CORE_BACKUP_DATE_SEPARATOR_PERIOD)
+      format_str = "%04u.%02u.%02u %02u:%02u:%02u";
 
    snprintf(timestamp, len,
          format_str,
