@@ -481,84 +481,93 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 bool win32_load_content_from_gui(const char *szFilename)
 {
    /* poll list of current cores */
-   size_t list_size;
-   content_ctx_info_t content_info  = { 0 };
    core_info_list_t *core_info_list = NULL;
-   const core_info_t *core_info     = NULL;
 
    core_info_get_list(&core_info_list);
 
-   if (!core_info_list)
-      return false;
-
-   core_info_list_get_supported_cores(core_info_list,
-      (const char*)szFilename, &core_info, &list_size);
-
-   if (!list_size)
-      return false;
-
-   path_set(RARCH_PATH_CONTENT, szFilename);
-
-   if (!path_is_empty(RARCH_PATH_CONTENT))
+   if (core_info_list)
    {
-      unsigned i;
-      core_info_t *current_core = NULL;
-      core_info_get_current_core(&current_core);
+      size_t list_size;
+      content_ctx_info_t content_info  = { 0 };
+      const core_info_t *core_info     = NULL;
+      core_info_list_get_supported_cores(core_info_list,
+            (const char*)szFilename, &core_info, &list_size);
 
-      /*we already have path for libretro core */
-      for (i = 0; i < list_size; i++)
+      if (list_size)
       {
-         const core_info_t *info = (const core_info_t*)&core_info[i];
+         path_set(RARCH_PATH_CONTENT, szFilename);
 
-         if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
+         if (!path_is_empty(RARCH_PATH_CONTENT))
          {
-            /* Our previous core supports the current rom */
-            task_push_load_content_with_current_core_from_companion_ui(
-               NULL,
-               &content_info,
-               CORE_TYPE_PLAIN,
-               NULL, NULL);
-            return true;
+            unsigned i;
+            core_info_t *current_core = NULL;
+            core_info_get_current_core(&current_core);
+
+            /*we already have path for libretro core */
+            for (i = 0; i < list_size; i++)
+            {
+               const core_info_t *info = (const core_info_t*)&core_info[i];
+
+               if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
+               {
+                  /* Our previous core supports the current rom */
+                  task_push_load_content_with_current_core_from_companion_ui(
+                        NULL,
+                        &content_info,
+                        CORE_TYPE_PLAIN,
+                        NULL, NULL);
+                  return true;
+               }
+            }
+         }
+
+         /* Poll for cores for current rom since none exist. */
+         if (list_size == 1)
+         {
+            /*pick core that only exists and is bound to work. Ish. */
+            const core_info_t *info = (const core_info_t*)&core_info[0];
+
+            if (info)
+            {
+               task_push_load_content_with_new_core_from_companion_ui(
+                     info->path, NULL, NULL, NULL, NULL, &content_info, NULL, NULL);
+               return true;
+            }
+         }
+         else
+         {
+            bool            okay              = false;
+            settings_t *settings              = config_get_ptr();
+            bool video_is_fs                  = settings->bools.video_fullscreen;
+            video_driver_state_t *video_st    = video_state_get_ptr();
+
+            /* Fullscreen: Show mouse cursor for dialog */
+            if (video_is_fs)
+            {
+               if (     video_st->poke
+                     && video_st->poke->show_mouse)
+                  video_st->poke->show_mouse(video_st->data, true);
+            }
+
+            /* Pick one core that could be compatible, ew */
+            if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
+                     main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
+            {
+               task_push_load_content_with_current_core_from_companion_ui(
+                     NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+               okay = true;
+            }
+
+            /* Fullscreen: Hide mouse cursor after dialog */
+            if (video_is_fs)
+            {
+               if (     video_st->poke
+                     && video_st->poke->show_mouse)
+                  video_st->poke->show_mouse(video_st->data, false);
+            }
+            return okay;
          }
       }
-   }
-
-   /* Poll for cores for current rom since none exist. */
-   if (list_size == 1)
-   {
-      /*pick core that only exists and is bound to work. Ish. */
-      const core_info_t *info = (const core_info_t*)&core_info[0];
-
-      if (info)
-      {
-         task_push_load_content_with_new_core_from_companion_ui(
-            info->path, NULL, NULL, NULL, NULL, &content_info, NULL, NULL);
-         return true;
-      }
-   }
-   else
-   {
-      bool            okay = false;
-      settings_t *settings = config_get_ptr();
-      bool video_is_fs     = settings->bools.video_fullscreen;
-
-      /* Fullscreen: Show mouse cursor for dialog */
-      if (video_is_fs)
-         video_driver_show_mouse();
-
-      /* Pick one core that could be compatible, ew */
-      if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
-         main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
-      {
-         task_push_load_content_with_current_core_from_companion_ui(
-            NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-         okay = true;
-      }
-
-      /* Fullscreen: Hide mouse cursor after dialog */
-      if (video_is_fs)
-         video_driver_hide_mouse();
-      return okay;
    }
    return false;
 }

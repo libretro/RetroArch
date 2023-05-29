@@ -2175,22 +2175,6 @@ void video_driver_update_viewport(
    }
 }
 
-void video_driver_show_mouse(void)
-{
-   video_driver_state_t *video_st = &video_driver_st;
-   if (     video_st->poke
-         && video_st->poke->show_mouse)
-      video_st->poke->show_mouse(video_st->data, true);
-}
-
-void video_driver_hide_mouse(void)
-{
-   video_driver_state_t *video_st = &video_driver_st;
-   if (     video_st->poke
-         && video_st->poke->show_mouse)
-      video_st->poke->show_mouse(video_st->data, false);
-}
-
 void video_driver_restore_cached(void *settings_data)
 {
    settings_t *settings           = (settings_t*)settings_data;
@@ -3519,13 +3503,17 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
     * (re-)initialisation */
    if (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE)
    {
-      video_driver_hide_mouse();
+      if (     video_st->poke
+            && video_st->poke->show_mouse)
+         video_st->poke->show_mouse(video_st->data, false);
       if (input_driver_grab_mouse())
          input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
    }
    else if (video.fullscreen)
    {
-      video_driver_hide_mouse();
+      if (     video_st->poke
+            && video_st->poke->show_mouse)
+         video_st->poke->show_mouse(video_st->data, false);
       if (!settings->bools.video_windowed_fullscreen)
          if (input_driver_grab_mouse())
             input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;

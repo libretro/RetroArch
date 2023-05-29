@@ -2467,6 +2467,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          {
             recording_state_t 
                *recording_st      = recording_state_get_ptr();
+            video_driver_state_t *video_st    = video_state_get_ptr();
             bool video_fullscreen = settings->bools.video_fullscreen;
             int reinit_flags      = DRIVERS_CMD_ALL &
                   ~(DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK | DRIVER_MENU_MASK);
@@ -2493,7 +2494,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             /* Hide mouse cursor in fullscreen mode */
             if (video_fullscreen)
-               video_driver_hide_mouse();
+            {
+               if (     video_st->poke
+                     && video_st->poke->show_mouse)
+                  video_st->poke->show_mouse(video_st->data, false);
+            }
          }
          break;
       }
@@ -2691,7 +2696,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             /* Hide mouse cursor in fullscreen after
              * a RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO call. */
             if (video_fullscreen)
-               video_driver_hide_mouse();
+            {
+               if (     video_st->poke
+                     && video_st->poke->show_mouse)
+                  video_st->poke->show_mouse(video_st->data, false);
+            }
 
             /* Recalibrate frame delay target when video reinits
              * and pause frame delay when video does not reinit */

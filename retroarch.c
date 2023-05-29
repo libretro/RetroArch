@@ -2637,6 +2637,7 @@ bool command_event(enum event_command cmd, void *data)
             bool load_dummy_core            = data ? *(bool*)data : true;
             content_ctx_info_t content_info = {0};
             global_t   *global              = global_get_ptr();
+            video_driver_state_t *video_st  = video_state_get_ptr();
             rarch_system_info_t *sys_info   = &runloop_st->system;
             uint8_t flags                   = content_get_flags();
 
@@ -2680,7 +2681,9 @@ bool command_event(enum event_command cmd, void *data)
                if (!settings->bools.video_fullscreen)
                {
                   input_driver_state_t *input_st = input_state_get_ptr();
-                  video_driver_show_mouse();
+                  if (     video_st->poke
+                        && video_st->poke->show_mouse)
+                     video_st->poke->show_mouse(video_st->data, true);
                   if (input_driver_ungrab_mouse())
                      input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
                }
@@ -3779,14 +3782,18 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_REINIT, NULL);
             if (video_fullscreen)
             {
-               video_driver_hide_mouse();
+               if (     video_st->poke
+                     && video_st->poke->show_mouse)
+                  video_st->poke->show_mouse(video_st->data, false);
                if (!settings->bools.video_windowed_fullscreen)
                   if (input_driver_grab_mouse())
                      input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
             }
             else
             {
-               video_driver_show_mouse();
+               if (     video_st->poke
+                     && video_st->poke->show_mouse)
+                  video_st->poke->show_mouse(video_st->data, true);
                if (!settings->bools.video_windowed_fullscreen)
                   if (input_driver_ungrab_mouse())
                      input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
@@ -3979,9 +3986,17 @@ bool command_event(enum event_command cmd, void *data)
                   grab_mouse_state ? "ON" : "OFF");
 
             if (grab_mouse_state)
-               video_driver_hide_mouse();
+            {
+               if (     video_st->poke
+                     && video_st->poke->show_mouse)
+                  video_st->poke->show_mouse(video_st->data, false);
+            }
             else
-               video_driver_show_mouse();
+            {
+               if (     video_st->poke
+                     && video_st->poke->show_mouse)
+                  video_st->poke->show_mouse(video_st->data, true);
+            }
          }
          break;
       case CMD_EVENT_UI_COMPANION_TOGGLE:
@@ -4065,7 +4080,9 @@ bool command_event(enum event_command cmd, void *data)
                {
                   if (input_driver_grab_mouse())
                      input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
-                  video_driver_hide_mouse();
+                  if (     video_st->poke
+                        && video_st->poke->show_mouse)
+                     video_st->poke->show_mouse(video_st->data, false);
                }
                /* Ungrab only if windowed and auto mouse grab is disabled */
                else if (!video_fullscreen &&
@@ -4073,7 +4090,9 @@ bool command_event(enum event_command cmd, void *data)
                {
                   if (input_driver_ungrab_mouse())
                      input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
-                  video_driver_show_mouse();
+                  if (     video_st->poke
+                        && video_st->poke->show_mouse)
+                     video_st->poke->show_mouse(video_st->data, true);
                }
 
                if (input_st->game_focus_state.enabled)

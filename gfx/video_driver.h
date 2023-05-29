@@ -940,10 +940,6 @@ void video_driver_set_aspect_ratio(void);
 
 void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bool keep_aspect);
 
-void video_driver_show_mouse(void);
-
-void video_driver_hide_mouse(void);
-
 void video_driver_apply_state_changes(void);
 
 bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);

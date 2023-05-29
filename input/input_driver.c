@@ -3911,7 +3911,11 @@ static void input_overlay_loaded(retro_task_t *task,
    free(data);
 
    if (!input_overlay_show_mouse_cursor)
-      video_driver_hide_mouse();
+   {
+      if (     video_st->poke
+            && video_st->poke->show_mouse)
+         video_st->poke->show_mouse(video_st->data, false);
+   }
 
    /* Attempt to automatically rotate overlay, if required */
    if (inp_overlay_auto_rotate)

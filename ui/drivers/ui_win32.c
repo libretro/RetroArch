@@ -248,6 +248,7 @@ static bool ui_browser_window_win32_core(
    OPENFILENAME ofn;
    bool            okay  = true;
    settings_t *settings  = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
    bool video_fullscreen = settings->bools.video_fullscreen;
 
    ofn.lStructSize       = sizeof(OPENFILENAME);
@@ -280,7 +281,11 @@ static bool ui_browser_window_win32_core(
 
    /* Full Screen: Show mouse for the file dialog */
    if (video_fullscreen)
-      video_driver_show_mouse();
+   {
+      if (     video_st->poke
+            && video_st->poke->show_mouse)
+         video_st->poke->show_mouse(video_st->data, true);
+   }
 
    if (!save && !GetOpenFileName(&ofn))
       okay = false;
@@ -289,7 +294,11 @@ static bool ui_browser_window_win32_core(
 
    /* Full screen: Hide mouse after the file dialog */
    if (video_fullscreen)
-      video_driver_hide_mouse();
+   {
+      if (     video_st->poke
+            && video_st->poke->show_mouse)
+         video_st->poke->show_mouse(video_st->data, false);
+   }
 
    return okay;
 }

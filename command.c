@@ -2108,7 +2108,11 @@ void command_event_reinit(const int flags)
 #ifdef HAVE_MENU
    p_disp->flags |= GFX_DISP_FLAG_FB_DIRTY;
    if (video_fullscreen)
-      video_driver_hide_mouse();
+   {
+      if (     video_st->poke
+            && video_st->poke->show_mouse)
+         video_st->poke->show_mouse(video_st->data, false);
+   }
    if (     (menu_st->flags & MENU_ST_FLAG_ALIVE)
          && video_st->current_video->set_nonblock_state)
       video_st->current_video->set_nonblock_state(
