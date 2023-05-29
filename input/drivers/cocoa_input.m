@@ -66,6 +66,9 @@ void apple_direct_input_keyboard_event(bool down,
 #if TARGET_OS_IPHONE
 /* TODO/FIXME - static globals */
 static bool small_keyboard_active = false;
+#if TARGET_OS_IOS
+static UISelectionFeedbackGenerator *feedbackGenerator;
+#endif
 
 #define HIDKEY(X) X
 #define MAX_ICADE_PROFILES 4
@@ -352,6 +355,12 @@ static void *cocoa_input_init(const char *joypad_driver)
    if (@available(macOS 10.15, *))
       if (!motionManager)
          motionManager = [[CMMotionManager alloc] init];
+#endif
+
+#if TARGET_OS_IOS
+   if (!feedbackGenerator)
+      feedbackGenerator = [[UISelectionFeedbackGenerator alloc] init];
+   [feedbackGenerator prepare];
 #endif
 
    cocoa_input_data_t *apple = (cocoa_input_data_t*)calloc(1, sizeof(*apple));
@@ -728,6 +737,14 @@ static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id
    return 0.0f;
 }
 
+#if TARGET_OS_IOS
+static void cocoa_input_keypress_vibrate()
+{
+   [feedbackGenerator selectionChanged];
+   [feedbackGenerator prepare];
+}
+#endif
+
 input_driver_t input_cocoa = {
    cocoa_input_init,
    cocoa_input_poll,
@@ -738,6 +755,10 @@ input_driver_t input_cocoa = {
    cocoa_input_get_capabilities,
    "cocoa",
    NULL,                         /* grab_mouse */
-   NULL,
+   NULL,                         /* grab_stdin */
+#if TARGET_OS_IOS
+   cocoa_input_keypress_vibrate
+#else
    NULL
+#endif
 };
