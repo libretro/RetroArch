@@ -68,6 +68,9 @@ bool gfx_ctx_wl_init_common(
 bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
       unsigned width, unsigned height, bool fullscreen);
 
+bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
+      bool fullscreen);
+
 bool gfx_ctx_wl_suppress_screensaver(void *data, bool state);
 
 bool gfx_ctx_wl_set_video_mode_common(gfx_ctx_wayland_data_t *wl,
