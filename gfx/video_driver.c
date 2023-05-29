@@ -87,31 +87,6 @@ static const video_display_server_t dispserv_null = {
    "null"
 };
 
-#ifdef HAVE_VULKAN
-static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
-#if defined(__APPLE__)
-   &gfx_ctx_cocoavk,
-#endif
-#if defined(_WIN32) && !defined(__WINRT__)
-   &gfx_ctx_w_vk,
-#endif
-#if defined(ANDROID)
-   &gfx_ctx_vk_android,
-#endif
-#if defined(HAVE_WAYLAND)
-   &gfx_ctx_vk_wayland,
-#endif
-#if defined(HAVE_X11)
-   &gfx_ctx_vk_x,
-#endif
-#if defined(HAVE_VULKAN_DISPLAY)
-   &gfx_ctx_khr_display,
-#endif
-   &gfx_ctx_null,
-   NULL
-};
-#endif
-
 static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(ORBIS)
    &orbis_ctx,
@@ -2736,72 +2711,28 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #endif
 }
 
-#ifdef HAVE_VULKAN
-static const gfx_ctx_driver_t *vk_context_driver_init_first(
-      uint32_t runloop_flags,
-      settings_t *settings,
-      void *data,
+/**
+ * video_context_driver_init_first:
+ * @data                    : Input data.
+ * @ident                   : Identifier of graphics context driver to find.
+ * @api                     : API of higher-level graphics API.
+ * @major                   : Major version number of higher-level graphics API.
+ * @minor                   : Minor version number of higher-level graphics API.
+ * @hw_render_ctx           : Request a graphics context driver capable of
+ *                            hardware rendering?
+ *
+ * Finds first suitable graphics context driver and initializes.
+ *
+ * Returns: graphics context driver if found, otherwise NULL.
+ **/
+const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx, void **ctx_data)
 {
    unsigned j;
    int i = -1;
-   video_driver_state_t *video_st = &video_driver_st;
-
-   for (j = 0; gfx_ctx_vk_drivers[j]; j++)
-   {
-      if (string_is_equal_noncase(ident, gfx_ctx_vk_drivers[j]->ident))
-      {
-         i = j;
-         break;
-      }
-   }
-
-   if (i >= 0)
-   {
-      const gfx_ctx_driver_t *ctx = video_context_driver_init(
-            runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
-            settings,
-            data,
-            gfx_ctx_vk_drivers[i], ident,
-            api, major, minor, hw_render_ctx, ctx_data);
-      if (ctx)
-      {
-         video_st->context_data = *ctx_data;
-         return ctx;
-      }
-   }
-
-   for (i = 0; gfx_ctx_vk_drivers[i]; i++)
-   {
-      const gfx_ctx_driver_t *ctx =
-         video_context_driver_init(
-               runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
-               settings,
-               data,
-               gfx_ctx_vk_drivers[i], ident,
-               api, major, minor, hw_render_ctx, ctx_data);
-
-      if (ctx)
-      {
-         video_st->context_data = *ctx_data;
-         return ctx;
-      }
-   }
-
-   return NULL;
-}
-#endif
-
-static const gfx_ctx_driver_t *gl_context_driver_init_first(
-      uint32_t runloop_flags,
-      settings_t *settings,
-      void *data,
-      const char *ident, enum gfx_ctx_api api, unsigned major,
-      unsigned minor, bool hw_render_ctx, void **ctx_data)
-{
-   unsigned j;
-   int i = -1;
+   uint32_t runloop_flags         = runloop_get_flags();
+   settings_t *settings           = config_get_ptr();
    video_driver_state_t *video_st = &video_driver_st;
 
    for (j = 0; gfx_ctx_gl_drivers[j]; j++)
@@ -2844,58 +2775,6 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(
          return ctx;
       }
    }
-
-   return NULL;
-}
-
-/**
- * video_context_driver_init_first:
- * @data                    : Input data.
- * @ident                   : Identifier of graphics context driver to find.
- * @api                     : API of higher-level graphics API.
- * @major                   : Major version number of higher-level graphics API.
- * @minor                   : Minor version number of higher-level graphics API.
- * @hw_render_ctx           : Request a graphics context driver capable of
- *                            hardware rendering?
- *
- * Finds first suitable graphics context driver and initializes.
- *
- * Returns: graphics context driver if found, otherwise NULL.
- **/
-const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
-      const char *ident, enum gfx_ctx_api api, unsigned major,
-      unsigned minor, bool hw_render_ctx, void **ctx_data)
-{
-   uint32_t runloop_flags      = runloop_get_flags();
-   settings_t *settings        = config_get_ptr();
-
-   switch (api)
-   {
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         {
-            const gfx_ctx_driver_t *ptr = vk_context_driver_init_first(
-                  runloop_flags, settings,
-                  data, ident, api, major, minor, hw_render_ctx, ctx_data);
-            if (ptr && !string_is_equal(ptr->ident, "null"))
-               return ptr;
-            /* fall-through if no valid driver was found */
-         }
-#endif
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
-      case GFX_CTX_METAL_API:
-      case GFX_CTX_RSX_API:
-         return gl_context_driver_init_first(
-               runloop_flags, settings,
-               data, ident, api, major, minor,
-               hw_render_ctx, ctx_data);
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
 
    return NULL;
 }

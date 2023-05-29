@@ -130,19 +130,97 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width, unsigned height);
 #endif
 static void vulkan_viewport_info(void *data, struct video_viewport *vp);
 
+static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
+#if defined(__APPLE__)
+   &gfx_ctx_cocoavk,
+#endif
+#if defined(_WIN32) && !defined(__WINRT__)
+   &gfx_ctx_w_vk,
+#endif
+#if defined(ANDROID)
+   &gfx_ctx_vk_android,
+#endif
+#if defined(HAVE_WAYLAND)
+   &gfx_ctx_vk_wayland,
+#endif
+#if defined(HAVE_X11)
+   &gfx_ctx_vk_x,
+#endif
+#if defined(HAVE_VULKAN_DISPLAY)
+   &gfx_ctx_khr_display,
+#endif
+   &gfx_ctx_null,
+   NULL
+};
+
+static const gfx_ctx_driver_t *vk_context_driver_init_first(
+      uint32_t runloop_flags,
+      settings_t *settings,
+      void *data,
+      const char *ident, enum gfx_ctx_api api, unsigned major,
+      unsigned minor, bool hw_render_ctx, void **ctx_data)
+{
+   unsigned j;
+   int i = -1;
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   for (j = 0; gfx_ctx_vk_drivers[j]; j++)
+   {
+      if (string_is_equal_noncase(ident, gfx_ctx_vk_drivers[j]->ident))
+      {
+         i = j;
+         break;
+      }
+   }
+
+   if (i >= 0)
+   {
+      const gfx_ctx_driver_t *ctx = video_context_driver_init(
+            runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
+            settings,
+            data,
+            gfx_ctx_vk_drivers[i], ident,
+            api, major, minor, hw_render_ctx, ctx_data);
+      if (ctx)
+      {
+         video_st->context_data = *ctx_data;
+         return ctx;
+      }
+   }
+
+   for (i = 0; gfx_ctx_vk_drivers[i]; i++)
+   {
+      const gfx_ctx_driver_t *ctx =
+         video_context_driver_init(
+               runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
+               settings,
+               data,
+               gfx_ctx_vk_drivers[i], ident,
+               api, major, minor, hw_render_ctx, ctx_data);
+
+      if (ctx)
+      {
+         video_st->context_data = *ctx_data;
+         return ctx;
+      }
+   }
+
+   return NULL;
+}
+
 static const gfx_ctx_driver_t *vulkan_get_context(vk_t *vk, settings_t *settings)
 {
    void                 *ctx_data  = NULL;
    unsigned major                  = 1;
    unsigned minor                  = 0;
    enum gfx_ctx_api api            = GFX_CTX_VULKAN_API;
-   const gfx_ctx_driver_t *gfx_ctx = video_context_driver_init_first(
-         vk, settings->arrays.video_context_driver,
-         api, major, minor, false, &ctx_data);
+   uint32_t runloop_flags          = runloop_get_flags();
+   const gfx_ctx_driver_t *gfx_ctx = vk_context_driver_init_first(
+         runloop_flags, settings,
+         vk, settings->arrays.video_context_driver, api, major, minor, false, &ctx_data);
 
    if (ctx_data)
-      vk->ctx_data = ctx_data;
-
+      vk->ctx_data                 = ctx_data;
    return gfx_ctx;
 }
 
