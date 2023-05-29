@@ -7888,13 +7888,11 @@ void runloop_path_set_redirect(settings_t *settings,
 
             /* Append library_name to the savestate location */
             if (sort_savestates_enable)
-            {
                fill_pathname_join(
                      new_savestate_dir,
                      new_savestate_dir,
                      system->library_name,
                      sizeof(new_savestate_dir));
-            }
 
             /* If path doesn't exist, try to create it.
              * If everything fails, revert to the original path. */
@@ -7942,8 +7940,8 @@ void runloop_path_set_redirect(settings_t *settings,
 
 #ifdef HAVE_NETWORKING
    /* Special save directory for netplay clients. */
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-         !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+   if (      netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
+         && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
    {
       fill_pathname_join(new_savefile_dir, new_savefile_dir, ".netplay",
          sizeof(new_savefile_dir));
@@ -8072,7 +8070,7 @@ void runloop_path_set_special(char **argv, unsigned num_content)
    if (is_dir)
    {
       strlcpy(runloop_st->name.savestate, savestate_dir,
-              sizeof(runloop_st->name.savestate)); /* TODO/FIXME - why are we setting this string here but then later overwriting it later with fil_pathname_dir? */
+              sizeof(runloop_st->name.savestate)); /* TODO/FIXME - why are we setting this string here but then later overwriting it later with fill_pathname_dir? */
       strlcpy(runloop_st->name.replay, savestate_dir,
               sizeof(runloop_st->name.replay)); /* TODO/FIXME - as above */
    }
