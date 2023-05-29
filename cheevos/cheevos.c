@@ -744,7 +744,7 @@ void rcheevos_reset_game(bool widgets_ready)
       rcheevos_init_memory(&rcheevos_locals);
 }
 
-void rcheevos_refresh_memory()
+void rcheevos_refresh_memory(void)
 {
    if (rcheevos_locals.memory.total_size > 0)
       rcheevos_init_memory(&rcheevos_locals);

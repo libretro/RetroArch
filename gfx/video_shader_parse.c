@@ -3115,7 +3115,6 @@ const char *video_shader_get_current_shader_preset(void)
 void video_shader_toggle(settings_t *settings)
 {
    bool toggle                     = !settings->bools.video_shader_enable;
-   bool refresh                    = false;
    struct video_shader *shader     = menu_shader_get();
    struct menu_state *menu_st      = menu_state_get_ptr();
    shader->flags                  |=  SHDR_FLAG_MODIFIED;
