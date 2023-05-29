@@ -1846,7 +1846,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("quick_menu_show_close_content",              &settings->bools.quick_menu_show_close_content, true, DEFAULT_QUICK_MENU_SHOW_CLOSE_CONTENT, false);
    SETTING_BOOL("quick_menu_show_savestate_submenu",          &settings->bools.quick_menu_show_savestate_submenu, true, DEFAULT_QUICK_MENU_SHOW_SAVESTATE_SUBMENU, false);
    SETTING_BOOL("quick_menu_show_save_load_state",            &settings->bools.quick_menu_show_save_load_state, true, DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE, false);
-   SETTING_BOOL("quick_menu_show_replay",            &settings->bools.quick_menu_show_replay, true, DEFAULT_QUICK_MENU_SHOW_REPLAY, false);
+   SETTING_BOOL("quick_menu_show_replay",                     &settings->bools.quick_menu_show_replay, true, DEFAULT_QUICK_MENU_SHOW_REPLAY, false);
    SETTING_BOOL("quick_menu_show_take_screenshot",            &settings->bools.quick_menu_show_take_screenshot, true, DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT, false);
    SETTING_BOOL("quick_menu_show_undo_save_load_state",       &settings->bools.quick_menu_show_undo_save_load_state, true, DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE, false);
    SETTING_BOOL("quick_menu_show_add_to_favorites",           &settings->bools.quick_menu_show_add_to_favorites, true, DEFAULT_QUICK_MENU_SHOW_ADD_TO_FAVORITES, false);
@@ -1860,8 +1860,8 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("quick_menu_show_cheats",                     &settings->bools.quick_menu_show_cheats, true, DEFAULT_QUICK_MENU_SHOW_CHEATS, false);
    SETTING_BOOL("quick_menu_show_shaders",                    &settings->bools.quick_menu_show_shaders, true, DEFAULT_QUICK_MENU_SHOW_SHADERS, false);
    SETTING_BOOL("quick_menu_show_save_core_overrides",        &settings->bools.quick_menu_show_save_core_overrides, true, DEFAULT_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES, false);
-   SETTING_BOOL("quick_menu_show_save_game_overrides",        &settings->bools.quick_menu_show_save_game_overrides, true, DEFAULT_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES, false);
    SETTING_BOOL("quick_menu_show_save_content_dir_overrides", &settings->bools.quick_menu_show_save_content_dir_overrides, true, DEFAULT_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES, false);
+   SETTING_BOOL("quick_menu_show_save_game_overrides",        &settings->bools.quick_menu_show_save_game_overrides, true, DEFAULT_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES, false);
    SETTING_BOOL("quick_menu_show_information",                &settings->bools.quick_menu_show_information, true, DEFAULT_QUICK_MENU_SHOW_INFORMATION, false);
 #ifdef HAVE_NETWORKING
    SETTING_BOOL("quick_menu_show_download_thumbnails",        &settings->bools.quick_menu_show_download_thumbnails, true, DEFAULT_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS, false);

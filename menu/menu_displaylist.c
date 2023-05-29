@@ -3687,6 +3687,7 @@ static int menu_displaylist_parse_load_content_settings(
 #endif
 
          if (       (settings->bools.quick_menu_show_save_core_overrides
+                  || settings->bools.quick_menu_show_save_content_dir_overrides
                   || settings->bools.quick_menu_show_save_game_overrides))
          {
             if (menu_entries_append(list,
@@ -10349,6 +10350,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CONTENT_SHOW_REWIND,                    PARSE_ONLY_BOOL},
 #endif
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,    PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,    PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS,                 PARSE_ONLY_BOOL},
             };
