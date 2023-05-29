@@ -1081,8 +1081,6 @@ bool video_driver_monitor_adjust_system_rates(
 
 void crt_switch_driver_refresh(void);
 
-char* crt_switch_core_name(void);
-
 #define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
    (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) : false)
 
@@ -1233,8 +1231,6 @@ void video_driver_force_fallback(const char *driver);
 void video_driver_set_gpu_api_devices(enum gfx_ctx_api api, struct string_list *list);
 
 struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api);
-
-enum retro_hw_context_type hw_render_context_type(const char *s);
 
 const char *hw_render_context_name(
       enum retro_hw_context_type type, int major, int minor);

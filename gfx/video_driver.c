@@ -507,7 +507,7 @@ const char *hw_render_context_name(
    return "N/A";
 }
 
-enum retro_hw_context_type hw_render_context_type(const char *s)
+static enum retro_hw_context_type hw_render_context_type(const char *s)
 {
 #ifdef HAVE_OPENGL_CORE
    if (string_is_equal(s, "glcore"))

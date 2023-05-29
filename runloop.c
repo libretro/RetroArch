@@ -7698,11 +7698,6 @@ bool core_has_set_input_descriptor(void)
             RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS) > 0);
 }
 
-char *crt_switch_core_name(void)
-{
-   return (char*)runloop_state.system.info.library_name;
-}
-
 void runloop_path_set_basename(const char *path)
 {
    runloop_state_t *runloop_st = &runloop_state;
